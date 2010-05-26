@@ -1,0 +1,21 @@
+<VirtualHost *:80>
+ServerName fly.mpi-cbg.de
+ServerAlias catmaid.mpi-cbg.de
+
+DocumentRoot "/var/www/vhosts/fly/httpdocs"
+
+php_admin_value register_globals off
+php_admin_value include_path ".:/var/www/vhosts/fly/inc"
+php_admin_value session.use_only_cookies 1
+php_admin_value error_reporting 2047
+
+<Directory /var/www/vhosts/fly/httpdocs>
+
+	Options FollowSymLinks
+	AllowOverride AuthConfig Limit FileInfo
+
+</Directory>
+
+CustomLog /var/www/vhosts/fly/logs/access_log combined
+
+</VirtualHost>

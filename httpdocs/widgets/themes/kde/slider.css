@@ -1,0 +1,105 @@
+div.vSliderView
+{
+	/* this has to be the 1st rule for automated parsing */
+	position:absolute;
+	margin:68px 0px 128px 0px;
+	padding:0px;
+	width:32px;
+	height:256px;
+	z-index:8;
+	overflow:hidden;
+	background:url(checker_grey32.gif) repeat-y center top;
+}
+
+div.vSliderHandle
+{
+	/* this has to be the 2nd rule for automated parsing */
+	margin:32px 0px 32px 0px;
+	padding:0px;
+	width:100%;
+	height:24px;
+	cursor:pointer;
+	background:url(handle.gif) no-repeat center;
+	/*
+	background:#0000FF;
+	*/
+}
+
+div.hSliderView
+{
+	/* this has to be the 3rd rule for automated parsing */
+	/*position:absolute;*/
+	position:relative;
+	margin:0px 32px 0px 32px;
+	padding:0px;
+	width:128px;
+	height:24px;
+	z-index:8;
+	overflow:hidden;
+	float:left;
+	/*background:url(hslider_bg.gif) repeat-x center;*/
+}
+
+div.hSliderHandle
+{
+	/* this has to be the 4th rule for automated parsing */
+	position:absolute;
+	top:0px;
+	left:0px;
+	margin:0px 0px 0px 0px;
+	padding:0px;
+	width:11px;
+	height:100%;
+	cursor:pointer;
+	z-index:8;
+	background:url(hslider_handle.gif) no-repeat center;
+	/*
+	background:#0000FF;
+	*/
+}
+
+
+div.vSliderBarTop
+{
+	margin:0px;
+	padding:0px;
+	width:100%;
+	height:50%;
+	background:url(bar_top.gif) no-repeat center top;
+	overflow:hidden;
+}
+
+div.vSliderBarBottom
+{
+	margin:0px;
+	padding:0px;
+	width:100%;
+	height:50%;
+	background:url(bar_bottom.gif) no-repeat center bottom;
+}
+
+
+div.hSliderBarTop
+{
+	position:absolute;
+	top:0px;
+	left:0px;
+	margin:0px;
+	padding:0px;
+	width:50%;
+	height:100%;
+	background:url(hslider_bar_left_b.gif) no-repeat left center;
+	overflow:hidden;
+}
+
+div.hSliderBarBottom
+{
+	position:absolute;
+	top:0px;
+	right:0px;
+	margin:0px;
+	padding:0px;
+	width:50%;
+	height:100%;
+	background:url(hslider_bar_right_b.gif) no-repeat right center;
+}

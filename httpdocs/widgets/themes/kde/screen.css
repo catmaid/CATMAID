@@ -1,0 +1,129 @@
+html, body
+{
+	border:none;
+	min-width:300px;
+	margin:0px;
+	padding:0px;
+}
+html, body, input, textarea, p, dl
+{
+	color:#000000;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:11px;
+	font-weight:normal;
+	line-height:13px;
+}
+h1
+{
+	margin:1.5em 16px 0.5em 20px;
+	font-size:25px;
+	line-height:1.1em;
+	font-weight:normal;
+}
+
+h2
+{
+	margin:1.5em 16px 0.5em 20px;
+	font-size:16px;
+	line-height:1.1em;
+	font-weight:bold;
+}
+
+p, dl
+{
+	margin:1.5em 16px 0.5em 20px;
+}
+dt,
+dd
+{
+	margin-bottom:0.5em;
+}
+dl p
+{
+	font-style:italic;
+	margin:0px;
+}
+
+.wait_bgwhite, div.form .wait_bgwhite
+{
+	padding:4px 0px 4px 24px;
+	vertical-align:middle;
+	background:url(wait_bgwhite.gif) no-repeat left center;
+}
+
+dt
+{
+	font-weight:bold;
+}
+dd
+{
+	margin-left:1em;
+}
+
+div#imprint
+{
+	height:32px;
+	width:100%;
+	background:url(bar32_bg.gif) repeat-x left top;		
+	position:absolute;
+	left:0px;
+	bottom:0px;
+	margin:0px;
+	padding:0px;
+	overflow:hidden;
+	border:none;
+	border-top:solid 4px #000000;
+}
+div#imprint p
+{
+	border:none;
+	margin:0px;
+	padding:4px 0px 0px 20px;
+	vertical-align:middle;
+	line-height:20px;
+}
+
+div#content
+{
+	position:absolute;
+	left:0px;
+	top:0px;
+	bottom:0px;
+	width:100%;
+	overflow:auto;
+	background:#FFFFFF;
+}
+
+/**
+ * Forms
+ */
+div.form
+{
+	display:none;
+}
+
+div.form table
+{
+	margin:1.5em 16px 0.5em 20px;
+}
+
+div.form table td
+{
+	padding-right:1em;
+	vertical-align:top;
+}
+
+div.form p
+{
+	margin:0px;
+	border:dashed 1px #FFFFFF;
+	padding:0.5em 0em 0.5em 0em;
+}
+
+div.form textarea, div.form input, div.form select
+{
+	border:dashed 1px #AAAAAA;
+	background:#F4F4F4;
+	padding:0.5em 1em 0.5em 1em;
+}
+

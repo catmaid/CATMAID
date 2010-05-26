@@ -1,0 +1,13 @@
+div#eventCatcher
+{
+	position:absolute;
+	top:0px;
+	left:0px;
+	margin:0px;
+	padding:0px;
+	width:100%;
+	height:100%;
+	z-index:9;
+	display:none;
+	cursor:move;
+}

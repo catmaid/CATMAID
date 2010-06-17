@@ -2,6 +2,22 @@
 -- PostgreSQL database dump
 --
 
+--
+-- Role: catmaid_user
+--
+
+CREATE ROLE "catmaid_user" LOGIN PASSWORD 'catmaid_user_password';
+
+
+--
+-- Database: catmaid
+--
+
+CREATE DATABASE "catmaid" OWNER "catmaid_user";
+
+\c catmaid
+
+
 SET client_encoding = 'UTF8';
 SET check_function_bodies = false;
 SET client_min_messages = warning;

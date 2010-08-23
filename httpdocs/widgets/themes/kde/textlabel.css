@@ -48,6 +48,16 @@ div.textlabelView_nocanvas textarea
 	/*white-space:normal;*/
 	/*white-space:pre-line;*/
 }
+div.textlabelView p,
+div.textlabelView_nocanvas p,
+div.textlabelView pre,
+div.textlabelView_nocanvas pre
+{
+	/* Compensate for Firefox' extra padding in textareas.  In KHTML,
+	   textare styling seems impossible... */ 
+	padding-left:1px;
+	padding-right:1px;
+}
 div.textlabelView input,
 div.textlabelView_nocanvas input,
 div.textlabelView textarea,

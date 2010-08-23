@@ -32,6 +32,7 @@ function makeJSON( $data )
 		$data = str_replace( "\n", '\n', $data );
 		$data = str_replace( "\r", '\r', $data );
 		$data = str_replace( "\t", '\t', $data );
+		$data = str_replace( '\"', '"', $data );
 		$data = str_replace( '"', '\"', $data );
 		return '"'.$data.'"';
 	}

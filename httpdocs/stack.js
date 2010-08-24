@@ -873,7 +873,7 @@ function Stack(
 	
 	//--------------------------------------------------------------------------
 	/**
-	 * Slider commands for changing the slice come in to frequent, thus the
+	 * Slider commands for changing the slice come in too frequently, thus the
 	 * execution of the actual slice change has to be delayed slightly.  The
 	 * timer is overridden if a new action comes in before the last had time to
 	 * be executed.

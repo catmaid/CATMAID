@@ -1,0 +1,91 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>Raphaël · SVG Benchmark</title>
+        <script src="raphael-min.js" type="text/javascript" charset="utf-8"></script>
+        <script type="text/javascript" charset="utf-8">                
+
+Node = function( paper, parent, x, y, r )
+{
+	var ox = 0, oy = 0;
+	
+	var c = paper.circle( x, y, r ).attr({
+					fill: "hsb(.8, 1, 1)",
+					stroke: "none",
+					opacity: .5
+					});
+	this.getC = function(){ return c; }
+	
+	var mc = paper.circle( x, y, r + 8 ).attr({
+					fill: "rgb(0, 1, 0)",
+					stroke: "none",
+					opacity: 0
+					});
+	
+	var children = new Array();
+	this.getChildren = function(){ return children; }
+	
+	this.parent = parent;
+	var l;
+	if ( parent != null )
+		l = paper.path();
+	
+	var drawLine = function()
+	{
+		l.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], [ "L", parent.getC().attrs.cx, parent.getC().attrs.cy ] ] } );
+	}
+	
+	this.drawLine = drawLine;
+	
+	mc.move = function( dx, dy )
+	{
+		var x = ox + dx;
+    	var y = oy + dy;
+		c.attr({cx: x,cy: y});
+		mc.attr({cx: x,cy: y});
+		for ( var i = 0; i < children.length; ++i )
+			children[ i ].drawLine();
+		drawLine();
+	}
+	mc.up = function()
+	{
+		c.attr({opacity:.5});
+	}
+	mc.start = function()
+	{
+		ox = mc.attr("cx");
+		oy = mc.attr("cy");
+		c.attr({opacity:1});
+	}
+	mc.drag( mc.move, mc.start, mc.up );
+}
+
+
+window.onload = function () {
+	
+	
+    var r = Raphael("holder", 1200, 600);
+	
+	    // storing original coordinates
+
+	var ln = null;
+
+	for (var i = 0; i < 2000; ++i)
+	{
+		ln = new Node( r, ln, Math.random() * r.width, Math.random() * r.height, 2 );
+	}
+	
+	while ( ln.parent != null )
+	{
+		ln.parent.getChildren().push( ln );
+		ln.drawLine();
+		ln = ln.parent;
+	}
+};
+        </script>
+    </head>
+    <body>
+        <div id="holder"></div>
+    </body>
+</html>

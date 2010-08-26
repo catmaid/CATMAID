@@ -34,6 +34,7 @@ Node = function( paper, parent, x, y, r )
 	var drawLine = function()
 	{
 		l.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], [ "L", parent.getC().attrs.cx, parent.getC().attrs.cy ] ] } );
+		l.toBack();
 	}
 	
 	this.drawLine = drawLine;
@@ -70,10 +71,15 @@ window.onload = function () {
 	    // storing original coordinates
 
 	var ln = null;
+	
+	var x = r.width / 2;
+	var y = r.height / 2;
 
-	for (var i = 0; i < 2000; ++i)
+	for (var i = 0; i < 10000; ++i)
 	{
-		ln = new Node( r, ln, Math.random() * r.width, Math.random() * r.height, 2 );
+		x = Math.min( r.width, Math.max( 0, x + ( .5 - Math.random() ) * 100 ) );
+		y = Math.min( r.height, Math.max( 0, y + ( .5 - Math.random() ) * 100 ) );
+		ln = new Node( r, ln, x, y, 2 );
 	}
 	
 	while ( ln.parent != null )

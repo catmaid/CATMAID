@@ -86,7 +86,7 @@ foreach ( $pprojects as $p )
 	{
 		$projects[ $p[ 'pid' ] ] = array(
 				'title'		=> $p[ 'ptitle' ],
-				'public_project'	=> $p[ 'public' ] == "t",
+				'public_project'	=> $p[ 'public' ] == 't',
 				'action'	=> array(),
 				'editable'	=> $p[ 'editable' ] == 't',
 				'note'		=> ( $p[ 'editable' ] == 't' ? '[ editable ]' : '' ) );

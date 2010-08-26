@@ -115,9 +115,7 @@ function handle_login( status, text, xml )
 			
 			document.getElementById( "message_box" ).style.display = "block";
 
-			//don't show it for now
-			//document.getElementById( "project_menu_new" ).style.display = "block";
-			document.getElementById( "project_menu_new" ).style.display = "none";
+			document.getElementById( "project_menu_new" ).style.display = "block";
 			
 			//msg_timeout = window.setTimeout( message, MSG_TIMEOUT_INTERVAL );
 			message();

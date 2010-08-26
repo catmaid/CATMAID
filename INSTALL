@@ -1,0 +1,26 @@
+==Basic Installation Instructions==
+
+===Prerequisites===
+
+1. PostgreSQL > 8.2
+2. Apache2 Webserver
+3. PHP 5
+
+===Database===
+
+Create the database using the included dump.sql file.  In Debian/Ubuntu, this
+is:
+
+sudo -u postgres pgsql < dump.sql
+
+for a fresh Postgres installation.  The dump adds the login role `catmaid_user'
+with default password `catmaid_user_password'.  Change that to your personal
+needs either in dump.sql or afterwards via
+
+ALTER ROLE "catmaid_user" PASSWORD '<new password>'
+
+===Web Server===
+
+
+
+

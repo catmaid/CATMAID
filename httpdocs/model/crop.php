@@ -95,8 +95,6 @@ if ( $pid )
 			//echo makeJSON( array( 'error' => $url ) );
 			//exit;
 
-			//! @todo invoke the crop process here and implement an appropriate answer
-			
 			//ob_end_clean();
 			header( 'Connection: close' );
 			ignore_user_abort( true );

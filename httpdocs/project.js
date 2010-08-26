@@ -343,7 +343,7 @@ function Project( pid )
 	{
 		icon_text_apply.style.display = "block";
 		requestQueue.register(
-			'textlabel.create.php',
+			'model/textlabel.create.php',
 			'POST',
 			{
 				pid : project.id,

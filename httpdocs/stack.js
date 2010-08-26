@@ -341,7 +341,7 @@ function Stack(
 			tl_height = tiles.length * Y_TILE_SIZE / scale;
 		}
 		requestQueue.register(
-			'textlabels.php',
+			'model/textlabels.php',
 			'POST',
 			{
 				pid : project.id,
@@ -470,7 +470,7 @@ function Stack(
 				if ( r < 0 || c < 0 || r > LAST_YT || c > LAST_XT )
 				{
 					tiles[ i ][ j ].alt = "";
-					tiles[ i ][ j ].src = "gfx/black.gif";
+					tiles[ i ][ j ].src = "widgets/black.gif";
 				}
 				else
 				{
@@ -1128,7 +1128,7 @@ function Stack(
 		
 		if ( !window.confirm( str ) ) return false; 
 		requestQueue.register(
-		'crop.php',
+		'model/crop.php',
 		'POST',
 		{
 			pid : project.id,

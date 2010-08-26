@@ -231,7 +231,7 @@ Textlabel = function(
 	{
 		icon_apply.style.display = "block";
 		requestQueue.replace(
-			"textlabel.update.php",
+			"model/textlabel.update.php",
 			"POST",
 			{
 				pid : project.id,
@@ -279,7 +279,7 @@ Textlabel = function(
 		icon_apply.style.display = "block";
 		
 		requestQueue.register(
-			'textlabel.delete.php',
+			'model/textlabel.delete.php',
 			'POST',
 			{
 				pid : project.id,

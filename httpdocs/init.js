@@ -74,13 +74,13 @@ function login(
 	ui.catchEvents( "wait" );
 	if ( account || password )
 		requestQueue.register(
-			'login.php',
+			'model/login.php',
 			'POST',
 			{ name : account, pwd : password },
 			handle_login );
 	else
 		requestQueue.register(
-			'login.php',
+			'model/login.php',
 			'GET',
 			undefined,
 			handle_login );
@@ -140,7 +140,7 @@ function logout()
 	
 	ui.catchEvents( "wait" );
 	requestQueue.register(
-		'logout.php',
+		'model/logout.php',
 		'GET',
 		undefined,
 		handle_logout );
@@ -196,7 +196,7 @@ function updateProjects()
 	pp.appendChild( w );
 	
 	requestQueue.register(
-		'project.list.php',
+		'model/project.list.php',
 		'GET',
 		undefined,
 		handle_updateProjects );
@@ -290,7 +290,7 @@ function openProjectStack( pid, sid )
 	}
 	ui.catchEvents( "wait" );
 	requestQueue.register(
-		'project.stack.php',
+		'model/project.stack.php',
 		'POST',
 		{ pid : pid, sid : sid },
 		handle_openProjectStack );
@@ -388,7 +388,7 @@ function handle_openProjectStack( status, text, xml )
 function message()
 {
 	requestQueue.register(
-		'message.list.php',
+		'model/message.list.php',
 		'GET',
 		undefined,
 		handle_message );
@@ -419,7 +419,7 @@ function handle_message( status, text, xml )
 			var n = 0;
 			for ( var i in e )
 			{
-				e[ i ].action = "message.read.php?id=" + e[ i ].id;
+				e[ i ].action = "model/message.read.php?id=" + e[ i ].id;
 				e[ i ].note = e[ i ].time_formatted;
 				++n;
 				var dt = document.createElement( "dt" );
@@ -454,7 +454,7 @@ function updateUsers()
 	document.getElementById( "new_project_form" ).elements[ 3 ].style.display = "none";
 	document.getElementById( "new_project_owners_wait" ).style.display = "block";
 	requestQueue.register(
-		'user.list.php',
+		'model/user.list.php',
 		'GET',
 		undefined,
 		handle_updateUsers );
@@ -508,7 +508,7 @@ function handle_updateUsers( status, text, xml )
 function read_message( id )
 {
 	requestQueue.register(
-		'message.read.php',
+		'model/message.read.php',
 		'POST',
 		{ id : id },
 		null );	

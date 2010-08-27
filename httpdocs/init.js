@@ -1,4 +1,4 @@
-var console;		//!< global error console
+var statusBar;		//!< global statusBar
 
 var slider_z;		//!< slice slider
 var slider_s;		//!< zoom slider
@@ -618,8 +618,8 @@ function init()
 		}
 	}
 	
-	console = new Console();
-	document.body.appendChild( console.getView() );
+	statusBar = new Console();
+	document.body.appendChild( statusBar.getView() );
 	
 	requestQueue = new RequestQueue();
 	ui = new UI();
@@ -646,7 +646,7 @@ function init()
 			388,
 			388,
 			1,
-			function( val ){ console.replaceLast( "z: " + val ); return; } );
+			function( val ){ statusBar.replaceLast( "z: " + val ); return; } );
 	
 	slider_s = new Slider(
 			SLIDER_HORIZONTAL,
@@ -660,7 +660,7 @@ function init()
 				4,
 				8 ),
 			8,
-			function( val ){ console.replaceLast( "s: " + val ); } );
+			function( val ){ statusBar.replaceLast( "s: " + val ); } );
 	
 	var slider_z_view = slider_z.getView();
 	slider_z_view.id = "slider_z";
@@ -687,7 +687,7 @@ function init()
 			1,
 			1,
 			1,
-			function( val ){ console.replaceLast( "crop top z: " + val ); return; } );
+			function( val ){ statusBar.replaceLast( "crop top z: " + val ); return; } );
 	
 	slider_crop_bottom_z = new Slider(
 			SLIDER_HORIZONTAL,
@@ -696,7 +696,7 @@ function init()
 			1,
 			1,
 			1,
-			function( val ){ console.replaceLast( "crop bottom z: " + val ); return; } );
+			function( val ){ statusBar.replaceLast( "crop bottom z: " + val ); return; } );
 
 	slider_crop_s = new Slider(
 			SLIDER_HORIZONTAL,
@@ -705,7 +705,7 @@ function init()
 			0,
 			6,
 			5,
-			function( val ){ console.replaceLast( "crop s: " + val ); } );
+			function( val ){ statusBar.replaceLast( "crop s: " + val ); } );
 	
 	var slider_crop_top_z_view = slider_crop_top_z.getView();
 	slider_crop_top_z_view.id = "slider_crop_top_z";

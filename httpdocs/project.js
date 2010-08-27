@@ -196,7 +196,10 @@ function Project( pid )
 		case "crop":
 			document.getElementById( "toolbar_crop" ).style.display = "block";
 			break;
-		//case "profile":
+		case "trace":
+           document.getElementById( "toolbar_trace" ).style.display = "block";
+           if ( !show_traces ) self.toggleShow( "trace" );
+           break;
 		}
 		
 		mode = m;
@@ -363,7 +366,7 @@ function Project( pid )
 			},
 			function( status, text, xml )
 			{
-				console.replaceLast( text );
+				statusBar.replaceLast( text );
 				
 				if ( status == 200 )
 				{
@@ -386,30 +389,6 @@ function Project( pid )
 				}
 				return true;
 			} );
-		return;
-	}
-	
-	this.handle_updateTextlabels = function( status, text, xml )
-	{
-		if ( status == 200 )
-		{
-			icon_text_apply.style.display = "none";
-			for ( var i = 0; i < stacks.length; ++i )
-			{
-				stacks[ i ].updateTextlabels();
-			}
-			if ( text && text != " " )
-			{
-				var e = eval( "(" + text + ")" );
-				if ( e.error )
-				{
-					alert( e.error );
-				}
-				else
-				{
-				}
-			}
-		}
 		return;
 	}
 	

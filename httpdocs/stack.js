@@ -35,7 +35,7 @@ function Transition()
 		{
 			if ( queue[ i ] == f )
 			{
-				console.replaceLast( "already queued in slot " + i + " of " + queue.length + "." );
+				statusBar.replaceLast( "already queued in slot " + i + " of " + queue.length + "." );
 				q = true;
 				break;
 			}
@@ -78,7 +78,7 @@ function Transition()
 			step = 0;
 			if ( queue.length > 0 )
 				queue.shift();
-			//console.replaceLast( "running step " + step + " queue.length " + queue.length );
+			//statusBar.replaceLast( "running step " + step + " queue.length " + queue.length );
 		}
 		if ( queue.length > 0 )
 			timeout = window.setTimeout( run, 25 );
@@ -117,7 +117,7 @@ function SmallMap(
 		var m = ui.getMouse( e );
 		if ( m )
 		{
-			//console.replaceLast( m.offsetX + ", " + m.offsetY );
+			//statusBar.replaceLast( m.offsetX + ", " + m.offsetY );
 			stack.moveToPixel( z, Math.floor( m.offsetY / SCALE ), Math.floor( m.offsetX / SCALE ), s );
 		}
 		return false;
@@ -276,7 +276,7 @@ function Stack(
 		smallMap.update( z, y, x, s, viewHeight, viewWidth );
 		updateBenchmark();
 		
-		//console.replaceLast( "[" + ( Math.round( x * 10000 * resolution.x ) / 10000 ) + ", " + ( Math.round( y * 10000 * resolution.y ) / 10000 ) + "]" );
+		//statusBar.replaceLast( "[" + ( Math.round( x * 10000 * resolution.x ) / 10000 ) + ", " + ( Math.round( y * 10000 * resolution.y ) / 10000 ) + "]" );
 		
 		if ( !transition.queued( redraw ) )
 		{
@@ -664,7 +664,7 @@ function Stack(
 			{
 				var pos_x = translation.x + ( x + ( m.offsetX - viewWidth / 2 ) / scale ) * resolution.x;
 				var pos_y = translation.x + ( y + ( m.offsetY - viewHeight / 2 ) / scale ) * resolution.y;
-				console.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 3 ) + "]" );
+				statusBar.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 3 ) + "]" );
 			}
 			return false;
 		},
@@ -839,7 +839,7 @@ function Stack(
 			{
 				xp = m.offsetX - viewWidth / 2;
 				yp = m.offsetY - viewHeight / 2;
-				//console.replaceLast( ( m.offsetX - viewWidth / 2 ) + " " + ( m.offsetY - viewHeight / 2 ) );
+				//statusBar.replaceLast( ( m.offsetX - viewWidth / 2 ) + " " + ( m.offsetY - viewHeight / 2 ) );
 			}
 			if ( w )
 			{
@@ -1154,7 +1154,7 @@ function Stack(
 	{
 		if ( status = 200 )
 		{
-			console.replaceLast( text );
+			statusBar.replaceLast( text );
 			var e = eval( "(" + text + ")" );
 			if ( e.error )
 			{
@@ -1459,7 +1459,7 @@ function Stack(
 		cropBox.view.style.width = Math.floor( ( r - l ) / rx ) + "px";
 		cropBox.view.style.height = Math.floor( ( b - t ) / ry ) + "px";
 		
-		console.replaceLast( l.toFixed( 3 ) + ", " + t.toFixed( 3 ) + " -> " + r.toFixed( 3 ) + "," + b.toFixed( 3 ) );
+		statusBar.replaceLast( l.toFixed( 3 ) + ", " + t.toFixed( 3 ) + " -> " + r.toFixed( 3 ) + "," + b.toFixed( 3 ) );
 		
 		cropBox.text.replaceChild( document.createTextNode( ( r - l ).toFixed( 3 ) + " x " + ( b - t ).toFixed( 3 ) ), cropBox.text.firstChild );
 		

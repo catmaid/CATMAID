@@ -137,11 +137,11 @@ RequestQueue = function()
 			if ( queue[ i ].id == id )
 			{
 				queue.splice( i, 1 );
-				console.replaceLast( "replacing request ", + r );				
+				statusBar.replaceLast( "replacing request ", + r );				
 			}
 		}
 		this.register( r, m, d, c, id );
-		console.replaceLast( "queue.length = " + queue.length );
+		statusBar.replaceLast( "queue.length = " + queue.length );
 		return;
 	}
 

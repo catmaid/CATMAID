@@ -161,7 +161,7 @@ function UI()
 			if ( which == 2 ) which = 3;	//!< right
 			if ( which == 4 ) which = 2;	//!< middle
 		}
-		//console.replaceLast( "mouse button " + which + " pressed" );
+		//statusBar.replaceLast( "mouse button " + which + " pressed" );
 		
 		return which;
 	}
@@ -244,7 +244,7 @@ function UI()
 		var m = self.getMouse( e );
 		if ( m )
 		{
-			//console.replaceLast( m.x + ", " + m.y );
+			//statusBar.replaceLast( m.x + ", " + m.y );
 			self.diffX = m.x - lastX;
 			self.diffY = m.y - lastY;
 			lastX = m.x;
@@ -264,7 +264,7 @@ function UI()
 		var m = self.getMouse( e );
 		if ( m )
 		{
-			//console.replaceLast( m.x + ", " + m.y );
+			//statusBar.replaceLast( m.x + ", " + m.y );
 			lastX = m.x;
 			lastY = m.y;
 			self.diffX = 0;
@@ -274,7 +274,7 @@ function UI()
 			
 			if ( which )
 			{
-				//console.replaceLast( "mouse button " + which + " pressed" );
+				//statusBar.replaceLast( "mouse button " + which + " pressed" );
 				switch ( which )
 				{
 				case 1:
@@ -300,7 +300,7 @@ function UI()
 		var m = self.getMouse( e );
 		if ( m )
 		{
-			//console.replaceLast( m.x + ", " + m.y );
+			//statusBar.replaceLast( m.x + ", " + m.y );
 			lastX = m.x;
 			lastY = m.y;
 			self.diffX = 0;
@@ -310,7 +310,7 @@ function UI()
 			
 			if ( which )
 			{
-				//console.replaceLast( "mouse button " + which + " released" );
+				//statusBar.replaceLast( "mouse button " + which + " released" );
 				switch ( which )
 				{
 				case 1:

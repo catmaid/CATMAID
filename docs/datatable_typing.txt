@@ -1,0 +1,37 @@
+CREATE TYPE tabletype AS ENUM ('class_instance', 'treenode', 'treenode_class_instance', 'class_instance_class_instance', 'class_class');
+
+add column to "concepts"
+
+these tabletypes can be shown in the in data table widget
+
+functionality
++++++++++++++
+
+applicable over all tables
+click rows: select (multiple-select with ctrl)
+  operations: delete
+
+
+class_instance
+--------------
+show columns: name, link to class_id uri
+- click row:
+- dblcklick row: 
+
+treenode
+--------
+show columns: id, creation, modification, parent (= is root), x, y, z, radius, confidence
+- dblcklick row: jump to node in sliceview
+- edit parameters (radius, etc.)
+
+treenode_class_instance
+-----------------------
+
+
+class_instance_class_instance
+-----------------------------
+
+class_class
+-----------------------------
+
+

@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
-		<title>CATMAID v0.23beta</title>
+		<title>CATMAID v0.24beta</title>
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/themes/kde/console.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/ui.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/themes/kde/slider.css" />
@@ -45,6 +45,9 @@
 		<script type="text/javascript" src="widgets/textlabel.js"></script>
 		<script type="text/javascript" src="widgets/profile.js"></script>
 		<script type="text/javascript" src="init.js"></script>
+		<script type="text/javascript" charset="utf-8" src="libs/raphael/raphael.js"></script>
+		<script type="text/javascript" charset="utf-8" src="widgets/tracing.js"></script>
+		
 	</head>
 	<body onload="init();"><a></a>
 	
@@ -73,12 +76,23 @@
 					<div class="menu_item" onclick="document.getElementById( 'message_widget' ).style.display = 'block'; ui.onresize();" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p id="message_menu_text"><a>Messages</a>&nbsp;&nbsp;</p>
 						<div class="pulldown" id="message_menu"></div></div>
 				</div>
-				<div class="box" id="toolbox_project" style="display:none"><a href="#" class="button" id="edit_button_select" onclick="project.setMode( 'select' );"><img src="widgets/themes/kde/select.gif" alt="select" title="select" /></a><a href="#" class="button" id="edit_button_move" onclick="project.setMode( 'move' );"><img src="widgets/themes/kde/move.gif" alt="move" title="move" /></a></div>
-				<div class="box" id="toolbox_edit" style="display:none"><a href="#" class="button" id="edit_button_text" onclick="project.setMode( 'text' );"><img src="widgets/themes/kde/text.gif" alt="text" title="text" /></a><a href="#" class="button" id="edit_button_crop" onclick="project.setMode( 'crop' );"><img src="widgets/themes/kde/crop.gif" alt="crop microstack" title="crop microstack" /></a><!--<a href="#" class="button" id="edit_button_profile" onclick="project.setMode( 'profile' );"><img src="widgets/themes/kde/draw.gif" alt="profile" title="profile" /></a>--></div>
+				<div class="box" id="toolbox_project" style="display:none">
+					<a href="#" class="button" id="edit_button_select" onclick="project.setMode( 'select' );"><img src="widgets/themes/kde/select.gif" alt="select" title="select" /></a>
+					<a href="#" class="button" id="edit_button_move" onclick="project.setMode( 'move' );"><img src="widgets/themes/kde/move.gif" alt="move" title="move" /></a>
+				</div>
+				<div class="box" id="toolbox_edit" style="display:none">
+					<a href="#" class="button" id="edit_button_text" onclick="project.setMode( 'text' );"><img src="widgets/themes/kde/text.gif" alt="text" title="text" /></a>
+					<a href="#" class="button" id="edit_button_crop" onclick="project.setMode( 'crop' );"><img src="widgets/themes/kde/crop.gif" alt="crop microstack" title="crop microstack" /></a>
+					<a href="#" class="button" id="edit_button_trace" onclick="project.setMode( 'trace' );"><img src="widgets/themes/kde/trace.gif" alt="trace" title="trace" /></a>
+					<!--<a href="#" class="button" id="edit_button_profile" onclick="project.setMode( 'profile' );"><img src="widgets/themes/kde/draw.gif" alt="profile" title="profile" /></a>-->
+				</div>
 				<div id="logout_box" class="box_right" style="display:none"><p><a id="logout" name="logout" title="Logout" onclick="logout();" href="#">Logout</a></p></div>
 				<div id="login_box" class="box_right" style="display:none"><p>account&nbsp;</p><p><input type="text" id="account" name="account" size="8" /></p><p>&nbsp;&nbsp;password&nbsp;</p><p><input type="password" id="password" name="password" size="8" /></p><p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p></div>
 				<div id="session_box" class="box_right" style="display:none"><p>You are <span id="session_longname">&nbsp;</span>.</p></div>
-				<div class="box_right" id="toolbox_show" style="display:none"><a href="#" class="button_active" id="show_button_text" onclick="project.toggleShow( 'text' );"><img src="widgets/themes/kde/show_text.gif" alt="show textlabels" title="show textlabels" /></a></div>
+				<div class="box_right" id="toolbox_show" style="display:none">
+					<a href="#" class="button_active" id="show_button_text" onclick="project.toggleShow( 'text' );"><img src="widgets/themes/kde/show_text.gif" alt="show textlabels" title="show textlabels" /></a>
+					<a href="#" class="button_active" id="show_button_trace" onclick="project.toggleShow( 'trace' );"><img src="widgets/themes/kde/show_trace.gif" alt="show traces" title="show traces" /></a>
+				</div>
 				<div class="toolbar_fill"></div>
 			</div>
 			<!--
@@ -110,6 +124,34 @@
 				<div class="box"><p>scaling&nbsp;</p><p><input type="checkbox" id="fontscaling" name="fontscaling" checked="checked" /></p></div>
 				<!--<div class="box_right"><a href="#" class="button" id="button_text_apply" onclick="return false;"><img src="widgets/themes/kde/apply.gif" alt="apply" title="apply" /></a></div>-->
 				<div class="box_right"><p id="icon_text_apply" class="toolbar_wait">applying ...</p></div>
+				<div class="toolbar_fill"></div>
+			</div>
+			<!--
+			*******************************************************************
+			-->
+			
+			<!-- Toolbar tracing
+			*******************************************************************
+			-->
+			<div id="toolbar_trace" class="toolbar" style="display:none">
+				<div class="box"><p><i>For new treeline:</i> &nbsp;</p><p><input type="text" id="treelinename" name="treelinename" size="15" value="my treeline" /></p></div>
+				<div class="box"><p>visible&nbsp;</p><p><input type="checkbox" id="treelinevisible" name="treelinevisible" checked="checked" /></p></div>
+				<div class="box"><p>editable&nbsp;</p><p><input type="checkbox" id="treelineeditable" name="treelineeditable" /></p></div>
+				<div class="box"><p>Structure Type: &nbsp;
+					<select name="ttreelinestructuretype" id="treelinestructuretype" size="1">
+						<option>Undefined</option>
+						<option>Axon</option>
+						<option>Dendrite</option>
+					</select>
+				</p>
+				</div>
+				<div class="box"><p>|&nbsp;&nbsp;<i>For new node:</i> &nbsp;</p></div>
+				<div class="box"><p>confidence&nbsp;</p><p id="input_confidence"></p></div>
+				<div class="box"><p>radius&nbsp;</p><p id="input_radius"></p></div>
+				<div class="box"><p>|&nbsp;&nbsp;Nodes Tables&nbsp;</p></div>
+				<div class="box"><p>|&nbsp;&nbsp;Connector Table&nbsp;</p></div>
+				<!--<div class="box_right"><a href="#" class="button" id="button_text_apply" onclick="return false;"><img src="img/kde/apply.gif" alt="apply" title="apply" /></a></div>-->
+				<!--<div class="box_right"><p id="icon_text_apply" class="toolbar_wait">applying ...</p></div>-->
 				<div class="toolbar_fill"></div>
 			</div>
 			<!--
@@ -179,10 +221,39 @@
 						<td><p>Owners:</p></td><td><p id="new_project_owners_wait" class="wait_bgwhite">loading ...</p><select name="owners" id="new_project_owners" multiple="multiple"></select></td>
 			
 					</tr>
+					<tr><td>&nbsp;</td><td>&nbsp;</td></tr>
+					<tr><td></td>
+						<td><input type="button" value=" Register Project " onclick="register_project();" />
+						<input type="reset" value=" Cancel " /></td>
+					</tr>
 				</table>
 				</form>
 			</div>
 
+			<div id="new_user_dialog" class="form">
+			<form name="new_user_form" id="new_user_form" action="">
+			<h2>Create new user</h2>
+			<table>
+				<tr>
+					<td><p>Username:</p></td><td><input type="text" name="uname" id="user_name" /></td>
+				</tr>
+				<tr>
+					<td><p>Longname:</p></td><td><input type="text" name="ulongname" id="user_longname" /></td>
+				</tr>
+				<tr>
+					<td><p>Password:</p></td><td><input type="password" name="upassword" id="user_pwd" /></td>
+				</tr>
+				<tr>
+					<td><p>E-Mail:</p></td><td><input type="text" name="uemail" id="user_email" /></td>
+				</tr>
+				<tr><td>&nbsp;</td><td>&nbsp;</td></tr>
+				<tr><td></td><td>
+					<input type="button" value=" Register User " onclick="register_user();" />
+					<input type="reset" value=" Cancel " />
+				</td></tr>
+			</table>
+			</form>
+			</div>
 		</div>		
 		
 	</body>

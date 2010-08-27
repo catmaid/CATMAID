@@ -16,7 +16,7 @@ function setAlpha( element, alpha )
 		}
 		else
 		{
-			//Console.println("setting Alpha to " + alpha);
+			//statusBar.println("setting Alpha to " + alpha);
 			element.style.MozOpacity = Math.max( 0, Math.min( 1, alpha / 100 ) );
 		}
 	}

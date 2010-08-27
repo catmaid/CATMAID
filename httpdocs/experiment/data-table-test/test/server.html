@@ -17,6 +17,8 @@
 			$(document).ready(function() {
 				$('#example').dataTable( {
 					"bProcessing": true,
+					"bServerSide": true,
+					"sAjaxSource": 'http://catmaid/model/treenode.list.php?pid=1',
 					"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
 					"bJQueryUI": true,
 					"aoColumnDefs": [ 
@@ -24,15 +26,6 @@
 					{ "sClass": "center", "aTargets": [ 4 ] },
 					{ "sClass": "center", "aTargets": [ 5 ] }
 					],
-					"fnRowCallback": function( nRow, aData, iDisplayIndex ) {
-						/* Append the grade to the default row class name */
-						if ( parseInt(aData[2]) < 5 )
-						{
-							$('td:eq(4)', nRow).html( '<b>A</b>' );
-						}
-						return nRow;
-					},
-					"sAjaxSource": 'test_json/json_source.txt'
 				} );
 			} );
 

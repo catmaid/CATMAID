@@ -11,7 +11,10 @@
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/themes/kde/screen.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/project.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/themes/kde/textlabel.css" />
+		<link rel="stylesheet" type="text/css" media="all" href="widgets/themes/kde/datatable/css/demo_table.css" />
+		<link rel="stylesheet" type="text/css" media="all" href="widgets/themes/kde/datatable/themes/smoothness/jquery-ui-1.8.4.custom.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/themes/kde/resize_handle.css" />
+		
 		<!--[if gte IE 5]>
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/ui.ie.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/themes/kde/stack/stack.ie.css" />
@@ -43,9 +46,12 @@
 		<script type="text/javascript">var IE = true;</script>
 		<![endif]-->
 		<script type="text/javascript" src="widgets/textlabel.js"></script>
+		<script type="text/javascript" src="widgets/datatable.js"></script>
 		<script type="text/javascript" src="widgets/profile.js"></script>
 		<script type="text/javascript" src="init.js"></script>
 		<script type="text/javascript" charset="utf-8" src="libs/raphael/raphael.js"></script>
+		<script type="text/javascript" charset="utf-8" src="libs/jquery/jquery.js"></script>
+		<script type="text/javascript" charset="utf-8" src="libs/jquery/jquery.dataTables.js"></script>
 		<script type="text/javascript" charset="utf-8" src="widgets/tracing.js"></script>
 		
 	</head>
@@ -87,7 +93,7 @@
 					<!--<a href="#" class="button" id="edit_button_profile" onclick="project.setMode( 'profile' );"><img src="widgets/themes/kde/draw.gif" alt="profile" title="profile" /></a>-->
 				</div>
 				<div class="box" id="toolbox_data" style="display:none">
-					<a href="#" class="button" id="data_button_table" onclick="document.getElementById( 'table_widget' ).style.display = 'block'; ui.onresize();"><img src="widgets/themes/kde/table.gif" alt="table" title="table" /></a>
+					<a href="#" class="button" id="data_button_table" onclick="showTable();"><img src="widgets/themes/kde/table.gif" alt="table" title="table" /></a>
 				</div>
 				<div id="logout_box" class="box_right" style="display:none"><p><a id="logout" name="logout" title="Logout" onclick="logout();" href="#">Logout</a></p></div>
 				<div id="login_box" class="box_right" style="display:none"><p>account&nbsp;</p><p><input type="text" id="account" name="account" size="8" /></p><p>&nbsp;&nbsp;password&nbsp;</p><p><input type="password" id="password" name="password" size="8" /></p><p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p></div>
@@ -193,7 +199,39 @@
 		-->
 		<div id="table_widget" class="sliceView" style="width:200px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
 			<div class="stackInfo_selected" style="position:relative"><p id="table_widget_title" class="stackTitle">Table</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
-			<div id="table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto"></div>
+			<div id="table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
+
+<table cellpadding="0" cellspacing="0" border="0" class="display" id="exampletable">
+	<thead>
+		<tr>
+			<th>id</th>
+			<th>x</th>
+			<th>y</th>
+			<th>z</th>
+			<th>confidence</th>
+			<th>radius</th>
+			<th>username</th>
+			<th>tags</th>
+		</tr>
+	</thead>
+	<tbody>
+
+	</tbody>
+	<tfoot>
+		<tr>
+			<th>id</th>
+			<th>x</th>
+			<th>y</th>
+			<th>z</th>
+			<th>confidence</th>
+			<th>radius</th>
+			<th>username</th>
+			<th>tags</th>
+		</tr>
+	</tfoot>
+</table>
+
+			</div>
 		</div>
 		
 		<!-- Disclaimer

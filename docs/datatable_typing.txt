@@ -27,7 +27,6 @@ show columns: id, creation, modification, parent (= is root), x, y, z, radius, c
 treenode_class_instance
 -----------------------
 
-
 class_instance_class_instance
 -----------------------------
 
@@ -35,3 +34,16 @@ class_class
 -----------------------------
 
 
+Datatables for display
+----------------------
+
+- Select a treeline, connector for tree
+Outgoing (table)
+Connector_id / Target_id
+Incoming (table)
+Connector_id / Target_id
+
+-> connector table: incoming / outgoing
+
+Treelinenode table
+-  All nodes / Branch nodes / End nodes

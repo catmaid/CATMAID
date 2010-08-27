@@ -143,10 +143,19 @@ function Project( pid )
 		var height = Math.max( 0, ui.getFrameHeight() - top - bottom );
 		var left = 0;
 		var width = ui.getFrameWidth();
-		if (table_widget.offsetWidth)
+		if ( table_widget.offsetWidth )
 		{
 			width -= table_widget.offsetWidth;
-			left = table_widget.offsetWidth;
+			left += table_widget.offsetWidth;
+		}
+		if ( tree_widget.offsetWidth )
+		{
+			if ( table_widget.offsetWidth )
+				tree_widget.style.left = left + "px";
+			else
+				tree_widget.style.left = "0px";
+			width -= tree_widget.offsetWidth;
+			left += tree_widget.offsetWidth;
 		}
 		var old_width = 0;
 		for ( var i = 0; i < stacks.length; ++i )

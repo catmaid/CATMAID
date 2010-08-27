@@ -88,6 +88,7 @@
 				</div>
 				<div class="box" id="toolbox_data" style="display:none">
 					<a href="#" class="button" id="data_button_table" onclick="document.getElementById( 'table_widget' ).style.display = 'block'; ui.onresize();"><img src="widgets/themes/kde/table.gif" alt="table" title="table" /></a>
+					<a href="#" class="button" id="data_button_tree" onclick="document.getElementById( 'tree_widget' ).style.display = 'block'; ui.onresize();"><img src="widgets/themes/kde/tree.gif" alt="tree" title="tree" /></a>
 				</div>
 				<div id="logout_box" class="box_right" style="display:none"><p><a id="logout" name="logout" title="Logout" onclick="logout();" href="#">Logout</a></p></div>
 				<div id="login_box" class="box_right" style="display:none"><p>account&nbsp;</p><p><input type="text" id="account" name="account" size="8" /></p><p>&nbsp;&nbsp;password&nbsp;</p><p><input type="password" id="password" name="password" size="8" /></p><p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p></div>
@@ -194,6 +195,14 @@
 		<div id="table_widget" class="sliceView" style="width:200px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
 			<div class="stackInfo_selected" style="position:relative"><p id="table_widget_title" class="stackTitle">Table</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
 			<div id="table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto"></div>
+		</div>
+		
+		<!-- Tree widget
+		***********************************************************************
+		-->
+		<div id="tree_widget" class="sliceView" style="width:200px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
+			<div class="stackInfo_selected" style="position:relative"><p id="tree_widget_title" class="stackTitle">Tree</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
+			<div id="tree_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto"></div>
 		</div>
 		
 		<!-- Disclaimer

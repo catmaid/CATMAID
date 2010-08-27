@@ -5,7 +5,7 @@ html, body
 	margin:0px;
 	padding:0px;
 }
-html, body, input, textarea, p, dl
+html, body, input, textarea, p, dl, select
 {
 	color:#000000;
 	font-family:Arial, Helvetica, sans-serif;

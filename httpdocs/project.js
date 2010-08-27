@@ -141,7 +141,13 @@ function Project( pid )
 		//var bottom = document.getElementById( 'console' ).offsetHeight;
 		var bottom = 64;
 		var height = Math.max( 0, ui.getFrameHeight() - top - bottom );
+		var left = 0;
 		var width = ui.getFrameWidth();
+		if (table_widget.offsetWidth)
+		{
+			width -= table_widget.offsetWidth;
+			left = table_widget.offsetWidth;
+		}
 		var old_width = 0;
 		for ( var i = 0; i < stacks.length; ++i )
 		{
@@ -151,7 +157,8 @@ function Project( pid )
 		
 		//var stack_view_width = Math.floor( width / stacks.length );
 		
-		var left = 0;
+		view.style.left = left + "px";
+		left = 0;
 		for ( var i = 0; i < stacks.length; ++i )
 		{
 			//stacks[ i ].resize( i * stack_view_width, 0, stack_view_width, height );
@@ -277,6 +284,7 @@ function Project( pid )
 			document.getElementById( "toolbar_text" ).style.display = "none";
 			document.getElementById( "toolbox_project" ).style.display = "none";
 			document.getElementById( "toolbox_edit" ).style.display = "none";
+			document.getElementById( "toolbox_data" ).style.display = "none";
 			document.getElementById( "toolbox_show" ).style.display = "none";
 			document.getElementById( "toolbar_crop" ).style.display = "none";
 		}
@@ -290,11 +298,18 @@ function Project( pid )
 	/**
 	 * set the project to be editable or not
 	 */
-	this.setEditable = function( bool )
+	this.setEditable = function(bool)
 	{
 		editable = bool;
-		if ( editable ) document.getElementById( "toolbox_edit" ).style.display = "block";
-		else document.getElementById( "toolbox_edit" ).style.display = "none";
+		if (editable) {
+			document.getElementById("toolbox_edit").style.display = "block";
+			document.getElementById("toolbox_data").style.display = "block";
+		}
+		else 
+		{
+			document.getElementById("toolbox_edit").style.display = "none";
+			document.getElementById("toolbox_data").style.display = "none";
+		}
 		window.onresize();
 		
 		return;

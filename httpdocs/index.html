@@ -86,6 +86,9 @@
 					<a href="#" class="button" id="edit_button_trace" onclick="project.setMode( 'trace' );"><img src="widgets/themes/kde/trace.gif" alt="trace" title="trace" /></a>
 					<!--<a href="#" class="button" id="edit_button_profile" onclick="project.setMode( 'profile' );"><img src="widgets/themes/kde/draw.gif" alt="profile" title="profile" /></a>-->
 				</div>
+				<div class="box" id="toolbox_data" style="display:none">
+					<a href="#" class="button" id="data_button_table" onclick="document.getElementById( 'table_widget' ).style.display = 'block'; ui.onresize();"><img src="widgets/themes/kde/table.gif" alt="table" title="table" /></a>
+				</div>
 				<div id="logout_box" class="box_right" style="display:none"><p><a id="logout" name="logout" title="Logout" onclick="logout();" href="#">Logout</a></p></div>
 				<div id="login_box" class="box_right" style="display:none"><p>account&nbsp;</p><p><input type="text" id="account" name="account" size="8" /></p><p>&nbsp;&nbsp;password&nbsp;</p><p><input type="password" id="password" name="password" size="8" /></p><p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p></div>
 				<div id="session_box" class="box_right" style="display:none"><p>You are <span id="session_longname">&nbsp;</span>.</p></div>
@@ -185,10 +188,18 @@
 			<div style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto"><dl id="message_container" style="margin-top:2em; margin-bottom:2em;"></dl></div>
 		</div>
 		
+		<!-- Table widget
+		***********************************************************************
+		-->
+		<div id="table_widget" class="sliceView" style="width:200px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
+			<div class="stackInfo_selected" style="position:relative"><p id="table_widget_title" class="stackTitle">Table</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
+			<div id="table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto"></div>
+		</div>
+		
 		<!-- Disclaimer
 		***********************************************************************
 		-->
-		<div id="imprint"><p>CATMAID v0.23beta, &copy;2007 by <a href="http://fly.mpi-cbg.de/~saalfeld/">Stephan Saalfeld</a>, <a href="http://www.mpi-cbg.de/research/research-groups/pavel-tomancak.html">Pavel Toman&#x010d;&aacute;k Group</a>, MPI-CBG, Dresden, Germany.</p></div>
+		<div id="imprint"><p>CATMAID v0.24beta, &copy;&nbsp;2007&ndash;2010 <a href="http://fly.mpi-cbg.de/~saalfeld/">Stephan Saalfeld</a> and <a href="http://www.unidesign.ch/">Stephan Gerhard</a>, funded by <a href="http://www.mpi-cbg.de/research/research-groups/pavel-tomancak.html">Pavel Toman&#x010d;&aacute;k</a>, MPI-CBG, Dresden, Germany and <a href="http://albert.rierol.net/">Albert Cardona</a>, Uni/ETH, Z&uuml;rich, Switzerland.</p></div>
 		<!--
 		***********************************************************************
 		-->

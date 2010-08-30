@@ -164,6 +164,8 @@ function Input(
 	try
 	{
 		input.addEventListener( "DOMMouseScroll", mouseWheel, false );
+		/* Webkit takes the event but does not understand it ... */
+		input.addEventListener( "mousewheel", mouseWheel, false );
 	}
 	catch ( error )
 	{

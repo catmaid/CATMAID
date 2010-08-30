@@ -448,6 +448,8 @@ Slider = function(
 		try
 		{
 			input.addEventListener( "DOMMouseScroll", mouseWheel, false );
+			/* Webkit takes the event but does not understand it ... */
+			input.addEventListener( "mousewheel", mouseWheel, false );
 		}
 		catch ( error )
 		{
@@ -462,6 +464,8 @@ Slider = function(
 	try
 	{
 		view.addEventListener( "DOMMouseScroll", mouseWheel, false );
+		/* Webkit takes the event but does not understand it ... */
+		view.addEventListener( "mousewheel", mouseWheel, false );
 	}
 	catch ( error )
 	{

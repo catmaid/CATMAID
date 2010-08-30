@@ -1046,6 +1046,8 @@ function Stack(
 			try
 			{
 				mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel.move, false );
+				/* Webkit takes the event but does not understand it ... */
+				mouseCatcher.addEventListener( "mousewheel", onmousewheel.move, false );
 			}
 			catch ( error )
 			{

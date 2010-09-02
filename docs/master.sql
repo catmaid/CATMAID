@@ -10,13 +10,13 @@ SET client_min_messages = warning;
 SET escape_string_warning = off;
 
 --
--- Name: plpgsql; Type: PROCEDURAL LANGUAGE; Schema: -; Owner: postgres
+-- Name: plpgsql; Type: PROCEDURAL LANGUAGE; Schema: -; Owner: catmaid_user
 --
 
 CREATE PROCEDURAL LANGUAGE plpgsql;
 
 
-ALTER PROCEDURAL LANGUAGE plpgsql OWNER TO postgres;
+ALTER PROCEDURAL LANGUAGE plpgsql OWNER TO catmaid_user;
 
 SET search_path = public, pg_catalog;
 
@@ -67,9 +67,13 @@ ALTER TYPE public.rgba OWNER TO catmaid_user;
 CREATE FUNCTION on_edit() RETURNS trigger
     LANGUAGE plpgsql
     AS $$BEGIN
+
     NEW."edition_time" := now();
+
     RETURN NEW;
+
 END;
+
 $$;
 
 
@@ -204,7 +208,7 @@ ALTER SEQUENCE concept_id_seq OWNED BY concept.id;
 -- Name: concept_id_seq; Type: SEQUENCE SET; Schema: public; Owner: catmaid_user
 --
 
-SELECT pg_catalog.setval('concept_id_seq', 32, true);
+SELECT pg_catalog.setval('concept_id_seq', 49, true);
 
 
 --
@@ -587,7 +591,7 @@ ALTER SEQUENCE textlabel_id_seq OWNED BY textlabel.id;
 -- Name: textlabel_id_seq; Type: SEQUENCE SET; Schema: public; Owner: catmaid_user
 --
 
-SELECT pg_catalog.setval('textlabel_id_seq', 3, true);
+SELECT pg_catalog.setval('textlabel_id_seq', 4, true);
 
 
 --
@@ -757,12 +761,13 @@ COPY broken_slice (stack_id, index) FROM stdin;
 -- Data for Name: class; Type: TABLE DATA; Schema: public; Owner: catmaid_user
 --
 
-COPY class (id, user_id, creation_time, edition_time, class_name, uri, description, project_id) FROM stdin;
-5	1	2010-08-26 18:23:53.551017+02	2010-08-26 18:23:53.551017+02	neuron			1
-7	1	2010-08-26 18:30:53.288021+02	2010-08-26 18:30:53.288021+02	synapse			1
-12	1	2010-08-26 19:18:02.355176+02	2010-08-26 19:18:02.355176+02	soma			1
-13	1	2010-08-26 19:18:28.772257+02	2010-08-26 19:18:28.772257+02	arbor			1
-14	1	2010-08-26 19:19:57.046457+02	2010-08-26 19:19:57.046457+02	skeleton			1
+COPY class (id, user_id, creation_time, edition_time, project_id, class_name, uri, description) FROM stdin;
+5	1	2010-08-26 18:23:53.551017+02	2010-08-26 18:23:53.551017+02	3	neuron	\N	\N
+7	1	2010-08-26 18:30:53.288021+02	2010-08-26 18:30:53.288021+02	3	synapse	\N	\N
+12	1	2010-08-26 19:18:02.355176+02	2010-08-26 19:18:02.355176+02	3	soma	\N	\N
+13	1	2010-08-26 19:18:28.772257+02	2010-08-26 19:18:28.772257+02	3	arbor	\N	\N
+14	1	2010-08-26 19:19:57.046457+02	2010-08-26 19:19:57.046457+02	3	skeleton	\N	\N
+33	3	2010-08-27 17:28:08.713582+02	2010-08-27 17:28:08.713582+02	3	label	\N	\N
 \.
 
 
@@ -770,10 +775,10 @@ COPY class (id, user_id, creation_time, edition_time, class_name, uri, descripti
 -- Data for Name: class_class; Type: TABLE DATA; Schema: public; Owner: catmaid_user
 --
 
-COPY class_class (id, user_id, creation_time, edition_time, relation_id, class_a, class_b, project_id) FROM stdin;
-19	1	2010-08-26 20:45:12.094786+02	2010-08-26 20:45:12.094786+02	9	12	5	1
-20	1	2010-08-26 20:45:37.683605+02	2010-08-26 20:45:37.683605+02	9	13	5	1
-21	1	2010-08-26 20:46:01.008363+02	2010-08-26 20:46:01.008363+02	10	14	13	1
+COPY class_class (id, user_id, creation_time, edition_time, project_id, relation_id, class_a, class_b) FROM stdin;
+19	1	2010-08-26 20:45:12.094786+02	2010-08-26 20:45:12.094786+02	1	9	12	5
+20	1	2010-08-26 20:45:37.683605+02	2010-08-26 20:45:37.683605+02	1	9	13	5
+21	1	2010-08-26 20:46:01.008363+02	2010-08-26 20:46:01.008363+02	1	10	14	13
 \.
 
 
@@ -781,10 +786,12 @@ COPY class_class (id, user_id, creation_time, edition_time, relation_id, class_a
 -- Data for Name: class_instance; Type: TABLE DATA; Schema: public; Owner: catmaid_user
 --
 
-COPY class_instance (id, user_id, creation_time, edition_time, class_id, name, project_id) FROM stdin;
-6	1	2010-08-26 18:28:55.555084+02	2010-08-26 18:28:55.555084+02	5	neuron1	1
-28	1	2010-08-26 21:34:08.550039+02	2010-08-26 21:34:08.550039+02	14	skeleton1	1
-29	1	2010-08-26 21:34:49.796369+02	2010-08-26 21:34:49.796369+02	7	synapse1	1
+COPY class_instance (id, user_id, creation_time, edition_time, project_id, class_id, name) FROM stdin;
+6	1	2010-08-26 18:28:55.555084+02	2010-08-26 18:28:55.555084+02	3	5	neuron1
+29	1	2010-08-26 21:34:49.796369+02	2010-08-26 21:34:49.796369+02	3	7	synapse1
+45	3	2010-09-02 16:44:09.215251+02	2010-09-02 16:44:09.215251+02	3	33	Wrong End
+28	1	2010-08-26 21:34:08.550039+02	2010-08-26 21:34:08.550039+02	3	14	skeleton1
+34	3	2010-08-27 17:29:22.926167+02	2010-08-27 17:29:22.926167+02	3	33	TODO
 \.
 
 
@@ -792,7 +799,7 @@ COPY class_instance (id, user_id, creation_time, edition_time, class_id, name, p
 -- Data for Name: class_instance_class_instance; Type: TABLE DATA; Schema: public; Owner: catmaid_user
 --
 
-COPY class_instance_class_instance (id, user_id, creation_time, edition_time, relation_id, class_instance_a, class_instance_b, project_id) FROM stdin;
+COPY class_instance_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, class_instance_a, class_instance_b) FROM stdin;
 \.
 
 
@@ -866,14 +873,15 @@ COPY project_user (project_id, user_id) FROM stdin;
 -- Data for Name: relation; Type: TABLE DATA; Schema: public; Owner: catmaid_user
 --
 
-COPY relation (id, user_id, creation_time, edition_time, relation_name, project_id) FROM stdin;
-4	1	2010-08-26 18:18:09.841169+02	2010-08-26 18:18:09.841169+02	child_of	1
-8	1	2010-08-26 19:08:19.488588+02	2010-08-26 19:08:19.488588+02	is_a	1
-9	1	2010-08-26 19:15:22.408939+02	2010-08-26 19:15:22.408939+02	part_of	1
-10	1	2010-08-26 19:15:31.939089+02	2010-08-26 19:15:31.939089+02	model_of	1
-11	1	2010-08-26 19:15:41.060476+02	2010-08-26 19:15:41.060476+02	element_of	1
-23	1	2010-08-26 21:20:51.55492+02	2010-08-26 21:20:51.55492+02	presynaptic_to	1
-24	1	2010-08-26 21:21:35.859377+02	2010-08-26 21:21:35.859377+02	postsynaptic_to	1
+COPY relation (id, user_id, creation_time, edition_time, project_id, relation_name) FROM stdin;
+35	3	2010-08-27 17:30:10.480635+02	2010-08-27 17:30:10.480635+02	3	labeled_as
+24	1	2010-08-26 21:21:35.859377+02	2010-08-26 21:21:35.859377+02	3	postsynaptic_to
+23	1	2010-08-26 21:20:51.55492+02	2010-08-26 21:20:51.55492+02	3	presynaptic_to
+11	1	2010-08-26 19:15:41.060476+02	2010-08-26 19:15:41.060476+02	3	element_of
+10	1	2010-08-26 19:15:31.939089+02	2010-08-26 19:15:31.939089+02	3	model_of
+9	1	2010-08-26 19:15:22.408939+02	2010-08-26 19:15:22.408939+02	3	part_of
+8	1	2010-08-26 19:08:19.488588+02	2010-08-26 19:08:19.488588+02	3	is_a
+4	1	2010-08-26 18:18:09.841169+02	2010-08-26 18:18:09.841169+02	3	child_of
 \.
 
 
@@ -881,7 +889,7 @@ COPY relation (id, user_id, creation_time, edition_time, relation_name, project_
 -- Data for Name: relation_instance; Type: TABLE DATA; Schema: public; Owner: catmaid_user
 --
 
-COPY relation_instance (id, user_id, creation_time, edition_time, relation_id, project_id) FROM stdin;
+COPY relation_instance (id, user_id, creation_time, edition_time, project_id, relation_id) FROM stdin;
 \.
 
 
@@ -903,6 +911,7 @@ COPY textlabel (id, type, text, colour, font_name, font_style, font_size, projec
 1	text	Guten Tag!	(1,0.8509804,0,1)	\N	bold	864	1	t	2010-08-26 12:35:10.72796+02	2010-08-27 12:33:53.834085+02	f
 3	text	Schoen	(1,0.49803922,0,1)	\N	bold	978	1	t	2010-08-27 12:38:40.980952+02	2010-08-27 12:39:00.6389+02	f
 2	text	Edit this text...	(1,0.8509804,0,1)	\N	bold	1196	1	t	2010-08-26 12:36:48.24755+02	2010-08-26 12:36:50.836827+02	t
+4	text	Test	(1,0.49803922,0,1)	\N	bold	250	3	t	2010-08-27 15:19:17.197702+02	2010-08-27 15:19:22.691802+02	f
 \.
 
 
@@ -914,6 +923,7 @@ COPY textlabel_location (textlabel_id, location, deleted) FROM stdin;
 1	(3793.0082000000002,3701.6889999999999,60)	f
 3	(8580.7433999999994,5945.5321999999996,60)	f
 2	(7501.2200000000003,7798.0074000000004,60)	t
+4	(2920,3177.5,9)	f
 \.
 
 
@@ -921,9 +931,18 @@ COPY textlabel_location (textlabel_id, location, deleted) FROM stdin;
 -- Data for Name: treenode; Type: TABLE DATA; Schema: public; Owner: catmaid_user
 --
 
-COPY treenode (id, user_id, creation_time, edition_time, parent_id, location, radius, confidence, project_id) FROM stdin;
-25	1	2010-08-26 21:32:07.78538+02	2010-08-26 21:32:07.78538+02	\N	(1000,1000,0)	0	5	1
-27	1	2010-08-26 21:33:08.322107+02	2010-08-26 21:33:08.322107+02	25	(9000,2000,0)	0	5	1
+COPY treenode (id, user_id, creation_time, edition_time, project_id, parent_id, location, radius, confidence) FROM stdin;
+36	3	2010-09-02 10:51:02.027312+02	2010-09-02 10:51:02.027312+02	3	\N	(1000,1000,0)	0	4
+37	3	2010-09-02 10:51:41.345787+02	2010-09-02 10:51:41.345787+02	3	36	(1200,1000,0)	0	5
+27	1	2010-08-26 21:33:08.322107+02	2010-08-26 21:33:08.322107+02	1	25	(9000,2000,0)	0	5
+25	1	2010-08-26 21:32:07.78538+02	2010-08-26 21:32:07.78538+02	1	\N	(1000,1000,0)	0	5
+38	3	2010-09-02 11:13:30.274837+02	2010-09-02 11:13:30.274837+02	3	37	(1100,1000,0)	0	5
+39	3	2010-09-02 11:13:43.706183+02	2010-09-02 11:13:43.706183+02	3	37	(1300,1000,0)	0	5
+40	3	2010-09-02 14:11:12.962032+02	2010-09-02 14:11:12.962032+02	3	39	(1000,1000,0)	0	5
+41	3	2010-09-02 14:11:24.727072+02	2010-09-02 14:11:24.727072+02	3	40	(1100,1000,0)	0	5
+42	1	2010-09-02 14:11:33.62876+02	2010-09-02 14:11:33.62876+02	3	\N	(1000,1000,0)	0	5
+43	1	2010-09-02 14:20:35.302603+02	2010-09-02 14:20:35.302603+02	3	42	(1000,1000,0)	0	5
+44	3	2010-09-02 14:22:11.203582+02	2010-09-02 14:22:11.203582+02	3	36	(1100,1000,0)	0	5
 \.
 
 
@@ -931,10 +950,13 @@ COPY treenode (id, user_id, creation_time, edition_time, parent_id, location, ra
 -- Data for Name: treenode_class_instance; Type: TABLE DATA; Schema: public; Owner: catmaid_user
 --
 
-COPY treenode_class_instance (id, user_id, creation_time, edition_time, relation_id, treenode_id, class_instance_id, project_id) FROM stdin;
-30	1	2010-08-26 21:35:49.185502+02	2010-08-26 21:35:49.185502+02	11	25	28	1
-31	1	2010-08-26 21:36:14.408922+02	2010-08-26 21:36:14.408922+02	11	27	28	1
-32	1	2010-08-26 21:38:44.246691+02	2010-08-26 21:38:44.246691+02	23	27	29	1
+COPY treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) FROM stdin;
+30	1	2010-08-26 21:35:49.185502+02	2010-08-26 21:35:49.185502+02	1	11	25	28
+31	1	2010-08-26 21:36:14.408922+02	2010-08-26 21:36:14.408922+02	1	11	27	28
+32	1	2010-08-26 21:38:44.246691+02	2010-08-26 21:38:44.246691+02	1	23	27	29
+47	3	2010-09-02 16:55:41.459904+02	2010-09-02 16:55:41.459904+02	3	35	37	34
+48	3	2010-09-02 17:18:30.209735+02	2010-09-02 17:18:30.209735+02	3	35	37	45
+49	3	2010-09-02 17:19:17.920141+02	2010-09-02 17:19:17.920141+02	3	35	38	45
 \.
 
 
@@ -945,7 +967,7 @@ COPY treenode_class_instance (id, user_id, creation_time, edition_time, relation
 COPY "user" (id, name, pwd, longname) FROM stdin;
 1	saalfeld	84789cbcbd2daf359a9fa4f34350e50f	Stephan Saalfeld
 2	test	098f6bcd4621d373cade4e832627b4f6	Theo Test
-3	Gerhard	md5('Stephan')	Stephan Gerhard
+3	gerhard	bf1f92de980819a99356289142b9590d	Stephan Gerhard
 \.
 
 

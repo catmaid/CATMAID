@@ -3,7 +3,7 @@ showTreenodeTable = function(pid) {
 
 	document.getElementById( 'table_widget' ).style.display = 'block'; 				
 	ui.onresize();
-	$('#exampletable').dataTable( {
+	$('#treenodetable').dataTable( {
 		 "bDestroy": true,
 		"bProcessing": true,
 		"bServerSide": true,

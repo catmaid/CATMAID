@@ -19,11 +19,11 @@ echo "POST:\n";
 print_r( $_POST );
 
 print_r( $_COOKIE );
-exit;
 
-$users = $db->getResult( 'SELECT * FROM "users"' );
 
-print_r( $users );
+$users = $db->getResult( 'SELECT * FROM "user"' );
+
+print_r( $users[0]['id'] );
 
 
 ?>

@@ -55,7 +55,7 @@ function fnColumnToField( $i )
 	else if ( $i == 7 )
 		return "username";
 	else if ( $i == 8 )
-		return "tags";
+		return "labels";
 
 }
 
@@ -65,6 +65,7 @@ if ( $pid )
 	if ( $uid )
 	{
 		
+			// treenode type logic
 			$tbranch = $db->getResult(
 			'SELECT  "t1"."id" AS "t1id",
 				COUNT( "t2"."id" ) as cc
@@ -81,9 +82,51 @@ if ( $pid )
 			while ( list( $key, $val) = each( $tbranch ) )
 			{
 				$tbranch2[$val["t1id"]] = $val["cc"];
-				unset($tbranch[ $key ]);
 			}
+			unset( $tbranch );
 			
+			// label logic
+			/*
+			$tlabelid_res = $db->getResult(
+			'SELECT "class"."id" FROM "class"
+			WHERE "class"."project_id" = '.$pid.' AND "class"."class_name" = \'label\'');
+			if( !empty($tlabelid_res) )
+				$tlabelid = $tlabelid_res[0]['id'];
+			*/
+			
+			// get id for relation 'labeled_as'
+			$tlabelrel_res = $db->getResult(
+			'SELECT "relation"."id" FROM "relation"
+			WHERE "relation"."project_id" = '.$pid.' AND
+			"relation"."relation_name" = \'labeled_as\'');
+			
+			if( !empty($tlabelrel_res) )
+			{
+				$tlabelrel = $tlabelrel_res[0]['id'];
+			
+				// get treenode_class_instance rows
+				$tlabel = $db->getResult(
+				'SELECT "tci"."id", "tci"."treenode_id", "tci"."class_instance_id", "class_instance"."name" as "name"
+				FROM "treenode_class_instance" AS "tci" , "class_instance"
+				WHERE "tci"."project_id" = '.$pid.' AND "tci"."relation_id" = '.$tlabelrel.' AND "class_instance"."id" = "tci"."class_instance_id"'
+				);
+				
+				reset( $tlabel );
+				$tlabel2 = array();
+				while ( list( $key, $val) = each( $tlabel ) )
+				{
+					$k = $val['treenode_id'];
+					
+					if( array_key_exists($k, $tlabel2) )
+					 	$tlabel2[$k][] = $val['name']; // only append				
+					else
+						$tlabel2[$k] = array($val['name']);;
+	
+				}
+				unset( $tlabel );
+			}
+						
+			// treenode list logic
 			$t = $db->getResult(
 				'SELECT	"treenode"."id" AS "tid",
 						"treenode"."radius" AS "radius",
@@ -114,8 +157,6 @@ if ( $pid )
 			$sOutput .= '"aaData": [ ';
 			while ( list( $key, $val) = each( $t ) )
 			{
-				// TO REMOVE
-				$val["tags"] = "blubb";
 				
 				$sOutput .= "[";
 				$sOutput .= '"'.addslashes($val["tid"]).'",';
@@ -156,7 +197,20 @@ if ( $pid )
 				$sOutput .= '"'.addslashes($val["confidence"]).'",';
 				$sOutput .= '"'.addslashes($val["radius"]).'",';
 				$sOutput .= '"'.addslashes($val["username"]).'",';
-				$sOutput .= '"'.addslashes($val["tags"]).'",';
+				// use tags
+				if(!empty($tlabel2))
+				{
+					if( array_key_exists($val['tid'], $tlabel2) )
+						$out = implode(', ', $tlabel2[$val['tid']]);
+					else
+						$out = '';
+					$sOutput .= '"'.addslashes($out).'",';
+						
+				}
+				else
+				{
+					$sOutput .= '"",';
+				}
 				$sOutput .= "],";
 			}
 			$sOutput = substr_replace( $sOutput, "", -1 );

@@ -14,8 +14,7 @@ $ses =& getSession();
 $pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
-// TODO: filter by skeleton_instance as parameter, so far, show all
-// TODO: show treenodes from all user, so far, only show the ones for the currently logged in user
+// TODO: filter by "is_model_of" "skeleton_instance" as parameter, so far, show all
 
 /* Paging */
 $sLimit = "";
@@ -48,12 +47,14 @@ function fnColumnToField( $i )
 	else if ( $i == 3 )
 		return "z";
 	else if ( $i == 4 )
-		return "confidence";
+		return "type";
 	else if ( $i == 5 )
-		return "radius";
+		return "confidence";
 	else if ( $i == 6 )
-		return "username";
+		return "radius";
 	else if ( $i == 7 )
+		return "username";
+	else if ( $i == 8 )
 		return "tags";
 
 }
@@ -64,8 +65,24 @@ if ( $pid )
 	if ( $uid )
 	{
 		
-			// columns: 	id 	user_id 	creation_time 	edition_time 	project_id 	parent_id 	location 	radius 	confidence
-			// improvements: retrieve nodes for project members
+			$tbranch = $db->getResult(
+			'SELECT  "t1"."id" AS "t1id",
+				COUNT( "t2"."id" ) as cc
+				FROM "treenode" AS "t1"
+				    JOIN "treenode" AS "t2"
+				        ON "t2"."parent_id" = "t1"."id"
+				
+				WHERE
+				"t1"."project_id" = '.$pid.'
+				GROUP BY "t1"."id"');
+			
+			reset( $tbranch );
+			$tbranch2 = array();
+			while ( list( $key, $val) = each( $tbranch ) )
+			{
+				$tbranch2[$val["t1id"]] = $val["cc"];
+				unset($tbranch[ $key ]);
+			}
 			
 			$t = $db->getResult(
 				'SELECT	"treenode"."id" AS "tid",
@@ -76,17 +93,16 @@ if ( $pid )
 						("treenode"."location")."x" AS "x",
 						("treenode"."location")."y" AS "y",
 						("treenode"."location")."z" AS "z",
-						"user"."name" AS "username"
-
-					FROM "treenode" INNER JOIN "user"
-						ON "treenode"."user_id" = "user"."id"
+						"user"."name" AS "username",
+						( "treenode"."user_id" = '.$uid.' ) AS "can_edit"
+						
+					FROM "treenode", "user"
 						
 					WHERE "treenode"."project_id" = '.$pid.' AND
-						  "treenode"."user_id" = '.$uid.'
+						  "treenode"."user_id" = "user"."id"
 					'.$sOrder.'
 					'.$sLimit.'
 					');
-			
 			
 			$iTotal = count($t);
 			
@@ -106,10 +122,38 @@ if ( $pid )
 				$sOutput .= '"'.addslashes($val["x"]).'",';
 				$sOutput .= '"'.addslashes($val["y"]).'",';
 				$sOutput .= '"'.addslashes($val["z"]).'",';
-				if ( $val["parent_id"] == "NULL" )
-					$sOutput .= '"Root",';
+				
+				// find node type
+				// R : root
+				// S : slab
+				// B : branch
+				// L : leaf
+				// X : undefined
+				if ( $val["parent_id"] == "" )
+					$sOutput .= '"R",';
 				else
-					$sOutput .= '"'.addslashes($val["confidence"]).'",';
+				{
+					if( array_key_exists(intval($val["tid"]), $tbranch2 ) )
+					{
+						if( $tbranch2[intval($val["tid"])] == 1 )
+						{
+							$sOutput .= '"S",';
+						}
+						else if( $tbranch2[intval($val["tid"])] > 1 )
+						{
+							$sOutput .= '"B",';
+						}
+						else
+						{
+							$sOutput .= '"X",';
+						}
+					}
+					else
+					{
+						$sOutput .= '"L",';
+					}
+				}					
+				$sOutput .= '"'.addslashes($val["confidence"]).'",';
 				$sOutput .= '"'.addslashes($val["radius"]).'",';
 				$sOutput .= '"'.addslashes($val["username"]).'",';
 				$sOutput .= '"'.addslashes($val["tags"]).'",';

@@ -12,11 +12,11 @@
  */
 $db_host[ 'write' ]	= 'localhost';
 $db_user[ 'write' ]	= 'catmaid_user';
-$db_pw[ 'write' ]	= 'catmaid_user_password';
+$db_pw[ 'write' ]	= 'diamtac';
 $db_db[ 'write' ]	= 'catmaid';
 $db_host[ 'read' ]	= 'localhost';
 $db_user[ 'read' ]	= 'catmaid_user';
-$db_pw[ 'read' ]	= 'catmaid_user_password';
+$db_pw[ 'read' ]	= 'diamtac';
 $db_db[ 'read' ]	= 'catmaid';
 /**#@-*/
 

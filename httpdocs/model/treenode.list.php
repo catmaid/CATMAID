@@ -14,10 +14,8 @@ $ses =& getSession();
 $pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
-// TODO: filter by skeleton_instance as parameter
-
-// TO REMOVE!
-$uid = 1;
+// TODO: filter by skeleton_instance as parameter, so far, show all
+// TODO: show treenodes from all user, so far, only show the ones for the currently logged in user
 
 /* Paging */
 $sLimit = "";
@@ -69,7 +67,6 @@ if ( $pid )
 			// columns: 	id 	user_id 	creation_time 	edition_time 	project_id 	parent_id 	location 	radius 	confidence
 			// improvements: retrieve nodes for project members
 			
-
 			$t = $db->getResult(
 				'SELECT	"treenode"."id" AS "tid",
 						"treenode"."radius" AS "radius",
@@ -97,6 +94,7 @@ if ( $pid )
 			
 			$sOutput = '{';
 			$sOutput .= '"iTotalRecords": '.$iTotal.', ';
+			$sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
 			$sOutput .= '"aaData": [ ';
 			while ( list( $key, $val) = each( $t ) )
 			{

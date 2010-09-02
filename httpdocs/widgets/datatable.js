@@ -1,12 +1,13 @@
 
-showTable = function() {
+showTreenodeTable = function(pid) {
 
 	document.getElementById( 'table_widget' ).style.display = 'block'; 				
 	ui.onresize();
 	$('#exampletable').dataTable( {
+		 "bDestroy": true,
 		"bProcessing": true,
 		"bServerSide": true,
-		"sAjaxSource": 'http://catmaid/model/treenode.list.php?pid=1',
+		"sAjaxSource": 'http://catmaid/model/treenode.list.php?pid='+pid,
 		"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
 		"bJQueryUI": true,
 		"aoColumnDefs": [ 

@@ -188,6 +188,20 @@ function Project( pid )
 		return mode;
 	}
 	
+	/*
+	 * Shows the datatable for the loaded project
+	 */
+	this.showTable = function ( m )
+	{
+		switch ( m )
+		{
+		case "treenode":
+			showTreenodeTable( this.id );
+			break;
+		}
+		return;
+	}
+	
 	this.setMode = function( m )
 	{
 		document.getElementById( "edit_button_select" ).className = "button";
@@ -296,6 +310,12 @@ function Project( pid )
 			document.getElementById( "toolbox_data" ).style.display = "none";
 			document.getElementById( "toolbox_show" ).style.display = "none";
 			document.getElementById( "toolbar_crop" ).style.display = "none";
+			
+			// hide data table and tree view widgets
+			// in order to reload the data for a new project
+			document.getElementById( "table_widget" ).style.display = "none";
+			document.getElementById( "tree_widget" ).style.display = "none";
+			
 		}
 		catch ( error ) {}
 		self.id = 0;

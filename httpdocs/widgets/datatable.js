@@ -28,6 +28,7 @@ showTreenodeTable = function(pid) {
 		              {"sClass": "center", "bSearchable": false}, // radius
 		              {"bSearchable": false}, // username
 		              {"bSearchable": true, "bSortable" : false}, // labels
+		              {"bSearchable": false, "bSortable" : true}, // last modified
 		              ]
 	} );
 	
@@ -103,6 +104,7 @@ showSynapseTable = function(pid, pre) {
 		              {"bSearchable": false, "bSortable" : true, "sClass": "center"}, // syn to treenodeid
 		              {"bSearchable": false}, // username
 		              {"bSearchable": true, "bSortable" : false}, // labels
+		              {"bSearchable": false, "bSortable" : true}, // last modified
 		              ]
 	} );
 

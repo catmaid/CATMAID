@@ -144,24 +144,8 @@
 			*******************************************************************
 			-->
 			<div id="toolbar_trace" class="toolbar" style="display:none">
-				<div class="box"><p><i>For new treeline:</i> &nbsp;</p><p><input type="text" id="treelinename" name="treelinename" size="15" value="my treeline" /></p></div>
-				<div class="box"><p>visible&nbsp;</p><p><input type="checkbox" id="treelinevisible" name="treelinevisible" checked="checked" /></p></div>
-				<div class="box"><p>editable&nbsp;</p><p><input type="checkbox" id="treelineeditable" name="treelineeditable" /></p></div>
-				<div class="box"><p>Structure Type: &nbsp;
-					<select name="ttreelinestructuretype" id="treelinestructuretype" size="1">
-						<option>Undefined</option>
-						<option>Axon</option>
-						<option>Dendrite</option>
-					</select>
-				</p>
-				</div>
-				<div class="box"><p>|&nbsp;&nbsp;<i>For new node:</i> &nbsp;</p></div>
-				<div class="box"><p>confidence&nbsp;</p><p id="input_confidence"></p></div>
-				<div class="box"><p>radius&nbsp;</p><p id="input_radius"></p></div>
-				<div class="box"><p>|&nbsp;&nbsp;Nodes Tables&nbsp;</p></div>
-				<div class="box"><p>|&nbsp;&nbsp;Connector Table&nbsp;</p></div>
-				<!--<div class="box_right"><a href="#" class="button" id="button_text_apply" onclick="return false;"><img src="img/kde/apply.gif" alt="apply" title="apply" /></a></div>-->
-				<!--<div class="box_right"><p id="icon_text_apply" class="toolbar_wait">applying ...</p></div>-->
+				<div class="box"><p>ADD NEW TREENODE MODE </p></div>
+				<div class="box"><p>ADD NEW SYNAPSE MODE </p></div>
 				<div class="toolbar_fill"></div>
 			</div>
 			<!--
@@ -198,7 +182,7 @@
 		<!-- Table widget
 		***********************************************************************
 		-->
-		<div id="table_widget" class="sliceView" style="width:450px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
+		<div id="table_widget" class="sliceView" style="width:50%; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
 			<div class="stackInfo_selected" style="position:relative">
 				<p id="table_widget_title" class="stackTitle">Table</p>
 				<p id="table_widget_treenodetable" onclick="project.showTable( 'treenode' );" class="stackTitle">| Treenode Table</p>
@@ -221,6 +205,7 @@
 							<th>radius</th>
 							<th>username</th>
 							<th>labels</th>
+							<th>last modfied</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -236,7 +221,8 @@
 							<th>confidence</th>
 							<th>radius</th>
 							<th>username</th>
-							<th><input type="text" name="search_labels" value="Search labels" class="search_init" /></th>			
+							<th><input type="text" name="search_labels" value="Search labels" class="search_init" /></th>
+							<th>last modfied</th>			
 						</tr>
 					</tfoot>
 				</table>
@@ -250,6 +236,7 @@
 							<th>presynaptic to treenodeid</th>
 							<th>username</th>
 							<th>labels</th>
+							<th>last modfied</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -260,6 +247,7 @@
 							<th>presynaptic to treenodeid</th>
 							<th>username</th>
 							<th><input type="text" name="search_labels" value="Search labels" class="search_init" /></th>
+							<th>last modfied</th>
 						</tr>
 					</tfoot>
 				</table>
@@ -273,6 +261,7 @@
 							<th>postsynaptic to treenodeid</th>
 							<th>username</th>
 							<th>labels</th>
+							<th>last modfied</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -283,6 +272,7 @@
 							<th>postsynaptic to treenodeid</th>
 							<th>username</th>
 							<th><input type="text" name="search_labels" value="Search labels" class="search_init" /></th>
+							<th>last modfied</th>
 						</tr>
 					</tfoot>
 				</table>

@@ -55,6 +55,8 @@ function fnColumnToField( $i )
 		return "username";
 	else if ( $i == 8 )
 		return "labels";
+	else if ( $i == 9 )
+		return "last_modified";
 
 }
 
@@ -129,7 +131,8 @@ if ( $pid )
 						("treenode"."location")."y" AS "y",
 						("treenode"."location")."z" AS "z",
 						"user"."name" AS "username",
-						( "treenode"."user_id" = '.$uid.' ) AS "can_edit"
+						( "treenode"."user_id" = '.$uid.' ) AS "can_edit",
+						to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
 						
 					FROM "treenode", "user"
 						
@@ -216,6 +219,10 @@ if ( $pid )
 				{
 					$sRow .= '"",';
 				}
+				
+				// last modified
+				$sRow .= '"'.addslashes($val["last_modified"]).'",';
+				
 				$sRow .= "],";
 				
 				$skip = False;

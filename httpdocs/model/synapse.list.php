@@ -44,6 +44,8 @@ function fnColumnToField( $i )
 		return "username";
 	else if ( $i == 3 )
 		return "labels";
+	else if ( $i == 4 )
+		return "last_modified";
 }
 
 
@@ -124,7 +126,8 @@ if ( $pid )
 "user"."name" AS "username",
 "ci"."name" AS "instance_name",
 "ci"."id" AS "instance_id",
-( "tci"."user_id" = '.$uid.' ) AS "can_edit"
+( "tci"."user_id" = '.$uid.' ) AS "can_edit",
+to_char("ci"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
 FROM "treenode_class_instance" as "tci", "user", "class_instance" as "ci"
 WHERE "tci"."relation_id" = '.$presyn_id.' AND
 "tci"."project_id" = '.$pid.' AND
@@ -143,7 +146,8 @@ WHERE "tci"."relation_id" = '.$presyn_id.' AND
 "user"."name" AS "username",
 "ci"."name" AS "instance_name",
 "ci"."id" AS "instance_id",
-( "tci"."user_id" = '.$uid.' ) AS "can_edit"
+( "tci"."user_id" = '.$uid.' ) AS "can_edit",
+to_char("ci"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
 FROM "treenode_class_instance" as "tci", "user", "class_instance" as "ci"
 WHERE "tci"."relation_id" = '.$postsyn_id.' AND
 "tci"."project_id" = '.$pid.' AND
@@ -192,6 +196,10 @@ WHERE "tci"."relation_id" = '.$postsyn_id.' AND
 				{
 					$sRow .= '"",';
 				}
+
+				// last modified
+				$sRow .= '"'.addslashes($val["last_modified"]).'",';
+				
 				$sRow .= "],";
 				
 				$skip = False;

@@ -829,6 +829,22 @@ function Stack(
 	
 	var onmousewheel = 
 	{
+		zoom : function( e )
+		{
+			var w = ui.getMouseWheel( e );
+			if ( w )
+			{
+				if ( w > 0 )
+				{
+					slider_z.move( -1 );
+				}
+				else
+				{
+					slider_z.move( 1 );
+				}
+			}
+			return false;
+		},
 		move : function( e )
 		{
 			var xp = x;
@@ -1045,15 +1061,15 @@ function Stack(
 			mouseCatcher.onmousemove = onmousemove.pos;
 			try
 			{
-				mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel.move, false );
+				mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel.zoom, false );
 				/* Webkit takes the event but does not understand it ... */
-				mouseCatcher.addEventListener( "mousewheel", onmousewheel.move, false );
+				mouseCatcher.addEventListener( "mousewheel", onmousewheel.zoom, false );
 			}
 			catch ( error )
 			{
 				try
 				{
-					mouseCatcher.onmousewheel = onmousewheel.move;
+					mouseCatcher.onmousewheel = onmousewheel.zoom;
 				}
 				catch ( error ) {}
 			}
@@ -1325,7 +1341,7 @@ function Stack(
 			undefined,
 			0,
 			null );
-			
+		
 		input_x.onchange = null;
 		try
 		{

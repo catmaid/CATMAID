@@ -1,0 +1,37 @@
+[Term]
+id: FBbt:00000000
+name: germ layer derivative
+subset: cur
+subset: EmbDevSlim
+is_a: FBbt:00004208 ! developing embryonic structure
+relationship: develops_from FBbt:00000110 ! germ layer
+
+[Term]
+id: FBbt:00000001
+name: organism
+def: "An individual member of the species Drosophila melanogaster." [FBC:DOS]
+subset: cur
+subset: EmbDevSlim
+synonym: "Drosophila" RELATED []
+synonym: "whole organism" RELATED []
+xref: CARO:0000012
+xref: NCBITaxon:7227
+is_a: FBbt:00007001 ! anatomical structure
+disjoint_from: FBbt:00004856 ! organ system
+disjoint_from: FBbt:00007002 ! cell
+disjoint_from: FBbt:00007010 ! multi-tissue structure
+disjoint_from: FBbt:00007012 ! cell component
+disjoint_from: FBbt:00007013 ! acellular anatomical structure
+disjoint_from: FBbt:00007060 ! multi-cell-component structure
+disjoint_from: FBbt:00007229 ! cell cluster organ
+disjoint_from: FBbt:00007230 ! compound cell cluster organ
+
+[Term]
+id: FBbt:00000002
+name: tagma
+def: "The three main divisions of the whole organism formed from groups of segments." [FBC:gg]
+subset: cur
+subset: FB_gloss
+subset: larval_OF
+is_a: FBbt:00057001 ! anterior-posterior subdivision of organism
+relationship: part_of FBbt:00000001 ! organism

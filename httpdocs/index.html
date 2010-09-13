@@ -199,44 +199,75 @@
 		***********************************************************************
 		-->
 		<div id="table_widget" class="sliceView" style="width:200px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
-			<div class="stackInfo_selected" style="position:relative"><p id="table_widget_title" class="stackTitle">Table</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
+			<div class="stackInfo_selected" style="position:relative">
+				<p id="table_widget_title" class="stackTitle">Table</p>
+				<p id="table_widget_treenodetable" onclick="project.showTable( 'treenode' );" class="stackTitle">| Treenode Table</p>
+				<p id="table_widget_synapsetable" onclick="project.showTable( 'synapse' );" class="stackTitle">| Synapse Table</p>
+				<p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
+
 			<div id="table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
-
-<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable">
-	<thead>
-		<tr>
-			<th>id</th>
-			<th>x</th>
-			<th>y</th>
-			<th>z</th>
-			<th>type</th>
-			<th>confidence</th>
-			<th>radius</th>
-			<th>username</th>
-			<th>labels</th>
-		</tr>
-	</thead>
-	<tbody>
-
-	</tbody>
-	
-	<tfoot>
-		<tr>
-			<th>id</th>
-			<th>x</th>
-			<th>y</th>
-			<th>z</th>
-			<th><input type="text" name="search_type" value="Search type" class="search_init" /></th>
-			<th>confidence</th>
-			<th>radius</th>
-			<th>username</th>
-			<th><input type="text" name="search_labels" value="Search labels" class="search_init" /></th>			
-		</tr>
-	</tfoot>
-
-</table>
-
+			
+				<div id="treenodetable_container">
+				<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable">
+					<thead>
+						<tr>
+							<th>id</th>
+							<th>x</th>
+							<th>y</th>
+							<th>z</th>
+							<th>type</th>
+							<th>confidence</th>
+							<th>radius</th>
+							<th>username</th>
+							<th>labels</th>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+					
+					<tfoot>
+						<tr>
+							<th>id</th>
+							<th>x</th>
+							<th>y</th>
+							<th>z</th>
+							<th><input type="text" name="search_type" value="Search type" class="search_init" /></th>
+							<th>confidence</th>
+							<th>radius</th>
+							<th>username</th>
+							<th><input type="text" name="search_labels" value="Search labels" class="search_init" /></th>			
+						</tr>
+					</tfoot>
+				</table>
+				</div>
+				
+				<div id="synapsetable_container">
+				<table cellpadding="0" cellspacing="0" border="0" class="display" id="synapsetable">
+					<thead>
+						<tr>
+							<th>id</th>
+							<th>presynaptic</th>
+							<th>postsynaptic</th>
+							<th>username</th>
+							<th>labels</th>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+					<tfoot>
+						<tr>
+							<th>id</th>
+							<th>presynaptic</th>
+							<th>postsynaptic</th>
+							<th>username</th>
+							<th>labels</th>		
+						</tr>
+					</tfoot>
+				</table>
+				</div>
+				
 			</div>
+
 		</div>
 		
 		<!-- Tree widget

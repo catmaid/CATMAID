@@ -196,7 +196,14 @@ function Project( pid )
 		switch ( m )
 		{
 		case "treenode":
+			document.getElementById( 'table_widget' ).style.display = 'block';
+			ui.onresize();
 			showTreenodeTable( this.id );
+			break;
+		case "synapse":
+			document.getElementById( 'table_widget' ).style.display = 'block';
+			ui.onresize();
+			showSynapseTable( this.id );
 			break;
 		}
 		return;

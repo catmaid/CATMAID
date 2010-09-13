@@ -200,10 +200,15 @@ function Project( pid )
 			ui.onresize();
 			showTreenodeTable( this.id );
 			break;
-		case "synapse":
+		case "presynapse":
 			document.getElementById( 'table_widget' ).style.display = 'block';
 			ui.onresize();
-			showSynapseTable( this.id );
+			showSynapseTable( this.id , true);
+			break;
+		case "postsynapse":
+			document.getElementById( 'table_widget' ).style.display = 'block';
+			ui.onresize();
+			showSynapseTable( this.id , false);
 			break;
 		}
 		return;

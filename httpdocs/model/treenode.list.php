@@ -6,7 +6,6 @@ ini_set( 'display_errors', true );
 include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
-include_once( 'json.inc.php' );
 
 $db =& getDB();
 $ses =& getSession();
@@ -35,11 +34,6 @@ if ( isset( $_REQUEST['iSortCol_0'] ) )
 	}
 	$sOrder = substr_replace( $sOrder, "", -2 );
 }
-
-	if ( $_GET['sSearch_0'] != "" )
-	{
-		
-	}
 
 function fnColumnToField( $i )
 {
@@ -91,13 +85,6 @@ if ( $pid )
 			unset( $tbranch );
 			
 			// label logic
-			/*
-			$tlabelid_res = $db->getResult(
-			'SELECT "class"."id" FROM "class"
-			WHERE "class"."project_id" = '.$pid.' AND "class"."class_name" = \'label\'');
-			if( !empty($tlabelid_res) )
-				$tlabelid = $tlabelid_res[0]['id'];
-			*/
 			
 			// get id for relation 'labeled_as'
 			$tlabelrel_res = $db->getResult(

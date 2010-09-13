@@ -6,7 +6,8 @@ var asInitValsSyn = new Array();
 showTreenodeTable = function(pid) {
 
 	$('#treenodetable_container').show();
-	$('#synapsetable_container').hide();
+	$('#presynapsetable_container').hide();
+	$('#postsynapsetable_container').hide();
 
 	oTable = $('#treenodetable').dataTable( {
 		// http://www.datatables.net/usage/options
@@ -14,7 +15,7 @@ showTreenodeTable = function(pid) {
 		"sDom" : '<"H"lr>t<"F"ip>', // default: <"H"lfr>t<"F"ip>
 		"bProcessing": true,
 		"bServerSide": true,
-		"sAjaxSource": 'http://catmaid/model/treenode.list.php?pid='+pid,
+		"sAjaxSource": 'model/treenode.list.php?pid='+pid,
 		"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
 		"bJQueryUI": true,
 		"aoColumns": [
@@ -63,28 +64,48 @@ showTreenodeTable = function(pid) {
 };
 
 
-showSynapseTable = function(pid) {
-
+showSynapseTable = function(pid, pre) {
+	
 	$('#treenodetable_container').hide();
-	$('#synapsetable_container').show();
-				
-	sTable = $('#synapsetable').dataTable( {
+	if( pre )
+	{
+		$('#presynapsetable_container').show();
+		$('#postsynapsetable_container').hide();
+	}
+	else
+	{
+		$('#presynapsetable_container').hide();
+		$('#postsynapsetable_container').show();
+	}
+	
+	if(pre)
+	{
+		prestr = '1';
+		tableid = '#presynapsetable';
+	}
+	else
+	{
+		prestr = '0';
+		tableid = '#postsynapsetable';
+	}
+	
+	sTable = $(tableid).dataTable( {
 		// http://www.datatables.net/usage/options
 		"bDestroy": true,
 		"sDom" : '<"H"lr>t<"F"ip>', // default: <"H"lfr>t<"F"ip>
-		"bProcessing": false,
-		"bServerSide": false,
-		//"sAjaxSource": 'http://catmaid/model/synapse.list.php?pid='+pid,
+		"bProcessing": true,
+		"bServerSide": true,
+		"sAjaxSource": 'model/synapse.list.php?pid='+pid+'&pre='+prestr,
 		"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
 		"bJQueryUI": true,
 		"aoColumns": [
-		              {"sClass": "center", "bSearchable": false, "bSortable" : false}, // id
-		              {"sClass": "center", "bSearchable": false}, // presyn
-		              {"sClass": "center", "bSearchable": false}, // postsyn
+		              {"bSearchable": false, "bSortable" : true}, // name
+		              {"sClass": "center", "bSearchable": false, "bSortable" : true}, // syn to treenodeid
 		              {"bSearchable": false}, // username
 		              {"bSearchable": true, "bSortable" : false}, // labels
 		              ]
 	} );
+
 	
 	$("tfoot input").keyup( function () {
 		/* Filter on the column (the index) of this element */

@@ -14,7 +14,7 @@ showTreenodeTable = function(pid) {
 		"sDom" : '<"H"lr>t<"F"ip>', // default: <"H"lfr>t<"F"ip>
 		"bProcessing": true,
 		"bServerSide": true,
-		"sAjaxSource": 'http://catmaid/model/treenode.list.php?pid='+pid,
+		"sAjaxSource": 'model/treenode.list.php?pid='+pid,
 		"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
 		"bJQueryUI": true,
 		"aoColumns": [

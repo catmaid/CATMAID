@@ -100,7 +100,7 @@ showSynapseTable = function(pid, pre) {
 		"bJQueryUI": true,
 		"aoColumns": [
 		              {"bSearchable": false, "bSortable" : true}, // name
-		              {"sClass": "center", "bSearchable": false, "bSortable" : true}, // syn to treenodeid
+		              {"bSearchable": false, "bSortable" : true, "sClass": "center"}, // syn to treenodeid
 		              {"bSearchable": false}, // username
 		              {"bSearchable": true, "bSortable" : false}, // labels
 		              ]

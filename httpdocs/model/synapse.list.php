@@ -195,19 +195,9 @@ WHERE "tci"."relation_id" = '.$postsyn_id.' AND
 				$sRow .= "],";
 				
 				$skip = False;
-				/*
-				// search by label			
-				if ( $_GET['sSearch_0'] != "" )
+				if ( $_GET['sSearch_2'] != "" )
 				{
-					if( strtoupper($_GET['sSearch_0']) != $val["nodetype"])
-					{
-						$skip = True;
-					}
-				}*/
-
-				if ( $_GET['sSearch_0'] != "" )
-				{
-					$pos = strpos(strtoupper($val["label"]),strtoupper($_GET['sSearch_1']));
+					$pos = strpos(strtoupper($val["label"]),strtoupper($_GET['sSearch_2']));
 					if ( $pos === false ) {
 						$skip = True;
 					}
@@ -215,7 +205,7 @@ WHERE "tci"."relation_id" = '.$postsyn_id.' AND
 				
 				if ( !$skip )
 					$sOutput .= $sRow;
-					
+
 				
 			}
 			$sOutput = substr_replace( $sOutput, "", -1 );

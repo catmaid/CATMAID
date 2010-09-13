@@ -36,6 +36,11 @@ if ( isset( $_REQUEST['iSortCol_0'] ) )
 	$sOrder = substr_replace( $sOrder, "", -2 );
 }
 
+	if ( $_GET['sSearch_0'] != "" )
+	{
+		
+	}
+
 function fnColumnToField( $i )
 {
 	if ( $i == 0 )
@@ -155,14 +160,15 @@ if ( $pid )
 			$sOutput .= '"iTotalRecords": '.$iTotal.', ';
 			$sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
 			$sOutput .= '"aaData": [ ';
+			
 			while ( list( $key, $val) = each( $t ) )
 			{
-				
-				$sOutput .= "[";
-				$sOutput .= '"'.addslashes($val["tid"]).'",';
-				$sOutput .= '"'.addslashes($val["x"]).'",';
-				$sOutput .= '"'.addslashes($val["y"]).'",';
-				$sOutput .= '"'.addslashes($val["z"]).'",';
+				$sRow = "";
+				$sRow .= "[";
+				$sRow .= '"'.addslashes($val["tid"]).'",';
+				$sRow .= '"'.addslashes($val["x"]).'",';
+				$sRow .= '"'.addslashes($val["y"]).'",';
+				$sRow .= '"'.addslashes($val["z"]).'",';
 				
 				// find node type
 				// R : root
@@ -171,47 +177,85 @@ if ( $pid )
 				// L : leaf
 				// X : undefined
 				if ( $val["parent_id"] == "" )
-					$sOutput .= '"R",';
+				{
+					$sRow .= '"R",';
+					$val["nodetype"] = "R";
+				}
 				else
 				{
 					if( array_key_exists(intval($val["tid"]), $tbranch2 ) )
 					{
 						if( $tbranch2[intval($val["tid"])] == 1 )
 						{
-							$sOutput .= '"S",';
+							$sRow .= '"S",';
+							$val["nodetype"] = "S";
 						}
 						else if( $tbranch2[intval($val["tid"])] > 1 )
 						{
-							$sOutput .= '"B",';
+							$sRow .= '"B",';
+							$val["nodetype"] = "B";
 						}
 						else
 						{
-							$sOutput .= '"X",';
+							$sRow .= '"X",';
+							$val["nodetype"] = "X";
 						}
 					}
 					else
 					{
-						$sOutput .= '"L",';
+						$sRow .= '"L",';
+						$val["nodetype"] = "L";
 					}
 				}					
-				$sOutput .= '"'.addslashes($val["confidence"]).'",';
-				$sOutput .= '"'.addslashes($val["radius"]).'",';
-				$sOutput .= '"'.addslashes($val["username"]).'",';
+				$sRow .= '"'.addslashes($val["confidence"]).'",';
+				$sRow .= '"'.addslashes($val["radius"]).'",';
+				$sRow .= '"'.addslashes($val["username"]).'",';
 				// use tags
 				if(!empty($tlabel2))
 				{
 					if( array_key_exists($val['tid'], $tlabel2) )
+					{
 						$out = implode(', ', $tlabel2[$val['tid']]);
+					}
 					else
+					{
 						$out = '';
-					$sOutput .= '"'.addslashes($out).'",';
+					}
+					$val['label'] = $out;
+					$sRow .= '"'.addslashes($out).'",';
 						
 				}
 				else
 				{
-					$sOutput .= '"",';
+					$sRow .= '"",';
 				}
-				$sOutput .= "],";
+				$sRow .= "],";
+				
+				$skip = False;
+				// if search by node type is set, only add this row
+				// if it corresponds to the nodes we want to display
+				// 0 -> node type
+				// 1 -> label			
+				if ( $_GET['sSearch_0'] != "" )
+				{
+					if( strtoupper($_GET['sSearch_0']) != $val["nodetype"])
+					{
+						$skip = True;
+					}
+				}
+
+				if ( $_GET['sSearch_1'] != "" )
+				{
+					$pos = strpos(strtoupper($val["label"]),strtoupper($_GET['sSearch_1']));
+					if ( $pos === false ) {
+						$skip = True;
+					}
+				}
+				
+				if ( !$skip )
+					$sOutput .= $sRow;
+					
+				
 			}
 			$sOutput = substr_replace( $sOutput, "", -1 );
 			$sOutput .= '] }';

@@ -46,13 +46,13 @@
 		<script type="text/javascript">var IE = true;</script>
 		<![endif]-->
 		<script type="text/javascript" src="widgets/textlabel.js"></script>
-		<script type="text/javascript" src="widgets/datatable.js"></script>
 		<script type="text/javascript" src="widgets/profile.js"></script>
 		<script type="text/javascript" src="init.js"></script>
-		<script type="text/javascript" charset="utf-8" src="libs/raphael/raphael.js"></script>
-		<script type="text/javascript" charset="utf-8" src="libs/jquery/jquery.js"></script>
-		<script type="text/javascript" charset="utf-8" src="libs/jquery/jquery.dataTables.js"></script>
-		<script type="text/javascript" charset="utf-8" src="widgets/tracing.js"></script>
+		<script type="text/javascript" src="libs/raphael/raphael.js"></script>
+		<script type="text/javascript" src="libs/jquery/jquery.js"></script>
+		<script type="text/javascript" src="libs/jquery/jquery.dataTables.js"></script>
+		<script type="text/javascript" src="widgets/tracing.js"></script>
+		<script type="text/javascript" src="widgets/datatable.js"></script>
 		
 	</head>
 	<body onload="init();"><a></a>
@@ -219,19 +219,21 @@
 	<tbody>
 
 	</tbody>
+	
 	<tfoot>
 		<tr>
 			<th>id</th>
 			<th>x</th>
 			<th>y</th>
 			<th>z</th>
-			<th>type</th>
+			<th><input type="text" name="search_type" value="Search type" class="search_init" /></th>
 			<th>confidence</th>
 			<th>radius</th>
 			<th>username</th>
-			<th>labels</th>
+			<th><input type="text" name="search_labels" value="Search labels" class="search_init" /></th>			
 		</tr>
 	</tfoot>
+
 </table>
 
 			</div>

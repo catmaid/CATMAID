@@ -198,7 +198,7 @@ function Project( pid )
 		{
 		case "entities":
 			var tw_status = document.getElementById( 'tree_widget' ).style.display;
-			// check if not opened before
+			// check if not opened before to prevent messing up with event handlers
 			if ( tw_status != 'block' )
 			{
 				document.getElementById( 'tree_widget' ).style.display = 'block';
@@ -217,22 +217,18 @@ function Project( pid )
 	 */
 	this.showDatatableWidget = function ( m )
 	{
+		document.getElementById( 'table_widget' ).style.display = 'block';
+		ui.onresize();	
 		switch ( m )
 		{
 		case "treenode":
-			document.getElementById( 'table_widget' ).style.display = 'block';
-			ui.onresize();
-			showTreenodeTable( this.id );
+			initDatatable( 'treenode', this.id );
 			break;
 		case "presynapse":
-			document.getElementById( 'table_widget' ).style.display = 'block';
-			ui.onresize();
-			showSynapseTable( this.id , true);
+			initDatatable( 'presynapse', this.id );
 			break;
 		case "postsynapse":
-			document.getElementById( 'table_widget' ).style.display = 'block';
-			ui.onresize();
-			showSynapseTable( this.id , false);
+			initDatatable( 'postsynapse', this.id );
 			break;
 		}
 		return;

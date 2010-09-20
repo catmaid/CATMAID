@@ -148,6 +148,9 @@ if ( $pid )
 			
 			reset( $t );
 			
+			// possibly add sort function for types using
+			// array_multisort with php
+			
 			$sOutput = '{';
 			$sOutput .= '"iTotalRecords": '.$iTotal.', ';
 			$sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';

@@ -19,7 +19,7 @@ showTreenodeTable = function(pid) {
 		"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
 		"bJQueryUI": true,
 		"aoColumns": [
-		              {"sClass": "center", "bSearchable": false, "bSortable" : false}, // id
+		              {"sClass": "center", "bSearchable": false, "bSortable" : true}, // id
 		              {"sClass": "center", "bSearchable": false}, // x
 		              {"sClass": "center", "bSearchable": false}, // y
 		              {"sClass": "center", "bSearchable": false}, // z

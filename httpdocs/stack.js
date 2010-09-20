@@ -1639,6 +1639,10 @@ function Stack(
 	
 	var cropBox = false;
 	
+	//! treenode overlay
+	// adds a layer for graphical interaction with tree nodes
+	loadOverlay();
+	
 	// take care, that all values are within a proper range
 	var z = 1;
 	var y = Math.floor( MAX_Y / 2 );

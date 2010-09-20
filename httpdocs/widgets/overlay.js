@@ -1,10 +1,5 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html lang="en">
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <title>Raphaël · SVG Benchmark</title>
-        <script src="raphael-min.js" type="text/javascript" charset="utf-8"></script>
-        <script type="text/javascript" charset="utf-8">                
+console.log("Overlay loading...");
+
 
 Node = function( paper, parent, x, y, r )
 {
@@ -63,18 +58,19 @@ Node = function( paper, parent, x, y, r )
 }
 
 
-window.onload = function () {
-	
-	
-    var r = Raphael("holder", 1200, 600);
-	
-	    // storing original coordinates
+loadOverlay = function() {
 
+	console.log("load overlay")
+	
+	var r = Raphael("sliceView", 1200, 600);
+	
+	// storing original coordinates
+	
 	var ln = null;
 	
 	var x = r.width / 2;
 	var y = r.height / 2;
-
+	
 	for (var i = 0; i < 100; ++i)
 	{
 		x = Math.min( r.width, Math.max( 0, x + ( .5 - Math.random() ) * 100 ) );
@@ -88,10 +84,5 @@ window.onload = function () {
 		ln.drawLine();
 		ln = ln.parent;
 	}
+
 };
-        </script>
-    </head>
-    <body>
-        <div id="holder"></div>
-    </body>
-</html>

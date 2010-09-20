@@ -46,6 +46,9 @@ function fnColumnToField( $i )
 		return "labels";
 	else if ( $i == 4 )
 		return "last_modified";
+	else if ( $i == 5 )
+		return "instance_id";
+		
 }
 
 
@@ -199,6 +202,8 @@ WHERE "tci"."relation_id" = '.$postsyn_id.' AND
 
 				// last modified
 				$sRow .= '"'.addslashes($val["last_modified"]).'",';
+				// instance_id
+				$sRow .= '"'.addslashes($val["instance_id"]).'",';
 				
 				$sRow .= "],";
 				

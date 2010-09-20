@@ -19,7 +19,7 @@ showTreenodeTable = function(pid) {
 		"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
 		"bJQueryUI": true,
 		"fnRowCallback": function( nRow, aData, iDisplayIndex ) {
-			if ( aData[0] in selectedObjects == true)
+			if ( parseInt(aData[0]) in selectedObjects)
 			{
 				$(nRow).addClass('row_selected');
 			}
@@ -39,7 +39,7 @@ showTreenodeTable = function(pid) {
 		              ]
 	} );
 	
-	$("tfoot input").keyup( function () {
+	$("#treenodetable tfoot input").keyup( function () {
 		/* Filter on the column (the index) of this element */
 		oTable.fnFilter( this.value, $("tfoot input").index(this) );
 	} );
@@ -49,11 +49,11 @@ showTreenodeTable = function(pid) {
 	 * the footer
 	 */
 
-	$("tfoot input").each( function (i) {
+	$("#treenodetable tfoot input").each( function (i) {
 		asInitVals[i] = this.value;
 	} );
 
-	$("tfoot input").focus( function () {
+	$("#treenodetable tfoot input").focus( function () {
 		if ( this.className == "search_init" )
 		{
 			this.className = "";
@@ -61,7 +61,7 @@ showTreenodeTable = function(pid) {
 		}
 	} );
 
-	$("tfoot input").blur( function (i) {
+	$("#treenodetable tfoot input").blur( function (i) {
 		if ( this.value == "" )
 		{
 			this.className = "search_init";
@@ -69,24 +69,25 @@ showTreenodeTable = function(pid) {
 		}
 	} );
 	
-	$('tbody tr').live('click', function () {
-		
+	$('#treenodetable tbody tr').live('click', function () {
+		console.log("tree");
 		var aData = oTable.fnGetData( this );
-		var iId = aData[0];
 		
-		console.log(aData);
+		var iId = parseInt(aData[0]);
 		
-		if ( iId in selectedObjects == false)
+		if ( iId in selectedObjects )
 		{
-			selectedObjects[iId] = {tabledata:aData,
-									type = 'treenode'};
+			console.log("remove", iId);
+			delete selectedObjects[iId];
 		}
 		else
 		{
-			delete selectedObjects[iId];
+			console.log("add data", iId);
+			selectedObjects[iId] = {tabledata:aData, 'type' : 'treenode'};
 		}
 		
 		$(this).toggleClass('row_selected');
+		console.log(selectedObjects);
 	} );
 
 	
@@ -111,11 +112,13 @@ showSynapseTable = function(pid, pre) {
 	{
 		prestr = '1';
 		tableid = '#presynapsetable';
+		stype = 'presynaptic';
 	}
 	else
 	{
 		prestr = '0';
 		tableid = '#postsynapsetable';
+		stype = 'postsynaptic';
 	}
 	
 	sTable = $(tableid).dataTable( {
@@ -127,17 +130,26 @@ showSynapseTable = function(pid, pre) {
 		"sAjaxSource": 'model/synapse.list.php?pid='+pid+'&pre='+prestr,
 		"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
 		"bJQueryUI": true,
+		"fnRowCallback": function( nRow, aData, iDisplayIndex ) {
+		console.log("key in ", parseInt(aData[5]) in selectedObjects);
+			if ( parseInt(aData[5]) in selectedObjects)
+			{
+				$(nRow).addClass('row_selected');
+			}
+			return nRow;
+		},
 		"aoColumns": [
 		              {"bSearchable": false, "bSortable" : true}, // name
 		              {"bSearchable": false, "bSortable" : true, "sClass": "center"}, // syn to treenodeid
 		              {"bSearchable": false}, // username
 		              {"bSearchable": true, "bSortable" : false}, // labels
 		              {"bSearchable": false, "bSortable" : true}, // last modified
+		              {"bVisible": false} // instance_id
 		              ]
 	} );
 
 	
-	$("tfoot input").keyup( function () {
+	$(tableid+" tfoot input").keyup( function () {
 		/* Filter on the column (the index) of this element */
 		sTable.fnFilter( this.value, $("tfoot input").index(this) );
 	} );
@@ -146,11 +158,11 @@ showSynapseTable = function(pid, pre) {
 	 * Support functions to provide a little bit of 'user friendlyness' to the textboxes in 
 	 * the footer
 	 */
-	$("tfoot input").each( function (i) {
+	$(tableid+" tfoot input").each( function (i) {
 		asInitValsSyn[i] = this.value;
 	} );
 
-	$("tfoot input").focus( function () {
+	$(tableid+" tfoot input").focus( function () {
 		if ( this.className == "search_init" )
 		{
 			this.className = "";
@@ -158,12 +170,36 @@ showSynapseTable = function(pid, pre) {
 		}
 	} );
 
-	$("tfoot input").blur( function (i) {
+	$(tableid+" tfoot input").blur( function (i) {
 		if ( this.value == "" )
 		{
 			this.className = "search_init";
 			this.value = asInitValsSyn[$("tfoot input").index(this)];
 		}
+	} );
+	
+	$(tableid+" tbody tr").live('click', function () {
+		console.log("syn");
+		var aData = sTable.fnGetData( this );
+		// grab last element, the hidden instance_id
+		
+		var iId = parseInt(aData[5]);
+		
+		if ( iId in selectedObjects)
+		{
+			console.log("remove data", iId);
+			delete selectedObjects[iId];
+		}
+		else
+		{
+			console.log("add data", iId);
+			selectedObjects[iId] = {'tabledata':aData, 'type': stype};
+
+		}
+		
+		console.log(selectedObjects);
+		
+		$(this).toggleClass('row_selected');
 	} );
 	
 };

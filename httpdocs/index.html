@@ -51,8 +51,10 @@
 		<script type="text/javascript" src="libs/raphael/raphael.js"></script>
 		<script type="text/javascript" src="libs/jquery/jquery.js"></script>
 		<script type="text/javascript" src="libs/jquery/jquery.dataTables.js"></script>
+		<script type="text/javascript" src="libs/jquery/jquery.jstree.js"></script>
 		<script type="text/javascript" src="widgets/tracing.js"></script>
 		<script type="text/javascript" src="widgets/datatable.js"></script>
+		<script type="text/javascript" src="widgets/treeview.js"></script>
 		
 	</head>
 	<body onload="init();"><a></a>
@@ -93,8 +95,8 @@
 					<!--<a href="#" class="button" id="edit_button_profile" onclick="project.setMode( 'profile' );"><img src="widgets/themes/kde/draw.gif" alt="profile" title="profile" /></a>-->
 				</div>
 				<div class="box" id="toolbox_data" style="display:none">
-					<a href="#" class="button" id="data_button_table" onclick="project.showTable( 'treenode' );"><img src="widgets/themes/kde/table.gif" alt="table" title="table" /></a>
-					<a href="#" class="button" id="data_button_tree" onclick="document.getElementById( 'tree_widget' ).style.display = 'block'; ui.onresize();"><img src="widgets/themes/kde/tree.gif" alt="tree" title="tree" /></a>
+					<a href="#" class="button" id="data_button_table" onclick="project.showDatatableWidget( 'treenode' );"><img src="widgets/themes/kde/table.gif" alt="table" title="table" /></a>
+					<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'entities' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="tree" /></a>
 				</div>
 				<div id="logout_box" class="box_right" style="display:none"><p><a id="logout" name="logout" title="Logout" onclick="logout();" href="#">Logout</a></p></div>
 				<div id="login_box" class="box_right" style="display:none"><p>account&nbsp;</p><p><input type="text" id="account" name="account" size="8" /></p><p>&nbsp;&nbsp;password&nbsp;</p><p><input type="password" id="password" name="password" size="8" /></p><p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p></div>
@@ -291,7 +293,33 @@
 		-->
 		<div id="tree_widget" class="sliceView" style="width:200px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
 			<div class="stackInfo_selected" style="position:relative"><p id="tree_widget_title" class="stackTitle">Tree</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
-			<div id="tree_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto"></div>
+			<div id="tree_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
+			
+			<input type="button" class="button" value="toggle_node" id="toggle_node" style="clear:both;" />
+
+			<div id="treeview">
+					<ul>
+					<li id="phtml_1">
+			
+						<a href="#">Root node 1</a>
+						<ul>
+							<li id="phtml_2">
+								<a href="#">Child node 1</a>
+							</li>
+							<li id="phtml_3">
+								<a href="#">Child node 2</a>
+			
+							</li>
+						</ul>
+					</li>
+					<li id="phtml_4">
+						<a href="#">Root node 2</a>
+					</li>
+				</ul>
+
+			</div>
+			
+			</div>
 		</div>
 		
 		<!-- Disclaimer

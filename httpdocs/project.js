@@ -188,10 +188,34 @@ function Project( pid )
 		return mode;
 	}
 	
+
+	/*
+	 * Shows the tree view for the loaded project
+	 */
+	this.showTreeviewWidget = function ( m )
+	{
+		switch ( m )
+		{
+		case "entities":
+			var tw_status = document.getElementById( 'tree_widget' ).style.display;
+			// check if not opened before
+			if ( tw_status != 'block' )
+			{
+				document.getElementById( 'tree_widget' ).style.display = 'block';
+				ui.onresize();			
+				showTreeview( this.id );
+			}
+			break;
+		}
+		return;
+	}
+
+	
+	
 	/*
 	 * Shows the datatable for the loaded project
 	 */
-	this.showTable = function ( m )
+	this.showDatatableWidget = function ( m )
 	{
 		switch ( m )
 		{

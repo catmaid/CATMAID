@@ -17,11 +17,13 @@ $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
 /* Paging */
 $sLimit = "";
-if ( isset( $_REQUEST['iDisplayStart'] ) )
-{
-	$sLimit = "LIMIT ".pg_escape_string( $_REQUEST['iDisplayLength'] )." ".
-		"OFFSET ".pg_escape_string( $_REQUEST['iDisplayStart'] );
-}
+$iDisplayStart = isset( $_REQUEST['iDisplayStart'] ) ? intval( $_REQUEST['iDisplayStart'] ) : 0;
+$iDisplayLength = isset( $_REQUEST['iDisplayLength'] ) ? intval( $_REQUEST['iDisplayLength'] ) : -1;
+
+if ( $iDisplayLength > 0 )
+	$sLimit .= ' LIMIT '.$iDisplayLength;
+if ( $iDisplayStart > 0 )
+	$sLimit .= ' OFFSET '.$iDisplayStart;
 	
 /* Ordering */
 if ( isset( $_REQUEST['iSortCol_0'] ) )

@@ -58,11 +58,14 @@ Node = function( paper, parent, x, y, r )
 }
 
 
-loadOverlay = function() {
-
-	console.log("load overlay")
+loadOverlay = function(view, width, height) {
 	
-	var r = Raphael("sliceView", 1200, 600);
+	console.log("load overlay");
+	console.log("width", width);
+	console.log("height", height);
+	
+	var r = Raphael(view, width, height);
+	console.log("raph", r);
 	
 	// storing original coordinates
 	

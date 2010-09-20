@@ -1641,7 +1641,10 @@ function Stack(
 	
 	//! treenode overlay
 	// adds a layer for graphical interaction with tree nodes
-	loadOverlay();
+	var svgOverlay = document.createElement( "div" );
+	svgOverlay.className = "sliceSVGOverlay";
+	view.appendChild( svgOverlay );
+	loadOverlay(svgOverlay, 1000, 800 );
 	
 	// take care, that all values are within a proper range
 	var z = 1;

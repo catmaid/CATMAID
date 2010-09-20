@@ -291,34 +291,10 @@
 		<!-- Tree widget
 		***********************************************************************
 		-->
-		<div id="tree_widget" class="sliceView" style="width:200px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
+		<div id="tree_widget" class="sliceView" style="width:350px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
 			<div class="stackInfo_selected" style="position:relative"><p id="tree_widget_title" class="stackTitle">Tree</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
 			<div id="tree_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
-			
-			<input type="button" class="button" value="toggle_node" id="toggle_node" style="clear:both;" />
-
-			<div id="treeview">
-					<ul>
-					<li id="phtml_1">
-			
-						<a href="#">Root node 1</a>
-						<ul>
-							<li id="phtml_2">
-								<a href="#">Child node 1</a>
-							</li>
-							<li id="phtml_3">
-								<a href="#">Child node 2</a>
-			
-							</li>
-						</ul>
-					</li>
-					<li id="phtml_4">
-						<a href="#">Root node 2</a>
-					</li>
-				</ul>
-
-			</div>
-			
+			<div id="treeview"></div>			
 			</div>
 		</div>
 		

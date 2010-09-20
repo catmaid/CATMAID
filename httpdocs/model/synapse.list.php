@@ -6,6 +6,7 @@ ini_set( 'display_errors', true );
 include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
+include_once( 'json.inc.php' );
 
 $db =& getDB();
 $ses =& getSession();
@@ -62,29 +63,14 @@ if ( $pid )
 			'SELECT "relation"."id" FROM "relation"
 			WHERE "relation"."project_id" = '.$pid.' AND
 			"relation"."relation_name" = \'presynaptic_to\'');
-			if( !empty($presyn) )
-			{
-				$presyn_id = $presyn[0]['id'];
-			}
-			else
-			{
-				$presyn_id = 0;
-			}
+			$presyn_id = !empty($presyn) ? $presyn_id = $presyn[0]['id'] : 0;
 			
 			// get id for postsynaptic_to
 			$postsyn = $db->getResult(
 			'SELECT "relation"."id" FROM "relation"
 			WHERE "relation"."project_id" = '.$pid.' AND
 			"relation"."relation_name" = \'postsynaptic_to\'');
-			if( !empty($postsyn) )
-			{
-				$postsyn_id = $postsyn[0]['id'];
-			}
-			else
-			{
-				$postsyn_id = 0;
-			}
-			
+			$postsyn_id = !empty($postsyn) ? $postsyn_id = $postsyn[0]['id'] : 0;
 			
 			// get id for relation 'labeled_as'
 			$tlabelrel_res = $db->getResult(
@@ -124,41 +110,41 @@ if ( $pid )
 				
 			// retrieve from treenode_class_instance for relation ids
 			$t = $db->getResult(
-'SELECT	"tci"."treenode_id" AS "tnid",
-"tci"."user_id" AS "user_id",
-"user"."name" AS "username",
-"ci"."name" AS "instance_name",
-"ci"."id" AS "instance_id",
-( "tci"."user_id" = '.$uid.' ) AS "can_edit",
-to_char("ci"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
-FROM "treenode_class_instance" as "tci", "user", "class_instance" as "ci"
-WHERE "tci"."relation_id" = '.$presyn_id.' AND
-"tci"."project_id" = '.$pid.' AND
-"tci"."user_id" = "user"."id" AND
-"tci"."class_instance_id" = "ci"."id"
-'.$sOrder.'
-'.$sLimit
-);
+				'SELECT	"tci"."treenode_id" AS "tnid",
+				"tci"."user_id" AS "user_id",
+				"user"."name" AS "username",
+				"ci"."name" AS "instance_name",
+				"ci"."id" AS "instance_id",
+				( "tci"."user_id" = '.$uid.' ) AS "can_edit",
+				to_char("ci"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
+				FROM "treenode_class_instance" as "tci", "user", "class_instance" as "ci"
+				WHERE "tci"."relation_id" = '.$presyn_id.' AND
+				"tci"."project_id" = '.$pid.' AND
+				"tci"."user_id" = "user"."id" AND
+				"tci"."class_instance_id" = "ci"."id"
+				'.$sOrder.'
+				'.$sLimit
+				);
 			}
 			else
 			{
 
 			$t = $db->getResult(
-'SELECT	"tci"."treenode_id" AS "tnid",
-"tci"."user_id" AS "user_id",
-"user"."name" AS "username",
-"ci"."name" AS "instance_name",
-"ci"."id" AS "instance_id",
-( "tci"."user_id" = '.$uid.' ) AS "can_edit",
-to_char("ci"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
-FROM "treenode_class_instance" as "tci", "user", "class_instance" as "ci"
-WHERE "tci"."relation_id" = '.$postsyn_id.' AND
-"tci"."project_id" = '.$pid.' AND
-"tci"."user_id" = "user"."id" AND
-"tci"."class_instance_id" = "ci"."id"
-'.$sOrder.'
-'.$sLimit
-);
+				'SELECT	"tci"."treenode_id" AS "tnid",
+				"tci"."user_id" AS "user_id",
+				"user"."name" AS "username",
+				"ci"."name" AS "instance_name",
+				"ci"."id" AS "instance_id",
+				( "tci"."user_id" = '.$uid.' ) AS "can_edit",
+				to_char("ci"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
+				FROM "treenode_class_instance" as "tci", "user", "class_instance" as "ci"
+				WHERE "tci"."relation_id" = '.$postsyn_id.' AND
+				"tci"."project_id" = '.$pid.' AND
+				"tci"."user_id" = "user"."id" AND
+				"tci"."class_instance_id" = "ci"."id"
+				'.$sOrder.'
+				'.$sLimit
+				);
 			}
 			
 			// synapse list logic

@@ -203,14 +203,12 @@ function Project( pid )
 			{
 				document.getElementById( 'tree_widget' ).style.display = 'block';
 				ui.onresize();			
-				showTreeview( this.id );
+				initTreeview( this.id );
 			}
 			break;
 		}
 		return;
 	}
-
-	
 	
 	/*
 	 * Shows the datatable for the loaded project

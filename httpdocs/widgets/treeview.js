@@ -1,29 +1,33 @@
 var treeview_loaded;
 
-showTreeview = function() {
-	
+initTreeview = function(pid) {
 
-	$("#treeview")
-		.bind("open_node.jstree close_node.jstree", function (e) {
-			console.log("Last operation: " + e.type);
-		})
-		.jstree({
-			core : { html_titles : false},
-			plugins : [ "themes", "html_data"],
-			"themes" : {
-				"theme" : "apple",
-				"url" : "widgets/themes/kde/jsTree/apple/style.css",
-				"dots" : false,
-				"icons" : false
-			},
-		});
-		
-	
-	$("#toggle_node").click(function () { 
-		$("#treeview").jstree("toggle_node","#phtml_1");
+	$("#treeview").jstree({
+		"json_data" : {
+			"ajax" : {
+				"url" : 'model/skeleton.list.php?pid='+pid,
+				},
+			"progressive_render" : true
+		},
+		"ui" : {
+			"select_limit" : -1,
+			"select_multiple_modifier" : "ctrl",
+			"selected_parent_close" : "deselect",
+		},
+		"core" : { html_titles : false},
+		"plugins" : [ "themes", "json_data", "ui"],
+		"themes" : {
+			"theme" : "apple",
+			"url" : "widgets/themes/kde/jsTree/apple/style.css",
+			"dots" : true,
+			"icons" : true
+		},
 	});
-
 	
+
+	// handlers
+
+
 }
 
 

@@ -18,6 +18,13 @@ showTreenodeTable = function(pid) {
 		"sAjaxSource": 'model/treenode.list.php?pid='+pid,
 		"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
 		"bJQueryUI": true,
+		"fnRowCallback": function( nRow, aData, iDisplayIndex ) {
+			if ( aData[0] in selectedObjects == true)
+			{
+				$(nRow).addClass('row_selected');
+			}
+			return nRow;
+		},
 		"aoColumns": [
 		              {"sClass": "center", "bSearchable": false, "bSortable" : true}, // id
 		              {"sClass": "center", "bSearchable": false}, // x
@@ -61,6 +68,27 @@ showTreenodeTable = function(pid) {
 			this.value = asInitVals[$("tfoot input").index(this)];
 		}
 	} );
+	
+	$('tbody tr').live('click', function () {
+		
+		var aData = oTable.fnGetData( this );
+		var iId = aData[0];
+		
+		console.log(aData);
+		
+		if ( iId in selectedObjects == false)
+		{
+			selectedObjects[iId] = {tabledata:aData,
+									type = 'treenode'};
+		}
+		else
+		{
+			delete selectedObjects[iId];
+		}
+		
+		$(this).toggleClass('row_selected');
+	} );
+
 	
 };
 

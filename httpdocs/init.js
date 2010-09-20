@@ -42,6 +42,8 @@ var session;
 var msg_timeout;
 var MSG_TIMEOUT_INTERVAL = 60000;	//!< length of the message lookup interval in milliseconds
 
+var selectedObjects = {}; //!< associative array of selected objects like class_instances, treenodes etc.
+
 /**
  * queue a login-request on pressing return
  * to be used as onkeydown-handler in the account and password input fields

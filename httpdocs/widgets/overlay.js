@@ -57,14 +57,40 @@ Node = function( paper, parent, x, y, r )
 	mc.drag( mc.move, mc.start, mc.up );
 }
 
-
-loadOverlay = function(view, width, height) {
+SVGOverlay = function(
+		svgView,
+		resolution,			//!< object {x, y, z} resolution of the parent DOM element in nanometer/pixel
+		translation
+)
+{
+		
+	console.log("svg overlay...");
+	console.log("resolution", resolution);
+	console.log("translation", translation);
 	
-	console.log("load overlay");
-	console.log("width", width);
-	console.log("height", height);
+	this.updatePaper = function(
+			left, top, viewWidth, viewHeight
+			)
+	{
+		// you need not to update the tracingContainer's style
+		/*
+		tracingContainer.style.left = left + "px";
+		tracingContainer.style.top = top + "px";
+		tracingContainer.style.width = viewWidth + "px";
+		tracingContainer.style.height = viewHeight + "px";
+		*/
+		
+		// update paper size
+		r.setSize(viewWidth, viewHeight);
+		
+	}
 	
-	var r = Raphael(view, width, height);
+	self = this;
+	self.resolution = resolution;
+	self.translation = translation;
+	self.svgView = svgView;
+	
+	var r = Raphael(self.svgView, 1000, 200);
 	console.log("raph", r);
 	
 	// storing original coordinates

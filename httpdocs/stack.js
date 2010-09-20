@@ -1126,7 +1126,7 @@ function Stack(
 		var cols = Math.floor( viewWidth / X_TILE_SIZE ) + 2;
 		
 		initTiles( rows, cols );
-		
+		 		
 		return;
 	}
 	
@@ -1641,10 +1641,11 @@ function Stack(
 	
 	//! treenode overlay
 	// adds a layer for graphical interaction with tree nodes
-	var svgOverlay = document.createElement( "div" );
-	svgOverlay.className = "sliceSVGOverlay";
-	view.appendChild( svgOverlay );
-	loadOverlay(svgOverlay, 1000, 800 );
+	var svgOverlayView = document.createElement( "div" );
+	svgOverlayView.className = "sliceSVGOverlay";
+	view.appendChild( svgOverlayView );
+	
+	var svgOverlay = new SVGOverlay(svgOverlayView, resolution, translation);
 	
 	// take care, that all values are within a proper range
 	var z = 1;

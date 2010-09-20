@@ -208,7 +208,7 @@ ALTER SEQUENCE concept_id_seq OWNED BY concept.id;
 -- Name: concept_id_seq; Type: SEQUENCE SET; Schema: public; Owner: catmaid_user
 --
 
-SELECT pg_catalog.setval('concept_id_seq', 58, true);
+SELECT pg_catalog.setval('concept_id_seq', 57, true);
 
 
 --
@@ -811,7 +811,6 @@ COPY class_instance (id, user_id, creation_time, edition_time, project_id, class
 29	3	2010-08-26 21:34:49.796369+02	2010-08-26 21:34:49.796369+02	3	7	synapse1
 54	3	2010-09-13 14:43:13.055191+02	2010-09-13 14:43:13.055191+02	3	33	MySynapseLabel
 56	3	2010-09-13 15:26:14.246752+02	2010-09-13 15:26:14.246752+02	3	7	synapse2
-58	3	2010-09-20 16:38:48.760047+02	2010-09-20 16:38:48.760047+02	3	14	skeleton2
 \.
 
 
@@ -1646,5 +1645,4 @@ GRANT ALL ON TABLE "user" TO catmaid_user;
 --
 -- PostgreSQL database dump complete
 --
-
 

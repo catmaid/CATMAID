@@ -157,24 +157,23 @@ CMWRootNode.prototype.getRootNode = function(){ return this; }
 /**
  * Horizontal split node
  */
-function CMWHSplitNode( parent, child1, child2 )
+function CMWHSplitNode( child1, child2 )
 {
 	var id = this.uniqueId();
 	
-	var parent = parent;
+	var parent = null;
 	
 	var child1 = child1;
 	
 	var child2 = child2;
 	
 	if ( typeof child1 === "undefined" )
-		child1 = new CMWWindow( this, "Window 1" );
-	else
-		child1.setParent( this );
+		child1 = new CMWWindow( "Window 1" );
 	if ( typeof child2 === "undefined" )
-		child2 = new CMWWindow( this, "Window 2" );
-	else
-		child2.setParent( this );
+		child2 = new CMWWindow( "Window 2" );
+
+	child1.setParent( this );
+	child2.setParent( this );
 		
 	var frame = document.createElement( "div" );
 	frame.className = "sliceView";
@@ -325,24 +324,23 @@ CMWHSplitNode.prototype.constructor = CMWHSplitNode;
 /**
  * Vertical split node.
  */
-function CMWVSplitNode( parent, child1, child2 )
+function CMWVSplitNode( child1, child2 )
 {
 	var id = this.uniqueId();
 	
-	var parent = parent;
+	var parent = null;
 	
 	var child1 = child1;
 	
 	var child2 = child2;
 	
 	if ( typeof child1 === "undefined" )
-		child1 = new CMWWindow( this, "Window 1" );
-	else
-		child1.setParent( this );
+		child1 = new CMWWindow( "Window 1" );
 	if ( typeof child2 === "undefined" )
-		child2 = new CMWWindow( this, "Window 2" );
-	else
-		child2.setParent( this );
+		child2 = new CMWWindow( "Window 2" );
+
+	child1.setParent( this );
+	child2.setParent( this );
 		
 	var frame = document.createElement( "div" );
 	frame.className = "sliceView";
@@ -492,7 +490,7 @@ CMWVSplitNode.prototype.constructor = CMWVSplitNode;
 /**
  * Window is leaf of the binary tree.
  */
-function CMWWindow( parent, title )
+function CMWWindow( title )
 {
 	var self = this;
 	
@@ -501,12 +499,15 @@ function CMWWindow( parent, title )
 	 * remove the root frame from document as well.
 	 * 
 	 * Call all listeners with a CLOSE event.
+	 * 
+	 * @param e
 	 */
-	this.close = function()
+	this.close = function( e )
 	{
+		if ( e ) e.stopPropagation();
+		else if ( event ) event.cancelBubble = true;
+
 		var root = self.getRootNode();
-		
-		root.releaseDrag();
 		
 		if ( root == parent )
 		{
@@ -532,12 +533,14 @@ function CMWWindow( parent, title )
 		for ( var i = 0; i < listeners.length; ++i )
 			listeners[ i ]( self, CMWWindow.CLOSE );
 			
+		e.stop
+			
 		return false;
 	}
 	
 	var id = this.uniqueId();
 	
-	var parent = parent;
+	var parent = null;
 	
 	var title = title;
 	
@@ -641,19 +644,19 @@ function CMWWindow( parent, title )
 		
 			if ( eventCatcher.className == "eventCatcherTop" )
 			{
-				parent.replaceChild( new CMWVSplitNode( parent, CMWWindow.selectedWindow, self ), self );
+				parent.replaceChild( new CMWVSplitNode( CMWWindow.selectedWindow, self ), self );
 			}
 			else if ( eventCatcher.className == "eventCatcherBottom" )
 			{
-				parent.replaceChild( new CMWVSplitNode( parent, self, CMWWindow.selectedWindow ), self );
+				parent.replaceChild( new CMWVSplitNode( self, CMWWindow.selectedWindow ), self );
 			}
 			else if ( eventCatcher.className == "eventCatcherLeft" )
 			{
-				parent.replaceChild( new CMWHSplitNode( parent, CMWWindow.selectedWindow, self ), self );
+				parent.replaceChild( new CMWHSplitNode( CMWWindow.selectedWindow, self ), self );
 			}
 			else if ( eventCatcher.className == "eventCatcherRight" )
 			{
-				parent.replaceChild( new CMWHSplitNode( parent, self, CMWWindow.selectedWindow ), self );
+				parent.replaceChild( new CMWHSplitNode( self, CMWWindow.selectedWindow ), self );
 			}
 		}
 		var rootNode = self.getRootNode();

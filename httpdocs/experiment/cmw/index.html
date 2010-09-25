@@ -42,17 +42,17 @@ function init()
 //	
 //	rootFrame.appendChild( w.getFrame() );
 	
-	s = new CMWHSplitNode( root );
+	s = new CMWHSplitNode();
 	root.replaceChild( s );
 	s.getFrame().style.background = "#00ff00";
 	
 	root.redraw();
 	
-	t = new CMWHSplitNode( root );
+	t = new CMWHSplitNode();
 	s.replaceLeftChild( t );
 	t.getFrame().style.background = "#ffff00";
 	
-	u = new CMWVSplitNode( root );
+	u = new CMWVSplitNode();
 	t.replaceRightChild( u );
 	u.getFrame().style.background = "#00ffff";
 	

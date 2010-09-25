@@ -496,6 +496,45 @@ function CMWWindow( parent, title )
 {
 	var self = this;
 	
+	/**
+	 * Remove this window from tree.  If this was the sole child of root,
+	 * remove the root frame from document as well.
+	 * 
+	 * Call all listeners with a CLOSE event.
+	 */
+	this.close = function()
+	{
+		var root = self.getRootNode();
+		
+		root.releaseDrag();
+		
+		if ( root == parent )
+		{
+			var rootFrame = root.getFrame();
+			rootFrame.parentNode.removeChild( rootFrame );
+		}
+		else
+		{
+			var sibling = parent.getSiblingOf( self );
+			var siblingFrame = sibling.getFrame();
+			
+			parent.removeResizeHandle();
+			parent.getParent().replaceChild( sibling, parent );
+			
+			siblingFrame.style.top = "0px";
+			siblingFrame.style.left = "0px";
+			siblingFrame.style.width = "";
+			siblingFrame.style.height = "";
+			
+			root.redraw();
+		}
+		
+		for ( var i = 0; i < listeners.length; ++i )
+			listeners[ i ]( self, CMWWindow.CLOSE );
+			
+		return false;
+	}
+	
 	var id = this.uniqueId();
 	
 	var parent = parent;
@@ -508,7 +547,7 @@ function CMWWindow( parent, title )
 	
 	var closeHandle = document.createElement( "p" );
 	closeHandle.className = "stackClose";
-	closeHandle.onclick = this.close;
+	closeHandle.onmousedown = self.close;
 	closeHandle.appendChild( document.createTextNode( "close [ x ]" ) );
 	
 	var titleBar = document.createElement( "div" );
@@ -682,26 +721,14 @@ function CMWWindow( parent, title )
 		return parent.getRootNode();
 	}
 	
+	/**
+	 * Call all listeners with a RESIZE event, the actual window redrawing is
+	 * done by parent.
+	 */
 	this.redraw = function()
 	{
 		for ( var i = 0; i < listeners.length; ++i )
-			listeners[ i ]( this, CMWWindow.RESIZE );
-	}
-	
-	this.close = function()
-	{
-		if ( self.getRootNode() == parent )
-		var sourceSibling = sourceSplitNode.getSiblingOf( CMWWindow.selectedWindow );
-		var sourceSiblingFrame = sourceSibling.getFrame();
-			var selectedWindowFrame = CMWWindow.selectedWindow.getFrame();
-			
-			sourceSplitNode.removeResizeHandle();
-			sourceSplitNode.getParent().replaceChild( sourceSibling, sourceSplitNode );
-			
-			sourceSiblingFrame.style.top = selectedWindowFrame.style.top = frame.style.top = "0px";
-			sourceSiblingFrame.style.left = selectedWindowFrame.style.left = frame.style.left = "0px";
-			sourceSiblingFrame.style.width = selectedWindowFrame.style.width = frame.style.width = "";
-			sourceSiblingFrame.style.height = selectedWindowFrame.style.height = frame.style.height = "";
+			listeners[ i ]( self, CMWWindow.RESIZE );
 	}
 	
 	this.toXML = function( tabs )
@@ -712,8 +739,6 @@ function CMWWindow( parent, title )
 
 CMWWindow.prototype = new CMWNode();
 CMWWindow.prototype.constructor = CMWWindow;
-
-CMWWindow.prototype.close = function(){}
 
 /**
  * Constants

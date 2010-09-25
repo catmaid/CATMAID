@@ -9,7 +9,7 @@
 /**
  * container for generic user interface actions
  */
-function UI()
+UI = function()
 {
 	var self = this;
 
@@ -36,6 +36,10 @@ function UI()
 	var eventCatcher = document.createElement( "div" );
 	eventCatcher.id = "eventCatcher";
 	document.body.appendChild( eventCatcher );
+	
+	var focusCatcher = document.createElement( "a" );
+	focusCatcher.id = "focusCatcher";
+	document.body.appendChild( focusCatcher );
 
 	var updateFrameHeight = function()
 	{
@@ -354,13 +358,56 @@ function UI()
 		return;
 	}
 	
+	/**
+	 * catch focus which might be at a form element or an arbitrary anchor
+	 */
+	this.catchFocus = function()
+	{
+		focusCatcher.focus();
+	}
+	
 	window.onresize = this.onresize;
 	window.onresize();
 	
 	eventCatcher.onmousedown = self.onmousedown;
 	eventCatcher.onmouseout = eventCatcher.onmouseup = self.onmouseup;
 	eventCatcher.onmousemove = self.onmousemove;
+}
+
+UI.getFrameHeight = function()
+{
+	try
+	{
+		if (window.innerHeight) 
+			return window.innerHeight;
+		else {
+			if (document.documentElement && document.documentElement.clientHeight) 
+				return document.documentElement.clientHeight;
+			else 
+				if (document.body && document.body.clientHeight) 
+					return document.body.clientHeight;
+		}
+		return 0;
+	}
+	catch ( exception ) { return 0; }	
+}
 	
+UI.getFrameWidth = function()
+{
+	try
+	{
+		if (window.innerWidth) 
+			return window.innerWidth;
+		else {
+			if (document.documentElement && document.documentElement.clientWidth) 
+				return document.documentElement.clientWidth;
+			else 
+				if (document.body && document.body.clientWidth) 
+					return document.body.clientWidth;
+		}
+		return 0;
+	}
+	catch ( exception ) { return 0; }
 }
 
 //var UI = new UI();

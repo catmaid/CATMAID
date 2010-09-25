@@ -80,7 +80,7 @@ ResizeHandle = function( type )
 	
 	
 	// initialise
-	if ( !ui ) ui = new UI();
+	if ( typeof ui === "undefined" ) ui = new UI();
 
 	var self = this;
 

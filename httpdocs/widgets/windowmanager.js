@@ -120,11 +120,20 @@ function CMWRootNode()
 		if ( frame.lastChild )
 			frame.removeChild( frame.lastChild );
 		frame.appendChild( child.getFrame() );
-		child.setParent( this );
-		this.redraw();
+		child.setParent( self );
+		self.redraw();
 	}
 	
-	this.redraw = function(){ child.redraw(); document.getElementById( "text" ).replaceChild( document.createTextNode( this.toXML() ), document.getElementById( "text" ).firstChild ); }
+	/**
+	 * @return {CMWRootNode} this (allows chains of calls like myRootNode.redraw().show())
+	 */
+	this.redraw = function()
+	{
+		child.redraw();
+		document.getElementById( "text" ).replaceChild( document.createTextNode( self.toXML() ), document.getElementById( "text" ).firstChild );
+		
+		return self;
+	}
 	
 	this.catchDrag = function()
 	{
@@ -152,6 +161,12 @@ CMWRootNode.prototype.constructor = CMWRootNode;
 
 CMWRootNode.prototype.getRootNode = function(){ return this; }
 
+/**
+ * Empty close method that cna be overridden to any needs.  The method is
+ * called by the last open window on closing.
+ */
+CMWRootNode.prototype.close = function(){ return; }
+
 
 
 /**
@@ -159,6 +174,8 @@ CMWRootNode.prototype.getRootNode = function(){ return this; }
  */
 function CMWHSplitNode( child1, child2 )
 {
+	var self = this;
+	
 	var id = this.uniqueId();
 	
 	var parent = null;
@@ -196,12 +213,20 @@ function CMWHSplitNode( child1, child2 )
 	
 	this.getParent = function(){ return parent; }
 	
-	this.setParent = function( newParent ){ parent = newParent; }
-	
-	this.getRootNode = function()
+	/**
+	 * Set the parent node.
+	 * 
+	 * @param {Object} newParent
+	 * @return former parent node
+	 */
+	this.setParent = function( newParent )
 	{
-		return parent.getRootNode();
+		var oldParent = parent;
+		parent = newParent;
+		return oldParent;
 	}
+	
+	this.getRootNode = function(){ return parent.getRootNode(); }
 	
 	this.getChildren = function()
 	{
@@ -217,7 +242,7 @@ function CMWHSplitNode( child1, child2 )
 	{
 		var f1 = child1.getFrame();
 		var f2 = child2.getFrame();
-		var w = this.getWidth();
+		var w = self.getWidth();
 		w1 = Math.max( 20, Math.min( w - 20, Math.round( w * widthRatio ) ) );
 		
 		f1.style.width = w1 + "px";
@@ -228,18 +253,18 @@ function CMWHSplitNode( child1, child2 )
 		child1.redraw();
 		child2.redraw();
 		
-		return this;
+		return self;
 	}
 	
 	this.changeWidth = function( d )
 	{
 		var f1 = child1.getFrame();
 		var f2 = child2.getFrame();
-		var w = this.getWidth();
+		var w = self.getWidth();
 		var w1 = Math.max( 20, Math.min( w - 20, child1.getWidth() + d ) );
 		widthRatio = w1 / w;
 		
-		return this.redraw();
+		return self.redraw();
 	}
 	
 	this.removeResizeHandle = function()
@@ -250,15 +275,15 @@ function CMWHSplitNode( child1, child2 )
 	this.replaceChild = function( newChild, oldChild )
 	{
 		if ( oldChild == child1 )
-			return this.replaceLeftChild( newChild );
+			return self.replaceLeftChild( newChild );
 		else if ( oldChild == child2 )
-			return this.replaceRightChild( newChild );
+			return self.replaceRightChild( newChild );
 	}
 	
 	this.replaceLeftChild = function( newChild )
 	{
 		var oldChild = child1;
-		this.removeResizeHandle();
+		self.removeResizeHandle();
 		if ( newChild.getFrame().parentNode != null )
 			newChild.getFrame().parentNode.removeChild( newChild.getFrame() );
 		newChild.getFrame().appendChild( resizeHandle.getView() );
@@ -267,8 +292,8 @@ function CMWHSplitNode( child1, child2 )
 		else
 			frame.appendChild( newChild.getFrame() );
 		child1 = newChild;
-		newChild.setParent( this );
-		this.redraw();
+		newChild.setParent( self );
+		self.redraw();
 		return oldChild;
 	}
 	
@@ -282,8 +307,8 @@ function CMWHSplitNode( child1, child2 )
 		else
 			frame.appendChild( newChild.getFrame() );
 		child2 = newChild;
-		newChild.setParent( this );
-		this.redraw();
+		newChild.setParent( self );
+		self.redraw();
 		return oldChild;
 	}
 	
@@ -301,12 +326,14 @@ function CMWHSplitNode( child1, child2 )
 	{
 		child1.catchDrag();
 		child2.catchDrag();
+		return;
 	}
 	
 	this.releaseDrag = function()
 	{
 		child1.releaseDrag();
 		child2.releaseDrag();
+		return;
 	}
 	
 	this.toXML = function( tabs )
@@ -326,6 +353,8 @@ CMWHSplitNode.prototype.constructor = CMWHSplitNode;
  */
 function CMWVSplitNode( child1, child2 )
 {
+	var self = this;
+	
 	var id = this.uniqueId();
 	
 	var parent = null;
@@ -363,12 +392,20 @@ function CMWVSplitNode( child1, child2 )
 	
 	this.getParent = function(){ return parent; }
 	
-	this.setParent = function( newParent ){ parent = newParent; }
-	
-	this.getRootNode = function()
+	/**
+	 * Set the parent node.
+	 * 
+	 * @param {Object} newParent
+	 * @return former parent node
+	 */
+	this.setParent = function( newParent )
 	{
-		return parent.getRootNode();
+		var oldParent = parent;
+		parent = newParent;
+		return oldParent;
 	}
+	
+	this.getRootNode = function(){ return parent.getRootNode(); }
 	
 	this.getChildren = function()
 	{
@@ -384,7 +421,7 @@ function CMWVSplitNode( child1, child2 )
 	{
 		var f1 = child1.getFrame();
 		var f2 = child2.getFrame();
-		var h = this.getHeight();
+		var h = self.getHeight();
 		h1 = Math.max( 20, Math.min( h - 20, Math.round( h * heightRatio ) ) );
 		
 		f1.style.height = h1 + "px";
@@ -395,18 +432,18 @@ function CMWVSplitNode( child1, child2 )
 		child1.redraw();
 		child2.redraw();
 		
-		return this;
+		return self;
 	}
 	
 	this.changeHeight = function( d )
 	{
 		var f1 = child1.getFrame();
 		var f2 = child2.getFrame();
-		var h = this.getHeight();
+		var h = self.getHeight();
 		var h1 = Math.max( 20, Math.min( h - 20, child1.getHeight() + d ) );
 		heightRatio = h1 / h;
 		
-		return this.redraw();
+		return self.redraw();
 	}
 	
 	this.removeResizeHandle = function()
@@ -417,15 +454,15 @@ function CMWVSplitNode( child1, child2 )
 	this.replaceChild = function( newChild, oldChild )
 	{
 		if ( oldChild == child1 )
-			return this.replaceTopChild( newChild );
+			return self.replaceTopChild( newChild );
 		else if ( oldChild == child2 )
-			return this.replaceBottomChild( newChild );
+			return self.replaceBottomChild( newChild );
 	}
 	
 	this.replaceTopChild = function( newChild )
 	{
 		var oldChild = child1;
-		this.removeResizeHandle();
+		self.removeResizeHandle();
 		if ( newChild.getFrame().parentNode != null )
 			newChild.getFrame().parentNode.removeChild( newChild.getFrame() );
 		newChild.getFrame().appendChild( resizeHandle.getView() );
@@ -434,8 +471,8 @@ function CMWVSplitNode( child1, child2 )
 		else
 			frame.appendChild( newChild.getFrame() );
 		child1 = newChild;
-		newChild.setParent( this );
-		this.redraw();
+		newChild.setParent( self );
+		self.redraw();
 		return oldChild;
 	}
 	
@@ -449,8 +486,8 @@ function CMWVSplitNode( child1, child2 )
 		else
 			frame.appendChild( newChild.getFrame() );
 		child2 = newChild;
-		newChild.setParent( this );
-		this.redraw();
+		newChild.setParent( self );
+		self.redraw();
 		return oldChild;
 	}
 	
@@ -468,12 +505,14 @@ function CMWVSplitNode( child1, child2 )
 	{
 		child1.catchDrag();
 		child2.catchDrag();
+		return;
 	}
 	
 	this.releaseDrag = function()
 	{
 		child1.releaseDrag();
 		child2.releaseDrag();
+		return;
 	}
 	
 	this.toXML = function( tabs )
@@ -513,6 +552,7 @@ function CMWWindow( title )
 		{
 			var rootFrame = root.getFrame();
 			rootFrame.parentNode.removeChild( rootFrame );
+			root.close();
 		}
 		else
 		{
@@ -621,6 +661,7 @@ function CMWWindow( title )
 	eventCatcher.onmouseout = function()
 	{
 		eventCatcher.className = "eventCatcher";
+		return false;
 	}
 	
 	eventCatcher.onmouseup = function( e )
@@ -664,9 +705,15 @@ function CMWWindow( title )
 		CMWWindow.selectedWindow = null;
 		eventCatcher.className = "eventCatcher";
 		rootNode.redraw();
+		
+		return false;
 	}
 	
-	this.addListener = function( listener ){ listeners.push( listener ); return; }
+	this.addListener = function( listener )
+	{
+		listeners.push( listener );
+		return;
+	}
 	
 	this.removeListener = function( listener )
 	{
@@ -697,23 +744,34 @@ function CMWWindow( title )
 	
 	this.getSibling = function(){ return parent.getSiblingOf( self ); }
 	
-	this.setParent = function( newParent ){ parent = newParent; return; }
+	/**
+	 * Set the parent node.
+	 * 
+	 * @param {Object} newParent
+	 * @return former parent node
+	 */
+	this.setParent = function( newParent )
+	{
+		var oldParent = parent;
+		parent = newParent;
+		return oldParent;
+	}
 	
 	this.getChildren = function(){ return []; }
 	
-	this.getWindows = function(){ return [ this ]; }
+	this.getWindows = function(){ return [ self ]; }
 	
 	/**
 	 * Set the window title
 	 * 
 	 * @param {String} title
-	 * @return this allows chains of calls like myWindow.setTitle( "new" ).show()
+	 * @return {CMWWindow} this (allows chains of calls like myWindow.setTitle( "new" ).show())
 	 */
 	this.setTitle = function( newTitle )
 	{
 		title = newTitle;
 		titleText.replaceChild( document.createTextNode( title ), titleText.firstChild );
-		return this;
+		return self;
 	}
 	
 	/**
@@ -727,11 +785,15 @@ function CMWWindow( title )
 	/**
 	 * Call all listeners with a RESIZE event, the actual window redrawing is
 	 * done by parent.
+	 * 
+ 	 * @return {CMWWindow} this (allows chains of calls like myWindow.setTitle( "new" ).show())
 	 */
 	this.redraw = function()
 	{
 		for ( var i = 0; i < listeners.length; ++i )
 			listeners[ i ]( self, CMWWindow.RESIZE );
+		
+		return self;
 	}
 	
 	this.toXML = function( tabs )

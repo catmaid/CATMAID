@@ -26,14 +26,14 @@ if ( $pid )
 		'SELECT "class"."id" FROM "class"
 		WHERE "class"."project_id" = '.$pid.' AND
 		"class"."class_name" = \'neuron\'');
-		$nid = !empty($neures) ? $nid = $neures[0]['id'] : 0;
+		$nid = !empty($neures) ? $neures[0]['id'] : 0;
 		
 		// get id for skeleton class in this project
 		$skidres = $db->getResult(
 		'SELECT "class"."id" FROM "class"
 		WHERE "class"."project_id" = '.$pid.' AND
 		"class"."class_name" = \'skeleton\'');
-		$skid = !empty($skidres) ? $skid = $skidres[0]['id'] : 0;
+		$skid = !empty($skidres) ? $skidres[0]['id'] : 0;
 		
 		// relations
 		

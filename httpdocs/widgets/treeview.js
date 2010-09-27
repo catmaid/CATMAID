@@ -21,16 +21,16 @@ initTreeview = function(pid) {
 		selectedObjects['treeview'] = myselection;
 		
 		// XXX: here comes the invocation of the data table
+		
 		initDatatable( "treenode", pid);
 		showTreenodeTable();
 	});
-	
 
 	
 	$("#treeview").jstree({
 		"core" : { "html_titles" : false,
 				  "initially_open" : ["#rootnode"]},
-		"plugins" : [ "themes", "json_data", "ui", "crrm", "types"],
+		"plugins" : [ "themes", "json_data", "ui", "crrm", "types", "dnd"],
 		"json_data" : {
 			"ajax" : {
 				"url" : 'model/treeview.list.php?pid='+pid,
@@ -47,6 +47,44 @@ initTreeview = function(pid) {
 			"url" : "widgets/themes/kde/jsTree/apple/style.css",
 			"dots" : true,
 			"icons" : true
+		},
+		"dnd" : {
+			"drag_check" : function (data) {
+			
+			
+			console.log(data);
+			/*
+			if(data.r.attr("rel") == "neuron") {
+				return { 
+					after : false, 
+					before : false, 
+					inside : true 
+				};
+			}*/
+			return true;
+			},
+			/*
+			"drop_finish" : function () { 
+				console.log("DROP"); 
+			},
+			"drag_check" : function (data) {
+				console.log(data);
+				
+				if(data.r.attr("rel") == "neuron") {
+					return { 
+						after : false, 
+						before : false, 
+						inside : true 
+					};
+				}
+				return false;
+			},
+			"drag_finish" : function (data) {
+				console.log(data.o);
+				console.log(data.r);
+				console.log("DRAG OK"); 
+			}
+			*/
 		},
 		"types" : {
 			"valid_children" : [ "all" ],
@@ -65,13 +103,20 @@ initTreeview = function(pid) {
 					//"delete_node"	: true
 				},
 				"root" : {
-					"valid_children" : [ "neuron", "skeleton" ]
+					"valid_children" : [ "neuron", "skeleton" ],
+					"start_drag" : false,
+					"select_node" : false,
+					"delete_node" : false,
+					"remove" : false
+
 				},
 				"neuron" : {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/neuron.png"
 					},
-					"valid_children" : [ "relation" ]					
+					"valid_children" : [ "relation", "skeleton" ],
+					"start_drag" : false,
+					
 				},
 				"skeleton" : {
 					"icon" : {
@@ -83,14 +128,16 @@ initTreeview = function(pid) {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/synapse.png"
 					},
-					"valid_children" : [ "all" ]
+					"valid_children" : [ "all" ],
+					"start_drag" : false,
 				},
 				"relation" : {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/relation.png"
 					},
-					"select_node" : function () {return false;},
-					"valid_children" : [ "neuron", "skeleton", "synapse" ]
+					"select_node" : function () { return false; },
+					"valid_children" : [ "neuron", "skeleton", "synapse" ],
+					"start_drag" : false,
 				}
 			}
 		}
@@ -99,6 +146,12 @@ initTreeview = function(pid) {
 	
 
 	// handlers
+	
+	//	"inst" : /* the actual tree instance */, 
+	//	"args" : /* arguments passed to the function */, 
+	//	"rslt" : /* any data the function passed to the event */, 
+	//	"rlbk" : /* an optional rollback object - it is not always present */
+	
 	$("#treeview").bind("loaded.jstree", function (event, data) {
 		console.log("Treeview loaded");
 	});
@@ -123,12 +176,6 @@ initTreeview = function(pid) {
 		myselection[id] = {'id': id, 'type' : type};
 
 	});
-
-	
-//		"inst" : /* the actual tree instance */, 
-//		"args" : /* arguments passed to the function */, 
-//		"rslt" : /* any data the function passed to the event */, 
-//		"rlbk" : /* an optional rollback object - it is not always present */
 	
 	$("#treeview").bind("rename.jstree", function (e, data) {
 		
@@ -167,6 +214,48 @@ initTreeview = function(pid) {
 		
 	});
 	
+	$("#treeview").bind("move_node.jstree", function (e, data) {
+		console.log("moved"); 
+		
+		// update skeleton in database, relating it to its neuron
+		console.log(data.rslt.o.attr("id"));
+		console.log(data.rslt.r.attr("id"));
+		
+		src = data.rslt.o;
+		ref = data.rslt.r;
+		
+		if( src.attr("rel") == "skeleton" )
+		{
+			$.ajax({
+				async : false,
+				type: 'POST',
+				url: "/model/instance.operation.php",
+				data : { 
+					"operation" : "move_skeleton", 
+					"src" : src.attr("id").replace("node_",""), 
+					"ref" : ref.attr("id").replace("node_",""), 
+					"pid" : pid
+				},
+				success : function (r) {
+					if(!r.status) {
+						$.jstree.rollback(data.rlbk);
+					}
+					else {
+						console.log("ok");
+						// XXX: we should refresh the table here!
+						// move node to has models
+						/*
+						$(data.rslt.oc).attr("id", "node_" + r.id);
+						if(data.rslt.cy && $(data.rslt.oc).children("UL").length) {
+							data.inst.refresh(data.inst._get_parent(data.rslt.oc));
+						}*/
+					}
+				}
+			});
+		}
+		
+	});
+		
 }
 
 

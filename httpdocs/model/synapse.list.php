@@ -63,14 +63,14 @@ if ( $pid )
 			'SELECT "relation"."id" FROM "relation"
 			WHERE "relation"."project_id" = '.$pid.' AND
 			"relation"."relation_name" = \'presynaptic_to\'');
-			$presyn_id = !empty($presyn) ? $presyn_id = $presyn[0]['id'] : 0;
+			$presyn_id = !empty($presyn) ? $presyn[0]['id'] : 0;
 			
 			// get id for postsynaptic_to
 			$postsyn = $db->getResult(
 			'SELECT "relation"."id" FROM "relation"
 			WHERE "relation"."project_id" = '.$pid.' AND
 			"relation"."relation_name" = \'postsynaptic_to\'');
-			$postsyn_id = !empty($postsyn) ? $postsyn_id = $postsyn[0]['id'] : 0;
+			$postsyn_id = !empty($postsyn) ? $postsyn[0]['id'] : 0;
 			
 			// get id for relation 'labeled_as'
 			$tlabelrel_res = $db->getResult(

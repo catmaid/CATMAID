@@ -8,9 +8,37 @@
  * @version 0.1 TrakEM2
  *
  */
-/**
- */
 
+
+/**
+ * create a tree view node
+ */
+function tv_node( $data )
+{
+	
+	$sOutput = '';
+	$sOutput .= '{';			
+	$sOutput .= '"data" : {';
+	$sOutput .= ' "title" : "'.$data['title'].' <'.$data['type'].'>",';
+	$sOutput .= ' "icon" : "'.$data['icon'].'",';
+	$sOutput .= '},';
+	
+	$sOutput .= '"children" : [';
+	
+	if( array_key_exists('children', $data) )
+	{
+		// add the children here
+		foreach ($data['children'] as $key => $value ) {
+			$sOutput .= tv_node($value);	
+		};
+	}
+	
+	$sOutput .= ']';
+	$sOutput .= '},';
+	
+	return $sOutput;
+			
+}
 /**
  * create a x,y,z assoziative float array from a trakem2-postgres double3d(x,y,z)
  *

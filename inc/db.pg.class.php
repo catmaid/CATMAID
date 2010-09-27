@@ -97,6 +97,36 @@ class DB
 	}
 	
 	/**
+	 * get the results of an SQL query keyed by id
+	 *
+	 * @param string $query SQL query, $id for what name for key
+	 *
+	 * @return false|array associative index=>name=>value
+	 */
+	function getResultKeyedById( $query, $id )
+	{
+		$result = array();
+		if ( $temp = pg_query( $this->handle, $query ) )
+		{
+			while ( $result[] = @pg_fetch_assoc( $temp ) ) {}
+			array_pop( $result );
+		}
+		else
+		{
+			return false;
+		}
+
+		$nresult = array();
+		
+		if( $result ) {
+			foreach( $result as $value ) {
+				$nresult[$value[$id]] = $value; 
+			}
+		}
+		return $nresult;
+	}
+	
+	/**
 	 * count the entries of a table that match an optional condition
 	 *
 	 * @param string $table

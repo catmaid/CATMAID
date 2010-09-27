@@ -96,7 +96,8 @@ if ( $pid )
 							'title' => $skel[$rel['a']]['name'],
 							'type' => 'skeleton',
 							'icon' => 'folder',
-							'attr' => array('id' => 'node_'. $skel[$rel['a']]['id']),
+							'attr' => array('id' => 'node_'. $skel[$rel['a']]['id'],
+											'rel' => 'skeleton'),
 							'children' => array()
 						);
 					}
@@ -107,7 +108,8 @@ if ( $pid )
 				'title' => $neur['name'],
 				'type' => 'neuron',
 				'icon' => 'folder',
-			 	'attr' => array('id' => 'node_'. $neur['id']),
+			 	'attr' => array('id' => 'node_'. $neur['id'],
+								'rel' => 'neuron'),
 				'children' => array(
 							  array(
 									'title' => 'model_of',
@@ -129,7 +131,8 @@ if ( $pid )
 		$bigarr = array('title' => 'Root',
 								   'type' => 'origin',
 								   'icon' => '',
-								   'attr' => array('id' => 'node_0'),
+								   'attr' => array('id' => 'node_0',
+											'rel' => 'root'),
 								   'children' => $narr);
 		
 		$sOutput = '[';

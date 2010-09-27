@@ -11,6 +11,9 @@ initTreeview = function(pid) {
 	});
 	
 	$("#treeview").jstree({
+		"core" : { "html_titles" : false,
+				  "initially_open" : ["#rootnode"]},
+		"plugins" : [ "themes", "json_data", "ui", "crrm", "types"],
 		"json_data" : {
 			"ajax" : {
 				"url" : 'model/treeview.list.php?pid='+pid,
@@ -22,15 +25,44 @@ initTreeview = function(pid) {
 			"select_multiple_modifier" : "ctrl",
 			"selected_parent_close" : "deselect",
 		},
-		"core" : { "html_titles" : false,
-					"initially_open" : ["phtml_1"]},
-		"plugins" : [ "themes", "json_data", "ui", "crrm"],
 		"themes" : {
 			"theme" : "apple",
 			"url" : "widgets/themes/kde/jsTree/apple/style.css",
 			"dots" : true,
 			"icons" : true
 		},
+		"types" : {
+			"valid_children" : [ "all" ],
+			"types" : {
+				// the default type
+				"default" : {
+					"max_children"	: -1,
+					"max_depth"		: -1,
+					"valid_children": "all",
+	
+					// Bound functions - you can bind any other function here (using boolean or function)
+					"select_node"	: false,
+					//"open_node"	: true,
+					//"close_node"	: true,
+					//"create_node"	: true,
+					//"delete_node"	: true
+				},
+				"neuron" : {
+					"icon" : {
+						"image" : "widgets/themes/kde/jsTree/neuron/neuron.png"
+					},
+					"valid_children" : [ "relation" ]
+				},
+				"skeleton" : {
+					"valid_children" : [ "all" ]
+				},
+				"relation" : {
+					"select_node" : function () {return false;},
+					"valid_children" : [ "neuron", "skeleton" ]
+				}
+			}
+		}
+
 	});
 	
 

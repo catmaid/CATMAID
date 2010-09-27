@@ -58,7 +58,6 @@ if ( $pid )
 		"relation"."relation_name" = \'model_of\'');
 		$modid = !empty($modelofres) ? $modelofres[0]['id'] : 0;
 		
-		
 		// retrieve all the skeletons for a particular project
 		$skel = $db->getResultKeyedById(
 		'SELECT "ci"."id" as "id", "ci"."name" as "name" FROM "class_instance" AS "ci"
@@ -80,6 +79,8 @@ if ( $pid )
 		);
 		
 		$narr = array();
+		// leftover skeleton
+		$loverske = array();
 		foreach( $neurons as $neur ) {
 			
 			// outgoing synapses
@@ -90,7 +91,9 @@ if ( $pid )
 			// generate skeleton children for a particular neuron
 			// retrieve model_of relation
 			$skarr = array();
+			
 			foreach($skel_m_neur as $rel) {
+				// model of class_instance b should be a neuron
 				if( $rel['b'] == $neur['id'] )
 				{
 					// retrieve skeleton with id a
@@ -142,11 +145,15 @@ if ( $pid )
 							);
 					}
 					
-					}
+					// unset the worked on skeleton
+					unset($skel[$rel['a']]);
+					
+					} // end if
 				}
 				
-			}
+			} // end foreach that loope over all model_of relations between skeletons and neurons
 			
+
 			$narr[] = array(
 				'title' => $neur['name'],
 			 	'attr' => array('id' => 'node_'. $neur['id'],
@@ -176,6 +183,18 @@ if ( $pid )
 			
 		}
 		
+		// add remaining skeletons
+		// for later dragging to a neuron
+		foreach ($skel as $skelkey => $loverskel)
+		{
+			$narr[] = array(
+				'title' => $loverskel['name'],
+				'attr' => array('id' => 'node_'. $skelkey,
+								'rel' => 'skeleton'),
+				'children' => array()
+			);
+		}
+							
 		// generate big array
 		$bigarr = array('title' => 'Root',
 								   'attr' => array('id' => 'node_0',

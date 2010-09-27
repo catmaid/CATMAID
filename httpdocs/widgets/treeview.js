@@ -1,4 +1,5 @@
 var treeview_loaded;
+myselection = {};
 
 initTreeview = function(pid) {
 
@@ -9,6 +10,22 @@ initTreeview = function(pid) {
 	$("#rename").click(function () { 
 		$("#treeview").jstree("rename"); 
 	});
+	
+	$("#remove").click(function () { 
+		$("#treeview").jstree("remove"); 
+	});
+
+	$("#show_treenodes").click(function () { 
+		// call treenode table for selected objects
+		
+		selectedObjects['treeview'] = myselection;
+		
+		// XXX: here comes the invocation of the data table
+		initDatatable( "treenode", pid);
+		showTreenodeTable();
+	});
+	
+
 	
 	$("#treeview").jstree({
 		"core" : { "html_titles" : false,
@@ -41,24 +58,39 @@ initTreeview = function(pid) {
 					"valid_children": "all",
 	
 					// Bound functions - you can bind any other function here (using boolean or function)
-					"select_node"	: false,
+					//"select_node"	: false,
 					//"open_node"	: true,
 					//"close_node"	: true,
 					//"create_node"	: true,
 					//"delete_node"	: true
 				},
+				"root" : {
+					"valid_children" : [ "neuron", "skeleton" ]
+				},
 				"neuron" : {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/neuron.png"
 					},
-					"valid_children" : [ "relation" ]
+					"valid_children" : [ "relation" ]					
 				},
 				"skeleton" : {
+					"icon" : {
+						"image" : "widgets/themes/kde/jsTree/neuron/skeleton.png"
+					},
+					"valid_children" : [ "all" ]
+				},
+				"synapse" : {
+					"icon" : {
+						"image" : "widgets/themes/kde/jsTree/neuron/synapse.png"
+					},
 					"valid_children" : [ "all" ]
 				},
 				"relation" : {
+					"icon" : {
+						"image" : "widgets/themes/kde/jsTree/neuron/relation.png"
+					},
 					"select_node" : function () {return false;},
-					"valid_children" : [ "neuron", "skeleton" ]
+					"valid_children" : [ "neuron", "skeleton", "synapse" ]
 				}
 			}
 		}
@@ -69,35 +101,72 @@ initTreeview = function(pid) {
 	// handlers
 	$("#treeview").bind("loaded.jstree", function (event, data) {
 		console.log("Treeview loaded");
-	})
- 
+	});
+	
+	$("#treeview").bind("deselect_node.jstree", function (event, data) {
+		console.log("Deselect node");
+		
+		id = data.rslt.obj.attr("id").replace("node_","");
+		
+		if ( id in myselection )
+		{
+			delete myselection[id];
+		}
+		
+	});
+	
+	$("#treeview").bind("select_node.jstree", function (event, data) {
+		
+		id = data.rslt.obj.attr("id").replace("node_","");
+		type = data.rslt.obj.attr("rel");
+		
+		myselection[id] = {'id': id, 'type' : type};
+
+	});
+
+	
 //		"inst" : /* the actual tree instance */, 
 //		"args" : /* arguments passed to the function */, 
 //		"rslt" : /* any data the function passed to the event */, 
 //		"rlbk" : /* an optional rollback object - it is not always present */
 	
 	$("#treeview").bind("rename.jstree", function (e, data) {
-		console.log(e, data);
+		
 		console.log(data.rslt.obj.attr("id"));
 		
 		$.post(
-			"/model/instance_operation.php", 
+			"/model/instance.operation.php", 
 			{ 
 				"operation" : "rename_node", 
 				"id" : data.rslt.obj.attr("id").replace("node_",""),
 				"title" : data.rslt.new_name,
 				"pid" : pid
 			}, null
-			/*
-			function (r) {
-				if(!r.status) {
-					$.jstree.rollback(data.rlbk);
-				}
-			}*/
 		);
-		
 	});
 
+	$("#treeview").bind("remove.jstree", function (e, data) {
+		
+		treebefore = data.rlbk;
+		
+		if( confirm('Really remove node?') )
+		{
+			$.post(
+					"/model/instance.operation.php", 
+					{ 
+						"operation" : "remove_node", 
+						"id" : data.rslt.obj.attr("id").replace("node_",""),
+						"title" : data.rslt.new_name,
+						"pid" : pid
+					}, null
+				);
+		} else {
+			 $.jstree.rollback(treebefore);
+			 return false;
+		}
+		
+	});
+	
 }
 
 

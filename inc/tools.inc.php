@@ -28,7 +28,7 @@ function tv_node( $data )
 		$sOutput .= '},';
 	}		
 	$sOutput .= '"data" : {';
-	$sOutput .= ' "title" : "'.$data['title'].' <'.$data['type'].'>",';
+	$sOutput .= ' "title" : "'.$data['title'].'" ,';
 
 	if( array_key_exists('icon', $data))
 	{

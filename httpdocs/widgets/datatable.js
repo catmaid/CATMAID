@@ -134,7 +134,10 @@ initTreenodeTable = function(pid) {
 		}
 		else
 		{
-			selectedObjects[iId] = {tabledata:aData, 'type' : 'treenode'};
+			selectedObjects[iId] = {'id': iId, 'tabledata':aData, 'type' : 'treenode'};
+			for(key in selectedObjects)
+				console.log(key);
+
 		}			
 		$(this).toggleClass('row_selected');
 	} );
@@ -215,7 +218,7 @@ initPreSynapseTable = function(pid) {
 		}
 		else
 		{
-			selectedObjects[iId] = {'tabledata':aData, 'type': stype};
+			selectedObjects[iId] = {'id': iId, 'tabledata':aData, 'type': stype};
 		}
 		$(this).toggleClass('row_selected');
 	} );
@@ -296,7 +299,10 @@ initPostSynapseTable = function(pid) {
 		}
 		else
 		{
-			selectedObjects[iId] = {'tabledata':aData, 'type': stype};
+			
+			selectedObjects[iId] = {'id': iId, 'tabledata':aData, 'type': stype};
+			console.log(selectedObjects);
+			
 		}
 		$(this).toggleClass('row_selected');
 	} );

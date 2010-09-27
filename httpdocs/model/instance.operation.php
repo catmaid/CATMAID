@@ -31,6 +31,13 @@ if ( $pid )
 			$ids = $db->update("class_instance", array("name" => $name) ,' "class_instance"."id" = '.$id);
 			echo "Updated.";
 				
+		} else if ( $op == 'remove_node')
+		{
+			
+			// check if the object belongs to you
+			
+			$ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
+			echo "Removed.";
 		}
 		
 	}

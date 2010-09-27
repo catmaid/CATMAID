@@ -82,6 +82,11 @@ if ( $pid )
 		$narr = array();
 		foreach( $neurons as $neur ) {
 			
+			// outgoing synapses
+			$insyn = array();
+			// incoming synapses
+			$outsyn = array();
+			
 			// generate skeleton children for a particular neuron
 			// retrieve model_of relation
 			$skarr = array();
@@ -94,28 +99,72 @@ if ( $pid )
 						// add skeleton
 						$skarr[] = array(
 							'title' => $skel[$rel['a']]['name'],
-							'type' => 'skeleton',
-							'icon' => 'folder',
 							'attr' => array('id' => 'node_'. $skel[$rel['a']]['id'],
 											'rel' => 'skeleton'),
 							'children' => array()
 						);
+						
+					// retrieve all treenodes for skeleton
+					// query outgoing synapses for skeleton id
+					$incom_res = $db->getResult(
+					'SELECT "tci2"."class_instance_id" as "id", "ci"."name" as "name"
+					FROM "treenode_class_instance" as "tci", "treenode_class_instance" as "tci2",
+					"class_instance" as "ci" WHERE "tci"."class_instance_id" = '.$skel[$rel['a']]['id'].' AND
+					"tci"."treenode_id" = "tci2"."treenode_id" AND "tci2"."relation_id" = '.$presyn_id.'
+					AND "ci"."id" = "tci2"."class_instance_id" AND "tci2"."project_id" = '.$pid);
+					
+					foreach($incom_res as $val)
+					{
+						$insyn[] = array(		
+	 						'title' => $val['name'],
+							'attr' => array('id' => 'node_'. $val['id'],
+											'rel' => 'synapse'),
+							'children' => array()
+							);
+					}
+					
+					// retrieve all treenodes for skeleton
+					// query incoming synapses for skeleton id
+					$outgo_res = $db->getResult(
+					'SELECT "tci2"."class_instance_id" as "id", "ci"."name" as "name"
+					FROM "treenode_class_instance" as "tci", "treenode_class_instance" as "tci2",
+					"class_instance" as "ci" WHERE "tci"."class_instance_id" = '.$skel[$rel['a']]['id'].' AND
+					"tci"."treenode_id" = "tci2"."treenode_id" AND "tci2"."relation_id" = '.$postsyn_id.'
+					AND "ci"."id" = "tci2"."class_instance_id" AND "tci2"."project_id" = '.$pid);
+					
+					foreach($outgo_res as $val)
+					{
+						$outsyn[] = array(		
+	 						'title' => $val['name'],
+							'attr' => array('id' => 'node_'. $val['id'],
+											'rel' => 'synapse'),
+							'children' => array()
+							);
+					}
+					
 					}
 				}
+				
 			}
 			
 			$narr[] = array(
 				'title' => $neur['name'],
-				'type' => 'neuron',
-				'icon' => 'folder',
 			 	'attr' => array('id' => 'node_'. $neur['id'],
 								'rel' => 'neuron'),
 				'children' => array(
 							  array(
-									'title' => 'model_of',
-									'type' => 'relation',
-									'icon' => '',
+									'title' => 'has models',
+									'attr' => array('rel' => 'relation'),
 									'children' => $skarr),
+							  array(
+									'title' => 'outgoing synapses',
+									'attr' => array('rel' => 'relation'),
+									'children' => $outsyn),
+							  array(
+									'title' => 'incoming synapses',
+									'attr' => array('rel' => 'relation'),
+									'children' => $insyn),
+							  
 							  /*
 							  array(
 									'title' => 'presynaptic_to',
@@ -129,10 +178,8 @@ if ( $pid )
 		
 		// generate big array
 		$bigarr = array('title' => 'Root',
-								   'type' => 'origin',
-								   'icon' => '',
 								   'attr' => array('id' => 'node_0',
-											'rel' => 'root'),
+												  'rel' => 'root'),
 								   'children' => $narr);
 		
 		$sOutput = '[';

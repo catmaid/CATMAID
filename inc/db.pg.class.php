@@ -222,7 +222,7 @@ class DB
 			if ( $i != $max - 1 ) $query .= ', ';
 		}
 		$query .= ' WHERE '.$cond;
-		echo $query;
+		//echo $query;
 		$r = pg_query( $this->handle, $query );
 		return pg_affected_rows( $r );
 	}

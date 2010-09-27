@@ -96,6 +96,7 @@ if ( $pid )
 							'title' => $skel[$rel['a']]['name'],
 							'type' => 'skeleton',
 							'icon' => 'folder',
+							'attr' => array('id' => 'node_'. $skel[$rel['a']]['id']),
 							'children' => array()
 						);
 					}
@@ -106,6 +107,7 @@ if ( $pid )
 				'title' => $neur['name'],
 				'type' => 'neuron',
 				'icon' => 'folder',
+			 	'attr' => array('id' => 'node_'. $neur['id']),
 				'children' => array(
 							  array(
 									'title' => 'model_of',
@@ -127,64 +129,13 @@ if ( $pid )
 		$bigarr = array('title' => 'Root',
 								   'type' => 'origin',
 								   'icon' => '',
+								   'attr' => array('id' => 'node_0'),
 								   'children' => $narr);
 		
-		//print_r($bigarr);
 		$sOutput = '[';
 		$sOutput .= tv_node( $bigarr );
 		$sOutput .= ']';
 		echo $sOutput;
-		
-		/*
-		reset( $skel );
-		
-		
-		
-		$sOutput = '[';
-		
-		// root node as default
-		$sOutput .= tv_node( array('title' => 'Root',
-								   'type' => 'origin',
-								   'icon' => '',
-								   'children' => array() ) );
-
-		while ( list( $key, $val) = each( $skel ) )
-		{
-			$sOutput .= '{';			
-			$sOutput .= '"data" : {';
-			$sOutput .= ' "title" : "'.$val["name"].' <skeleton>",';
-			$sOutput .= ' "icon" : "folder",';
-			$sOutput .= '},';
-			
-			// add the children here
-			$sOutput .= '"children" : [ "presynaptic_to <relation>", "postsynaptic_to <relation>", "model_of <relation>"],';
-			
-			$sOutput .= '},';
-		}
-		$sOutput .= ']';
-		unset( $skel );
-			*/
-		/*
-		 * [
-						{ 
-							"data" : "A node", 
-							"children" : [ "Child 1", "Child 2" ]
-						},
-						{ 
-							"attr" : { "id" : "li.node.id" }, 
-							"data" : { 
-								"title" : "Long format demo", 
-								"attr" : { "href" : "#" } 
-							} 
-						}
-					
-						],
-						
-		*/
-		// show synapses that are presynaptic
-		// show synapses that are postsynaptic
-		
-		//echo $sOutput;
 		
 	}
 	else

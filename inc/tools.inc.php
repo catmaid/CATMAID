@@ -17,10 +17,24 @@ function tv_node( $data )
 {
 	
 	$sOutput = '';
-	$sOutput .= '{';			
+	$sOutput .= '{';	
+	if( array_key_exists('attr', $data))
+	{
+		$sOutput .= ' "attr" : {';
+		foreach($data['attr'] as $key => $aval)
+		{
+			$sOutput .= '"'.$key.'" : "'.$aval.'",';		
+		}
+		$sOutput .= '},';
+	}		
 	$sOutput .= '"data" : {';
 	$sOutput .= ' "title" : "'.$data['title'].' <'.$data['type'].'>",';
-	$sOutput .= ' "icon" : "'.$data['icon'].'",';
+
+	if( array_key_exists('icon', $data))
+	{
+		$sOutput .= ' "icon" : "'.$data['icon'].'",';
+	}
+	
 	$sOutput .= '},';
 	
 	$sOutput .= '"children" : [';

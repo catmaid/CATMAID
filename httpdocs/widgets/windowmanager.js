@@ -95,6 +95,8 @@ function CMWRootNode()
 	
 	this.getFrame = function(){ return frame; }
 	
+	this.getChild = function(){ return child; }
+	
 	this.getChildren = function()
 	{
 		var children = new Array();
@@ -567,15 +569,37 @@ function CMWWindow( title )
 			siblingFrame.style.width = "";
 			siblingFrame.style.height = "";
 			
+			if ( self.hasFocus() )
+				sibling.getWindows()[ 0 ].focus();
+			
 			root.redraw();
 		}
 		
-		for ( var i = 0; i < listeners.length; ++i )
-			listeners[ i ]( self, CMWWindow.CLOSE );
-			
-		e.stop
+		self.callListeners( CMWWindow.CLOSE );
 			
 		return false;
+	}
+	
+	this.hasFocus = function()
+	{
+		return frame.firstChild.className == "stackInfo_selected";
+	}
+	
+	this.focus = function()
+	{
+		var root = self.getRootNode();
+		var windows = root.getWindows();
+		for ( var i = 0; i < windows.length; ++i )
+		{
+			var w = windows[ i ];
+			w.getFrame().firstChild.className = "stackInfo";
+			w.callListeners( CMWWindow.BLUR );
+		}
+			
+		frame.firstChild.className = "stackInfo_selected";
+		self.callListeners( CMWWindow.FOCUS );
+		
+		return self;
 	}
 	
 	var id = this.uniqueId();
@@ -625,6 +649,8 @@ function CMWWindow( title )
 		eventCatcher.style.display = "none";
 		return false;
 	}
+	
+	frame.onmousedown = this.focus;
 	
 	titleBar.onmousedown = function( e )
 	{
@@ -734,6 +760,17 @@ function CMWWindow( title )
 		listeners = new Array();
 	}
 	
+	/**
+	 * Call all listeners with a RESIZE event, the actual window redrawing is
+	 * done by parent.
+	 * 
+ 	 * @return {CMWWindow} this (allows chains of calls like myWindow.setTitle( "new" ).show())
+	 */
+	this.redraw = function()
+	{
+		return self.callListeners( self, CMWWindow.RESIZE );
+	}
+	
 	this.getId = function(){ return id; }
 	
 	this.getFrame = function(){ return frame; }
@@ -783,22 +820,22 @@ function CMWWindow( title )
 	}
 	
 	/**
-	 * Call all listeners with a RESIZE event, the actual window redrawing is
-	 * done by parent.
+	 * Call all listeners with a signal.
 	 * 
+	 * @param {Number} signal one of the CMWWindow constants
  	 * @return {CMWWindow} this (allows chains of calls like myWindow.setTitle( "new" ).show())
 	 */
-	this.redraw = function()
+	this.callListeners = function( signal )
 	{
 		for ( var i = 0; i < listeners.length; ++i )
-			listeners[ i ]( self, CMWWindow.RESIZE );
+			listeners[ i ]( self, signal );
 		
 		return self;
 	}
 	
 	this.toXML = function( tabs )
 	{
-		return tabs + "<window id\"" + id + "\" title=\"" + title + "\" \\>";
+		return tabs + "<window id\"" + id + "\" title=\"" + title + "\" />";
 	}
 }
 
@@ -810,6 +847,8 @@ CMWWindow.prototype.constructor = CMWWindow;
  */
 CMWWindow.CLOSE = 0;
 CMWWindow.RESIZE = 1;
+CMWWindow.FOCUS = 2;
+CMWWindow.BLUR = 3;
 
 
 

@@ -547,8 +547,8 @@ function Project( pid )
 	// initialise
 	var self = this;
 	this.id = pid;
-	if ( !ui ) ui = new UI();
-	if ( !requestQueue ) requestQueue = new RequestQueue();
+	if ( typeof ui == "undefined" ) ui = new UI();
+	if ( typeof requestQueue == "undefined" ) requestQueue = new RequestQueue();
 	
 	var view = document.createElement( "div" );
 	view.className = "projectView";

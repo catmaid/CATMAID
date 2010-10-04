@@ -1,21 +1,22 @@
-// TO Remove.
-
 var treeview_loaded;
 myselection = {};
 
-initTreeview = function(pid) {
+initObjectTree = function(pid) {
 
+	// id of object tree
+	object_tree_id = "#tree_object";
+	
 	$("#add_neuron").click(function () { 
 		console.log("add neuron");
-		//$("#treeview").jstree("create","#rootnode","first","NeuronX <neuron>",false,false); 
+		//$(object_tree_id).jstree("create","#rootnode","first","NeuronX <neuron>",false,false); 
 	});
 
 	$("#rename").click(function () { 
-		$("#treeview").jstree("rename"); 
+		$(object_tree_id).jstree("rename"); 
 	});
 	
 	$("#remove").click(function () { 
-		$("#treeview").jstree("remove"); 
+		$(object_tree_id).jstree("remove"); 
 	});
 
 	$("#show_treenodes").click(function () { 
@@ -29,7 +30,7 @@ initTreeview = function(pid) {
 	});
 
 	
-	$("#treeview").jstree({
+	$(object_tree_id).jstree({
 		"core" : { "html_titles" : false},
 		"plugins" : [ "themes", "json_data", "ui", "crrm", "types", "dnd", "contextmenu"],
 		"json_data" : {
@@ -156,11 +157,11 @@ initTreeview = function(pid) {
 	//	"rslt" : /* any data the function passed to the event */, 
 	//	"rlbk" : /* an optional rollback object - it is not always present */
 	
-	$("#treeview").bind("loaded.jstree", function (event, data) {
+	$(object_tree_id).bind("loaded.jstree", function (event, data) {
 		console.log("Treeview loaded");
 	});
 	
-	$("#treeview").bind("deselect_node.jstree", function (event, data) {
+	$(object_tree_id).bind("deselect_node.jstree", function (event, data) {
 		console.log("Deselect node");
 		
 		id = data.rslt.obj.attr("id").replace("node_","");
@@ -173,7 +174,7 @@ initTreeview = function(pid) {
 		
 	});
 	
-	$("#treeview").bind("select_node.jstree", function (event, data) {
+	$(object_tree_id).bind("select_node.jstree", function (event, data) {
 		
 		console.log("select node");
 		
@@ -184,7 +185,7 @@ initTreeview = function(pid) {
 
 	});
 	
-	$("#treeview").bind("rename.jstree", function (e, data) {
+	$(object_tree_id).bind("rename.jstree", function (e, data) {
 		
 		console.log("rename");
 		console.log(data.rslt.obj.attr("id"));
@@ -200,7 +201,7 @@ initTreeview = function(pid) {
 		);
 	});
 
-	$("#treeview").bind("remove.jstree", function (e, data) {
+	$(object_tree_id).bind("remove.jstree", function (e, data) {
 		
 		treebefore = data.rlbk;
 		
@@ -222,7 +223,7 @@ initTreeview = function(pid) {
 		
 	});
 	
-	$("#treeview").bind("move_node.jstree", function (e, data) {
+	$(object_tree_id).bind("move_node.jstree", function (e, data) {
 		console.log("moved"); 
 		
 		// update skeleton in database, relating it to its neuron

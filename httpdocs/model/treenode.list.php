@@ -6,6 +6,7 @@ ini_set( 'display_errors', true );
 include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
+include_once( 'json.inc.php' );
 
 $db =& getDB();
 $ses =& getSession();

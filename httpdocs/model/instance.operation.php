@@ -41,6 +41,12 @@ if ( $pid )
 			echo "Removed.";
 			
 		}
+		else if ( $op == 'add_node')
+		{
+			// find out class id
+			echo "Nothing done yet.";
+			
+		}
 		else if ( $op == 'move_skeleton')
 		{
 			if ( $src && $ref )

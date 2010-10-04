@@ -148,14 +148,14 @@ function Project( pid )
 			width -= table_widget.offsetWidth;
 			left += table_widget.offsetWidth;
 		}
-		if ( tree_widget.offsetWidth )
+		if ( object_tree_widget.offsetWidth )
 		{
 			if ( table_widget.offsetWidth )
-				tree_widget.style.left = left + "px";
+				object_tree_widget.style.left = left + "px";
 			else
-				tree_widget.style.left = "0px";
-			width -= tree_widget.offsetWidth;
-			left += tree_widget.offsetWidth;
+				object_tree_widget.style.left = "0px";
+			width -= object_tree_widget.offsetWidth;
+			left += object_tree_widget.offsetWidth;
 		}
 		var old_width = 0;
 		for ( var i = 0; i < stacks.length; ++i )
@@ -197,13 +197,14 @@ function Project( pid )
 		switch ( m )
 		{
 		case "entities":
-			var tw_status = document.getElementById( 'tree_widget' ).style.display;
+			
+			var tw_status = document.getElementById( 'object_tree_widget' ).style.display;
 			// check if not opened before to prevent messing up with event handlers
 			if ( tw_status != 'block' )
 			{
-				document.getElementById( 'tree_widget' ).style.display = 'block';
+				document.getElementById( 'object_tree_widget' ).style.display = 'block';
 				ui.onresize();			
-				initTreeview( this.id );
+				initObjectTree( this.id );
 			}
 			break;
 		}
@@ -215,18 +216,18 @@ function Project( pid )
 	 */
 	this.showDatatableWidget = function ( m )
 	{
-		document.getElementById( 'table_widget' ).style.display = 'block';
+		document.getElementById( 'treenode_table_widget' ).style.display = 'block';
 		ui.onresize();	
 		switch ( m )
 		{
 		case "treenode":
-			initDatatable( 'treenode', this.id );
+			initTreenodeTable( this.id );
 			break;
 		case "presynapse":
-			initDatatable( 'presynapse', this.id );
+			initPreSynapseTable( this.id );
 			break;
 		case "postsynapse":
-			initDatatable( 'postsynapse', this.id );
+			initPostSynapseTable( this.id );
 			break;
 		}
 		return;
@@ -343,7 +344,7 @@ function Project( pid )
 			
 			// hide data table and tree view widgets
 			// in order to reload the data for a new project
-			document.getElementById( "table_widget" ).style.display = "none";
+			document.getElementById( "treenode_table_widget" ).style.display = "none";
 			document.getElementById( "tree_widget" ).style.display = "none";
 			
 		}

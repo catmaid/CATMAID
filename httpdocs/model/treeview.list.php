@@ -101,7 +101,9 @@ if ( $pid )
 					{
 						// add skeleton
 						$skarr[] = array(
-							'title' => $skel[$rel['a']]['name'],
+							'data' => array(
+								'title' => $skel[$rel['a']]['name'],
+							),
 							'attr' => array('id' => 'node_'. $skel[$rel['a']]['id'],
 											'rel' => 'skeleton'),
 							'children' => array()
@@ -119,9 +121,11 @@ if ( $pid )
 					foreach($incom_res as $val)
 					{
 						$insyn[] = array(		
-	 						'title' => $val['name'],
+							'data' => array(
+	 							'title' => $val['name'],
+							),
 							'attr' => array('id' => 'node_'. $val['id'],
-											'rel' => 'synapse'),
+											'rel' => 'synapse'),								
 							'children' => array()
 							);
 					}
@@ -138,9 +142,11 @@ if ( $pid )
 					foreach($outgo_res as $val)
 					{
 						$outsyn[] = array(		
-	 						'title' => $val['name'],
+							'data' => array(
+	 							'title' => $val['name'],
+							),
 							'attr' => array('id' => 'node_'. $val['id'],
-											'rel' => 'synapse'),
+											'rel' => 'synapse'),							
 							'children' => array()
 							);
 					}
@@ -155,20 +161,28 @@ if ( $pid )
 			
 
 			$narr[] = array(
-				'title' => $neur['name'],
-			 	'attr' => array('id' => 'node_'. $neur['id'],
+				'data' => array(
+					'title' => $neur['name'],
+				),
+		 		'attr' => array('id' => 'node_'. $neur['id'],
 								'rel' => 'neuron'),
 				'children' => array(
 							  array(
-									'title' => 'has models',
-									'attr' => array('rel' => 'relation'),
+							  		'data' => array(
+										'title' => 'has models',
+							  		),
+							  		'attr' => array('rel' => 'relation'),
 									'children' => $skarr),
 							  array(
-									'title' => 'outgoing synapses',
-									'attr' => array('rel' => 'relation'),
+							  		'data' => array(
+										'title' => 'outgoing synapses',
+							  		),
+							  		'attr' => array('rel' => 'relation'),
 									'children' => $outsyn),
 							  array(
-									'title' => 'incoming synapses',
+							  		'data' => array(
+										'title' => 'incoming synapses',
+						  			),
 									'attr' => array('rel' => 'relation'),
 									'children' => $insyn),
 							  
@@ -188,7 +202,9 @@ if ( $pid )
 		foreach ($skel as $skelkey => $loverskel)
 		{
 			$narr[] = array(
-				'title' => $loverskel['name'],
+				'data' => array(
+					'title' => $loverskel['name'],
+				),
 				'attr' => array('id' => 'node_'. $skelkey,
 								'rel' => 'skeleton'),
 				'children' => array()
@@ -196,10 +212,13 @@ if ( $pid )
 		}
 							
 		// generate big array
-		$bigarr = array('title' => 'Root',
-								   'attr' => array('id' => 'node_0',
-												  'rel' => 'root'),
-								   'children' => $narr);
+		$bigarr = array('data' => array(
+										'title' => 'Root',
+										),
+						'attr' => array('id' => 'node_0',
+						 				'rel' => 'root'),
+						'state' => 'open',
+						'children' => $narr);
 		
 		$sOutput = '[';
 		$sOutput .= tv_node( $bigarr );

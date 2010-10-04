@@ -162,28 +162,32 @@ if ( $pid )
 
 			$narr[] = array(
 				'data' => array(
-					'title' => $neur['name'],
+					'title' => $neur['name']
 				),
 		 		'attr' => array('id' => 'node_'. $neur['id'],
-								'rel' => 'neuron'),
+								'rel' => 'neuron',
+								'class' => 'jstree-drop'),
 				'children' => array(
 							  array(
 							  		'data' => array(
 										'title' => 'has models',
 							  		),
-							  		'attr' => array('rel' => 'relation'),
+							  		'attr' => array('rel' => 'modelof'),
+							  		'state' => 'open',
 									'children' => $skarr),
 							  array(
 							  		'data' => array(
 										'title' => 'outgoing synapses',
 							  		),
-							  		'attr' => array('rel' => 'relation'),
+							  		'attr' => array('rel' => 'postsynaptic'),
+							  		'state' => 'open',
 									'children' => $outsyn),
 							  array(
 							  		'data' => array(
 										'title' => 'incoming synapses',
 						  			),
-									'attr' => array('rel' => 'relation'),
+									'attr' => array('rel' => 'presynaptic'),
+						  			'state' => 'open',
 									'children' => $insyn),
 							  
 							  /*
@@ -227,9 +231,9 @@ if ( $pid )
 		
 	}
 	else
-		echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to retrieve skeletons.' ) );
+		echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to retrieve the tree.' ) );
 }
 else
-	echo makeJSON( array( 'error' => 'Project closed. Can not retrieve skeletons.' ) );
+	echo makeJSON( array( 'error' => 'Project closed. Can not retrieve the tree.' ) );
 
 ?>

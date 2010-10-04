@@ -533,6 +533,7 @@ function global_resize( e )
 	message_widget.style.width = width + "px";
 	table_widget.style.height = height + "px";
 	object_tree_widget.style.height = height + "px";
+	class_tree_widget.style.height = height + "px";
 
 	var content = document.getElementById( "content" );
 	content.style.top = top + "px";
@@ -800,6 +801,10 @@ function init()
 	object_tree_widget = document.getElementById( "object_tree_widget" );
 	var tree_widget_resize_handle = new ResizeHandle( "h" );
 	object_tree_widget.appendChild( tree_widget_resize_handle.getView() );
+	
+	class_tree_widget = document.getElementById( "class_tree_widget" );
+	var tree_widget_resize_handle = new ResizeHandle( "h" );
+	class_tree_widget.appendChild( tree_widget_resize_handle.getView() );
 	
 	//! auto login by url (unsafe as can be but convenient)
 	if ( account && password )

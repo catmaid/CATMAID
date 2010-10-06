@@ -19,6 +19,13 @@ needs either in dump.sql or afterwards via
 
 ALTER ROLE "catmaid_user" PASSWORD '<new password>'
 
+Add the respective password authentication rule to your pg_hba.conf before the
+rule for ident authentication:
+
+local   catmaid     catmaid_user                      md5
+local   all         all                               ident
+
+
 ===Web Server===
 
 

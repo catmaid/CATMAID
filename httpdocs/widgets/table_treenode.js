@@ -12,13 +12,17 @@ initTreenodeTable = function(pid) {
 		"bAutoWidth": false,
 		"sAjaxSource": 'model/treenode.list.php',
 		"fnServerData": function ( sSource, aoData, fnCallback ) {
+		
+			// remove all selected elements in table
+			for(key in project.selectedObjects['table_treenode'])
+				delete project.selectedObjects['table_treenode'][key];
 			
 			// add list of skeleton ids to draw
 			// retrieve vom selected object_tree objects
 			i = 0;
-			for(key in selectedObjects['object_tree'])
+			for(key in project.selectedObjects['tree_object'])
 			{
-				if( selectedObjects['object_tree'][key]['type'] == 'skeleton' )
+				if( project.selectedObjects['tree_object'][key]['type'] == 'skeleton' )
 				{
 					aoData.push( { "name" : "skeleton_" + i, "value" : key } );
 					i = i + 1;
@@ -37,7 +41,7 @@ initTreenodeTable = function(pid) {
 		"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
 		"bJQueryUI": true,
 		"fnRowCallback": function( nRow, aData, iDisplayIndex ) {
-			if ( parseInt(aData[0]) in selectedObjects)
+			if ( parseInt(aData[0]) in project.selectedObjects['table_treenode'])
 			{
 				$(nRow).addClass('row_selected');
 			}
@@ -93,16 +97,15 @@ initTreenodeTable = function(pid) {
 		
 		var iId = parseInt(aData[0]);
 		
-		if ( iId in selectedObjects )
+		if ( iId in project.selectedObjects['table_treenode'] )
 		{
-			delete selectedObjects[iId];
+			delete project.selectedObjects['table_treenode'][iId];
 		}
 		else
 		{
-			selectedObjects[iId] = {'id': iId, 'tabledata':aData, 'type' : 'treenode'};
-			for(key in selectedObjects)
+			project.selectedObjects['table_treenode'][iId] = {'id': iId, 'tabledata':aData, 'type' : 'treenode'};
+			for(key in project.selectedObjects['table_treenode'])
 				console.log(key);
-
 		}			
 		$(this).toggleClass('row_selected');
 	} );

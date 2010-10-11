@@ -1,5 +1,3 @@
-instance_selection = {};
-
 initObjectTree = function(pid) {
 
 	// id of object tree
@@ -9,10 +7,33 @@ initObjectTree = function(pid) {
 		// how to refresh the whole tree?
 		console.log("refresh tree"); 
 	});
+	
+	$("#simaddtn").click(function () {
+		// simulate adding a treenode in the stack widget
+		// thus needs to add a new dangling skeleton
+		console.log("simulate adding a new treenode");
+		
+		$.ajax({
+			  url: 'model/treenode.create.php',
+			  data : { 'pid' : pid,
+					   // 'skeleton_id': 69,
+					   'parent_id': 50,
+					   'x' : 1000,
+					   'y' : 1234,
+					   'z' : 1,
+					   'radius' : 3,
+					   'confidence' : 5},
+			  dataType : 'json',
+			  success: function(data) {
+			  	console.log("ajax returned.");
+			  }
+			});
+		
+	});
 
 	$("#show_treenodes").click(function () { 
 		// call treenode table for selected objects
-		selectedObjects['object_tree'] = instance_selection;
+		// selectedObjects['tree_object'] = instance_selection;
 		// datatables grabs automatically the selected skeletons
 		oTable.fnDraw();
 		
@@ -46,12 +67,6 @@ initObjectTree = function(pid) {
 			var menu = {};
 			if(type_of_node == "neuron") {
 				menu = {
-					"create" : {
-						"separator_before"	: false,
-						"separator_after"	: true,
-						"label"				: "Create skeleton",
-						"action"			: function (obj) { this.create(obj); }
-					},
 					"rename" : {
 						"separator_before"	: false,
 						"separator_after"	: false,
@@ -71,9 +86,18 @@ initObjectTree = function(pid) {
 				menu = {
 						"create" : {
 							"separator_before"	: false,
-							"separator_after"	: true,
+							"separator_after"	: false,
 							"label"				: "Create neuron",
 							"action"			: function (obj) { this.create(obj); }
+						}
+				}
+			} else if (type_of_node == "skeleton" ) {
+				menu = {
+						"rename" : {
+							"separator_before"	: false,
+							"separator_after"	: false,
+							"label"				: "Rename skeleton",
+							"action"			: function (obj) { this.rename(obj); }						
 						}
 				}
 			}
@@ -231,10 +255,10 @@ initObjectTree = function(pid) {
 		
 		id = data.rslt.obj.attr("id").replace("node_","");
 		
-		if ( id in instance_selection )
+		if ( id in project.selectedObjects['tree_object'] )
 		{
 			console.log("delete id", id);
-			delete instance_selection[id];
+			delete project.selectedObjects['tree_object'][id];
 		}
 		
 	});
@@ -246,7 +270,7 @@ initObjectTree = function(pid) {
 		id = data.rslt.obj.attr("id").replace("node_","");
 		type = data.rslt.obj.attr("rel");
 		
-		instance_selection[id] = {'id': id, 'type' : type};
+		project.selectedObjects['tree_object'][id] = {'id': id, 'type' : type};
 
 	});
 	
@@ -272,6 +296,8 @@ initObjectTree = function(pid) {
 		
 		if( confirm('Really remove node?') )
 		{
+			// XXX: remove node depending on its type?
+			// issue 34
 			$.post(
 					"/model/instance.operation.php", 
 					{ 

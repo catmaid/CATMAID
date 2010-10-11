@@ -1,5 +1,4 @@
 
-var selectedOjects = {}; //!< associative array of selected objects like class_instances, treenodes etc.
 var statusBar;		//!< global statusBar
 
 var slider_z;		//!< slice slider

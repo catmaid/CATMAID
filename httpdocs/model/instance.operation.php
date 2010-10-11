@@ -29,16 +29,25 @@ if ( $pid )
 		
 		if ( $op == 'rename_node')
 		{
-			
 			$ids = $db->update("class_instance", array("name" => $name) ,' "class_instance"."id" = '.$id);
-			echo "Updated.";
-				
+			echo "Renamed successfully.";
 		}
 		else if ( $op == 'remove_node')
 		{
 			// check if the object belongs to you
-			$ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
-			echo "Removed.";
+			$isuser = $db->getResult('SELECT "ci"."id" FROM "class_instance" AS "ci", WHERE
+			"ci"."id" = '.$id.'
+			"ci"."user_id" = '.$uid);
+			if( $isuser )
+			{
+				$ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
+				echo "Removed successfully.";
+			}
+			else
+			{
+				echo "You are not the creator of the object, thus you can not remove it.";
+			}
+			
 			
 		}
 		else if ( $op == 'add_node')

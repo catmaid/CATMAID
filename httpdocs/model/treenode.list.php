@@ -15,7 +15,6 @@ $pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
 // retrieve skeleton ids if set
-
 if ( isset( $_REQUEST['skeleton_nr'] ))
 {
 	$skelnr = intval( $_REQUEST['skeleton_nr'] );
@@ -300,7 +299,6 @@ if ( $pid )
 			$sOutput .= '] }';
 			
 			echo $sOutput;
-			
 
 	}
 	else

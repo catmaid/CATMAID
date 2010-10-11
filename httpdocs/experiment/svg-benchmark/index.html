@@ -3,21 +3,27 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Raphaël · SVG Benchmark</title>
-        <script src="raphael-min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="raphael.js" type="text/javascript" charset="utf-8"></script>
+		<script src="../../libs/jquery/jquery.js" type="text/javascript" charset="utf-8"></script>
         <script type="text/javascript" charset="utf-8">                
 
-Node = function( paper, parent, x, y, r )
+Node = function( paper, id, parent, x, y, r )
 {
 	var ox = 0, oy = 0;
+	// the id of this node
+	this.id = id;
+	// the coordinates of this node
+	this.ix = x - r;
+	this.iy = y - r;
 	
-	var c = paper.circle( x, y, r ).attr({
+	var c = paper.circle( this.ix, this.iy , r ).attr({
 					fill: "hsb(.8, 1, 1)",
 					stroke: "none",
 					opacity: .5
 					});
 	this.getC = function(){ return c; }
 	
-	var mc = paper.circle( x, y, r + 8 ).attr({
+	var mc = paper.circle( this.ix, this.iy, r + 8 ).attr({
 					fill: "rgb(0, 1, 0)",
 					stroke: "none",
 					opacity: 0
@@ -26,6 +32,7 @@ Node = function( paper, parent, x, y, r )
 	var children = new Array();
 	this.getChildren = function(){ return children; }
 	
+	this.children = children;
 	this.parent = parent;
 	var l;
 	if ( parent != null )
@@ -33,53 +40,127 @@ Node = function( paper, parent, x, y, r )
 	
 	var drawLine = function()
 	{
-		l.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], [ "L", parent.getC().attrs.cx, parent.getC().attrs.cy ] ] } );
-		l.toBack();
+		if (parent != null) {
+			console.log("draw line");
+			l.attr({
+				path: [["M", c.attrs.cx, c.attrs.cy], ["L", parent.getC().attrs.cx, parent.getC().attrs.cy]]
+			});
+			l.toBack();
+		}
 	}
 	
 	this.drawLine = drawLine;
 	
-	mc.move = function( dx, dy )
+	mc.move = function( dx, dy, ax, ay, event )
 	{
-		var x = ox + dx;
-    	var y = oy + dy;
-		c.attr({cx: x,cy: y});
-		mc.attr({cx: x,cy: y});
-		for ( var i = 0; i < children.length; ++i )
-			children[ i ].drawLine();
-		drawLine();
+		if (!event.ctrlKey) {
+			var x = ox + dx;
+			var y = oy + dy;
+			c.attr({cx: x,cy: y});
+			mc.attr({cx: x,cy: y});
+			this.ix = x;
+			this.iy = y;
+			for ( var i = 0; i < children.length; ++i )
+				children[ i ].drawLine();
+			drawLine();
+		}
 	}
-	mc.up = function()
-	{
-		c.attr({opacity:.5});
+	mc.up = function(event)
+	{		
+		if (!event.ctrlKey) {
+			// console.log("in drag handler", event)
+			c.attr({
+				opacity: .5
+			});
+		}
 	}
-	mc.start = function()
+	mc.start = function(event)
 	{
-		ox = mc.attr("cx");
-		oy = mc.attr("cy");
-		c.attr({opacity:1});
+		// not drag when ctrl pressed
+		if (!event.ctrlKey ){
+			ox = mc.attr("cx");
+			oy = mc.attr("cy");
+			c.attr({opacity:1});			
+		}
 	}
 	mc.drag( mc.move, mc.start, mc.up );
+	
+	mc.click(function (event) {
+		console.log("clicked circle");
+	});
+	
+	mc.mousedown(function (event) {
+	    console.log("mousedown");
+		/*console.log(parent);
+		console.log(children)*/	
+	});
+	
+	mc.mouseup(function (event) {
+	    console.log("mouseup");
+		/*console.log(parent);
+		console.log(children)*/
+	});
+	
+	mc.dblclick(function (event) {
+		alert("this is a node"+id);
+	});
+
+
+	
+	
 }
 
+var r;
+var lastcli;
 
 window.onload = function () {
 	
+    r = Raphael("holder", 1200, 400);
 	
-    var r = Raphael("holder", 1200, 600);
-	
-	    // storing original coordinates
+	 // storing original coordinates
+	r.raphael.mouseup(function (event) {
+		console.log("raphael mouse up");
+		lastcli.drawLine();
+	});
+	r.raphael.mousedown(function (event) {
+		
+		// only add if shift is pressed
+		if (event.shiftKey) {
+			ln = new Node(r, Math.round(Math.random() * 100), null, event.clientX, event.clientY, 5);
+			// added node is last clicked
+			lastcli = ln;
+		} else if (event.ctrlKey) {
+			
+			// draw a line from lastcli to here
+			x = event.clientX;
+			y = event.clientY;
+			
+			// add a new node and set the parent to the last clicked
+			nn = new Node(r, Math.round(Math.random() * 100), null, x, y, 5);
+			nn.parent = lastcli;
+			// add children to lastcli
+			lastcli.children.push(nn);
+			lastcli = nn;
+			/*
+			var l = r.path();
+			l.attr({
+				path: [["M", lastcli.ix, lastcli.iy], ["L", x, y]]
+			});*/
+			
+		}
+		
+	});
 
 	var ln = null;
 	
 	var x = r.width / 2;
 	var y = r.height / 2;
 
-	for (var i = 0; i < 10000; ++i)
+	for (var i = 0; i < 10; ++i)
 	{
 		x = Math.min( r.width, Math.max( 0, x + ( .5 - Math.random() ) * 100 ) );
 		y = Math.min( r.height, Math.max( 0, y + ( .5 - Math.random() ) * 100 ) );
-		ln = new Node( r, ln, x, y, 2 );
+		ln = new Node( r, i, ln, x, y, 2 );
 	}
 	
 	while ( ln.parent != null )

@@ -10,7 +10,30 @@ initTreenodeTable = function(pid) {
 		"bProcessing": true,
 		"bServerSide": true,
 		"bAutoWidth": false,
-		"sAjaxSource": 'model/treenode.list.php?pid='+pid,
+		"sAjaxSource": 'model/treenode.list.php',
+		"fnServerData": function ( sSource, aoData, fnCallback ) {
+			
+			// add list of skeleton ids to draw
+			// retrieve vom selected instance_tree objects
+			i = 0;
+			for(key in selectedObjects['instance_tree'])
+			{
+				if( selectedObjects['instance_tree'][key]['type'] == 'skeleton' )
+				{
+					aoData.push( { "name" : "skeleton_" + i, "value" : key } );
+					i = i + 1;
+				}
+			}
+			aoData.push( { "name" : "skeleton_nr", "value" : i } );
+			aoData.push( { "name" : "pid", "value" : pid } );
+			$.ajax( {
+				"dataType": 'json', 
+				"type": "POST", 
+				"url": sSource, 
+				"data": aoData, 
+				"success": fnCallback
+			} );
+		},
 		"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
 		"bJQueryUI": true,
 		"fnRowCallback": function( nRow, aData, iDisplayIndex ) {

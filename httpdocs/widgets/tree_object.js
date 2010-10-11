@@ -16,7 +16,9 @@ initObjectTree = function(pid) {
 		selectedObjects['instance_tree'] = instance_selection;
 		console.log("Updated selected objects", selectedObjects);
 		
-		// XXX: here comes the invocation of the data table in another widget
+		// datatables grabs automatically the selected skeletons
+		oTable.fnDraw();
+		
 	});
 	
 	$(object_tree_id).jstree({

@@ -1,3 +1,5 @@
+
+var selectedOjects = {}; //!< associative array of selected objects like class_instances, treenodes etc.
 var statusBar;		//!< global statusBar
 
 var slider_z;		//!< slice slider
@@ -41,8 +43,6 @@ var xp;
 var session;
 var msg_timeout;
 var MSG_TIMEOUT_INTERVAL = 60000;	//!< length of the message lookup interval in milliseconds
-
-var selectedObjects = {}; //!< associative array of selected objects like class_instances, treenodes etc.
 
 /**
  * queue a login-request on pressing return

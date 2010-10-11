@@ -12,10 +12,7 @@ initObjectTree = function(pid) {
 
 	$("#show_treenodes").click(function () { 
 		// call treenode table for selected objects
-		
-		selectedObjects['instance_tree'] = instance_selection;
-		console.log("Updated selected objects", selectedObjects);
-		
+		selectedObjects['object_tree'] = instance_selection;
 		// datatables grabs automatically the selected skeletons
 		oTable.fnDraw();
 		

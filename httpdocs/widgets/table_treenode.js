@@ -14,11 +14,11 @@ initTreenodeTable = function(pid) {
 		"fnServerData": function ( sSource, aoData, fnCallback ) {
 			
 			// add list of skeleton ids to draw
-			// retrieve vom selected instance_tree objects
+			// retrieve vom selected object_tree objects
 			i = 0;
-			for(key in selectedObjects['instance_tree'])
+			for(key in selectedObjects['object_tree'])
 			{
-				if( selectedObjects['instance_tree'][key]['type'] == 'skeleton' )
+				if( selectedObjects['object_tree'][key]['type'] == 'skeleton' )
 				{
 					aoData.push( { "name" : "skeleton_" + i, "value" : key } );
 					i = i + 1;

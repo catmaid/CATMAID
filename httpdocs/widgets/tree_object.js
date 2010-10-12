@@ -4,21 +4,15 @@ initObjectTree = function(pid) {
 	object_tree_id = "#tree_object";
 	
 	$("#refresh_object_tree").click(function () {
-		// how to refresh the whole tree?
-		console.log("refresh tree"); 
 		$("#tree_object").jstree("refresh", -1);
-
 	});
 	
 	$("#simaddtn").click(function () {
 		// simulate adding a treenode in the stack widget
-		// thus needs to add a new dangling skeleton
-		console.log("simulate adding a new treenode");
 		
 		// retrieve skeleton id currently selected
 		for(key in project.selectedObjects['tree_object'])
 			skelid = key;
-
 		console.log("adding treenode (root) for skeleton id", skelid);
 		
 		$.ajax({
@@ -32,17 +26,12 @@ initObjectTree = function(pid) {
 					   'radius' : 3,
 					   'confidence' : 5},
 			  dataType : 'json',
-			  success: function(data) {
-			  	console.log("ajax returned.");
-			  }
+			  success: null
 			});
-		
 	});
 
 	$("#show_treenodes").click(function () { 
-		// call treenode table for selected objects
-		// selectedObjects['tree_object'] = instance_selection;
-		// datatables grabs automatically the selected skeletons
+		// datatables grabs automatically the selected skeleton
 		oTable.fnDraw();
 	});
 	
@@ -50,24 +39,18 @@ initObjectTree = function(pid) {
 		"core" : { "html_titles" : false},
 		"plugins" : [ "themes", "json_data", "ui", "crrm", "types", "dnd", "contextmenu"],
 		"json_data" : { 
-			// I chose an ajax enabled tree - again - as this is most common, and maybe a bit more complex
-			// All the options are the same as jQuery's except for `data` which CAN (not should) be a function
 			"ajax" : {
-				// the URL to fetch the data
 				"url" : "model/tree.object.list.php",
-				// this function is executed in the instance's scope (this refers to the tree instance)
-				// the parameter is the node being loaded (may be -1, 0, or undefined when loading the root nodes)
 				"data" : function (n) {
 					// depending on which type of node it is, display those
 					// the result is fed to the AJAX request `data` option
 					return { 
 						"pid" : pid,
-						"parentid" : n.attr ? n.attr("id").replace("node_","") : 0,
-						
+						"parentid" : n.attr ? n.attr("id").replace("node_","") : 0,						
 					}; 
 				}
 			},
-			//"progressive_render" : true
+			"progressive_render" : true
 		},
 		"ui" : {
 			"select_limit" : 1,
@@ -218,32 +201,36 @@ initObjectTree = function(pid) {
 		},
 		"crrm" : {
 			"move" : {
-				"always_copy" : true,
+				"always_copy" : false,
 				"check_move" : function (m) { 
+			
+					// valid moves (class - class)
+					valid_moves = {
+							"group" : ["root", "group"], // part_of
+							"neurongroup" : ["root", "group"], // part_of
+							"neuron" : ["neurongroup"], // part_of
+							"skeleton" : ["neuron"] // model_of
+					};
 					
-					// allow neuron (class) -> root (object tree)
-					// add to database
-					// .o (the node being moved) -> id => class_id
-					// .r (the node moved to, root in this case), later can be any "part-of" node?
+					// http://snook.ca/archives/javascript/testing_for_a_v
+					function oc(a)
+					{
+					  var o = {};
+					  for(var i=0;i<a.length;i++)
+					  {
+					    o[a[i]]='';
+					  }
+					  return o;
+					}
 					
-					if( m.o.attr("rel") == "neuron" )
-					{
-						//console.log("original node is neuron");
-						
-						// target node has to be root
-						if( m.r.attr("rel") == "root")
-						{
-							// neuron -> root
-							return true;
-						}
+					srcrel = m.o.attr("rel"); // the node being moved
+					dstrel = m.r.attr("rel"); // the node moved to
+					
+					if( dstrel in oc(valid_moves[srcrel]) )
+						return true;
+					else
 						return false;
-						
-					} else if ( m.o.attr("rel") == "skeleton" )
-					{
-						// console.log("original node is skeleton");
-						return false;
-					} 
-					return false;	
+					
 				}
 			}
 		},
@@ -280,8 +267,6 @@ initObjectTree = function(pid) {
 				// the default type
 				"default" : {
 					"valid_children": "none",
-	
-					// Bound functions - you can bind any other function here (using boolean or function)
 					//"select_node"	: false,
 					//"open_node"	: true,
 					//"close_node"	: true,
@@ -297,7 +282,6 @@ initObjectTree = function(pid) {
 					"select_node" : false,
 					"delete_node" : false,
 					"remove" : false
-
 				},
 				"group" : {
 					"icon" : {
@@ -306,7 +290,6 @@ initObjectTree = function(pid) {
 					"valid_children" : [ "group", "neurongroup" ],
 					"start_drag" : true,
 					"select_node" : false,
-					
 				},
 				"neurongroup" : {
 					"icon" : {
@@ -368,12 +351,9 @@ initObjectTree = function(pid) {
 				}
 			}
 		}
-
 	});
 	
-
 	// handlers
-	
 	//	"inst" : /* the actual tree instance */, 
 	//	"args" : /* arguments passed to the function */, 
 	//	"rslt" : /* any data the function passed to the event */, 
@@ -387,20 +367,11 @@ initObjectTree = function(pid) {
 		// deselection only works when explicitly done by ctrl
 		// we get into a bad state when it gets deselected by selecting another node
 		
-		console.log("Deselect node");
+		console.log("deselect node");
+		
 		// remove all previously selected nodes (or push it to the history)
 		for(key in project.selectedObjects['tree_object'])
 			delete project.selectedObjects['tree_object'][key];
-		
-		/*
-		id = data.rslt.obj.attr("id").replace("node_","");
-		
-		if ( id in project.selectedObjects['tree_object'] )
-		{
-			console.log("delete id", id);
-			delete project.selectedObjects['tree_object'][id];
-		}*/
-		
 	});
 	
 	$(object_tree_id).bind("select_node.jstree", function (event, data) {
@@ -468,6 +439,9 @@ initObjectTree = function(pid) {
 		{
 			// XXX: remove node depending on its type?
 			// issue 34
+			// recursively remove? e.g. group and neurongroup
+			// remove treenodes when removing skeleton?
+			// what about removing synapses (which are relational?)
 			$.post(
 					"/model/instance.operation.php", 
 					{ 
@@ -481,64 +455,33 @@ initObjectTree = function(pid) {
 			 $.jstree.rollback(treebefore);
 			 return false;
 		}
-		
 	});
 	
 	$(object_tree_id).bind("move_node.jstree", function (e, data) {
 		
-		console.log("moved"); 
-		
-		// update skeleton in database, relating it to its neuron
-		console.log(data.rslt.o.attr("id"));
-		console.log(data.rslt.r.attr("id"));
-		
 		src = data.rslt.o;
 		ref = data.rslt.r;
 		
-		if( src.attr("rel") == "neuron" )
-		{
-			// neuron -> root
-			if( ref.attr("rel") == "root" )
-			{
-				// XXX: next: instance.operation.php
-				
-				// class_id, pid, userid, src
-				// automatically generate a name?
-				// callback: 1) what is the id, 2) the name?
-				
-			}
-		}
-		else if( src.attr("rel") == "skeleton" )
-		{
-			$.ajax({
-				async : false,
-				type: 'POST',
-				url: "/model/instance.operation.php",
-				data : { 
-					"operation" : "move_skeleton", 
-					"src" : src.attr("id").replace("node_",""), 
-					"ref" : ref.attr("id").replace("node_",""), 
-					"pid" : pid
-				},
-				success : function (r) {
-					if(!r.status) {
-						$.jstree.rollback(data.rlbk);
-						console.log("rollback");
-					}
-					else {
-						console.log("ok");
-						// XXX: we should refresh the table here!
-						// move node to has models
-						/*
-						$(data.rslt.oc).attr("id", "node_" + r.id);
-						if(data.rslt.cy && $(data.rslt.oc).children("UL").length) {
-							data.inst.refresh(data.inst._get_parent(data.rslt.oc));
-						}*/
-					}
-				}
-			});
-		}
+		// the relationship stays the same (otherwise it would not be
+		// a valid move), thus we only have to change the parent
 		
+		$.ajax({
+			async : false,
+			type: 'POST',
+			url: "/model/instance.operation.php",
+			data : { 
+				"operation" : "move_node", 
+				"src" : src.attr("id").replace("node_",""), 
+				"ref" : ref.attr("id").replace("node_",""), 
+				"pid" : pid
+			},
+			success : function (r, status) {
+				if(r != "True") {
+					$.jstree.rollback(data.rlbk);
+					// console.log("rollback");
+				}
+			}
+		});
 	});
 		
 }

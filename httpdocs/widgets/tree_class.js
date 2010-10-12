@@ -19,7 +19,7 @@ initClassTree = function(pid) {
 		},
 		"themes" : {
 			"theme" : "apple",
-			"url" : "widgets/themes/kde/jsTree/apple/style.css",
+			"url" : "widgets/themes/kde/jsTree/neuron/style.css",
 			"dots" : true,
 			"icons" : true
 		},
@@ -48,32 +48,49 @@ initClassTree = function(pid) {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/root.png"
 					},
-					"valid_children" : [ "neuron", "skeleton" ],
+					"valid_children" : [ "all" ],
 					"start_drag" : false,
 					"select_node" : false,
 					"delete_node" : false,
 					"remove" : false
 
 				},
+				"group" : {
+					"icon" : {
+						"image" : "widgets/themes/kde/jsTree/neuron/group.png"
+					},
+					"valid_children" : [ "none" ],
+					"start_drag" : true,
+					
+				},
+				"neurongroup" : {
+					"icon" : {
+						"image" : "widgets/themes/kde/jsTree/neuron/neurongroup.png"
+					},
+					"valid_children" : [ "none" ],
+					"start_drag" : true,
+				},
 				"neuron" : {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/neuron.png"
 					},
-					"valid_children" : [ "modelof", "skeleton" ],
-					
+					"valid_children" : [ "none" ],
+					"start_drag" : true,
 				},
 				"skeleton" : {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/skeleton.png"
 					},
-					"valid_children" : [ "all" ]
+					"valid_children" : [ "none" ],
+					 "start_drag" : true,
 				},
 				"synapse" : {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/synapse.png"
 					},
-					"valid_children" : [ "all" ],
-				}
+					"valid_children" : [ "none" ],
+					"start_drag" : false,
+				},
 			}
 		}
 

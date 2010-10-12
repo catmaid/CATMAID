@@ -19,7 +19,7 @@ if ( $pid )
 	if ( $uid )
 	{
 		
-		// instances
+		// instances to display
 				
 		// get id for neuron class in this project
 		$neures = $db->getResult(

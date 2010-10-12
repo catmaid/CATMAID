@@ -30,6 +30,8 @@ treenode manipulation mode
 1. left-mouseclick on a treenode
 
 * add new treenode
+? otherwise, need an active skeleton in the object tree (generated before)
+? and adding a new treenode links it to this skeleton, this is how trakem does it!
 1. mouse over an empty location on the stack
 2. left-mousedown
 ? case 3.1 and 3.2. differentiated with a control key? e.g. shift for 3.2 (less common) than 3.1

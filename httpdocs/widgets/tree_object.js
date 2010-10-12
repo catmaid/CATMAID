@@ -55,7 +55,7 @@ initObjectTree = function(pid) {
 		},
 		"themes" : {
 			"theme" : "apple",
-			"url" : "widgets/themes/kde/jsTree/apple/style.css",
+			"url" : "widgets/themes/kde/jsTree/neuron/style.css",
 			"dots" : true,
 			"icons" : true
 		},
@@ -65,15 +65,96 @@ initObjectTree = function(pid) {
 			var id_of_node = obj.attr("id");
 			var type_of_node = obj.attr("rel");
 			var menu = {};
-			if(type_of_node == "neuron") {
+			if (type_of_node == "root" ){
 				menu = {
-					"rename" : {
+						"create_group" : {
+							"separator_before"	: false,
+							"separator_after"	: false,
+							"label"				: "Create group",
+							"action"			: function (obj) {
+								att = { "state": "open", 
+										"data": "group",
+										"attr" : {"rel" : "group", "relname" : "part_of" }
+									};
+								this.create(obj, "inside", att, null, true); 
+							}
+						},
+						"create_neurongroup" : {
+							"separator_before"	: false,
+							"separator_after"	: false,
+							"label"				: "Create neurongroup",
+							"action"			: function (obj) {
+								att = { "state": "open", 
+										"data": "neurongroup",
+										"attr" : {"rel" : "neurongroup", "relname" : "part_of" }
+									};
+								this.create(obj, "inside", att, null, true); 
+							}
+						},
+				}
+			} else if (type_of_node == "group" ){
+				menu = {
+						"create_group" : {
+							"separator_before"	: false,
+							"separator_after"	: false,
+							"label"				: "Create group",
+							"action"			: function (obj) {
+								att = { "state": "open", 
+										"data": "group",
+										"attr" : {"rel" : "group", "relname" : "part_of" }
+									};
+								this.create(obj, "inside", att, null, true); 
+							}
+						},
+						"create_neurongroup" : {
+							"separator_before"	: false,
+							"separator_after"	: false,
+							"label"				: "Create neurongroup",
+							"action"			: function (obj) {
+								att = { "state": "open", 
+										"data": "neurongroup",
+										"attr" : {"rel" : "neurongroup", "relname" : "part_of" }
+									};
+								this.create(obj, "inside", att, null, true); 
+							}
+						}
+				}
+			} else if (type_of_node == "neurongroup" ){
+				menu = {
+						"create_neuron" : {
+							"separator_before"	: false,
+							"separator_after"	: false,
+							"label"				: "Create neuron",
+							"action"			: function (obj) {
+								att = { "state": "open", 
+										"data": "neuron",
+										"attr" : {"rel" : "neuron", "relname" : "part_of" }
+									};
+								this.create(obj, "inside", att, null, true); 
+							}
+						}
+				}
+			} else if(type_of_node == "neuron") {
+				menu = {
+					"create_skeleton" : {
+						"separator_before"	: false,
+						"separator_after"	: true,
+						"label"				: "Create skeleton",
+						"action"			: function (obj) {
+							att = { "state": "open", 
+									"data": "skeleton",
+									"attr" : {"rel" : "skeleton", "relname" : "model_of" }
+								};
+							this.create(obj, "inside", att, null, true); 
+						}
+					},
+					"rename_neuron" : {
 						"separator_before"	: false,
 						"separator_after"	: false,
 						"label"				: "Rename neuron",
 						"action"			: function (obj) { this.rename(obj); }						
 					},
-					"remove" : {
+					"remove_neuron" : {
 						"separator_before"	: false,
 						"icon"				: false,
 						"separator_after"	: false,
@@ -82,18 +163,9 @@ initObjectTree = function(pid) {
 					},
 					"ccp" : false
 				}
-			} else if (type_of_node == "root" ){
-				menu = {
-						"create" : {
-							"separator_before"	: false,
-							"separator_after"	: false,
-							"label"				: "Create neuron",
-							"action"			: function (obj) { this.create(obj); }
-						}
-				}
 			} else if (type_of_node == "skeleton" ) {
 				menu = {
-						"rename" : {
+						"rename_skeleton" : {
 							"separator_before"	: false,
 							"separator_after"	: false,
 							"label"				: "Rename skeleton",
@@ -181,26 +253,41 @@ initObjectTree = function(pid) {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/root.png"
 					},
-					//"valid_children" : [ "all" ],
+					"valid_children" : [ "group" ],
 					"start_drag" : false,
 					"select_node" : false,
 					"delete_node" : false,
 					"remove" : false
 
 				},
+				"group" : {
+					"icon" : {
+						"image" : "widgets/themes/kde/jsTree/neuron/group.png"
+					},
+					"valid_children" : [ "group", "neurongroup" ],
+					"start_drag" : true,
+					
+				},
+				"neurongroup" : {
+					"icon" : {
+						"image" : "widgets/themes/kde/jsTree/neuron/neurongroup.png"
+					},
+					"valid_children" : [ "neuron" ],
+					"start_drag" : true,
+				},
 				"neuron" : {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/neuron.png"
 					},
-					"valid_children" : [ "modelof", "skeleton" ],
-					"start_drag" : false,
-					
+					"valid_children" : [ "modelof", "presynaptic", "postsynaptic" ],
+					"start_drag" : true,
 				},
 				"skeleton" : {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/skeleton.png"
 					},
-					"valid_children" : [ "all" ]
+					"valid_children" : [ "none" ],
+					 "start_drag" : true,
 				},
 				"synapse" : {
 					"icon" : {
@@ -272,6 +359,32 @@ initObjectTree = function(pid) {
 		
 		project.selectedObjects['tree_object'][id] = {'id': id, 'type' : type};
 
+	});
+	
+	$(object_tree_id).bind("create.jstree", function (e, data) {
+
+		mynode = data.rslt.obj;
+		data = {
+			"operation" : "create_node",
+			"parentid" : data.rslt.parent.attr("id").replace("node_",""),
+			"classname" : data.rslt.obj.attr("rel"),
+			"relationname" : data.rslt.obj.attr("relname"),
+			"objname" : data.rslt.name,
+			"pid" : pid
+		};
+		
+		$.ajax({
+			async : false,
+			type: 'POST',
+			url: "/model/instance.operation.php",
+			data : data,
+			dataType : 'json',
+			success : function (data2) {
+				// update node id
+				mynode.attr("id", "node_" + data2['class_instance_id']);
+			}
+		});
+		
 	});
 	
 	$(object_tree_id).bind("rename.jstree", function (e, data) {

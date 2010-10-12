@@ -160,7 +160,7 @@ function Project( pid )
 		if ( class_tree_widget.offsetWidth )
 		{
 			if ( object_tree_widget.offsetWidth )
-				class_tree_widget.style.left = object_tree_widget.offsetWidth + "px";
+				class_tree_widget.style.left = left + "px";
 			else
 				class_tree_widget.style.left = "0px";
 			width -= class_tree_widget.offsetWidth;

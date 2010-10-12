@@ -23,7 +23,7 @@ if ( $pid )
 		
 		$class = $db->getResult(
 		'SELECT "class"."id", "class"."class_name", "class"."uri", "class"."description" 
-		FROM "class" WHERE "class"."project_id" = '.$pid);
+		FROM "class" WHERE "class"."project_id" = '.$pid.' AND "class"."showintree"');
 		
 		$narr = array();
 
@@ -35,6 +35,12 @@ if ( $pid )
 				$rel = 'neuron';
 			else if( $cl['class_name'] == 'skeleton')
 				$rel = 'skeleton';
+			else if( $cl['class_name'] == 'synapse')
+				$rel = 'synapse';
+			else if( $cl['class_name'] == 'group')
+				$rel = 'group';
+			else if( $cl['class_name'] == 'neurongroup')
+				$rel = 'neurongroup';
 			else
 				$rel = 'anything';
 			

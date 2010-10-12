@@ -44,7 +44,7 @@ initObjectTree = function(pid) {
 		"plugins" : [ "themes", "json_data", "ui", "crrm", "types", "dnd", "contextmenu"],
 		"json_data" : {
 			"ajax" : {
-				"url" : 'model/tree.object.list.php?pid='+pid,
+				"url" : 'model/tree.object.list2.php?pid='+pid,
 				},
 			"progressive_render" : true
 		},

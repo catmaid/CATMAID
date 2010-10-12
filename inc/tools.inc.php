@@ -9,7 +9,6 @@
  *
  */
 
-
 /**
  * create a tree view node
  */

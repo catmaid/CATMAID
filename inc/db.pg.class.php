@@ -342,6 +342,33 @@ class DB
 		}
 		return $ret;
 	}
+	
+	/*
+	 * Retrieve relation id for a relation class in a given project
+	 */
+	function getRelationId( $pid, $relationname )
+	{
+		$res = $this->getResult(
+		'SELECT "relation"."id" FROM "relation"
+		WHERE "relation"."project_id" = '.$pid.' AND
+		"relation"."relation_name" = \''.$relationname.'\'');
+		$resid = !empty($res) ? $res[0]['id'] : 0;
+		return $resid;
+	}
+
+	/*
+	 * Retrieve class id for a class name in a given project
+	 */
+	function getClassId( $pid, $classname )
+	{
+		$res = $this->getResult(
+		'SELECT "class"."id" FROM "class"
+		WHERE "class"."project_id" = '.$pid.' AND
+		"class"."class_name" = \''.$classname.'\'');
+		$resid = !empty($res) ? $res[0]['id'] : 0;
+		return $resid;
+	}
+	
 }
 
 ?>

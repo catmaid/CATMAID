@@ -20,43 +20,17 @@ if ( $pid )
 	{
 		
 		// instances to display
-				
-		// get id for neuron class in this project
-		$neures = $db->getResult(
-		'SELECT "class"."id" FROM "class"
-		WHERE "class"."project_id" = '.$pid.' AND
-		"class"."class_name" = \'neuron\'');
-		$nid = !empty($neures) ? $neures[0]['id'] : 0;
-		
-		// get id for skeleton class in this project
-		$skidres = $db->getResult(
-		'SELECT "class"."id" FROM "class"
-		WHERE "class"."project_id" = '.$pid.' AND
-		"class"."class_name" = \'skeleton\'');
-		$skid = !empty($skidres) ? $skidres[0]['id'] : 0;
+		$nid = $db->getClassId( $pid, "neuron" );
+		$skid = $db->getClassId( $pid, "skeleton" );
+		$ngid = $db->getClassId( $pid, "neurongroup" );
+		$gid = $db->getClassId( $pid, "group" );
+		$rid = $db->getClassId( $pid, "root" );
 		
 		// relations
-		
-		// get id for presynaptic_to
-		$presyn = $db->getResult(
-		'SELECT "relation"."id" FROM "relation"
-		WHERE "relation"."project_id" = '.$pid.' AND
-		"relation"."relation_name" = \'presynaptic_to\'');
-		$presyn_id = !empty($presyn) ? $presyn[0]['id'] : 0;
-		
-		// get id for postsynaptic_to
-		$postsyn = $db->getResult(
-		'SELECT "relation"."id" FROM "relation"
-		WHERE "relation"."project_id" = '.$pid.' AND
-		"relation"."relation_name" = \'postsynaptic_to\'');
-		$postsyn_id = !empty($postsyn) ? $postsyn[0]['id'] : 0;
-		
-		// get id for relation 'model_of'
-		$modelofres = $db->getResult(
-		'SELECT "relation"."id" FROM "relation"
-		WHERE "relation"."project_id" = '.$pid.' AND
-		"relation"."relation_name" = \'model_of\'');
-		$modid = !empty($modelofres) ? $modelofres[0]['id'] : 0;
+		$presyn_id = $db->getRelationId( $id, "presynaptic_to" );
+		$postsyn_id = $db->getRelationId( $id, "postsynaptic_to" );
+		$modid = $db->getRelationId( $id, "model_of" );
+		$partof_id = $db->getRelationId( $id, "part_of" );
 		
 		// retrieve all the skeletons for a particular project
 		$skel = $db->getResultKeyedById(

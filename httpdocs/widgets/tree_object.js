@@ -42,11 +42,25 @@ initObjectTree = function(pid) {
 	$(object_tree_id).jstree({
 		"core" : { "html_titles" : false},
 		"plugins" : [ "themes", "json_data", "ui", "crrm", "types", "dnd", "contextmenu"],
-		"json_data" : {
+		"json_data" : { 
+			// I chose an ajax enabled tree - again - as this is most common, and maybe a bit more complex
+			// All the options are the same as jQuery's except for `data` which CAN (not should) be a function
 			"ajax" : {
-				"url" : 'model/tree.object.list2.php?pid='+pid,
-				},
-			"progressive_render" : true
+				// the URL to fetch the data
+				"url" : "model/tree.object.list.php",
+				// this function is executed in the instance's scope (this refers to the tree instance)
+				// the parameter is the node being loaded (may be -1, 0, or undefined when loading the root nodes)
+				"data" : function (n) {
+					// depending on which type of node it is, display those
+					// the result is fed to the AJAX request `data` option
+					return { 
+						"pid" : pid,
+						"parentid" : n.attr ? n.attr("id").replace("node_","") : 0,
+						
+					}; 
+				}
+			},
+			//"progressive_render" : true
 		},
 		"ui" : {
 			"select_limit" : -1,
@@ -91,6 +105,12 @@ initObjectTree = function(pid) {
 								this.create(obj, "inside", att, null, true); 
 							}
 						},
+						"rename_root" : {
+							"separator_before"	: true,
+							"separator_after"	: false,
+							"label"				: "Rename root",
+							"action"			: function (obj) { this.rename(obj); }						
+						}
 				}
 			} else if (type_of_node == "group" ){
 				menu = {
@@ -117,6 +137,12 @@ initObjectTree = function(pid) {
 									};
 								this.create(obj, "inside", att, null, true); 
 							}
+						},
+						"rename_group" : {
+							"separator_before"	: true,
+							"separator_after"	: false,
+							"label"				: "Rename group",
+							"action"			: function (obj) { this.rename(obj); }						
 						}
 				}
 			} else if (type_of_node == "neurongroup" ){
@@ -132,13 +158,19 @@ initObjectTree = function(pid) {
 									};
 								this.create(obj, "inside", att, null, true); 
 							}
+						},
+						"rename_neurongroup" : {
+							"separator_before"	: true,
+							"separator_after"	: false,
+							"label"				: "Rename neurongroup",
+							"action"			: function (obj) { this.rename(obj); }						
 						}
 				}
 			} else if(type_of_node == "neuron") {
 				menu = {
 					"create_skeleton" : {
 						"separator_before"	: false,
-						"separator_after"	: true,
+						"separator_after"	: false,
 						"label"				: "Create skeleton",
 						"action"			: function (obj) {
 							att = { "state": "open", 
@@ -149,7 +181,7 @@ initObjectTree = function(pid) {
 						}
 					},
 					"rename_neuron" : {
-						"separator_before"	: false,
+						"separator_before"	: true,
 						"separator_after"	: false,
 						"label"				: "Rename neuron",
 						"action"			: function (obj) { this.rename(obj); }						
@@ -234,13 +266,13 @@ initObjectTree = function(pid) {
 			}
 		},*/
 		"types" : {
-			"valid_children" : [ "all" ],
+			"max_depth" : -2,
+			"max_children" : -2,
+			"valid_children" : [ "group" ],
 			"types" : {
 				// the default type
 				"default" : {
-					"max_children"	: -1,
-					"max_depth"		: -1,
-					"valid_children": "all",
+					"valid_children": "none",
 	
 					// Bound functions - you can bind any other function here (using boolean or function)
 					//"select_node"	: false,
@@ -266,6 +298,7 @@ initObjectTree = function(pid) {
 					},
 					"valid_children" : [ "group", "neurongroup" ],
 					"start_drag" : true,
+					"select_node" : false,
 					
 				},
 				"neurongroup" : {
@@ -274,13 +307,17 @@ initObjectTree = function(pid) {
 					},
 					"valid_children" : [ "neuron" ],
 					"start_drag" : true,
+					"select_node" : false,
 				},
 				"neuron" : {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/neuron.png"
 					},
-					"valid_children" : [ "modelof", "presynaptic", "postsynaptic" ],
+					// XXX: need to discuss
+					// "valid_children" : [ "modelof", "presynaptic", "postsynaptic" ],
+					"valid_children" : [ "skeleton", "synapse" ],
 					"start_drag" : true,
+					"select_node" : false,
 				},
 				"skeleton" : {
 					"icon" : {
@@ -288,13 +325,15 @@ initObjectTree = function(pid) {
 					},
 					"valid_children" : [ "none" ],
 					 "start_drag" : true,
+					 "select_node" : true,
 				},
 				"synapse" : {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/synapse.png"
 					},
-					"valid_children" : [ "all" ],
+					"valid_children" : [ "none" ],
 					"start_drag" : false,
+					"select_node" : true,
 				},
 				"modelof" : {
 					"icon" : {

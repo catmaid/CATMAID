@@ -14,11 +14,13 @@ $ses =& getSession();
 $pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
+$parentid = isset( $_REQUEST[ 'parentid' ] ) ? intval($_REQUEST[ 'parentid' ]) : 0;
+// extend it by giving a set of relationship types
+
 if ( $pid )
 {
 	if ( $uid )
 	{
-		
 		// instances to display
 		$nid = $db->getClassId( $pid, "neuron" );
 		$skid = $db->getClassId( $pid, "skeleton" );
@@ -27,182 +29,82 @@ if ( $pid )
 		$rid = $db->getClassId( $pid, "root" );
 		
 		// relations
-		$presyn_id = $db->getRelationId( $id, "presynaptic_to" );
-		$postsyn_id = $db->getRelationId( $id, "postsynaptic_to" );
-		$modid = $db->getRelationId( $id, "model_of" );
-		$partof_id = $db->getRelationId( $id, "part_of" );
-		
-		// retrieve all the skeletons for a particular project
-		$skel = $db->getResultKeyedById(
-		'SELECT "ci"."id" as "id", "ci"."name" as "name" FROM "class_instance" AS "ci"
-		WHERE "ci"."project_id" = '.$pid.' AND
-		"ci"."class_id" = '.$skid.'', 'id');
-		
-		// retrieve all the neurons for a particular project
-		$neurons = $db->getResultKeyedById(
-		'SELECT "ci"."id" as "id", "ci"."name" as "name" FROM "class_instance" AS "ci"
-		WHERE "ci"."project_id" = '.$pid.' AND
-		"ci"."class_id" = '.$nid.'', 'id');
+		$presyn_id = $db->getRelationId( $pid, "presynaptic_to" );
+		$postsyn_id = $db->getRelationId( $pid, "postsynaptic_to" );
+		$modid = $db->getRelationId( $pid, "model_of" );
+		$partof_id = $db->getRelationId( $pid, "part_of" );
 
-		// retrieve all skeleton model_of neuron relations
-		$skel_m_neur = $db->getResult(
-		'SELECT "cici"."class_instance_a" as "a", "cici"."class_instance_b" as "b" 
-		FROM "class_instance_class_instance" AS "cici"
-		WHERE "cici"."project_id" = '.$pid.' AND
-		"cici"."relation_id" = '.$modid
-		);
-		
-		$narr = array();
-		// leftover skeleton
-		$loverske = array();
-		foreach( $neurons as $neur ) {
+		if ( !$parentid ) {
+			// retrieve the id of the root node for this project
+			$res = $db->getResult('SELECT "ci"."id", "ci"."name" FROM "class_instance" AS "ci" 
+			WHERE "ci"."project_id" = '.$pid.' AND "ci"."class_id" = '.$rid);
 			
-			// outgoing synapses
-			$insyn = array();
-			// incoming synapses
-			$outsyn = array();
+			$parid = !empty($res) ? $res[0]['id'] : 0;
+			$parname = !empty($res) ? $res[0]['name'] : 'noname';
 			
-			// generate skeleton children for a particular neuron
-			// retrieve model_of relation
-			$skarr = array();
-			
-			foreach($skel_m_neur as $rel) {
-				// model of class_instance b should be a neuron
-				if( $rel['b'] == $neur['id'] )
-				{
-					// retrieve skeleton with id a
-					if( array_key_exists( $rel['a'], $skel) )
-					{
-						// add skeleton
-						$skarr[] = array(
-							'data' => array(
-								'title' => $skel[$rel['a']]['name'],
-							),
-							'attr' => array('id' => 'node_'. $skel[$rel['a']]['id'],
-											'rel' => 'skeleton'),
-							'children' => array()
+			$sOutput = '[';
+			$ar = array(		
+						'data' => array(
+ 							'title' => $parname,
+						),
+						'attr' => array('id' => 'node_'. $parid,
+										'rel' => "root"),
+						'state' => 'closed'								
 						);
 						
-					// retrieve all treenodes for skeleton
-					// query outgoing synapses for skeleton id
-					$incom_res = $db->getResult(
-					'SELECT "tci2"."class_instance_id" as "id", "ci"."name" as "name"
-					FROM "treenode_class_instance" as "tci", "treenode_class_instance" as "tci2",
-					"class_instance" as "ci" WHERE "tci"."class_instance_id" = '.$skel[$rel['a']]['id'].' AND
-					"tci"."treenode_id" = "tci2"."treenode_id" AND "tci2"."relation_id" = '.$presyn_id.'
-					AND "ci"."id" = "tci2"."class_instance_id" AND "tci2"."project_id" = '.$pid);
-					
-					foreach($incom_res as $val)
-					{
-						$insyn[] = array(		
-							'data' => array(
-	 							'title' => $val['name'],
-							),
-							'attr' => array('id' => 'node_'. $val['id'],
-											'rel' => 'synapse'),								
-							'children' => array()
-							);
-					}
-					
-					// retrieve all treenodes for skeleton
-					// query incoming synapses for skeleton id
-					$outgo_res = $db->getResult(
-					'SELECT "tci2"."class_instance_id" as "id", "ci"."name" as "name"
-					FROM "treenode_class_instance" as "tci", "treenode_class_instance" as "tci2",
-					"class_instance" as "ci" WHERE "tci"."class_instance_id" = '.$skel[$rel['a']]['id'].' AND
-					"tci"."treenode_id" = "tci2"."treenode_id" AND "tci2"."relation_id" = '.$postsyn_id.'
-					AND "ci"."id" = "tci2"."class_instance_id" AND "tci2"."project_id" = '.$pid);
-					
-					foreach($outgo_res as $val)
-					{
-						$outsyn[] = array(		
-							'data' => array(
-	 							'title' => $val['name'],
-							),
-							'attr' => array('id' => 'node_'. $val['id'],
-											'rel' => 'synapse'),							
-							'children' => array()
-							);
-					}
-					
-					// unset the worked on skeleton
-					unset($skel[$rel['a']]);
-					
-					} // end if
-				}
-				
-			} // end foreach that loope over all model_of relations between skeletons and neurons
-			
+			$sOutput .= tv_node( $ar );
+			$sOutput .= ']';
+			echo $sOutput;
+			return;
+		}
+		
+		// XXX: inc case we need to show relation_names
+	/*	$res = $db->getResult('SELECT "ci"."id", "ci"."name", "ci"."class_id",
+		"cici"."relation_id", "cici"."class_instance_b" AS "parent", "rl"."relation_name"
+		FROM "class_instance" AS "ci"
+		INNER JOIN "class_instance_class_instance" AS "cici" 
+			ON "ci"."id" = "cici"."class_instance_a" 
+			INNER JOIN "relation" AS "rl" 
+				ON "cici"."relation_id" = "rl"."id"
+		WHERE "ci"."project_id" = '.$pid.' AND
+		   "cici"."class_instance_b" = '.$parid.' AND
+		   ("cici"."relation_id" = '.$presyn_id.'
+			OR "cici"."relation_id" = '.$postsyn_id.'
+			OR "cici"."relation_id" = '.$modid.'
+			OR "cici"."relation_id" = '.$partof_id.')');
+*/
+		$res = $db->getResult('SELECT "ci"."id", "ci"."name", "ci"."class_id",
+		"cici"."relation_id", "cici"."class_instance_b" AS "parent", "cl"."class_name"
+		FROM "class_instance" AS "ci"
+		INNER JOIN "class_instance_class_instance" AS "cici" 
+			ON "ci"."id" = "cici"."class_instance_a" 
+			INNER JOIN "class" AS "cl" 
+				ON "ci"."class_id" = "cl"."id"
+		WHERE "ci"."project_id" = '.$pid.' AND
+		   "cici"."class_instance_b" = '.$parentid.' AND
+		   ("cici"."relation_id" = '.$presyn_id.'
+			OR "cici"."relation_id" = '.$postsyn_id.'
+			OR "cici"."relation_id" = '.$modid.'
+			OR "cici"."relation_id" = '.$partof_id.')');
 
-			$narr[] = array(
-				'data' => array(
-					'title' => $neur['name']
-				),
-		 		'attr' => array('id' => 'node_'. $neur['id'],
-								'rel' => 'neuron',
-								'class' => 'jstree-drop'),
-				'children' => array(
-							  array(
-							  		'data' => array(
-										'title' => 'has models',
-							  		),
-							  		'attr' => array('rel' => 'modelof'),
-							  		'state' => 'open',
-									'children' => $skarr),
-							  array(
-							  		'data' => array(
-										'title' => 'outgoing synapses',
-							  		),
-							  		'attr' => array('rel' => 'postsynaptic'),
-							  		'state' => 'open',
-									'children' => $outsyn),
-							  array(
-							  		'data' => array(
-										'title' => 'incoming synapses',
-						  			),
-									'attr' => array('rel' => 'presynaptic'),
-						  			'state' => 'open',
-									'children' => $insyn),
-							  
-							  /*
-							  array(
-									'title' => 'presynaptic_to',
-									'type' => '',
-									'icon' => '',
-									'children' => array()),*/
-							  )
-			);
-			
-		}
-		
-		// add remaining skeletons
-		// for later dragging to a neuron
-		foreach ($skel as $skelkey => $loverskel)
-		{
-			$narr[] = array(
-				'data' => array(
-					'title' => $loverskel['name'],
-				),
-				'attr' => array('id' => 'node_'. $skelkey,
-								'rel' => 'skeleton'),
-				'children' => array()
-			);
-		}
-							
-		// generate big array
-		$bigarr = array('data' => array(
-										'title' => 'Root',
-										),
-						'attr' => array('id' => 'node_0',
-						 				'rel' => 'root'),
-						'state' => 'open',
-						'children' => $narr);
-		
+		// loop through the array and generate children to return
 		$sOutput = '[';
-		$sOutput .= tv_node( $bigarr );
+		foreach($res as $key => $ele) {
+			$ar = array(		
+						'data' => array(
+ 							'title' => $ele['name'],
+						),
+						'attr' => array('id' => 'node_'. $ele['id'],
+										'rel' => $ele['class_name']),
+						'state' => 'closed'								
+						);
+			$sOutput .= tv_node( $ar );
+			
+		};
 		$sOutput .= ']';
-		echo $sOutput;
 		
+		echo $sOutput;
+
 	}
 	else
 		echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to retrieve the tree.' ) );

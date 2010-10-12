@@ -31,7 +31,7 @@ if ( $pid )
 		if ( $op == 'rename_node')
 		{
 			$ids = $db->update("class_instance", array("name" => $name) ,' "class_instance"."id" = '.$id);
-			echo "Renamed successfully.";
+			echo makeJSON( array( '"class_instance_id"' => $ids) );
 		}
 		else if ( $op == 'remove_node')
 		{

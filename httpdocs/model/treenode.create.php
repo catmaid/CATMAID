@@ -19,10 +19,11 @@ $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 // need to know id if element_of relation for treenode_class_instance
 // isset? parentid, location, radius, confidence
 
-// 1. add new treenode for a given skeleton id
+// 1. add new treenode for a given skeleton id (if parent_id is empty, create a root node with parent = NULL)
 // return: new treenode id
 
-// 2. add new treenode and create a new skeleton
+// XXX: this would go away if we agree for the user to create a skeleton first
+// 2. add new treenode (root) and create a new skeleton
 // return: new treenode id and skeleton id
 
 $skelid = isset( $_REQUEST[ 'skeleton_id' ] ) ? intval( $_REQUEST[ 'skeleton_id' ] ) : 0;
@@ -40,29 +41,23 @@ if ( $pid )
 	{
 		
 		// get id for skeleton class in this project
-		$skidres = $db->getResult(
-		'SELECT "class"."id" FROM "class"
-		WHERE "class"."project_id" = '.$pid.' AND
-		"class"."class_name" = \'skeleton\'');
-		$skid = !empty($skidres) ? $skidres[0]['id'] : 0;
-
+		$skid = $db->getClassId( $pid, "skeleton" );
 		// get id for relation 'element_of'
-		$eleres = $db->getResult(
-		'SELECT "relation"."id" FROM "relation"
-		WHERE "relation"."project_id" = '.$pid.' AND
-		"relation"."relation_name" = \'element_of\'');
-		$eleof = !empty($eleres) ? $eleres[0]['id'] : 0;
-		
+		$eleof = $db->getRelationId( $pid, "element_of" );
+
 		if ( $skelid )
 		{
 			// first case
 			$data = array(
 					'user_id' => $uid,
 					'project_id' => $pid,
-					'parent_id' => $parentid,
 					'location' => '('.$x.','.$y.','.$z.')',
 					'radius' => $radius,
 					'confidence' => $confidence);
+			
+			// this is not a root node
+			if ( $parentid )
+				$data['parent_id'] = $parentid;
 			
 			$tnid = $db->insertIntoId(
 				'treenode',

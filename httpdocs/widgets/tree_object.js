@@ -3,9 +3,11 @@ initObjectTree = function(pid) {
 	// id of object tree
 	object_tree_id = "#tree_object";
 	
-	$("#refresh").click(function () {
+	$("#refresh_object_tree").click(function () {
 		// how to refresh the whole tree?
 		console.log("refresh tree"); 
+		$("#tree_object").jstree("refresh", -1);
+
 	});
 	
 	$("#simaddtn").click(function () {
@@ -13,11 +15,17 @@ initObjectTree = function(pid) {
 		// thus needs to add a new dangling skeleton
 		console.log("simulate adding a new treenode");
 		
+		// retrieve skeleton id currently selected
+		for(key in project.selectedObjects['tree_object'])
+			skelid = key;
+
+		console.log("adding treenode (root) for skeleton id", skelid);
+		
 		$.ajax({
 			  url: 'model/treenode.create.php',
 			  data : { 'pid' : pid,
-					   // 'skeleton_id': 69,
-					   'parent_id': 50,
+					   'skeleton_id': skelid,
+					   'parent_id': 0,
 					   'x' : 1000,
 					   'y' : 1234,
 					   'z' : 1,
@@ -36,7 +44,6 @@ initObjectTree = function(pid) {
 		// selectedObjects['tree_object'] = instance_selection;
 		// datatables grabs automatically the selected skeletons
 		oTable.fnDraw();
-		
 	});
 	
 	$(object_tree_id).jstree({
@@ -63,7 +70,7 @@ initObjectTree = function(pid) {
 			//"progressive_render" : true
 		},
 		"ui" : {
-			"select_limit" : -1,
+			"select_limit" : 1,
 			"select_multiple_modifier" : "ctrl",
 			"selected_parent_close" : "deselect",
 		},
@@ -377,15 +384,22 @@ initObjectTree = function(pid) {
 	});
 	
 	$(object_tree_id).bind("deselect_node.jstree", function (event, data) {
-		console.log("Deselect node");
+		// deselection only works when explicitly done by ctrl
+		// we get into a bad state when it gets deselected by selecting another node
 		
+		console.log("Deselect node");
+		// remove all previously selected nodes (or push it to the history)
+		for(key in project.selectedObjects['tree_object'])
+			delete project.selectedObjects['tree_object'][key];
+		
+		/*
 		id = data.rslt.obj.attr("id").replace("node_","");
 		
 		if ( id in project.selectedObjects['tree_object'] )
 		{
 			console.log("delete id", id);
 			delete project.selectedObjects['tree_object'][id];
-		}
+		}*/
 		
 	});
 	
@@ -395,6 +409,10 @@ initObjectTree = function(pid) {
 		
 		id = data.rslt.obj.attr("id").replace("node_","");
 		type = data.rslt.obj.attr("rel");
+		
+		// remove all previously selected nodes (or push it to the history)
+		for(key in project.selectedObjects['tree_object'])
+			delete project.selectedObjects['tree_object'][key];
 		
 		project.selectedObjects['tree_object'][id] = {'id': id, 'type' : type};
 

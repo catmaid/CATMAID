@@ -77,10 +77,10 @@ if ( $pid )
 					'treenode_class_instance',
 					$data );
 				
-				echo makeJSON( array( 'treenode_id' => $tnid) );
+				echo makeJSON( array( '"treenode_id"' => $tnid) );
 			}
 			else {
-				echo makeJSON( array( 'error' => 'Error while trying to insert treenode.' ) );
+				echo makeJSON( array( '"error"' => 'Error while trying to insert treenode.' ) );
 			}
 		}
 		else
@@ -128,11 +128,11 @@ if ( $pid )
 					'treenode_class_instance',
 					$data );
 				
-				echo makeJSON( array( 'treenode_id' => $tnid,
-									  'skeleton_id' => $skelid) );
+				echo makeJSON( array( '"treenode_id"' => $tnid,
+									  '"skeleton_id"' => $skelid) );
 			}
 			else {
-				echo makeJSON( array( 'error' => 'Error while trying to insert treenode.' ) );
+				echo makeJSON( array( '"error"' => 'Error while trying to insert treenode.' ) );
 			}
 			
 		}

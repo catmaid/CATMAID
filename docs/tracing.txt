@@ -9,6 +9,7 @@ define cursors and key shortcuts for activate a mode.
 notion of the active treenode (only in the local browser):
 * a newly added treenode is automatically the active treenode
 * a clicked treenode becomes the active treenode
+-> project.selectedObjects['active_treenode'] =
 
 in the stack, show treenodes with different colors for the slices below and above (or more than 1)
 
@@ -25,6 +26,7 @@ table name abbreviations:
 
 treenode manipulation mode 
 --------------------------
+
 
 * make an existing treenode active
 1. left-mouseclick on a treenode

@@ -10,29 +10,63 @@ initObjectTree = function(pid) {
 	$("#simaddtn").click(function () {
 		// simulate adding a treenode in the stack widget
 		
+		var skelid = 220;
 		// retrieve skeleton id currently selected
 		for(key in project.selectedObjects['tree_object'])
 			skelid = key;
-		console.log("adding treenode (root) for skeleton id", skelid);
 		
-		$.ajax({
-			  url: 'model/treenode.create.php',
-			  data : { 'pid' : pid,
-					   'skeleton_id': skelid,
-					   'parent_id': 0,
-					   'x' : 1000,
-					   'y' : 1234,
-					   'z' : 1,
-					   'radius' : 3,
-					   'confidence' : 5},
-			  dataType : 'json',
-			  success: null
-			});
-	});
-
-	$("#show_treenodes").click(function () { 
-		// datatables grabs automatically the selected skeleton
-		oTable.fnDraw();
+		if(!skelid) {
+			return;
+		} else {
+		// console.log("adding treenode (root) for skeleton id", skelid);
+		
+		requestQueue.replace(
+				"model/treenode.create.php",
+				"POST",
+				{
+				   'pid' : pid,
+				   'skeleton_id': skelid,
+				   'parent_id': 0,
+				   'x' : 1000,
+				   'y' : 1234,
+				   'z' : 1,
+				   'radius' : 3,
+				   'confidence' : 5
+				},
+				function( status, text, xml )
+				{
+					if ( status == 200 )
+					{
+						if ( text && text != " " )
+						{
+							var jso = $.parseJSON(text);
+							
+							if ( jso.error )
+							{
+								alert( jso.error );
+							}
+							else
+							{
+								// make treenode_id active
+								if ( jso.treenode_id ) {
+									project.selectedObjects['active_treenode'] = {
+										"id" : jso.treenode_id,
+										"type" : "treenode"
+										}
+								}
+								// add it to the visualized objects in the stack
+								// i.e. volumetric treenode.list and update view
+							}
+						}
+					}
+					return true;
+				});
+			
+		}
+		
+		
+		
+		
 	});
 	
 	$(object_tree_id).jstree({
@@ -192,6 +226,19 @@ initObjectTree = function(pid) {
 							"separator_after"	: false,
 							"label"				: "Rename skeleton",
 							"action"			: function (obj) { this.rename(obj); }						
+						},
+						"show_treenode" : {
+							"separator_before"	: false,
+							"separator_after"	: false,
+							"label"				: "Show treenodes in table",
+							"action"			: function (obj) {
+													// deselect all (XXX: only skeletons? context?)
+													this.deselect_all();
+													// select the node
+													this.select_node( obj );
+													// datatables grabs automatically the selected skeleton
+													oTable.fnDraw();
+												  }
 						}
 				}
 			}
@@ -367,7 +414,7 @@ initObjectTree = function(pid) {
 		// deselection only works when explicitly done by ctrl
 		// we get into a bad state when it gets deselected by selecting another node
 		
-		console.log("deselect node");
+		console.log("deselect node", data);
 		
 		// remove all previously selected nodes (or push it to the history)
 		for(key in project.selectedObjects['tree_object'])

@@ -10,7 +10,7 @@ initTreenodeTable = function(pid) {
 		"bProcessing": true,
 		"bServerSide": true,
 		"bAutoWidth": false,
-		"sAjaxSource": 'model/treenode.list.php',
+		"sAjaxSource": 'model/treenode.table.list.php',
 		"fnServerData": function ( sSource, aoData, fnCallback ) {
 		
 			// remove all selected elements in table

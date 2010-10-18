@@ -10,7 +10,7 @@ initObjectTree = function(pid) {
 	$("#simaddtn").click(function () {
 		// simulate adding a treenode in the stack widget
 		
-		var skelid = 220;
+		var skelid = 0;
 		// retrieve skeleton id currently selected
 		for(key in project.selectedObjects['tree_object'])
 			skelid = key;
@@ -49,10 +49,7 @@ initObjectTree = function(pid) {
 							{
 								// make treenode_id active
 								if ( jso.treenode_id ) {
-									project.selectedObjects['active_treenode'] = {
-										"id" : jso.treenode_id,
-										"type" : "treenode"
-										}
+									project.active_treenode = jso.treenode_id;
 								}
 								// add it to the visualized objects in the stack
 								// i.e. volumetric treenode.list and update view

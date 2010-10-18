@@ -148,9 +148,18 @@ function Project( pid )
 			width -= table_widget.offsetWidth;
 			left += table_widget.offsetWidth;
 		}
-		if ( object_tree_widget.offsetWidth )
+		if ( project_stats_widget.offsetWidth )
 		{
 			if ( table_widget.offsetWidth )
+				project_stats_widget.style.left = left + "px";
+			else
+				project_stats_widget.style.left = "0px";
+			width -= project_stats_widget.offsetWidth;
+			left += project_stats_widget.offsetWidth;
+		}
+		if ( object_tree_widget.offsetWidth )
+		{
+			if ( project_stats_widget.offsetWidth )
 				object_tree_widget.style.left = left + "px";
 			else
 				object_tree_widget.style.left = "0px";
@@ -248,6 +257,18 @@ function Project( pid )
 			initPostSynapseTable( this.id );
 			break;
 		}
+		return;
+	}
+	
+	
+	/*
+	 * Shows the project statistics widget
+	 */
+	this.showStatisticsWidget = function (  )
+	{
+		document.getElementById( 'project_stats_widget' ).style.display = 'block';
+		ui.onresize();	
+		initProjectStats();
 		return;
 	}
 	

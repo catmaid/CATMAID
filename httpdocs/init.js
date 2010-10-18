@@ -797,6 +797,10 @@ function init()
 	var table_widget_resize_handle = new ResizeHandle( "h" );
 	table_widget.appendChild( table_widget_resize_handle.getView() );
 	
+	project_stats_widget = document.getElementById( "project_stats_widget" );
+	var project_stats_widget_resize_handle = new ResizeHandle( "h" );
+	project_stats_widget.appendChild( project_stats_widget_resize_handle.getView() );
+	
 	object_tree_widget = document.getElementById( "object_tree_widget" );
 	var tree_widget_resize_handle = new ResizeHandle( "h" );
 	object_tree_widget.appendChild( tree_widget_resize_handle.getView() );

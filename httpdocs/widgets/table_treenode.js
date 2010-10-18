@@ -104,8 +104,9 @@ initTreenodeTable = function(pid) {
 		else
 		{
 			project.selectedObjects['table_treenode'][iId] = {'id': iId, 'tabledata':aData, 'type' : 'treenode'};
+			/**
 			for(key in project.selectedObjects['table_treenode'])
-				console.log(key);
+				console.log(key);*/
 		}			
 		$(this).toggleClass('row_selected');
 	} );

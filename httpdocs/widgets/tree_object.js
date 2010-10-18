@@ -490,7 +490,6 @@ initObjectTree = function(pid) {
 	});
 
 	$(object_tree_id).bind("remove.jstree", function (e, data) {
-		
 		treebefore = data.rlbk;
 		// check if there are any subelements related to the object tree
 		// part_of and model_of relationships
@@ -505,7 +504,7 @@ initObjectTree = function(pid) {
 					"pid" : pid
 				}, function (retdata) {
 					if ( retdata == "True" ) {
-						alert("Object Tree node has child relations. (Re-)move them first before you can delete it.");
+						alert("Object Treenode has child relations. (Re-)move them first before you can delete it.");
 						$.jstree.rollback(treebefore);
 						return false;
 					}
@@ -519,7 +518,8 @@ initObjectTree = function(pid) {
 										"operation" : "remove_node", 
 										"id" : data.rslt.obj.attr("id").replace("node_",""),
 										"title" : data.rslt.new_name,
-										"pid" : pid
+										"pid" : pid,
+										"rel" : data.rslt.obj.attr("rel")
 									}, null
 								);
 							return true;

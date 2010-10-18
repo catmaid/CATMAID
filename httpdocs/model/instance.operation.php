@@ -22,6 +22,41 @@ $name = isset( $_REQUEST[ 'title' ] ) ? $_REQUEST[ 'title' ] : 0;
 $id = isset( $_REQUEST[ 'id' ] ) ? intval($_REQUEST[ 'id' ]) : 0;
 $src = isset( $_REQUEST[ 'src' ] ) ? intval($_REQUEST[ 'src' ]) : 0;
 $ref = isset( $_REQUEST[ 'ref' ] ) ? intval($_REQUEST[ 'ref' ]) : 0;
+$rel = isset( $_REQUEST[ 'rel' ] ) ? $_REQUEST[ 'rel' ] : 0;
+
+// remove skeleton, i.e. treenodes and corresponding relations 
+function remove_skeleton($db, $pid, $skelid) {
+	
+	$lablid = $db->getRelationId( $pid, "labeled_as" );
+	$preid = $db->getRelationId( $pid, "presynaptic_to" );
+	$postid = $db->getRelationId( $pid, "postsynaptic_to" );
+	$elid = $db->getRelationId( $pid, "element_of" );
+	
+	// labeled_as, presynaptic_to, postsynaptic_to, element_of
+	$relarr = array( $lablid, $preid, $postid );
+	foreach( $relarr as $val ) {
+		$res = $db->getResult('DELETE FROM 
+			  "treenode_class_instance" AS "tci"
+			 WHERE 
+			  "tci"."treenode_id" IN (
+			    SELECT "tn"."id"
+			    FROM "treenode" AS "tn"
+			    INNER JOIN "treenode_class_instance" AS "tci2"
+			    ON "tci2"."treenode_id" = "tn"."id" 
+			    WHERE "tci2"."class_instance_id" = '.$skelid.' AND "tci2"."project_id" = '.$pid.'
+			  ) AND "tci"."relation_id" = '.$val);
+	}
+	// remove treenodes from treenode table, should remove the remaining
+	// connected treenodes to the skeleton with the element_of relationship using cascade deletion
+	$res = $db->getResult('DELETE FROM 
+			 "treenode" AS "tn"
+			 WHERE 
+			  "tn"."id" IN (
+			    SELECT "tci"."treenode_id"
+			    FROM "treenode_class_instance" AS "tci"
+			    WHERE "tci"."class_instance_id" = '.$skelid.' AND "tci"."project_id" = '.$pid.')');
+	
+}
 
 if ( $pid )
 {
@@ -41,8 +76,21 @@ if ( $pid )
 			"ci"."user_id" = '.$uid);			
 			if( !empty($isuser) )
 			{
-				$ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
-				echo "Removed successfully.";
+				// check if node is a skeleton. if so, we have to remove its treenodes as well!
+				if ( $rel ) {
+					if ( $rel == "skeleton" )
+					{
+						remove_skeleton($db, $pid, $id);
+						$ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
+						echo "Removed skeleton successfully.";		
+					}
+					else
+					{
+						$ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
+						echo "Removed node successfully.";						
+					}
+				}
+				
 			}
 			else
 			{

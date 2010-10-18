@@ -208,7 +208,7 @@ ALTER SEQUENCE concept_id_seq OWNED BY concept.id;
 -- Name: concept_id_seq; Type: SEQUENCE SET; Schema: public; Owner: catmaid_user
 --
 
-SELECT pg_catalog.setval('concept_id_seq', 354, true);
+SELECT pg_catalog.setval('concept_id_seq', 251, true);
 
 
 --
@@ -616,7 +616,7 @@ ALTER SEQUENCE textlabel_id_seq OWNED BY textlabel.id;
 -- Name: textlabel_id_seq; Type: SEQUENCE SET; Schema: public; Owner: catmaid_user
 --
 
-SELECT pg_catalog.setval('textlabel_id_seq', 9, true);
+SELECT pg_catalog.setval('textlabel_id_seq', 7, true);
 
 
 --
@@ -787,14 +787,14 @@ COPY broken_slice (stack_id, index) FROM stdin;
 --
 
 COPY class (id, user_id, creation_time, edition_time, project_id, class_name, uri, description, showintree) FROM stdin;
+7	1	2010-08-26 18:30:53.288021+02	2010-08-26 18:30:53.288021+02	3	synapse	\N	\N	t
+12	1	2010-08-26 19:18:02.355176+02	2010-08-26 19:18:02.355176+02	3	soma	\N	\N	t
 14	1	2010-08-26 19:19:57.046457+02	2010-08-26 19:19:57.046457+02	3	skeleton	\N	\N	t
 5	1	2010-08-26 18:23:53.551017+02	2010-08-26 18:23:53.551017+02	3	neuron	http://flybase.org/.bin/cvreport.html?cvterm=FBbt:00005106+childdepth=2+parentdepth=all	\N	t
 106	3	2010-10-12 09:42:55.856494+02	2010-10-12 09:42:55.856494+02	3	group	\N	A group helps to organize the data, i.e. it can contain neuron or other groups.	t
 33	3	2010-08-27 17:28:08.713582+02	2010-08-27 17:28:08.713582+02	3	label	\N	\N	f
 107	3	2010-10-12 10:11:23.015507+02	2010-10-12 10:11:23.015507+02	3	neurongroup	\N	a group of neurons	t
 112	3	2010-10-12 11:29:38.385393+02	2010-10-12 11:29:38.385393+02	3	root	\N	\N	f
-12	1	2010-08-26 19:18:02.355176+02	2010-08-26 19:18:02.355176+02	3	soma	http://flybase.org/cgi-bin/cvreport.html?rel=is_a&id=FBbt:00005107	\N	t
-7	1	2010-08-26 18:30:53.288021+02	2010-08-26 18:30:53.288021+02	3	synapse	http://flybase.org/.bin/cvreport.html?cvterm=GO:0045202	\N	t
 \.
 
 
@@ -819,9 +819,11 @@ COPY class_instance (id, user_id, creation_time, edition_time, project_id, class
 210	3	2010-10-12 15:39:47.06444+02	2010-10-12 15:39:47.06444+02	3	106	VNC
 54	3	2010-09-13 14:43:13.055191+02	2010-09-13 14:43:13.055191+02	3	33	MySynapseLabel
 56	3	2010-09-13 15:26:14.246752+02	2010-09-13 15:26:14.246752+02	3	7	synapse2
+212	3	2010-10-12 15:40:02.473579+02	2010-10-12 15:40:02.473579+02	3	107	Sensory neurons
 214	3	2010-10-12 15:40:21.234627+02	2010-10-12 15:40:21.234627+02	3	107	Motor neurons
 216	3	2010-10-12 15:41:04.316662+02	2010-10-12 15:41:04.316662+02	3	5	my first sensory neuron
 218	3	2010-10-12 15:41:42.716015+02	2010-10-12 15:41:42.716015+02	3	5	my first motor neuron
+220	3	2010-10-12 15:44:28.441371+02	2010-10-12 15:44:28.441371+02	3	14	my first skeleton
 222	3	2010-10-12 15:45:16.253228+02	2010-10-12 15:45:16.253228+02	3	14	another skeleton
 224	3	2010-10-12 15:50:43.373386+02	2010-10-12 15:50:43.373386+02	3	14	new skeleton 225
 227	3	2010-10-12 16:00:59.010639+02	2010-10-12 16:00:59.010639+02	3	14	new skeleton 228
@@ -841,12 +843,7 @@ COPY class_instance (id, user_id, creation_time, edition_time, project_id, class
 100	3	2010-10-11 17:26:56.714283+02	2010-10-11 17:26:56.714283+02	3	14	new skeleton 101
 103	3	2010-10-11 17:26:56.816555+02	2010-10-11 17:26:56.816555+02	3	14	new skeleton 104
 248	3	2010-10-12 16:25:27.559696+02	2010-10-12 16:25:27.559696+02	3	106	lateral part right
-212	3	2010-10-12 15:40:02.473579+02	2010-10-12 15:40:02.473579+02	3	107	Sensory neurons
-291	3	2010-10-18 14:00:52.019396+02	2010-10-18 14:00:52.019396+02	3	14	TOREMOVESKEL
-307	3	2010-10-18 14:05:42.984465+02	2010-10-18 14:05:42.984465+02	3	14	skeleton
-323	3	2010-10-18 15:55:24.750893+02	2010-10-18 15:55:24.750893+02	3	106	repository
-331	3	2010-10-18 17:28:04.947925+02	2010-10-18 17:28:04.947925+02	3	107	neurongroup
-333	3	2010-10-18 17:28:06.87195+02	2010-10-18 17:28:06.87195+02	3	5	neuron
+250	3	2010-10-12 16:44:04.271401+02	2010-10-12 16:44:04.271401+02	3	106	dummy2
 \.
 
 
@@ -862,14 +859,13 @@ COPY class_instance_class_instance (id, user_id, creation_time, edition_time, pr
 215	3	2010-10-12 15:40:21.246458+02	2010-10-12 15:40:21.246458+02	3	9	214	210
 217	3	2010-10-12 15:41:04.339678+02	2010-10-12 15:41:04.339678+02	3	9	216	212
 219	3	2010-10-12 15:41:42.741856+02	2010-10-12 15:41:42.741856+02	3	9	218	214
+223	3	2010-10-12 15:45:16.281005+02	2010-10-12 15:45:16.281005+02	3	10	222	218
 247	3	2010-10-12 16:25:13.25979+02	2010-10-12 16:25:13.25979+02	3	9	246	208
 249	3	2010-10-12 16:25:27.58286+02	2010-10-12 16:25:27.58286+02	3	9	248	208
 68	3	2010-09-27 14:56:05.611705+02	2010-09-27 14:56:05.611705+02	3	10	58	67
+251	3	2010-10-12 16:44:04.292271+02	2010-10-12 16:44:04.292271+02	3	9	250	208
+221	3	2010-10-12 15:44:28.466215+02	2010-10-12 15:44:28.466215+02	3	10	220	218
 213	3	2010-10-12 15:40:02.500448+02	2010-10-12 15:40:02.500448+02	3	9	212	210
-223	3	2010-10-12 15:45:16.281005+02	2010-10-12 15:45:16.281005+02	3	10	222	216
-324	3	2010-10-18 15:55:24.765313+02	2010-10-18 15:55:24.765313+02	3	9	323	117
-332	3	2010-10-18 17:28:04.971404+02	2010-10-18 17:28:04.971404+02	3	9	331	323
-334	3	2010-10-18 17:28:06.8819+02	2010-10-18 17:28:06.8819+02	3	9	333	331
 \.
 
 
@@ -984,8 +980,6 @@ COPY textlabel (id, type, text, colour, font_name, font_style, font_size, projec
 5	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	250	3	t	2010-09-13 11:50:47.159475+02	2010-09-13 11:50:49.604793+02	t
 6	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-10-11 14:15:31.168282+02	2010-10-11 14:15:33.854817+02	t
 7	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-10-11 14:16:05.826567+02	2010-10-11 14:16:08.769985+02	t
-8	text	MYTEST\n	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-10-18 09:38:47.088904+02	2010-10-18 09:39:33.143551+02	t
-9	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-10-18 09:44:24.225973+02	2010-10-18 09:44:29.548195+02	t
 \.
 
 
@@ -1001,8 +995,6 @@ COPY textlabel_location (textlabel_id, location, deleted) FROM stdin;
 5	(4820,2375,9)	t
 6	(3420,3640,153)	t
 7	(2175,4200,9)	t
-8	(1440,4145,99)	t
-9	(2035,4005,9)	t
 \.
 
 
@@ -1013,7 +1005,6 @@ COPY textlabel_location (textlabel_id, location, deleted) FROM stdin;
 COPY treenode (id, user_id, creation_time, edition_time, project_id, parent_id, location, radius, confidence) FROM stdin;
 36	3	2010-09-02 10:51:02.027312+02	2010-09-02 10:51:02.027312+02	3	\N	(1000,1000,0)	0	4
 37	3	2010-09-02 10:51:41.345787+02	2010-09-02 10:51:41.345787+02	3	36	(1200,1000,0)	0	5
-293	3	2010-10-18 14:01:07.710007+02	2010-10-18 14:01:07.710007+02	3	\N	(1000,1234,1)	3	5
 27	1	2010-08-26 21:33:08.322107+02	2010-08-26 21:33:08.322107+02	1	25	(9000,2000,0)	0	5
 25	1	2010-08-26 21:32:07.78538+02	2010-08-26 21:32:07.78538+02	1	\N	(1000,1000,0)	0	5
 38	3	2010-09-02 11:13:30.274837+02	2010-09-02 11:13:30.274837+02	3	37	(1100,1000,0)	0	5
@@ -1042,32 +1033,6 @@ COPY treenode (id, user_id, creation_time, edition_time, project_id, parent_id, 
 240	3	2010-10-12 16:18:47.853836+02	2010-10-12 16:18:47.853836+02	3	\N	(1000,1234,1)	3	5
 242	3	2010-10-12 16:18:48.038443+02	2010-10-12 16:18:48.038443+02	3	\N	(1000,1234,1)	3	5
 244	3	2010-10-12 16:18:48.193885+02	2010-10-12 16:18:48.193885+02	3	\N	(1000,1234,1)	3	5
-252	3	2010-10-18 09:25:32.949434+02	2010-10-18 09:25:32.949434+02	3	\N	(1000,1234,1)	3	5
-254	3	2010-10-18 09:46:45.684329+02	2010-10-18 09:46:45.684329+02	3	\N	(1000,1234,1)	3	5
-256	3	2010-10-18 09:47:54.110851+02	2010-10-18 09:47:54.110851+02	3	\N	(1000,1234,1)	3	5
-258	3	2010-10-18 09:49:24.308571+02	2010-10-18 09:49:24.308571+02	3	\N	(1000,1234,1)	3	5
-260	3	2010-10-18 09:52:10.127186+02	2010-10-18 09:52:10.127186+02	3	\N	(1000,1234,1)	3	5
-262	3	2010-10-18 09:54:19.793804+02	2010-10-18 09:54:19.793804+02	3	\N	(1000,1234,1)	3	5
-264	3	2010-10-18 10:39:14.721573+02	2010-10-18 10:39:14.721573+02	3	\N	(1000,1234,1)	3	5
-266	3	2010-10-18 10:39:30.055859+02	2010-10-18 10:39:30.055859+02	3	\N	(1000,1234,1)	3	5
-268	3	2010-10-18 10:40:02.18132+02	2010-10-18 10:40:02.18132+02	3	\N	(1000,1234,1)	3	5
-270	3	2010-10-18 10:42:27.733485+02	2010-10-18 10:42:27.733485+02	3	\N	(1000,1234,1)	3	5
-272	3	2010-10-18 10:42:59.825641+02	2010-10-18 10:42:59.825641+02	3	\N	(1000,1234,1)	3	5
-274	3	2010-10-18 10:43:57.600224+02	2010-10-18 10:43:57.600224+02	3	\N	(1000,1234,1)	3	5
-276	3	2010-10-18 10:44:25.521956+02	2010-10-18 10:44:25.521956+02	3	\N	(1000,1234,1)	3	5
-278	3	2010-10-18 10:44:48.33622+02	2010-10-18 10:44:48.33622+02	3	\N	(1000,1234,1)	3	5
-280	3	2010-10-18 10:45:17.371449+02	2010-10-18 10:45:17.371449+02	3	\N	(1000,1234,1)	3	5
-282	3	2010-10-18 10:49:41.694031+02	2010-10-18 10:49:41.694031+02	3	\N	(1000,1234,1)	3	5
-295	3	2010-10-18 14:01:08.861427+02	2010-10-18 14:01:08.861427+02	3	\N	(1000,1234,1)	3	5
-297	3	2010-10-18 14:02:51.098989+02	2010-10-18 14:02:51.098989+02	3	\N	(1000,1234,1)	3	5
-299	3	2010-10-18 14:02:51.202326+02	2010-10-18 14:02:51.202326+02	3	\N	(1000,1234,1)	3	5
-301	3	2010-10-18 14:02:57.285975+02	2010-10-18 14:02:57.285975+02	3	\N	(1000,1234,1)	3	5
-303	3	2010-10-18 14:02:57.384177+02	2010-10-18 14:02:57.384177+02	3	\N	(1000,1234,1)	3	5
-317	3	2010-10-18 15:53:16.758623+02	2010-10-18 15:53:16.758623+02	3	\N	(1000,1234,1)	3	5
-319	3	2010-10-18 15:53:17.196384+02	2010-10-18 15:53:17.196384+02	3	\N	(1000,1234,1)	3	5
-337	3	2010-10-18 17:28:16.337451+02	2010-10-18 17:28:16.337451+02	3	\N	(1000,1234,1)	3	5
-339	3	2010-10-18 17:28:16.977094+02	2010-10-18 17:28:16.977094+02	3	\N	(1000,1234,1)	3	5
-341	3	2010-10-18 17:28:17.707743+02	2010-10-18 17:28:17.707743+02	3	\N	(1000,1234,1)	3	5
 \.
 
 
@@ -1095,13 +1060,12 @@ COPY treenode_class_instance (id, user_id, creation_time, edition_time, project_
 105	3	2010-10-11 17:26:56.845771+02	2010-10-11 17:26:56.845771+02	3	11	104	103
 226	3	2010-10-12 15:50:43.494727+02	2010-10-12 15:50:43.494727+02	3	11	225	224
 229	3	2010-10-12 16:00:59.054239+02	2010-10-12 16:00:59.054239+02	3	11	228	227
-253	3	2010-10-18 09:25:33.000973+02	2010-10-18 09:25:33.000973+02	3	11	252	222
-294	3	2010-10-18 14:01:07.735488+02	2010-10-18 14:01:07.735488+02	3	11	293	291
-296	3	2010-10-18 14:01:08.868689+02	2010-10-18 14:01:08.868689+02	3	11	295	291
-298	3	2010-10-18 14:02:51.121824+02	2010-10-18 14:02:51.121824+02	3	11	297	291
-300	3	2010-10-18 14:02:51.210465+02	2010-10-18 14:02:51.210465+02	3	11	299	291
-302	3	2010-10-18 14:02:57.299966+02	2010-10-18 14:02:57.299966+02	3	11	301	291
-304	3	2010-10-18 14:02:57.388773+02	2010-10-18 14:02:57.388773+02	3	11	303	291
+235	3	2010-10-12 16:18:21.381323+02	2010-10-12 16:18:21.381323+02	3	11	234	220
+237	3	2010-10-12 16:18:44.383218+02	2010-10-12 16:18:44.383218+02	3	11	236	220
+239	3	2010-10-12 16:18:45.028258+02	2010-10-12 16:18:45.028258+02	3	11	238	220
+241	3	2010-10-12 16:18:47.872961+02	2010-10-12 16:18:47.872961+02	3	11	240	220
+243	3	2010-10-12 16:18:48.050573+02	2010-10-12 16:18:48.050573+02	3	11	242	220
+245	3	2010-10-12 16:18:48.205613+02	2010-10-12 16:18:48.205613+02	3	11	244	220
 \.
 
 
@@ -1357,16 +1321,6 @@ ALTER TABLE ONLY "user"
 
 
 --
--- Name: apply_edition_time_update; Type: TRIGGER; Schema: public; Owner: catmaid_user
---
-
-CREATE TRIGGER apply_edition_time_update
-    BEFORE UPDATE ON class_instance
-    FOR EACH ROW
-    EXECUTE PROCEDURE on_edit();
-
-
---
 -- Name: on_edit; Type: TRIGGER; Schema: public; Owner: catmaid_user
 --
 
@@ -1403,22 +1357,6 @@ ALTER TABLE ONLY broken_slice
 
 
 --
--- Name: class_class_class_a_fkey; Type: FK CONSTRAINT; Schema: public; Owner: catmaid_user
---
-
-ALTER TABLE ONLY class_class
-    ADD CONSTRAINT class_class_class_a_fkey FOREIGN KEY (class_a) REFERENCES class(id) ON DELETE CASCADE;
-
-
---
--- Name: class_class_class_b_fkey; Type: FK CONSTRAINT; Schema: public; Owner: catmaid_user
---
-
-ALTER TABLE ONLY class_class
-    ADD CONSTRAINT class_class_class_b_fkey FOREIGN KEY (class_b) REFERENCES class(id) ON DELETE CASCADE;
-
-
---
 -- Name: class_instance_class_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: catmaid_user
 --
 
@@ -1427,19 +1365,19 @@ ALTER TABLE ONLY class_instance
 
 
 --
--- Name: class_instance_class_instance_class_instance_a_fkey; Type: FK CONSTRAINT; Schema: public; Owner: catmaid_user
+-- Name: class_instance_relation_instance_class_instance_a_fkey; Type: FK CONSTRAINT; Schema: public; Owner: catmaid_user
 --
 
 ALTER TABLE ONLY class_instance_class_instance
-    ADD CONSTRAINT class_instance_class_instance_class_instance_a_fkey FOREIGN KEY (class_instance_a) REFERENCES class_instance(id) ON DELETE CASCADE;
+    ADD CONSTRAINT class_instance_relation_instance_class_instance_a_fkey FOREIGN KEY (class_instance_a) REFERENCES class_instance(id);
 
 
 --
--- Name: class_instance_class_instance_class_instance_b_fkey; Type: FK CONSTRAINT; Schema: public; Owner: catmaid_user
+-- Name: class_instance_relation_instance_class_instance_b_fkey; Type: FK CONSTRAINT; Schema: public; Owner: catmaid_user
 --
 
 ALTER TABLE ONLY class_instance_class_instance
-    ADD CONSTRAINT class_instance_class_instance_class_instance_b_fkey FOREIGN KEY (class_instance_b) REFERENCES class_instance(id) ON DELETE CASCADE;
+    ADD CONSTRAINT class_instance_relation_instance_class_instance_b_fkey FOREIGN KEY (class_instance_b) REFERENCES class_instance(id);
 
 
 --
@@ -1464,6 +1402,22 @@ ALTER TABLE ONLY class_instance_class_instance
 
 ALTER TABLE ONLY class_instance
     ADD CONSTRAINT class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+
+
+--
+-- Name: class_relation_instance_class_a_fkey; Type: FK CONSTRAINT; Schema: public; Owner: catmaid_user
+--
+
+ALTER TABLE ONLY class_class
+    ADD CONSTRAINT class_relation_instance_class_a_fkey FOREIGN KEY (class_a) REFERENCES class(id);
+
+
+--
+-- Name: class_relation_instance_class_b_fkey; Type: FK CONSTRAINT; Schema: public; Owner: catmaid_user
+--
+
+ALTER TABLE ONLY class_class
+    ADD CONSTRAINT class_relation_instance_class_b_fkey FOREIGN KEY (class_b) REFERENCES class(id);
 
 
 --
@@ -1607,7 +1561,7 @@ ALTER TABLE ONLY treenode_class_instance
 --
 
 ALTER TABLE ONLY treenode_class_instance
-    ADD CONSTRAINT treenode_class_instance_treenode_id_fkey FOREIGN KEY (treenode_id) REFERENCES treenode(id) ON DELETE CASCADE;
+    ADD CONSTRAINT treenode_class_instance_treenode_id_fkey FOREIGN KEY (treenode_id) REFERENCES treenode(id);
 
 
 --

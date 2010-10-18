@@ -27,7 +27,6 @@ table name abbreviations:
 treenode manipulation mode 
 --------------------------
 
-
 * make an existing treenode active
 1. left-mouseclick on a treenode
 

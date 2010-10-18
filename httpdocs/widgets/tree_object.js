@@ -20,7 +20,7 @@ initObjectTree = function(pid) {
 		} else {
 		// console.log("adding treenode (root) for skeleton id", skelid);
 		
-		requestQueue.replace(
+		requestQueue.register(
 				"model/treenode.create.php",
 				"POST",
 				{
@@ -164,7 +164,14 @@ initObjectTree = function(pid) {
 							"separator_after"	: false,
 							"label"				: "Rename group",
 							"action"			: function (obj) { this.rename(obj); }						
-						}
+						},
+						"remove_group" : {
+							"separator_before"	: false,
+							"icon"				: false,
+							"separator_after"	: false,
+							"label"				: "Remove group",
+							"action"			: function (obj) { this.remove(obj); }
+						},
 				}
 			} else if (type_of_node == "neurongroup" ){
 				menu = {
@@ -185,7 +192,14 @@ initObjectTree = function(pid) {
 							"separator_after"	: false,
 							"label"				: "Rename neurongroup",
 							"action"			: function (obj) { this.rename(obj); }						
-						}
+						},
+						"remove_neurongroup" : {
+							"separator_before"	: false,
+							"icon"				: false,
+							"separator_after"	: false,
+							"label"				: "Remove neurongroup",
+							"action"			: function (obj) { this.remove(obj); }
+						},
 				}
 			} else if(type_of_node == "neuron") {
 				menu = {
@@ -218,12 +232,6 @@ initObjectTree = function(pid) {
 				}
 			} else if (type_of_node == "skeleton" ) {
 				menu = {
-						"rename_skeleton" : {
-							"separator_before"	: false,
-							"separator_after"	: false,
-							"label"				: "Rename skeleton",
-							"action"			: function (obj) { this.rename(obj); }						
-						},
 						"show_treenode" : {
 							"separator_before"	: false,
 							"separator_after"	: false,
@@ -236,7 +244,20 @@ initObjectTree = function(pid) {
 													// datatables grabs automatically the selected skeleton
 													oTable.fnDraw();
 												  }
-						}
+						},
+						"rename_skeleton" : {
+							"separator_before"	: true,
+							"separator_after"	: false,
+							"label"				: "Rename skeleton",
+							"action"			: function (obj) { this.rename(obj); }						
+						},
+						"remove_skeleton" : {
+							"separator_before"	: false,
+							"icon"				: false,
+							"separator_after"	: false,
+							"label"				: "Remove skeleton",
+							"action"			: function (obj) { this.remove(obj); }
+						},
 				}
 			}
 			return menu;
@@ -410,17 +431,14 @@ initObjectTree = function(pid) {
 	$(object_tree_id).bind("deselect_node.jstree", function (event, data) {
 		// deselection only works when explicitly done by ctrl
 		// we get into a bad state when it gets deselected by selecting another node
-		
-		console.log("deselect node", data);
-		
+		// thus, we only allow one selected node for now
+				
 		// remove all previously selected nodes (or push it to the history)
 		for(key in project.selectedObjects['tree_object'])
 			delete project.selectedObjects['tree_object'][key];
 	});
 	
 	$(object_tree_id).bind("select_node.jstree", function (event, data) {
-		
-		console.log("select node");
 		
 		id = data.rslt.obj.attr("id").replace("node_","");
 		type = data.rslt.obj.attr("rel");
@@ -460,10 +478,6 @@ initObjectTree = function(pid) {
 	});
 	
 	$(object_tree_id).bind("rename.jstree", function (e, data) {
-		
-		console.log("rename");
-		console.log(data.rslt.obj.attr("id"));
-		
 		$.post(
 			"/model/instance.operation.php", 
 			{ 
@@ -478,27 +492,46 @@ initObjectTree = function(pid) {
 	$(object_tree_id).bind("remove.jstree", function (e, data) {
 		
 		treebefore = data.rlbk;
+		// check if there are any subelements related to the object tree
+		// part_of and model_of relationships
+		$.post(
+				"/model/instance.operation.php", 
+				{ 
+					"operation" : "has_relations",
+					"relationnr" : 2,
+					"relation0" : "part_of",
+					"relation1" : "model_of",
+					"id" : data.rslt.obj.attr("id").replace("node_",""),
+					"pid" : pid
+				}, function (retdata) {
+					if ( retdata == "True" ) {
+						alert("Object Tree node has child relations. (Re-)move them first before you can delete it.");
+						$.jstree.rollback(treebefore);
+						return false;
+					}
+					else {
+						// can remove
+						if( confirm('Really remove "' + data.rslt.obj.text() + '" ?' ) )
+						{
+							$.post(
+									"/model/instance.operation.php", 
+									{ 
+										"operation" : "remove_node", 
+										"id" : data.rslt.obj.attr("id").replace("node_",""),
+										"title" : data.rslt.new_name,
+										"pid" : pid
+									}, null
+								);
+							return true;
+						} else {
+							 $.jstree.rollback(treebefore);
+							 return false;
+						}
+					}
+
+				}
+			);
 		
-		if( confirm('Really remove node?') )
-		{
-			// XXX: remove node depending on its type?
-			// issue 34
-			// recursively remove? e.g. group and neurongroup
-			// remove treenodes when removing skeleton?
-			// what about removing synapses (which are relational?)
-			$.post(
-					"/model/instance.operation.php", 
-					{ 
-						"operation" : "remove_node", 
-						"id" : data.rslt.obj.attr("id").replace("node_",""),
-						"title" : data.rslt.new_name,
-						"pid" : pid
-					}, null
-				);
-		} else {
-			 $.jstree.rollback(treebefore);
-			 return false;
-		}
 	});
 	
 	$(object_tree_id).bind("move_node.jstree", function (e, data) {
@@ -508,7 +541,6 @@ initObjectTree = function(pid) {
 		
 		// the relationship stays the same (otherwise it would not be
 		// a valid move), thus we only have to change the parent
-		
 		$.ajax({
 			async : false,
 			type: 'POST',
@@ -522,7 +554,6 @@ initObjectTree = function(pid) {
 			success : function (r, status) {
 				if(r != "True") {
 					$.jstree.rollback(data.rlbk);
-					// console.log("rollback");
 				}
 			}
 		});

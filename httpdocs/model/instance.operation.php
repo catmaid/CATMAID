@@ -36,10 +36,10 @@ if ( $pid )
 		else if ( $op == 'remove_node')
 		{
 			// check if the object belongs to you
-			$isuser = $db->getResult('SELECT "ci"."id" FROM "class_instance" AS "ci", WHERE
-			"ci"."id" = '.$id.'
-			"ci"."user_id" = '.$uid);
-			if( $isuser )
+			$isuser = $db->getResult('SELECT "ci"."id" FROM "class_instance" AS "ci" WHERE
+			"ci"."id" = '.$id.' AND
+			"ci"."user_id" = '.$uid);			
+			if( !empty($isuser) )
 			{
 				$ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
 				echo "Removed successfully.";
@@ -127,45 +127,30 @@ if ( $pid )
 				echo "True";	
 			}
 		}
-		else if ( $op == 'move_skeleton')
+			else if ( $op == 'has_relations' )
 		{
-			if ( $src && $ref )
-			{
-				// check if src and ref are already related by model_of
-				// if so, update, otherwise create new
+			
+			$relnr = isset( $_REQUEST[ 'relationnr' ] ) ? intval($_REQUEST[ 'relationnr' ]) : 0;
+			
+			$relwhere = "";
+			for ($i = 0; $i < $relnr; $i++) {
 				
-				// get id for relation 'model_of'
-				$modelofres = $db->getResult(
-				'SELECT "relation"."id" FROM "relation"
-				WHERE "relation"."project_id" = '.$pid.' AND
-				"relation"."relation_name" = \'model_of\'');
-				$modid = !empty($modelofres) ? $modelofres[0]['id'] : 0;
+				$re = isset( $_REQUEST[ 'relation'.$i ] ) ? $_REQUEST[ 'relation'.$i ] : "none";
 				
-				$res = $db->getResult(
-				'SELECT "cici"."id" FROM "class_instance_class_instance" AS "cici" 
-				WHERE "cici"."project_id" = '.$pid.' AND "cici"."relation_id" = '.$modid.' 
-				AND "cici"."class_instance_a" = '.$src);
-				
-				if (empty($res)) {
-					// insert it
-					$ins = array('user_id' => $uid,
-								 'project_id' => $pid,
-								 'relation_id' => $modid,
-								 'class_instance_a' => $src,
-								 'class_instance_b' => $ref);
-					$db->insertInto( "class_instance_class_instance", $ins);
-					echo "Inserted";
-					
-				} else {
-					// update it
-					$up = array('class_instance_b' => $ref);
-					$upw = 'user_id = '.$uid.' AND project_id = '.$pid.' AND relation_id = '.$modid.' AND class_instance_a = '.$src;
-					$db->update( "class_instance_class_instance", $up, $upw);
-					echo "Updated";
-					
-				}
-				
-			}	
+			    $relid = $db->getRelationId( $pid, $re );
+			    $relwhere .= 'relation_id = '.$relid;
+			    if( $i < ($relnr - 1)) {
+			    	$relwhere .= ' OR ';
+			    };
+			}
+			
+			$rels = $db->getResult(
+			'SELECT "cici"."id" FROM "class_instance_class_instance" AS "cici"
+			WHERE "cici"."project_id" = '.$pid.' AND
+			"cici"."class_instance_b" = '.$id.' AND
+			('.$relwhere.')');
+			$ret = !empty($rels) ? "True" : "False";
+			echo $ret;
 
 		}
 		

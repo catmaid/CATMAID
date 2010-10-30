@@ -8,7 +8,12 @@
 
 == Ubuntu 10.10 ==
 
-0. Check out the git-repo into /var/www/catmaid so that it has /var/www/catmaid/httpdocs/
+The git repository is hosted here::
+
+	http://pacific.mpi-cbg.de/cgi-bin/gitweb.cgi
+
+0. Clone the repository into /var/www/catmaid so that you have
+the folder /var/www/catmaid/httpdocs/ in place
 
 1. PostgresSQL
 
@@ -79,6 +84,10 @@ Try to start CATMAID::
 
 	firefox http://catmaid/
 
+And use the default login::
+
+	user: gerhard
+	pass: gerhard
 
 Deprecated
 ==========

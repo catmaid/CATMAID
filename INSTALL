@@ -21,13 +21,13 @@ https://help.ubuntu.com/community/PostgreSQL
 
 	sudo apt-get install postgresql pgadmin3 phppgadmin
 
-Update the password for your catmaid user in /var/www/catmaid/doc/createuser.sql
+Update the password for your catmaid user in /var/www/catmaid/docs/createuser.sql
 
 	sudo -u postgres psql < docs/createuser.sql
 
 Dump the database in docs/master.sql::
 
-	sudo -u postgres psql < docs/master.sql
+	sudo -u postgres psql catmaid < docs/master.sql
 
 Check if you can login and see the contents::
 

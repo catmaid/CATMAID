@@ -6,6 +6,84 @@
 2. Apache2 Webserver
 3. PHP 5
 
+== Ubuntu 10.10 ==
+
+0. Check out the git-repo into /var/www/catmaid so that it has /var/www/catmaid/httpdocs/
+
+1. PostgresSQL
+
+https://help.ubuntu.com/community/PostgreSQL
+
+	sudo apt-get install postgresql pgadmin3 phppgadmin
+
+Update the password for your catmaid user in /var/www/catmaid/doc/createuser.sql
+
+	sudo -u postgres psql < docs/createuser.sql
+
+Dump the database in docs/master.sql::
+
+	sudo -u postgres psql < docs/master.sql
+
+Check if you can login and see the contents::
+
+	http://localhost/phppgadmin/
+
+Do "Managing users and rights"
+
+	 -> TODO (updating pg_hba.conf)
+
+Update catmaid database connection for user in::
+
+	/var/www/catmaid/inc/setup.inc.php
+
+
+2. Apache2 Server
+
+http://wiki.ubuntuusers.de/Apache/Virtual_Hosts
+
+Create in /etc/apache2/sites-available a file called "catmaid":
+----
+<VirtualHost *:80>
+ServerName catmaid
+
+DocumentRoot "/var/www/catmaid/httpdocs"
+
+php_admin_value register_globals off
+php_admin_value include_path ".:/var/www/catmaid/inc"
+php_admin_value session.use_only_cookies 1
+php_admin_value error_reporting 2047
+php_admin_value display_errors true
+
+<Directory /var/www/catmaid/httpdocs>
+
+	Options FollowSymLinks
+	AllowOverride AuthConfig Limit FileInfo
+
+                Order allow,deny
+                allow from all
+
+</Directory>
+
+CustomLog /var/www/catmaid/logs/access_log combined
+ErrorLog /var/www/catmaid/logs/error.log
+
+</VirtualHost>
+---
+
+	sudo a2ensite catmaid
+	/etc/init.d/apache2 reload
+
+You might have to update /etc/hosts
+
+Try to start CATMAID::
+
+	firefox http://catmaid/
+
+
+Deprecated
+==========
+
+
 ===Database===
 
 Create the database using the included dump.sql file.  In Debian/Ubuntu, this
@@ -24,10 +102,4 @@ rule for ident authentication:
 
 local   catmaid     catmaid_user                      md5
 local   all         all                               ident
-
-
-===Web Server===
-
-
-
 

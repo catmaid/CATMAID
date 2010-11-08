@@ -91,6 +91,9 @@ SVGOverlay = function(
 	self.svgView = svgView;
 	
 	var r = Raphael(self.svgView, 1000, 200);
+	
+	var c = r.circle(50, 50, 40);
+	
 	console.log("raph", r);
 	
 	// storing original coordinates

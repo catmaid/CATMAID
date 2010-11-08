@@ -1,0 +1,6 @@
+div.sliceSVGOverlay,
+{
+	position:absolute;
+	background:#FFFF00;
+	z-index:4;
+}

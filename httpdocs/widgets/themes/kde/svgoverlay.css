@@ -1,0 +1,31 @@
+div.sliceView div.sliceSVGOverlay
+{
+  position:absolute;
+  top:0px;
+  left:0px;
+  margin:0px;
+  padding:0px;
+  
+  border:solid 2px #0000FF;
+ 
+}
+
+/*
+div.sliceView div.sliceSVGOverlay p
+{
+  border:none;
+  margin:0px;
+  margin-top:-12px;
+  padding:3px 6px 3px 14px;
+  color:#FFFFFF;
+
+  background:url(blue20.png);
+  overflow:hidden;
+}
+
+div.sliceView div.sliceSVGOverlay p span
+{
+  padding:3px 6px 3px 6px;
+  background:#0000FF;
+}
+*/

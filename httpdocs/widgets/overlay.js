@@ -58,63 +58,56 @@ Node = function( paper, parent, x, y, r )
 }
 
 SVGOverlay = function(
-		svgView,
 		resolution,			//!< object {x, y, z} resolution of the parent DOM element in nanometer/pixel
 		translation
 )
 {
-		
-	console.log("svg overlay...");
-	console.log("resolution", resolution);
-	console.log("translation", translation);
-	
-	this.updatePaper = function(
-			left, top, viewWidth, viewHeight
-			)
+
+  this.createdata = function() 
+  {
+    // storing original coordinates
+    
+    var ln = null;
+    
+    var x = r.width / 2;
+    var y = r.height / 2;
+    
+    for (var i = 0; i < 100; ++i)
+    {
+      x = Math.min( r.width, Math.max( 0, x + ( .5 - Math.random() ) * 100 ) );
+      y = Math.min( r.height, Math.max( 0, y + ( .5 - Math.random() ) * 100 ) );
+      ln = new Node( r, ln, x, y, 8 );
+    }
+    
+    while ( ln.parent != null )
+    {
+      ln.parent.getChildren().push( ln );
+      ln.drawLine();
+      ln = ln.parent;
+    }
+  }
+
+	this.update = function(width, height)
 	{
-		// you need not to update the tracingContainer's style
-		/*
-		tracingContainer.style.left = left + "px";
-		tracingContainer.style.top = top + "px";
-		tracingContainer.style.width = viewWidth + "px";
-		tracingContainer.style.height = viewHeight + "px";
-		*/
-		
-		// update paper size
-		r.setSize(viewWidth, viewHeight);
-		
+	  view.style.width = width + "px";
+    view.style.height = height + "px";
+		r.setSize(width, height);
 	}
 	
+  this.getView = function()
+  {
+    return view;
+  }
+  
 	self = this;
 	self.resolution = resolution;
 	self.translation = translation;
-	self.svgView = svgView;
-	
-	var r = Raphael(self.svgView, 1000, 200);
-	
-	var c = r.circle(50, 50, 40);
-	
-	console.log("raph", r);
-	
-	// storing original coordinates
-	
-	var ln = null;
-	
-	var x = r.width / 2;
-	var y = r.height / 2;
-	
-	for (var i = 0; i < 100; ++i)
-	{
-		x = Math.min( r.width, Math.max( 0, x + ( .5 - Math.random() ) * 100 ) );
-		y = Math.min( r.height, Math.max( 0, y + ( .5 - Math.random() ) * 100 ) );
-		ln = new Node( r, ln, x, y, 2 );
-	}
-	
-	while ( ln.parent != null )
-	{
-		ln.parent.getChildren().push( ln );
-		ln.drawLine();
-		ln = ln.parent;
-	}
+  
+  var view = document.createElement( "div" );
+  view.className = "sliceSVGOverlay";
+  view.style.zIndex = 4;
+  
+	var r = Raphael(view, 1000, 400);
+
 
 };

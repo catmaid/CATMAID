@@ -175,7 +175,7 @@ function SmallMap(
 	view.className = "smallMapView";
 	view.style.width = WIDTH + "px";
 	view.style.height = HEIGHT + "px";
-		
+	
 	var img = document.createElement( "img" );
 	img.className = "smallMapMap";
 	img.src = "map/small.jpg";
@@ -275,6 +275,9 @@ function Stack(
 	{
 		smallMap.update( z, y, x, s, viewHeight, viewWidth );
 		updateBenchmark();
+		
+		// update the svgOverly
+		svgOverlay.update(viewWidth, viewHeight);
 		
 		//statusBar.replaceLast( "[" + ( Math.round( x * 10000 * resolution.x ) / 10000 ) + ", " + ( Math.round( y * 10000 * resolution.y ) / 10000 ) + "]" );
 		
@@ -1117,6 +1120,9 @@ function Stack(
 		viewHeight = height;
 		viewWidth = width;
 		
+		// resize svgOverlay
+		svgOverlay.update(viewWidth, viewHeight);
+		
 		view.style.left = left + "px";
 		view.style.top = top + "px";
 		view.style.width = viewWidth + "px";
@@ -1124,7 +1130,7 @@ function Stack(
 		
 		var rows = Math.floor( viewHeight / Y_TILE_SIZE ) + 2;
 		var cols = Math.floor( viewWidth / X_TILE_SIZE ) + 2;
-		
+
 		initTiles( rows, cols );
 		 		
 		return;
@@ -1638,14 +1644,10 @@ function Stack(
 	var textlabels = new Array();
 	
 	var cropBox = false;
-	
-	//! treenode overlay
-	// adds a layer for graphical interaction with tree nodes
-	var svgOverlayView = document.createElement( "div" );
-	svgOverlayView.className = "sliceSVGOverlay";
-	view.appendChild( svgOverlayView );
-	
-	var svgOverlay = new SVGOverlay(svgOverlayView, resolution, translation);
+		
+	var svgOverlay = new SVGOverlay(resolution, translation);
+  view.appendChild( svgOverlay.getView() );
+  svgOverlay.createdata()
 	
 	// take care, that all values are within a proper range
 	var z = 1;

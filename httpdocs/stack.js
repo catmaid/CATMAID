@@ -276,8 +276,6 @@ function Stack(
 		smallMap.update( z, y, x, s, viewHeight, viewWidth );
 		updateBenchmark();
 		
-		// update the svgOverly
-		svgOverlay.update(viewWidth, viewHeight);
 		
 		//statusBar.replaceLast( "[" + ( Math.round( x * 10000 * resolution.x ) / 10000 ) + ", " + ( Math.round( y * 10000 * resolution.y ) / 10000 ) + "]" );
 		
@@ -539,6 +537,13 @@ function Stack(
 					screen_top,
 					scale );
 			}
+			
+			// inject redraw of the svg overlay here, since we are using the same variables
+			svgOverlay.redraw(
+			  screen_left,
+        screen_top,
+        scale );
+        
 		}
 		
 		// update crop box if available
@@ -1054,6 +1059,9 @@ function Stack(
 			mouseCatcher.onmousemove = onmousemove.pos;
 			if ( show_textlabels ) self.updateTextlabels();
 			break;
+		case "trace":
+		  console.log("in tracing mode");
+		  break;
 		case "select":
 		case "move":
 		default:
@@ -1121,7 +1129,7 @@ function Stack(
 		viewWidth = width;
 		
 		// resize svgOverlay
-		svgOverlay.update(viewWidth, viewHeight);
+		//svgOverlay.update(viewWidth, viewHeight);
 		
 		view.style.left = left + "px";
 		view.style.top = top + "px";
@@ -1644,9 +1652,11 @@ function Stack(
 	var textlabels = new Array();
 	
 	var cropBox = false;
-		
+	
+	// svg overlay for the tracing
 	var svgOverlay = new SVGOverlay(resolution, translation);
-  mouseCatcher.appendChild( svgOverlay.getView() );
+  //mouseCatcher.appendChild( svgOverlay.getView() );
+  view.appendChild( svgOverlay.getView() );
   svgOverlay.createdata()
 	
 	// take care, that all values are within a proper range

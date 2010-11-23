@@ -99,12 +99,21 @@ SVGOverlay = function(
     return view;
   }
   
+  var onclick = function( e )
+  {
+    var m = ui.getMouse( e );
+    console.log("clicked", m);
+    return false;
+  }
+  
+  
 	self = this;
 	self.resolution = resolution;
 	self.translation = translation;
   
   var view = document.createElement( "div" );
   view.className = "sliceSVGOverlay";
+  view.onclick = onclick;
   view.style.zIndex = 4;
   
 	var r = Raphael(view, 1000, 400);

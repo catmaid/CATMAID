@@ -149,8 +149,11 @@ SVGOverlay = function(
       activateNode( nn );
       // if the parent (i.e. active node is not null) we need to
       // add the newly created treenode as a child
-      if(atn != null)
-        nn.parent.getChildren().push( nn );
+      if(atn != null) {
+        if(nn.parent!=null)
+          nn.parent.getChildren().push( nn );
+      }
+        
     }           
     //return true;
   }

@@ -1646,7 +1646,7 @@ function Stack(
 	var cropBox = false;
 		
 	var svgOverlay = new SVGOverlay(resolution, translation);
-  view.appendChild( svgOverlay.getView() );
+  mouseCatcher.appendChild( svgOverlay.getView() );
   svgOverlay.createdata()
 	
 	// take care, that all values are within a proper range

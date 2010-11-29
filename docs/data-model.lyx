@@ -1,4 +1,4 @@
-#LyX 1.6.5 created this file. For more info see http://www.lyx.org/
+#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
 \lyxformat 345
 \begin_document
 \begin_header
@@ -37,6 +37,7 @@
 \tracking_changes false
 \output_changes false
 \author "" 
+\author "" 
 \end_header
 
 \begin_body
@@ -47,8 +48,17 @@ CATMAID data model
 
 \begin_layout Standard
 The aim of the CATMAID data model is to describe annotations of image data
- in terms of Subject-Verb-Object triples, in such a way that can be represented
- in a PostgreSQL database.
+ in terms of Subject-Verb-Object triples
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+I would write Subject-Relation-Object throughout
+\end_layout
+
+\end_inset
+
+, in such a way that can be represented in a PostgreSQL database.
  Each possible verb is described at the top level by a row in the 
 \series bold
 relation
@@ -315,6 +325,20 @@ soma part_of neuron
 \end_inset
 
 .)
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+
+\emph on
+This is true.
+ We have not populated this table so far.
+ But it should correspond in away to the TrakEM template tree.
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard

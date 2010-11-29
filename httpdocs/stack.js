@@ -1707,11 +1707,7 @@ function Stack(
   view.appendChild( mouseCatcher );
 
 	
-	// svg overlay for the tracing
-	var svgOverlay = new SVGOverlay(resolution, translation, dimension);
-  //mouseCatcher.appendChild( svgOverlay.getView() );
-  view.appendChild( svgOverlay.getView() );
-	svgOverlay.hide();
+
 
 	// take care, that all values are within a proper range
 	var z = 1;
@@ -1729,6 +1725,13 @@ function Stack(
 	
 	var scale = 1 / Math.pow( 2, s );
 	var old_scale = scale;
+	
+  // svg overlay for the tracing
+  var svgOverlay = new SVGOverlay(resolution, translation, dimension, scale);
+  //mouseCatcher.appendChild( svgOverlay.getView() );
+  view.appendChild( svgOverlay.getView() );
+  svgOverlay.hide();
+  
 	
 	var LAST_XT = Math.floor( MAX_X * scale / X_TILE_SIZE );
 	var LAST_YT = Math.floor( MAX_Y * scale / Y_TILE_SIZE );

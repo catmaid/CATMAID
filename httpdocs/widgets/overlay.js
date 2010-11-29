@@ -194,17 +194,21 @@ Node = function(
   self.y = y;
   self.r = r;
   
-  this.setXY = function(x, y)
+  this.getX = function() { return x };
+  this.getY = function() { return y };
+  
+  this.setXY = function(xnew, ynew)
   {
-    self.x = x;
-    self.y = y;
+    x = xnew;
+    y = ynew;
+    c.attr({cx: x,cy: y});
+    mc.attr({cx: x,cy: y});
+    draw();
   }
   
   // local variables, only valid in the scope of a node
   // and not accessible to the outisde
 	var ox = 0, oy = 0, r = 4;
-	
-	console.log("circ x", self.x);
 	
 	// create a raphael circle object
 	var c = paper.circle( x, y, r ).attr({
@@ -308,6 +312,7 @@ Node = function(
 	  console.log("activated node", id);
 	  console.log("its parent is", parent);
 	  console.log("its children", children);
+	  console.log("its coords", x, y);
 	  
 	  if(e.ctrlKey && e.shiftKey ){
       deleteall();
@@ -329,10 +334,10 @@ Node = function(
 	mc.move = function( dx, dy )
 	{
 	  
-		self.x = ox + dx;
-    self.y = oy + dy;
-		c.attr({cx: self.x,cy: self.y});
-		mc.attr({cx: self.x,cy: self.y});
+		x = ox + dx;
+    y = oy + dy;
+		c.attr({cx: x,cy: y});
+		mc.attr({cx: x,cy: y});
     draw();
 	}
 	mc.up = function()
@@ -353,7 +358,8 @@ Node = function(
 SVGOverlay = function(
 		resolution,			//!< object {x, y, z} resolution of the parent DOM element in nanometer/pixel
 		translation,
-		dimension // dimension of the stack
+		dimension, // dimension of the stack
+		current_scale // current scale of the stack
 )
 {
 
@@ -382,15 +388,30 @@ SVGOverlay = function(
   }
   // a node cache
   var nodes = Array();
-  var updateNodeCoordinates = function()
+  var updateNodeCoordinates = function(newscale)
   {
     // depending on the scale, update all the node coordinates
     // loop over all nodes
+    for ( var i = 0; i < nodes.length; ++i )
+    {
+      var x = nodes[i].getX();
+      var y = nodes[i].getY();
+      var fact = newscale / s;
+      xnew = Math.floor(x * fact);
+      ynew = Math.floor(y * fact);
+      nodes[i].setXY(xnew, ynew); 
+    }
+  }
+  
+  var retrieveNodes = function()
+  {
+    // retrieve all the nodes from the database in a given
+    // bounding volume, map physical coordinates to screen coordinates
+    // given the current scale
   }
 
   var updateDimension = function()
   {
-    
     wi = Math.floor(dimension.x*s);
     he = Math.floor(dimension.y*s);
     // update width/height with the dimension from the database, which is in pixel unit
@@ -407,7 +428,13 @@ SVGOverlay = function(
       ns              //!< scale factor to be applied to resolution [and fontsize],
   )
   {
-    // update the scale of the internal scale variable
+
+    // check if new scale changed, if so, update all node coordinates
+    if(ns!=s)
+    {
+      updateNodeCoordinates(ns);
+    }
+    // update the scale of the internal scale variable    
     s = ns;
     // pl/pt are in physical coordinates
     view.style.left = Math.floor(-pl/resolution.x*s) + "px";
@@ -420,7 +447,6 @@ SVGOverlay = function(
     return view;
   }
   
-  
   this.onclick = function( e )
   {   
     //console.log("mouse down event in overlay", e);
@@ -428,16 +454,16 @@ SVGOverlay = function(
     //console.log(project.coordinates.z);
     
     var m = ui.getMouse( e );
-    // it is relative to mouse catcher right now
-    console.log("offx", m.offsetX, "offy", m.offsetY, "x", m.x, "y", m.y);
     
     // take into account current local offset coordinates and scale
     var pos_x = m.offsetX;
     var pos_y = m.offsetY;
     
     // XXX: get physical coordinates for database
-    
-    console.log(pos_x, pos_y);
+    var phys_x = phys2pixX(pos_x);
+    var phys_y = phys2pixY(pos_y);
+    var phys_z = project.coordinates.z;
+    console.log("physical coordinates", phys_x, phys_y, phys_z);
     
     // if ctrl is pressed and clicked, deselect atn
     if( e.ctrlKey ) {
@@ -499,7 +525,7 @@ SVGOverlay = function(
   view.style.zIndex = 5;
   view.style.cursor = "crosshair";
   
-  var s = 1.0;
+  var s = current_scale;
 	var r = Raphael(view, Math.floor(dimension.x*s), Math.floor(dimension.y*s));
   self.r = r;
 
@@ -511,7 +537,7 @@ SVGOverlay = function(
     /*
     try
     {
-      view.removeEventListener( "DOMMouseScroll", self.onmousewheel, false );
+      view.removeEventListener( "DOMMouseScroll", onmousewheel, false );
     }
     catch ( error )
     {
@@ -520,8 +546,8 @@ SVGOverlay = function(
         view.onmousewheel = null;
       }
       catch ( error ) {}
-    }*/
-      
+    }
+      */
   }
 
 

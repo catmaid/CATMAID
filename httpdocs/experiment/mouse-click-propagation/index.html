@@ -1,0 +1,64 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-15">
+<title></title>
+<script type="text/javascript" charset="utf-8" src="jquery-1.4.4.min.js"></script>
+<script type="text/javascript" src="raphael-min.js"></script>
+<script type="text/javascript" charset="utf-8">
+$(document).ready( function() {
+
+   $('#underlay').click( function() {
+      alert("Got a mouse click on the underlay");
+   } );
+
+   var r = Raphael('svg-overlay',300,300);
+   var normalColor = "red";
+   var movingColor = "green";
+   var c = r.circle(50,50,20).attr("fill",normalColor);
+   var start = function () {
+      this.ox = this.attr('cx');
+      this.oy = this.attr('cy');
+      this.attr("fill",movingColor);
+   };
+   var move = function (dx, dy) {
+      this.attr({cx: this.ox + dx, cy: this.oy + dy});
+   };
+   var end = function () {
+      this.attr("fill",normalColor);
+   }
+   c.drag(move,start,end);
+});
+</script>
+<style type="text/css">
+#underlay {
+  z-index: 4;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: grey;
+  width: 500px;
+  height: 500px;
+}
+#svg-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 7;
+  width: 300px;
+  height: 300px;
+  background-color: yellow;
+  margin: 10px;
+}
+</style>
+</head>
+<body>
+</body>
+<div id="enclosing">
+  This is some unfloated text beneath the SVG elements.  The
+  svg-overlay needs to be nested inside the underlay in order
+  for the events to be propagated.
+  <div id="underlay"></div>
+  <div id="svg-overlay"></div>
+</div>
+</html>

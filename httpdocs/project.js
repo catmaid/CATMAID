@@ -282,6 +282,7 @@ function Project( pid )
 		document.getElementById( "toolbar_nav" ).style.display = "none";
 		document.getElementById( "toolbar_text" ).style.display = "none";
 		document.getElementById( "toolbar_crop" ).style.display = "none";
+		document.getElementById( "toolbar_trace" ).style.display = "none";
 		switch ( m )
 		{
 		case "select":

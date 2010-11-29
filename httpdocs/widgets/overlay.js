@@ -364,54 +364,47 @@ SVGOverlay = function(
     }
   }
 
+  var updateDimension = function()
+  {
+    wi = Math.floor(dimension.x*s);
+    he = Math.floor(dimension.y*s);
+    // update width/height with the dimension from the database, which is in pixel unit
+    view.style.width =  wi + "px";
+    view.style.height = he + "px";
+    // update the raphael canvas as well
+    r.setSize(wi, he);
+  }
+  
+
   this.redraw = function(
       pl,           //!< float left-most coordinate of the parent DOM element in nanometer
       pt,           //!< float top-most coordinate of the parent DOM element in nanometer
-      ns,            //!< scale factor to be applied to resolution [and fontsize],
-      nz,
-      screenHeight,
-      screenWidth 
+      ns              //!< scale factor to be applied to resolution [and fontsize],
   )
   {
-    console.log("current z",z);
-    parentLeft = pl;
-    parentTop = pt;
-    scale = ns;
-    var rx = resolution.x / scale;
-    var ry = resolution.y / scale;
-    var x = Math.floor( (  - parentLeft ) / rx );
-    var y = Math.floor( (  - parentTop ) / ry );
-    
-    view.style.left = ( x  ) + "px";
-    view.style.top = ( y  ) + "px";
-/*
+    // update the scale of the internal scale variable
     s = ns;
-    z = nz;
-    
-    var scale = 1 / Math.pow( 2, s );
-    console.log("scale", scale);
-    scale = 0.5;
-    view.style.width = (MAX_X * scale) + "px";
-    view.style.height = (MAX_Y * scale) + "px";
-    console.log('new x scale', MAX_X * scale);
-*/
-    // XXX: the width and height do not fit to the stack
+    // pl/pt are in physical coordinates
+    view.style.left = Math.floor(-pl/resolution.x*s) + "px";
+    view.style.top = Math.floor(-pt/resolution.y*s) + "px";
+    updateDimension(s);
   };
-  
-  // XXX: rework on this function
-	/*this.update = function(width, height)
-	{
-		r.setSize(width, height);
-	}*/
 	
   this.getView = function()
   {
     return view;
   }
   
-  var onclick = function( e )
-  {    
+  this.onclick = function( e )
+  {   
+    console.log("mouse down event in overlay", e);
+    console.log("current coordinates in physical space:");
+    console.log(project.coordinates.z);
+    
     var m = ui.getMouse( e );
+    // it is relative to mouse catcher right now
+    console.log("offx", m.offsetX, "offy", m.offsetY, "x", m.x, "y", m.y);
+    
     // if ctrl is pressed and clicked, deselect atn
     if( e.ctrlKey ) {
       activateNode( null );
@@ -457,9 +450,8 @@ SVGOverlay = function(
   }
   
 	self = this;
-  if ( !ui ) ui = new UI();
-  if ( !requestQueue ) requestQueue = new RequestQueue();
-  
+  //if ( !ui ) ui = new UI();
+  //if ( !requestQueue ) requestQueue = new RequestQueue();
   
 	self.resolution = resolution;
 	self.translation = translation;
@@ -467,16 +459,37 @@ SVGOverlay = function(
   
   var view = document.createElement( "div" );
   view.className = "sliceSVGOverlay";
-  view.onclick = onclick;
-  //view.style.zIndex = 7;
+  //view.onclick = onclick;
+  //view.onmousedown = tracemousedown;
+  view.style.zIndex = 4;
   
-  var MAX_X = dimension.x;
-  var MAX_Y = dimension.y;
-  var s = 0.5;
-  var z = 0;
-  
-	var r = Raphael(view, MAX_X * s, MAX_Y * s);
+  var s = 1.0;
+  //$('#sliceSVGOverlay').hide();
+	var r = Raphael(view, Math.floor(dimension.x*s), Math.floor(dimension.y*s));
   self.r = r;
+  //$('#sliceSVGOverlay').show();
+
+  //self.r.canvas.style.position = "absolute";
+  //self.r.canvas.style.zIndex = "4"; 
+  //self.r.canvas.style.background =  "#00FFFF";
+  //view.style.background =  "#FF00FF";
+  // do i need them?
+  var screen =
+  {
+    x : 0,
+    y : 0,
+    width : 0,
+    height : 0,
+    s : 0,
+    scale : 1
+  };          //!< screen coordinates
+  
+/*
+  this.onmousedown = function( e )
+  {
+    console.log("mouse down event in overlay", e);
+    return;
+  }
 
   var tracemousemove = function( e )
   {
@@ -487,13 +500,25 @@ SVGOverlay = function(
   var tracemousedown = function( e )
   {
     console.log("trace mouse down");
+    
+    ui.registerEvent( "onmousemove", tracemousemove );
+    ui.registerEvent( "onmouseup", tracemouseup );
+    ui.catchEvents( "trace" );
+    ui.onmousedown( e );
+    
+    //! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
+    document.body.firstChild.focus();
+    
     return false;
   }
   
   var tracemouseup = function( e )
   {
     console.log("trace mouse up");
+    ui.releaseEvents()
+    ui.removeEvent( "onmousemove", tracemousemove );
+    ui.removeEvent( "onmouseup", tracemouseup );
     return false;
-  }
+  }*/
 
 };

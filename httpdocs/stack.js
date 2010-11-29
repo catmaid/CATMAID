@@ -538,14 +538,11 @@ function Stack(
 					scale );
 			}
 			
-			// inject redraw of the svg overlay here, since we are using the same variables
+			// redraw the overlay
 			svgOverlay.redraw(
 			  screen_left,
         screen_top,
-        scale,
-        self.z, // not working XXX
-        viewWidth,
-        viewHeight);
+        scale);
         
 		}
 		
@@ -671,6 +668,8 @@ function Stack(
 			var xp;
 			var yp;
 			var m = ui.getMouse( e );
+      // XXX: error, svg is taken for the mouse event instead of the
+      // event catcher
 			if ( m )
 			{
 				var pos_x = translation.x + ( x + ( m.offsetX - viewWidth / 2 ) / scale ) * resolution.x;
@@ -722,8 +721,40 @@ function Stack(
 	
 	var onmousedown =
 	{
+	  trace : function( e )
+	  {
+	    console.log("register trace events in onmousedown of mouseevent catcher");
+      var b = ui.getMouseButton( e );
+      switch ( b )
+      {
+      case 1:
+        console.log("mouse 1");
+        // call the event handler of the svg overlay
+        console.log("screencoord", self.screenCoordinates());
+        console.log("projcoord", self.projectCoordinates());
+        svgOverlay.onclick( e );
+        break;
+      case 2:
+        console.log("mouse 2");
+        var m = ui.getMouse( e );
+        var tlx = ( x + ( m.offsetX - viewWidth / 2 ) / scale ) * resolution.x + translation.x;
+        var tly = ( y + ( m.offsetY - viewHeight / 2 ) / scale ) * resolution.y + translation.y;
+        var tlz = z * resolution.z + translation.z;
+        console.log(tlx, tly, tlz);
+        break;
+      case 3:
+        console.log("mouse 3");
+        break;
+      }
+	    return false;
+	  },
 		move : function( e )
 		{
+		  scoord = self.screenCoordinates();
+      console.log("screencoord", scoord.x, scoord.y, scoord);
+      pcord =self.projectCoordinates();
+      console.log("projcoord", pcord.x, pcord.y, pcord);
+        
 			ui.registerEvent( "onmousemove", onmousemove.move );
 			ui.registerEvent( "onmouseup", onmouseup.move );
 			ui.catchEvents( "move" );
@@ -783,10 +814,10 @@ function Stack(
 				document.body.firstChild.focus();
 				break;
 			default:
-				var m = ui.getMouse( e );
-				var tlx = ( x + ( m.offsetX - viewWidth / 2 ) / scale ) * resolution.x + translation.x;
-				var tly = ( y + ( m.offsetY - viewHeight / 2 ) / scale ) * resolution.y + translation.y;
-				var tlz = z * resolution.z + translation.z;
+  				var m = ui.getMouse( e );
+  				var tlx = ( x + ( m.offsetX - viewWidth / 2 ) / scale ) * resolution.x + translation.x;
+  				var tly = ( y + ( m.offsetY - viewHeight / 2 ) / scale ) * resolution.y + translation.y;
+  				var tlz = z * resolution.z + translation.z;
 			
 				project.createTextlabel( tlx, tly, tlz, resolution.y, scale );
 			}
@@ -1064,6 +1095,10 @@ function Stack(
 			break;
 		case "trace":
 		  console.log("in tracing mode");
+		  mode = "trace"
+      //mouseCatcher.style.cursor = "crosshair";
+      mouseCatcher.onmousedown = onmousedown.trace;
+      //mouseCatcher.onmousemove = onmousemove.pos;
 		  break;
 		case "select":
 		case "move":
@@ -1658,7 +1693,6 @@ function Stack(
 	var cropBox = false;
 	
 	// svg overlay for the tracing
-	// console.log(MAX_X, MAX_Y, MAX_Z);
 	var svgOverlay = new SVGOverlay(resolution, translation, dimension);
   //mouseCatcher.appendChild( svgOverlay.getView() );
   view.appendChild( svgOverlay.getView() );

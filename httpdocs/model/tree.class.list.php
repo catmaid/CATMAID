@@ -41,6 +41,8 @@ if ( $pid )
 				$rel = 'group';
 			else if( $cl['class_name'] == 'neurongroup')
 				$rel = 'neurongroup';
+      else if( $cl['class_name'] == 'soma')
+        $rel = 'soma';
 			else
 				$rel = 'anything';
 			

@@ -91,6 +91,13 @@ initClassTree = function(pid) {
 					"valid_children" : [ "none" ],
 					"start_drag" : false,
 				},
+        "soma" : {
+          "icon" : {
+            "image" : "widgets/themes/kde/jsTree/neuron/soma.png"
+          },
+          "valid_children" : [ "none" ],
+          "start_drag" : false,
+        }
 			}
 		}
 

@@ -3,6 +3,7 @@ var atn = null;
 // TODO:
 // - join existing nodes together with shift
 // - add backend logic
+// - delete node from svgoverlay nodes upon delete
 
 function activateNode( node ) {
     // activate new node, i.e. first deactivate old one
@@ -185,10 +186,25 @@ Node = function(
 { 
   self = this;
   self.id = id;
+  // state variable whether this node is already synchronized with the database
+  self.needsync = true;
+  
+  // local screen coordinates relative to the div
+  self.x = x;
+  self.y = y;
+  self.r = r;
+  
+  this.setXY = function(x, y)
+  {
+    self.x = x;
+    self.y = y;
+  }
   
   // local variables, only valid in the scope of a node
   // and not accessible to the outisde
 	var ox = 0, oy = 0, r = 4;
+	
+	console.log("circ x", self.x);
 	
 	// create a raphael circle object
 	var c = paper.circle( x, y, r ).attr({
@@ -312,10 +328,11 @@ Node = function(
 
 	mc.move = function( dx, dy )
 	{
-		var x = ox + dx;
-    	var y = oy + dy;
-		c.attr({cx: x,cy: y});
-		mc.attr({cx: x,cy: y});
+	  
+		self.x = ox + dx;
+    self.y = oy + dy;
+		c.attr({cx: self.x,cy: self.y});
+		mc.attr({cx: self.x,cy: self.y});
     draw();
 	}
 	mc.up = function()
@@ -351,8 +368,8 @@ SVGOverlay = function(
     
     for (var i = 0; i < 10; ++i)
     {
-      x = Math.min( r.width, Math.max( 0, x + ( .5 - Math.random() ) * 100 ) );
-      y = Math.min( r.height, Math.max( 0, y + ( .5 - Math.random() ) * 100 ) );      
+      x = Math.min( r.width, Math.max( 0, x + ( .5 - Math.random() ) * 10 ) );
+      y = Math.min( r.height, Math.max( 0, y + ( .5 - Math.random() ) * 10 ) );      
       ln = new Node( i, r, ln, x, y, 4 );
     }
     
@@ -363,9 +380,17 @@ SVGOverlay = function(
       ln = ln.parent;
     }
   }
+  // a node cache
+  var nodes = Array();
+  var updateNodeCoordinates = function()
+  {
+    // depending on the scale, update all the node coordinates
+    // loop over all nodes
+  }
 
   var updateDimension = function()
   {
+    
     wi = Math.floor(dimension.x*s);
     he = Math.floor(dimension.y*s);
     // update width/height with the dimension from the database, which is in pixel unit
@@ -395,15 +420,24 @@ SVGOverlay = function(
     return view;
   }
   
+  
   this.onclick = function( e )
   {   
-    console.log("mouse down event in overlay", e);
-    console.log("current coordinates in physical space:");
-    console.log(project.coordinates.z);
+    //console.log("mouse down event in overlay", e);
+    //console.log("current coordinates in physical space:");
+    //console.log(project.coordinates.z);
     
     var m = ui.getMouse( e );
     // it is relative to mouse catcher right now
     console.log("offx", m.offsetX, "offy", m.offsetY, "x", m.x, "y", m.y);
+    
+    // take into account current local offset coordinates and scale
+    var pos_x = m.offsetX;
+    var pos_y = m.offsetY;
+    
+    // XXX: get physical coordinates for database
+    
+    console.log(pos_x, pos_y);
     
     // if ctrl is pressed and clicked, deselect atn
     if( e.ctrlKey ) {
@@ -416,15 +450,17 @@ SVGOverlay = function(
       // XXX: create a random id for now
       randomid = Math.floor( Math.random() * 1000);
       // emulating synapse creation mode!
-      var sn = new ConnectorNode( randomid, r, atn, m.offsetX, m.offsetY);
+      var sn = new ConnectorNode( randomid, r, atn, pos_x, pos_y);
       sn.parent.getChildren().push( sn );
+      nodes.push(sn);
       sn.draw();
       activateNode( sn );
       
     } else {
       // XXX: create a random id for now
       randomid = Math.floor( Math.random() * 1000);
-      var nn = new Node( randomid, r, atn, m.offsetX, m.offsetY); 
+      var nn = new Node( randomid, r, atn, pos_x, pos_y); 
+      nodes.push(nn);
       nn.draw();
 
       // if the parent (i.e. active node is not null) we need to
@@ -459,20 +495,91 @@ SVGOverlay = function(
   
   var view = document.createElement( "div" );
   view.className = "sliceSVGOverlay";
-  //view.onclick = onclick;
-  //view.onmousedown = tracemousedown;
-  view.style.zIndex = 4;
+  view.onclick = self.onclick;
+  view.style.zIndex = 5;
+  view.style.cursor = "crosshair";
   
   var s = 1.0;
-  //$('#sliceSVGOverlay').hide();
 	var r = Raphael(view, Math.floor(dimension.x*s), Math.floor(dimension.y*s));
   self.r = r;
-  //$('#sliceSVGOverlay').show();
 
-  //self.r.canvas.style.position = "absolute";
-  //self.r.canvas.style.zIndex = "4"; 
-  //self.r.canvas.style.background =  "#00FFFF";
-  //view.style.background =  "#FF00FF";
+  if ( !ui ) ui = new UI();
+
+  this.hide = function() 
+  {
+    view.style.display = "none";
+    /*
+    try
+    {
+      view.removeEventListener( "DOMMouseScroll", self.onmousewheel, false );
+    }
+    catch ( error )
+    {
+      try
+      {
+        view.onmousewheel = null;
+      }
+      catch ( error ) {}
+    }*/
+      
+  }
+
+
+  this.onmousewheel = function( e )
+  {
+    var w = ui.getMouseWheel( e );
+    if ( w )
+    {
+      if ( w > 0 )
+      {
+        slider_z.move( -1 );
+      }
+      else
+      {
+        slider_z.move( 1 );
+      }
+    }
+    return false;
+  }
+
+  var phys2pixX = function( x )
+  { return translation.x + ( ( x ) / s ) * resolution.x; }
+  var phys2pixY = function( y )
+  { return translation.y + ( ( y ) / s ) * resolution.y; }
+  var phys2pixZ = function( z )
+  { return z * resolution.z + translation.z; }
+  
+  var getPhysCoordinatesOfCursor = function( e )
+  {
+      var m = ui.getMouse( e );
+      // compute absolute coordinates
+      var pos_x = phys2pixX(m.offsetX);
+      var pos_y = phys2pixY(m.offsetY);
+      var pos_z = phys2pixZ(slider_z.val);
+      console.log('pos',pos_x, pos_y, pos_z);
+      // XXX write it to the database
+  }
+
+  this.show = function() 
+  {
+    view.style.display = "block";
+  }
+
+  try
+  {
+    view.addEventListener( "DOMMouseScroll", self.onmousewheel, false );
+    /* Webkit takes the event but does not understand it ... */
+    view.addEventListener( "mousewheel", self.onmousewheel, false );
+  }
+  catch ( error )
+  {
+    try
+    {
+      view.onmousewheel = self.onmousewheel;
+    }
+    catch ( error ) {}
+  }
+  
   // do i need them?
   var screen =
   {
@@ -484,41 +591,4 @@ SVGOverlay = function(
     scale : 1
   };          //!< screen coordinates
   
-/*
-  this.onmousedown = function( e )
-  {
-    console.log("mouse down event in overlay", e);
-    return;
-  }
-
-  var tracemousemove = function( e )
-  {
-    console.log("trace mouse move");
-    return false;
-  }
-  
-  var tracemousedown = function( e )
-  {
-    console.log("trace mouse down");
-    
-    ui.registerEvent( "onmousemove", tracemousemove );
-    ui.registerEvent( "onmouseup", tracemouseup );
-    ui.catchEvents( "trace" );
-    ui.onmousedown( e );
-    
-    //! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
-    document.body.firstChild.focus();
-    
-    return false;
-  }
-  
-  var tracemouseup = function( e )
-  {
-    console.log("trace mouse up");
-    ui.releaseEvents()
-    ui.removeEvent( "onmousemove", tracemousemove );
-    ui.removeEvent( "onmouseup", tracemouseup );
-    return false;
-  }*/
-
 };

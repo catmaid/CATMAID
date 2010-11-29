@@ -147,7 +147,7 @@ function SmallMap(
 	
 	this.focus = function()
 	{
-		view.style.zIndex = 6;
+		view.style.zIndex = 8;
 		return;
 	}
 	
@@ -668,8 +668,8 @@ function Stack(
 			var xp;
 			var yp;
 			var m = ui.getMouse( e );
-      // XXX: error, svg is taken for the mouse event instead of the
-      // event catcher
+      // XXX: error, svg is taken as target for the mouse event instead of the
+      // mouse event catcher, only if svg/div is child of catcher
 			if ( m )
 			{
 				var pos_x = translation.x + ( x + ( m.offsetX - viewWidth / 2 ) / scale ) * resolution.x;
@@ -716,11 +716,19 @@ function Stack(
 			ui.releaseEvents();
 			ui.removeEvent( "onmousemove", onmousemove.crop );
 			ui.removeEvent( "onmouseup", onmouseup.crop );
-		}
+		},
+    trace : function( e )
+    {
+      console.log("unregister trace");
+      ui.releaseEvents();
+      ui.removeEvent( "onmousemove", svgOverlay.onmousemove );
+      ui.removeEvent( "onmouseup", onmouseup.crop );
+    }
 	};
 	
 	var onmousedown =
 	{
+	  /*
 	  trace : function( e )
 	  {
 	    console.log("register trace events in onmousedown of mouseevent catcher");
@@ -730,31 +738,31 @@ function Stack(
       case 1:
         console.log("mouse 1");
         // call the event handler of the svg overlay
-        console.log("screencoord", self.screenCoordinates());
-        console.log("projcoord", self.projectCoordinates());
-        svgOverlay.onclick( e );
+        ui.registerEvent( "onmousemove", svgOverlay.onmousemove );
+        ui.registerEvent( "onmouseup", onmouseup.trace );
+        ui.catchEvents( );
+        ui.onmousedown( e );
+      
+        //svgOverlay.onclick( e );
         break;
       case 2:
         console.log("mouse 2");
         var m = ui.getMouse( e );
+        console.log("m", e);
         var tlx = ( x + ( m.offsetX - viewWidth / 2 ) / scale ) * resolution.x + translation.x;
         var tly = ( y + ( m.offsetY - viewHeight / 2 ) / scale ) * resolution.y + translation.y;
         var tlz = z * resolution.z + translation.z;
-        console.log(tlx, tly, tlz);
+        //console.log(tlx, tly, tlz);
+        svgOverlay.physicalclick(tlx,tly,tlz);
         break;
       case 3:
         console.log("mouse 3");
         break;
       }
 	    return false;
-	  },
+	  },*/
 		move : function( e )
-		{
-		  scoord = self.screenCoordinates();
-      console.log("screencoord", scoord.x, scoord.y, scoord);
-      pcord =self.projectCoordinates();
-      console.log("projcoord", pcord.x, pcord.y, pcord);
-        
+		{          
 			ui.registerEvent( "onmousemove", onmousemove.move );
 			ui.registerEvent( "onmouseup", onmouseup.move );
 			ui.catchEvents( "move" );
@@ -1031,6 +1039,7 @@ function Stack(
 			cropBox = false;
 		}
 		mouseCatcher.style.zIndex = 5;
+		svgOverlay.hide();
 		switch( m )
 		{
 		/*
@@ -1096,9 +1105,12 @@ function Stack(
 		case "trace":
 		  console.log("in tracing mode");
 		  mode = "trace"
-      //mouseCatcher.style.cursor = "crosshair";
-      mouseCatcher.onmousedown = onmousedown.trace;
-      //mouseCatcher.onmousemove = onmousemove.pos;
+      mouseCatcher.style.cursor = "crosshair";
+      //mouseCatcher.onmousedown = onmousedown.trace;
+      // for the surrounding mouse event catcher
+      mouseCatcher.onmousedown = onmousedown.move;
+      mouseCatcher.onmousemove = onmousemove.pos;
+      svgOverlay.show();
 		  break;
 		case "select":
 		case "move":
@@ -1653,10 +1665,7 @@ function Stack(
 	tilesContainer.className = "sliceTiles";
 	view.appendChild( tilesContainer );
 	
-	//! mouse catcher
-	var mouseCatcher = document.createElement( "div" );
-	mouseCatcher.className = "sliceMouseCatcher";
-	view.appendChild( mouseCatcher );
+
 	
 	//! stack info header
 	var stackInfo = document.createElement( "div" );
@@ -1692,12 +1701,18 @@ function Stack(
 	
 	var cropBox = false;
 	
+  //! mouse catcher
+  var mouseCatcher = document.createElement( "div" );
+  mouseCatcher.className = "sliceMouseCatcher";
+  view.appendChild( mouseCatcher );
+
+	
 	// svg overlay for the tracing
 	var svgOverlay = new SVGOverlay(resolution, translation, dimension);
   //mouseCatcher.appendChild( svgOverlay.getView() );
   view.appendChild( svgOverlay.getView() );
-  svgOverlay.createdata()
-	
+	svgOverlay.hide();
+
 	// take care, that all values are within a proper range
 	var z = 1;
 	var y = Math.floor( MAX_Y / 2 );

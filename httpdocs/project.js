@@ -278,6 +278,7 @@ function Project( pid )
 		document.getElementById( "edit_button_move" ).className = "button";
 		document.getElementById( "edit_button_text" ).className = "button";
 		document.getElementById( "edit_button_crop" ).className = "button";
+    document.getElementById( "edit_button_trace" ).className = "button";
 		//document.getElementById( "edit_button_profile" ).className = "button";
 		document.getElementById( "toolbar_nav" ).style.display = "none";
 		document.getElementById( "toolbar_text" ).style.display = "none";

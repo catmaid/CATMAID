@@ -6,7 +6,7 @@
 2. Apache2 Webserver
 3. PHP 5
 
-sudo apt-get install libapache2-mod-php5 php5-pgsql [ imagemagick ]
+sudo apt-get install libapache2-mod-php5 php5-pgsql imagemagick
 
 == Ubuntu 10.10 ==
 

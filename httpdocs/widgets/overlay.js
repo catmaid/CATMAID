@@ -335,7 +335,8 @@ Node = function(
 
 SVGOverlay = function(
 		resolution,			//!< object {x, y, z} resolution of the parent DOM element in nanometer/pixel
-		translation
+		translation,
+		dimension // dimension of the stack
 )
 {
 
@@ -366,28 +367,42 @@ SVGOverlay = function(
   this.redraw = function(
       pl,           //!< float left-most coordinate of the parent DOM element in nanometer
       pt,           //!< float top-most coordinate of the parent DOM element in nanometer
-      s            //!< scale factor to be applied to resolution [and fontsize]
+      ns,            //!< scale factor to be applied to resolution [and fontsize],
+      nz,
+      screenHeight,
+      screenWidth 
   )
   {
+    console.log("current z",z);
     parentLeft = pl;
     parentTop = pt;
-    scale = s;
+    scale = ns;
     var rx = resolution.x / scale;
     var ry = resolution.y / scale;
     var x = Math.floor( (  - parentLeft ) / rx );
     var y = Math.floor( (  - parentTop ) / ry );
+    
     view.style.left = ( x  ) + "px";
     view.style.top = ( y  ) + "px";
+/*
+    s = ns;
+    z = nz;
+    
+    var scale = 1 / Math.pow( 2, s );
+    console.log("scale", scale);
+    scale = 0.5;
+    view.style.width = (MAX_X * scale) + "px";
+    view.style.height = (MAX_Y * scale) + "px";
+    console.log('new x scale', MAX_X * scale);
+*/
     // XXX: the width and height do not fit to the stack
   };
   
   // XXX: rework on this function
-	this.update = function(width, height)
+	/*this.update = function(width, height)
 	{
-	  view.style.width = width + "px";
-    view.style.height = height + "px";
 		r.setSize(width, height);
-	}
+	}*/
 	
   this.getView = function()
   {
@@ -442,15 +457,43 @@ SVGOverlay = function(
   }
   
 	self = this;
+  if ( !ui ) ui = new UI();
+  if ( !requestQueue ) requestQueue = new RequestQueue();
+  
+  
 	self.resolution = resolution;
 	self.translation = translation;
+	self.dimension = dimension;
   
   var view = document.createElement( "div" );
   view.className = "sliceSVGOverlay";
   view.onclick = onclick;
-  view.style.zIndex = 7;
+  //view.style.zIndex = 7;
   
-	var r = Raphael(view, 500, 800);
+  var MAX_X = dimension.x;
+  var MAX_Y = dimension.y;
+  var s = 0.5;
+  var z = 0;
+  
+	var r = Raphael(view, MAX_X * s, MAX_Y * s);
   self.r = r;
+
+  var tracemousemove = function( e )
+  {
+    console.log("trace mouse move");
+    return false;
+  }
+  
+  var tracemousedown = function( e )
+  {
+    console.log("trace mouse down");
+    return false;
+  }
+  
+  var tracemouseup = function( e )
+  {
+    console.log("trace mouse up");
+    return false;
+  }
 
 };

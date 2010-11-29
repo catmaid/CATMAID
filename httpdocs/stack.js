@@ -542,7 +542,10 @@ function Stack(
 			svgOverlay.redraw(
 			  screen_left,
         screen_top,
-        scale );
+        scale,
+        self.z, // not working XXX
+        viewWidth,
+        viewHeight);
         
 		}
 		
@@ -1574,6 +1577,7 @@ function Stack(
 	var MAX_Y = dimension.y - 1;   //!< the last possible y-coordinate
 	var MAX_Z = dimension.z - 1;   //!< the last possible z-coordinate
 	
+	
 	//! estimate the zoom levels
 	var MAX_S = 0;
 	var min_max = Math.min( MAX_X, MAX_Y );
@@ -1654,7 +1658,8 @@ function Stack(
 	var cropBox = false;
 	
 	// svg overlay for the tracing
-	var svgOverlay = new SVGOverlay(resolution, translation);
+	// console.log(MAX_X, MAX_Y, MAX_Z);
+	var svgOverlay = new SVGOverlay(resolution, translation, dimension);
   //mouseCatcher.appendChild( svgOverlay.getView() );
   view.appendChild( svgOverlay.getView() );
   svgOverlay.createdata()

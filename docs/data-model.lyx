@@ -1,4 +1,4 @@
-#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
+#LyX 1.6.5 created this file. For more info see http://www.lyx.org/
 \lyxformat 345
 \begin_document
 \begin_header
@@ -48,18 +48,9 @@ CATMAID data model
 
 \begin_layout Standard
 The aim of the CATMAID data model is to describe annotations of image data
- in terms of Subject-Verb-Object triples
-\begin_inset Note Note
-status open
-
-\begin_layout Plain Layout
-I would write Subject-Relation-Object throughout
-\end_layout
-
-\end_inset
-
-, in such a way that can be represented in a PostgreSQL database.
- Each possible verb is described at the top level by a row in the 
+ in terms of Subject-Relation-Object triples, in such a way that can be
+ represented in a PostgreSQL database.
+ Each possible relation is described at the top level by a row in the 
 \series bold
 relation
 \series default
@@ -287,20 +278,36 @@ relation_instance
 \emph on
  relation_id
 \emph default
- to specify which relation this is an instance of.
+ column
+\emph on
+ 
+\emph default
+to specify which relation this is an instance of.
  The three tables that inherit from relation_instance are 
-\series bold
-class_instance_class_instance
-\series default
-, 
-\series bold
-treenode_class_instance
-\series default
- and 
 \series bold
 class_class
 \series default
-, depending on whether the subject of the relationship is a 
+, 
+\series bold
+class_instance_class_instance
+\series default
+ and 
+\series bold
+treenode_class_instance
+\series default
+.
+
+\series bold
+ 
+\series default
+The 
+\series bold
+class_class
+\series default
+ table describes the possible classes that can be linked by that particular
+ relation.
+ Which table is used for the concrete relationships depends on whether the
+ subject of the relationship is a 
 \series bold
 class
 \series default
@@ -309,36 +316,16 @@ class
 treenode
 \series default
 .
- 
-\emph on
-(FIXME: 
+ The treenode_class_instance table has rows that link a treenode to a class
+ instance, whereas the 
 \series bold
-class_class
+class_instance_class_instance
 \series default
- presumably should describe the possible classes that can be linked by a
- relationship, but only seens to have one entry at the moment: 
-\begin_inset Quotes eld
-\end_inset
-
-soma part_of neuron
-\begin_inset Quotes erd
-\end_inset
-
-.)
-\begin_inset Note Note
-status open
-
-\begin_layout Plain Layout
-
-\emph on
-This is true.
- We have not populated this table so far.
- But it should correspond in away to the TrakEM template tree.
-\end_layout
-
-\end_inset
-
-
+ table links two 
+\series bold
+class_instance_class_instance
+\series default
+s.
 \end_layout
 
 \begin_layout Standard
@@ -556,8 +543,8 @@ class_instance
 \end_layout
 
 \begin_layout Standard
-Instances of the Subject-Verb-Object relationship between instances of two
- classes are represented by rows in the 
+Instances of the Subject-Relation-Object relationship between instances
+ of two classes are represented by rows in the 
 \series bold
 class_instance_class_instance
 \series default

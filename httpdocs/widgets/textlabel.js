@@ -230,7 +230,7 @@ Textlabel = function(
 	var apply = function( e )
 	{
 		icon_apply.style.display = "block";
-		requestQueue.replace(
+		RequestQueue.replace(
 			"model/textlabel.update.php",
 			"POST",
 			{
@@ -278,7 +278,7 @@ Textlabel = function(
 	{
 		icon_apply.style.display = "block";
 		
-		requestQueue.register(
+		RequestQueue.register(
 			'model/textlabel.delete.php',
 			'POST',
 			{
@@ -495,7 +495,6 @@ Textlabel = function(
 	// initialise
 	var self = this;
 	if ( !ui ) ui = new UI();
-	if ( !requestQueue ) requestQueue = new RequestQueue();
 	
 	var view = document.createElement( "div" );
 	view.className = "textlabelView";	
@@ -588,4 +587,135 @@ Textlabel = function(
 	var icon_apply = document.getElementById( "icon_text_apply" );
 	
 	var edit = false;
+}
+
+
+TextlabelLayer = function(
+		stack )		//!< int `tile' height
+{
+	var stack = stack;
+	var textlabels = new Array();
+	var stackWindow = stack.getWindow();
+	
+	/**
+	 * update textlabels in a given box of interest by querying it from the server
+	 */
+	this.update = function(
+		x,						//!< left border in project coordinates
+		y,						//!< top border in project coordinates
+		width,					//!< width in project coordinates
+		height					//!< height in project coordinates
+	)
+	{
+		var scale = stack.getScale();
+		var coordinates = stack.projectCoordinates();
+		var resolution = stack.resolution();
+		
+		requestQueue.register(
+			'model/textlabels.php',
+			'POST',
+			{
+				pid : stack.getProject().getId(),
+				sid : stack.getId(),
+				z : coordinates.z,
+				top : y,
+				left : x,
+				width : width,
+				height : height,
+				//scale : ( stack.getMode() == Stack.EDIT_TEXT ? 1 : scale ),	// should we display all textlabels when being in text-edit mode?  could be really cluttered
+				scale : scale,
+				resolution : resolution.y
+			},
+			handle_update );
+		return;
+	}
+	
+	/**
+	 * handle an update-textlabels-request answer
+	 *
+	 */
+	var handle_update = function( status, text, xml )
+	{
+		if ( status = 200 )
+		{
+			//alert( "data: " + text );
+			var e = eval( "(" + text + ")" );
+			if ( e.error )
+				alert( e.error );
+			else
+			{
+				//! remove old text labels
+				while ( textlabels.length > 0 )
+				{
+					var t = textlabels.pop();
+					try		//!< we do not know if it really is in the DOM currently
+					{
+						view.removeChild( t.getView() );
+					}
+					catch ( error ) {}
+				}
+				
+				if ( text )
+				{
+					var resolution = stack.resolution();
+					var translation = stack.translation();
+					var stackWindowFrame = stackWindow.getFrame();
+					
+					//! import new
+					for ( var i in e )
+					{
+						var t = new Textlabel( e[ i ], resolution, translation );
+						textlabels.push( t );
+						stackWindowFrame().appendChild( t.getView() );
+						if ( mode == "text" )
+							t.setEditable( true );
+					}
+				}
+			}
+		}
+		return;
+	}
+	
+	/**
+	 * Move to project-coordinates.
+	 * 
+	 * Considers only coordinates[0], coordinates[1] and scale.  The caller is
+	 * required to call update(x,y,width,height) on change of z,t,scale or
+	 * in case the field of view leaves the current data window.
+	 * 
+	 * @param {Array} coordinates [x,y,z,...]
+	 * @param {Number} scale
+	 */
+	this.moveTo = function( coordinates, scale )
+	{
+		alert( "moveTo" );
+		
+		if ( typeof sp == "number" )
+		{
+			s = Math.max( 0, Math.min( MAX_S, Math.round( sp ) ) );
+			scale = 1 / Math.pow( 2, s );
+		}
+		
+		LAST_XT = Math.floor( MAX_X * scale / X_TILE_SIZE );
+		LAST_YT = Math.floor( MAX_Y * scale / Y_TILE_SIZE );
+		
+		x = Math.max( 0, Math.min( MAX_X, Math.round( ( xp - translation.x ) / resolution.x ) ) );
+		y = Math.max( 0, Math.min( MAX_Y, Math.round( ( yp - translation.y ) / resolution.y ) ) );
+		
+		var z1;
+		var z2;
+		z1 = z2 = Math.round( ( zp - translation.z ) / resolution.z );
+		while ( broken_slices[ z1 ] && broken_slices[ z2 ] )
+		{
+			z1 = Math.max( 0, z1 - 1 );
+			z2 = Math.min( MAX_Z, z2 + 1 );
+		}
+		if ( !broken_slices[ z1 ] ) z = z1;
+		else z = z2;
+		z = Math.max( 0, Math.min( MAX_Z, z ) );
+		
+		update();
+		
+		return;
+	}
 }

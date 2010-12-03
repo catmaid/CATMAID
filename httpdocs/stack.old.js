@@ -5,53 +5,242 @@
  *	 tools.js
  *	 ui.js
  *	 slider.js
+ *
+ * @todo redo all public interfaces to use physical coordinates instead of pixel coordinates
  */
 
 /**
  */
 
 /**
- * Stack is the core data viewer and interaction element.  It displays a list
- * of layers of an x,y-plane in an n-dimensional data set, tracks the
- * navigation/edit mode and organizes access to user interface elements such
- * as navigation sliders and buttons.  x, y dimensions are shown in the plane,
- * for all other dimensions, a slider is used.
- * 
- * Layers can be images, text, SVG or arbitrary other overlays.
- * 
- * A Stack is created with a given pixel resolution, pixel dimension, a
- * translation relative to the project and lists of planes to be excluded
- * (e.g. missing sections in serial section microscopy and missing frames in a
- * time series).  These properties limit the field of view and the slider
- * ranges.  
+ * transition object for general animations
  */
-function Stack(
-		project,					//!< {Project} reference to the parent project
-		id,							//!< {Integer} the stack's id
-		title,						//!< {String} the stack's title
-		dimension,					//!< {Array} pixel dimensions [x, y, z, ...]
-		dimensionLabels,			//!< {Array} labels for dimensions ["x", "y", "z", "t", ...]
-		resolution,					//!< {Array} physical resolution in nm/pixel [x, y, z, ...]
-		overview_url,				//!< {String} URL to the overview image
-		skip_planes,				//!< {Array} planes to be excluded from the stack's view [[z],[t], ...]
-		trakem2_project				//!< {boolean} that states if a TrakEM2 project is available for this stack
+function Transition()
+{
+	/**
+	 * returns if there is some transition running or not
+	 */
+	this.busy = function()
+	{
+		return ( this.timeout !== false );
+	}
+	
+	/**
+	 * returns true, if the requested function is still queued
+	 */
+	this.queued = function( f )
+	{
+		q = false;
+		for ( var i = 0; i < queue.length; ++i )
+		{
+			if ( queue[ i ] == f )
+			{
+				statusBar.replaceLast( "already queued in slot " + i + " of " + queue.length + "." );
+				q = true;
+				break;
+			}
+		}
+		return q;
+	}
+	
+	/**
+	 * forces the transition to finish by setting step = 1
+	 */
+	this.finish = function()
+	{
+		step = 1.0;
+		return;
+	}
+	
+	/**
+	 * registers a function to the queue for waiting or starts it immediately
+	 * each function gets the current step as parameter and has to return the next step value
+	 */
+	this.register = function( t )
+	{
+		queue.push( t );
+		if ( !timeout )
+			t();
+			timeout = window.setTimeout( run, 25 );
+		return;
+	}
+	
+	/**
+	 * runs the first element of the queue
+	 */
+	var run = function()
+	{
+		if ( timeout ) window.clearTimeout( timeout );
+		if ( queue.length > 0 )
+			step = queue[ 0 ]( step );
+		if ( step > 1 )
+		{
+			step = 0;
+			if ( queue.length > 0 )
+				queue.shift();
+			//statusBar.replaceLast( "running step " + step + " queue.length " + queue.length );
+		}
+		if ( queue.length > 0 )
+			timeout = window.setTimeout( run, 25 );
+		else
+			timeout = false;
+		return;
+	}
+	
+	// initialize
+	var self = this;
+	var step = 0;					//!< the transitions state [0.0, ..., 1.0]
+	var queue = new Array();		//!< queue of waiting transitions
+	var FINISH = false;				//!< set this to force the transition to make an end
+	var timeout = false;			//!< window.timeout
+}
+
+/**
+ * container for the small navigator map widget
+ */
+function SmallMap(
+		stack,			//!< a reference to the stack
+		max_y,			//!< maximal height
+		max_x			//!< maximal width
 )
 {
-	var n = dimension.length;
+	/**
+	 * get the view object
+	 */
+	this.getView = function()
+	{
+		return view;
+	}
 	
+	var onclick = function( e )
+	{
+		var m = ui.getMouse( e );
+		if ( m )
+		{
+			//statusBar.replaceLast( m.offsetX + ", " + m.offsetY );
+			stack.moveToPixel( z, Math.floor( m.offsetY / SCALE ), Math.floor( m.offsetX / SCALE ), s );
+		}
+		return false;
+	}
+	
+	this.update = function(
+			nz,
+			y,
+			x,
+			ns,
+			screenHeight,
+			screenWidth
+	)
+	{
+		z = nz;
+		s = ns;
+		var scale = 1 / Math.pow( 2, s );
+		img.src = stack.image_base + z + "/small.jpg";
+		var height = SCALE / scale * screenHeight;
+		var width = SCALE / scale * screenWidth;
+		rect.style.height = Math.floor( height ) + "px";
+		rect.style.width = Math.floor( width ) + "px";
+		rect.style.top = Math.floor( SCALE * y - height / 2 ) + "px";
+		rect.style.left = Math.floor( SCALE * x - width / 2 ) + "px";
+		return;
+	}
+	
+	this.focus = function()
+	{
+		view.style.zIndex = 6;
+		return;
+	}
+	
+	this.blur = function()
+	{
+		view.style.zIndex = 4;
+		return;
+	}
+	
+	// initialize
+	if ( !ui ) ui = new UI();
+	
+	var HEIGHT = parseInt( getPropertyFromCssRules( 3, 3, "height" ) );
+	var WIDTH = parseInt( getPropertyFromCssRules( 3, 3, "width" ) );
+	var SCALE_Y = HEIGHT / max_y;
+	var SCALE_X = WIDTH / max_x;
+	var SCALE = Math.min( SCALE_X, SCALE_Y );
+	HEIGHT = Math.floor( max_y * SCALE );
+	WIDTH = Math.floor( max_x * SCALE );
+	
+	var s = 0;
+	var z = 0;
+	
+	var view = document.createElement( "div" );
+	view.className = "smallMapView";
+	view.style.width = WIDTH + "px";
+	view.style.height = HEIGHT + "px";
+		
+	var img = document.createElement( "img" );
+	img.className = "smallMapMap";
+	img.src = "map/small.jpg";
+	img.onclick = onclick;
+	img.style.width = view.style.width;
+	img.style.height = view.style.height;
+	view.appendChild( img );
+	
+	var rect = document.createElement( "div" );
+	rect.className = "smallMapRect";
+	view.appendChild( rect );
+	
+	var toggle = document.createElement( "div" );
+	toggle.className = "smallMapToggle";
+	toggle.title = "hide general view";
+	toggle.onclick = function( e )
+	{
+		if ( view.className == "smallMapView_hidden" )
+		{
+			toggle.title = "hide general view";
+			view.className = "smallMapView";
+			view.style.width = WIDTH + "px";
+			view.style.height = HEIGHT + "px";
+		}
+		else
+		{
+			toggle.title = "show general view";
+			view.className = "smallMapView_hidden";
+			view.style.width = "";
+			view.style.height = "";
+		}
+		return false;
+	}
+	
+	view.appendChild( toggle );
+}
+
+/**
+ * a stack of slices
+ */
+function Stack(
+		project,					//!< reference to the parent project
+		id,							//!< the stack's id
+		title,						//!< the stack's title
+		dimension,					//!< pixel dimensions {x, y, z}
+		resolution,					//!< physical resolution in nm/pixel {x, y, z}
+		translation,				//!< physical translation relative to the project in nm {x, y, z}
+		image_base,					//!< URL to the image base path
+		broken_slices,				//!< broken slices to be excluded from the stack's view
+		trakem2_project				//!< boolean that states if a TrakEM2 project is available for this stack
+)
+{
 	/**
 	 * update the benchmark (x-resolution) to a proper size
 	 */
-	var updateScaleBar = function()
+	var updateBenchmark = function()
 	{
-		var meter = scale / resolution[ 0 ];
-		var width = 0;
-		var text = "";
-		for ( var i = 0; i < Stack.SCALEBAR_SIZES.length; ++i )
+		var meter = scale / resolution.x;
+		var benchmark_width = 0;
+		var benchmark_text = "";
+		for ( var i = 0; i < BENCHMARK_SIZES.length; ++i )
 		{
-			text = Stack.SCALEBAR_SIZES[ i ];
-			width = Stack.SCALEBAR_SIZES[ i ] * meter;
-			if ( width > Math.min( 192, viewWidth / 5 ) )
+			benchmark_text = BENCHMARK_SIZES[ i ];
+			benchmark_width = BENCHMARK_SIZES[ i ] * meter;
+			if ( benchmark_width > Math.min( 192, viewWidth / 5 ) )
 				break;
 		}
 		var ui = 0;
@@ -1364,7 +1553,57 @@ function Stack(
 	
 	this.image_base = image_base;
 	
-	
+	//!< in nanometers
+	var BENCHMARK_SIZES = new Array(
+			10,
+			20,
+			25,
+			50,
+			100,
+			200,
+			250,
+			500,
+			1000,
+			2000,
+			2500,
+			5000,
+			10000,
+			20000,
+			25000,
+			50000,
+			100000,
+			200000,
+			250000,
+			500000,
+			1000000,
+			2000000,
+			2500000,
+			5000000,
+			10000000,
+			20000000,
+			25000000,
+			50000000,
+			100000000,
+			200000000,
+			250000000,
+			500000000,
+			1000000000,
+			2000000000,
+			2500000000,
+			5000000000,
+			10000000000,
+			20000000000,
+			25000000000,
+			50000000000,
+			100000000000,
+			200000000000,
+			250000000000,
+			500000000000 );
+	var BENCHMARK_UNITS = new Array(
+			"nm",
+			unescape( "%u03BCm" ),
+			"mm",
+			"m" );
 	
 	
 	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1493,55 +1732,3 @@ function Stack(
 
 	//self.setMode( "move" );
 }
-
-//!< in nanometers
-Stack.SCALE_BAR_SIZES = new Array(
-			10,
-			20,
-			25,
-			50,
-			100,
-			200,
-			250,
-			500,
-			1000,
-			2000,
-			2500,
-			5000,
-			10000,
-			20000,
-			25000,
-			50000,
-			100000,
-			200000,
-			250000,
-			500000,
-			1000000,
-			2000000,
-			2500000,
-			5000000,
-			10000000,
-			20000000,
-			25000000,
-			50000000,
-			100000000,
-			200000000,
-			250000000,
-			500000000,
-			1000000000,
-			2000000000,
-			2500000000,
-			5000000000,
-			10000000000,
-			20000000000,
-			25000000000,
-			50000000000,
-			100000000000,
-			200000000000,
-			250000000000,
-			500000000000 );
-Stack.SCALE_BAR_UNITS = new Array(
-			"nm",
-			unescape( "%u03BCm" ),
-			"mm",
-			"m" );

@@ -43,15 +43,15 @@ function Project( pid )
 		if ( !opened )
 		{
 			stacks.push( stack );
-			view.appendChild( stack.getView() );
+			if ( rootWindow.getChild() == null )
+				rootWindow.replaceChild( stack.getWindow() );
+			else
+				rootWindow.replaceChild( new CMWHSplitNode( rootWindow.getChild(), stack.getWindow() ) );
+				
 			ui.onresize();
 		}
 		if ( stacks.length > 1 )
-		{
-			var message_widget_resize_handle = new ResizeHandle( "h" );
-			stacks[ stacks.length - 2 ].getView().insertBefore( message_widget_resize_handle.getView(), stacks[ stacks.length - 2 ].getView().firstChild );
 			self.moveTo( self.coordinates.z, self.coordinates.y, self.coordinates.x );
-		}
 		else
 		{
 			var c = stack.projectCoordinates();
@@ -86,16 +86,12 @@ function Project( pid )
 			if ( stacks[ i ].id == sid )
 			{
 				stacks[ i ].unregister();
-				view.removeChild( stacks[ i ].getView() );
+				stacks[ i ].close();
 				stacks.splice( i, 1 );
 				if ( stacks.length == 0 )
 					self.unregister();
 				else
-				{
-					if ( stacks[ stacks.length - 1 ].getView().firstChild.className.match( /resize_handle/ ) )
-						stacks[ stacks.length - 1 ].getView().removeChild( stacks[ stacks.length - 1 ].getView().firstChild );
 					stacks[ ( i + 1 ) % stacks.length ].focus();
-				}
 			}
 		}
 		ui.onresize();
@@ -103,16 +99,11 @@ function Project( pid )
 	}
 	
 	/**
-	 * focus one stack and blur the rest
+	 * focus a stack and blur the rest
 	 */
-	this.focusStack = function( stack )
+	this.setFocusedStack = function( stack )
 	{
 		self.focusedStack = stack;
-		for ( var i = 0; i < stacks.length; ++i )
-		{
-			if ( stack != stacks[ i ] )
-				stacks[ i ].blur();
-		}
 		return;
 	}
 	
@@ -123,63 +114,31 @@ function Project( pid )
 	{
 		var i;
 		for ( i = 0; i < stacks.length; ++i )
-		{
 			if ( self.focusedStack == stacks[ i ] ) break;
-		}
+			
 		stacks[ ( i + stacks.length + s ) % stacks.length ].focus();
 		return;
 	}
 	
 	
-	/*
-	* resize the view and its content on window.onresize event
-	*/
+	/**
+	 * resize the view and its content on window.onresize event
+	 */
 	var resize = function( e )
 	{
+		var rootFrame = rootWindow.getFrame();
 		var top = document.getElementById( "toolbar_container" ).offsetHeight;
 		if ( message_widget.offsetHeight ) top += message_widget.offsetHeight;
 		//var bottom = document.getElementById( 'console' ).offsetHeight;
 		var bottom = 64;
 		var height = Math.max( 0, ui.getFrameHeight() - top - bottom );
-		var left = 0;
-		var width = ui.getFrameWidth();
-		if ( table_widget.offsetWidth )
-		{
-			width -= table_widget.offsetWidth;
-			left += table_widget.offsetWidth;
-		}
-		if ( tree_widget.offsetWidth )
-		{
-			if ( table_widget.offsetWidth )
-				tree_widget.style.left = left + "px";
-			else
-				tree_widget.style.left = "0px";
-			width -= tree_widget.offsetWidth;
-			left += tree_widget.offsetWidth;
-		}
-		var old_width = 0;
-		for ( var i = 0; i < stacks.length; ++i )
-		{
-			old_width += stacks[ i ].getView().offsetWidth;
-		}
-		var width_ratio = width / old_width;
 		
-		//var stack_view_width = Math.floor( width / stacks.length );
+		rootFrame.style.top = top + "px";
+		rootFrame.style.width = UI.getFrameWidth() + "px";
+		rootFrame.style.height = height + "px";
 		
-		view.style.left = left + "px";
-		left = 0;
-		for ( var i = 0; i < stacks.length; ++i )
-		{
-			//stacks[ i ].resize( i * stack_view_width, 0, stack_view_width, height );
-			var stack_view_width = Math.floor( stacks[ i ].getView().offsetWidth * width_ratio );
-			stacks[ i ].resize( left, 0, stack_view_width, height );
-			left += stack_view_width;
-		}
+		rootWindow.redraw();
 		
-		view.style.top = top + "px";
-		view.style.width = width + "px";
-		view.style.height = height + "px";
-	
 		return true;
 	}
 	
@@ -544,27 +503,22 @@ function Project( pid )
 		else return true;
 	}
 	
+	/**
+	 * Get project ID.
+	 */
+	this.getId = function(){ return pid; }
+	
 	// initialise
 	var self = this;
 	this.id = pid;
 	if ( typeof ui == "undefined" ) ui = new UI();
 	if ( typeof requestQueue == "undefined" ) requestQueue = new RequestQueue();
 	
-	var view = document.createElement( "div" );
+	var rootWindow = new CMWRootNode();
+	ui.registerEvent( "onresize", resize );
+	
+	var view = rootWindow.getFrame();
 	view.className = "projectView";
-	
-	var templateView = document.createElement( "div" );
-	templateView.className = "projectTemplateView";
-	
-	var dataView = document.createElement( "div" );
-	templateView.className = "projectDataView";
-	
-	var editToolbar = document.getElementById( "" );
-	
-	/*
-	view.appendChild( templateView );
-	view.appendChild( dataView );
-	*/
 	
 	this.coordinates = 
 	{

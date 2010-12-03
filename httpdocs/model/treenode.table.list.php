@@ -6,6 +6,7 @@ ini_set( 'display_errors', true );
 include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
+include_once( 'json.inc.php' );
 
 $db =& getDB();
 $ses =& getSession();
@@ -13,7 +14,33 @@ $ses =& getSession();
 $pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
-// TODO: filter by "is_model_of" "skeleton_instance" as parameter, so far, show all
+// retrieve skeleton ids if set
+if ( isset( $_REQUEST['skeleton_nr'] ))
+{
+	$skelnr = intval( $_REQUEST['skeleton_nr'] );
+	
+	if ( $skelnr )
+	{
+		$skelcon = "AND (";
+		
+		for ( $i = 0; $i < $skelnr; $i++ )
+		{
+			// $skelid[] = $_REQUEST['skeleton_'.$i];
+			if( $i == 0 )
+				$skelcon .= '"tci"."class_instance_id" = '. $_REQUEST['skeleton_'.$i];
+			else
+				$skelcon .= 'OR "tci"."class_instance_id" = '. $_REQUEST['skeleton_'.$i];
+		}
+		$skelcon .= ")";
+		
+	}
+	else
+	{
+		$skelcon = "";
+	}
+	
+	
+}
 
 /* Paging */
 $sLimit = "";
@@ -121,7 +148,16 @@ if ( $pid )
 				}
 				unset( $tlabel );
 			}
-						
+			
+			// retrieve model_of id
+			$modelofres = $db->getResult(
+			'SELECT "relation"."id" FROM "relation"
+			WHERE "relation"."project_id" = '.$pid.' AND
+			"relation"."relation_name" = \'model_of\'');
+			$modid = !empty($modelofres) ? $modelofres[0]['id'] : 0;
+			
+			
+			
 			// treenode list logic
 			$t = $db->getResult(
 				'SELECT	"treenode"."id" AS "tid",
@@ -134,12 +170,15 @@ if ( $pid )
 						("treenode"."location")."z" AS "z",
 						"user"."name" AS "username",
 						( "treenode"."user_id" = '.$uid.' ) AS "can_edit",
-						to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
+						to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified",
+						"tci"."class_instance_id"
 						
-					FROM "treenode", "user"
+					FROM "treenode", "user", "treenode_class_instance" AS "tci"
 						
 					WHERE "treenode"."project_id" = '.$pid.' AND
-						  "treenode"."user_id" = "user"."id"
+						  "treenode"."user_id" = "user"."id" AND
+						  "treenode"."id" = "tci"."treenode_id"
+						  '.$skelcon.'
 					'.$sOrder.'
 					'.$sLimit.'
 					');
@@ -235,17 +274,17 @@ if ( $pid )
 				// if it corresponds to the nodes we want to display
 				// 0 -> node type
 				// 1 -> label			
-				if ( $_GET['sSearch_0'] != "" )
+				if ( $_REQUEST['sSearch_0'] != "" )
 				{
-					if( strtoupper($_GET['sSearch_0']) != $val["nodetype"])
+					if( strtoupper($_REQUEST['sSearch_0']) != $val["nodetype"])
 					{
 						$skip = True;
 					}
 				}
 
-				if ( $_GET['sSearch_1'] != "" )
+				if ( $_REQUEST['sSearch_1'] != "" )
 				{
-					$pos = strpos(strtoupper($val["label"]),strtoupper($_GET['sSearch_1']));
+					$pos = strpos(strtoupper($val["label"]),strtoupper($_REQUEST['sSearch_1']));
 					if ( $pos === false ) {
 						$skip = True;
 					}
@@ -260,7 +299,6 @@ if ( $pid )
 			$sOutput .= '] }';
 			
 			echo $sOutput;
-			
 
 	}
 	else

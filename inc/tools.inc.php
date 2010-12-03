@@ -9,15 +9,30 @@
  *
  */
 
-
 /**
  * create a tree view node
  */
 function tv_node( $data )
 {
-	
+	// print_r( $data );
 	$sOutput = '';
 	$sOutput .= '{';	
+	if( array_key_exists('data', $data) )
+	{
+		$sOutput .= '"data" : {';
+		if( array_key_exists('title', $data['data']))
+		{
+		$sOutput .= ' "title" : "'.$data['data']['title'].'" ,';
+		}
+		
+		if( array_key_exists('icon', $data['data']))
+		{
+			$sOutput .= ' "icon" : "'.$data['data']['icon'].'",';
+		}
+		
+		$sOutput .= '},';
+	};
+	
 	if( array_key_exists('attr', $data))
 	{
 		$sOutput .= ' "attr" : {';
@@ -27,27 +42,22 @@ function tv_node( $data )
 		}
 		$sOutput .= '},';
 	}		
-	$sOutput .= '"data" : {';
-	$sOutput .= ' "title" : "'.$data['title'].'" ,';
-
-	if( array_key_exists('icon', $data))
+	
+	if( array_key_exists('state', $data))
 	{
-		$sOutput .= ' "icon" : "'.$data['icon'].'",';
+		$sOutput .= ' "state" : "'.$data['state'].'",';
 	}
-	
-	$sOutput .= '},';
-	
-	$sOutput .= '"children" : [';
 	
 	if( array_key_exists('children', $data) )
 	{
+		$sOutput .= '"children" : [';
 		// add the children here
 		foreach ($data['children'] as $key => $value ) {
 			$sOutput .= tv_node($value);	
 		};
+		$sOutput .= ']';
 	}
 	
-	$sOutput .= ']';
 	$sOutput .= '},';
 	
 	return $sOutput;

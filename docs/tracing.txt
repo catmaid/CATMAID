@@ -1,0 +1,98 @@
+define the interactivity with tracing clearly.
+
+define cursors and key shortcuts for activate a mode.
+
+% -> database interaction
+? -> question to discuss
+: -> display issue
+
+notion of the active treenode (only in the local browser):
+* a newly added treenode is automatically the active treenode
+* a clicked treenode becomes the active treenode
+-> project.selectedObjects['active_treenode'] =
+
+in the stack, show treenodes with different colors for the slices below and above (or more than 1)
+
+in the stack, show synapses +/- x slices above and below
+
+back&forth navigation. what are the operations to track?
+* sequence of active treenodes and active synapses
+
+table name abbreviations:
+* tn: treenode
+* tci: treenode_class_instance
+* ci: class_instance
+* cici: class_instance_class_instance
+
+treenode manipulation mode 
+--------------------------
+
+* make an existing treenode active
+1. left-mouseclick on a treenode
+
+* add new treenode
+? otherwise, need an active skeleton in the object tree (generated before)
+? and adding a new treenode links it to this skeleton, this is how trakem does it!
+1. mouse over an empty location on the stack
+2. left-mousedown
+? case 3.1 and 3.2. differentiated with a control key? e.g. shift for 3.2 (less common) than 3.1
+3. new treenode created
+3.1. as extensions of current skeleton, create connection with active treenode
+% add new treenode in tn and set parent id to active treenode id
+3.2. create a new skeleton, new treenode is the root of the new skeleton without connection
+% add new treenode in database with parent id NULL, create a new skeleton, link treenode and skeleton
+: possibly refresh treeview and datatable, but: we do not want to do this for every new treenode
+4. newly created treenode becomes active
+
+* drag existing treenode
+1. mouse over an existing, visible treenode
+2. shift-left-mousedown, treenode becomes active
+? could use alt control key?
+3. while hold down, move to new location
+4. release mousebutton
+% update location in database
+
+* connect 2 existing treenodes
+? do we need this at all?
+? what about connecting/merging two skeletons ? rerooting?
+1. mouse over an existing, visible treenode
+2. ctrl-left-mousedown, treenode becomes active
+3. move mouse to new location with mousedown hold
+4. release mouse on new location
+4.1. new location has an existing treenode -> connect: origin is parent, target is child
+4.2. new location has not an existing treenode -> nothing happens. origin treenode stays active
+
+* jump to the next branch node towards the root
+1. press tab key
+1.1. next branch node becomes active and jump to it
+1.2. if no branch node exist, jump to root
+
+* jump directly to root treenode of the skeleton
+1. press shift-tab key
+2. root of skeleton becomes active, jump to it 
+
+synapse manipulation mode
+-------------------------
+
+* make an existing synapse active
+1. left-mouseclick on a synapse
+
+* add new synapse
+1. switch to synapse mode, have an active treenode from which we want to make a synapse
+2.1. left-click on the synaptic cleft location, add a new synapse, add a presynaptic-to relation to it
+2.2. shift-left-click on the synaptic cleft location, add a new synapse, add a postsynaptic-to relation to it
+3.1. shift-left-click in target branch, create a new treenode (and skeleton), add postsynaptic-to relation to it
+3.2. left-click in target branch, create a new treenode (and skeleton), add presynaptic-to relation to it
+
+* extend synaptic relations for an existing synapse
+1. have an active synapse
+2.1.1 left-click on an existing treenode, add a presynaptic-to relation to it
+% add to tci
+2.1.2 left-click on a free spot, add a new treenode, and add a presynaptic-to relation to it
+% add to tn, tci
+2.2.1 shift-left-click on a an existing treenode, add a postsynaptic-to relation to it
+% add to tci
+2.2.2 shift-left-click on a freespot, add a new treenode, and add a postsynaptic-to relation to it
+% add to tn, tci
+
+

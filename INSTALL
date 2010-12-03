@@ -6,6 +6,138 @@
 2. Apache2 Webserver
 3. PHP 5
 
+sudo apt-get install libapache2-mod-php5 php5-pgsql imagemagick
+
+== Ubuntu 10.10 ==
+
+The git repository is hosted here::
+
+	http://pacific.mpi-cbg.de/cgi-bin/gitweb.cgi
+
+0. Clone the repository into /var/www/catmaid so that you have
+the folder /var/www/catmaid/httpdocs/ in place
+
+1. PostgresSQL
+
+https://help.ubuntu.com/community/PostgreSQL
+
+	sudo apt-get install postgresql pgadmin3 phppgadmin
+
+Update the password for your catmaid user in /var/www/catmaid/docs/createuser.sql
+
+	sudo -u postgres psql < docs/createuser.sql
+
+Dump the database in docs/master.sql::
+
+	sudo -u postgres psql catmaid < docs/master.sql
+
+Check if you can login and see the contents::
+
+	http://localhost/phppgadmin/
+
+Make sure that the catmaid database is accessible using MD5 hashed
+passwords - you have to add this line as the *first* rule in
+/etc/postgresql/8.4/main/pg_hba.conf:
+
+	local   catmaid     all                               md5
+
+Update catmaid database connection for user in::
+
+	/var/www/catmaid/inc/setup.inc.php
+
+2. Apache2 Server
+
+There are two possibilities here - setting up CATMAID on
+its own virtual host, or setting it up as a subdirectory
+of an existing host:
+
+2.1 Named Virtual Hosts approach:
+
+http://wiki.ubuntuusers.de/Apache/Virtual_Hosts
+
+Create in /etc/apache2/sites-available a file called "catmaid":
+----
+<VirtualHost *:80>
+ServerName catmaid
+
+DocumentRoot "/var/www/catmaid/httpdocs"
+
+php_admin_value register_globals off
+php_admin_value include_path ".:/var/www/catmaid/inc"
+php_admin_value session.use_only_cookies 1
+php_admin_value error_reporting 2047
+php_admin_value display_errors true
+
+<Directory /var/www/catmaid/httpdocs>
+
+	Options FollowSymLinks
+	AllowOverride AuthConfig Limit FileInfo
+
+                Order allow,deny
+                allow from all
+
+</Directory>
+
+CustomLog /var/www/catmaid/logs/access_log combined
+ErrorLog /var/www/catmaid/logs/error.log
+
+</VirtualHost>
+---
+
+	sudo a2ensite catmaid
+	/etc/init.d/apache2 reload
+
+You might have to update /etc/hosts
+
+2.2 As a directory of an existing virtual host
+
+<VirtualHost *:80>
+        ServerAdmin webmaster@localhost
+
+        DocumentRoot /var/www
+        <Directory />
+                Options FollowSymLinks
+                AllowOverride None
+        </Directory>
+	...
+	...
+
+	# Add CATMAID configuration here:
+        # CATMAID stuff:
+        php_admin_value register_globals off
+        php_admin_value include_path ".:/home/mark/catmaid-local-instance/inc"
+        php_admin_value session.use_only_cookies 1
+        php_admin_value error_reporting 2047
+        php_admin_value display_errors true
+
+        Alias /catmaid/ /home/mark/catmaid-local-instance/httpdocs/
+        <Directory /home/mark/catmaid-local-instance/httpdocs/>
+                Options FollowSymLinks
+                AllowOverride AuthConfig Limit FileInfo
+                Order allow,deny
+                Allow from all
+        </Directory>
+
+	...
+	...
+</VirtualHost>
+
+
+3. Now try it out!
+
+Try to start CATMAID::
+
+	firefox http://catmaid/
+
+And use the default login::
+
+	user: gerhard
+	pass: gerhard
+
+Deprecated
+==========
+
+
 ===Database===
 
 Create the database using the included dump.sql file.  In Debian/Ubuntu, this
@@ -19,8 +151,9 @@ needs either in dump.sql or afterwards via
 
 ALTER ROLE "catmaid_user" PASSWORD '<new password>'
 
-===Web Server===
+Add the respective password authentication rule to your pg_hba.conf before the
+rule for ident authentication:
 
-
-
+local   catmaid     catmaid_user                      md5
+local   all         all                               ident
 

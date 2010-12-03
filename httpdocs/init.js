@@ -1,3 +1,4 @@
+
 var statusBar;		//!< global statusBar
 
 var slider_z;		//!< slice slider
@@ -41,8 +42,6 @@ var xp;
 var session;
 var msg_timeout;
 var MSG_TIMEOUT_INTERVAL = 60000;	//!< length of the message lookup interval in milliseconds
-
-var selectedObjects = {}; //!< associative array of selected objects like class_instances, treenodes etc.
 
 /**
  * queue a login-request on pressing return
@@ -523,14 +522,17 @@ function read_message( id )
 function global_resize( e )
 {
 	var top = document.getElementById( "toolbar_container" ).offsetHeight;
-	message_widget.style.top = table_widget.style.top = tree_widget.style.top = top + "px";
+	
+	message_widget.style.top = table_widget.style.top = object_tree_widget.style.top = top + "px";
+	
 	if ( message_widget.offsetHeight ) top += message_widget.offsetHeight;
 	var bottom = 64;
 	var height = Math.max( 0, ui.getFrameHeight() - top - bottom );
 	var width = ui.getFrameWidth();
 	message_widget.style.width = width + "px";
 	table_widget.style.height = height + "px";
-	tree_widget.style.height = height + "px";
+	object_tree_widget.style.height = height + "px";
+	class_tree_widget.style.height = height + "px";
 
 	var content = document.getElementById( "content" );
 	content.style.top = top + "px";
@@ -791,13 +793,21 @@ function init()
 	var message_widget_resize_handle = new ResizeHandle( "v" );
 	message_widget.appendChild( message_widget_resize_handle.getView() );
 	
-	table_widget = document.getElementById( "table_widget" );
+	table_widget = document.getElementById( "treenode_table_widget" );
 	var table_widget_resize_handle = new ResizeHandle( "h" );
 	table_widget.appendChild( table_widget_resize_handle.getView() );
 	
-	tree_widget = document.getElementById( "tree_widget" );
+	project_stats_widget = document.getElementById( "project_stats_widget" );
+	var project_stats_widget_resize_handle = new ResizeHandle( "h" );
+	project_stats_widget.appendChild( project_stats_widget_resize_handle.getView() );
+	
+	object_tree_widget = document.getElementById( "object_tree_widget" );
 	var tree_widget_resize_handle = new ResizeHandle( "h" );
-	tree_widget.appendChild( tree_widget_resize_handle.getView() );
+	object_tree_widget.appendChild( tree_widget_resize_handle.getView() );
+	
+	class_tree_widget = document.getElementById( "class_tree_widget" );
+	var tree_widget_resize_handle = new ResizeHandle( "h" );
+	class_tree_widget.appendChild( tree_widget_resize_handle.getView() );
 	
 	//! auto login by url (unsafe as can be but convenient)
 	if ( account && password )

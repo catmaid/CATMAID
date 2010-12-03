@@ -82,7 +82,7 @@ function CMWRootNode()
 {
 	var self = this;
 	
-	var child = child;
+	var child = null;
 	
 	var id = this.uniqueId();
 	
@@ -131,8 +131,8 @@ function CMWRootNode()
 	 */
 	this.redraw = function()
 	{
-		child.redraw();
-		document.getElementById( "text" ).replaceChild( document.createTextNode( self.toXML() ), document.getElementById( "text" ).firstChild );
+		if ( child ) child.redraw();
+		/* document.getElementById( "text" ).replaceChild( document.createTextNode( self.toXML() ), document.getElementById( "text" ).firstChild ); */
 		
 		return self;
 	}
@@ -768,7 +768,7 @@ function CMWWindow( title )
 	 */
 	this.redraw = function()
 	{
-		return self.callListeners( self, CMWWindow.RESIZE );
+		return self.callListeners( CMWWindow.RESIZE );
 	}
 	
 	this.getId = function(){ return id; }

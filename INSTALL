@@ -6,6 +6,8 @@
 2. Apache2 Webserver
 3. PHP 5
 
+sudo apt-get install libapache2-mod-php5 php5-pgsql imagemagick
+
 == Ubuntu 10.10 ==
 
 The git repository is hosted here::
@@ -33,16 +35,23 @@ Check if you can login and see the contents::
 
 	http://localhost/phppgadmin/
 
-Do "Managing users and rights"
+Make sure that the catmaid database is accessible using MD5 hashed
+passwords - you have to add this line as the *first* rule in
+/etc/postgresql/8.4/main/pg_hba.conf:
 
-	 -> TODO (updating pg_hba.conf)
+	local   catmaid     all                               md5
 
 Update catmaid database connection for user in::
 
 	/var/www/catmaid/inc/setup.inc.php
 
-
 2. Apache2 Server
+
+There are two possibilities here - setting up CATMAID on
+its own virtual host, or setting it up as a subdirectory
+of an existing host:
+
+2.1 Named Virtual Hosts approach:
 
 http://wiki.ubuntuusers.de/Apache/Virtual_Hosts
 
@@ -79,6 +88,42 @@ ErrorLog /var/www/catmaid/logs/error.log
 	/etc/init.d/apache2 reload
 
 You might have to update /etc/hosts
+
+2.2 As a directory of an existing virtual host
+
+<VirtualHost *:80>
+        ServerAdmin webmaster@localhost
+
+        DocumentRoot /var/www
+        <Directory />
+                Options FollowSymLinks
+                AllowOverride None
+        </Directory>
+	...
+	...
+
+	# Add CATMAID configuration here:
+        # CATMAID stuff:
+        php_admin_value register_globals off
+        php_admin_value include_path ".:/home/mark/catmaid-local-instance/inc"
+        php_admin_value session.use_only_cookies 1
+        php_admin_value error_reporting 2047
+        php_admin_value display_errors true
+
+        Alias /catmaid/ /home/mark/catmaid-local-instance/httpdocs/
+        <Directory /home/mark/catmaid-local-instance/httpdocs/>
+                Options FollowSymLinks
+                AllowOverride AuthConfig Limit FileInfo
+                Order allow,deny
+                Allow from all
+        </Directory>
+
+	...
+	...
+</VirtualHost>
+
+
+3. Now try it out!
 
 Try to start CATMAID::
 

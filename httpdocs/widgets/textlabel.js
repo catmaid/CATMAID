@@ -288,6 +288,7 @@ Textlabel = function(
 				y : self.location.y,
 				z : self.location.z
 			},
+			// XXX: not existing.
 			project.handle_updateTextlabels );
 		return;
 	}

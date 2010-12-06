@@ -405,18 +405,18 @@ function Stack(
     if ( status = 200 )
     {
       var e = eval( "(" + text + ")" );
-      
+      //var e = $.parseJSON(text);
       if ( e.error )
       {
         alert( e.error );
       }
       else
       {
-        console.log("manipulate overlay here, adding the treenodes to display");
         var jso = $.parseJSON(text);
+        console.log("Retrieved from the database ", jso.length, " treenodes.")
+        console.log(jso);
         svgOverlay.refreshNodes(jso);
       }
-      //update();
     }
     return;
   }
@@ -585,6 +585,7 @@ function Stack(
 				yd != 0 )
 			{
 				self.updateTextlabels();
+				self.updateTreelinenodes();
 			}
 			
 			//! left-most border of the view in physical project coordinates
@@ -605,7 +606,7 @@ function Stack(
         screen_top,
         scale);
         
-      self.updateTreelinenodes();
+      
       
 		}
 		

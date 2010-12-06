@@ -4,7 +4,7 @@ var atn = null;
 // - join existing nodes together with shift
 // - add backend logic
 // - delete node from svgoverlay nodes upon delete
-var r;
+// var r;
 
 function activateNode( node ) {
     // activate new node, i.e. first deactivate old one
@@ -31,6 +31,7 @@ Node = function(
   id, // unique id for the node from the database
   paper, // the raphael paper this node is drawn to
   parent, // the parent node
+  r,
   x, // the x coordinate in pixel coordinates
   y) // the y coordinate in pixel coordiantes
 { 
@@ -42,7 +43,8 @@ Node = function(
   // local screen coordinates relative to the div
   self.x = x;
   self.y = y;
-  self.r = r;
+  self.parent = parent;
+  self.r = parseFloat(r);
   
   var setSync = function( bo ) { needsync = bo; }
   this.setSync = setSync;
@@ -99,13 +101,13 @@ Node = function(
 	{
 	  // test if there is any child of type ConnectorNode
 	  // if so, it is not allowed to remove the treenode
-    for ( var i = 0; i < children.length; ++i ) {
+    /*for ( var i = 0; i < children.length; ++i ) {
       if( children[i] instanceof ConnectorNode ) {
         console.log("not allowed to delete treenode with connector attached. first remove connector.")
         return;
       }
     }
-    
+    */
     // remove the parent of all the children
     for ( var i = 0; i < children.length; ++i ) {
       children[ i ].line.remove();
@@ -127,19 +129,29 @@ Node = function(
 	// make this function accessible
 	this.deleteall = deleteall;
 	
-	this.parent = parent;
   // remove the parent node
   this.removeParent = function()
   { 
     delete parent;
     parent = null;
   }
+  this.updateParent = function(par)
+  {
+    parent = par;
+    if ( parent != null ) {
+      line = paper.path();
+      self.line = line;
+    }
+    // update reference to oneself
+    parent.getChildren().push( self );
+    console.log("should have children", parent.getChildren());
+  }
   
   // the line that is drawn to its parent
 	var line;
 	if ( parent != null ) {
-	  line = paper.path();
-	  self.line = line;
+	  // if parent exists, update it
+	  updateParent(parent);
 	}
 	
 	// updates the raphael path coordinates
@@ -219,7 +231,7 @@ SVGOverlay = function(
 {
 
   self = this;
-  var nodes = Array();
+  var nodes = new Object();
   
   var createNode = function( parentid, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y )
   {
@@ -255,8 +267,13 @@ SVGOverlay = function(
             {
               // add treenode to the display and update it
               var jso = $.parseJSON(text);
-              var nn = new Node( jso.treenode_id, r, atn, pos_x, pos_y); 
-              nodes.push(nn);
+              if(parid == -1) {
+                var nn = new Node( jso.treenode_id, r, null, radius, pos_x, pos_y);
+              } else {
+                var nn = new Node( jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y);
+              }
+  
+              nodes[jso.treenode_id] = nn;
               nn.draw();
         
               // if the parent (i.e. active node is not null) we need to
@@ -311,7 +328,7 @@ SVGOverlay = function(
             }
             else
             {
-              console.log("updated phys coordinates");
+              console.log("Coordinates updated for treenode ", id);
             }
           }
         }
@@ -322,7 +339,7 @@ SVGOverlay = function(
 
   var updateNodeCoordinatesinDB = function()
   {
-    for ( var i = 0; i < nodes.length; ++i )
+    for (var i in nodes)
     {
       if(nodes[i].getSync())
       {
@@ -330,7 +347,7 @@ SVGOverlay = function(
         var phys_x = pix2physX(nodes[i].x);
         var phys_y = pix2physY(nodes[i].y);
         var phys_z = project.coordinates.z;
-        console.log("update required for ",nodes[i].id,phys_x,phys_y,phys_z);
+        console.log("Update required for treenode ",nodes[i].id,phys_x,phys_y,phys_z);
         nodes[i].setSync(false);
         updateNodePosition(nodes[i].id,phys_x,phys_y,phys_z)
       }
@@ -354,12 +371,38 @@ SVGOverlay = function(
   
   var refreshNodes = function( jso )
   {
-    // retrieve all the nodes from the database in a given
-    // bounding volume, map physical coordinates to screen coordinates
-    // given the current scale
-    nodes = Array();
-    
+    //clearPaperandRecreate();
+    // get an array from the database, delete all old nodes
+    // and add new ones
+    for (var i in nodes) {
+      //console.log("should delete", nodes[i]);
+      nodes[i].deleteall();
+    }
+
+    nodes = new Object();
+    for (var i in jso) {
+        var pos_x = phys2pixX(jso[i].x);
+        var pos_y = phys2pixY(jso[i].y);
+        var nn = new Node( jso[i].tlnid, r, null, jso[i].radius, pos_x, pos_y);         
+        nodes[jso[i].tlnid] = nn;
+        nn.draw();
+    }
+    // update parent links
+    for (var i in jso)
+    {
+     // console.log(nodes[parseInt(jso[i].parentid)]);
+      if(nodes[parseInt(jso[i].parentid)]) {
+        console.log("parent is existing for ", jso[i].tlnid );
+        // update the parent because it is existing in the retrieved node set
+        nodes[parseInt(jso[i].tlnid)].updateParent( nodes[parseInt(jso[i].parentid)] );
+        //nodes[parseInt(jso[i].tlnid)].draw();
+        //console.log(nodes[parseInt(jso[i].tlnid)]);
+      }
+      
+    }
+    //console.log(jso);
   }
+  this.refreshNodes = refreshNodes;
 
   var updateDimension = function()
   {
@@ -458,6 +501,13 @@ SVGOverlay = function(
   self.r = r;
 
   if ( !ui ) ui = new UI();
+
+  var clearPaperandRecreate = function(){
+      var paperDom = r.canvas;
+      paperDom.parentNode.removeChild(paperDom);
+      r = Raphael(view, Math.floor(dimension.x*s), Math.floor(dimension.y*s));
+      updateDimension();
+  }
 
   this.hide = function() 
   {

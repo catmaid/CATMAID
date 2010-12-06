@@ -31,7 +31,7 @@ if ( $pid )
   {
     
     $treenodes = $db->getResult(
-      'SELECT DISTINCT ON ( "tlnid" ) "treenode"."id" AS "tlnid",
+      'SELECT "treenode"."id" AS "tlnid",
           "treenode"."parent_id" AS "parentid",
           ("treenode"."location")."x" AS "x",
           ("treenode"."location")."y" AS "y",
@@ -42,13 +42,9 @@ if ( $pid )
           abs( ("treenode"."location")."z" - ("treenode"."location")."z" ) AS "z_diff"
         
         FROM "treenode" INNER JOIN "project"
-            ON "project"."id" = "treenode"."project_id" LEFT JOIN "project_user"
-              ON "project"."id" = "project_user"."project_id" INNER JOIN "project_stack"
-                ON "project"."id" = "project_stack"."project_id"
+            ON "project"."id" = "treenode"."project_id"
           
           WHERE "project"."id" = '.$pid.' AND
-              ( "project_user"."user_id" = '.$uid.' OR
-                "project"."public" ) AND
               ("treenode"."location")."x" >= '.$left.' AND
               ("treenode"."location")."x" <= '.( $left + $width ).' AND
               ("treenode"."location")."y" >= '.$top.' AND
@@ -56,10 +52,9 @@ if ( $pid )
               ("treenode"."location")."z" >= '.$z.' - '.$zbound.' * '.$zres.' AND
               ("treenode"."location")."z" <= '.$z.' + '.$zbound.' * '.$zres.'
           
-          ORDER BY "tlnid", "z_diff"'
+          ORDER BY "parentid" DESC,"tlnid", "z_diff"'
     );
-  
-    echo makeJSON( $treenodes );
+    echo json_encode( $treenodes );
 
   }
   else

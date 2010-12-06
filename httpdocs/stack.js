@@ -390,6 +390,7 @@ function Stack(
         left : ( x - tl_width / 2 ) * resolution.x + translation.x,
         width : tl_width * resolution.x,
         height : tl_height * resolution.y,
+        zres : resolution.z
       },
       handle_updateTreelinenodes );
     return;
@@ -404,6 +405,7 @@ function Stack(
     if ( status = 200 )
     {
       var e = eval( "(" + text + ")" );
+      
       if ( e.error )
       {
         alert( e.error );
@@ -411,6 +413,8 @@ function Stack(
       else
       {
         console.log("manipulate overlay here, adding the treenodes to display");
+        var jso = $.parseJSON(text);
+        svgOverlay.refreshNodes(jso);
       }
       //update();
     }
@@ -601,6 +605,8 @@ function Stack(
         screen_top,
         scale);
         
+      self.updateTreelinenodes();
+      
 		}
 		
 		// render the treenodes

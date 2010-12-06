@@ -4,6 +4,7 @@ var atn = null;
 // - join existing nodes together with shift
 // - add backend logic
 // - delete node from svgoverlay nodes upon delete
+var r;
 
 function activateNode( node ) {
     // activate new node, i.e. first deactivate old one
@@ -26,157 +27,6 @@ function activateNode( node ) {
           fill: "rgb(0, 255, 0)" });
 };
 
-
-ConnectorNode = function(
-  id, // unique id for the node from the database
-  paper, // the raphael paper this node is drawn to
-  parent, // the parent node
-  x, // the x coordinate in pixel coordinates
-  y) // the y coordinate in pixel coordiantes
-{ 
-  self = this;
-  self.id = id;
-  
-  // local variables, only valid in the scope of a node
-  // and not accessible to the outisde
-  var ox = 0, oy = 0, r = 6;
-  
-  // create a raphael circle object
-  var c = paper.circle( x, y, r ).attr({
-          fill: "rgb(255, 0, 0  )",
-          stroke: "none",
-          opacity: 1.0
-          });
-  // the accessor method
-  this.getC = function(){ return c; }
-    
-  // a raphael circle oversized for the mouse logic
-  var mc = paper.circle( x, y, r + 8 ).attr({
-          fill: "rgb(0, 1, 0)",
-          stroke: "none",
-          opacity: 0
-          });
-          
-  // add a reference to the parent container node
-  // in order to get active nodes working from inside
-  // mc eventhandlers
-  mc.parentnode = self;
-  
-  // an array storing the children objects of the node
-  var children = new Array();
-  this.getChildren = function(){ return children; }
-  // remove the ith element of the array
-  this.removeChild = function(i) { children.splice(i,1); }
-  
-  // delete all objects relevant to this node
-  // such as raphael DOM elements and node references
-  // javascript's garbage collection should do the rest
-  var deleteall = function()
-  {
-    // remove the parent of all the children
-    for ( var i = 0; i < children.length; ++i ) {
-      children[ i ].line.remove();
-      children[ i ].removeParent();
-    }
-    // remove the raphael svg elements from the DOM
-    c.remove();
-    mc.remove();
-    if(parent != null) {
-      line.remove();
-      // remove this node from parent's children list
-      var nodeschild = parent.getChildren();
-      for ( var i = 0; i < nodeschild.length; ++i ) {
-        if(nodeschild[i].id == id)
-          parent.removeChild(i);
-      }
-    }
-  }
-  
-  // make this function accessible
-  this.deleteall = deleteall;
-  
-  this.parent = parent;
-  // remove the parent node
-  this.removeParent = function()
-  { 
-    delete parent;
-    parent = null;
-  }
-  
-  // the line that is drawn to its parent
-  var line;
-  if ( parent != null ) {
-    line = paper.path();
-    self.line = line;
-  }
-  
-  // updates the raphael path coordinates
-  var drawLine = function()
-  {  
-    line.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], [ "L", parent.getC().attrs.cx, parent.getC().attrs.cy ] ] } );
-    line.toBack();
-  }
-  this.drawLine = drawLine;
-  
-  // draw function to update the paths from the children
-  // and to its parent  
-  var draw = function() {
-    // draws/updates path to parent and children
-    for ( var i = 0; i < children.length; ++i )
-      children[ i ].drawLine();
-    if ( parent != null )
-      drawLine();
-  }
-  // make the function accessible
-  this.draw = draw;
-  
-  mc.click(function (e) {
-    // return some log information when clicked on the node
-    console.log("activated node", id);
-    console.log("its parent is", parent);
-    console.log("its children", children);
-    
-    if(e.ctrlKey && e.shiftKey ){
-      deleteall();
-    } else if (e.shiftKey) {
-      if(atn != null) {
-        // connected activated treenode or connectornode
-        // to existing treenode or connectornode
-        console.log('need to implement join operation');
-      }
-    }
-    else {
-      // activate this node
-      activateNode( this.parentnode );
-      // stop propagation of the event
-      e.stopPropagation();      
-    }
-  });
-
-  mc.move = function( dx, dy )
-  {
-    var x = ox + dx;
-      var y = oy + dy;
-    c.attr({cx: x,cy: y});
-    mc.attr({cx: x,cy: y});
-    draw();
-  }
-  mc.up = function()
-  {
-    c.attr({opacity:1});
-  }
-  mc.start = function()
-  {
-    // as soon you do something with the node, activate it
-    activateNode( this.parentnode );
-    ox = mc.attr("cx");
-    oy = mc.attr("cy");
-    c.attr({opacity:0.7});
-  }
-  mc.drag( mc.move, mc.start, mc.up );
-}
-
-
 Node = function(
   id, // unique id for the node from the database
   paper, // the raphael paper this node is drawn to
@@ -187,12 +37,17 @@ Node = function(
   self = this;
   self.id = id;
   // state variable whether this node is already synchronized with the database
-  self.needsync = true;
+  var needsync = false;
   
   // local screen coordinates relative to the div
   self.x = x;
   self.y = y;
   self.r = r;
+  
+  var setSync = function( bo ) { needsync = bo; }
+  this.setSync = setSync;
+  var getSync = function( ) { return needsync; }
+  this.getSync = getSync;
   
   this.getX = function() { return x };
   this.getY = function() { return y };
@@ -309,11 +164,11 @@ Node = function(
 	
 	mc.click(function (e) {
 	  // return some log information when clicked on the node
-	  console.log("activated node", id);
+	  /*console.log("activated node", id);
 	  console.log("its parent is", parent);
 	  console.log("its children", children);
 	  console.log("its coords", x, y);
-	  
+	  */
 	  if(e.ctrlKey && e.shiftKey ){
       deleteall();
 	  } else if (e.shiftKey) {
@@ -333,7 +188,6 @@ Node = function(
 
 	mc.move = function( dx, dy )
 	{
-	  
 		x = ox + dx;
     y = oy + dy;
 		c.attr({cx: x,cy: y});
@@ -343,6 +197,7 @@ Node = function(
 	mc.up = function()
 	{
 		c.attr({opacity:1});
+		setSync(true); 
 	}
 	mc.start = function()
 	{
@@ -363,31 +218,125 @@ SVGOverlay = function(
 )
 {
 
-  // creating some test data
-  this.createdata = function() 
+  self = this;
+  var nodes = Array();
+  
+  var createNode = function( parentid, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y )
   {
-    // storing original coordinates
-    var ln = null;
-    
-    var x = r.width / 2;
-    var y = r.height / 2;
-    
-    for (var i = 0; i < 10; ++i)
+    if(!parentid)
+      var parid = -1;
+    else
+      var parid = parentid.id;
+      
+    requestQueue.register(
+      "model/treenode.create.php",
+      "POST",
+      {
+        pid : project.id,
+        parent_id : parid,
+        x : phys_x,
+        y : phys_y,
+        z : phys_z,
+        radius : radius,
+        confidence : confidence
+        },
+      function(status, text, xml)
+      {
+        if ( status == 200 )
+        {
+          if ( text && text != " " )
+          {
+            var e = eval( "(" + text + ")" );
+            if ( e.error )
+            {
+              alert( e.error );
+            }
+            else
+            {
+              // add treenode to the display and update it
+              var jso = $.parseJSON(text);
+              var nn = new Node( jso.treenode_id, r, atn, pos_x, pos_y); 
+              nodes.push(nn);
+              nn.draw();
+        
+              // if the parent (i.e. active node is not null) we need to
+              // add the newly created treenode as a child
+              if(atn != null) {
+                // check the selected node type
+                if(atn instanceof Node) {
+                  activateNode( nn );
+                  if(nn.parent!=null)
+                    nn.parent.getChildren().push( nn );
+                } else if(atn instanceof ConnectorNode) {
+                  // if it is a connector, do not change selection, but just add children
+                  if(nn.parent!=null)
+                    nn.parent.getChildren().push( nn );
+                }
+              } else {
+                // by default, select the newly added node without children
+                  activateNode( nn );
+              }
+
+            }
+          }
+        }
+        return true;
+  });
+    return;
+  }
+
+  
+  var updateNodePosition = function( id, phys_x, phys_y, phys_z )
+  {
+    requestQueue.register(
+      "model/treenode.update.php",
+      "POST",
+      {
+        pid : project.id,
+        tnid : id,
+        x : phys_x,
+        y : phys_y,
+        z : phys_z
+        },
+      function( status, text, xml )
+      {
+        if ( status == 200 )
+        {
+          if ( text && text != " " )
+          {
+            var e = eval( "(" + text + ")" );
+            if ( e.error )
+            {
+              alert( e.error );
+            }
+            else
+            {
+              console.log("updated phys coordinates");
+            }
+          }
+        }
+        return true;
+      });
+    return;
+  }
+
+  var updateNodeCoordinatesinDB = function()
+  {
+    for ( var i = 0; i < nodes.length; ++i )
     {
-      x = Math.min( r.width, Math.max( 0, x + ( .5 - Math.random() ) * 10 ) );
-      y = Math.min( r.height, Math.max( 0, y + ( .5 - Math.random() ) * 10 ) );      
-      ln = new Node( i, r, ln, x, y, 4 );
-    }
-    
-    while ( ln.parent != null )
-    {
-      ln.parent.getChildren().push( ln );
-      ln.draw();
-      ln = ln.parent;
+      if(nodes[i].getSync())
+      {
+        // get physical
+        var phys_x = pix2physX(nodes[i].x);
+        var phys_y = pix2physY(nodes[i].y);
+        var phys_z = project.coordinates.z;
+        console.log("update required for ",nodes[i].id,phys_x,phys_y,phys_z);
+        nodes[i].setSync(false);
+        updateNodePosition(nodes[i].id,phys_x,phys_y,phys_z)
+      }
     }
   }
-  // a node cache
-  var nodes = Array();
+
   var updateNodeCoordinates = function(newscale)
   {
     // depending on the scale, update all the node coordinates
@@ -403,11 +352,13 @@ SVGOverlay = function(
     }
   }
   
-  var retrieveNodes = function()
+  var refreshNodes = function( jso )
   {
     // retrieve all the nodes from the database in a given
     // bounding volume, map physical coordinates to screen coordinates
     // given the current scale
+    nodes = Array();
+    
   }
 
   var updateDimension = function()
@@ -440,6 +391,7 @@ SVGOverlay = function(
     view.style.left = Math.floor(-pl/resolution.x*s) + "px";
     view.style.top = Math.floor(-pt/resolution.y*s) + "px";
     updateDimension(s);
+    updateNodeCoordinatesinDB();
   };
 	
   this.getView = function()
@@ -460,8 +412,8 @@ SVGOverlay = function(
     var pos_y = m.offsetY;
     
     // XXX: get physical coordinates for database
-    var phys_x = phys2pixX(pos_x);
-    var phys_y = phys2pixY(pos_y);
+    var phys_x = pix2physX(pos_x);
+    var phys_y = pix2physY(pos_y);
     var phys_z = project.coordinates.z;
     console.log("physical coordinates", phys_x, phys_y, phys_z);
     
@@ -483,41 +435,17 @@ SVGOverlay = function(
       activateNode( sn );
       
     } else {
-      // XXX: create a random id for now
-      randomid = Math.floor( Math.random() * 1000);
-      var nn = new Node( randomid, r, atn, pos_x, pos_y); 
-      nodes.push(nn);
-      nn.draw();
-
-      // if the parent (i.e. active node is not null) we need to
-      // add the newly created treenode as a child
-      if(atn != null) {
-        // check the selected node type
-        if(atn instanceof Node) {
-          activateNode( nn );
-          if(nn.parent!=null)
-            nn.parent.getChildren().push( nn );
-        } else if(atn instanceof ConnectorNode) {
-          // if it is a connector, do not change selection, but just add children
-          if(nn.parent!=null)
-            nn.parent.getChildren().push( nn );
-        }
-        
-      } else {
-        // by default, select the newly added node without children
-          activateNode( nn );
-      }
-        
+      // create a new treenode,
+      // either root node if atn is null, or has parent 
+      createNode(atn, phys_x, phys_y, phys_z, 3, 5, pos_x, pos_y);
+      // display node creation is done in event handler
     }
   }
-  
-	self = this;
-  //if ( !ui ) ui = new UI();
-  //if ( !requestQueue ) requestQueue = new RequestQueue();
-  
-	self.resolution = resolution;
-	self.translation = translation;
-	self.dimension = dimension;
+
+
+  self.resolution = resolution;
+  self.translation = translation;
+  self.dimension = dimension;
   
   var view = document.createElement( "div" );
   view.className = "sliceSVGOverlay";
@@ -526,7 +454,7 @@ SVGOverlay = function(
   view.style.cursor = "crosshair";
   
   var s = current_scale;
-	var r = Raphael(view, Math.floor(dimension.x*s), Math.floor(dimension.y*s));
+  var r = Raphael(view, Math.floor(dimension.x*s), Math.floor(dimension.y*s));
   self.r = r;
 
   if ( !ui ) ui = new UI();
@@ -568,12 +496,29 @@ SVGOverlay = function(
     return false;
   }
 
-  var phys2pixX = function( x )
+  var pix2physX = function( x )
   { return translation.x + ( ( x ) / s ) * resolution.x; }
-  var phys2pixY = function( y )
+  self.pix2physX = pix2physX;
+  
+  var phys2pixX = function( x )
+  { return  ( x - translation.x ) / resolution.x * s; }
+  self.phys2pixX = phys2pixX;
+  
+  var pix2physY = function( y )
   { return translation.y + ( ( y ) / s ) * resolution.y; }
-  var phys2pixZ = function( z )
+  self.pix2physY = pix2physY;
+  
+  var phys2pixY = function( y )
+  { return  ( y - translation.y ) / resolution.y * s; }
+  self.phys2pixY = phys2pixY;
+  
+  var pix2physZ = function( z )
   { return z * resolution.z + translation.z; }
+  self.pix2physZ = pix2physZ;
+  
+  var phys2pixZ = function( z )
+  { return (z - translation.z) / resolution.z; }
+  self.phys2pixZ = phys2pixZ;
   
   var getPhysCoordinatesOfCursor = function( e )
   {

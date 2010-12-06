@@ -28,7 +28,7 @@ $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
 $skelid = isset( $_REQUEST[ 'skeleton_id' ] ) ? intval( $_REQUEST[ 'skeleton_id' ] ) : 0;
 
-$parentid = isset( $_REQUEST[ 'parent_id' ] ) ? intval( $_REQUEST[ 'parent_id' ] ) : 0;
+$parentid = isset( $_REQUEST[ 'parent_id' ] ) ? intval( $_REQUEST[ 'parent_id' ] ) : -1;
 $x = isset( $_REQUEST[ 'x' ] ) ? floatval( $_REQUEST[ 'x' ] ) : 0;
 $y = isset( $_REQUEST[ 'y' ] ) ? floatval( $_REQUEST[ 'y' ] ) : 0;
 $z = isset( $_REQUEST[ 'z' ] ) ? floatval( $_REQUEST[ 'z' ] ) : 0;
@@ -54,9 +54,9 @@ if ( $pid )
 					'location' => '('.$x.','.$y.','.$z.')',
 					'radius' => $radius,
 					'confidence' => $confidence);
-			
+      
 			// this is not a root node
-			if ( $parentid )
+			if ( $parentid != -1 )
 				$data['parent_id'] = $parentid;
 			
 			$tnid = $db->insertIntoId(
@@ -100,17 +100,21 @@ if ( $pid )
 			$data = array(
 				'user_id' => $uid,
 				'project_id' => $pid,
-				'parent_id' => $parentid,
 				'location' => '('.$x.','.$y.','.$z.')',
 				'radius' => $radius,
 				'confidence' => $confidence);
-			
+
+      // only set parent_id if given, otherwise
+      // NULL is default and it represents new root node
+      if ( $parentid != -1 )
+        $data['parent_id'] = $parentid;
+        
 			$tnid = $db->insertIntoId(
 				'treenode',
 				$data );
 
 			// update skeleton name by adding its id to the end
-			$up = array('name' => 'new skeleton '.$tnid);
+			$up = array('name' => 'new skeleton '.$skelid);
 			$upw = 'id = '.$skelid;
 			$db->update( "class_instance", $up, $upw);					
 				

@@ -150,23 +150,26 @@ function Project( pid )
 		}
 		if ( project_stats_widget.offsetWidth )
 		{
+		  
 			if ( table_widget.offsetWidth )
 				project_stats_widget.style.left = left + "px";
 			else
 				project_stats_widget.style.left = "0px";
+				
 			width -= project_stats_widget.offsetWidth;
 			left += project_stats_widget.offsetWidth;
 		}
 		if ( object_tree_widget.offsetWidth )
 		{
-			if ( project_stats_widget.offsetWidth )
-				object_tree_widget.style.left = left + "px";
+  		if ( project_stats_widget.offsetWidth || table_widget.offsetWidth ) 
+  				object_tree_widget.style.left = left + "px";
 			else
 				object_tree_widget.style.left = "0px";
+				
 			width -= object_tree_widget.offsetWidth;
 			left += object_tree_widget.offsetWidth;
 		}
-		if ( class_tree_widget.offsetWidth )
+/*		if ( class_tree_widget.offsetWidth )
 		{
 			if ( object_tree_widget.offsetWidth )
 				class_tree_widget.style.left = left + "px";
@@ -174,7 +177,7 @@ function Project( pid )
 				class_tree_widget.style.left = "0px";
 			width -= class_tree_widget.offsetWidth;
 			left += class_tree_widget.offsetWidth;
-		}
+		}*/
 		var old_width = 0;
 		for ( var i = 0; i < stacks.length; ++i )
 		{

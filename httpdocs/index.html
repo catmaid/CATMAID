@@ -103,7 +103,7 @@
 				<div class="box" id="toolbox_data" style="display:none">
 					<a href="#" class="button" id="data_button_table" onclick="project.showDatatableWidget( 'treenode' );"><img src="widgets/themes/kde/table.gif" alt="table" title="table" /></a>
 					<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'entities' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="object tree" /></a>
-					<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'classes' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="class tree" /></a>
+					<!--<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'classes' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="class tree" /></a>-->
 					<a href="#" class="button" id="data_button_stats" onclick="project.showStatisticsWidget( );"><img src="widgets/themes/kde/stats.gif" alt="tree" title="project statistics" /></a>
 				</div>
 				<div id="logout_box" class="box_right" style="display:none"><p><a id="logout" name="logout" title="Logout" onclick="logout();" href="#">Logout</a></p></div>
@@ -111,7 +111,7 @@
 				<div id="session_box" class="box_right" style="display:none"><p>You are <span id="session_longname">&nbsp;</span>.</p></div>
 				<div class="box_right" id="toolbox_show" style="display:none">
 					<a href="#" class="button_active" id="show_button_text" onclick="project.toggleShow( 'text' );"><img src="widgets/themes/kde/show_text.gif" alt="show textlabels" title="show textlabels" /></a>
-					<a href="#" class="button_active" id="show_button_trace" onclick="project.toggleShow( 'trace' );"><img src="widgets/themes/kde/show_trace.gif" alt="show traces" title="show traces" /></a>
+					<!--<a href="#" class="button_active" id="show_button_trace" onclick="project.toggleShow( 'trace' );"><img src="widgets/themes/kde/show_trace.gif" alt="show traces" title="show traces" /></a>//-->
 				</div>
 				<div class="toolbar_fill"></div>
 			</div>
@@ -320,14 +320,17 @@
 		<!-- Project statistics widget
 		***********************************************************************
 		-->
+
 		<div id="project_stats_widget" class="sliceView" style="width:350px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
-			<div class="stackInfo_selected" style="position:relative"><p id="tree_widget_title" class="stackTitle">Project statistics</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
-			<div id="tree_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">			
+			<div class="stackInfo_selected" style="position:relative">
+			  <p id="tree_widget_title" class="stackTitle">Project statistics</p>
+			  <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
+			  
+			<div id="tree_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">	
 			<input type="button" id="refresh_stats" value="refresh" style="display:block; float:left;" />
 			
-				<br clear="all" />
+				<br clear="all" /> 
 				<div id="project_stats">
-			
 				<table cellpadding="0" cellspacing="0" border="0" class="display" id="project_stats_table">
 					<tr>
 						<td >#users</td>
@@ -362,9 +365,10 @@
 						<td id="proj_textlabels"></td>
 					</tr>
 				</table>
-					
 				</div>			
+				
 			</div>
+			  
 		</div>
 		
 		

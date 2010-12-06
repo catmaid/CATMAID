@@ -523,7 +523,7 @@ function global_resize( e )
 {
 	var top = document.getElementById( "toolbar_container" ).offsetHeight;
 	
-	message_widget.style.top = table_widget.style.top = object_tree_widget.style.top = top + "px";
+	message_widget.style.top = table_widget.style.top = object_tree_widget.style.top = project_stats_widget.style.top = top + "px";
 	
 	if ( message_widget.offsetHeight ) top += message_widget.offsetHeight;
 	var bottom = 64;
@@ -533,6 +533,7 @@ function global_resize( e )
 	table_widget.style.height = height + "px";
 	object_tree_widget.style.height = height + "px";
 	class_tree_widget.style.height = height + "px";
+  project_stats_widget.style.height = height + "px";
 
 	var content = document.getElementById( "content" );
 	content.style.top = top + "px";

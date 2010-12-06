@@ -297,9 +297,9 @@ function Project( pid )
 			document.getElementById( "toolbar_crop" ).style.display = "block";
 			break;
 		case "trace":
-           document.getElementById( "toolbar_trace" ).style.display = "block";
-           if ( !show_traces ) self.toggleShow( "trace" );
-           break;
+      document.getElementById( "toolbar_trace" ).style.display = "block";
+      if ( !show_traces ) self.toggleShow( "trace" );
+      break;
 		}
 		
 		mode = m;

@@ -359,6 +359,63 @@ function Stack(
 		return;
 	}
 
+  /**
+   * update treeline nodes by querying them from the server
+   * with a bounding volume dependend on the current view
+   */
+  this.updateTreelinenodes = function()
+  {
+    console.log("In updateTreelinenodes");
+    var tl_width;
+    var tl_height;
+    if ( tiles.length == 0 )
+    {
+      tl_width = 0;
+      tl_height = 0;
+    }
+    else
+    {
+      tl_width = tiles[ 0 ].length * X_TILE_SIZE / scale;
+      tl_height = tiles.length * Y_TILE_SIZE / scale;
+    }
+    requestQueue.register(
+      'model/treenode.list.php',
+      'POST',
+      {
+        pid : project.id,
+        sid : id,
+        z : z * resolution.z + translation.z,
+        top : ( y - tl_height / 2 ) * resolution.y + translation.y,
+        left : ( x - tl_width / 2 ) * resolution.x + translation.x,
+        width : tl_width * resolution.x,
+        height : tl_height * resolution.y,
+      },
+      handle_updateTreelinenodes );
+    return;
+  }
+
+  /**
+   * handle an update-treelinenodes-request answer
+   *
+   */
+  var handle_updateTreelinenodes = function( status, text, xml )
+  {
+    if ( status = 200 )
+    {
+      var e = eval( "(" + text + ")" );
+      if ( e.error )
+      {
+        alert( e.error );
+      }
+      else
+      {
+        console.log("manipulate overlay here, adding the treenodes to display");
+      }
+      //update();
+    }
+    return;
+  }
+  
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */
@@ -537,6 +594,14 @@ function Stack(
 					scale );
 			}
 		}
+		
+		// render the treenodes
+		/*
+		if ( show_treenodes )
+		{
+		  self.updateTreelinenodes();
+		  console.log("redraw treenodes...");
+		}*/
 		
 		// update crop box if available
 		if ( mode == "crop" && cropBox )
@@ -1661,7 +1726,8 @@ function Stack(
 	
 	var mode = "move";
 	var show_textlabels = true;
-	
+  var show_treenodes = true;
+  
 	var registered = false;
 	
 	var slider_s;

@@ -96,3 +96,6 @@ synapse manipulation mode
 % add to tn, tci
 
 
+DELETE FROM treenode_class_instance;
+DELETE FROM class_instance WHERE class_instance.id > 400;
+DELETE FROM treenode;

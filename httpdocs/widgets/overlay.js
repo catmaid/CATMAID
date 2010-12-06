@@ -33,7 +33,7 @@ Node = function(
   parent, // the parent node
   r,
   x, // the x coordinate in pixel coordinates
-  y) // the y coordinate in pixel coordiantes
+  y, z) // the y coordinate in pixel coordiantes
 { 
   self = this;
   self.id = id;
@@ -43,6 +43,7 @@ Node = function(
   // local screen coordinates relative to the div
   self.x = x;
   self.y = y;
+  self.z = z;
   self.parent = parent;
   self.r = parseFloat(r);
   
@@ -89,10 +90,9 @@ Node = function(
 	mc.parentnode = self;
 	
 	// an array storing the children objects of the node
-	var children = new Array();
-	this.getChildren = function(){ return children; }
-	// remove the ith element of the array
-	this.removeChild = function(i) { children.splice(i,1); }
+	var children = new Object();
+	this.children = children;
+	
 	
 	// delete all objects relevant to this node
 	// such as raphael DOM elements and node references
@@ -116,14 +116,13 @@ Node = function(
     // remove the raphael svg elements from the DOM
 	  c.remove();
 	  mc.remove();
-	  if(parent != null) {
+	  if(self.parent != null) {
 	    line.remove();
 	    // remove this node from parent's children list
-	    var nodeschild = parent.getChildren();
-      for ( var i = 0; i < nodeschild.length; ++i ) {
-        if(nodeschild[i].id == id)
-          parent.removeChild(i);
-      }
+	    for ( var i in self.parent.children) {
+	      if(self.parent.children[i].id == id)
+	       delete self.parent.children[i];
+	    }
 	  }
 	}
 	// make this function accessible
@@ -132,23 +131,27 @@ Node = function(
   // remove the parent node
   this.removeParent = function()
   { 
-    delete parent;
-    parent = null;
+    delete self.parent;
+    self.parent = null;
   }
-  this.updateParent = function(par)
+  var updateParent = function(par)
   {
-    parent = par;
-    if ( parent != null ) {
+    self.parent = par;
+    if ( par != null ) {
       line = paper.path();
       self.line = line;
     }
     // update reference to oneself
-    parent.getChildren().push( self );
-    console.log("should have children", parent.getChildren());
+    self.parent.children[id] = self;
+    console.log("YYY-updateparent", self.parent.children);
   }
+  this.updateParent = updateParent;
   
   // the line that is drawn to its parent
 	var line;
+	line = paper.path();
+  self.line = line;
+  // from the function invocation
 	if ( parent != null ) {
 	  // if parent exists, update it
 	  updateParent(parent);
@@ -157,8 +160,11 @@ Node = function(
 	// updates the raphael path coordinates
 	var drawLine = function()
 	{  
-    line.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], [ "L", parent.getC().attrs.cx, parent.getC().attrs.cy ] ] } );
+	  console.log("drawing line for", self);
+	  if(self.parent != null) {
+    line.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], [ "L", self.parent.getC().attrs.cx, self.parent.getC().attrs.cy ] ] } );
     line.toBack();
+    }
 	}
   this.drawLine = drawLine;
   
@@ -166,9 +172,13 @@ Node = function(
   // and to its parent	
 	var draw = function() {
 	  // draws/updates path to parent and children
-    for ( var i = 0; i < children.length; ++i )
-      children[ i ].drawLine();
-    if ( parent != null )
+    for ( var i in children ) {
+      if(children[i].parent != null) {
+        console.log("XXXX:parent should not be null", children[i].parent);
+        children[ i ].drawLine();
+      }
+    }
+    if ( self.parent != null )
       drawLine();
 	}
 	// make the function accessible
@@ -176,11 +186,12 @@ Node = function(
 	
 	mc.click(function (e) {
 	  // return some log information when clicked on the node
-	  /*console.log("activated node", id);
-	  console.log("its parent is", parent);
+	  console.log("----------")
+	  console.log("activated node", id, self);
+	  console.log("its parent is", self.parent);
 	  console.log("its children", children);
-	  console.log("its coords", x, y);
-	  */
+	  console.log("its coords", x, y, z);
+	  
 	  if(e.ctrlKey && e.shiftKey ){
       deleteall();
 	  } else if (e.shiftKey) {
@@ -209,7 +220,7 @@ Node = function(
 	mc.up = function()
 	{
 		c.attr({opacity:1});
-		setSync(true); 
+		setSync(true);
 	}
 	mc.start = function()
 	{
@@ -233,7 +244,7 @@ SVGOverlay = function(
   self = this;
   var nodes = new Object();
   
-  var createNode = function( parentid, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y )
+  var createNode = function( parentid, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z )
   {
     if(!parentid)
       var parid = -1;
@@ -268,17 +279,18 @@ SVGOverlay = function(
               // add treenode to the display and update it
               var jso = $.parseJSON(text);
               if(parid == -1) {
-                var nn = new Node( jso.treenode_id, r, null, radius, pos_x, pos_y);
+                var nn = new Node( jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z);
               } else {
-                var nn = new Node( jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y);
+                var nn = new Node( jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z);
               }
   
               nodes[jso.treenode_id] = nn;
               nn.draw();
-        
+              activateNode( nn );
+              
               // if the parent (i.e. active node is not null) we need to
               // add the newly created treenode as a child
-              if(atn != null) {
+              /*if(atn != null) {
                 // check the selected node type
                 if(atn instanceof Node) {
                   activateNode( nn );
@@ -292,7 +304,7 @@ SVGOverlay = function(
               } else {
                 // by default, select the newly added node without children
                   activateNode( nn );
-              }
+              }*/
 
             }
           }
@@ -328,7 +340,7 @@ SVGOverlay = function(
             }
             else
             {
-              console.log("Coordinates updated for treenode ", id);
+              console.log("Coordinates updated for treenode ", id, phys_x,phys_y,phys_z);
             }
           }
         }
@@ -346,7 +358,7 @@ SVGOverlay = function(
         // get physical
         var phys_x = pix2physX(nodes[i].x);
         var phys_y = pix2physY(nodes[i].y);
-        var phys_z = project.coordinates.z;
+        var phys_z = pix2physZ(nodes[i].z);
         console.log("Update required for treenode ",nodes[i].id,phys_x,phys_y,phys_z);
         nodes[i].setSync(false);
         updateNodePosition(nodes[i].id,phys_x,phys_y,phys_z)
@@ -377,27 +389,50 @@ SVGOverlay = function(
     for (var i in nodes) {
       //console.log("should delete", nodes[i]);
       nodes[i].deleteall();
+      delete nodes[i];
     }
 
-    nodes = new Object();
+    //nodes = new Object();
     for (var i in jso) {
         var pos_x = phys2pixX(jso[i].x);
         var pos_y = phys2pixY(jso[i].y);
-        var nn = new Node( jso[i].tlnid, r, null, jso[i].radius, pos_x, pos_y);         
-        nodes[jso[i].tlnid] = nn;
-        nn.draw();
+        var pos_z = phys2pixZ(jso[i].z);
+        var nn = new Node( parseInt(jso[i].tlnid), r, null, jso[i].radius, pos_x, pos_y, pos_z);    
+        console.log(nn)     
+        nodes[parseInt(jso[i].tlnid)] = nn;
+        //nn.draw();
     }
-    // update parent links
+    // loop again and add correct parent objects and parent's children update
     for (var i in jso)
     {
+     var parid = parseInt(jso[i].parentid);
+     var nid = parseInt(jso[i].tlnid);
+     if(nodes[parid]) {
+       // if parent is existing, update the references
+       nodes[nid].parent = nodes[parid];
+       // update the parents children
+       nodes[nid].parent.children[nid] = nodes[nid];
+       //nodes[nid].draw();
+       console.log("node", nodes[nid], 'should have parent', nodes[parid]);
+       console.log("and parent should have children", nodes[parid].children, 'including ', nodes[nid]);
+     } else {
+       console.log("no parent (rootnode?)", nodes[nid]);
+     }
+    console.log("all nodes", nodes);
+    for (var i in nodes) {
+      nodes[i].draw();
+    }
+    
+     /*
+     nodes[nid]
      // console.log(nodes[parseInt(jso[i].parentid)]);
       if(nodes[parseInt(jso[i].parentid)]) {
         console.log("parent is existing for ", jso[i].tlnid );
         // update the parent because it is existing in the retrieved node set
         nodes[parseInt(jso[i].tlnid)].updateParent( nodes[parseInt(jso[i].parentid)] );
-        //nodes[parseInt(jso[i].tlnid)].draw();
+        nodes[parseInt(jso[i].tlnid)].draw();
         //console.log(nodes[parseInt(jso[i].tlnid)]);
-      }
+      }*/
       
     }
     //console.log(jso);
@@ -446,13 +481,14 @@ SVGOverlay = function(
   {   
     //console.log("mouse down event in overlay", e);
     //console.log("current coordinates in physical space:");
-    //console.log(project.coordinates.z);
+    //console.log(project.coordinates.z, "pix", phys2pixZ(project.coordinates.z));
     
     var m = ui.getMouse( e );
     
     // take into account current local offset coordinates and scale
     var pos_x = m.offsetX;
     var pos_y = m.offsetY;
+    var pos_z = phys2pixZ(project.coordinates.z);
     
     // XXX: get physical coordinates for database
     var phys_x = pix2physX(pos_x);
@@ -480,7 +516,7 @@ SVGOverlay = function(
     } else {
       // create a new treenode,
       // either root node if atn is null, or has parent 
-      createNode(atn, phys_x, phys_y, phys_z, 3, 5, pos_x, pos_y);
+      createNode(atn, phys_x, phys_y, phys_z, 3, 5, pos_x, pos_y, pos_z);
       // display node creation is done in event handler
     }
   }

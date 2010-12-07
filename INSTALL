@@ -41,9 +41,9 @@ passwords - you have to add this line as the *first* rule in
 
 	local   catmaid     all                               md5
 
-Update catmaid database connection for user in::
+Update catmaid database connection for user in. Remove the .template ending::
 
-	/var/www/catmaid/inc/setup.inc.php
+	/var/www/catmaid/inc/setup.inc.php.template
 
 2. Apache2 Server
 

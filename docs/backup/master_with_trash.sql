@@ -616,7 +616,7 @@ ALTER SEQUENCE textlabel_id_seq OWNED BY textlabel.id;
 -- Name: textlabel_id_seq; Type: SEQUENCE SET; Schema: public; Owner: catmaid_user
 --
 
-SELECT pg_catalog.setval('textlabel_id_seq', 13, true);
+SELECT pg_catalog.setval('textlabel_id_seq', 9, true);
 
 
 --
@@ -819,6 +819,7 @@ COPY class_instance (id, user_id, creation_time, edition_time, project_id, class
 210	3	2010-10-12 15:39:47.06444+02	2010-10-12 15:39:47.06444+02	3	106	VNC
 54	3	2010-09-13 14:43:13.055191+02	2010-09-13 14:43:13.055191+02	3	33	MySynapseLabel
 56	3	2010-09-13 15:26:14.246752+02	2010-09-13 15:26:14.246752+02	3	7	synapse2
+214	3	2010-10-12 15:40:21.234627+02	2010-10-12 15:40:21.234627+02	3	107	Motor neurons
 216	3	2010-10-12 15:41:04.316662+02	2010-10-12 15:41:04.316662+02	3	5	my first sensory neuron
 218	3	2010-10-12 15:41:42.716015+02	2010-10-12 15:41:42.716015+02	3	5	my first motor neuron
 222	3	2010-10-12 15:45:16.253228+02	2010-10-12 15:45:16.253228+02	3	14	another skeleton
@@ -840,13 +841,12 @@ COPY class_instance (id, user_id, creation_time, edition_time, project_id, class
 100	3	2010-10-11 17:26:56.714283+02	2010-10-11 17:26:56.714283+02	3	14	new skeleton 101
 103	3	2010-10-11 17:26:56.816555+02	2010-10-11 17:26:56.816555+02	3	14	new skeleton 104
 248	3	2010-10-12 16:25:27.559696+02	2010-10-12 16:25:27.559696+02	3	106	lateral part right
+212	3	2010-10-12 15:40:02.473579+02	2010-10-12 15:40:02.473579+02	3	107	Sensory neurons
 291	3	2010-10-18 14:00:52.019396+02	2010-10-18 14:00:52.019396+02	3	14	TOREMOVESKEL
 307	3	2010-10-18 14:05:42.984465+02	2010-10-18 14:05:42.984465+02	3	14	skeleton
 323	3	2010-10-18 15:55:24.750893+02	2010-10-18 15:55:24.750893+02	3	106	repository
+331	3	2010-10-18 17:28:04.947925+02	2010-10-18 17:28:04.947925+02	3	107	neurongroup
 333	3	2010-10-18 17:28:06.87195+02	2010-10-18 17:28:06.87195+02	3	5	neuron
-331	3	2010-10-18 17:28:04.947925+02	2010-12-07 13:06:31.540487+01	3	106	neurongroup
-212	3	2010-10-12 15:40:02.473579+02	2010-12-07 13:06:38.198755+01	3	106	Sensory neurons
-214	3	2010-10-12 15:40:21.234627+02	2010-12-07 13:06:44.378142+01	3	106	Motor neurons
 \.
 
 
@@ -986,10 +986,6 @@ COPY textlabel (id, type, text, colour, font_name, font_style, font_size, projec
 7	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-10-11 14:16:05.826567+02	2010-10-11 14:16:08.769985+02	t
 8	text	MYTEST\n	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-10-18 09:38:47.088904+02	2010-10-18 09:39:33.143551+02	t
 9	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-10-18 09:44:24.225973+02	2010-10-18 09:44:29.548195+02	t
-11	text	Mitochondria	(0,0,1,1)	\N	bold	160	3	t	2010-12-01 09:42:09.159965+01	2010-12-01 09:43:57.486748+01	f
-13	text	Myelinated axon	(0,0,1,1)	\N	bold	150	3	t	2010-12-01 09:43:16.700626+01	2010-12-01 09:44:09.465283+01	f
-10	text	*	(0,0,1,1)	\N	bold	260	3	t	2010-12-01 09:41:45.68728+01	2010-12-01 09:42:08.359032+01	f
-12	text	*	(0,0,1,1)	\N	bold	260	3	t	2010-12-01 09:42:35.406046+01	2010-12-01 09:42:56.152671+01	f
 \.
 
 
@@ -1007,10 +1003,6 @@ COPY textlabel_location (textlabel_id, location, deleted) FROM stdin;
 7	(2175,4200,9)	t
 8	(1440,4145,99)	t
 9	(2035,4005,9)	t
-10	(5240,2380,45)	f
-12	(5725,2360,45)	f
-11	(5310,1985,45)	f
-13	(5150,3705,45)	f
 \.
 
 
@@ -1635,12 +1627,11 @@ ALTER TABLE ONLY treenode
 
 
 --
--- Name: public; Type: ACL; Schema: -; Owner: stephan
+-- Name: public; Type: ACL; Schema: -; Owner: postgres
 --
 
 REVOKE ALL ON SCHEMA public FROM PUBLIC;
-REVOKE ALL ON SCHEMA public FROM stephan;
-GRANT ALL ON SCHEMA public TO stephan;
+REVOKE ALL ON SCHEMA public FROM postgres;
 GRANT ALL ON SCHEMA public TO postgres;
 GRANT ALL ON SCHEMA public TO PUBLIC;
 

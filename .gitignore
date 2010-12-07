@@ -1,3 +1,4 @@
+inc/setup.inc.php
 logs/
 temp/
 httpdocs/data/

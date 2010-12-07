@@ -114,18 +114,6 @@ initObjectTree = function(pid) {
 								this.create(obj, "inside", att, null, true); 
 							}
 						},
-						"create_neurongroup" : {
-							"separator_before"	: false,
-							"separator_after"	: false,
-							"label"				: "Create neurongroup",
-							"action"			: function (obj) {
-								att = { "state": "open", 
-										"data": "neurongroup",
-										"attr" : {"rel" : "neurongroup", "relname" : "part_of" }
-									};
-								this.create(obj, "inside", att, null, true); 
-							}
-						},
 						"rename_root" : {
 							"separator_before"	: true,
 							"separator_after"	: false,
@@ -147,18 +135,18 @@ initObjectTree = function(pid) {
 								this.create(obj, "inside", att, null, true); 
 							}
 						},
-						"create_neurongroup" : {
-							"separator_before"	: false,
-							"separator_after"	: false,
-							"label"				: "Create neurongroup",
-							"action"			: function (obj) {
-								att = { "state": "open", 
-										"data": "neurongroup",
-										"attr" : {"rel" : "neurongroup", "relname" : "part_of" }
-									};
-								this.create(obj, "inside", att, null, true); 
-							}
-						},
+            "create_neuron" : {
+              "separator_before"  : false,
+              "separator_after" : false,
+              "label"       : "Create neuron",
+              "action"      : function (obj) {
+                att = { "state": "open", 
+                    "data": "neuron",
+                    "attr" : {"rel" : "neuron", "relname" : "part_of" }
+                  };
+                this.create(obj, "inside", att, null, true); 
+              }
+            },
 						"rename_group" : {
 							"separator_before"	: true,
 							"separator_after"	: false,
@@ -170,34 +158,6 @@ initObjectTree = function(pid) {
 							"icon"				: false,
 							"separator_after"	: false,
 							"label"				: "Remove group",
-							"action"			: function (obj) { this.remove(obj); }
-						},
-				}
-			} else if (type_of_node == "neurongroup" ){
-				menu = {
-						"create_neuron" : {
-							"separator_before"	: false,
-							"separator_after"	: false,
-							"label"				: "Create neuron",
-							"action"			: function (obj) {
-								att = { "state": "open", 
-										"data": "neuron",
-										"attr" : {"rel" : "neuron", "relname" : "part_of" }
-									};
-								this.create(obj, "inside", att, null, true); 
-							}
-						},
-						"rename_neurongroup" : {
-							"separator_before"	: true,
-							"separator_after"	: false,
-							"label"				: "Rename neurongroup",
-							"action"			: function (obj) { this.rename(obj); }						
-						},
-						"remove_neurongroup" : {
-							"separator_before"	: false,
-							"icon"				: false,
-							"separator_after"	: false,
-							"label"				: "Remove neurongroup",
 							"action"			: function (obj) { this.remove(obj); }
 						},
 				}
@@ -272,8 +232,7 @@ initObjectTree = function(pid) {
 					// valid moves (class - class)
 					valid_moves = {
 							"group" : ["root", "group"], // part_of
-							"neurongroup" : ["root", "group"], // part_of
-							"neuron" : ["neurongroup"], // part_of
+							"neuron" : ["group"], // part_of
 							"skeleton" : ["neuron"] // model_of
 					};
 					
@@ -352,15 +311,7 @@ initObjectTree = function(pid) {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/group.png"
 					},
-					"valid_children" : [ "group", "neurongroup" ],
-					"start_drag" : true,
-					"select_node" : false,
-				},
-				"neurongroup" : {
-					"icon" : {
-						"image" : "widgets/themes/kde/jsTree/neuron/neurongroup.png"
-					},
-					"valid_children" : [ "neuron" ],
+					"valid_children" : [ "group", "neuron" ],
 					"start_drag" : true,
 					"select_node" : false,
 				},

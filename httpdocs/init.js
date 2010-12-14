@@ -127,6 +127,11 @@ function handle_login( status, text, xml )
 			alert( e.error );
 		}
 		updateProjects();
+	} else if ( status != 200 ) {
+		// Of course, lots of non-200 errors are fine - just report
+		// all for the moment, however:
+		alert("The server returned an unexpected status ("+status+") "+
+			  "with error message:\n"+text);
 	}
 	return;
 }

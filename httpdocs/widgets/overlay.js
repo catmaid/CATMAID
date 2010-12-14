@@ -9,6 +9,8 @@ var atn_fillcolor = "rgb(0, 255, 0)";
 // keep atn - works, but what if there are big z jumps. how to handle these?
 // add dragging
 // delete
+// node dblclick and zoom
+// delete logic in php
 
 
 function activateNode( node ) {
@@ -89,7 +91,6 @@ Node = function(
   this.getC = function(){ return c; }
   var c, mc;
   
-
   this.recreateNodeCircles = function(myfill) {
     
       // create a raphael circle object
@@ -140,7 +141,7 @@ Node = function(
 	  c.remove();
 	  mc.remove();
 	  if(self.parent != null) {
-	    line.remove();
+	    this.removeLine();
 	    // remove this node from parent's children list
 	    for ( var i in self.parent.children) {
 	      if(self.parent.children[i].id == id)
@@ -149,19 +150,62 @@ Node = function(
 	  }
 	}
 	// make this function accessible
+	this.deletenode = function()
+	{
+	  
+    requestQueue.register(
+      "model/treenode.delete.php",
+      "POST",
+      {
+        pid : project.id,
+        tnid : this.id
+      },
+      function(status, text, xml)
+      {
+        if ( status != 200 )
+        {
+          console.log("an error occured while deleting the treenodes", text);
+        }
+        return true;
+      });
+        
+    // remove the parent of all the children
+    for ( var i in this.children) {
+      console.log("we have children", this.children[i]);
+      this.children[ i ].removeLine();
+      this.children[ i ].removeParent();
+    }
+    // remove the raphael svg elements from the DOM
+    c.remove();
+    mc.remove();
+    line.remove();
+    
+    if(this.parent != null) {
+      // remove this node from parent's children list
+      for ( var i in this.parent.children) {
+        if(this.parent.children[i].id == id)
+         delete this.parent.children[i];
+      }
+    }
+	}
 	
+	this.removeLine = function()
+	{
+	  line.remove();
+	}
   // remove the parent node
   this.removeParent = function()
   { 
-    delete self.parent;
-    self.parent = null;
+    delete this.parent;
+    this.parent = null;
   }
+  
   this.updateParent = function(par)
   {
     // par must be a Node object
-    self.parent = par;
+    this.parent = par;
     // update reference to oneself
-    self.parent.children[id] = self;
+    this.parent.children[id] = this;
   }
   
   // the line that is drawn to its parent
@@ -221,6 +265,8 @@ Node = function(
 	   
 	  if(e.ctrlKey && e.shiftKey ){
       console.log("should invoke delete node of this", this);
+      this.parentnode.deletenode();
+      
       //deleteall();
 	  } else if (e.shiftKey) {
       if(atn != null) {

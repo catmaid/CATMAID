@@ -1,22 +1,21 @@
 // active treenode or connectornode
 var atn = null;
+
+var atn_fillcolor = "rgb(0, 255, 0)";
 // TODO:
 // - join existing nodes together with shift
 // - add backend logic
 // - delete node from svgoverlay nodes upon delete
-// keep atn
+// keep atn - works, but what if there are big z jumps. how to handle these?
 // add dragging
 // delete
 
+
 function activateNode( node ) {
-    // activate new node, i.e. first deactivate old one
+    // changes the color attributes of the newly activated node
     if ( atn != null ) {
       if(atn instanceof Node) {
-        atn.getC().attr({
-              fill: "rgb(0, 0, 255)"});
-      } else if(atn instanceof ConnectorNode) {
-        atn.getC().attr({
-              fill: "rgb(255, 0, 0)" });
+        atn.setDefaultColor();
       }
     };
     // if node == null, just deactivate
@@ -26,7 +25,7 @@ function activateNode( node ) {
     }
     atn = node;
     atn.getC().attr({
-          fill: "rgb(0, 255, 0)" });
+          fill: atn_fillcolor });
 };
 
 Node = function(
@@ -35,7 +34,9 @@ Node = function(
   parent, // the parent node
   r, // the radius
   x, // the x coordinate in pixel coordinates
-  y, z, zdiff) // the y coordinate in pixel coordiantes
+  y, // y coordinates 
+  z, // z coordinates
+  zdiff) // the different from the current slices
 { 
   self = this;
   self.id = id;
@@ -48,12 +49,13 @@ Node = function(
   self.y = y;
   self.z = z;
   self.zdiff = zdiff;
-  self.parent = parent;
-  if( parseFloat(r) == 0)
-    self.r = 4;
-   else
-    self.r = parseFloat(r);
-
+  
+  this.parent = parent;
+  self.r = r;
+  if(self.zdiff == 0)
+    this.rcatch = r + 8;
+  else
+    this.rcatch = 0; 
   self.paper = paper;
   
   this.setXY = function(xnew, ynew)
@@ -76,24 +78,37 @@ Node = function(
    fillcolor = "rgb(0, 0, 255)";
   else if(zdiff == -1)
    fillcolor = "rgb(255, 0, 0)";
-  	
-	// create a raphael circle object
-	var c = this.paper.circle( this.x, this.y, this.r ).attr({
-					fill: fillcolor,
-					stroke: "none",
-					opacity: 1.0
-					});
-					
-	// the accessor method
-	this.getC = function(){ return c; }
-		
-	// a raphael circle oversized for the mouse logic
-	var mc = this.paper.circle( this.x, this.y, this.r + 8 ).attr({
-					fill: "rgb(0, 1, 0)",
-					stroke: "none",
-					opacity: 0
-					});
-					
+  
+  this.setDefaultColor = function()
+  {
+      c.attr({fill: fillcolor});
+  }
+  
+          
+  // the accessor method
+  this.getC = function(){ return c; }
+  var c, mc;
+  
+
+  this.recreateNodeCircles = function(myfill) {
+    
+      // create a raphael circle object
+        c = this.paper.circle( this.x, this.y, this.r ).attr({
+              fill: myfill,
+              stroke: "none",
+              opacity: 1.0
+              });
+    
+        
+      // a raphael circle oversized for the mouse logic
+        mc = this.paper.circle( this.x, this.y, this.rcatch).attr({
+              fill: "rgb(0, 1, 0)",
+              stroke: "none",
+              opacity: 0
+              });     
+  }
+  this.recreateNodeCircles(fillcolor);
+  			
 	// add a reference to the parent container node in the
 	// raphael object in order to get the drag event handler
 	// doing something
@@ -145,14 +160,8 @@ Node = function(
   {
     // par must be a Node object
     self.parent = par;
-    /*
-    if ( par != null ) {
-      line = paper.path();
-      //self.line = line;
-    }*/
     // update reference to oneself
     self.parent.children[id] = self;
-    //console.log("YYY-updateparent", self.parent.children);
   }
   
   // the line that is drawn to its parent
@@ -168,8 +177,18 @@ Node = function(
 	this.drawLine = function()
 	{  
 	  if(this.parent != null) {
-      line.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], [ "L", this.parent.getC().attrs.cx, this.parent.getC().attrs.cy ] ] } );
-      line.toBack();
+	    var strokecolor; 
+	    if(this.parent.zdiff < 0)
+	       strokecolor = "rgb(255, 0, 0)";
+	    else if (this.parent.zdiff > 0)
+	       strokecolor = "rgb(0, 0, 255)";
+	    else
+         strokecolor = "rgb(255, 255, 0)";
+         
+      line.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], 
+                          [ "L", this.parent.getC().attrs.cx, this.parent.getC().attrs.cy ] ],
+                  stroke: strokecolor} );
+      //line.toBack();
     }
 	}
   
@@ -183,7 +202,7 @@ Node = function(
         this.children[ i ].drawLine();
       }
     }
-    if ( self.parent != null )
+    if ( this.parent != null )
       this.drawLine();
 	}
 	mc.dblclick(function (e) {
@@ -192,16 +211,16 @@ Node = function(
 	mc.click(function (e) {
 	  // return some log information when clicked on the node
 	  // this usually refers here to the mc object
-	  /*
+	  
 	  console.log("----------")
 	  console.log("correct id", this.parentnode.id);
 	  console.log("activated node", this.parentnode);
 	  console.log("handler object", this);
 	  console.log("its children", this.parentnode.children);
 	  console.log("its coords", this.parentnode.x, this.parentnode.y, this.parentnode.z);
-	  */
+	   
 	  if(e.ctrlKey && e.shiftKey ){
-      console.log("should invoke deleteall of this", this);
+      console.log("should invoke delete node of this", this);
       //deleteall();
 	  } else if (e.shiftKey) {
       if(atn != null) {
@@ -224,11 +243,6 @@ Node = function(
     this.parentnode.y = oy + dy;
     c.attr({cx: this.parentnode.x,cy: this.parentnode.y});
     mc.attr({cx: this.parentnode.x,cy: this.parentnode.y});
-    /*
-		x = ox + dx;
-    y = oy + dy;
-		c.attr({cx: x,cy: y});
-		mc.attr({cx: x,cy: y});*/
     this.parentnode.draw();
 	}
 	mc.up = function()
@@ -294,38 +308,20 @@ SVGOverlay = function(
               // add treenode to the display and update it
               var jso = $.parseJSON(text);
               if(parid == -1) {
-                var nn = new Node( jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z);
+                var nn = new Node( jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0);
               } else {
-                var nn = new Node( jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z);
+                var nn = new Node( jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0);
               }
   
               nodes[jso.treenode_id] = nn;
               nn.draw();
               activateNode( nn );
               
-              // if the parent (i.e. active node is not null) we need to
-              // add the newly created treenode as a child
-              /*if(atn != null) {
-                // check the selected node type
-                if(atn instanceof Node) {
-                  activateNode( nn );
-                  if(nn.parent!=null)
-                    nn.parent.getChildren().push( nn );
-                } else if(atn instanceof ConnectorNode) {
-                  // if it is a connector, do not change selection, but just add children
-                  if(nn.parent!=null)
-                    nn.parent.getChildren().push( nn );
-                }
-              } else {
-                // by default, select the newly added node without children
-                  activateNode( nn );
-              }*/
-
             }
           }
         }
         return true;
-  });
+    });
     return;
   }
 
@@ -363,8 +359,6 @@ SVGOverlay = function(
       });
     return;
   }
-
-
   
   this.updateNodeCoordinatesinDB = function()
   {
@@ -408,31 +402,42 @@ SVGOverlay = function(
     nodes = new Object();
     
     for (var i in jso) {
+        var id = parseInt(jso[i].tlnid);
         var pos_x = phys2pixX(jso[i].x);
         var pos_y = phys2pixY(jso[i].y);
         var pos_z = phys2pixZ(jso[i].z);
         var zdiff = Math.floor(parseFloat(jso[i].z_diff) / resolution.z);
-        var nn = new Node( parseInt(jso[i].tlnid), r, null, jso[i].radius, pos_x, pos_y, pos_z, zdiff);    
-        nodes[parseInt(jso[i].tlnid)] = nn;
+        //console.log("zdiff", zdiff);
+        if(zdiff == 0)
+          var rad = parseFloat(jso[i].radius);
+        else
+          var rad = 0;
+        var nn = new Node( id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff);    
+        nodes[id] = nn;
     }
     // loop again and add correct parent objects and parent's children update
     for (var i in jso)
     {
-     var parid = parseInt(jso[i].parentid);
-     var nid = parseInt(jso[i].tlnid);
-     if(nodes[parid]) {
-       // if parent is existing, update the references
-       nodes[nid].parent = nodes[parid];
-       // update the parents children
-       nodes[nid].parent.children[nid] = nodes[nid];
-     } else {
-       //console.log("no parent (rootnode?)", nodes[nid]);
-     }
-    // draw nodes    
-    for (var i in nodes) {
-      nodes[i].draw();
+       var parid = parseInt(jso[i].parentid);
+       var nid = parseInt(jso[i].tlnid);
+       if(nodes[parid]) {
+         // if parent is existing, update the references
+         nodes[nid].parent = nodes[parid];
+         // update the parents children
+         nodes[nid].parent.children[nid] = nodes[nid];
+       } else {
+         //console.log("no parent (rootnode?)", nodes[nid]);
+       }
+      // draw nodes    
+      for (var i in nodes) {
+        nodes[i].draw();
+      }      
     }
-      
+
+    if(atn != null) {
+      // draw active node in any case
+      // but without event handling
+      atn.recreateNodeCircles(atn_fillcolor);
     }
     //console.log("all nodes", nodes);
   }
@@ -448,7 +453,6 @@ SVGOverlay = function(
     r.setSize(wi, he);
   }
   
-
   this.redraw = function(
       pl,           //!< float left-most coordinate of the parent DOM element in nanometer
       pt,           //!< float top-most coordinate of the parent DOM element in nanometer
@@ -514,7 +518,7 @@ SVGOverlay = function(
     } else {
       // create a new treenode,
       // either root node if atn is null, or has parent 
-      createNode(atn, phys_x, phys_y, phys_z, 3, 5, pos_x, pos_y, pos_z);
+      createNode(atn, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
       // display node creation is done in event handler
     }
   }
@@ -538,22 +542,7 @@ SVGOverlay = function(
   this.hide = function() 
   {
     view.style.display = "none";
-    /*
-    try
-    {
-      view.removeEventListener( "DOMMouseScroll", onmousewheel, false );
-    }
-    catch ( error )
-    {
-      try
-      {
-        view.onmousewheel = null;
-      }
-      catch ( error ) {}
-    }
-      */
   }
-
 
   this.onmousewheel = function( e )
   {
@@ -596,17 +585,6 @@ SVGOverlay = function(
   { return (z - translation.z) / resolution.z; }
   self.phys2pixZ = phys2pixZ;
   
-  var getPhysCoordinatesOfCursor = function( e )
-  {
-      var m = ui.getMouse( e );
-      // compute absolute coordinates
-      var pos_x = phys2pixX(m.offsetX);
-      var pos_y = phys2pixY(m.offsetY);
-      var pos_z = phys2pixZ(slider_z.val);
-      console.log('pos',pos_x, pos_y, pos_z);
-      // XXX write it to the database
-  }
-
   this.show = function() 
   {
     view.style.display = "block";
@@ -614,15 +592,15 @@ SVGOverlay = function(
 
   try
   {
-    view.addEventListener( "DOMMouseScroll", self.onmousewheel, false );
+    view.addEventListener( "DOMMouseScroll", this.onmousewheel, false );
     /* Webkit takes the event but does not understand it ... */
-    view.addEventListener( "mousewheel", self.onmousewheel, false );
+    view.addEventListener( "mousewheel", this.onmousewheel, false );
   }
   catch ( error )
   {
     try
     {
-      view.onmousewheel = self.onmousewheel;
+      view.onmousewheel = this.onmousewheel;
     }
     catch ( error ) {}
   }

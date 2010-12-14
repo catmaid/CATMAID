@@ -178,7 +178,7 @@ function SmallMap(
 	
 	var img = document.createElement( "img" );
 	img.className = "smallMapMap";
-	img.src = "map/small.jpg";
+	//img.src = "map/small.jpg";
 	img.onclick = onclick;
 	img.style.width = view.style.width;
 	img.style.height = view.style.height;
@@ -476,7 +476,7 @@ function Stack(
 					tilesContainer.removeChild( tiles[ i ].pop() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
-					img.src = "gfx/empty256.gif";
+					img.src = "widgets/themes/kde/empty.gif";
 					img.style.visibility = "hidden";
 					tilesContainer.appendChild( img );
 					tiles[ i ].unshift( img );
@@ -489,7 +489,7 @@ function Stack(
 					tilesContainer.removeChild( tiles[ i ].shift() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
-					img.src = "gfx/empty256.gif";
+					img.src = "widgets/themes/kde/empty.gif";
 					img.style.visibility = "hidden";
 					tilesContainer.appendChild( img );
 					tiles[ i ].push( img );
@@ -504,7 +504,7 @@ function Stack(
 					tilesContainer.removeChild( old_row.pop() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
-					img.src = "gfx/empty256.gif";
+					img.src = "widgets/themes/kde/empty.gif";
 					img.style.visibility = "hidden";
 					tilesContainer.appendChild( img );
 					new_row.push( img );
@@ -520,7 +520,7 @@ function Stack(
 					tilesContainer.removeChild( old_row.pop() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
-					img.src = "gfx/empty256.gif";
+					img.src = "widgets/themes/kde/empty.gif";
 					img.style.visibility = "hidden";
 					tilesContainer.appendChild( img );
 					new_row.push( img );
@@ -687,7 +687,7 @@ function Stack(
 			{
 				tiles[ i ][ j ] = document.createElement( "img" );
 				tiles[ i ][ j ].alt = "empty";
-				tiles[ i ][ j ].src = "gfx/empty256.gif";
+				tiles[ i ][ j ].src = "widgets/themes/kde/empty.gif";
 				
 				tilesContainer.appendChild( tiles[ i ][ j ] );
 			}
@@ -1834,6 +1834,11 @@ function Stack(
 
   $("#sync_treenodes").click(function () {
     svgOverlay.updateNodeCoordinatesinDB();
+  });
+  
+  
+  $("#go_active").click(function () {
+    console.log("active node is: ", atn);
   });
 	
 	var LAST_XT = Math.floor( MAX_X * scale / X_TILE_SIZE );

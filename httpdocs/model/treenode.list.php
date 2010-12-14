@@ -20,7 +20,7 @@ $height = isset( $_REQUEST[ 'height' ] ) ? floatval( $_REQUEST[ 'height' ] ) : 0
 $zres = isset( $_REQUEST[ 'zres' ] ) ? floatval( $_REQUEST[ 'zres' ] ) : 0;
 
 // the scale factor to volume bound the query in z-direction based on the z-resolution
-$zbound = 1.0;
+$zbound = 2.0;
 // limit number of retrieved treenodes
 $limit = 400;
 

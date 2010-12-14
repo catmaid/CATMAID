@@ -76,13 +76,37 @@ for new_class in (x for x in required_classes if x not in class_to_class_id):
   class_to_class_id[new_class] = new_id
   rs.close()
 
+# FIXME: Don't Repeat Yourself...
+
 # Fetch all the relation names and IDs:
 relation_to_relation_id = {}
 s = c.createStatement();
-rs = s.executeQuery("SELECT id, relation_name FROM relation")
+rs = s.executeQuery("SELECT id, relation_name FROM relation WHERE project_id = "+str(project_id))
 while rs.next():
   relation_to_relation_id[rs.getString(2)] = rs.getLong(1)
 s.close()
+
+required_relations = [
+  "presynaptic_to",
+  "postsynaptic_to",
+  "model_of",
+  "part_of",
+  "labeled_as",
+  "is_a",
+  "element_of"
+]
+
+# Insert any that didn't already exist:
+ps = c.prepareStatement("INSERT INTO relation (relation_name,project_id,user_id) VALUES (?,?,?) RETURNING id")
+ps.setInt(2,project_id)
+ps.setInt(3,user_id)
+for new_relation in (x for x in required_relations if x not in relation_to_relation_id):
+  ps.setString(1,new_relation)
+  rs = ps.executeQuery()
+  rs.next()
+  new_id = rs.getLong(1)
+  relation_to_relation_id[new_relation] = new_id
+  rs.close()
 
 # ========================================================================
 

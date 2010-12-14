@@ -364,6 +364,8 @@ SVGOverlay = function(
     return;
   }
 
+
+  
   this.updateNodeCoordinatesinDB = function()
   {
     console.log("synchronising with database");
@@ -533,15 +535,6 @@ SVGOverlay = function(
   self.r = r;
   this.paper = r;
   
-  if ( !ui ) ui = new UI();
-
-  var clearPaperandRecreate = function(){
-      var paperDom = r.canvas;
-      paperDom.parentNode.removeChild(paperDom);
-      r = Raphael(view, Math.floor(dimension.x*s), Math.floor(dimension.y*s));
-      updateDimension();
-  }
-
   this.hide = function() 
   {
     view.style.display = "none";

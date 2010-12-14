@@ -1809,9 +1809,6 @@ function Stack(
   mouseCatcher.className = "sliceMouseCatcher";
   view.appendChild( mouseCatcher );
 
-	
-
-
 	// take care, that all values are within a proper range
 	var z = 1;
 	var y = Math.floor( MAX_Y / 2 );
@@ -1834,7 +1831,10 @@ function Stack(
   //mouseCatcher.appendChild( svgOverlay.getView() );
   view.appendChild( svgOverlay.getView() );
   svgOverlay.hide();
-  
+
+  $("#sync_treenodes").click(function () {
+    svgOverlay.updateNodeCoordinatesinDB();
+  });
 	
 	var LAST_XT = Math.floor( MAX_X * scale / X_TILE_SIZE );
 	var LAST_YT = Math.floor( MAX_Y * scale / Y_TILE_SIZE );

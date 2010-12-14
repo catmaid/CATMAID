@@ -48,13 +48,33 @@ c = DriverManager.getConnection("jdbc:postgresql://localhost/catmaid",
                                 catmaid_db_user,
                                 catmaid_db_password)
 
+required_classes = [
+ "skeleton",
+ "label",
+ "root",
+ "synapse",
+ "neuron",
+ "group" ]
+
 # Fetch all the class names and IDs:
 class_to_class_id = {}
-s = c.createStatement();
-rs = s.executeQuery("SELECT id, class_name FROM class")
+s = c.createStatement()
+rs = s.executeQuery("SELECT id, class_name FROM class WHERE project_id = "+str(project_id))
 while rs.next():
   class_to_class_id[rs.getString(2)] = rs.getLong(1)
 s.close()
+
+# Insert any that didn't already exist:
+ps = c.prepareStatement("INSERT INTO class (class_name,project_id,user_id) VALUES (?,?,?) RETURNING id")
+ps.setInt(2,project_id)
+ps.setInt(3,user_id)
+for new_class in (x for x in required_classes if x not in class_to_class_id):
+  ps.setString(1,new_class)
+  rs = ps.executeQuery()
+  rs.next()
+  new_id = rs.getLong(1)
+  class_to_class_id[new_class] = new_id
+  rs.close()
 
 # Fetch all the relation names and IDs:
 relation_to_relation_id = {}

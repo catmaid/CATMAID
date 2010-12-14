@@ -366,7 +366,7 @@ function Stack(
    */
   this.updateTreelinenodes = function()
   {
-    console.log("In updateTreelinenodes");
+    
     var tl_width;
     var tl_height;
     if ( tiles.length == 0 )
@@ -379,6 +379,30 @@ function Stack(
       tl_width = tiles[ 0 ].length * X_TILE_SIZE / scale;
       tl_height = tiles.length * Y_TILE_SIZE / scale;
     }
+    
+    console.log("In updateTreelinenodes");
+    console.log("scale is: "+scale);
+    console.log("X_TILE_SIZE is: "+X_TILE_SIZE);
+    console.log("Y_TILE_SIZE is: "+Y_TILE_SIZE);
+    console.log("tl_width is: "+tl_width);
+    console.log("tl_height is: "+tl_height);
+    console.log("x is: "+x);
+    console.log("y is: "+y);
+    console.log("resolution.x is: "+resolution.x);
+    console.log("resolution.y is: "+resolution.y);
+    console.log("translation.x is: "+translation.x);
+    console.log("translation.y is: "+translation.y);
+    console.log('-----computed');
+    console.log('z', z * resolution.z + translation.z);
+    console.log('top', ( y - tl_height / 2 ) * resolution.y + translation.y);
+    console.log('left', ( x - tl_width / 2 ) * resolution.x + translation.x);
+    console.log('width', tl_width * resolution.x);
+    console.log('height', tl_height * resolution.y);
+        
+    // first synchronize with database
+    svgOverlay.updateNodeCoordinatesinDB();
+    
+
     requestQueue.register(
       'model/treenode.list.php',
       'POST',
@@ -413,8 +437,6 @@ function Stack(
       else
       {
         var jso = $.parseJSON(text);
-        console.log("Retrieved from the database ", jso.length, " treenodes.")
-        console.log(jso);
         svgOverlay.refreshNodes(jso);
       }
     }
@@ -585,7 +607,6 @@ function Stack(
 				yd != 0 )
 			{
 				self.updateTextlabels();
-				self.updateTreelinenodes();
 			}
 			
 			//! left-most border of the view in physical project coordinates
@@ -598,16 +619,23 @@ function Stack(
 					screen_left,
 					screen_top,
 					scale );
-			}
-			
-			// redraw the overlay
-			svgOverlay.redraw(
-			  screen_left,
+			}        
+      
+		}
+		if ( show_tracing )
+		{
+      if ( z != old_z ||
+        s != old_s ||
+        xd != 0 ||
+        yd != 0 )
+      {
+        self.updateTreelinenodes();
+      }
+      // redraw the overlay
+      svgOverlay.redraw(
+        screen_left,
         screen_top,
         scale);
-        
-      
-      
 		}
 		
 		// render the treenodes
@@ -1112,6 +1140,7 @@ function Stack(
 		}
 		mouseCatcher.style.zIndex = 5;
 		svgOverlay.hide();
+		show_tracing = false;
 		switch( m )
 		{
 		/*
@@ -1182,7 +1211,9 @@ function Stack(
       // for the surrounding mouse event catcher
       mouseCatcher.onmousedown = onmousedown.move;
       mouseCatcher.onmousemove = onmousemove.pos;
+      show_tracing = true;
       svgOverlay.show();
+      self.updateTreelinenodes();
 		  break;
 		case "select":
 		case "move":
@@ -1810,7 +1841,7 @@ function Stack(
 	
 	var mode = "move";
 	var show_textlabels = true;
-  var show_treenodes = true;
+  var show_tracing = false;
   
 	var registered = false;
 	

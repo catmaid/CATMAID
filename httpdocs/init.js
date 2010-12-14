@@ -100,7 +100,7 @@ function handle_login( status, text, xml )
 {
 	if ( status == 200 && text )
 	{
-	  console.log(text);
+	  // console.log(text);
 		var e = eval( "(" + text + ")" );
 		
 		if ( e.id )

@@ -22,8 +22,9 @@ $height = isset( $_REQUEST[ 'height' ] ) ? floatval( $_REQUEST[ 'height' ] ) : 0
 $zres = isset( $_REQUEST[ 'zres' ] ) ? floatval( $_REQUEST[ 'zres' ] ) : 0;
 
 // the scale factor to volume bound the query in z-direction based on the z-resolution
-$zbound = 0.5;
-
+$zbound = 1.0;
+// limit number of retrieved treenodes
+$limit = 400;
 
 if ( $pid )
 {
@@ -39,7 +40,7 @@ if ( $pid )
           "treenode"."confidence" AS "confidence",
           "treenode"."user_id" AS "user_id",
           "treenode"."radius" AS "radius",
-          abs( ("treenode"."location")."z" - ("treenode"."location")."z" ) AS "z_diff"
+          ( ("treenode"."location")."z" - '.$z.' ) AS "z_diff"
         
         FROM "treenode" INNER JOIN "project"
             ON "project"."id" = "treenode"."project_id"
@@ -52,7 +53,7 @@ if ( $pid )
               ("treenode"."location")."z" >= '.$z.' - '.$zbound.' * '.$zres.' AND
               ("treenode"."location")."z" <= '.$z.' + '.$zbound.' * '.$zres.'
           
-          ORDER BY "parentid" DESC,"tlnid", "z_diff"'
+          ORDER BY "parentid" DESC,"tlnid", "z_diff" LIMIT '.$limit
     );
     echo json_encode( $treenodes );
 

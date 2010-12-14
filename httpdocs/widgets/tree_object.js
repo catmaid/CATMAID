@@ -376,7 +376,7 @@ initObjectTree = function(pid) {
 	//	"rlbk" : /* an optional rollback object - it is not always present */
 	
 	$(object_tree_id).bind("loaded.jstree", function (event, data) {
-		console.log("Object tree loaded.");
+		// console.log("Object tree loaded.");
 	});
 	
 	$(object_tree_id).bind("deselect_node.jstree", function (event, data) {

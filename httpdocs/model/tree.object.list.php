@@ -24,7 +24,6 @@ if ( $pid )
 		// instances to display
 		$nid = $db->getClassId( $pid, "neuron" );
 		$skid = $db->getClassId( $pid, "skeleton" );
-		$ngid = $db->getClassId( $pid, "neurongroup" );
 		$gid = $db->getClassId( $pid, "group" );
 		$rid = $db->getClassId( $pid, "root" );
 		

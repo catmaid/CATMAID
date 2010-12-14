@@ -11,7 +11,7 @@ function activateNode( node ) {
     if ( atn != null ) {
       if(atn instanceof Node) {
         atn.getC().attr({
-              fill: "rgb(0, 0, 255)" });
+              fill: "rgb(0, 0, 255)"});
       } else if(atn instanceof ConnectorNode) {
         atn.getC().attr({
               fill: "rgb(255, 0, 0)" });
@@ -31,73 +31,75 @@ Node = function(
   id, // unique id for the node from the database
   paper, // the raphael paper this node is drawn to
   parent, // the parent node
-  r,
+  r, // the radius
   x, // the x coordinate in pixel coordinates
-  y, z) // the y coordinate in pixel coordiantes
+  y, z, zdiff) // the y coordinate in pixel coordiantes
 { 
   self = this;
   self.id = id;
+  
   // state variable whether this node is already synchronized with the database
-  var needsync = false;
+  self.needsync = false;
   
   // local screen coordinates relative to the div
   self.x = x;
   self.y = y;
   self.z = z;
+  self.zdiff = zdiff;
   self.parent = parent;
   self.r = parseFloat(r);
-  
-  var setSync = function( bo ) { needsync = bo; }
-  this.setSync = setSync;
-  var getSync = function( ) { return needsync; }
-  this.getSync = getSync;
-  
-  this.getX = function() { return x };
-  this.getY = function() { return y };
+  self.paper = paper;
   
   this.setXY = function(xnew, ynew)
   {
-    x = xnew;
-    y = ynew;
-    c.attr({cx: x,cy: y});
-    mc.attr({cx: x,cy: y});
-    draw();
+    this.x = xnew;
+    this.y = ynew;
+    c.attr({cx: this.x,cy: this.y});
+    mc.attr({cx: this.x,cy: this.y});
+    this.draw();
   }
   
   // local variables, only valid in the scope of a node
   // and not accessible to the outisde
-	var ox = 0, oy = 0, r = 4;
+	var ox = 0, oy = 0;
 	
+	var fillcolor;
+	if(zdiff == 0)
+	 fillcolor = "rgb(255, 255, 0)";
+  else if(zdiff == 1)
+   fillcolor = "rgb(0, 0, 255)";
+  else if(zdiff == -1)
+   fillcolor = "rgb(255, 0, 0)";
+  	
 	// create a raphael circle object
-	var c = paper.circle( x, y, r ).attr({
-					fill: "rgb(0, 0, 255)",
+	var c = this.paper.circle( this.x, this.y, this.r ).attr({
+					fill: fillcolor,
 					stroke: "none",
 					opacity: 1.0
 					});
+					
 	// the accessor method
 	this.getC = function(){ return c; }
 		
 	// a raphael circle oversized for the mouse logic
-	var mc = paper.circle( x, y, r + 8 ).attr({
+	var mc = this.paper.circle( this.x, this.y, this.r + 8 ).attr({
 					fill: "rgb(0, 1, 0)",
 					stroke: "none",
 					opacity: 0
 					});
 					
-	// add a reference to the parent container node
-  // in order to get active nodes working from inside
-  // mc eventhandlers
-	mc.parentnode = self;
+	// add a reference to the parent container node in the
+	// raphael object in order to get the drag event handler
+	// doing something
+	mc.parentnode = this;
 	
 	// an array storing the children objects of the node
-	var children = new Object();
-	this.children = children;
-	
+	this.children = new Object();
 	
 	// delete all objects relevant to this node
 	// such as raphael DOM elements and node references
 	// javascript's garbage collection should do the rest
-	var deleteall = function()
+	this.deleteall = function()
 	{
 	  // test if there is any child of type ConnectorNode
 	  // if so, it is not allowed to remove the treenode
@@ -109,9 +111,9 @@ Node = function(
     }
     */
     // remove the parent of all the children
-    for ( var i = 0; i < children.length; ++i ) {
-      children[ i ].line.remove();
-      children[ i ].removeParent();
+    for ( var i = 0; i < this.children.length; ++i ) {
+      this.children[ i ].line.remove();
+      this.children[ i ].removeParent();
     }
     // remove the raphael svg elements from the DOM
 	  c.remove();
@@ -126,7 +128,6 @@ Node = function(
 	  }
 	}
 	// make this function accessible
-	this.deleteall = deleteall;
 	
   // remove the parent node
   this.removeParent = function()
@@ -134,66 +135,65 @@ Node = function(
     delete self.parent;
     self.parent = null;
   }
-  var updateParent = function(par)
+  this.updateParent = function(par)
   {
+    // par must be a Node object
     self.parent = par;
+    /*
     if ( par != null ) {
       line = paper.path();
-      self.line = line;
-    }
+      //self.line = line;
+    }*/
     // update reference to oneself
     self.parent.children[id] = self;
-    console.log("YYY-updateparent", self.parent.children);
+    //console.log("YYY-updateparent", self.parent.children);
   }
-  this.updateParent = updateParent;
   
   // the line that is drawn to its parent
-	var line;
-	line = paper.path();
-  self.line = line;
+	var line = this.paper.path();
+  //self.line = line;
   // from the function invocation
 	if ( parent != null ) {
 	  // if parent exists, update it
-	  updateParent(parent);
+	  this.updateParent(parent);
 	}
 	
 	// updates the raphael path coordinates
-	var drawLine = function()
+	this.drawLine = function()
 	{  
-	  console.log("drawing line for", self);
-	  if(self.parent != null) {
-    line.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], [ "L", self.parent.getC().attrs.cx, self.parent.getC().attrs.cy ] ] } );
-    line.toBack();
+	  if(this.parent != null) {
+      line.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], [ "L", this.parent.getC().attrs.cx, this.parent.getC().attrs.cy ] ] } );
+      line.toBack();
     }
 	}
-  this.drawLine = drawLine;
   
   // draw function to update the paths from the children
   // and to its parent	
-	var draw = function() {
+	this.draw = function() {
 	  // draws/updates path to parent and children
-    for ( var i in children ) {
-      if(children[i].parent != null) {
-        console.log("XXXX:parent should not be null", children[i].parent);
-        children[ i ].drawLine();
+    for ( var i in this.children ) {
+      if(this.children[i].parent != null) {
+        //console.log("XXXX:parent should not be null", children[i].parent);
+        this.children[ i ].drawLine();
       }
     }
     if ( self.parent != null )
-      drawLine();
+      this.drawLine();
 	}
-	// make the function accessible
-	this.draw = draw;
 	
 	mc.click(function (e) {
 	  // return some log information when clicked on the node
+	  // this usually refers here to the mc object
 	  console.log("----------")
-	  console.log("activated node", id, self);
-	  console.log("its parent is", self.parent);
-	  console.log("its children", children);
-	  console.log("its coords", x, y, z);
+	  console.log("correct id", this.parentnode.id);
+	  console.log("activated node", this.parentnode);
+	  console.log("handler object", this);
+	  console.log("its children", this.parentnode.children);
+	  console.log("its coords", this.parentnode.x, this.parentnode.y, this.parentnode.z);
 	  
 	  if(e.ctrlKey && e.shiftKey ){
-      deleteall();
+      console.log("should invoke deleteall of this", this);
+      //deleteall();
 	  } else if (e.shiftKey) {
       if(atn != null) {
         // connected activated treenode or connectornode
@@ -205,25 +205,31 @@ Node = function(
       // activate this node
       activateNode( this.parentnode );
       // stop propagation of the event
-      e.stopPropagation();	    
+      e.stopPropagation();
 	  }
   });
 
 	mc.move = function( dx, dy )
 	{
+	  this.parentnode.x = ox + dx;
+    this.parentnode.y = oy + dy;
+    c.attr({cx: this.parentnode.x,cy: this.parentnode.y});
+    mc.attr({cx: this.parentnode.x,cy: this.parentnode.y});
+    /*
 		x = ox + dx;
     y = oy + dy;
 		c.attr({cx: x,cy: y});
-		mc.attr({cx: x,cy: y});
-    draw();
+		mc.attr({cx: x,cy: y});*/
+    this.parentnode.draw();
 	}
 	mc.up = function()
 	{
 		c.attr({opacity:1});
-		setSync(true);
+		this.parentnode.needsync = true;
 	}
 	mc.start = function()
 	{
+	  //console.log("in mc start, this:", this);
 	  // as soon you do something with the node, activate it
 	  activateNode( this.parentnode );
 		ox = mc.attr("cx");
@@ -340,7 +346,7 @@ SVGOverlay = function(
             }
             else
             {
-              console.log("Coordinates updated for treenode ", id, phys_x,phys_y,phys_z);
+              console.log("Coordinates updated for treenode ", id, " to ", phys_x, phys_y, phys_z);
             }
           }
         }
@@ -349,18 +355,19 @@ SVGOverlay = function(
     return;
   }
 
-  var updateNodeCoordinatesinDB = function()
+  this.updateNodeCoordinatesinDB = function()
   {
+    console.log("synchronising with database");
     for (var i in nodes)
     {
-      if(nodes[i].getSync())
+      if(nodes[i].needsync)
       {
         // get physical
         var phys_x = pix2physX(nodes[i].x);
         var phys_y = pix2physY(nodes[i].y);
         var phys_z = pix2physZ(nodes[i].z);
-        console.log("Update required for treenode ",nodes[i].id,phys_x,phys_y,phys_z);
-        nodes[i].setSync(false);
+        console.log("Update required for treenode",nodes[i].id, " with ", phys_x,phys_y,phys_z);
+        nodes[i].needsync = false;
         updateNodePosition(nodes[i].id,phys_x,phys_y,phys_z)
       }
     }
@@ -368,20 +375,23 @@ SVGOverlay = function(
 
   var updateNodeCoordinates = function(newscale)
   {
+    console.log("in updatenodecoordinates for new scale function");
     // depending on the scale, update all the node coordinates
     // loop over all nodes
     for ( var i = 0; i < nodes.length; ++i )
     {
-      var x = nodes[i].getX();
-      var y = nodes[i].getY();
+      var x = nodes[i].x;
+      var y = nodes[i].y;
       var fact = newscale / s;
       xnew = Math.floor(x * fact);
       ynew = Math.floor(y * fact);
-      nodes[i].setXY(xnew, ynew); 
+      // use call to get the function working on this
+      this.setXY.call(nodes[i], xnew, ynew);
+      // nodes[i].setXY(xnew, ynew); 
     }
   }
   
-  var refreshNodes = function( jso )
+  this.refreshNodes = function( jso )
   {
     //clearPaperandRecreate();
     // get an array from the database, delete all old nodes
@@ -391,14 +401,15 @@ SVGOverlay = function(
       nodes[i].deleteall();
       delete nodes[i];
     }
-
+    //console.log(jso);
     //nodes = new Object();
     for (var i in jso) {
         var pos_x = phys2pixX(jso[i].x);
         var pos_y = phys2pixY(jso[i].y);
         var pos_z = phys2pixZ(jso[i].z);
-        var nn = new Node( parseInt(jso[i].tlnid), r, null, jso[i].radius, pos_x, pos_y, pos_z);    
-        console.log(nn)     
+        var zdiff = Math.floor(parseFloat(jso[i].z_diff) / resolution.z);
+        var nn = new Node( parseInt(jso[i].tlnid), r, null, jso[i].radius, pos_x, pos_y, pos_z, zdiff);    
+        //console.log(nn)     
         nodes[parseInt(jso[i].tlnid)] = nn;
         //nn.draw();
     }
@@ -412,13 +423,10 @@ SVGOverlay = function(
        nodes[nid].parent = nodes[parid];
        // update the parents children
        nodes[nid].parent.children[nid] = nodes[nid];
-       //nodes[nid].draw();
-       console.log("node", nodes[nid], 'should have parent', nodes[parid]);
-       console.log("and parent should have children", nodes[parid].children, 'including ', nodes[nid]);
      } else {
-       console.log("no parent (rootnode?)", nodes[nid]);
+       //console.log("no parent (rootnode?)", nodes[nid]);
      }
-    console.log("all nodes", nodes);
+    
     for (var i in nodes) {
       nodes[i].draw();
     }
@@ -435,9 +443,9 @@ SVGOverlay = function(
       }*/
       
     }
+    console.log("all nodes", nodes);
     //console.log(jso);
   }
-  this.refreshNodes = refreshNodes;
 
   var updateDimension = function()
   {
@@ -469,7 +477,7 @@ SVGOverlay = function(
     view.style.left = Math.floor(-pl/resolution.x*s) + "px";
     view.style.top = Math.floor(-pt/resolution.y*s) + "px";
     updateDimension(s);
-    updateNodeCoordinatesinDB();
+    //updateNodeCoordinatesinDB();
   };
 	
   this.getView = function()
@@ -637,15 +645,5 @@ SVGOverlay = function(
     catch ( error ) {}
   }
   
-  // do i need them?
-  var screen =
-  {
-    x : 0,
-    y : 0,
-    width : 0,
-    height : 0,
-    s : 0,
-    scale : 1
-  };          //!< screen coordinates
   
 };

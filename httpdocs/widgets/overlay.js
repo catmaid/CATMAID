@@ -4,7 +4,9 @@ var atn = null;
 // - join existing nodes together with shift
 // - add backend logic
 // - delete node from svgoverlay nodes upon delete
-// var r;
+// keep atn
+// add dragging
+// delete
 
 function activateNode( node ) {
     // activate new node, i.e. first deactivate old one
@@ -47,7 +49,11 @@ Node = function(
   self.z = z;
   self.zdiff = zdiff;
   self.parent = parent;
-  self.r = parseFloat(r);
+  if( parseFloat(r) == 0)
+    self.r = 4;
+   else
+    self.r = parseFloat(r);
+
   self.paper = paper;
   
   this.setXY = function(xnew, ynew)
@@ -180,17 +186,20 @@ Node = function(
     if ( self.parent != null )
       this.drawLine();
 	}
-	
+	mc.dblclick(function (e) {
+	  console.log("node dblclick");
+	});
 	mc.click(function (e) {
 	  // return some log information when clicked on the node
 	  // this usually refers here to the mc object
+	  /*
 	  console.log("----------")
 	  console.log("correct id", this.parentnode.id);
 	  console.log("activated node", this.parentnode);
 	  console.log("handler object", this);
 	  console.log("its children", this.parentnode.children);
 	  console.log("its coords", this.parentnode.x, this.parentnode.y, this.parentnode.z);
-	  
+	  */
 	  if(e.ctrlKey && e.shiftKey ){
       console.log("should invoke deleteall of this", this);
       //deleteall();
@@ -393,25 +402,16 @@ SVGOverlay = function(
   
   this.refreshNodes = function( jso )
   {
-    //clearPaperandRecreate();
-    // get an array from the database, delete all old nodes
-    // and add new ones
-    for (var i in nodes) {
-      //console.log("should delete", nodes[i]);
-      nodes[i].deleteall();
-      delete nodes[i];
-    }
-    //console.log(jso);
-    //nodes = new Object();
+    this.paper.clear();
+    nodes = new Object();
+    
     for (var i in jso) {
         var pos_x = phys2pixX(jso[i].x);
         var pos_y = phys2pixY(jso[i].y);
         var pos_z = phys2pixZ(jso[i].z);
         var zdiff = Math.floor(parseFloat(jso[i].z_diff) / resolution.z);
         var nn = new Node( parseInt(jso[i].tlnid), r, null, jso[i].radius, pos_x, pos_y, pos_z, zdiff);    
-        //console.log(nn)     
         nodes[parseInt(jso[i].tlnid)] = nn;
-        //nn.draw();
     }
     // loop again and add correct parent objects and parent's children update
     for (var i in jso)
@@ -426,25 +426,13 @@ SVGOverlay = function(
      } else {
        //console.log("no parent (rootnode?)", nodes[nid]);
      }
-    
+    // draw nodes    
     for (var i in nodes) {
       nodes[i].draw();
     }
-    
-     /*
-     nodes[nid]
-     // console.log(nodes[parseInt(jso[i].parentid)]);
-      if(nodes[parseInt(jso[i].parentid)]) {
-        console.log("parent is existing for ", jso[i].tlnid );
-        // update the parent because it is existing in the retrieved node set
-        nodes[parseInt(jso[i].tlnid)].updateParent( nodes[parseInt(jso[i].parentid)] );
-        nodes[parseInt(jso[i].tlnid)].draw();
-        //console.log(nodes[parseInt(jso[i].tlnid)]);
-      }*/
       
     }
-    console.log("all nodes", nodes);
-    //console.log(jso);
+    //console.log("all nodes", nodes);
   }
 
   var updateDimension = function()
@@ -543,7 +531,8 @@ SVGOverlay = function(
   var s = current_scale;
   var r = Raphael(view, Math.floor(dimension.x*s), Math.floor(dimension.y*s));
   self.r = r;
-
+  this.paper = r;
+  
   if ( !ui ) ui = new UI();
 
   var clearPaperandRecreate = function(){

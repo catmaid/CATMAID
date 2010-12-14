@@ -379,7 +379,7 @@ function Stack(
       tl_width = tiles[ 0 ].length * X_TILE_SIZE / scale;
       tl_height = tiles.length * Y_TILE_SIZE / scale;
     }
-    
+    /*
     console.log("In updateTreelinenodes");
     console.log("scale is: "+scale);
     console.log("X_TILE_SIZE is: "+X_TILE_SIZE);
@@ -398,7 +398,7 @@ function Stack(
     console.log('left', ( x - tl_width / 2 ) * resolution.x + translation.x);
     console.log('width', tl_width * resolution.x);
     console.log('height', tl_height * resolution.y);
-        
+      */  
     // first synchronize with database
     svgOverlay.updateNodeCoordinatesinDB();
     

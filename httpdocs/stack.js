@@ -1182,7 +1182,7 @@ function Stack(
 			if ( show_textlabels ) self.updateTextlabels();
 			break;
 		case "trace":
-		  console.log("in tracing mode");
+		  // console.log("in tracing mode");
 		  mode = "trace"
       mouseCatcher.style.cursor = "crosshair";
       //mouseCatcher.onmousedown = onmousedown.trace;

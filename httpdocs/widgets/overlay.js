@@ -4,13 +4,10 @@ var atn_fillcolor = "rgb(0, 255, 0)";
 
 // TODO:
 // - join existing nodes together with shift
-// - add backend logic
-// - delete node from svgoverlay nodes upon delete
-// keep atn - works, but what if there are big z jumps. how to handle these?
-// add dragging
-// delete
+// - problem of tracing perpendicular processes (active node is in the way)
+
 // node dblclick and zoom
-// delete logic in php
+
 
 function activateNode( node ) {
 //  console.trace();
@@ -119,7 +116,7 @@ SVGOverlay = function(
             }
             else
             {
-              console.log("Coordinates updated for treenode ", id, " to ", phys_x, phys_y, phys_z);
+              // console.log("Coordinates updated for treenode ", id, " to ", phys_x, phys_y, phys_z);
             }
           }
         }
@@ -130,7 +127,7 @@ SVGOverlay = function(
   
   this.updateNodeCoordinatesinDB = function()
   {
-    console.log("synchronising with database");
+    // console.log("synchronising with database");
     for (var i in nodes)
     {
       if(nodes[i].needsync)
@@ -139,7 +136,7 @@ SVGOverlay = function(
         var phys_x = pix2physX(nodes[i].x);
         var phys_y = pix2physY(nodes[i].y);
         var phys_z = pix2physZ(nodes[i].z);
-        console.log("Update required for treenode",nodes[i].id, " with ", phys_x,phys_y,phys_z);
+        // console.log("Update required for treenode",nodes[i].id, " with ", phys_x,phys_y,phys_z);
         nodes[i].needsync = false;
         updateNodePosition(nodes[i].id,phys_x,phys_y,phys_z)
       }
@@ -148,7 +145,7 @@ SVGOverlay = function(
 
   var updateNodeCoordinates = function(newscale)
   {
-    console.log("in updatenodecoordinates for new scale function");
+    // console.log("in updatenodecoordinates for new scale function");
     // depending on the scale, update all the node coordinates
     // loop over all nodes
     for ( var i = 0; i < nodes.length; ++i )
@@ -176,7 +173,6 @@ SVGOverlay = function(
         var pos_y = phys2pixY(jso[i].y);
         var pos_z = phys2pixZ(jso[i].z);
         var zdiff = Math.floor(parseFloat(jso[i].z_diff) / resolution.z);
-        //console.log("zdiff", zdiff);
         if(zdiff == 0)
           var rad = parseFloat(jso[i].radius);
         else
@@ -238,13 +234,6 @@ SVGOverlay = function(
         nodes[i].draw();
       }      
     }
-/*
-    if(atn != null) {
-      // XXX
-      // draw active node in any case
-      // but without event handling
-      atn.recreateNodeCircles(atn_fillcolor);
-    }*/
     //console.log("all nodes", nodes);
   }
 
@@ -302,7 +291,7 @@ SVGOverlay = function(
     var phys_x = pix2physX(pos_x);
     var phys_y = pix2physY(pos_y);
     var phys_z = project.coordinates.z;
-    console.log("clicked on physical coordinates", phys_x, phys_y, phys_z, "this", this);
+    // console.log("clicked on physical coordinates", phys_x, phys_y, phys_z, "this", this);
     
     // if ctrl is pressed and clicked, deselect atn
     if( e.ctrlKey ) {
@@ -342,9 +331,7 @@ SVGOverlay = function(
   
   var s = current_scale;
   var r = Raphael(view, Math.floor(dimension.x*s), Math.floor(dimension.y*s));
-  //this.r = r;
   this.paper = r;
-  
 
   this.onmousewheel = function( e )
   {
@@ -384,6 +371,7 @@ SVGOverlay = function(
   var phys2pixY = function( y )  { return  ( y - translation.y ) / resolution.y * s; }
   var pix2physZ = function( z )  { return z * resolution.z + translation.z; }
   var phys2pixZ = function( z )  { return (z - translation.z) / resolution.z; }
+  
   this.show = function()   { view.style.display = "block"; }
   this.hide = function() { view.style.display = "none"; }
   

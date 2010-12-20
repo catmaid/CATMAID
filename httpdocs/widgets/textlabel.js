@@ -288,8 +288,28 @@ Textlabel = function(
 				y : self.location.y,
 				z : self.location.z
 			},
-			// XXX: not existing.
-			project.handle_updateTextlabels );
+    function( status, text, xml )
+      {
+        statusBar.replaceLast( text );
+        
+        if ( status == 200 )
+        {
+          project.focusedStack.updateTextlabels();
+          if ( text && text != " " )
+          {
+            var e = eval( "(" + text + ")" );
+            if ( e.error )
+            {
+              alert( e.error );
+            }
+            else
+            {
+            }
+          }
+        }
+        return true;
+      }
+			);
 		return;
 	}
 	

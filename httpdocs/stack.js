@@ -1138,33 +1138,13 @@ function Stack(
 			delete cropBox;
 			cropBox = false;
 		}
+    // svg overlay logic		
 		mouseCatcher.style.zIndex = 5;
 		svgOverlay.hide();
 		show_tracing = false;
+		
 		switch( m )
 		{
-		/*
-		case "profile":
-			mode = "profile";
-			mouseCatcher.style.display = "block";
-			mouseCatcher.style.cursor = "crosshair";
-			mouseCatcher.onmousedown = onmousedown.edit;
-			mouseCatcher.onmousemove = onmousemove.pos;
-			try
-			{
-				mouseCatcher.removeEventListener( "DOMMouseScroll", onmousewheel.move, false );
-			}
-			catch ( error )
-			{
-				try
-				{
-					mouseCatcher.onmousewheel = null;
-				}
-				catch ( error ) {}
-			}
-			//! @todo import the available profiles of the slice
-			break;
-		*/
 		case "text":
 			mode = "text";
 			mouseCatcher.style.cursor = "crosshair";
@@ -1187,12 +1167,10 @@ function Stack(
 			*/
 			show_textlabels = true;
 			self.updateTextlabels();
-			/*
 			for ( var i = 0; i < textlabels.length; ++i )
 			{
 				textlabels[ i ].setEditable( true );
 			}
-			*/
 			//updateControls();
 			//update();
 			break;
@@ -1214,6 +1192,10 @@ function Stack(
       show_tracing = true;
       svgOverlay.show();
       self.updateTreelinenodes();
+      for ( var i = 0; i < textlabels.length; ++i )
+      {
+        textlabels[ i ].setEditable( false );
+      }
 		  break;
 		case "select":
 		case "move":
@@ -1238,15 +1220,36 @@ function Stack(
 				catch ( error ) {}
 			}
 			if ( show_textlabels ) self.updateTextlabels();
-			/*
+			
 			for ( var i = 0; i < textlabels.length; ++i )
 			{
 				textlabels[ i ].setEditable( false );
 			}
-			*/
 			//updateControls();
 			//update();
 			break;
+    /*
+    case "profile":
+      mode = "profile";
+      mouseCatcher.style.display = "block";
+      mouseCatcher.style.cursor = "crosshair";
+      mouseCatcher.onmousedown = onmousedown.edit;
+      mouseCatcher.onmousemove = onmousemove.pos;
+      try
+      {
+        mouseCatcher.removeEventListener( "DOMMouseScroll", onmousewheel.move, false );
+      }
+      catch ( error )
+      {
+        try
+        {
+          mouseCatcher.onmousewheel = null;
+        }
+        catch ( error ) {}
+      }
+      //! @todo import the available profiles of the slice
+      break;
+    */
 		}
 		return;
 	}

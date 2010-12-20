@@ -45,7 +45,7 @@ function remove_skeleton($db, $pid, $skelid) {
 			  ) AND "tci"."relation_id" = '.$val);
 	}
 	// remove treenodes from treenode table, should remove the remaining
-	// connected treenodes to the skeleton with the element_of relationship using cascade deletion
+	// connected treenodes to the skeleton with the element_of relationship using cascade deletion (does it XXX?)
 	$res = $db->getResult('DELETE FROM 
 			 "treenode" AS "tn"
 			 WHERE 

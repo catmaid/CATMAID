@@ -79,6 +79,10 @@ initObjectTree = function(pid) {
 						"pid" : pid,
 						"parentid" : n.attr ? n.attr("id").replace("node_","") : 0,						
 					}; 
+				},
+				"success" : function(e) {
+				  if(e.error)
+				    alert(e.error);
 				}
 			},
 			"progressive_render" : true
@@ -417,7 +421,7 @@ initObjectTree = function(pid) {
 		$.ajax({
 			async : false,
 			type: 'POST',
-			url: "/model/instance.operation.php",
+			url: "model/instance.operation.php",
 			data : data,
 			dataType : 'json',
 			success : function (data2) {
@@ -430,7 +434,7 @@ initObjectTree = function(pid) {
 	
 	$(object_tree_id).bind("rename.jstree", function (e, data) {
 		$.post(
-			"/model/instance.operation.php", 
+			"model/instance.operation.php", 
 			{ 
 				"operation" : "rename_node", 
 				"id" : data.rslt.obj.attr("id").replace("node_",""),
@@ -445,7 +449,7 @@ initObjectTree = function(pid) {
 		// check if there are any subelements related to the object tree
 		// part_of and model_of relationships
 		$.post(
-				"/model/instance.operation.php", 
+				"model/instance.operation.php", 
 				{ 
 					"operation" : "has_relations",
 					"relationnr" : 2,
@@ -464,7 +468,7 @@ initObjectTree = function(pid) {
 						if( confirm('Really remove "' + data.rslt.obj.text() + '" ?' ) )
 						{
 							$.post(
-									"/model/instance.operation.php", 
+									"model/instance.operation.php", 
 									{ 
 										"operation" : "remove_node", 
 										"id" : data.rslt.obj.attr("id").replace("node_",""),
@@ -495,7 +499,7 @@ initObjectTree = function(pid) {
 		$.ajax({
 			async : false,
 			type: 'POST',
-			url: "/model/instance.operation.php",
+			url: "model/instance.operation.php",
 			data : { 
 				"operation" : "move_node", 
 				"src" : src.attr("id").replace("node_",""), 

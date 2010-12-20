@@ -29,6 +29,59 @@ SVGOverlay = function(
 
   var nodes = new Object();
   
+  var createConnector = function( id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z )
+  {
+    
+    requestQueue.register(
+      "model/location.create.php",
+      "POST",
+      {
+        pid : project.id,
+        input_id : id,
+        input_relation : 'model_of',
+        input_type : 'presynaptic terminal',
+        input_location_relation : 'presynaptic_to',
+        x : phys_x,
+        y : phys_y,
+        z : phys_z,
+        location_type : 'synapse',
+        location_relation : 'model_of',
+        },
+        function(status, text, xml)
+        {
+          if ( status == 200 )
+          {
+            if ( text && text != " " )
+            {
+              var e = eval( "(" + text + ")" );
+              if ( e.error )
+              {
+                alert( e.error );
+              }
+              else
+              {
+                // add treenode to the display and update it
+                var jso = $.parseJSON(text);
+                console.log("json returned from location.create.php", jso);
+                /*
+                if(parid == -1) {
+                  var nn = new Node( jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0);
+                } else {
+                  var nn = new Node( jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0);
+                }
+    
+                nodes[jso.treenode_id] = nn;
+                nn.draw();
+                activateNode( nn );
+                */
+              }
+            }
+          }
+          return true;
+    });
+    return;
+  }
+  
   var createNode = function( parentid, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z )
   {
     if(!parentid)
@@ -256,19 +309,17 @@ SVGOverlay = function(
     if( e.ctrlKey ) {
       activateNode( null );
     } else if( e.shiftKey ) {
-      if(atn == null || atn instanceof ConnectorNode) {
-        console.log("can not add a connector without an active treenode");
-        return;
+      if(atn == null) {
+          console.log("You need to activate a treenode/connectornode first");
+      } else {
+        if(atn instanceof Node) {
+          console.log("...create new synapse presynaptic to activated treenode ", atn);
+          createConnector(atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
+        }
+        else if (atn instanceof ConnectorNode)
+          console.log("...create new treenode (and skeleton) postsynaptic to activated connector", atn);
       }
-      // XXX: create a random id for now
-      randomid = Math.floor( Math.random() * 1000);
-      // emulating synapse creation mode!
-      var sn = new ConnectorNode( randomid, r, atn, pos_x, pos_y);
-      sn.parent.getChildren().push( sn );
-      nodes.push(sn);
-      sn.draw();
-      activateNode( sn );
-      
+
     } else {
       // create a new treenode,
       // either root node if atn is null, or has parent 

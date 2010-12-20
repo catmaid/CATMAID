@@ -1,7 +1,8 @@
 /* 
- * A treenode object
+ * A connector node object
+ * Copy-and-Paste from Node
  */
-Node = function(
+ConnectorNode = function(
   id,     // unique id for the node from the database
   paper,  // the raphael paper this node is drawn to
   parent, // the parent node
@@ -127,7 +128,7 @@ Node = function(
     */
     // remove the parent of all the children
     for ( var i = 0; i < this.children.length; ++i ) {
-      this.children[ i ].removeLine();
+      this.children[ i ].line.remove();
       this.children[ i ].removeParent();
     }
     // remove the raphael svg elements from the DOM

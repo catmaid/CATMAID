@@ -7,65 +7,6 @@ initObjectTree = function(pid) {
 		$("#tree_object").jstree("refresh", -1);
 	});
 	
-	$("#simaddtn").click(function () {
-		// simulate adding a treenode in the stack widget
-		
-		var skelid = 0;
-		// retrieve skeleton id currently selected
-		for(key in project.selectedObjects['tree_object'])
-			skelid = key;
-		
-		if(!skelid) {
-			return;
-		} else {
-		// console.log("adding treenode (root) for skeleton id", skelid);
-		
-		requestQueue.register(
-				"model/treenode.create.php",
-				"POST",
-				{
-				   'pid' : pid,
-				   'skeleton_id': skelid,
-				   'parent_id': 0,
-				   'x' : 1000,
-				   'y' : 1234,
-				   'z' : 1,
-				   'radius' : 3,
-				   'confidence' : 5
-				},
-				function( status, text, xml )
-				{
-					if ( status == 200 )
-					{
-						if ( text && text != " " )
-						{
-							var jso = $.parseJSON(text);
-							
-							if ( jso.error )
-							{
-								alert( jso.error );
-							}
-							else
-							{
-								// make treenode_id active
-								if ( jso.treenode_id ) {
-									project.active_treenode = jso.treenode_id;
-								}
-								// add it to the visualized objects in the stack
-								// i.e. volumetric treenode.list and update view
-							}
-						}
-					}
-					return true;
-				});
-			
-		}
-		
-		
-		
-		
-	});
-	
 	$(object_tree_id).jstree({
 		"core" : { "html_titles" : false},
 		"plugins" : [ "themes", "json_data", "ui", "crrm", "types", "dnd", "contextmenu"],

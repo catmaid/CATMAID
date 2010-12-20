@@ -1839,9 +1839,16 @@ function Stack(
     svgOverlay.updateNodeCoordinatesinDB();
   });
   
-  
   $("#go_active").click(function () {
-    console.log("active node is: ", atn);
+    if(atn!=null) {
+        self.moveToPixel(
+                  atn.z,
+                  atn.y,
+                  atn.x,
+                  s  );
+    } else {
+      alert("No node activated");
+    }
   });
 	
 	var LAST_XT = Math.floor( MAX_X * scale / X_TILE_SIZE );

@@ -2,15 +2,7 @@
 var atn = null;
 var atn_fillcolor = "rgb(0, 255, 0)";
 
-// TODO:
-// - join existing nodes together with shift
-// - problem of tracing perpendicular processes (active node is in the way)
-
-// node dblclick and zoom
-
-
 function activateNode( node ) {
-//  console.trace();
     // changes the color attributes of the newly activated node
     if ( atn != null ) {
       if(atn instanceof Node) {
@@ -35,7 +27,6 @@ SVGOverlay = function(
 )
 {
 
-  self = this;
   var nodes = new Object();
   
   var createNode = function( parentid, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z )
@@ -165,7 +156,6 @@ SVGOverlay = function(
   {
     this.paper.clear();
     nodes = new Object();
-    var active_selected = false;
     
     for (var i in jso) {
         var id = parseInt(jso[i].tlnid);
@@ -177,43 +167,12 @@ SVGOverlay = function(
           var rad = parseFloat(jso[i].radius);
         else
           var rad = 0;
-          
-        // if retrieved node matches current active node
-        // create the node and set it to active
-        if(atn == null)
-        {
-          // just add the node and make no check for the active node
-          var nn = new Node( id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff);    
-          nodes[id] = nn;          
-        } else {
-          // there is an active node
-          if(atn.id == id) {
-            // check if the active node matches the id
-            // if so, do not recreate but only set it and keep
-            // the radius of the active node
-            var nn = new Node( id, this.paper, null, atn.r, pos_x, pos_y, pos_z, 0);    
-            nodes[id] = nn;
-            activateNode(nn);
-            active_selected = true;
-          } else {
-            // the atn does not match but we still need to add the node
-            var nn = new Node( id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff);    
-            nodes[id] = nn;            
-          }
-        }
-    }
-    // if active node is not retrieved in current slice
-    // add it to the nodes list to keep it active
-    if(!active_selected && atn != null) {
-      // console.log("active must be in another slice far away");
-      // recreate active node with no parent an no children
-      // XXX: when creating a new node given an active node in a slice
-      // far away (not retrieved by the current query), because there are
-      // not lines drawn (e.g to parent or children), it can lead to
-      // some unintuitive display of the nodes
-      var nn = new Node( atn.id, this.paper, null, atn.r, atn.x, atn.y, atn.z, 0);    
-      nodes[atn.id] = nn;
-      activateNode(nn);          
+
+        var nn = new Node( id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff);    
+        nodes[id] = nn;
+        
+        if(atn!=null && atn.id == id)
+          activateNode(nn);
     }
     
     // loop again and add correct parent objects and parent's children update

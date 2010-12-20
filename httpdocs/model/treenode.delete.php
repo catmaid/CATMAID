@@ -21,7 +21,11 @@ if ( $pid )
   if ( $uid )
   {
       if ( $tnid != -1 ) {
-        // XXX>: set children referencing this treenode to NULL
+        $treenodes = $db->getResult('SELECT "treenode"."id" AS "tnid" FROM "treenode" WHERE "treenode"."parent_id" = '.$tnid);
+        // loop ofer treenodes and set to zero
+        foreach($treenodes as $key => $tn) {
+          $ids = $db->getResult('UPDATE "treenode" SET "parent_id" = NULL WHERE "treenode"."id" = '.$tn['tnid']);
+        };
         $ids = $db->deleteFrom("treenode_class_instance", ' "treenode_class_instance"."treenode_id" = '.$tnid);
         $ids = $db->deleteFrom("treenode", ' "treenode"."id" = '.$tnid);
         echo "Removed treenode successfully.";

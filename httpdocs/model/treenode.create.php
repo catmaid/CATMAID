@@ -110,11 +110,11 @@ if ( $pid )
 				'user_id' => $uid,
 				'project_id' => $pid,
 				'class_id' => $skid,
-				'name' => 'new skeleton'
+				'name' => 'skeleton'
 				);
 			$skelid = $db->insertIntoId('class_instance', $data );
       // update skeleton name by adding its id to the end
-      $up = array('name' => 'new skeleton '.$skelid);
+      $up = array('name' => 'skeleton '.$skelid);
       $upw = 'id = '.$skelid;
       $db->update( "class_instance", $up, $upw);          
 
@@ -125,11 +125,11 @@ if ( $pid )
         'user_id' => $uid,
         'project_id' => $pid,
         'class_id' => $nid,
-        'name' => 'new neuron'
+        'name' => 'neuron'
         );
       $neuid = $db->insertIntoId('class_instance', $data );
       // update skeleton name by adding its id to the end
-      $up = array('name' => 'new neuron '.$neuid);
+      $up = array('name' => 'neuron '.$neuid);
       $upw = 'id = '.$neuid;
       $db->update( "class_instance", $up, $upw); 
       // add skeleton model_of neuron

@@ -5,6 +5,7 @@
 ConnectorNode = function(
   id,     // unique id for the node from the database
   paper,  // the raphael paper this node is drawn to
+  r,      // radius
   x,      // the x coordinate in pixel coordinates
   y,      // y coordinates 
   z,      // z coordinates
@@ -33,7 +34,7 @@ ConnectorNode = function(
   this.postgroup = new Object();
   
   // prefixed radius for now
-  this.r = 10;
+  this.r = r;
   
   // local variables, only valid in the scope of a node
   // and not accessible to the outisde
@@ -41,15 +42,12 @@ ConnectorNode = function(
   // the raphael node objects, one for display, the other
   // slightly bigger one for dragging
   var c, mc;
-  
-  // XXX: the line that is drawn to its parent
-  var line = this.paper.path();
 
   // the node fill color depending on its distance for the
   // current slice
   var fillcolor;
   if(zdiff == 0)
-   fillcolor = "rgb(255, 255, 0)";
+   fillcolor = "rgb(208, 156, 46)";
   else if(zdiff == 1)
    fillcolor = "rgb(0, 0, 255)";
   else if(zdiff == -1)
@@ -58,7 +56,7 @@ ConnectorNode = function(
   // if the zdiff is bigger than zero we do not allow
   // to drag the nodes
   if(this.zdiff == 0)
-    this.rcatch = this.r + 8;
+    this.rcatch = r + 8;
   else
     this.rcatch = 0;
 
@@ -106,13 +104,14 @@ ConnectorNode = function(
         stroke: "none",
         opacity: 1.0
         });
-    
+        
   // a raphael circle oversized for the mouse logic
   mc = this.paper.circle( this.x, this.y, this.rcatch).attr({
         fill: "rgb(0, 1, 0)",
         stroke: "none",
         opacity: 0
         });
+        
 
   // add a reference to the parent container node in the
   // raphael object in order to being able for the drag event handler
@@ -212,44 +211,59 @@ ConnectorNode = function(
   }*/
   
   // updates the raphael path coordinates
-  this.drawLine = function()
-  {  
-    if(this.parent != null) {
-      var strokecolor; 
-      if(this.parent.zdiff < 0)
-         strokecolor = "rgb(255, 0, 0)";
-      else if (this.parent.zdiff > 0)
-         strokecolor = "rgb(0, 0, 255)";
-      else
-         strokecolor = "rgb(255, 255, 0)";
-        
-        /*
-      line.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], 
-                          [ "L", this.parent.getC().attrs.cx, this.parent.getC().attrs.cy ] ],
-                  stroke: strokecolor} );
-                  */
-      // XXX: comment toBack for now because it takes much resources
-      //line.toBack();
-    }
+  this.drawLine = function(to_id, pre)
+  {          
+      var line = this.paper.path();
+      if(pre) {
+        line.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], 
+                            [ "L", this.pregroup[to_id].getC().attrs.cx, this.pregroup[to_id].getC().attrs.cy ] ],
+                     "stroke-width": 2, "stroke-linecap": "round",
+                     "stroke": "rgb(255, 100, 255)",
+                    } );    
+      } else {
+        line.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], 
+                            [ "L", this.postgroup[to_id].getC().attrs.cx, this.postgroup[to_id].getC().attrs.cy ] ],
+                     "stroke-width": 2, "stroke-linecap": "round",
+                     "stroke": "rgb(100, 100, 255)",
+                    } );   
+      }
+     return line;
   }
+  
+  this.preLines = new Object();
+  this.postLines = new Object();
+  
+  this.updateLines = function() {
+    
+    for(var i in this.preLines) {
+      this.preLines[i].remove();
+    }
+
+    for(var i in this.postLines) {
+      this.postLines[i].remove();
+    }
+
+    // re-create
+    for(var i in this.pregroup) {
+      var l = this.drawLine(this.pregroup[i].id, true);
+      this.preLines[this.pregroup[i].id] = l;
+    }
+
+    for(var i in this.postgroup) {
+      var l = this.drawLine(this.postgroup[i].id, false);
+      this.postLines[this.postgroup[i].id] = l;
+    }
+
+    
+  }
+  
   
   // draw function to update the paths from the children
   // and to its parent  
   this.draw = function() {
     
-    /*
-     * XXX
-    // draws/updates path to parent and children
-    for ( var i in this.children ) {
-      if(this.children[i].parent != null) {
-        //console.log("XXXX:parent should not be null", children[i].parent);
-        this.children[ i ].drawLine();
-      }
-    }
-    if ( this.parent != null )
-      this.drawLine();
-      
-      */
+    // delete lines and recreate them with the current list
+    this.updateLines();
       
   }
   
@@ -284,7 +298,8 @@ ConnectorNode = function(
     console.log("correct id", this.parentnode.id);
     console.log("activated node", this.parentnode);
     console.log("handler object", this);
-    console.log("its children", this.parentnode.children);
+    console.log("its pre", this.pregroup);
+    console.log("its post", this.postgroup);
     console.log("its coords", this.parentnode.x, this.parentnode.y, this.parentnode.z);
     console.log("-----------");
     */
@@ -294,10 +309,20 @@ ConnectorNode = function(
       if(atn != null ) { 
         // connected activated treenode or connectornode
         // to existing treenode or connectornode
-        alert("There is an active node. Need to implement join operation of the two nodes.");
+
+        alert("You want to connect an active treenode with this location!");
+        // is the connection pre or postsynaptic?
+        // XXX: add another connector.create or class_instanstance create giving 
+        // location and treenode id
+        console.log("active node id", atn.id, "to current location id", this.parentnode.id);
+        
+      } else {
+
+        
       }
     }
     else {
+      console.log("Try to activate node");
       // activate this node
       activateNode( this.parentnode );
       // stop propagation of the event

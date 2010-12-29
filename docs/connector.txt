@@ -27,6 +27,7 @@ Queries
 --
 * What are the presynaptic/postsynaptic terminals of a neuron?
 * What are the synapses connected to a neuron pre/postsynaptically?
+* Given a location_id, what are its pre/postsynaptic treenode ids?
 
 ------
 Connect treenode to existing location

@@ -98,6 +98,8 @@ synapse manipulation mode
 
 DELETE FROM treenode_class_instance;
 DELETE FROM treenode;
+DELETE FROM location_class_instance;
+DELETE FROM location;
 DELETE FROM class_instance;
 DELETE FROM class_instance_class_instance;
 DELETE FROM class_instance WHERE class_instance.id > 400;

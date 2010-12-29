@@ -12,6 +12,8 @@ $ses =& getSession();
 $pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
+$location_id = isset( $_REQUEST[ 'location_id' ] ) ? intval( $_REQUEST[ 'location_id' ] ) : 0;
+
 $input_id = isset( $_REQUEST[ 'input_id' ] ) ? intval( $_REQUEST[ 'input_id' ] ) : 0;
 $input_relation = isset( $_REQUEST[ 'input_relation' ] ) ? $_REQUEST[ 'input_relation' ] : 'none';
 $input_type = isset( $_REQUEST[ 'input_type' ] ) ? $_REQUEST[ 'input_type' ] : 'none';
@@ -46,16 +48,31 @@ if ( $pid )
     // class_instance
       // * synapseX <synapse>
       // * presynaptic terminal X <presynaptic terminal>
-    $data = array(
-      'user_id' => $uid,
-      'project_id' => $pid,
-      'class_id' => $lt_id,
-      'name' => $location_type
-      );
-    $location_type_instance_id = $db->insertIntoId('class_instance', $data );
-    // rename location_type instance
-    $up = array('name' => $location_type.' '.$location_type_instance_id);
-    $db->update( "class_instance", $up, 'id = '.$location_type_instance_id); 
+    if(!$location_id) { // only execute when location not yet existing
+      $data = array(
+        'user_id' => $uid,
+        'project_id' => $pid,
+        'class_id' => $lt_id,
+        'name' => $location_type
+        );
+      $location_type_instance_id = $db->insertIntoId('class_instance', $data );
+      // rename location_type instance
+      $up = array('name' => $location_type.' '.$location_type_instance_id);
+      $db->update( "class_instance", $up, 'id = '.$location_type_instance_id); 
+    } else {
+      // retrieve location type instance id
+      // e.g. what is the id of the synapse
+      $locationtype = $db->getResult('SELECT "lci"."class_instance_id" AS "id" FROM "location_class_instance" AS "lci",
+      "class_instance" AS "ci" WHERE "lci"."location_id" = '.$location_id.' AND "lci"."relation_id" = '.$lr_id.' AND
+      "ci"."id" = "lci"."class_instance_id" AND "ci"."class_id" = '.$lt_id);
+      if(empty($locationtype)) {
+        echo makeJSON( array( '"error"' => 'Location seems not to be a valid '.$location_relation.' a '.$location_type));
+        return;
+      } else {
+        $location_type_instance_id = $locationtype[0]['id'];
+      }
+      
+    }
       
     $data = array(
       'user_id' => $uid,
@@ -67,16 +84,21 @@ if ( $pid )
     // rename location_type instance
     $up = array('name' => $input_type.' '.$input_type_instance_id);
     $db->update( "class_instance", $up, 'id = '.$input_type_instance_id); 
+
+    if(!$location_id) {
+      //location
+        //* new location L
+      $data = array(
+        'user_id' => $uid,
+        'project_id' => $pid,
+        'location' => '('.$x.','.$y.','.$z.')'
+        );
+      $location_instance_id = $db->insertIntoId('location', $data );
+    } else {
+      // we reuse the given location id
+      $location_instance_id = $location_id;
+    }
     
-    //location
-      //* new location L
-    $data = array(
-      'user_id' => $uid,
-      'project_id' => $pid,
-      'location' => '('.$x.','.$y.','.$z.')'
-      );
-    $location_instance_id = $db->insertIntoId('location', $data );
-     
     //treenode_class_instance
       //* treenode model_of presynaptic terminal X
     $data = array(
@@ -88,16 +110,18 @@ if ( $pid )
       );
     $db->insertInto('treenode_class_instance', $data );
       
-    //location_class_instance
-      //* L model_of synapseX
-    $data = array(
-      'user_id' => $uid,
-      'project_id' => $pid,
-      'relation_id' => $lr_id,
-      'location_id' => $location_instance_id,
-      'class_instance_id' => $location_type_instance_id
-      );
-    $db->insertInto('location_class_instance', $data );
+    if(!$location_id) {
+      //location_class_instance
+        //* L model_of synapseX
+      $data = array(
+        'user_id' => $uid,
+        'project_id' => $pid,
+        'relation_id' => $lr_id,
+        'location_id' => $location_instance_id,
+        'class_instance_id' => $location_type_instance_id
+        );
+      $db->insertInto('location_class_instance', $data );
+    }
     
     // class_instance_class_instance
       //* presynaptic terminal X presynaptic_to synapseX
@@ -110,7 +134,10 @@ if ( $pid )
       );
     $db->insertInto('class_instance_class_instance', $data );
     
-    echo makeJSON( array( 'success' => 'Added location and corresponding annotation updates.' ) );
+    echo makeJSON( array( '"location_id"' => $location_instance_id,
+                '"input_id"' => $input_id,
+                '"location_type_instance_id"' => $location_type_instance_id
+                ) );
     
   }
   else

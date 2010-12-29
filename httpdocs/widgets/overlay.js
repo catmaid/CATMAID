@@ -5,9 +5,7 @@ var atn_fillcolor = "rgb(0, 255, 0)";
 function activateNode( node ) {
     // changes the color attributes of the newly activated node
     if ( atn != null ) {
-      if(atn instanceof Node) {
-        atn.setDefaultColor();
-      }
+      atn.setDefaultColor();
     };
     // if node == null, just deactivate
     if( node == null ) {
@@ -29,8 +27,20 @@ SVGOverlay = function(
 
   var nodes = new Object();
   
-  var createConnector = function( id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z )
+  var createConnector = function( locidval, id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z )
   {
+    // id is treenode id
+    if(locidval == null) {
+      // we have the presynaptic case
+      ip_type = 'presynaptic terminal'
+      iplre = 'presynaptic_to'
+      locid = 0
+    } else {
+      // we have the postsynaptic case where the location and synapse is already existing
+      ip_type = 'postsynaptic terminal'
+      iplre = 'postsynaptic_to'
+      locid = locidval
+    }
     
     requestQueue.register(
       "model/connector.create.php",
@@ -39,11 +49,12 @@ SVGOverlay = function(
         pid : project.id,
         input_id : id,
         input_relation : 'model_of',
-        input_type : 'presynaptic terminal',
-        input_location_relation : 'presynaptic_to',
+        input_type : ip_type,
+        input_location_relation : iplre,
         x : phys_x,
         y : phys_y,
         z : phys_z,
+        location_id : locid,
         location_type : 'synapse',
         location_relation : 'model_of',
         },
@@ -62,18 +73,26 @@ SVGOverlay = function(
               {
                 // add treenode to the display and update it
                 var jso = $.parseJSON(text);
-                console.log("json returned from connector.create.php", jso);
-                /*
-                if(parid == -1) {
-                  var nn = new Node( jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0);
+                var locid_retrieved = parseInt(jso.location_id);
+
+                if(locidval == null) {
+                  // presynaptic case
+                  
+                  var nn = new ConnectorNode(locid, r, pos_x, pos_y, pos_z, 0);
+                  // take the currently activated treenode into the pregroup
+                  nn.pregroup[id] = nodes[id];
+                  nodes[locid_retrieved] = nn;
+                  nn.draw();
+                  activateNode( nn );
                 } else {
-                  var nn = new Node( jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0);
+                  // do not need to create a new connector, already existing
+                  // need to update the postgroup with corresponding original treenode
+                  console.log("existing syn", nodes[locid]);
+                  nodes[locid].postgroup[id] = nodes[id]; 
+                  // do not activate anything but redraw
+                  nodes[locid].draw();
                 }
-    
-                nodes[jso.treenode_id] = nn;
-                nn.draw();
-                activateNode( nn );
-                */
+              
               }
             }
           }
@@ -82,8 +101,67 @@ SVGOverlay = function(
     return;
   }
   
-  var createNode = function( parentid, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z )
+  var createNodeWithConnector = function( locid, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
+    // no parent exists
+    // this is invoked to create a new node giving a location_id for a postynaptic linking
+    var parid = -1;
+    requestQueue.register(
+      "model/treenode.create.php",
+      "POST",
+      {
+        pid : project.id,
+        parent_id : parid,
+        x : phys_x,
+        y : phys_y,
+        z : phys_z,
+        radius : radius,
+        confidence : confidence
+        },
+      function(status, text, xml)
+      {
+        if ( status == 200 )
+        {
+          if ( text && text != " " )
+          {
+            var e = eval( "(" + text + ")" );
+            if ( e.error )
+            {
+              alert( e.error );
+            }
+            else
+            {
+              // add treenode to the display and update it
+              var jso = $.parseJSON(text);
+              if(parid == -1) {
+                var nn = new Node( jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0);
+              } else {
+                var nn = new Node( jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0);
+              }
+  
+              nodes[jso.treenode_id] = nn;
+              nn.draw();
+              activateNode( nn );
+              
+              // grab the treenode id
+              var tnid = jso.treenode_id;
+
+              console.log("treenode id to use for the create connector", tnid);
+              // create connector : new atn postsynaptic_to deactivated atn.id (location)
+              createConnector(locid, tnid, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
+          
+              
+            }
+          }
+        }
+        return true;
+    });
+    return;
+    
+  }
+  
+  var createNode = function( parentid, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
   {
+    
     if(!parentid)
       var parid = -1;
     else
@@ -155,7 +233,6 @@ SVGOverlay = function(
         {
           if ( text && text != " " )
           {
-            console.log(text);
             var e = eval( "(" + text + ")" );
             if ( e.error )
             {
@@ -183,7 +260,7 @@ SVGOverlay = function(
         var phys_x = pix2physX(nodes[i].x);
         var phys_y = pix2physY(nodes[i].y);
         var phys_z = pix2physZ(nodes[i].z);
-        console.log("Update required for treenode",nodes[i].id, " with ", phys_x,phys_y,phys_z);
+        //console.log("Update required for treenode",nodes[i].id, " with ", phys_x,phys_y,phys_z);
         nodes[i].needsync = false;
         // XXX: case distinction for connector
         updateNodePosition(nodes[i].id,phys_x,phys_y,phys_z, nodes[i].type)
@@ -220,30 +297,37 @@ SVGOverlay = function(
         var pos_y = phys2pixY(jso[i].y);
         var pos_z = phys2pixZ(jso[i].z);
         var zdiff = Math.floor(parseFloat(jso[i].z_diff) / resolution.z);
-        if(zdiff == 0)
-          var rad = parseFloat(jso[i].radius);
+        if(zdiff == 0) {
+          if(  jso[i].type == "treenode")
+            var rad = parseFloat(jso[i].radius);
+          else
+            var rad = 8; // default radius for locations
+        }
         else
           var rad = 0;
 
-        console.log("type: ", jso[i].id, jso[i].type);
+        // console.log("type: ", jso[i].id, jso[i].type);
         if(  jso[i].type == "treenode")
           var nn = new Node( id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff);
         else
-          var nn = new ConnectorNode( id, this.paper, pos_x, pos_y, pos_z, zdiff);
+          var nn = new ConnectorNode( id, this.paper, rad, pos_x, pos_y, pos_z, zdiff);
 
         nodes[id] = nn;
         
-        if(atn!=null && atn.id == id)
+        if(atn!=null && atn.id == id) {
           activateNode(nn);
+        }
+          
     }
     
     // loop again and add correct parent objects and parent's children update
     for (var i in jso)
     {
+       var nid = parseInt(jso[i].id);
        // for treenodes, make updates
        if( jso[i].type == "treenode" ) {
          var parid = parseInt(jso[i].parentid);
-         var nid = parseInt(jso[i].id);
+         
          if(nodes[parid]) {
            // if parent is existing, update the references
            nodes[nid].parent = nodes[parid];
@@ -254,15 +338,38 @@ SVGOverlay = function(
          }
          
        } else if ( jso[i].type == "location" ) {
-         // XXX: update children and parentset
+         // update pregroup and postgroup
+         for ( var j in jso[i].pre )
+         {
+           // check if presynaptic trenode id in list, if so,
+           // link to its pbject
+           preloctnid = parseInt(jso[i].pre[j].tnid);
+           if ( preloctnid in nodes ) {
+             // add presyn treenode to pregroup of
+             // the location object
+             nodes[nid].pregroup[preloctnid] = nodes[preloctnid];
+             
+             // XXX: add to pregroup of treenode
+             
+           }
+         }
+         for ( var j in jso[i].post )
+         {
+           // do the same for the post
+           postloctnid = parseInt(jso[i].post[j].tnid);
+           if ( postloctnid in nodes ) {
+             nodes[nid].postgroup[postloctnid] = nodes[postloctnid];
+           }
+           // XXX: add to postgroup of treenode (for nice drawing later)
+         }
        }
-       
+        
       // draw nodes    
       for (var i in nodes) {
         nodes[i].draw();
-      }      
+      }
     }
-    console.log("all nodes", nodes);
+    //console.log("all nodes", nodes);
   }
 
   var updateDimension = function()
@@ -330,10 +437,22 @@ SVGOverlay = function(
       } else {
         if(atn instanceof Node) {
           console.log("...create new synapse presynaptic to activated treenode ", atn);
-          createConnector(atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
+          createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
+          return;
         }
         else if (atn instanceof ConnectorNode)
           console.log("...create new treenode (and skeleton) postsynaptic to activated connector", atn);
+          // deactiveate atn, cache atn
+          var locid = atn.id;
+          // activateNode( null );
+          
+          // create root node, creates a new active node
+          // because the treenode creation is asynchronous, we have to invoke
+          // the connector creation in the event handler
+          createNodeWithConnector(locid, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
+
+          return;
+          
       }
 
     } else {
@@ -341,6 +460,7 @@ SVGOverlay = function(
       // either root node if atn is null, or has parent 
       createNode(atn, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
       // display node creation is done in event handler
+      return;
     }
   }
 

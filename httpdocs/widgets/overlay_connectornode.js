@@ -5,8 +5,6 @@
 ConnectorNode = function(
   id,     // unique id for the node from the database
   paper,  // the raphael paper this node is drawn to
-  parent, // the parent node
-  r,      // the radius
   x,      // the x coordinate in pixel coordinates
   y,      // y coordinates 
   z,      // z coordinates
@@ -14,6 +12,8 @@ ConnectorNode = function(
 { 
   // the database treenode id
   this.id = id;
+  // this object should be used for synapses, for now only location
+  this.type = "location";
   
   // state variable whether this node is already synchronized with the database
   this.needsync = false;
@@ -24,9 +24,16 @@ ConnectorNode = function(
   this.y = y;
   this.z = z;
   this.zdiff = zdiff;
-  this.parent = parent;
   this.paper = paper;
-  this.r = r;
+  
+  // set of presynaptic treenodes
+  this.pregroup =  new Object();
+  
+  // set of postsynaptic treenodes
+  this.postgroup = new Object();
+  
+  // prefixed radius for now
+  this.r = 10;
   
   // local variables, only valid in the scope of a node
   // and not accessible to the outisde
@@ -34,7 +41,8 @@ ConnectorNode = function(
   // the raphael node objects, one for display, the other
   // slightly bigger one for dragging
   var c, mc;
-  // the line that is drawn to its parent
+  
+  // XXX: the line that is drawn to its parent
   var line = this.paper.path();
 
   // the node fill color depending on its distance for the
@@ -50,25 +58,27 @@ ConnectorNode = function(
   // if the zdiff is bigger than zero we do not allow
   // to drag the nodes
   if(this.zdiff == 0)
-    this.rcatch = r + 8;
+    this.rcatch = this.r + 8;
   else
     this.rcatch = 0;
 
-  // update the parent node of this node
+  // XXX: update the parent node of this node
   // update parent's children array
+  /*
   this.updateParent = function(par)
   {
     // par must be a Node object
     this.parent = par;
     // update reference to oneself
     this.parent.children[id] = this;
-  }
+  }*/
   
   // update the parent if it exists
+  /*
   if ( this.parent != null ) {
     // if parent exists, update it
     this.updateParent(parent);
-  }
+  }*/
   
   // update the local x,y coordinates
   // updated them for the raphael object as well
@@ -110,9 +120,9 @@ ConnectorNode = function(
   mc.parentnode = this;
   
   // an array storing the children Node objects of the this node
-  this.children = new Object();
+  // this.children = new Object();
   
-  // delete all objects relevant to this node
+  // XXX: delete all objects relevant to this node
   // such as raphael DOM elements and node references
   // javascript's garbage collection should do the rest
   this.deleteall = function()
@@ -145,7 +155,7 @@ ConnectorNode = function(
   }
   
   /* 
-   * delete the node from the database and removes it from
+   * XXX: delete the node from the database and removes it from
    * the current view and local objects
    * 
    */
@@ -194,11 +204,12 @@ ConnectorNode = function(
   }
   
   // remove the parent node
+  /*
   this.removeParent = function()
   { 
     delete this.parent;
     this.parent = null;
-  }
+  }*/
   
   // updates the raphael path coordinates
   this.drawLine = function()
@@ -211,10 +222,12 @@ ConnectorNode = function(
          strokecolor = "rgb(0, 0, 255)";
       else
          strokecolor = "rgb(255, 255, 0)";
-         
+        
+        /*
       line.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], 
                           [ "L", this.parent.getC().attrs.cx, this.parent.getC().attrs.cy ] ],
                   stroke: strokecolor} );
+                  */
       // XXX: comment toBack for now because it takes much resources
       //line.toBack();
     }
@@ -223,6 +236,9 @@ ConnectorNode = function(
   // draw function to update the paths from the children
   // and to its parent  
   this.draw = function() {
+    
+    /*
+     * XXX
     // draws/updates path to parent and children
     for ( var i in this.children ) {
       if(this.children[i].parent != null) {
@@ -232,6 +248,9 @@ ConnectorNode = function(
     }
     if ( this.parent != null )
       this.drawLine();
+      
+      */
+      
   }
   
   /*

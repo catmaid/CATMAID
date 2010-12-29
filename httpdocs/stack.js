@@ -364,7 +364,7 @@ function Stack(
    * update treeline nodes by querying them from the server
    * with a bounding volume dependend on the current view
    */
-  this.updateTreelinenodes = function()
+  this.updateNodes = function()
   {
     
     var tl_width;
@@ -401,10 +401,9 @@ function Stack(
       */  
     // first synchronize with database
     svgOverlay.updateNodeCoordinatesinDB();
-    
 
     requestQueue.register(
-      'model/treenode.list.php',
+      'model/node.list.php',
       'POST',
       {
         pid : project.id,
@@ -416,7 +415,7 @@ function Stack(
         height : tl_height * resolution.y,
         zres : resolution.z
       },
-      handle_updateTreelinenodes );
+      handle_updateNodes );
     return;
   }
 
@@ -424,7 +423,7 @@ function Stack(
    * handle an update-treelinenodes-request answer
    *
    */
-  var handle_updateTreelinenodes = function( status, text, xml )
+  var handle_updateNodes = function( status, text, xml )
   {
     if ( status = 200 )
     {
@@ -629,7 +628,7 @@ function Stack(
         xd != 0 ||
         yd != 0 )
       {
-        self.updateTreelinenodes();
+        self.updateNodes();
       }
       // redraw the overlay
       svgOverlay.redraw(
@@ -1191,7 +1190,7 @@ function Stack(
       mouseCatcher.onmousemove = onmousemove.pos;
       show_tracing = true;
       svgOverlay.show();
-      self.updateTreelinenodes();
+      self.updateNodes();
       for ( var i = 0; i < textlabels.length; ++i )
       {
         textlabels[ i ].setEditable( false );

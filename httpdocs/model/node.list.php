@@ -30,7 +30,7 @@ if ( $pid )
   {
     
     $treenodes = $db->getResult(
-      'SELECT "treenode"."id" AS "tlnid",
+      'SELECT "treenode"."id" AS "id",
           "treenode"."parent_id" AS "parentid",
           ("treenode"."location")."x" AS "x",
           ("treenode"."location")."y" AS "y",
@@ -51,9 +51,43 @@ if ( $pid )
               ("treenode"."location")."z" >= '.$z.' - '.$zbound.' * '.$zres.' AND
               ("treenode"."location")."z" <= '.$z.' + '.$zbound.' * '.$zres.'
           
-          ORDER BY "parentid" DESC,"tlnid", "z_diff" LIMIT '.$limit
+          ORDER BY "parentid" DESC,"id", "z_diff" LIMIT '.$limit
     );
-    echo json_encode( $treenodes );
+    // loop over and add type
+    while ( list( $key, $val) = each( $treenodes ) )
+    {
+      $treenodes[$key]['type'] = "treenode";
+    }
+    
+    // retrieve locations that are synapses
+    // XXX: maybe add synapse join?
+    $locations = $db->getResult(
+      'SELECT "location"."id" AS "id",
+          ("location"."location")."x" AS "x",
+          ("location"."location")."y" AS "y",
+          ("location"."location")."z" AS "z",
+          "location"."user_id" AS "user_id",
+          ( ("location"."location")."z" - '.$z.' ) AS "z_diff"
+        
+        FROM "location" INNER JOIN "project"
+            ON "project"."id" = "location"."project_id"
+          
+          WHERE "project"."id" = '.$pid.' AND
+              ("location"."location")."x" >= '.$left.' AND
+              ("location"."location")."x" <= '.( $left + $width ).' AND
+              ("location"."location")."y" >= '.$top.' AND
+              ("location"."location")."y" <= '.( $top + $height ).' AND
+              ("location"."location")."z" >= '.$z.' - '.$zbound.' * '.$zres.' AND
+              ("location"."location")."z" <= '.$z.' + '.$zbound.' * '.$zres.'
+          
+          ORDER BY "id", "z_diff" LIMIT '.$limit
+    );
+    while ( list( $key, $val) = each( $locations ) )
+    {
+      $locations[$key]['type'] = "location";
+    }
+
+    echo json_encode( $treenodes + $locations);
 
   }
   else

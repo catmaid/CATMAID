@@ -33,7 +33,7 @@ SVGOverlay = function(
   {
     
     requestQueue.register(
-      "model/location.create.php",
+      "model/connector.create.php",
       "POST",
       {
         pid : project.id,
@@ -62,7 +62,7 @@ SVGOverlay = function(
               {
                 // add treenode to the display and update it
                 var jso = $.parseJSON(text);
-                console.log("json returned from location.create.php", jso);
+                console.log("json returned from connector.create.php", jso);
                 /*
                 if(parid == -1) {
                   var nn = new Node( jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0);
@@ -135,17 +135,19 @@ SVGOverlay = function(
   }
 
   
-  var updateNodePosition = function( id, phys_x, phys_y, phys_z )
+  var updateNodePosition = function( id, phys_x, phys_y, phys_z, type )
   {
+    // XXX: case distincation when it is connector
     requestQueue.register(
-      "model/treenode.update.php",
+      "model/node.update.php",
       "POST",
       {
         pid : project.id,
-        tnid : id,
+        id : id,
         x : phys_x,
         y : phys_y,
-        z : phys_z
+        z : phys_z,
+        type : type
         },
       function( status, text, xml )
       {
@@ -153,6 +155,7 @@ SVGOverlay = function(
         {
           if ( text && text != " " )
           {
+            console.log(text);
             var e = eval( "(" + text + ")" );
             if ( e.error )
             {
@@ -180,9 +183,10 @@ SVGOverlay = function(
         var phys_x = pix2physX(nodes[i].x);
         var phys_y = pix2physY(nodes[i].y);
         var phys_z = pix2physZ(nodes[i].z);
-        // console.log("Update required for treenode",nodes[i].id, " with ", phys_x,phys_y,phys_z);
+        console.log("Update required for treenode",nodes[i].id, " with ", phys_x,phys_y,phys_z);
         nodes[i].needsync = false;
-        updateNodePosition(nodes[i].id,phys_x,phys_y,phys_z)
+        // XXX: case distinction for connector
+        updateNodePosition(nodes[i].id,phys_x,phys_y,phys_z, nodes[i].type)
       }
     }
   }
@@ -211,7 +215,7 @@ SVGOverlay = function(
     nodes = new Object();
     
     for (var i in jso) {
-        var id = parseInt(jso[i].tlnid);
+        var id = parseInt(jso[i].id);
         var pos_x = phys2pixX(jso[i].x);
         var pos_y = phys2pixY(jso[i].y);
         var pos_z = phys2pixZ(jso[i].z);
@@ -221,7 +225,12 @@ SVGOverlay = function(
         else
           var rad = 0;
 
-        var nn = new Node( id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff);    
+        console.log("type: ", jso[i].id, jso[i].type);
+        if(  jso[i].type == "treenode")
+          var nn = new Node( id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff);
+        else
+          var nn = new ConnectorNode( id, this.paper, pos_x, pos_y, pos_z, zdiff);
+
         nodes[id] = nn;
         
         if(atn!=null && atn.id == id)
@@ -231,22 +240,29 @@ SVGOverlay = function(
     // loop again and add correct parent objects and parent's children update
     for (var i in jso)
     {
-       var parid = parseInt(jso[i].parentid);
-       var nid = parseInt(jso[i].tlnid);
-       if(nodes[parid]) {
-         // if parent is existing, update the references
-         nodes[nid].parent = nodes[parid];
-         // update the parents children
-         nodes[nid].parent.children[nid] = nodes[nid];
-       } else {
-         //console.log("no parent (rootnode?)", nodes[nid]);
+       // for treenodes, make updates
+       if( jso[i].type == "treenode" ) {
+         var parid = parseInt(jso[i].parentid);
+         var nid = parseInt(jso[i].id);
+         if(nodes[parid]) {
+           // if parent is existing, update the references
+           nodes[nid].parent = nodes[parid];
+           // update the parents children
+           nodes[nid].parent.children[nid] = nodes[nid];
+         } else {
+           //console.log("no parent (rootnode?)", nodes[nid]);
+         }
+         
+       } else if ( jso[i].type == "location" ) {
+         // XXX: update children and parentset
        }
+       
       // draw nodes    
       for (var i in nodes) {
         nodes[i].draw();
       }      
     }
-    //console.log("all nodes", nodes);
+    console.log("all nodes", nodes);
   }
 
   var updateDimension = function()

@@ -13,6 +13,8 @@ Node = function(
 { 
   // the database treenode id
   this.id = id;
+  // this object should be used for treenodes
+  this.type = "treenode";
   
   // state variable whether this node is already synchronized with the database
   this.needsync = false;

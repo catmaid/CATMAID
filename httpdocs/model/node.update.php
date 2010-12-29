@@ -14,7 +14,8 @@ $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
 // update treenode coordinates to the database
 
-$tnid = isset( $_REQUEST[ 'tnid' ] ) ? intval( $_REQUEST[ 'tnid' ] ) : -1;
+$id = isset( $_REQUEST[ 'id' ] ) ? intval( $_REQUEST[ 'id' ] ) : -1;
+$type = isset( $_REQUEST[ 'type'] ) ? $_REQUEST[ 'type'] : 'none';
 $x = isset( $_REQUEST[ 'x' ] ) ? floatval( $_REQUEST[ 'x' ] ) : 0;
 $y = isset( $_REQUEST[ 'y' ] ) ? floatval( $_REQUEST[ 'y' ] ) : 0;
 $z = isset( $_REQUEST[ 'z' ] ) ? floatval( $_REQUEST[ 'z' ] ) : 0;
@@ -25,10 +26,24 @@ if ( $pid )
 {
   if ( $uid )
   {
-      if ( $tnid != -1 ) {
-        $ids = $db->update("treenode", array('location' => '('.$x.','.$y.','.$z.')' ), '"treenode"."id" = '.$tnid);
-        echo makeJSON( array( 'updated_treenode_id' => $ids ) );
+      if( $type == "treenode") {
+
+        if ( $id != -1 ) {
+          $ids = $db->update("treenode", array('location' => '('.$x.','.$y.','.$z.')' ), '"treenode"."id" = '.$id);
+          echo makeJSON( array( 'updated_treenode_id' => $ids ) );
+          return;
+        }
+        
+      } elseif ( $type == "location") {
+
+        if ( $id != -1 ) {
+          $ids = $db->update("location", array('location' => '('.$x.','.$y.','.$z.')' ), '"location"."id" = '.$id);
+          echo makeJSON( array( 'updated_location_id' => $ids ) );
+          return;
+        }
+        
       }
+      echo "Nothing updated!";
         
   }
   else

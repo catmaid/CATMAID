@@ -208,7 +208,7 @@ ALTER SEQUENCE concept_id_seq OWNED BY concept.id;
 -- Name: concept_id_seq; Type: SEQUENCE SET; Schema: public; Owner: catmaid_user
 --
 
-SELECT pg_catalog.setval('concept_id_seq', 768, true);
+SELECT pg_catalog.setval('concept_id_seq', 762, true);
 
 
 --
@@ -219,6 +219,7 @@ CREATE TABLE class (
     class_name character varying(255) NOT NULL,
     uri character varying(2048),
     description text,
+    showintree boolean DEFAULT true
 )
 INHERITS (concept);
 
@@ -662,10 +663,11 @@ ALTER TABLE public.textlabel_location OWNER TO catmaid_user;
 
 CREATE TABLE treenode (
     parent_id bigint,
+    location double3d NOT NULL,
     radius double precision DEFAULT 0 NOT NULL,
     confidence integer DEFAULT 5 NOT NULL
 )
-INHERITS (location);
+INHERITS (concept);
 
 
 ALTER TABLE public.treenode OWNER TO catmaid_user;
@@ -809,16 +811,17 @@ COPY broken_slice (stack_id, index) FROM stdin;
 -- Data for Name: class; Type: TABLE DATA; Schema: public; Owner: catmaid_user
 --
 
-COPY class (id, user_id, creation_time, edition_time, project_id, class_name, uri, description) FROM stdin;
-14	1	2010-08-26 19:19:57.046457+02	2010-08-26 19:19:57.046457+02	3	skeleton	\N	\N
-5	1	2010-08-26 18:23:53.551017+02	2010-08-26 18:23:53.551017+02	3	neuron	http://flybase.org/.bin/cvreport.html?cvterm=FBbt:00005106+childdepth=2+parentdepth=all	\N
-106	3	2010-10-12 09:42:55.856494+02	2010-10-12 09:42:55.856494+02	3	group	\N	A group helps to organize the data, i.e. it can contain neuron or other groups.
-33	3	2010-08-27 17:28:08.713582+02	2010-08-27 17:28:08.713582+02	3	label	\N	\N
-112	3	2010-10-12 11:29:38.385393+02	2010-10-12 11:29:38.385393+02	3	root	\N	\N
-12	1	2010-08-26 19:18:02.355176+02	2010-08-26 19:18:02.355176+02	3	soma	http://flybase.org/cgi-bin/cvreport.html?rel=is_a&id=FBbt:00005107	\N
-7	3	2010-08-26 18:30:53.288021+02	2010-08-26 18:30:53.288021+02	3	synapse	http://flybase.org/.bin/cvreport.html?cvterm=GO:0045202	\N
-755	3	2010-12-20 16:17:48.122167+01	2010-12-20 16:17:48.122167+01	3	presynaptic terminal
-756	3	2010-12-20 16:18:07.231631+01	2010-12-20 16:18:07.231631+01	3	postsynaptic terminal
+COPY class (id, user_id, creation_time, edition_time, project_id, class_name, uri, description, showintree) FROM stdin;
+14	1	2010-08-26 19:19:57.046457+02	2010-08-26 19:19:57.046457+02	3	skeleton	\N	\N	t
+5	1	2010-08-26 18:23:53.551017+02	2010-08-26 18:23:53.551017+02	3	neuron	http://flybase.org/.bin/cvreport.html?cvterm=FBbt:00005106+childdepth=2+parentdepth=all	\N	t
+106	3	2010-10-12 09:42:55.856494+02	2010-10-12 09:42:55.856494+02	3	group	\N	A group helps to organize the data, i.e. it can contain neuron or other groups.	t
+33	3	2010-08-27 17:28:08.713582+02	2010-08-27 17:28:08.713582+02	3	label	\N	\N	f
+107	3	2010-10-12 10:11:23.015507+02	2010-10-12 10:11:23.015507+02	3	neurongroup	\N	a group of neurons	t
+112	3	2010-10-12 11:29:38.385393+02	2010-10-12 11:29:38.385393+02	3	root	\N	\N	f
+12	1	2010-08-26 19:18:02.355176+02	2010-08-26 19:18:02.355176+02	3	soma	http://flybase.org/cgi-bin/cvreport.html?rel=is_a&id=FBbt:00005107	\N	t
+7	3	2010-08-26 18:30:53.288021+02	2010-08-26 18:30:53.288021+02	3	synapse	http://flybase.org/.bin/cvreport.html?cvterm=GO:0045202	\N	t
+755	3	2010-12-20 16:17:48.122167+01	2010-12-20 16:17:48.122167+01	3	presynaptic terminal			t
+756	3	2010-12-20 16:18:07.231631+01	2010-12-20 16:18:07.231631+01	3	postsynaptic terminal			t
 \.
 
 
@@ -979,6 +982,7 @@ COPY stack (id, title, dimension, resolution, image_base, comment, trakem2_proje
 --
 
 COPY textlabel (id, type, text, colour, font_name, font_style, font_size, project_id, scaling, creation_time, edition_time, deleted) FROM stdin;
+1	text	Guten Tag!	(1,0.8509804,0,1)	\N	bold	864	1	t	2010-08-26 12:35:10.72796+02	2010-08-27 12:33:53.834085+02	f
 3	text	Schoen	(1,0.49803922,0,1)	\N	bold	978	1	t	2010-08-27 12:38:40.980952+02	2010-08-27 12:39:00.6389+02	f
 2	text	Edit this text...	(1,0.8509804,0,1)	\N	bold	1196	1	t	2010-08-26 12:36:48.24755+02	2010-08-26 12:36:50.836827+02	t
 5	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	250	3	t	2010-09-13 11:50:47.159475+02	2010-09-13 11:50:49.604793+02	t
@@ -999,7 +1003,6 @@ COPY textlabel (id, type, text, colour, font_name, font_style, font_size, projec
 20	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-12-20 10:16:13.782039+01	2010-12-20 10:16:29.660556+01	t
 22	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-12-20 10:19:56.8591+01	2010-12-20 10:19:56.8591+01	f
 11	text	Mitochondria	(0,0,1,1)	\N	bold	160	3	t	2010-12-01 09:42:09.159965+01	2010-12-20 12:37:54.40121+01	f
-1	text	Guten Tag!	(1,0.8509804,0,1)	\N	bold	864	1	t	2010-08-26 12:35:10.72796+02	2010-12-20 17:38:32.970317+01	f
 12	text	*	(0,0,1,1)	\N	bold	260	3	t	2010-12-01 09:42:35.406046+01	2010-12-01 09:42:56.152671+01	f
 \.
 
@@ -1009,6 +1012,7 @@ COPY textlabel (id, type, text, colour, font_name, font_style, font_size, projec
 --
 
 COPY textlabel_location (textlabel_id, location, deleted) FROM stdin;
+1	(3793.0082000000002,3701.6889999999999,60)	f
 3	(8580.7433999999994,5945.5321999999996,60)	f
 2	(7501.2200000000003,7798.0074000000004,60)	t
 5	(4820,2375,9)	t
@@ -1030,7 +1034,6 @@ COPY textlabel_location (textlabel_id, location, deleted) FROM stdin;
 20	(5495,4145,0)	t
 22	(3225,3725,0)	f
 11	(5680,1785,45)	f
-1	(4393.1058000000003,3701.6889999999999,60)	f
 \.
 
 
@@ -1039,10 +1042,7 @@ COPY textlabel_location (textlabel_id, location, deleted) FROM stdin;
 --
 
 COPY treenode (id, user_id, creation_time, edition_time, project_id, parent_id, location, radius, confidence) FROM stdin;
-753	3	2010-12-20 15:42:36.933346+01	2010-12-20 15:42:36.933346+01	3	\N	(4330,4190,9)	4	5
-763	3	2010-12-29 09:05:36.171769+01	2010-12-29 09:05:36.171769+01	3	753	(4600,3930,9)	4	5
-765	3	2010-12-29 09:05:44.024585+01	2010-12-29 09:05:44.024585+01	3	763	(4740,3710,18)	4	5
-767	3	2010-12-29 09:05:48.5136+01	2010-12-29 09:05:48.5136+01	3	765	(5040,3720,27)	4	5
+753	3	2010-12-20 15:42:36.933346+01	2010-12-20 15:42:36.933346+01	3	\N	(4650,4030,9)	4	5
 \.
 
 
@@ -1053,9 +1053,6 @@ COPY treenode (id, user_id, creation_time, edition_time, project_id, parent_id, 
 COPY treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) FROM stdin;
 754	3	2010-12-20 15:42:36.941852+01	2010-12-20 15:42:36.941852+01	3	11	753	747
 760	3	2010-12-20 17:17:32.751739+01	2010-12-20 17:17:32.751739+01	3	10	753	758
-764	3	2010-12-29 09:05:36.200946+01	2010-12-29 09:05:36.200946+01	3	11	763	747
-766	3	2010-12-29 09:05:44.037879+01	2010-12-29 09:05:44.037879+01	3	11	765	747
-768	3	2010-12-29 09:05:48.524744+01	2010-12-29 09:05:48.524744+01	3	11	767	747
 \.
 
 
@@ -1156,38 +1153,6 @@ ALTER TABLE ONLY concept
 
 ALTER TABLE ONLY concept
     ADD CONSTRAINT concept_pkey PRIMARY KEY (id);
-
-
---
--- Name: location_class_instance_id_key; Type: CONSTRAINT; Schema: public; Owner: stephan; Tablespace: 
---
-
-ALTER TABLE ONLY location_class_instance
-    ADD CONSTRAINT location_class_instance_id_key UNIQUE (id);
-
-
---
--- Name: location_class_instance_pkey; Type: CONSTRAINT; Schema: public; Owner: stephan; Tablespace: 
---
-
-ALTER TABLE ONLY location_class_instance
-    ADD CONSTRAINT location_class_instance_pkey PRIMARY KEY (id);
-
-
---
--- Name: location_id_key; Type: CONSTRAINT; Schema: public; Owner: stephan; Tablespace: 
---
-
-ALTER TABLE ONLY location
-    ADD CONSTRAINT location_id_key UNIQUE (id);
-
-
---
--- Name: location_pkey; Type: CONSTRAINT; Schema: public; Owner: stephan; Tablespace: 
---
-
-ALTER TABLE ONLY location
-    ADD CONSTRAINT location_pkey PRIMARY KEY (id);
 
 
 --
@@ -1482,46 +1447,6 @@ ALTER TABLE ONLY class
 
 ALTER TABLE ONLY concept
     ADD CONSTRAINT concept_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
-
-
---
--- Name: location_class_instance_class_instance_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: stephan
---
-
-ALTER TABLE ONLY location_class_instance
-    ADD CONSTRAINT location_class_instance_class_instance_id_fkey FOREIGN KEY (class_instance_id) REFERENCES class_instance(id);
-
-
---
--- Name: location_class_instance_location_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: stephan
---
-
-ALTER TABLE ONLY location_class_instance
-    ADD CONSTRAINT location_class_instance_location_id_fkey FOREIGN KEY (location_id) REFERENCES location(id) ON DELETE CASCADE;
-
-
---
--- Name: location_class_instance_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: stephan
---
-
-ALTER TABLE ONLY location_class_instance
-    ADD CONSTRAINT location_class_instance_project_id_fkey FOREIGN KEY (project_id) REFERENCES project(id);
-
-
---
--- Name: location_class_instance_relation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: stephan
---
-
-ALTER TABLE ONLY location_class_instance
-    ADD CONSTRAINT location_class_instance_relation_id_fkey FOREIGN KEY (relation_id) REFERENCES relation(id);
-
-
---
--- Name: location_class_instance_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: stephan
---
-
-ALTER TABLE ONLY location_class_instance
-    ADD CONSTRAINT location_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
 
 
 --

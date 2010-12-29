@@ -427,7 +427,7 @@ function Stack(
   {
     if ( status = 200 )
     {
-      // console.log("update noded text", $.parseJSON(text));
+      //console.log("update noded text", $.parseJSON(text));
       var e = eval( "(" + text + ")" );
       //var e = $.parseJSON(text);
       

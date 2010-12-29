@@ -322,7 +322,7 @@ ConnectorNode = function(
       }
     }
     else {
-      console.log("Try to activate node");
+      //console.log("Try to activate node");
       // activate this node
       activateNode( this.parentnode );
       // stop propagation of the event

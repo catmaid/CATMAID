@@ -29,6 +29,8 @@ SVGOverlay = function(
   
   var createConnector = function( locidval, id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z )
   {
+    //console.log("start: locidval", locidval, "id", id);
+    
     // id is treenode id
     if(locidval == null) {
       // we have the presynaptic case
@@ -74,11 +76,13 @@ SVGOverlay = function(
                 // add treenode to the display and update it
                 var jso = $.parseJSON(text);
                 var locid_retrieved = parseInt(jso.location_id);
-
+                //alert("locid retrieved"+ locid_retrieved);
+                //console.log("handler: locidval", locidval, "id", id);
                 if(locidval == null) {
                   // presynaptic case
                   
-                  var nn = new ConnectorNode(locid, r, pos_x, pos_y, pos_z, 0);
+                  var nn = new ConnectorNode(locid_retrieved, r, 8, pos_x, pos_y, pos_z, 0);
+                  
                   // take the currently activated treenode into the pregroup
                   nn.pregroup[id] = nodes[id];
                   nodes[locid_retrieved] = nn;
@@ -87,10 +91,10 @@ SVGOverlay = function(
                 } else {
                   // do not need to create a new connector, already existing
                   // need to update the postgroup with corresponding original treenode
-                  console.log("existing syn", nodes[locid]);
-                  nodes[locid].postgroup[id] = nodes[id]; 
+                  //console.log("existing syn", nodes[locid_retrieved], "locid", locid,  "retrieved", locid_retrieved);
+                  nodes[locid_retrieved].postgroup[id] = nodes[id]; 
                   // do not activate anything but redraw
-                  nodes[locid].draw();
+                  nodes[locid_retrieved].draw();
                 }
               
               }
@@ -145,7 +149,7 @@ SVGOverlay = function(
               // grab the treenode id
               var tnid = jso.treenode_id;
 
-              console.log("treenode id to use for the create connector", tnid);
+              //console.log("treenode id to use for the create connector", tnid, "with locid", locid);
               // create connector : new atn postsynaptic_to deactivated atn.id (location)
               createConnector(locid, tnid, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
           
@@ -411,7 +415,8 @@ SVGOverlay = function(
   
   this.onclick = function( e )
   {   
-    //console.log("mouse down event in overlay", e);
+    
+    // console.log("mouse down event in overlay", e);
     //console.log("current coordinates in physical space:");
     //console.log(project.coordinates.z, "pix", phys2pixZ(project.coordinates.z));
     
@@ -436,32 +441,37 @@ SVGOverlay = function(
           console.log("You need to activate a treenode/connectornode first");
       } else {
         if(atn instanceof Node) {
-          console.log("...create new synapse presynaptic to activated treenode ", atn);
+          //console.log("...create new synapse presynaptic to activated treenode ", atn);
           createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
-          return;
+          return true
         }
         else if (atn instanceof ConnectorNode)
-          console.log("...create new treenode (and skeleton) postsynaptic to activated connector", atn);
+          //console.log("...create new treenode (and skeleton) postsynaptic to activated connector", atn);
           // deactiveate atn, cache atn
           var locid = atn.id;
-          // activateNode( null );
+          activateNode( null );
           
           // create root node, creates a new active node
           // because the treenode creation is asynchronous, we have to invoke
           // the connector creation in the event handler
           createNodeWithConnector(locid, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
-
-          return;
-          
+          return true
       }
 
     } else {
-      // create a new treenode,
-      // either root node if atn is null, or has parent 
-      createNode(atn, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
-      // display node creation is done in event handler
-      return;
+      if(atn instanceof Node || atn == null) {
+        // create a new treenode,
+        // either root node if atn is null, or has parent 
+        createNode(atn, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
+        // display node creation is done in event handler
+        return true
+      } else if (atn instanceof ConnectorNode) {
+        alert("Use Ctrl-Click to deactivate the location. Then create a new treenode");
+        return true
+      }
     }
+    e.stopPropagation();
+    return true;
   }
 
 

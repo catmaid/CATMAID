@@ -34,12 +34,12 @@ SVGOverlay = function(
     // id is treenode id
     if(locidval == null) {
       // we have the presynaptic case
-      ip_type = 'presynaptic terminal'
+      ip_type = 'presynapticterminal'
       iplre = 'presynaptic_to'
       locid = 0
     } else {
       // we have the postsynaptic case where the location and synapse is already existing
-      ip_type = 'postsynaptic terminal'
+      ip_type = 'postsynapticterminal'
       iplre = 'postsynaptic_to'
       locid = locidval
     }

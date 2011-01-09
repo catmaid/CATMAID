@@ -10,13 +10,13 @@ class_instance
 * synapseX <synapse>
 * presynaptic terminal X <presynaptic terminal>
 
-location
-* new location L
+connector
+* new connector L
 
 treenode_class_instance
 * treenode model_of presynaptic terminal X
 
-location_class_instance
+connector_class_instance
 * L model_of synapseX
 
 class_instance_class_instance
@@ -25,9 +25,10 @@ class_instance_class_instance
 
 Queries
 --
-* What are the presynaptic/postsynaptic terminals of a neuron?
+* What are the presynaptic/postsynaptic terminals of a neuron? -> using part_of in class_instance_class_instance
+* 
 * What are the synapses connected to a neuron pre/postsynaptically?
-* Given a location_id, what are its pre/postsynaptic treenode ids?
+* Given a connector_id, what are its pre/postsynaptic treenode ids?
 
 ------
 Connect treenode to existing location

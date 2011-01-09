@@ -45,6 +45,13 @@ if ( $pid )
     $lr_id = $db->getRelationId( $pid, $location_relation );
     if(!$lr_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$location_relation.'" relation for this project' ) ); return; }
         
+    $partof_id = $db->getRelationId( $pid, 'part_of');
+    if(!$partof_id)  { echo makeJSON( array( '"error"' => 'Can not find "part_of" relation for this project' ) ); return; }
+
+    $elementof_id = $db->getRelationId( $pid, 'element_of');
+    if(!$elementof_id)  { echo makeJSON( array( '"error"' => 'Can not find "element_of" relation for this project' ) ); return; }
+    
+    
     // class_instance
       // * synapseX <synapse>
       // * presynaptic terminal X <presynaptic terminal>
@@ -62,7 +69,7 @@ if ( $pid )
     } else {
       // retrieve location type instance id
       // e.g. what is the id of the synapse
-      $locationtype = $db->getResult('SELECT "lci"."class_instance_id" AS "id" FROM "location_class_instance" AS "lci",
+      $locationtype = $db->getResult('SELECT "lci"."class_instance_id" AS "id" FROM "connector_class_instance" AS "lci",
       "class_instance" AS "ci" WHERE "lci"."location_id" = '.$location_id.' AND "lci"."relation_id" = '.$lr_id.' AND
       "ci"."id" = "lci"."class_instance_id" AND "ci"."class_id" = '.$lt_id);
       if(empty($locationtype)) {
@@ -93,7 +100,7 @@ if ( $pid )
         'project_id' => $pid,
         'location' => '('.$x.','.$y.','.$z.')'
         );
-      $location_instance_id = $db->insertIntoId('location', $data );
+      $location_instance_id = $db->insertIntoId('connector', $data );
     } else {
       // we reuse the given location id
       $location_instance_id = $location_id;
@@ -111,7 +118,7 @@ if ( $pid )
     $db->insertInto('treenode_class_instance', $data );
       
     if(!$location_id) {
-      //location_class_instance
+      //connector_class_instance
         //* L model_of synapseX
       $data = array(
         'user_id' => $uid,
@@ -120,7 +127,7 @@ if ( $pid )
         'location_id' => $location_instance_id,
         'class_instance_id' => $location_type_instance_id
         );
-      $db->insertInto('location_class_instance', $data );
+      $db->insertInto('connector_class_instance', $data );
     }
     
     // class_instance_class_instance
@@ -134,14 +141,37 @@ if ( $pid )
       );
     $db->insertInto('class_instance_class_instance', $data );
     
+    /*
+     * Create terminal part_of neuron
+     */
+    // retrieve skeleton_id (class_instance) for treenode
+      $skeleton = $db->getResult('SELECT "tci"."class_instance_id" AS "id" FROM "treenode_class_instance" AS "tci"
+      WHERE "tci"."relation_id" = '.$elementof_id.' AND "tci"."treenode_id" = '.$input_id);
+      if(empty($skeleton)) {
+        echo makeJSON( array( '"error"' => 'There seems not to exist a skeleton for treenode id '));
+        return;
+      } else {
+        $skeleton_id = $skeleton[0]['id'];
+      }
+    // insert terminal part_of skeleton_id into cici
+    $data = array(
+      'user_id' => $uid,
+      'project_id' => $pid,
+      'relation_id' => $partof_id,
+      'class_instance_a' => $input_type_instance_id,
+      'class_instance_b' => $skeleton_id
+      );
+    $db->insertInto('class_instance_class_instance', $data );
+    // -----
+    
     echo makeJSON( array( '"location_id"' => $location_instance_id,
                 '"input_id"' => $input_id,
-                '"location_type_instance_id"' => $location_type_instance_id
+                '"connector_type_instance_id"' => $location_type_instance_id
                 ) );
     
   }
   else
-    echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to create locations.' ) );
+    echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to create connectors.' ) );
 }
 else
   echo makeJSON( array( 'error' => 'Project closed. Can not apply operation.' ) );

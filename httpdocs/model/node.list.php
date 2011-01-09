@@ -35,11 +35,11 @@ if ( $pid )
     $syn = $db->getClassId( $pid, "synapse" );
     if(!$syn) { echo makeJSON( array( '"error"' => 'Can not find "synapse" class for this project' ) ); return; }
 
-    $presyn = $db->getClassId( $pid, "presynaptic terminal" );
-    if(!$syn) { echo makeJSON( array( '"error"' => 'Can not find "presynaptic terminal" class for this project' ) ); return; }
+    $presyn = $db->getClassId( $pid, "presynapticterminal" );
+    if(!$syn) { echo makeJSON( array( '"error"' => 'Can not find "presynapticterminal" class for this project' ) ); return; }
 
-    $postsyn = $db->getClassId( $pid, "postsynaptic terminal" );
-    if(!$syn) { echo makeJSON( array( '"error"' => 'Can not find "postsynaptic terminal" class for this project' ) ); return; }
+    $postsyn = $db->getClassId( $pid, "postsynapticterminal" );
+    if(!$syn) { echo makeJSON( array( '"error"' => 'Can not find "postsynapticterminal" class for this project' ) ); return; }
 
         
     // relation ids
@@ -93,7 +93,7 @@ if ( $pid )
           "location"."user_id" AS "user_id",
           ( ("location"."location")."z" - '.$z.' ) AS "z_diff"
         
-        FROM "location", "location_class_instance" AS "lci", "class_instance" AS "ci", "project"
+        FROM "location", "connector_class_instance" AS "lci", "class_instance" AS "ci", "project"
           WHERE "project"."id" = "location"."project_id" AND
               "project"."id" = '.$pid.' AND
               ("location"."location")."x" >= '.$left.' AND
@@ -116,7 +116,7 @@ if ( $pid )
       $pretreenodes = $db->getResult(
       '
 SELECT "location"."id" AS "lid", "tci"."treenode_id" as "tnid", "ci"."name" as "lcname" , "ci2"."name" AS "tcname"
-FROM location, location_class_instance as lci, treenode_class_instance as tci, class_instance as ci, class_instance as ci2, class_instance_class_instance as cici where
+FROM location, connector_class_instance as lci, treenode_class_instance as tci, class_instance as ci, class_instance as ci2, class_instance_class_instance as cici where
 location.id = '.$val['id'].' and lci.location_id = location.id
 and lci.relation_id = '.$model_of.' and lci.class_instance_id = ci.id and ci.class_id = '.$syn.' 
 and tci.relation_id = '.$model_of.' and tci.class_instance_id = ci2.id and ci2.class_id = '.$presyn.'
@@ -135,7 +135,7 @@ and cici.relation_id = '.$presyn_to.' and cici.class_instance_a = ci2.id and cic
       $posttreenodes = $db->getResult(
       '
 SELECT "location"."id" AS "lid", "tci"."treenode_id" as "tnid", "ci"."name" as "lcname" , "ci2"."name" AS "tcname"
-FROM location, location_class_instance as lci, treenode_class_instance as tci, class_instance as ci, class_instance as ci2, class_instance_class_instance as cici where
+FROM location, connector_class_instance as lci, treenode_class_instance as tci, class_instance as ci, class_instance as ci2, class_instance_class_instance as cici where
 location.id = '.$val['id'].' and lci.location_id = location.id
 and lci.relation_id = '.$model_of.' and lci.class_instance_id = ci.id and ci.class_id = '.$syn.' 
 and tci.relation_id = '.$model_of.' and tci.class_instance_id = ci2.id and ci2.class_id = '.$postsyn.'

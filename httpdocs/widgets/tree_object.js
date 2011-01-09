@@ -266,7 +266,7 @@ initObjectTree = function(pid) {
 					},
 					// XXX: need to discuss
 					// "valid_children" : [ "modelof", "presynaptic", "postsynaptic" ],
-					"valid_children" : [ "skeleton", "synapse" ],
+					"valid_children" : [ "skeleton" ],
 					"start_drag" : true,
 					"select_node" : false,
 				},
@@ -274,7 +274,7 @@ initObjectTree = function(pid) {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/skeleton.png"
 					},
-					"valid_children" : [ "none" ],
+					"valid_children" : [ "synapse" ],
 					 "start_drag" : true,
 					 "select_node" : true,
 				},
@@ -294,7 +294,7 @@ initObjectTree = function(pid) {
 					"valid_children" : [ "skeleton" ],
 					"start_drag" : false,
 				},
-				"presynaptic" : {
+				"presynapticterminal" : {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/presynapse.png"
 					},
@@ -302,7 +302,7 @@ initObjectTree = function(pid) {
 					"valid_children" : [ "synapse" ],
 					"start_drag" : false,
 				},
-				"postsynaptic" : {
+				"postsynapticterminal" : {
 					"icon" : {
 						"image" : "widgets/themes/kde/jsTree/neuron/postsynapse.png"
 					},

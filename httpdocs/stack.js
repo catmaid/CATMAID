@@ -764,13 +764,34 @@ function Stack(
 	
 	var onmousemove = 
 	{
+	  trace :function( e )
+    {
+      
+      // take into account the shift of the svgOverlay
+      var xp;
+      var yp;
+      var m = ui.getMouse( e );
+
+      if ( m )
+      {
+        // add right move of svgOverlay to the m.offsetX
+        offX = m.offsetX + svgOverlay.offleft;
+        // add down move of svgOverlay to the m.offsetY
+        offY = m.offsetY + svgOverlay.offtop;
+        
+        var pos_x = translation.x + ( x +  ( offX - viewWidth / 2 ) / scale ) * resolution.x;
+        var pos_y = translation.x + ( y + ( offY - viewHeight / 2 ) / scale ) * resolution.y;
+        statusBar.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 3 ) + "]" );
+      }
+      // continue with event handling
+      return true;
+    }, 
 		pos : function( e )
 		{
 			var xp;
 			var yp;
 			var m = ui.getMouse( e );
-      // XXX: error, svg is taken as target for the mouse event instead of the
-      // mouse event catcher, only if svg/div is child of catcher
+
 			if ( m )
 			{
 				var pos_x = translation.x + ( x + ( m.offsetX - viewWidth / 2 ) / scale ) * resolution.x;
@@ -823,45 +844,32 @@ function Stack(
       console.log("unregister trace");
       ui.releaseEvents();
       ui.removeEvent( "onmousemove", svgOverlay.onmousemove );
-      ui.removeEvent( "onmouseup", onmouseup.crop );
+      ui.removeEvent( "onmouseup", onmouseup.move );
     }
 	};
 	
 	var onmousedown =
 	{
-	  /*
 	  trace : function( e )
 	  {
-	    console.log("register trace events in onmousedown of mouseevent catcher");
+	    
       var b = ui.getMouseButton( e );
       switch ( b )
       {
-      case 1:
-        console.log("mouse 1");
-        // call the event handler of the svg overlay
-        ui.registerEvent( "onmousemove", svgOverlay.onmousemove );
-        ui.registerEvent( "onmouseup", onmouseup.trace );
-        ui.catchEvents( );
-        ui.onmousedown( e );
-      
-        //svgOverlay.onclick( e );
-        break;
       case 2:
-        console.log("mouse 2");
-        var m = ui.getMouse( e );
-        console.log("m", e);
-        var tlx = ( x + ( m.offsetX - viewWidth / 2 ) / scale ) * resolution.x + translation.x;
-        var tly = ( y + ( m.offsetY - viewHeight / 2 ) / scale ) * resolution.y + translation.y;
-        var tlz = z * resolution.z + translation.z;
-        //console.log(tlx, tly, tlz);
-        svgOverlay.physicalclick(tlx,tly,tlz);
-        break;
-      case 3:
-        console.log("mouse 3");
+        ui.registerEvent( "onmousemove", onmousemove.move );
+        ui.registerEvent( "onmouseup", onmouseup.move );
+        ui.catchEvents( "move" );
+        ui.onmousedown( e );
+
+        //! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
+        document.body.firstChild.focus();
         break;
       }
-	    return false;
-	  },*/
+      
+      return true;
+      
+	  },
 		move : function( e )
 		{          
 			ui.registerEvent( "onmousemove", onmousemove.move );
@@ -1152,20 +1160,6 @@ function Stack(
 			//mouseCatcher.style.display = "none";
 			mouseCatcher.onmousedown = onmousedown.text;
 			mouseCatcher.onmousemove = onmousemove.pos;
-			/*
-			try
-			{
-				mouseCatcher.removeEventListener( "DOMMouseScroll", onmousewheel.move, false );
-			}
-			catch ( error )
-			{
-				try
-				{
-					mouseCatcher.onmousewheel = null;
-				}
-				catch ( error ) {}
-			}
-			*/
 			show_textlabels = true;
 			self.updateTextlabels();
 			for ( var i = 0; i < textlabels.length; ++i )
@@ -1186,10 +1180,30 @@ function Stack(
 		  // console.log("in tracing mode");
 		  mode = "trace"
       mouseCatcher.style.cursor = "crosshair";
-      //mouseCatcher.onmousedown = onmousedown.trace;
+      
       // for the surrounding mouse event catcher
       mouseCatcher.onmousedown = onmousedown.move;
       mouseCatcher.onmousemove = onmousemove.pos;
+      // but also for the svgoverlay, stops dragging node mdoe
+      svgOverlay.view.onmousedown = onmousedown.trace;
+      // XXX: coordinates are adjusted, either position or dragging but not both :(
+      // svgOverlay.view.onmousemove = onmousemove.trace;
+
+      try
+      {
+        svgOverlay.view.addEventListener( "DOMMouseScroll", onmousewheel.zoom, false );
+        /* Webkit takes the event but does not understand it ... */
+        svgOverlay.view.addEventListener( "mousewheel", onmousewheel.zoom, false );
+      }
+      catch ( error )
+      {
+        try
+        {
+          svgOverlay.view.onmousewheel = onmousewheel.zoom;
+        }
+        catch ( error ) {}
+      }
+            
       show_tracing = true;
       svgOverlay.show();
       self.updateNodes();
@@ -1833,7 +1847,7 @@ function Stack(
   // svg overlay for the tracing
   var svgOverlay = new SVGOverlay(resolution, translation, dimension, scale);
   //mouseCatcher.appendChild( svgOverlay.getView() );
-  view.appendChild( svgOverlay.getView() );
+  view.appendChild( svgOverlay.view );
   svgOverlay.hide();
 
   $("#sync_treenodes").click(function () {

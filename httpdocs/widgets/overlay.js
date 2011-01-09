@@ -403,7 +403,11 @@ SVGOverlay = function(
     s = ns;
     // pl/pt are in physical coordinates
     view.style.left = Math.floor(-pl/resolution.x*s) + "px";
+    this.offleft = Math.floor(-pl/resolution.x*s);
+    
     view.style.top = Math.floor(-pt/resolution.y*s) + "px";
+    this.offtop = Math.floor(-pt/resolution.y*s);
+    
     updateDimension(s);
     //updateNodeCoordinatesinDB();
   };
@@ -479,48 +483,22 @@ SVGOverlay = function(
   this.translation = translation;
   this.dimension = dimension;
   
+  // offset of stack in physical coordinates
+  this.offleft = 0;
+  this.offtop = 0;
+  
   var view = document.createElement( "div" );
   view.className = "sliceSVGOverlay";
   view.onclick = this.onclick;
-  view.style.zIndex = 5;
+  view.style.zIndex = 6;
   view.style.cursor = "crosshair";
+  // make view accessible from outside to set more mouse handlers
+  this.view = view;
   
   var s = current_scale;
   var r = Raphael(view, Math.floor(dimension.x*s), Math.floor(dimension.y*s));
   this.paper = r;
 
-  this.onmousewheel = function( e )
-  {
-    var w = ui.getMouseWheel( e );
-    if ( w )
-    {
-      if ( w > 0 )
-      {
-        slider_z.move( -1 );
-      }
-      else
-      {
-        slider_z.move( 1 );
-      }
-    }
-    return false;
-  }
-
-  try
-  {
-    view.addEventListener( "DOMMouseScroll", this.onmousewheel, false );
-    /* Webkit takes the event but does not understand it ... */
-    view.addEventListener( "mousewheel", this.onmousewheel, false );
-  }
-  catch ( error )
-  {
-    try
-    {
-      view.onmousewheel = this.onmousewheel;
-    }
-    catch ( error ) {}
-  }
-  
   var pix2physX = function( x ) { return translation.x + ( ( x ) / s ) * resolution.x; }
   var phys2pixX = function( x )  { return  ( x - translation.x ) / resolution.x * s; }
   var pix2physY = function( y )  { return translation.y + ( ( y ) / s ) * resolution.y; }

@@ -91,6 +91,16 @@ initTreenodeTable = function(pid) {
 		}
 	} );
 	
+  $("#treenodetable tbody").dblclick(function(event) {
+    /*$(oTable.fnSettings().aoData).each(function (){
+      $(this.nTr).removeClass('row_selected');
+    });*/
+    // $(event.target.parentNode).addClass('row_selected');
+    alert('dblclicked, go to node');
+    //console.log(event, oTable.fnGetData( this ));
+  });
+
+
 	$('#treenodetable tbody tr').live('click', function () {
 
 		var aData = oTable.fnGetData( this );

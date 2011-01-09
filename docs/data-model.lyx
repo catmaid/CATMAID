@@ -18,14 +18,28 @@
 \graphics default
 \paperfontsize default
 \spacing onehalf
-\use_hyperref false
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder false
+\pdf_colorlinks true
+\pdf_backref false
+\pdf_pdfusetitle true
+\pdf_quoted_options "colorlinks=blue"
 \papersize default
-\use_geometry false
+\use_geometry true
 \use_amsmath 1
 \use_esint 1
 \cite_engine basic
 \use_bibtopic false
 \paperorientation portrait
+\leftmargin 2cm
+\topmargin 2cm
+\rightmargin 2cm
+\bottommargin 3cm
 \secnumdepth 3
 \tocdepth 3
 \paragraph_separation skip
@@ -47,19 +61,622 @@ CATMAID data model
 \end_layout
 
 \begin_layout Standard
-The aim of the CATMAID data model is to describe annotations of image data
- in terms of Subject-Verb-Object triples
-\begin_inset Note Note
+
+\series medium
+\emph on
+Stephan Gerhard, Stephan Saalfeld and Mark Longair <
+\begin_inset CommandInset href
+LatexCommand href
+target "longair@ini.phys.ethz.ch"
+type "mailto:"
+
+\end_inset
+
+>
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset href
+LatexCommand href
+name "CATMAID"
+target "http://fly.mpi-cbg.de/~saalfeld/catmaid/"
+
+\end_inset
+
+, the Collaborative Annotation Toolkit for Massive Amounts of Image Data,
+ is a web-based platform for the annotation of very large data sets, such
+ as those produced by serial section transmission electron microscopy.
+ The aim of the CATMAID data model is to describe annotations of image data
+ in terms of Subject-Relation-Object triples suitable for mapping to semantic
+ web technologies and incorporation into controlled vocabularies such as
+ those defined by the Open Biomedical Ontologies group.
+ Our other aim to be able to store these logical relationship efficiently
+ in PostgreSQL.
+ The following sections describe our current model and the plans for possible
+ changes.
+\end_layout
+
+\begin_layout Subsection*
+Current Entities and Relationships
+\end_layout
+
+\begin_layout Standard
+The basic entities that we are currently representing are 
+\series bold
+treenodes, connectors
+\series default
+ or 
+\series bold
+class_instances
+\series default
+.
+ The distinction between these is that a treenode is a physically located
+ point in space, with a number of other attributes specific to their use
+ in modelling the skeletons of neuronal structures, whereas a connector
+ is also a physically located point in space, with a number of attributes
+ specific to their use in modelling synapses.
+ A 
+\series bold
+class_instance
+\series default
+ does not have a particular point in space, except through relations to
+ treenodes or connectors.
+ Examples of class_instances are neurons, groups of neurons, groups of groups,
+ skeletons, synapses and pre- and postsynaptic terminals.
+\end_layout
+
+\begin_layout Standard
+The current set of relationships which are allowed between these entities
+ are:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="10" columns="3">
+<features>
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\emph on
+subject
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\emph on
+relation
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\emph on
+object
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\emph on
+treenode
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+labeled_as
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+class_instance
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+treenode
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+element_of
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+class_instance
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+treenode
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+model_of
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+class_instance
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+connector
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+model_of
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+class_instance
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+class_instance
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+model_of
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+class_instance
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+class_instance
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+part_of
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+class_instance
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+class_instance
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+is_a
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+class_instance
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+class_instance
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+postsynaptic_to
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+class_instance
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+class_instance
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+presynaptic_to
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+class_instance
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+These relationships are all asymmetric.
+ Every class_instance is an instance of a particular class - at the moment,
+ the defined classes are 
+\series bold
+skeleton
+\series default
+, 
+\series bold
+neuron
+\series default
+, 
+\series bold
+group
+\series default
+, 
+\series bold
+label
+\series default
+, 
+\series bold
+root
+\series default
+, 
+\series bold
+soma
+\series default
+, 
+\series bold
+synapse, presynapticterminal, postsynapticterminal
+\series default
+.
+\end_layout
+
+\begin_layout Standard
+Examples of the uses of each of these relationships are given below:
+\end_layout
+
+\begin_layout Subsubsection*
+labeled_as
+\end_layout
+
+\begin_layout Standard
+During annotation, it is frequently useful to annotate a point in the tree
+ with a text-based tag, which might be 
+\begin_inset Quotes eld
+\end_inset
+
+TODO
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+possible synapse here
+\begin_inset Quotes erd
+\end_inset
+
+, etc.
+ This relationship links a treenode to a label of this kind.
+\end_layout
+
+\begin_layout Subsubsection*
+postsynaptic_to, presynaptic_to
+\end_layout
+
+\begin_layout Standard
+We are representing the polyadic synapses found in our data with a connector
+ placed over the synaptic cleft.
+ A connector is a model of a synapse.
+ Treenodes which are pre-synaptic and post-synaptic partners are models
+ of presynaptic and postsynaptic terminals.
+ These two relationships are used to link the synaptic terminals to its
+ corresponding synapse.
+ Synapses can stand in one-to-many relationship to presynaptic and postsynaptic
+ terminals.
+\end_layout
+
+\begin_layout Subsubsection*
+element_of
+\end_layout
+
+\begin_layout Standard
+The element_of relationship is currently used to indicate that a treenode
+ is part of a particular skeleton.
+ This is distinct from the standard part_of relationship to indicate that
+ the subject is a treenode rather than a class_instance.
+\end_layout
+
+\begin_layout Subsubsection*
+model_of
+\end_layout
+
+\begin_layout Standard
+The concrete annotations used in CATMAID should be tissue-type agnostic;
+ in other words, they should not be specific to annotating neuronal structures.
+ The model_of relationship links a basic annotation to the particular biological
+ structure that it is representing.
+ The current use of this is always to create a link between a skeleton and
+ the neuron it represents the midline of.
+ The same neuron can be modelled by skeletons traced by different users.
+ Furthermore, a connector is a model_of a synapse.
+\end_layout
+
+\begin_layout Subsubsection*
+part_of
+\end_layout
+
+\begin_layout Standard
+This relationship indicates that one class_instance is part of another;
+ for example, a soma is part_of a neuron or a presynaptic terminal is part_of
+ a skeleton.
+ This should be the same as the part_of relationship used in the OBO foundry
+\begin_inset Foot
 status open
 
 \begin_layout Plain Layout
-I would write Subject-Relation-Object throughout
+\begin_inset CommandInset href
+LatexCommand href
+target "http://www.obofoundry.org/"
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
 
-, in such a way that can be represented in a PostgreSQL database.
- Each possible verb is described at the top level by a row in the 
+ ontologies.
+\end_layout
+
+\begin_layout Subsubsection*
+is_a
+\end_layout
+
+\begin_layout Standard
+This relationship indicates that one class_instance is a subtype of another;
+ for example, a neuron is_a cell.
+ This should be the same as the part_of relationship used in the OBO foundry
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+\begin_inset CommandInset href
+LatexCommand href
+target "http://www.obofoundry.org/"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Suggested Changes
+\end_layout
+
+\begin_layout Itemize
+There should be 
+\series bold
+node
+\series default
+ type that represents points in space without the additional attributes
+ of a treenode that are specific to trees, such as the parent node and radius.
+ Treenodes would be subtypes of node.
+\end_layout
+
+\begin_layout Subsection*
+Representation in PostgreSQL
+\end_layout
+
+\begin_layout Standard
+The representation of these entities and relationships in PostgreSQL makes
+ use of the database's inheritance feature.
+ If one table inherits from another, then the descendant has all the columns
+ of the former, and various queries enacted on the parent table will also
+ include rows from all descendant tables.
+ At the top level of this hierarchy in CATMAID is the 
+\series bold
+concept
+\series default
+ table, which provides columns for the 
+\emph on
+user_id
+\emph default
+, 
+\emph on
+project_id
+\emph default
+, 
+\emph on
+creation_time
+\emph default
+, 
+\emph on
+modification_time
+\emph default
+ and a unique 
+\emph on
+id
+\emph default
+.
+ All the other tables described below similarly inherit from 
+\series bold
+concept
+\series default
+.
+\end_layout
+
+\begin_layout Standard
+Each possible relation is described at the top level by a row in the 
 \series bold
 relation
 \series default
@@ -245,62 +862,46 @@ f
 \end_layout
 
 \begin_layout Standard
-This table uses PostgreSQL's inheritance mechanism to inherit from the 
-\series bold
-concept
-\series default
- table, which provides columns for the 
-\emph on
-user_id
-\emph default
-, 
-\emph on
-project_id
-\emph default
-, 
-\emph on
-creation_time
-\emph default
-, 
-\emph on
-modification_time
-\emph default
- and a unique 
-\emph on
-id
-\emph default
-.
- All the other tables described below similarly inherit from 
-\series bold
-concept
-\series default
-.
-\end_layout
-
-\begin_layout Standard
 An instance of one of these relations is represented by a row in a table
- which is inherits from the 
+ which inherits from the 
 \series bold
 relation_instance
 \series default
- table, which adds a
+ table.
+ The relation_instance table adds a
 \emph on
  relation_id
 \emph default
- to specify which relation this is an instance of.
+ column
+\emph on
+ 
+\emph default
+to specify which relation this is an instance of.
  The three tables that inherit from relation_instance are 
-\series bold
-class_instance_class_instance
-\series default
-, 
-\series bold
-treenode_class_instance
-\series default
- and 
 \series bold
 class_class
 \series default
-, depending on whether the subject of the relationship is a 
+, 
+\series bold
+class_instance_class_instance
+\series default
+ and 
+\series bold
+treenode_class_instance
+\series default
+.
+
+\series bold
+ 
+\series default
+The 
+\series bold
+class_class
+\series default
+ table describes the possible classes that can be linked by that particular
+ relation.
+ Which table is used for the concrete relationships depends on whether the
+ subject of the relationship is a 
 \series bold
 class
 \series default
@@ -309,36 +910,16 @@ class
 treenode
 \series default
 .
- 
-\emph on
-(FIXME: 
+ The treenode_class_instance table has rows that link a treenode to a class
+ instance, whereas the 
 \series bold
-class_class
+class_instance_class_instance
 \series default
- presumably should describe the possible classes that can be linked by a
- relationship, but only seens to have one entry at the moment: 
-\begin_inset Quotes eld
-\end_inset
-
-soma part_of neuron
-\begin_inset Quotes erd
-\end_inset
-
-.)
-\begin_inset Note Note
-status open
-
-\begin_layout Plain Layout
-
-\emph on
-This is true.
- We have not populated this table so far.
- But it should correspond in away to the TrakEM template tree.
-\end_layout
-
-\end_inset
-
-
+ table links two 
+\series bold
+class_instance_class_instance
+\series default
+s.
 \end_layout
 
 \begin_layout Standard
@@ -351,7 +932,7 @@ class
 
 \begin_layout Standard
 \begin_inset Tabular
-<lyxtabular version="3" rows="11" columns="2">
+<lyxtabular version="3" rows="10" columns="2">
 <features>
 <column alignment="center" valignment="top" width="0">
 <column alignment="center" valignment="top" width="0">
@@ -454,26 +1035,6 @@ label
 
 \begin_layout Plain Layout
 f
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-neurongroup
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-t
 \end_layout
 
 \end_inset
@@ -587,8 +1148,17 @@ t
 \end_layout
 
 \begin_layout Standard
-Particular instances of each of these classes are represented by rows in
- the 
+The 
+\emph on
+showintree
+\emph default
+ column indicates whether this class should be shown in the tree display
+ of the annotations in CATMAID's interface.
+ Particular
+\emph on
+ 
+\emph default
+instances of each of these classes are represented by rows in the 
 \series bold
 class_instance
 \series default
@@ -596,8 +1166,8 @@ class_instance
 \end_layout
 
 \begin_layout Standard
-Instances of the Subject-Verb-Object relationship between instances of two
- classes are represented by rows in the 
+Instances of the Subject-Relation-Object relationship between instances
+ of two classes are represented by rows in the 
 \series bold
 class_instance_class_instance
 \series default
@@ -663,8 +1233,17 @@ class_instance
 treenode
 \series default
 .
- The distinction between a treenode and a class_instance is that a treenode
- additionally has these features:
+ 
+\end_layout
+
+\begin_layout Standard
+Treenodes and connectors inherit from the location table which expresses
+ the location in space.
+\end_layout
+
+\begin_layout Standard
+The distinction between a treenode and a location is that a treenode additionall
+y has these features:
 \end_layout
 
 \begin_layout Itemize
@@ -677,24 +1256,11 @@ parent_id:
 \end_layout
 
 \begin_layout Itemize
-Concrete features of the point in space:
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
 
 \emph on
 radius:
 \emph default
  a radius of the skeleton at that point.
-\end_layout
-
-\begin_layout Itemize
-
-\emph on
-location
-\emph default
-: an x, y, z triple giving the location of the point in 3D.
 \end_layout
 
 \begin_layout Itemize
@@ -707,7 +1273,6 @@ confidence
  (5 is the most confident.)
 \end_layout
 
-\end_deeper
 \begin_layout Standard
 These relationships between
 \series bold
@@ -722,7 +1287,7 @@ treenode_class_instance
 
 \begin_layout Standard
 \begin_inset Tabular
-<lyxtabular version="3" rows="8" columns="3">
+<lyxtabular version="3" rows="7" columns="3">
 <features>
 <column alignment="center" valignment="top" width="0">
 <column alignment="center" valignment="top" width="0">
@@ -883,7 +1448,7 @@ class_instance_id
 \begin_inset Text
 
 \begin_layout Plain Layout
-23 [presynaptic_to]
+23 [model_of]
 \end_layout
 
 \end_inset
@@ -892,7 +1457,7 @@ class_instance_id
 \begin_inset Text
 
 \begin_layout Plain Layout
-247
+268
 \end_layout
 
 \end_inset
@@ -901,36 +1466,7 @@ class_instance_id
 \begin_inset Text
 
 \begin_layout Plain Layout
-36
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-24 [postsynaptic_to]
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-249
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Plain Layout
-15
+2500
 \end_layout
 
 \end_inset
@@ -973,9 +1509,229 @@ class_instance_id
 \end_layout
 
 \begin_layout Standard
-('labeled_as' gives a label to a particular treenode, 'presynaptic_to' and
- postsynaptic_to' build synapse relationships between treenodes and 'element_of'
- links a treenode to the skeleton it is a part of.)
+('labeled_as' gives a label to a particular treenode, 'model_of' to mark
+ the treenode as presynaptic terminal and 'element_of' links a treenode
+ to the skeleton it is a part of.)
+\end_layout
+
+\begin_layout Standard
+Similarily, relations can apply between a 
+\series bold
+connector
+\series default
+ and a 
+\series bold
+class_instance
+\series default
+.
+ Connector are points in space used to model the location of a synapse.
+ Connector additionally has these features:
+\end_layout
+
+\begin_layout Itemize
+
+\emph on
+confidence
+\emph default
+: on a scale of 1 to 5, the confidence that the annotator has that this
+ connector actually is a synapse and links correctly.
+ (5 is the most confident.)
+\end_layout
+
+\begin_layout Standard
+These relationships between
+\series bold
+ 
+\series default
+connectors and class_instances are stored as rows in the 
+\series bold
+connector_class_instance
+\series default
+ table:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="5" columns="3">
+<features>
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\emph on
+relation_id
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\emph on
+location_id
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\emph on
+class_instance_id
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+23 [model_of]
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+300
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1800
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+23 [model_of]
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+303
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+4800
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+...
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+...
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+...
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+35 [labeled_as]
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+268
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+15623
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+File Format
+\end_layout
+
+\begin_layout Standard
+For this web-based, database-backed system a concrete file format for import
+ and export is not a critical as provision of an API for interrogating the
+ database.
+ However, we will intially use 
+\begin_inset CommandInset href
+LatexCommand href
+name "TrakEM2"
+target "http://www.ini.uzh.ch/~acardona/trakem2.html"
+
+\end_inset
+
+'s XML-based format in order to import data.
 \end_layout
 
 \end_body

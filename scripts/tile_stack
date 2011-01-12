@@ -12,13 +12,15 @@
 
 s=0
 
+d=$(readlink -nf $(dirname $BASH_SOURCE))
+
 for file in `ls ${1}`;
 do
 	mkdir $s
 	cp $file $s
 	cd $s
 	file=`echo ${file} | sed "s/.*\/\([^\/]\)/\1/"`
-	tile $file ${2} ${3}
+	"$d"/tile $file ${2} ${3}
 	rm $file
 	cd ..
 	s=$(($s+1))

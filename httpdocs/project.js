@@ -579,6 +579,9 @@ function Project( pid )
 				input_y.value = parseInt( input_y.value ) + ( shift ? 100 : ( alt ? 1 : 10 ) );
 				input_y.onchange( e );
 				return false;
+			case 84:    //!< key k
+			  alert('want to tag');
+			   return false;
 			case 9:			//!< tab
 				if ( shift ) project.switchFocus( -1 );
 				else project.switchFocus( 1 );

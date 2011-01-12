@@ -27,6 +27,51 @@ SVGOverlay = function(
 
   var nodes = new Object();
   
+  var createSingleConnector = function( phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval) {
+    // create a single connector with a synapse instance that is
+    // not linked to any treenode
+    
+    requestQueue.register(
+      "model/connector.create.php",
+      "POST",
+      {
+        pid : project.id,
+        class_instance_type :'synapse',
+        class_instance_relation : 'model_of',
+        confidence : confval,
+        x : phys_x,
+        y : phys_y,
+        z : phys_z,
+       },
+       function(status, text, xml)
+       {
+          if ( status == 200 )
+          {
+            if ( text && text != " " )
+            {
+              var e = eval( "(" + text + ")" );
+              if ( e.error )
+              {
+                alert( e.error );
+              }
+              else
+              {
+                // add treenode to the display and update it
+                var jso = $.parseJSON(text);
+                console.log("retrieved", jso);
+                var cid = parseInt(jso.connector_id);
+                
+                var nn = new ConnectorNode(cid, r, 8, pos_x, pos_y, pos_z, 0);
+                nodes[cid] = nn;
+                nn.draw();
+                activateNode( nn );
+                
+              }
+            } // endif
+          } // end if
+        }); // endfunction
+  }
+  
   var createConnector = function( locidval, id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z )
   {
     //console.log("start: locidval", locidval, "id", id);
@@ -437,8 +482,8 @@ SVGOverlay = function(
     var phys_z = project.coordinates.z;
     // console.log("clicked on physical coordinates", phys_x, phys_y, phys_z, "this", this);
     
-    // if ctrl is pressed and clicked, deselect atn
     if( e.ctrlKey ) {
+      // if ctrl is pressed and clicked, deselect atn
       activateNode( null );
     } else if( e.shiftKey ) {
       if(atn == null) {
@@ -463,15 +508,23 @@ SVGOverlay = function(
       }
 
     } else {
-      if(atn instanceof Node || atn == null) {
-        // create a new treenode,
-        // either root node if atn is null, or has parent 
-        createNode(atn, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
-        // display node creation is done in event handler
-        return true
-      } else if (atn instanceof ConnectorNode) {
-        alert("Use Ctrl-Click to deactivate the location. Then create a new treenode");
-        return true
+      
+      // depending on what mode we are in
+      if(getMode() == "skeletontracing") {
+        if(atn instanceof Node || atn == null) {
+          // create a new treenode,
+          // either root node if atn is null, or has parent 
+          createNode(atn, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
+          // display node creation is done in event handler
+          return true
+        } else if (atn instanceof ConnectorNode) {
+          alert("Use Ctrl-Click to deactivate the location. Then create a new treenode");
+          return true
+        }
+      } else if (getMode() == "synapsedropping") {
+        
+        createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5);
+            
       }
     }
     e.stopPropagation();
@@ -485,12 +538,13 @@ SVGOverlay = function(
     document.getElementById( "trace_button_synapse" ).className = "button";
     
     if( mode == "skeletontracing") {
-          this.currentmode = mode;
+          currentmode = mode;
           document.getElementById( "trace_button_skeleton" ).className = "button_active";
-    } else if ( this.currentmode == "skeletontracing") {
-          this.currentmode = mode;
+    } else if ( currentmode == "skeletontracing") {
+          currentmode = mode;
           document.getElementById( "trace_button_synapse" ).className = "button_active";
     }
+    console.log("new mode", currentmode);
     
   }
 
@@ -503,8 +557,13 @@ SVGOverlay = function(
   this.offtop = 0;
   
   // currently there are two modes: skeletontracing and synapsedropping
-  this.currentmode = "skeletontracing";
-  this.set_tracing_mode( this.currentmode );
+  var currentmode = "skeletontracing";
+  this.set_tracing_mode( currentmode );
+  
+  var getMode = function( e )
+  {
+    return currentmode;
+  }
   
   var view = document.createElement( "div" );
   view.className = "sliceSVGOverlay";

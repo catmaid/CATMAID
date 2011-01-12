@@ -70,7 +70,7 @@ if ( $pid )
       // retrieve location type instance id
       // e.g. what is the id of the synapse
       $locationtype = $db->getResult('SELECT "lci"."class_instance_id" AS "id" FROM "connector_class_instance" AS "lci",
-      "class_instance" AS "ci" WHERE "lci"."location_id" = '.$location_id.' AND "lci"."relation_id" = '.$lr_id.' AND
+      "class_instance" AS "ci" WHERE "lci"."connector_id" = '.$location_id.' AND "lci"."relation_id" = '.$lr_id.' AND
       "ci"."id" = "lci"."class_instance_id" AND "ci"."class_id" = '.$lt_id);
       if(empty($locationtype)) {
         echo makeJSON( array( '"error"' => 'Location seems not to be a valid '.$location_relation.' a '.$location_type));
@@ -124,7 +124,7 @@ if ( $pid )
         'user_id' => $uid,
         'project_id' => $pid,
         'relation_id' => $lr_id,
-        'location_id' => $location_instance_id,
+        'connector_id' => $location_instance_id,
         'class_instance_id' => $location_type_instance_id
         );
       $db->insertInto('connector_class_instance', $data );

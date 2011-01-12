@@ -154,18 +154,20 @@ ConnectorNode = function(
   }
   
   /* 
-   * XXX: delete the node from the database and removes it from
+   * delete the connector from the database and removes it from
    * the current view and local objects
    * 
    */
   this.deletenode = function()
   {
     requestQueue.register(
-      "model/treenode.delete.php",
+      "model/connector.delete.php",
       "POST",
       {
         pid : project.id,
-        tnid : this.id
+        cid : this.id,
+        class_instance_type :'synapse',
+        class_instance_relation : 'model_of',
       },
       function(status, text, xml)
       {
@@ -176,56 +178,41 @@ ConnectorNode = function(
         }
         return true;
       });
+      
+    // remove from view
 
-    // remove the parent of all the children
-    for ( var i in this.children) {
-      this.children[ i ].removeLine();
-      this.children[ i ].removeParent();
-    }
-    // remove the raphael svg elements from the DOM
-    c.remove();
-    mc.remove();
-    this.removeLine();
-    
-    if(this.parent != null) {
-      // remove this node from parent's children list
-      for ( var i in this.parent.children) {
-        if(this.parent.children[i].id == id)
-         delete this.parent.children[i];
-      }
-    }
   }
   
-  // remove the raphael line to the parent
-  this.removeLine = function()
+  var arrowLine = function (paper, x1, y1, x2, y2, size, strowi, strocol)
   {
-    line.remove();
+    this.remove = function()
+    {
+      arrowPath.remove();
+      linePath.remove();
+    }
+    var angle = Math.atan2(x1-x2,y2-y1);
+    angle = (angle / (2 * Math.PI)) * 360;
+    var linePath = paper.path("M" + x1 + " " + y1 + " L" + x2 + " " + y2);
+    var arrowPath = paper.path("M" + x2 + " " + y2 + " L" + (x2  - size) + " " + (y2  - size) + " L" + (x2  - size)  + " " + (y2  + size) + " L" + x2 + " " + y2 ).attr("fill","black").rotate((90+angle),x2,y2);
+    linePath.attr( {"stroke-width": strowi,
+                     "stroke": strocol,
+                     } );
   }
-  
-  // remove the parent node
-  /*
-  this.removeParent = function()
-  { 
-    delete this.parent;
-    this.parent = null;
-  }*/
-  
+
   // updates the raphael path coordinates
   this.drawLine = function(to_id, pre)
   {          
       var line = this.paper.path();
+
       if(pre) {
-        line.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], 
-                            [ "L", this.pregroup[to_id].getC().attrs.cx, this.pregroup[to_id].getC().attrs.cy ] ],
-                     "stroke-width": 2, "stroke-linecap": "round",
-                     "stroke": "rgb(255, 100, 255)",
-                    } );    
+        var line = new arrowLine(this.paper, this.pregroup[to_id].getC().attrs.cx, this.pregroup[to_id].getC().attrs.cy,
+                                     c.attrs.cx, c.attrs.cy,
+                                     5 , 2, "rgb(126, 57, 112)"); 
       } else {
-        line.attr( {path: [ [ "M", c.attrs.cx, c.attrs.cy ], 
-                            [ "L", this.postgroup[to_id].getC().attrs.cx, this.postgroup[to_id].getC().attrs.cy ] ],
-                     "stroke-width": 2, "stroke-linecap": "round",
-                     "stroke": "rgb(100, 100, 255)",
-                    } );   
+        var line = new arrowLine(this.paper, 
+                                     c.attrs.cx, c.attrs.cy,
+                                     this.postgroup[to_id].getC().attrs.cx, this.postgroup[to_id].getC().attrs.cy,
+                                     5 , 2, "rgb(67, 67, 128)"); 
       }
      return line;
   }

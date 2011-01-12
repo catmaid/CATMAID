@@ -208,7 +208,7 @@ ALTER SEQUENCE concept_id_seq OWNED BY concept.id;
 -- Name: concept_id_seq; Type: SEQUENCE SET; Schema: public; Owner: catmaid_user
 --
 
-SELECT pg_catalog.setval('concept_id_seq', 1792, true);
+SELECT pg_catalog.setval('concept_id_seq', 1501, true);
 
 
 --
@@ -334,7 +334,7 @@ ALTER TABLE public.connector OWNER TO catmaid_user;
 --
 
 CREATE TABLE connector_class_instance (
-    connector_id bigint NOT NULL,
+    location_id bigint NOT NULL,
     class_instance_id bigint NOT NULL
 )
 INHERITS (relation_instance);
@@ -831,8 +831,8 @@ COPY class (id, user_id, creation_time, edition_time, project_id, class_name, ur
 112	3	2010-10-12 11:29:38.385393+02	2010-10-12 11:29:38.385393+02	3	root	\N	\N	f
 12	1	2010-08-26 19:18:02.355176+02	2010-08-26 19:18:02.355176+02	3	soma	http://flybase.org/cgi-bin/cvreport.html?rel=is_a&id=FBbt:00005107	\N	t
 7	3	2010-08-26 18:30:53.288021+02	2010-08-26 18:30:53.288021+02	3	synapse	http://flybase.org/.bin/cvreport.html?cvterm=GO:0045202	\N	t
-755	3	2010-12-20 16:17:48.122167+01	2010-12-20 16:17:48.122167+01	3	presynaptic terminal			t
-756	3	2010-12-20 16:18:07.231631+01	2010-12-20 16:18:07.231631+01	3	postsynaptic terminal			t
+755	3	2010-12-20 16:17:48.122167+01	2010-12-20 16:17:48.122167+01	3	presynapticterminal			t
+756	3	2010-12-20 16:18:07.231631+01	2010-12-20 16:18:07.231631+01	3	postsynapticterminal			t
 \.
 
 
@@ -849,7 +849,22 @@ COPY class_class (id, user_id, creation_time, edition_time, project_id, relation
 --
 
 COPY class_instance (id, user_id, creation_time, edition_time, project_id, class_id, name) FROM stdin;
-1792	3	2011-01-12 13:54:08.121232+01	2011-01-12 13:54:08.121232+01	3	112	neuropile
+1463	3	2011-01-09 13:18:52.783614+01	2011-01-09 13:18:52.80048+01	3	14	skeleton 1463
+1464	3	2011-01-09 13:18:52.808709+01	2011-01-09 13:18:52.8171+01	3	5	neuron 1464
+1469	3	2011-01-09 13:20:26.171649+01	2011-01-09 13:20:26.185588+01	3	14	skeleton 1469
+1470	3	2011-01-09 13:20:26.193329+01	2011-01-09 13:20:26.201875+01	3	5	neuron 1470
+1475	3	2011-01-09 13:20:26.360488+01	2011-01-09 13:20:26.367774+01	3	756	postsynapticterminal 1475
+1479	3	2011-01-09 13:22:32.076811+01	2011-01-09 13:22:32.094304+01	3	14	skeleton 1479
+1480	3	2011-01-09 13:22:32.10216+01	2011-01-09 13:22:32.110595+01	3	5	neuron 1480
+1485	3	2011-01-09 13:22:32.28184+01	2011-01-09 13:22:32.284663+01	3	756	postsynapticterminal 1485
+1489	3	2011-01-09 13:22:38.282834+01	2011-01-09 13:22:38.288766+01	3	7	synapse 1489
+1490	3	2011-01-09 13:22:38.296926+01	2011-01-09 13:22:38.305359+01	3	755	presynapticterminal 1490
+1443	3	2011-01-09 13:13:55.728496+01	2011-01-09 13:13:55.728496+01	3	112	neuro
+1444	3	2011-01-09 13:14:04.520646+01	2011-01-09 13:14:04.536713+01	3	14	skeleton 1444
+1445	3	2011-01-09 13:14:04.54453+01	2011-01-09 13:14:04.552903+01	3	5	neuron 1445
+1447	3	2011-01-09 13:14:04.570086+01	2011-01-09 13:14:04.570086+01	3	106	Fragments
+1456	3	2011-01-09 13:14:16.311384+01	2011-01-09 13:14:16.320776+01	3	7	synapse 1456
+1457	3	2011-01-09 13:14:16.328475+01	2011-01-09 13:14:16.337086+01	3	755	presynaptic terminal 1457
 \.
 
 
@@ -858,6 +873,23 @@ COPY class_instance (id, user_id, creation_time, edition_time, project_id, class
 --
 
 COPY class_instance_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, class_instance_a, class_instance_b) FROM stdin;
+1465	3	2011-01-09 13:18:52.825172+01	2011-01-09 13:18:52.825172+01	3	10	1463	1464
+1466	3	2011-01-09 13:18:52.833961+01	2011-01-09 13:18:52.833961+01	3	9	1464	1447
+1471	3	2011-01-09 13:20:26.209872+01	2011-01-09 13:20:26.209872+01	3	10	1469	1470
+1472	3	2011-01-09 13:20:26.218585+01	2011-01-09 13:20:26.218585+01	3	9	1470	1447
+1477	3	2011-01-09 13:20:26.384159+01	2011-01-09 13:20:26.384159+01	3	24	1475	1456
+1478	3	2011-01-09 13:20:26.393154+01	2011-01-09 13:20:26.393154+01	3	9	1475	1469
+1481	3	2011-01-09 13:22:32.118655+01	2011-01-09 13:22:32.118655+01	3	10	1479	1480
+1482	3	2011-01-09 13:22:32.127342+01	2011-01-09 13:22:32.127342+01	3	9	1480	1447
+1487	3	2011-01-09 13:22:32.301124+01	2011-01-09 13:22:32.301124+01	3	24	1485	1456
+1488	3	2011-01-09 13:22:32.318295+01	2011-01-09 13:22:32.318295+01	3	9	1485	1479
+1494	3	2011-01-09 13:22:38.338375+01	2011-01-09 13:22:38.338375+01	3	23	1490	1489
+1495	3	2011-01-09 13:22:38.347311+01	2011-01-09 13:22:38.347311+01	3	9	1490	1479
+1446	3	2011-01-09 13:14:04.561087+01	2011-01-09 13:14:04.561087+01	3	10	1444	1445
+1448	3	2011-01-09 13:14:04.578493+01	2011-01-09 13:14:04.578493+01	3	9	1447	1443
+1449	3	2011-01-09 13:14:04.585976+01	2011-01-09 13:14:04.585976+01	3	9	1445	1447
+1461	3	2011-01-09 13:14:16.37003+01	2011-01-09 13:14:16.37003+01	3	23	1457	1456
+1462	3	2011-01-09 13:14:16.378791+01	2011-01-09 13:14:16.378791+01	3	9	1457	1444
 \.
 
 
@@ -874,6 +906,8 @@ COPY concept (id, user_id, creation_time, edition_time, project_id) FROM stdin;
 --
 
 COPY connector (id, user_id, creation_time, edition_time, project_id, location, confidence) FROM stdin;
+1458	3	2011-01-09 13:14:16.345145+01	2011-01-09 13:14:16.345145+01	3	(5687.8815999999997,5557.4255999999996,60)	5
+1491	3	2011-01-09 13:22:38.313452+01	2011-01-09 13:22:38.313452+01	3	(4044.136,4122.4096,60)	5
 \.
 
 
@@ -881,7 +915,9 @@ COPY connector (id, user_id, creation_time, edition_time, project_id, location, 
 -- Data for Name: connector_class_instance; Type: TABLE DATA; Schema: public; Owner: catmaid_user
 --
 
-COPY connector_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, connector_id, class_instance_id) FROM stdin;
+COPY connector_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, location_id, class_instance_id) FROM stdin;
+1460	3	2011-01-09 13:14:16.361697+01	2011-01-09 13:14:16.361697+01	3	10	1458	1456
+1493	3	2011-01-09 13:22:38.330012+01	2011-01-09 13:22:38.330012+01	3	10	1491	1489
 \.
 
 
@@ -944,7 +980,7 @@ COPY project (id, title, public) FROM stdin;
 
 COPY project_stack (project_id, stack_id, translation) FROM stdin;
 1	1	(0,0,0)
-3	3	(0,0,0)
+3	2	(0,0,0)
 \.
 
 
@@ -991,6 +1027,7 @@ COPY relation_instance (id, user_id, creation_time, edition_time, project_id, re
 COPY stack (id, title, dimension, resolution, image_base, comment, trakem2_project) FROM stdin;
 1	Original data.	(4096,4096,16)	(3.2614000000000001,3.2614000000000001,60)	http://fly.mpi-cbg.de/map/evaluation/original/	<p>&copy;2007 by Stephan Saalfeld.</p>\n<p>Rendered with <a href="http://www.povray.org/">POV-Ray&nbsp;v3.6</a> using this <a href="http://fly.mpi-cbg.de/~saalfeld/download/volume.tar.bz2">scene-file</a>.</p>	f
 3	Focussed Ion Beam (FIB) stack of Rat Striatum\t	(2048,1536,460)	(5,5,9)	http://incf.ini.uzh.ch/image-stack-fib/	<p>&copy;2009 <a href="http://people.epfl.ch/graham.knott">Graham Knott</a>.</p>\n<p>Public INCF data set available at the <a href="http://www.incf.org/about/nodes/switzerland/data">Swiss INCF Node</a>.</p>	f
+2	TrickStack	(4096,4096,16)	(3.2614000000000001,3.2614000000000001,60)	http://fly.mpi-cbg.de/map/evaluation/original/	<p>&copy;2009 <a href="http://people.epfl.ch/graham.knott">Graham Knott</a>.</p>\n<p>Public INCF data set available at the <a href="http://www.incf.org/about/nodes/switzerland/data">Swiss INCF Node</a>.</p>	f
 \.
 
 
@@ -1173,6 +1210,15 @@ COPY textlabel_location (textlabel_id, location, deleted) FROM stdin;
 --
 
 COPY treenode (id, user_id, creation_time, edition_time, project_id, location, parent_id, radius, confidence) FROM stdin;
+1496	3	2011-01-09 13:22:43.561876+01	2011-01-09 13:22:43.561876+01	3	(3678.8591999999999,6079.2496000000001,60)	1483	4	5
+1498	3	2011-01-09 13:22:44.252598+01	2011-01-09 13:22:44.252598+01	3	(2843.9407999999999,5505.2431999999999,60)	1496	4	5
+1500	3	2011-01-09 13:22:44.822662+01	2011-01-09 13:22:44.822662+01	3	(2530.8463999999999,4905.1455999999998,60)	1498	4	5
+1450	3	2011-01-09 13:14:04.594226+01	2011-01-09 13:14:04.594226+01	3	(5453.0608000000002,7722.9952000000003,60)	\N	4	5
+1454	3	2011-01-09 13:14:06.886502+01	2011-01-09 13:14:06.886502+01	3	(7879.5424000000003,5922.7024000000001,60)	1452	4	5
+1452	3	2011-01-09 13:14:06.289417+01	2011-01-09 13:14:06.289417+01	3	(6548.8912,6548.8912,60)	1450	4	5
+1467	3	2011-01-09 13:18:52.841882+01	2011-01-09 13:18:52.841882+01	3	(6757.6207999999997,4200.6832000000004,60)	\N	4	5
+1473	3	2011-01-09 13:20:26.226569+01	2011-01-09 13:20:26.226569+01	3	(5113.8752000000004,4618.1423999999997,60)	\N	4	5
+1483	3	2011-01-09 13:22:32.135331+01	2011-01-09 13:22:32.135331+01	3	(4018.0448000000001,5609.6080000000002,60)	\N	4	5
 \.
 
 
@@ -1181,6 +1227,19 @@ COPY treenode (id, user_id, creation_time, edition_time, project_id, location, p
 --
 
 COPY treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) FROM stdin;
+1451	3	2011-01-09 13:14:04.602751+01	2011-01-09 13:14:04.602751+01	3	11	1450	1444
+1453	3	2011-01-09 13:14:06.302903+01	2011-01-09 13:14:06.302903+01	3	11	1452	1444
+1455	3	2011-01-09 13:14:06.900034+01	2011-01-09 13:14:06.900034+01	3	11	1454	1444
+1459	3	2011-01-09 13:14:16.353637+01	2011-01-09 13:14:16.353637+01	3	10	1452	1457
+1468	3	2011-01-09 13:18:52.850402+01	2011-01-09 13:18:52.850402+01	3	11	1467	1463
+1474	3	2011-01-09 13:20:26.235161+01	2011-01-09 13:20:26.235161+01	3	11	1473	1469
+1476	3	2011-01-09 13:20:26.375897+01	2011-01-09 13:20:26.375897+01	3	10	1473	1475
+1484	3	2011-01-09 13:22:32.144967+01	2011-01-09 13:22:32.144967+01	3	11	1483	1479
+1486	3	2011-01-09 13:22:32.292929+01	2011-01-09 13:22:32.292929+01	3	10	1483	1485
+1492	3	2011-01-09 13:22:38.321931+01	2011-01-09 13:22:38.321931+01	3	10	1483	1490
+1497	3	2011-01-09 13:22:43.579918+01	2011-01-09 13:22:43.579918+01	3	11	1496	1479
+1499	3	2011-01-09 13:22:44.259875+01	2011-01-09 13:22:44.259875+01	3	11	1498	1479
+1501	3	2011-01-09 13:22:44.831875+01	2011-01-09 13:22:44.831875+01	3	11	1500	1479
 \.
 
 
@@ -1622,7 +1681,7 @@ ALTER TABLE ONLY connector_class_instance
 --
 
 ALTER TABLE ONLY connector_class_instance
-    ADD CONSTRAINT connector_class_instance_location_id_fkey FOREIGN KEY (connector_id) REFERENCES connector(id) ON DELETE CASCADE;
+    ADD CONSTRAINT connector_class_instance_location_id_fkey FOREIGN KEY (location_id) REFERENCES connector(id) ON DELETE CASCADE;
 
 
 --
@@ -1778,13 +1837,13 @@ ALTER TABLE ONLY treenode
 
 
 --
--- Name: public; Type: ACL; Schema: -; Owner: postgres
+-- Name: public; Type: ACL; Schema: -; Owner: stephan
 --
 
 REVOKE ALL ON SCHEMA public FROM PUBLIC;
-REVOKE ALL ON SCHEMA public FROM postgres;
-GRANT ALL ON SCHEMA public TO postgres;
+REVOKE ALL ON SCHEMA public FROM stephan;
 GRANT ALL ON SCHEMA public TO stephan;
+GRANT ALL ON SCHEMA public TO postgres;
 GRANT ALL ON SCHEMA public TO PUBLIC;
 
 

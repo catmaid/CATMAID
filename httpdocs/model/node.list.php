@@ -102,7 +102,7 @@ if ( $pid )
               ("location"."location")."y" <= '.( $top + $height ).' AND
               ("location"."location")."z" >= '.$z.' - '.$zbound.' * '.$zres.' AND
               ("location"."location")."z" <= '.$z.' + '.$zbound.' * '.$zres.' AND
-              "location"."id" = "lci"."location_id" AND
+              "location"."id" = "lci"."connector_id" AND
               "ci"."id" = "lci"."class_instance_id" AND
               "ci"."class_id" = '.$syn.'
           
@@ -117,7 +117,7 @@ if ( $pid )
       '
 SELECT "location"."id" AS "lid", "tci"."treenode_id" as "tnid", "ci"."name" as "lcname" , "ci2"."name" AS "tcname"
 FROM location, connector_class_instance as lci, treenode_class_instance as tci, class_instance as ci, class_instance as ci2, class_instance_class_instance as cici where
-location.id = '.$val['id'].' and lci.location_id = location.id
+location.id = '.$val['id'].' and lci.connector_id = location.id
 and lci.relation_id = '.$model_of.' and lci.class_instance_id = ci.id and ci.class_id = '.$syn.' 
 and tci.relation_id = '.$model_of.' and tci.class_instance_id = ci2.id and ci2.class_id = '.$presyn.'
 and cici.relation_id = '.$presyn_to.' and cici.class_instance_a = ci2.id and cici.class_instance_b = ci.id
@@ -136,7 +136,7 @@ and cici.relation_id = '.$presyn_to.' and cici.class_instance_a = ci2.id and cic
       '
 SELECT "location"."id" AS "lid", "tci"."treenode_id" as "tnid", "ci"."name" as "lcname" , "ci2"."name" AS "tcname"
 FROM location, connector_class_instance as lci, treenode_class_instance as tci, class_instance as ci, class_instance as ci2, class_instance_class_instance as cici where
-location.id = '.$val['id'].' and lci.location_id = location.id
+location.id = '.$val['id'].' and lci.connector_id = location.id
 and lci.relation_id = '.$model_of.' and lci.class_instance_id = ci.id and ci.class_id = '.$syn.' 
 and tci.relation_id = '.$model_of.' and tci.class_instance_id = ci2.id and ci2.class_id = '.$postsyn.'
 and cici.relation_id = '.$postsyn_to.' and cici.class_instance_a = ci2.id and cici.class_instance_b = ci.id

@@ -1,0 +1,101 @@
+#!/bin/bash
+
+##
+# Generate a tiled scale pyramid of an image and a little overview thumbnail.
+# Call it this way:
+#
+# tile <image file name> <tile size> <thumbnail size>
+#
+# e.g.
+# tile image.tif 256 192
+##
+
+convert +compress ${1} s_0.ppm
+		
+width=`identify -format "%w" s_0.ppm`
+height=`identify -format "%h" s_0.ppm`
+
+s=0
+
+width=$((${width}/(2**${s})))
+height=$((${height}/(2**${s})))
+
+collumns=$((${width}/${2}))
+if [[ $width > $(($collumns*${2})) ]]
+then
+	collumns=$(($collumns+1))
+fi
+rows=$((${height}/${2}))
+if [[ $height > $(($rows*${2})) ]]
+then
+	rows=$(($rows+1))
+fi
+
+echo "${width} => ${collumns}" >&2
+echo "${height} => ${rows}" >&2
+
+convert -crop ${2}x${2} s_${s}.ppm ${s}.jpg
+for file in `ls ${s}-*.jpg`;
+do
+	regex="s/${s}-\([0-9][0-9]*\).jpg/\1/"
+	n=`echo ${file} | sed "${regex}"`
+	r=$((${n}/${collumns}))
+	c=$((${n}%${collumns}))
+	mv $file ${r}_${c}_${s}.jpg
+done
+
+s=$(($s+1))
+width=$((${width}/2))
+height=$((${height}/2))	
+collumns=$((${width}/${2}))
+if [[ $width > $(($collumns*${2})) ]]
+then
+	collumns=$(($collumns+1))
+fi
+rows=$((${height}/${2}))
+if [[ $height > $(($rows*${2})) ]]
+then
+	rows=$(($rows+1))
+fi
+
+while [ $height -ge $((2*${2})) ];
+do
+	echo "${width} => ${collumns}" >&2
+	echo "${height} => ${rows}" >&2
+
+	convert -resize ${width}x${height} s_$((${s}-1)).ppm s_${s}.ppm
+			
+	convert -crop ${2}x${2} s_${s}.ppm ${s}.jpg
+	for file in `ls ${s}-*.jpg`;
+	do
+		regex="s/${s}-\([0-9][0-9]*\).jpg/\1/"
+		n=`echo ${file} | sed "${regex}"`
+		r=$((${n}/${collumns}))
+		c=$((${n}%${collumns}))
+		mv $file ${r}_${c}_${s}.jpg
+	done
+	
+	s=$(($s+1))
+	width=$((${width}/2))
+	height=$((${height}/2))	
+	collumns=$((${width}/${2}))
+	if [[ $width > $(($collumns*${2})) ]]
+	then
+		collumns=$(($collumns+1))
+	fi
+	rows=$((${height}/${2}))
+	if [[ $height > $(($rows*${2})) ]]
+	then
+		rows=$(($rows+1))
+	fi
+done
+		
+if [[ $height < $width ]]
+then
+	convert -resize ${3} s_$((${s}-2)).ppm small.jpg
+else
+	convert -resize x${3} s_$((${s}-2)).ppm small.jpg
+fi
+
+rm *.ppm
+

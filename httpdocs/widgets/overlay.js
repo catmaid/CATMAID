@@ -45,7 +45,7 @@ SVGOverlay = function(
     }
     
     requestQueue.register(
-      "model/connector.create.php",
+      "model/treenode.connector.create.php",
       "POST",
       {
         pid : project.id,
@@ -261,9 +261,9 @@ SVGOverlay = function(
       if(nodes[i].needsync)
       {
         // get physical
-        var phys_x = pix2physX(nodes[i].x);
-        var phys_y = pix2physY(nodes[i].y);
-        var phys_z = pix2physZ(nodes[i].z);
+        var phys_x = this.pix2physX(nodes[i].x);
+        var phys_y = this.pix2physY(nodes[i].y);
+        var phys_z = this.pix2physZ(nodes[i].z);
         //console.log("Update required for treenode",nodes[i].id, " with ", phys_x,phys_y,phys_z);
         nodes[i].needsync = false;
         // XXX: case distinction for connector
@@ -499,12 +499,16 @@ SVGOverlay = function(
   var r = Raphael(view, Math.floor(dimension.x*s), Math.floor(dimension.y*s));
   this.paper = r;
 
-  var pix2physX = function( x ) { return translation.x + ( ( x ) / s ) * resolution.x; }
   var phys2pixX = function( x )  { return  ( x - translation.x ) / resolution.x * s; }
-  var pix2physY = function( y )  { return translation.y + ( ( y ) / s ) * resolution.y; }
   var phys2pixY = function( y )  { return  ( y - translation.y ) / resolution.y * s; }
-  var pix2physZ = function( z )  { return z * resolution.z + translation.z; }
   var phys2pixZ = function( z )  { return (z - translation.z) / resolution.z; }
+
+  this.pix2physX = function( x ) { return translation.x + ( ( x ) / s ) * resolution.x; }
+  this.pix2physY = function( y )  { return translation.y + ( ( y ) / s ) * resolution.y; }
+  var pix2physX = function( x ) { return translation.x + ( ( x ) / s ) * resolution.x; }
+  var pix2physY = function( y )  { return translation.y + ( ( y ) / s ) * resolution.y; }
+  this.pix2physZ = function( z )  { return z * resolution.z + translation.z; }
+
   
   this.show = function()   { view.style.display = "block"; }
   this.hide = function() { view.style.display = "none"; }

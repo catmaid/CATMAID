@@ -1856,11 +1856,11 @@ function Stack(
   
   $("#go_active").click(function () {
     if(atn!=null) {
-        self.moveToPixel(
-                  atn.z,
-                  atn.y,
-                  atn.x,
-                  s  );
+        project.moveTo(
+                  svgOverlay.pix2physZ(atn.z),
+                  svgOverlay.pix2physY(atn.y),
+                  svgOverlay.pix2physX(atn.x)
+                  );
     } else {
       alert("No node activated");
     }

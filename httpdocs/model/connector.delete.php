@@ -16,7 +16,7 @@ $ses =& getSession();
 $pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
-$cid = isset( $_REQUEST[ 'cid' ] ) ? intval( $_REQUEST[ 'x' ] ) : 0;
+$cid = isset( $_REQUEST[ 'cid' ] ) ? intval( $_REQUEST[ 'cid' ] ) : 0;
 $ci_type = isset( $_REQUEST[ 'class_instance_type' ] ) ? $_REQUEST[ 'class_instance_type' ] : 'none';
 $ci_relation = isset( $_REQUEST[ 'class_instance_relation' ] ) ? $_REQUEST[ 'class_instance_relation' ] : 'none';
 
@@ -46,6 +46,9 @@ if ( $pid )
     "ci"."user_id" = '.$uid);     
     if( !empty($isuser) )
     {
+      
+      // XXX: correct deletion of associated terminals
+      
       // delete connector
       $ids = $db->deleteFrom("connector", ' "connector"."id" = '.$cid);
       // delete class_instance

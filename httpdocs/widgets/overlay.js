@@ -544,7 +544,7 @@ SVGOverlay = function(
           currentmode = mode;
           document.getElementById( "trace_button_synapse" ).className = "button_active";
     }
-    console.log("new mode", currentmode);
+    //console.log("new mode", currentmode);
     
   }
 

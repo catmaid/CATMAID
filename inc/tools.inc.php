@@ -19,38 +19,41 @@ function tv_node( $data )
 	$sOutput .= '{';	
 	if( array_key_exists('data', $data) )
 	{
-		$sOutput .= '"data" : {';
+		$sOutput .= '"data":{';
 		if( array_key_exists('title', $data['data']))
 		{
-		$sOutput .= ' "title" : "'.$data['data']['title'].'" ,';
+		$sOutput .= '"title":"'.$data['data']['title'].'"';
 		}
 		
 		if( array_key_exists('icon', $data['data']))
 		{
-			$sOutput .= ' "icon" : "'.$data['data']['icon'].'",';
+			$sOutput .= ',"icon":"'.$data['data']['icon'].'"';
 		}
 		
-		$sOutput .= '},';
+		$sOutput .= '}';
 	};
 	
 	if( array_key_exists('attr', $data))
 	{
-		$sOutput .= ' "attr" : {';
+		$sOutput .= ',"attr":{';
+    $i = 0;
 		foreach($data['attr'] as $key => $aval)
 		{
-			$sOutput .= '"'.$key.'" : "'.$aval.'",';		
+		  if($i!=0) { $sOutput .= ','; }
+			$sOutput .= '"'.$key.'" : "'.$aval.'"';		
+      $i++;
 		}
-		$sOutput .= '},';
+		$sOutput .= '}';
 	}		
 	
 	if( array_key_exists('state', $data))
 	{
-		$sOutput .= ' "state" : "'.$data['state'].'",';
+		$sOutput .= ',"state":"'.$data['state'].'"';
 	}
 	
 	if( array_key_exists('children', $data) )
 	{
-		$sOutput .= '"children" : [';
+		$sOutput .= '",children":[';
 		// add the children here
 		foreach ($data['children'] as $key => $value ) {
 			$sOutput .= tv_node($value);	
@@ -58,7 +61,7 @@ function tv_node( $data )
 		$sOutput .= ']';
 	}
 	
-	$sOutput .= '},';
+	$sOutput .= '}';
 	
 	return $sOutput;
 			

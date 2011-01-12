@@ -94,6 +94,7 @@ if ( $pid )
 
 		// loop through the array and generate children to return
 		$sOutput = '[';
+		$i = 0;
 		foreach($res as $key => $ele) {
 			$ar = array(		
 						'data' => array(
@@ -104,7 +105,9 @@ if ( $pid )
 										'rel' => str_replace(" ", "", $ele['class_name'])),
 						'state' => 'closed'								
 						);
+			if($i!=0)  { $sOutput .= ','; }
 			$sOutput .= tv_node( $ar );
+			$i++;
 			
 		};
 		$sOutput .= ']';

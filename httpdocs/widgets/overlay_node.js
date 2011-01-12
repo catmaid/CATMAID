@@ -239,23 +239,12 @@ Node = function(
    * event handlers
    */
   
-  mc.dblclick(function (e) {
-    if(e.shiftKey) // zoom in
+  mc.dblclick(function (e) {    
+    if(e.altKey) // zoom in
       slider_s.move( -1 );
     else // zoom out
       slider_s.move( 1 );
-    // update position
-    // var m = ui.getMouse( e );   
-    // XXX: how to propagate the offsets to physical coordinates
-    // and apply moveTo. Need to know current scale and cannot invoke
-    // svgOverlay event handler methods here (no reference)
-    /*
-    var phys_x = pix2physX(m.offsetX);
-    var phys_y = pix2physY(m.offsetY);
-    var phys_z = project.coordinates.z;
-    project.moveTo( project.coordinates.z, phys_y, phys_x );
-    console.log("scale", project.focusedStack.screenCoordinates().s);
-    */
+    project.toggleTracing( 'goactive');
   });
   
   mc.click(function (e) {

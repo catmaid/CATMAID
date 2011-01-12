@@ -95,7 +95,7 @@ if ( $pid )
 		
 			// treenode type logic
 			$tbranch = $db->getResult(
-			'SELECT  "t1"."id" AS "t1id",
+			'SELECT "t1"."id" AS "t1id",
 				COUNT( "t2"."id" ) as cc
 				FROM "treenode" AS "t1"
 				    JOIN "treenode" AS "t2"
@@ -158,7 +158,7 @@ if ( $pid )
 			
 			// treenode list logic
 			$t = $db->getResult(
-				'SELECT	"treenode"."id" AS "tid",
+				'SELECT DISTINCT "treenode"."id" AS "tid",
 						"treenode"."radius" AS "radius",
 						"treenode"."confidence" AS "confidence",
 						"treenode"."parent_id" AS "parent_id",
@@ -180,7 +180,7 @@ if ( $pid )
 					'.$sOrder.'
 					'.$sLimit.'
 					');
-			
+
 			$iTotal = count($t);
 			
 			reset( $t );
@@ -192,10 +192,12 @@ if ( $pid )
 			$sOutput .= '"iTotalRecords": '.$iTotal.', ';
 			$sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
 			$sOutput .= '"aaData": [ ';
-			
+			$i = 0;
 			while ( list( $key, $val) = each( $t ) )
 			{
 				$sRow = "";
+				if($i!=0) { $sRow .= ","; }
+				
 				$sRow .= "[";
 				$sRow .= '"'.addslashes($val["tid"]).'",';
 				$sRow .= '"'.addslashes($val["x"]).'",';
@@ -263,9 +265,9 @@ if ( $pid )
 				}
 				
 				// last modified
-				$sRow .= '"'.addslashes($val["last_modified"]).'",';
+				$sRow .= '"'.addslashes($val["last_modified"]).'"';
 				
-				$sRow .= "],";
+				$sRow .= "]";
 				
 				$skip = False;
 				// if search by node type is set, only add this row
@@ -290,11 +292,12 @@ if ( $pid )
 				
 				if ( !$skip )
 					$sOutput .= $sRow;
-					
+				
+        $i++;	
 				
 			}
-			$sOutput = substr_replace( $sOutput, "", -1 );
-			$sOutput .= '] }';
+			// $sOutput = substr_replace( $sOutput, "", -1 );
+			$sOutput .= ']}';
 			
 			echo $sOutput;
 

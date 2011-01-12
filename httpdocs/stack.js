@@ -1291,6 +1291,37 @@ function Stack(
 		return;
 	}
 	
+	
+	this.toggleTracing = function( m )
+	{
+    switch ( m )
+    {
+    case "skeletontracing":
+      svgOverlay.set_tracing_mode(m);
+      break;
+    case "synapsedropping":
+      svgOverlay.set_tracing_mode(m);
+      break;
+    case "dbsync":
+      svgOverlay.updateNodeCoordinatesinDB();
+      break;
+    case "goactive":
+      if(atn!=null) {
+        project.moveTo(
+                  svgOverlay.pix2physZ(atn.z),
+                  svgOverlay.pix2physY(atn.y),
+                  svgOverlay.pix2physX(atn.x)
+                  );
+      }
+      break;
+    }
+    return;
+	  
+	}
+	
+
+
+	
 	/*
 	 * resize the viewport
 	 */
@@ -1849,22 +1880,6 @@ function Stack(
   //mouseCatcher.appendChild( svgOverlay.getView() );
   view.appendChild( svgOverlay.view );
   svgOverlay.hide();
-
-  $("#sync_treenodes").click(function () {
-    svgOverlay.updateNodeCoordinatesinDB();
-  });
-  
-  $("#go_active").click(function () {
-    if(atn!=null) {
-        project.moveTo(
-                  svgOverlay.pix2physZ(atn.z),
-                  svgOverlay.pix2physY(atn.y),
-                  svgOverlay.pix2physX(atn.x)
-                  );
-    } else {
-      alert("No node activated");
-    }
-  });
 	
 	var LAST_XT = Math.floor( MAX_X * scale / X_TILE_SIZE );
 	var LAST_YT = Math.floor( MAX_Y * scale / Y_TILE_SIZE );

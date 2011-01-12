@@ -35,11 +35,11 @@ if ( $pid )
     $syn = $db->getClassId( $pid, "synapse" );
     if(!$syn) { echo makeJSON( array( '"error"' => 'Can not find "synapse" class for this project' ) ); return; }
 
-    $presyn = $db->getClassId( $pid, "presynapticterminal" );
-    if(!$syn) { echo makeJSON( array( '"error"' => 'Can not find "presynapticterminal" class for this project' ) ); return; }
+    $presyn = $db->getClassId( $pid, "presynaptic terminal" );
+    if(!$syn) { echo makeJSON( array( '"error"' => 'Can not find "presynaptic terminal" class for this project' ) ); return; }
 
-    $postsyn = $db->getClassId( $pid, "postsynapticterminal" );
-    if(!$syn) { echo makeJSON( array( '"error"' => 'Can not find "postsynapticterminal" class for this project' ) ); return; }
+    $postsyn = $db->getClassId( $pid, "postsynaptic terminal" );
+    if(!$syn) { echo makeJSON( array( '"error"' => 'Can not find "postsynaptic terminal" class for this project' ) ); return; }
 
         
     // relation ids

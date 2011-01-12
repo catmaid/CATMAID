@@ -159,8 +159,19 @@
 			<div id="toolbar_trace" class="toolbar" style="display:none">
 			  
 				<div class="box">
-				  <input type="button" id="sync_treenodes" value="sync with db" style="display:block; float:left;" />
-				  <input type="button" id="go_active" value="go to active node" style="display:block; float:left;" />
+
+				  <a href="#" class="button" id="trace_button_skeleton" onclick="project.toggleTracing( 'skeletontracing' );">
+				    <img src="widgets/themes/kde/trace_skeleton.png" alt="skeleton tracing" title="skeleton tracing" /></a>
+				    
+				  <a href="#" class="button" id="trace_button_synapse" onclick="project.toggleTracing( 'synapsedropping' );">
+				    <img src="widgets/themes/kde/trace_synapse.png" alt="synapse dropping" title="synapse dropping" /></a>
+				    
+          <a href="#" class="button" id="trace_button_sync" onclick="project.toggleTracing( 'dbsync' );">
+            <img src="widgets/themes/kde/trace_sync.png" alt="sync with database" title="sync with database" /></a>
+            
+          <a href="#" class="button" id="trace_button_goactive" onclick="project.toggleTracing( 'goactive' );">
+            <img src="widgets/themes/kde/trace_active.png" alt="go to active node" title="go to active node" /></a>
+            
 				</div>
 				<div class="toolbar_fill"></div>
 			</div>

@@ -344,6 +344,13 @@ function Project( pid )
 		return;
 	}
 	
+	this.toggleTracing = function ( m )
+	{
+	  for ( var i = 0; i < stacks.length; ++i )
+      stacks[ i ].toggleTracing(m);
+    return;
+	}
+	
 	/**
 	 * register all GUI elements
 	 */

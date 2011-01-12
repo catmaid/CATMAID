@@ -100,7 +100,8 @@ if ( $pid )
  							'title' => $ele['name'],
 						),
 						'attr' => array('id' => 'node_'. $ele['id'],
-										'rel' => $ele['class_name']),
+						// replace whitespace because of tree object types
+										'rel' => str_replace(" ", "", $ele['class_name'])),
 						'state' => 'closed'								
 						);
 			$sOutput .= tv_node( $ar );

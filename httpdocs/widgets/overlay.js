@@ -34,12 +34,12 @@ SVGOverlay = function(
     // id is treenode id
     if(locidval == null) {
       // we have the presynaptic case
-      ip_type = 'presynapticterminal'
+      ip_type = 'presynaptic terminal'
       iplre = 'presynaptic_to'
       locid = 0
     } else {
       // we have the postsynaptic case where the location and synapse is already existing
-      ip_type = 'postsynapticterminal'
+      ip_type = 'postsynaptic terminal'
       iplre = 'postsynaptic_to'
       locid = locidval
     }
@@ -478,6 +478,21 @@ SVGOverlay = function(
     return true;
   }
 
+  this.set_tracing_mode = function( mode ) {
+    // toggels the button correctly
+    // might update the mouse pointer
+    document.getElementById( "trace_button_skeleton" ).className = "button";
+    document.getElementById( "trace_button_synapse" ).className = "button";
+    
+    if( mode == "skeletontracing") {
+          this.currentmode = mode;
+          document.getElementById( "trace_button_skeleton" ).className = "button_active";
+    } else if ( this.currentmode == "skeletontracing") {
+          this.currentmode = mode;
+          document.getElementById( "trace_button_synapse" ).className = "button_active";
+    }
+    
+  }
 
   this.resolution = resolution;
   this.translation = translation;
@@ -486,6 +501,10 @@ SVGOverlay = function(
   // offset of stack in physical coordinates
   this.offleft = 0;
   this.offtop = 0;
+  
+  // currently there are two modes: skeletontracing and synapsedropping
+  this.currentmode = "skeletontracing";
+  this.set_tracing_mode( this.currentmode );
   
   var view = document.createElement( "div" );
   view.className = "sliceSVGOverlay";

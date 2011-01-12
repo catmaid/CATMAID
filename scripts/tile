@@ -11,7 +11,7 @@
 ##
 
 convert +compress ${1} s_0.ppm
-		
+
 width=`identify -format "%w" s_0.ppm`
 height=`identify -format "%h" s_0.ppm`
 
@@ -46,7 +46,7 @@ done
 
 s=$(($s+1))
 width=$((${width}/2))
-height=$((${height}/2))	
+height=$((${height}/2))
 collumns=$((${width}/${2}))
 if [[ $width > $(($collumns*${2})) ]]
 then
@@ -64,7 +64,7 @@ do
 	echo "${height} => ${rows}" >&2
 
 	convert -resize ${width}x${height} s_$((${s}-1)).ppm s_${s}.ppm
-			
+
 	convert -crop ${2}x${2} s_${s}.ppm ${s}.jpg
 	for file in `ls ${s}-*.jpg`;
 	do
@@ -74,10 +74,10 @@ do
 		c=$((${n}%${collumns}))
 		mv $file ${r}_${c}_${s}.jpg
 	done
-	
+
 	s=$(($s+1))
 	width=$((${width}/2))
-	height=$((${height}/2))	
+	height=$((${height}/2))
 	collumns=$((${width}/${2}))
 	if [[ $width > $(($collumns*${2})) ]]
 	then
@@ -89,7 +89,7 @@ do
 		rows=$(($rows+1))
 	fi
 done
-		
+
 if [[ $height < $width ]]
 then
 	convert -resize ${3} s_$((${s}-2)).ppm small.jpg

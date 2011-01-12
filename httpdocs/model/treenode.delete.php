@@ -20,10 +20,11 @@ if ( $pid )
   {
       if ( $tnid != -1 ) {
         $treenodes = $db->getResult('SELECT "treenode"."id" AS "tnid" FROM "treenode" WHERE "treenode"."parent_id" = '.$tnid);
-        // loop ofer treenodes and set to zero
+        // loop child treenodes and set to NULL (they become root)
         foreach($treenodes as $key => $tn) {
           $ids = $db->getResult('UPDATE "treenode" SET "parent_id" = NULL WHERE "treenode"."id" = '.$tn['tnid']);
         };
+        // XXX: remove its labels, and its terminal annotations
         $ids = $db->deleteFrom("treenode_class_instance", ' "treenode_class_instance"."treenode_id" = '.$tnid);
         $ids = $db->deleteFrom("treenode", ' "treenode"."id" = '.$tnid);
         echo "Removed treenode successfully.";

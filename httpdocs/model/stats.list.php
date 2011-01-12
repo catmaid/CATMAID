@@ -21,8 +21,8 @@ if ( $pid )
 		$nid = $db->getClassId( $pid, "neuron" );
 		$sid = $db->getClassId( $pid, "synapse" );
 		$skid = $db->getClassId( $pid, "skeleton" );
-		$presyn_id = $db->getRelationId( $pid, "presynaptic_to" );
-		$postsyn_id = $db->getRelationId( $pid, "postsynaptic_to" );
+    $pret = $db->getClassId( $pid, "presynaptic terminal" );
+    $postt = $db->getClassId( $pid, "postsynaptic terminal" );
 		
 		$proj_usersdb = $db->getResult('SELECT COUNT(DISTINCT "ci"."user_id") AS "nr" FROM "class_instance"
 									AS "ci" WHERE "ci"."project_id" = '.$pid);
@@ -44,14 +44,14 @@ if ( $pid )
 			AS "ci" WHERE "ci"."project_id" = '.$pid.' AND "ci"."class_id" = '.$skid);
 		$proj_skeletons = !empty($proj_skeletonsdb) ? $proj_skeletonsdb[0]['nr'] : 0;
 		
-		$proj_presyndb = $db->getResult('SELECT COUNT(DISTINCT "tci"."id") AS "nr" FROM "treenode_class_instance"
-			AS "tci" WHERE "tci"."project_id" = '.$pid.' AND "tci"."relation_id" = '.$presyn_id);
-		$proj_presyn = !empty($proj_presyndb) ? $proj_presyndb[0]['nr'] : 0;
-		
-		$proj_postsyndb = $db->getResult('SELECT COUNT(DISTINCT "tci"."id") AS "nr" FROM "treenode_class_instance"
-			AS "tci" WHERE "tci"."project_id" = '.$pid.' AND "tci"."relation_id" = '.$postsyn_id);
-		$proj_postsyn = !empty($proj_postsyndb) ? $proj_postsyndb[0]['nr'] : 0;
-		
+    $proj_presyndb = $db->getResult('SELECT COUNT(DISTINCT "ci"."id") AS "nr" FROM "class_instance"
+      AS "ci" WHERE "ci"."project_id" = '.$pid.' AND "ci"."class_id" = '.$pret);
+    $proj_presyn = !empty($proj_presyndb) ? $proj_presyndb[0]['nr'] : 0;
+
+    $proj_postsyndb = $db->getResult('SELECT COUNT(DISTINCT "ci"."id") AS "nr" FROM "class_instance"
+      AS "ci" WHERE "ci"."project_id" = '.$pid.' AND "ci"."class_id" = '.$postt);
+    $proj_postsyn = !empty($proj_postsyndb) ? $proj_postsyndb[0]['nr'] : 0;
+
 		$proj_textlabelsdb = $db->getResult('SELECT COUNT(DISTINCT "tl"."id") AS "nr" FROM "textlabel"
 			AS "tl" WHERE "tl"."project_id" = '.$pid.' AND NOT "tl"."deleted"');
 		$proj_textlabels = !empty($proj_textlabelsdb) ? $proj_textlabelsdb[0]['nr'] : 0;

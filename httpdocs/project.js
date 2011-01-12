@@ -579,6 +579,14 @@ function Project( pid )
 				input_y.value = parseInt( input_y.value ) + ( shift ? 100 : ( alt ? 1 : 10 ) );
 				input_y.onchange( e );
 				return false;
+			case 65: // A
+			  if(shift)
+			   project.toggleTracing( 'skeletontracing' );
+			  return false;
+      case 83: // S
+        if(shift)
+         project.toggleTracing( 'synapsedropping' );
+        return false;
 			case 84:    //!< key k
 			  alert('want to tag');
 			   return false;

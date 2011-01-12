@@ -132,7 +132,7 @@ SVGOverlay = function(
                   nn.pregroup[id] = nodes[id];
                   nodes[locid_retrieved] = nn;
                   nn.draw();
-                  activateNode( nn );
+                  //activateNode( nn );
                 } else {
                   // do not need to create a new connector, already existing
                   // need to update the postgroup with corresponding original treenode
@@ -189,7 +189,7 @@ SVGOverlay = function(
   
               nodes[jso.treenode_id] = nn;
               nn.draw();
-              activateNode( nn );
+              //activateNode( nn );
               
               // grab the treenode id
               var tnid = jso.treenode_id;
@@ -498,7 +498,7 @@ SVGOverlay = function(
           //console.log("...create new treenode (and skeleton) postsynaptic to activated connector", atn);
           // deactiveate atn, cache atn
           var locid = atn.id;
-          activateNode( null );
+          //activateNode( null );
           
           // create root node, creates a new active node
           // because the treenode creation is asynchronous, we have to invoke

@@ -995,11 +995,11 @@ function Stack(
 			{
 				if ( w > 0 )
 				{
-					slider_z.move( -1 );
+					slider_z.move( 1 );
 				}
 				else
 				{
-					slider_z.move( 1 );
+					slider_z.move( -1 );
 				}
 			}
 			return false;

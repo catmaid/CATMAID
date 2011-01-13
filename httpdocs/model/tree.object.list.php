@@ -63,21 +63,6 @@ if ( $pid )
 			return;
 		}
 		
-		// XXX: inc case we need to show relation_names
-	/*	$res = $db->getResult('SELECT "ci"."id", "ci"."name", "ci"."class_id",
-		"cici"."relation_id", "cici"."class_instance_b" AS "parent", "rl"."relation_name"
-		FROM "class_instance" AS "ci"
-		INNER JOIN "class_instance_class_instance" AS "cici" 
-			ON "ci"."id" = "cici"."class_instance_a" 
-			INNER JOIN "relation" AS "rl" 
-				ON "cici"."relation_id" = "rl"."id"
-		WHERE "ci"."project_id" = '.$pid.' AND
-		   "cici"."class_instance_b" = '.$parid.' AND
-		   ("cici"."relation_id" = '.$presyn_id.'
-			OR "cici"."relation_id" = '.$postsyn_id.'
-			OR "cici"."relation_id" = '.$modid.'
-			OR "cici"."relation_id" = '.$partof_id.')');
-*/
 		$res = $db->getResult('SELECT "ci"."id", "ci"."name", "ci"."class_id",
 		"cici"."relation_id", "cici"."class_instance_b" AS "parent", "cl"."class_name"
 		FROM "class_instance" AS "ci"
@@ -90,7 +75,8 @@ if ( $pid )
 		   ("cici"."relation_id" = '.$presyn_id.'
 			OR "cici"."relation_id" = '.$postsyn_id.'
 			OR "cici"."relation_id" = '.$modid.'
-			OR "cici"."relation_id" = '.$partof_id.')');
+			OR "cici"."relation_id" = '.$partof_id.')
+	  ORDER BY "ci"."edition_time" DESC');
 
 		// loop through the array and generate children to return
 		$sOutput = '[';

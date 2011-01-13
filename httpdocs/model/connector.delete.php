@@ -72,23 +72,21 @@ if ( $pid )
       // delete class_instance
       if(!empty($conin)) {
         foreach($conin as $key => $tn) {
-          echo "delete ci".$tn['id'];
            $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$tn['id']);
         }
       }
       
       // delete label relationships without deleting the class_instance labels
-      $ids = $db->deleteFrom("treenode_class_instance", ' "treenode_class_instance"."treenode_id" = '.$tnid.' AND
+      $ids = $db->deleteFrom("treenode_class_instance", ' "treenode_class_instance"."treenode_id" = '.$classin_id.' AND
       "treenode_class_instance"."relation_id" = '.$lab_id);
 
-      echo "Removed connector successfully.";
           
     } else {
       echo makeJSON( array( '"error"' => 'Can not delete. You are not the owner of the class_instance "'.$classin_id.'" for this project' ) );
       return;
     }
       
-    echo makeJSON( array( '"result"' => "Removed connector and class_instance",
+    echo makeJSON( array( '"result"' => "Removed connector and class_instances",
                 '"connector_id"' => $cid,
                 '"class_instance_id"' => $classin_id
                 ) );

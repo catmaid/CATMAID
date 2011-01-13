@@ -92,18 +92,16 @@ initTreenodeTable = function(pid) {
 	} );
 	
   $("#treenodetable tbody tr").live('dblclick', function() { //dblclick(function(event) {
-    /*$(oTable.fnSettings().aoData).each(function (){
-      $(this.nTr).removeClass('row_selected');
-    });*/
-    // $(event.target.parentNode).addClass('row_selected');
-    //alert('dblclicked, go to node');
+
     var aData = oTable.fnGetData( this );
     // retrieve coortinates and moveTo
     var x = parseFloat(aData[1]);
     var y = parseFloat(aData[2]);
     var z = parseFloat(aData[3]);
     project.moveTo(z,y,x);
-    
+    // XXX: want to active the node, but how? we know the id
+    // and register a request that activates the node because
+    // it should be retrieved
   });
 
 

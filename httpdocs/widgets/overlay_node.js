@@ -250,15 +250,6 @@ Node = function(
   mc.click(function (e) {
     // return some log information when clicked on the node
     // this usually refers here to the mc object
-    /*
-    console.log("----------");
-    console.log("correct id", this.parentnode.id);
-    console.log("activated node", this.parentnode);
-    console.log("handler object", this);
-    console.log("its children", this.parentnode.children);
-    console.log("its coords", this.parentnode.x, this.parentnode.y, this.parentnode.z);
-    console.log("-----------");
-    */
     if(e.ctrlKey && e.shiftKey ){
       this.parentnode.deletenode();
     } else if (e.shiftKey) {

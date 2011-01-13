@@ -26,6 +26,43 @@ SVGOverlay = function(
 {
 
   var nodes = new Object();
+
+  this.rerootSkeleton = function()
+  {
+
+    if ( confirm( "Do you really want to to reroot the skeleton?" ) )
+    {
+      requestQueue.register(
+        "model/treenode.reroot.php",
+        "POST",
+        {
+          pid : project.id,
+          tnid : atn.id
+         },
+         function(status, text, xml)
+         {
+            if ( status == 200 )
+            {
+              if ( text && text != " " )
+              {
+                var e = eval( "(" + text + ")" );
+                console.log(e);
+                if ( e.error )
+                {
+                  alert( e.error );
+                }
+                else
+                {
+                  // add treenode to the display and update it
+                  var jso = $.parseJSON(text);
+                  console.log("retrieved", jso);
+                  
+                }
+              } // endif
+            } // end if
+          }); // endfunction
+    };
+  }
   
   this.splitSkeleton = function()
   {

@@ -14,6 +14,16 @@ $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
 $tnid = isset( $_REQUEST[ 'tnid' ] ) ? intval( $_REQUEST[ 'tnid' ] ) : -1;
 
+function rerootSkeleton($tnid){
+  // currenttn = tnid
+  // while lastparent != null
+  //  lastparent = select(currenttn.parentid)
+  //  update parenttn's parentid to currenttn.id
+  //  currentn = parentn.id
+  
+  return true;
+} 
+
 if ( $pid )
 {
   if ( $uid )

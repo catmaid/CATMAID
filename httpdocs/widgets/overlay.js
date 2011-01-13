@@ -1,4 +1,4 @@
-// active treenode or connectornode
+// active treenode or connector
 var atn = null;
 var atn_fillcolor = "rgb(0, 255, 0)";
 
@@ -27,10 +27,45 @@ SVGOverlay = function(
 
   var nodes = new Object();
   
+  this.splitSkeleton = function()
+  {
+
+    if ( confirm( "Do you really want to to split the skeleton?" ) )
+    {
+      requestQueue.register(
+        "model/treenode.split.php",
+        "POST",
+        {
+          pid : project.id,
+          tnid : atn.id
+         },
+         function(status, text, xml)
+         {
+            if ( status == 200 )
+            {
+              if ( text && text != " " )
+              {
+                var e = eval( "(" + text + ")" );
+                if ( e.error )
+                {
+                  alert( e.error );
+                }
+                else
+                {
+                  // add treenode to the display and update it
+                  var jso = $.parseJSON(text);
+                  console.log("retrieved", jso);
+                  
+                }
+              } // endif
+            } // end if
+          }); // endfunction
+    };
+  }
+  
   var createSingleConnector = function( phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval) {
     // create a single connector with a synapse instance that is
     // not linked to any treenode
-    
     requestQueue.register(
       "model/connector.create.php",
       "POST",
@@ -58,7 +93,6 @@ SVGOverlay = function(
               {
                 // add treenode to the display and update it
                 var jso = $.parseJSON(text);
-                console.log("retrieved", jso);
                 var cid = parseInt(jso.connector_id);
                 
                 var nn = new ConnectorNode(cid, r, 8, pos_x, pos_y, pos_z, 0);

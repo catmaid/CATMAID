@@ -14,7 +14,7 @@ initPreSynapseTable = function(pid) {
 		"bProcessing": true,
 		"bServerSide": true,
 		"bAutoWidth": false,
-		"sAjaxSource": 'model/synapse.list.php?pid='+pid+'&pre='+prestr,
+		"sAjaxSource": 'model/connector.list.php?pid='+pid+'&pre='+prestr,
 		"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
 		"bJQueryUI": true,
 		"fnRowCallback": function( nRow, aData, iDisplayIndex ) {

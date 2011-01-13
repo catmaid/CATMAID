@@ -1314,6 +1314,20 @@ function Stack(
                   );
       }
       break;
+    case "skeletonsplitting":
+      if(atn!=null) {
+        svgOverlay.splitSkeleton();
+      } else {
+        alert('Need to activate a treenode before splitting!');
+      }
+      break;
+    case "skeletonreroot":
+      if(atn!=null) {
+        svgOverlay.rerootSkeleton();
+      } else {
+        alert('Need to activate a treenode before rerooting!');
+      }
+      break;
     }
     return;
 	  

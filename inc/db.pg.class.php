@@ -418,7 +418,7 @@ class DB
     if(!$rel_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$relation.'" relation for this project' ) ); return; }
 
     $res = $this->getResult(
-    'SELECT "tci"."class_instance_b" as "id" FROM "class_instance_class_instance" AS "cici"
+    'SELECT "cici"."class_instance_b" as "id" FROM "class_instance_class_instance" AS "cici"
     WHERE "cici"."project_id" = '.$pid.' AND
     "cici"."relation_id" = '.$rel_id.' AND
     "cici"."class_instance_a" = '.$cid);
@@ -454,7 +454,7 @@ class DB
   /*
    * split a skeleton given a treenode
    */
-  function splitSkeleton( $pid, $tnid )
+  function splitSkeleton( $pid, $uid, $tnid )
   {
  
     $modof = 'model_of';
@@ -471,21 +471,24 @@ class DB
     if(!$skid) { echo makeJSON( array( '"error"' => 'Can not find "skeleton" class for this project' ) ); return; }
  
     // retrieve class_instances for the treenode, should only be one id
-    $ci_id = getClassInstanceForTreenode( $pid, $tnid, 'model_of');
+    //$ci_id = $this->getClassInstanceForTreenode( $pid, $tnid, 'model_of');
     // delete the model of, assume only one
-    $ids = $this->deleteFrom("class_instance", ' "class_instance"."id" = '.$ci_id[0]['class_instance_id']);
+    //$ids = $this->deleteFrom("class_instance", ' "class_instance"."id" = '.$ci_id[0]['class_instance_id']);
     
     // retrieve skeleton id
-    $sk = getClassInstanceForTreenode( $pid, $tnid, 'element_of');
-    $sk_id = $sk[0]['class_instance_id'];
-    
+    $sk = $this->getClassInstanceForTreenode( $pid, $tnid, 'element_of');
+    if(!empty($sk)) { $sk_id = $sk[0]['class_instance_id']; } else {
+      echo makeJSON( array( '"error"' => 'Can not find skeleton for this treenode.' ) ); return; }
+
     // retrieve neuron id of the skeleton
-    $neu = getCIFromCI( $pid, $sk_id, 'model_of' );
-    $neu_id = $neu[0]['id'];
+    $neu = $this->getCIFromCI( $pid, $sk_id, 'model_of' );
+    if(!empty($neu)) { $neu_id = $neu[0]['id']; } else {
+      echo makeJSON( array( '"error"' => 'Can not find neron for the skeleton.' ) ); return; }
+      
     
     $childrentreenodes = $this->getTreenodeChildren( $pid, $tnid );
     // for each children, set to root and create a new skeleton
-    foreach($treenodes as $key => $tn) {
+    foreach($childrentreenodes as $key => $tn) {
       // set to root
       $ids = $this->getResult('UPDATE "treenode" SET "parent_id" = NULL WHERE "treenode"."id" = '.$tn['tnid']);
       // create new skeleton
@@ -505,7 +508,7 @@ class DB
       $data = array(
           'user_id' => $uid,
           'project_id' => $pid,
-          'relation_id' => 'model_of',
+          'relation_id' => $modof_id,
           'class_instance_a' => $skelid,
           'class_instance_b' => $neu_id 
         );
@@ -514,7 +517,7 @@ class DB
       // update element_of of sub-skeleton
       // retrieve all treenode ids by traversing the subtree
       $allchi = $this->getAllTreenodeChildrenRecursively( $pid, $tn['tnid'] );
-      foreach($treenodes as $key => $chitn) {
+      foreach($allchi as $key => $chitn) {
         // update the element_of to the newly created skeleton
         // and the new root treenode
         $ids = $this->getResult('UPDATE "treenode_class_instance" SET "class_instance_id" = '.$skelid.' WHERE

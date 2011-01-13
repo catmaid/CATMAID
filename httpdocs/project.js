@@ -654,22 +654,4 @@ function Project( pid )
 						  };
 	this.selectedObjects = selectedObjects;
 	
-	// handling all the currently existing objects
-	var existingObjects = {};
-	this.existingObjects = existingObjects;
-	
-	// history of activated objects in the past
-	var history = [];
-	this.history = history;
-	
-	// currently active treenode
-	// includes id and skeleton id
-	var active_treenode = {};
-	this.active_treenode = active_treenode;
-	
-	// currently active synapse
-	// includes id
-	var active_synapse = {};
-	this.active_synapse = active_synapse;
-	
 }

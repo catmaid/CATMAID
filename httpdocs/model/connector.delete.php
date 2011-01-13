@@ -35,6 +35,7 @@ if ( $pid )
     $classin = $db->getResult('SELECT "cci"."class_instance_id" AS "id" FROM "connector_class_instance" AS "cci"
      WHERE "cci"."relation_id" = '.$cir_id.' AND "cci"."connector_id" = '.$cid.' AND 
      "cci"."project_id" = '.$pid);
+
     if(!empty($classin)) { $classin_id = $classin[0]['id']; } else {
       echo makeJSON( array( '"error"' => 'Can not find class_instance of "'.$ci_type.'" class for this project' ) );
       return;
@@ -53,6 +54,9 @@ if ( $pid )
       $ids = $db->deleteFrom("connector", ' "connector"."id" = '.$cid);
       // delete class_instance
       $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$classin_id);
+    } else {
+      echo makeJSON( array( '"error"' => 'Can not delete. You are not the owner of the class_instance "'.$classin_id.'" for this project' ) );
+      return;
     }
       
     echo makeJSON( array( '"result"' => "Removed connector and class_instance",

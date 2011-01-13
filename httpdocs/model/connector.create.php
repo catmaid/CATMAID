@@ -19,7 +19,7 @@ $confi = isset( $_REQUEST[ 'confidence' ] ) ? floatval( $_REQUEST[ 'confidence' 
 
 $ci_type = isset( $_REQUEST[ 'class_instance_type' ] ) ? $_REQUEST[ 'class_instance_type' ] : 'none';
 $ci_relation = isset( $_REQUEST[ 'class_instance_relation' ] ) ? $_REQUEST[ 'class_instance_relation' ] : 'none';
-
+  
 if ( $pid )
 {
   if ( $uid )

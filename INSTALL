@@ -21,7 +21,7 @@ the folder /var/www/catmaid/httpdocs/ in place
 
 https://help.ubuntu.com/community/PostgreSQL
 
-	sudo apt-get install postgresql pgadmin3 phppgadmin
+	sudo apt-get install postgresql pgadmin3 phppgadmin postgresql-contrib
 
 Update the password for your catmaid user in /var/www/catmaid/docs/createuser.sql
 

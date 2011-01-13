@@ -61,169 +61,6 @@ CREATE TYPE rgba AS (
 ALTER TYPE public.rgba OWNER TO catmaid_user;
 
 --
--- Name: tablefunc_crosstab_2; Type: TYPE; Schema: public; Owner: catmaid_user
---
-
-CREATE TYPE tablefunc_crosstab_2 AS (
-	row_name text,
-	category_1 text,
-	category_2 text
-);
-
-
-ALTER TYPE public.tablefunc_crosstab_2 OWNER TO catmaid_user;
-
---
--- Name: tablefunc_crosstab_3; Type: TYPE; Schema: public; Owner: catmaid_user
---
-
-CREATE TYPE tablefunc_crosstab_3 AS (
-	row_name text,
-	category_1 text,
-	category_2 text,
-	category_3 text
-);
-
-
-ALTER TYPE public.tablefunc_crosstab_3 OWNER TO catmaid_user;
-
---
--- Name: tablefunc_crosstab_4; Type: TYPE; Schema: public; Owner: catmaid_user
---
-
-CREATE TYPE tablefunc_crosstab_4 AS (
-	row_name text,
-	category_1 text,
-	category_2 text,
-	category_3 text,
-	category_4 text
-);
-
-
-ALTER TYPE public.tablefunc_crosstab_4 OWNER TO catmaid_user;
-
---
--- Name: connectby(text, text, text, text, integer, text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION connectby(text, text, text, text, integer, text) RETURNS SETOF record
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'connectby_text';
-
-
-ALTER FUNCTION public.connectby(text, text, text, text, integer, text) OWNER TO catmaid_user;
-
---
--- Name: connectby(text, text, text, text, integer); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION connectby(text, text, text, text, integer) RETURNS SETOF record
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'connectby_text';
-
-
-ALTER FUNCTION public.connectby(text, text, text, text, integer) OWNER TO catmaid_user;
-
---
--- Name: connectby(text, text, text, text, text, integer, text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION connectby(text, text, text, text, text, integer, text) RETURNS SETOF record
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'connectby_text_serial';
-
-
-ALTER FUNCTION public.connectby(text, text, text, text, text, integer, text) OWNER TO catmaid_user;
-
---
--- Name: connectby(text, text, text, text, text, integer); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION connectby(text, text, text, text, text, integer) RETURNS SETOF record
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'connectby_text_serial';
-
-
-ALTER FUNCTION public.connectby(text, text, text, text, text, integer) OWNER TO catmaid_user;
-
---
--- Name: crosstab(text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION crosstab(text) RETURNS SETOF record
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'crosstab';
-
-
-ALTER FUNCTION public.crosstab(text) OWNER TO catmaid_user;
-
---
--- Name: crosstab(text, integer); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION crosstab(text, integer) RETURNS SETOF record
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'crosstab';
-
-
-ALTER FUNCTION public.crosstab(text, integer) OWNER TO catmaid_user;
-
---
--- Name: crosstab(text, text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION crosstab(text, text) RETURNS SETOF record
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'crosstab_hash';
-
-
-ALTER FUNCTION public.crosstab(text, text) OWNER TO catmaid_user;
-
---
--- Name: crosstab2(text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION crosstab2(text) RETURNS SETOF tablefunc_crosstab_2
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'crosstab';
-
-
-ALTER FUNCTION public.crosstab2(text) OWNER TO catmaid_user;
-
---
--- Name: crosstab3(text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION crosstab3(text) RETURNS SETOF tablefunc_crosstab_3
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'crosstab';
-
-
-ALTER FUNCTION public.crosstab3(text) OWNER TO catmaid_user;
-
---
--- Name: crosstab4(text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION crosstab4(text) RETURNS SETOF tablefunc_crosstab_4
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'crosstab';
-
-
-ALTER FUNCTION public.crosstab4(text) OWNER TO catmaid_user;
-
---
--- Name: normal_rand(integer, double precision, double precision); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION normal_rand(integer, double precision, double precision) RETURNS SETOF double precision
-    LANGUAGE c STRICT
-    AS '$libdir/tablefunc', 'normal_rand';
-
-
-ALTER FUNCTION public.normal_rand(integer, double precision, double precision) OWNER TO catmaid_user;
-
---
 -- Name: on_edit(); Type: FUNCTION; Schema: public; Owner: catmaid_user
 --
 
@@ -371,7 +208,7 @@ ALTER SEQUENCE concept_id_seq OWNED BY concept.id;
 -- Name: concept_id_seq; Type: SEQUENCE SET; Schema: public; Owner: catmaid_user
 --
 
-SELECT pg_catalog.setval('concept_id_seq', 2323, true);
+SELECT pg_catalog.setval('concept_id_seq', 1792, true);
 
 
 --
@@ -1012,7 +849,7 @@ COPY class_class (id, user_id, creation_time, edition_time, project_id, relation
 --
 
 COPY class_instance (id, user_id, creation_time, edition_time, project_id, class_id, name) FROM stdin;
-2323	3	2011-01-13 15:10:41.563809+01	2011-01-13 15:10:41.563809+01	3	112	neuropile
+1792	3	2011-01-12 13:54:08.121232+01	2011-01-12 13:54:08.121232+01	3	112	neuropile
 \.
 
 
@@ -1053,6 +890,16 @@ COPY connector_class_instance (id, user_id, creation_time, edition_time, project
 --
 
 COPY location (id, user_id, creation_time, edition_time, project_id, location) FROM stdin;
+1331	3	2010-12-29 18:34:29.322328+01	2010-12-29 18:34:29.322328+01	3	(3704.9504000000002,1278.4688000000001,120)
+1337	3	2010-12-29 18:37:09.306273+01	2010-12-29 18:37:09.306273+01	3	(2348.2080000000001,6888.0767999999998,60)
+1349	3	2010-12-29 18:37:09.746111+01	2010-12-29 18:37:09.746111+01	3	(2348.2080000000001,6888.0767999999998,60)
+1370	3	2010-12-29 18:37:49.943599+01	2010-12-29 18:37:49.943599+01	3	(6940.2592000000004,9627.6527999999998,120)
+1385	3	2010-12-29 18:38:10.33665+01	2010-12-29 18:38:10.33665+01	3	(2556.9376000000002,8818.8256000000001,120)
+1265	3	2010-12-29 18:30:39.83259+01	2010-12-29 18:30:39.83259+01	3	(5335.6504000000004,6757.6207999999997,120)
+1355	3	2010-12-29 18:37:43.217698+01	2010-12-29 18:37:43.217698+01	3	(5635.6992,8779.6887999999999,120)
+1391	3	2010-12-29 18:39:19.75276+01	2010-12-29 18:39:19.75276+01	3	(4931.2367999999997,11206.170400000001,120)
+1253	3	2010-12-29 18:30:39.442699+01	2010-12-29 18:30:39.442699+01	3	(4957.3280000000004,3939.7712000000001,120)
+1319	3	2010-12-29 18:34:28.990594+01	2010-12-29 18:34:28.990594+01	3	(2661.3024,3652.768,120)
 \.
 
 
@@ -1152,6 +999,29 @@ COPY stack (id, title, dimension, resolution, image_base, comment, trakem2_proje
 --
 
 COPY textlabel (id, type, text, colour, font_name, font_style, font_size, project_id, scaling, creation_time, edition_time, deleted) FROM stdin;
+3	text	Schoen	(1,0.49803922,0,1)	\N	bold	978	1	t	2010-08-27 12:38:40.980952+02	2010-08-27 12:39:00.6389+02	f
+2	text	Edit this text...	(1,0.8509804,0,1)	\N	bold	1196	1	t	2010-08-26 12:36:48.24755+02	2010-08-26 12:36:50.836827+02	t
+5	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	250	3	t	2010-09-13 11:50:47.159475+02	2010-09-13 11:50:49.604793+02	t
+6	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-10-11 14:15:31.168282+02	2010-10-11 14:15:33.854817+02	t
+7	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-10-11 14:16:05.826567+02	2010-10-11 14:16:08.769985+02	t
+8	text	MYTEST\n	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-10-18 09:38:47.088904+02	2010-10-18 09:39:33.143551+02	t
+9	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-10-18 09:44:24.225973+02	2010-10-18 09:44:29.548195+02	t
+4	text	Test	(1,0.49803922,0,1)	\N	bold	250	3	t	2010-08-27 15:19:17.197702+02	2010-12-20 09:31:47.015919+01	t
+13	text	Myelinated axon	(0,0,1,1)	\N	bold	150	3	t	2010-12-01 09:43:16.700626+01	2010-12-20 09:36:28.343518+01	t
+15	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-12-20 09:37:38.285231+01	2010-12-20 09:37:44.347119+01	t
+14	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-12-20 09:36:39.000766+01	2010-12-20 09:38:43.094581+01	t
+16	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-12-20 10:10:26.269007+01	2010-12-20 10:10:29.762499+01	t
+17	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-12-20 10:10:53.579777+01	2010-12-20 10:14:46.224959+01	t
+18	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-12-20 10:10:54.103042+01	2010-12-20 10:15:57.32196+01	t
+19	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-12-20 10:16:12.935654+01	2010-12-20 10:16:21.208902+01	t
+21	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-12-20 10:16:14.335655+01	2010-12-20 10:16:25.638116+01	t
+10	text	*	(0,0,1,1)	\N	bold	260	3	t	2010-12-01 09:41:45.68728+01	2010-12-01 09:42:08.359032+01	f
+20	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-12-20 10:16:13.782039+01	2010-12-20 10:16:29.660556+01	t
+22	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	160	3	t	2010-12-20 10:19:56.8591+01	2010-12-20 10:19:56.8591+01	f
+11	text	Mitochondria	(0,0,1,1)	\N	bold	160	3	t	2010-12-01 09:42:09.159965+01	2010-12-20 12:37:54.40121+01	f
+1	text	Guten Tag!	(1,0.8509804,0,1)	\N	bold	864	1	t	2010-08-26 12:35:10.72796+02	2010-12-20 17:38:32.970317+01	f
+12	text	*	(0,0,1,1)	\N	bold	260	3	t	2010-12-01 09:42:35.406046+01	2010-12-01 09:42:56.152671+01	f
+23	text	Edit this text...	(1,0.49803922,0,1)	\N	bold	104	3	t	2011-01-09 10:56:18.363413+01	2011-01-09 10:56:18.363413+01	f
 \.
 
 
@@ -1160,6 +1030,141 @@ COPY textlabel (id, type, text, colour, font_name, font_style, font_size, projec
 --
 
 COPY textlabel_location (textlabel_id, location, deleted) FROM stdin;
+3	(8580.7433999999994,5945.5321999999996,60)	f
+2	(7501.2200000000003,7798.0074000000004,60)	t
+5	(4820,2375,9)	t
+6	(3420,3640,153)	t
+7	(2175,4200,9)	t
+8	(1440,4145,99)	t
+9	(2035,4005,9)	t
+10	(5240,2380,45)	f
+12	(5725,2360,45)	f
+4	(2690,2767.5,9)	t
+13	(5150,3705,45)	t
+15	(3605,4185,9)	t
+14	(4085,4015,0)	t
+16	(1665,3065,0)	t
+17	(2115,4135,0)	t
+18	(4885,4135,0)	t
+19	(3105,3195,0)	t
+21	(4055,4705,0)	t
+20	(5495,4145,0)	t
+22	(3225,3725,0)	f
+11	(5680,1785,45)	f
+1	(4393.1058000000003,3701.6889999999999,60)	f
+3	(8580.7433999999994,5945.5321999999996,60)	f
+2	(7501.2200000000003,7798.0074000000004,60)	t
+5	(4820,2375,9)	t
+6	(3420,3640,153)	t
+7	(2175,4200,9)	t
+8	(1440,4145,99)	t
+9	(2035,4005,9)	t
+10	(5240,2380,45)	f
+12	(5725,2360,45)	f
+4	(2690,2767.5,9)	t
+13	(5150,3705,45)	t
+15	(3605,4185,9)	t
+14	(4085,4015,0)	t
+16	(1665,3065,0)	t
+17	(2115,4135,0)	t
+18	(4885,4135,0)	t
+19	(3105,3195,0)	t
+21	(4055,4705,0)	t
+20	(5495,4145,0)	t
+22	(3225,3725,0)	f
+11	(5680,1785,45)	f
+1	(4393.1058000000003,3701.6889999999999,60)	f
+23	(4419.1970000000001,6338.5308999999997,840)	f
+3	(8580.7433999999994,5945.5321999999996,60)	f
+2	(7501.2200000000003,7798.0074000000004,60)	t
+5	(4820,2375,9)	t
+6	(3420,3640,153)	t
+7	(2175,4200,9)	t
+8	(1440,4145,99)	t
+9	(2035,4005,9)	t
+10	(5240,2380,45)	f
+12	(5725,2360,45)	f
+4	(2690,2767.5,9)	t
+13	(5150,3705,45)	t
+15	(3605,4185,9)	t
+14	(4085,4015,0)	t
+16	(1665,3065,0)	t
+17	(2115,4135,0)	t
+18	(4885,4135,0)	t
+19	(3105,3195,0)	t
+21	(4055,4705,0)	t
+20	(5495,4145,0)	t
+22	(3225,3725,0)	f
+11	(5680,1785,45)	f
+1	(4393.1058000000003,3701.6889999999999,60)	f
+3	(8580.7433999999994,5945.5321999999996,60)	f
+2	(7501.2200000000003,7798.0074000000004,60)	t
+5	(4820,2375,9)	t
+6	(3420,3640,153)	t
+7	(2175,4200,9)	t
+8	(1440,4145,99)	t
+9	(2035,4005,9)	t
+10	(5240,2380,45)	f
+12	(5725,2360,45)	f
+4	(2690,2767.5,9)	t
+13	(5150,3705,45)	t
+15	(3605,4185,9)	t
+14	(4085,4015,0)	t
+16	(1665,3065,0)	t
+17	(2115,4135,0)	t
+18	(4885,4135,0)	t
+19	(3105,3195,0)	t
+21	(4055,4705,0)	t
+20	(5495,4145,0)	t
+22	(3225,3725,0)	f
+11	(5680,1785,45)	f
+1	(4393.1058000000003,3701.6889999999999,60)	f
+23	(4419.1970000000001,6338.5308999999997,840)	f
+3	(8580.7433999999994,5945.5321999999996,60)	f
+2	(7501.2200000000003,7798.0074000000004,60)	t
+5	(4820,2375,9)	t
+6	(3420,3640,153)	t
+7	(2175,4200,9)	t
+8	(1440,4145,99)	t
+9	(2035,4005,9)	t
+10	(5240,2380,45)	f
+12	(5725,2360,45)	f
+4	(2690,2767.5,9)	t
+13	(5150,3705,45)	t
+15	(3605,4185,9)	t
+14	(4085,4015,0)	t
+16	(1665,3065,0)	t
+17	(2115,4135,0)	t
+18	(4885,4135,0)	t
+19	(3105,3195,0)	t
+21	(4055,4705,0)	t
+20	(5495,4145,0)	t
+22	(3225,3725,0)	f
+11	(5680,1785,45)	f
+1	(4393.1058000000003,3701.6889999999999,60)	f
+3	(8580.7433999999994,5945.5321999999996,60)	f
+2	(7501.2200000000003,7798.0074000000004,60)	t
+5	(4820,2375,9)	t
+6	(3420,3640,153)	t
+7	(2175,4200,9)	t
+8	(1440,4145,99)	t
+9	(2035,4005,9)	t
+10	(5240,2380,45)	f
+12	(5725,2360,45)	f
+4	(2690,2767.5,9)	t
+13	(5150,3705,45)	t
+15	(3605,4185,9)	t
+14	(4085,4015,0)	t
+16	(1665,3065,0)	t
+17	(2115,4135,0)	t
+18	(4885,4135,0)	t
+19	(3105,3195,0)	t
+21	(4055,4705,0)	t
+20	(5495,4145,0)	t
+22	(3225,3725,0)	f
+11	(5680,1785,45)	f
+1	(4393.1058000000003,3701.6889999999999,60)	f
+23	(4419.1970000000001,6338.5308999999997,840)	f
 \.
 
 
@@ -1549,22 +1554,6 @@ ALTER TABLE ONLY class_instance
 
 
 --
--- Name: class_instance_class_instance_class_instance_a_fkey; Type: FK CONSTRAINT; Schema: public; Owner: catmaid_user
---
-
-ALTER TABLE ONLY class_instance_class_instance
-    ADD CONSTRAINT class_instance_class_instance_class_instance_a_fkey FOREIGN KEY (class_instance_a) REFERENCES class_instance(id) ON DELETE CASCADE;
-
-
---
--- Name: class_instance_class_instance_class_instance_b_fkey; Type: FK CONSTRAINT; Schema: public; Owner: catmaid_user
---
-
-ALTER TABLE ONLY class_instance_class_instance
-    ADD CONSTRAINT class_instance_class_instance_class_instance_b_fkey FOREIGN KEY (class_instance_b) REFERENCES class_instance(id) ON DELETE CASCADE;
-
-
---
 -- Name: class_instance_relation_instance_relation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: catmaid_user
 --
 
@@ -1753,7 +1742,7 @@ ALTER TABLE ONLY textlabel
 --
 
 ALTER TABLE ONLY treenode_class_instance
-    ADD CONSTRAINT treenode_class_instance_class_instance_id_fkey FOREIGN KEY (class_instance_id) REFERENCES class_instance(id) ON DELETE CASCADE;
+    ADD CONSTRAINT treenode_class_instance_class_instance_id_fkey FOREIGN KEY (class_instance_id) REFERENCES class_instance(id);
 
 
 --

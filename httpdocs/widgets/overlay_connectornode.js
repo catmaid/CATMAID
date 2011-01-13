@@ -167,7 +167,6 @@ ConnectorNode = function(
         pid : project.id,
         cid : this.id,
         class_instance_type :'synapse',
-        class_instance_relation : 'model_of',
       },
       function(status, text, xml)
       {

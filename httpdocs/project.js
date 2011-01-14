@@ -587,9 +587,9 @@ function Project( pid )
         if(shift)
          project.toggleTracing( 'synapsedropping' );
         return false;
-			case 84:    //!< key k
-			  alert('want to tag');
-			   return false;
+			case 84:    //!< key t
+			  project.toggleTracing( 'tagging' );
+			  return false;
 			case 9:			//!< tab
 				if ( shift ) project.switchFocus( -1 );
 				else project.switchFocus( 1 );

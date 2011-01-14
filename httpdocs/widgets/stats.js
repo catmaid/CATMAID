@@ -43,6 +43,7 @@ initProjectStats = function() {
 		$("#proj_presyn").text(data.proj_presyn);
 		$("#proj_postsyn").text(data.proj_postsyn);
 		$("#proj_textlabels").text(data.proj_textlabels);
+    $("#proj_tags").text(data.proj_tags);
 	}
 	
 }

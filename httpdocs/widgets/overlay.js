@@ -27,6 +27,169 @@ SVGOverlay = function(
 
   var nodes = new Object();
 
+  this.tagATN = function()
+  {
+    // creates a tag editor diff for the activated atn
+    //$("#sliceSVGOverlayId").append("<div>hello world</div>");
+    /*
+    var tagbox = document.createElement( "div" );
+    tagbox.className = "tagBox";
+    tagbox.id = "tagboxId";
+    tagbox.style.zIndex = 6;
+    tagbox.style.left = atn.x + "px";
+    tagbox.style.top = atn.y + "px";
+    $("tagBoxId").text("mensch");
+*/
+
+    if( $("#tagBoxId" + atn.id).length != 0 ) {
+      alert("TagBox is already open!");
+      return;
+    }
+
+    var e = $("<div class='tagBox' id='tagBoxId"+ atn.id + "' style='z-index: 8; left: "+atn.x + "px; top: "+ atn.y + "px;'>" + 
+    //var e = $("<div class='tagBox' id='tagBoxId' style='z-index: 7; left: 0px; top: 0px; color:white; bgcolor:blue;font-size:12pt'>" +
+      "Tag: <input id='Tags"+ atn.id + "' name='Tags' type='text' value='' />" +
+      "<button id='SaveCloseButton"+ atn.id + "'>Save&Close</button>" +
+      "<button id='CloseButton"+ atn.id + "'>Close</button>" +
+      "</div>");
+    e.onclick = function( e )
+    {   
+      e.stopPropagation();
+      return true;
+    }
+    e.css('background-color', 'white');
+    //e.css('width', '200px');
+    //e.css('height', '200px');
+    e.css('position', 'absolute');
+    e.appendTo("#sliceSVGOverlayId");
+    
+    // update click event handling
+    $("#tagBoxId" + atn.id).click(function(event) {
+        // console.log(event);
+        event.stopPropagation();
+        });
+        
+    // add autocompletion
+    requestQueue.register(
+      "model/label.all.list.php",
+      "POST",
+       {
+        pid : project.id
+       },
+       function(status, text, xml)
+       {
+         
+        if ( status == 200 )
+        {
+          if ( text && text != " " )
+          {
+            var e = eval( "(" + text + ")" );
+            if ( e.error )
+            {
+              alert( e.error );
+            }
+            else
+            {
+                var availableTags = $.parseJSON( text );
+                $("#Tags"+ atn.id).autocomplete({
+                  source: availableTags
+                });
+            }
+           }
+         }
+       }
+     ); // endfunction
+          
+    // labels.all.list.php <- for autocompletion input
+    // labels.node.list.php <- retrieve labels for a node
+    // labels.update.php <- recreate labels (discover new ones etc.)
+    requestQueue.register(
+      "model/label.node.list.php",
+      "POST",
+       {
+        pid : project.id,
+        nid : atn.id,
+        ntype : atn.type
+       },
+       function(status, text, xml)
+       {
+         
+        if ( status == 200 )
+        {
+          if ( text && text != " " )
+          {
+            var e = eval( "(" + text + ")" );
+            if ( e.error )
+            {
+              alert( e.error );
+            }
+            else
+            {
+                var nodeitems = $.parseJSON( text );
+                
+                $("#Tags" + atn.id).tagEditor(
+                  {
+                      items: nodeitems,
+                      confirmRemoval: true
+                  });
+                  
+            }
+           }
+         }
+       }
+     ); // endfunction
+    
+
+    $("#CloseButton" + atn.id).click(function(event) {
+       // save and close
+       // alert($("#Tags" + atn.id).tagEditorGetTags());
+       $("#tagBoxId" + atn.id).remove();
+       event.stopPropagation();     
+    });
+
+
+    $("#SaveCloseButton" + atn.id).click(function(event) {
+       // save and close
+       // alert($("#Tags" + atn.id).tagEditorGetTags());
+         
+      requestQueue.register(
+        "model/label.update.php",
+        "POST",
+         {
+          pid : project.id,
+          nid : atn.id,
+          ntype : atn.type,
+          tags : $("#Tags" + atn.id).tagEditorGetTags()
+         },
+         function(status, text, xml)
+         {
+           
+          if ( status == 200 )
+          {
+            if ( text && text != " " )
+            {
+              var e = eval( "(" + text + ")" );
+              if ( e.error )
+              {
+                alert( e.error );
+              }
+              else
+              {
+                  console.log("Done");
+                    
+              }
+             }
+           }
+         }
+       ); // endfunction
+         
+       $("#tagBoxId" + atn.id).remove();
+       event.stopPropagation();     
+    });
+
+
+  }
+
   this.rerootSkeleton = function()
   {
 
@@ -269,7 +432,6 @@ SVGOverlay = function(
               // create connector : new atn postsynaptic_to deactivated atn.id (location)
               createConnector(locid, tnid, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
           
-              
             }
           }
         }
@@ -638,6 +800,7 @@ SVGOverlay = function(
   
   var view = document.createElement( "div" );
   view.className = "sliceSVGOverlay";
+  view.id = "sliceSVGOverlayId";
   view.onclick = this.onclick;
   view.style.zIndex = 6;
   view.style.cursor = "crosshair";

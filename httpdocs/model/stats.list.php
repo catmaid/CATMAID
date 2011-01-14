@@ -23,7 +23,8 @@ if ( $pid )
 		$skid = $db->getClassId( $pid, "skeleton" );
     $pret = $db->getClassId( $pid, "presynaptic terminal" );
     $postt = $db->getClassId( $pid, "postsynaptic terminal" );
-		
+    $lab = $db->getClassId( $pid, "label" );
+    
 		$proj_usersdb = $db->getResult('SELECT COUNT(DISTINCT "ci"."user_id") AS "nr" FROM "class_instance"
 									AS "ci" WHERE "ci"."project_id" = '.$pid);
 		$proj_users = !empty($proj_usersdb) ? $proj_usersdb[0]['nr'] : 0;
@@ -55,7 +56,11 @@ if ( $pid )
 		$proj_textlabelsdb = $db->getResult('SELECT COUNT(DISTINCT "tl"."id") AS "nr" FROM "textlabel"
 			AS "tl" WHERE "tl"."project_id" = '.$pid.' AND NOT "tl"."deleted"');
 		$proj_textlabels = !empty($proj_textlabelsdb) ? $proj_textlabelsdb[0]['nr'] : 0;
-						
+
+    $proj_tagsdb = $db->getResult('SELECT COUNT(DISTINCT "ci"."id") AS "nr" FROM "class_instance"
+      AS "ci" WHERE "ci"."project_id" = '.$pid.' AND "ci"."class_id" = '.$lab);
+    $proj_tags = !empty($proj_tagsdb) ? $proj_tagsdb[0]['nr'] : 0;
+    
 		echo makeJSON( array( '"proj_users"' => $proj_users,
 							  '"proj_neurons"' => $proj_neurons,
 							  '"proj_synapses"' => $proj_synapses,
@@ -64,6 +69,7 @@ if ( $pid )
 							  '"proj_presyn"' => $proj_presyn,
 							  '"proj_postsyn"' => $proj_postsyn,
 							  '"proj_textlabels"' => $proj_textlabels,
+							  '"proj_tags"' => $proj_tags,
 			) );
 
 	}

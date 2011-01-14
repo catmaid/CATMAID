@@ -1328,6 +1328,13 @@ function Stack(
         alert('Need to activate a treenode before rerooting!');
       }
       break;
+    case "tagging":
+      if(atn!=null) {
+        svgOverlay.tagATN();
+      } else {
+        alert('Need to activate a treenode or connector before tagging!');
+      }
+      break;
     }
     return;
 	  

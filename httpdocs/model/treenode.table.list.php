@@ -120,7 +120,8 @@ if ( $pid )
 			'SELECT "relation"."id" FROM "relation"
 			WHERE "relation"."project_id" = '.$pid.' AND
 			"relation"."relation_name" = \'labeled_as\'');
-			
+			$tlabel2 = array();
+      
 			if( !empty($tlabelrel_res) )
 			{
 				$tlabelrel = $tlabelrel_res[0]['id'];
@@ -133,7 +134,7 @@ if ( $pid )
 				);
 				
 				reset( $tlabel );
-				$tlabel2 = array();
+				
 				while ( list( $key, $val) = each( $tlabel ) )
 				{
 					$k = $val['treenode_id'];
@@ -148,14 +149,34 @@ if ( $pid )
 			}
 			
 			// retrieve model_of id
-			$modelofres = $db->getResult(
-			'SELECT "relation"."id" FROM "relation"
-			WHERE "relation"."project_id" = '.$pid.' AND
-			"relation"."relation_name" = \'model_of\'');
-			$modid = !empty($modelofres) ? $modelofres[0]['id'] : 0;
-			
-			
-			
+      $modid = $db->getRelationId( $pid, 'model_of' );
+      if(!$modid) { echo makeJSON( array( '"error"' => 'Can not find "model_of" relation for this project' ) ); return; }
+  		/*
+$t = $db->getResult(
+        'SELECT DISTINCT "treenode"."id" AS "tid",
+            "treenode"."radius" AS "radius",
+            "treenode"."confidence" AS "confidence",
+            "treenode"."parent_id" AS "parent_id",
+            "treenode"."user_id" AS "user_id",
+            ("treenode"."location")."x" AS "x",
+            ("treenode"."location")."y" AS "y",
+            ("treenode"."location")."z" AS "z",
+            "user"."name" AS "username",
+            ( "treenode"."user_id" = '.$uid.' ) AS "can_edit",
+            to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified",
+            "tci"."class_instance_id"
+            
+          FROM "treenode", "user", "treenode_class_instance" AS "tci"
+            
+          WHERE "treenode"."project_id" = '.$pid.' AND
+              "treenode"."user_id" = "user"."id" AND
+              "treenode"."id" = "tci"."treenode_id"
+              '.$skelcon.'
+          '.$sOrder.'
+          '.$sLimit.'
+          ');
+       *
+       */
 			// treenode list logic
 			$t = $db->getResult(
 				'SELECT DISTINCT "treenode"."id" AS "tid",
@@ -168,14 +189,12 @@ if ( $pid )
 						("treenode"."location")."z" AS "z",
 						"user"."name" AS "username",
 						( "treenode"."user_id" = '.$uid.' ) AS "can_edit",
-						to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified",
-						"tci"."class_instance_id"
+						to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
 						
-					FROM "treenode", "user", "treenode_class_instance" AS "tci"
+					FROM "treenode", "user"
 						
 					WHERE "treenode"."project_id" = '.$pid.' AND
-						  "treenode"."user_id" = "user"."id" AND
-						  "treenode"."id" = "tci"."treenode_id"
+						  "treenode"."user_id" = "user"."id"
 						  '.$skelcon.'
 					'.$sOrder.'
 					'.$sLimit.'
@@ -187,7 +206,7 @@ if ( $pid )
 			
 			// possibly add sort function for types using
 			// array_multisort with php
-			
+			//print_r($tlabel2);
 			$sOutput = '{';
 			$sOutput .= '"iTotalRecords": '.$iTotal.', ';
 			$sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
@@ -196,7 +215,6 @@ if ( $pid )
 			while ( list( $key, $val) = each( $t ) )
 			{
 				$sRow = "";
-				if($i!=0) { $sRow .= ","; }
 				
 				$sRow .= "[";
 				$sRow .= '"'.addslashes($val["tid"]).'",';
@@ -245,25 +263,19 @@ if ( $pid )
 				$sRow .= '"'.addslashes($val["radius"]).'",';
 				$sRow .= '"'.addslashes($val["username"]).'",';
 				// use tags
-				if(!empty($tlabel2))
+				
+				if( array_key_exists($val['tid'], $tlabel2) )
 				{
-					if( array_key_exists($val['tid'], $tlabel2) )
-					{
-						$out = implode(', ', $tlabel2[$val['tid']]);
-					}
-					else
-					{
-						$out = '';
-					}
-					$val['label'] = $out;
-					$sRow .= '"'.addslashes($out).'",';
-						
+					$out = implode(', ', $tlabel2[$val['tid']]);
 				}
 				else
 				{
-					$sRow .= '"",';
+					$out = '';
 				}
-				
+				$vallabel = $out;
+				$sRow .= '"'.addslashes($out).'",';
+					
+
 				// last modified
 				$sRow .= '"'.addslashes($val["last_modified"]).'"';
 				
@@ -284,16 +296,21 @@ if ( $pid )
 
 				if ( $_REQUEST['sSearch_1'] != "" )
 				{
-					$pos = strpos(strtoupper($val["label"]),strtoupper($_REQUEST['sSearch_1']));
-					if ( $pos === false ) {
-						$skip = True;
-					}
+					$pos = strpos(strtoupper($vallabel), strtoupper($_REQUEST['sSearch_1']));
+
+					if ( $pos !== false ) {
+						$skip = False;
+					} else {
+					  $skip = True;
+					};
+
 				}
 				
-				if ( !$skip )
+				if ( !$skip ) {
+          if($i!=0) { $sRow = ",".$sRow; }
 					$sOutput .= $sRow;
-				
-        $i++;	
+          $i++;
+        }
 				
 			}
 			// $sOutput = substr_replace( $sOutput, "", -1 );

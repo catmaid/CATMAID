@@ -27,6 +27,10 @@ ph = None
 user_id = 3
 project_id = 4
 
+# FIXME: And also hardcode the separation:
+
+z_separation = 50.0
+
 radius_node_class = Class.forName('ini.trakem2.display.Treeline$RadiusNode')
 
 # Set up the JDBC connection:
@@ -58,7 +62,9 @@ required_classes = [
  "root",
  "synapse",
  "neuron",
- "group" ]
+ "group",
+ "presynaptic terminal",
+ "postsynaptic terminal" ]
 
 # Fetch all the class names and IDs:
 class_to_class_id = {}
@@ -195,10 +201,82 @@ def new_treenode_class_instance(relation_name,t,ci):
 
 # ------------------------------------------------------------------------
 
+ps_connector_class_instance = c.prepareStatement(
+  "INSERT INTO connector_class_instance " +
+  "(user_id,project_id,relation_id,connector_id,class_instance_id) " +
+  "VALUES (?,?,?,?,?)")
+ps_connector_class_instance.setInt(1,user_id)
+ps_connector_class_instance.setInt(2,project_id)
+
+def new_connector_class_instance(relation_name,c,ci):
+  ps_connector_class_instance.setInt(3,relation_to_relation_id[relation_name])
+  ps_connector_class_instance.setInt(4,c)
+  ps_connector_class_instance.setInt(5,ci)
+  ps_connector_class_instance.executeUpdate()
+
+# ------------------------------------------------------------------------
+
+ps_new_connector = c.prepareStatement(
+  "INSERT INTO connector "+
+  "(user_id,project_id,location) "+
+  "VALUES (?,?,(?,?,?)) "+
+  "RETURNING id")
+
+ps_new_connector.setInt(1,user_id)
+ps_new_connector.setInt(2,project_id)
+
+def insert_connector_and_synapse( x, y, z, synapse_name ):
+  ps_new_connector.setDouble(3,x)
+  ps_new_connector.setDouble(4,y)
+  ps_new_connector.setDouble(5,z)
+  rs = ps_new_connector.executeQuery()
+  rs.next()
+  new_id = rs.getLong(1)
+  rs.close()
+  synapse_id = new_class_instance('synapse',synapse_name)
+  new_connector_class_instance('model_of',new_id,synapse_id)
+  return synapse_id
+
+# ------------------------------------------------------------------------
+
 ps_get_root_nodes = c.prepareStatement(
   "SELECT id FROM class_instance WHERE project_id = ? AND class_id = ?")
 ps_get_root_nodes.setInt(1,project_id)
 ps_get_root_nodes.setInt(2,class_to_class_id['root'])
+
+# ------------------------------------------------------------------------
+
+ps_get_treenodes = c.prepareStatement(
+  "SELECT id,(t.location).x,(t.location).y,(t.location).z "+
+  "FROM treenode AS t WHERE project_id = ? AND "+
+  "(t.location).x >= ? AND (t.location).x <= ? AND "+
+  "(t.location).y >= ? AND (t.location).y <= ? AND "+
+  "(t.location).z >= ? AND (t.location).z <= ?")
+
+ps_get_treenodes.setInt(1,project_id)
+
+class TreeNode:
+  def __init__(self,treenode_id,x,y,z):
+    self.treenode_id = treenode_id
+    self.x = x
+    self.y = y
+    self.z = z
+
+def get_treenodes_within(x1,x2,y1,y2,z1,z2):
+  ps_get_treenodes.setDouble(2,x1);
+  ps_get_treenodes.setDouble(3,x2);
+  ps_get_treenodes.setDouble(4,y1);
+  ps_get_treenodes.setDouble(5,y2);
+  ps_get_treenodes.setDouble(6,z1);
+  ps_get_treenodes.setDouble(7,z2);
+  rs = ps_get_treenodes.executeQuery()
+  result = []
+  while rs.next():
+    result.append( TreeNode(rs.getLong(1),
+                            rs.getDouble(2),
+                            rs.getDouble(3),
+                            rs.getDouble(4)) )
+  return result
 
 # ------------------------------------------------------------------------
 
@@ -320,7 +398,7 @@ def add_recursively(pt,parent_id,depth=0):
   if not parent_id:
     # Then this should be the root:
     new_id = insert_project_root_node(name_with_id)
-  elif pt_type in ("sensory", "class", "vnc", "contour", "group", "neuropile", "synapses", "pre", "post"):
+  elif pt_type in ("sensory", "class", "vnc", "contour", "group", "neuropile", "synapses", "pre", "post", "trachea", "imported_labels"):
     # Just create all of these as groups for the moment:
     new_id = insert_group(parent_id,name_with_id)
   elif pt_type == "nucleus":
@@ -355,6 +433,113 @@ def add_recursively(pt,parent_id,depth=0):
     for c in children:
       add_recursively(c,new_id,depth+1)
 
+class ConnectorNode:
+  def __init__(self,t,r):
+    self.x, self.y, self.z = t
+    self.r = r
+  def __str__(self):
+    return "(%f,%f,%f) radius: %f"%(self.x,self.y,self.z,self.r)
+  def treenode_within_radius(self,treenode):
+    if abs(self.z - treenode.z) > (z_separation/2):
+      return False
+    xdiff = self.x - treenode.x
+    ydiff = self.y - treenode.y
+    return (xdiff*xdiff + ydiff*ydiff) < (self.r*self.r)
+  def find_treenodes_under(self):
+    in_cuboid_treenodes = get_treenodes_within(self.x-self.r,self.x+self.r,
+                                               self.y-self.r,self.y+self.r,
+                                               self.z-(z_separation/2.0),self.z+(z_separation/2.0))
+    # That might find some which are with a squared region but not
+    # within a circular region, so narrow that down:
+    return [ x for x in in_cuboid_treenodes if self.treenode_within_radius(x) ]
+
+class SynapseSides:
+  PRE = 0
+  POST = 1
+
+def add_synapse( name, connector, pre_nodes, post_nodes ):
+  # Find the centroid of those points:
+  all_nodes = pre_nodes + post_nodes
+  summed_tuple = map(sum,zip(*[(n.x,n.y,n.z) for n in all_nodes]))
+  centroid = map(lambda x: x / len(all_nodes), summed_tuple)
+  # create a connector at the centroid
+  # create a synapse
+  # make the connector a model_of the synapse
+  # for each node pre and post:
+  #    find if there is a treenode in the same layer
+  #    and within the right distance
+  #    if not:
+  #       create one isolated treenode in a skeleton
+  #    for each of treenodes:
+  #       create a new pre/post synaptic terminal
+  #       make the treenode a model_of the pre/postsynaptic terminal
+  #       make the terminal pre/postsynaptic_to the synapse
+  #       FIXME: TODO make the terminal part_of a skeleton or a neuron
+  #
+  # Now do these one at a time...
+  # * create a connector at the centroid
+  # * create a synapse
+  # * make the connector a model_of the synapse
+  synapse_id = insert_connector_and_synapse( centroid[0], centroid[1], centroid[2], name )
+  # * for each node pre and post:
+  for side in (SynapseSides.PRE,SynapseSides.POST):
+    for node in (pre_nodes if side == SynapseSides.PRE else post_nodes):
+      # * find if there is a treenode in the same layer
+      #   and within the right distance
+      treenodes = node.find_treenodes_under()
+      # * if not:
+      #   * create one isolated treenode in a skeleton
+      if not treenodes:
+        treenode_id = insert_treenode( None, node.x, node.y, node.z, 0, 5 )
+        treenodes.append(TreeNode(treenode_id,node.x,node.y,node.z))
+      # * for each of treenodes:
+      for tn in treenodes:
+        # * create a new pre/post synaptic terminal
+        prefix = "pre" if side == SynapseSides.PRE else "post"
+        terminal_class_name = prefix + "synaptic terminal"
+        terminal_relationship = prefix + "synaptic_to"
+        terminal_id = new_class_instance(terminal_class_name,terminal_class_name)
+        #    * make the treenode a model_of the pre/postsynaptic terminal
+        new_treenode_class_instance('model_of',tn.treenode_id,terminal_id)
+        # * make the terminal pre/postsynaptic_to the synapse
+        new_class_instance_class_instance(terminal_relationship,terminal_id,synapse_id)
+        # FIXME: TODO make the terminal part_of a skeleton or a neuron
+
+def add_connectors_recursively(pt,depth=0):
+  name_with_id = get_project_thing_name(pt)
+  pt_type = pt.getType()
+  prefix = " "*depth
+  print prefix, pt, name_with_id, '::', pt_type
+  if pt_type == "connector":
+    c = pt.getObject()
+    print prefix, "#########################################"
+    print prefix, "Got connector: ", c, "of type", type(c)
+    aff = None
+    try:
+      aff = c.getAffineTransform()
+    except AttributeError:
+      pass
+    if not aff:
+      print "Connector didn't have getAffineTransform(), probably the type is wrong:", type(c)
+    elif not c.root:
+      print "Connector had no origin node"
+    else:
+      connector_target_nodes = c.root.getChildrenNodes()
+      if not connector_target_nodes:
+        print prefix, "Connector had no target nodes"
+      else:
+        originNode = ConnectorNode(node_to_coordinates(aff,c.root),c.root.getData())
+        targetNodes = [ ConnectorNode(node_to_coordinates(aff,x),x.getData()) for x in connector_target_nodes ]
+        print prefix, "Got originNode:", originNode
+        for t in targetNodes:
+          print prefix, "Got targetNode:", t
+        add_synapse( name_with_id, c, [ originNode ], targetNodes )
+  else:
+    children = pt.getChildren()
+    if children:
+      for c in children:
+        add_connectors_recursively(c,depth+1)
+
 def run():
   global cal, pw, ph
   projects = Project.getProjects()
@@ -368,7 +553,9 @@ def run():
   ph = float(cal.pixelHeight)
   rpt = p.getRootProjectThing()
 
-  add_recursively(rpt,None)
+  # add_recursively(rpt,None)
+
+  add_connectors_recursively(rpt)
 
 run()
 

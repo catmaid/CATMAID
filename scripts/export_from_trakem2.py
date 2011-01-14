@@ -228,7 +228,7 @@ def insert_project_root_node( name ):
   root_id = None
   existing_root_ids = get_root_node_ids()
   if len(existing_root_ids) > 1:
-    raise Exception, "There is more than one root not in project: "+str(project_id)
+    raise Exception, "There is more than one root node in project: "+str(project_id)
   if root_id:
     IJ.log("Project root node already existed - just updating the name...")
     ps = c.prepareStatement("UPDATE class_instance SET name = ? WHERE id = ?")

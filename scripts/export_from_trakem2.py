@@ -18,6 +18,10 @@ from jarray import array
 
 from java.sql import DriverManager, Connection, SQLException, Types
 
+cal = None
+pw = None
+ph = None
+
 # FIXME: Just hardcode the user_id and project_id for the moment
 
 user_id = 3
@@ -281,21 +285,22 @@ def findConnections(tree):
 def get_project_thing_name(pt):
   return str(pt.getObject())+" #"+str(pt.getId())
 
-def insertTree(tree,skeleton_id):
-  root = tree.getRoot()
-  if root is None:
-    return None
-  cal = tree.getLayerSet().getCalibrationCopy()
-  pw = float(cal.pixelWidth)
-  ph = float(cal.pixelHeight)
-  aff = tree.getAffineTransform()
-  table = {}
-  for nd in tree.getRoot().getSubtreeNodes():
+def node_to_coordinates(aff,nd):
     fp = array([nd.x, nd.y], 'f')
     aff.transform(fp, 0, fp, 0, 1)
     x = fp[0] * pw
     y = fp[1] * ph
     z = float(nd.layer.z) * pw
+    return (x,y,z)
+
+def insertTree(tree,skeleton_id):
+  root = tree.getRoot()
+  if root is None:
+    return None
+  aff = tree.getAffineTransform()
+  table = {}
+  for nd in tree.getRoot().getSubtreeNodes():
+    x, y, z = node_to_coordinates(aff,nd)
     confidence = nd.getConfidence()
     parent = None
     if nd.parent:
@@ -351,12 +356,16 @@ def add_recursively(pt,parent_id,depth=0):
       add_recursively(c,new_id,depth+1)
 
 def run():
+  global cal, pw, ph
   projects = Project.getProjects()
   if projects is None or projects.isEmpty():
     IJ.log('No project open!')
     return
   p = projects.get(0)
   ls = p.getRootLayerSet()
+  cal = ls.getCalibrationCopy()
+  pw = float(cal.pixelWidth)
+  ph = float(cal.pixelHeight)
   rpt = p.getRootProjectThing()
 
   add_recursively(rpt,None)

@@ -46,7 +46,7 @@ SVGOverlay = function(
               if ( text && text != " " )
               {
                 var e = eval( "(" + text + ")" );
-                console.log(e);
+                // console.log(e);
                 if ( e.error )
                 {
                   alert( e.error );

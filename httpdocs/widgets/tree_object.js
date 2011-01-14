@@ -80,6 +80,7 @@ initObjectTree = function(pid) {
 								this.create(obj, "inside", att, null, true); 
 							}
 						},
+						/*
             "create_neuron" : {
               "separator_before"  : false,
               "separator_after" : false,
@@ -91,7 +92,7 @@ initObjectTree = function(pid) {
                   };
                 this.create(obj, "inside", att, null, true); 
               }
-            },
+            },*/
 						"rename_group" : {
 							"separator_before"	: true,
 							"separator_after"	: false,
@@ -108,6 +109,7 @@ initObjectTree = function(pid) {
 				}
 			} else if(type_of_node == "neuron") {
 				menu = {
+				  /*
 					"create_skeleton" : {
 						"separator_before"	: false,
 						"separator_after"	: false,
@@ -119,7 +121,7 @@ initObjectTree = function(pid) {
 								};
 							this.create(obj, "inside", att, null, true); 
 						}
-					},
+					},*/
 					"rename_neuron" : {
 						"separator_before"	: true,
 						"separator_after"	: false,

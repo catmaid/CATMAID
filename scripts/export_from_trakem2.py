@@ -213,13 +213,18 @@ def insert_skeleton( model_of_neuron_id, name ):
   new_class_instance_class_instance('model_of',new_id,model_of_neuron_id)
   return new_id
 
-def insert_project_root_node( name ):
-  root_id = None
+def get_root_node_ids():
+  result = []
   rs = ps_get_root_nodes.executeQuery()
   while rs.next():
-    if root_id:
-      raise Exception, "There is more than one root not in project: "+str(project_id)
-    root_id = rs.getLong(1)
+    result.append(rs.getLong(1))
+  return result
+
+def insert_project_root_node( name ):
+  root_id = None
+  existing_root_ids = get_root_node_ids()
+  if len(existing_root_ids) > 1:
+    raise Exception, "There is more than one root not in project: "+str(project_id)
   if root_id:
     IJ.log("Project root node already existed - just updating the name...")
     ps = c.prepareStatement("UPDATE class_instance SET name = ? WHERE id = ?")

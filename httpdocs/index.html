@@ -50,10 +50,11 @@
 		<script type="text/javascript" src="widgets/profile.js"></script>
 		<script type="text/javascript" src="widgets/overlay_node.js"></script>
 		<script type="text/javascript" src="widgets/overlay_connectornode.js"></script>
+    <script type="text/javascript" src="widgets/overlay_label.js"></script>
 		<script type="text/javascript" src="widgets/overlay.js"></script>
 		<script type="text/javascript" src="init.js"></script>
 		<script type="text/javascript" src="libs/raphael/raphael.js"></script>
-		<script type="text/javascript" src="libs/raphael/g.raphael-min.js"></script>
+		<script type="text/javascript" src="libs/raphael/g.raphael.js"></script>
     <script type="text/javascript" src="libs/raphael/raphael-custom.js"></script>
 		<script type="text/javascript" src="libs/jquery/jquery.js"></script>
 		<script type="text/javascript" src="libs/jquery/jquery.dataTables.js"></script>
@@ -180,6 +181,9 @@
 
           <a href="#" class="button" id="trace_button_skelrerooting" onclick="project.toggleTracing( 'skeletonreroot' );">
             <img src="widgets/themes/kde/trace_skelrerooting.png" alt="reroot skeleton on active treenode" title="reroot skeleton on active treenode" /></a>
+
+          <a href="#" class="button" id="trace_button_togglelabels" onclick="project.toggleTracing( 'togglelabels' );">
+            <img src="widgets/themes/kde/trace_labels.png" alt="toggle labels" title="toggle labels" /></a>
 
 				</div>
         <div class="toolbar_fill"></div>

@@ -47,7 +47,14 @@ if ( $pid )
 
     $list = array();
     foreach($res as $key => $val) {
-      $list[] = $val['name'];
+      if(empty($list[$nid]))
+      {
+        $list[$nid] = array();
+        $list[$nid][] = $val['name'];
+      } else {
+        $list[$nid][] = $val['name'];
+      }
+      
     }
     
     echo json_encode( $list );

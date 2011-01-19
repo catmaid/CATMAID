@@ -26,20 +26,73 @@ SVGOverlay = function(
 {
 
   var nodes = new Object();
+  var labels = new Object();
+  var show_labels = false;
+  
+  this.toggleLabels = function()
+  {
+    // update state variable
+    if(show_labels)
+      show_labels = false;
+    else
+      show_labels = true;
+      
+    // retrieve labels for the set of currently visible nodes
+    if(show_labels)
+    {
+      for(nodeid in nodes)
+      {
+        if(nodes[nodeid].zdiff == 0){
+          
+          // retrieve node
+          requestQueue.register(
+            "model/label.node.list.php",
+            "POST",
+             {
+              pid : project.id,
+              nid : nodeid,
+              ntype : nodes[nodeid].type
+             },
+             function(status, text, xml)
+             {
+               
+              if ( status == 200 )
+              {
+                if ( text && text != " " )
+                {
+                  var e = eval( "(" + text + ")" );
+                  if ( e.error )
+                  {
+                    alert( e.error );
+                  }
+                  else
+                  {
+                      var nodeitems = $.parseJSON( text );
+                      // for all retrieved, create a label
+                      for(nodeid in nodeitems)
+                      {
+                        var tl = new OverlayLabel(nodeitems[nodeid], r, nodes[nodeid].x, nodes[nodeid].y, nodeitems[nodeid]);
+                        labels[nodeid] = tl;
+                      }
+                  }
+                 }
+               }
+             }
+           ); // endfunction
+        }
+      }      
+    } else {
+      // loop through labels and remove
+      for(labid in labels) {
+        labels[labid].remove();
+      }
+      labels = new Object();
+    }
+    
+  }
 
   this.tagATN = function()
   {
-    // creates a tag editor diff for the activated atn
-    //$("#sliceSVGOverlayId").append("<div>hello world</div>");
-    /*
-    var tagbox = document.createElement( "div" );
-    tagbox.className = "tagBox";
-    tagbox.id = "tagboxId";
-    tagbox.style.zIndex = 6;
-    tagbox.style.left = atn.x + "px";
-    tagbox.style.top = atn.y + "px";
-    $("tagBoxId").text("mensch");
-*/
 
     if( $("#tagBoxId" + atn.id).length != 0 ) {
       alert("TagBox is already open!");
@@ -126,10 +179,11 @@ SVGOverlay = function(
             else
             {
                 var nodeitems = $.parseJSON( text );
-                
+                // retrieved nodeitems should be for active
+                // node anyways
                 $("#Tags" + atn.id).tagEditor(
                   {
-                      items: nodeitems,
+                      items: nodeitems[atn.id],
                       confirmRemoval: true
                   });
                   
@@ -572,6 +626,8 @@ SVGOverlay = function(
   {
     this.paper.clear();
     nodes = new Object();
+    labels = new Object();
+    show_labels = false;
     
     for (var i in jso) {
         var id = parseInt(jso[i].id);

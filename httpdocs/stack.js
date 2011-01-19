@@ -1335,6 +1335,9 @@ function Stack(
         alert('Need to activate a treenode or connector before tagging!');
       }
       break;
+    case "togglelabels":
+      svgOverlay.toggleLabels();
+      break;
     }
     return;
 	  

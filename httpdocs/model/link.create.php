@@ -29,13 +29,7 @@ if ( $pid )
 {
   if ( $uid )
   {
-    // retrieve class ids
-/*    $from_type_ID = $db->getClassId( $pid, $from_type );
-    if(!$from_type_ID) { echo makeJSON( array( '"error"' => 'Can not find "'.$from_type.'" class for this project' ) ); return; }
-    
-    $to_type_ID = $db->getClassId( $pid, $to_type );
-    if(!$to_type_ID) { echo makeJSON( array( '"error"' => 'Can not find "'.$to_type.'" class for this project' ) ); return; }
-  */  
+
     // relation ids
     $link_type_ID = $db->getRelationId( $pid, $link_type);
     if(!$link_type_ID)  { echo makeJSON( array( '"error"' => 'Can not find "'.$link_type.'" relation for this project' ) ); return; }

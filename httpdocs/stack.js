@@ -1342,6 +1342,13 @@ function Stack(
     case "togglelabels":
       svgOverlay.toggleLabels();
       break;
+    case "showskeleton":
+      if(atn!=null) {
+        svgOverlay.showSkeleton();
+      } else {
+        alert('Need to activate a treenode or connector before showing them!');
+      }
+      break;
     }
     return;
 	  

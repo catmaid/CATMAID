@@ -29,6 +29,41 @@ SVGOverlay = function(
   var labels = new Object();
   var show_labels = false;
   
+  this.showSkeleton = function()
+  {
+    // check if show window is already open,
+    // if not, open it
+    
+    // retrieve data for the nodes skeleton
+    requestQueue.register(
+      "model/visualize.skeleton.php",
+      "POST",
+       {
+        pid : project.id,
+        tnid : atn.id,
+       },
+       function(status, text, xml)
+       {
+         
+        if ( status == 200 )
+        {
+          if ( text && text != " " )
+          {
+            var e = eval( "(" + text + ")" );
+            if ( e.error )
+            {
+              alert( e.error );
+            }
+            else
+            {
+            }
+           }
+         }
+       }
+     ); // endfunction
+           
+  }
+  
   this.toggleLabels = function()
   {
     // update state variable

@@ -465,6 +465,16 @@ function Project( pid )
 		return url;
 	}
 	
+	/*
+	 * create a link between two locations
+	 */
+	this.createLink = function(fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype)
+	{
+    for ( var i = 0; i < stacks.length; ++i )
+      stacks[ i ].createLink(fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype);
+    return;
+	}
+	
 	/**
 	 * create a textlabel on the server
 	 */

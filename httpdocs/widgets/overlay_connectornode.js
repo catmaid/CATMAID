@@ -273,25 +273,24 @@ ConnectorNode = function(
   
   
   mc.click(function (e) {
+
     // return some log information when clicked on the node
     // this usually refers here to the mc object
-    if(e.ctrlKey && e.shiftKey ){
-      this.parentnode.deletenode();
-    } else if (e.shiftKey) {
+    if (e.shiftKey) {
+      if(e.ctrlKey && e.shiftKey ){
+        this.parentnode.deletenode();
+        e.stopPropagation();
+        return true;
+      }
       if(atn != null ) { 
         // connected activated treenode or connectornode
         // to existing treenode or connectornode
-
-        alert("You want to connect an active treenode with this location!");
-        // is the connection pre or postsynaptic?
-        // XXX: add another connector.create or class_instanstance create giving 
-        // location and treenode id
-        console.log("active node id", atn.id, "to current location id", this.parentnode.id);
-        
+        console.log("from", atn.id, "to", this.parentnode.id);
+        project.createLink(atn.id, this.parentnode.id, "presynaptic_to", "presynaptic terminal", "synapse", "treenode", "connector");
       } else {
-
-        
+        alert("You need to activate a treenode before joining it to a connector node!");
       }
+      e.stopPropagation();
     }
     else {
       //console.log("Try to activate node");
@@ -304,6 +303,7 @@ ConnectorNode = function(
 
   mc.move = function( dx, dy )
   {
+    activateNode( this.parentnode );
     this.parentnode.x = ox + dx;
     this.parentnode.y = oy + dy;
     c.attr({cx: this.parentnode.x,cy: this.parentnode.y});
@@ -318,7 +318,7 @@ ConnectorNode = function(
   mc.start = function()
   {
     // as soon you do something with the node, activate it
-    activateNode( this.parentnode );
+    // activateNode( this.parentnode );
     ox = mc.attr("cx");
     oy = mc.attr("cy");
     c.attr({opacity:0.7});

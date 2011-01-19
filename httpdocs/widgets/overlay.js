@@ -229,8 +229,7 @@ SVGOverlay = function(
               }
               else
               {
-                  console.log("Done");
-                    
+                  
               }
              }
            }
@@ -272,8 +271,9 @@ SVGOverlay = function(
                 {
                   // add treenode to the display and update it
                   var jso = $.parseJSON(text);
-                  console.log("retrieved", jso);
-                  
+                  // updates nodes parent node
+                  nodes[jso['newroot']].parent = null;
+
                 }
               } // endif
             } // end if
@@ -751,9 +751,54 @@ SVGOverlay = function(
     return view;
   }
   
+  this.createLink = function(fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype)
+  {
+
+    requestQueue.register(
+      "model/link.create.php",
+      "POST",
+      {
+        pid : project.id,
+        from_id : fromid,
+        from_relation : 'model_of',
+        from_type : from_type,
+        from_nodetype : from_nodetype,
+        
+        link_type : link_type,
+        
+        to_id : toid,
+        to_type : to_type,
+        to_nodetype : to_nodetype,
+        to_relation : 'model_of',
+        },
+        function(status, text, xml)
+        {
+          if ( status == 200 )
+          {
+            if ( text && text != " " )
+            {
+              var e = eval( "(" + text + ")" );
+              if ( e.error )
+              {
+                alert( e.error );
+              }
+              else
+              {
+                
+                // XXX:
+                // depending on link_type, update the elements accordingly
+                
+              }
+            }
+          }
+          return true;
+    });
+    return;
+  }
+  
   this.onclick = function( e )
   {   
-    
+    //console.log("OVERLAY: atn.id", atn.id);
     // console.log("mouse down event in overlay", e);
     //console.log("current coordinates in physical space:");
     //console.log(project.coordinates.z, "pix", phys2pixZ(project.coordinates.z));
@@ -776,12 +821,16 @@ SVGOverlay = function(
       activateNode( null );
     } else if( e.shiftKey ) {
       if(atn == null) {
-          console.log("You need to activate a treenode/connectornode first");
+          alert("You need to activate a treenode first (skeleton tracing mode)");
       } else {
         if(atn instanceof Node) {
           //console.log("...create new synapse presynaptic to activated treenode ", atn);
-          createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
-          return true
+          // remove the automatic synapse creation
+          //createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
+          
+          
+          e.stopPropagation();
+          return true;
         }
         else if (atn instanceof ConnectorNode)
           //console.log("...create new treenode (and skeleton) postsynaptic to activated connector", atn);
@@ -793,7 +842,8 @@ SVGOverlay = function(
           // because the treenode creation is asynchronous, we have to invoke
           // the connector creation in the event handler
           createNodeWithConnector(locid, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
-          return true
+          e.stopPropagation();
+          return true;
       }
 
     } else {
@@ -804,12 +854,10 @@ SVGOverlay = function(
           // create a new treenode,
           // either root node if atn is null, or has parent 
           createNode(atn, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
+          e.stopPropagation();
           // display node creation is done in event handler
-          return true
-        } else if (atn instanceof ConnectorNode) {
-          alert("Use Ctrl-Click to deactivate the location. Then create a new treenode");
-          return true
-        }
+          return true;
+        } 
       } else if (getMode() == "synapsedropping") {
         
         createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5);

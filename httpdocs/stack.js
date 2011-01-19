@@ -1290,7 +1290,11 @@ function Stack(
 		}
 		return;
 	}
-	
+
+  this.createLink = function( fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype )
+  {
+    svgOverlay.createLink(fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype);
+  }
 	
 	this.toggleTracing = function( m )
 	{

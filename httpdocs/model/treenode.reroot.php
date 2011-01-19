@@ -52,17 +52,14 @@ if ( $pid )
     $ids = $db->getResult('UPDATE "treenode" SET "parent_id" = NULL WHERE "treenode"."id" = '.$tnid);
       
     // echo "Successfully rerooted";
+    echo json_encode( array( 'newroot' => $tnid ) );
+    
    }
     else {
       // no parent found or is root, then return
       echo makeJSON( array( 'error' => 'An error occured while rerooting. No valid query result.' ) );
     }
-    
-        // currenttn = tnid
-        // while lastparent != null
-        //  lastparent = select(currenttn.parentid)
-        //  update parenttn's parentid to currenttn.id
-        //  currentn = parentn.id
+
   }
   else
     echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to add treenodes.' ) );

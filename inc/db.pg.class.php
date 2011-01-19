@@ -409,6 +409,106 @@ class DB
    }
 
   /*
+   * create class instance for treenode
+   * Returns: class_instance_id
+   */
+   function createClassInstanceForTreenode( $pid, $uid, $tnid, $relation, $class, $class_instance_name = "" )
+   {
+    $rel_id = $this->getRelationId( $pid, $relation );
+    if(!$rel_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$relation.'" relation for this project' ) ); return; }
+
+    $class_id = $this->getClassId( $pid, $class );
+    if(!$class_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$class.'" class for this project' ) ); return; }
+    
+    $data = array(
+      'user_id' => $uid,
+      'project_id' => $pid,
+      'class_id' => $class_id,
+      'name' => $class
+      );
+    $ci_id = $this->insertIntoId('class_instance', $data );
+    // update with class_instanstance_name
+    if($class_instance_name == "") {
+      $up = array('name' => $class.' '.$ci_id);
+      $this->update( "class_instance", $up, 'id = '.$ci_id); 
+    } else {
+      // use it as name
+      $up = array('name' => $class_instance_name);
+      $this->update( "class_instance", $up, 'id = '.$ci_id); 
+    }
+    
+    $data = array(
+      'user_id' => $uid,
+      'project_id' => $pid,
+      'relation_id' => $rel_id,
+      'treenode_id' => $tnid,
+      'class_instance_id' => $ci_id
+      );
+    $this->insertInto('treenode_class_instance', $data );
+    
+    return $ci_id;
+   }
+
+  /*
+   * create class instance for connector
+   * Returns: class_instance_id
+   */
+   function createClassInstanceForConnector( $pid, $uid, $cid, $relation, $class, $class_instance_name = "" )
+   {
+    $rel_id = $this->getRelationId( $pid, $relation );
+    if(!$rel_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$relation.'" relation for this project' ) ); return; }
+
+    $class_id = $this->getClassId( $pid, $class );
+    if(!$class_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$class.'" class for this project' ) ); return; }
+    
+    $data = array(
+      'user_id' => $uid,
+      'project_id' => $pid,
+      'class_id' => $class_id,
+      'name' => $class
+      );
+    $ci_id = $this->insertIntoId('class_instance', $data );
+    // update with class_instanstance_name
+    if($class_instance_name == "") {
+      $up = array('name' => $class.' '.$ci_id);
+      $this->update( "class_instance", $up, 'id = '.$ci_id); 
+    } else {
+      // use it as name
+      $up = array('name' => $class_instance_name);
+      $this->update( "class_instance", $up, 'id = '.$ci_id); 
+    }
+    
+    $data = array(
+      'user_id' => $uid,
+      'project_id' => $pid,
+      'relation_id' => $rel_id,
+      'connector_id' => $cid,
+      'class_instance_id' => $ci_id
+      );
+    $this->insertInto('connector_class_instance', $data );
+    
+    return $ci_id;
+   }
+
+   /*
+    * return class_instance id of a connector for a given relation in a project
+    */
+   function getClassInstanceForConnector( $pid, $cid, $relation )
+   {
+    // element of id
+    $rel_id = $this->getRelationId( $pid, $relation );
+    if(!$rel_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$relation.'" relation for this project' ) ); return; }
+
+    $res = $this->getResult(
+    'SELECT "cci"."class_instance_id" FROM "connector_class_instance" AS "cci"
+    WHERE "cci"."project_id" = '.$pid.' AND
+    "cci"."relation_id" = '.$rel_id.' AND
+    "cci"."connector_id" = '.$cid);
+    
+    return $res;
+   }
+
+  /*
    * get class_instance parent from a class_instance given its relation
    */
    function getCIFromCI( $pid, $cid, $relation )

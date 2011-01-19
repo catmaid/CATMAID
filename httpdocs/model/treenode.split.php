@@ -46,7 +46,7 @@ if ( $pid )
     // retrieve neuron id of the skeleton
     $neu = $db->getCIFromCI( $pid, $sk_id, 'model_of' );
     if(!empty($neu)) { $neu_id = $neu[0]['id']; } else {
-      echo makeJSON( array( '"error"' => 'Can not find neron for the skeleton.' ) ); return; }
+      echo makeJSON( array( '"error"' => 'Can not find neuron for the skeleton.' ) ); return; }
       
     
     $childrentreenodes = $db->getTreenodeChildren( $pid, $tnid );

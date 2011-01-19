@@ -248,16 +248,37 @@ Node = function(
   });
   
   mc.click(function (e) {
+//    console.log("atn.id", atn.id);
+  //  console.log("treenode: clicked", this.parentnode.id, "active is", atn.id);
     // return some log information when clicked on the node
     // this usually refers here to the mc object
-    if(e.ctrlKey && e.shiftKey ){
-      this.parentnode.deletenode();
-    } else if (e.shiftKey) {
+    if (e.shiftKey) {
+      if(e.ctrlKey && e.shiftKey ){
+        this.parentnode.deletenode();
+        e.stopPropagation();
+        return true;
+      }
       if(atn != null ) { 
         // connected activated treenode or connectornode
         // to existing treenode or connectornode
-        alert("There is an active node. Need to implement join operation of the two nodes.");
+        if(atn.type == "location") {
+          project.createLink(atn.id, this.parentnode.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
+        } else if(atn.type == "treenode") {
+          
+          if(this.parentnode.parent != null) {
+            alert("Target treenode needs to be rerooted before joining!");
+          } else {
+            console.log("link treenodes", atn.id, this.parentnode.id);
+          }
+          
+        }
+        
+      } 
+      else {
+        alert("Nothing to join without an active node!");
       }
+      e.stopPropagation();
+
     }
     else {
       // activate this node
@@ -269,6 +290,7 @@ Node = function(
 
   mc.move = function( dx, dy )
   {
+    activateNode( this.parentnode );
     this.parentnode.x = ox + dx;
     this.parentnode.y = oy + dy;
     c.attr({cx: this.parentnode.x,cy: this.parentnode.y});
@@ -282,8 +304,6 @@ Node = function(
   }
   mc.start = function()
   {
-    // as soon you do something with the node, activate it
-    activateNode( this.parentnode );
     ox = mc.attr("cx");
     oy = mc.attr("cy");
     c.attr({opacity:0.7});

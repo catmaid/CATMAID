@@ -241,7 +241,6 @@ def insert_connector_and_synapse( x, y, z, synapse_name ):
   new_connector_class_instance('model_of',new_id,synapse_id)
   return synapse_id
 
-
 def new_treenode_class_instance(relation_name,t,ci):
   ps_treenode_class_instance.setInt(3,relation_to_relation_id[relation_name])
   ps_treenode_class_instance.setInt(4,t)

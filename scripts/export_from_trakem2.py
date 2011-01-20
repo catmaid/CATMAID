@@ -575,7 +575,7 @@ def run():
   ph = float(cal.pixelHeight)
   rpt = p.getRootProjectThing()
 
-  # add_recursively(rpt,None)
+  add_recursively(rpt,None)
 
   add_connectors_recursively(rpt)
 

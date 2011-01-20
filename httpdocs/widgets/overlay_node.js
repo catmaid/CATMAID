@@ -47,7 +47,10 @@ Node = function(
    fillcolor = "rgb(0, 0, 255)";
   else if(zdiff == -1)
    fillcolor = "rgb(255, 0, 0)";
-   
+
+  if(this.r < 0)
+   this.r = 3;
+
   // if the zdiff is bigger than zero we do not allow
   // to drag the nodes
   if(this.zdiff == 0)

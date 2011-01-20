@@ -341,6 +341,29 @@ def insert_project_root_node( name ):
     ps.close()
   return root_id
 
+ps_get_fragments_id = c.prepareStatement("SELECT ci.id from class_instance as ci, class_instance_class_instance as cici WHERE ci.project_id = ? AND cici.project_id = ? AND ci.user_id = ? AND cici.user_id = ? AND ci.name = 'Fragments' AND cici.class_instance_a = ci.id and cici.class_instance_b = ?")
+ps_get_fragments_id.setInt(1,project_id)
+ps_get_fragments_id.setInt(2,project_id)
+ps_get_fragments_id.setInt(3,user_id)
+ps_get_fragments_id.setInt(4,user_id)
+
+def get_fragments_node_id():
+  root_node_id = get_root_node_ids()[0]
+  ps_get_fragments_id.setInt(5,root_node_id)
+  rs = ps_get_fragments_id.executeQuery()
+  fragment_ids = []
+  while rs.next():
+    fragment_ids.append(rs.getLong(1))
+  if len(fragment_ids) > 1:
+    raise Exception, "Found more than one id for the class 'Fragments'"
+  # Create the group if it doesn't exist:
+  if len(fragment_ids) == 0:
+    return insert_group(root_node_id,'Fragments')
+  else:
+    return fragment_ids[0]
+
+
+
 # ------------------------------------------------------------------------
 
 # FIXME: when we've finalized the connector / synapse representation,
@@ -505,6 +528,7 @@ def add_synapse( name, connector, pre_nodes, post_nodes ):
   synapse_id = insert_connector_and_synapse( centroid[0], centroid[1], centroid[2], name )
   # * for each node pre and post:
   for side in (SynapseSides.PRE,SynapseSides.POST):
+    side_string = "pre" if side == SynapseSides.PRE else "post"
     for node in (pre_nodes if side == SynapseSides.PRE else post_nodes):
       # * find if there is a treenode in the same layer
       #   and within the right distance
@@ -514,18 +538,21 @@ def add_synapse( name, connector, pre_nodes, post_nodes ):
       if not treenodes:
         treenode_id = insert_treenode( None, node.x, node.y, node.z, 0, 5 )
         treenodes.append(TreeNode(treenode_id,node.x,node.y,node.z))
+        # * create a skeleton, a neuron and make this part of the 'Fragments' group
+        fragments_group_id = get_fragments_node_id()
+        neuron_id = insert_neuron(fragments_group_id,'orphaned '+side_string)
+        skeleton_id = insert_skeleton(neuron_id,'orphaned '+side_string)
+        new_treenode_class_instance('element_of',treenode_id,skeleton_id)
       # * for each of treenodes:
       for tn in treenodes:
         # * create a new pre/post synaptic terminal
-        prefix = "pre" if side == SynapseSides.PRE else "post"
-        terminal_class_name = prefix + "synaptic terminal"
-        terminal_relationship = prefix + "synaptic_to"
+        terminal_class_name = side_string + "synaptic terminal"
+        terminal_relationship = side_string + "synaptic_to"
         terminal_id = new_class_instance(terminal_class_name,terminal_class_name)
         #    * make the treenode a model_of the pre/postsynaptic terminal
         new_treenode_class_instance('model_of',tn.treenode_id,terminal_id)
         # * make the terminal pre/postsynaptic_to the synapse
         new_class_instance_class_instance(terminal_relationship,terminal_id,synapse_id)
-        # FIXME: TODO make the terminal part_of a skeleton or a neuron
 
 def add_connectors_recursively(pt,depth=0):
   name_with_id = get_project_thing_name(pt)

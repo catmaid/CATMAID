@@ -71,7 +71,11 @@ class_to_class_id = {}
 s = c.createStatement()
 rs = s.executeQuery("SELECT id, class_name FROM class WHERE project_id = "+str(project_id))
 while rs.next():
-  class_to_class_id[rs.getString(2)] = rs.getLong(1)
+  class_name = rs.getString(2)
+  class_id = rs.getLong(1)
+  if class_name in class_to_class_id:
+    raise Exception, "There's are multiple classes called '%s' for project_id %d" % (class_name,project_id)
+  class_to_class_id[class_name] = class_id
 s.close()
 
 # Insert any that didn't already exist:

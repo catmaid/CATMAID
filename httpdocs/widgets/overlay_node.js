@@ -169,6 +169,12 @@ Node = function(
         return true;
       });
 
+    // redraw everything for now
+    project.updateNodes();
+                  
+    // infact, doing everything done on the server-side
+    // (like relinking) again in the ui not best-practice
+    /*
     // remove the parent of all the children
     for ( var i in this.children) {
       this.children[ i ].removeLine();
@@ -186,6 +192,7 @@ Node = function(
          delete this.parent.children[i];
       }
     }
+    */
   }
   
   // remove the raphael line to the parent

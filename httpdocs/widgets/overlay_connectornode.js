@@ -203,6 +203,9 @@ ConnectorNode = function(
     linePath.attr( {"stroke-width": strowi,
                      "stroke": strocol,
                      } );
+    arrowPath.attr( {"fill" : strocol,
+                    "stroke": strocol,
+                     } );
   }
 
   // updates the raphael path coordinates

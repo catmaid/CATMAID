@@ -319,9 +319,9 @@ SVGOverlay = function(
                 else
                 {
                   // add treenode to the display and update it
-                  var jso = $.parseJSON(text);
-                  // updates nodes parent node
-                  nodes[jso['newroot']].parent = null;
+                  // var jso = $.parseJSON(text);
+                  // just redraw all for now
+                  project.updateNodes();
                 }
               } // endif
             } // end if
@@ -353,11 +353,9 @@ SVGOverlay = function(
                   alert( e.error );
                 }
                 else
-                {
-                  // add treenode to the display and update it
-                  var jso = $.parseJSON(text);
-                  console.log("retrieved", jso);
-                  
+                {  
+                  // just redraw all for now
+                  project.updateNodes();
                 }
               } // endif
             } // end if
@@ -826,8 +824,7 @@ SVGOverlay = function(
               else
               {
                 // add treenode to the display and update it
-                var jso = $.parseJSON(text);
-
+                // var jso = $.parseJSON(text);
                 // just redraw all for now
                 project.updateNodes();
               }

@@ -27,5 +27,4 @@ OverlayLabel = function(
   this.remove = function() {
     c.remove();
   }
-        
 }

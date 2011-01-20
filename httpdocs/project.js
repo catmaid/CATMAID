@@ -481,6 +481,16 @@ function Project( pid )
       stacks[ i ].createLink(fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype);
     return;
 	}
+	/*
+	 * updates nodes in all stacks
+	 */
+	 
+  this.updateNodes = function()
+  {
+    for ( var i = 0; i < stacks.length; ++i )
+      stacks[ i ].updateNodes();
+    return;
+  }	 
 	
   /*
    * create a link between two treenodes (join them)

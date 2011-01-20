@@ -244,7 +244,7 @@ Node = function(
       slider_s.move( -1 );
     else // zoom out
       slider_s.move( 1 );
-    project.toggleTracing( 'goactive');
+    project.toggleTracing( 'goactive' );
   });
   
   mc.click(function (e) {
@@ -265,11 +265,10 @@ Node = function(
           project.createLink(atn.id, this.parentnode.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
         } else if(atn.type == "treenode") {
           
-          if(this.parentnode.parent != null) {
-            alert("Target treenode needs to be rerooted before joining!");
-          } else {
+//          if(this.parentnode.parent != null) {
+//            console.log("parent of target is not null", this.parentnode);
+//          }
             project.createTreenodeLink(atn.id, this.parentnode.id);
-          }
           
         }
         

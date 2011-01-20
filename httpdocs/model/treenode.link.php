@@ -23,8 +23,6 @@ if ( $pid )
     $eleof = $db->getRelationId( $pid, "element_of" );
     if(!$eleof) { echo makeJSON( array( '"error"' => 'Can not find "element_of" relation for this project' ) ); return; }
     
-    
-    
     // assume that target to is parent, so only have to set parent to from_id
     
     // retrieve skeleton id of from_id treenode
@@ -40,6 +38,11 @@ if ( $pid )
           $skelid_to = $res[0]['class_instance_id'];
         } else {
           echo makeJSON( array( '"error"' => 'Can not find skeleton for to-treenode.' ) ); return; }
+        
+    // check if the skeletons are the same, send an error because we do not want to introduce loops
+    if($skelid_from == $skelid_to) {
+        echo makeJSON( array( '"error"' => 'Please do not join treenodes of the same skeleton. This introduces loopholes.' ) ); return;
+    }
         
     // use this id to update element_of relationships of from_skeleton
        $tnlist = array();

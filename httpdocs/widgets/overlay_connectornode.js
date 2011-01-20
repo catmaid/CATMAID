@@ -285,7 +285,7 @@ ConnectorNode = function(
       if(atn != null ) { 
         // connected activated treenode or connectornode
         // to existing treenode or connectornode
-        console.log("from", atn.id, "to", this.parentnode.id);
+        // console.log("from", atn.id, "to", this.parentnode.id);
         project.createLink(atn.id, this.parentnode.id, "presynaptic_to", "presynaptic terminal", "synapse", "treenode", "connector");
       } else {
         alert("You need to activate a treenode before joining it to a connector node!");

@@ -71,29 +71,28 @@ SVGOverlay = function(
   
   this.toggleLabels = function(toval)
   {
+    for(labid in labels) {
+      labels[labid].remove();
+     }
+    labels = new Object();
+    
     // update state variable
     if(toval == null ) {
       if(show_labels) {
         show_labels = false;
-        // remove them 
-        for(labid in labels) {
-          labels[labid].remove();
-        }
-        labels = new Object();
-      } else
-        show_labels = true;      
-    } else {
-      // in any case, remove them first
-      for(labid in labels) {
-        labels[labid].remove();
+      } else {
+        show_labels = true; 
       }
-      labels = new Object();
+             
+    } else {
       show_labels = toval;
     }
       
     // retrieve labels for the set of currently visible nodes
     if(show_labels)
     {
+      // first remove all existing
+      // loop through labels and remove
       for(nodeid in nodes)
       {
         if(nodes[nodeid].zdiff == 0){
@@ -135,13 +134,7 @@ SVGOverlay = function(
            ); // endfunction
         }
       }      
-    } else {
-      // loop through labels and remove
-      for(labid in labels) {
-        labels[labid].remove();
-      }
-      labels = new Object();
-    }
+    } 
     
   }
 
@@ -329,7 +322,6 @@ SVGOverlay = function(
                   var jso = $.parseJSON(text);
                   // updates nodes parent node
                   nodes[jso['newroot']].parent = null;
-
                 }
               } // endif
             } // end if
@@ -679,12 +671,10 @@ SVGOverlay = function(
   }
   
   this.refreshNodes = function( jso )
-  {
+  { 
     this.paper.clear();
     nodes = new Object();
     labels = new Object();
-    show_labels = false;
-    
     for (var i in jso) {
         var id = parseInt(jso[i].id);
         var pos_x = phys2pixX(jso[i].x);
@@ -764,6 +754,8 @@ SVGOverlay = function(
       }
     }
     //console.log("all nodes", nodes);
+    // show tags again
+    this.showTags(show_labels);
   }
 
   var updateDimension = function()
@@ -810,6 +802,41 @@ SVGOverlay = function(
 
   this.createTreenodeLink = function(fromid, toid)
   {
+    // first make sure to reroot target
+
+    requestQueue.register(
+      "model/treenode.reroot.php",
+      "POST",
+      {
+        pid : project.id,
+        tnid : toid
+       },
+       function(status, text, xml)
+       {
+          if ( status == 200 )
+          {
+            if ( text && text != " " )
+            {
+              var e = eval( "(" + text + ")" );
+              // console.log(e);
+              if ( e.error )
+              {
+                alert( e.error );
+              }
+              else
+              {
+                // add treenode to the display and update it
+                var jso = $.parseJSON(text);
+
+                // just redraw all for now
+                project.updateNodes();
+              }
+            } // endif
+          } // end if
+        }); // endfunction
+
+      
+  // then link again
     requestQueue.register(
       "model/treenode.link.php",
       "POST",
@@ -835,7 +862,9 @@ SVGOverlay = function(
                // update the parents children
                nodes[fromid].children[toid] = nodes[toid];
                nodes[toid].draw();
-               nodes[fromid].draw();               
+               nodes[fromid].draw();
+               // make target active treenode
+               activateNode(nodes[toid]);
               }
             }
           }
@@ -879,9 +908,8 @@ SVGOverlay = function(
               else
               {
                 
-                // XXX:
-                // depending on link_type, update the elements accordingly
-                
+                // just redraw all for now
+                project.updateNodes();
               }
             }
           }
@@ -889,6 +917,8 @@ SVGOverlay = function(
     });
     return;
   }
+
+  
   
   this.onclick = function( e )
   {   

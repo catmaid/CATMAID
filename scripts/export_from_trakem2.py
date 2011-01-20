@@ -241,6 +241,17 @@ def insert_connector_and_synapse( x, y, z, synapse_name ):
   new_connector_class_instance('model_of',new_id,synapse_id)
   return synapse_id
 
+
+def new_treenode_class_instance(relation_name,t,ci):
+  ps_treenode_class_instance.setInt(3,relation_to_relation_id[relation_name])
+  ps_treenode_class_instance.setInt(4,t)
+  ps_treenode_class_instance.setInt(5,ci)
+  ps_treenode_class_instance.executeUpdate()
+
+def insert_tag_for_treenode( tag, treenode_id ):
+  tag_class_instance_id = new_class_instance('label',tag)
+  return new_treenode_class_instance('labeled_as',treenode_id,tag_class_instance_id)
+
 # ------------------------------------------------------------------------
 
 ps_get_root_nodes = c.prepareStatement(
@@ -393,6 +404,13 @@ def insertTree(tree,skeleton_id):
     new_id = insert_treenode( parent, x, y, z, 0, confidence )
     table[nd] = new_id
     new_treenode_class_instance('element_of',new_id,skeleton_id)
+    # Also try to find any tags:
+    all_tags = nd.getTags()
+    if all_tags:
+      for tag in all_tags:
+        tag_as_string = tag.toString()
+        print "Trying to add tag: "+tag_as_string
+        insert_tag_for_treenode(tag_as_string,new_id)
 
 def add_recursively(pt,parent_id,depth=0):
   name_with_id = get_project_thing_name(pt)

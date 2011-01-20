@@ -85,6 +85,7 @@ class DB
 	 */
 	function getResult( $query )
 	{
+		error_log("In getResult: ".preg_replace('/\s+/', ' ', $query));
 		$result = array();
 		if ( $temp = pg_query( $this->handle, $query ) )
 		{
@@ -105,6 +106,7 @@ class DB
 	 */
 	function getResultKeyedById( $query, $id )
 	{
+		error_log("In getResultKeyedById with id ".$id.": ".preg_replace('/\s+/', ' ', $query));
 		$result = array();
 		if ( $temp = pg_query( $this->handle, $query ) )
 		{
@@ -179,6 +181,7 @@ class DB
 		}
 		$queryStr .= ')';
 		//echo $queryStr, "<br />\n";
+		error_log("In insertInto:".preg_replace('/\s+/', ' ', $queryStr));
 		pg_query( $this->handle, $queryStr );
 		return;
 	}

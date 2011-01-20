@@ -54,7 +54,8 @@ if ( $pid )
     foreach($childrentreenodes as $key => $tn) {
       // set to root
       $ids = $db->getResult('UPDATE "treenode" SET "parent_id" = NULL WHERE "treenode"."id" = '.$tn['tnid']);
-      // create new skeleton
+      // create new skeleton that will be used for each children treenode
+      // which becomes the root of a new skeleton
       $data = array(
         'user_id' => $uid,
         'project_id' => $pid,

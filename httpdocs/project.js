@@ -626,7 +626,7 @@ function Project( pid )
          project.toggleTracing( 'synapsedropping' );
         return false;
 			case 84:    //!< key t
-			  if ( shift  ) project.toggleTracing( 'tagging' );
+			  if ( !ctrl  ) project.toggleTracing( 'tagging' );
 			  break;
 			case 9:			//!< tab
 				if ( shift ) project.switchFocus( -1 );

@@ -12,32 +12,53 @@ $ses =& getSession();
 $pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
-// retrieve skeleton ids if set
-if ( isset( $_REQUEST['skeleton_nr'] ))
-{
-	$skelnr = intval( $_REQUEST['skeleton_nr'] );
-	
-	if ( $skelnr )
-	{
-		$skelcon = "AND (";
-		
-		for ( $i = 0; $i < $skelnr; $i++ )
-		{
-			// $skelid[] = $_REQUEST['skeleton_'.$i];
-			if( $i == 0 )
-				$skelcon .= '"tci"."class_instance_id" = '. $_REQUEST['skeleton_'.$i];
-			else
-				$skelcon .= 'OR "tci"."class_instance_id" = '. $_REQUEST['skeleton_'.$i];
-		}
-		$skelcon .= ")";
-		
-	}
-	else
-	{
-		$skelcon = "";
-	}
-	
-	
+// retrieve treenode id, when set retrieve skeleton id
+$atnid = isset( $_REQUEST[ 'atnid' ] ) ? intval( $_REQUEST[ 'atnid' ] ) : 0;
+
+$tabinject = '';
+if($atnid) {
+       $res = $db->getClassInstanceForTreenode( $pid, $atnid, "element_of" );
+       if(!empty($res)) {
+          $skelid = $res[0]['class_instance_id'];
+          $skelcon = "AND (";
+          $skelcon .= '"tci"."class_instance_id" = '.$skelid;
+          $skelcon .= ")";
+          $skelcon .= 'AND "treenode"."id" = "tci"."treenode_id"';
+          $tabinject = ', "treenode_class_instance" AS "tci"';
+          
+        } else {
+          echo makeJSON( array( '"error"' => 'Can not find skeleton for this treenode.' ) ); return; }
+
+} else {
+  // try to retrieve the sent skeleton ids
+  
+    
+    // retrieve skeleton ids if set
+    if ( isset( $_REQUEST['skeleton_nr'] ))
+    {
+    	$skelnr = intval( $_REQUEST['skeleton_nr'] );
+    	
+    	if ( $skelnr )
+    	{
+    		$skelcon = "AND (";
+    		
+    		for ( $i = 0; $i < $skelnr; $i++ )
+    		{
+    			// $skelid[] = $_REQUEST['skeleton_'.$i];
+    			if( $i == 0 )
+    				$skelcon .= '"tci"."class_instance_id" = '. $_REQUEST['skeleton_'.$i];
+    			else
+    				$skelcon .= 'OR "tci"."class_instance_id" = '. $_REQUEST['skeleton_'.$i];
+    		}
+    		$skelcon .= ")";
+    		
+    	}
+    	else
+    	{
+    		$skelcon = "";
+    	}
+    }
+
 }
 
 /* Paging */
@@ -115,16 +136,11 @@ if ( $pid )
 			
 			// label logic
 			
-			// get id for relation 'labeled_as'
-			$tlabelrel_res = $db->getResult(
-			'SELECT "relation"."id" FROM "relation"
-			WHERE "relation"."project_id" = '.$pid.' AND
-			"relation"."relation_name" = \'labeled_as\'');
+			// get id for relation 'labeled_as'      
+      $tlabelrel = $db->getRelationId( $pid, "labeled_as");
 			$tlabel2 = array();
-      
-			if( !empty($tlabelrel_res) )
+			if( !$tlabelrel )
 			{
-				$tlabelrel = $tlabelrel_res[0]['id'];
 			
 				// get treenode_class_instance rows
 				$tlabel = $db->getResult(
@@ -191,7 +207,7 @@ $t = $db->getResult(
 						( "treenode"."user_id" = '.$uid.' ) AS "can_edit",
 						to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
 						
-					FROM "treenode", "user"
+					FROM "treenode", "user"'.$tabinject.'
 						
 					WHERE "treenode"."project_id" = '.$pid.' AND
 						  "treenode"."user_id" = "user"."id"

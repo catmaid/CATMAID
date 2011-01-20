@@ -331,6 +331,30 @@ table.display tr.odd.row_selected td {
 	background-color: #9FAFD1;
 }
 
+table.display tr.even.highlight_active td {
+  background-color: #78ff78;
+}
+
+table.display tr.odd.highlight_active td {
+  background-color: #78ff78;
+}
+
+table.display tr.even.root_node td {
+  background-color: #ffbfbf;
+}
+
+table.display tr.odd.root_node td {
+  background-color: #ffbfbf;
+}
+
+table.display tr.even.leaf_node td {
+  background-color: #ffbfbf;
+}
+
+table.display tr.odd.leaf_node td {
+  background-color: #ffbfbf;
+}
+
 
 /*
  * Sorting classes for columns

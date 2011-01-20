@@ -30,6 +30,12 @@ initTreenodeTable = function(pid) {
 			}
 			aoData.push( { "name" : "skeleton_nr", "value" : i } );
 			aoData.push( { "name" : "pid", "value" : pid } );
+			
+			// send active treenode when set
+			if( atn != null && atn.type == "treenode") {
+        aoData.push( { "name" : "atnid", "value" : atn.id } );
+			}
+			
 			$.ajax( {
 				"dataType": 'json', 
 				"type": "POST", 
@@ -41,10 +47,22 @@ initTreenodeTable = function(pid) {
 		"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
 		"bJQueryUI": true,
 		"fnRowCallback": function( nRow, aData, iDisplayIndex ) {
-			if ( parseInt(aData[0]) in project.selectedObjects['table_treenode'])
-			{
-				$(nRow).addClass('row_selected');
-			}
+      
+      if ( aData[4] == "R" )
+        $(nRow).addClass('root_node');
+      if ( aData[4] == "L" )
+        $(nRow).addClass('leaf_node');
+      
+      if(atn != null) {
+        if ( parseInt(aData[0]) == atn.id ) {
+          // just to be sure
+          $(nRow).removeClass('root_node');
+          $(nRow).removeClass('leaf_node');
+          // highlight row of active treenode
+          $(nRow).addClass('highlight_active');
+        }
+      }
+      
 			return nRow;
 		},
 		"aoColumns": [

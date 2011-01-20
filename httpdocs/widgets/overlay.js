@@ -136,7 +136,7 @@ SVGOverlay = function(
 
     var e = $("<div class='tagBox' id='tagBoxId"+ atn.id + "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: "+atn.x + "px; top: "+ atn.y + "px;'>" + 
     //var e = $("<div class='tagBox' id='tagBoxId' style='z-index: 7; left: 0px; top: 0px; color:white; bgcolor:blue;font-size:12pt'>" +
-      "Tag: <input id='Tags"+ atn.id + "' name='Tags' type='text' value='' />" +
+      "Tag (id:"+ atn.id + "): <input id='Tags"+ atn.id + "' name='Tags' type='text' value='' />" +
       "<button id='SaveCloseButton"+ atn.id + "'>Save&Close</button>" +
       "<button id='CloseButton"+ atn.id + "'>Close</button>" +
       "</div>");

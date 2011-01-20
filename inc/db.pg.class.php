@@ -51,6 +51,8 @@ class DB
 	var $db;
 	var $handle;
 
+    var $debug = true;
+
 	/**
 	 * Constructor
 	 */  
@@ -85,7 +87,8 @@ class DB
 	 */
 	function getResult( $query )
 	{
-		error_log("In getResult: ".preg_replace('/\s+/', ' ', $query));
+		if( $this->debug )
+			error_log("In getResult: ".preg_replace('/\s+/', ' ', $query));
 		$result = array();
 		if ( $temp = pg_query( $this->handle, $query ) )
 		{
@@ -106,7 +109,8 @@ class DB
 	 */
 	function getResultKeyedById( $query, $id )
 	{
-		error_log("In getResultKeyedById with id ".$id.": ".preg_replace('/\s+/', ' ', $query));
+		if( $this->debug )
+			error_log("In getResultKeyedById with id ".$id.": ".preg_replace('/\s+/', ' ', $query));
 		$result = array();
 		if ( $temp = pg_query( $this->handle, $query ) )
 		{
@@ -181,7 +185,8 @@ class DB
 		}
 		$queryStr .= ')';
 		//echo $queryStr, "<br />\n";
-		error_log("In insertInto: ".preg_replace('/\s+/', ' ', $queryStr));
+		if( $this->debug )
+			error_log("In insertInto: ".preg_replace('/\s+/', ' ', $queryStr));
 		pg_query( $this->handle, $queryStr );
 		return;
 	}
@@ -226,7 +231,8 @@ class DB
 		}
 		$query .= ' WHERE '.$cond;
 		//echo $query;
-		error_log("In update: ".preg_replace('/\s+/', ' ', $query));	
+		if( $this->debug )
+			error_log("In update: ".preg_replace('/\s+/', ' ', $query));	
 		$r = pg_query( $this->handle, $query );
 		return pg_affected_rows( $r );
 	}
@@ -243,7 +249,8 @@ class DB
 	{
 		//print("DELETE FROM `".$table."` WHERE ".$cond.";<br />\n");
 		$query = 'DELETE FROM "'.$table.'" WHERE '.$cond;
-		error_log("In delete: ".preg_replace('/\s+/', ' ', $query));
+		if( $this->debug )
+			error_log("In delete: ".preg_replace('/\s+/', ' ', $query));
 		$r = pg_query( $this->handle, $query );
 		return pg_affected_rows( $r );
 	}

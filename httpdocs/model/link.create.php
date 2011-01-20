@@ -135,8 +135,6 @@ if ( $pid )
       
     }
 
-
-
     echo makeJSON( array( '"from_ci"' => $from_ci_id,
                 '"to_ci"' => $to_ci_id,
                 ) );

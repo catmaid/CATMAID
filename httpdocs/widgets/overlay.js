@@ -831,14 +831,11 @@ SVGOverlay = function(
               }
               else
               {
-                
-                // XXX:
                nodes[toid].parent = nodes[fromid];
                // update the parents children
                nodes[fromid].children[toid] = nodes[toid];
                nodes[toid].draw();
-               nodes[fromid].draw();
-               
+               nodes[fromid].draw();               
               }
             }
           }

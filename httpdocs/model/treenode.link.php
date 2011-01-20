@@ -63,7 +63,9 @@ if ( $pid )
     
     // update the parent of to_id treenode
     $ids = $db->update("treenode", array("parent_id" => $from_id) ,' "treenode"."id" = '.$to_id);
-    
+
+      echo json_encode( array('message' => 'success', 'fromid' => $from_id, 'toid' => $to_id) );  
+          
   }
   else
     echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to join treenodes.' ) );

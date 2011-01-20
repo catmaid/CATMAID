@@ -268,7 +268,6 @@ Node = function(
           if(this.parentnode.parent != null) {
             alert("Target treenode needs to be rerooted before joining!");
           } else {
-            console.log("link treenodes", atn.id, this.parentnode.id);
             project.createTreenodeLink(atn.id, this.parentnode.id);
           }
           

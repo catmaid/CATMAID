@@ -96,11 +96,8 @@ if ( $pid )
         $lab_ci_id = $db->insertIntoId('connector_class_instance', $data );
         
       }
-    
-
 
     }
-     // echo makeJSON( array( 'message' => 'success' ) );
       echo json_encode( array('message' => 'success') );  
   }
   else

@@ -73,11 +73,21 @@ SVGOverlay = function(
   {
     // update state variable
     if(toval == null ) {
-      if(show_labels)
+      if(show_labels) {
         show_labels = false;
-      else
+        // remove them 
+        for(labid in labels) {
+          labels[labid].remove();
+        }
+        labels = new Object();
+      } else
         show_labels = true;      
     } else {
+      // in any case, remove them first
+      for(labid in labels) {
+        labels[labid].remove();
+      }
+      labels = new Object();
       show_labels = toval;
     }
       

@@ -420,10 +420,14 @@ def insertTree(tree,skeleton_id):
     parent = None
     if nd.parent:
       parent = table[nd.parent]
-    radius = 0
+    radius = -1
     if nd.getClass() == radius_node_class:
       radius = nd.getData()
-    new_id = insert_treenode( parent, x, y, z, 0, confidence )
+    # In TrakEM2, 0 is "unset" as well as "radius 0" - in CATMAID,
+    # we're making "-1" unset for the moment...
+    if radius == 0:
+      radius = -1
+    new_id = insert_treenode( parent, x, y, z, radius, confidence )
     table[nd] = new_id
     new_treenode_class_instance('element_of',new_id,skeleton_id)
     # Also try to find any tags:

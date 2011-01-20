@@ -351,6 +351,13 @@ function Project( pid )
     return;
 	}
 	
+  this.showTags = function ( m )
+  {
+    for ( var i = 0; i < stacks.length; ++i )
+      stacks[ i ].showTags(m);
+    return;
+  }
+	
 	/**
 	 * register all GUI elements
 	 */

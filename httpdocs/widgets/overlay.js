@@ -64,7 +64,12 @@ SVGOverlay = function(
            
   }
   
-  this.toggleLabels = function(toval = null)
+  this.showTags = function( val )
+  {
+    this.toggleLabels( val );
+  }
+  
+  this.toggleLabels = function(toval)
   {
     // update state variable
     if(toval == null ) {
@@ -270,7 +275,7 @@ SVGOverlay = function(
               }
               else
               {
-                  project.toggleLabels(true);
+                  project.showTags(true);
               }
              }
            }

@@ -1301,6 +1301,11 @@ function Stack(
     svgOverlay.createTreenodeLink(fromid, toid);
   }
 	
+	this.showTags = function ( val )
+	{
+      svgOverlay.showTags(val);
+	}
+	
 	this.toggleTracing = function( m )
 	{
     switch ( m )

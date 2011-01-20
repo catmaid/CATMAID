@@ -96,9 +96,12 @@ if ( $pid )
         $lab_ci_id = $db->insertIntoId('connector_class_instance', $data );
         
       }
+    
+
 
     }
-
+     // echo makeJSON( array( 'message' => 'success' ) );
+      echo json_encode( array('message' => 'success') );  
   }
   else
     echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to retrieve labels.' ) );

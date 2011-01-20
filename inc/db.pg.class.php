@@ -181,7 +181,7 @@ class DB
 		}
 		$queryStr .= ')';
 		//echo $queryStr, "<br />\n";
-		error_log("In insertInto:".preg_replace('/\s+/', ' ', $queryStr));
+		error_log("In insertInto: ".preg_replace('/\s+/', ' ', $queryStr));
 		pg_query( $this->handle, $queryStr );
 		return;
 	}
@@ -226,7 +226,7 @@ class DB
 		}
 		$query .= ' WHERE '.$cond;
 		//echo $query;
-    error_log("In update:".preg_replace('/\s+/', ' ', $query));
+		error_log("In update: ".preg_replace('/\s+/', ' ', $query));	
 		$r = pg_query( $this->handle, $query );
 		return pg_affected_rows( $r );
 	}
@@ -242,7 +242,9 @@ class DB
 	function deleteFrom( $table, $cond = '0' )
 	{
 		//print("DELETE FROM `".$table."` WHERE ".$cond.";<br />\n");
-		$r = pg_query( $this->handle, 'DELETE FROM "'.$table.'" WHERE '.$cond );
+		$query = 'DELETE FROM "'.$table.'" WHERE '.$cond;
+		error_log("In delete: ".preg_replace('/\s+/', ' ', $query));
+		$r = pg_query( $this->handle, $query );
 		return pg_affected_rows( $r );
 	}
 	

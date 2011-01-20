@@ -64,13 +64,17 @@ SVGOverlay = function(
            
   }
   
-  this.toggleLabels = function()
+  this.toggleLabels = function(toval = null)
   {
     // update state variable
-    if(show_labels)
-      show_labels = false;
-    else
-      show_labels = true;
+    if(toval == null ) {
+      if(show_labels)
+        show_labels = false;
+      else
+        show_labels = true;      
+    } else {
+      show_labels = toval;
+    }
       
     // retrieve labels for the set of currently visible nodes
     if(show_labels)
@@ -137,8 +141,8 @@ SVGOverlay = function(
     var e = $("<div class='tagBox' id='tagBoxId"+ atn.id + "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: "+atn.x + "px; top: "+ atn.y + "px;'>" + 
     //var e = $("<div class='tagBox' id='tagBoxId' style='z-index: 7; left: 0px; top: 0px; color:white; bgcolor:blue;font-size:12pt'>" +
       "Tag (id:"+ atn.id + "): <input id='Tags"+ atn.id + "' name='Tags' type='text' value='' />" +
-      "<button id='SaveCloseButton"+ atn.id + "'>Save&Close</button>" +
-      "<button id='CloseButton"+ atn.id + "'>Close</button>" +
+      "<button id='SaveCloseButton"+ atn.id + "'>Save</button>" +
+      "<button id='CloseButton"+ atn.id + "'>Cancel</button>" +
       "</div>");
     e.onclick = function( e )
     {   
@@ -239,8 +243,10 @@ SVGOverlay = function(
 
     $("#SaveCloseButton" + atn.id).click(function(event) {
        // save and close
-       // alert($("#Tags" + atn.id).tagEditorGetTags());
-         
+        
+      // XXX: programatically hit enter on the input box
+      // i.e. grab input field and add it as tag
+      
       requestQueue.register(
         "model/label.update.php",
         "POST",
@@ -264,7 +270,7 @@ SVGOverlay = function(
               }
               else
               {
-                  
+                  project.toggleLabels(true);
               }
              }
            }
@@ -786,6 +792,47 @@ SVGOverlay = function(
     return view;
   }
   
+
+  this.createTreenodeLink = function(fromid, toid)
+  {
+    requestQueue.register(
+      "model/treenode.link.php",
+      "POST",
+      {
+        pid : project.id,
+        from_id : fromid,
+        to_id : toid,
+        },
+        function(status, text, xml)
+        {
+          if ( status == 200 )
+          {
+            if ( text && text != " " )
+            {
+              var e = eval( "(" + text + ")" );
+              if ( e.error )
+              {
+                alert( e.error );
+              }
+              else
+              {
+                
+                // XXX:
+               nodes[toid].parent = nodes[fromid];
+               // update the parents children
+               nodes[fromid].children[toid] = nodes[toid];
+               nodes[toid].draw();
+               nodes[fromid].draw();
+               
+              }
+            }
+          }
+          return true;
+    });
+    return;
+  }
+  
+  
   this.createLink = function(fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype)
   {
 
@@ -862,7 +909,6 @@ SVGOverlay = function(
           //console.log("...create new synapse presynaptic to activated treenode ", atn);
           // remove the automatic synapse creation
           //createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
-          
           
           e.stopPropagation();
           return true;

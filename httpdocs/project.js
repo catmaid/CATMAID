@@ -475,6 +475,17 @@ function Project( pid )
     return;
 	}
 	
+  /*
+   * create a link between two treenodes (join them)
+   * toid has to be root of a skeleton
+   */
+  this.createTreenodeLink = function(fromid, toid)
+  {
+    for ( var i = 0; i < stacks.length; ++i )
+      stacks[ i ].createTreenodeLink(fromid, toid);
+    return;
+  }
+	
 	/**
 	 * create a textlabel on the server
 	 */
@@ -598,8 +609,8 @@ function Project( pid )
          project.toggleTracing( 'synapsedropping' );
         return false;
 			case 84:    //!< key t
-			  project.toggleTracing( 'tagging' );
-			  return false;
+			  if ( shift  ) project.toggleTracing( 'tagging' );
+			  break;
 			case 9:			//!< tab
 				if ( shift ) project.switchFocus( -1 );
 				else project.switchFocus( 1 );

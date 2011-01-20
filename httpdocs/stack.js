@@ -1295,6 +1295,11 @@ function Stack(
   {
     svgOverlay.createLink(fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype);
   }
+  
+  this.createTreenodeLink = function( fromid, toid )
+  {
+    svgOverlay.createTreenodeLink(fromid, toid);
+  }
 	
 	this.toggleTracing = function( m )
 	{

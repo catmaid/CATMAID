@@ -226,6 +226,7 @@ class DB
 		}
 		$query .= ' WHERE '.$cond;
 		//echo $query;
+    error_log("In update:".preg_replace('/\s+/', ' ', $query));
 		$r = pg_query( $this->handle, $query );
 		return pg_affected_rows( $r );
 	}

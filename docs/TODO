@@ -1,6 +1,6 @@
 TODO
 
-* OPEN: to may neurons in Fragments. a folder for real fragments without single postsynaptic nodes
+* OPEN: too may neurons in Fragments. a folder for real fragments without single postsynaptic nodes
   * PROBLEM: create new postyn treenode, and the, continue tracing, would stay in the same group
 * PROBLEM: dblick just somewhere to zoom in in all modes
   * why can not set ondblclick event handler to mouse catcher?
@@ -17,6 +17,17 @@ BEAUTIFICATION
 * object tree background alignment in chrome
 * copying sliders instead of moving them
 
+WISHLIST
+
+* zoom in past 100%, on to 200% and 400% (MHL can work on this)
+* in TrakEM2, pressing 'g' while over a node selects that object - in
+  CATMAID it would be good if it selected the active node.
+* once display is fast enough, display treelines in all modes - in
+  general
+* search box (regular expression across class instance names)
+* somewhere that displays the world coordinates of the current mouse
+  position
+
 LATER
 * security auditing, related to:
   - amazon mechanical turk test
@@ -29,6 +40,7 @@ LATER
   - import obo ontolgoy terms
   - use class_class for constraining
 * export script to trackem
+* new django-based back-end (MHL working on this)
 
 SECURITY CONCERNS
 * problem of SQL injections in php where REQUEST variable is just used in the sql statements

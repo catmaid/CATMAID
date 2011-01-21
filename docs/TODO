@@ -15,6 +15,7 @@ BEAUTIFICATION
   * small tutorial with the key bindings and how tracing works
 * remove beta from title?
 * object tree background alignment in chrome
+* copying sliders instead of moving them
 
 LATER
 * security auditing, related to:
@@ -28,6 +29,11 @@ LATER
   - import obo ontolgoy terms
   - use class_class for constraining
 * export script to trackem
+
+SECURITY CONCERNS
+* problem of SQL injections in php where REQUEST variable is just used in the sql statements
+* calling e.g. tracing methods programatically in firebug using the project variable
+* php code execution protected only by if($pid) and if($uid)
 
 DONE
 * DONE: change confidence value (-> in table)

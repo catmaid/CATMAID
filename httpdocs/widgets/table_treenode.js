@@ -46,8 +46,25 @@ initTreenodeTable = function(pid) {
 		},
 		"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
 		"bJQueryUI": true,
+		"fnDrawCallback" : function() {
+        $('td:eq(5)', oTable.fnGetNodes()).editable( 'model/treenode.table.update.php', {
+          "callback": function( sValue, y ) {
+          },
+          "submitdata": function ( value, settings ) {
+            // console.log("submit", value, "settings", settings, "this", this);
+            var aPos = oTable.fnGetPosition( this );
+            var aData = oTable.fnGetData( aPos[0] );
+            return {
+              "id" : aData[0],
+              "type" : "confidence",
+              "pid" : project.id
+            };
+          },
+          "height": "14px"
+        } );      
+		},
 		"fnRowCallback": function( nRow, aData, iDisplayIndex ) {
-      
+		  
       if ( aData[4] == "R" )
         $(nRow).addClass('root_node');
       if ( aData[4] == "L" )
@@ -62,7 +79,6 @@ initTreenodeTable = function(pid) {
           $(nRow).addClass('highlight_active');
         }
       }
-      
 			return nRow;
 		},
 		"aoColumns": [
@@ -123,6 +139,7 @@ initTreenodeTable = function(pid) {
   });
 
 
+/*
 	$('#treenodetable tbody tr').live('click', function () {
 
 		var aData = oTable.fnGetData( this );
@@ -136,11 +153,13 @@ initTreenodeTable = function(pid) {
 		else
 		{
 			project.selectedObjects['table_treenode'][iId] = {'id': iId, 'tabledata':aData, 'type' : 'treenode'};
-			/**
-			for(key in project.selectedObjects['table_treenode'])
-				console.log(key);*/
+
 		}			
 		$(this).toggleClass('row_selected');
 	} );
+	*/	
+  
+
+  
 		
 }

@@ -4,7 +4,7 @@ TODO
   * PROBLEM: create new postyn treenode, and the, continue tracing, would stay in the same group
 * PROBLEM: dblick just somewhere to zoom in in all modes
   * why can not set ondblclick event handler to mouse catcher?
-* TODO: change confidence/radius value (e.g. key C and number or in table)
+* OPEN: add connector table (id, x,y,z, presyn, postsyn, tags, lastmodified)
 * CANT REPRODUCE: sEcho error for in datatable for vnc stack
 
 BEAUTIFICATION
@@ -13,6 +13,8 @@ BEAUTIFICATION
 * code-cleanup
 * catmaid.org, tutorial, video
   * small tutorial with the key bindings and how tracing works
+* remove beta from title?
+* object tree background alignment in chrome
 
 LATER
 * security auditing, related to:
@@ -28,7 +30,7 @@ LATER
 * export script to trackem
 
 DONE
-
+* DONE: change confidence value (-> in table)
 * DONE: active treenode in view, show its skeleton treenodes in datatable
 * DONE: show treenodes from a given skeleton again (check again from object tree)
 * DONE: splitting seems not to update the skeleton correctly

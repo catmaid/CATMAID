@@ -264,6 +264,10 @@ Node = function(
     // this usually refers here to the mc object
     if (e.shiftKey) {
       if(e.ctrlKey && e.shiftKey ){
+        // if it is active node, set active node to null
+        if(this.parentnode.id == atn.id) {
+          activateNode(null);
+        }
         this.parentnode.deletenode();
         e.stopPropagation();
         return true;

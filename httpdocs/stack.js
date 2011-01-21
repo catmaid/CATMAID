@@ -1920,7 +1920,6 @@ function Stack(
 	
   // svg overlay for the tracing
   var svgOverlay = new SVGOverlay(resolution, translation, dimension, scale);
-  //mouseCatcher.appendChild( svgOverlay.getView() );
   view.appendChild( svgOverlay.view );
   svgOverlay.hide();
 	

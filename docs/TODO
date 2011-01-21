@@ -1,0 +1,39 @@
+TODO
+
+* OPEN: to may neurons in Fragments. a folder for real fragments without single postsynaptic nodes
+  * PROBLEM: create new postyn treenode, and the, continue tracing, would stay in the same group
+* PROBLEM: dblick just somewhere to zoom in in all modes
+  * why can not set ondblclick event handler to mouse catcher?
+* TODO: change confidence/radius value (e.g. key C and number or in table)
+* CANT REPRODUCE: sEcho error for in datatable for vnc stack
+
+BEAUTIFICATION
+* arrowheads problem (zindex)
+* drag treenodes updates connector path
+* code-cleanup
+* catmaid.org, tutorial, video
+  * small tutorial with the key bindings and how tracing works
+
+LATER
+* security auditing, related to:
+  - amazon mechanical turk test
+  - user rights managment, registration
+  - history/logfile of changes
+* 3d view of a skeleton
+* show connectivity graph from annotation domain
+* integrate the window manager: CMW
+* ontology work
+  - import obo ontolgoy terms
+  - use class_class for constraining
+* export script to trackem
+
+DONE
+
+* DONE: active treenode in view, show its skeleton treenodes in datatable
+* DONE: show treenodes from a given skeleton again (check again from object tree)
+* DONE: splitting seems not to update the skeleton correctly
+* DONE: add endnode types to treenode, was leaf node
+* DONE: ctrl check for tagging
+* DONE:colorcode active treenode in data table
+  * also colorcoded root and leaf node
+* DONE: delete active treenode problem (when new node added)

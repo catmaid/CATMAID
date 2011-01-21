@@ -915,8 +915,6 @@ SVGOverlay = function(
     return;
   }
 
-  
-  
   this.onclick = function( e )
   {   
     //console.log("OVERLAY: atn.id", atn.id);

@@ -89,6 +89,9 @@ if ( $pid )
         "treenode_class_instance"."relation_id" = '.$eleof_id);
       };
     };
+    
+    echo json_encode( array( 'message' => 'success' ) );
+    
   }
   else
     echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to add treenodes.' ) );

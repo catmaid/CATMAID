@@ -16,14 +16,14 @@ $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 $atnid = isset( $_REQUEST[ 'atnid' ] ) ? intval( $_REQUEST[ 'atnid' ] ) : 0;
 
 $tabinject = '';
-if($atnid) {
+if($atnid != 0) {
        $res = $db->getClassInstanceForTreenode( $pid, $atnid, "element_of" );
        if(!empty($res)) {
           $skelid = $res[0]['class_instance_id'];
           $skelcon = "AND (";
           $skelcon .= '"tci"."class_instance_id" = '.$skelid;
           $skelcon .= ")";
-          $skelcon .= 'AND "treenode"."id" = "tci"."treenode_id"';
+          //$skelcon .= 'AND "treenode"."id" = "tci"."treenode_id"';
           $tabinject = ', "treenode_class_instance" AS "tci"';
           
         } else {
@@ -137,10 +137,13 @@ if ( $pid )
 			// label logic
 			
 			// get id for relation 'labeled_as'      
-      $tlabelrel = $db->getRelationId( $pid, "labeled_as");
-			$tlabel2 = array();
-			if( !$tlabelrel )
+      $tlabelrel_res = $db->getResult('SELECT "relation"."id" FROM "relation"
+      WHERE "relation"."project_id" = '.$pid.' AND
+      "relation"."relation_name" = \'labeled_as\'');
+			
+			if( !empty($tlabelrel_res) )
 			{
+			  $tlabelrel = $tlabelrel_res[0]['id'];
 			
 				// get treenode_class_instance rows
 				$tlabel = $db->getResult(
@@ -150,7 +153,7 @@ if ( $pid )
 				);
 				
 				reset( $tlabel );
-				
+				$tlabel2 = array();
 				while ( list( $key, $val) = each( $tlabel ) )
 				{
 					$k = $val['treenode_id'];
@@ -207,10 +210,11 @@ $t = $db->getResult(
 						( "treenode"."user_id" = '.$uid.' ) AS "can_edit",
 						to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
 						
-					FROM "treenode", "user"'.$tabinject.'
+					FROM "treenode", "user", "treenode_class_instance" AS "tci"
 						
 					WHERE "treenode"."project_id" = '.$pid.' AND
 						  "treenode"."user_id" = "user"."id"
+						  AND "treenode"."id" = "tci"."treenode_id"
 						  '.$skelcon.'
 					'.$sOrder.'
 					'.$sLimit.'

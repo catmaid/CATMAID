@@ -265,7 +265,7 @@ Node = function(
     if (e.shiftKey) {
       if(e.ctrlKey && e.shiftKey ){
         // if it is active node, set active node to null
-        if(this.parentnode.id == atn.id) {
+        if(atn != null && this.parentnode.id == atn.id) {
           activateNode(null);
         }
         this.parentnode.deletenode();

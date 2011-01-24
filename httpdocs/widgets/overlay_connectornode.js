@@ -281,6 +281,9 @@ ConnectorNode = function(
     // this usually refers here to the mc object
     if (e.shiftKey) {
       if(e.ctrlKey && e.shiftKey ){
+        if(atn != null && this.parentnode.id == atn.id) {
+          activateNode(null);
+        }
         this.parentnode.deletenode();
         e.stopPropagation();
         return true;

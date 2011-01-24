@@ -6,6 +6,7 @@ TODO
   * why can not set ondblclick event handler to mouse catcher?
 * OPEN: add connector table (id, x,y,z, presyn, postsyn, tags, lastmodified)
 * CANT REPRODUCE: sEcho error for in datatable for vnc stack
+* check delete connector when active (probably need to deactivate as well)
 
 BEAUTIFICATION
 * arrowheads problem (zindex)
@@ -16,6 +17,8 @@ BEAUTIFICATION
 * remove beta from title?
 * object tree background alignment in chrome
 * copying sliders instead of moving them
+* splitter in toolbar
+* update schema.dia file
 
 WISHLIST
 
@@ -41,6 +44,8 @@ LATER
   - use class_class for constraining
 * export script to trackem
 * new django-based back-end (MHL working on this)
+* label an area by a close polyline, similar to labelme
+  - add a areatreenode inheriting from treenode with array column
 
 SECURITY CONCERNS
 * problem of SQL injections in php where REQUEST variable is just used in the sql statements

@@ -268,9 +268,9 @@ ConnectorNode = function(
    */
   mc.dblclick(function (e) {    
     if(e.altKey) // zoom in
-      slider_s.move( -1 );
+      slider_trace_s.move( -1 );
     else // zoom out
-      slider_s.move( 1 );
+      slider_trace_s.move( 1 );
     project.toggleTracing( 'goactive');
   });
   

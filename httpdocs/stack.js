@@ -258,6 +258,7 @@ function Stack(
 		if ( registered )
 		{
 			if ( slider_s ) slider_s.setByValue( s, true );
+      if ( slider_trace_s ) slider_trace_s.setByValue( s, true );
 			if ( slider_z ) slider_z.setByValue( z, true );
       if ( slider_trace_z ) slider_trace_z.setByValue( z, true );
       
@@ -1453,7 +1454,13 @@ function Stack(
 		slider_s = c;
 		return;
 	}
-	
+
+  this.registerZoomControlTrace = function( c )
+  {
+    slider_trace_s = c;
+    return;
+  }
+  
 	this.registerSliceControl = function( c )
 	{
 		slider_z = c;
@@ -1514,7 +1521,13 @@ function Stack(
 			MAX_S + 1,
 			s,
 			this.changeScaleDelayed );
-		
+    slider_trace_s.update(
+      MAX_S,
+      0,
+      MAX_S + 1,
+      s,
+      this.changeScaleDelayed );
+      
 		if ( slices.length < 2 )	//!< hide the slider_z if there is only one slice
 		{
 			slider_z.getView().parentNode.style.display = "none";
@@ -1611,7 +1624,14 @@ function Stack(
 			undefined,
 			0,
 			null );
-		
+
+    slider_trace_s.update(
+      0,
+      1,
+      undefined,
+      0,
+      null );
+      
 		slider_z.update(
 			0,
 			1,
@@ -1958,8 +1978,9 @@ function Stack(
 	var registered = false;
 	
 	var slider_s;
-	//var slider_z;
-	//var slider_trace_z;
+  var slider_trace_s;
+	var slider_z;
+	var slider_trace_z;
 	var input_x;
 	var input_y;
 	

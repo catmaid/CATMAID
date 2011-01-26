@@ -4,6 +4,7 @@ var statusBar;		//!< global statusBar
 var slider_z;		//!< slice slider
 var slider_trace_z;
 var slider_s;		//!< zoom slider
+var slider_trace_s;
 var input_x;		//!< x_input
 var input_y;		//!< y_input
 var a_url;			//!< URL to this page
@@ -346,6 +347,7 @@ function handle_openProjectStack( status, text, xml )
 					e.trakem2_project );
 			
 			stack.registerZoomControl( slider_s );
+      stack.registerZoomControlTrace( slider_trace_s );
 			stack.registerSliceControl( slider_z );
       stack.registerSliceControlTrace( slider_trace_z );
 			stack.registerXControl( input_x );
@@ -685,7 +687,21 @@ function init()
 				8 ),
 			8,
 			function( val ){ statusBar.replaceLast( "s: " + val ); } );
-	
+
+  slider_trace_s = new Slider(
+      SLIDER_HORIZONTAL,
+      true,
+      undefined,
+      undefined,
+      new Array(
+        0,
+        1,
+        2,
+        4,
+        8 ),
+      8,
+      function( val ){ statusBar.replaceLast( "s: " + val ); } );
+      
 	var slider_z_view = slider_z.getView();
 	slider_z_view.id = "slider_z";
 	document.getElementById( "slider_z" ).parentNode.replaceChild(
@@ -704,7 +720,6 @@ function init()
       slider_trace_z.getInputView(),
       slider_trace_z_view.nextSibling );
 
-
 	var slider_s_view = slider_s.getView();
 	slider_s_view.id = "slider_s";
 	document.getElementById( "slider_s" ).parentNode.replaceChild(
@@ -713,6 +728,15 @@ function init()
 	document.getElementById( "slider_s" ).parentNode.replaceChild(
 			slider_s.getInputView(),
 			slider_s_view.nextSibling );
+			
+  var slider_trace_s_view = slider_trace_s.getView();
+  slider_trace_s_view.id = "slider_trace_s";
+  document.getElementById( "slider_trace_s" ).parentNode.replaceChild(
+      slider_trace_s_view,
+      document.getElementById( "slider_trace_s" ) );
+  document.getElementById( "slider_trace_s" ).parentNode.replaceChild(
+      slider_trace_s.getInputView(),
+      slider_trace_s_view.nextSibling );
 	
 	slider_crop_top_z = new Slider(
 			SLIDER_HORIZONTAL,

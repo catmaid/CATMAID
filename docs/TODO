@@ -1,12 +1,7 @@
 TODO
 * Benchmarks
-
-* OPEN: too may neurons in Fragments. a folder for real fragments without single postsynaptic nodes
-  * PROBLEM: create new postyn treenode, and the, continue tracing, would stay in the same group
-  * 
 * PROBLEM: dblick just somewhere to zoom in in all modes
   * why can not set ondblclick event handler to mouse catcher?
-* check delete connector when active (probably need to deactivate as well): DONE
 * copying sliders instead of moving them
   zoom-level scroll bar not visible with "move" or "select" tools.
   
@@ -47,7 +42,12 @@ DONE
   field to start typing, automatic tag addition when entering seperator (,)
   store tags with Tab-Space (switch to save button end click), if required
   you can add another key that simulates a .click() event
-
+* check delete connector when active (probably need to deactivate as well): DONE
+* too may neurons in Fragments. a folder for real fragments without single postsynaptic nodes
+  -> now, adding in "Fragments" for newly created treenodes just somewhere, and 
+  "Fragments with connector" for added postsynaptic single treenodes
+  
+  
 BEAUTIFICATION
 * arrowheads problem (zindex)
 * drag treenodes updates connector path

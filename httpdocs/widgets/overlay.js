@@ -501,7 +501,8 @@ SVGOverlay = function(
         y : phys_y,
         z : phys_z,
         radius : radius,
-        confidence : confidence
+        confidence : confidence,
+        targetgroup : "Fragments with connector" 
         },
       function(status, text, xml)
       {
@@ -562,7 +563,8 @@ SVGOverlay = function(
         y : phys_y,
         z : phys_z,
         radius : radius,
-        confidence : confidence
+        confidence : confidence,
+        targetgroup : "Fragments" 
         },
       function(status, text, xml)
       {

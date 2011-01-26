@@ -1,34 +1,31 @@
 TODO
-
 * OPEN: too may neurons in Fragments. a folder for real fragments without single postsynaptic nodes
   * PROBLEM: create new postyn treenode, and the, continue tracing, would stay in the same group
 * PROBLEM: dblick just somewhere to zoom in in all modes
   * why can not set ondblclick event handler to mouse catcher?
-* OPEN: add connector table (id, x,y,z, presyn, postsyn, tags, lastmodified)
-* CANT REPRODUCE: sEcho error for in datatable for vnc stack
+* CANT REPRODUCE: sEcho error for in datatable for vnc stac
 * check delete connector when active (probably need to deactivate as well)
-* zoom-level scroll bar not visible with "move" or "select" tools.
+* copying sliders instead of moving them
+  zoom-level scroll bar not visible with "move" or "select" tools.
   
 * Rendering when zoomed into 100% is not limited to 400 nodes. Some
 nodes get rendered and some don't. MMB-drag updates different subsets at
 every repaint event.
-* JPEG artifacts: CATMAID shows jpeg images, which were generated from
+
+* * JPEG artifacts: CATMAID shows jpeg images, which were generated from
 TrakEM2's jpeg mimaps. One step of jpeg-ing too many. We should generate
 CATMAID tiles from original images plus their transformations. How did
 you generate the tiles for the VNC? If from TrakEM2, I can fix that
 part.
- I am not sure I understood
-the logic. The current interface is pretty, and lets one add more than
-one tag at the same time. I'd rather enter just one tag by 't', type,
-up/down arrows to choose, enter to select, enter to set. Or just 't',
-type, enter to set (can be faster to type "TODO" than to scroll for it).
 
 ... also sometimes I get into state where "Cannot find skeleton
 for parent treenode in this project" errors happen whenever I
 click in the interface
 
 DONE
-
+* update schema.dia file: DONE
+* add keyboard shortcuts (like F2, F3, F4 ...) for all the tools in the toolbar.
+  --> added keybindings with 1,2,3,...
 * context popup menu in the "Object Tree" doesn't go away when moving the mouse out of it, or when
   clicking elsewhere. One must click on one of its elements. -> only does not go away when clicking on the stack
 * Tagging must be easier/faster: keyboard only. -> now, automatic focus on input
@@ -44,11 +41,7 @@ BEAUTIFICATION
   * small tutorial with the key bindings and how tracing works
 * remove beta from title?
 * object tree background alignment in chrome
-* copying sliders instead of moving them
 * splitter in toolbar
-* update schema.dia file
-* add keyboard shortcuts (like F2, F3, F4 ...) for all the tools in the toolbar.
-
 
 WISHLIST
 
@@ -81,6 +74,7 @@ LATER
 * new django-based back-end (MHL working on this)
 * label an area by a close polyline, similar to labelme
   - add a areatreenode inheriting from treenode with array column
+* OPEN: add connector table (id, x,y,z, presyn, postsyn, tags, lastmodified)
 
 SECURITY CONCERNS
 * problem of SQL injections in php where REQUEST variable is just used in the sql statements

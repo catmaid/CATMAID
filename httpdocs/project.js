@@ -617,13 +617,26 @@ function Project( pid )
 				input_y.value = parseInt( input_y.value ) + ( shift ? 100 : ( alt ? 1 : 10 ) );
 				input_y.onchange( e );
 				return false;
-			case 65: // A
-			  if(shift)
-			   project.toggleTracing( 'skeletontracing' );
+			case 49: // A
+			  project.toggleTracing( 'skeletontracing' );
 			  return false;
-      case 83: // S
-        if(shift)
-         project.toggleTracing( 'synapsedropping' );
+      case 50: // S
+        project.toggleTracing( 'synapsedropping' );
+        return false;
+      case 51: // S
+        project.toggleTracing( 'dbsync' );
+        return false;
+      case 52: // S
+        project.toggleTracing( 'goactive' );
+        return false;
+      case 53: // S
+        project.toggleTracing( 'skeletonsplitting' );
+        return false;
+      case 54: // S
+        project.toggleTracing( 'skeletonreroot' );
+        return false;
+      case 55: // S
+        project.toggleTracing( 'togglelabels' );
         return false;
 			case 84:    //!< key t
 			  if ( !ctrl  ) project.toggleTracing( 'tagging' );

@@ -2,6 +2,7 @@
 var statusBar;		//!< global statusBar
 
 var slider_z;		//!< slice slider
+var slider_trace_z;
 var slider_s;		//!< zoom slider
 var input_x;		//!< x_input
 var input_y;		//!< y_input
@@ -346,6 +347,7 @@ function handle_openProjectStack( status, text, xml )
 			
 			stack.registerZoomControl( slider_s );
 			stack.registerSliceControl( slider_z );
+      stack.registerSliceControlTrace( slider_trace_z );
 			stack.registerXControl( input_x );
 			stack.registerYControl( input_y );
 			stack.registerCropTopSliceControl( slider_crop_top_z );
@@ -660,7 +662,16 @@ function init()
 			388,
 			1,
 			function( val ){ statusBar.replaceLast( "z: " + val ); return; } );
-	
+			
+  slider_trace_z = new Slider(
+      SLIDER_HORIZONTAL,
+      true,
+      1,
+      388,
+      388,
+      1,
+      function( val ){ statusBar.replaceLast( "z: " + val ); return; } );
+  
 	slider_s = new Slider(
 			SLIDER_HORIZONTAL,
 			true,
@@ -682,8 +693,18 @@ function init()
 			document.getElementById( "slider_z" ) );
 	document.getElementById( "slider_z" ).parentNode.replaceChild(
 			slider_z.getInputView(),
-			slider_z_view.nextSibling );
-	
+		slider_z_view.nextSibling );
+
+  var slider_trace_z_view = slider_trace_z.getView();
+  slider_trace_z_view.id = "slider_trace_z";
+  document.getElementById( "slider_trace_z" ).parentNode.replaceChild(
+      slider_trace_z_view,
+      document.getElementById( "slider_trace_z" ) );
+  document.getElementById( "slider_trace_z" ).parentNode.replaceChild(
+      slider_trace_z.getInputView(),
+      slider_trace_z_view.nextSibling );
+
+
 	var slider_s_view = slider_s.getView();
 	slider_s_view.id = "slider_s";
 	document.getElementById( "slider_s" ).parentNode.replaceChild(

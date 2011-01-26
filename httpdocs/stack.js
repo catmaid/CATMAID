@@ -259,7 +259,8 @@ function Stack(
 		{
 			if ( slider_s ) slider_s.setByValue( s, true );
 			if ( slider_z ) slider_z.setByValue( z, true );
-
+      if ( slider_trace_z ) slider_trace_z.setByValue( z, true );
+      
 			if ( input_x ) input_x.value = x;
 			if ( input_y ) input_y.value = y;
 		}
@@ -995,10 +996,12 @@ function Stack(
 				if ( w > 0 )
 				{
 					slider_z.move( 1 );
+          slider_trace_z.move( 1 );
 				}
 				else
 				{
-					slider_z.move( -1 );
+          slider_z.move( -1 );
+          slider_trace_z.move( -1 );
 				}
 			}
 			return false;
@@ -1457,6 +1460,12 @@ function Stack(
 		return;
 	}
 	
+  this.registerSliceControlTrace = function( c )
+  {
+    slider_trace_z = c;
+    return;
+  }
+	
 	this.registerXControl = function( c )
 	{
 		input_x = c;
@@ -1509,12 +1518,14 @@ function Stack(
 		if ( slices.length < 2 )	//!< hide the slider_z if there is only one slice
 		{
 			slider_z.getView().parentNode.style.display = "none";
+      slider_trace_z.getView().parentNode.style.display = "none";
 			slider_crop_top_z.getView().parentNode.style.display = "none";
 			slider_crop_bottom_z.getView().parentNode.style.display = "none";
 		}
 		else
 		{
 			slider_z.getView().parentNode.style.display = "block";
+      slider_trace_z.getView().parentNode.style.display = "block";
 			slider_crop_top_z.getView().parentNode.style.display = "block";
 			slider_crop_bottom_z.getView().parentNode.style.display = "block";
 		}
@@ -1524,6 +1535,14 @@ function Stack(
 			slices,
 			z,
 			this.changeSliceDelayed );
+			
+    slider_trace_z.update(
+      0,
+      0,
+      slices,
+      z,
+      this.changeSliceDelayed );
+
 		slider_crop_top_z.update(
 			0,
 			0,
@@ -1599,7 +1618,14 @@ function Stack(
 			undefined,
 			0,
 			null );
-		
+
+    slider_trace_z.update(
+      0,
+      1,
+      undefined,
+      0,
+      null );
+      
 		input_x.onchange = null;
 		try
 		{
@@ -1932,7 +1958,8 @@ function Stack(
 	var registered = false;
 	
 	var slider_s;
-	var slider_z;
+	//var slider_z;
+	//var slider_trace_z;
 	var input_x;
 	var input_y;
 	

@@ -41,7 +41,7 @@ if ( $pid )
         
     // check if the skeletons are the same, send an error because we do not want to introduce loops
     if($skelid_from == $skelid_to) {
-        echo makeJSON( array( '"error"' => 'Please do not join treenodes of the same skeleton. This introduces loopholes.' ) ); return;
+        echo makeJSON( array( '"error"' => 'Please do not join treenodes of the same skeleton. This introduces loops.' ) ); return;
     }
         
     // use this id to update element_of relationships of from_skeleton

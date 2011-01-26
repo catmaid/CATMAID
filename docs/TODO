@@ -1,12 +1,12 @@
 TODO
 * Benchmarks
-* 
+
 * OPEN: too may neurons in Fragments. a folder for real fragments without single postsynaptic nodes
   * PROBLEM: create new postyn treenode, and the, continue tracing, would stay in the same group
+  * 
 * PROBLEM: dblick just somewhere to zoom in in all modes
   * why can not set ondblclick event handler to mouse catcher?
-* CANT REPRODUCE: sEcho error for in datatable for vnc stac
-* check delete connector when active (probably need to deactivate as well)
+* check delete connector when active (probably need to deactivate as well): DONE
 * copying sliders instead of moving them
   zoom-level scroll bar not visible with "move" or "select" tools.
   

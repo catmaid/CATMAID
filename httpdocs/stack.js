@@ -1,5 +1,4 @@
-/**
- * stack.js
+ /* stack.js
  *
  * requirements:
  *	 tools.js

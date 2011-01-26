@@ -141,6 +141,7 @@ SVGOverlay = function(
   this.tagATN = function()
   {
 
+    // http://blog.crazybeavers.se/wp-content/demos/jquery.tag.editor/
     if( $("#tagBoxId" + atn.id).length != 0 ) {
       alert("TagBox is already open!");
       return;
@@ -231,8 +232,10 @@ SVGOverlay = function(
                 $("#Tags" + atn.id).tagEditor(
                   {
                       items: nodeitems[atn.id],
-                      confirmRemoval: true
+                      confirmRemoval: true,
+                      completeOnSeparator : true
                   });
+                $("#Tags" + atn.id).focus();
                   
             }
            }

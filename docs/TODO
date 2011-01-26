@@ -17,7 +17,7 @@ TrakEM2's jpeg mimaps. One step of jpeg-ing too many. We should generate
 CATMAID tiles from original images plus their transformations. How did
 you generate the tiles for the VNC? If from TrakEM2, I can fix that
 part.
-* Tagging must be easier/faster: keyboard only. I am not sure I understood
+ I am not sure I understood
 the logic. The current interface is pretty, and lets one add more than
 one tag at the same time. I'd rather enter just one tag by 't', type,
 up/down arrows to choose, enter to select, enter to set. Or just 't',
@@ -27,10 +27,14 @@ type, enter to set (can be faster to type "TODO" than to scroll for it).
 for parent treenode in this project" errors happen whenever I
 click in the interface
 
+DONE
 
 * context popup menu in the "Object Tree" doesn't go away when moving the mouse out of it, or when
   clicking elsewhere. One must click on one of its elements. -> only does not go away when clicking on the stack
-
+* Tagging must be easier/faster: keyboard only. -> now, automatic focus on input
+  field to start typing, automatic tag addition when entering seperator (,)
+  store tags with Tab-Space (switch to save button end click), if required
+  you can add another key that simulates a .click() event
 
 BEAUTIFICATION
 * arrowheads problem (zindex)

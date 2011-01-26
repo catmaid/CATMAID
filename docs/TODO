@@ -8,9 +8,7 @@ TODO
 * CANT REPRODUCE: sEcho error for in datatable for vnc stack
 * check delete connector when active (probably need to deactivate as well)
 * zoom-level scroll bar not visible with "move" or "select" tools.
-* context popup menu in the "Object Tree" doesn't go away when moving
-the mouse out of it, or when clicking elsewhere. One must click on one
-of its elements.
+  
 * Rendering when zoomed into 100% is not limited to 400 nodes. Some
 nodes get rendered and some don't. MMB-drag updates different subsets at
 every repaint event.
@@ -25,22 +23,13 @@ one tag at the same time. I'd rather enter just one tag by 't', type,
 up/down arrows to choose, enter to select, enter to set. Or just 't',
 type, enter to set (can be faster to type "TODO" than to scroll for it).
 
-... also, I see a few of these in chromium's javascript console:
-
-   Uncaught TypeError: Cannot read property 'id' of null   /catmaid/widgets/overlay_node.js:268
-   mc.move.parentnode.x                                    /catmaid/widgets/overlay_node.js:268
-   addEvent.f                                              /catmaid/libs/raphael/raphael.js:2605
-   
-
 ... also sometimes I get into state where "Cannot find skeleton
 for parent treenode in this project" errors happen whenever I
 click in the interface
 
 
-There should also be a "try it now": a test project with images and
-segmentations were anybody can add text labels, and edit just about
-anything. A cron job can reset it every hour or so, or each visitor is
-given a copy of the segmentation data (if small, it won't matter).
+* context popup menu in the "Object Tree" doesn't go away when moving the mouse out of it, or when
+  clicking elsewhere. One must click on one of its elements. -> only does not go away when clicking on the stack
 
 
 BEAUTIFICATION
@@ -67,6 +56,11 @@ WISHLIST
 * search box (regular expression across class instance names)
 * somewhere that displays the world coordinates of the current mouse
   position
+* homepage: "try it now": a test project with images and
+segmentations were anybody can add text labels, and edit just about
+anything. A cron job can reset it every hour or so, or each visitor is
+given a copy of the segmentation data 
+
 
 LATER
 * security auditing, related to:

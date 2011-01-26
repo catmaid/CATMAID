@@ -2,21 +2,7 @@ TODO
 * Benchmarks
 * PROBLEM: dblick just somewhere to zoom in in all modes
   * why can not set ondblclick event handler to mouse catcher?
-* copying sliders instead of moving them
-  zoom-level scroll bar not visible with "move" or "select" tools.
-  
-...  On the performance issue - the queries were running a little
-    slow (0.4 seconds to return the treenodes) but I've added
-    indices on location.(x|y|z) in the treenode and connector
-    tables, which brings that down to 0.06 seconds.  So the bulk
-    of the time is on the client side.  I'd like to try
-    switching to the most recent Raphael (1.5.2) from 1.4.7 to
-    see if that improves the performance the client side
-    performance.  Also we could just remove the invisible
-    catcher elements, which would reduce hugely the number of
-    DOM elements being created.  The syntax for creating indices
-    on composite types is a bit odd:
-
+* adding indices
       create index location_x_index on treenode (((location).x));
       create index location_y_index on treenode (((location).y));
       create index location_z_index on treenode (((location).z));
@@ -24,11 +10,11 @@ TODO
       create index connector_x_index on connector (((location).x));
       create index connector_y_index on connector (((location).y));
       create index connector_z_index on connector (((location).z));
-
-    I'll do more profiling on the Javascript to try to get to
-    the bottom of this.
     
 DONE
+* copying sliders instead of moving them
+  zoom-level scroll bar not visible with "move" or "select" tools.
+  -> DONE
 * update schema.dia file: DONE
 * add keyboard shortcuts (like F2, F3, F4 ...) for all the tools in the toolbar.
   --> added keybindings with 1,2,3,...
@@ -42,7 +28,8 @@ DONE
 * too may neurons in Fragments. a folder for real fragments without single postsynaptic nodes
   -> now, adding in "Fragments" for newly created treenodes just somewhere, and 
   "Fragments with connector" for added postsynaptic single treenodes
-  
+* object tree background alignment in chrome
+  -> back to classic
   
 BEAUTIFICATION
 * arrowheads problem (zindex)
@@ -50,12 +37,13 @@ BEAUTIFICATION
 * code-cleanup
 * catmaid.org, tutorial, video
   * small tutorial with the key bindings and how tracing works
+  * homepage: "try it now": a test project with images and
+    segmentations were anybody can add text labels, and edit just about
+    anything. A cron job can reset it every hour or so, or each visitor is
+    given a copy of the segmentation data 
 * remove beta from title?
-* object tree background alignment in chrome
-* splitter in toolbar
 
 WISHLIST
-
 * zoom in past 100%, on to 200% and 400% (MHL can work on this)
 * in TrakEM2, pressing 'g' while over a node selects that object - in
   CATMAID it would be good if it selected the active node.
@@ -64,10 +52,6 @@ WISHLIST
 * search box (regular expression across class instance names)
 * somewhere that displays the world coordinates of the current mouse
   position
-* homepage: "try it now": a test project with images and
-segmentations were anybody can add text labels, and edit just about
-anything. A cron job can reset it every hour or so, or each visitor is
-given a copy of the segmentation data 
 
 
 LATER

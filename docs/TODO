@@ -5,10 +5,6 @@ TODO
 * copying sliders instead of moving them
   zoom-level scroll bar not visible with "move" or "select" tools.
   
-* Rendering when zoomed into 100% is not limited to 400 nodes. Some
-nodes get rendered and some don't. MMB-drag updates different subsets at
-every repaint event.
-
 ...  On the performance issue - the queries were running a little
     slow (0.4 seconds to return the treenodes) but I've added
     indices on location.(x|y|z) in the treenode and connector

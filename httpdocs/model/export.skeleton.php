@@ -45,10 +45,10 @@ if ( $pid )
     "tci"."class_instance_id" = '.$skelid.' AND
     "treenode"."id" = "tci"."treenode_id"
     ORDER BY "treenode"."parent_id" DESC');
-    $out = date("l");
+    $out = "1,2,3";
     //header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
-    header('Content-Type: application/txt');
-    header('Content-Disposition: attachment; filename=checkimage.jpg');
+    header('Content-Type: application/csv');
+    header('Content-Disposition: attachment; filename=test.csv');
     header("Content-Length: " . strlen($out));
     echo($out);
     //echo date("l");

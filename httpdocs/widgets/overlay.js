@@ -38,7 +38,7 @@ SVGOverlay = function(
     // treenode's skeleton
     
     // retrieve data for the nodes skeleton
-    $.get(
+    $.post(
       "model/export.skeleton.php", 
        {
         pid : project.id,

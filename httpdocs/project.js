@@ -704,10 +704,11 @@ function Project( pid )
 	
 	var icon_text_apply = document.getElementById( "icon_text_apply" );
 	
-	//!< associative array of selected objects like class_instances, treenodes etc.
+	//!< associative array of selected objects
+	// in the treenode table and object tree
+	// (not used for anything sensible right now)
 	var selectedObjects = { 'tree_object' : {},
-							'table_treenode' : {},
-						  };
+							'table_treenode' : {} };
 	this.selectedObjects = selectedObjects;
 	
 }

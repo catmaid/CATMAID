@@ -26,6 +26,8 @@ SVGOverlay = function(
 )
 {
 
+  var speedtoggle = false;
+
   var nodes = new Object();
   var labels = new Object();
   var show_labels = false;
@@ -770,6 +772,8 @@ SVGOverlay = function(
     this.paper.clear();
     nodes = new Object();
     labels = new Object();
+    var nrtn = 0;
+    var nrcn = 0;
     // deactive node, but keep id for reactivation
     var oldatnid;
     if(atn!=null)
@@ -790,63 +794,69 @@ SVGOverlay = function(
         else
           var rad = 0;
 
-        if(  jso[i].type == "treenode")
+        if(  jso[i].type == "treenode") {
           var nn = new Node( id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff);
-        else
+          nrtn++;
+        }
+        else {
           var nn = new ConnectorNode( id, this.paper, rad, pos_x, pos_y, pos_z, zdiff);
-
+          nrcn++;
+        }
         nodes[id] = nn;
         // keep active state of previous active node
         if(oldatnid == id) {
           activateNode(nn);
         }
     }
-    
-    // loop again and add correct parent objects and parent's children update
-    for (var i in jso)
-    {
-       var nid = parseInt(jso[i].id);
-       // for treenodes, make updates
-       if( jso[i].type == "treenode" ) {
-         var parid = parseInt(jso[i].parentid);
-         
-         if(nodes[parid]) {
-           // if parent is existing, update the references
-           nodes[nid].parent = nodes[parid];
-           // update the parents children
-           nodes[nid].parent.children[nid] = nodes[nid];
-         }
-         
-       } else if ( jso[i].type == "location" ) {
-         // update pregroup and postgroup
-         for ( var j in jso[i].pre )
-         {
-           // check if presynaptic trenode id in list, if so,
-           // link to its pbject
-           preloctnid = parseInt(jso[i].pre[j].tnid);
-           if ( preloctnid in nodes ) {
-             // add presyn treenode to pregroup of
-             // the location object
-             nodes[nid].pregroup[preloctnid] = nodes[preloctnid];
-             // XXX: add to pregroup of treenode
+    if(speedtoggle) {
+      // loop again and add correct parent objects and parent's children update
+      for (var i in jso)
+      {
+         var nid = parseInt(jso[i].id);
+         // for treenodes, make updates
+         if( jso[i].type == "treenode" ) {
+           var parid = parseInt(jso[i].parentid);
+           
+           if(nodes[parid]) {
+             // if parent is existing, update the references
+             nodes[nid].parent = nodes[parid];
+             // update the parents children
+             nodes[nid].parent.children[nid] = nodes[nid];
+           }
+           
+         } else if ( jso[i].type == "location" ) {
+           // update pregroup and postgroup
+           for ( var j in jso[i].pre )
+           {
+             // check if presynaptic trenode id in list, if so,
+             // link to its pbject
+             preloctnid = parseInt(jso[i].pre[j].tnid);
+             if ( preloctnid in nodes ) {
+               // add presyn treenode to pregroup of
+               // the location object
+               nodes[nid].pregroup[preloctnid] = nodes[preloctnid];
+               // XXX: add to pregroup of treenode
+             }
+           }
+           for ( var j in jso[i].post )
+           {
+             // do the same for the post
+             postloctnid = parseInt(jso[i].post[j].tnid);
+             if ( postloctnid in nodes ) {
+               nodes[nid].postgroup[postloctnid] = nodes[postloctnid];
+             }
+             // XXX: add to postgroup of treenode (for nice drawing later)
            }
          }
-         for ( var j in jso[i].post )
-         {
-           // do the same for the post
-           postloctnid = parseInt(jso[i].post[j].tnid);
-           if ( postloctnid in nodes ) {
-             nodes[nid].postgroup[postloctnid] = nodes[postloctnid];
-           }
-           // XXX: add to postgroup of treenode (for nice drawing later)
-         }
-       }
-        
+      }
       // draw nodes    
       for (var i in nodes) {
         nodes[i].draw();
       }
-    }
+    
+    } // end speed toggle
+   // statusBar.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 3 ) + "]" );
+    statusBar.replaceLast( "number of treenodes (retrieved): " + nrtn +"; number of connectors: " + nrcn);   
     // show tags if necessary again
     this.showTags(show_labels);
   }
@@ -1019,5 +1029,19 @@ SVGOverlay = function(
 
   this.show = function()   { view.style.display = "block"; }
   this.hide = function() { view.style.display = "none"; }
+  
+  $('input#speedtoggle').change(function () {
+    if ($(this).attr("checked")) {
+        //do the stuff that you would do when 'checked'
+        speedtoggle = true;
+        return;
+    } else {
+      speedtoggle = false;
+      return;
+    }
+    //Here do the stuff you want to do when 'unchecked'
+  });
+
+
   
 };

@@ -439,6 +439,7 @@ function Stack(
       else
       {
         var jso = $.parseJSON(text);
+        // XXX: how much time does calling the function like this take?
         svgOverlay.refreshNodes(jso);
       }
     }

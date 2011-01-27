@@ -1,6 +1,5 @@
 TODO
 
-    
 DONE
 * copying sliders instead of moving them
   zoom-level scroll bar not visible with "move" or "select" tools.
@@ -21,7 +20,7 @@ DONE
 * object tree background alignment in chrome
   -> back to classic
 * added indices to master.sql
-  
+
 BEAUTIFICATION
 * arrowheads problem (zindex)
 * drag treenodes updates connector path
@@ -40,8 +39,7 @@ WISHLIST
 * once display is fast enough, display treelines in all modes - in
   general
 * search box (regular expression across class instance names)
-* somewhere that displays the world coordinates of the current mouse
-  position
+* somewhere that displays the world coordinates of the current mouse position
 * PROBLEM: dblick just somewhere to zoom in in all modes
   * why can not set ondblclick event handler to mouse catcher?
 

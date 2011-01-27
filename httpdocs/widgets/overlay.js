@@ -3,7 +3,8 @@ var atn = null;
 var atn_fillcolor = "rgb(0, 255, 0)";
 
 function activateNode( node ) {
-    // changes the color attributes of the newly activated node
+    // changes the color attributes of
+    // the newly activated node
     if ( atn != null ) {
       atn.setDefaultColor();
     };
@@ -31,6 +32,7 @@ SVGOverlay = function(
   
   this.showSkeleton = function()
   {
+    // XXX
     // check if show window is already open,
     // if not, open it
     
@@ -82,8 +84,7 @@ SVGOverlay = function(
         show_labels = false;
       } else {
         show_labels = true; 
-      }
-             
+      }      
     } else {
       show_labels = toval;
     }
@@ -135,12 +136,12 @@ SVGOverlay = function(
         }
       }      
     } 
-    
   }
 
   this.tagATN = function()
   {
 
+    // tagbox from
     // http://blog.crazybeavers.se/wp-content/demos/jquery.tag.editor/
     if( $("#tagBoxId" + atn.id).length != 0 ) {
       alert("TagBox is already open!");
@@ -201,9 +202,6 @@ SVGOverlay = function(
        }
      ); // endfunction
           
-    // labels.all.list.php <- for autocompletion input
-    // labels.node.list.php <- retrieve labels for a node
-    // labels.update.php <- recreate labels (discover new ones etc.)
     requestQueue.register(
       "model/label.node.list.php",
       "POST",
@@ -243,7 +241,6 @@ SVGOverlay = function(
        }
      ); // endfunction
     
-
     $("#CloseButton" + atn.id).click(function(event) {
        // save and close
        // alert($("#Tags" + atn.id).tagEditorGetTags());
@@ -251,12 +248,8 @@ SVGOverlay = function(
        event.stopPropagation();     
     });
 
-
     $("#SaveCloseButton" + atn.id).click(function(event) {
        // save and close
-        
-      // XXX: programatically hit enter on the input box
-      // i.e. grab input field and add it as tag
       
       requestQueue.register(
         "model/label.update.php",
@@ -287,7 +280,6 @@ SVGOverlay = function(
            }
          }
        ); // endfunction
-         
        $("#tagBoxId" + atn.id).remove();
        event.stopPropagation();     
     });
@@ -297,7 +289,6 @@ SVGOverlay = function(
 
   this.rerootSkeleton = function()
   {
-
     if ( confirm( "Do you really want to to reroot the skeleton?" ) )
     {
       requestQueue.register(
@@ -314,15 +305,12 @@ SVGOverlay = function(
               if ( text && text != " " )
               {
                 var e = eval( "(" + text + ")" );
-                // console.log(e);
                 if ( e.error )
                 {
                   alert( e.error );
                 }
                 else
                 {
-                  // add treenode to the display and update it
-                  // var jso = $.parseJSON(text);
                   // just redraw all for now
                   project.updateNodes();
                 }
@@ -334,7 +322,6 @@ SVGOverlay = function(
   
   this.splitSkeleton = function()
   {
-
     if ( confirm( "Do you really want to to split the skeleton?" ) )
     {
       requestQueue.register(
@@ -365,7 +352,116 @@ SVGOverlay = function(
           }); // endfunction
     };
   }
+
+  this.createTreenodeLink = function(fromid, toid)
+  {
+    // first make sure to reroot target
+    requestQueue.register(
+      "model/treenode.reroot.php",
+      "POST",
+      {
+        pid : project.id,
+        tnid : toid
+       },
+       function(status, text, xml)
+       {
+          if ( status == 200 )
+          {
+            if ( text && text != " " )
+            {
+              var e = eval( "(" + text + ")" );
+              // console.log(e);
+              if ( e.error )
+              {
+                alert( e.error );
+              }
+              else
+              {
+                // just redraw all for now
+                project.updateNodes();
+              }
+            } // endif
+          } // end if
+        }); // endfunction
+
+    // then link again
+    requestQueue.register(
+      "model/treenode.link.php",
+      "POST",
+      {
+        pid : project.id,
+        from_id : fromid,
+        to_id : toid,
+        },
+        function(status, text, xml)
+        {
+          if ( status == 200 )
+          {
+            if ( text && text != " " )
+            {
+              var e = eval( "(" + text + ")" );
+              if ( e.error )
+              {
+                alert( e.error );
+              }
+              else
+              {
+               nodes[toid].parent = nodes[fromid];
+               // update the parents children
+               nodes[fromid].children[toid] = nodes[toid];
+               nodes[toid].draw();
+               nodes[fromid].draw();
+               // make target active treenode
+               activateNode(nodes[toid]);
+              }
+            }
+          }
+          return true;
+    });
+    return;
+  }
   
+  this.createLink = function(fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype)
+  {
+
+    requestQueue.register(
+      "model/link.create.php",
+      "POST",
+      {
+        pid : project.id,
+        from_id : fromid,
+        from_relation : 'model_of',
+        from_type : from_type,
+        from_nodetype : from_nodetype,
+        link_type : link_type,
+        to_id : toid,
+        to_type : to_type,
+        to_nodetype : to_nodetype,
+        to_relation : 'model_of',
+        },
+        function(status, text, xml)
+        {
+          if ( status == 200 )
+          {
+            if ( text && text != " " )
+            {
+              var e = eval( "(" + text + ")" );
+              if ( e.error )
+              {
+                alert( e.error );
+              }
+              else
+              {
+                // just redraw all for now
+                project.updateNodes();
+              }
+            }
+          }
+          return true;
+    });
+    return;
+  }
+
   var createSingleConnector = function( phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval) {
     // create a single connector with a synapse instance that is
     // not linked to any treenode
@@ -401,8 +497,7 @@ SVGOverlay = function(
                 var nn = new ConnectorNode(cid, r, 8, pos_x, pos_y, pos_z, 0);
                 nodes[cid] = nn;
                 nn.draw();
-                activateNode( nn );
-                
+                activateNode( nn ); 
               }
             } // endif
           } // end if
@@ -599,10 +694,8 @@ SVGOverlay = function(
     return;
   }
 
-  
   var updateNodePosition = function( id, phys_x, phys_y, phys_z, type )
   {
-    // XXX: case distincation when it is connector
     requestQueue.register(
       "model/node.update.php",
       "POST",
@@ -625,10 +718,6 @@ SVGOverlay = function(
             {
               alert( e.error );
             }
-            else
-            {
-              // console.log("Coordinates updated for treenode ", id, " to ", phys_x, phys_y, phys_z);
-            }
           }
         }
         return true;
@@ -638,18 +727,17 @@ SVGOverlay = function(
   
   this.updateNodeCoordinatesinDB = function()
   {
-    // console.log("synchronising with database");
     for (var i in nodes)
     {
+      // only updated nodes that need sync, e.g.
+      // when they changed position
       if(nodes[i].needsync)
       {
         // get physical
         var phys_x = this.pix2physX(nodes[i].x);
         var phys_y = this.pix2physY(nodes[i].y);
         var phys_z = this.pix2physZ(nodes[i].z);
-        //console.log("Update required for treenode",nodes[i].id, " with ", phys_x,phys_y,phys_z);
         nodes[i].needsync = false;
-        // XXX: case distinction for connector
         updateNodePosition(nodes[i].id,phys_x,phys_y,phys_z, nodes[i].type)
       }
     }
@@ -657,9 +745,7 @@ SVGOverlay = function(
 
   var updateNodeCoordinates = function(newscale)
   {
-    // console.log("in updatenodecoordinates for new scale function");
     // depending on the scale, update all the node coordinates
-    // loop over all nodes
     for ( var i = 0; i < nodes.length; ++i )
     {
       var x = nodes[i].x;
@@ -669,7 +755,6 @@ SVGOverlay = function(
       ynew = Math.floor(y * fact);
       // use call to get the function working on this
       this.setXY.call(nodes[i], xnew, ynew);
-      // nodes[i].setXY(xnew, ynew); 
     }
   }
   
@@ -678,6 +763,11 @@ SVGOverlay = function(
     this.paper.clear();
     nodes = new Object();
     labels = new Object();
+    // deactive node, but keep id for reactivation
+    var oldatnid;
+    if(atn!=null)
+      oldatnid = atn.id;
+    activateNode(null);
     for (var i in jso) {
         var id = parseInt(jso[i].id);
         var pos_x = phys2pixX(jso[i].x);
@@ -693,18 +783,16 @@ SVGOverlay = function(
         else
           var rad = 0;
 
-        // console.log("type: ", jso[i].id, jso[i].type);
         if(  jso[i].type == "treenode")
           var nn = new Node( id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff);
         else
           var nn = new ConnectorNode( id, this.paper, rad, pos_x, pos_y, pos_z, zdiff);
 
         nodes[id] = nn;
-        
-        if(atn!=null && atn.id == id) {
+        // keep active state of previous active node
+        if(oldatnid == id) {
           activateNode(nn);
         }
-          
     }
     
     // loop again and add correct parent objects and parent's children update
@@ -720,8 +808,6 @@ SVGOverlay = function(
            nodes[nid].parent = nodes[parid];
            // update the parents children
            nodes[nid].parent.children[nid] = nodes[nid];
-         } else {
-           //console.log("no parent (rootnode?)", nodes[nid]);
          }
          
        } else if ( jso[i].type == "location" ) {
@@ -735,9 +821,7 @@ SVGOverlay = function(
              // add presyn treenode to pregroup of
              // the location object
              nodes[nid].pregroup[preloctnid] = nodes[preloctnid];
-             
              // XXX: add to pregroup of treenode
-             
            }
          }
          for ( var j in jso[i].post )
@@ -756,8 +840,7 @@ SVGOverlay = function(
         nodes[i].draw();
       }
     }
-    //console.log("all nodes", nodes);
-    // show tags again
+    // show tags if necessary again
     this.showTags(show_labels);
   }
 
@@ -773,9 +856,9 @@ SVGOverlay = function(
   }
   
   this.redraw = function(
-      pl,           //!< float left-most coordinate of the parent DOM element in nanometer
-      pt,           //!< float top-most coordinate of the parent DOM element in nanometer
-      ns              //!< scale factor to be applied to resolution [and fontsize],
+      pl,  //!< float left-most coordinate of the parent DOM element in nanometer
+      pt,  //!< float top-most coordinate of the parent DOM element in nanometer
+      ns   //!< scale factor to be applied to resolution [and fontsize]
   )
   {
 
@@ -789,207 +872,13 @@ SVGOverlay = function(
     // pl/pt are in physical coordinates
     view.style.left = Math.floor(-pl/resolution.x*s) + "px";
     this.offleft = Math.floor(-pl/resolution.x*s);
-    
     view.style.top = Math.floor(-pt/resolution.y*s) + "px";
     this.offtop = Math.floor(-pt/resolution.y*s);
-    
     updateDimension(s);
-    //updateNodeCoordinatesinDB();
+    // do not want do updated node coordinates on
+    // every redraw
+    // updateNodeCoordinatesinDB();
   };
-	
-  this.getView = function()
-  {
-    return view;
-  }
-  
-
-  this.createTreenodeLink = function(fromid, toid)
-  {
-    // first make sure to reroot target
-
-    requestQueue.register(
-      "model/treenode.reroot.php",
-      "POST",
-      {
-        pid : project.id,
-        tnid : toid
-       },
-       function(status, text, xml)
-       {
-          if ( status == 200 )
-          {
-            if ( text && text != " " )
-            {
-              var e = eval( "(" + text + ")" );
-              // console.log(e);
-              if ( e.error )
-              {
-                alert( e.error );
-              }
-              else
-              {
-                // add treenode to the display and update it
-                // var jso = $.parseJSON(text);
-                // just redraw all for now
-                project.updateNodes();
-              }
-            } // endif
-          } // end if
-        }); // endfunction
-
-      
-  // then link again
-    requestQueue.register(
-      "model/treenode.link.php",
-      "POST",
-      {
-        pid : project.id,
-        from_id : fromid,
-        to_id : toid,
-        },
-        function(status, text, xml)
-        {
-          if ( status == 200 )
-          {
-            if ( text && text != " " )
-            {
-              var e = eval( "(" + text + ")" );
-              if ( e.error )
-              {
-                alert( e.error );
-              }
-              else
-              {
-               nodes[toid].parent = nodes[fromid];
-               // update the parents children
-               nodes[fromid].children[toid] = nodes[toid];
-               nodes[toid].draw();
-               nodes[fromid].draw();
-               // make target active treenode
-               activateNode(nodes[toid]);
-              }
-            }
-          }
-          return true;
-    });
-    return;
-  }
-  
-  
-  this.createLink = function(fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype)
-  {
-
-    requestQueue.register(
-      "model/link.create.php",
-      "POST",
-      {
-        pid : project.id,
-        from_id : fromid,
-        from_relation : 'model_of',
-        from_type : from_type,
-        from_nodetype : from_nodetype,
-        
-        link_type : link_type,
-        
-        to_id : toid,
-        to_type : to_type,
-        to_nodetype : to_nodetype,
-        to_relation : 'model_of',
-        },
-        function(status, text, xml)
-        {
-          if ( status == 200 )
-          {
-            if ( text && text != " " )
-            {
-              var e = eval( "(" + text + ")" );
-              if ( e.error )
-              {
-                alert( e.error );
-              }
-              else
-              {
-                
-                // just redraw all for now
-                project.updateNodes();
-              }
-            }
-          }
-          return true;
-    });
-    return;
-  }
-
-  this.onclick = function( e )
-  {   
-    //console.log("OVERLAY: atn.id", atn.id);
-    // console.log("mouse down event in overlay", e);
-    //console.log("current coordinates in physical space:");
-    //console.log(project.coordinates.z, "pix", phys2pixZ(project.coordinates.z));
-    
-    var m = ui.getMouse( e );
-    
-    // take into account current local offset coordinates and scale
-    var pos_x = m.offsetX;
-    var pos_y = m.offsetY;
-    var pos_z = phys2pixZ(project.coordinates.z);
-    
-    // XXX: get physical coordinates for database
-    var phys_x = pix2physX(pos_x);
-    var phys_y = pix2physY(pos_y);
-    var phys_z = project.coordinates.z;
-    // console.log("clicked on physical coordinates", phys_x, phys_y, phys_z, "this", this);
-    
-    if( e.ctrlKey ) {
-      // if ctrl is pressed and clicked, deselect atn
-      activateNode( null );
-    } else if( e.shiftKey ) {
-      if(atn == null) {
-          alert("You need to activate a treenode first (skeleton tracing mode)");
-      } else {
-        if(atn instanceof Node) {
-          //console.log("...create new synapse presynaptic to activated treenode ", atn);
-          // remove the automatic synapse creation
-          //createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
-          
-          e.stopPropagation();
-          return true;
-        }
-        else if (atn instanceof ConnectorNode)
-          //console.log("...create new treenode (and skeleton) postsynaptic to activated connector", atn);
-          // deactiveate atn, cache atn
-          var locid = atn.id;
-          //activateNode( null );
-          
-          // create root node, creates a new active node
-          // because the treenode creation is asynchronous, we have to invoke
-          // the connector creation in the event handler
-          createNodeWithConnector(locid, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
-          e.stopPropagation();
-          return true;
-      }
-
-    } else {
-      
-      // depending on what mode we are in
-      if(getMode() == "skeletontracing") {
-        if(atn instanceof Node || atn == null) {
-          // create a new treenode,
-          // either root node if atn is null, or has parent 
-          createNode(atn, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
-          e.stopPropagation();
-          // display node creation is done in event handler
-          return true;
-        } 
-      } else if (getMode() == "synapsedropping") {
-        
-        createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5);
-            
-      }
-    }
-    e.stopPropagation();
-    return true;
-  }
 
   this.set_tracing_mode = function( mode ) {
     // toggels the button correctly
@@ -1003,9 +892,87 @@ SVGOverlay = function(
     } else if ( currentmode == "skeletontracing") {
           currentmode = mode;
           document.getElementById( "trace_button_synapse" ).className = "button_active";
-    }
-    //console.log("new mode", currentmode);
+    }    
+  }
+
+  var getMode = function( e )
+  {
+    return currentmode;
+  }
+  
+  this.getView = function()
+  {
+    return view;
+  }
+
+  this.onclick = function( e )
+  {   
+    var m = ui.getMouse( e );
     
+    // take into account current local offset coordinates and scale
+    var pos_x = m.offsetX;
+    var pos_y = m.offsetY;
+    var pos_z = phys2pixZ(project.coordinates.z);
+    
+    // get physical coordinates for node position creation
+    var phys_x = pix2physX(pos_x);
+    var phys_y = pix2physY(pos_y);
+    var phys_z = project.coordinates.z;
+        
+    if( e.ctrlKey ) {
+      // ctrl-click deselects the current active node
+      activateNode( null );
+    } else if( e.shiftKey ) {
+      if(atn == null) {
+          if(getMode() == "skeletontracing") {
+            alert("You need to activate a treenode first (skeleton tracing mode)");
+            return true;
+          }
+      } else {
+        if(atn instanceof Node) {
+          // here we could create new synapse presynaptic to the activated treenode
+          // remove the automatic synapse creation for now
+          // the user has to change into the synapsedropping mode and add the
+          // connector, then active the original treenode again, and shift-click
+          // on the target connector to link them presynaptically
+          //createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
+          e.stopPropagation();
+          return true;
+        }
+        else if (atn instanceof ConnectorNode)
+          // create new treenode (and skeleton) postsynaptic to activated connector
+          // deactiveate atn, cache atn id
+          var locid = atn.id;
+          // keep connector active because you might want
+          // to quickly add several postsynaptic treenodes
+          //activateNode( null );
+          
+          // create root node, creates a new active node
+          // because the treenode creation is asynchronous, we have to invoke
+          // the connector creation in the event handler
+          createNodeWithConnector(locid, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
+          e.stopPropagation();
+          return true;
+      }
+    } else {
+      // depending on what mode we are in
+      // do something else when clicking
+      if(getMode() == "skeletontracing") {
+        if(atn instanceof Node || atn == null) {
+          // create a new treenode,
+          // either root node if atn is null, or child if
+          // it is not null
+          createNode(atn, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
+          e.stopPropagation();
+          return true;
+        } 
+      } else if (getMode() == "synapsedropping") {
+        // only create single synapses/connectors
+        createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5);
+      }
+    }
+    e.stopPropagation();
+    return true;
   }
 
   this.resolution = resolution;
@@ -1020,18 +987,13 @@ SVGOverlay = function(
   var currentmode = "skeletontracing";
   this.set_tracing_mode( currentmode );
   
-  var getMode = function( e )
-  {
-    return currentmode;
-  }
-  
   var view = document.createElement( "div" );
   view.className = "sliceSVGOverlay";
   view.id = "sliceSVGOverlayId";
   view.onclick = this.onclick;
   view.style.zIndex = 6;
   view.style.cursor = "crosshair";
-  // make view accessible from outside to set more mouse handlers
+  // make view accessible from outside for setting additional mouse handlers
   this.view = view;
   
   var s = current_scale;
@@ -1042,13 +1004,12 @@ SVGOverlay = function(
   var phys2pixY = function( y )  { return  ( y - translation.y ) / resolution.y * s; }
   var phys2pixZ = function( z )  { return (z - translation.z) / resolution.z; }
 
-  this.pix2physX = function( x ) { return translation.x + ( ( x ) / s ) * resolution.x; }
-  this.pix2physY = function( y )  { return translation.y + ( ( y ) / s ) * resolution.y; }
   var pix2physX = function( x ) { return translation.x + ( ( x ) / s ) * resolution.x; }
   var pix2physY = function( y )  { return translation.y + ( ( y ) / s ) * resolution.y; }
+  this.pix2physX = function( x ) { return translation.x + ( ( x ) / s ) * resolution.x; }
+  this.pix2physY = function( y )  { return translation.y + ( ( y ) / s ) * resolution.y; }
   this.pix2physZ = function( z )  { return z * resolution.z + translation.z; }
 
-  
   this.show = function()   { view.style.display = "block"; }
   this.hide = function() { view.style.display = "none"; }
   

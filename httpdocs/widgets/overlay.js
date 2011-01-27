@@ -30,23 +30,29 @@ SVGOverlay = function(
   var labels = new Object();
   var show_labels = false;
   
-  this.showSkeleton = function()
+  this.exportSWC = function()
   {
-    // XXX
-    // check if show window is already open,
-    // if not, open it
+    // retrieve SWC file of currently active
+    // treenode's skeleton
     
     // retrieve data for the nodes skeleton
+    $.get(
+      "model/export.skeleton.php", 
+       {
+        pid : project.id,
+        tnid : atn.id,
+       }
+    )/*
     requestQueue.register(
-      "model/visualize.skeleton.php",
-      "POST",
+      "model/export.skeleton.php",
+      "GET",
        {
         pid : project.id,
         tnid : atn.id,
        },
        function(status, text, xml)
        {
-         
+         /*
         if ( status == 200 )
         {
           if ( text && text != " " )
@@ -61,9 +67,10 @@ SVGOverlay = function(
             }
            }
          }
+         
        }
      ); // endfunction
-           
+        */   
   }
   
   this.showTags = function( val )

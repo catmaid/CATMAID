@@ -1356,6 +1356,13 @@ function Stack(
     case "togglelabels":
       svgOverlay.toggleLabels();
       break;
+    case "exportswc":
+      if(atn!=null) {
+        svgOverlay.exportSWC();
+      } else {
+        alert('Need to activate a treenode before exporting to SWC!');
+      }
+      break;
     case "showskeleton":
       if(atn!=null) {
         svgOverlay.showSkeleton();

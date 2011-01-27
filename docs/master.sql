@@ -1938,4 +1938,12 @@ GRANT ALL ON TABLE "user" TO catmaid_user;
 -- PostgreSQL database dump complete
 --
 
+--- adding indices
+create index location_x_index on treenode (((location).x));
+create index location_y_index on treenode (((location).y));
+create index location_z_index on treenode (((location).z));
+
+create index connector_x_index on connector (((location).x));
+create index connector_y_index on connector (((location).y));
+create index connector_z_index on connector (((location).z));
 

@@ -44,14 +44,13 @@ initTreenodeTable = function(pid) {
 				"success": fnCallback
 			} );
 		},
-		"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+		"aLengthMenu": [[40, 100, 200, -1], [40, 100, 200, "All"]],
 		"bJQueryUI": true,
 		"fnDrawCallback" : function() {
         $('td:eq(5)', oTable.fnGetNodes()).editable( 'model/treenode.table.update.php', {
           "callback": function( sValue, y ) {
           },
           "submitdata": function ( value, settings ) {
-            // console.log("submit", value, "settings", settings, "this", this);
             var aPos = oTable.fnGetPosition( this );
             var aData = oTable.fnGetData( aPos[0] );
             return {
@@ -91,7 +90,7 @@ initTreenodeTable = function(pid) {
 		              {"sClass": "center", "bSearchable": false}, // radius
 		              {"bSearchable": false}, // username
 		              {"bSearchable": true, "bSortable" : false}, // labels
-		              {"bSearchable": false, "bSortable" : true}, // last modified
+		              {"bSearchable": false, "bSortable" : true} // last modified
 		              ]
 	} );
 	
@@ -110,6 +109,7 @@ initTreenodeTable = function(pid) {
 	} );
 
 	$("#treenodetable tfoot input").focus( function () {
+	  console.log("focus");
 		if ( this.className == "search_init" )
 		{
 			this.className = "";
@@ -125,10 +125,10 @@ initTreenodeTable = function(pid) {
 		}
 	} );
 	
-  $("#treenodetable tbody tr").live('dblclick', function() { //dblclick(function(event) {
+  $("#treenodetable tbody tr").live('dblclick', function() {
 
     var aData = oTable.fnGetData( this );
-    // retrieve coortinates and moveTo
+    // retrieve coordinates and moveTo
     var x = parseFloat(aData[1]);
     var y = parseFloat(aData[2]);
     var z = parseFloat(aData[3]);
@@ -137,29 +137,5 @@ initTreenodeTable = function(pid) {
     // and register a request that activates the node because
     // it should be retrieved
   });
-
-
-/*
-	$('#treenodetable tbody tr').live('click', function () {
-
-		var aData = oTable.fnGetData( this );
-		
-		var iId = parseInt(aData[0]);
-		
-		if ( iId in project.selectedObjects['table_treenode'] )
-		{
-			delete project.selectedObjects['table_treenode'][iId];
-		}
-		else
-		{
-			project.selectedObjects['table_treenode'][iId] = {'id': iId, 'tabledata':aData, 'type' : 'treenode'};
-
-		}			
-		$(this).toggleClass('row_selected');
-	} );
-	*/	
-  
-
-  
 		
 }

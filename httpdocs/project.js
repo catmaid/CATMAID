@@ -403,8 +403,9 @@ function Project( pid )
 			// hide data table and tree view widgets
 			// in order to reload the data for a new project
 			document.getElementById( "treenode_table_widget" ).style.display = "none";
-			document.getElementById( "tree_widget" ).style.display = "none";
-			
+			document.getElementById( "object_tree_widget" ).style.display = "none";
+      document.getElementById( "project_stats_widget" ).style.display = "none";
+      
 		}
 		catch ( error ) {}
 		self.id = 0;
@@ -590,16 +591,20 @@ function Project( pid )
 			case 107:
 			case 187:		//!< for IE only---take care what this is in other platforms...
 				slider_s.move( 1 );
+        slider_trace_s.move( 1 );
 				return false;
 			case 109:		//!< -
 			case 189:		//!< for IE only---take care what this is in other platforms...
 				slider_s.move( -1 );
+        slider_trace_s.move( -1 );
 				return false;
 			case 188:		//!< ,
 				slider_z.move( -( shift ? 10 : 1 ) );
+        slider_trace_z.move( -( shift ? 10 : 1 ) );
 				return false;
 			case 190:		//!< .
 				slider_z.move( ( shift ? 10 : 1 ) );
+        slider_trace_z.move( ( shift ? 10 : 1 ) );
 				return false;
 			case 37:		//!< cursor left
 				input_x.value = parseInt( input_x.value ) - ( shift ? 100 : ( alt ? 1 : 10 ) );
@@ -699,10 +704,11 @@ function Project( pid )
 	
 	var icon_text_apply = document.getElementById( "icon_text_apply" );
 	
-	//!< associative array of selected objects like class_instances, treenodes etc.
+	//!< associative array of selected objects
+	// in the treenode table and object tree
+	// (not used for anything sensible right now)
 	var selectedObjects = { 'tree_object' : {},
-							'table_treenode' : {},
-						  };
+							'table_treenode' : {} };
 	this.selectedObjects = selectedObjects;
 	
 }

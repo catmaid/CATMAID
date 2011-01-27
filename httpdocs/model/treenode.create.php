@@ -28,6 +28,7 @@ $y = isset( $_REQUEST[ 'y' ] ) ? floatval( $_REQUEST[ 'y' ] ) : 0;
 $z = isset( $_REQUEST[ 'z' ] ) ? floatval( $_REQUEST[ 'z' ] ) : 0;
 $radius = isset( $_REQUEST[ 'radius' ] ) ? floatval( $_REQUEST[ 'radius' ] ) : 0;
 $confidence = isset( $_REQUEST[ 'confidence' ] ) ? floatval( $_REQUEST[ 'confidence' ] ) : 0;
+$targetgroup = isset( $_REQUEST[ 'targetgroup' ] ) ? $_REQUEST[ 'targetgroup' ] : 'none';
 
 if ( $pid )
 {
@@ -146,7 +147,7 @@ if ( $pid )
        * Add neuron to Fragments 
        */
       $fid = $db->getResult('SELECT "ci"."id" FROM "class_instance" AS "ci"
-      WHERE "ci"."name" = \'Fragments\' AND
+      WHERE "ci"."name" = \''.$targetgroup.'\' AND
       "ci"."project_id" = '.$pid);
       if(!$fid) {
         // need to create a fragments group and add it
@@ -157,7 +158,7 @@ if ( $pid )
           'user_id' => $uid,
           'project_id' => $pid,
           'class_id' => $gid,
-          'name' => 'Fragments'
+          'name' => $targetgroup
           );
         $frid = $db->insertIntoId('class_instance', $data );
         

@@ -33,10 +33,11 @@ initObjectTree = function(pid) {
 			"select_multiple_modifier" : "ctrl",
 			"selected_parent_close" : "deselect",
 		},
+		
 		"themes" : {
-			"theme" : "apple",
-			"url" : "widgets/themes/kde/jsTree/neuron/style.css",
-			"dots" : true,
+			"theme" : "classic",
+			"url" : "widgets/themes/kde/jsTree/classic/style.css",
+			"dots" : false,
 			"icons" : true
 		},
 		"contextmenu" : {

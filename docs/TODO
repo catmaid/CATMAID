@@ -1,52 +1,5 @@
 TODO
-* Benchmarks
-* 
-* OPEN: too may neurons in Fragments. a folder for real fragments without single postsynaptic nodes
-  * PROBLEM: create new postyn treenode, and the, continue tracing, would stay in the same group
-* PROBLEM: dblick just somewhere to zoom in in all modes
-  * why can not set ondblclick event handler to mouse catcher?
-* CANT REPRODUCE: sEcho error for in datatable for vnc stac
-* check delete connector when active (probably need to deactivate as well)
-* copying sliders instead of moving them
-  zoom-level scroll bar not visible with "move" or "select" tools.
-  
-* Rendering when zoomed into 100% is not limited to 400 nodes. Some
-nodes get rendered and some don't. MMB-drag updates different subsets at
-every repaint event.
 
-...  On the performance issue - the queries were running a little
-    slow (0.4 seconds to return the treenodes) but I've added
-    indices on location.(x|y|z) in the treenode and connector
-    tables, which brings that down to 0.06 seconds.  So the bulk
-    of the time is on the client side.  I'd like to try
-    switching to the most recent Raphael (1.5.2) from 1.4.7 to
-    see if that improves the performance the client side
-    performance.  Also we could just remove the invisible
-    catcher elements, which would reduce hugely the number of
-    DOM elements being created.  The syntax for creating indices
-    on composite types is a bit odd:
-
-      create index location_x_index on treenode (((location).x));
-      create index location_y_index on treenode (((location).y));
-      create index location_z_index on treenode (((location).z));
-
-      create index connector_x_index on connector (((location).x));
-      create index connector_y_index on connector (((location).y));
-      create index connector_z_index on connector (((location).z));
-
-    I'll do more profiling on the Javascript to try to get to
-    the bottom of this.
-    
-DONE
-* update schema.dia file: DONE
-* add keyboard shortcuts (like F2, F3, F4 ...) for all the tools in the toolbar.
-  --> added keybindings with 1,2,3,...
-* context popup menu in the "Object Tree" doesn't go away when moving the mouse out of it, or when
-  clicking elsewhere. One must click on one of its elements. -> only does not go away when clicking on the stack
-* Tagging must be easier/faster: keyboard only. -> now, automatic focus on input
-  field to start typing, automatic tag addition when entering seperator (,)
-  store tags with Tab-Space (switch to save button end click), if required
-  you can add another key that simulates a .click() event
 
 BEAUTIFICATION
 * arrowheads problem (zindex)
@@ -54,27 +7,24 @@ BEAUTIFICATION
 * code-cleanup
 * catmaid.org, tutorial, video
   * small tutorial with the key bindings and how tracing works
-* remove beta from title?
-* object tree background alignment in chrome
-* splitter in toolbar
+  * homepage: "try it now": a test project with images and
+    segmentations were anybody can add text labels, and edit just about
+    anything. A cron job can reset it every hour or so, or each visitor is
+    given a copy of the segmentation data 
 
 WISHLIST
-
 * zoom in past 100%, on to 200% and 400% (MHL can work on this)
 * in TrakEM2, pressing 'g' while over a node selects that object - in
   CATMAID it would be good if it selected the active node.
 * once display is fast enough, display treelines in all modes - in
   general
 * search box (regular expression across class instance names)
-* somewhere that displays the world coordinates of the current mouse
-  position
-* homepage: "try it now": a test project with images and
-segmentations were anybody can add text labels, and edit just about
-anything. A cron job can reset it every hour or so, or each visitor is
-given a copy of the segmentation data 
-
+* somewhere that displays the world coordinates of the current mouse position
+* PROBLEM: dblick just somewhere to zoom in in all modes
+  * why can not set ondblclick event handler to mouse catcher?
 
 LATER
+* Benchmarks / speedup investigation
 * security auditing, related to:
   - amazon mechanical turk test
   - user rights managment, registration
@@ -106,3 +56,23 @@ DONE
 * DONE:colorcode active treenode in data table
   * also colorcoded root and leaf node
 * DONE: delete active treenode problem (when new node added)
+DONE
+* copying sliders instead of moving them
+  zoom-level scroll bar not visible with "move" or "select" tools.
+  -> DONE
+* update schema.dia file: DONE
+* add keyboard shortcuts (like F2, F3, F4 ...) for all the tools in the toolbar.
+  --> added keybindings with 1,2,3,...
+* context popup menu in the "Object Tree" doesn't go away when moving the mouse out of it, or when
+  clicking elsewhere. One must click on one of its elements. -> only does not go away when clicking on the stack
+* Tagging must be easier/faster: keyboard only. -> now, automatic focus on input
+  field to start typing, automatic tag addition when entering seperator (,)
+  store tags with Tab-Space (switch to save button end click), if required
+  you can add another key that simulates a .click() event
+* check delete connector when active (probably need to deactivate as well): DONE
+* too may neurons in Fragments. a folder for real fragments without single postsynaptic nodes
+  -> now, adding in "Fragments" for newly created treenodes just somewhere, and 
+  "Fragments with connector" for added postsynaptic single treenodes
+* object tree background alignment in chrome
+  -> back to classic
+* added indices to master.sql

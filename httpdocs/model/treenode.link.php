@@ -44,7 +44,11 @@ if ( $pid )
         echo makeJSON( array( '"error"' => 'Please do not join treenodes of the same skeleton. This introduces loops.' ) ); return;
     }
         
-    // use this id to update element_of relationships of from_skeleton
+    // update element_of relationships of target skeleton
+    $ids = $db->update("treenode_class_instance", array("class_instance_id" => $skelid_from) ,' "class_instance_id" = '.$skelid_to.' AND 
+           "relation_id" = '.$eleof);
+            
+      /*
        $tnlist = array();
        $res = $db->getTreenodeIdsForSkeleton( $pid, $skelid_to );
        if(!empty($res)) {
@@ -54,12 +58,14 @@ if ( $pid )
             $tnlist[] = $row['id'];
           }
           // update
-          $ids = $db->update("treenode_class_instance", array("class_instance_id" => $skelid_from) ,' "class_instance_id" = '.$skelid_to.' AND 
-          "relation_id" = '.$eleof); // AND "treenode_id" IN ('.implode(",", $tnlist).')');
+          // AND "treenode_id" IN ('.implode(",", $tnlist).')');
+          
+
           
         } else {
           echo makeJSON( array( '"error"' => 'Can not retrieve any treenodes for skeleton.' ) ); return; }
-
+    */
+    
     // remove skeleton of to_id (should delete part of to neuron by cascade, 
     // leaving the parent neuron dangeling in the object tree)
     $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$skelid_to);

@@ -63,10 +63,10 @@
 		<script type="text/javascript" src="libs/jquery/jquery.jeditable.js"></script>
 		<script type="text/javascript" src="libs/jquery/jquery-ui-1.8.8.custom.min.js"></script>
 		<script type="text/javascript" src="widgets/table_treenode.js"></script>
-		<script type="text/javascript" src="widgets/table_presynapse.js"></script>
+		<!--<script type="text/javascript" src="widgets/table_presynapse.js"></script>
 		<script type="text/javascript" src="widgets/table_postsynapse.js"></script>
+    <script type="text/javascript" src="widgets/tree_class.js"></script>-->
 		<script type="text/javascript" src="widgets/tree_object.js"></script>
-		<script type="text/javascript" src="widgets/tree_class.js"></script>
 		<script type="text/javascript" src="widgets/stats.js"></script>
 		
 		
@@ -134,7 +134,9 @@
 				<div class="box"><p>x&nbsp;</p><p><input type="text" id="x" name="x" size="5" /><img src="widgets/themes/kde/input_topdown.gif" alt="" usemap="#xmap" /></p></div>
 				<div class="box"><p>y&nbsp;</p><p><input type="text" id="y" name="y" size="5" /><img src="widgets/themes/kde/input_topdown.gif" alt="" usemap="#ymap" /></p></div>
   			<div class="box_right"><p><a id="a_url" name="a_url" title="This is the URL to this view. You can bookmark it or send it to the people." href="">URL to this view</a></p></div>
-				<div class="toolbar_fill"></div>
+        <div class="box" id="z_index_box"><p>z-index&nbsp;&nbsp;</p><div id="slider_z"></div><p>&nbsp;&nbsp;</p></div>
+        <div class="box" id="zoom_level_box"><p>zoom-level&nbsp;&nbsp;</p><div id="slider_s"></div><p>&nbsp;&nbsp;</p></div>
+        <div class="toolbar_fill"></div>
 			</div>
 			<!--
 			*******************************************************************
@@ -184,14 +186,13 @@
           <a href="#" class="button" id="trace_button_togglelabels" onclick="project.toggleTracing( 'togglelabels' );">
             <img src="widgets/themes/kde/trace_labels.png" alt="toggle labels display" title="7: toggle labels display" /></a>
 
-         <!-- <a href="#" class="button" id="trace_button_togglelabels" onclick="project.toggleTracing( 'showskeleton' );">
-            <img src="widgets/themes/kde/trace_3dview.png" alt="show active treenode's skeleton in 3d'" title="show active treenode's skeleton in 3d" /></a>
-        -->
+          <a href="#" class="button" id="trace_button_exportswc" onclick="project.toggleTracing( 'exportswc' );">
+            <img src="widgets/themes/kde/trace_3dview.png" alt="8: export to SWC'" title="8: export to SWC" /></a>
+
         
 				</div>
-				<div class="box" id="z_index_box"><p>z-index&nbsp;&nbsp;</p><div id="slider_z"></div><p>&nbsp;&nbsp;</p></div>
-        <div class="box" id="zoom_level_box"><p>zoom-level&nbsp;&nbsp;</p><div id="slider_s"></div><p>&nbsp;&nbsp;</p></div>
-  
+        <div class="box" id="z_index_box"><p>z-index&nbsp;&nbsp;</p><div id="slider_trace_z"></div><p>&nbsp;&nbsp;</p></div>
+        <div class="box" id="zoom_level_box"><p>zoom-level&nbsp;&nbsp;</p><div id="slider_trace_s"></div><p>&nbsp;&nbsp;</p></div>
         <div class="toolbar_fill"></div>
 
 			</div>
@@ -255,7 +256,6 @@
 					</thead>
 					<tbody>
 					</tbody>
-					
 					<tfoot>
 						<tr>
 							<th>id</th>

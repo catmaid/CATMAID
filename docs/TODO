@@ -1,8 +1,6 @@
 TODO
 
-
 BEAUTIFICATION
-* arrowheads problem (zindex)
 * drag treenodes updates connector path
 * code-cleanup
 * catmaid.org, tutorial, video
@@ -76,3 +74,5 @@ DONE
 * object tree background alignment in chrome
   -> back to classic
 * added indices to master.sql
+* arrowheads problem (zindex) -> arrow head only up to connector
+* 

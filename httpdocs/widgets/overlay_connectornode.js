@@ -196,10 +196,20 @@ ConnectorNode = function(
       arrowPath.remove();
       linePath.remove();
     }
+    /* 
+     * compute better position for arrowhead pointer
+     */
+    var rloc = 8;
+    var xdiff = (x2-x1);
+    var ydiff = (y2-y1);
+    var le = Math.sqrt(xdiff*xdiff+ydiff*ydiff);
+    var x2new = (x2-x1)*(1-rloc/le) + x1;
+    var y2new = (y2-y1)*(1-rloc/le) + y1;
+    
     var angle = Math.atan2(x1-x2,y2-y1);
     angle = (angle / (2 * Math.PI)) * 360;
-    var linePath = paper.path("M" + x1 + " " + y1 + " L" + x2 + " " + y2);
-    var arrowPath = paper.path("M" + x2 + " " + y2 + " L" + (x2  - size) + " " + (y2  - size) + " L" + (x2  - size)  + " " + (y2  + size) + " L" + x2 + " " + y2 ).attr("fill","black").rotate((90+angle),x2,y2);
+    var linePath = paper.path("M" + x1 + " " + y1 + " L" + x2new + " " + y2new);
+    var arrowPath = paper.path("M" + x2new + " " + y2new + " L" + (x2new  - size) + " " + (y2new  - size) + " L" + (x2new  - size)  + " " + (y2new  + size) + " L" + x2new + " " + y2new ).attr("fill","black").rotate((90+angle),x2new,y2new);
     linePath.attr( {"stroke-width": strowi,
                      "stroke": strocol,
                      } );
@@ -256,11 +266,9 @@ ConnectorNode = function(
   
   // draw function to update the paths from the children
   // and to its parent  
-  this.draw = function() {
-    
+  this.draw = function() { 
     // delete lines and recreate them with the current list
     this.updateLines();
-      
   }
   
   /*

@@ -1,15 +1,5 @@
 TODO
-* Benchmarks
-* PROBLEM: dblick just somewhere to zoom in in all modes
-  * why can not set ondblclick event handler to mouse catcher?
-* adding indices
-      create index location_x_index on treenode (((location).x));
-      create index location_y_index on treenode (((location).y));
-      create index location_z_index on treenode (((location).z));
 
-      create index connector_x_index on connector (((location).x));
-      create index connector_y_index on connector (((location).y));
-      create index connector_z_index on connector (((location).z));
     
 DONE
 * copying sliders instead of moving them
@@ -30,6 +20,7 @@ DONE
   "Fragments with connector" for added postsynaptic single treenodes
 * object tree background alignment in chrome
   -> back to classic
+* added indices to master.sql
   
 BEAUTIFICATION
 * arrowheads problem (zindex)
@@ -41,7 +32,6 @@ BEAUTIFICATION
     segmentations were anybody can add text labels, and edit just about
     anything. A cron job can reset it every hour or so, or each visitor is
     given a copy of the segmentation data 
-* remove beta from title?
 
 WISHLIST
 * zoom in past 100%, on to 200% and 400% (MHL can work on this)
@@ -52,9 +42,12 @@ WISHLIST
 * search box (regular expression across class instance names)
 * somewhere that displays the world coordinates of the current mouse
   position
+* PROBLEM: dblick just somewhere to zoom in in all modes
+  * why can not set ondblclick event handler to mouse catcher?
 
 
 LATER
+* Benchmarks / speedup investigation
 * security auditing, related to:
   - amazon mechanical turk test
   - user rights managment, registration

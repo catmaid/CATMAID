@@ -858,6 +858,7 @@ function Stack(
       switch ( b )
       {
       case 2:
+        // afford dradding in tracing mode
         ui.registerEvent( "onmousemove", onmousemove.move );
         ui.registerEvent( "onmouseup", onmouseup.move );
         ui.catchEvents( "move" );

@@ -23,6 +23,7 @@ WISHLIST
 
 LATER
 * Benchmarks / speedup investigation
+* shift-click on a line should add a node between two others
 * security auditing, related to:
   - amazon mechanical turk test
   - user rights managment, registration

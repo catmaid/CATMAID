@@ -29,7 +29,7 @@ if ( $uid )
 			
 			ORDER BY "time" DESC'
 	);
-	
+
 	echo makeJSON( $messages );
 }
 else

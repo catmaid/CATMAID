@@ -448,7 +448,12 @@ function handle_message( status, text, xml )
 			}
 			message_menu.update( e );
 			if ( n > 0 ) document.getElementById( "message_menu_text" ).className = "alert";
-			else document.getElementById( "message_menu_text" ).className = "";
+			else {
+			  document.getElementById( "message_menu_text" ).className = "";
+			  var dt = document.createElement( "div" );
+        dt.appendChild( document.createTextNode( "No messages present." ) );
+        message_container.appendChild( dt );
+			}
 		}
 	}
 	

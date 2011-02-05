@@ -84,10 +84,21 @@ ErrorLog /var/www/catmaid/logs/error.log
 </VirtualHost>
 ---
 
-	sudo a2ensite catmaid
-	/etc/init.d/apache2 reload
 
-You might have to update /etc/hosts
+Then create the directory "logs" in the catmaid folder:
+	mkdir /var/www/catmaid/logs
+
+... then make apache aware of the virtual host:
+	sudo a2ensite catmaid
+
+... then restart apache:
+	/etc/init.d/apache2 restart
+
+... and finally add this entry to "/etc/hosts" :
+
+127.0.0.1	catmaid
+
+
 
 2.2 As a directory of an existing virtual host
 

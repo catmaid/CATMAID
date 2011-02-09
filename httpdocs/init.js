@@ -658,6 +658,12 @@ function init()
 		this.href = project.createURL();
 		return true;
 	}
+  a_url2 = document.getElementById( "a_url2" );
+  a_url2.onmouseover = function( e )
+  {
+    this.href = project.createURL();
+    return true;
+  }
 	
 	button_crop_apply = document.getElementById( "button_crop_apply" );
 	

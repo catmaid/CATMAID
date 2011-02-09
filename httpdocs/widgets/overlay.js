@@ -775,10 +775,12 @@ SVGOverlay = function(
     var nrtn = 0;
     var nrcn = 0;
     // deactive node, but keep id for reactivation
-    var oldatnid;
-    if(atn!=null)
+    /*if(atn!=null) {
       oldatnid = atn.id;
-    activateNode(null);
+      console.log("XXX:oldatnid", oldatnid);
+    }*/
+      
+    // activateNode(null);
     for (var i in jso) {
         var id = parseInt(jso[i].id);
         var pos_x = phys2pixX(jso[i].x);
@@ -804,7 +806,7 @@ SVGOverlay = function(
         }
         nodes[id] = nn;
         // keep active state of previous active node
-        if(oldatnid == id) {
+        if(atn!= null && atn.id == id) {
           activateNode(nn);
         }
     }
@@ -1013,6 +1015,7 @@ SVGOverlay = function(
   // make view accessible from outside for setting additional mouse handlers
   this.view = view;
   
+
   var s = current_scale;
   var r = Raphael(view, Math.floor(dimension.x*s), Math.floor(dimension.y*s));
   this.paper = r;
@@ -1034,9 +1037,11 @@ SVGOverlay = function(
     if ($(this).attr("checked")) {
         //do the stuff that you would do when 'checked'
         speedtoggle = true;
+        project.updateNodes();
         return;
     } else {
       speedtoggle = false;
+      project.updateNodes();
       return;
     }
     //Here do the stuff you want to do when 'unchecked'

@@ -81,19 +81,18 @@ initObjectTree = function(pid) {
 								this.create(obj, "inside", att, null, true); 
 							}
 						},
-						/*
-            "create_neuron" : {
-              "separator_before"  : false,
-              "separator_after" : false,
-              "label"       : "Create neuron",
-              "action"      : function (obj) {
-                att = { "state": "open", 
-                    "data": "neuron",
-                    "attr" : {"rel" : "neuron", "relname" : "part_of" }
-                  };
-                this.create(obj, "inside", att, null, true); 
-              }
-            },*/
+			            "create_neuron" : {
+			              "separator_before"  : false,
+			              "separator_after" : false,
+			              "label"       : "Create neuron",
+			              "action"      : function (obj) {
+			                att = { "state": "open", 
+			                    "data": "neuron",
+			                    "attr" : {"rel" : "neuron", "relname" : "part_of" }
+			                  };
+			                this.create(obj, "inside", att, null, true); 
+			              }
+			            },
 						"rename_group" : {
 							"separator_before"	: true,
 							"separator_after"	: false,

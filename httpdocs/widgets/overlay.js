@@ -663,6 +663,14 @@ SVGOverlay = function(
     else
       var parid = parentid.id;
       
+    // check if we want the newly create node to be
+    // a model of a neuron
+    var selneuron = project.selectedObjects['selectedneuron'];
+    if(selneuron != null)
+      var useneuron = selneuron;
+    else
+      var useneuron = -1;
+      
     requestQueue.register(
       "model/treenode.create.php",
       "POST",
@@ -674,7 +682,8 @@ SVGOverlay = function(
         z : phys_z,
         radius : radius,
         confidence : confidence,
-        targetgroup : "Fragments" 
+        targetgroup : "Fragments",
+        useneuron : useneuron
         },
       function(status, text, xml)
       {
@@ -993,6 +1002,9 @@ SVGOverlay = function(
           // create a new treenode,
           // either root node if atn is null, or child if
           // it is not null
+          if(atn != null) {
+          	statusBar.replaceLast("created new treenode as child of treenode"+atn.id);
+          }
           createNode(atn, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
           e.stopPropagation();
           return true;

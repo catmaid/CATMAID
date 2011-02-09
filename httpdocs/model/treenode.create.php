@@ -17,10 +17,14 @@ $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 // 1. add new treenode for a given skeleton id. parent should not be empty
 // return: new treenode id
 
-// 2. add new treenode (root) and create a new skeleton
+// 2. add new treenode (root) and create a new skeleton (maybe for a given neuron)
 // return: new treenode id and skeleton idm ...
 
 // $skelid = isset( $_REQUEST[ 'skeleton_id' ] ) ? intval( $_REQUEST[ 'skeleton_id' ] ) : 0;
+
+// if a neuron id is given, use that one to create the skeleton
+// as a model of it
+$neuronid = isset( $_REQUEST[ 'useneuron' ] ) ? intval( $_REQUEST[ 'useneuron' ] ) : -1;
 
 $parentid = isset( $_REQUEST[ 'parent_id' ] ) ? intval( $_REQUEST[ 'parent_id' ] ) : 0;
 $x = isset( $_REQUEST[ 'x' ] ) ? floatval( $_REQUEST[ 'x' ] ) : 0;
@@ -104,6 +108,80 @@ if ( $pid )
 		{
 			// second case
 			
+	if($neuronid != -1) {
+		// we create for the treenode a new skeleton as model of the current neuron
+
+		// create new skeleton
+			/*
+       * Create a new skeleton
+       */
+			$data = array(
+				'user_id' => $uid,
+				'project_id' => $pid,
+				'class_id' => $skid,
+				'name' => 'skeleton'
+				);
+			$skelid = $db->insertIntoId('class_instance', $data );
+		      // update skeleton name by adding its id to the end
+		      $up = array('name' => 'skeleton '.$skelid);
+		      $upw = 'id = '.$skelid;
+		      $db->update( "class_instance", $up, $upw);     
+
+
+		// make it model of neuron
+		      $data = array(
+			  'user_id' => $uid,
+			  'project_id' => $pid,
+			  'relation_id' => $modid,
+			  'class_instance_a' => $skelid,
+			  'class_instance_b' => $neuronid 
+			);
+		      $db->insertInto('class_instance_class_instance', $data );
+
+		// create treenode
+			$data = array(
+				'user_id' => $uid,
+				'project_id' => $pid,
+				'location' => '('.$x.','.$y.','.$z.')',
+				'radius' => $radius,
+				'confidence' => $confidence);
+
+		      // only set parent_id if given, otherwise
+		      // NULL is default and it represents new root node
+		      if ( $parentid != -1 ) {
+			$data['parent_id'] = $parentid;
+		       }
+
+			$tnid = $db->insertIntoId('treenode', $data );
+
+
+		// make treenode element of skeleton
+      
+			if ( $tnid )
+			{
+				$data = array(
+						'user_id' => $uid,
+						'project_id' => $pid,
+						'relation_id' => $eleof,
+						'treenode_id' => $tnid,
+						'class_instance_id' => $skelid 
+					);
+				$db->insertInto('treenode_class_instance',$data );
+				
+				echo makeJSON( array( '"treenode_id"' => $tnid,
+									  '"skeleton_id"' => $skelid,
+									  '"neuron_id"' => $neuronid,
+                   		 ) );
+			}
+			else {
+				echo makeJSON( array( '"error"' => 'Error while inserting treenode.' ) );
+			}
+
+
+	} else {
+		// otherwise, we put it into fragments
+
+
 			/*
        * Create a new skeleton
        */
@@ -210,9 +288,10 @@ if ( $pid )
 
       // only set parent_id if given, otherwise
       // NULL is default and it represents new root node
-      if ( $parentid != -1 )
+      if ( $parentid != -1 ) {
         $data['parent_id'] = $parentid;
-        
+       }
+
 			$tnid = $db->insertIntoId('treenode', $data );
 
       // insert skeleton to Fragments group. Check first if fragment group
@@ -239,9 +318,10 @@ if ( $pid )
                     ) );
 			}
 			else {
-				echo makeJSON( array( '"error"' => 'Error while trying to insert treenode.' ) );
+				echo makeJSON( array( '"error"' => 'Error while inserting treenode.' ) );
 			}
 			
+		} // inner if about if neuron exists already closed
 		}
 		
 	}

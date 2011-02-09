@@ -44,7 +44,7 @@ initTreenodeTable = function(pid) {
 				"success": fnCallback
 			} );
 		},
-		"aLengthMenu": [[40, 100, 200, -1], [40, 100, 200, "All"]],
+		"aLengthMenu": [[10, 100, 200, -1], [10, 100, 200, "All"]],
 		"bJQueryUI": true,
 		"fnDrawCallback" : function() {
         $('td:eq(5)', oTable.fnGetNodes()).editable( 'model/treenode.table.update.php', {

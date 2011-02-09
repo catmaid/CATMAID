@@ -14,6 +14,8 @@ $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
 // retrieve treenode id, when set retrieve skeleton id
 $atnid = isset( $_REQUEST[ 'atnid' ] ) ? intval( $_REQUEST[ 'atnid' ] ) : 0;
+// maximum number of rows to display
+$maxrows = 5000;
 
 $tabinject = '';
 if($atnid != 0) {
@@ -27,12 +29,11 @@ if($atnid != 0) {
           $tabinject = ', "treenode_class_instance" AS "tci"';
           
         } else {
-          echo makeJSON( array( '"error"' => 'Can not find skeleton for this treenode.' ) ); return; }
+          echo makeJSON( array( '"error"' => 'Can not find skeleton for the selected treenode.' ) ); return; }
 
 } else {
   // try to retrieve the sent skeleton ids
-  
-    
+
     // retrieve skeleton ids if set
     if ( isset( $_REQUEST['skeleton_nr'] ))
     {
@@ -68,9 +69,11 @@ $iDisplayLength = isset( $_REQUEST['iDisplayLength'] ) ? intval( $_REQUEST['iDis
 
 if ( $iDisplayLength > 0 )
 	$sLimit .= ' LIMIT '.$iDisplayLength;
+else
+	$sLimit .= ' LIMIT '.$maxrows;
 if ( $iDisplayStart > 0 )
 	$sLimit .= ' OFFSET '.$iDisplayStart;
-	
+
 /* Ordering */
 if ( isset( $_REQUEST['iSortCol_0'] ) )
 {
@@ -113,33 +116,13 @@ if ( $pid )
 {
 	if ( $uid )
 	{
-		
-			// treenode type logic
-			$tbranch = $db->getResult(
-			'SELECT "t1"."id" AS "t1id",
-				COUNT( "t2"."id" ) as cc
-				FROM "treenode" AS "t1"
-				    JOIN "treenode" AS "t2"
-				        ON "t2"."parent_id" = "t1"."id"
-				
-				WHERE
-				"t1"."project_id" = '.$pid.'
-				GROUP BY "t1"."id"');
-			
-			reset( $tbranch );
-			$tbranch2 = array();
-			while ( list( $key, $val) = each( $tbranch ) )
-			{
-				$tbranch2[$val["t1id"]] = $val["cc"];
-			}
-			unset( $tbranch );
 			
 			// label logic
 			
 			// get id for relation 'labeled_as'      
-      $tlabelrel_res = $db->getResult('SELECT "relation"."id" FROM "relation"
-      WHERE "relation"."project_id" = '.$pid.' AND
-      "relation"."relation_name" = \'labeled_as\'');
+		      $tlabelrel_res = $db->getResult('SELECT "relation"."id" FROM "relation"
+		      WHERE "relation"."project_id" = '.$pid.' AND
+		      "relation"."relation_name" = \'labeled_as\'');
 			
 			if( !empty($tlabelrel_res) )
 			{
@@ -168,34 +151,9 @@ if ( $pid )
 			}
 			
 			// retrieve model_of id
-      $modid = $db->getRelationId( $pid, 'model_of' );
-      if(!$modid) { echo makeJSON( array( '"error"' => 'Can not find "model_of" relation for this project' ) ); return; }
-  		/*
-$t = $db->getResult(
-        'SELECT DISTINCT "treenode"."id" AS "tid",
-            "treenode"."radius" AS "radius",
-            "treenode"."confidence" AS "confidence",
-            "treenode"."parent_id" AS "parent_id",
-            "treenode"."user_id" AS "user_id",
-            ("treenode"."location")."x" AS "x",
-            ("treenode"."location")."y" AS "y",
-            ("treenode"."location")."z" AS "z",
-            "user"."name" AS "username",
-            ( "treenode"."user_id" = '.$uid.' ) AS "can_edit",
-            to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified",
-            "tci"."class_instance_id"
-            
-          FROM "treenode", "user", "treenode_class_instance" AS "tci"
-            
-          WHERE "treenode"."project_id" = '.$pid.' AND
-              "treenode"."user_id" = "user"."id" AND
-              "treenode"."id" = "tci"."treenode_id"
-              '.$skelcon.'
-          '.$sOrder.'
-          '.$sLimit.'
-          ');
-       *
-       */
+			$modid = $db->getRelationId( $pid, 'model_of' );
+			if(!$modid) { echo makeJSON( array( '"error"' => 'Can not find "model_of" relation for this project' ) ); return; }
+
 			// treenode list logic
 			$t = $db->getResult(
 				'SELECT DISTINCT "treenode"."id" AS "tid",
@@ -216,11 +174,31 @@ $t = $db->getResult(
 						  "treenode"."user_id" = "user"."id"
 						  AND "treenode"."id" = "tci"."treenode_id"
 						  '.$skelcon.'
-					'.$sOrder.'
-					'.$sLimit.'
-					');
+						  '.$sOrder.'
+						  '.$sLimit.'
+						  ');
 
 			$iTotal = count($t);
+			
+			// count treenode parents to derive
+			// treenode type
+			$tbranch = $db->getResult(
+			'SELECT "t1"."id" AS "t1id", COUNT( "t2"."id" ) as cc 
+				FROM "treenode" AS "t1", "treenode" AS "t2", "treenode_class_instance" AS "tci"
+				WHERE "t1"."project_id" = '.$pid.' AND "t2"."parent_id" = "t1"."id"
+			    AND "t1"."id" = "tci"."treenode_id"
+			    '.$skelcon.'
+				GROUP BY "t1"."id"');
+			
+			reset( $tbranch );
+			// create simplified array keyed by id
+			$tbranch2 = array();
+			while ( list( $key, $val) = each( $tbranch ) )
+			{
+				$tbranch2[$val["t1id"]] = $val["cc"];
+			}
+			unset( $tbranch );
+			// ***************
 			
 			reset( $t );
 			
@@ -327,10 +305,10 @@ $t = $db->getResult(
 				}
 				
 				if ( !$skip ) {
-          if($i!=0) { $sRow = ",".$sRow; }
-					$sOutput .= $sRow;
-          $i++;
-        }
+		          if($i!=0) { $sRow = ",".$sRow; }
+				  $sOutput .= $sRow;
+		          $i++;
+		        }
 				
 			}
 			// $sOutput = substr_replace( $sOutput, "", -1 );

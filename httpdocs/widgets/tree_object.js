@@ -149,8 +149,14 @@ initObjectTree = function(pid) {
 													this.deselect_all();
 													// select the node
 													this.select_node( obj );
-													// datatables grabs automatically the selected skeleton
-													oTable.fnDraw();
+													
+													if(oTable == null) {
+														alert("Please open up the table first");
+													} else {
+														// datatables grabs automatically the selected skeleton
+														oTable.fnDraw();
+														// project.selectedObjects['selectedskeleton'] = null;
+													}
 												  }
 						},
 						"rename_skeleton" : {
@@ -271,7 +277,7 @@ initObjectTree = function(pid) {
 					// "valid_children" : [ "modelof", "presynaptic", "postsynaptic" ],
 					"valid_children" : [ "skeleton" ],
 					"start_drag" : true,
-					"select_node" : false,
+					"select_node" : true,
 				},
 				"skeleton" : {
 					"icon" : {
@@ -328,6 +334,10 @@ initObjectTree = function(pid) {
 	});
 	
 	$(object_tree_id).bind("deselect_node.jstree", function (event, data) {
+	
+		id = data.rslt.obj.attr("id").replace("node_","");
+		type = data.rslt.obj.attr("rel");
+		
 		// deselection only works when explicitly done by ctrl
 		// we get into a bad state when it gets deselected by selecting another node
 		// thus, we only allow one selected node for now
@@ -335,6 +345,14 @@ initObjectTree = function(pid) {
 		// remove all previously selected nodes (or push it to the history)
 		for(key in project.selectedObjects['tree_object'])
 			delete project.selectedObjects['tree_object'][key];
+			
+		project.selectedObjects['selectedneuron'] = null;
+		
+		// deselect skeleton
+		if(type == "skeleton") {
+			project.selectedObjects['selectedskeleton'] = null;
+		}
+		
 	});
 	
 	$(object_tree_id).bind("select_node.jstree", function (event, data) {
@@ -347,6 +365,13 @@ initObjectTree = function(pid) {
 			delete project.selectedObjects['tree_object'][key];
 		
 		project.selectedObjects['tree_object'][id] = {'id': id, 'type' : type};
+
+		if(type == "neuron") {
+			project.selectedObjects['selectedneuron'] = id;
+		} else if(type == "skeleton") {
+			project.selectedObjects['selectedskeleton'] = id;
+		}
+																
 
 	});
 	

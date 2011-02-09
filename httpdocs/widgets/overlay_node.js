@@ -125,7 +125,7 @@ Node = function(
     // if so, it is not allowed to remove the treenode
     /*for ( var i = 0; i < children.length; ++i ) {
       if( children[i] instanceof ConnectorNode ) {
-        console.log("not allowed to delete treenode with connector attached. first remove connector.")
+      alert("Not allowed to delete treenode with connector attached. Please remove connector first.");
         return;
       }
     }
@@ -268,6 +268,7 @@ Node = function(
         if(atn != null && this.parentnode.id == atn.id) {
           activateNode(null);
         }
+        statusBar.replaceLast( "deleted treenode with id "+this.parentnode.id);
         this.parentnode.deletenode();
         e.stopPropagation();
         return true;
@@ -277,11 +278,9 @@ Node = function(
         // to existing treenode or connectornode
         if(atn.type == "location") {
           project.createLink(atn.id, this.parentnode.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
+		  statusBar.replaceLast( "joined active treenode to connector with id "+this.parentnode.id);
         } else if(atn.type == "treenode") {
-          
-//          if(this.parentnode.parent != null) {
-//            console.log("parent of target is not null", this.parentnode);
-//          }
+            statusBar.replaceLast( "joined active treenode to treenode with id "+this.parentnode.id);
             project.createTreenodeLink(atn.id, this.parentnode.id);
           
         }
@@ -309,10 +308,12 @@ Node = function(
     c.attr({cx: this.parentnode.x,cy: this.parentnode.y});
     mc.attr({cx: this.parentnode.x,cy: this.parentnode.y});
     this.parentnode.draw();
+    statusBar.replaceLast( "move treenode with id "+this.parentnode.id);
   }
   mc.up = function()
   {
     c.attr({opacity:1});
+
     this.parentnode.needsync = true;
   }
   mc.start = function()

@@ -1331,6 +1331,8 @@ function Stack(
                   svgOverlay.pix2physY(atn.y),
                   svgOverlay.pix2physX(atn.x)
                   );
+      } else {
+      	alert("No active node to go to!");
       }
       break;
     case "skeletonsplitting":

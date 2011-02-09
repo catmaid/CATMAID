@@ -625,34 +625,35 @@ function Project( pid )
 			case 49: // A
 			  project.toggleTracing( 'skeletontracing' );
 			  return false;
-      case 50: // S
+      case 50: 
         project.toggleTracing( 'synapsedropping' );
         return false;
-      case 51: // S
+      case 51:
         project.toggleTracing( 'dbsync' );
         return false;
-      case 52: // S
+      case 52:
+      case 69: // press e
         project.toggleTracing( 'goactive' );
         return false;
-      case 53: // S
+      case 53:
         project.toggleTracing( 'skeletonsplitting' );
         return false;
-      case 54: // S
+      case 54:
         project.toggleTracing( 'skeletonreroot' );
         return false;
-      case 55: // S
+      case 55:
         project.toggleTracing( 'togglelabels' );
         return false;
-			case 84:    //!< key t
-			  if ( !ctrl  ) project.toggleTracing( 'tagging' );
-			  break;
-			case 9:			//!< tab
-				if ( shift ) project.switchFocus( -1 );
-				else project.switchFocus( 1 );
-				//e.stopPropagation();
-				return false;
-			case 13:		//!< return
-				break;
+	  case 84:    //!< key t
+	    if ( !ctrl  ) project.toggleTracing( 'tagging' );
+	    break;
+	  case 9:			//!< tab
+		if ( shift ) project.switchFocus( -1 );
+		else project.switchFocus( 1 );
+		//e.stopPropagation();
+		return false;
+	  case 13:		//!< return
+		break;
 			/*
 			default:
 				alert( key );
@@ -708,7 +709,9 @@ function Project( pid )
 	// in the treenode table and object tree
 	// (not used for anything sensible right now)
 	var selectedObjects = { 'tree_object' : {},
-							'table_treenode' : {} };
+							'table_treenode' : {},
+							'selectedneuron' : null ,
+							'selectedskeleton' : null };
 	this.selectedObjects = selectedObjects;
 	
 }

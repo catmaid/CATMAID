@@ -15,7 +15,7 @@ $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 // retrieve treenode id, when set retrieve skeleton id
 $atnid = isset( $_REQUEST[ 'atnid' ] ) ? intval( $_REQUEST[ 'atnid' ] ) : 0;
 // maximum number of rows to display
-$maxrows = 5000;
+$maxrows = 3000;
 
 $tabinject = '';
 if($atnid != 0) {
@@ -56,8 +56,12 @@ if($atnid != 0) {
     	}
     	else
     	{
-    		$skelcon = "";
+    	// just not retrieve anything
+    		$skelcon = "AND false";
     	}
+    } else {
+    // just not retrieve anything
+	    $skelcon = "AND false";
     }
 
 }
@@ -71,6 +75,7 @@ if ( $iDisplayLength > 0 )
 	$sLimit .= ' LIMIT '.$iDisplayLength;
 else
 	$sLimit .= ' LIMIT '.$maxrows;
+	
 if ( $iDisplayStart > 0 )
 	$sLimit .= ' OFFSET '.$iDisplayStart;
 
@@ -78,6 +83,7 @@ if ( $iDisplayStart > 0 )
 if ( isset( $_REQUEST['iSortCol_0'] ) )
 {
 	$sOrder = "ORDER BY  ";
+	$sOrder .= '"edition_time" DESC,';
 	for ( $i=0 ; $i<pg_escape_string( $_REQUEST['iSortingCols'] ) ; $i++ )
 	{
 		$sOrder .= fnColumnToField(pg_escape_string( $_REQUEST['iSortCol_'.$i] ))."
@@ -131,7 +137,7 @@ if ( $pid )
 				// get treenode_class_instance rows
 				$tlabel = $db->getResult(
 				'SELECT "tci"."id", "tci"."treenode_id", "tci"."class_instance_id", "class_instance"."name" as "name"
-				FROM "treenode_class_instance" AS "tci" , "class_instance"
+				FROM "treenode_class_instance" AS "tci", "class_instance"
 				WHERE "tci"."project_id" = '.$pid.' AND "tci"."relation_id" = '.$tlabelrel.' AND "class_instance"."id" = "tci"."class_instance_id"'
 				);
 				
@@ -161,6 +167,7 @@ if ( $pid )
 						"treenode"."confidence" AS "confidence",
 						"treenode"."parent_id" AS "parent_id",
 						"treenode"."user_id" AS "user_id",
+						"treenode"."edition_time" AS "edition_time",
 						("treenode"."location")."x" AS "x",
 						("treenode"."location")."y" AS "y",
 						("treenode"."location")."z" AS "z",

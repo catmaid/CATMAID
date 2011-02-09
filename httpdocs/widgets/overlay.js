@@ -3,6 +3,7 @@ var atn = null;
 var atn_fillcolor = "rgb(0, 255, 0)";
 
 function activateNode( node ) {
+
     // changes the color attributes of
     // the newly activated node
     if ( atn != null ) {
@@ -16,6 +17,11 @@ function activateNode( node ) {
     atn = node;
     atn.getC().attr({
           fill: atn_fillcolor });
+    // update statusBar
+    if(atn.type == "treenode")
+	    statusBar.replaceLast( "activated treenode with id " + atn.id );
+	else
+		statusBar.replaceLast( "activated node with id " + atn.id );
 };
 
 SVGOverlay = function(
@@ -858,7 +864,8 @@ SVGOverlay = function(
     
     } // end speed toggle
    // statusBar.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 3 ) + "]" );
-    statusBar.replaceLast( "number of treenodes (retrieved): " + nrtn +"; number of connectors: " + nrcn);   
+   // debugging the node retrieval
+//    statusBar.replaceLast( "number of treenodes (retrieved): " + nrtn +"; number of connectors: " + nrcn);   
     // show tags if necessary again
     this.showTags(show_labels);
   }
@@ -940,6 +947,9 @@ SVGOverlay = function(
         
     if( e.ctrlKey ) {
       // ctrl-click deselects the current active node
+      if(atn!=null) {
+      	statusBar.replaceLast("deactivated active node with id "+atn.id);
+      }
       activateNode( null );
     } else if( e.shiftKey ) {
       if(atn == null) {
@@ -954,7 +964,8 @@ SVGOverlay = function(
           // the user has to change into the synapsedropping mode and add the
           // connector, then active the original treenode again, and shift-click
           // on the target connector to link them presynaptically
-          //createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
+    	  statusBar.replaceLast( "created connector presynaptic to treenode with id "+atn.id);
+          createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
           e.stopPropagation();
           return true;
         }
@@ -969,7 +980,8 @@ SVGOverlay = function(
           // create root node, creates a new active node
           // because the treenode creation is asynchronous, we have to invoke
           // the connector creation in the event handler
-          createNodeWithConnector(locid, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
+    	  statusBar.replaceLast( "created connector postsynaptic to treenode with id "+atn.id);
+          createNodeWithConnector(locid, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
           e.stopPropagation();
           return true;
       }
@@ -981,7 +993,7 @@ SVGOverlay = function(
           // create a new treenode,
           // either root node if atn is null, or child if
           // it is not null
-          createNode(atn, phys_x, phys_y, phys_z, 4, 5, pos_x, pos_y, pos_z);
+          createNode(atn, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
           e.stopPropagation();
           return true;
         } 

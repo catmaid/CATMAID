@@ -47,7 +47,7 @@ ConnectorNode = function(
   // current slice
   var fillcolor;
   if(zdiff == 0)
-   fillcolor = "rgb(208, 156, 46)";
+   fillcolor = "rgb(235, 117, 0)";
   else if(zdiff == 1)
    fillcolor = "rgb(0, 0, 255)";
   else if(zdiff == -1)
@@ -292,6 +292,7 @@ ConnectorNode = function(
         if(atn != null && this.parentnode.id == atn.id) {
           activateNode(null);
         }
+        statusBar.replaceLast( "deleted connector with id "+this.parentnode.id);
         this.parentnode.deletenode();
         e.stopPropagation();
         return true;
@@ -301,6 +302,7 @@ ConnectorNode = function(
         // to existing treenode or connectornode
         // console.log("from", atn.id, "to", this.parentnode.id);
         project.createLink(atn.id, this.parentnode.id, "presynaptic_to", "presynaptic terminal", "synapse", "treenode", "connector");
+	   statusBar.replaceLast( "joined active connector to treenode with id "+this.parentnode.id);
       } else {
         alert("You need to activate a treenode before joining it to a connector node!");
       }
@@ -323,6 +325,7 @@ ConnectorNode = function(
     c.attr({cx: this.parentnode.x,cy: this.parentnode.y});
     mc.attr({cx: this.parentnode.x,cy: this.parentnode.y});
     this.parentnode.draw();
+    statusBar.replaceLast( "move connector with id "+this.parentnode.id);
   }
   mc.up = function()
   {

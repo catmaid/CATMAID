@@ -19,6 +19,7 @@ initTreenodeTable = function(pid) {
 			
 			// add list of skeleton ids to draw
 			// retrieve vom selected object_tree objects
+			/* this is only for a list of skeletons
 			i = 0;
 			for(key in project.selectedObjects['tree_object'])
 			{
@@ -29,12 +30,22 @@ initTreenodeTable = function(pid) {
 				}
 			}
 			aoData.push( { "name" : "skeleton_nr", "value" : i } );
-			aoData.push( { "name" : "pid", "value" : pid } );
-			
-			// send active treenode when set
-			if( atn != null && atn.type == "treenode") {
-        aoData.push( { "name" : "atnid", "value" : atn.id } );
+			*/
+			// only for one skeleton
+			var skelid = project.selectedObjects['selectedskeleton'];
+			if(skelid != null) {
+			    // give priority to showing treenodes
+				aoData.push( { "name" : "skeleton_0", "value" : project.selectedObjects['selectedskeleton'] } );
+				aoData.push( { "name" : "skeleton_nr", "value" : 1 } );
+			} else {
+				// check if a treenode is active
+				// send active treenode when set
+				if( atn != null && atn.type == "treenode") {
+			        aoData.push( { "name" : "atnid", "value" : atn.id } );
+				}
 			}
+			
+			aoData.push( { "name" : "pid", "value" : pid } );
 			
 			$.ajax( {
 				"dataType": 'json', 
@@ -44,7 +55,8 @@ initTreenodeTable = function(pid) {
 				"success": fnCallback
 			} );
 		},
-		"aLengthMenu": [[10, 100, 200, -1], [10, 100, 200, "All"]],
+		"iDisplayLength" : -1,
+		"aLengthMenu": [[-1, 10, 100, 200], ["All", 10, 100, 200]],
 		"bJQueryUI": true,
 		"fnDrawCallback" : function() {
         $('td:eq(5)', oTable.fnGetNodes()).editable( 'model/treenode.table.update.php', {
@@ -109,7 +121,7 @@ initTreenodeTable = function(pid) {
 	} );
 
 	$("#treenodetable tfoot input").focus( function () {
-	  console.log("focus");
+	  // console.log("focus");
 		if ( this.className == "search_init" )
 		{
 			this.className = "";

@@ -77,7 +77,7 @@ initPostSynapseTable = function(pid) {
 		{
 			
 			selectedObjects[iId] = {'id': iId, 'tabledata':aData, 'type': stype};
-			console.log(selectedObjects);
+			// console.log(selectedObjects);
 			
 		}
 		$(this).toggleClass('row_selected');

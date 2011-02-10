@@ -1,7 +1,6 @@
 TOMORROW
 - user managment extensions, plans
-- tracing policy/best practics
-(lower/uppercase names, tags, where to place the treenode/connector)
+- tracing policy/best practics (lower/uppercase names, tags, where to place the treenode/connector)
 - catmaid.org, tutorial, video
   * small tutorial with the key bindings and how tracing works
   * homepage: "try it now": a test project with images and
@@ -10,14 +9,12 @@ TOMORROW
     given a copy of the segmentation data 
 
 critical
-
 - several label refresh calls when panning -> in stack.js line 613, textlabel redraw logic
 
 important
 - show skeleton in object tree for a selected treenode / shortcut to display the selected neuron in the object tree
 - highlight the active skeleton
-- not updating nodes quickly when moving through stack. Only update nodes at final point when scrolling.
-- drag treenodes updates connector path
+- not updating nodes quickly when moving through stack. only update nodes at final point when scrolling.
 
 wishlist
 
@@ -55,4 +52,4 @@ LATER
 * new django-based back-end (MHL working on this)
 * label an area by a close polyline, similar to labelme
   - add a areatreenode inheriting from treenode with array column
-* OPEN: add connector table (id, x,y,z, presyn, postsyn, tags, lastmodified)
+* add connector table (id, x,y,z, presyn, postsyn, tags, lastmodified)

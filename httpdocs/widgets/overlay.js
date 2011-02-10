@@ -42,7 +42,9 @@ SVGOverlay = function(
   {
     // retrieve SWC file of currently active
     // treenode's skeleton
+
     
+    /*
     // retrieve data for the nodes skeleton
     $.post(
       "model/export.skeleton.php", 
@@ -50,7 +52,9 @@ SVGOverlay = function(
         pid : project.id,
         tnid : atn.id,
        }
-    )/*
+    ) */
+    var recipe =  window.open('','RecipeWindow','width=600,height=600');
+    
     requestQueue.register(
       "model/export.skeleton.php",
       "GET",
@@ -60,25 +64,23 @@ SVGOverlay = function(
        },
        function(status, text, xml)
        {
-         /*
         if ( status == 200 )
         {
-          if ( text && text != " " )
-          {
-            var e = eval( "(" + text + ")" );
-            if ( e.error )
-            {
-              alert( e.error );
-            }
-            else
-            {
-            }
-           }
+ 
+	        console.log("output", text);
+	     	$('#recipe1').clone().appendTo('#myprintrecipe');
+		    var html = "<html><head><title>Skeleton as SWC</title></head><body><pre><div id='myprintrecipe'>"+text+"</div></pre></body></html>";
+			recipe.document.open();
+			recipe.document.write(html);
+			recipe.document.close();
+
+            
+            
+           
          }
-         
        }
      ); // endfunction
-        */   
+          
   }
   
   this.selectNode = function( id )
@@ -867,9 +869,10 @@ SVGOverlay = function(
              postloctnid = parseInt(jso[i].post[j].tnid);
              if ( postloctnid in nodes ) {
                nodes[nid].postgroup[postloctnid] = nodes[postloctnid];
+               // add to postgroup of treenode (for nice drawing later)
+               nodes[postloctnid].connectors[nid] = nodes[nid];
              }
-             // add to postgroup of treenode (for nice drawing later)
-             nodes[postloctnid].connectors[nid] = nodes[nid];
+
            }
          }
       }

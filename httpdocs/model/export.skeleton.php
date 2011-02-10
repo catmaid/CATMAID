@@ -23,7 +23,6 @@ if ( $pid )
     $ele_id = $db->getRelationId( $pid, 'element_of' );
     if(!$ele_id) { echo makeJSON( array( '"error"' => 'Can not find "element_of" relation for this project' ) ); return; }
     
-    
     // retrieve skeleton for treenode
     $res = $db->getClassInstanceForTreenode( $pid, $tnid, "element_of");
     
@@ -45,16 +44,30 @@ if ( $pid )
     "tci"."class_instance_id" = '.$skelid.' AND
     "treenode"."id" = "tci"."treenode_id"
     ORDER BY "treenode"."parent_id" DESC');
-    $out = "1,2,3";
+    
+	foreach($res as $key => $ele) {
+		$out = "";
+		$out .= $ele['id']." ";
+		$out .= $ele['x']." ";
+		$out .= $ele['y']." ";
+		$out .= $ele['z']." ";
+		$out .= $ele['confidence']." ";
+		if($ele['parent_id']=="")
+			$out .= "-1\n";
+		else
+			$out .= $ele['parent_id']."\n";
+		
+		echo $out;
+	}
     //header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
-    header('Content-Type: application/csv');
-    header('Content-Disposition: attachment; filename=test.csv');
-    header("Content-Length: " . strlen($out));
-    echo($out);
+    //header('Content-Type: application/csv');
+    //header('Content-Disposition: attachment; filename=test.csv');
+    //header("Content-Length: " . strlen($out));
+    //echo(var_dump($res));
     //echo date("l");
     //echo "\r\n";
     // XXX retrieve treenodes with parent and location information
-    exit;
+    //exit;
     //echo json_encode($res);
     
   }

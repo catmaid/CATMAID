@@ -292,7 +292,7 @@ if ( $pid )
         $data['parent_id'] = $parentid;
        }
 
-			$tnid = $db->insertIntoId('treenode', $data );
+	  $tnid = $db->insertIntoId('treenode', $data );
 
       // insert skeleton to Fragments group. Check first if fragment group
       // exists at all. If not, create. Create a neuron and attach skeleton to it

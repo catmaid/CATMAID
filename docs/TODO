@@ -10,9 +10,6 @@ TOMORROW
     given a copy of the segmentation data 
 
 critical
-- loop through parents
-
-- bugfix shift-click for creation of new connector
 - bug with treenode skeleton in splitting wrong
 - for newly created postsyn treenode, why are there two elements in tree view
 

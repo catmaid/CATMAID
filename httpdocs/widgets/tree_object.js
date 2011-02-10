@@ -41,7 +41,6 @@ initObjectTree = function(pid) {
 			"icons" : true
 		},
 		"contextmenu" : {
-			
 			"items" : function(obj) {
 			var id_of_node = obj.attr("id");
 			var type_of_node = obj.attr("rel");
@@ -193,9 +192,7 @@ initObjectTree = function(pid) {
 													// select the node
 													this.select_node( obj );
 													
-													if(oTable == null) {
-														project.showDatatableWidget("treenode");
-													} 
+													project.showDatatableWidget("treenode");
 													// datatables grabs automatically the selected skeleton
 													oTable.fnDraw();
 												  }

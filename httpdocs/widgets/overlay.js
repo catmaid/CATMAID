@@ -133,7 +133,7 @@ SVGOverlay = function(
               for(nodeid in nodeitems)
               {
                 var tl = new OverlayLabel(nodeitems[nodeid], r, nodes[nodeid].x, nodes[nodeid].y, nodeitems[nodeid]);
-                console.log(tl);
+                // console.log(tl);
                 labels[nodeid] = tl;
               }
 	          }

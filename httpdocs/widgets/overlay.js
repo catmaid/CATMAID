@@ -612,7 +612,7 @@ SVGOverlay = function(
         z : phys_z,
         radius : radius,
         confidence : confidence,
-        targetgroup : "Fragments with connector" 
+        targetgroup : "Isolated synaptic terminals"
         },
       function(status, text, xml)
       {

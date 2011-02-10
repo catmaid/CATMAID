@@ -10,11 +10,8 @@ TOMORROW
     given a copy of the segmentation data 
 
 critical
-- bug with treenode skeleton in splitting wrong
-- for newly created postsyn treenode, why are there two elements in tree view
 
 - several label refresh calls when panning -> in stack.js line 613, textlabel redraw logic
-
 
 important
 - show skeleton in object tree for a selected treenode / shortcut to display the selected neuron in the object tree

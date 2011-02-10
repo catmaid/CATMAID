@@ -843,7 +843,7 @@ function Stack(
 		},
     trace : function( e )
     {
-      console.log("unregister trace");
+      // console.log("unregister trace");
       ui.releaseEvents();
       ui.removeEvent( "onmousemove", svgOverlay.onmousemove );
       ui.removeEvent( "onmouseup", onmouseup.move );

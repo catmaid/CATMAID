@@ -11,12 +11,12 @@ TOMORROW
 
 critical
 - loop through parents
-- show treenode from object tree
 
 - bugfix shift-click for creation of new connector
 - bug with treenode skeleton in splitting wrong
 - for newly created postsyn treenode, why are there two elements in tree view
-- many label refreshs when panning
+
+- several label refresh calls when panning -> in stack.js line 613, textlabel redraw logic
 
 
 important

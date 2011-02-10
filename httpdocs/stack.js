@@ -627,28 +627,20 @@ function Stack(
 		}
 		if ( show_tracing )
 		{
-      if ( z != old_z ||
-        s != old_s ||
-        xd != 0 ||
-        yd != 0 )
-      {
-        self.updateNodes();
-      }
-      // redraw the overlay
-      svgOverlay.redraw(
-        screen_left,
-        screen_top,
-        scale);
+	      if ( z != old_z ||
+	        s != old_s ||
+	        xd != 0 ||
+	        yd != 0 )
+	      {
+	        self.updateNodes();
+	      }
+	      // redraw the overlay
+	      svgOverlay.redraw(
+	        screen_left,
+	        screen_top,
+	        scale);
 		}
-		
-		// render the treenodes
-		/*
-		if ( show_treenodes )
-		{
-		  self.updateTreelinenodes();
-		  console.log("redraw treenodes...");
-		}*/
-		
+				
 		// update crop box if available
 		if ( mode == "crop" && cropBox )
 			updateCropBox();
@@ -1329,6 +1321,24 @@ function Stack(
       break;
     case "dbsync":
       svgOverlay.updateNodeCoordinatesinDB();
+      break;
+    case "goparent":
+      if(atn!=null) {
+      	if(atn.parent != null) {
+	        project.moveTo(
+	                  svgOverlay.pix2physZ(atn.parent.z),
+	                  svgOverlay.pix2physY(atn.parent.y),
+	                  svgOverlay.pix2physX(atn.parent.x)
+	                  );
+      		window.setTimeout("project.selectNode( "+atn.parent.id+" )", 1000);
+      		    
+      	
+      	} else {
+      		alert("This is the root node.");
+      	}
+      } else {
+      	alert("No active node selected.");
+      }
       break;
     case "goactive":
       if(atn!=null) {

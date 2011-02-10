@@ -954,8 +954,8 @@ SVGOverlay = function(
     var phys_y = pix2physY(pos_y);
     var phys_z = project.coordinates.z;
         
-    if( e.altKey ) {
-      // alt-click deselects the current active node
+    if( e.ctrlKey ) {
+      // ctrl-click deselects the current active node
       if(atn!=null) {
       	statusBar.replaceLast("deactivated active node with id "+atn.id);
       }

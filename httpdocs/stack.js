@@ -740,6 +740,7 @@ function Stack(
 		z = Math.max( 0, Math.min( MAX_Z, z ) );
 		
 		update();
+		updateControls();
 		
 		return;
 	}

@@ -81,7 +81,7 @@ SVGOverlay = function(
         */   
   }
   
-  this.activateNode = function( id )
+  this.selectNode = function( id )
   {
   	// activates the given node id if it exists
   	// in the current retrieved set of nodes

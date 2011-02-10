@@ -146,11 +146,11 @@ initTreenodeTable = function(pid) {
     var z = parseFloat(aData[3]);
     project.moveTo(z,y,x);
 
-    // var id = parseInt(aData[0]);
+    // activate the node with a delay
+    var id = parseInt(aData[0]);
+    window.setTimeout("project.selectNode( "+id+" )", 1000);
     
-    // XXX: want to active the node, but how? we know the id
-    // and register a request that activates the node because
-    // it should be retrieved
+
   });
 		
 }

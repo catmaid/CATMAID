@@ -358,12 +358,12 @@ function Project( pid )
     return;
   }
 
-	this.activateNode = function( id )
+	this.selectNode = function( id )
 	{
-	// activate the node in the current overlay
+	// select the node in the current overlay
 	// if it is existing
 	    for ( var i = 0; i < stacks.length; ++i )
-	      stacks[ i ].activateNode(id);
+	      stacks[ i ].selectNode(id);
 	    return;	
 	}  
 

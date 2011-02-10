@@ -177,7 +177,7 @@ Node = function(
 		activateNode( null );
 	} else {
 		// loop over nodes to see if parent is retrieved
-		project.activateNode( this.parent.id );
+		project.selectNode( this.parent.id );
 	}
     // redraw everything for now
     project.updateNodes();

@@ -1312,9 +1312,9 @@ function Stack(
       svgOverlay.showTags(val);
 	}
 	
-	this.activateNode = function ( id )
+	this.selectNode = function ( id )
 	{
-      svgOverlay.activateNode(id);
+      svgOverlay.selectNode(id);
 	}
 	
 	this.toggleTracing = function( m )

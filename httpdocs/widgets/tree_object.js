@@ -150,12 +150,10 @@ initObjectTree = function(pid) {
 													this.select_node( obj );
 													
 													if(oTable == null) {
-														alert("Please open up the table first");
-													} else {
-														// datatables grabs automatically the selected skeleton
-														oTable.fnDraw();
-														// project.selectedObjects['selectedskeleton'] = null;
-													}
+														project.showDatatableWidget("treenode");
+													} 
+													// datatables grabs automatically the selected skeleton
+													oTable.fnDraw();
 												  }
 						},
 						"rename_skeleton" : {

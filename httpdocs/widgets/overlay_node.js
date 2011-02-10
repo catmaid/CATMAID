@@ -172,9 +172,16 @@ Node = function(
         return true;
       });
 
+    // activate parent node when deleted
+	if(this.parent == null) {
+		activateNode( null );
+	} else {
+		// loop over nodes to see if parent is retrieved
+		project.activateNode( this.parent.id );
+	}
     // redraw everything for now
     project.updateNodes();
-                  
+    
     // infact, doing everything done on the server-side
     // (like relinking) again in the ui not best-practice
     /*

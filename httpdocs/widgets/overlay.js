@@ -81,6 +81,17 @@ SVGOverlay = function(
         */   
   }
   
+  this.activateNode = function( id )
+  {
+  	// activates the given node id if it exists
+  	// in the current retrieved set of nodes
+    for(nodeid in nodes) {
+        if(nodes[nodeid].id == id){
+    		activateNode(nodes[nodeid]);
+    	}
+    }
+  }
+  
   this.showTags = function( val )
   {
     this.toggleLabels( val );
@@ -943,8 +954,8 @@ SVGOverlay = function(
     var phys_y = pix2physY(pos_y);
     var phys_z = project.coordinates.z;
         
-    if( e.ctrlKey ) {
-      // ctrl-click deselects the current active node
+    if( e.altKey ) {
+      // alt-click deselects the current active node
       if(atn!=null) {
       	statusBar.replaceLast("deactivated active node with id "+atn.id);
       }

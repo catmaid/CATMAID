@@ -281,7 +281,7 @@ function Project( pid )
 		document.getElementById( "edit_button_move" ).className = "button";
 		document.getElementById( "edit_button_text" ).className = "button";
 		document.getElementById( "edit_button_crop" ).className = "button";
-    document.getElementById( "edit_button_trace" ).className = "button";
+    	document.getElementById( "edit_button_trace" ).className = "button";
 		//document.getElementById( "edit_button_profile" ).className = "button";
 		document.getElementById( "toolbar_nav" ).style.display = "none";
 		document.getElementById( "toolbar_text" ).style.display = "none";
@@ -357,6 +357,16 @@ function Project( pid )
       stacks[ i ].showTags(m);
     return;
   }
+
+	this.activateNode = function( id )
+	{
+	// activate the node in the current overlay
+	// if it is existing
+	    for ( var i = 0; i < stacks.length; ++i )
+	      stacks[ i ].activateNode(id);
+	    return;	
+	}  
+
 	
 	/**
 	 * register all GUI elements
@@ -627,6 +637,9 @@ function Project( pid )
 			  return false;
       case 50: 
         project.toggleTracing( 'synapsedropping' );
+        return false;
+      case 77: // just deselect the active node
+        activateNode( null );
         return false;
       case 51:
         project.toggleTracing( 'dbsync' );

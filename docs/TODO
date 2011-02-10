@@ -1,25 +1,46 @@
-TODO
-
-BEAUTIFICATION
-* drag treenodes updates connector path
-* code-cleanup
-* catmaid.org, tutorial, video
+TOMORROW
+- user managment extensions, plans
+- tracing policy/best practics
+(lower/uppercase names, tags, where to place the treenode/connector)
+- catmaid.org, tutorial, video
   * small tutorial with the key bindings and how tracing works
   * homepage: "try it now": a test project with images and
     segmentations were anybody can add text labels, and edit just about
     anything. A cron job can reset it every hour or so, or each visitor is
     given a copy of the segmentation data 
 
-WISHLIST
-* zoom in past 100%, on to 200% and 400% (MHL can work on this)
-* in TrakEM2, pressing 'g' while over a node selects that object - in
+critical
+- bugfix shift-click for creation of new connector
+- for newly created postsyn treenode, why are there two elements in tree view
+- many label refreshs when panning
+
+
+important
+- show skeleton in object tree for a selected objectd tree
+- highlight the active skeleton
+- not updating nodes quickly when moving through stack. Only update nodes at final point when scrolling.
+- shortcut to display the selected neuron in the object tree
+- Restore active node when deleting a node, or at least give activeness to parent node.
+- drag treenodes updates connector path
+
+wishlist
+
+- not use ctrl-click for deselect -> alt
+- datatable, label to the left, type small, do not need to show the id
+- zoom in/out should use mouse position
+- show the confidence for active treenodes/connector
+- updating the confidence with keys 1 to 5
+- ability to pop out interface elements -> window manager
+- Bug: On mac chrome v9, sometimes tiles don't load on zoom/layer change operations and lack of loading persists. No issues with scrolling.
+- zoom in past 100%, on to 200% and 400% (MHL can work on this)
+- Turn scale bar off option
+- Bug: [+] expander box is shown even on elements without subobjects in Object Tree
+- in TrakEM2, pressing 'g' while over a node selects that object - in
   CATMAID it would be good if it selected the active node.
-* once display is fast enough, display treelines in all modes - in
-  general
-* search box (regular expression across class instance names)
-* somewhere that displays the world coordinates of the current mouse position
-* PROBLEM: dblick just somewhere to zoom in in all modes
-  * why can not set ondblclick event handler to mouse catcher?
+- once display is fast enough, display treelines in all modes - in general
+- search box (regular expression across class instance names)
+- somewhere that displays the world coordinates of the current mouse position
+- dblick just somewhere to zoom in in all modes
 
 LATER
 * Benchmarks / speedup investigation
@@ -39,41 +60,3 @@ LATER
 * label an area by a close polyline, similar to labelme
   - add a areatreenode inheriting from treenode with array column
 * OPEN: add connector table (id, x,y,z, presyn, postsyn, tags, lastmodified)
-
-SECURITY CONCERNS
-* problem of SQL injections in php where REQUEST variable is just used in the sql statements
-* calling e.g. tracing methods programatically in firebug using the project variable
-* php code execution protected only by if($pid) and if($uid)
-
-DONE
-* DONE: change confidence value (-> in table)
-* DONE: active treenode in view, show its skeleton treenodes in datatable
-* DONE: show treenodes from a given skeleton again (check again from object tree)
-* DONE: splitting seems not to update the skeleton correctly
-* DONE: add endnode types to treenode, was leaf node
-* DONE: ctrl check for tagging
-* DONE:colorcode active treenode in data table
-  * also colorcoded root and leaf node
-* DONE: delete active treenode problem (when new node added)
-DONE
-* copying sliders instead of moving them
-  zoom-level scroll bar not visible with "move" or "select" tools.
-  -> DONE
-* update schema.dia file: DONE
-* add keyboard shortcuts (like F2, F3, F4 ...) for all the tools in the toolbar.
-  --> added keybindings with 1,2,3,...
-* context popup menu in the "Object Tree" doesn't go away when moving the mouse out of it, or when
-  clicking elsewhere. One must click on one of its elements. -> only does not go away when clicking on the stack
-* Tagging must be easier/faster: keyboard only. -> now, automatic focus on input
-  field to start typing, automatic tag addition when entering seperator (,)
-  store tags with Tab-Space (switch to save button end click), if required
-  you can add another key that simulates a .click() event
-* check delete connector when active (probably need to deactivate as well): DONE
-* too may neurons in Fragments. a folder for real fragments without single postsynaptic nodes
-  -> now, adding in "Fragments" for newly created treenodes just somewhere, and 
-  "Fragments with connector" for added postsynaptic single treenodes
-* object tree background alignment in chrome
-  -> back to classic
-* added indices to master.sql
-* arrowheads problem (zindex) -> arrow head only up to connector
-* 

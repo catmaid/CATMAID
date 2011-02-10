@@ -1312,6 +1312,11 @@ function Stack(
       svgOverlay.showTags(val);
 	}
 	
+	this.activateNode = function ( id )
+	{
+      svgOverlay.activateNode(id);
+	}
+	
 	this.toggleTracing = function( m )
 	{
     switch ( m )

@@ -139,6 +139,50 @@ initObjectTree = function(pid) {
 				}
 			} else if (type_of_node == "skeleton" ) {
 				menu = {
+						"goto_parent" : {
+							"separator_before"	: false,
+							"separator_after"	: false,
+							"label"				: "Go to root node",
+							"action"			: function (obj) {
+							
+												   var skelid = obj.attr("id").replace("node_","");												
+												   requestQueue.register(
+												      "model/skeleton.root.get.php",
+												      "POST",
+												       {
+												        pid : project.id,
+												        skeletonid : skelid
+												       },
+												       function(status, text, xml)
+												       {
+												         
+												        if ( status == 200 )
+												        {
+												          if ( text && text != " " )
+												          {
+												            var e = eval( "(" + text + ")" );
+												            if ( e.error )
+												            {
+												              alert( e.error );
+												            }
+												            else
+												            {
+																// go to node
+																// console.log("returned", e, e.root_id);
+																
+																project.moveTo(e.z,e.y,e.x);
+
+															    // activate the node with a delay
+															    window.setTimeout("project.selectNode( "+e.root_id+" )", 1000);
+															    
+												            }
+												           }
+												         }
+												       }
+												     );
+													
+												  }
+						},
 						"show_treenode" : {
 							"separator_before"	: false,
 							"separator_after"	: false,

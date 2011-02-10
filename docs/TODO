@@ -10,6 +10,9 @@ TOMORROW
     given a copy of the segmentation data 
 
 critical
+- loop through parents
+- show treenode from object tree
+
 - bugfix shift-click for creation of new connector
 - bug with treenode skeleton in splitting wrong
 - for newly created postsyn treenode, why are there two elements in tree view
@@ -17,11 +20,9 @@ critical
 
 
 important
-- show skeleton in object tree for a selected objectd tree
+- show skeleton in object tree for a selected treenode / shortcut to display the selected neuron in the object tree
 - highlight the active skeleton
 - not updating nodes quickly when moving through stack. Only update nodes at final point when scrolling.
-- shortcut to display the selected neuron in the object tree
-- Restore active node when deleting a node, or at least give activeness to parent node.
 - drag treenodes updates connector path
 
 wishlist

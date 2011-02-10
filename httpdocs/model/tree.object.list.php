@@ -14,6 +14,8 @@ $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
 $parentid = isset( $_REQUEST[ 'parentid' ] ) ? intval($_REQUEST[ 'parentid' ]) : 0;
 // extend it by giving a set of relationship types
+// limit number of nodes retrievable
+$maxnodes = 1000;
 
 if ( $pid )
 {
@@ -76,7 +78,8 @@ if ( $pid )
 			OR "cici"."relation_id" = '.$postsyn_id.'
 			OR "cici"."relation_id" = '.$modid.'
 			OR "cici"."relation_id" = '.$partof_id.')
-	  ORDER BY "ci"."edition_time" DESC');
+	  ORDER BY "ci"."edition_time" DESC
+	  LIMIT '.$maxnodes);
 
 		// loop through the array and generate children to return
 		$sOutput = '[';

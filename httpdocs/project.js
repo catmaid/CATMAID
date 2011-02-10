@@ -632,6 +632,8 @@ function Project( pid )
         project.toggleTracing( 'dbsync' );
         return false;
       case 52:
+        project.toggleTracing( 'goactive' );
+        return false;
       case 69: // press e
         project.toggleTracing( 'goactive' );
         return false;

@@ -145,6 +145,9 @@ initTreenodeTable = function(pid) {
     var y = parseFloat(aData[2]);
     var z = parseFloat(aData[3]);
     project.moveTo(z,y,x);
+
+    // var id = parseInt(aData[0]);
+    
     // XXX: want to active the node, but how? we know the id
     // and register a request that activates the node because
     // it should be retrieved

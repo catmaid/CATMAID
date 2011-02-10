@@ -107,50 +107,39 @@ SVGOverlay = function(
     // retrieve labels for the set of currently visible nodes
     if(show_labels)
     {
-      // first remove all existing
-      // loop through labels and remove
-      for(nodeid in nodes)
-      {
+	// retrieve all currently existing 
+    var nods = {};
+    // create node id array
+    for(nodeid in nodes) {
         if(nodes[nodeid].zdiff == 0){
-          
-          // retrieve node
-          requestQueue.register(
-            "model/label.node.list.php",
-            "POST",
-             {
-              pid : project.id,
-              nid : nodeid,
-              ntype : nodes[nodeid].type
-             },
-             function(status, text, xml)
-             {
-               
-              if ( status == 200 )
+    		nods[nodeid + ""] = nodeid;
+    	}
+    }
+	jQuery.ajax({
+	          url: "model/label.node.list.all.php",
+	          type: "POST",
+	          data: { nods: JSON.stringify(nods),
+	                  pid : project.id },
+	          dataType: "json",
+	          beforeSend: function(x) {
+	            if (x && x.overrideMimeType) {
+	              x.overrideMimeType("application/json;charset=UTF-8");
+	            }
+	          },
+	          success: function(result) {
+	           var nodeitems = result;
+	           
+              // for all retrieved, create a label
+              for(nodeid in nodeitems)
               {
-                if ( text && text != " " )
-                {
-                  var e = eval( "(" + text + ")" );
-                  if ( e.error )
-                  {
-                    alert( e.error );
-                  }
-                  else
-                  {
-                      var nodeitems = $.parseJSON( text );
-                      // for all retrieved, create a label
-                      for(nodeid in nodeitems)
-                      {
-                        var tl = new OverlayLabel(nodeitems[nodeid], r, nodes[nodeid].x, nodes[nodeid].y, nodeitems[nodeid]);
-                        labels[nodeid] = tl;
-                      }
-                  }
-                 }
-               }
-             }
-           ); // endfunction
-        }
-      }      
+                var tl = new OverlayLabel(nodeitems[nodeid], r, nodes[nodeid].x, nodes[nodeid].y, nodeitems[nodeid]);
+                console.log(tl);
+                labels[nodeid] = tl;
+              }
+	          }
+	});
     } 
+
   }
 
   this.tagATN = function()

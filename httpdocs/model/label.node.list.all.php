@@ -14,7 +14,6 @@ $pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
 $stu = isset( $_REQUEST[ 'nods' ] ) ? $_REQUEST[ 'nods' ]  : 0;
-
 $ntype = isset( $_REQUEST[ 'ntype' ] ) ? $_REQUEST[ 'ntype' ] : 'treenode';
 
 if ( $pid )
@@ -27,9 +26,6 @@ if ( $pid )
     $labeled_as_id = $db->getRelationId( $pid, 'labeled_as' );
     if(!$labeled_as_id) { echo makeJSON( array( '"error"' => 'Can not find "labeled_as" relation for this project' ) ); return; }
    
-	if($stu == 0) {
-	 return;
-	}
 	// create select where in statement part
 	$studec = json_decode($stu);
 	$stuimp = array();

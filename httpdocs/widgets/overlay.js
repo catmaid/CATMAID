@@ -3,56 +3,42 @@ var atn = null;
 var atn_fillcolor = "rgb(0, 255, 0)";
 
 function activateNode( node ) {
-
     // changes the color attributes of
     // the newly activated node
     if ( atn != null ) {
-      atn.setDefaultColor();
+		atn.setDefaultColor();
     };
     // if node == null, just deactivate
     if( node == null ) {
-      atn = null;
-      return;
+		atn = null;
+		return;
     }
     atn = node;
-    atn.getC().attr({
-          fill: atn_fillcolor });
+    atn.getC().attr({ fill: atn_fillcolor });
     // update statusBar
     if(atn.type == "treenode")
-	    statusBar.replaceLast( "activated treenode with id " + atn.id );
+		statusBar.replaceLast( "activated treenode with id " + atn.id );
 	else
 		statusBar.replaceLast( "activated node with id " + atn.id );
 };
 
 SVGOverlay = function(
-		resolution,			//!< object {x, y, z} resolution of the parent DOM element in nanometer/pixel
-		translation,
-		dimension, // dimension of the stack
-		current_scale // current scale of the stack
+	resolution,
+	translation,
+	dimension, // dimension of the stack
+	current_scale // current scale of the stack
 )
 {
 
-  var speedtoggle = false;
-
-  var nodes = new Object();
-  var labels = new Object();
-  var show_labels = false;
+	var speedtoggle = false;
+	var nodes = new Object();
+	var labels = new Object();
+	var show_labels = false;
   
   this.exportSWC = function()
   {
-    // retrieve SWC file of currently active
-    // treenode's skeleton
+	// retrieve SWC file of currently active treenode's skeleton
 
-    
-    /*
-    // retrieve data for the nodes skeleton
-    $.post(
-      "model/export.skeleton.php", 
-       {
-        pid : project.id,
-        tnid : atn.id,
-       }
-    ) */
     var recipe =  window.open('','RecipeWindow','width=600,height=600');
     
     requestQueue.register(

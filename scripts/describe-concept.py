@@ -26,14 +26,16 @@ c = conn.cursor()
 
 # Find which table the concept is really in, and also the project_id:
 
-select = 'SELECT p.relname, t.project_id FROM concept t, pg_class p WHERE id = %s AND t.tableoid = p.oid'
+select = 'SELECT p.relname, t.project_id, t.user_id, u.name '
+select += 'FROM concept t, pg_class p, "user" u '
+select += 'WHERE t.id = %s AND t.tableoid = p.oid AND t.user_id = u.id'
 c.execute(select,(cid,))
 row = c.fetchone()
 if not row:
     print >> sys.stderr, "No concept with id {0} was found".format(cid)
     sys.exit(1)
 
-table_name, pid = row
+table_name, pid, user_id, user_name = row
 
 # Find all the relations in that project:
 
@@ -43,6 +45,7 @@ for r in c.fetchall():
     relations[r[1]] = r[0]
 
 print "== " + table_name + " =="
+print "-- owned by {0} ({1})".format(user_id,user_name)
 
 def get_location(location_id):
     query = 'SELECT (t.location).x, (t.location).y, (t.location).z FROM location t WHERE id = %s'

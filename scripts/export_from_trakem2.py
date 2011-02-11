@@ -27,6 +27,8 @@ ph = None
 user_id = 3
 project_id = 4
 
+fragments_group_name = "Isolated synaptic terminals"
+
 # FIXME: And also hardcode the separation:
 
 z_separation = 50.0
@@ -340,7 +342,7 @@ def insert_project_root_node( name ):
     ps.close()
   return root_id
 
-ps_get_fragments_id = c.prepareStatement("SELECT ci.id from class_instance as ci, class_instance_class_instance as cici WHERE ci.project_id = ? AND cici.project_id = ? AND ci.user_id = ? AND cici.user_id = ? AND ci.name = 'Fragments' AND cici.class_instance_a = ci.id and cici.class_instance_b = ?")
+ps_get_fragments_id = c.prepareStatement("SELECT ci.id from class_instance as ci, class_instance_class_instance as cici WHERE ci.project_id = ? AND cici.project_id = ? AND ci.user_id = ? AND cici.user_id = ? AND ci.name = '{}' AND cici.class_instance_a = ci.id and cici.class_instance_b = ?"%(fragments_group_name,))
 ps_get_fragments_id.setInt(1,project_id)
 ps_get_fragments_id.setInt(2,project_id)
 ps_get_fragments_id.setInt(3,user_id)
@@ -357,11 +359,9 @@ def get_fragments_node_id():
     raise Exception, "Found more than one id for the class 'Fragments'"
   # Create the group if it doesn't exist:
   if len(fragment_ids) == 0:
-    return insert_group(root_node_id,'Fragments')
+    return insert_group(root_node_id,fragments_group_name)
   else:
     return fragment_ids[0]
-
-
 
 # ------------------------------------------------------------------------
 
@@ -446,10 +446,12 @@ def add_recursively(pt,parent_id,depth=0):
   if not parent_id:
     # Then this should be the root:
     new_id = insert_project_root_node(name_with_id)
-  elif pt_type in ("sensory", "class", "vnc", "contour", "group", "neuropile", "synapses", "pre", "post", "trachea", "imported_labels"):
+  elif pt_type in ("sensory", "class", "vnc", "contour", "group", "neuropile", "synapses", "trachea", "imported_labels"):
     # Just create all of these as groups for the moment:
     new_id = insert_group(parent_id,name_with_id)
   elif pt_type == "nucleus":
+    pass
+  elif pt_type in ("pre", "post"):
     pass
   elif pt_type == "neuron":
     new_id = insert_neuron(parent_id,name_with_id)
@@ -539,7 +541,7 @@ def add_synapse( name, connector, pre_nodes, post_nodes ):
       # * if not:
       #   * create one isolated treenode in a skeleton
       if not treenodes:
-        treenode_id = insert_treenode( None, node.x, node.y, node.z, 0, 5 )
+        treenode_id = insert_treenode( None, node.x, node.y, node.z, -1, 5 )
         treenodes.append(TreeNode(treenode_id,node.x,node.y,node.z))
         # * create a skeleton, a neuron and make this part of the 'Fragments' group
         fragments_group_id = get_fragments_node_id()

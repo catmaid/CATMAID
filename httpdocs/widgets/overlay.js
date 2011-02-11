@@ -42,7 +42,9 @@ SVGOverlay = function(
   {
     // retrieve SWC file of currently active
     // treenode's skeleton
+
     
+    /*
     // retrieve data for the nodes skeleton
     $.post(
       "model/export.skeleton.php", 
@@ -50,7 +52,9 @@ SVGOverlay = function(
         pid : project.id,
         tnid : atn.id,
        }
-    )/*
+    ) */
+    var recipe =  window.open('','RecipeWindow','width=600,height=600');
+    
     requestQueue.register(
       "model/export.skeleton.php",
       "GET",
@@ -60,28 +64,26 @@ SVGOverlay = function(
        },
        function(status, text, xml)
        {
-         /*
         if ( status == 200 )
         {
-          if ( text && text != " " )
-          {
-            var e = eval( "(" + text + ")" );
-            if ( e.error )
-            {
-              alert( e.error );
-            }
-            else
-            {
-            }
-           }
+ 
+	        console.log("output", text);
+	     	$('#recipe1').clone().appendTo('#myprintrecipe');
+		    var html = "<html><head><title>Skeleton as SWC</title></head><body><pre><div id='myprintrecipe'>"+text+"</div></pre></body></html>";
+			recipe.document.open();
+			recipe.document.write(html);
+			recipe.document.close();
+
+            
+            
+           
          }
-         
        }
      ); // endfunction
-        */   
+          
   }
   
-  this.activateNode = function( id )
+  this.selectNode = function( id )
   {
   	// activates the given node id if it exists
   	// in the current retrieved set of nodes
@@ -579,6 +581,9 @@ SVGOverlay = function(
                   nn.pregroup[id] = nodes[id];
                   nodes[locid_retrieved] = nn;
                   nn.draw();
+                  // update the reference to the connector from the treenode
+                  nodes[id].connectors[locid_retrieved] = nn;
+               
                   //activateNode( nn );
                 } else {
                   // do not need to create a new connector, already existing
@@ -587,6 +592,8 @@ SVGOverlay = function(
                   nodes[locid_retrieved].postgroup[id] = nodes[id]; 
                   // do not activate anything but redraw
                   nodes[locid_retrieved].draw();
+                  // update the reference to the connector from the treenode
+                  nodes[id].connectors[locid_retrieved] = nodes[locid_retrieved];
                 }
               
               }
@@ -852,7 +859,8 @@ SVGOverlay = function(
                // add presyn treenode to pregroup of
                // the location object
                nodes[nid].pregroup[preloctnid] = nodes[preloctnid];
-               // XXX: add to pregroup of treenode
+               // add to pregroup of treenode
+               nodes[preloctnid].connectors[nid] = nodes[nid];
              }
            }
            for ( var j in jso[i].post )
@@ -861,8 +869,10 @@ SVGOverlay = function(
              postloctnid = parseInt(jso[i].post[j].tnid);
              if ( postloctnid in nodes ) {
                nodes[nid].postgroup[postloctnid] = nodes[postloctnid];
+               // add to postgroup of treenode (for nice drawing later)
+               nodes[postloctnid].connectors[nid] = nodes[nid];
              }
-             // XXX: add to postgroup of treenode (for nice drawing later)
+
            }
          }
       }
@@ -877,6 +887,8 @@ SVGOverlay = function(
 //    statusBar.replaceLast( "number of treenodes (retrieved): " + nrtn +"; number of connectors: " + nrcn);   
     // show tags if necessary again
     this.showTags(show_labels);
+    // show nodes
+    // console.log(nodes);
   }
 
   var updateDimension = function()
@@ -954,8 +966,8 @@ SVGOverlay = function(
     var phys_y = pix2physY(pos_y);
     var phys_z = project.coordinates.z;
         
-    if( e.altKey ) {
-      // alt-click deselects the current active node
+    if( e.ctrlKey ) {
+      // ctrl-click deselects the current active node
       if(atn!=null) {
       	statusBar.replaceLast("deactivated active node with id "+atn.id);
       }

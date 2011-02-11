@@ -116,6 +116,9 @@ Node = function(
   // an array storing the children Node objects of the this node
   this.children = new Object();
   
+  // an array storing the reference to all attached connector
+  this.connectors = new Object();
+  
   // delete all objects relevant to this node
   // such as raphael DOM elements and node references
   // javascript's garbage collection should do the rest
@@ -177,7 +180,7 @@ Node = function(
 		activateNode( null );
 	} else {
 		// loop over nodes to see if parent is retrieved
-		project.activateNode( this.parent.id );
+		project.selectNode( this.parent.id );
 	}
     // redraw everything for now
     project.updateNodes();
@@ -244,9 +247,12 @@ Node = function(
     // draws/updates path to parent and children
     for ( var i in this.children ) {
       if(this.children[i].parent != null) {
-        //console.log("XXXX:parent should not be null", children[i].parent);
         this.children[ i ].drawLine();
       }
+    }
+    for ( var i in this.connectors ) {
+        // should update the connector paths
+        this.connectors[ i ].draw();
     }
     if ( this.parent != null )
       this.drawLine();

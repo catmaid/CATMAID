@@ -358,12 +358,12 @@ function Project( pid )
     return;
   }
 
-	this.activateNode = function( id )
+	this.selectNode = function( id )
 	{
-	// activate the node in the current overlay
+	// select the node in the current overlay
 	// if it is existing
 	    for ( var i = 0; i < stacks.length; ++i )
-	      stacks[ i ].activateNode(id);
+	      stacks[ i ].selectNode(id);
 	    return;	
 	}  
 
@@ -643,6 +643,9 @@ function Project( pid )
         return false;
       case 51:
         project.toggleTracing( 'dbsync' );
+        return false;
+      case 80: // press p
+        project.toggleTracing( 'goparent' );
         return false;
       case 52:
         project.toggleTracing( 'goactive' );

@@ -199,7 +199,7 @@ ConnectorNode = function(
     /* 
      * compute better position for arrowhead pointer
      */
-    var rloc = 8;
+    var rloc = 3;
     var xdiff = (x2-x1);
     var ydiff = (y2-y1);
     var le = Math.sqrt(xdiff*xdiff+ydiff*ydiff);

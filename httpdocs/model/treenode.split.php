@@ -84,8 +84,9 @@ if ( $pid )
       foreach($allchi as $key => $chitn) {
         // update the element_of to the newly created skeleton
         // and the new root treenode
+        // XXX should use $chitn['id'] and $tn['tnid']
         $ids = $db->getResult('UPDATE "treenode_class_instance" SET "class_instance_id" = '.$skelid.' WHERE
-        "treenode_class_instance"."treenode_id" = '.$tn['tnid'].' AND
+        "treenode_class_instance"."treenode_id" = '.$chitn['id'].' AND
         "treenode_class_instance"."relation_id" = '.$eleof_id);
       };
     };

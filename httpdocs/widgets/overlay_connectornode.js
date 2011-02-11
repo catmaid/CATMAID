@@ -177,7 +177,12 @@ ConnectorNode = function(
         }
         return true;
       });
-      
+    
+    // refresh the nodes again in order to remove the lines
+    // and not have references to the connector anymore in the
+    // treenodes
+	project.updateNodes();
+    /*
     // remove from view
     c.remove();
     mc.remove();
@@ -187,6 +192,7 @@ ConnectorNode = function(
     for(var i in this.postLines) {
       this.postLines[i].remove();
     }
+    */
   }
   
   var arrowLine = function (paper, x1, y1, x2, y2, size, strowi, strocol)

@@ -13,6 +13,7 @@ Node = function(
 { 
   // the database treenode id
   this.id = id;
+
   // this object should be used for treenodes
   this.type = "treenode";
   
@@ -295,7 +296,6 @@ Node = function(
         } else if(atn.type == "treenode") {
             statusBar.replaceLast( "joined active treenode to treenode with id "+this.parentnode.id);
             project.createTreenodeLink(atn.id, this.parentnode.id);
-          
         }
         
       } 

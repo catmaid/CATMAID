@@ -38,20 +38,21 @@ if ( $pid )
 {
 	if ( $uid )
 	{
+
 		
 		// get id for skeleton class in this project
 		$skid = $db->getClassId( $pid, "skeleton" );
-    if(!$skid) { echo makeJSON( array( '"error"' => 'Can not find "skeleton" class for this project' ) ); return; }
-    $nid = $db->getClassId( $pid, "neuron" );
-    if(!$nid) { echo makeJSON( array( '"error"' => 'Can not find "neuron" class for this project' ) ); return; }
+		if(!$skid) { echo makeJSON( array( '"error"' => 'Can not find "skeleton" class for this project' ) ); return; }
+		$nid = $db->getClassId( $pid, "neuron" );
+		if(!$nid) { echo makeJSON( array( '"error"' => 'Can not find "neuron" class for this project' ) ); return; }
     
 		// get id for relation 'element_of'
 		$eleof = $db->getRelationId( $pid, "element_of" );
-    if(!$eleof) { echo makeJSON( array( '"error"' => 'Can not find "element_of" relation for this project' ) ); return; }
-    $modid = $db->getRelationId( $pid, "model_of" );
-    if(!$modid) { echo makeJSON( array( '"error"' => 'Can not find "model_of" relation for this project' ) ); return; }
-    $partof_id = $db->getRelationId( $pid, "part_of" );
-    if(!$partof_id) { echo makeJSON( array( '"error"' => 'Can not find "part_of" relation for this project' ) ); return; }
+		if(!$eleof) { echo makeJSON( array( '"error"' => 'Can not find "element_of" relation for this project' ) ); return; }
+		$modid = $db->getRelationId( $pid, "model_of" );
+		if(!$modid) { echo makeJSON( array( '"error"' => 'Can not find "model_of" relation for this project' ) ); return; }
+		$partof_id = $db->getRelationId( $pid, "part_of" );
+		if(!$partof_id) { echo makeJSON( array( '"error"' => 'Can not find "part_of" relation for this project' ) ); return; }
     
 		if ( $parentid != -1 )
 		{
@@ -113,8 +114,8 @@ if ( $pid )
 
 		// create new skeleton
 			/*
-       * Create a new skeleton
-       */
+	       * Create a new skeleton
+	       */
 			$data = array(
 				'user_id' => $uid,
 				'project_id' => $pid,

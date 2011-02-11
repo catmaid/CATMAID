@@ -482,7 +482,7 @@ initObjectTree = function(pid) {
 										"title" : data.rslt.new_name,
 										"pid" : pid,
 										"rel" : data.rslt.obj.attr("rel")
-									}, null
+									}, function (retdata) { project.updateNodes(); }
 								);
 							return true;
 						} else {

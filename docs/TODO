@@ -6,19 +6,24 @@ TOMORROW
   * homepage: "try it now": a test project with images and
     segmentations were anybody can add text labels, and edit just about
     anything. A cron job can reset it every hour or so, or each visitor is
-    given a copy of the segmentation data 
+    given a copy of the segmentation data
 
 critical
+- remove a root node with children does delete the skeleton element of relationship of all its children
 - several label refresh calls when panning -> in stack.js line 613, textlabel redraw logic
+- show all links for a connector even when not in the same slice
+- show all incoming connectors for each treenode
 
 important
+- add transactions to the operations
+- reverse the ordering of drawing the line
 - show skeleton in object tree for a selected treenode / shortcut to display the selected neuron in the object tree
 - highlight the active skeleton
 - not updating nodes quickly when moving through stack. only update nodes at final point when scrolling.
 
 wishlist
-
-- not use ctrl-click for deselect -> alt
+- show z coordinat in statusbar when panning
+- not use ctrl-click for deselect 
 - datatable, label to the left, type small, do not need to show the id
 - zoom in/out should use mouse position
 - show the confidence for active treenodes/connector

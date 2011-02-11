@@ -6,17 +6,11 @@ import os
 
 limit = 50
 
-if len(sys.argv) != 3:
-    print >> sys.stderr, "Usage: describe-concept.py <PROJECT-ID> <CONCEPT-ID>"
+if len(sys.argv) != 2:
+    print >> sys.stderr, "Usage: describe-concept.py <CONCEPT-ID>"
     sys.exit(1)
 
-pid = int(sys.argv[1])
-cid = int(sys.argv[2])
-
-pwhere = "t.project_id = "+str(pid)
-
-catmaid_db_user = None
-catmaid_db_password = None
+cid = int(sys.argv[1])
 
 db_login_filename = os.path.join(os.environ['HOME'],'.catmaid-db')
 fp = open(db_login_filename)
@@ -30,31 +24,33 @@ conn = psycopg2.connect(database="catmaid",user=catmaid_db_user,password=catmaid
 
 c = conn.cursor()
 
-relations = {}
-c.execute('SELECT id, relation_name FROM relation t WHERE '+pwhere)
-for r in c.fetchall():
-    relations[r[1]] = r[0]
+# Find which table the concept is really in, and also the project_id:
 
-class_name = None
-
-select = 'SELECT p.relname FROM concept t, pg_class p WHERE id = %s AND t.tableoid = p.oid AND '+pwhere
+select = 'SELECT p.relname, t.project_id FROM concept t, pg_class p WHERE id = %s AND t.tableoid = p.oid'
 c.execute(select,(cid,))
 row = c.fetchone()
 if not row:
     print >> sys.stderr, "No concept with id %d was found" % (cid,)
     sys.exit(1)
 
-table_name = row[0]
+table_name, pid = row
+
+# Find all the relations in that project:
+
+relations = {}
+c.execute('SELECT id, relation_name FROM relation t WHERE project_id = %s',(pid,))
+for r in c.fetchall():
+    relations[r[1]] = r[0]
 
 print "== " + table_name + " =="
 
 def get_location(location_id):
-    query = 'SELECT (t.location).x, (t.location).y, (t.location).z FROM location t WHERE id = %s AND '+pwhere
+    query = 'SELECT (t.location).x, (t.location).y, (t.location).z FROM location t WHERE id = %s'
     c.execute(query,(location_id,))
     return c.fetchone()
 
 def get_treenode_radius(treenode_id):
-    c.execute('SELECT radius FROM treenode t WHERE id = %s AND '+pwhere,
+    c.execute('SELECT radius FROM treenode t WHERE id = %s',
               (treenode_id,))
     return c.fetchone()[0]
 
@@ -68,8 +64,7 @@ def print_all_relationships(cid):
     for comb in combinations:
         for rname, rid in relations.items():
             comb['relation_name'] = rname
-            comb['pwhere'] = pwhere
-            query = 'SELECT {other} FROM {t} t WHERE {this} = %s AND relation_id = %s AND {pwhere}'.format(**comb)
+            query = 'SELECT {other} FROM {t} t WHERE {this} = %s AND relation_id = %s'.format(**comb)
             c.execute(query,(cid,rid))
             rows = c.fetchall()
             for row in rows[0:limit]:
@@ -81,9 +76,9 @@ def print_all_relationships(cid):
 if table_name == 'class_instance':
     c.execute('SELECT c.class_name, c.id, t.name FROM class_instance t, class c '+
                'WHERE c.id = t.class_id AND '+
-               't.id = %s AND '+pwhere, (cid,) )
+               't.id = %s', (cid,) )
     class_name, class_id, ci_name = c.fetchone()
-    print "  ... of class: %d (%s)"%(class_id,class_name)
+    print "  ... of class: {0} ({1})".format(class_id,class_name)
     print "  ... with name: "+ci_name
     print_all_relationships(cid)
 
@@ -97,11 +92,11 @@ elif table_name == 'treenode':
     print_all_relationships(cid)
 
 elif table_name == 'class':
-    c.execute('SELECT class_name FROM class t WHERE id = %s AND '+pwhere,(cid,))
+    c.execute('SELECT class_name FROM class t WHERE id = %s',(cid,))
     print '  ... with name: '+c.fetchone()[0]
 
 elif table_name == 'relation':
-    c.execute('SELECT relation_name FROM relation t WHERE id = %s AND '+pwhere,(cid,))
+    c.execute('SELECT relation_name FROM relation t WHERE id = %s',(cid,))
     print '  ... with name: '+c.fetchone()[0]
 
 else:

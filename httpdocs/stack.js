@@ -792,7 +792,8 @@ function Stack(
 			{
 				var pos_x = translation.x + ( x + ( m.offsetX - viewWidth / 2 ) / scale ) * resolution.x;
 				var pos_y = translation.x + ( y + ( m.offsetY - viewHeight / 2 ) / scale ) * resolution.y;
-				statusBar.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 3 ) + "]" );
+				var pos_z = translation.z + z * resolution.z;
+				statusBar.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 3 ) + ", " + pos_z + "]" );
 			}
 			return false;
 		},

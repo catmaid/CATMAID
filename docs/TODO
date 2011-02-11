@@ -1,34 +1,21 @@
-TOMORROW
-- user managment extensions, plans
-- tracing policy/best practics (lower/uppercase names, tags, where to place the treenode/connector)
-- catmaid.org, tutorial, video
-  * small tutorial with the key bindings and how tracing works
-  * homepage: "try it now": a test project with images and
-    segmentations were anybody can add text labels, and edit just about
-    anything. A cron job can reset it every hour or so, or each visitor is
-    given a copy of the segmentation data
-
-- jump to connector
-
 critical
 
 important
+- reverse the ordering of drawing the line
+- tracing policy/best practics (lower/uppercase names, tags, where to place the treenode/connector)
+- catmaid.org, tracing tutorial, video, try it now project online
 - several label refresh calls when panning -> in stack.js line 613, textlabel redraw logic
 - show all links for a connector even when not in the same slice
-- show all incoming connectors for each treenode
+- show all incoming connectors for a treenode
 - highlight treenode of currently activated skeleton (will probably require to fetch the skeletons ids and
   save it as property of the nodes)
 - delete only the connection to or from a treenode when you click on the arrow
-- when deleting a skeleton from the treeobject, need to deselect the active node
 - update the datatable/treeview after operations: create/delete/join/split/reroot treenode
 - add transactions to the operations
-- reverse the ordering of drawing the line
 - show skeleton in object tree for a selected treenode / shortcut to display the selected neuron in the object tree
-- highlight the active skeleton
 - not updating nodes quickly when moving through stack. only update nodes at final point when scrolling.
 
 wishlist
-- show z coordinates in statusbar when panning
 - not use ctrl-click for deselect 
 - datatable, label to the left, type small, do not need to show the id
 - zoom in/out should use mouse position
@@ -37,7 +24,7 @@ wishlist
 - ability to pop out interface elements -> window manager
 - Bug: On mac chrome v9, sometimes tiles don't load on zoom/layer change operations and
   lack of loading persists. No issues with scrolling.
-- zoom in past 100%, on to 200% and 400% (MHL can work on this)
+- zoom in past 100%, on to 200% and 400%
 - Turn scale bar off option
 - Bug: [+] expander box is shown even on elements without subobjects in Object Tree
 - in TrakEM2, pressing 'g' while over a node selects that object - in CATMAID it would
@@ -46,22 +33,21 @@ wishlist
 - search box (regular expression across class instance names)
 - somewhere that displays the world coordinates of the current mouse position
 - dblick just somewhere to zoom in in all modes
+- shift-click on a line should add a node between two others
 
 LATER
-* Benchmarks / speedup investigation
-* shift-click on a line should add a node between two others
-* security auditing, related to:
+- benchmarks / speedup investigation
+- user rights management extensions
+- security auditing, related to:
   - amazon mechanical turk test
   - user rights managment, registration
   - history/logfile of changes
-* 3d view of a skeleton
-* show connectivity graph from annotation domain
-* integrate the window manager: CMW
-* ontology work
-  - import obo ontolgoy terms
-  - use class_class for constraining
-* export script to trackem
-* new django-based back-end (MHL working on this)
-* label an area by a close polyline, similar to labelme
-  - add a areatreenode inheriting from treenode with array column
-* add connector table (id, x,y,z, presyn, postsyn, tags, lastmodified)
+- 3d view of a skeleton
+- show connectivity graph from annotation domain
+- integrate the window manager: CMW
+- ontology work: import/export obo ontolgoy terms, use class_class for constraining
+- export script to trackem
+- new django-based back-end
+- label an area by a close polyline, similar to labelme
+  - add a areatree node inheriting from treenode with array column
+- add connector table (id, x,y,z, presyn, postsyn, tags, lastmodified)

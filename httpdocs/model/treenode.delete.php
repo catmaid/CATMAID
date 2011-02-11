@@ -52,9 +52,6 @@ if ( $pid )
 				if(!empty($neu)) { $neu_id = $neu[0]['id']; } else {
 				echo makeJSON( array( '"error"' => 'Can not find neuron for the skeleton.' ) ); return; }
 
-				// remove original skeleton
-				$ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$sk_id);
-
 				// loop over all children
 				$treenodes = $db->getResult('SELECT "treenode"."id" AS "tnid" FROM "treenode" WHERE "treenode"."parent_id" = '.$tnid);
 				foreach($treenodes as $key => $tn) {
@@ -113,6 +110,9 @@ if ( $pid )
 				// finally delete the treenode to be consistent with the foreign key constraint
 				// with on cascade delete, this will delete all its labels
 				$ids = $db->deleteFrom("treenode", ' "treenode"."id" = '.$tnid);
+
+				// remove original skeleton
+				$ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$sk_id);
 
 				echo "Removed treenode successfully.";  
 

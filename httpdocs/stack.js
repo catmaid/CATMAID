@@ -451,7 +451,6 @@ function Stack(
 	 */
 	var redraw = function()
 	{
-		console.log("redraw called");
 		
 		var yc = Math.floor( y * scale - ( viewHeight / 2 ) );
 		var xc = Math.floor( x * scale - ( viewWidth / 2 ) );
@@ -464,7 +463,6 @@ function Stack(
 		
 		if ( z == old_z && s == old_s )
 		{
-			console.log("update images");
 			var old_yc = Math.floor( old_y * old_scale - ( viewHeight / 2 ) );
 			var old_xc = Math.floor( old_x * old_scale - ( viewWidth / 2 ) );
 			

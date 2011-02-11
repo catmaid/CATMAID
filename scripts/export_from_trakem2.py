@@ -541,7 +541,7 @@ def add_synapse( name, connector, pre_nodes, post_nodes ):
       # * if not:
       #   * create one isolated treenode in a skeleton
       if not treenodes:
-        treenode_id = insert_treenode( None, node.x, node.y, node.z, 0, 5 )
+        treenode_id = insert_treenode( None, node.x, node.y, node.z, -1, 5 )
         treenodes.append(TreeNode(treenode_id,node.x,node.y,node.z))
         # * create a skeleton, a neuron and make this part of the 'Fragments' group
         fragments_group_id = get_fragments_node_id()

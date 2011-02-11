@@ -30,7 +30,7 @@ select = 'SELECT p.relname, t.project_id FROM concept t, pg_class p WHERE id = %
 c.execute(select,(cid,))
 row = c.fetchone()
 if not row:
-    print >> sys.stderr, "No concept with id %d was found" % (cid,)
+    print >> sys.stderr, "No concept with id {0} was found".format(cid)
     sys.exit(1)
 
 table_name, pid = row
@@ -100,4 +100,4 @@ elif table_name == 'relation':
     print '  ... with name: '+c.fetchone()[0]
 
 else:
-    print "There's currently no support for entities from the table '%s'" % (table_name,)
+    print "There's currently no support for entities from the table '{0}'".format(table_name)

@@ -222,6 +222,9 @@ ConnectorNode = function(
     arrowPath.attr( {"fill" : strocol,
                     "stroke": strocol,
                      } );
+    // XXX: uncomment this for speedup
+	linePath.toBack();
+    arrowPath.toBack();
   }
 
   // updates the raphael path coordinates

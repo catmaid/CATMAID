@@ -8,13 +8,19 @@ TOMORROW
     anything. A cron job can reset it every hour or so, or each visitor is
     given a copy of the segmentation data
 
+- jump to connector
+
 critical
-- remove a root node with children does delete the skeleton element of relationship of all its children
+
+important
 - several label refresh calls when panning -> in stack.js line 613, textlabel redraw logic
 - show all links for a connector even when not in the same slice
 - show all incoming connectors for each treenode
-
-important
+- highlight treenode of currently activated skeleton (will probably require to fetch the skeletons ids and
+  save it as property of the nodes)
+- delete only the connection to or from a treenode when you click on the arrow
+- when deleting a skeleton from the treeobject, need to deselect the active node
+- update the datatable/treeview after operations: create/delete/join/split/reroot treenode
 - add transactions to the operations
 - reverse the ordering of drawing the line
 - show skeleton in object tree for a selected treenode / shortcut to display the selected neuron in the object tree
@@ -22,19 +28,20 @@ important
 - not updating nodes quickly when moving through stack. only update nodes at final point when scrolling.
 
 wishlist
-- show z coordinat in statusbar when panning
+- show z coordinates in statusbar when panning
 - not use ctrl-click for deselect 
 - datatable, label to the left, type small, do not need to show the id
 - zoom in/out should use mouse position
 - show the confidence for active treenodes/connector
 - updating the confidence with keys 1 to 5
 - ability to pop out interface elements -> window manager
-- Bug: On mac chrome v9, sometimes tiles don't load on zoom/layer change operations and lack of loading persists. No issues with scrolling.
+- Bug: On mac chrome v9, sometimes tiles don't load on zoom/layer change operations and
+  lack of loading persists. No issues with scrolling.
 - zoom in past 100%, on to 200% and 400% (MHL can work on this)
 - Turn scale bar off option
 - Bug: [+] expander box is shown even on elements without subobjects in Object Tree
-- in TrakEM2, pressing 'g' while over a node selects that object - in
-  CATMAID it would be good if it selected the active node.
+- in TrakEM2, pressing 'g' while over a node selects that object - in CATMAID it would
+  be good if it selected the active node
 - once display is fast enough, display treelines in all modes - in general
 - search box (regular expression across class instance names)
 - somewhere that displays the world coordinates of the current mouse position

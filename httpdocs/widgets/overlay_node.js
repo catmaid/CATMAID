@@ -238,7 +238,7 @@ Node = function(
                           [ "L", this.parent.getC().attrs.cx, this.parent.getC().attrs.cy ] ],
                   stroke: strokecolor} );
       // XXX: comment toBack for now because it takes much resources
-      //line.toBack();
+      line.toBack();
     }
   }
   

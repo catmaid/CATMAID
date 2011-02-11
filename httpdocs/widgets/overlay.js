@@ -583,8 +583,8 @@ SVGOverlay = function(
                   nn.draw();
                   // update the reference to the connector from the treenode
                   nodes[id].connectors[locid_retrieved] = nn;
-               
-                  //activateNode( nn );
+				  // activate the newly created connector
+                  activateNode( nn );
                 } else {
                   // do not need to create a new connector, already existing
                   // need to update the postgroup with corresponding original treenode

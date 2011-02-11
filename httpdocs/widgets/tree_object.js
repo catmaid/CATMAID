@@ -136,6 +136,98 @@ initObjectTree = function(pid) {
 					},
 					"ccp" : false
 				}
+			} else if(type_of_node == "presynapticterminal") {
+				menu = {
+						"goto_connector" : {
+							"separator_before"	: false,
+							"separator_after"	: false,
+							"label"				: "Go to connector node",
+							"action"			: function (obj) {
+							
+												   var terminid = obj.attr("id").replace("node_","");												
+												   requestQueue.register(
+												      "model/connector.location.get.php",
+												      "POST",
+												       {
+												        pid : project.id,
+												        terminalid : terminid,
+												        relationtype : "presynaptic_to"
+												       },
+												       function(status, text, xml)
+												       {
+												         
+												        if ( status == 200 )
+												        {
+												          if ( text && text != " " )
+												          {
+												            var e = eval( "(" + text + ")" );
+												            if ( e.error )
+												            {
+												              alert( e.error );
+												            }
+												            else
+												            {
+																// go to node
+																project.moveTo(e.z,e.y,e.x);
+
+															    // activate the node with a delay
+															    window.setTimeout("project.selectNode( "+e.connector_id+" )", 1000);
+															    
+												            }
+												           }
+												         }
+												       }
+												     );
+													
+												  }
+						},
+				}
+			} else if(type_of_node == "postsynapticterminal") {
+				menu = {
+						"goto_connector" : {
+							"separator_before"	: false,
+							"separator_after"	: false,
+							"label"				: "Go to connector node",
+							"action"			: function (obj) {
+							
+												   var terminid = obj.attr("id").replace("node_","");												
+												   requestQueue.register(
+												      "model/connector.location.get.php",
+												      "POST",
+												       {
+												        pid : project.id,
+												        terminalid : terminid,
+												        relationtype : "postsynaptic_to"
+												       },
+												       function(status, text, xml)
+												       {
+												         
+												        if ( status == 200 )
+												        {
+												          if ( text && text != " " )
+												          {
+												            var e = eval( "(" + text + ")" );
+												            if ( e.error )
+												            {
+												              alert( e.error );
+												            }
+												            else
+												            {
+																// go to node
+																project.moveTo(e.z,e.y,e.x);
+
+															    // activate the node with a delay
+															    window.setTimeout("project.selectNode( "+e.connector_id+" )", 1000);
+															    
+												            }
+												           }
+												         }
+												       }
+												     );
+													
+												  }
+						},
+				}
 			} else if (type_of_node == "skeleton" ) {
 				menu = {
 						"goto_parent" : {
@@ -482,7 +574,13 @@ initObjectTree = function(pid) {
 										"title" : data.rslt.new_name,
 										"pid" : pid,
 										"rel" : data.rslt.obj.attr("rel")
-									}, function (retdata) { project.updateNodes(); }
+									}, function (retdata) {
+										// need to deactive any currently active node
+										// in the display. if the active treenode would
+										// be element of the deleted skeleton, the
+										// active node would become invalid
+										activateNode( null );
+										project.updateNodes(); }
 								);
 							return true;
 						} else {

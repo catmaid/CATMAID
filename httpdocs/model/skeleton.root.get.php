@@ -19,9 +19,7 @@ if ( $pid )
 {
   if ( $uid )
   {
-    $label_id = $db->getClassId( $pid, 'label' );
-    if(!$label_id) { echo makeJSON( array( '"error"' => 'Can not find "label" class for this project' ) ); return; }
-    
+
     $eof_id = $db->getRelationId( $pid, 'element_of' );
     if(!$eof_id) { echo makeJSON( array( '"error"' => 'Can not find "element_of" relation for this project' ) ); return; }
     

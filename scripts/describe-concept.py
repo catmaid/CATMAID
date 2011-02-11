@@ -35,8 +35,6 @@ c.execute('SELECT id, relation_name FROM relation t WHERE '+pwhere)
 for r in c.fetchall():
     relations[r[1]] = r[0]
 
-tables = [ "treenode", "class_instance", "connector" ]
-
 class_name = None
 
 select = 'SELECT p.relname FROM concept t, pg_class p WHERE id = %s AND t.tableoid = p.oid AND '+pwhere

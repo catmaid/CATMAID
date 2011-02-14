@@ -17,6 +17,7 @@ important
 - add transactions to the operations
 - show skeleton in object tree for a selected treenode / shortcut to display the selected neuron in the object tree
 - not updating nodes quickly when moving through stack. only update nodes at final point when scrolling.
+- when the project statistics window opens, its results column is empty. One has to click on the refresh button. Happens the very first time only
 
 wishlist
 - not use ctrl-click for deselect 

@@ -15,7 +15,7 @@
  * A TrakEM2 Web project.
  *
  * - contains abstract objects on top of a common project-specific semantic framework
- * - is related to one ore more stacks of statically aligned layers
+ * - is related to one or more stacks of statically aligned layers
  *   ( all stacks of a project are related by translation using physical dimensions )
  */
 function Project( pid )
@@ -150,7 +150,7 @@ function Project( pid )
 		}
 		if ( project_stats_widget.offsetWidth )
 		{
-		  
+			
 			if ( table_widget.offsetWidth )
 				project_stats_widget.style.left = left + "px";
 			else
@@ -161,15 +161,15 @@ function Project( pid )
 		}
 		if ( object_tree_widget.offsetWidth )
 		{
-  		if ( project_stats_widget.offsetWidth || table_widget.offsetWidth ) 
-  				object_tree_widget.style.left = left + "px";
+			if ( project_stats_widget.offsetWidth || table_widget.offsetWidth ) 
+					object_tree_widget.style.left = left + "px";
 			else
 				object_tree_widget.style.left = "0px";
 				
 			width -= object_tree_widget.offsetWidth;
 			left += object_tree_widget.offsetWidth;
 		}
-/*		if ( class_tree_widget.offsetWidth )
+		/*if ( class_tree_widget.offsetWidth )
 		{
 			if ( object_tree_widget.offsetWidth )
 				class_tree_widget.style.left = left + "px";
@@ -281,7 +281,7 @@ function Project( pid )
 		document.getElementById( "edit_button_move" ).className = "button";
 		document.getElementById( "edit_button_text" ).className = "button";
 		document.getElementById( "edit_button_crop" ).className = "button";
-    	document.getElementById( "edit_button_trace" ).className = "button";
+		document.getElementById( "edit_button_trace" ).className = "button";
 		//document.getElementById( "edit_button_profile" ).className = "button";
 		document.getElementById( "toolbar_nav" ).style.display = "none";
 		document.getElementById( "toolbar_text" ).style.display = "none";
@@ -302,9 +302,9 @@ function Project( pid )
 			document.getElementById( "toolbar_crop" ).style.display = "block";
 			break;
 		case "trace":
-      document.getElementById( "toolbar_trace" ).style.display = "block";
-      //if ( !show_traces ) self.toggleShow( "trace" );
-      break;
+			document.getElementById( "toolbar_trace" ).style.display = "block";
+			//if ( !show_traces ) self.toggleShow( "trace" );
+			break;
 		}
 		
 		mode = m;
@@ -346,25 +346,25 @@ function Project( pid )
 	
 	this.toggleTracing = function ( m )
 	{
-	  for ( var i = 0; i < stacks.length; ++i )
-      stacks[ i ].toggleTracing(m);
-    return;
+		for ( var i = 0; i < stacks.length; ++i )
+			stacks[ i ].toggleTracing(m);
+		return;
 	}
 	
-  this.showTags = function ( m )
-  {
-    for ( var i = 0; i < stacks.length; ++i )
-      stacks[ i ].showTags(m);
-    return;
-  }
+	this.showTags = function ( m )
+	{
+		for ( var i = 0; i < stacks.length; ++i )
+			stacks[ i ].showTags(m);
+		return;
+	}
 
 	this.selectNode = function( id )
 	{
 	// select the node in the current overlay
 	// if it is existing
-	    for ( var i = 0; i < stacks.length; ++i )
-	      stacks[ i ].selectNode(id);
-	    return;	
+			for ( var i = 0; i < stacks.length; ++i )
+				stacks[ i ].selectNode(id);
+			return;	
 	}  
 
 	
@@ -414,8 +414,8 @@ function Project( pid )
 			// in order to reload the data for a new project
 			document.getElementById( "treenode_table_widget" ).style.display = "none";
 			document.getElementById( "object_tree_widget" ).style.display = "none";
-      document.getElementById( "project_stats_widget" ).style.display = "none";
-      
+			document.getElementById( "project_stats_widget" ).style.display = "none";
+			
 		}
 		catch ( error ) {}
 		self.id = 0;
@@ -488,31 +488,31 @@ function Project( pid )
 	 */
 	this.createLink = function(fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype)
 	{
-    for ( var i = 0; i < stacks.length; ++i )
-      stacks[ i ].createLink(fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype);
-    return;
+		for ( var i = 0; i < stacks.length; ++i )
+			stacks[ i ].createLink(fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype);
+		return;
 	}
 	/*
 	 * updates nodes in all stacks
 	 */
 	 
-  this.updateNodes = function()
-  {
-    for ( var i = 0; i < stacks.length; ++i )
-      stacks[ i ].updateNodes();
-    return;
-  }	 
+	this.updateNodes = function()
+	{
+		for ( var i = 0; i < stacks.length; ++i )
+			stacks[ i ].updateNodes();
+		return;
+	}	 
 	
-  /*
-   * create a link between two treenodes (join them)
-   * toid has to be root of a skeleton
-   */
-  this.createTreenodeLink = function(fromid, toid)
-  {
-    for ( var i = 0; i < stacks.length; ++i )
-      stacks[ i ].createTreenodeLink(fromid, toid);
-    return;
-  }
+	/*
+	 * create a link between two treenodes (join them)
+	 * toid has to be root of a skeleton
+	 */
+	this.createTreenodeLink = function(fromid, toid)
+	{
+		for ( var i = 0; i < stacks.length; ++i )
+			stacks[ i ].createTreenodeLink(fromid, toid);
+		return;
+	}
 	
 	/**
 	 * create a textlabel on the server
@@ -567,6 +567,7 @@ function Project( pid )
 		return;
 	}
 	
+	/* Implements the key bindings. */
 	var onkeydown = function( e )
 	{
 		var key;
@@ -601,20 +602,20 @@ function Project( pid )
 			case 107:
 			case 187:		//!< for IE only---take care what this is in other platforms...
 				slider_s.move( 1 );
-        slider_trace_s.move( 1 );
+				slider_trace_s.move( 1 );
 				return false;
 			case 109:		//!< -
 			case 189:		//!< for IE only---take care what this is in other platforms...
 				slider_s.move( -1 );
-        slider_trace_s.move( -1 );
+				slider_trace_s.move( -1 );
 				return false;
 			case 188:		//!< ,
 				slider_z.move( -( shift ? 10 : 1 ) );
-        slider_trace_z.move( -( shift ? 10 : 1 ) );
+				slider_trace_z.move( -( shift ? 10 : 1 ) );
 				return false;
 			case 190:		//!< .
 				slider_z.move( ( shift ? 10 : 1 ) );
-        slider_trace_z.move( ( shift ? 10 : 1 ) );
+				slider_trace_z.move( ( shift ? 10 : 1 ) );
 				return false;
 			case 37:		//!< cursor left
 				input_x.value = parseInt( input_x.value ) - ( shift ? 100 : ( alt ? 1 : 10 ) );
@@ -633,45 +634,45 @@ function Project( pid )
 				input_y.onchange( e );
 				return false;
 			case 49: // A
-			  project.toggleTracing( 'skeletontracing' );
-			  return false;
-      case 50: 
-        project.toggleTracing( 'synapsedropping' );
-        return false;
-      case 77: // just deselect the active node
-        activateNode( null );
-        return false;
-      case 51:
-        project.toggleTracing( 'dbsync' );
-        return false;
-      case 80: // press p
-        project.toggleTracing( 'goparent' );
-        return false;
-      case 52:
-        project.toggleTracing( 'goactive' );
-        return false;
-      case 69: // press e
-        project.toggleTracing( 'goactive' );
-        return false;
-      case 53:
-        project.toggleTracing( 'skeletonsplitting' );
-        return false;
-      case 54:
-        project.toggleTracing( 'skeletonreroot' );
-        return false;
-      case 55:
-        project.toggleTracing( 'togglelabels' );
-        return false;
-	  case 84:    //!< key t
-	    if ( !ctrl  ) project.toggleTracing( 'tagging' );
-	    break;
-	  case 9:			//!< tab
-		if ( shift ) project.switchFocus( -1 );
-		else project.switchFocus( 1 );
-		//e.stopPropagation();
-		return false;
-	  case 13:		//!< return
-		break;
+				project.toggleTracing( 'skeletontracing' );
+				return false;
+			case 50: 
+				project.toggleTracing( 'synapsedropping' );
+				return false;
+			case 77: // just deselect the active node
+				activateNode( null );
+				return false;
+			case 51:
+				project.toggleTracing( 'dbsync' );
+				return false;
+			case 80: // press p
+				project.toggleTracing( 'goparent' );
+				return false;
+			case 52:
+				project.toggleTracing( 'goactive' );
+				return false;
+			case 69: // press e
+				project.toggleTracing( 'goactive' );
+				return false;
+			case 53:
+				project.toggleTracing( 'skeletonsplitting' );
+				return false;
+			case 54:
+				project.toggleTracing( 'skeletonreroot' );
+				return false;
+			case 55:
+				project.toggleTracing( 'togglelabels' );
+				return false;
+			case 84:    //!< key t
+				if ( !ctrl  ) project.toggleTracing( 'tagging' );
+				break;
+			case 9:			//!< tab
+				if ( shift ) project.switchFocus( -1 );
+				else project.switchFocus( 1 );
+				//e.stopPropagation();
+				return false;
+			case 13:		//!< return
+				break;
 			/*
 			default:
 				alert( key );

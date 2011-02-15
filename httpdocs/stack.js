@@ -258,10 +258,10 @@ function Stack(
 		if ( registered )
 		{
 			if ( slider_s ) slider_s.setByValue( s, true );
-      if ( slider_trace_s ) slider_trace_s.setByValue( s, true );
+			if ( slider_trace_s ) slider_trace_s.setByValue( s, true );
 			if ( slider_z ) slider_z.setByValue( z, true );
-      if ( slider_trace_z ) slider_trace_z.setByValue( z, true );
-      
+			if ( slider_trace_z ) slider_trace_z.setByValue( z, true );
+			
 			if ( input_x ) input_x.value = x;
 			if ( input_y ) input_y.value = y;
 		}
@@ -353,7 +353,7 @@ function Stack(
 				left : ( x - tl_width / 2 ) * resolution.x + translation.x,
 				width : tl_width * resolution.x,
 				height : tl_height * resolution.y,
-				//scale : ( mode == "text" ? 1 : scale ),	// should we display all textlabels when being in text-edit mode?  could be really cluttered
+				//scale : ( mode == "text" ? 1 : scale ),	// should we display all textlabels when being in text-edit mode?	could be really cluttered
 				scale : scale,
 				resolution : resolution.y
 			},
@@ -361,91 +361,91 @@ function Stack(
 		return;
 	}
 
-  /**
-   * update treeline nodes by querying them from the server
-   * with a bounding volume dependend on the current view
-   */
-  this.updateNodes = function()
-  {
-    
-    var tl_width;
-    var tl_height;
-    if ( tiles.length == 0 )
-    {
-      tl_width = 0;
-      tl_height = 0;
-    }
-    else
-    {
-      tl_width = tiles[ 0 ].length * X_TILE_SIZE / scale;
-      tl_height = tiles.length * Y_TILE_SIZE / scale;
-    }
-    /*
-    console.log("In updateTreelinenodes");
-    console.log("scale is: "+scale);
-    console.log("X_TILE_SIZE is: "+X_TILE_SIZE);
-    console.log("Y_TILE_SIZE is: "+Y_TILE_SIZE);
-    console.log("tl_width is: "+tl_width);
-    console.log("tl_height is: "+tl_height);
-    console.log("x is: "+x);
-    console.log("y is: "+y);
-    console.log("resolution.x is: "+resolution.x);
-    console.log("resolution.y is: "+resolution.y);
-    console.log("translation.x is: "+translation.x);
-    console.log("translation.y is: "+translation.y);
-    console.log('-----computed');
-    console.log('z', z * resolution.z + translation.z);
-    console.log('top', ( y - tl_height / 2 ) * resolution.y + translation.y);
-    console.log('left', ( x - tl_width / 2 ) * resolution.x + translation.x);
-    console.log('width', tl_width * resolution.x);
-    console.log('height', tl_height * resolution.y);
-      */  
-    // first synchronize with database
-    svgOverlay.updateNodeCoordinatesinDB();
+	/**
+	 * update treeline nodes by querying them from the server
+	 * with a bounding volume dependend on the current view
+	 */
+	this.updateNodes = function()
+	{
+		
+		var tl_width;
+		var tl_height;
+		if ( tiles.length == 0 )
+		{
+			tl_width = 0;
+			tl_height = 0;
+		}
+		else
+		{
+			tl_width = tiles[ 0 ].length * X_TILE_SIZE / scale;
+			tl_height = tiles.length * Y_TILE_SIZE / scale;
+		}
+		/*
+		console.log("In updateTreelinenodes");
+		console.log("scale is: "+scale);
+		console.log("X_TILE_SIZE is: "+X_TILE_SIZE);
+		console.log("Y_TILE_SIZE is: "+Y_TILE_SIZE);
+		console.log("tl_width is: "+tl_width);
+		console.log("tl_height is: "+tl_height);
+		console.log("x is: "+x);
+		console.log("y is: "+y);
+		console.log("resolution.x is: "+resolution.x);
+		console.log("resolution.y is: "+resolution.y);
+		console.log("translation.x is: "+translation.x);
+		console.log("translation.y is: "+translation.y);
+		console.log('-----computed');
+		console.log('z', z * resolution.z + translation.z);
+		console.log('top', ( y - tl_height / 2 ) * resolution.y + translation.y);
+		console.log('left', ( x - tl_width / 2 ) * resolution.x + translation.x);
+		console.log('width', tl_width * resolution.x);
+		console.log('height', tl_height * resolution.y);
+			*/	
+		// first synchronize with database
+		svgOverlay.updateNodeCoordinatesinDB();
 
-    requestQueue.register(
-      'model/node.list.php',
-      'POST',
-      {
-        pid : project.id,
-        sid : id,
-        z : z * resolution.z + translation.z,
-        top : ( y - tl_height / 2 ) * resolution.y + translation.y,
-        left : ( x - tl_width / 2 ) * resolution.x + translation.x,
-        width : tl_width * resolution.x,
-        height : tl_height * resolution.y,
-        zres : resolution.z
-      },
-      handle_updateNodes );
-    return;
-  }
+		requestQueue.register(
+			'model/node.list.php',
+			'POST',
+			{
+				pid : project.id,
+				sid : id,
+				z : z * resolution.z + translation.z,
+				top : ( y - tl_height / 2 ) * resolution.y + translation.y,
+				left : ( x - tl_width / 2 ) * resolution.x + translation.x,
+				width : tl_width * resolution.x,
+				height : tl_height * resolution.y,
+				zres : resolution.z
+			},
+			handle_updateNodes );
+		return;
+	}
 
-  /**
-   * handle an update-treelinenodes-request answer
-   *
-   */
-  var handle_updateNodes = function( status, text, xml )
-  {
-    if ( status = 200 )
-    {
-      //console.log("update noded text", $.parseJSON(text));
-      var e = eval( "(" + text + ")" );
-      //var e = $.parseJSON(text);
-      
-      if ( e.error )
-      {
-        alert( e.error );
-      }
-      else
-      {
-        var jso = $.parseJSON(text);
-        // XXX: how much time does calling the function like this take?
-        svgOverlay.refreshNodes(jso);
-      }
-    }
-    return;
-  }
-  
+	/**
+	 * handle an update-treelinenodes-request answer
+	 *
+	 */
+	var handle_updateNodes = function( status, text, xml )
+	{
+		if ( status = 200 )
+		{
+			//console.log("update noded text", $.parseJSON(text));
+			var e = eval( "(" + text + ")" );
+			//var e = $.parseJSON(text);
+			
+			if ( e.error )
+			{
+				alert( e.error );
+			}
+			else
+			{
+				var jso = $.parseJSON(text);
+				// XXX: how much time does calling the function like this take?
+				svgOverlay.refreshNodes(jso);
+			}
+		}
+		return;
+	}
+	
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */
@@ -537,9 +537,9 @@ function Stack(
 		var left;
 		
 		if ( yc >= 0 )
-			top  = -( yc % Y_TILE_SIZE );
+			top	= -( yc % Y_TILE_SIZE );
 		else
-			top  = -( ( yc + 1 ) % Y_TILE_SIZE ) - Y_TILE_SIZE + 1;
+			top	= -( ( yc + 1 ) % Y_TILE_SIZE ) - Y_TILE_SIZE + 1;
 		if ( xc >= 0 )
 			left = -( xc % X_TILE_SIZE );
 		else
@@ -623,23 +623,23 @@ function Stack(
 					screen_left,
 					screen_top,
 					scale );
-			}        
-      
+			}				
+			
 		}
 		if ( show_tracing )
 		{
-	      if ( z != old_z ||
-	        s != old_s ||
-	        xd != 0 ||
-	        yd != 0 )
-	      {
-	        self.updateNodes();
-	      }
-	      // redraw the overlay
-	      svgOverlay.redraw(
-	        screen_left,
-	        screen_top,
-	        scale);
+				if ( z != old_z ||
+					s != old_s ||
+					xd != 0 ||
+					yd != 0 )
+				{
+					self.updateNodes();
+				}
+				// redraw the overlay
+				svgOverlay.redraw(
+					screen_left,
+					screen_top,
+					scale);
 		}
 				
 		// update crop box if available
@@ -649,7 +649,7 @@ function Stack(
 		//----------------------------------------------------------------------
 		/**
 		 * This question is completely useless but without asking it, Firefox on
-		 * Linux systems will not redraw the screen properly.  Took me ... to
+		 * Linux systems will not redraw the screen properly.	Took me ... to
 		 * find this out.
 		 */
 		var a = view.offsetWidth;
@@ -760,28 +760,28 @@ function Stack(
 	
 	var onmousemove = 
 	{
-	  trace :function( e )
-    {
-      
-      // take into account the shift of the svgOverlay
-      var xp;
-      var yp;
-      var m = ui.getMouse( e );
+		trace :function( e )
+		{
+			
+			// take into account the shift of the svgOverlay
+			var xp;
+			var yp;
+			var m = ui.getMouse( e );
 
-      if ( m )
-      {
-        // add right move of svgOverlay to the m.offsetX
-        offX = m.offsetX + svgOverlay.offleft;
-        // add down move of svgOverlay to the m.offsetY
-        offY = m.offsetY + svgOverlay.offtop;
-        
-        var pos_x = translation.x + ( x +  ( offX - viewWidth / 2 ) / scale ) * resolution.x;
-        var pos_y = translation.x + ( y + ( offY - viewHeight / 2 ) / scale ) * resolution.y;
-        statusBar.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 3 ) + "]" );
-      }
-      // continue with event handling
-      return true;
-    }, 
+			if ( m )
+			{
+				// add right move of svgOverlay to the m.offsetX
+				offX = m.offsetX + svgOverlay.offleft;
+				// add down move of svgOverlay to the m.offsetY
+				offY = m.offsetY + svgOverlay.offtop;
+				
+				var pos_x = translation.x + ( x +	( offX - viewWidth / 2 ) / scale ) * resolution.x;
+				var pos_y = translation.x + ( y + ( offY - viewHeight / 2 ) / scale ) * resolution.y;
+				statusBar.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 3 ) + "]" );
+			}
+			// continue with event handling
+			return true;
+		}, 
 		pos : function( e )
 		{
 			var xp;
@@ -836,40 +836,40 @@ function Stack(
 			ui.removeEvent( "onmousemove", onmousemove.crop );
 			ui.removeEvent( "onmouseup", onmouseup.crop );
 		},
-    trace : function( e )
-    {
-      // console.log("unregister trace");
-      ui.releaseEvents();
-      ui.removeEvent( "onmousemove", svgOverlay.onmousemove );
-      ui.removeEvent( "onmouseup", onmouseup.move );
-    }
+		trace : function( e )
+		{
+			// console.log("unregister trace");
+			ui.releaseEvents();
+			ui.removeEvent( "onmousemove", svgOverlay.onmousemove );
+			ui.removeEvent( "onmouseup", onmouseup.move );
+		}
 	};
 	
 	var onmousedown =
 	{
-	  trace : function( e )
-	  {
-	    
-      var b = ui.getMouseButton( e );
-      switch ( b )
-      {
-      case 2:
-        // afford dradding in tracing mode
-        ui.registerEvent( "onmousemove", onmousemove.move );
-        ui.registerEvent( "onmouseup", onmouseup.move );
-        ui.catchEvents( "move" );
-        ui.onmousedown( e );
+		trace : function( e )
+		{
+			
+			var b = ui.getMouseButton( e );
+			switch ( b )
+			{
+			case 2:
+				// afford dradding in tracing mode
+				ui.registerEvent( "onmousemove", onmousemove.move );
+				ui.registerEvent( "onmouseup", onmouseup.move );
+				ui.catchEvents( "move" );
+				ui.onmousedown( e );
 
-        //! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
-        document.body.firstChild.focus();
-        break;
-      }
-      
-      return true;
-      
-	  },
+				//! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
+				document.body.firstChild.focus();
+				break;
+			}
+			
+			return true;
+			
+		},
 		move : function( e )
-		{          
+		{					
 			ui.registerEvent( "onmousemove", onmousemove.move );
 			ui.registerEvent( "onmouseup", onmouseup.move );
 			ui.catchEvents( "move" );
@@ -929,10 +929,10 @@ function Stack(
 				document.body.firstChild.focus();
 				break;
 			default:
-  				var m = ui.getMouse( e );
-  				var tlx = ( x + ( m.offsetX - viewWidth / 2 ) / scale ) * resolution.x + translation.x;
-  				var tly = ( y + ( m.offsetY - viewHeight / 2 ) / scale ) * resolution.y + translation.y;
-  				var tlz = z * resolution.z + translation.z;
+					var m = ui.getMouse( e );
+					var tlx = ( x + ( m.offsetX - viewWidth / 2 ) / scale ) * resolution.x + translation.x;
+					var tly = ( y + ( m.offsetY - viewHeight / 2 ) / scale ) * resolution.y + translation.y;
+					var tlz = z * resolution.z + translation.z;
 			
 				project.createTextlabel( tlx, tly, tlz, resolution.y, scale );
 			}
@@ -994,12 +994,12 @@ function Stack(
 				if ( w > 0 )
 				{
 					slider_z.move( 1 );
-          slider_trace_z.move( 1 );
+					slider_trace_z.move( 1 );
 				}
 				else
 				{
-          slider_z.move( -1 );
-          slider_trace_z.move( -1 );
+					slider_z.move( -1 );
+					slider_trace_z.move( -1 );
 				}
 			}
 			return false;
@@ -1049,7 +1049,7 @@ function Stack(
 	//--------------------------------------------------------------------------
 	/**
 	 * Slider commands for changing the slice come in too frequently, thus the
-	 * execution of the actual slice change has to be delayed slightly.  The
+	 * execution of the actual slice change has to be delayed slightly.	The
 	 * timer is overridden if a new action comes in before the last had time to
 	 * be executed.
 	 */
@@ -1147,7 +1147,7 @@ function Stack(
 			delete cropBox;
 			cropBox = false;
 		}
-    // svg overlay logic		
+		// svg overlay logic		
 		mouseCatcher.style.zIndex = 5;
 		svgOverlay.hide();
 		show_tracing = false;
@@ -1177,41 +1177,41 @@ function Stack(
 			if ( show_textlabels ) self.updateTextlabels();
 			break;
 		case "trace":
-		  // console.log("in tracing mode");
-		  mode = "trace"
-      mouseCatcher.style.cursor = "crosshair";
-      
-      // for the surrounding mouse event catcher
-      mouseCatcher.onmousedown = onmousedown.move;
-      mouseCatcher.onmousemove = onmousemove.pos;
-      // but also for the svgoverlay, stops dragging node mdoe
-      svgOverlay.view.onmousedown = onmousedown.trace;
-      // XXX: coordinates are adjusted, either position or dragging but not both :(
-      // svgOverlay.view.onmousemove = onmousemove.trace;
+			// console.log("in tracing mode");
+			mode = "trace"
+			mouseCatcher.style.cursor = "crosshair";
+			
+			// for the surrounding mouse event catcher
+			mouseCatcher.onmousedown = onmousedown.move;
+			mouseCatcher.onmousemove = onmousemove.pos;
+			// but also for the svgoverlay, stops dragging node mdoe
+			svgOverlay.view.onmousedown = onmousedown.trace;
+			// XXX: coordinates are adjusted, either position or dragging but not both :(
+			// svgOverlay.view.onmousemove = onmousemove.trace;
 
-      try
-      {
-        svgOverlay.view.addEventListener( "DOMMouseScroll", onmousewheel.zoom, false );
-        /* Webkit takes the event but does not understand it ... */
-        svgOverlay.view.addEventListener( "mousewheel", onmousewheel.zoom, false );
-      }
-      catch ( error )
-      {
-        try
-        {
-          svgOverlay.view.onmousewheel = onmousewheel.zoom;
-        }
-        catch ( error ) {}
-      }
-            
-      show_tracing = true;
-      svgOverlay.show();
-      self.updateNodes();
-      for ( var i = 0; i < textlabels.length; ++i )
-      {
-        textlabels[ i ].setEditable( false );
-      }
-		  break;
+			try
+			{
+				svgOverlay.view.addEventListener( "DOMMouseScroll", onmousewheel.zoom, false );
+				/* Webkit takes the event but does not understand it ... */
+				svgOverlay.view.addEventListener( "mousewheel", onmousewheel.zoom, false );
+			}
+			catch ( error )
+			{
+				try
+				{
+					svgOverlay.view.onmousewheel = onmousewheel.zoom;
+				}
+				catch ( error ) {}
+			}
+						
+			show_tracing = true;
+			svgOverlay.show();
+			self.updateNodes();
+			for ( var i = 0; i < textlabels.length; ++i )
+			{
+				textlabels[ i ].setEditable( false );
+			}
+			break;
 		case "select":
 		case "move":
 		default:
@@ -1243,28 +1243,28 @@ function Stack(
 			//updateControls();
 			//update();
 			break;
-    /*
-    case "profile":
-      mode = "profile";
-      mouseCatcher.style.display = "block";
-      mouseCatcher.style.cursor = "crosshair";
-      mouseCatcher.onmousedown = onmousedown.edit;
-      mouseCatcher.onmousemove = onmousemove.pos;
-      try
-      {
-        mouseCatcher.removeEventListener( "DOMMouseScroll", onmousewheel.move, false );
-      }
-      catch ( error )
-      {
-        try
-        {
-          mouseCatcher.onmousewheel = null;
-        }
-        catch ( error ) {}
-      }
-      //! @todo import the available profiles of the slice
-      break;
-    */
+		/*
+		case "profile":
+			mode = "profile";
+			mouseCatcher.style.display = "block";
+			mouseCatcher.style.cursor = "crosshair";
+			mouseCatcher.onmousedown = onmousedown.edit;
+			mouseCatcher.onmousemove = onmousemove.pos;
+			try
+			{
+				mouseCatcher.removeEventListener( "DOMMouseScroll", onmousewheel.move, false );
+			}
+			catch ( error )
+			{
+				try
+				{
+					mouseCatcher.onmousewheel = null;
+				}
+				catch ( error ) {}
+			}
+			//! @todo import the available profiles of the slice
+			break;
+		*/
 		}
 		return;
 	}
@@ -1291,109 +1291,107 @@ function Stack(
 		return;
 	}
 
-  this.createLink = function( fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype )
-  {
-    svgOverlay.createLink(fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype);
-  }
-  
-  this.createTreenodeLink = function( fromid, toid )
-  {
-    svgOverlay.createTreenodeLink(fromid, toid);
-  }
+	this.createLink = function( fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype )
+	{
+		svgOverlay.createLink(fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype);
+	}
+	
+	this.createTreenodeLink = function( fromid, toid )
+	{
+		svgOverlay.createTreenodeLink(fromid, toid);
+	}
 	
 	this.showTags = function ( val )
 	{
-      svgOverlay.showTags(val);
+			svgOverlay.showTags(val);
 	}
 	
 	this.selectNode = function ( id )
 	{
-      svgOverlay.selectNode(id);
+			svgOverlay.selectNode(id);
 	}
 	
 	this.toggleTracing = function( m )
 	{
-    switch ( m )
-    {
-    case "skeletontracing":
-      svgOverlay.set_tracing_mode(m);
-      break;
-    case "synapsedropping":
-      svgOverlay.set_tracing_mode(m);
-      break;
-    case "dbsync":
-      svgOverlay.updateNodeCoordinatesinDB();
-      break;
-    case "goparent":
-      if(atn!=null) {
-      	if(atn.parent != null) {
-	        project.moveTo(
-	                  svgOverlay.pix2physZ(atn.parent.z),
-	                  svgOverlay.pix2physY(atn.parent.y),
-	                  svgOverlay.pix2physX(atn.parent.x)
-	                  );
-      		window.setTimeout("project.selectNode( "+atn.parent.id+" )", 1000);
-      		    
-      	
-      	} else {
-      		alert("This is the root node.");
-      	}
-      } else {
-      	alert("No active node selected.");
-      }
-      break;
-    case "goactive":
-      if(atn!=null) {
-        project.moveTo(
-                  svgOverlay.pix2physZ(atn.z),
-                  svgOverlay.pix2physY(atn.y),
-                  svgOverlay.pix2physX(atn.x)
-                  );
-      } else {
-      	alert("No active node to go to!");
-      }
-      break;
-    case "skeletonsplitting":
-      if(atn!=null) {
-        svgOverlay.splitSkeleton();
-      } else {
-        alert('Need to activate a treenode before splitting!');
-      }
-      break;
-    case "skeletonreroot":
-      if(atn!=null) {
-        svgOverlay.rerootSkeleton();
-      } else {
-        alert('Need to activate a treenode before rerooting!');
-      }
-      break;
-    case "tagging":
-      if(atn!=null) {
-        svgOverlay.tagATN();
-      } else {
-        alert('Need to activate a treenode or connector before tagging!');
-      }
-      break;
-    case "togglelabels":
-      svgOverlay.toggleLabels();
-      break;
-    case "exportswc":
-      if(atn!=null) {
-        svgOverlay.exportSWC();
-      } else {
-        alert('Need to activate a treenode before exporting to SWC!');
-      }
-      break;
-    case "showskeleton":
-      if(atn!=null) {
-        svgOverlay.showSkeleton();
-      } else {
-        alert('Need to activate a treenode or connector before showing them!');
-      }
-      break;
-    }
-    return;
-	  
+		switch ( m )
+		{
+		case "skeletontracing":
+			svgOverlay.set_tracing_mode(m);
+			break;
+		case "synapsedropping":
+			svgOverlay.set_tracing_mode(m);
+			break;
+		case "dbsync":
+			svgOverlay.updateNodeCoordinatesinDB();
+			break;
+		case "goparent":
+			if(atn!=null) {
+				if(atn.parent != null) {
+					project.moveTo(
+						svgOverlay.pix2physZ(atn.parent.z),
+						svgOverlay.pix2physY(atn.parent.y),
+						svgOverlay.pix2physX(atn.parent.x)
+					);
+					window.setTimeout("project.selectNode( "+atn.parent.id+" )", 1000);
+				} else {
+					alert("This is the root node.");
+				}
+			} else {
+				alert("No active node selected.");
+			}
+			break;
+		case "goactive":
+			if(atn!=null) {
+				project.moveTo(
+					svgOverlay.pix2physZ(atn.z),
+					svgOverlay.pix2physY(atn.y),
+					svgOverlay.pix2physX(atn.x)
+				);
+			} else {
+				alert("No active node to go to!");
+			}
+			break;
+		case "skeletonsplitting":
+			if(atn!=null) {
+				svgOverlay.splitSkeleton();
+			} else {
+				alert('Need to activate a treenode before splitting!');
+			}
+			break;
+		case "skeletonreroot":
+			if(atn!=null) {
+				svgOverlay.rerootSkeleton();
+			} else {
+				alert('Need to activate a treenode before rerooting!');
+			}
+			break;
+		case "tagging":
+			if(atn!=null) {
+				svgOverlay.tagATN();
+			} else {
+				alert('Need to activate a treenode or connector before tagging!');
+			}
+			break;
+		case "togglelabels":
+			svgOverlay.toggleLabels();
+			break;
+		case "exportswc":
+			if(atn!=null) {
+				svgOverlay.exportSWC();
+			} else {
+				alert('Need to activate a treenode before exporting to SWC!');
+			}
+			break;
+		case "showskeleton":
+			if(atn!=null) {
+				svgOverlay.showSkeleton();
+			} else {
+				alert('Need to activate a treenode or connector before showing them!');
+			}
+			break;
+		}
+		return;
+		
 	}
 	
 	
@@ -1484,23 +1482,23 @@ function Stack(
 		return;
 	}
 
-  this.registerZoomControlTrace = function( c )
-  {
-    slider_trace_s = c;
-    return;
-  }
-  
+	this.registerZoomControlTrace = function( c )
+	{
+		slider_trace_s = c;
+		return;
+	}
+	
 	this.registerSliceControl = function( c )
 	{
 		slider_z = c;
 		return;
 	}
 	
-  this.registerSliceControlTrace = function( c )
-  {
-    slider_trace_z = c;
-    return;
-  }
+	this.registerSliceControlTrace = function( c )
+	{
+		slider_trace_z = c;
+		return;
+	}
 	
 	this.registerXControl = function( c )
 	{
@@ -1550,24 +1548,24 @@ function Stack(
 			MAX_S + 1,
 			s,
 			this.changeScaleDelayed );
-    slider_trace_s.update(
-      MAX_S,
-      0,
-      MAX_S + 1,
-      s,
-      this.changeScaleDelayed );
-      
+		slider_trace_s.update(
+			MAX_S,
+			0,
+			MAX_S + 1,
+			s,
+			this.changeScaleDelayed );
+			
 		if ( slices.length < 2 )	//!< hide the slider_z if there is only one slice
 		{
 			slider_z.getView().parentNode.style.display = "none";
-      slider_trace_z.getView().parentNode.style.display = "none";
+			slider_trace_z.getView().parentNode.style.display = "none";
 			slider_crop_top_z.getView().parentNode.style.display = "none";
 			slider_crop_bottom_z.getView().parentNode.style.display = "none";
 		}
 		else
 		{
 			slider_z.getView().parentNode.style.display = "block";
-      slider_trace_z.getView().parentNode.style.display = "block";
+			slider_trace_z.getView().parentNode.style.display = "block";
 			slider_crop_top_z.getView().parentNode.style.display = "block";
 			slider_crop_bottom_z.getView().parentNode.style.display = "block";
 		}
@@ -1578,12 +1576,12 @@ function Stack(
 			z,
 			this.changeSliceDelayed );
 			
-    slider_trace_z.update(
-      0,
-      0,
-      slices,
-      z,
-      this.changeSliceDelayed );
+		slider_trace_z.update(
+			0,
+			0,
+			slices,
+			z,
+			this.changeSliceDelayed );
 
 		slider_crop_top_z.update(
 			0,
@@ -1654,13 +1652,13 @@ function Stack(
 			0,
 			null );
 
-    slider_trace_s.update(
-      0,
-      1,
-      undefined,
-      0,
-      null );
-      
+		slider_trace_s.update(
+			0,
+			1,
+			undefined,
+			0,
+			null );
+			
 		slider_z.update(
 			0,
 			1,
@@ -1668,13 +1666,13 @@ function Stack(
 			0,
 			null );
 
-    slider_trace_z.update(
-      0,
-      1,
-      undefined,
-      0,
-      null );
-      
+		slider_trace_z.update(
+			0,
+			1,
+			undefined,
+			0,
+			null );
+			
 		input_x.onchange = null;
 		try
 		{
@@ -1799,7 +1797,7 @@ function Stack(
 		var l = Math.min( cropBox.left, cropBox.right );
 		var r = Math.max( cropBox.left, cropBox.right );
 		//! left-most border of the view in physical project coordinates
-	    var screen_left = ( ( x - viewWidth / scale / 2 ) + translation.x ) * resolution.x;
+			var screen_left = ( ( x - viewWidth / scale / 2 ) + translation.x ) * resolution.x;
 		var screen_top = ( ( y - viewHeight / scale / 2 ) + translation.y ) * resolution.y;
 							
 		var rx = resolution.x / scale;
@@ -1889,9 +1887,9 @@ function Stack(
 	var Y_TILE_SIZE = 256;
 	var X_TILE_SIZE = 256;
 	
-	var MAX_X = dimension.x - 1;   //!< the last possible x-coordinate
-	var MAX_Y = dimension.y - 1;   //!< the last possible y-coordinate
-	var MAX_Z = dimension.z - 1;   //!< the last possible z-coordinate
+	var MAX_X = dimension.x - 1;	 //!< the last possible x-coordinate
+	var MAX_Y = dimension.y - 1;	 //!< the last possible y-coordinate
+	var MAX_Z = dimension.z - 1;	 //!< the last possible z-coordinate
 	
 	
 	//! estimate the zoom levels
@@ -1920,10 +1918,10 @@ function Stack(
 	var transition = new Transition();
 	
 	// extract the borders of the viewer window from CSS rules
-	var viewTop    = parseInt( getPropertyFromCssRules( 3, 0, "top" ) );
+	var viewTop		= parseInt( getPropertyFromCssRules( 3, 0, "top" ) );
 	var viewBottom = parseInt( getPropertyFromCssRules( 3, 0, "bottom" ) );
-	var viewLeft   = parseInt( getPropertyFromCssRules( 3, 0, "left" ) );
-	var viewRight  = parseInt( getPropertyFromCssRules( 3, 0, "right" ) );
+	var viewLeft	 = parseInt( getPropertyFromCssRules( 3, 0, "left" ) );
+	var viewRight	= parseInt( getPropertyFromCssRules( 3, 0, "right" ) );
 	
 	var tiles = new Array();
 	
@@ -1970,10 +1968,10 @@ function Stack(
 	
 	var cropBox = false;
 	
-  //! mouse catcher
-  var mouseCatcher = document.createElement( "div" );
-  mouseCatcher.className = "sliceMouseCatcher";
-  view.appendChild( mouseCatcher );
+	//! mouse catcher
+	var mouseCatcher = document.createElement( "div" );
+	mouseCatcher.className = "sliceMouseCatcher";
+	view.appendChild( mouseCatcher );
 
 	// take care, that all values are within a proper range
 	var z = 1;
@@ -1992,22 +1990,22 @@ function Stack(
 	var scale = 1 / Math.pow( 2, s );
 	var old_scale = scale;
 	
-  // svg overlay for the tracing
-  var svgOverlay = new SVGOverlay(resolution, translation, dimension, scale);
-  view.appendChild( svgOverlay.view );
-  svgOverlay.hide();
+	// svg overlay for the tracing
+	var svgOverlay = new SVGOverlay(resolution, translation, dimension, scale);
+	view.appendChild( svgOverlay.view );
+	svgOverlay.hide();
 	
 	var LAST_XT = Math.floor( MAX_X * scale / X_TILE_SIZE );
 	var LAST_YT = Math.floor( MAX_Y * scale / Y_TILE_SIZE );
 	
 	var mode = "move";
 	var show_textlabels = true;
-  var show_tracing = false;
-  
+	var show_tracing = false;
+	
 	var registered = false;
 	
 	var slider_s;
-  var slider_trace_s;
+	var slider_trace_s;
 	var slider_z;
 	var slider_trace_z;
 	var input_x;

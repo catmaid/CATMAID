@@ -10,6 +10,9 @@ critical
    6. Going to the marked node (one per tree, useful for measurements)
 
 important
+- make 'a' go to active node' and 'e' go to the last edited node in the current skeleton
+- fix the keyboard shortcuts in the tooltips
+- removing a neuron shouldn't require you to remove all synapses under it
 - reverse the ordering of drawing the line
 - tracing policy/best practics (lower/uppercase names, tags, where to place the treenode/connector)
 - catmaid.org, tracing tutorial, video, try it now project online
@@ -23,6 +26,19 @@ important
 - add transactions to the operations
 - show skeleton in object tree for a selected treenode / shortcut to display the selected neuron in the object tree
 - not updating nodes quickly when moving through stack. only update nodes at final point when scrolling.
+- when the project statistics window opens, its results column is empty. One has to click on the refresh button. Happens the very first time only
+- show root and leaf nodes differently from normal nodes
+- when the user adds a surprising node (not in the same layer, not in the next or previous layer) show a warning in the status bar
+- add a window that lists the keyboard shortcuts
+- more keyboard shortcuts:
+   1. Go to the next branch node or end node
+   2. Go to the previous branch node or root
+   3. Go to next node
+   4. Go to previous node
+   5. Go to the root node
+   6. Last edited node
+   7. Last added node
+   8. Last active / selected node
 
 wishlist
 - not use ctrl-click for deselect 

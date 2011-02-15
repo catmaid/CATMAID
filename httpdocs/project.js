@@ -633,45 +633,46 @@ function Project( pid )
 				input_y.value = parseInt( input_y.value ) + ( shift ? 100 : ( alt ? 1 : 10 ) );
 				input_y.onchange( e );
 				return false;
-			case 49: // A
+			case 49: // number 1
 				project.toggleTracing( 'skeletontracing' );
 				return false;
-			case 50: 
+			case 50: // number 2
 				project.toggleTracing( 'synapsedropping' );
 				return false;
-			case 77: // just deselect the active node
+			case 77: // key M
+				// just deselect the active node
 				activateNode( null );
 				return false;
-			case 51:
+			case 51: // number 3
 				project.toggleTracing( 'dbsync' );
 				return false;
-			case 80: // press p
+			case 80: // key P
 				project.toggleTracing( 'goparent' );
 				return false;
-			case 52:
+			case 52: // number 4
 				project.toggleTracing( 'goactive' );
 				return false;
-			case 69: // press e
+			case 69: // key E
 				project.toggleTracing( 'goactive' );
 				return false;
-			case 53:
+			case 53: // number 5
 				project.toggleTracing( 'skeletonsplitting' );
 				return false;
-			case 54:
+			case 54: // number 6
 				project.toggleTracing( 'skeletonreroot' );
 				return false;
-			case 55:
+			case 55: // number 7
 				project.toggleTracing( 'togglelabels' );
 				return false;
-			case 84:    //!< key t
+			case 84: // key T
 				if ( !ctrl  ) project.toggleTracing( 'tagging' );
 				break;
-			case 9:			//!< tab
+			case 9:	// key tab
 				if ( shift ) project.switchFocus( -1 );
 				else project.switchFocus( 1 );
 				//e.stopPropagation();
 				return false;
-			case 13:		//!< return
+			case 13: // key return
 				break;
 			/*
 			default:
@@ -682,7 +683,8 @@ function Project( pid )
 		}
 		else return true;
 	}
-	
+
+
 	// initialise
 	var self = this;
 	this.id = pid;

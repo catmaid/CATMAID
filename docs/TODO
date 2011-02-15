@@ -1,13 +1,4 @@
 critical
-- root node must be labeled distinctively. For example in magenta, with an 'R' or 'S' like trakem2 does.
-- need means to mark a node, for measurements. For example, to measure distance from that node to the root, or to the previous branch point, etc.
-- missing keybindings for:
-   1. Going to last added node ('a')
-   2. Going to last edited node (moved or tagged)
-   3. Going to last selected node (currently 'e' ?)
-   4. Going to previous node (currently 'p', cound be '[')
-   5. Going to next node ('n' or ']')
-   6. Going to the marked node (one per tree, useful for measurements)
 
 important
 - make 'a' go to active node' and 'e' go to the last edited node in the current skeleton
@@ -27,18 +18,22 @@ important
 - show skeleton in object tree for a selected treenode / shortcut to display the selected neuron in the object tree
 - not updating nodes quickly when moving through stack. only update nodes at final point when scrolling.
 - when the project statistics window opens, its results column is empty. One has to click on the refresh button. Happens the very first time only
-- show root and leaf nodes differently from normal nodes
+- show root and leaf nodes differently from normal nodes. Root node must be labeled distinctively. For example in magenta, with an 'R' or 'S' like trakem2 does.
 - when the user adds a surprising node (not in the same layer, not in the next or previous layer) show a warning in the status bar
 - add a window that lists the keyboard shortcuts
 - more keyboard shortcuts:
-   1. Go to the next branch node or end node
-   2. Go to the previous branch node or root
-   3. Go to next node
-   4. Go to previous node
-   5. Go to the root node
-   6. Last edited node
-   7. Last added node
-   8. Last active / selected node
+   1. Go to the next branch node or end node ('n')
+   2. Go to the previous branch node or root ('p')
+   3. Go to next node (']')
+   4. Go to previous node ('[')
+   5. Go to the root node ('r')
+   6. Last edited node ('w')
+   7. Last added node ('a')
+   8. Last active / selected node ('e')
+   9. Marked node (shift+e)
+- each skeleton must have a "last active/selected node", "last edited node", and "last added node".
+- need means to mark a node, for measurements. For example, to measure distance from that node to the root, or to the previous branch point, etc.
+- removing a skeleton that has synapses should be possible: leave the synapses behind as place holders. Requires a mechanism to set a skeleton node as a the parent of the synapse node, to become the presynaptic side.
 
 wishlist
 - not use ctrl-click for deselect 
@@ -59,6 +54,7 @@ wishlist
 - somewhere that displays the world coordinates of the current mouse position
 - dblick just somewhere to zoom in in all modes
 - shift-click on a line should add a node between two others
+- show multiple node tables, each one for a single skeleton, in tabs. This will preserve the current filtering for that tree and make it easy to go from one to the other for correcting errors in the skeletons.
 
 LATER
 - benchmarks / speedup investigation

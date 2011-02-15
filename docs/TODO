@@ -34,6 +34,10 @@ important
 - each skeleton must have a "last active/selected node", "last edited node", and "last added node".
 - need means to mark a node, for measurements. For example, to measure distance from that node to the root, or to the previous branch point, etc.
 - removing a skeleton that has synapses should be possible: leave the synapses behind as place holders. Requires a mechanism to set a skeleton node as a the parent of the synapse node, to become the presynaptic side.
+- Object Tree: add means to synchronize with the canvas. When selecting a node in the canvas, how can one expand nodes and show the skeleton object node?
+- Object Tree: a node with two different presynaptic sites lists them with the same name under the skeleton node. Is that an error?
+- Object Tree: the postsynaptic side is listed as "presynaptic terminal 2704", which is wrong, and the number is not the same number as that of the presynaptic side. What does the number mean? It should mean the id of the synapse itself.
+
 
 wishlist
 - not use ctrl-click for deselect 

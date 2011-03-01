@@ -1,178 +1,176 @@
+/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
+/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
+
 /**
  * input element with mousewheel-control and increase-decrease handles
  */
 
 function Input(
-	name,
-	size,
-	onchange,
-	defaultvalue
-)
+name, size, onchange, defaultvalue)
 {
-	/**
-	 * returns the conatining span-element for insertion to the document
-	 */
-	this.getView = function()
-	{
-		return view;
-	}
-	
-	/**
-	 * mouse up, so clear the timer
-	 */
-	var mouseUp = function( e )
-	{
-		if ( timer ) window.clearTimeout( timer );
-		
-		ui.releaseEvents()
-		ui.removeEvent( "onmouseup", mouseUp );
-		
-		return false;
-	}
-	
-	/**
-	 * decreases the value and invoke timeout
-	 */
-	var decrease = function()
-	{
-		var val = parseInt( input.value );
-		if ( isNaN( val ) ) return;
-		else
-		{
-			input.value = val - 1;
-			input.onchange();
-			timer = window.setTimeout( decrease, 250 );
-		}
-		return;
-	}
-	
-	/**
-	 * mouse down on the increase button, so move up, setting a timer
-	 */
-	var topMouseDown = function( e )
-	{
-		if ( timer ) window.clearTimeout( timer );
-		
-		ui.registerEvent( "onmouseup", mouseUp );
-		ui.setCursor( "auto" );
-		ui.catchEvents();
-		ui.onmousedown( e );
-		
-		decrease();
-		return false;
-	}
-	
-	/**
-	 * increases the value and invoke timeout
-	 */
-	var increase = function()
-	{
-		var val = parseInt( input.value );
-		if ( isNaN( val ) ) return;
-		else
-		{
-			input.value = val + 1;
-			input.onchange();
-			timer = window.setTimeout( increase, 250 );
-		}
-		return;
-	}
-	
-	/**
-	 * mouse down on the top bar, so move up, setting a timer
-	 */
-	var bottomMouseDown = function( e )
-	{
-		if ( timer ) window.clearTimeout( timer );
-		
-		ui.registerEvent( "onmouseup", mouseUp );
-		ui.setCursor( "auto" );
-		ui.catchEvents();
-		ui.onmousedown( e );
-		
-		increase();
-		return false;
-	}
-	
-	/**
-	 * mouse wheel over input
-	 */
-	var mouseWheel = function( e )
-	{
-		var val = parseInt( input.value );
-		if ( isNaN( val ) ) return;
-		
-		var w = ui.getMouseWheel( e );
-		if ( w )
-		{
-			if ( w > 0 )
-				input.value = val - 1;
-			else
-				input.value = val + 1;
-		}
-		input.onchange();
-		return false;
-	}
-	
-	// initialise
-	
-	var self = this;
-	var timer;
-	
-	if ( !ui ) ui = new UI();
-	
-	var view = document.createElement( "span" );
-	//view.style.paddingLeft = "2em";
-	var input = document.createElement( "input" );
-	input.type = "text";
-	input.size = size;
-	input.id = input.name = name;
-	
-	if ( typeof defaultvalue != "undefined" ) input.value = defaultvalue;
-	
-	var map = document.createElement( "map" );
-	map.id = map.name = "map_" + name;
-	var area1 = document.createElement( "area" );
-	area1.shape = "rect";
-	area1.coords = "0,0,13,9";
-	area1.alt = "+";
-	var area2 = document.createElement( "area" );
-	area2.shape = "rect";
-	area2.coords = "0,10,13,18";
-	area2.alt = "-";
-	
-	
-	area1.onmousedown = bottomMouseDown;
-	area2.onmousedown = topMouseDown;
-	
-	area1.onmouseup = mouseUp;
-	area2.onmouseup = mouseUp;
-		
-	map.appendChild( area1 );
-	map.appendChild( area2 );
-		
-	var img = document.createElement( "img" );
-	img.src = "widgets/themes/kde/input_topdown.gif";
-	img.alt = "";
-	img.useMap = "#map_" + name;
-		
-	view.appendChild( map );
-	view.appendChild( input );
-	view.appendChild( img );
-	
-	input.onchange = onchange;
-	try
-	{
-		input.addEventListener( "DOMMouseScroll", mouseWheel, false );
-		/* Webkit takes the event but does not understand it ... */
-		input.addEventListener( "mousewheel", mouseWheel, false );
-	}
-	catch ( error )
-	{
-		try
-		{
-			input.onmousewheel = mouseWheel;
-		}
-		catch ( error ) {}
-	}
+  /**
+   * returns the conatining span-element for insertion to the document
+   */
+  this.getView = function ()
+  {
+    return view;
+  }
+
+  /**
+   * mouse up, so clear the timer
+   */
+  var mouseUp = function (e)
+  {
+    if (timer) window.clearTimeout(timer);
+
+    ui.releaseEvents()
+    ui.removeEvent("onmouseup", mouseUp);
+
+    return false;
+  }
+
+  /**
+   * decreases the value and invoke timeout
+   */
+  var decrease = function ()
+  {
+    var val = parseInt(input.value);
+    if (isNaN(val)) return;
+    else
+    {
+      input.value = val - 1;
+      input.onchange();
+      timer = window.setTimeout(decrease, 250);
+    }
+    return;
+  }
+
+  /**
+   * mouse down on the increase button, so move up, setting a timer
+   */
+  var topMouseDown = function (e)
+  {
+    if (timer) window.clearTimeout(timer);
+
+    ui.registerEvent("onmouseup", mouseUp);
+    ui.setCursor("auto");
+    ui.catchEvents();
+    ui.onmousedown(e);
+
+    decrease();
+    return false;
+  }
+
+  /**
+   * increases the value and invoke timeout
+   */
+  var increase = function ()
+  {
+    var val = parseInt(input.value);
+    if (isNaN(val)) return;
+    else
+    {
+      input.value = val + 1;
+      input.onchange();
+      timer = window.setTimeout(increase, 250);
+    }
+    return;
+  }
+
+  /**
+   * mouse down on the top bar, so move up, setting a timer
+   */
+  var bottomMouseDown = function (e)
+  {
+    if (timer) window.clearTimeout(timer);
+
+    ui.registerEvent("onmouseup", mouseUp);
+    ui.setCursor("auto");
+    ui.catchEvents();
+    ui.onmousedown(e);
+
+    increase();
+    return false;
+  }
+
+  /**
+   * mouse wheel over input
+   */
+  var mouseWheel = function (e)
+  {
+    var val = parseInt(input.value);
+    if (isNaN(val)) return;
+
+    var w = ui.getMouseWheel(e);
+    if (w)
+    {
+      if (w > 0) input.value = val - 1;
+      else
+      input.value = val + 1;
+    }
+    input.onchange();
+    return false;
+  }
+
+  // initialise
+  var self = this;
+  var timer;
+
+  if (!ui) ui = new UI();
+
+  var view = document.createElement("span");
+  //view.style.paddingLeft = "2em";
+  var input = document.createElement("input");
+  input.type = "text";
+  input.size = size;
+  input.id = input.name = name;
+
+  if (typeof defaultvalue != "undefined") input.value = defaultvalue;
+
+  var map = document.createElement("map");
+  map.id = map.name = "map_" + name;
+  var area1 = document.createElement("area");
+  area1.shape = "rect";
+  area1.coords = "0,0,13,9";
+  area1.alt = "+";
+  var area2 = document.createElement("area");
+  area2.shape = "rect";
+  area2.coords = "0,10,13,18";
+  area2.alt = "-";
+
+
+  area1.onmousedown = bottomMouseDown;
+  area2.onmousedown = topMouseDown;
+
+  area1.onmouseup = mouseUp;
+  area2.onmouseup = mouseUp;
+
+  map.appendChild(area1);
+  map.appendChild(area2);
+
+  var img = document.createElement("img");
+  img.src = "widgets/themes/kde/input_topdown.gif";
+  img.alt = "";
+  img.useMap = "#map_" + name;
+
+  view.appendChild(map);
+  view.appendChild(input);
+  view.appendChild(img);
+
+  input.onchange = onchange;
+  try
+  {
+    input.addEventListener("DOMMouseScroll", mouseWheel, false); /* Webkit takes the event but does not understand it ... */
+    input.addEventListener("mousewheel", mouseWheel, false);
+  }
+  catch (error)
+  {
+    try
+    {
+      input.onmousewheel = mouseWheel;
+    }
+    catch (error)
+    {
+    }
+  }
 }

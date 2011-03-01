@@ -41,9 +41,9 @@ passwords - you have to add this line as the *first* rule in
 
 	local   catmaid     all                               md5
 
-Update catmaid database connection for user in. Remove the .template ending::
-
-	/var/www/catmaid/inc/setup.inc.php.template
+Update catmaid database connection for user in
+inc/setup.inc.php.template and rename the file to
+inc/setup.inc
 
 2. Apache2 Server
 
@@ -55,38 +55,42 @@ of an existing host:
 
 http://wiki.ubuntuusers.de/Apache/Virtual_Hosts
 
+Your clone of the CATMAID source code should be *outside* any
+web-accessible directory.  For example, let's say that you have the
+source code in /home/bob/catmaid/
+
+Create a directory for the log files, for example with:
+
+   sudo mkdir -p /var/log/apache2/catmaid/
+
 Create in /etc/apache2/sites-available a file called "catmaid":
 ----
 <VirtualHost *:80>
-ServerName catmaid
+    ServerName catmaid
 
-DocumentRoot "/var/www/catmaid/httpdocs"
+    DocumentRoot "/home/bob/catmaid/httpdocs/"
 
-php_admin_value register_globals off
-php_admin_value include_path ".:/var/www/catmaid/inc"
-php_admin_value session.use_only_cookies 1
-php_admin_value error_reporting 2047
-php_admin_value display_errors true
+    php_admin_value register_globals off
+    php_admin_value include_path ".:/home/bob/catmaid/inc"
+    php_admin_value session.use_only_cookies 1
+    php_admin_value error_reporting 2047
+    php_admin_value display_errors true
 
-<Directory /var/www/catmaid/httpdocs>
+    <Directory /home/bob/catmaid/httpdocs/>
 
-	Options FollowSymLinks
-	AllowOverride AuthConfig Limit FileInfo
+        Options FollowSymLinks
+        AllowOverride AuthConfig Limit FileInfo
 
-                Order allow,deny
-                allow from all
+        Order allow,deny
+        allow from all
 
-</Directory>
+    </Directory>
 
-CustomLog /var/www/catmaid/logs/access_log combined
-ErrorLog /var/www/catmaid/logs/error.log
+    CustomLog /var/log/apache2/catmaid/access_log combined
+    ErrorLog /var/log/apache2/catmaid/error.log
 
 </VirtualHost>
 ---
-
-
-Then create the directory "logs" in the catmaid folder:
-	mkdir /var/www/catmaid/logs
 
 ... then make apache aware of the virtual host:
 	sudo a2ensite catmaid
@@ -97,7 +101,6 @@ Then create the directory "logs" in the catmaid folder:
 ... and finally add this entry to "/etc/hosts" :
 
 127.0.0.1	catmaid
-
 
 
 2.2 As a directory of an existing virtual host

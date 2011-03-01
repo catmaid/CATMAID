@@ -22,6 +22,185 @@
  *   ( all stacks of a project are related by translation using physical dimensions )
  */
 
+/* Define any new keybindings here.
+
+   There's a helpful page with the different key codes for different
+   browsers here:
+
+     http://unixpapa.com/js/key.html
+ */
+
+var arrowKeyCodes = { left: 37, up: 38, right: 39, down: 40 };
+
+var stringToKeyAction = {
+  "A" : { helpText: "Go to active node",
+          run: function (e) {
+            project.tracingCommand('goactive');
+            return false;
+          }},
+  "J" : { helpText: "Nothing right now",
+          run: function (e) {
+            alert("J was pressed");
+            return false;
+          }},
+  "+" : { helpText: "Zoom in",
+          specialKeyCodes: [ 61, 187 ],
+          run: function (e) {
+            slider_s.move(1);
+            slider_trace_s.move(1);
+            return false;
+          }},
+  "-" : { helpText: "Zoom out",
+          specialKeyCodes: [ 109, 189, 45 ],
+          run: function (e) {
+            slider_s.move(-1);
+            slider_trace_s.move(-1);
+            return false;
+          }},
+  "," : { helpText: "Move up 1 slice in z (or 10 with Shift held)",
+          specialKeyCodes: [ 188, 44 ],
+          run: function (e) {
+            slider_z.move(-(e.shiftKey ? 10 : 1));
+            slider_trace_z.move(-(e.shiftKey ? 10 : 1));
+            return false;
+          }},
+  "." : { helpText: "Move down 1 slice in z (or 10 with Shift held)",
+          specialKeyCodes: [ 190, 46 ],
+            run: function (e) {
+              slider_z.move((e.shiftKey ? 10 : 1));
+              slider_trace_z.move((e.shiftKey ? 10 : 1));
+              return false;
+            }},
+  "\u2190" : { helpText: "Move left (towards negative x)",
+               specialKeyCodes: [ arrowKeyCodes.left ],
+               run: function (e) {
+                 input_x.value = parseInt(input_x.value) - (e.shiftKey ? 100 : (alt ? 1 : 10));
+                 input_x.onchange(e);
+                 return false;
+               }},
+  "\u2192" : { helpText: "Move right (towards positive x)",
+               specialKeyCodes: [ arrowKeyCodes.right ],
+               run: function (e) {
+                 input_x.value = parseInt(input_x.value) + (e.shiftKey ? 100 : (alt ? 1 : 10));
+                 input_x.onchange(e);
+                 return false;
+               }},
+  "\u2191" : { helpText: "Move up (towards negative y)",
+               specialKeyCodes: [ arrowKeyCodes.up ],
+               run: function (e) {
+                 input_y.value = parseInt(input_y.value) - (e.shiftKey ? 100 : (alt ? 1 : 10));
+                 input_y.onchange(e);
+                 return false;
+               }},
+  "\u2193" : { helpText: "Move down (towards positive y)",
+               specialKeyCodes: [ arrowKeyCodes.down ],
+               run: function (e) {
+                 input_y.value = parseInt(input_y.value) + (e.shiftKey ? 100 : (alt ? 1 : 10));
+                 input_y.onchange(e);
+                 return false;
+               }},
+  "1" : { helpText: "Switch to skeleton tracing mode",
+          run: function (e) {
+            project.tracingCommand('skeletontracing');
+            return false;
+          }},
+  "2" : { helpText: "Switch to synapse dropping mode",
+          run: function (e) {
+            project.tracingCommand('synapsedropping');
+            return false;
+          }},
+  "M" : { helpText: "Deselect the active node",
+          run: function (e) {
+            activateNode(null);
+            return false;
+          }},
+  "3" : { helpText: "Manually sync with the database",
+          run: function (e) {
+            project.tracingCommand('dbsync');
+            return false;
+          }},
+  "P" : { helpText: "Go to the parent of the active node (?)",
+          run: function (e) {
+            project.tracingCommand('goparent');
+            return false;
+          }},
+  "E" : { helpText: "Go to the last edited node in this skeleton",
+          run: function (e) {
+            alert("IMPLEMENT ME");
+            /*
+            project.tracingCommand('goactive');
+            return false;
+            */
+          }},
+  "5" : { helpText: "Split this skeleton at the active node",
+          run: function (e) {
+            project.tracingCommand('skeletonsplitting');
+            return false;
+          }},
+  "6" : { helpText: "Re-root this skeleton at the active node",
+          run: function (e) {
+            project.tracingCommand('skeletonreroot');
+            return false;
+          }},
+  "7" : { helpText: "Toggle the display of labels",
+          run: function (e) {
+            project.tracingCommand('togglelabels');
+            return false;
+          }},
+  "T" : { helpText: "Tag the active node",
+          run: function (e) {
+            if (!e.ctrlKey)
+              project.tracingCommand('tagging');
+            return true;
+          }},
+  "Tab" : { helpText: "Switch to the next project (or the previous with Shift)",
+            specialKeyCodes: [ 9 ],
+            run: function (e) {
+              if (shift)
+                project.switchFocus(-1);
+              else
+                project.switchFocus(1);
+              //e.stopPropagation();
+              return false;
+            }},
+};
+
+stringToKeyAction["4"] = stringToKeyAction["A"];
+
+/* We now turn that structure into an object for
+   fast lookups from keyCodes */
+
+var keyCodeToKeyAction = { }
+
+for(var i in stringToKeyAction) {
+  var keyCodeFromKey = null;
+  /* If the string representation of the key is a single upper case
+     letter or a number, we just use its ASCII value as the key
+     code */
+  if (i.length == 1) {
+    k = i.charCodeAt(0);
+    if ((k >= 65 && k <= 90) || (k >= 48 && k <= 57)) {
+      keyCodeFromKey = k;
+    }
+  }
+  var o = stringToKeyAction[i];
+  /* Add any more unusual key codes for that action */
+  var allKeyCodes = o.specialKeyCodes || [];
+  if (keyCodeFromKey && $.inArray(keyCodeFromKey, allKeyCodes) < 0)
+    allKeyCodes.push(keyCodeFromKey);
+
+  /* Now add to the keyCodeToKeyAction object */
+  var ki, k;
+  for (ki in allKeyCodes) {
+    k = allKeyCodes[ki];
+    if (keyCodeToKeyAction[k]) {
+      alert("Attempting to define a second action for keyCode "+k+" via '"+i+"'");
+    } else {
+      keyCodeToKeyAction[k] = o;
+    }
+  }
+}
+
 function Project(pid)
 {
   this.getView = function ()
@@ -375,7 +554,8 @@ function Project(pid)
     ui.registerEvent("onresize", resize);
     window.onresize();
 
-    document.onkeydown = onkeydown;
+    // Use jQuery so we can get the 'e.which' normalized keyCode:
+    $(document).keydown(onkeydown);
 
     return;
   }
@@ -568,9 +748,7 @@ function Project(pid)
     var ctrl;
     if (e)
     {
-      if (e.keyCode) key = e.keyCode;
-      else if (e.charCode) key = e.charCode;
-      else key = e.which;
+      key = e.which;
       target = e.target;
       shift = e.shiftKey;
       alt = e.altKey;
@@ -587,116 +765,13 @@ function Project(pid)
     var n = target.nodeName.toLowerCase();
     if (!(n == "input" || n == "textarea" || n == "area")) //!< @todo exclude all useful keyboard input elements e.g. contenteditable...
     {
-      switch (key)
-      {
-      case 61:
-        //!< +
-      case 107:
-      case 187:
-        //!< for IE only---take care what this is in other platforms...
-        slider_s.move(1);
-        slider_trace_s.move(1);
-        return false;
-      case 109:
-        //!< -
-      case 189:
-        //!< for IE only---take care what this is in other platforms...
-        slider_s.move(-1);
-        slider_trace_s.move(-1);
-        return false;
-      case 188:
-        //!< ,
-        slider_z.move(-(shift ? 10 : 1));
-        slider_trace_z.move(-(shift ? 10 : 1));
-        return false;
-      case 190:
-        //!< .
-        slider_z.move((shift ? 10 : 1));
-        slider_trace_z.move((shift ? 10 : 1));
-        return false;
-      case 37:
-        //!< cursor left
-        input_x.value = parseInt(input_x.value) - (shift ? 100 : (alt ? 1 : 10));
-        input_x.onchange(e);
-        return false;
-      case 39:
-        //!< cursor right
-        input_x.value = parseInt(input_x.value) + (shift ? 100 : (alt ? 1 : 10));
-        input_x.onchange(e);
-        return false;
-      case 38:
-        //!< cursor up
-        input_y.value = parseInt(input_y.value) - (shift ? 100 : (alt ? 1 : 10));
-        input_y.onchange(e);
-        return false;
-      case 40:
-        //!< cursor down
-        input_y.value = parseInt(input_y.value) + (shift ? 100 : (alt ? 1 : 10));
-        input_y.onchange(e);
-        return false;
-      case 49:
-        // number 1
-        project.tracingCommand('skeletontracing');
-        return false;
-      case 50:
-        // number 2
-        project.tracingCommand('synapsedropping');
-        return false;
-      case 77:
-        // key M
-        // just deselect the active node
-        activateNode(null);
-        return false;
-      case 51:
-        // number 3
-        project.tracingCommand('dbsync');
-        return false;
-      case 80:
-        // key P
-        project.tracingCommand('goparent');
-        return false;
-      case 52:
-        // number 4
-        project.tracingCommand('goactive');
-        return false;
-      case 69:
-        // key E
-        project.tracingCommand('goactive');
-        return false;
-      case 53:
-        // number 5
-        project.tracingCommand('skeletonsplitting');
-        return false;
-      case 54:
-        // number 6
-        project.tracingCommand('skeletonreroot');
-        return false;
-      case 55:
-        // number 7
-        project.tracingCommand('togglelabels');
-        return false;
-      case 84:
-        // key T
-        if (!ctrl) project.tracingCommand('tagging');
-        break;
-      case 9:
-        // key tab
-        if (shift) project.switchFocus(-1);
-        else project.switchFocus(1);
-        //e.stopPropagation();
-        return false;
-      case 13:
-        // key return
-        break;
-/*
-			default:
-				alert( key );
-			*/
-      }
+      keyAction = keyCodeToKeyAction[key];
+      if (keyAction)
+        return keyAction.run(e || event);
       return true;
     }
     else
-    return true;
+      return true;
   }
 
 

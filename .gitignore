@@ -1,7 +1,7 @@
-inc/setup.inc.php
-logs/
-temp/
-httpdocs/data/
+/inc/setup.inc.php
+/logs/
+/temp/
+/httpdocs/data/
 *~
-.project
-.pydevproject
+/.project
+/.pydevproject

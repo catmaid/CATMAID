@@ -341,10 +341,10 @@ function Project(pid)
     return;
   }
 
-  this.toggleTracing = function (m)
+  this.tracingCommand = function (m)
   {
     for (var i = 0; i < stacks.length; ++i)
-    stacks[i].toggleTracing(m);
+    stacks[i].tracingCommand(m);
     return;
   }
 
@@ -636,11 +636,11 @@ function Project(pid)
         return false;
       case 49:
         // number 1
-        project.toggleTracing('skeletontracing');
+        project.tracingCommand('skeletontracing');
         return false;
       case 50:
         // number 2
-        project.toggleTracing('synapsedropping');
+        project.tracingCommand('synapsedropping');
         return false;
       case 77:
         // key M
@@ -649,35 +649,35 @@ function Project(pid)
         return false;
       case 51:
         // number 3
-        project.toggleTracing('dbsync');
+        project.tracingCommand('dbsync');
         return false;
       case 80:
         // key P
-        project.toggleTracing('goparent');
+        project.tracingCommand('goparent');
         return false;
       case 52:
         // number 4
-        project.toggleTracing('goactive');
+        project.tracingCommand('goactive');
         return false;
       case 69:
         // key E
-        project.toggleTracing('goactive');
+        project.tracingCommand('goactive');
         return false;
       case 53:
         // number 5
-        project.toggleTracing('skeletonsplitting');
+        project.tracingCommand('skeletonsplitting');
         return false;
       case 54:
         // number 6
-        project.toggleTracing('skeletonreroot');
+        project.tracingCommand('skeletonreroot');
         return false;
       case 55:
         // number 7
-        project.toggleTracing('togglelabels');
+        project.tracingCommand('togglelabels');
         return false;
       case 84:
         // key T
-        if (!ctrl) project.toggleTracing('tagging');
+        if (!ctrl) project.tracingCommand('tagging');
         break;
       case 9:
         // key tab

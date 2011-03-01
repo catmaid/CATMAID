@@ -1279,7 +1279,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     svgOverlay.selectNode(id);
   }
 
-  this.toggleTracing = function (m)
+  this.tracingCommand = function (m)
   {
     switch (m)
     {

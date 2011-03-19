@@ -98,12 +98,15 @@ if ( $pid )
 		else if ( $op == 'create_node')
 		{
 
-			// XXX: is this a security leak?
 			$classname = isset( $_REQUEST[ 'classname' ] ) ? $_REQUEST[ 'classname' ] : 0;
 			$relname = isset( $_REQUEST[ 'relationname' ] ) ? $_REQUEST[ 'relationname' ] : 0;
 			$objname = isset( $_REQUEST[ 'objname' ] ) ? $_REQUEST[ 'objname' ] : 0;
 			$parentid = isset( $_REQUEST[ 'parentid' ] ) ? intval($_REQUEST[ 'parentid' ]) : 0;
-			
+
+			// These are both subsequently used directly in queries:
+			$classname = pg_escape_string($classname);
+			$relname = pg_escape_string($relname);
+
 			// create class_instance
 			$classi = $db->getResult(
 			'SELECT "class"."id" FROM "class"

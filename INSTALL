@@ -148,26 +148,40 @@ And use the default login::
 	user: gerhard
 	pass: gerhard
 
-Deprecated
-==========
+4. Adding a new project
+
+Currently, adding a new project and stacks within that project is
+still a largely manual process.  You can generate the image tiles for
+a stack with the scripts/tile_stack script or by exporting from
+TrakEM2 with its "Export > Flat Images" option and selecting the
+"Export for web" checkbox.
+
+Then you will need to add at least one row to the following tables:
+
+  project - to define a new project.  A project is like the coordinate
+            space for a particular subject, which can have many stacks
+            added to it - e.g. one for electon microscope imagery, one for
+	    a registered light microscope image stack, etc.
+
+  stack - to define the properties of a particular stack of images
+          within the project
+
+  project_stack - a join table to indicate that the stack is part of that
+                  project
+
+  project_user - a join table to indicate that that user may annotate
+                 that project
 
 
-===Database===
+5. Enabling skeleton and synapse annotation
 
-Create the database using the included dump.sql file.  In Debian/Ubuntu, this
-is:
+To enable the new SVG-based skeleton and synapse annotation features
+at the moment, you need to add some classes and relations to your new
+project.  Also you will need to add a root class_instance.
 
-sudo -u postgres pgsql < dump.sql
+You can copy the insert statments in docs/master.sql that begin at
+"COPY class ..." and "COPY class_instance ..." but with your new
+project_id.  More details about the data model can be found in
+docs/data-model.lyx - a PDF generated from that file can be found here:
 
-for a fresh Postgres installation.  The dump adds the login role `catmaid_user'
-with default password `catmaid_user_password'.  Change that to your personal
-needs either in dump.sql or afterwards via
-
-ALTER ROLE "catmaid_user" PASSWORD '<new password>'
-
-Add the respective password authentication rule to your pg_hba.conf before the
-rule for ident authentication:
-
-local   catmaid     catmaid_user                      md5
-local   all         all                               ident
-
+  http://incf.ini.uzh.ch/docs/catmaid-data-model.pdf

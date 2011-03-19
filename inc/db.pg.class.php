@@ -361,10 +361,11 @@ class DB
 	 */
 	function getRelationId( $pid, $relationname )
 	{
+		$escaped_relationname = pg_escape_string($relationname);
 		$res = $this->getResult(
-		'SELECT "relation"."id" FROM "relation"
-		WHERE "relation"."project_id" = '.$pid.' AND
-		"relation"."relation_name" = \''.$relationname.'\'');
+		"SELECT relation.id FROM relation ".
+		"WHERE relation.project_id = $pid AND ".
+		"relation.relation_name = '$escaped_relationname'");
 		$resid = !empty($res) ? $res[0]['id'] : 0;
 		return $resid;
 	}
@@ -374,10 +375,11 @@ class DB
 	 */
 	function getClassId( $pid, $classname )
 	{
+		$escaped_classname = pg_escape_string($classname);
 		$res = $this->getResult(
-		'SELECT "class"."id" FROM "class"
-		WHERE "class"."project_id" = '.$pid.' AND
-		"class"."class_name" = \''.$classname.'\'');
+		"SELECT class.id FROM class ".
+		"WHERE class.project_id = $pid AND ".
+		"class.class_name = '$escaped_classname'");
 		$resid = !empty($res) ? $res[0]['id'] : 0;
 		return $resid;
 	}

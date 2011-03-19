@@ -292,7 +292,7 @@ zdiff) // the different from the current slices
     slider_trace_s.move(-1);
     else // zoom out
     slider_trace_s.move(1);
-    project.toggleTracing('goactive');
+    project.tracingCommand('goactive');
   });
 
   mc.click(function (e)

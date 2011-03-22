@@ -15,15 +15,11 @@ $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
 $from_id = isset( $_REQUEST[ 'from_id' ] ) ? intval( $_REQUEST[ 'from_id' ] ) : 0;
 $from_relation = isset( $_REQUEST[ 'from_relation' ] ) ? $_REQUEST[ 'from_relation' ] : 'none';
-$from_type = isset( $_REQUEST[ 'from_type' ] ) ? $_REQUEST[ 'from_type' ] : 'none';
-$from_nodetype = isset( $_REQUEST[ 'from_nodetype' ] ) ? $_REQUEST[ 'from_nodetype' ] : 'none';
 
 $link_type = isset( $_REQUEST[ 'link_type' ] ) ? $_REQUEST[ 'link_type' ] : 'none';
 
 $to_id = isset( $_REQUEST[ 'to_id' ] ) ? intval( $_REQUEST[ 'to_id' ] ) : 0;
-$to_type = isset( $_REQUEST[ 'to_type' ] ) ? $_REQUEST[ 'to_type' ] : 'none';
 $to_relation = isset( $_REQUEST[ 'to_relation' ] ) ? $_REQUEST[ 'to_relation' ] : 'none';
-$to_nodetype = isset( $_REQUEST[ 'to_nodetype' ] ) ? $_REQUEST[ 'to_nodetype' ] : 'none';
 
 if ( $pid )
 {

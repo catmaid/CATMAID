@@ -79,43 +79,41 @@ else
 if ( $iDisplayStart > 0 )
 	$sLimit .= ' OFFSET '.$iDisplayStart;
 
+
+$columnToFieldArray = array( "tid",
+			     "x",
+			     "y",
+			     "z",
+			     "type",
+			     "confidence",
+			     "radius",
+			     "username",
+			     "labels",
+			     "last_modified" );
+
+function fnColumnToField( $i )
+{
+	global $columnToFieldArray;
+	if ( $i < 0 || $i >= count($columnToFieldArray) )
+		return "tid";
+	else
+		return $columnToFieldArray[$i];
+}
+
 /* Ordering */
 if ( isset( $_REQUEST['iSortCol_0'] ) )
 {
 	$sOrder = "ORDER BY  ";
-	$sOrder .= '"edition_time" DESC,';
-	for ( $i=0 ; $i<pg_escape_string( $_REQUEST['iSortingCols'] ) ; $i++ )
+	$sColumns = intval( $_REQUEST['iSortingCols'] );
+	for ( $i=0 ; $i< $sColumns; $i++ )
 	{
-		$sOrder .= fnColumnToField(pg_escape_string( $_REQUEST['iSortCol_'.$i] ))."
-		 	".pg_escape_string( $_REQUEST['sSortDir_'.$i] ) .", ";
+		$direction = (strtoupper($_REQUEST['sSortDir_'.$i]) === "DESC") ? "DESC" : "ASC";
+		$columnIndex = intval( $_REQUEST['iSortCol_'.$i] );
+		$sOrder .= fnColumnToField($columnIndex)." ".$direction.", ";
 	}
 	$sOrder = substr_replace( $sOrder, "", -2 );
 }
 
-function fnColumnToField( $i )
-{
-	if ( $i == 0 )
-		return "tid";
-	else if ( $i == 1 )
-		return "x";
-	else if ( $i == 2 )
-		return "y";
-	else if ( $i == 3 )
-		return "z";
-	else if ( $i == 4 )
-		return "type";
-	else if ( $i == 5 )
-		return "confidence";
-	else if ( $i == 6 )
-		return "radius";
-	else if ( $i == 7 )
-		return "username";
-	else if ( $i == 8 )
-		return "labels";
-	else if ( $i == 9 )
-		return "last_modified";
-
-}
 
 
 if ( $pid )

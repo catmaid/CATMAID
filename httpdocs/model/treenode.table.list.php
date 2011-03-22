@@ -46,10 +46,9 @@ if($atnid != 0) {
     		for ( $i = 0; $i < $skelnr; $i++ )
     		{
     			// $skelid[] = $_REQUEST['skeleton_'.$i];
-    			if( $i == 0 )
-    				$skelcon .= '"tci"."class_instance_id" = '. $_REQUEST['skeleton_'.$i];
-    			else
-    				$skelcon .= 'OR "tci"."class_instance_id" = '. $_REQUEST['skeleton_'.$i];
+			if( $i != 0 )
+				$skelcon .= 'OR ';
+			$skelcon .= '"tci"."class_instance_id" = '. intval($_REQUEST['skeleton_'.$i]);
     		}
     		$skelcon .= ")";
     		

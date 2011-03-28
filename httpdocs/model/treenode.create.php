@@ -226,7 +226,7 @@ if ( $pid )
        * Add neuron to Fragments 
        */
       $fid = $db->getResult('SELECT "ci"."id" FROM "class_instance" AS "ci"
-      WHERE "ci"."name" = \''.$targetgroup.'\' AND
+      WHERE "ci"."name" = \''.pg_escape_string($targetgroup).'\' AND
       "ci"."project_id" = '.$pid);
       if(!$fid) {
         // need to create a fragments group and add it

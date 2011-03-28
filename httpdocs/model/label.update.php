@@ -56,7 +56,7 @@ if ( $pid )
       // see if label exists
       $res = $db->getResult('SELECT "ci"."name" as "name", "ci"."id" as "id" FROM "class_instance" as "ci" WHERE
       "ci"."class_id" = '.$label_id.' AND 
-      "ci"."name" = \''.$val.'\' AND
+      "ci"."name" = \''.pg_escape_string($val).'\' AND
       "ci"."project_id" = '.$pid);
       if(empty($res)) {
         // create class_instance of label

@@ -30,7 +30,7 @@ if ( $pid )
 	$studec = json_decode($stu);
 	$stuimp = array();
 	foreach($studec as $key => $val) {
-		$stuimp[] = $val;
+		$stuimp[] = intval($val);
 	}
     
     if(count($stuimp) == 0) {

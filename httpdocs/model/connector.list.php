@@ -17,39 +17,40 @@ $pre = isset( $_REQUEST[ 'pre' ] ) ? intval( $_REQUEST[ 'pre' ] ) : 0;
 $sLimit = "";
 if ( isset( $_REQUEST['iDisplayStart'] ) )
 {
-	$sLimit = "LIMIT ".pg_escape_string( $_REQUEST['iDisplayLength'] )." ".
-		"OFFSET ".pg_escape_string( $_REQUEST['iDisplayStart'] );
+	$displayLength = intval( $_REQUEST['iDisplayLength'] );
+	$displayStart = intval( $_REQUEST['iDisplayStart'] );
+	$sLimit = "LIMIT ".$displayLength." OFFSET ".$displayStart;
 }
-	
+
+$columnToFieldArray = array( "instance_name",
+			     "tnid",
+			     "username",
+			     "labels",
+			     "last_modified",
+			     "instance_id" );
+
+function fnColumnToField( $i )
+{
+	global $columnToFieldArray;
+	if ( $i < 0 || $i >= count($columnToFieldArray) )
+		return "tnid";
+	else
+		return $columnToFieldArray[$i];
+}
+
 /* Ordering */
 if ( isset( $_REQUEST['iSortCol_0'] ) )
 {
 	$sOrder = "ORDER BY  ";
-	for ( $i=0 ; $i<pg_escape_string( $_REQUEST['iSortingCols'] ) ; $i++ )
+	$sColumns = intval( $_REQUEST['iSortingCols'] );
+	for ( $i=0 ; $i<$sColumns ; $i++ )
 	{
-		$sOrder .= fnColumnToField(pg_escape_string( $_REQUEST['iSortCol_'.$i] ))."
-		 	".pg_escape_string( $_REQUEST['sSortDir_'.$i] ) .", ";
+		$direction = (strtoupper($_REQUEST['sSortDir_'.$i]) === "DESC") ? "DESC" : "ASC";
+		$columnIndex = intval( $_REQUEST['iSortCol_'.$i] );
+		$sOrder .= fnColumnToField($columnIndex)." ".$direction.", ";
 	}
 	$sOrder = substr_replace( $sOrder, "", -2 );
 }
-
-function fnColumnToField( $i )
-{
-	if ( $i == 0 )
-		return "instance_name";
-	else if ( $i == 1 )
-		return "tnid";
-	else if ( $i == 2 )
-		return "username";
-	else if ( $i == 3 )
-		return "labels";
-	else if ( $i == 4 )
-		return "last_modified";
-	else if ( $i == 5 )
-		return "instance_id";
-		
-}
-
 
 if ( $pid )
 {

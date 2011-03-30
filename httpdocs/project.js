@@ -165,14 +165,15 @@ var stringToKeyAction = {
             }},
 };
 
-stringToKeyAction["4"] = stringToKeyAction["A"];
+var withAliases = jQuery.extend({}, stringToKeyAction);
+withAliases["4"] = withAliases["A"];
 
 /* We now turn that structure into an object for
    fast lookups from keyCodes */
 
 var keyCodeToKeyAction = { }
 
-for(var i in stringToKeyAction) {
+for(var i in withAliases) {
   var keyCodeFromKey = null;
   /* If the string representation of the key is a single upper case
      letter or a number, we just use its ASCII value as the key
@@ -183,7 +184,7 @@ for(var i in stringToKeyAction) {
       keyCodeFromKey = k;
     }
   }
-  var o = stringToKeyAction[i];
+  var o = withAliases[i];
   /* Add any more unusual key codes for that action */
   var allKeyCodes = o.specialKeyCodes || [];
   if (keyCodeFromKey && $.inArray(keyCodeFromKey, allKeyCodes) < 0)

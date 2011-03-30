@@ -34,6 +34,7 @@ var arrowKeyCodes = { left: 37, up: 38, right: 39, down: 40 };
 
 var stringToKeyAction = {
   "A" : { helpText: "Go to active node",
+          buttonID: 'trace_button_goactive',
           run: function (e) {
             project.tracingCommand('goactive');
             return false;
@@ -100,11 +101,13 @@ var stringToKeyAction = {
                  return false;
                }},
   "1" : { helpText: "Switch to skeleton tracing mode",
+          buttonID: 'trace_button_skeleton',
           run: function (e) {
             project.tracingCommand('skeletontracing');
             return false;
           }},
   "2" : { helpText: "Switch to synapse dropping mode",
+          buttonID: 'trace_button_synapse',
           run: function (e) {
             project.tracingCommand('synapsedropping');
             return false;
@@ -115,6 +118,7 @@ var stringToKeyAction = {
             return false;
           }},
   "3" : { helpText: "Manually sync with the database",
+          buttonID: 'trace_button_sync',
           run: function (e) {
             project.tracingCommand('dbsync');
             return false;
@@ -133,18 +137,27 @@ var stringToKeyAction = {
             */
           }},
   "5" : { helpText: "Split this skeleton at the active node",
+          buttonID: 'trace_button_skelsplitting',
           run: function (e) {
             project.tracingCommand('skeletonsplitting');
             return false;
           }},
   "6" : { helpText: "Re-root this skeleton at the active node",
+          buttonID: 'trace_button_skelrerooting',
           run: function (e) {
             project.tracingCommand('skeletonreroot');
             return false;
           }},
   "7" : { helpText: "Toggle the display of labels",
+          buttonID: 'trace_button_togglelabels',
           run: function (e) {
             project.tracingCommand('togglelabels');
+            return false;
+          }},
+  "S" : { helpText: "Export to SWC",
+          buttonID: 'trace_button_exportswc',
+          run: function (e) {
+            project.tracingCommand( 'exportswc' );
             return false;
           }},
   "T" : { helpText: "Tag the active node",
@@ -198,6 +211,27 @@ for(var i in withAliases) {
       alert("Attempting to define a second action for keyCode "+k+" via '"+i+"'");
     } else {
       keyCodeToKeyAction[k] = o;
+    }
+  }
+}
+
+/** Updates the 'alt' and 'title' attributes on the toolbar
+    icons that are documented with help text and key presses.
+    Also bind the onClick action for the link that contains
+    those icons to the corresponding function */
+
+function setButtons()
+{
+  for(var i in stringToKeyAction) {
+    var o = stringToKeyAction[i];
+    if (o.buttonID) {
+      var link = $('#'+o.buttonID);
+      link.attr('href','foo');
+      link.click(o.run);
+      var img = link.find('img');
+      img.attr('alt',o.helpText);
+      var title = i+': '+o.helpText;
+      img.attr('title',title);
     }
   }
 }

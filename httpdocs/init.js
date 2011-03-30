@@ -845,5 +845,7 @@ function init()
   ui.registerEvent("onresize", global_resize);
   window.onresize();
 
+  setButtons();
+
   return;
 }

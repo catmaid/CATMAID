@@ -369,6 +369,12 @@ function Project(pid)
       width -= project_stats_widget.offsetWidth;
       left += project_stats_widget.offsetWidth;
     }
+    if (key_shortcut_widget.offsetWidth)
+    {
+      key_shortcut_widget.style.left = left + "px";
+      width -= key_shortcut_widget.offsetWidth;
+      left += key_shortcut_widget.offsetWidth;
+    }
     if (object_tree_widget.offsetWidth)
     {
       object_tree_widget.style.left = left + "px";
@@ -477,6 +483,21 @@ function Project(pid)
     document.getElementById('project_stats_widget').style.display = 'block';
     ui.onresize();
     initProjectStats();
+    return;
+  }
+
+  this.showKeyShortcutHelp = function ()
+  {
+    var i;
+    var widget = $('#key_shortcut_widget');
+    var divForText = widget.find('#keyShortcutsText');
+    var keysHTML = '';
+    for( i in stringToKeyAction ) {
+      keysHTML += '<strong><tt>' + i + '</tt></strong>: ' + stringToKeyAction[i].helpText + "<br>";
+    }
+    divForText.html(keysHTML);
+    widget.css('display', 'block');
+    ui.onresize();
     return;
   }
 

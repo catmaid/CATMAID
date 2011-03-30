@@ -347,8 +347,8 @@ function Project(pid)
 
 
 /*
-	* resize the view and its content on window.onresize event
-	*/
+ * resize the view and its content on window.onresize event
+ */
   var resize = function (e)
   {
     var top = document.getElementById("toolbar_container").offsetHeight;
@@ -422,8 +422,8 @@ function Project(pid)
 
 
 /*
-	 * Shows the tree view for the loaded project
-	 */
+ * Shows the tree view for the loaded project
+ */
   this.showTreeviewWidget = function (m)
   {
     switch (m)
@@ -453,8 +453,8 @@ function Project(pid)
   }
 
 /*
-	 * Shows the datatable for the loaded project
-	 */
+ * Shows the datatable for the loaded project
+ */
   this.showDatatableWidget = function (m)
   {
     document.getElementById('treenode_table_widget').style.display = 'block';
@@ -476,8 +476,8 @@ function Project(pid)
 
 
 /*
-	 * Shows the project statistics widget
-	 */
+ * Shows the project statistics widget
+ */
   this.showStatisticsWidget = function ()
   {
     document.getElementById('project_stats_widget').style.display = 'block';
@@ -710,8 +710,8 @@ function Project(pid)
   }
 
 /*
-	 * create a link between two locations
-	 */
+ * create a link between two locations
+ */
   this.createLink = function (fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype)
   {
     for (var i = 0; i < stacks.length; ++i)
@@ -719,8 +719,8 @@ function Project(pid)
     return;
   }
 /*
-	 * updates nodes in all stacks
-	 */
+ * updates nodes in all stacks
+ */
 
   this.updateNodes = function ()
   {
@@ -730,9 +730,9 @@ function Project(pid)
   }
 
 /*
-	 * create a link between two treenodes (join them)
-	 * toid has to be root of a skeleton
-	 */
+ * create a link between two treenodes (join them)
+ * toid has to be root of a skeleton
+ */
   this.createTreenodeLink = function (fromid, toid)
   {
     for (var i = 0; i < stacks.length; ++i)
@@ -842,9 +842,9 @@ function Project(pid)
   var editToolbar = document.getElementById("");
 
 /*
-	view.appendChild( templateView );
-	view.appendChild( dataView );
-	*/
+  view.appendChild( templateView );
+  view.appendChild( dataView );
+*/
 
   this.coordinates =
   {

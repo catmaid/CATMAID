@@ -483,6 +483,7 @@ function Project(pid)
     document.getElementById('project_stats_widget').style.display = 'block';
     ui.onresize();
     initProjectStats();
+    refresh_project_statistics();
     return;
   }
 

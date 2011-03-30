@@ -365,20 +365,13 @@ function Project(pid)
     }
     if (project_stats_widget.offsetWidth)
     {
-
-      if (table_widget.offsetWidth) project_stats_widget.style.left = left + "px";
-      else
-      project_stats_widget.style.left = "0px";
-
+      project_stats_widget.style.left = left + "px";
       width -= project_stats_widget.offsetWidth;
       left += project_stats_widget.offsetWidth;
     }
     if (object_tree_widget.offsetWidth)
     {
-      if (project_stats_widget.offsetWidth || table_widget.offsetWidth) object_tree_widget.style.left = left + "px";
-      else
-      object_tree_widget.style.left = "0px";
-
+      object_tree_widget.style.left = left + "px";
       width -= object_tree_widget.offsetWidth;
       left += object_tree_widget.offsetWidth;
     }

@@ -11,8 +11,6 @@ SG: the active node is an object with a global variable (atn) in widgets/overlay
     for a) new backend code is required where you sort on the edition_time field the nodes that you retrieve with node.list.php
     from the volume. for b) if you move the node (=edit it), it sets a variable needs_sync that synchronizes the position with
     the database only when you move the node. with only needs_sync, no information is given about the order of editing.
-- fix the keyboard shortcuts in the tooltips
-SG: easy to do in index.html
 - removing a neuron shouldn't require you to remove all synapses under it
   (same as: removing a skeleton that has synapses should be possible: leave the synapses behind as place holders. Requires a mechanism to set a skeleton node as a the parent of the synapse node, to become the presynaptic side.)
 SG: this would require additional backend code. first retrieve the skeleton_id, then find all nodes with element_of this skeleton
@@ -43,8 +41,6 @@ SG: maybe i priorioty, i should have done it from the beginning. helps lots in f
 SG: check in the jstree forum. if you can not find it easily, i would rather post there, they seem to be very helpful.
 
 - not updating nodes quickly when moving through stack. only update nodes at final point when scrolling.
-- when the project statistics window opens, its results column is empty. One has to click on the refresh button. Happens the very first time only
-SG: if the stats widget is open, just call project.showStatisticsWidget( ); programmatically
 - show root and leaf nodes differently from normal nodes. Root node must be labeled distinctively. For example in magenta, with an 'R' or 'S' like trakem2 does.
 SG: i implemented the logic in treenode.table.list.php. it should be doable with b) only (i.e. just check on the children and parent fields of the
     nodes in memory (overlay_node/overlay_connectornode.js). for the 'R', 'S' labels, you could use the same machinery as used for the labels display.
@@ -52,7 +48,6 @@ SG: i implemented the logic in treenode.table.list.php. it should be doable with
 - when the user adds a surprising node (not in the same layer, not in the next or previous layer) show a warning in the status bar
 SG: the status bar display has to be bigger, the fonts are very small and white-on-grey text is hardly visible. originally, when stephan developed it,
     it was only meant for debugging purposes i think.
-- add a window that lists the keyboard shortcuts
 - more keyboard shortcuts:
 SG: as i said above, it is important to distinguish between a) and b) for the functionality. how much you want to do in the UI on the client,
 and sporadically updated the database, or send lots of ajax requests.

@@ -511,7 +511,7 @@ function global_resize(e)
 {
   var top = document.getElementById("toolbar_container").offsetHeight;
 
-  message_widget.style.top = table_widget.style.top = object_tree_widget.style.top = project_stats_widget.style.top = key_shortcut_widget.style.top = top + "px";
+  message_widget.style.top = table_widget.style.top = object_tree_widget.style.top = project_stats_widget.style.top = key_shortcut_widget.style.top = view_in_3d_widget.style.top = top + "px";
 
   if (message_widget.offsetHeight) top += message_widget.offsetHeight;
   var bottom = 64;
@@ -523,6 +523,7 @@ function global_resize(e)
   class_tree_widget.style.height = height + "px";
   project_stats_widget.style.height = height + "px";
   key_shortcut_widget.style.height = height + "px";
+  view_in_3d_widget.style.height = height + "px";
 
   var content = document.getElementById("content");
   content.style.top = top + "px";
@@ -796,6 +797,10 @@ function init()
   key_shortcut_widget = document.getElementById("key_shortcut_widget");
   var key_shortcut_widget_resize_handle = new ResizeHandle("h");
   key_shortcut_widget.appendChild(key_shortcut_widget_resize_handle.getView());
+
+  view_in_3d_widget = document.getElementById("view_in_3d_widget");
+  var view_in_3d_widget_resize_handle = new ResizeHandle("h");
+  view_in_3d_widget.appendChild(view_in_3d_widget_resize_handle.getView());
 
   object_tree_widget = document.getElementById("object_tree_widget");
   var tree_widget_resize_handle = new ResizeHandle("h");

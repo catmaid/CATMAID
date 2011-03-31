@@ -375,6 +375,12 @@ function Project(pid)
       width -= key_shortcut_widget.offsetWidth;
       left += key_shortcut_widget.offsetWidth;
     }
+    if (view_in_3d_widget.offsetWidth)
+    {
+      view_in_3d_widget.style.left = left + "px";
+      width -= view_in_3d_widget.offsetWidth;
+      left += view_in_3d_widget.offsetWidth;
+    }
     if (object_tree_widget.offsetWidth)
     {
       object_tree_widget.style.left = left + "px";
@@ -500,6 +506,51 @@ function Project(pid)
     widget.css('display', 'block');
     ui.onresize();
     return;
+  }
+
+  this.show3DView = function ()
+  {
+    var widget = $('#view_in_3d_widget');
+    widget.css('display', 'block');
+    ui.onresize();
+    createViewerFromCATMAID('3d-viewer-canvas');
+    return;
+  }
+
+  this.addTo3DView = function ()
+  {
+    if (!atn) {
+      alert("You must have an active node selected to add its skeleton to the 3D View.");
+      return;
+    }
+    if (atn.type != "treenode") {
+      alert("You can only add skeletons to the 3D View at the moment - please select a node of a skeleton.");
+      return;
+    }
+    var tnid = atn.id;
+
+    requestQueue.register('model/treenode.info.php', 'POST', {
+      pid: project.id,
+      tnid: atn.id
+    }, function (status, text, xml)
+    {
+      if (status == 200)
+      {
+        var e = eval("(" + text + ")");
+        if (e.error)
+        {
+          alert(e.error);
+        }
+        else
+        {
+          e['project_id'] = project.id;
+          addNeuronFromCATMAID('3d-viewer-canvas',e);
+        }
+      } else {
+        alert("Bad status code "+status+" mapping treenode ID to skeleton and neuron");
+      }
+      return true;
+    });
   }
 
   this.setMode = function (m)

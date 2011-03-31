@@ -48,10 +48,11 @@ if ( $pid )
 	foreach($res as $key => $ele) {
 		$out = "";
 		$out .= $ele['id']." ";
+		$out .= '0 '; // SWC type
 		$out .= $ele['x']." ";
 		$out .= $ele['y']." ";
 		$out .= $ele['z']." ";
-		$out .= $ele['confidence']." ";
+		$out .= "0 "; // radius
 		if($ele['parent_id']=="")
 			$out .= "-1\n";
 		else

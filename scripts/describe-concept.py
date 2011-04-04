@@ -12,7 +12,7 @@ if len(sys.argv) != 2:
 
 cid = int(sys.argv[1])
 
-db_login_filename = os.path.join(os.environ['HOME'],'.catmaid-db')
+db_login_filename = os.path.join(os.environ['HOME'],'.catmaid-db.test')
 fp = open(db_login_filename)
 for i, line in enumerate(fp):
   if i == 0:
@@ -20,7 +20,7 @@ for i, line in enumerate(fp):
   elif i == 1:
     catmaid_db_password = line.strip()
 
-conn = psycopg2.connect(database="catmaid",user=catmaid_db_user,password=catmaid_db_password)
+conn = psycopg2.connect(database="catmaid-dev",user=catmaid_db_user,password=catmaid_db_password)
 
 c = conn.cursor()
 

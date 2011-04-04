@@ -221,7 +221,10 @@ function Viewer( divID ) {
         }
 
         for( var i in this.neurons ) {
-            this.neurons[i].transform( this.currentTransformation );
+            var neuron = this.neurons[i];
+            if( neuron.drawable ) {
+                neuron.transform( this.currentTransformation );
+            }
         }
 
         if (this.showVNCLandmarks) {
@@ -263,12 +266,15 @@ function Viewer( divID ) {
             newMaxX = newMaxY = newMaxZ = -1;
         } else {
             for( i in this.neurons ) {
-                newMinX = Math.min(newMinX, this.neurons[i].min_x);
-                newMaxX = Math.max(newMaxX, this.neurons[i].max_x);
-                newMinY = Math.min(newMinY, this.neurons[i].min_y);
-                newMaxY = Math.max(newMaxY, this.neurons[i].max_y);
-                newMinZ = Math.min(newMinZ, this.neurons[i].min_z);
-                newMaxZ = Math.max(newMaxZ, this.neurons[i].max_z);
+                var neuron = this.neurons[i];
+                if( ! neuron.drawable )
+                    continue;
+                newMinX = Math.min(newMinX, neuron.min_x);
+                newMaxX = Math.max(newMaxX, neuron.max_x);
+                newMinY = Math.min(newMinY, neuron.min_y);
+                newMaxY = Math.max(newMaxY, neuron.max_y);
+                newMinZ = Math.min(newMinZ, neuron.min_z);
+                newMaxZ = Math.max(newMaxZ, neuron.max_z);
             }
         }
         this.centreX = (newMinX + newMaxX) / 2;
@@ -441,6 +447,8 @@ function NeuronView( basename, color, viewer, projectID, skeletonID ) {
     this.viewer = viewer;
     this.skeletonID = skeletonID;
 
+    this.drawable = false;
+
     this.circleRadius = 0.6;
     this.lineWidth = 2;
 
@@ -530,10 +538,12 @@ function NeuronView( basename, color, viewer, projectID, skeletonID ) {
             }
         }
 
-        enclosingObject.transform( enclosingObject.viewer.currentTransformation );
-
-	enclosingObject.viewer.updateViewBounds();
-        enclosingObject.viewer.redraw();
+        if( enclosingObject.all_points.length > 0 ) {
+            enclosingObject.drawable = true;
+            enclosingObject.transform( enclosingObject.viewer.currentTransformation );
+            enclosingObject.viewer.updateViewBounds();
+            enclosingObject.viewer.redraw();
+        }
 
     }, "test");
 

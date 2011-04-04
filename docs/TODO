@@ -1,124 +1,279 @@
-SG: i will add some comments and pointers to where in the code modifications are required
-    or what is needed in terms of new code. for some functionality, it is important to distinguish
-    between: a) does it require new backend code to retrieve information, b) is it possible with the
-    currently retrieved nodes (in the client memory) of the current stack, one above and below.
-    
+SG: i will add some comments and pointers to where in the code
+   modifications are required or what is needed in terms of new
+   code. for some functionality, it is important to distinguish
+   between: a) does it require new backend code to retrieve
+   information, b) is it possible with the currently retrieved nodes
+   (in the client memory) of the current stack, one above and below.
+
+========================================================================
 critical
 
+
+========================================================================
 important
-- make 'a' go to active node' and 'e' go to the last edited node in the current skeleton
-SG: the active node is an object with a global variable (atn) in widgets/overlay.js . what means exactly last edited?
-    for a) new backend code is required where you sort on the edition_time field the nodes that you retrieve with node.list.php
-    from the volume. for b) if you move the node (=edit it), it sets a variable needs_sync that synchronizes the position with
-    the database only when you move the node. with only needs_sync, no information is given about the order of editing.
-- removing a neuron shouldn't require you to remove all synapses under it
-  (same as: removing a skeleton that has synapses should be possible: leave the synapses behind as place holders. Requires a mechanism to set a skeleton node as a the parent of the synapse node, to become the presynaptic side.)
-SG: this would require additional backend code. first retrieve the skeleton_id, then find all nodes with element_of this skeleton
-    and remove them from treenode. but also, one needs to be sure that all the class_instance are deleted (but not the label class_instances).
-    this would me all presynaptic/postsynaptic terminals of the treenodes. i made this for removing only one treenode in (treenode.delete.php)
-- reverse the ordering of drawing the line
-SG: maybe it easy done, it would be in widgets/overlay.js, refreshNodes line 778
-- tracing policy/best practics (lower/uppercase names, tags, where to place the treenode/connector)
-- catmaid.org, tracing tutorial, video, try it now project online
-- several label refresh calls when panning -> in stack.js line 613, textlabel redraw logic
-- show all links for a connector even when not in the same slice
-- show all incoming connectors for a treenode
-SG: would require more backend code, probably in nodes.list.php where the treenodes/connectors are fetched
-- highlight treenode of currently activated skeleton
-SG: require to fetch the skeletons ids and save it as property of the nodes. there is the notion of an active skeleton used
-    for the object tree (in tree_object.js, line 502), defined in project.js (variable selectedObjects)
-- delete only the connection to or from a treenode when you click on the arrow
-SG: add an onclick event handler in the overlay_connectornode.js for the arrow path, add backend code to only remove the relationship
-    to the synapse class_instance (post/presynaptic_to) and the class_instances model_of of the treenode, and the part_of relationships
-    for the skeleton (see connector diagram)
-- update the datatable/treeview after operations: create/delete/join/split/reroot treenode
-SG: for the datatable and object tree, there are refresh functions. i think this needs checking of whether the widget (and the table
-    or object tree is initialized at all). there is no nice signal/slot mechanism in catmaid as it is in Qt for interwidget communication.
-- add transactions to the operations
-SG: maybe i priorioty, i should have done it from the beginning. helps lots in fixing broken php scripts.
-- show skeleton in object tree for a selected treenode / shortcut to display the selected neuron in the object tree
-  (same as: Object Tree: add means to synchronize with the canvas. When selecting a node in the canvas, how can one expand nodes and show the skeleton object node?)
-SG: check in the jstree forum. if you can not find it easily, i would rather post there, they seem to be very helpful.
 
-- not updating nodes quickly when moving through stack. only update nodes at final point when scrolling.
-- show root and leaf nodes differently from normal nodes. Root node must be labeled distinctively. For example in magenta, with an 'R' or 'S' like trakem2 does.
-SG: i implemented the logic in treenode.table.list.php. it should be doable with b) only (i.e. just check on the children and parent fields of the
-    nodes in memory (overlay_node/overlay_connectornode.js). for the 'R', 'S' labels, you could use the same machinery as used for the labels display.
-    using g.raphael.js
-- when the user adds a surprising node (not in the same layer, not in the next or previous layer) show a warning in the status bar
-SG: the status bar display has to be bigger, the fonts are very small and white-on-grey text is hardly visible. originally, when stephan developed it,
-    it was only meant for debugging purposes i think.
-- more keyboard shortcuts:
-SG: as i said above, it is important to distinguish between a) and b) for the functionality. how much you want to do in the UI on the client,
-and sporadically updated the database, or send lots of ajax requests.
-   1. Go to the next branch node or end node ('n')
-SG: branch nodes lie often not only one slice away, so would need b)
-   2. Go to the previous branch node or root ('p')
-SG: also b)
-   3. Go to next node (']')
-SG: as Albert said, illdefined for branch nodes. probably can be done with a) only when adhering to the policy of putting nodes in each slices
-    and not making jumps.
-   4. Go to previous node ('[')
-SG: same as 3.
-   5. Go to the root node ('r')
-SG: i implemented go to the root node of the selected skeleton in the object tree with b) (skeleton.root.get.php). it just jumps to the
-    coordinate and with a miliseconds timer, (assuming enough time has passed to have all the nodes in memory), select the node id.
-    This milisecond is particularly not nice. i think you have to add a new function where you can give the appropriate callbackfunction
-    (like activating the node). the callback function is then executed immediately after the backend returns its value.
-   6. Last edited node ('w')
-   7. Last added node ('a')
-SG: probably will require the route a), using the creation_time, edition_tiem fields. also beware if you want to distinguish the user that
-    last edited/added the node, otherwise you will jump to nodes from other users adding nodes concurrenetly.
-   8. Last active / selected node ('e')
-SG: maybe introduce another variable for last active that is set in the activateNode function in overlay.js to store a one-step back history
-   9. Marked node (shift+e)
-- each skeleton must have a "last active/selected node", "last edited node", and "last added node".
-SG: if desining the backendcode for the keyboard shortcuts, maybe add the possibility of adding a skeleton_id that is used in the WHERE part
-    of the selects
-- need means to mark a node, for measurements. For example, to measure distance from that node to the root, or to the previous branch point, etc.
-SG: yes, up to you guys to decide how much statistics will be included in catmaid, or rather use exporters to trackem etc.
-- Object Tree: a node with two different presynaptic sites lists them with the same name under the skeleton node. Is that an error?
-SG: i just attached their database id when creating. if they have the same name including id, this is an error.
-- Object Tree: the postsynaptic side is listed as "presynaptic terminal 2704", which is wrong, and the number is not the same number as that of the presynaptic side. What does the number mean? It should mean the id of the synapse itself.
-SG: in the current model (i agree, it is by no means the straightforwardest, check connector.png in docs/dbschema) this is correct. a treenode
-    is a model_of a eg. <class_instance> "presynaptic terminal 2704", which is in a relationship presynaptic_to <class_instance> "synapse X".
-    in turn, "synapse X" is a model_of a connector.
+* make 'a' go to active node' and 'e' go to the last edited node in
+   the current skeleton
 
+   SG: the active node is an object with a global variable (atn) in
+   widgets/overlay.js . what means exactly last edited?  for a) new
+   backend code is required where you sort on the edition_time field
+   the nodes that you retrieve with node.list.php from the volume. for
+   b) if you move the node (=edit it), it sets a variable needs_sync
+   that synchronizes the position with the database only when you move
+   the node. with only needs_sync, no information is given about the
+   order of editing.
 
+* removing a neuron shouldn't require you to remove all synapses under
+   it (same as: removing a skeleton that has synapses should be
+   possible: leave the synapses behind as place holders. Requires a
+   mechanism to set a skeleton node as a the parent of the synapse
+   node, to become the presynaptic side.)
+
+   SG: this would require additional backend code. first retrieve the
+   skeleton_id, then find all nodes with element_of this skeleton and
+   remove them from treenode. but also, one needs to be sure that all
+   the class_instance are deleted (but not the label class_instances).
+   this would me all presynaptic/postsynaptic terminals of the
+   treenodes. i made this for removing only one treenode in
+   (treenode.delete.php)
+
+* reverse the ordering of drawing the line
+
+   SG: maybe it easy done, it would be in widgets/overlay.js,
+   refreshNodes line 778
+
+* tracing policy/best practics (lower/uppercase names, tags, where to
+   place the treenode/connector)
+
+* catmaid.org, tracing tutorial, video, try it now project online
+
+* several label refresh calls when panning -> in stack.js line 613,
+   textlabel redraw logic
+
+* show all links for a connector even when not in the same slice
+
+* show all incoming connectors for a treenode
+
+   SG: would require more backend code, probably in nodes.list.php
+   where the treenodes/connectors are fetched
+
+* highlight treenode of currently activated skeleton
+
+   SG: require to fetch the skeletons ids and save it as property of
+   the nodes. there is the notion of an active skeleton used for the
+   object tree (in tree_object.js, line 502), defined in project.js
+   (variable selectedObjects)
+
+* delete only the connection to or from a treenode when you click on
+   the arrow
+
+   SG: add an onclick event handler in the overlay_connectornode.js
+   for the arrow path, add backend code to only remove the
+   relationship to the synapse class_instance (post/presynaptic_to)
+   and the class_instances model_of of the treenode, and the part_of
+   relationships for the skeleton (see connector diagram)
+
+* update the datatable/treeview after operations:
+   create/delete/join/split/reroot treenode
+
+   SG: for the datatable and object tree, there are refresh
+   functions. i think this needs checking of whether the widget (and
+   the table or object tree is initialized at all). there is no nice
+   signal/slot mechanism in catmaid as it is in Qt for interwidget
+   communication.
+
+* add transactions to the operations
+
+   SG: maybe i priorioty, i should have done it from the
+   beginning. helps lots in fixing broken php scripts.
+
+* show skeleton in object tree for a selected treenode / shortcut to
+   display the selected neuron in the object tree (same as: Object
+   Tree: add means to synchronize with the canvas. When selecting a
+   node in the canvas, how can one expand nodes and show the skeleton
+   object node?)
+
+   SG: check in the jstree forum. if you can not find it easily, i
+   would rather post there, they seem to be very helpful.
+
+* not updating nodes quickly when moving through stack. only update
+   nodes at final point when scrolling.
+
+* show root and leaf nodes differently from normal nodes. Root node
+   must be labeled distinctively. For example in magenta, with an 'R'
+   or 'S' like trakem2 does.
+
+   SG: i implemented the logic in treenode.table.list.php. it should
+   be doable with b) only (i.e. just check on the children and parent
+   fields of the nodes in memory
+   (overlay_node/overlay_connectornode.js). for the 'R', 'S' labels,
+   you could use the same machinery as used for the labels display.
+   using g.raphael.js
+
+* when the user adds a surprising node (not in the same layer, not in
+   the next or previous layer) show a warning in the status bar
+
+   SG: the status bar display has to be bigger, the fonts are very
+   small and white-on-grey text is hardly visible. originally, when
+   stephan developed it, it was only meant for debugging purposes i
+   think.
+
+* more keyboard shortcuts:
+
+   SG: as i said above, it is important to distinguish between a) and
+   b) for the functionality. how much you want to do in the UI on the
+   client, and sporadically updated the database, or send lots of ajax
+   requests.
+
+ 1. Go to the next branch node or end node ('n')
+
+   SG: branch nodes lie often not only one slice away, so would need b)
+
+ 2. Go to the previous branch node or root ('p')
+
+   SG: also b)
+
+ 3. Go to next node (']')
+
+   SG: as Albert said, illdefined for branch nodes. probably can
+   be done with a) only when adhering to the policy of putting nodes
+   in each slices and not making jumps.
+
+ 4. Go to previous node ('[')
+
+   SG: same as 3.
+
+ 5. Go to the root node ('r')
+
+   SG: i implemented go to the root node of the selected skeleton in
+   the object tree with b) (skeleton.root.get.php). it just jumps to
+   the coordinate and with a miliseconds timer, (assuming enough time
+   has passed to have all the nodes in memory), select the node id.
+   This milisecond is particularly not nice. i think you have to add a
+   new function where you can give the appropriate callbackfunction
+   (like activating the node). the callback function is then executed
+   immediately after the backend returns its value.
+
+ 6. Last edited node ('w')
+
+ 7. Last added node ('a')
+
+   SG: probably will require the route a), using the creation_time,
+   edition_tiem fields. also beware if you want to distinguish the
+   user that last edited/added the node, otherwise you will jump to
+   nodes from other users adding nodes concurrenetly.
+
+ 8. Last active / selected node ('e')
+
+   SG: maybe introduce another variable for last active that is set in
+   the activateNode function in overlay.js to store a one-step back
+   history
+
+ 9. Marked node (shift+e)
+
+* each skeleton must have a "last active/selected node", "last edited
+   node", and "last added node".
+
+   SG: if desining the backendcode for the keyboard shortcuts, maybe
+   add the possibility of adding a skeleton_id that is used in the
+   WHERE part of the selects
+
+* need means to mark a node, for measurements. For example, to measure
+   distance from that node to the root, or to the previous branch
+   point, etc.
+
+   SG: yes, up to you guys to decide how much statistics will be included in catmaid, or rather use exporters to trackem etc.
+
+* Object Tree: a node with two different presynaptic sites lists them
+   with the same name under the skeleton node. Is that an error?
+
+   SG: i just attached their database id when creating. if they have
+   the same name including id, this is an error.
+
+* Object Tree: the postsynaptic side is listed as "presynaptic
+   terminal 2704", which is wrong, and the number is not the same
+   number as that of the presynaptic side. What does the number mean?
+   It should mean the id of the synapse itself.
+
+   SG: in the current model (i agree, it is by no means the
+   straightforwardest, check connector.png in docs/dbschema) this is
+   correct. a treenode is a model_of a eg. <class_instance>
+   "presynaptic terminal 2704", which is in a relationship
+   presynaptic_to <class_instance> "synapse X".  in turn, "synapse X"
+   is a model_of a connector.
+
+========================================================================
 wishlist
-- not use ctrl-click for deselect 
-- datatable, label to the left, type small, do not need to show the id
-- zoom in/out should use mouse position
-- show the confidence for active treenodes/connector
-- updating the confidence with keys 1 to 5
-- ability to pop out interface elements -> window manager
-- Bug: On mac chrome v9, sometimes tiles don't load on zoom/layer change operations and
-  lack of loading persists. No issues with scrolling.
-- zoom in past 100%, on to 200% and 400%
-- Turn scale bar off option
-- Bug: [+] expander box is shown even on elements without subobjects in Object Tree
-- in TrakEM2, pressing 'g' while over a node selects that object - in CATMAID it would
-  be good if it selected the active node
-- once display is fast enough, display treelines in all modes - in general
-- search box (regular expression across class instance names)
-- somewhere that displays the world coordinates of the current mouse position
-- dblick just somewhere to zoom in in all modes
-- shift-click on a line should add a node between two others
-- show multiple node tables, each one for a single skeleton, in tabs. This will preserve the current filtering for that tree and make it easy to go from one to the other for correcting errors in the skeletons.
+
+* not use ctrl-click for deselect
+
+* datatable, label to the left, type small, do not need to show the id
+
+* zoom in/out should use mouse position
+
+* show the confidence for active treenodes/connector
+
+* updating the confidence with keys 1 to 5
+
+* ability to pop out interface elements -> window manager
+
+* Bug: On mac chrome v9, sometimes tiles don't load on zoom/layer
+   change operations and lack of loading persists. No issues with
+   scrolling.
+
+* zoom in past 100%, on to 200% and 400%
+
+* Turn scale bar off option
+
+* Bug: [+] expander box is shown even on elements without subobjects
+   in Object Tree
+
+* in TrakEM2, pressing 'g' while over a node selects that object - in
+   CATMAID it would be good if it selected the active node
+
+* once display is fast enough, display treelines in all modes - in
+   general
+
+* search box (regular expression across class instance names)
+
+* somewhere that displays the world coordinates of the current mouse
+   position
+
+* dblick just somewhere to zoom in in all modes
+
+* shift-click on a line should add a node between two others
+
+* show multiple node tables, each one for a single skeleton, in
+   tabs. This will preserve the current filtering for that tree and
+   make it easy to go from one to the other for correcting errors in
+   the skeletons.
 
 LATER
-- benchmarks / speedup investigation
-- user rights management extensions
-- security auditing, related to:
-  - amazon mechanical turk test
-  - user rights managment, registration
-  - history/logfile of changes
-- 3d view of a skeleton
-- show connectivity graph from annotation domain
-- integrate the window manager: CMW
-- ontology work: import/export obo ontolgoy terms, use class_class for constraining
-- export script to trackem
-- new django-based back-end
-- label an area by a close polyline, similar to labelme
-  - add a areatree node inheriting from treenode with array column
-- add connector table (id, x,y,z, presyn, postsyn, tags, lastmodified)
+
+* benchmarks / speedup investigation
+
+* user rights management extensions
+
+* security auditing, related to:
+  * amazon mechanical turk test
+  * user rights managment, registration
+  * history/logfile of changes
+
+* show connectivity graph from annotation domain
+
+* integrate the window manager: CMW
+
+* ontology work: import/export obo ontolgoy terms, use class_class for
+   constraining
+
+* export script to trackem
+
+* new django-based back-end
+
+* label an area by a close polyline, similar to labelme
+
+  * add a areatree node inheriting from treenode with array column
+
+* add connector table (id, x,y,z, presyn, postsyn, tags, lastmodified)
+

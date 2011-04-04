@@ -306,25 +306,6 @@ function Viewer( divID ) {
         $('#3d-view-object-list').append(newElement);
     }
 
-    this.removeFromNeuronList = function( neuronName ) {
-        var indexToRemove = -1;
-        for( i in this.neurons ) {
-            if( this.neurons[i].basename == neuronName ) {
-                indexToRemove = i;
-                break;
-            }
-        }
-        if( indexToRemove >= 0 ) {
-            alert("found it at index: "+indexToRemove);
-            this.neurons.splice(indexToRemove);
-            alert("after removing, this.neurons is: "+this.neurons);
-	    this.updateViewBounds();
-            this.redraw();
-        } else {
-            alert("Couldn't find the neuron "+neuronName+" to remove");
-        }
-    }
-
     this.addFromCATMAID = function( projectID, skeletonID, neuronName ) {
         for( i in this.neurons ) {
             if( this.neurons[i].basename == neuronName ){

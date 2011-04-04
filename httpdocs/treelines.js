@@ -5,6 +5,37 @@ function strip(s) {
     return s.replace(/^\s*|\s*$/g,'');
 }
 
+// This function from: http://stackoverflow.com/questions/962802/is-it-correct-to-use-javascript-array-sort-method-for-shuffling
+function shuffle(array) {
+    var tmp, current, top = array.length;
+
+    if(top) while(--top) {
+        current = Math.floor(Math.random() * (top + 1));
+        tmp = array[current];
+        array[current] = array[top];
+        array[top] = tmp;
+    }
+
+    return array;
+}
+
+var numberOfColors = 100;
+var colors = [];
+for( var i = 0; i < numberOfColors; ++i ) {
+    var h = i / (numberOfColors + 1);
+    colors.push( Raphael.hsb2rgb({ h:h, s:1, b:1 }).hex)
+}
+shuffle(colors);
+
+function hashStringToByte ( s ) {
+    var c, result = 0;
+    for (var i = 0; i < s.length; i++ ) {
+        c = s.charCodeAt(i);
+        result += 23 * c;
+    }
+    return result & 0xFF;
+}
+
 function createTransformation( phi, theta, psi, scale ) {
 
     var R = $M( [ [ Math.cos(theta)*Math.cos(psi),
@@ -296,9 +327,9 @@ function Viewer( divID ) {
             }
         }
 
-        var color = "blue";
+        var color = colors[hashStringToByte(neuronName)%numberOfColors];
 
-        var neuron = new NeuronView( neuronName, "blue", this, projectID, skeletonID );
+        var neuron = new NeuronView( neuronName, color, this, projectID, skeletonID );
         this.neurons.push( neuron );
         this.addToNeuronList( neuron );
     }

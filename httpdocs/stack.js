@@ -389,6 +389,10 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 		console.log('width', tl_width * resolution.x);
 		console.log('height', tl_height * resolution.y);
 			*/
+
+    // FIXME: check if we need to wait for the result of this, which
+    // can now be done with completedCallback...
+
     // first synchronize with database
     svgOverlay.updateNodeCoordinatesinDB();
 

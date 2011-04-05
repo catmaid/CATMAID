@@ -364,6 +364,8 @@ zdiff) // the different from the current slices
     });
     this.parentnode.draw();
     statusBar.replaceLast("move treenode with id " + this.parentnode.id);
+
+    this.parentnode.needsync = true;
   }
   mc.up = function ()
   {
@@ -371,8 +373,6 @@ zdiff) // the different from the current slices
     {
       opacity: 1
     });
-
-    this.parentnode.needsync = true;
   }
   mc.start = function ()
   {

@@ -128,13 +128,10 @@ var stringToKeyAction = {
             project.tracingCommand('goparent');
             return false;
           }},
-  "E" : { helpText: "Go to the last edited node in this skeleton",
+  "E" : { helpText: "Go to last edited node in this skeleton",
           run: function (e) {
-            alert("IMPLEMENT ME");
-            /*
-            project.tracingCommand('goactive');
+            project.tracingCommand('golastedited');
             return false;
-            */
           }},
   "5" : { helpText: "Split this skeleton at the active node",
           buttonID: 'trace_button_skelsplitting',

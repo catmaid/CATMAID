@@ -1326,6 +1326,36 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
         alert("No active node to go to!");
       }
       break;
+    case "golastedited":
+      if (atn == null) {
+        alert("There was no active node.  One is required to find the\n"+
+              "last edited node in the same skeleton.");
+        break;
+      }
+      svgOverlay.updateNodeCoordinatesinDB(function () {
+
+        requestQueue.register("model/last.edited.or.added.php", "POST", {
+          pid: project.id,
+          tnid: atn.id }, function (status, text, xml) {
+            if (status == 200)
+            {
+              if (text && text != " ")
+              {
+                var e = eval("(" + text + ")");
+                if (e.error)
+                {
+                  alert(e.error);
+                }
+                else
+                {
+                  project.moveTo(e.z, e.y, e.x);
+                }
+              }
+            }
+          });
+
+      });
+      break;
     case "skeletonsplitting":
       if (atn != null)
       {

@@ -18,7 +18,9 @@ if ( $pid )
 {
 	if ( $uid )
 	{
-        $query = "SELECT tn.id AS id, tn.location AS location, greatest(tn.creation_time, tn.edition_time) AS most_recent ".
+        $query = "SELECT tn.id AS id, ".
+            "            (tn.location).x as x, (tn.location).y as y, (tn.location).z AS z, ".
+            "             greatest(tn.creation_time, tn.edition_time) AS most_recent ".
             "FROM treenode_class_instance tcn, relation r, treenode_class_instance tcn2, treenode tn ".
             "WHERE ".
             "  tcn.treenode_id = $tnid AND ".

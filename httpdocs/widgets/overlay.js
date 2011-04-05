@@ -685,7 +685,7 @@ current_scale // current scale of the stack
     return;
   }
 
-  var updateNodePositions = function (nodeArray)
+  var updateNodePositions = function (nodeArray, completedCallback)
   {
     var requestDicitionary = {};
     for( i in nodeArray ) {
@@ -705,8 +705,10 @@ current_scale // current scale of the stack
           if (e.error)
           {
             alert(e.error);
+            completedCallback(-1);
           } else {
-            // TODO: run a supplied callback
+            if( completedCallback )
+              completedCallback(e['updated']);
           }
         }
       }
@@ -717,7 +719,7 @@ current_scale // current scale of the stack
                           callback);
   }
 
-  this.updateNodeCoordinatesinDB = function ()
+  this.updateNodeCoordinatesinDB = function (completedCallback)
   {
     var nodesToUpdate = new Array();
     for (var i in nodes)
@@ -740,7 +742,11 @@ current_scale // current scale of the stack
       }
     }
     if( nodesToUpdate.length > 0 )
-      updateNodePositions( nodesToUpdate );
+      updateNodePositions( nodesToUpdate, completedCallback );
+    else {
+      if( completedCallback )
+        completedCallback(0);
+    }
   }
 
   var updateNodeCoordinates = function (newscale)

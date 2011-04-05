@@ -9,47 +9,60 @@ include_once( 'json.inc.php' );
 $db =& getDB();
 $ses =& getSession();
 
-$pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
-
-// update treenode coordinates to the database
-
-$id = isset( $_REQUEST[ 'id' ] ) ? intval( $_REQUEST[ 'id' ] ) : -1;
-$type = isset( $_REQUEST[ 'type'] ) ? $_REQUEST[ 'type'] : 'none';
-$x = isset( $_REQUEST[ 'x' ] ) ? floatval( $_REQUEST[ 'x' ] ) : 0;
-$y = isset( $_REQUEST[ 'y' ] ) ? floatval( $_REQUEST[ 'y' ] ) : 0;
-$z = isset( $_REQUEST[ 'z' ] ) ? floatval( $_REQUEST[ 'z' ] ) : 0;
-$radius = isset( $_REQUEST[ 'radius' ] ) ? floatval( $_REQUEST[ 'radius' ] ) : 0;
-$confidence = isset( $_REQUEST[ 'confidence' ] ) ? floatval( $_REQUEST[ 'confidence' ] ) : 0;
-
-if ( $pid )
-{
-  if ( $uid )
-  {
-      if( $type == "treenode") {
-
-        if ( $id != -1 ) {
-          $ids = $db->update("treenode", array('location' => '('.$x.','.$y.','.$z.')' ), '"treenode"."id" = '.$id);
-          echo makeJSON( array( 'updated_treenode_id' => $ids ) );
-          return;
-        }
-        
-      } elseif ( $type == "location") {
-
-        if ( $id != -1 ) {
-          $ids = $db->update("location", array('location' => '('.$x.','.$y.','.$z.')' ), '"location"."id" = '.$id);
-          echo makeJSON( array( 'updated_location_id' => $ids ) );
-          return;
-        }
-        
-      }
-      echo "Nothing updated!";
-        
-  }
-  else
+if ( ! $uid ) {
     echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to update treenodes.' ) );
+    return;
 }
-else
-  echo makeJSON( array( 'error' => 'Project closed. Can not apply operation.' ) );
-  
+
+$nodes = array();
+
+foreach( $_REQUEST as $key => $value ) {
+    preg_match('/^(\w+)([0-9]+)$/', $key, $matches);
+    $real_key = $matches[1];
+    $index = $matches[2];
+    if( ! array_key_exists($index,$nodes) ) {
+        $nodes[$index] = array();
+    }
+    $nodes[$index][$real_key] = $value;
+}
+
+$required_keys = array( 'pid', 'node_id', 'x', 'y', 'z', 'type' );
+
+$nodes_updated = 0;
+
+foreach( $nodes as $node ) {
+    foreach( $required_keys as $required_key ) {
+        if( ! array_key_exists($required_key,$node) ) {
+            echo makeJSON( array( 'error' => "Missing key: '$required_key' in index '$index'" ) );
+            return;
+        }
+    }
+    $pid = intval( $node['pid'] );
+    if( ! $pid ) {
+        /* FIXME: also check that this a project the user
+           has access to.  This needs to be done *everywhere* ... */
+        echo makeJSON( array( 'error' => 'Invalid project' ) );
+        return;
+    }
+    $node_id = intval( $node['node_id'] );
+    $x = floatval( $node['x'] );
+    $y = floatval( $node['y'] );
+    $z = floatval( $node['z'] );
+    $type = $node['type'];
+    if( $type == "treenode") {
+        $db->update("treenode", array('location' => '('.$x.','.$y.','.$z.')' ), 'treenode.id = '.$node_id);
+    } elseif ( $type == "location") {
+        $db->update("location", array('location' => '('.$x.','.$y.','.$z.')' ), 'location.id = '.$node_id);
+    } else {
+        echo makeJSON( array( 'error' => "Unknown node type: '$type'" ) );
+        return;
+    }
+
+    ++ $nodes_updated;
+}
+
+echo makeJSON( array( 'updated' => $nodes_updated ) );
+return;
+
 ?>

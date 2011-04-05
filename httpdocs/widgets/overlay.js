@@ -685,16 +685,17 @@ current_scale // current scale of the stack
     return;
   }
 
-  var updateNodePosition = function (id, phys_x, phys_y, phys_z, type)
+  var updateNodePositions = function (nodeArray)
   {
-    requestQueue.register("model/node.update.php", "POST", {
-      pid: project.id,
-      id: id,
-      x: phys_x,
-      y: phys_y,
-      z: phys_z,
-      type: type
-    }, function (status, text, xml)
+    var requestDicitionary = {};
+    for( i in nodeArray ) {
+      requestDicitionary['pid'+i] = project.id;
+      var node = nodeArray[i];
+      for( k in node ) {
+        requestDicitionary[k+i] = node[k];
+      }
+    }
+    var callback = function (status, text, xml)
     {
       if (status == 200)
       {
@@ -704,16 +705,21 @@ current_scale // current scale of the stack
           if (e.error)
           {
             alert(e.error);
+          } else {
+            // TODO: run a supplied callback
           }
         }
       }
       return true;
-    });
-    return;
+    }
+    requestQueue.register("model/node.update.php", "POST",
+                          requestDicitionary,
+                          callback);
   }
 
   this.updateNodeCoordinatesinDB = function ()
   {
+    var nodesToUpdate = new Array();
     for (var i in nodes)
     {
       // only updated nodes that need sync, e.g.
@@ -725,9 +731,16 @@ current_scale // current scale of the stack
         var phys_y = this.pix2physY(nodes[i].y);
         var phys_z = this.pix2physZ(nodes[i].z);
         nodes[i].needsync = false;
-        updateNodePosition(nodes[i].id, phys_x, phys_y, phys_z, nodes[i].type)
+
+        nodesToUpdate.push( { 'node_id': nodes[i].id,
+                              'x': phys_x,
+                              'y': phys_y,
+                              'z': phys_z,
+                              'type': nodes[i].type } );
       }
     }
+    if( nodesToUpdate.length > 0 )
+      updateNodePositions( nodesToUpdate );
   }
 
   var updateNodeCoordinates = function (newscale)

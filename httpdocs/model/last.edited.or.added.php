@@ -24,6 +24,7 @@ if ( $pid )
             "FROM treenode_class_instance tcn, relation r, treenode_class_instance tcn2, treenode tn ".
             "WHERE ".
             "  tcn.treenode_id = $tnid AND ".
+            "  tcn.project_id = $pid AND ".
             "  r.relation_name = 'element_of' AND ".
             "  tcn.relation_id = r.id AND ".
             "  tcn.class_instance_id = tcn2.class_instance_id AND ".

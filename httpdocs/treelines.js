@@ -463,70 +463,74 @@ function NeuronView( basename, color, viewer, projectID, skeletonID ) {
 
     var enclosingObject = this; // Since the meaning of 'this' is changed in the callback
 
-    $.get(swcURI, function(data) {
+    requestQueue.register(swcURI, 'GET', {}, function (status, data, xml) {
+        if (status == 200)
+        {
+            var lines = data.split("\n");
+            for( var i = 0; i < lines.length; ++i ) {
+                var line = lines[i];
+                if( line.match(/^\s*#/) ) {
+                    continue;
+                }
+                if( line.match(/^\s*$/) ) {
+                    continue;
+                }
+                line = strip(line);
+                var fields = line.split(/\s+/);
+                var point = new Point(
+                    fields[0], // id
+                    fields[1], // type
+                    parseFloat(fields[2]), // x
+                    parseFloat(fields[3]), // y
+                    parseFloat(fields[4]), // z
+                    fields[5], // radius
+                    fields[6], // parent_id
+                    enclosingObject.viewer);
 
-        var lines = data.split("\n");
-        for( var i = 0; i < lines.length; ++i ) {
-            var line = lines[i];
-            if( line.match(/^\s*#/) ) {
-                continue;
+                enclosingObject.min_x = Math.min( point.original_x, enclosingObject.min_x );
+                enclosingObject.max_x = Math.max( point.original_x, enclosingObject.max_x );
+                enclosingObject.min_y = Math.min( point.original_y, enclosingObject.min_y );
+                enclosingObject.max_y = Math.max( point.original_y, enclosingObject.max_y );
+                enclosingObject.min_z = Math.min( point.original_z, enclosingObject.min_z );
+                enclosingObject.max_z = Math.max( point.original_z, enclosingObject.max_z );
+
+                enclosingObject.all_points[point.id] = point;
             }
-            if( line.match(/^\s*$/) ) {
-                continue;
+
+            // centrePoint = r.circle(10,10,4);
+            // centrePoint.attr("fill","#f00");
+            // centrePoint.attr("stroke","#f00");
+
+            for( var i in enclosingObject.all_points ) {
+                var point = enclosingObject.all_points[i];
+                var p = point.map_to_screen();
+                if( this.circles ) {
+                    point.circle = r.circle(p.x,p.y,circleRadius);
+                    point.circle.attr("fill",enclosingObject.color);
+                }
             }
-            line = strip(line);
-            var fields = line.split(/\s+/);
-            var point = new Point(
-                fields[0], // id
-                fields[1], // type
-                parseFloat(fields[2]), // x
-                parseFloat(fields[3]), // y
-                parseFloat(fields[4]), // z
-                fields[5], // radius
-                fields[6], // parent_id
-                enclosingObject.viewer);
 
-            enclosingObject.min_x = Math.min( point.original_x, enclosingObject.min_x );
-            enclosingObject.max_x = Math.max( point.original_x, enclosingObject.max_x );
-            enclosingObject.min_y = Math.min( point.original_y, enclosingObject.min_y );
-            enclosingObject.max_y = Math.max( point.original_y, enclosingObject.max_y );
-            enclosingObject.min_z = Math.min( point.original_z, enclosingObject.min_z );
-            enclosingObject.max_z = Math.max( point.original_z, enclosingObject.max_z );
+            // Now find all the end points, i.e. those with no parents:
 
-            enclosingObject.all_points[point.id] = point;
-        }
-
-        // centrePoint = r.circle(10,10,4);
-        // centrePoint.attr("fill","#f00");
-        // centrePoint.attr("stroke","#f00");
-
-        for( var i in enclosingObject.all_points ) {
-            var point = enclosingObject.all_points[i];
-            var p = point.map_to_screen();
-            if( this.circles ) {
-                point.circle = r.circle(p.x,p.y,circleRadius);
-                point.circle.attr("fill",enclosingObject.color);
+            enclosingObject.endPoints = enclosingObject.all_points.slice(0);
+            for( var i in enclosingObject.all_points ) {
+                var parent_id = enclosingObject.all_points[i].parent_id;
+                if( parent_id > 0 ) {
+                    delete enclosingObject.endPoints[parent_id];
+                }
             }
-        }
 
-        // Now find all the end points, i.e. those with no parents:
-
-        enclosingObject.endPoints = enclosingObject.all_points.slice(0);
-        for( var i in enclosingObject.all_points ) {
-            var parent_id = enclosingObject.all_points[i].parent_id;
-            if( parent_id > 0 ) {
-                delete enclosingObject.endPoints[parent_id];
+            if( enclosingObject.all_points.length > 0 ) {
+                enclosingObject.drawable = true;
+                enclosingObject.transform( enclosingObject.viewer.currentTransformation );
+                enclosingObject.viewer.updateViewBounds();
+                enclosingObject.viewer.redraw();
             }
-        }
 
-        if( enclosingObject.all_points.length > 0 ) {
-            enclosingObject.drawable = true;
-            enclosingObject.transform( enclosingObject.viewer.currentTransformation );
-            enclosingObject.viewer.updateViewBounds();
-            enclosingObject.viewer.redraw();
+        } else {
+            alert("Bad status code "+status+" when fetching SWC file");
         }
-
-    }, "test");
+    });
 
     this.setColor = function( color ) {
         this.color = color;

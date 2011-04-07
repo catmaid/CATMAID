@@ -60,6 +60,7 @@ RequestQueue = function ()
       /* xmlHttp.setRequestHeader( "Connection", "close" ); */
     }
     xmlHttp.onreadystatechange = callback;
+    $('#spinner').show();
     xmlHttp.send(queue[0].data);
     return;
   }
@@ -68,6 +69,7 @@ RequestQueue = function ()
   {
     if (xmlHttp.readyState == 4)
     {
+      $('#spinner').hide();
       queue[0].callback(xmlHttp.status, xmlHttp.responseText, xmlHttp.responseXML);
       queue.shift();
       if (queue.length > 0) send();

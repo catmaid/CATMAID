@@ -7,6 +7,13 @@ function Console()
   view.className = "console";
   view.appendChild(document.createElement("pre"));
 
+  var spinnerDiv = document.createElement("div");
+  spinnerDiv.setAttribute('id','spinner');
+  var spinnerImg = document.createElement("img");
+  spinnerImg.setAttribute('src', 'widgets/themes/kde/ajax-loader.gif');
+  spinnerDiv.appendChild(spinnerImg);
+  view.appendChild(spinnerDiv);
+
   var toStr = function (obj, ins)
   {
     if (typeof ins == "undefined") ins = "";
@@ -61,7 +68,7 @@ function Console()
     if (typeof obj == "string") sp.appendChild(document.createTextNode(obj));
     else
     sp.appendChild(document.createTextNode(toStr(obj)));
-    view.replaceChild(sp, view.lastChild);
+    view.replaceChild(sp, view.firstChild);
     return;
   }
 

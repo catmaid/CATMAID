@@ -677,6 +677,32 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   }
 
   /**
+   * change the scale, making sure that the point keep_[xyz] stays in
+   * the same position in the view
+   */
+  this.scalePreservingLastPosition = function(keep_x, keep_y, sp)
+  {
+    var old_s = s;
+    var old_scale = scale;
+    var new_s = Math.max(0, Math.min(MAX_S, Math.round(sp)));
+    var new_scale = 1 / Math.pow(2,new_s);
+
+    if( old_s == new_s )
+      return;
+
+    var dx = keep_x - project.coordinates.x;
+    var dy = keep_y - project.coordinates.y;
+
+    var new_centre_x = keep_x - dx * (old_scale / new_scale);
+    var new_centre_y = keep_y - dy * (old_scale / new_scale);
+
+    this.moveTo( project.coordinates.z,
+                 new_centre_y,
+                 new_centre_x,
+                 sp );
+  }
+
+  /**
    * move to physical project-coordinates in nanometer
    */
   this.moveTo = function (zp, yp, xp, sp)
@@ -748,6 +774,8 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 
         var pos_x = translation.x + (x + (offX - viewWidth / 2) / scale) * resolution.x;
         var pos_y = translation.x + (y + (offY - viewHeight / 2) / scale) * resolution.y;
+        project.lastX = pos_x;
+        project.lastY = pos_y;
         statusBar.replaceLast("[" + pos_x.toFixed(3) + ", " + pos_y.toFixed(3) + "]");
       }
       // continue with event handling
@@ -764,6 +792,8 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
         var pos_x = translation.x + (x + (m.offsetX - viewWidth / 2) / scale) * resolution.x;
         var pos_y = translation.x + (y + (m.offsetY - viewHeight / 2) / scale) * resolution.y;
         var pos_z = translation.z + z * resolution.z;
+        project.lastX = pos_x;
+        project.lastY = pos_y;
         statusBar.replaceLast("[" + pos_x.toFixed(3) + ", " + pos_y.toFixed(3) + ", " + pos_z + "]");
       }
       return false;
@@ -1073,7 +1103,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 
   this.changeScale = function (val)
   {
-    self.moveToPixel(z, y, x, val);
+    self.scalePreservingLastPosition(project.lastX, project.lastY, val);
     return;
   }
   //--------------------------------------------------------------------------

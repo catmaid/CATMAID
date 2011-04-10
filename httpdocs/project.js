@@ -235,6 +235,9 @@ function setButtons()
 
 function Project(pid)
 {
+  this.lastX = null;
+  this.lastY = null;
+
   this.getView = function ()
   {
     return view;

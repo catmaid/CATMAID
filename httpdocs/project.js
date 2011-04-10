@@ -862,7 +862,7 @@ function Project(pid)
     }
     var n = target.nodeName.toLowerCase();
     var fromATextField = (n == "input" && target.type.toLowerCase() == "text");
-    if (!(fromATextField || n == "textarea" || n == "area")) //!< @todo exclude all useful keyboard input elements e.g. contenteditable...
+    if (!(fromATextField || n == "textarea" || n == "password" || n == "area")) //!< @todo exclude all useful keyboard input elements e.g. contenteditable...
     {
       keyAction = keyCodeToKeyAction[key];
       if (keyAction)

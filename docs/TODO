@@ -10,13 +10,9 @@ critical
 - root node must be labeled distinctively. For example in magenta, with an 'R' or 'S' like trakem2 does.
 - need means to mark a node, for measurements. For example, to measure distance from that node to the root, or to the previous branch point, etc.
 - missing keybindings for:
-   1. Going to last added node ('a')
-   2. Going to last edited node (moved or tagged)
-   3. Going to last selected node (currently 'e' ?)
-   4. Going to previous node (currently 'p', cound be '[')
-   5. Going to next node ('n' or ']')
-   6. Going to the marked node (one per tree, useful for measurements)
-
+   1. Going to previous node (currently 'p', cound be '[')
+   2. Going to next node ('n' or ']')
+   3. Going to the marked node (one per tree, useful for measurements)
 
 ========================================================================
 important
@@ -152,22 +148,7 @@ important
    (like activating the node). the callback function is then executed
    immediately after the backend returns its value.
 
- 6. Last edited node ('w')
-
- 7. Last added node ('a')
-
-   SG: probably will require the route a), using the creation_time,
-   edition_tiem fields. also beware if you want to distinguish the
-   user that last edited/added the node, otherwise you will jump to
-   nodes from other users adding nodes concurrenetly.
-
- 8. Last active / selected node ('e')
-
-   SG: maybe introduce another variable for last active that is set in
-   the activateNode function in overlay.js to store a one-step back
-   history
-
- 9. Marked node (shift+e)
+ 6. Marked node (shift+e)
 
 * each skeleton must have a "last active/selected node", "last edited
    node", and "last added node".

@@ -731,6 +731,10 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     else z = z2;
     z = Math.max(0, Math.min(MAX_Z, z));
 
+    project.coordinates.x = xp;
+    project.coordinates.y = yp;
+    project.coordinates.z = zp;
+
     update();
     updateControls();
 

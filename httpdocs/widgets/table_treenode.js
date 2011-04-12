@@ -131,7 +131,8 @@ initTreenodeTable = function (pid)
     {
       "sClass": "center",
       "bSearchable": false,
-      "bSortable": true
+      "bSortable": true,
+      "bVisible": false
     }, // id
     {
       "sClass": "center",

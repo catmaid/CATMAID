@@ -75,28 +75,28 @@ var stringToKeyAction = {
   "\u2190" : { helpText: "Move left (towards negative x)",
                specialKeyCodes: [ arrowKeyCodes.left ],
                run: function (e) {
-                 input_x.value = parseInt(input_x.value) - (e.shiftKey ? 100 : (alt ? 1 : 10));
+                 input_x.value = parseInt(input_x.value,10) - (e.shiftKey ? 100 : (alt ? 1 : 10));
                  input_x.onchange(e);
                  return false;
                }},
   "\u2192" : { helpText: "Move right (towards positive x)",
                specialKeyCodes: [ arrowKeyCodes.right ],
                run: function (e) {
-                 input_x.value = parseInt(input_x.value) + (e.shiftKey ? 100 : (alt ? 1 : 10));
+                 input_x.value = parseInt(input_x.value,10) + (e.shiftKey ? 100 : (alt ? 1 : 10));
                  input_x.onchange(e);
                  return false;
                }},
   "\u2191" : { helpText: "Move up (towards negative y)",
                specialKeyCodes: [ arrowKeyCodes.up ],
                run: function (e) {
-                 input_y.value = parseInt(input_y.value) - (e.shiftKey ? 100 : (alt ? 1 : 10));
+                 input_y.value = parseInt(input_y.value,10) - (e.shiftKey ? 100 : (alt ? 1 : 10));
                  input_y.onchange(e);
                  return false;
                }},
   "\u2193" : { helpText: "Move down (towards positive y)",
                specialKeyCodes: [ arrowKeyCodes.down ],
                run: function (e) {
-                 input_y.value = parseInt(input_y.value) + (e.shiftKey ? 100 : (alt ? 1 : 10));
+                 input_y.value = parseInt(input_y.value,10) + (e.shiftKey ? 100 : (alt ? 1 : 10));
                  input_y.onchange(e);
                  return false;
                }},
@@ -159,20 +159,22 @@ var stringToKeyAction = {
           }},
   "T" : { helpText: "Tag the active node",
           run: function (e) {
-            if (!e.ctrlKey)
+            if (!e.ctrlKey) {
               project.tracingCommand('tagging');
+            }
             return true;
           }},
   "Tab" : { helpText: "Switch to the next project (or the previous with Shift)",
             specialKeyCodes: [ 9 ],
             run: function (e) {
-              if (shift)
+              if (shift) {
                 project.switchFocus(-1);
-              else
+              } else {
                 project.switchFocus(1);
+              }
               //e.stopPropagation();
               return false;
-            }},
+            }}
 };
 
 var withAliases = jQuery.extend({}, stringToKeyAction);
@@ -181,33 +183,37 @@ withAliases["4"] = withAliases["A"];
 /* We now turn that structure into an object for
    fast lookups from keyCodes */
 
-var keyCodeToKeyAction = { }
+var keyCodeToKeyAction = { };
 
-for(var i in withAliases) {
-  var keyCodeFromKey = null;
-  /* If the string representation of the key is a single upper case
-     letter or a number, we just use its ASCII value as the key
-     code */
-  if (i.length == 1) {
-    k = i.charCodeAt(0);
-    if ((k >= 65 && k <= 90) || (k >= 48 && k <= 57)) {
-      keyCodeFromKey = k;
+{
+  var i;
+  for(i in withAliases) {
+    var keyCodeFromKey = null;
+    /* If the string representation of the key is a single upper case
+       letter or a number, we just use its ASCII value as the key
+       code */
+    if (i.length === 1) {
+      k = i.charCodeAt(0);
+      if ((k >= 65 && k <= 90) || (k >= 48 && k <= 57)) {
+        keyCodeFromKey = k;
+      }
     }
-  }
-  var o = withAliases[i];
-  /* Add any more unusual key codes for that action */
-  var allKeyCodes = o.specialKeyCodes || [];
-  if (keyCodeFromKey && $.inArray(keyCodeFromKey, allKeyCodes) < 0)
-    allKeyCodes.push(keyCodeFromKey);
+    var o = withAliases[i];
+    /* Add any more unusual key codes for that action */
+    var allKeyCodes = o.specialKeyCodes || [];
+    if (keyCodeFromKey && $.inArray(keyCodeFromKey, allKeyCodes) < 0) {
+      allKeyCodes.push(keyCodeFromKey);
+    }
 
-  /* Now add to the keyCodeToKeyAction object */
-  var ki, k;
-  for (ki in allKeyCodes) {
-    k = allKeyCodes[ki];
-    if (keyCodeToKeyAction[k]) {
-      alert("Attempting to define a second action for keyCode "+k+" via '"+i+"'");
-    } else {
-      keyCodeToKeyAction[k] = o;
+    /* Now add to the keyCodeToKeyAction object */
+    var ki, k;
+    for (ki in allKeyCodes) {
+      k = allKeyCodes[ki];
+      if (keyCodeToKeyAction[k]) {
+        alert("Attempting to define a second action for keyCode "+k+" via '"+i+"'");
+      } else {
+        keyCodeToKeyAction[k] = o;
+      }
     }
   }
 }

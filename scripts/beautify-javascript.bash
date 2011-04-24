@@ -22,7 +22,7 @@ case "$#" in
     if [ -e "$1" ]
     then
         T=$(mktemp) &&
-        rhino $JSB/beautify-cl.js -i 2 -a -b -n -p -d $JSB $1 > $T &&
+        rhino $JSB/beautify-cl.js -i 2 -a -n -p -d $JSB $1 > $T &&
 	echo '/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 ' > $1 &&

@@ -19,7 +19,6 @@ var input_fontsize; //!< fontsize input
 var input_fontcolourred; //!< fontcolour red input
 var input_fontcolourgreen; //!< fontcolour green input
 var input_fontcolourblue; //!< fontcolour blue input
-
 var ui;
 var requestQueue;
 var project;
@@ -48,14 +47,11 @@ var MSG_TIMEOUT_INTERVAL = 60000; //!< length of the message lookup interval in 
  * to be used as onkeydown-handler in the account and password input fields
  */
 
-function login_oninputreturn(e)
-{
-  if (ui.getKey(e) == 13)
-  {
+function login_oninputreturn(e) {
+  if (ui.getKey(e) == 13) {
     login(document.getElementById("account").value, document.getElementById("password").value);
     return false;
-  }
-  else
+  } else
   return true;
 }
 
@@ -70,8 +66,7 @@ function login_oninputreturn(e)
 function login(
 account, //!< string account
 password //!< string password
-)
-{
+) {
   if (msg_timeout) window.clearTimeout(msg_timeout);
 
   ui.catchEvents("wait");
@@ -93,15 +88,12 @@ password //!< string password
  * free the window
  */
 
-function handle_login(status, text, xml)
-{
-  if (status == 200 && text)
-  {
+function handle_login(status, text, xml) {
+  if (status == 200 && text) {
     // console.log(text);
     var e = eval("(" + text + ")");
 
-    if (e.id)
-    {
+    if (e.id) {
       session = e;
       document.getElementById("account").value = "";
       document.getElementById("password").value = "";
@@ -117,15 +109,11 @@ function handle_login(status, text, xml)
 
       //msg_timeout = window.setTimeout( message, MSG_TIMEOUT_INTERVAL );
       message();
-    }
-    else if (e.error)
-    {
+    } else if (e.error) {
       alert(e.error);
     }
     updateProjects();
-  }
-  else if (status != 200)
-  {
+  } else if (status != 200) {
     // Of course, lots of non-200 errors are fine - just report
     // all for the moment, however:
     alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
@@ -139,8 +127,7 @@ function handle_login(status, text, xml)
  * freeze the window to wait for an answer
  */
 
-function logout()
-{
+function logout() {
   if (msg_timeout) window.clearTimeout(msg_timeout);
 
   ui.catchEvents("wait");
@@ -156,8 +143,7 @@ function logout()
  * free the window
  */
 
-function handle_logout()
-{
+function handle_logout() {
   session = undefined;
   document.getElementById("login_box").style.display = "block";
   document.getElementById("logout_box").style.display = "none";
@@ -181,8 +167,7 @@ function handle_logout()
  * the answer depends on the session, which wa sinstantiated by setting a cookie
  */
 
-function updateProjects()
-{
+function updateProjects() {
   //ui.catchEvents( "wait" );
   project_menu_open.update(null);
 
@@ -208,10 +193,8 @@ function updateProjects()
  * free the window
  */
 
-function handle_updateProjects(status, text, xml)
-{
-  if (status == 200 && text)
-  {
+function handle_updateProjects(status, text, xml) {
+  if (status == 200 && text) {
     var e = eval("(" + text + ")");
 
     var keep_project_alive = false;
@@ -220,17 +203,12 @@ function handle_updateProjects(status, text, xml)
     var pp = document.getElementById("projects_dl");
     while (pp.firstChild) pp.removeChild(pp.firstChild);
 
-    if (e.error)
-    {
+    if (e.error) {
       project_menu_open.update();
       alert(e.error);
-    }
-    else
-    {
-      for (var i in e)
-      {
-        if (project && project.id == i)
-        {
+    } else {
+      for (var i in e) {
+        if (project && project.id == i) {
           keep_project_alive = true;
           keep_project_editable = e[i].editable;
         }
@@ -241,8 +219,7 @@ function handle_updateProjects(status, text, xml)
         document.getElementById("projects_h").style.display = "block";
         pp.appendChild(dt);
 
-        for (var j in e[i].action)
-        {
+        for (var j in e[i].action) {
           var dd = document.createElement("dd");
           var a = document.createElement("a");
           var ddc = document.createElement("dd");
@@ -250,8 +227,7 @@ function handle_updateProjects(status, text, xml)
           a.appendChild(document.createTextNode(e[i].action[j].title));
           dd.appendChild(a);
           pp.appendChild(dd);
-          if (e[i].action[j].comment)
-          {
+          if (e[i].action[j].comment) {
             var ddc = document.createElement("dd");
             ddc.innerHTML = e[i].action[j].comment;
             pp.appendChild(ddc);
@@ -261,11 +237,9 @@ function handle_updateProjects(status, text, xml)
       }
       project_menu_open.update(e)
     }
-    if (project)
-    {
+    if (project) {
       if (keep_project_alive) project.setEditable(keep_project_editable);
-      else
-      {
+      else {
         project.unregister();
         delete project;
       }
@@ -280,10 +254,8 @@ function handle_updateProjects(status, text, xml)
  * freeze the window to wait for an answer
  */
 
-function openProjectStack(pid, sid)
-{
-  if (project && project.id != pid)
-  {
+function openProjectStack(pid, sid) {
+  if (project && project.id != pid) {
     project.unregister();
     delete project;
   }
@@ -302,21 +274,15 @@ function openProjectStack(pid, sid)
  * free the window
  */
 
-function handle_openProjectStack(status, text, xml)
-{
-  if (status == 200 && text)
-  {
+function handle_openProjectStack(status, text, xml) {
+  if (status == 200 && text) {
     var e = eval("(" + text + ")");
-    if (e.error)
-    {
+    if (e.error) {
       alert(e.error);
-    }
-    else
-    {
+    } else {
       //console.replaceLast( e );
       //! look if the project is already opened, otherwise open a new one
-      if (!(project && project.id == e.pid))
-      {
+      if (!(project && project.id == e.pid)) {
         project = new Project(e.pid);
         project_view = project.getView();
         project.register();
@@ -347,15 +313,11 @@ function handle_openProjectStack(status, text, xml)
       project.addStack(stack);
 
       //! if the stack was initialized by an URL query, move it to a given position
-      if (pid == e.pid && sids.length > 0)
-      {
-        for (var i = 0; i < sids.length; ++i)
-        {
-          if (sids[i] == e.sid)
-          {
+      if (pid == e.pid && sids.length > 0) {
+        for (var i = 0; i < sids.length; ++i) {
+          if (sids[i] == e.sid) {
             if (
-            typeof ss[i] == "number" && typeof zp == "number" && typeof yp == "number" && typeof xp == "number")
-            {
+            typeof ss[i] == "number" && typeof zp == "number" && typeof yp == "number" && typeof xp == "number") {
               project.lastX = xp;
               project.lastY = yp;
               project.lastZ = zp;
@@ -378,8 +340,7 @@ function handle_openProjectStack(status, text, xml)
  * look for user messages
  */
 
-function message()
-{
+function message() {
   requestQueue.register('model/message.list.php', 'GET', undefined, handle_message);
   return;
 }
@@ -388,26 +349,20 @@ function message()
  * handle a user message
  */
 
-function handle_message(status, text, xml)
-{
+function handle_message(status, text, xml) {
   if (!session) return;
 
-  if (status == 200 && text)
-  {
+  if (status == 200 && text) {
     var e = eval("(" + text + ")");
-    if (e.error)
-    {
+    if (e.error) {
       alert(e.error);
-    }
-    else
-    {
+    } else {
       //! remove old messages
       var message_container = document.getElementById("message_container");
       while (message_container.firstChild) message_container.removeChild(message_container.firstChild);
 
       var n = 0;
-      for (var i in e)
-      {
+      for (var i in e) {
         e[i].action = "model/message.read.php?id=" + e[i].id;
         e[i].note = e[i].time_formatted;
         ++n;
@@ -426,8 +381,7 @@ function handle_message(status, text, xml)
       }
       message_menu.update(e);
       if (n > 0) document.getElementById("message_menu_text").className = "alert";
-      else
-      {
+      else {
         document.getElementById("message_menu_text").className = "";
         var dt = document.createElement("div");
         dt.appendChild(document.createTextNode("No messages present."));
@@ -445,8 +399,7 @@ function handle_message(status, text, xml)
  * update the lists of users
  */
 
-function updateUsers()
-{
+function updateUsers() {
   document.getElementById("new_project_form").elements[3].style.display = "none";
   document.getElementById("new_project_owners_wait").style.display = "block";
   requestQueue.register('model/user.list.php', 'GET', undefined, handle_updateUsers);
@@ -457,29 +410,22 @@ function updateUsers()
  * handle a lists of users update response
  */
 
-function handle_updateUsers(status, text, xml)
-{
+function handle_updateUsers(status, text, xml) {
   if (!session) return;
 
-  if (status == 200 && text)
-  {
+  if (status == 200 && text) {
     var e = eval("(" + text + ")");
-    if (e.error)
-    {
+    if (e.error) {
       alert(e.error);
-    }
-    else
-    {
+    } else {
       var new_project_owners = document.getElementById("new_project_form").elements[3];
       while (new_project_owners.length > 0)
       new_project_owners.remove(0);
-      for (var i in e)
-      {
+      for (var i in e) {
         var option = document.createElement("option");
         option.text = e[i].longname;
         option.value = e[i].id;
-        if (e[i].id == session.id)
-        {
+        if (e[i].id == session.id) {
           option.selected = true;
         }
         new_project_owners.appendChild(option);
@@ -498,8 +444,7 @@ function handle_updateUsers(status, text, xml)
  * mark a message as read
  */
 
-function read_message(id)
-{
+function read_message(id) {
   requestQueue.register('model/message.read.php', 'POST', {
     id: id
   }, null);
@@ -510,8 +455,7 @@ function read_message(id)
  * resize the view and its content on window.onresize event
  */
 
-function global_resize(e)
-{
+function global_resize(e) {
   var top = document.getElementById("toolbar_container").offsetHeight;
 
   message_widget.style.top = table_widget.style.top = object_tree_widget.style.top = project_stats_widget.style.top = key_shortcut_widget.style.top = view_in_3d_widget.style.top = top + "px";
@@ -542,8 +486,7 @@ function global_resize(e)
  * to be called by the onload-handler of document.body
  */
 
-function init()
-{
+function init() {
   //! set some non standard attributes
 /*
 	document.body.oncontextmenu = function( e ){ return false; };
@@ -561,8 +504,7 @@ function init()
   var password;
 
   var values = parseQuery();
-  if (values)
-  {
+  if (values) {
     // simply parse the fragment values
     // @todo take care for the values proper range
     if (values["z"]) z = parseInt(values["z"]);
@@ -575,16 +517,13 @@ function init()
     if (isNaN(s)) delete s;
 
     if (!(
-    typeof z == "undefined" || typeof y == "undefined" || typeof x == "undefined" || typeof s == "undefined"))
-    {
+    typeof z == "undefined" || typeof y == "undefined" || typeof x == "undefined" || typeof s == "undefined")) {
       pid = 1;
       sids = new Array();
       sids[0] = 1;
       ss = new Array();
       ss[0] = 1;
-    }
-    else
-    {
+    } else {
       if (values["pid"]) pid = parseInt(values["pid"]);
       if (isNaN(pid)) delete pid;
       if (values["zp"]) zp = parseInt(values["zp"]);
@@ -594,22 +533,19 @@ function init()
       if (values["xp"]) xp = parseInt(values["xp"]);
       if (isNaN(x)) delete xp;
 
-      for (var i = 0; values["sid" + i]; ++i)
-      {
+      for (var i = 0; values["sid" + i]; ++i) {
         sids.push(parseInt(values["sid" + i]));
         if (values["s" + i]) ss.push(parseInt(values["s" + i]));
         else
         ss.push(NaN);
-        if (isNaN(sids[i]) || isNaN(ss[i]))
-        {
+        if (isNaN(sids[i]) || isNaN(ss[i])) {
           sids.pop();
           ss.pop();
         }
       }
     }
 
-    if (values["account"] && values["password"])
-    {
+    if (values["account"] && values["password"]) {
       account = values["account"];
       password = values["password"];
     }
@@ -628,14 +564,12 @@ function init()
   input_y = document.getElementById("y");
 
   a_url = document.getElementById("a_url");
-  a_url.onmouseover = function (e)
-  {
+  a_url.onmouseover = function (e) {
     this.href = project.createURL();
     return true;
   }
   a_url2 = document.getElementById("a_url2");
-  a_url2.onmouseover = function (e)
-  {
+  a_url2.onmouseover = function (e) {
     this.href = project.createURL();
     return true;
   }
@@ -643,30 +577,26 @@ function init()
   button_crop_apply = document.getElementById("button_crop_apply");
 
   slider_z = new Slider(
-  SLIDER_HORIZONTAL, true, 1, 388, 388, 1, function (val)
-  {
+  SLIDER_HORIZONTAL, true, 1, 388, 388, 1, function (val) {
     statusBar.replaceLast("z: " + val);
     return;
   });
 
   slider_trace_z = new Slider(
-  SLIDER_HORIZONTAL, true, 1, 388, 388, 1, function (val)
-  {
+  SLIDER_HORIZONTAL, true, 1, 388, 388, 1, function (val) {
     statusBar.replaceLast("z: " + val);
     return;
   });
 
   slider_s = new Slider(
   SLIDER_HORIZONTAL, true, undefined, undefined, new Array(
-  0, 1, 2, 4, 8), 8, function (val)
-  {
+  0, 1, 2, 4, 8), 8, function (val) {
     statusBar.replaceLast("s: " + val);
   });
 
   slider_trace_s = new Slider(
   SLIDER_HORIZONTAL, true, undefined, undefined, new Array(
-  0, 1, 2, 4, 8), 8, function (val)
-  {
+  0, 1, 2, 4, 8), 8, function (val) {
     statusBar.replaceLast("s: " + val);
   });
 
@@ -699,22 +629,19 @@ function init()
   slider_trace_s.getInputView(), slider_trace_s_view.nextSibling);
 
   slider_crop_top_z = new Slider(
-  SLIDER_HORIZONTAL, true, 1, 1, 1, 1, function (val)
-  {
+  SLIDER_HORIZONTAL, true, 1, 1, 1, 1, function (val) {
     statusBar.replaceLast("crop top z: " + val);
     return;
   });
 
   slider_crop_bottom_z = new Slider(
-  SLIDER_HORIZONTAL, true, 1, 1, 1, 1, function (val)
-  {
+  SLIDER_HORIZONTAL, true, 1, 1, 1, 1, function (val) {
     statusBar.replaceLast("crop bottom z: " + val);
     return;
   });
 
   slider_crop_s = new Slider(
-  SLIDER_HORIZONTAL, true, 5, 0, 6, 5, function (val)
-  {
+  SLIDER_HORIZONTAL, true, 5, 0, 6, 5, function (val) {
     statusBar.replaceLast("crop s: " + val);
   });
 
@@ -754,13 +681,11 @@ function init()
   document.getElementById("password").onkeydown = login_oninputreturn;
 
   project_menu = new Menu();
-  project_menu.update(
-  {
+  project_menu.update({
     0: {
       title: "New",
       id: "project_menu_new",
-      action: function ()
-      {
+      action: function () {
         if (project) project.unregister();
         document.getElementById("project list").style.display = "none";
         document.getElementById("new_project_dialog").style.display = "block";
@@ -772,8 +697,7 @@ function init()
     1: {
       title: "Open",
       id: "project_menu_open",
-      action: {
-      },
+      action: {},
       note: ""
     }
   });
@@ -818,32 +742,26 @@ function init()
   else
   login();
 
-  if (pid && sids.length > 0)
-  {
-    for (var i = 0; i < sids.length; ++i)
-    {
+  if (pid && sids.length > 0) {
+    for (var i = 0; i < sids.length; ++i) {
       openProjectStack(pid, sids[i])
     }
   }
 
   // the text-label toolbar
-  input_fontsize = new Input("fontsize", 3, function (e)
-  {
+  input_fontsize = new Input("fontsize", 3, function (e) {
     return true;
   }, 32);
   document.getElementById("input_fontsize").appendChild(input_fontsize.getView());
-  input_fontcolourred = new Input("fontcolourred", 3, function (e)
-  {
+  input_fontcolourred = new Input("fontcolourred", 3, function (e) {
     return true;
   }, 255);
   document.getElementById("input_fontcolourred").appendChild(input_fontcolourred.getView());
-  input_fontcolourgreen = new Input("fontcolourgreen", 3, function (e)
-  {
+  input_fontcolourgreen = new Input("fontcolourgreen", 3, function (e) {
     return true;
   }, 127);
   document.getElementById("input_fontcolourgreen").appendChild(input_fontcolourgreen.getView());
-  input_fontcolourblue = new Input("fontcolourblue", 3, function (e)
-  {
+  input_fontcolourblue = new Input("fontcolourblue", 3, function (e) {
     return true;
   }, 0);
   document.getElementById("input_fontcolourblue").appendChild(input_fontcolourblue.getView());

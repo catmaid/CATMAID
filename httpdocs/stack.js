@@ -18,26 +18,21 @@
  * transition object for general animations
  */
 
-function Transition()
-{
+function Transition() {
   /**
    * returns if there is some transition running or not
    */
-  this.busy = function ()
-  {
+  this.busy = function () {
     return (this.timeout !== false);
   }
 
   /**
    * returns true, if the requested function is still queued
    */
-  this.queued = function (f)
-  {
+  this.queued = function (f) {
     q = false;
-    for (var i = 0; i < queue.length; ++i)
-    {
-      if (queue[i] == f)
-      {
+    for (var i = 0; i < queue.length; ++i) {
+      if (queue[i] == f) {
         statusBar.replaceLast("already queued in slot " + i + " of " + queue.length + ".");
         q = true;
         break;
@@ -49,8 +44,7 @@ function Transition()
   /**
    * forces the transition to finish by setting step = 1
    */
-  this.finish = function ()
-  {
+  this.finish = function () {
     step = 1.0;
     return;
   }
@@ -59,8 +53,7 @@ function Transition()
    * registers a function to the queue for waiting or starts it imediately
    * each function gets the current step as parameter and has to return the next step value
    */
-  this.register = function (t)
-  {
+  this.register = function (t) {
     queue.push(t);
     if (!timeout) t();
     timeout = window.setTimeout(run, 25);
@@ -70,12 +63,10 @@ function Transition()
   /**
    * runs the first element of the queue
    */
-  var run = function ()
-  {
+  var run = function () {
     if (timeout) window.clearTimeout(timeout);
     if (queue.length > 0) step = queue[0](step);
-    if (step > 1)
-    {
+    if (step > 1) {
       step = 0;
       if (queue.length > 0) queue.shift();
       //statusBar.replaceLast( "running step " + step + " queue.length " + queue.length );
@@ -102,21 +93,17 @@ function SmallMap(
 stack, //!< a reference to the stack
 max_y, //!< maximal height
 max_x //!< maximal width
-)
-{
+) {
   /**
    * get the view object
    */
-  this.getView = function ()
-  {
+  this.getView = function () {
     return view;
   }
 
-  var onclick = function (e)
-  {
+  var onclick = function (e) {
     var m = ui.getMouse(e);
-    if (m)
-    {
+    if (m) {
       //statusBar.replaceLast( m.offsetX + ", " + m.offsetY );
       stack.moveToPixel(z, Math.floor(m.offsetY / SCALE), Math.floor(m.offsetX / SCALE), s);
     }
@@ -124,8 +111,7 @@ max_x //!< maximal width
   }
 
   this.update = function (
-  nz, y, x, ns, screenHeight, screenWidth)
-  {
+  nz, y, x, ns, screenHeight, screenWidth) {
     z = nz;
     s = ns;
     var scale = 1 / Math.pow(2, s);
@@ -139,14 +125,12 @@ max_x //!< maximal width
     return;
   }
 
-  this.focus = function ()
-  {
+  this.focus = function () {
     view.style.zIndex = 8;
     return;
   }
 
-  this.blur = function ()
-  {
+  this.blur = function () {
     view.style.zIndex = 4;
     return;
   }
@@ -185,17 +169,13 @@ max_x //!< maximal width
   var toggle = document.createElement("div");
   toggle.className = "smallMapToggle";
   toggle.title = "hide general view";
-  toggle.onclick = function (e)
-  {
-    if (view.className == "smallMapView_hidden")
-    {
+  toggle.onclick = function (e) {
+    if (view.className == "smallMapView_hidden") {
       toggle.title = "hide general view";
       view.className = "smallMapView";
       view.style.width = WIDTH + "px";
       view.style.height = HEIGHT + "px";
-    }
-    else
-    {
+    } else {
       toggle.title = "show general view";
       view.className = "smallMapView_hidden";
       view.style.width = "";
@@ -221,25 +201,21 @@ translation, //!< physical translation relative to the project in nm {x, y, z}
 image_base, //!< URL to the image base path
 broken_slices, //!< broken slices to be excluded from the stack's view
 trakem2_project //!< boolean that states if a TrakEM2 project is available for this stack
-)
-{
+) {
   /**
    * update the benchmark (x-resolution) to a proper size
    */
-  var updateBenchmark = function ()
-  {
+  var updateBenchmark = function () {
     var meter = scale / resolution.x;
     var benchmark_width = 0;
     var benchmark_text = "";
-    for (var i = 0; i < BENCHMARK_SIZES.length; ++i)
-    {
+    for (var i = 0; i < BENCHMARK_SIZES.length; ++i) {
       benchmark_text = BENCHMARK_SIZES[i];
       benchmark_width = BENCHMARK_SIZES[i] * meter;
       if (benchmark_width > Math.min(192, viewWidth / 5)) break;
     }
     var ui = 0;
-    while (benchmark_text >= 1000 && ui < BENCHMARK_UNITS.length - 1)
-    {
+    while (benchmark_text >= 1000 && ui < BENCHMARK_UNITS.length - 1) {
       benchmark_text /= 1000;
       ++ui;
     }
@@ -248,10 +224,8 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     return;
   }
 
-  var updateControls = function ()
-  {
-    if (registered)
-    {
+  var updateControls = function () {
+    if (registered) {
       if (slider_s) slider_s.setByValue(s, true);
       if (slider_trace_s) slider_trace_s.setByValue(s, true);
       if (slider_z) slider_z.setByValue(z, true);
@@ -267,15 +241,13 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   /**
    * update all state informations and the screen content
    */
-  var update = function (now)
-  {
+  var update = function (now) {
     smallMap.update(z, y, x, s, viewHeight, viewWidth);
     updateBenchmark();
 
 
     //statusBar.replaceLast( "[" + ( Math.round( x * 10000 * resolution.x ) / 10000 ) + ", " + ( Math.round( y * 10000 * resolution.y ) / 10000 ) + "]" );
-    if (!transition.queued(redraw))
-    {
+    if (!transition.queued(redraw)) {
       if (now) transition.register(redraw);
       else
       redraw();
@@ -287,10 +259,8 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   /**
    * get the pixel coordinates of the current view's top left corner
    */
-  this.screenCoordinates = function ()
-  {
-    var l =
-    {
+  this.screenCoordinates = function () {
+    var l = {
       width: viewWidth / scale,
       height: viewHeight / scale,
       z: z,
@@ -305,10 +275,8 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   /**
    * get the physical project-coordinates to the current view
    */
-  this.projectCoordinates = function ()
-  {
-    var l =
-    {
+  this.projectCoordinates = function () {
+    var l = {
       z: z * resolution.z + translation.z,
       s: s,
       scale: scale,
@@ -321,17 +289,13 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   /**
    * update textlabels by querying it from the server
    */
-  this.updateTextlabels = function ()
-  {
+  this.updateTextlabels = function () {
     var tl_width;
     var tl_height;
-    if (tiles.length == 0)
-    {
+    if (tiles.length == 0) {
       tl_width = 0;
       tl_height = 0;
-    }
-    else
-    {
+    } else {
       tl_width = tiles[0].length * X_TILE_SIZE / scale;
       tl_height = tiles.length * Y_TILE_SIZE / scale;
     }
@@ -354,18 +318,14 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
    * update treeline nodes by querying them from the server
    * with a bounding volume dependend on the current view
    */
-  this.updateNodes = function ()
-  {
+  this.updateNodes = function () {
 
     var tl_width;
     var tl_height;
-    if (tiles.length == 0)
-    {
+    if (tiles.length == 0) {
       tl_width = 0;
       tl_height = 0;
-    }
-    else
-    {
+    } else {
       tl_width = tiles[0].length * X_TILE_SIZE / scale;
       tl_height = tiles.length * Y_TILE_SIZE / scale;
     }
@@ -392,7 +352,6 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 
     // FIXME: check if we need to wait for the result of this, which
     // can now be done with completedCallback...
-
     // first synchronize with database
     svgOverlay.updateNodeCoordinatesinDB();
 
@@ -413,19 +372,14 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
    * handle an update-treelinenodes-request answer
    *
    */
-  var handle_updateNodes = function (status, text, xml)
-  {
-    if (status = 200)
-    {
+  var handle_updateNodes = function (status, text, xml) {
+    if (status = 200) {
       //console.log("update noded text", $.parseJSON(text));
       var e = eval("(" + text + ")");
       //var e = $.parseJSON(text);
-      if (e.error)
-      {
+      if (e.error) {
         alert(e.error);
-      }
-      else
-      {
+      } else {
         var jso = $.parseJSON(text);
         // XXX: how much time does calling the function like this take?
         svgOverlay.refreshNodes(jso);
@@ -437,8 +391,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   /**
    * align and update the tiles to be ( x, y ) in the image center
    */
-  var redraw = function ()
-  {
+  var redraw = function () {
 
     var yc = Math.floor(y * scale - (viewHeight / 2));
     var xc = Math.floor(x * scale - (viewWidth / 2));
@@ -449,8 +402,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     var xd = 0;
     var yd = 0;
 
-    if (z == old_z && s == old_s)
-    {
+    if (z == old_z && s == old_s) {
       var old_yc = Math.floor(old_y * old_scale - (viewHeight / 2));
       var old_xc = Math.floor(old_x * old_scale - (viewWidth / 2));
 
@@ -461,10 +413,8 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       yd = fr - old_fr;
 
       // re-order the tiles array on demand
-      if (xd < 0)
-      {
-        for (var i = 0; i < tiles.length; ++i)
-        {
+      if (xd < 0) {
+        for (var i = 0; i < tiles.length; ++i) {
           tilesContainer.removeChild(tiles[i].pop());
           var img = document.createElement("img");
           img.alt = "empty";
@@ -473,11 +423,8 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
           tilesContainer.appendChild(img);
           tiles[i].unshift(img);
         }
-      }
-      else if (xd > 0)
-      {
-        for (var i = 0; i < tiles.length; ++i)
-        {
+      } else if (xd > 0) {
+        for (var i = 0; i < tiles.length; ++i) {
           tilesContainer.removeChild(tiles[i].shift());
           var img = document.createElement("img");
           img.alt = "empty";
@@ -486,13 +433,10 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
           tilesContainer.appendChild(img);
           tiles[i].push(img);
         }
-      }
-      else if (yd < 0)
-      {
+      } else if (yd < 0) {
         var old_row = tiles.pop();
         var new_row = new Array();
-        for (var i = 0; i < tiles[0].length; ++i)
-        {
+        for (var i = 0; i < tiles[0].length; ++i) {
           tilesContainer.removeChild(old_row.pop());
           var img = document.createElement("img");
           img.alt = "empty";
@@ -502,13 +446,10 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
           new_row.push(img);
         }
         tiles.unshift(new_row);
-      }
-      else if (yd > 0)
-      {
+      } else if (yd > 0) {
         var old_row = tiles.shift();
         var new_row = new Array();
-        for (var i = 0; i < tiles[0].length; ++i)
-        {
+        for (var i = 0; i < tiles[0].length; ++i) {
           tilesContainer.removeChild(old_row.pop());
           var img = document.createElement("img");
           img.alt = "empty";
@@ -535,19 +476,14 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     var l = left;
 
     // update the images sources
-    for (var i = 0; i < tiles.length; ++i)
-    {
+    for (var i = 0; i < tiles.length; ++i) {
       var r = fr + i;
-      for (var j = 0; j < tiles[0].length; ++j)
-      {
+      for (var j = 0; j < tiles[0].length; ++j) {
         var c = fc + j;
-        if (r < 0 || c < 0 || r > LAST_YT || c > LAST_XT)
-        {
+        if (r < 0 || c < 0 || r > LAST_YT || c > LAST_XT) {
           tiles[i][j].alt = "";
           tiles[i][j].src = "widgets/black.gif";
-        }
-        else
-        {
+        } else {
           tiles[i][j].alt = z + "/" + (fr + i) + "_" + (fc + j) + "_" + s;
           tiles[i][j].src = image_base + tiles[i][j].alt + ".jpg";
         }
@@ -588,10 +524,8 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 		*/
 
     // update and request textlabels
-    if (show_textlabels)
-    {
-      if (z != old_z || s != old_s || xd != 0 || yd != 0)
-      {
+    if (show_textlabels) {
+      if (z != old_z || s != old_s || xd != 0 || yd != 0) {
         self.updateTextlabels();
       }
 
@@ -599,17 +533,14 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       var screen_left = ((x - viewWidth / scale / 2)) * resolution.x + translation.x;
       var screen_top = ((y - viewHeight / scale / 2)) * resolution.y + translation.y;
 
-      for (var i = 0; i < textlabels.length; ++i)
-      {
+      for (var i = 0; i < textlabels.length; ++i) {
         textlabels[i].redraw(
         screen_left, screen_top, scale);
       }
 
     }
-    if (show_tracing)
-    {
-      if (z != old_z || s != old_s || xd != 0 || yd != 0)
-      {
+    if (show_tracing) {
+      if (z != old_z || s != old_s || xd != 0 || yd != 0) {
         self.updateNodes();
       }
       // redraw the overlay
@@ -628,7 +559,6 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
      */
     var a = view.offsetWidth;
     //----------------------------------------------------------------------
-
     old_z = z;
     old_y = y;
     old_x = x;
@@ -641,19 +571,16 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   /**
    * initialise the tiles array
    */
-  var initTiles = function (rows, cols)
-  {
+  var initTiles = function (rows, cols) {
     while (tilesContainer.firstChild)
     tilesContainer.removeChild(tilesContainer.firstChild);
 
     delete tiles;
     tiles = new Array();
 
-    for (var i = 0; i < rows; ++i)
-    {
+    for (var i = 0; i < rows; ++i) {
       tiles[i] = new Array();
-      for (var j = 0; j < cols; ++j)
-      {
+      for (var j = 0; j < cols; ++j) {
         tiles[i][j] = document.createElement("img");
         tiles[i][j].alt = "empty";
         tiles[i][j].src = "widgets/themes/kde/empty.gif";
@@ -671,8 +598,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   /**
    * get the view element
    */
-  this.getView = function ()
-  {
+  this.getView = function () {
     return view;
   }
 
@@ -680,15 +606,13 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
    * change the scale, making sure that the point keep_[xyz] stays in
    * the same position in the view
    */
-  this.scalePreservingLastPosition = function(keep_x, keep_y, sp)
-  {
+  this.scalePreservingLastPosition = function (keep_x, keep_y, sp) {
     var old_s = s;
     var old_scale = scale;
     var new_s = Math.max(0, Math.min(MAX_S, Math.round(sp)));
-    var new_scale = 1 / Math.pow(2,new_s);
+    var new_scale = 1 / Math.pow(2, new_s);
 
-    if( old_s == new_s )
-      return;
+    if (old_s == new_s) return;
 
     var dx = keep_x - project.coordinates.x;
     var dy = keep_y - project.coordinates.y;
@@ -696,19 +620,14 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     var new_centre_x = keep_x - dx * (old_scale / new_scale);
     var new_centre_y = keep_y - dy * (old_scale / new_scale);
 
-    this.moveTo( project.coordinates.z,
-                 new_centre_y,
-                 new_centre_x,
-                 sp );
+    this.moveTo(project.coordinates.z, new_centre_y, new_centre_x, sp);
   }
 
   /**
    * move to physical project-coordinates in nanometer
    */
-  this.moveTo = function (zp, yp, xp, sp)
-  {
-    if (typeof sp == "number")
-    {
+  this.moveTo = function (zp, yp, xp, sp) {
+    if (typeof sp == "number") {
       s = Math.max(0, Math.min(MAX_S, Math.round(sp)));
       scale = 1 / Math.pow(2, s);
     }
@@ -722,8 +641,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     var z1;
     var z2;
     z1 = z2 = Math.round((zp - translation.z) / resolution.z);
-    while (broken_slices[z1] && broken_slices[z2])
-    {
+    while (broken_slices[z1] && broken_slices[z2]) {
       z1 = Math.max(0, z1 - 1);
       z2 = Math.min(MAX_Z, z2 + 1);
     }
@@ -744,8 +662,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   /**
    * move to pixel coordinates
    */
-  this.moveToPixel = function (zp, yp, xp, sp)
-  {
+  this.moveToPixel = function (zp, yp, xp, sp) {
     s = Math.max(0, Math.min(MAX_S, sp));
 
     scale = 1 / Math.pow(2, s);
@@ -759,18 +676,15 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   }
 
 
-  var onmousemove =
-  {
-    trace: function (e)
-    {
+  var onmousemove = {
+    trace: function (e) {
 
       // take into account the shift of the svgOverlay
       var xp;
       var yp;
       var m = ui.getMouse(e);
 
-      if (m)
-      {
+      if (m) {
         // add right move of svgOverlay to the m.offsetX
         offX = m.offsetX + svgOverlay.offleft;
         // add down move of svgOverlay to the m.offsetY
@@ -785,14 +699,12 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       // continue with event handling
       return true;
     },
-    pos: function (e)
-    {
+    pos: function (e) {
       var xp;
       var yp;
       var m = ui.getMouse(e);
 
-      if (m)
-      {
+      if (m) {
         var pos_x = translation.x + (x + (m.offsetX - viewWidth / 2) / scale) * resolution.x;
         var pos_y = translation.x + (y + (m.offsetY - viewHeight / 2) / scale) * resolution.y;
         var pos_z = translation.z + z * resolution.z;
@@ -802,15 +714,12 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       }
       return false;
     },
-    move: function (e)
-    {
+    move: function (e) {
       self.moveToPixel(z, y - ui.diffY / scale, x - ui.diffX / scale, s);
       return false;
     },
-    crop: function (e)
-    {
-      if (cropBox)
-      {
+    crop: function (e) {
+      if (cropBox) {
         cropBox.right += ui.diffX / scale * resolution.x;
         cropBox.bottom += ui.diffY / scale * resolution.y;
         updateCropBox();
@@ -818,31 +727,26 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     }
   };
 
-  var onmouseup =
-  {
-    move: function (e)
-    {
+  var onmouseup = {
+    move: function (e) {
       ui.releaseEvents()
       ui.removeEvent("onmousemove", onmousemove.move);
       ui.removeEvent("onmouseup", onmouseup.move);
       return false;
     },
-    edit: function (e)
-    {
+    edit: function (e) {
       ui.releaseEvents()
       ui.removeEvent("onmousemove", profiles[spi].onmousemove);
       ui.removeEvent("onmouseup", onmouseup.edit);
 
       return false;
     },
-    crop: function (e)
-    {
+    crop: function (e) {
       ui.releaseEvents();
       ui.removeEvent("onmousemove", onmousemove.crop);
       ui.removeEvent("onmouseup", onmouseup.crop);
     },
-    trace: function (e)
-    {
+    trace: function (e) {
       // console.log("unregister trace");
       ui.releaseEvents();
       ui.removeEvent("onmousemove", svgOverlay.onmousemove);
@@ -850,14 +754,11 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     }
   };
 
-  var onmousedown =
-  {
-    trace: function (e)
-    {
+  var onmousedown = {
+    trace: function (e) {
 
       var b = ui.getMouseButton(e);
-      switch (b)
-      {
+      switch (b) {
       case 2:
         // afford dradding in tracing mode
         ui.registerEvent("onmousemove", onmousemove.move);
@@ -873,8 +774,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       return true;
 
     },
-    move: function (e)
-    {
+    move: function (e) {
       ui.registerEvent("onmousemove", onmousemove.move);
       ui.registerEvent("onmouseup", onmouseup.move);
       ui.catchEvents("move");
@@ -885,24 +785,19 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 
       return false;
     },
-    edit: function (e)
-    {
+    edit: function (e) {
       var m = ui.getMouse(e);
-      if (m)
-      {
+      if (m) {
         var pos_x = Math.round(x + (m.offsetX - viewWidth / 2) / scale);
         var pos_y = Math.round(y + (m.offsetY - viewHeight / 2) / scale);
         var spi = -1;
-        for (var i = 0; i < profiles.length; ++i)
-        {
-          if (profiles[i].isInside(pos_x, pos_y))
-          {
+        for (var i = 0; i < profiles.length; ++i) {
+          if (profiles[i].isInside(pos_x, pos_y)) {
             spi = i;
             break;
           }
         }
-        if (spi >= 0)
-        {
+        if (spi >= 0) {
           profiles[spi].onmousedown(e);
           profiles[spi].clearCanvas();
           profiles[spi].drawOutline();
@@ -919,11 +814,9 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 
       return false;
     },
-    text: function (e)
-    {
+    text: function (e) {
       var b = ui.getMouseButton(e);
-      switch (b)
-      {
+      switch (b) {
       case 2:
         ui.registerEvent("onmousemove", onmousemove.move);
         ui.registerEvent("onmouseup", onmouseup.move);
@@ -944,26 +837,22 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 
       return false;
     },
-    crop: function (e)
-    {
+    crop: function (e) {
       var b = ui.getMouseButton(e);
-      switch (b)
-      {
+      switch (b) {
       case 2:
         ui.registerEvent("onmousemove", onmousemove.move);
         ui.registerEvent("onmouseup", onmouseup.move);
         ui.catchEvents("move");
         break;
       default:
-        if (cropBox)
-        {
+        if (cropBox) {
           view.removeChild(cropBox.view);
           delete cropBox;
           cropBox = false;
         }
         var m = ui.getMouse(e);
-        cropBox =
-        {
+        cropBox = {
           left: (x + (m.offsetX - viewWidth / 2) / scale) * resolution.x + translation.x,
           top: (y + (m.offsetY - viewHeight / 2) / scale) * resolution.y + translation.y
         };
@@ -990,52 +879,38 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     }
   };
 
-  var onmousewheel =
-  {
-    zoom: function (e)
-    {
+  var onmousewheel = {
+    zoom: function (e) {
       var w = ui.getMouseWheel(e);
-      if (w)
-      {
-        if (w > 0)
-        {
+      if (w) {
+        if (w > 0) {
           slider_z.move(1);
           slider_trace_z.move(1);
-        }
-        else
-        {
+        } else {
           slider_z.move(-1);
           slider_trace_z.move(-1);
         }
       }
       return false;
     },
-    move: function (e)
-    {
+    move: function (e) {
       var xp = x;
       var yp = y;
       var m = ui.getMouse(e);
       var w = ui.getMouseWheel(e);
-      if (m)
-      {
+      if (m) {
         xp = m.offsetX - viewWidth / 2;
         yp = m.offsetY - viewHeight / 2;
         //statusBar.replaceLast( ( m.offsetX - viewWidth / 2 ) + " " + ( m.offsetY - viewHeight / 2 ) );
       }
-      if (w)
-      {
-        if (w > 0)
-        {
-          if (s < MAX_S)
-          {
+      if (w) {
+        if (w > 0) {
+          if (s < MAX_S) {
             self.moveToPixel(
             z, y - Math.floor(yp / scale), x - Math.floor(xp / scale), s + 1);
           }
-        }
-        else
-        {
-          if (s > 0)
-          {
+        } else {
+          if (s > 0) {
             var ns = scale * 2;
             self.moveToPixel(
             z, y + Math.floor(yp / ns), x + Math.floor(xp / ns), s - 1);
@@ -1056,26 +931,22 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   var changeSliceDelayedTimer = null;
   var changeSliceDelayedParam = null;
 
-  var changeSliceDelayedAction = function ()
-  {
+  var changeSliceDelayedAction = function () {
     window.clearTimeout(changeSliceDelayedTimer);
     self.changeSlice(changeSliceDelayedParam.z);
     changeSliceDelayedParam = null;
     return false;
   }
 
-  this.changeSliceDelayed = function (val)
-  {
+  this.changeSliceDelayed = function (val) {
     if (changeSliceDelayedTimer) window.clearTimeout(changeSliceDelayedTimer);
-    changeSliceDelayedParam =
-    {
+    changeSliceDelayedParam = {
       z: val
     };
     changeSliceDelayedTimer = window.setTimeout(changeSliceDelayedAction, 100);
   }
 
-  this.changeSlice = function (val)
-  {
+  this.changeSlice = function (val) {
     self.moveToPixel(val, y, x, s);
     return;
   }
@@ -1087,51 +958,43 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   var changeScaleDelayedTimer = null;
   var changeScaleDelayedParam = null;
 
-  var changeScaleDelayedAction = function ()
-  {
+  var changeScaleDelayedAction = function () {
     window.clearTimeout(changeScaleDelayedTimer);
     self.changeScale(changeScaleDelayedParam.s);
     changeScaleDelayedParam = null;
     return false;
   }
 
-  this.changeScaleDelayed = function (val)
-  {
+  this.changeScaleDelayed = function (val) {
     if (changeScaleDelayedTimer) window.clearTimeout(changeScaleDelayedTimer);
-    changeScaleDelayedParam =
-    {
+    changeScaleDelayedParam = {
       s: val
     };
     changeScaleDelayedTimer = window.setTimeout(changeScaleDelayedAction, 100);
   }
 
-  this.changeScale = function (val)
-  {
+  this.changeScale = function (val) {
     self.scalePreservingLastPosition(project.lastX, project.lastY, val);
     return;
   }
   //--------------------------------------------------------------------------
-  var changeXByInput = function (e)
-  {
+  var changeXByInput = function (e) {
     var val = parseInt(this.value);
     if (isNaN(val)) this.value = x;
     else self.moveToPixel(z, y, val, s);
     return;
   }
 
-  var changeYByInput = function (e)
-  {
+  var changeYByInput = function (e) {
     var val = parseInt(this.value);
     if (isNaN(val)) this.value = y;
     self.moveToPixel(z, val, x, s);
     return;
   }
 
-  var YXMouseWheel = function (e)
-  {
+  var YXMouseWheel = function (e) {
     var w = ui.getMouseWheel(e);
-    if (w)
-    {
+    if (w) {
       this.value = parseInt(this.value) - w;
       this.onchange();
     }
@@ -1143,10 +1006,8 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
    *
    * @param string m { "select", "move", "edit" }
    */
-  this.setMode = function (m)
-  {
-    if (cropBox)
-    {
+  this.setMode = function (m) {
+    if (cropBox) {
       view.removeChild(cropBox.view);
       delete cropBox;
       cropBox = false;
@@ -1156,8 +1017,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     svgOverlay.hide();
     show_tracing = false;
 
-    switch (m)
-    {
+    switch (m) {
     case "text":
       mode = "text";
       mouseCatcher.style.cursor = "crosshair";
@@ -1166,8 +1026,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       mouseCatcher.onmousemove = onmousemove.pos;
       show_textlabels = true;
       self.updateTextlabels();
-      for (var i = 0; i < textlabels.length; ++i)
-      {
+      for (var i = 0; i < textlabels.length; ++i) {
         textlabels[i].setEditable(true);
       }
       //updateControls();
@@ -1192,27 +1051,19 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       svgOverlay.view.onmousedown = onmousedown.trace;
       // XXX: coordinates are adjusted, either position or dragging but not both :(
       // svgOverlay.view.onmousemove = onmousemove.trace;
-      try
-      {
+      try {
         svgOverlay.view.addEventListener("DOMMouseScroll", onmousewheel.zoom, false); /* Webkit takes the event but does not understand it ... */
         svgOverlay.view.addEventListener("mousewheel", onmousewheel.zoom, false);
-      }
-      catch (error)
-      {
-        try
-        {
+      } catch (error) {
+        try {
           svgOverlay.view.onmousewheel = onmousewheel.zoom;
-        }
-        catch (error)
-        {
-        }
+        } catch (error) {}
       }
 
       show_tracing = true;
       svgOverlay.show();
       self.updateNodes();
-      for (var i = 0; i < textlabels.length; ++i)
-      {
+      for (var i = 0; i < textlabels.length; ++i) {
         textlabels[i].setEditable(false);
       }
       break;
@@ -1224,25 +1075,17 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       mouseCatcher.style.cursor = "move";
       mouseCatcher.onmousedown = onmousedown.move;
       mouseCatcher.onmousemove = onmousemove.pos;
-      try
-      {
+      try {
         mouseCatcher.addEventListener("DOMMouseScroll", onmousewheel.zoom, false); /* Webkit takes the event but does not understand it ... */
         mouseCatcher.addEventListener("mousewheel", onmousewheel.zoom, false);
-      }
-      catch (error)
-      {
-        try
-        {
+      } catch (error) {
+        try {
           mouseCatcher.onmousewheel = onmousewheel.zoom;
-        }
-        catch (error)
-        {
-        }
+        } catch (error) {}
       }
       if (show_textlabels) self.updateTextlabels();
 
-      for (var i = 0; i < textlabels.length; ++i)
-      {
+      for (var i = 0; i < textlabels.length; ++i) {
         textlabels[i].setEditable(false);
       }
       //updateControls();
@@ -1275,52 +1118,40 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   }
 
 
-  this.showTextlabels = function (b)
-  {
+  this.showTextlabels = function (b) {
     show_textlabels = b;
     if (show_textlabels) self.updateTextlabels();
-    else
-    {
+    else {
       //! remove all old text labels
-      while (textlabels.length > 0)
-      {
+      while (textlabels.length > 0) {
         var t = textlabels.pop();
         try //!< we do not know if it really is in the DOM currently
         {
           view.removeChild(t.getView());
-        }
-        catch (error)
-        {
-        }
+        } catch (error) {}
       }
     }
     return;
   }
 
-  this.createLink = function (fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype)
-  {
+  this.createLink = function (fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype) {
     svgOverlay.createLink(fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype);
   }
 
-  this.createTreenodeLink = function (fromid, toid)
-  {
+  this.createTreenodeLink = function (fromid, toid) {
     svgOverlay.createTreenodeLink(fromid, toid);
   }
 
-  this.showTags = function (val)
-  {
+  this.showTags = function (val) {
     svgOverlay.showTags(val);
   }
 
-  this.selectNode = function (id)
-  {
+  this.selectNode = function (id) {
     svgOverlay.selectNode(id);
   }
 
-  this.tracingCommand = function (m)
-  {
-    switch (m)
-    {
+  this.tracingCommand = function (m) {
+    switch (m) {
     case "skeletontracing":
       svgOverlay.set_tracing_mode(m);
       break;
@@ -1331,92 +1162,69 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       svgOverlay.updateNodeCoordinatesinDB();
       break;
     case "goparent":
-      if (atn != null)
-      {
-        if (atn.parent != null)
-        {
+      if (atn != null) {
+        if (atn.parent != null) {
           project.moveTo(
           svgOverlay.pix2physZ(atn.parent.z), svgOverlay.pix2physY(atn.parent.y), svgOverlay.pix2physX(atn.parent.x));
           window.setTimeout("project.selectNode( " + atn.parent.id + " )", 1000);
-        }
-        else
-        {
+        } else {
           alert("This is the root node.");
         }
-      }
-      else
-      {
+      } else {
         alert("No active node selected.");
       }
       break;
     case "goactive":
-      if (atn != null)
-      {
+      if (atn != null) {
         project.moveTo(
         svgOverlay.pix2physZ(atn.z), svgOverlay.pix2physY(atn.y), svgOverlay.pix2physX(atn.x));
-      }
-      else
-      {
+      } else {
         alert("No active node to go to!");
       }
       break;
     case "golastedited":
       if (atn == null) {
-        alert("There was no active node.  One is required to find the\n"+
-              "last edited node in the same skeleton.");
+        alert("There was no active node.  One is required to find the\n" + "last edited node in the same skeleton.");
         break;
       }
       svgOverlay.updateNodeCoordinatesinDB(function () {
 
         requestQueue.register("model/last.edited.or.added.php", "POST", {
           pid: project.id,
-          tnid: atn.id }, function (status, text, xml) {
-            if (status == 200)
-            {
-              if (text && text != " ")
-              {
-                var e = eval("(" + text + ")");
-                if (e.error)
-                {
-                  alert(e.error);
-                }
-                else
-                {
-                  project.moveTo(e.z, e.y, e.x);
-                }
+          tnid: atn.id
+        }, function (status, text, xml) {
+          if (status == 200) {
+            if (text && text != " ") {
+              var e = eval("(" + text + ")");
+              if (e.error) {
+                alert(e.error);
+              } else {
+                project.moveTo(e.z, e.y, e.x);
               }
             }
-          });
+          }
+        });
 
       });
       break;
     case "skeletonsplitting":
-      if (atn != null)
-      {
+      if (atn != null) {
         svgOverlay.splitSkeleton();
-      }
-      else
-      {
+      } else {
         alert('Need to activate a treenode before splitting!');
       }
       break;
     case "skeletonreroot":
-      if (atn != null)
-      {
+      if (atn != null) {
         svgOverlay.rerootSkeleton();
-      }
-      else
-      {
+      } else {
         alert('Need to activate a treenode before rerooting!');
       }
       break;
     case "tagging":
-      if (atn != null)
-      {
+      if (atn != null) {
         svgOverlay.tagATN();
-      }
-      else
-      {
+      } else {
         alert('Need to activate a treenode or connector before tagging!');
       }
       break;
@@ -1424,22 +1232,16 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       svgOverlay.toggleLabels();
       break;
     case "exportswc":
-      if (atn != null)
-      {
+      if (atn != null) {
         svgOverlay.exportSWC();
-      }
-      else
-      {
+      } else {
         alert('Need to activate a treenode before exporting to SWC!');
       }
       break;
     case "showskeleton":
-      if (atn != null)
-      {
+      if (atn != null) {
         svgOverlay.showSkeleton();
-      }
-      else
-      {
+      } else {
         alert('Need to activate a treenode or connector before showing them!');
       }
       break;
@@ -1452,8 +1254,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 /*
 	 * resize the viewport
 	 */
-  this.resize = function (left, top, width, height)
-  {
+  this.resize = function (left, top, width, height) {
     viewHeight = height;
     viewWidth = width;
 
@@ -1476,8 +1277,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
    * crop a microstack by initiating a server backend
    * @todo which has to be built
    */
-  var crop = function ()
-  {
+  var crop = function () {
     var scale = 1 / Math.pow(2, slider_crop_s.val);
     var numSections = Math.max(slider_crop_top_z.val, slider_crop_bottom_z.val) - Math.min(slider_crop_top_z.val, slider_crop_bottom_z.val) + 1;
     var pixelWidth = Math.round((Math.max(cropBox.left, cropBox.right) - Math.min(cropBox.left, cropBox.right)) / resolution.x * scale);
@@ -1506,18 +1306,13 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
    * handle the answer of a microstack crop request
    * this answer is not the ready made microstack itself but a confirmation that the cropping process was invoked
    */
-  var handle_crop = function (status, text, xml)
-  {
-    if (status = 200)
-    {
+  var handle_crop = function (status, text, xml) {
+    if (status = 200) {
       statusBar.replaceLast(text);
       var e = eval("(" + text + ")");
-      if (e.error)
-      {
+      if (e.error) {
         alert(e.error);
-      }
-      else
-      {
+      } else {
         //alert( "crop microstack ( " + e.left + ", " + e.top + ", " + e.front + " ) -> ( " + e.right + ", " + e.bottom + ", " + e.back + " ) at scale " + e.scale );
         alert("Cropping the microstack...\nThis operation may take some time, you will be notified as soon as the cropped stack is ready.");
       }
@@ -1525,62 +1320,52 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     return;
   }
 
-  this.registerZoomControl = function (c)
-  {
+  this.registerZoomControl = function (c) {
     slider_s = c;
     return;
   }
 
-  this.registerZoomControlTrace = function (c)
-  {
+  this.registerZoomControlTrace = function (c) {
     slider_trace_s = c;
     return;
   }
 
-  this.registerSliceControl = function (c)
-  {
+  this.registerSliceControl = function (c) {
     slider_z = c;
     return;
   }
 
-  this.registerSliceControlTrace = function (c)
-  {
+  this.registerSliceControlTrace = function (c) {
     slider_trace_z = c;
     return;
   }
 
-  this.registerXControl = function (c)
-  {
+  this.registerXControl = function (c) {
     input_x = c;
     return;
   }
 
-  this.registerYControl = function (c)
-  {
+  this.registerYControl = function (c) {
     input_y = c;
     return;
   }
 
-  this.registerCropTopSliceControl = function (c)
-  {
+  this.registerCropTopSliceControl = function (c) {
     slider_crop_top_z = c;
     return;
   }
 
-  this.registerCropBottomSliceControl = function (c)
-  {
+  this.registerCropBottomSliceControl = function (c) {
     slider_crop_bottom_z = c;
     return;
   }
 
-  this.registerCropZoomControl = function (c)
-  {
+  this.registerCropZoomControl = function (c) {
     slider_crop_s = c;
     return;
   }
 
-  this.registerCropApplyControl = function (c)
-  {
+  this.registerCropApplyControl = function (c) {
     button_crop_apply = c;
     return;
   }
@@ -1588,8 +1373,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   /**
    * register all GUI control elements and event handlers
    */
-  this.register = function ()
-  {
+  this.register = function () {
     registered = true;
     slider_s.update(
     MAX_S, 0, MAX_S + 1, s, this.changeScaleDelayed);
@@ -1602,9 +1386,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       slider_trace_z.getView().parentNode.style.display = "none";
       slider_crop_top_z.getView().parentNode.style.display = "none";
       slider_crop_bottom_z.getView().parentNode.style.display = "none";
-    }
-    else
-    {
+    } else {
       slider_z.getView().parentNode.style.display = "block";
       slider_trace_z.getView().parentNode.style.display = "block";
       slider_crop_top_z.getView().parentNode.style.display = "block";
@@ -1624,46 +1406,29 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     /**
      * Cropping is possible with an attached TrakEM2 project only.
      */
-    if (trakem2_project)
-    {
+    if (trakem2_project) {
       document.getElementById("edit_button_crop").style.display = "block";
       button_crop_apply.onclick = crop;
-    }
-    else
-    {
+    } else {
       document.getElementById("edit_button_crop").style.display = "none";
     }
 
     input_x.onchange = changeXByInput;
-    try
-    {
+    try {
       input_x.addEventListener("DOMMouseScroll", YXMouseWheel, false);
-    }
-    catch (error)
-    {
-      try
-      {
+    } catch (error) {
+      try {
         input_x.onmousewheel = YXMouseWheel;
-      }
-      catch (error)
-      {
-      }
+      } catch (error) {}
     }
 
     input_y.onchange = changeYByInput;
-    try
-    {
+    try {
       input_y.addEventListener("DOMMouseScroll", YXMouseWheel, false);
-    }
-    catch (error)
-    {
-      try
-      {
+    } catch (error) {
+      try {
         input_x.onmousewheel = YXMouseWheel;
-      }
-      catch (error)
-      {
-      }
+      } catch (error) {}
     }
     return;
   }
@@ -1671,8 +1436,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   /**
    * unregister all GUI control connections and event handlers
    */
-  this.unregister = function ()
-  {
+  this.unregister = function () {
     registered = false;
     slider_s.update(
     0, 1, undefined, 0, null);
@@ -1687,35 +1451,21 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     0, 1, undefined, 0, null);
 
     input_x.onchange = null;
-    try
-    {
+    try {
       input_x.removeEventListener("DOMMouseScroll", YXMouseWheel, false);
-    }
-    catch (error)
-    {
-      try
-      {
+    } catch (error) {
+      try {
         input_x.onmousewheel = null;
-      }
-      catch (error)
-      {
-      }
+      } catch (error) {}
     }
 
     input_y.onchange = null;
-    try
-    {
+    try {
       input_y.removeEventListener("DOMMouseScroll", YXMouseWheel, false);
-    }
-    catch (error)
-    {
-      try
-      {
+    } catch (error) {
+      try {
         input_x.onmousewheel = null;
-      }
-      catch (error)
-      {
-      }
+      } catch (error) {}
     }
     return;
   }
@@ -1724,8 +1474,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   /**
    * set the GUI focus to the stack
    */
-  this.focus = function ()
-  {
+  this.focus = function () {
     project.focusStack(self);
 
     smallMap.focus();
@@ -1742,13 +1491,11 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   /**
    * remove the GUI focus from the stack
    */
-  this.blur = function ()
-  {
+  this.blur = function () {
     self.unregister();
     mouseCatcher.style.cursor = "default";
     mouseCatcher.style.zIndex = 7;
-    mouseCatcher.onmousedown = function (e)
-    {
+    mouseCatcher.onmousedown = function (e) {
       self.focus();
       return onmousedown[mode](e);
     }
@@ -1763,36 +1510,25 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
    * handle an update-textlabels-request answer
    *
    */
-  var handle_updateTextlabels = function (status, text, xml)
-  {
-    if (status = 200)
-    {
+  var handle_updateTextlabels = function (status, text, xml) {
+    if (status = 200) {
       //alert( "data: " + text );
       var e = eval("(" + text + ")");
-      if (e.error)
-      {
+      if (e.error) {
         alert(e.error);
-      }
-      else
-      {
+      } else {
         //! remove all old text labels
-        while (textlabels.length > 0)
-        {
+        while (textlabels.length > 0) {
           var t = textlabels.pop();
           try //!< we do not know if it really is in the DOM currently
           {
             view.removeChild(t.getView());
-          }
-          catch (error)
-          {
-          }
+          } catch (error) {}
         }
 
-        if (text)
-        {
+        if (text) {
           //! import the new
-          for (var i in e)
-          {
+          for (var i in e) {
             var t = new Textlabel(e[i], resolution, translation);
             textlabels.push(t);
             view.appendChild(t.getView());
@@ -1808,8 +1544,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   /**
    * display the cropBox
    */
-  var updateCropBox = function ()
-  {
+  var updateCropBox = function () {
     var t = Math.min(cropBox.top, cropBox.bottom);
     var b = Math.max(cropBox.top, cropBox.bottom);
     var l = Math.min(cropBox.left, cropBox.right);
@@ -1860,7 +1595,6 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   var MAX_X = dimension.x - 1; //!< the last possible x-coordinate
   var MAX_Y = dimension.y - 1; //!< the last possible y-coordinate
   var MAX_Z = dimension.z - 1; //!< the last possible z-coordinate
-
   //! estimate the zoom levels
   var MAX_S = 0;
   var min_max = Math.min(MAX_X, MAX_Y);
@@ -1870,8 +1604,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 
   //! all possible slices
   var slices = new Array();
-  for (var i = 0; i < dimension.z; ++i)
-  {
+  for (var i = 0; i < dimension.z; ++i) {
     if (!broken_slices[i]) slices.push(i);
   }
 
@@ -1908,8 +1641,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   stackInfo.appendChild(stackTitle);
   var stackClose = document.createElement("p");
   stackClose.className = "stackClose";
-  stackClose.onmousedown = function (e)
-  {
+  stackClose.onmousedown = function (e) {
     project.removeStack(id);
     return true;
   };

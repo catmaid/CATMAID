@@ -1,14 +1,12 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-initClassTree = function (pid)
-{
+initClassTree = function (pid) {
 
   // id of object tree
   object_tree_id = "#tree_class";
 
-  $(object_tree_id).jstree(
-  {
+  $(object_tree_id).jstree({
     "core": {
       "html_titles": false
     },
@@ -31,8 +29,7 @@ initClassTree = function (pid)
       "icons": true
     },
     "dnd": {
-      "drop_finish": function (data)
-      {
+      "drop_finish": function (data) {
         console.log("tree_class: node dropped.");
       },
     },
@@ -116,8 +113,7 @@ initClassTree = function (pid)
   //	"args" : /* arguments passed to the function */,
   //	"rslt" : /* any data the function passed to the event */,
   //	"rlbk" : /* an optional rollback object - it is not always present */
-  $(object_tree_id).bind("loaded.jstree", function (event, data)
-  {
+  $(object_tree_id).bind("loaded.jstree", function (event, data) {
     console.log("Class tree loaded.");
   });
 

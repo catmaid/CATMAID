@@ -60,8 +60,7 @@ zdiff) // the different from the current slices
 
   // update the parent node of this node
   // update parent's children array
-  this.updateParent = function (par)
-  {
+  this.updateParent = function (par) {
     // par must be a Node object
     this.parent = par;
     // update reference to oneself
@@ -69,25 +68,21 @@ zdiff) // the different from the current slices
   }
 
   // update the parent if it exists
-  if (this.parent != null)
-  {
+  if (this.parent != null) {
     // if parent exists, update it
     this.updateParent(parent);
   }
 
   // update the local x,y coordinates
   // updated them for the raphael object as well
-  this.setXY = function (xnew, ynew)
-  {
+  this.setXY = function (xnew, ynew) {
     this.x = xnew;
     this.y = ynew;
-    c.attr(
-    {
+    c.attr({
       cx: this.x,
       cy: this.y
     });
-    mc.attr(
-    {
+    mc.attr({
       cx: this.x,
       cy: this.y
     });
@@ -95,31 +90,26 @@ zdiff) // the different from the current slices
   }
 
   // set to default fill color
-  this.setDefaultColor = function ()
-  {
-    c.attr(
-    {
+  this.setDefaultColor = function () {
+    c.attr({
       fill: fillcolor
     });
   }
 
   // the accessor method for the display node
-  this.getC = function ()
-  {
+  this.getC = function () {
     return c;
   }
 
   // create a raphael circle object
-  c = this.paper.circle(this.x, this.y, this.r).attr(
-  {
+  c = this.paper.circle(this.x, this.y, this.r).attr({
     fill: fillcolor,
     stroke: "none",
     opacity: 1.0
   });
 
   // a raphael circle oversized for the mouse logic
-  mc = this.paper.circle(this.x, this.y, this.rcatch).attr(
-  {
+  mc = this.paper.circle(this.x, this.y, this.rcatch).attr({
     fill: "rgb(0, 1, 0)",
     stroke: "none",
     opacity: 0
@@ -139,8 +129,7 @@ zdiff) // the different from the current slices
   // delete all objects relevant to this node
   // such as raphael DOM elements and node references
   // javascript's garbage collection should do the rest
-  this.deleteall = function ()
-  {
+  this.deleteall = function () {
     // test if there is any child of type ConnectorNode
     // if so, it is not allowed to remove the treenode
 /*for ( var i = 0; i < children.length; ++i ) {
@@ -151,20 +140,17 @@ zdiff) // the different from the current slices
     }
     */
     // remove the parent of all the children
-    for (var i = 0; i < this.children.length; ++i)
-    {
+    for (var i = 0; i < this.children.length; ++i) {
       this.children[i].removeLine();
       this.children[i].removeParent();
     }
     // remove the raphael svg elements from the DOM
     c.remove();
     mc.remove();
-    if (this.parent != null)
-    {
+    if (this.parent != null) {
       this.removeLine();
       // remove this node from parent's children list
-      for (var i in this.parent.children)
-      {
+      for (var i in this.parent.children) {
         if (this.parent.children[i].id == id) delete this.parent.children[i];
       }
     }
@@ -175,27 +161,21 @@ zdiff) // the different from the current slices
    * the current view and local objects
    *
    */
-  this.deletenode = function ()
-  {
+  this.deletenode = function () {
     requestQueue.register("model/treenode.delete.php", "POST", {
       pid: project.id,
       tnid: this.id
-    }, function (status, text, xml)
-    {
-      if (status != 200)
-      {
+    }, function (status, text, xml) {
+      if (status != 200) {
         alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
       }
       return true;
     });
 
     // activate parent node when deleted
-    if (this.parent == null)
-    {
+    if (this.parent == null) {
       activateNode(null);
-    }
-    else
-    {
+    } else {
       // loop over nodes to see if parent is retrieved
       project.selectNode(this.parent.id);
     }
@@ -226,31 +206,26 @@ zdiff) // the different from the current slices
   }
 
   // remove the raphael line to the parent
-  this.removeLine = function ()
-  {
+  this.removeLine = function () {
     line.remove();
   }
 
   // remove the parent node
-  this.removeParent = function ()
-  {
+  this.removeParent = function () {
     delete this.parent;
     this.parent = null;
   }
 
   // updates the raphael path coordinates
-  this.drawLine = function ()
-  {
-    if (this.parent != null)
-    {
+  this.drawLine = function () {
+    if (this.parent != null) {
       var strokecolor;
       if (this.parent.zdiff < 0) strokecolor = "rgb(255, 0, 0)";
       else if (this.parent.zdiff > 0) strokecolor = "rgb(0, 0, 255)";
       else
       strokecolor = "rgb(255, 255, 0)";
 
-      line.attr(
-      {
+      line.attr({
         path: [
           ["M", c.attrs.cx, c.attrs.cy],
           ["L", this.parent.getC().attrs.cx, this.parent.getC().attrs.cy]
@@ -264,18 +239,14 @@ zdiff) // the different from the current slices
 
   // draw function to update the paths from the children
   // and to its parent
-  this.draw = function ()
-  {
+  this.draw = function () {
     // draws/updates path to parent and children
-    for (var i in this.children)
-    {
-      if (this.children[i].parent != null)
-      {
+    for (var i in this.children) {
+      if (this.children[i].parent != null) {
         this.children[i].drawLine();
       }
     }
-    for (var i in this.connectors)
-    {
+    for (var i in this.connectors) {
       // should update the connector paths
       this.connectors[i].draw();
     }
@@ -286,8 +257,7 @@ zdiff) // the different from the current slices
    * event handlers
    */
 
-  mc.dblclick(function (e)
-  {
+  mc.dblclick(function (e) {
     if (e.altKey) // zoom in
     slider_trace_s.move(-1);
     else // zoom out
@@ -295,19 +265,15 @@ zdiff) // the different from the current slices
     project.tracingCommand('goactive');
   });
 
-  mc.click(function (e)
-  {
+  mc.click(function (e) {
     //    console.log("atn.id", atn.id);
     //  console.log("treenode: clicked", this.parentnode.id, "active is", atn.id);
     // return some log information when clicked on the node
     // this usually refers here to the mc object
-    if (e.shiftKey)
-    {
-      if (e.ctrlKey && e.shiftKey)
-      {
+    if (e.shiftKey) {
+      if (e.ctrlKey && e.shiftKey) {
         // if it is active node, set active node to null
-        if (atn != null && this.parentnode.id == atn.id)
-        {
+        if (atn != null && this.parentnode.id == atn.id) {
           activateNode(null);
         }
         statusBar.replaceLast("deleted treenode with id " + this.parentnode.id);
@@ -315,31 +281,23 @@ zdiff) // the different from the current slices
         e.stopPropagation();
         return true;
       }
-      if (atn != null)
-      {
+      if (atn != null) {
         // connected activated treenode or connectornode
         // to existing treenode or connectornode
-        if (atn.type == "location")
-        {
+        if (atn.type == "location") {
           project.createLink(atn.id, this.parentnode.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
           statusBar.replaceLast("joined active treenode to connector with id " + this.parentnode.id);
-        }
-        else if (atn.type == "treenode")
-        {
+        } else if (atn.type == "treenode") {
           statusBar.replaceLast("joined active treenode to treenode with id " + this.parentnode.id);
           project.createTreenodeLink(atn.id, this.parentnode.id);
         }
 
-      }
-      else
-      {
+      } else {
         alert("Nothing to join without an active node!");
       }
       e.stopPropagation();
 
-    }
-    else
-    {
+    } else {
       // activate this node
       activateNode(this.parentnode);
       // stop propagation of the event
@@ -347,18 +305,15 @@ zdiff) // the different from the current slices
     }
   });
 
-  mc.move = function (dx, dy)
-  {
+  mc.move = function (dx, dy) {
     activateNode(this.parentnode);
     this.parentnode.x = ox + dx;
     this.parentnode.y = oy + dy;
-    c.attr(
-    {
+    c.attr({
       cx: this.parentnode.x,
       cy: this.parentnode.y
     });
-    mc.attr(
-    {
+    mc.attr({
       cx: this.parentnode.x,
       cy: this.parentnode.y
     });
@@ -367,19 +322,15 @@ zdiff) // the different from the current slices
 
     this.parentnode.needsync = true;
   }
-  mc.up = function ()
-  {
-    c.attr(
-    {
+  mc.up = function () {
+    c.attr({
       opacity: 1
     });
   }
-  mc.start = function ()
-  {
+  mc.start = function () {
     ox = mc.attr("cx");
     oy = mc.attr("cy");
-    c.attr(
-    {
+    c.attr({
       opacity: 0.7
     });
   }

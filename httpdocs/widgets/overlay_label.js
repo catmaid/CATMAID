@@ -9,8 +9,7 @@ id, // unique id for the node from the database
 paper, // the raphael paper this node is drawn to
 x, // the x coordinate in pixel coordinates
 y, // y coordinates
-text)
-{
+text) {
   // the database treenode id
   this.id = id;
   this.paper = paper;
@@ -26,8 +25,7 @@ text)
   // create a raphael circle object
   c = this.paper.g.blob(this.x, this.y, this.text);
 
-  this.remove = function ()
-  {
+  this.remove = function () {
     c.remove();
   }
 }

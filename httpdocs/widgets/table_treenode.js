@@ -4,11 +4,9 @@
 var oTable;
 var asInitVals = new Array();
 
-initTreenodeTable = function (pid)
-{
+initTreenodeTable = function (pid) {
 
-  oTable = $('#treenodetable').dataTable(
-  {
+  oTable = $('#treenodetable').dataTable({
     // http://www.datatables.net/usage/options
     "bDestroy": true,
     "sDom": '<"H"lr>t<"F"ip>',
@@ -17,8 +15,7 @@ initTreenodeTable = function (pid)
     "bServerSide": true,
     "bAutoWidth": false,
     "sAjaxSource": 'model/treenode.table.list.php',
-    "fnServerData": function (sSource, aoData, fnCallback)
-    {
+    "fnServerData": function (sSource, aoData, fnCallback) {
 
       // remove all selected elements in table
       for (key in project.selectedObjects['table_treenode'])
@@ -40,42 +37,33 @@ initTreenodeTable = function (pid)
 			*/
       // only for one skeleton
       var skelid = project.selectedObjects['selectedskeleton'];
-      if (skelid != null)
-      {
+      if (skelid != null) {
         // give priority to showing treenodes
-        aoData.push(
-        {
+        aoData.push({
           "name": "skeleton_0",
           "value": project.selectedObjects['selectedskeleton']
         });
-        aoData.push(
-        {
+        aoData.push({
           "name": "skeleton_nr",
           "value": 1
         });
-      }
-      else
-      {
+      } else {
         // check if a treenode is active
         // send active treenode when set
-        if (atn != null && atn.type == "treenode")
-        {
-          aoData.push(
-          {
+        if (atn != null && atn.type == "treenode") {
+          aoData.push({
             "name": "atnid",
             "value": atn.id
           });
         }
       }
 
-      aoData.push(
-      {
+      aoData.push({
         "name": "pid",
         "value": pid
       });
 
-      $.ajax(
-      {
+      $.ajax({
         "dataType": 'json',
         "type": "POST",
         "url": sSource,
@@ -89,14 +77,10 @@ initTreenodeTable = function (pid)
       ["All", 10, 100, 200]
     ],
     "bJQueryUI": true,
-    "fnDrawCallback": function ()
-    {
+    "fnDrawCallback": function () {
       $('td:eq(5)', oTable.fnGetNodes()).editable('model/treenode.table.update.php', {
-        "callback": function (sValue, y)
-        {
-        },
-        "submitdata": function (value, settings)
-        {
+        "callback": function (sValue, y) {},
+        "submitdata": function (value, settings) {
           var aPos = oTable.fnGetPosition(this);
           var aData = oTable.fnGetData(aPos[0]);
           return {
@@ -108,16 +92,13 @@ initTreenodeTable = function (pid)
         "height": "14px"
       });
     },
-    "fnRowCallback": function (nRow, aData, iDisplayIndex)
-    {
+    "fnRowCallback": function (nRow, aData, iDisplayIndex) {
 
       if (aData[4] == "R") $(nRow).addClass('root_node');
       if (aData[4] == "L") $(nRow).addClass('leaf_node');
 
-      if (atn != null)
-      {
-        if (parseInt(aData[0]) == atn.id)
-        {
+      if (atn != null) {
+        if (parseInt(aData[0]) == atn.id) {
           // just to be sure
           $(nRow).removeClass('root_node');
           $(nRow).removeClass('leaf_node');
@@ -127,8 +108,7 @@ initTreenodeTable = function (pid)
       }
       return nRow;
     },
-    "aoColumns": [
-    {
+    "aoColumns": [{
       "sClass": "center",
       "bSearchable": false,
       "bSortable": true
@@ -172,8 +152,7 @@ initTreenodeTable = function (pid)
     ]
   });
 
-  $("#treenodetable tfoot input").keyup(function ()
-  { /* Filter on the column (the index) of this element */
+  $("#treenodetable tfoot input").keyup(function () { /* Filter on the column (the index) of this element */
     oTable.fnFilter(this.value, $("tfoot input").index(this));
   });
 
@@ -182,32 +161,26 @@ initTreenodeTable = function (pid)
 	 * the footer
 	 */
 
-  $("#treenodetable tfoot input").each(function (i)
-  {
+  $("#treenodetable tfoot input").each(function (i) {
     asInitVals[i] = this.value;
   });
 
-  $("#treenodetable tfoot input").focus(function ()
-  {
+  $("#treenodetable tfoot input").focus(function () {
     // console.log("focus");
-    if (this.className == "search_init")
-    {
+    if (this.className == "search_init") {
       this.className = "";
       this.value = "";
     }
   });
 
-  $("#treenodetable tfoot input").blur(function (i)
-  {
-    if (this.value == "")
-    {
+  $("#treenodetable tfoot input").blur(function (i) {
+    if (this.value == "") {
       this.className = "search_init";
       this.value = asInitVals[$("tfoot input").index(this)];
     }
   });
 
-  $("#treenodetable tbody tr").live('dblclick', function ()
-  {
+  $("#treenodetable tbody tr").live('dblclick', function () {
 
     var aData = oTable.fnGetData(this);
     // retrieve coordinates and moveTo

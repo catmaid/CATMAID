@@ -6,21 +6,18 @@
  */
 
 function Input(
-name, size, onchange, defaultvalue)
-{
+name, size, onchange, defaultvalue) {
   /**
    * returns the conatining span-element for insertion to the document
    */
-  this.getView = function ()
-  {
+  this.getView = function () {
     return view;
   }
 
   /**
    * mouse up, so clear the timer
    */
-  var mouseUp = function (e)
-  {
+  var mouseUp = function (e) {
     if (timer) window.clearTimeout(timer);
 
     ui.releaseEvents()
@@ -32,12 +29,10 @@ name, size, onchange, defaultvalue)
   /**
    * decreases the value and invoke timeout
    */
-  var decrease = function ()
-  {
+  var decrease = function () {
     var val = parseInt(input.value);
     if (isNaN(val)) return;
-    else
-    {
+    else {
       input.value = val - 1;
       input.onchange();
       timer = window.setTimeout(decrease, 250);
@@ -48,8 +43,7 @@ name, size, onchange, defaultvalue)
   /**
    * mouse down on the increase button, so move up, setting a timer
    */
-  var topMouseDown = function (e)
-  {
+  var topMouseDown = function (e) {
     if (timer) window.clearTimeout(timer);
 
     ui.registerEvent("onmouseup", mouseUp);
@@ -64,12 +58,10 @@ name, size, onchange, defaultvalue)
   /**
    * increases the value and invoke timeout
    */
-  var increase = function ()
-  {
+  var increase = function () {
     var val = parseInt(input.value);
     if (isNaN(val)) return;
-    else
-    {
+    else {
       input.value = val + 1;
       input.onchange();
       timer = window.setTimeout(increase, 250);
@@ -80,8 +72,7 @@ name, size, onchange, defaultvalue)
   /**
    * mouse down on the top bar, so move up, setting a timer
    */
-  var bottomMouseDown = function (e)
-  {
+  var bottomMouseDown = function (e) {
     if (timer) window.clearTimeout(timer);
 
     ui.registerEvent("onmouseup", mouseUp);
@@ -96,14 +87,12 @@ name, size, onchange, defaultvalue)
   /**
    * mouse wheel over input
    */
-  var mouseWheel = function (e)
-  {
+  var mouseWheel = function (e) {
     var val = parseInt(input.value);
     if (isNaN(val)) return;
 
     var w = ui.getMouseWheel(e);
-    if (w)
-    {
+    if (w) {
       if (w > 0) input.value = val - 1;
       else
       input.value = val + 1;
@@ -158,19 +147,12 @@ name, size, onchange, defaultvalue)
   view.appendChild(img);
 
   input.onchange = onchange;
-  try
-  {
+  try {
     input.addEventListener("DOMMouseScroll", mouseWheel, false); /* Webkit takes the event but does not understand it ... */
     input.addEventListener("mousewheel", mouseWheel, false);
-  }
-  catch (error)
-  {
-    try
-    {
+  } catch (error) {
+    try {
       input.onmousewheel = mouseWheel;
-    }
-    catch (error)
-    {
-    }
+    } catch (error) {}
   }
 }

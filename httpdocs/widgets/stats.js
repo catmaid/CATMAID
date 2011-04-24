@@ -1,8 +1,7 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-function update_stats_fields(data)
-{
+function update_stats_fields(data) {
   $("#proj_users").text(data.proj_users);
   $("#proj_neurons").text(data.proj_neurons);
   $("#proj_synapses").text(data.proj_synapses);
@@ -14,37 +13,28 @@ function update_stats_fields(data)
   $("#proj_tags").text(data.proj_tags);
 }
 
-function refresh_project_statistics()
-{
+function refresh_project_statistics() {
   requestQueue.replace("model/stats.list.php", "POST", {
     "pid": project.id,
-  }, function (status, text, xml)
-    {
-      if (status == 200)
-      {
-        if (text && text != " ")
-        {
-          var jso = $.parseJSON(text);
-          if (jso.error)
-          {
-            alert(jso.error);
-          }
-          else
-          {
-            update_stats_fields(jso);
-          }
+  }, function (status, text, xml) {
+    if (status == 200) {
+      if (text && text != " ") {
+        var jso = $.parseJSON(text);
+        if (jso.error) {
+          alert(jso.error);
+        } else {
+          update_stats_fields(jso);
         }
       }
-      return true;
-    });
+    }
+    return true;
+  });
 
 }
 
-initProjectStats = function ()
-{
+initProjectStats = function () {
 
-  $("#refresh_stats").click(function ()
-  {
+  $("#refresh_stats").click(function () {
     refresh_project_statistics();
   });
 

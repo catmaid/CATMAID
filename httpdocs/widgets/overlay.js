@@ -8,11 +8,11 @@ var atn_fillcolor = "rgb(0, 255, 0)";
 function activateNode(node) {
   // changes the color attributes of
   // the newly activated node
-  if (atn != null) {
+  if (atn !== null) {
     atn.setDefaultColor();
   };
-  // if node == null, just deactivate
-  if (node == null) {
+  // if node === null, just deactivate
+  if (node === null) {
     atn = null;
     return;
   }
@@ -21,7 +21,7 @@ function activateNode(node) {
     fill: atn_fillcolor
   });
   // update statusBar
-  if (atn.type == "treenode") statusBar.replaceLast("activated treenode with id " + atn.id);
+  if (atn.type === "treenode") statusBar.replaceLast("activated treenode with id " + atn.id);
   else
   statusBar.replaceLast("activated node with id " + atn.id);
 };
@@ -44,7 +44,7 @@ current_scale // current scale of the stack
       pid: project.id,
       tnid: atn.id,
     }, function (status, text, xml) {
-      if (status == 200) {
+      if (status === 200) {
 
         console.log("output", text);
         $('#recipe1').clone().appendTo('#myprintrecipe');
@@ -64,7 +64,7 @@ current_scale // current scale of the stack
     // activates the given node id if it exists
     // in the current retrieved set of nodes
     for (nodeid in nodes) {
-      if (nodes[nodeid].id == id) {
+      if (nodes[nodeid].id === id) {
         activateNode(nodes[nodeid]);
       }
     }
@@ -81,7 +81,7 @@ current_scale // current scale of the stack
     labels = new Object();
 
     // update state variable
-    if (toval == null) {
+    if (toval === null) {
       if (show_labels) {
         show_labels = false;
       } else {
@@ -97,7 +97,7 @@ current_scale // current scale of the stack
       var nods = {};
       // create node id array
       for (nodeid in nodes) {
-        if (nodes[nodeid].zdiff == 0) {
+        if (nodes[nodeid].zdiff === 0) {
           nods[nodeid + ""] = nodeid;
         }
       }
@@ -133,7 +133,7 @@ current_scale // current scale of the stack
 
     // tagbox from
     // http://blog.crazybeavers.se/wp-content/demos/jquery.tag.editor/
-    if ($("#tagBoxId" + atn.id).length != 0) {
+    if ($("#tagBoxId" + atn.id).length !== 0) {
       alert("TagBox is already open!");
       return;
     }
@@ -162,8 +162,8 @@ current_scale // current scale of the stack
       pid: project.id
     }, function (status, text, xml) {
 
-      if (status == 200) {
-        if (text && text != " ") {
+      if (status === 200) {
+        if (text && text !== " ") {
           var e = eval("(" + text + ")");
           if (e.error) {
             alert(e.error);
@@ -182,8 +182,8 @@ current_scale // current scale of the stack
       ntype: atn.type
     }, function (status, text, xml) {
 
-      if (status == 200) {
-        if (text && text != " ") {
+      if (status === 200) {
+        if (text && text !== " ") {
           var e = eval("(" + text + ")");
           if (e.error) {
             alert(e.error);
@@ -218,8 +218,8 @@ current_scale // current scale of the stack
         tags: $("#Tags" + atn.id).tagEditorGetTags()
       }, function (status, text, xml) {
 
-        if (status == 200) {
-          if (text && text != " ") {
+        if (status === 200) {
+          if (text && text !== " ") {
             var e = eval("(" + text + ")");
             if (e.error) {
               alert(e.error);
@@ -242,8 +242,8 @@ current_scale // current scale of the stack
         pid: project.id,
         tnid: atn.id
       }, function (status, text, xml) {
-        if (status == 200) {
-          if (text && text != " ") {
+        if (status === 200) {
+          if (text && text !== " ") {
             var e = eval("(" + text + ")");
             if (e.error) {
               alert(e.error);
@@ -263,8 +263,8 @@ current_scale // current scale of the stack
         pid: project.id,
         tnid: atn.id
       }, function (status, text, xml) {
-        if (status == 200) {
-          if (text && text != " ") {
+        if (status === 200) {
+          if (text && text !== " ") {
             var e = eval("(" + text + ")");
             if (e.error) {
               alert(e.error);
@@ -284,8 +284,8 @@ current_scale // current scale of the stack
       pid: project.id,
       tnid: toid
     }, function (status, text, xml) {
-      if (status == 200) {
-        if (text && text != " ") {
+      if (status === 200) {
+        if (text && text !== " ") {
           var e = eval("(" + text + ")");
           // console.log(e);
           if (e.error) {
@@ -303,8 +303,8 @@ current_scale // current scale of the stack
       from_id: fromid,
       to_id: toid,
     }, function (status, text, xml) {
-      if (status == 200) {
-        if (text && text != " ") {
+      if (status === 200) {
+        if (text && text !== " ") {
           var e = eval("(" + text + ")");
           if (e.error) {
             alert(e.error);
@@ -338,8 +338,8 @@ current_scale // current scale of the stack
       to_nodetype: to_nodetype,
       to_relation: 'model_of',
     }, function (status, text, xml) {
-      if (status == 200) {
-        if (text && text != " ") {
+      if (status === 200) {
+        if (text && text !== " ") {
           var e = eval("(" + text + ")");
           if (e.error) {
             alert(e.error);
@@ -366,8 +366,8 @@ current_scale // current scale of the stack
       y: phys_y,
       z: phys_z,
     }, function (status, text, xml) {
-      if (status == 200) {
-        if (text && text != " ") {
+      if (status === 200) {
+        if (text && text !== " ") {
           var e = eval("(" + text + ")");
           if (e.error) {
             alert(e.error);
@@ -389,7 +389,7 @@ current_scale // current scale of the stack
   var createConnector = function (locidval, id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z) {
     //console.log("start: locidval", locidval, "id", id);
     // id is treenode id
-    if (locidval == null) {
+    if (locidval === null) {
       // we have the presynaptic case
       ip_type = 'presynaptic terminal'
       iplre = 'presynaptic_to'
@@ -414,8 +414,8 @@ current_scale // current scale of the stack
       location_type: 'synapse',
       location_relation: 'model_of',
     }, function (status, text, xml) {
-      if (status == 200) {
-        if (text && text != " ") {
+      if (status === 200) {
+        if (text && text !== " ") {
           var e = eval("(" + text + ")");
           if (e.error) {
             alert(e.error);
@@ -425,7 +425,7 @@ current_scale // current scale of the stack
             var locid_retrieved = parseInt(jso.location_id);
             //alert("locid retrieved"+ locid_retrieved);
             //console.log("handler: locidval", locidval, "id", id);
-            if (locidval == null) {
+            if (locidval === null) {
               // presynaptic case
               var nn = new ConnectorNode(locid_retrieved, r, 8, pos_x, pos_y, pos_z, 0);
 
@@ -470,15 +470,15 @@ current_scale // current scale of the stack
       confidence: confidence,
       targetgroup: "Isolated synaptic terminals"
     }, function (status, text, xml) {
-      if (status == 200) {
-        if (text && text != " ") {
+      if (status === 200) {
+        if (text && text !== " ") {
           var e = eval("(" + text + ")");
           if (e.error) {
             alert(e.error);
           } else {
             // add treenode to the display and update it
             var jso = $.parseJSON(text);
-            if (parid == -1) {
+            if (parid === -1) {
               var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0);
             } else {
               var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0);
@@ -512,7 +512,7 @@ current_scale // current scale of the stack
     // check if we want the newly create node to be
     // a model of a neuron
     var selneuron = project.selectedObjects['selectedneuron'];
-    if (selneuron != null) var useneuron = selneuron;
+    if (selneuron !== null) var useneuron = selneuron;
     else
     var useneuron = -1;
 
@@ -527,15 +527,15 @@ current_scale // current scale of the stack
       targetgroup: "Fragments",
       useneuron: useneuron
     }, function (status, text, xml) {
-      if (status == 200) {
-        if (text && text != " ") {
+      if (status === 200) {
+        if (text && text !== " ") {
           var e = eval("(" + text + ")");
           if (e.error) {
             alert(e.error);
           } else {
             // add treenode to the display and update it
             var jso = $.parseJSON(text);
-            if (parid == -1) {
+            if (parid === -1) {
               var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0);
             } else {
               var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0);
@@ -563,8 +563,8 @@ current_scale // current scale of the stack
       }
     }
     var callback = function (status, text, xml) {
-      if (status == 200) {
-        if (text && text != " ") {
+      if (status === 200) {
+        if (text && text !== " ") {
           var e = eval("(" + text + ")");
           if (e.error) {
             alert(e.error);
@@ -638,14 +638,14 @@ current_scale // current scale of the stack
       var pos_y = phys2pixY(jso[i].y);
       var pos_z = phys2pixZ(jso[i].z);
       var zdiff = Math.floor(parseFloat(jso[i].z_diff) / resolution.z);
-      if (zdiff == 0) {
-        if (jso[i].type == "treenode") var rad = parseFloat(jso[i].radius);
+      if (zdiff === 0) {
+        if (jso[i].type === "treenode") var rad = parseFloat(jso[i].radius);
         else
         var rad = 8; // default radius for locations
       } else
       var rad = 0;
 
-      if (jso[i].type == "treenode") {
+      if (jso[i].type === "treenode") {
         var nn = new Node(id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff);
         nrtn++;
       } else {
@@ -654,7 +654,7 @@ current_scale // current scale of the stack
       }
       nodes[id] = nn;
       // keep active state of previous active node
-      if (atn != null && atn.id == id) {
+      if (atn !== null && atn.id === id) {
         activateNode(nn);
       }
     }
@@ -663,7 +663,7 @@ current_scale // current scale of the stack
       for (var i in jso) {
         var nid = parseInt(jso[i].id);
         // for treenodes, make updates
-        if (jso[i].type == "treenode") {
+        if (jso[i].type === "treenode") {
           var parid = parseInt(jso[i].parentid);
 
           if (nodes[parid]) {
@@ -673,7 +673,7 @@ current_scale // current scale of the stack
             nodes[nid].parent.children[nid] = nodes[nid];
           }
 
-        } else if (jso[i].type == "location") {
+        } else if (jso[i].type === "location") {
           // update pregroup and postgroup
           for (var j in jso[i].pre) {
             // check if presynaptic trenode id in list, if so,
@@ -731,7 +731,7 @@ current_scale // current scale of the stack
   ) {
 
     // check if new scale changed, if so, update all node coordinates
-    if (ns != s) {
+    if (ns !== s) {
       updateNodeCoordinates(ns);
     }
     // update the scale of the internal scale variable
@@ -753,10 +753,10 @@ current_scale // current scale of the stack
     document.getElementById("trace_button_skeleton").className = "button";
     document.getElementById("trace_button_synapse").className = "button";
 
-    if (mode == "skeletontracing") {
+    if (mode === "skeletontracing") {
       currentmode = mode;
       document.getElementById("trace_button_skeleton").className = "button_active";
-    } else if (currentmode == "skeletontracing") {
+    } else if (currentmode === "skeletontracing") {
       currentmode = mode;
       document.getElementById("trace_button_synapse").className = "button_active";
     }
@@ -785,13 +785,13 @@ current_scale // current scale of the stack
 
     if (e.ctrlKey) {
       // ctrl-click deselects the current active node
-      if (atn != null) {
+      if (atn !== null) {
         statusBar.replaceLast("deactivated active node with id " + atn.id);
       }
       activateNode(null);
     } else if (e.shiftKey) {
-      if (atn == null) {
-        if (getMode() == "skeletontracing") {
+      if (atn === null) {
+        if (getMode() === "skeletontracing") {
           alert("You need to activate a treenode first (skeleton tracing mode)");
           return true;
         }
@@ -824,19 +824,19 @@ current_scale // current scale of the stack
     } else {
       // depending on what mode we are in
       // do something else when clicking
-      if (getMode() == "skeletontracing") {
-        if (atn instanceof Node || atn == null) {
+      if (getMode() === "skeletontracing") {
+        if (atn instanceof Node || atn === null) {
           // create a new treenode,
           // either root node if atn is null, or child if
           // it is not null
-          if (atn != null) {
+          if (atn !== null) {
             statusBar.replaceLast("created new treenode as child of treenode" + atn.id);
           }
           createNode(atn, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
           e.stopPropagation();
           return true;
         }
-      } else if (getMode() == "synapsedropping") {
+      } else if (getMode() === "synapsedropping") {
         // only create single synapses/connectors
         createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5);
       }

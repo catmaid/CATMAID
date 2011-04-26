@@ -63,6 +63,7 @@
 		<script type="text/javascript" src="libs/raphael/g.raphael.js"></script>
     <script type="text/javascript" src="libs/raphael/raphael-custom.js"></script>
 		<script type="text/javascript" src="widgets/table_treenode.js"></script>
+    <script type="text/javascript" src="widgets/table_connector.js"></script>
 		<!--<script type="text/javascript" src="widgets/table_presynapse.js"></script>
 		<script type="text/javascript" src="widgets/table_postsynapse.js"></script>
     <script type="text/javascript" src="widgets/tree_class.js"></script>-->
@@ -110,7 +111,8 @@
 					<!--<a href="#" class="button" id="edit_button_profile" onclick="project.setMode( 'profile' );"><img src="widgets/themes/kde/draw.gif" alt="profile" title="profile" /></a>-->
 				</div>
 				<div class="box" id="toolbox_data" style="display:none">
-					<a href="#" class="button" id="data_button_table" onclick="project.showDatatableWidget( 'treenode' );"><img src="widgets/themes/kde/table.gif" alt="table" title="table" /></a>
+					<a href="#" class="button" id="data_button_table_treenode" onclick="project.showDatatableWidget( 'treenode' );"><img src="widgets/themes/kde/table.gif" alt="table" title="treenode table" /></a>
+          <a href="#" class="button" id="data_button_table_connector" onclick="project.showDatatableWidget( 'connector' );"><img src="widgets/themes/kde/table_connector.gif" alt="table" title="connector table" /></a>
 					<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'entities' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="object tree" /></a>
 					<!--<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'classes' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="class tree" /></a>-->
 					<a href="#" class="button" id="data_button_stats" onclick="project.showStatisticsWidget( );"><img src="widgets/themes/kde/stats.gif" alt="tree" title="project statistics" /></a>
@@ -255,7 +257,7 @@
 							<th>confidence</th>
 							<th>radius</th>
 							<th>username</th>
-							<th>labels</th>
+							<th>tags</th>
 							<th>last modified</th>
 						</tr>
 					</thead>
@@ -271,7 +273,7 @@
 							<th>confidence</th>
 							<th>radius</th>
 							<th>username</th>
-							<th><input type="text" name="search_labels" value="Search labels" class="search_init" /></th>
+							<th><input type="text" name="search_labels" value="Search tags" class="search_init" /></th>
 							<th>last modified</th>			
 						</tr>
 					</tfoot>
@@ -281,7 +283,45 @@
 			</div>
 
 		</div>
-		
+        
+		<div id="connectortable_widget" class="sliceView" style="width:50%; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
+			<div class="stackInfo_selected" style="position:relative">
+				<p id="table_widget_title" class="stackTitle">Connector Table</p>
+				<p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>	
+
+			<div id="table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
+        name of skeleton: <br />
+				<div id="connector_container">
+				<table cellpadding="0" cellspacing="0" border="0" class="display" id="connectortable">
+					<thead>
+						<tr>
+							<th>subject</th>
+							<th>predicated</th>
+              <th>object</th>
+							<th>tags</th>
+							<th>username</th>
+							<th>last modfied</th>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+					<tfoot>
+						<tr>
+							<th>subject</th>
+							<th>predicated</th>
+              <th>object</th>
+							<th><input type="text" name="search_labels" value="Search tags" class="search_init" /></th>
+							<th>username</th>
+							<th>last modfied</th>
+						</tr>
+					</tfoot>
+				</table>
+				</div>
+
+			</div>
+
+		</div>
+		<!--
 		<div id="table_widget" class="sliceView" style="width:50%; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
 			<div class="stackInfo_selected" style="position:relative">
 				<p id="table_widget_title" class="stackTitle">Presynapse Table</p>
@@ -358,7 +398,7 @@
 			</div>
 
 		</div>
-		
+		-->
 		<!-- Project statistics widget
 		***********************************************************************
 		-->

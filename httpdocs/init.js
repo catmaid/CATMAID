@@ -514,7 +514,7 @@ function global_resize(e)
 {
   var top = document.getElementById("toolbar_container").offsetHeight;
 
-  message_widget.style.top = table_widget.style.top = object_tree_widget.style.top = project_stats_widget.style.top = key_shortcut_widget.style.top = view_in_3d_widget.style.top = top + "px";
+  message_widget.style.top = table_widget.style.top = table_connector_widget.style.top = object_tree_widget.style.top = project_stats_widget.style.top = key_shortcut_widget.style.top = view_in_3d_widget.style.top = top + "px";
 
   if (message_widget.offsetHeight) top += message_widget.offsetHeight;
   var bottom = 64;
@@ -522,6 +522,7 @@ function global_resize(e)
   var width = ui.getFrameWidth();
   message_widget.style.width = width + "px";
   table_widget.style.height = height + "px";
+  table_connector_widget.style.height = height + "px";
   object_tree_widget.style.height = height + "px";
   class_tree_widget.style.height = height + "px";
   project_stats_widget.style.height = height + "px";
@@ -792,6 +793,10 @@ function init()
   table_widget = document.getElementById("treenode_table_widget");
   var table_widget_resize_handle = new ResizeHandle("h");
   table_widget.appendChild(table_widget_resize_handle.getView());
+  
+  table_connector_widget = document.getElementById("connectortable_widget");
+  var table_connector_widget_resize_handle = new ResizeHandle("h");
+  table_connector_widget.appendChild(table_connector_widget_resize_handle.getView());
 
   project_stats_widget = document.getElementById("project_stats_widget");
   var project_stats_widget_resize_handle = new ResizeHandle("h");

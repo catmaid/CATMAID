@@ -853,20 +853,21 @@ current_scale // current scale of the stack
           createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
           e.stopPropagation();
           return true;
-        } else if (atn instanceof ConnectorNode)
-        // create new treenode (and skeleton) postsynaptic to activated connector
-        // deactiveate atn, cache atn id
-        var locid = atn.id;
-        // keep connector active because you might want
-        // to quickly add several postsynaptic treenodes
-        //activateNode( null );
-        // create root node, creates a new active node
-        // because the treenode creation is asynchronous, we have to invoke
-        // the connector creation in the event handler
-        statusBar.replaceLast("created connector postsynaptic to treenode with id " + atn.id);
-        createNodeWithConnector(locid, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
-        e.stopPropagation();
-        return true;
+        } else if (atn instanceof ConnectorNode) {
+          // create new treenode (and skeleton) postsynaptic to activated connector
+          // deactiveate atn, cache atn id
+          locid = atn.id;
+          // keep connector active because you might want
+          // to quickly add several postsynaptic treenodes
+          //activateNode( null );
+          // create root node, creates a new active node
+          // because the treenode creation is asynchronous, we have to invoke
+          // the connector creation in the event handler
+          statusBar.replaceLast("created connector postsynaptic to treenode with id " + atn.id);
+          createNodeWithConnector(locid, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+          e.stopPropagation();
+          return true;
+        }
       }
     } else {
       // depending on what mode we are in

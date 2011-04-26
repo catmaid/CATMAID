@@ -413,16 +413,17 @@
         <div id="view_in_3d_widget" class="sliceView" style="width:512px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
           <div class="stackInfo_selected" style="position:relative">
             <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
-            <input type="button" id="add_current_to_3d_view" value="Add current skeleon to 3D view" onclick="project.addTo3DView();"/>
-            <p id="view3DIntroduction"></p>
-            <ul id="3d-view-object-list">
-            </ul>
-            <div id="3d-viewer-canvas" style="width: 500px; height: 500px"/>
+            <input type="button" id="add_current_to_3d_view" value="Add current skeleton to 3D view" onclick="project.addTo3DView();"/>
             <div id="3d-viewer-buttons">
               <input id="xy-button" type="button" value="XY">
               <input id="xz-button" type="button" value="XZ">
               <input id="zy-button" type="button" value="ZY">
             </div>
+            <p id="view3DIntroduction"></p>
+            <ul id="3d-view-object-list">
+            </ul>
+            <div id="3d-viewer-canvas" style="width: 500px; height: 500px"/>
+
           </div>
         </div>
 

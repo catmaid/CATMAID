@@ -20,7 +20,7 @@ if ( $pid )
   if ( $uid )
   {
     $label_id = $db->getClassId( $pid, 'label' );
-    if(!$label_id) { echo makeJSON( array( '"error"' => 'Can not find "label" class for this project' ) ); return; }
+    if(!$label_id) { echo makeJSON( array( 'error' => 'Can not find "label" class for this project' ) ); return; }
     
     $res = $db->getResult('SELECT DISTINCT "ci"."name" as "name" FROM "class_instance" as "ci" WHERE
     "ci"."class_id" = '.$label_id.' AND 

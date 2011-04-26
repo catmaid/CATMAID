@@ -33,24 +33,24 @@ if ( $pid )
     // need class: synapse, presynaptic terminal, postsynaptic terminal
     // retrieve class ids
     $syn = $db->getClassId( $pid, "synapse" );
-    if(!$syn) { echo makeJSON( array( '"error"' => 'Can not find "synapse" class for this project' ) ); return; }
+    if(!$syn) { echo makeJSON( array( 'error' => 'Can not find "synapse" class for this project' ) ); return; }
 
     $presyn = $db->getClassId( $pid, "presynaptic terminal" );
-    if(!$syn) { echo makeJSON( array( '"error"' => 'Can not find "presynaptic terminal" class for this project' ) ); return; }
+    if(!$syn) { echo makeJSON( array( 'error' => 'Can not find "presynaptic terminal" class for this project' ) ); return; }
 
     $postsyn = $db->getClassId( $pid, "postsynaptic terminal" );
-    if(!$syn) { echo makeJSON( array( '"error"' => 'Can not find "postsynaptic terminal" class for this project' ) ); return; }
+    if(!$syn) { echo makeJSON( array( 'error' => 'Can not find "postsynaptic terminal" class for this project' ) ); return; }
 
         
     // relation ids
     $model_of = $db->getRelationId( $pid, "model_of" );
-    if(!$model_of) { echo makeJSON( array( '"error"' => 'Can not find "model_of" relation for this project' ) ); return; }
+    if(!$model_of) { echo makeJSON( array( 'error' => 'Can not find "model_of" relation for this project' ) ); return; }
 
     $presyn_to = $db->getRelationId( $pid, "presynaptic_to" );
-    if(!$presyn_to) { echo makeJSON( array( '"error"' => 'Can not find "presynaptic_to" relation for this project' ) ); return; }
+    if(!$presyn_to) { echo makeJSON( array( 'error' => 'Can not find "presynaptic_to" relation for this project' ) ); return; }
 
     $postsyn_to = $db->getRelationId( $pid, "postsynaptic_to" );
-    if(!$postsyn_to) { echo makeJSON( array( '"error"' => 'Can not find "postsynaptic_to" relation for this project' ) ); return; }
+    if(!$postsyn_to) { echo makeJSON( array( 'error' => 'Can not find "postsynaptic_to" relation for this project' ) ); return; }
 
     
     $treenodes = $db->getResult(

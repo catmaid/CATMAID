@@ -30,26 +30,26 @@ if ( $pid )
   {
     // retrieve class ids
     $it_id = $db->getClassId( $pid, $input_type );
-    if(!$it_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$input_type.'" class for this project' ) ); return; }
+    if(!$it_id) { echo makeJSON( array( 'error' => 'Can not find "'.$input_type.'" class for this project' ) ); return; }
     
     $lt_id = $db->getClassId( $pid, $location_type );
-    if(!$lt_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$location_type.'" class for this project' ) ); return; }
+    if(!$lt_id) { echo makeJSON( array( 'error' => 'Can not find "'.$location_type.'" class for this project' ) ); return; }
     
     // relation ids
     $ir_id = $db->getRelationId( $pid, $input_relation );
-    if(!$ir_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$input_relation.'" relation for this project' ) ); return; }
+    if(!$ir_id) { echo makeJSON( array( 'error' => 'Can not find "'.$input_relation.'" relation for this project' ) ); return; }
 
     $ilr_id = $db->getRelationId( $pid, $input_location_relation );
-    if(!$ilr_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$input_location_relation.'" relation for this project' ) ); return; }
+    if(!$ilr_id) { echo makeJSON( array( 'error' => 'Can not find "'.$input_location_relation.'" relation for this project' ) ); return; }
 
     $lr_id = $db->getRelationId( $pid, $location_relation );
-    if(!$lr_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$location_relation.'" relation for this project' ) ); return; }
+    if(!$lr_id) { echo makeJSON( array( 'error' => 'Can not find "'.$location_relation.'" relation for this project' ) ); return; }
         
     $partof_id = $db->getRelationId( $pid, 'part_of');
-    if(!$partof_id)  { echo makeJSON( array( '"error"' => 'Can not find "part_of" relation for this project' ) ); return; }
+    if(!$partof_id)  { echo makeJSON( array( 'error' => 'Can not find "part_of" relation for this project' ) ); return; }
 
     $elementof_id = $db->getRelationId( $pid, 'element_of');
-    if(!$elementof_id)  { echo makeJSON( array( '"error"' => 'Can not find "element_of" relation for this project' ) ); return; }
+    if(!$elementof_id)  { echo makeJSON( array( 'error' => 'Can not find "element_of" relation for this project' ) ); return; }
     
     
     // class_instance
@@ -73,7 +73,7 @@ if ( $pid )
       "class_instance" AS "ci" WHERE "lci"."connector_id" = '.$location_id.' AND "lci"."relation_id" = '.$lr_id.' AND
       "ci"."id" = "lci"."class_instance_id" AND "ci"."class_id" = '.$lt_id);
       if(empty($locationtype)) {
-        echo makeJSON( array( '"error"' => 'Location seems not to be a valid '.$location_relation.' a '.$location_type));
+        echo makeJSON( array( 'error' => 'Location seems not to be a valid '.$location_relation.' a '.$location_type));
         return;
       } else {
         $location_type_instance_id = $locationtype[0]['id'];
@@ -148,7 +148,7 @@ if ( $pid )
       $skeleton = $db->getResult('SELECT "tci"."class_instance_id" AS "id" FROM "treenode_class_instance" AS "tci"
       WHERE "tci"."relation_id" = '.$elementof_id.' AND "tci"."treenode_id" = '.$input_id);
       if(empty($skeleton)) {
-        echo makeJSON( array( '"error"' => 'There seems not to exist a skeleton for treenode id '));
+        echo makeJSON( array( 'error' => 'There seems not to exist a skeleton for treenode id '));
         return;
       } else {
         $skeleton_id = $skeleton[0]['id'];
@@ -164,9 +164,9 @@ if ( $pid )
     $db->insertInto('class_instance_class_instance', $data );
     // -----
     
-    echo makeJSON( array( '"location_id"' => $location_instance_id,
-                '"input_id"' => $input_id,
-                '"connector_type_instance_id"' => $location_type_instance_id
+    echo makeJSON( array( 'location_id' => $location_instance_id,
+                'input_id' => $input_id,
+                'connector_type_instance_id' => $location_type_instance_id
                 ) );
     
   }

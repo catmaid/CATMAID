@@ -61,15 +61,15 @@ if ( $pid )
       AS "ci" WHERE "ci"."project_id" = '.$pid.' AND "ci"."class_id" = '.$lab);
     $proj_tags = !empty($proj_tagsdb) ? $proj_tagsdb[0]['nr'] : 0;
     
-		echo makeJSON( array( '"proj_users"' => $proj_users,
-							  '"proj_neurons"' => $proj_neurons,
-							  '"proj_synapses"' => $proj_synapses,
-							  '"proj_treenodes"' => $proj_treenodes,
-							  '"proj_skeletons"' => $proj_skeletons,
-							  '"proj_presyn"' => $proj_presyn,
-							  '"proj_postsyn"' => $proj_postsyn,
-							  '"proj_textlabels"' => $proj_textlabels,
-							  '"proj_tags"' => $proj_tags,
+		echo makeJSON( array( 'proj_users' => $proj_users,
+							  'proj_neurons' => $proj_neurons,
+							  'proj_synapses' => $proj_synapses,
+							  'proj_treenodes' => $proj_treenodes,
+							  'proj_skeletons' => $proj_skeletons,
+							  'proj_presyn' => $proj_presyn,
+							  'proj_postsyn' => $proj_postsyn,
+							  'proj_textlabels' => $proj_textlabels,
+							  'proj_tags' => $proj_tags,
 			) );
 
 	}

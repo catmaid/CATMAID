@@ -36,7 +36,7 @@ if ( $pid )
 		if ($result) {
             echo makeJSON( $result[0] );
 		} else
-			echo makeJSON( array( '"error"' => "No skeleton and neuron found for treenode $tnid" ) );
+			echo makeJSON( array( 'error' => "No skeleton and neuron found for treenode $tnid" ) );
 	}
 	else
 		echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to get the last modified treenode' ) );

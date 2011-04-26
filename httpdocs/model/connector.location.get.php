@@ -21,12 +21,12 @@ if ( $pid )
 	{
 
     $eof_id = $db->getRelationId( $pid, 'model_of' );
-    if(!$eof_id) { echo makeJSON( array( '"error"' => 'Can not find "model_of" relation for this project' ) ); return; }
+    if(!$eof_id) { echo makeJSON( array( 'error' => 'Can not find "model_of" relation for this project' ) ); return; }
 
 	$relationtype = isset( $_REQUEST[ 'relationtype' ] ) ? $_REQUEST[ 'relationtype' ]  : "presynaptic_to";
 
     $relationtype_id = $db->getRelationId( $pid, $relationtype );
-    if(!$relationtype_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$relationtype.'" relation for this project' ) ); return; }
+    if(!$relationtype_id) { echo makeJSON( array( 'error' => 'Can not find "'.$relationtype.'" relation for this project' ) ); return; }
 	
 	
 	$res = $db->getResult('SELECT "cn"."id" AS "id", ("cn"."location")."x" AS "x", ("cn"."location")."y" AS "y", ("cn"."location")."z" AS "z" 
@@ -39,10 +39,10 @@ if ( $pid )
 						   "cn"."project_id" = '.$pid);
      
     if(!empty($res)) {
-		echo makeJSON( array( '"connector_id"' => $res[0]['id'],
-		 '"x"' => $res[0]['x'],
-		 '"y"' => $res[0]['y'],
-		 '"z"' => $res[0]['z']) );
+		echo makeJSON( array( 'connector_id' => $res[0]['id'],
+		 'x' => $res[0]['x'],
+		 'y' => $res[0]['y'],
+		 'z' => $res[0]['z']) );
     }
     
   }

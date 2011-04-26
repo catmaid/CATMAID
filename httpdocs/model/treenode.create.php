@@ -42,17 +42,17 @@ if ( $pid )
 		
 		// get id for skeleton class in this project
 		$skid = $db->getClassId( $pid, "skeleton" );
-		if(!$skid) { echo makeJSON( array( '"error"' => 'Can not find "skeleton" class for this project' ) ); return; }
+		if(!$skid) { echo makeJSON( array( 'error' => 'Can not find "skeleton" class for this project' ) ); return; }
 		$nid = $db->getClassId( $pid, "neuron" );
-		if(!$nid) { echo makeJSON( array( '"error"' => 'Can not find "neuron" class for this project' ) ); return; }
+		if(!$nid) { echo makeJSON( array( 'error' => 'Can not find "neuron" class for this project' ) ); return; }
     
 		// get id for relation 'element_of'
 		$eleof = $db->getRelationId( $pid, "element_of" );
-		if(!$eleof) { echo makeJSON( array( '"error"' => 'Can not find "element_of" relation for this project' ) ); return; }
+		if(!$eleof) { echo makeJSON( array( 'error' => 'Can not find "element_of" relation for this project' ) ); return; }
 		$modid = $db->getRelationId( $pid, "model_of" );
-		if(!$modid) { echo makeJSON( array( '"error"' => 'Can not find "model_of" relation for this project' ) ); return; }
+		if(!$modid) { echo makeJSON( array( 'error' => 'Can not find "model_of" relation for this project' ) ); return; }
 		$partof_id = $db->getRelationId( $pid, "part_of" );
-		if(!$partof_id) { echo makeJSON( array( '"error"' => 'Can not find "part_of" relation for this project' ) ); return; }
+		if(!$partof_id) { echo makeJSON( array( 'error' => 'Can not find "part_of" relation for this project' ) ); return; }
     
 		if ( $parentid != -1 )
 		{
@@ -69,7 +69,7 @@ if ( $pid )
       "tci"."project_id" = '.$pid);
 
       if(empty($skelid)) {
-         echo makeJSON( array( '"error"' => 'Can not find skeleton for parent treenode '.$parentid.' in this project' ) ); 
+         echo makeJSON( array( 'error' => 'Can not find skeleton for parent treenode '.$parentid.' in this project' ) ); 
          return;
       }
 
@@ -99,10 +99,10 @@ if ( $pid )
 					
 				$db->insertInto('treenode_class_instance', $data );
 				
-				echo makeJSON( array( '"treenode_id"' => $tnid, '"skeleton_id"' => $skid) );
+				echo makeJSON( array( 'treenode_id' => $tnid, 'skeleton_id' => $skid) );
 			}
 			else {
-				echo makeJSON( array( '"error"' => 'Error while trying to insert treenode.' ) );
+				echo makeJSON( array( 'error' => 'Error while trying to insert treenode.' ) );
 			}
 		}
 		else
@@ -169,13 +169,13 @@ if ( $pid )
 					);
 				$db->insertInto('treenode_class_instance',$data );
 				
-				echo makeJSON( array( '"treenode_id"' => $tnid,
-									  '"skeleton_id"' => $skelid,
-									  '"neuron_id"' => $neuronid,
+				echo makeJSON( array( 'treenode_id' => $tnid,
+									  'skeleton_id' => $skelid,
+									  'neuron_id' => $neuronid,
                    		 ) );
 			}
 			else {
-				echo makeJSON( array( '"error"' => 'Error while inserting treenode.' ) );
+				echo makeJSON( array( 'error' => 'Error while inserting treenode.' ) );
 			}
 
 
@@ -231,7 +231,7 @@ if ( $pid )
       if(!$fid) {
         // need to create a fragments group and add it
         $gid = $db->getClassId( $pid, "group" );
-        if(!$gid) { echo makeJSON( array( '"error"' => 'Can not find "group" class for this project' ) ); return; }
+        if(!$gid) { echo makeJSON( array( 'error' => 'Can not find "group" class for this project' ) ); return; }
         
         $data = array(
           'user_id' => $uid,
@@ -312,14 +312,14 @@ if ( $pid )
 					);
 				$db->insertInto('treenode_class_instance',$data );
 				
-				echo makeJSON( array( '"treenode_id"' => $tnid,
-									  '"skeleton_id"' => $skelid,
-									  '"neuron_id"' => $neuid,
-									  '"fragmentgroup_id"' => $frid,
+				echo makeJSON( array( 'treenode_id' => $tnid,
+									  'skeleton_id' => $skelid,
+									  'neuron_id' => $neuid,
+									  'fragmentgroup_id' => $frid,
                     ) );
 			}
 			else {
-				echo makeJSON( array( '"error"' => 'Error while inserting treenode.' ) );
+				echo makeJSON( array( 'error' => 'Error while inserting treenode.' ) );
 			}
 			
 		} // inner if about if neuron exists already closed

@@ -21,12 +21,12 @@ if ( $pid )
   if ( $uid )
   {
     $ele_id = $db->getRelationId( $pid, 'element_of' );
-    if(!$ele_id) { echo makeJSON( array( '"error"' => 'Can not find "element_of" relation for this project' ) ); return; }
+    if(!$ele_id) { echo makeJSON( array( 'error' => 'Can not find "element_of" relation for this project' ) ); return; }
 
     $skelid = isset( $_REQUEST[ 'skeletonid' ] ) ? intval( $_REQUEST[ 'skeletonid' ] ) : 0;
     if( ! $skelid ) {
         if( ! $tnid ) {
-            echo makeJSON( array( '"error"' => 'export.skeleton.php requires either a treenode ID or a skeleton ID' ) );
+            echo makeJSON( array( 'error' => 'export.skeleton.php requires either a treenode ID or a skeleton ID' ) );
             return;
         }
         // retrieve skeleton for treenode
@@ -34,7 +34,7 @@ if ( $pid )
 
         if(!empty($res)) {$skelid = $res[0]['class_instance_id']; }
         else {
-            echo makeJSON( array( '"error"' => 'There seems not to exist a skeleton for treenode id '));
+            echo makeJSON( array( 'error' => 'There seems not to exist a skeleton for treenode id '));
             return;
         }
     }

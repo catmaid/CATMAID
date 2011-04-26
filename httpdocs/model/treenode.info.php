@@ -31,11 +31,11 @@ if ( $pid )
 		$result = $db->getResult($query);
 		if ($result) {
 			if (count($result) > 1)
-				echo makeJSON( array( '"error"' => "Found more than one skeleton and neuron for treenode $tnid" ) );
+				echo makeJSON( array( 'error' => "Found more than one skeleton and neuron for treenode $tnid" ) );
 			else
 				echo makeJSON( $result[0] );
 		} else
-			echo makeJSON( array( '"error"' => "No skeleton and neuron found for treenode $tnid" ) );
+			echo makeJSON( array( 'error' => "No skeleton and neuron found for treenode $tnid" ) );
 	}
 	else
 		echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to get skeleton and neuron details' ) );

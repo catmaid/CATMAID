@@ -25,11 +25,11 @@ if ( $pid )
   if ( $uid )
   {
     $cit_id = $db->getClassId( $pid, $ci_type );
-    if(!$cit_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$ci_type.'" class for this project' ) ); return; }
+    if(!$cit_id) { echo makeJSON( array( 'error' => 'Can not find "'.$ci_type.'" class for this project' ) ); return; }
     
     // relation ids
     $cir_id = $db->getRelationId( $pid, $ci_relation );
-    if(!$cir_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$ci_relation.'" relation for this project' ) ); return; }
+    if(!$cir_id) { echo makeJSON( array( 'error' => 'Can not find "'.$ci_relation.'" relation for this project' ) ); return; }
 
     $data = array(
       'user_id' => $uid,
@@ -61,8 +61,8 @@ if ( $pid )
       );
     $db->insertInto('connector_class_instance', $data );
     
-    echo makeJSON( array( '"connector_id"' => $connector_id,
-                '"class_instance_id"' => $class_instance_id
+    echo makeJSON( array( 'connector_id' => $connector_id,
+                'class_instance_id' => $class_instance_id
                 ) );
     
   } 

@@ -29,7 +29,7 @@ if($atnid != 0) {
           $tabinject = ', "treenode_class_instance" AS "tci"';
           
         } else {
-          echo makeJSON( array( '"error"' => 'Can not find skeleton for the selected treenode.' ) ); return; }
+          echo makeJSON( array( 'error' => 'Can not find skeleton for the selected treenode.' ) ); return; }
 
 } else {
   // try to retrieve the sent skeleton ids
@@ -155,7 +155,7 @@ if ( $pid )
 			
 			// retrieve model_of id
 			$modid = $db->getRelationId( $pid, 'model_of' );
-			if(!$modid) { echo makeJSON( array( '"error"' => 'Can not find "model_of" relation for this project' ) ); return; }
+			if(!$modid) { echo makeJSON( array( 'error' => 'Can not find "model_of" relation for this project' ) ); return; }
 
 			// treenode list logic
 			$t = $db->getResult(

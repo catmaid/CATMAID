@@ -42,7 +42,7 @@ function makeJSON( $data )
 		reset( $data );
 		while ( list( $key, $val ) = each( $data ) )
 		{
-			$str .= $key.' : '.makeJSON( $val ).', ';
+			$str .= '"'.$key.'" : '.makeJSON( $val ).', ';
 		}
 		if ( sizeof( $data ) > 0 )
 			return substr( $str, 0, -2 ).' }';

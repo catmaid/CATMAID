@@ -33,6 +33,10 @@ resolution, translation, dimension, // dimension of the stack
 current_scale // current scale of the stack
 ) {
 
+  this.resolution = resolution;
+  this.translation = translation;
+  this.dimension = dimension;
+
   var speedtoggle = false;
   var nodes = {};
   var labels = {};
@@ -892,10 +896,6 @@ current_scale // current scale of the stack
     e.stopPropagation();
     return true;
   };
-
-  this.resolution = resolution;
-  this.translation = translation;
-  this.dimension = dimension;
 
   // offset of stack in physical coordinates
   this.offleft = 0;

@@ -52,7 +52,6 @@ current_scale // current scale of the stack
     }, function (status, text, xml) {
       if (status === 200) {
 
-        console.log("output", text);
         $('#recipe1').clone().appendTo('#myprintrecipe');
         var html = "<html><head><title>Skeleton as SWC</title></head><body><pre><div id='myprintrecipe'>" + text + "</div></pre></body></html>";
         recipe.document.open();

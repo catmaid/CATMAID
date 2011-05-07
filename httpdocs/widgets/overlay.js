@@ -957,7 +957,8 @@ current_scale // current scale of the stack
     var phys_y = pix2physY(pos_y);
     var phys_z = project.coordinates.z;
 
-    if (e.ctrlKey)
+    // e.metaKey should correspond to the command key on Mac OS
+    if (e.ctrlKey || e.metaKey)
     {
       // ctrl-click deselects the current active node
       if (atn != null)

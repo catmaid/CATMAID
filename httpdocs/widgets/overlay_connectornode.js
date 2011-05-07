@@ -320,7 +320,7 @@ zdiff) // the different from the current slices
     // this usually refers here to the mc object
     if (e.shiftKey)
     {
-      if (e.ctrlKey && e.shiftKey)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey)
       {
         if (atn != null && this.parentnode.id == atn.id)
         {

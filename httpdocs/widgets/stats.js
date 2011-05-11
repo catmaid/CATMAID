@@ -15,10 +15,10 @@ function update_stats_fields(data) {
 
 function refresh_project_statistics() {
   requestQueue.replace("model/stats.list.php", "POST", {
-    "pid": project.id,
+    "pid": project.id
   }, function (status, text, xml) {
-    if (status == 200) {
-      if (text && text != " ") {
+    if (status === 200) {
+      if (text && text !== " ") {
         var jso = $.parseJSON(text);
         if (jso.error) {
           alert(jso.error);
@@ -38,5 +38,4 @@ initProjectStats = function () {
     refresh_project_statistics();
   });
 
-
-}
+};

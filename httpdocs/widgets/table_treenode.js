@@ -2,7 +2,7 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
 var oTable;
-var asInitVals = new Array();
+var asInitVals = [];
 
 initTreenodeTable = function (pid) {
 
@@ -16,32 +16,21 @@ initTreenodeTable = function (pid) {
     "bAutoWidth": false,
     "sAjaxSource": 'model/treenode.table.list.php',
     "fnServerData": function (sSource, aoData, fnCallback) {
-
+      var key;
       // remove all selected elements in table
-      for (key in project.selectedObjects['table_treenode'])
-      delete project.selectedObjects['table_treenode'][key];
-
-      // add list of skeleton ids to draw
-      // retrieve vom selected object_tree objects
-/* this is only for a list of skeletons
-			i = 0;
-			for(key in project.selectedObjects['tree_object'])
-			{
-				if( project.selectedObjects['tree_object'][key]['type'] == 'skeleton' )
-				{
-					aoData.push( { "name" : "skeleton_" + i, "value" : key } );
-					i = i + 1;
-				}
-			}
-			aoData.push( { "name" : "skeleton_nr", "value" : i } );
-			*/
+      for (key in project.selectedObjects.table_treenode) {
+        if (project.selectedObjects.table_treenode.hasOwnProperty(key)) {
+          delete project.selectedObjects.table_treenode[key];
+        }
+      }
+      
       // only for one skeleton
-      var skelid = project.selectedObjects['selectedskeleton'];
-      if (skelid != null) {
+      var skelid = project.selectedObjects.selectedskeleton;
+      if (skelid !== null) {
         // give priority to showing treenodes
         aoData.push({
           "name": "skeleton_0",
-          "value": project.selectedObjects['selectedskeleton']
+          "value": project.selectedObjects.selectedskeleton
         });
         aoData.push({
           "name": "skeleton_nr",
@@ -50,7 +39,7 @@ initTreenodeTable = function (pid) {
       } else {
         // check if a treenode is active
         // send active treenode when set
-        if (atn != null && atn.type == "treenode") {
+        if (atn !== null && atn.type === "treenode") {
           aoData.push({
             "name": "atnid",
             "value": atn.id
@@ -94,11 +83,15 @@ initTreenodeTable = function (pid) {
     },
     "fnRowCallback": function (nRow, aData, iDisplayIndex) {
 
-      if (aData[4] == "R") $(nRow).addClass('root_node');
-      if (aData[4] == "L") $(nRow).addClass('leaf_node');
+      if (aData[4] === "R") {
+        $(nRow).addClass('root_node');
+      }
+      if (aData[4] === "L") {
+        $(nRow).addClass('leaf_node');
+      }
 
-      if (atn != null) {
-        if (parseInt(aData[0]) == atn.id) {
+      if (atn !== null) {
+        if (parseInt(aData[0], 10) === atn.id) {
           // just to be sure
           $(nRow).removeClass('root_node');
           $(nRow).removeClass('leaf_node');
@@ -157,9 +150,9 @@ initTreenodeTable = function (pid) {
   });
 
 /*
-	 * Support functions to provide a little bit of 'user friendlyness' to the textboxes in
-	 * the footer
-	 */
+ * Support functions to provide a little bit of 'user friendlyness' to the textboxes in
+ * the footer
+ */
 
   $("#treenodetable tfoot input").each(function (i) {
     asInitVals[i] = this.value;
@@ -167,14 +160,14 @@ initTreenodeTable = function (pid) {
 
   $("#treenodetable tfoot input").focus(function () {
     // console.log("focus");
-    if (this.className == "search_init") {
+    if (this.className === "search_init") {
       this.className = "";
       this.value = "";
     }
   });
 
   $("#treenodetable tfoot input").blur(function (i) {
-    if (this.value == "") {
+    if (this.value === "") {
       this.className = "search_init";
       this.value = asInitVals[$("tfoot input").index(this)];
     }
@@ -190,10 +183,9 @@ initTreenodeTable = function (pid) {
     project.moveTo(z, y, x);
 
     // activate the node with a delay
-    var id = parseInt(aData[0]);
+    var id = parseInt(aData[0], 10);
     window.setTimeout("project.selectNode( " + id + " )", 1000);
-
 
   });
 
-}
+};

@@ -8,7 +8,7 @@
 function Input(
 name, size, onchange, defaultvalue) {
   /**
-   * returns the conatining span-element for insertion to the document
+   * returns the containing span-element for insertion to the document
    */
   this.getView = function () {
     return view;

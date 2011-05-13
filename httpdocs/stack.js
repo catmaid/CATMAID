@@ -794,7 +794,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       if (m)
       {
         var pos_x = translation.x + (x + (m.offsetX - viewWidth / 2) / scale) * resolution.x;
-        var pos_y = translation.x + (y + (m.offsetY - viewHeight / 2) / scale) * resolution.y;
+        var pos_y = translation.y + (y + (m.offsetY - viewHeight / 2) / scale) * resolution.y;
         var pos_z = translation.z + z * resolution.z;
         project.lastX = pos_x;
         project.lastY = pos_y;

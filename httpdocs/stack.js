@@ -858,7 +858,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       var b = ui.getMouseButton(e);
       switch (b)
       {
-      case 2:
+      case MOUSE_BUTTON_MIDDLE:
         // afford dradding in tracing mode
         ui.registerEvent("onmousemove", onmousemove.move);
         ui.registerEvent("onmouseup", onmouseup.move);
@@ -924,7 +924,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       var b = ui.getMouseButton(e);
       switch (b)
       {
-      case 2:
+      case MOUSE_BUTTON_MIDDLE:
         ui.registerEvent("onmousemove", onmousemove.move);
         ui.registerEvent("onmouseup", onmouseup.move);
         ui.catchEvents("move");
@@ -949,7 +949,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       var b = ui.getMouseButton(e);
       switch (b)
       {
-      case 2:
+      case MOUSE_BUTTON_MIDDLE:
         ui.registerEvent("onmousemove", onmousemove.move);
         ui.registerEvent("onmouseup", onmouseup.move);
         ui.catchEvents("move");
@@ -997,7 +997,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       var w = ui.getMouseWheel(e);
       if (w)
       {
-        if (w > 0)
+        if (w == MOUSE_WHEEL_UP)
         {
           slider_z.move(1);
           slider_trace_z.move(1);
@@ -1024,7 +1024,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       }
       if (w)
       {
-        if (w > 0)
+        if (w == MOUSE_WHEEL_UP)
         {
           if (s < MAX_S)
           {

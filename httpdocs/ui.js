@@ -9,6 +9,13 @@
  *
  */
 
+var MOUSE_WHEEL_UP = 1;
+var MOUSE_WHEEL_DOWN = -1;
+
+var MOUSE_BUTTON_LEFT = 1;
+var MOUSE_BUTTON_MIDDLE = 2;
+var MOUSE_BUTTON_RIGHT = 3;
+
 /**
  * container for generic user interface actions
  */
@@ -162,8 +169,8 @@ UI = function ()
     else if (event && event.button)
     {
       which = event.button;
-      if (which == 2) which = 3; //!< right
-      if (which == 4) which = 2; //!< middle
+      if (which == 2) which = MOUSE_BUTTON_RIGHT;
+      if (which == 4) which = MOUSE_BUTTON_MIDDLE;
     }
     //statusBar.replaceLast( "mouse button " + which + " pressed" );
     return which;
@@ -176,12 +183,12 @@ UI = function ()
    */
   this.getMouseWheel = function (e)
   {
-    if (e && e.detail) return (e.detail > 0 ? 1 : -1);
+    if (e && e.detail) return (e.detail > 0 ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN);
     else if (event && event.wheelDelta)
     {
-      if (window.opera) return (event.wheelDelta > 0 ? 1 : -1);
+      if (window.opera) return (event.wheelDelta > 0 ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN);
       else
-      return (event.wheelDelta < 0 ? 1 : -1);
+      return (event.wheelDelta < 0 ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN);
     }
     else
     return undefined;
@@ -274,10 +281,10 @@ UI = function ()
         //statusBar.replaceLast( "mouse button " + which + " pressed" );
         switch (which)
         {
-        case 1:
+        case MOUSE_BUTTON_LEFT:
           leftMouseDown = true;
           break;
-        case 3:
+        case MOUSE_BUTTON_RIGHT:
           rightMouseDown = true;
           break;
         }
@@ -311,10 +318,10 @@ UI = function ()
         //statusBar.replaceLast( "mouse button " + which + " released" );
         switch (which)
         {
-        case 1:
+        case MOUSE_BUTTON_LEFT:
           leftMouseDown = false;
           break;
-        case 3:
+        case MOUSE_BUTTON_RIGHT:
           rightMouseDown = false;
           break;
         }

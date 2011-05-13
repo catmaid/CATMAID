@@ -104,7 +104,7 @@ name, size, onchange, defaultvalue)
     var w = ui.getMouseWheel(e);
     if (w)
     {
-      if (w > 0) input.value = val - 1;
+      if (w == MOUSE_WHEEL_UP) input.value = val - 1;
       else
       input.value = val + 1;
     }

@@ -179,7 +179,7 @@ onchange //!< method to call
     if (w)
     {
       if (type == SLIDER_HORIZONTAL) w *= -1;
-      if (w > 0)
+      if (w == MOUSE_WHEEL_UP)
       {
         setByIndex(Math.min(values.length - 1, ind + 1));
       }

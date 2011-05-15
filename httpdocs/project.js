@@ -369,6 +369,11 @@ function Project(pid)
       width -= table_widget.offsetWidth;
       left += table_widget.offsetWidth;
     }
+    if (table_connector_widget.offsetWidth)
+    {
+      width -= table_connector_widget.offsetWidth;
+      left += table_connector_widget.offsetWidth;
+    }
     if (project_stats_widget.offsetWidth)
     {
       project_stats_widget.style.left = left + "px";
@@ -469,19 +474,26 @@ function Project(pid)
  */
   this.showDatatableWidget = function (m)
   {
-    document.getElementById('treenode_table_widget').style.display = 'block';
-    ui.onresize();
     switch (m)
     {
     case "treenode":
+      document.getElementById('treenode_table_widget').style.display = 'block';
+      document.getElementById('connectortable_widget').style.display = 'none';
+      ui.onresize();
       initTreenodeTable(this.id);
       break;
-    case "presynapse":
+    case "connector":
+      document.getElementById('treenode_table_widget').style.display = 'none';
+      document.getElementById('connectortable_widget').style.display = 'block';
+      ui.onresize();
+      initConnectorTable(this.id);
+      break;
+    /*case "presynapse":
       initPreSynapseTable(this.id);
       break;
     case "postsynapse":
       initPostSynapseTable(this.id);
-      break;
+      break;*/
     }
     return;
   }
@@ -697,6 +709,7 @@ function Project(pid)
       // hide data table and tree view widgets
       // in order to reload the data for a new project
       document.getElementById("treenode_table_widget").style.display = "none";
+      document.getElementById("treenode_connector_table_widget").style.display = "none";
       document.getElementById("object_tree_widget").style.display = "none";
       document.getElementById("project_stats_widget").style.display = "none";
 

@@ -1939,7 +1939,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
   view.appendChild(mouseCatcher);
 
   // take care, that all values are within a proper range
-  var z = 1;
+  var z = 0;
   var y = Math.floor(MAX_Y / 2);
   var x = Math.floor(MAX_X / 2);
   var s = MAX_S;

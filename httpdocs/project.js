@@ -159,7 +159,7 @@ var stringToKeyAction = {
           }},
   "T" : { helpText: "Tag the active node",
           run: function (e) {
-            if (!e.ctrlKey) {
+            if (!(e.ctrlKey || e.metaKey)) {
               project.tracingCommand('tagging');
             }
             return true;

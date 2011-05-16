@@ -31,6 +31,7 @@ def treenodes_to_numpy(tnrows):
 	-------
 	location : Nx3 array-like
 	local_topology : Nx1 array-like
+	idx : Nx1 array-like
 	
 	Notes
 	-----
@@ -61,7 +62,7 @@ def treenodes_to_numpy(tnrows):
 	for i,p in enumerate(par[1:]):
 		loctop[i+1] = idx.index(p)
 
-	return locarr, loctop
+	return locarr, loctop, idx
 	
 
 conn = psycopg2.connect(database="catmaid",user=catmaid_db_user,password=catmaid_db_password)
@@ -132,19 +133,21 @@ for row in rows:
 N = 0
 for sk in allskeletons:
 	N += len( sk[0] )
-	
+
+all_id =  np.zeros( (N,), dtype = np.int32 )
 all_loc = np.zeros( (N,3), dtype = np.float32 )
 all_lab = np.zeros( (N,), dtype = np.int32 )
 all_top = np.zeros( (N,), dtype = np.int32 )
 
 cnt = 0
 for i, arr in enumerate(allskeletons):
-	locarr, toparr = arr
+	locarr, toparr, idx = arr
 	Nskel = len( locarr )
 	
 	all_loc[cnt:cnt+Nskel, :] = locarr
 	all_top[cnt:cnt+Nskel] = toparr
 	all_lab[cnt:cnt+Nskel] = [ skelidlist[i] ] * Nskel
+	all_id[cnt:cnt+Nskel] = idx
 	cnt += Nskel
 	
 # Exporting treenodes finished.
@@ -155,5 +158,3 @@ for i, arr in enumerate(allskeletons):
 # Need to be clear how we index topology into treenode arrays
 # Probably need to recover the globally unique treenode id for global topology,
 # or remapped topology of all_X arrays
-	
-	

@@ -45,7 +45,7 @@ var stringToKeyAction = {
             return false;
           }},
   "+" : { helpText: "Zoom in",
-          specialKeyCodes: [ 61, 187 ],
+          specialKeyCodes: [ 107, 61, 187 ],
           run: function (e) {
             slider_s.move(1);
             slider_trace_s.move(1);

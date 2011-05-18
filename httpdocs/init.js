@@ -634,7 +634,7 @@ function init()
     this.href = project.createURL();
     return true;
   }
-  a_url2 = document.getElementById("a_url2");
+  var a_url2 = document.getElementById("a_url2");
   a_url2.onmouseover = function (e)
   {
     this.href = project.createURL();

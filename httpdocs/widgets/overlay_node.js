@@ -23,6 +23,9 @@ zdiff) // the different from the current slices
   // state variable whether this node is already synchronized with the database
   this.needsync = false;
 
+  // is this node a root node
+  this.isroot = false;
+
   // local screen coordinates relative to the div
   // pixel coordinates
   this.x = x;
@@ -57,6 +60,14 @@ zdiff) // the different from the current slices
   if (this.zdiff == 0) this.rcatch = r + 8;
   else
   this.rcatch = 0;
+
+  this.setAsRootNode = function ()
+  {
+    this.isroot = true;
+    fillcolor = "rgb(255, 0, 0)";
+    this.setDefaultColor();
+    console.log("called set root");
+  }
 
   // update the parent node of this node
   // update parent's children array

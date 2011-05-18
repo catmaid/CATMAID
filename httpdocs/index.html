@@ -56,17 +56,18 @@
 		<script type="text/javascript" src="widgets/profile.js"></script>
 		<script type="text/javascript" src="widgets/overlay_node.js"></script>
 		<script type="text/javascript" src="widgets/overlay_connectornode.js"></script>
-    <script type="text/javascript" src="widgets/overlay_label.js"></script>
+        <script type="text/javascript" src="widgets/overlay_label.js"></script>
 		<script type="text/javascript" src="widgets/overlay.js"></script>
 		<script type="text/javascript" src="init.js"></script>
 		<script type="text/javascript" src="libs/raphael/raphael.js"></script>
 		<script type="text/javascript" src="libs/raphael/g.raphael.js"></script>
-    <script type="text/javascript" src="libs/raphael/raphael-custom.js"></script>
+		<script type="text/javascript" src="libs/raphael/g.pie-min.js"></script>
+        <script type="text/javascript" src="libs/raphael/raphael-custom.js"></script>
 		<script type="text/javascript" src="widgets/table_treenode.js"></script>
-    <script type="text/javascript" src="widgets/table_connector.js"></script>
+        <script type="text/javascript" src="widgets/table_connector.js"></script>
 		<!--<script type="text/javascript" src="widgets/table_presynapse.js"></script>
 		<script type="text/javascript" src="widgets/table_postsynapse.js"></script>
-    <script type="text/javascript" src="widgets/tree_class.js"></script>-->
+        <script type="text/javascript" src="widgets/tree_class.js"></script>-->
 		<script type="text/javascript" src="widgets/tree_object.js"></script>
 		<script type="text/javascript" src="widgets/stats.js"></script>
 		<script type="text/javascript" src="libs/sylvester/sylvester.js"></script>
@@ -470,12 +471,15 @@
 						<td >#textlabels</td>
 						<td id="proj_textlabels"></td>
 					</tr>
-          <tr>
-            <td >#tags</td>
-            <td id="proj_tags"></td>
-          </tr>
+                    <tr>
+                        <td >#tags</td>
+                        <td id="proj_tags"></td>
+                    </tr>
 				</table>
-				</div>			
+				</div>
+                <!-- piechart -->
+                <h2>Treenode Annotators</h2>
+                <div id="piechart_treenode_holder"></div>
 				
 			</div>
 			  

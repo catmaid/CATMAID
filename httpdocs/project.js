@@ -75,28 +75,28 @@ var stringToKeyAction = {
   "\u2190" : { helpText: "Move left (towards negative x)",
                specialKeyCodes: [ arrowKeyCodes.left ],
                run: function (e) {
-                 input_x.value = parseInt(input_x.value,10) - (e.shiftKey ? 100 : (alt ? 1 : 10));
+                 input_x.value = parseInt(input_x.value,10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
                  input_x.onchange(e);
                  return false;
                }},
   "\u2192" : { helpText: "Move right (towards positive x)",
                specialKeyCodes: [ arrowKeyCodes.right ],
                run: function (e) {
-                 input_x.value = parseInt(input_x.value,10) + (e.shiftKey ? 100 : (alt ? 1 : 10));
+                 input_x.value = parseInt(input_x.value,10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
                  input_x.onchange(e);
                  return false;
                }},
   "\u2191" : { helpText: "Move up (towards negative y)",
                specialKeyCodes: [ arrowKeyCodes.up ],
                run: function (e) {
-                 input_y.value = parseInt(input_y.value,10) - (e.shiftKey ? 100 : (alt ? 1 : 10));
+                 input_y.value = parseInt(input_y.value,10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
                  input_y.onchange(e);
                  return false;
                }},
   "\u2193" : { helpText: "Move down (towards positive y)",
                specialKeyCodes: [ arrowKeyCodes.down ],
                run: function (e) {
-                 input_y.value = parseInt(input_y.value,10) + (e.shiftKey ? 100 : (alt ? 1 : 10));
+                 input_y.value = parseInt(input_y.value,10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
                  input_y.onchange(e);
                  return false;
                }},

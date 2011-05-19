@@ -798,23 +798,23 @@ function init()
   var table_connector_widget_resize_handle = new ResizeHandle("h");
   table_connector_widget.appendChild(table_connector_widget_resize_handle.getView());
 
-  project_stats_widget = document.getElementById("project_stats_widget");
+  var project_stats_widget = document.getElementById("project_stats_widget");
   var project_stats_widget_resize_handle = new ResizeHandle("h");
   project_stats_widget.appendChild(project_stats_widget_resize_handle.getView());
 
-  key_shortcut_widget = document.getElementById("key_shortcut_widget");
+  var key_shortcut_widget = document.getElementById("key_shortcut_widget");
   var key_shortcut_widget_resize_handle = new ResizeHandle("h");
   key_shortcut_widget.appendChild(key_shortcut_widget_resize_handle.getView());
 
-  view_in_3d_widget = document.getElementById("view_in_3d_widget");
+  var view_in_3d_widget = document.getElementById("view_in_3d_widget");
   var view_in_3d_widget_resize_handle = new ResizeHandle("h");
   view_in_3d_widget.appendChild(view_in_3d_widget_resize_handle.getView());
 
-  object_tree_widget = document.getElementById("object_tree_widget");
+  var object_tree_widget = document.getElementById("object_tree_widget");
   var tree_widget_resize_handle = new ResizeHandle("h");
   object_tree_widget.appendChild(tree_widget_resize_handle.getView());
 
-  class_tree_widget = document.getElementById("class_tree_widget");
+  var class_tree_widget = document.getElementById("class_tree_widget");
   var tree_widget_resize_handle = new ResizeHandle("h");
   class_tree_widget.appendChild(tree_widget_resize_handle.getView());
 

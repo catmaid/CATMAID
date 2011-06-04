@@ -766,18 +766,11 @@ current_scale // current scale of the stack
 
   this.refreshNodes = function (jso)
   {
+    var rad, nrtn = 0, nrcn = 0, parid, nid, nn;
     this.paper.clear();
     nodes = new Object();
     labels = new Object();
-    var nrtn = 0;
-    var nrcn = 0;
-    // deactive node, but keep id for reactivation
-/*if(atn!=null) {
-      oldatnid = atn.id;
-      console.log("XXX:oldatnid", oldatnid);
-    }*/
 
-    // activateNode(null);
     for (var i in jso)
     {
       var id = parseInt(jso[i].id);
@@ -787,21 +780,29 @@ current_scale // current scale of the stack
       var zdiff = Math.floor(parseFloat(jso[i].z_diff) / resolution.z);
       if (zdiff == 0)
       {
-        if (jso[i].type == "treenode") var rad = parseFloat(jso[i].radius);
+        if (jso[i].type == "treenode")
+        {
+          rad = parseFloat(jso[i].radius);
+        }
         else
-        var rad = 8; // default radius for locations
+        {
+          rad = 8; // default radius for locations
+        }
+
       }
       else
-      var rad = 0;
+      {
+        rad = 0;
+      }
 
       if (jso[i].type == "treenode")
       {
-        var nn = new Node(id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff);
+        nn = new Node(id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff);
         nrtn++;
       }
       else
       {
-        var nn = new ConnectorNode(id, this.paper, rad, pos_x, pos_y, pos_z, zdiff);
+        nn = new ConnectorNode(id, this.paper, rad, pos_x, pos_y, pos_z, zdiff);
         nrcn++;
       }
       nodes[id] = nn;
@@ -816,12 +817,15 @@ current_scale // current scale of the stack
       // loop again and add correct parent objects and parent's children update
       for (var i in jso)
       {
-        var nid = parseInt(jso[i].id);
+        nid = parseInt(jso[i].id);
         // for treenodes, make updates
         if (jso[i].type == "treenode")
         {
-          var parid = parseInt(jso[i].parentid);
-
+          parid = parseInt(jso[i].parentid);
+          if(isNaN(parid))
+          {
+            nodes[nid].setAsRootNode();
+          }
           if (nodes[parid])
           {
             // if parent is existing, update the references
@@ -829,7 +833,6 @@ current_scale // current scale of the stack
             // update the parents children
             nodes[nid].parent.children[nid] = nodes[nid];
           }
-
         }
         else if (jso[i].type == "location")
         {

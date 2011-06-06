@@ -11,7 +11,9 @@
 	<!-- Date: 2010-12-20 -->
 <script type="text/javascript" charset="utf-8">  
 // http://stackoverflow.com/questions/3750896/draw-polygon-with-gpolygon-without-gmap
+
 Raphael.fn.polygon = function () { // supply x,y coordinates as arguments
+
     var self = this.path();
     self.attr("fill", "#f00");
     self.coords = [];
@@ -38,17 +40,25 @@ Raphael.fn.polygon = function () { // supply x,y coordinates as arguments
 
 window.onload = function () {
   
-var paper = Raphael("MyArea",640,480);
-var mypolygon = paper.polygon(
-  10, 10,
-  200, 80,
-  10, 230
-);
-console.log(mypolygon);
+var paper = Raphael("MyArea",1040,480);
+
+var shi= 0;
+
+for(var j=0;j<100;j++) {
+    
+    var mypolygon = paper.polygon(
+      shi+10, 10,
+      shi+200, 80,
+      shi+10, 230
+    );
+    
+// console.log(mypolygon);
 
 // you can even modify it after creation:
 mypolygon.coords.push(15,20);
 mypolygon.update();
+shi = shi + 400;
+}
 
   }  
         </script>

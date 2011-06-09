@@ -59,7 +59,7 @@ initConnectorTable = function (pid)
     {
       "bVisible": true,
       "bSortable": true
-    } // last modfied
+    } // last modified
     ]
     
     

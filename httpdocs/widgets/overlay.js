@@ -597,6 +597,7 @@ current_scale // current scale of the stack
           {
             // add treenode to the display and update it
             var jso = $.parseJSON(text);
+            // FIXME: isn't this always true?
             if (parid == -1)
             {
               var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0);

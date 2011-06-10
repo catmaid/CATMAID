@@ -1,6 +1,16 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
+/* It's very easy to accidentally leave in a console.log if you're
+ * working with Firebug, but this will break CATMAID for the majority
+ * of browsers.  If window.console isn't defined, create a noop
+ * version of console.log: */
+
+if (!window.console) {
+  window.console = {};
+  window.console.log = function() {}
+}
+
 var statusBar; //!< global statusBar
 var slider_z; //!< slice slider
 var slider_trace_z;

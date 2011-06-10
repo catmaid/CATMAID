@@ -66,7 +66,7 @@ zdiff) // the different from the current slices
     this.isroot = true;
     fillcolor = "rgb(255, 0, 0)";
     this.setDefaultColor();
-    console.log("called set root");
+    // console.log("called set root");
   }
 
   // update the parent node of this node

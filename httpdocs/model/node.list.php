@@ -54,28 +54,30 @@ if ( $pid )
 
     
     $treenodes = $db->getResult(
-      'SELECT "treenode"."id" AS "id",
-          "treenode"."parent_id" AS "parentid",
-          ("treenode"."location")."x" AS "x",
-          ("treenode"."location")."y" AS "y",
-          ("treenode"."location")."z" AS "z",
-          "treenode"."confidence" AS "confidence",
-          "treenode"."user_id" AS "user_id",
-          "treenode"."radius" AS "radius",
-          ( ("treenode"."location")."z" - '.$z.' ) AS "z_diff"
-        
-        FROM "treenode" INNER JOIN "project"
-            ON "project"."id" = "treenode"."project_id"
-          
-          WHERE "project"."id" = '.$pid.' AND
-              ("treenode"."location")."x" >= '.$left.' AND
-              ("treenode"."location")."x" <= '.( $left + $width ).' AND
-              ("treenode"."location")."y" >= '.$top.' AND
-              ("treenode"."location")."y" <= '.( $top + $height ).' AND
-              ("treenode"."location")."z" >= '.$z.' - '.$zbound.' * '.$zres.' AND
-              ("treenode"."location")."z" <= '.$z.' + '.$zbound.' * '.$zres.'
-          
-          ORDER BY "parentid" DESC,"id", "z_diff" LIMIT '.$limit
+      'SELECT treenode.id AS id,
+           treenode.parent_id AS parentid,
+           (treenode.location).x AS x,
+           (treenode.location).y AS y,
+           (treenode.location).z AS z,
+           treenode.confidence AS confidence,
+           treenode.user_id AS user_id,
+           treenode.radius AS radius,
+           ((treenode.location).z - '.$z.') AS z_diff,
+           treenode_class_instance.class_instance_id AS skeleton_id
+       FROM (treenode INNER JOIN relation ON (relation.relation_name = \'element_of\' AND relation.project_id = treenode.project_id))
+           LEFT OUTER JOIN (treenode_class_instance
+                            INNER JOIN (class_instance INNER JOIN class ON class_instance.class_id = class.id AND class.class_name = \'skeleton\')
+                            ON treenode_class_instance.class_instance_id = class_instance.id)
+           ON (treenode_class_instance.treenode_id = treenode.id AND treenode_class_instance.relation_id = relation.id)
+       WHERE treenode.project_id = '.$pid.'
+        AND (treenode.location).x >= '.$left.'
+        AND (treenode.location).x <= '.( $left + $width ).'
+        AND (treenode.location).y >= '.$top.'
+        AND (treenode.location).y <= '.( $top + $height ).'
+        AND (treenode.location).z >= '.$z.' - '.$zbound.' * '.$zres.'
+        AND (treenode.location).z <= '.$z.' + '.$zbound.' * '.$zres.'
+        ORDER BY parentid DESC, id, z_diff
+        LIMIT '.$limit
     );
     // loop over and add type
     while ( list( $key, $val) = each( $treenodes ) )

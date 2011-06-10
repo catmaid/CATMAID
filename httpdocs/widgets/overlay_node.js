@@ -12,8 +12,10 @@ r, // the radius
 x, // the x coordinate in pixel coordinates
 y, // y coordinates
 z, // z coordinates
-zdiff) // the different from the current slices
+zdiff, // the different from the current slices
+skeleton_id) // the id of the skeleton this node is an element of
 {
+
   // the database treenode id
   this.id = id;
 
@@ -32,6 +34,7 @@ zdiff) // the different from the current slices
   this.y = y;
   this.z = z;
   this.zdiff = zdiff;
+  this.skeleton_id = skeleton_id;
   this.parent = parent;
   this.paper = paper;
   this.r = r;
@@ -46,12 +49,23 @@ zdiff) // the different from the current slices
   // the line that is drawn to its parent
   var line = this.paper.path();
 
+  this.colorFromZDiff = function(node) {
+    if (node.zdiff > 0) {
+      return "rgb(0, 0, 255)";
+    } else if (node.zdiff < 0) {
+      return "rgb(255, 0, 0)";
+    } else {
+      if (this.skeleton_id && this.skeleton_id === active_skeleton_id) {
+        return active_skeleton_color;
+      } else {
+        return "rgb(255, 255, 0)";
+      }
+    }
+  }
+
   // the node fill color depending on its distance for the
   // current slice
-  var fillcolor;
-  if (zdiff == 0) fillcolor = "rgb(255, 255, 0)";
-  else if (zdiff == 1) fillcolor = "rgb(0, 0, 255)";
-  else if (zdiff == -1) fillcolor = "rgb(255, 0, 0)";
+  var fillcolor = this.colorFromZDiff(this);
 
   if (this.r < 0) this.r = 3;
 
@@ -254,11 +268,7 @@ zdiff) // the different from the current slices
   {
     if (this.parent != null)
     {
-      var strokecolor;
-      if (this.parent.zdiff < 0) strokecolor = "rgb(255, 0, 0)";
-      else if (this.parent.zdiff > 0) strokecolor = "rgb(0, 0, 255)";
-      else
-      strokecolor = "rgb(255, 255, 0)";
+      var strokecolor = this.colorFromZDiff(this.parent);
 
       line.attr(
       {

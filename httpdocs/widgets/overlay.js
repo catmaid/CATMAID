@@ -5,6 +5,9 @@
 var atn = null;
 var atn_fillcolor = "rgb(0, 255, 0)";
 
+var active_skeleton_id = null;
+var active_skeleton_color = "rgb(255, 100, 0)";
+
 function activateNode(node)
 {
   // changes the color attributes of
@@ -24,6 +27,11 @@ function activateNode(node)
   {
     fill: atn_fillcolor
   });
+  // If the skeleton has changed, redraw everything:
+  if (active_skeleton_id !== atn.skeleton_id) {
+    active_skeleton_id = atn.skeleton_id;
+    project.updateNodes();
+  }
   // update statusBar
   if (atn.type == "treenode") statusBar.replaceLast("activated treenode with id " + atn.id);
   else
@@ -600,11 +608,11 @@ current_scale // current scale of the stack
             // FIXME: isn't this always true?
             if (parid == -1)
             {
-              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0);
+              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, null);
             }
             else
             {
-              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0);
+              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, null);
             }
 
             nodes[jso.treenode_id] = nn;
@@ -667,11 +675,11 @@ current_scale // current scale of the stack
             var jso = $.parseJSON(text);
             if (parid == -1)
             {
-              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0);
+              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id);
             }
             else
             {
-              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0);
+              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, jso.skeleton_id);
             }
 
             nodes[jso.treenode_id] = nn;
@@ -779,6 +787,7 @@ current_scale // current scale of the stack
       var pos_y = phys2pixY(jso[i].y);
       var pos_z = phys2pixZ(jso[i].z);
       var zdiff = Math.floor(parseFloat(jso[i].z_diff) / resolution.z);
+      var skeleton_id = null;
       if (zdiff == 0)
       {
         if (jso[i].type == "treenode")
@@ -798,7 +807,10 @@ current_scale // current scale of the stack
 
       if (jso[i].type == "treenode")
       {
-        nn = new Node(id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff);
+        if (jso[i].skeleton_id) {
+          skeleton_id = parseInt(jso[i].skeleton_id);
+        }
+        nn = new Node(id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff, skeleton_id);
         nrtn++;
       }
       else

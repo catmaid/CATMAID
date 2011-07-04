@@ -80,10 +80,13 @@ skeleton_id) // the id of the skeleton this node is an element of
     this.rcatch = 0;
   }
 
-
   this.setAsRootNode = function () {
     this.isroot = true;
-    fillcolor = "rgb(255, 0, 0)";
+    if (atn !== null && this.id === atn.id) {
+      fillcolor = atn_fillcolor;
+    } else {
+      fillcolor = "rgb(255, 0, 0)";
+    }
     this.setDefaultColor();
     // console.log("called set root");
   }

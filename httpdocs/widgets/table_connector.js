@@ -6,10 +6,9 @@ var asInitValsSyn = new Array();
 
 initConnectorTable = function (pid)
 {
-
-  prestr = '1';
-  tableid = '#connectortable';
-  stype = 'presynaptic';
+  var prestr = '1';
+  var tableid = '#connectortable';
+  var stype = 'presynaptic';
 
   connectorTable = $(tableid).dataTable(
   {

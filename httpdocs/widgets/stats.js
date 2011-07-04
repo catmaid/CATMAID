@@ -40,8 +40,7 @@ function refresh_project_statistics()
   
   requestQueue.register("model/stats.list.php", "POST", {
     "pid": project.id
-  }, function (status, text, xml)
-    {
+  }, function (status, text, xml) {
       if (status == 200)
       {
         if (text && text != " ")
@@ -57,9 +56,8 @@ function refresh_project_statistics()
           }
         }
       }
-    }
-    return true;
-  });
+      return true;
+    });
 
   requestQueue.register("model/stats.treenodes.list.php", "POST", {
     "pid": project.id

@@ -245,21 +245,25 @@ function NeuronView(basename, color, viewer, projectID, skeletonID) {
       // centrePoint = r.circle(10,10,4);
       // centrePoint.attr("fill","#f00");
       // centrePoint.attr("stroke","#f00");
-      for (i = 0; i < enclosingObject.all_points.length; ++i) {
-        point = enclosingObject.all_points[i];
-        p = point.map_to_screen();
-        if (this.circles) {
-          point.circle = this.viewer.r.circle(p.x, p.y, this.circleRadius);
-          point.circle.attr("fill", enclosingObject.color);
+      for (i in enclosingObject.all_points) {
+        if (enclosingObject.hasOwnProperty(i)) {
+          point = enclosingObject.all_points[i];
+          p = point.map_to_screen();
+          if (this.circles) {
+            point.circle = this.viewer.r.circle(p.x, p.y, this.circleRadius);
+            point.circle.attr("fill", enclosingObject.color);
+          }
         }
       }
 
       // Now find all the end points, i.e. those with no parents:
       enclosingObject.endPoints = enclosingObject.all_points.slice(0);
-      for (i = 0; i < enclosingObject.all_points.length; ++i) {
-        parent_id = enclosingObject.all_points[i].parent_id;
-        if (parent_id > 0) {
-          delete enclosingObject.endPoints[parent_id];
+      for (i in enclosingObject.all_points) {
+        if (enclosingObject.hasOwnProperty(i)) {
+          parent_id = enclosingObject.all_points[i].parent_id;
+          if (parent_id > 0) {
+            delete enclosingObject.endPoints[parent_id];
+          }
         }
       }
 
@@ -279,16 +283,20 @@ function NeuronView(basename, color, viewer, projectID, skeletonID) {
     var i, e;
     this.color = color;
     if (this.viewer.lines) {
-      for (i = 0; i < this.endPoints.length; ++i) {
-        e = this.endPoints[i];
-        e.lineToParent.attr({
-          stroke: this.color
-        });
+      for (i in this.endPoints) {
+        if (this.endPoints.hasOwnProperty(i)) {
+          e = this.endPoints[i];
+          e.lineToParent.attr({
+            stroke: this.color
+          });
+        }
       }
     }
     if (this.viewer.circles) {
-      for (i = 0; i < this.all_points.length; ++i) {
-        this.all_points[i].circle.attr("fill", this.color);
+      for (i in this.all_points) {
+        if (this.all_points.hasOwnProperty(i)) {
+          this.all_points[i].circle.attr("fill", this.color);
+        }
       }
     }
   };
@@ -296,14 +304,18 @@ function NeuronView(basename, color, viewer, projectID, skeletonID) {
   this.removeLinesAndCircles = function () {
     var i, e;
     if (this.viewer.circles) {
-      for (i = 0; i < this.all_points.length; ++i) {
-        this.all_points[i].circle.remove();
+      for (i in this.all_points) {
+        if (this.all_points.hasOwnProperty(i)) {
+          this.all_points[i].circle.remove();
+        }
       }
     }
     if (this.viewer.lines) {
-      for (i = 0; i < this.endPoints.length; ++i) {
-        e = this.endPoints[i];
-        e.lineToParent.remove();
+      for (i in this.endPoints) {
+        if (this.endPoints.hasOwnProperty(i)) {
+          e = this.endPoints[i];
+          e.lineToParent.remove();
+        }
       }
     }
   };
@@ -313,47 +325,51 @@ function NeuronView(basename, color, viewer, projectID, skeletonID) {
     var i, j, done, points, e, path, firstTime, p;
 
     // Tranform each point:
-    for (i = 0; i < this.all_points.length; ++i) {
-      this.all_points[i].map_to_screen();
-      if (this.viewer.circles) {
-        this.all_points[i].update_circle_position();
+    for (i in this.all_points) {
+      if (this.all_points.hasOwnProperty(i)) {
+        this.all_points[i].map_to_screen();
+        if (this.viewer.circles) {
+          this.all_points[i].update_circle_position();
+        }
       }
     }
 
     if (this.viewer.lines) {
       done = {};
-      for (i = 0; i < this.endPoints.length; ++i) {
-        points = [];
-        e = this.endPoints[i];
-        points.push(e);
-        done[e.id] = true;
-        while (true) {
-          if (e.parent_id < 0) {
-            break;
-          }
-          e = this.all_points[e.parent_id];
+      for (i in this.endPoints) {
+        if (this.endPoints.hasOwnProperty(i)) {
+          points = [];
+          e = this.endPoints[i];
           points.push(e);
-          if (done[e.id]) {
-            break;
-          }
           done[e.id] = true;
-        }
-        path = "M " + points[0].nx + " " + points[1].ny + " ";
-        firstTime = true;
-        for (j = 1; j < points.length; ++j) {
-          p = points[j];
-          path += "L " + p.nx + " " + p.ny + " ";
-        }
-        e = this.endPoints[i];
-        if (e.lineToParent) {
-          e.lineToParent.attr({
-            path: path,
-            stroke: this.color
-          });
-        } else {
-          e.lineToParent = this.viewer.r.path(path).attr({
-            stroke: this.color
-          });
+          while (true) {
+            if (e.parent_id < 0) {
+              break;
+            }
+            e = this.all_points[e.parent_id];
+            points.push(e);
+            if (done[e.id]) {
+              break;
+            }
+            done[e.id] = true;
+          }
+          path = "M " + points[0].nx + " " + points[0].ny + " ";
+          firstTime = true;
+          for (j = 1; j < points.length; ++j) {
+            p = points[j];
+            path += "L " + p.nx + " " + p.ny + " ";
+          }
+          e = this.endPoints[i];
+          if (e.lineToParent) {
+            e.lineToParent.attr({
+              path: path,
+              stroke: this.color
+            });
+          } else {
+            e.lineToParent = this.viewer.r.path(path).attr({
+              stroke: this.color
+            });
+          }
         }
       }
     }

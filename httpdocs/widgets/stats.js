@@ -15,6 +15,7 @@ function update_stats_fields(data) {
 
 function update_piechart( data )
 {
+  $("#piechart_treenode_holder").empty();
   var rpie = Raphael("piechart_treenode_holder");
   var pie = rpie.g.piechart(80, 100, 80, data.values, { legend: data.users, legendpos: "east"});
   pie.hover(function () {

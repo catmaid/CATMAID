@@ -32,7 +32,6 @@ function update_piechart( data )
           this.label[1].attr({"font-weight": 400});
       }
   });
-  console.log("test", pie);
 }
 
 function refresh_project_statistics()

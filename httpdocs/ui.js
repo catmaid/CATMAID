@@ -19,8 +19,7 @@ var MOUSE_BUTTON_RIGHT = 3;
 /**
  * container for generic user interface actions
  */
-UI = function ()
-{
+UI = function () {
   var self = this;
 
   var screenWidth = 0;
@@ -50,22 +49,18 @@ UI = function ()
   focusCatcher.id = "focusCatcher";
   document.body.appendChild(focusCatcher);
 
-  var updateFrameHeight = function ()
-  {
+  var updateFrameHeight = function () {
     if (window.innerHeight) screenHeight = window.innerHeight;
-    else
-    {
+    else {
       if (document.documentElement && document.documentElement.clientHeight) screenHeight = document.documentElement.clientHeight;
       else if (document.body && document.body.clientHeight) screenHeight = document.body.clientHeight;
     }
     return;
   }
 
-  var updateFrameWidth = function ()
-  {
+  var updateFrameWidth = function () {
     if (window.innerWidth) screenWidth = window.innerWidth;
-    else
-    {
+    else {
       if (document.documentElement && document.documentElement.clientWidth) screenWidth = document.documentElement.clientWidth;
       else if (document.body && document.body.clientWidth) screenWidth = document.body.clientWidth;
     }
@@ -77,8 +72,7 @@ UI = function ()
    */
   this.setCursor = function (
   c //!< string cursor
-  )
-  {
+  ) {
     eventCatcher.style.cursor = c;
     return;
   }
@@ -89,8 +83,7 @@ UI = function ()
   this.registerEvent = function (
   e, //!< event
   h //!< handler function
-  )
-  {
+  ) {
     events[e].push(h);
     return;
   }
@@ -101,12 +94,9 @@ UI = function ()
   this.removeEvent = function (
   e, //!< event
   h //!< handler function
-  )
-  {
-    for (var i = 0; i < events[e].length; ++i)
-    {
-      if (events[e][i] == h)
-      {
+  ) {
+    for (var i = 0; i < events[e].length; ++i) {
+      if (events[e][i] == h) {
         events[e].splice(i, 1);
         break;
       }
@@ -118,32 +108,25 @@ UI = function ()
    */
   this.clearEvent = function (
   e //!< event
-  )
-  {
+  ) {
     delete events[e];
     events[e] = new Array();
   }
 
-  this.getFrameWidth = function ()
-  {
+  this.getFrameWidth = function () {
     return screenWidth;
   }
 
-  this.getFrameHeight = function ()
-  {
+  this.getFrameHeight = function () {
     return screenHeight;
   }
 
-  this.onresize = function (e)
-  {
+  this.onresize = function (e) {
     try // IE fails if window height <= 0
     {
       updateFrameHeight();
       updateFrameWidth();
-    }
-    catch (exception)
-    {
-    }
+    } catch (exception) {}
 
     var r = true;
 
@@ -159,15 +142,11 @@ UI = function ()
    * 2 - middle
    * 3 - right
    */
-  this.getMouseButton = function (e)
-  {
+  this.getMouseButton = function (e) {
     var which = undefined;
-    if (e && e.which)
-    {
+    if (e && e.which) {
       which = e.which;
-    }
-    else if (event && event.button)
-    {
+    } else if (event && event.button) {
       which = event.button;
       if (which == 2) which = MOUSE_BUTTON_RIGHT;
       if (which == 4) which = MOUSE_BUTTON_MIDDLE;
@@ -181,27 +160,22 @@ UI = function ()
    *  1 - up
    * -1 - down
    */
-  this.getMouseWheel = function (e)
-  {
+  this.getMouseWheel = function (e) {
     if (e && e.detail) return (e.detail > 0 ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN);
-    else if (event && event.wheelDelta)
-    {
+    else if (event && event.wheelDelta) {
       if (window.opera) return (event.wheelDelta > 0 ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN);
       else
       return (event.wheelDelta < 0 ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN);
-    }
-    else
+    } else
     return undefined;
   }
 
   /**
    * get the mouse location absolute and relative to the element, which fired the event
    */
-  this.getMouse = function (e)
-  {
+  this.getMouse = function (e) {
     m = new Object();
-    if (e)
-    {
+    if (e) {
       e.preventDefault();
       e.stopPropagation();
       m.x = e.screenX;
@@ -211,16 +185,13 @@ UI = function ()
       if (e.offsetY) m.offsetY = e.offsetY;
       else if (e.layerY) m.offsetY = e.layerY - 1;
 
-    }
-    else if (event)
-    {
+    } else if (event) {
       event.cancelBubble = true;
       m.x = event.clientX;
       m.y = event.clientY;
       m.offsetX = event.offsetX;
       m.offsetY = event.offsetY;
-    }
-    else
+    } else
     m = undefined;
     return m;
   }
@@ -228,25 +199,20 @@ UI = function ()
   /**
    * get the key code
    */
-  this.getKey = function (e)
-  {
+  this.getKey = function (e) {
     var key;
-    if (e)
-    {
+    if (e) {
       if (e.keyCode) key = e.keyCode;
       else if (e.charCode) key = e.charCode;
       else key = e.which;
-    }
-    else if (event && event.keyCode) key = event.keyCode;
+    } else if (event && event.keyCode) key = event.keyCode;
     else key = false;
     return key;
   }
 
-  this.onmousemove = function (e)
-  {
+  this.onmousemove = function (e) {
     var m = self.getMouse(e);
-    if (m)
-    {
+    if (m) {
       //statusBar.replaceLast( m.x + ", " + m.y );
       self.diffX = m.x - lastX;
       self.diffY = m.y - lastY;
@@ -258,16 +224,13 @@ UI = function ()
       r = r && events["onmousemove"][i](e);
 
       return r;
-    }
-    else
+    } else
     return false;
   }
 
-  this.onmousedown = function (e)
-  {
+  this.onmousedown = function (e) {
     var m = self.getMouse(e);
-    if (m)
-    {
+    if (m) {
       //statusBar.replaceLast( m.x + ", " + m.y );
       lastX = m.x;
       lastY = m.y;
@@ -276,11 +239,9 @@ UI = function ()
 
       var which = self.getMouseButton(e);
 
-      if (which)
-      {
+      if (which) {
         //statusBar.replaceLast( "mouse button " + which + " pressed" );
-        switch (which)
-        {
+        switch (which) {
         case MOUSE_BUTTON_LEFT:
           leftMouseDown = true;
           break;
@@ -295,16 +256,13 @@ UI = function ()
       r = r && events["onmousedown"][i](e);
 
       return r;
-    }
-    else
+    } else
     return;
   }
 
-  this.onmouseup = function (e)
-  {
+  this.onmouseup = function (e) {
     var m = self.getMouse(e);
-    if (m)
-    {
+    if (m) {
       //statusBar.replaceLast( m.x + ", " + m.y );
       lastX = m.x;
       lastY = m.y;
@@ -313,11 +271,9 @@ UI = function ()
 
       var which = self.getMouseButton(e);
 
-      if (which)
-      {
+      if (which) {
         //statusBar.replaceLast( "mouse button " + which + " released" );
-        switch (which)
-        {
+        switch (which) {
         case MOUSE_BUTTON_LEFT:
           leftMouseDown = false;
           break;
@@ -331,8 +287,7 @@ UI = function ()
       for (var i = 0; i < events["onmouseup"].length; ++i)
       r = r && events["onmouseup"][i](e);
       return r;
-    }
-    else
+    } else
     return;
   }
 
@@ -343,8 +298,7 @@ UI = function ()
    */
   this.catchEvents = function (
   c //!< optional cursor style
-  )
-  {
+  ) {
     if (c) eventCatcher.style.cursor = c;
     eventCatcher.style.display = "block";
     return;
@@ -353,8 +307,7 @@ UI = function ()
   /**
    * release mouse and keyboard events
    */
-  this.releaseEvents = function ()
-  {
+  this.releaseEvents = function () {
     eventCatcher.style.cursor = "auto";
     eventCatcher.style.display = "none";
     return;
@@ -363,8 +316,7 @@ UI = function ()
   /**
    * catch focus which might be at a form element or an arbitrary anchor
    */
-  this.catchFocus = function ()
-  {
+  this.catchFocus = function () {
     focusCatcher.focus();
   }
 
@@ -376,40 +328,30 @@ UI = function ()
   eventCatcher.onmousemove = self.onmousemove;
 }
 
-UI.getFrameHeight = function ()
-{
-  try
-  {
+UI.getFrameHeight = function () {
+  try {
     if (window.innerHeight) return window.innerHeight;
-    else
-    {
+    else {
       if (document.documentElement && document.documentElement.clientHeight) return document.documentElement.clientHeight;
       else
       if (document.body && document.body.clientHeight) return document.body.clientHeight;
     }
     return 0;
-  }
-  catch (exception)
-  {
+  } catch (exception) {
     return 0;
   }
 }
 
-UI.getFrameWidth = function ()
-{
-  try
-  {
+UI.getFrameWidth = function () {
+  try {
     if (window.innerWidth) return window.innerWidth;
-    else
-    {
+    else {
       if (document.documentElement && document.documentElement.clientWidth) return document.documentElement.clientWidth;
       else
       if (document.body && document.body.clientWidth) return document.body.clientWidth;
     }
     return 0;
-  }
-  catch (exception)
-  {
+  } catch (exception) {
     return 0;
   }
 }

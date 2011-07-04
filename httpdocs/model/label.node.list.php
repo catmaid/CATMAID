@@ -22,10 +22,10 @@ if ( $pid )
   if ( $uid )
   {
     $label_id = $db->getClassId( $pid, 'label' );
-    if(!$label_id) { echo makeJSON( array( '"error"' => 'Can not find "label" class for this project' ) ); return; }
+    if(!$label_id) { echo makeJSON( array( 'error' => 'Can not find "label" class for this project' ) ); return; }
     
     $labeled_as_id = $db->getRelationId( $pid, 'labeled_as' );
-    if(!$labeled_as_id) { echo makeJSON( array( '"error"' => 'Can not find "labeled_as" relation for this project' ) ); return; }
+    if(!$labeled_as_id) { echo makeJSON( array( 'error' => 'Can not find "labeled_as" relation for this project' ) ); return; }
     
     if($ntype == "treenode") {
       $res = $db->getResult('SELECT "ci"."name" as "name" FROM "class_instance" as "ci", "treenode_class_instance" as "tci" WHERE

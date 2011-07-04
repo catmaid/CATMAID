@@ -19,22 +19,18 @@
  * Node prototype
  */
 
-function CMWNode()
-{
-}
+function CMWNode() {}
 
 CMWNode.CMWNodeUniqueId = 0;
 
-CMWNode.prototype.uniqueId = function ()
-{
+CMWNode.prototype.uniqueId = function () {
   return CMWNode.CMWNodeUniqueId++;
 }
 
 /**
  * @return width of the node in pixels
  */
-CMWNode.prototype.getWidth = function ()
-{
+CMWNode.prototype.getWidth = function () {
   var frame = this.getFrame();
   if (frame.offsetWidth) return frame.offsetWidth;
   else
@@ -44,8 +40,7 @@ CMWNode.prototype.getWidth = function ()
 /**
  * @return height of the node in pixels
  */
-CMWNode.prototype.getHeight = function ()
-{
+CMWNode.prototype.getHeight = function () {
   var frame = this.getFrame();
   if (frame.offsetHeight) return frame.offsetHeight;
   else
@@ -55,8 +50,7 @@ CMWNode.prototype.getHeight = function ()
 /**
  * @return left position of the node in pixels
  */
-CMWNode.prototype.getLeft = function ()
-{
+CMWNode.prototype.getLeft = function () {
   var frame = this.getFrame();
   if (frame.style.left) return parseInt(frame.style.left);
   else
@@ -66,8 +60,7 @@ CMWNode.prototype.getLeft = function ()
 /**
  * @return top position of the node in pixels
  */
-CMWNode.prototype.getTop = function ()
-{
+CMWNode.prototype.getTop = function () {
   var frame = this.getFrame();
   if (frame.style.top) return parseInt(frame.style.top);
   else
@@ -81,8 +74,7 @@ CMWNode.prototype.getTop = function ()
  * Root node
  */
 
-function CMWRootNode()
-{
+function CMWRootNode() {
   var self = this;
 
   var child = child;
@@ -94,41 +86,34 @@ function CMWRootNode()
   frame.id = "CMW" + id;
   frame.style.top = "0px";
 
-  this.getId = function ()
-  {
+  this.getId = function () {
     return id;
   }
 
-  this.getFrame = function ()
-  {
+  this.getFrame = function () {
     return frame;
   }
 
-  this.getChild = function ()
-  {
+  this.getChild = function () {
     return child;
   }
 
-  this.getChildren = function ()
-  {
+  this.getChildren = function () {
     var children = new Array();
-    if (child != null)
-    {
+    if (child != null) {
       children.push(child);
       children = children.concat(child.getChildren());
     }
     return children;
   }
 
-  this.getWindows = function ()
-  {
+  this.getWindows = function () {
     if (child != null) return child.getWindows();
     else
     return [];
   }
 
-  this.replaceChild = function (newChild)
-  {
+  this.replaceChild = function (newChild) {
     child = newChild;
     if (frame.lastChild) frame.removeChild(frame.lastChild);
     frame.appendChild(child.getFrame());
@@ -139,31 +124,27 @@ function CMWRootNode()
   /**
    * @return {CMWRootNode} this (allows chains of calls like myRootNode.redraw().show())
    */
-  this.redraw = function ()
-  {
+  this.redraw = function () {
     child.redraw();
     document.getElementById("text").replaceChild(document.createTextNode(self.toXML()), document.getElementById("text").firstChild);
 
     return self;
   }
 
-  this.catchDrag = function ()
-  {
+  this.catchDrag = function () {
     ui.catchFocus();
     ui.registerEvent("onmouseup", self.releaseDrag);
     ui.catchEvents();
     child.catchDrag();
   }
 
-  this.releaseDrag = function ()
-  {
+  this.releaseDrag = function () {
     ui.releaseEvents();
     ui.removeEvent("onmouseup", self.releaseDrag);
     child.releaseDrag();
   }
 
-  this.toXML = function ()
-  {
+  this.toXML = function () {
     return "<root id\"" + id + "\">\n" + child.toXML("\t") + "\n</root>";
   }
 }
@@ -171,8 +152,7 @@ function CMWRootNode()
 CMWRootNode.prototype = new CMWNode();
 CMWRootNode.prototype.constructor = CMWRootNode;
 
-CMWRootNode.prototype.getRootNode = function ()
-{
+CMWRootNode.prototype.getRootNode = function () {
   return this;
 }
 
@@ -180,8 +160,7 @@ CMWRootNode.prototype.getRootNode = function ()
  * Empty close method that cna be overridden to any needs.  The method is
  * called by the last open window on closing.
  */
-CMWRootNode.prototype.close = function ()
-{
+CMWRootNode.prototype.close = function () {
   return;
 }
 
@@ -191,8 +170,7 @@ CMWRootNode.prototype.close = function ()
  * Horizontal split node
  */
 
-function CMWHSplitNode(child1, child2)
-{
+function CMWHSplitNode(child1, child2) {
   var self = this;
 
   var id = this.uniqueId();
@@ -224,18 +202,15 @@ function CMWHSplitNode(child1, child2)
 
   var widthRatio = 0.5;
 
-  this.getId = function ()
-  {
+  this.getId = function () {
     return id;
   }
 
-  this.getFrame = function ()
-  {
+  this.getFrame = function () {
     return frame;
   }
 
-  this.getParent = function ()
-  {
+  this.getParent = function () {
     return parent;
   }
 
@@ -245,30 +220,25 @@ function CMWHSplitNode(child1, child2)
    * @param {Object} newParent
    * @return former parent node
    */
-  this.setParent = function (newParent)
-  {
+  this.setParent = function (newParent) {
     var oldParent = parent;
     parent = newParent;
     return oldParent;
   }
 
-  this.getRootNode = function ()
-  {
+  this.getRootNode = function () {
     return parent.getRootNode();
   }
 
-  this.getChildren = function ()
-  {
+  this.getChildren = function () {
     return [child1, child2].concat(child1.getChildren()).concat(child2.getChildren());
   }
 
-  this.getWindows = function ()
-  {
+  this.getWindows = function () {
     return child1.getWindows().concat(child2.getWindows());
   }
 
-  this.redraw = function ()
-  {
+  this.redraw = function () {
     var f1 = child1.getFrame();
     var f2 = child2.getFrame();
     var w = self.getWidth();
@@ -285,8 +255,7 @@ function CMWHSplitNode(child1, child2)
     return self;
   }
 
-  this.changeWidth = function (d)
-  {
+  this.changeWidth = function (d) {
     var f1 = child1.getFrame();
     var f2 = child2.getFrame();
     var w = self.getWidth();
@@ -296,19 +265,16 @@ function CMWHSplitNode(child1, child2)
     return self.redraw();
   }
 
-  this.removeResizeHandle = function ()
-  {
+  this.removeResizeHandle = function () {
     return child1.getFrame().removeChild(resizeHandle.getView());
   }
 
-  this.replaceChild = function (newChild, oldChild)
-  {
+  this.replaceChild = function (newChild, oldChild) {
     if (oldChild == child1) return self.replaceLeftChild(newChild);
     else if (oldChild == child2) return self.replaceRightChild(newChild);
   }
 
-  this.replaceLeftChild = function (newChild)
-  {
+  this.replaceLeftChild = function (newChild) {
     var oldChild = child1;
     self.removeResizeHandle();
     if (newChild.getFrame().parentNode != null) newChild.getFrame().parentNode.removeChild(newChild.getFrame());
@@ -322,8 +288,7 @@ function CMWHSplitNode(child1, child2)
     return oldChild;
   }
 
-  this.replaceRightChild = function (newChild)
-  {
+  this.replaceRightChild = function (newChild) {
     var oldChild = child2;
     if (newChild.getFrame().parentNode != null) newChild.getFrame().parentNode.removeChild(newChild.getFrame());
     if (child2.getFrame().parentNode == frame) frame.replaceChild(newChild.getFrame(), child2.getFrame());
@@ -335,30 +300,26 @@ function CMWHSplitNode(child1, child2)
     return oldChild;
   }
 
-  this.getSiblingOf = function (child)
-  {
+  this.getSiblingOf = function (child) {
     if (child1 == child) return child2;
     else if (child2 == child) return child1;
     else
     return null;
   }
 
-  this.catchDrag = function ()
-  {
+  this.catchDrag = function () {
     child1.catchDrag();
     child2.catchDrag();
     return;
   }
 
-  this.releaseDrag = function ()
-  {
+  this.releaseDrag = function () {
     child1.releaseDrag();
     child2.releaseDrag();
     return;
   }
 
-  this.toXML = function (tabs)
-  {
+  this.toXML = function (tabs) {
     return tabs + "<hsplitnode id\"" + id + "\">\n" + child1.toXML(tabs + "\t") + "\n" + child2.toXML(tabs + "\t") + "\n" + tabs + "</hsplitnode>";
   }
 }
@@ -373,8 +334,7 @@ CMWHSplitNode.prototype.constructor = CMWHSplitNode;
  * Vertical split node.
  */
 
-function CMWVSplitNode(child1, child2)
-{
+function CMWVSplitNode(child1, child2) {
   var self = this;
 
   var id = this.uniqueId();
@@ -406,18 +366,15 @@ function CMWVSplitNode(child1, child2)
 
   var heightRatio = 0.5;
 
-  this.getId = function ()
-  {
+  this.getId = function () {
     return id;
   }
 
-  this.getFrame = function ()
-  {
+  this.getFrame = function () {
     return frame;
   }
 
-  this.getParent = function ()
-  {
+  this.getParent = function () {
     return parent;
   }
 
@@ -427,30 +384,25 @@ function CMWVSplitNode(child1, child2)
    * @param {Object} newParent
    * @return former parent node
    */
-  this.setParent = function (newParent)
-  {
+  this.setParent = function (newParent) {
     var oldParent = parent;
     parent = newParent;
     return oldParent;
   }
 
-  this.getRootNode = function ()
-  {
+  this.getRootNode = function () {
     return parent.getRootNode();
   }
 
-  this.getChildren = function ()
-  {
+  this.getChildren = function () {
     return [child1, child2].concat(child1.getChildren()).concat(child2.getChildren());
   }
 
-  this.getWindows = function ()
-  {
+  this.getWindows = function () {
     return child1.getWindows().concat(child2.getWindows());
   }
 
-  this.redraw = function ()
-  {
+  this.redraw = function () {
     var f1 = child1.getFrame();
     var f2 = child2.getFrame();
     var h = self.getHeight();
@@ -467,8 +419,7 @@ function CMWVSplitNode(child1, child2)
     return self;
   }
 
-  this.changeHeight = function (d)
-  {
+  this.changeHeight = function (d) {
     var f1 = child1.getFrame();
     var f2 = child2.getFrame();
     var h = self.getHeight();
@@ -478,19 +429,16 @@ function CMWVSplitNode(child1, child2)
     return self.redraw();
   }
 
-  this.removeResizeHandle = function ()
-  {
+  this.removeResizeHandle = function () {
     return child1.getFrame().removeChild(resizeHandle.getView());
   }
 
-  this.replaceChild = function (newChild, oldChild)
-  {
+  this.replaceChild = function (newChild, oldChild) {
     if (oldChild == child1) return self.replaceTopChild(newChild);
     else if (oldChild == child2) return self.replaceBottomChild(newChild);
   }
 
-  this.replaceTopChild = function (newChild)
-  {
+  this.replaceTopChild = function (newChild) {
     var oldChild = child1;
     self.removeResizeHandle();
     if (newChild.getFrame().parentNode != null) newChild.getFrame().parentNode.removeChild(newChild.getFrame());
@@ -504,8 +452,7 @@ function CMWVSplitNode(child1, child2)
     return oldChild;
   }
 
-  this.replaceBottomChild = function (newChild)
-  {
+  this.replaceBottomChild = function (newChild) {
     var oldChild = child2;
     if (newChild.getFrame().parentNode != null) newChild.getFrame().parentNode.removeChild(newChild.getFrame());
     if (child2.getFrame().parentNode == frame) frame.replaceChild(newChild.getFrame(), child2.getFrame());
@@ -517,30 +464,26 @@ function CMWVSplitNode(child1, child2)
     return oldChild;
   }
 
-  this.getSiblingOf = function (child)
-  {
+  this.getSiblingOf = function (child) {
     if (child1 == child) return child2;
     else if (child2 == child) return child1;
     else
     return null;
   }
 
-  this.catchDrag = function ()
-  {
+  this.catchDrag = function () {
     child1.catchDrag();
     child2.catchDrag();
     return;
   }
 
-  this.releaseDrag = function ()
-  {
+  this.releaseDrag = function () {
     child1.releaseDrag();
     child2.releaseDrag();
     return;
   }
 
-  this.toXML = function (tabs)
-  {
+  this.toXML = function (tabs) {
     return tabs + "<vsplitnode id\"" + id + "\">\n" + child1.toXML(tabs + "\t") + "\n" + child2.toXML(tabs + "\t") + "\n" + tabs + "</vsplitnode>";
   }
 }
@@ -554,8 +497,7 @@ CMWVSplitNode.prototype.constructor = CMWVSplitNode;
  * Window is leaf of the binary tree.
  */
 
-function CMWWindow(title)
-{
+function CMWWindow(title) {
   var self = this;
 
   /**
@@ -566,21 +508,17 @@ function CMWWindow(title)
    *
    * @param e
    */
-  this.close = function (e)
-  {
+  this.close = function (e) {
     if (e) e.stopPropagation();
     else if (event) event.cancelBubble = true;
 
     var root = self.getRootNode();
 
-    if (root == parent)
-    {
+    if (root == parent) {
       var rootFrame = root.getFrame();
       rootFrame.parentNode.removeChild(rootFrame);
       root.close();
-    }
-    else
-    {
+    } else {
       var sibling = parent.getSiblingOf(self);
       var siblingFrame = sibling.getFrame();
 
@@ -602,17 +540,14 @@ function CMWWindow(title)
     return false;
   }
 
-  this.hasFocus = function ()
-  {
+  this.hasFocus = function () {
     return frame.firstChild.className == "stackInfo_selected";
   }
 
-  this.focus = function ()
-  {
+  this.focus = function () {
     var root = self.getRootNode();
     var windows = root.getWindows();
-    for (var i = 0; i < windows.length; ++i)
-    {
+    for (var i = 0; i < windows.length; ++i) {
       var w = windows[i];
       w.getFrame().firstChild.className = "stackInfo";
       w.callListeners(CMWWindow.BLUR);
@@ -660,41 +595,34 @@ function CMWWindow(title)
 
   var listeners = new Array();
 
-  this.catchDrag = function ()
-  {
+  this.catchDrag = function () {
     eventCatcher.style.display = "block";
     return false;
   }
 
-  this.releaseDrag = function ()
-  {
+  this.releaseDrag = function () {
     eventCatcher.style.display = "none";
     return false;
   }
 
   frame.onmousedown = this.focus;
 
-  titleBar.onmousedown = function (e)
-  {
+  titleBar.onmousedown = function (e) {
     CMWWindow.selectedWindow = self;
     self.getRootNode().catchDrag();
     return false;
   }
 
-  eventCatcher.onmousemove = function (e)
-  {
-    if (self != CMWWindow.selectedWindow)
-    {
+  eventCatcher.onmousemove = function (e) {
+    if (self != CMWWindow.selectedWindow) {
       var m = ui.getMouse(e);
       var min = m.offsetY;
       var s = "Top";
-      if (m.offsetY > self.getHeight() / 2)
-      {
+      if (m.offsetY > self.getHeight() / 2) {
         min = self.getHeight() - m.offsetY;
         s = "Bottom";
       }
-      if (m.offsetX < min)
-      {
+      if (m.offsetX < min) {
         min = m.offsetX;
         s = "Left";
       }
@@ -705,16 +633,13 @@ function CMWWindow(title)
     return false;
   }
 
-  eventCatcher.onmouseout = function ()
-  {
+  eventCatcher.onmouseout = function () {
     eventCatcher.className = "eventCatcher";
     return false;
   }
 
-  eventCatcher.onmouseup = function (e)
-  {
-    if (!(CMWWindow.selectedWindow == self || eventCatcher.className == "eventCatcher"))
-    {
+  eventCatcher.onmouseup = function (e) {
+    if (!(CMWWindow.selectedWindow == self || eventCatcher.className == "eventCatcher")) {
       var sourceSplitNode = CMWWindow.selectedWindow.getParent();
       var sourceSibling = sourceSplitNode.getSiblingOf(CMWWindow.selectedWindow);
       var sourceSiblingFrame = sourceSibling.getFrame();
@@ -730,20 +655,13 @@ function CMWWindow(title)
       sourceSiblingFrame.style.width = selectedWindowFrame.style.width = frame.style.width = targetSiblingFrame.style.width = "";
       sourceSiblingFrame.style.height = selectedWindowFrame.style.height = frame.style.height = targetSiblingFrame.style.height = "";
 
-      if (eventCatcher.className == "eventCatcherTop")
-      {
+      if (eventCatcher.className == "eventCatcherTop") {
         parent.replaceChild(new CMWVSplitNode(CMWWindow.selectedWindow, self), self);
-      }
-      else if (eventCatcher.className == "eventCatcherBottom")
-      {
+      } else if (eventCatcher.className == "eventCatcherBottom") {
         parent.replaceChild(new CMWVSplitNode(self, CMWWindow.selectedWindow), self);
-      }
-      else if (eventCatcher.className == "eventCatcherLeft")
-      {
+      } else if (eventCatcher.className == "eventCatcherLeft") {
         parent.replaceChild(new CMWHSplitNode(CMWWindow.selectedWindow, self), self);
-      }
-      else if (eventCatcher.className == "eventCatcherRight")
-      {
+      } else if (eventCatcher.className == "eventCatcherRight") {
         parent.replaceChild(new CMWHSplitNode(self, CMWWindow.selectedWindow), self);
       }
     }
@@ -756,18 +674,14 @@ function CMWWindow(title)
     return false;
   }
 
-  this.addListener = function (listener)
-  {
+  this.addListener = function (listener) {
     listeners.push(listener);
     return;
   }
 
-  this.removeListener = function (listener)
-  {
-    for (var i = 0; i < listeners.length; ++i)
-    {
-      if (listeners[i] == listener)
-      {
+  this.removeListener = function (listener) {
+    for (var i = 0; i < listeners.length; ++i) {
+      if (listeners[i] == listener) {
         listeners.splice(i, 1);
         break;
       }
@@ -775,8 +689,7 @@ function CMWWindow(title)
     return;
   }
 
-  this.clearListeners = function ()
-  {
+  this.clearListeners = function () {
     delete listeners;
     listeners = new Array();
   }
@@ -787,33 +700,27 @@ function CMWWindow(title)
    *
    * @return {CMWWindow} this (allows chains of calls like myWindow.setTitle( "new" ).show())
    */
-  this.redraw = function ()
-  {
+  this.redraw = function () {
     return self.callListeners(self, CMWWindow.RESIZE);
   }
 
-  this.getId = function ()
-  {
+  this.getId = function () {
     return id;
   }
 
-  this.getFrame = function ()
-  {
+  this.getFrame = function () {
     return frame;
   }
 
-  this.getParent = function ()
-  {
+  this.getParent = function () {
     return parent;
   }
 
-  this.getTitle = function ()
-  {
+  this.getTitle = function () {
     return title;
   }
 
-  this.getSibling = function ()
-  {
+  this.getSibling = function () {
     return parent.getSiblingOf(self);
   }
 
@@ -823,20 +730,17 @@ function CMWWindow(title)
    * @param {Object} newParent
    * @return former parent node
    */
-  this.setParent = function (newParent)
-  {
+  this.setParent = function (newParent) {
     var oldParent = parent;
     parent = newParent;
     return oldParent;
   }
 
-  this.getChildren = function ()
-  {
+  this.getChildren = function () {
     return [];
   }
 
-  this.getWindows = function ()
-  {
+  this.getWindows = function () {
     return [self];
   }
 
@@ -846,8 +750,7 @@ function CMWWindow(title)
    * @param {String} title
    * @return {CMWWindow} this (allows chains of calls like myWindow.setTitle( "new" ).show())
    */
-  this.setTitle = function (newTitle)
-  {
+  this.setTitle = function (newTitle) {
     title = newTitle;
     titleText.replaceChild(document.createTextNode(title), titleText.firstChild);
     return self;
@@ -856,8 +759,7 @@ function CMWWindow(title)
   /**
    * @return root node
    */
-  this.getRootNode = function ()
-  {
+  this.getRootNode = function () {
     return parent.getRootNode();
   }
 
@@ -867,16 +769,14 @@ function CMWWindow(title)
    * @param {Number} signal one of the CMWWindow constants
    * @return {CMWWindow} this (allows chains of calls like myWindow.setTitle( "new" ).show())
    */
-  this.callListeners = function (signal)
-  {
+  this.callListeners = function (signal) {
     for (var i = 0; i < listeners.length; ++i)
     listeners[i](self, signal);
 
     return self;
   }
 
-  this.toXML = function (tabs)
-  {
+  this.toXML = function (tabs) {
     return tabs + "<window id\"" + id + "\" title=\"" + title + "\" />";
   }
 }
@@ -901,41 +801,33 @@ CMWWindow.BLUR = 3;
  *
  */
 
-function ResizeHandle(type, node)
-{
+function ResizeHandle(type, node) {
   /**
    * @return the html-element
    */
-  this.getView = function ()
-  {
+  this.getView = function () {
     return view;
   }
 
-  var onmousemove =
-  {
-    h: function (e)
-    {
+  var onmousemove = {
+    h: function (e) {
       node.changeWidth(ui.diffX);
       return false;
     },
-    v: function (e)
-    {
+    v: function (e) {
       node.changeHeight(ui.diffY);
       return false;
     }
   };
 
-  var onmouseup =
-  {
-    h: function (e)
-    {
+  var onmouseup = {
+    h: function (e) {
       ui.releaseEvents()
       ui.removeEvent("onmousemove", onmousemove.h);
       ui.removeEvent("onmouseup", onmouseup.h);
       return false;
     },
-    v: function (e)
-    {
+    v: function (e) {
       ui.releaseEvents()
       ui.removeEvent("onmousemove", onmousemove.v);
       ui.removeEvent("onmouseup", onmouseup.v);
@@ -943,10 +835,8 @@ function ResizeHandle(type, node)
     }
   };
 
-  var onmousedown =
-  {
-    h: function (e)
-    {
+  var onmousedown = {
+    h: function (e) {
       ui.registerEvent("onmousemove", onmousemove.h);
       ui.registerEvent("onmouseup", onmouseup.h);
       ui.catchEvents("e-resize");
@@ -955,8 +845,7 @@ function ResizeHandle(type, node)
 
       return false;
     },
-    v: function (e)
-    {
+    v: function (e) {
       ui.registerEvent("onmousemove", onmousemove.v);
       ui.registerEvent("onmouseup", onmouseup.v);
       ui.catchEvents("s-resize");

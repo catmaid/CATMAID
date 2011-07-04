@@ -25,13 +25,13 @@ if ( $pid )
     
     // relation ids
     $modof_id = $db->getRelationId( $pid, $modof );
-    if(!$modof_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$modof.'" relation for this project' ) ); return; }
+    if(!$modof_id) { echo makeJSON( array( 'error' => 'Can not find "'.$modof.'" relation for this project' ) ); return; }
 
     $eleof_id = $db->getRelationId( $pid, $eleof );
-    if(!$eleof_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$eleof.'" relation for this project' ) ); return; }
+    if(!$eleof_id) { echo makeJSON( array( 'error' => 'Can not find "'.$eleof.'" relation for this project' ) ); return; }
 
     $skid = $db->getClassId( $pid, "skeleton" );
-    if(!$skid) { echo makeJSON( array( '"error"' => 'Can not find "skeleton" class for this project' ) ); return; }
+    if(!$skid) { echo makeJSON( array( 'error' => 'Can not find "skeleton" class for this project' ) ); return; }
  
     // retrieve class_instances for the treenode, should only be one id
     //$ci_id = $db->getClassInstanceForTreenode( $pid, $tnid, 'model_of');
@@ -41,12 +41,12 @@ if ( $pid )
     // retrieve skeleton id
     $sk = $db->getClassInstanceForTreenode( $pid, $tnid, 'element_of');
     if(!empty($sk)) { $sk_id = $sk[0]['class_instance_id']; } else {
-      echo makeJSON( array( '"error"' => 'Can not find skeleton for this treenode.' ) ); return; }
+      echo makeJSON( array( 'error' => 'Can not find skeleton for this treenode.' ) ); return; }
 
     // retrieve neuron id of the skeleton
     $neu = $db->getCIFromCI( $pid, $sk_id, 'model_of' );
     if(!empty($neu)) { $neu_id = $neu[0]['id']; } else {
-      echo makeJSON( array( '"error"' => 'Can not find neuron for the skeleton.' ) ); return; }
+      echo makeJSON( array( 'error' => 'Can not find neuron for the skeleton.' ) ); return; }
       
     
     $childrentreenodes = $db->getTreenodeChildren( $pid, $tnid );

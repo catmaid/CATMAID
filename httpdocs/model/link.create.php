@@ -28,13 +28,13 @@ if ( $pid )
 
     // relation ids
     $link_type_ID = $db->getRelationId( $pid, $link_type);
-    if(!$link_type_ID)  { echo makeJSON( array( '"error"' => 'Can not find "'.$link_type.'" relation for this project' ) ); return; }
+    if(!$link_type_ID)  { echo makeJSON( array( 'error' => 'Can not find "'.$link_type.'" relation for this project' ) ); return; }
 
     $elementof_id = $db->getRelationId( $pid, 'element_of');
-    if(!$elementof_id)  { echo makeJSON( array( '"error"' => 'Can not find "element_of" relation for this project' ) ); return; }
+    if(!$elementof_id)  { echo makeJSON( array( 'error' => 'Can not find "element_of" relation for this project' ) ); return; }
     
     $partof_id = $db->getRelationId( $pid, 'part_of');
-    if(!$partof_id)  { echo makeJSON( array( '"error"' => 'Can not find "part_of" relation for this project' ) ); return; }
+    if(!$partof_id)  { echo makeJSON( array( 'error' => 'Can not find "part_of" relation for this project' ) ); return; }
 
     
     // case distinctions for links
@@ -71,7 +71,7 @@ if ( $pid )
             );
           $db->insertInto('class_instance_class_instance', $data );
         } else {
-          echo makeJSON( array( '"error"' => 'Can not find skeleton for this treenode.' ) ); return; }
+          echo makeJSON( array( 'error' => 'Can not find skeleton for this treenode.' ) ); return; }
 
       // connect the two
       $data = array(
@@ -116,7 +116,7 @@ if ( $pid )
             );
           $db->insertInto('class_instance_class_instance', $data );
         } else {
-          echo makeJSON( array( '"error"' => 'Can not find skeleton for this treenode.' ) ); return; }
+          echo makeJSON( array( 'error' => 'Can not find skeleton for this treenode.' ) ); return; }
 
       // connect the two, take care, it is
       // presynaptic terminal presynaptic_to synapse
@@ -131,7 +131,7 @@ if ( $pid )
       
     }
 
-    echo makeJSON( array( '"from_ci"' => $from_ci_id,
+    echo makeJSON( array( 'from_ci' => $from_ci_id,
                 '"to_ci"' => $to_ci_id,
                 ) );
 

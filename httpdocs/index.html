@@ -402,6 +402,10 @@
           <div class="stackInfo_selected" style="position:relative">
             <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
             <input type="button" id="add_current_to_3d_view" value="Add current skeleton to 3D view" onclick="project.addTo3DView();"/>
+            <p id="view3DIntroduction"></p>
+            <ul id="3d-view-object-list">
+            </ul>
+            <div id="3d-viewer-canvas" style="width: 500px; height: 500px"/>
             <div id="3d-viewer-buttons">
               <input id="xy-button" type="button" value="XY">
               <input id="xz-button" type="button" value="XZ">

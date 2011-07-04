@@ -21,7 +21,7 @@ if ( $pid )
   if ( $uid )
   {
     $eleof = $db->getRelationId( $pid, "element_of" );
-    if(!$eleof) { echo makeJSON( array( '"error"' => 'Can not find "element_of" relation for this project' ) ); return; }
+    if(!$eleof) { echo makeJSON( array( 'error' => 'Can not find "element_of" relation for this project' ) ); return; }
     
     // assume that target to is parent, so only have to set parent to from_id
     
@@ -30,18 +30,18 @@ if ( $pid )
        if(!empty($res)) {
           $skelid_from = $res[0]['class_instance_id'];
         } else {
-          echo makeJSON( array( '"error"' => 'Can not find skeleton for from-treenode.' ) ); return; }
+          echo makeJSON( array( 'error' => 'Can not find skeleton for from-treenode.' ) ); return; }
 
     // retrieve skeleton id of to_id treenode
        $res = $db->getClassInstanceForTreenode( $pid, $to_id, "element_of" );
        if(!empty($res)) {
           $skelid_to = $res[0]['class_instance_id'];
         } else {
-          echo makeJSON( array( '"error"' => 'Can not find skeleton for to-treenode.' ) ); return; }
+          echo makeJSON( array( 'error' => 'Can not find skeleton for to-treenode.' ) ); return; }
         
     // check if the skeletons are the same, send an error because we do not want to introduce loops
     if($skelid_from == $skelid_to) {
-        echo makeJSON( array( '"error"' => 'Please do not join treenodes of the same skeleton. This introduces loops.' ) ); return;
+        echo makeJSON( array( 'error' => 'Please do not join treenodes of the same skeleton. This introduces loops.' ) ); return;
     }
         
     // update element_of relationships of target skeleton
@@ -63,7 +63,7 @@ if ( $pid )
 
           
         } else {
-          echo makeJSON( array( '"error"' => 'Can not retrieve any treenodes for skeleton.' ) ); return; }
+          echo makeJSON( array( 'error' => 'Can not retrieve any treenodes for skeleton.' ) ); return; }
     */
     
     // remove skeleton of to_id (should delete part of to neuron by cascade, 

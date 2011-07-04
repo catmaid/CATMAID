@@ -24,15 +24,15 @@ if ( $pid )
   if ( $uid )
   {
     $cit_id = $db->getClassId( $pid, $ci_type );
-    if(!$cit_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$ci_type.'" class for this project' ) ); return; }
+    if(!$cit_id) { echo makeJSON( array( 'error' => 'Can not find "'.$ci_type.'" class for this project' ) ); return; }
     
     // relation ids
     $cir_id = $db->getRelationId( $pid, 'model_of' );
-    if(!$cir_id) { echo makeJSON( array( '"error"' => 'Can not find "model_of" relation for this project' ) ); return; }
+    if(!$cir_id) { echo makeJSON( array( 'error' => 'Can not find "model_of" relation for this project' ) ); return; }
 
     // for labels, only remove the relation
     $lab_id = $db->getRelationId( $pid, 'labeled_as' );
-    if(!$lab_id) { echo makeJSON( array( '"error"' => 'Can not find "labeled_as" relation for this project' ) ); return; }
+    if(!$lab_id) { echo makeJSON( array( 'error' => 'Can not find "labeled_as" relation for this project' ) ); return; }
        
     // retrieve class instance id
     $classin = $db->getResult('SELECT "cci"."class_instance_id" AS "id" FROM "connector_class_instance" AS "cci"
@@ -40,7 +40,7 @@ if ( $pid )
      "cci"."project_id" = '.$pid);
 
     if(!empty($classin)) { $classin_id = $classin[0]['id']; } else {
-      echo makeJSON( array( '"error"' => 'Can not find class_instance of "'.$ci_type.'" class for this project' ) );
+      echo makeJSON( array( 'error' => 'Can not find class_instance of "'.$ci_type.'" class for this project' ) );
       return;
     }
      
@@ -53,9 +53,9 @@ if ( $pid )
       
       // XXX: correct deletion of associated terminals
       $presyn_id = $db->getRelationId( $pid, "presynaptic_to" );
-      if(!$presyn_id) { echo makeJSON( array( '"error"' => 'Can not find "presynaptic_to" relation for this project' ) ); return; }
+      if(!$presyn_id) { echo makeJSON( array( 'error' => 'Can not find "presynaptic_to" relation for this project' ) ); return; }
       $postsyn_id = $db->getRelationId( $pid, "postsynaptic_to" );
-      if(!$postsyn_id) { echo makeJSON( array( '"error"' => 'Can not find "postsynaptic_to" relation for this project' ) ); return; }
+      if(!$postsyn_id) { echo makeJSON( array( 'error' => 'Can not find "postsynaptic_to" relation for this project' ) ); return; }
 
       // retrieve and delete pre and post terminal
       $conin = $db->getResult('SELECT "cici"."class_instance_a" AS "id" FROM "class_instance_class_instance" AS "cici"
@@ -82,13 +82,13 @@ if ( $pid )
 
           
     } else {
-      echo makeJSON( array( '"error"' => 'Can not delete. You are not the owner of the class_instance "'.$classin_id.'" for this project' ) );
+      echo makeJSON( array( 'error' => 'Can not delete. You are not the owner of the class_instance "'.$classin_id.'" for this project' ) );
       return;
     }
       
-    echo makeJSON( array( '"result"' => "Removed connector and class_instances",
-                '"connector_id"' => $cid,
-                '"class_instance_id"' => $classin_id
+    echo makeJSON( array( 'result' => "Removed connector and class_instances",
+                'connector_id' => $cid,
+                'class_instance_id' => $classin_id
                 ) );
 
   } 

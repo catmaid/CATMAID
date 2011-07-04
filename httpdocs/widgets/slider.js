@@ -23,34 +23,29 @@ max, //!< the maximal value
 steps, //!< number of steps or an array of values
 def, //!< default value
 onchange //!< method to call
-)
-{
+) {
   /**
    * returns the slider-element for insertion to the document
    */
-  this.getView = function ()
-  {
+  this.getView = function () {
     return view;
   }
 
   /**
    * returns the input-element for insertion to the document
    */
-  this.getInputView = function ()
-  {
+  this.getInputView = function () {
     return inputView;
   }
 
   /**
    * set a value by its index in the value array
    */
-  var setByIndex = function (i, cancelOnchange)
-  {
+  var setByIndex = function (i, cancelOnchange) {
     if (values.length > 1) handlePos = i / (values.length - 1) * barSize;
     else
     handlePos = 0;
-    switch (type)
-    {
+    switch (type) {
     case SLIDER_VERTICAL:
       barTop.style.height = (handlePos + handleTop) + "px";
       barBottom.style.height = (barSize - handlePos + handleBottom) + "px";
@@ -63,8 +58,7 @@ onchange //!< method to call
       break;
     }
     self.val = values[i];
-    if (input)
-    {
+    if (input) {
       input.value = self.val;
     }
     ind = i;
@@ -77,11 +71,9 @@ onchange //!< method to call
   /**
    * set a value, priorly check if it is in the value array
    */
-  this.setByValue = function (val, cancelOnchange)
-  {
+  this.setByValue = function (val, cancelOnchange) {
     var i = isValue(val);
-    if (i > -1)
-    {
+    if (i > -1) {
       setByIndex(i, cancelOnchange);
     }
     return;
@@ -90,15 +82,11 @@ onchange //!< method to call
   /**
    * set a value, priorly check if it is in the value array
    */
-  var setByInput = function (e)
-  {
+  var setByInput = function (e) {
     var i = isValue(this.value);
-    if (i > -1)
-    {
+    if (i > -1) {
       setByIndex(i);
-    }
-    else
-    {
+    } else {
       this.value = self.val;
     }
     return;
@@ -109,10 +97,8 @@ onchange //!< method to call
    *
    * @returns -1 if not, the index of the value otherwise
    */
-  var isValue = function (val)
-  {
-    for (var i = 0; i < values.length; ++i)
-    {
+  var isValue = function (val) {
+    for (var i = 0; i < values.length; ++i) {
       if (values[i] == val) return i;
     }
     return -1;
@@ -121,8 +107,7 @@ onchange //!< method to call
   /**
    * mouse button pressed on handle
    */
-  var handleMouseDown = function (e)
-  {
+  var handleMouseDown = function (e) {
     virtualHandlePos = handlePos;
 
     ui.registerEvent("onmousemove", handleMove);
@@ -137,8 +122,7 @@ onchange //!< method to call
   /**
    * mouse button released on handle (on the ui.mouseCatcher respectively)
    */
-  var handleMouseUp = function (e)
-  {
+  var handleMouseUp = function (e) {
     if (timer) window.clearTimeout(timer);
 
     ui.releaseEvents()
@@ -151,11 +135,9 @@ onchange //!< method to call
   /**
    * mouse moved on handle (on the mouseCatcher respectively)
    */
-  var handleMove = function (e)
-  {
+  var handleMove = function (e) {
     var md;
-    switch (type)
-    {
+    switch (type) {
     case SLIDER_VERTICAL:
       md = ui.diffY;
       break;
@@ -173,18 +155,13 @@ onchange //!< method to call
   /**
    * mouse wheel over slider, moves the slider step by step
    */
-  var mouseWheel = function (e)
-  {
+  var mouseWheel = function (e) {
     var w = ui.getMouseWheel(e);
-    if (w)
-    {
+    if (w) {
       if (type == SLIDER_HORIZONTAL) w *= -1;
-      if (w == MOUSE_WHEEL_UP)
-      {
+      if (w == MOUSE_WHEEL_UP) {
         setByIndex(Math.min(values.length - 1, ind + 1));
-      }
-      else
-      {
+      } else {
         setByIndex(Math.max(0, ind - 1));
       }
     }
@@ -194,8 +171,7 @@ onchange //!< method to call
   /**
    * decreases the index and invoke timeout
    */
-  var decrease = function ()
-  {
+  var decrease = function () {
     setByIndex(Math.max(0, ind - 1));
     timer = window.setTimeout(decrease, 250);
     return;
@@ -204,8 +180,7 @@ onchange //!< method to call
   /**
    * mouse down on the top bar, so move up, setting a timer
    */
-  var barTopMouseDown = function (e)
-  {
+  var barTopMouseDown = function (e) {
     if (timer) window.clearTimeout(timer);
 
     ui.registerEvent("onmouseup", barMouseUp);
@@ -220,8 +195,7 @@ onchange //!< method to call
   /**
    * increases the index and invoke timeout
    */
-  var increase = function ()
-  {
+  var increase = function () {
     setByIndex(Math.min(values.length - 1, ind + 1));
     timer = window.setTimeout(increase, 250);
     return;
@@ -230,8 +204,7 @@ onchange //!< method to call
   /**
    * mouse down on the top bar, so move up, setting a timer
    */
-  var barBottomMouseDown = function (e)
-  {
+  var barBottomMouseDown = function (e) {
     if (timer) window.clearTimeout(timer);
 
     ui.registerEvent("onmouseup", barMouseUp);
@@ -246,16 +219,14 @@ onchange //!< method to call
   /**
    * move the slider from outside
    */
-  this.move = function (i)
-  {
+  this.move = function (i) {
     setByIndex(Math.max(0, Math.min(values.length - 1, ind + i)));
   }
 
   /**
    * mouse up on the top  or bottom bar, so clear the timer
    */
-  var barMouseUp = function (e)
-  {
+  var barMouseUp = function (e) {
     if (timer) window.clearTimeout(timer);
 
     ui.releaseEvents()
@@ -267,11 +238,9 @@ onchange //!< method to call
   /**
    * resize the slider
    */
-  this.resize = function (newSize)
-  {
+  this.resize = function (newSize) {
     viewSize = Math.max(handleSize * 2, newSize - viewTop - viewBottom);
-    switch (type)
-    {
+    switch (type) {
     case SLIDER_VERTICAL:
       view.style.height = viewSize + "px";
       break;
@@ -292,31 +261,24 @@ onchange //!< method to call
   steps, //!< number of steps or an array of values
   def, //!< default value
   onchange //!< method to call
-  )
-  {
+  ) {
     this.onchange = onchange;
-    if ((typeof steps) == "number")
-    {
+    if ((typeof steps) == "number") {
       values = new Array();
       if (steps > 1) var s = (max - min) / (steps - 1);
       else
       var s = 0;
       for (var i = 0; i < steps; ++i)
       values[i] = i * s + min;
-    }
-    else if ((typeof steps) == "object")
-    {
+    } else if ((typeof steps) == "object") {
       values = steps;
       min = steps[0];
       max = steps[steps.length - 1];
     }
 
-    if ((typeof def) != "undefined")
-    {
+    if ((typeof def) != "undefined") {
       self.setByValue(def, true);
-    }
-    else
-    {
+    } else {
       self.setByValue(values[0], true);
     }
 
@@ -346,8 +308,7 @@ onchange //!< method to call
   barTop.onmousedown = barTopMouseDown;
   barBottom.onmousedown = barBottomMouseDown;
 
-  switch (type)
-  {
+  switch (type) {
   case SLIDER_VERTICAL:
     var viewSize = parseInt(getPropertyFromCssRules(2, 0, "height"));
     var viewTop = parseInt(getPropertyFromCssRules(2, 0, "marginTop"));
@@ -391,8 +352,7 @@ onchange //!< method to call
   view.appendChild(handle);
   view.appendChild(barBottom);
 
-  if (input)
-  {
+  if (input) {
     var name = uniqueId();
 
     inputView = document.createElement("p");
@@ -413,8 +373,7 @@ onchange //!< method to call
     area2.coords = "0,10,13,18";
     area2.alt = "-";
 
-    switch (type)
-    {
+    switch (type) {
     case SLIDER_HORIZONTAL:
       area1.onmousedown = barBottomMouseDown;
       area2.onmousedown = barTopMouseDown;
@@ -443,37 +402,23 @@ onchange //!< method to call
     inputView.style.display = "block";
 
     input.onchange = setByInput;
-    try
-    {
+    try {
       input.addEventListener("DOMMouseScroll", mouseWheel, false); /* Webkit takes the event but does not understand it ... */
       input.addEventListener("mousewheel", mouseWheel, false);
-    }
-    catch (error)
-    {
-      try
-      {
+    } catch (error) {
+      try {
         input.onmousewheel = mouseWheel;
-      }
-      catch (error)
-      {
-      }
+      } catch (error) {}
     }
   }
 
-  try
-  {
+  try {
     view.addEventListener("DOMMouseScroll", mouseWheel, false); /* Webkit takes the event but does not understand it ... */
     view.addEventListener("mousewheel", mouseWheel, false);
-  }
-  catch (error)
-  {
-    try
-    {
+  } catch (error) {
+    try {
       view.onmousewheel = mouseWheel;
-    }
-    catch (error)
-    {
-    }
+    } catch (error) {}
   }
 
   this.update(min, max, steps, def, onchange);

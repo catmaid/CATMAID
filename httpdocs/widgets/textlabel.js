@@ -21,32 +21,22 @@
 Textlabel = function (
 data, //!< content and properties of the textlabel
 resolution, //!< object {x, y, z} resolution of the parent DOM element in nanometer/pixel
-translation)
-{
-  this.getView = function ()
-  {
+translation) {
+  this.getView = function () {
     return view;
   }
 
-  var getContext = function ()
-  {
-    if (!ctx)
-    {
-      try
-      {
-        if (canvas.getContext)
-        {
+  var getContext = function () {
+    if (!ctx) {
+      try {
+        if (canvas.getContext) {
           ctx = canvas.getContext("2d");
-        }
-        else if (G_vmlCanvasManager) //!< it could be an IE and we try to initialize the element first
+        } else if (G_vmlCanvasManager) //!< it could be an IE and we try to initialize the element first
         {
           canvas = G_vmlCanvasManager.initElement(canvas);
           ctx = canvas.getContext("2d");
         }
-      }
-      catch (e)
-      {
-      }
+      } catch (e) {}
     }
     return ctx;
   }
@@ -57,8 +47,7 @@ translation)
   s, //!< scale factor to be applied to resolution [and fontsize]
   pw, //!< int optional width of the parent DOM element in pixel
   ph //!< int optional height of the parent DOM element in pixel
-  )
-  {
+  ) {
     parentLeft = pl;
     parentTop = pt;
     scale = s;
@@ -89,8 +78,7 @@ translation)
     textArea.style.width = boxWidth + "px";
     textArea.style.height = boxHeight + "px";
 
-    switch (self.type)
-    {
+    switch (self.type) {
     case "text":
 
       view.style.left = (x - boxWidth / 2) + "px";
@@ -99,34 +87,26 @@ translation)
       break;
     case "bubble":
 
-      if (self.offset.left)
-      {
+      if (self.offset.left) {
         target_x = -self.offset.left / rx;
         x -= target_x;
-      }
-      else if (self.offset.right)
-      {
+      } else if (self.offset.right) {
         target_x = boxWidth + self.offset.right / rx;
         x -= target_x;
       }
-      if (self.offset.top)
-      {
+      if (self.offset.top) {
         target_y = -self.offset.top / ry;
         y -= target_y;
-      }
-      else if (self.offset.bottom)
-      {
+      } else if (self.offset.bottom) {
         target_y = boxHeight + self.offset.bottom / ry;
         y -= target_y;
       }
 
-      if (target_x < 0)
-      {
+      if (target_x < 0) {
         offset_x = -target_x;
         target_x = 0;
       }
-      if (target_y < 0)
-      {
+      if (target_y < 0) {
         offset_y = -target_y;
         target_y = 0;
       }
@@ -136,8 +116,7 @@ translation)
       canvas.style.top = -offset_y + "px";
 
       var ctx = getContext();
-      if (ctx)
-      {
+      if (ctx) {
         view.className = "textlabelView";
 
         var dir_x = (target_x < boxWidth / 2 ? 1 : 3) * boxWidth / 4 + offset_x - target_x;
@@ -151,14 +130,11 @@ translation)
 
         ctx.strokeStyle = "rgb(0,0,255)";
 
-        if (IE)
-        {
+        if (IE) {
           ctx.fillStyle = "rgb(255,255,255)";
           ctx.lineWidth = 2;
           ctx.strokeRect(1 + offset_x, 1 + offset_y, boxWidth - 1, boxHeight - 1);
-        }
-        else
-        {
+        } else {
           ctx.fillStyle = "rgba(255,255,255,0.85)";
           ctx.strokeRect(0.5 + offset_x, 0.5 + offset_y, boxWidth, boxHeight);
           ctx.lineWidth = 1.5;
@@ -180,9 +156,7 @@ translation)
 
         view.style.left = x + "px";
         view.style.top = y + "px";
-      }
-      else
-      {
+      } else {
         view.className = "textlabelView_nocanvas";
 
         view.style.left = (x + target_x - boxWidth / 2) + "px";
@@ -194,19 +168,15 @@ translation)
     return;
   }
 
-  this.setEditable = function (e)
-  {
+  this.setEditable = function (e) {
     edit = e;
-    if (e)
-    {
+    if (e) {
       textBox.style.visibility = "hidden";
       textArea.style.display = "block";
       view.style.zIndex = 5;
       moveHandle.style.display = "block";
       closeHandle.style.display = "block";
-    }
-    else
-    {
+    } else {
       textBox.style.visibility = "visible";
       textArea.style.display = "none";
       view.style.zIndex = "";
@@ -216,8 +186,7 @@ translation)
     return;
   }
 
-  var synchText = function (e)
-  {
+  var synchText = function (e) {
     self.text = textArea.value;
     textBox.replaceChild(document.createTextNode(self.text), textBox.firstChild);
 
@@ -227,8 +196,7 @@ translation)
     return true;
   }
 
-  var apply = function (e)
-  {
+  var apply = function (e) {
     icon_apply.style.display = "block";
     requestQueue.replace("model/textlabel.update.php", "POST", {
       pid: project.id,
@@ -248,21 +216,14 @@ translation)
       fontname: self.fontName,
       offset_left: self.offset.left,
       offset_top: self.offset.top
-    }, function (status, text, xml)
-    {
-      if (status == 200)
-      {
+    }, function (status, text, xml) {
+      if (status == 200) {
         icon_apply.style.display = "none";
-        if (text && text != " ")
-        {
+        if (text && text != " ") {
           var e = eval("(" + text + ")");
-          if (e.error)
-          {
+          if (e.error) {
             alert(e.error);
-          }
-          else
-          {
-          }
+          } else {}
         }
       }
       return true;
@@ -270,8 +231,7 @@ translation)
     return;
   }
 
-  var close = function (e)
-  {
+  var close = function (e) {
     icon_apply.style.display = "block";
 
     requestQueue.register('model/textlabel.delete.php', 'POST', {
@@ -280,23 +240,16 @@ translation)
       x: self.location.x,
       y: self.location.y,
       z: self.location.z
-    }, function (status, text, xml)
-    {
+    }, function (status, text, xml) {
       statusBar.replaceLast(text);
 
-      if (status == 200)
-      {
+      if (status == 200) {
         project.focusedStack.updateTextlabels();
-        if (text && text != " ")
-        {
+        if (text && text != " ") {
           var e = eval("(" + text + ")");
-          if (e.error)
-          {
+          if (e.error) {
             alert(e.error);
-          }
-          else
-          {
-          }
+          } else {}
         }
       }
       return true;
@@ -307,12 +260,10 @@ translation)
   /**
    * onchange handler for the font size input element
    */
-  var changeSize = function (e)
-  {
+  var changeSize = function (e) {
     var val = parseInt(this.value);
     if (isNaN(val) || val < 5) this.value = self.fontSize;
-    else
-    {
+    else {
       self.fontSize = val;
       apply();
       self.redraw(
@@ -324,12 +275,10 @@ translation)
   /**
    * onchange handler for the red colour input element
    */
-  var changeColourRed = function (e)
-  {
+  var changeColourRed = function (e) {
     var val = parseInt(this.value);
     if (isNaN(val) || val < 0 || val > 255) this.value = self.colour.r;
-    else
-    {
+    else {
       self.colour.r = val;
       apply();
       textBox.style.color = textArea.style.color = "rgb(" + self.colour.r + "," + self.colour.g + "," + self.colour.b + ")";
@@ -340,12 +289,10 @@ translation)
   /**
    * onchange handler for the green colour input element
    */
-  var changeColourGreen = function (e)
-  {
+  var changeColourGreen = function (e) {
     var val = parseInt(this.value);
     if (isNaN(val) || val < 0 || val > 255) this.value = self.colour.g;
-    else
-    {
+    else {
       self.colour.g = val;
       apply();
       textBox.style.color = textArea.style.color = "rgb(" + self.colour.r + "," + self.colour.g + "," + self.colour.b + ")";
@@ -356,12 +303,10 @@ translation)
   /**
    * onchange handler for the blue colour input element
    */
-  var changeColourBlue = function (e)
-  {
+  var changeColourBlue = function (e) {
     var val = parseInt(this.value);
     if (isNaN(val) || val < 0 || val > 255) this.value = self.colour.b;
-    else
-    {
+    else {
       self.colour.b = val;
       apply();
       textBox.style.color = textArea.style.color = "rgb(" + self.colour.r + "," + self.colour.g + "," + self.colour.b + ")";
@@ -373,8 +318,7 @@ translation)
   /**
    * bind all input elements
    */
-  this.register = function (e)
-  {
+  this.register = function (e) {
     input_size.onchange = changeSize;
     input_size.value = self.fontSize;
 
@@ -385,8 +329,7 @@ translation)
     input_colour_blue.onchange = changeColourBlue;
     input_colour_blue.value = self.colour.b;
 
-    checkbox_fontstyle_bold.onchange = function (e)
-    {
+    checkbox_fontstyle_bold.onchange = function (e) {
       if (this.checked) self.fontStyle = "bold";
       else self.fontStyle = "";
       apply();
@@ -397,8 +340,7 @@ translation)
     };
     checkbox_fontstyle_bold.checked = self.fontStyle == "bold";
 
-    checkbox_scaling.onchange = function (e)
-    {
+    checkbox_scaling.onchange = function (e) {
       if (this.checked) self.scaling = true;
       else self.scaling = false;
       apply();
@@ -415,10 +357,8 @@ translation)
   /**
    * unbind all input elements
    */
-  this.unregister = function (e)
-  {
-    input_size.onchange = function (e)
-    {
+  this.unregister = function (e) {
+    input_size.onchange = function (e) {
       var val = parseInt(this.value);
       if (isNaN(val) || val < 5) this.value = 5;
       return true;
@@ -426,8 +366,7 @@ translation)
 
     input_colour_red.onchange =
     input_colour_green.onchange =
-    input_colour_blue.onchange = function (e)
-    {
+    input_colour_blue.onchange = function (e) {
       var val = parseInt(this.value);
       if (isNaN(val) || val < 0) this.value = 0;
       else if (val > 255) this.value = 255;
@@ -435,16 +374,14 @@ translation)
     };
 
     checkbox_fontstyle_bold.onchange =
-    checkbox_scaling.onchange = function (e)
-    {
+    checkbox_scaling.onchange = function (e) {
       return true;
     };
     //button_apply.onclick = apply;
     return true;
   }
 
-  var movemousemove = function (e)
-  {
+  var movemousemove = function (e) {
     self.location.x += ui.diffX / scale * resolution.x;
     self.location.y += ui.diffY / scale * resolution.y;
     self.redraw(
@@ -452,8 +389,7 @@ translation)
     return false;
   }
 
-  var movemouseup = function (e)
-  {
+  var movemouseup = function (e) {
     apply();
     ui.releaseEvents()
     ui.removeEvent("onmousemove", movemousemove);
@@ -461,8 +397,7 @@ translation)
     return false;
   }
 
-  var movemousedown = function (e)
-  {
+  var movemousedown = function (e) {
     self.register(e);
 
     ui.registerEvent("onmousemove", movemousemove);
@@ -476,17 +411,14 @@ translation)
     return false;
   }
 
-  var closemousedown = function (e)
-  {
+  var closemousedown = function (e) {
     // prevent possible call of apply() onblur
     textArea.onblur = null;
 
-    if (confirm("Do you really want to remove this textlabel?"))
-    {
+    if (confirm("Do you really want to remove this textlabel?")) {
       self.unregister(e);
       close();
-    }
-    else
+    } else
     textArea.onblur = apply;
 
     //! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
@@ -560,8 +492,7 @@ translation)
 
   var canvas; //! canvas based drawing area
   var ctx; //!< 2d drawing context
-  if (self.type == "bubble")
-  {
+  if (self.type == "bubble") {
     canvas = document.createElement("canvas");
     view.appendChild(canvas);
   }

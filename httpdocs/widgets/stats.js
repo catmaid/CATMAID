@@ -1,8 +1,7 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-function update_stats_fields(data)
-{
+function update_stats_fields(data) {
   $("#proj_users").text(data.proj_users);
   $("#proj_neurons").text(data.proj_neurons);
   $("#proj_synapses").text(data.proj_synapses);
@@ -58,8 +57,9 @@ function refresh_project_statistics()
           }
         }
       }
-      return true;
-    });
+    }
+    return true;
+  });
 
   requestQueue.register("model/stats.treenodes.list.php", "POST", {
     "pid": project.id
@@ -85,13 +85,10 @@ function refresh_project_statistics()
 
 }
 
-initProjectStats = function ()
-{
+initProjectStats = function () {
 
-  $("#refresh_stats").click(function ()
-  {
+  $("#refresh_stats").click(function () {
     refresh_project_statistics();
   });
 
-
-}
+};

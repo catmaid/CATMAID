@@ -9,21 +9,18 @@
  * a [ nested ] pulldown menu
  *
  */
-Menu = function ()
-{
+Menu = function () {
   /**
    * returns the html-element
    */
-  this.getView = function ()
-  {
+  this.getView = function () {
     return view;
   }
 
   /**
    * get a pulldown-menu by it's title
    */
-  this.getPulldown = function (title)
-  {
+  this.getPulldown = function (title) {
     return pulldowns[title];
   }
 
@@ -32,40 +29,31 @@ Menu = function ()
    */
   this.update = function (
   content //!< object menu content
-  )
-  {
+  ) {
     if (view.firstChild) view.removeChild(view.firstChild);
     delete pulldowns;
     pulldowns = new Object();
     var table = document.createElement("table");
-    for (var key in content)
-    {
+    for (var key in content) {
       var row = table.insertRow(-1);
       row.className = "menu_item";
-      if (typeof content[key].action == "object")
-      {
-        row.onmouseover = function (e)
-        {
+      if (typeof content[key].action == "object") {
+        row.onmouseover = function (e) {
           if (this.className == "menu_item") this.className = "menu_item_hover";
           this.cells[0].firstChild.lastChild.style.display = "block";
           return false;
         }
-        row.onmouseout = function (e)
-        {
+        row.onmouseout = function (e) {
           if (this.className == "menu_item_hover") this.className = "menu_item";
           this.cells[0].firstChild.lastChild.style.display = "none";
           return false;
         }
-      }
-      else
-      {
-        row.onmouseover = function (e)
-        {
+      } else {
+        row.onmouseover = function (e) {
           if (this.className == "menu_item") this.className = "menu_item_hover";
           return false;
         }
-        row.onmouseout = function (e)
-        {
+        row.onmouseout = function (e) {
           if (this.className == "menu_item_hover") this.className = "menu_item";
           return false;
         }
@@ -89,8 +77,7 @@ Menu = function ()
       d.appendChild(document.createElement("p"));
       d.firstChild.appendChild(a);
 
-      switch (typeof content[key].action)
-      {
+      switch (typeof content[key].action) {
       case "function":
         a.onclick = content[key].action;
         break;

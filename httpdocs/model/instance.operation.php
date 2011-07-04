@@ -64,7 +64,7 @@ if ( $pid )
 		if ( $op == 'rename_node')
 		{
 			$ids = $db->update("class_instance", array("name" => $name) ,' "class_instance"."id" = '.$id);
-			echo makeJSON( array( '"class_instance_id"' => $ids) );
+			echo makeJSON( array( 'class_instance_id' => $ids) );
 		}
 		else if ( $op == 'remove_node')
 		{
@@ -152,7 +152,7 @@ if ( $pid )
 						 'class_instance_b' => $parid);
 			$db->insertInto( "class_instance_class_instance", $ins);
 			
-			echo makeJSON( array( '"class_instance_id"' => $cid) );
+			echo makeJSON( array( 'class_instance_id' => $cid) );
 			
 		}
 		else if ( $op == 'move_node' )

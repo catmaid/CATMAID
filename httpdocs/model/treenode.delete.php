@@ -20,17 +20,17 @@ if ( $pid )
 	{
 
 		$modof_id = $db->getRelationId( $pid, 'model_of' );
-		if(!$modof_id) { echo makeJSON( array( '"error"' => 'Can not find "model_of" relation for this project' ) ); return; }
+		if(!$modof_id) { echo makeJSON( array( 'error' => 'Can not find "model_of" relation for this project' ) ); return; }
 
 		$eleof_id = $db->getRelationId( $pid, 'element_of' );
-		if(!$eleof_id) { echo makeJSON( array( '"error"' => 'Can not find "element_of" relation for this project' ) ); return; }
+		if(!$eleof_id) { echo makeJSON( array( 'error' => 'Can not find "element_of" relation for this project' ) ); return; }
 
 		// for labels, only remove the relation
 		$lab_id = $db->getRelationId( $pid, 'labeled_as' );
-		if(!$lab_id) { echo makeJSON( array( '"error"' => 'Can not find "labeled_as" relation for this project' ) ); return; }
+		if(!$lab_id) { echo makeJSON( array( 'error' => 'Can not find "labeled_as" relation for this project' ) ); return; }
 
 		$skid = $db->getClassId( $pid, "skeleton" );
-		if(!$skid) { echo makeJSON( array( '"error"' => 'Can not find "skeleton" class for this project' ) ); return; }
+		if(!$skid) { echo makeJSON( array( 'error' => 'Can not find "skeleton" class for this project' ) ); return; }
 
 		if ( $tnid != -1 ) 
 		{
@@ -46,11 +46,11 @@ if ( $pid )
 
 				$sk = $db->getClassInstanceForTreenode( $pid, $tnid, 'element_of');
 				if(!empty($sk)) { $sk_id = $sk[0]['class_instance_id']; } else {
-				echo makeJSON( array( '"error"' => 'Can not find skeleton for this treenode.' ) ); return; }
+				echo makeJSON( array( 'error' => 'Can not find skeleton for this treenode.' ) ); return; }
 
 				$neu = $db->getCIFromCI( $pid, $sk_id, 'model_of' );
 				if(!empty($neu)) { $neu_id = $neu[0]['id']; } else {
-				echo makeJSON( array( '"error"' => 'Can not find neuron for the skeleton.' ) ); return; }
+				echo makeJSON( array( 'error' => 'Can not find neuron for the skeleton.' ) ); return; }
 
 				// loop over all children
 				$treenodes = $db->getResult('SELECT "treenode"."id" AS "tnid" FROM "treenode" WHERE "treenode"."parent_id" = '.$tnid);

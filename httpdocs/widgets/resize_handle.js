@@ -9,43 +9,35 @@
  * a vertical or horizontal resize handle
  *
  */
-ResizeHandle = function (type)
-{
+ResizeHandle = function (type) {
   /**
    * returns the html-element
    */
-  this.getView = function ()
-  {
+  this.getView = function () {
     return view;
   }
 
-  var onmousemove =
-  {
-    h: function (e)
-    {
+  var onmousemove = {
+    h: function (e) {
       view.parentNode.style.width = Math.max(24, view.parentNode.offsetWidth + ui.diffX) + "px";
       ui.onresize(e);
       return false;
     },
-    v: function (e)
-    {
+    v: function (e) {
       view.parentNode.style.height = Math.max(24, view.parentNode.offsetHeight + ui.diffY) + "px";
       ui.onresize(e);
       return false;
     }
   };
 
-  var onmouseup =
-  {
-    h: function (e)
-    {
+  var onmouseup = {
+    h: function (e) {
       ui.releaseEvents()
       ui.removeEvent("onmousemove", onmousemove.h);
       ui.removeEvent("onmouseup", onmouseup.h);
       return false;
     },
-    v: function (e)
-    {
+    v: function (e) {
       ui.releaseEvents()
       ui.removeEvent("onmousemove", onmousemove.v);
       ui.removeEvent("onmouseup", onmouseup.v);
@@ -53,10 +45,8 @@ ResizeHandle = function (type)
     }
   };
 
-  var onmousedown =
-  {
-    h: function (e)
-    {
+  var onmousedown = {
+    h: function (e) {
       ui.registerEvent("onmousemove", onmousemove.h);
       ui.registerEvent("onmouseup", onmouseup.h);
       ui.catchEvents("e-resize");
@@ -67,8 +57,7 @@ ResizeHandle = function (type)
 
       return false;
     },
-    v: function (e)
-    {
+    v: function (e) {
       ui.registerEvent("onmousemove", onmousemove.v);
       ui.registerEvent("onmouseup", onmouseup.v);
       ui.catchEvents("s-resize");

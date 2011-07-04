@@ -33,65 +33,54 @@ x, //!< float edge.x
 y, //!< float edge.y
 xb, //!< before
 yb, xa, //!< after
-ya)
-{
+ya) {
   var self = this;
   this.setType = function (
   t, //!< string type {CK_CORNER, CK_CUSP, CK_LINE_BEFORE, CK_LINE_AFTER, CK_ASYMMETRIC, CK_SYMMETRIC}
   kb, //!< the key before the current one, if available
   ka //!< the key after the current one, if available
-  )
-  {
-    switch (t)
-    {
+  ) {
+    switch (t) {
     case CK_CORNER:
       type = t;
-      self.before =
-      {
+      self.before = {
         x: self.key.x,
         y: self.key.y
       };
-      self.after =
-      {
+      self.after = {
         x: self.key.x,
         y: self.key.y
       };
       break;
     case CK_CUSP:
       type = t;
-      if (self.before.x == self.key.x && self.before.y == self.key.y) if (kb)
-      {
+      if (self.before.x == self.key.x && self.before.y == self.key.y) if (kb) {
         self.before.x = self.key.x - (self.key.x - kb.after.x) / 2;
         self.before.y = self.key.y - (self.key.y - kb.after.y) / 2;
       }
-      if (self.after.x == self.key.x && self.after.y == self.key.y) if (ka)
-      {
+      if (self.after.x == self.key.x && self.after.y == self.key.y) if (ka) {
         self.after.x = self.key.x + (ka.before.x - self.key.x) / 2;
         self.after.y = self.key.y + (ka.before.y - self.key.y) / 2;
       }
       break;
     case CK_LINE_BEFORE:
       type = t;
-      self.before =
-      {
+      self.before = {
         x: self.key.x,
         y: self.key.y
       };
-      if (self.after.x == self.key.x && self.after.y == self.key.y) if (ka)
-      {
+      if (self.after.x == self.key.x && self.after.y == self.key.y) if (ka) {
         self.after.x = self.key.x + (ka.before.x - self.key.x) / 2;
         self.after.y = self.key.y + (ka.before.y - self.key.y) / 2;
       }
       break;
     case CK_LINE_AFTER:
       type = t;
-      self.after =
-      {
+      self.after = {
         x: self.key.x,
         y: self.key.y
       };
-      if (self.before.x == self.key.x && self.before.y == self.key.y) if (kb)
-      {
+      if (self.before.x == self.key.x && self.before.y == self.key.y) if (kb) {
         self.before.x = self.key.x - (self.key.x - kb.after.x) / 2;
         self.before.y = self.key.y - (self.key.y - kb.after.y) / 2;
       }
@@ -99,17 +88,14 @@ ya)
     case CK_ASYMMETRIC:
     case CK_SYMMETRIC:
       type = t;
-      if (kb && ka)
-      {
+      if (kb && ka) {
         var dx = (ka.x - kb.x) / 2;
         var dy = (ka.y - kb.y) / 2;
-        self.before =
-        {
+        self.before = {
           x: self.key.x - dx,
           y: self.key.y - dy
         };
-        self.after =
-        {
+        self.after = {
           x: self.key.x + dx,
           y: self.key.y + dy
         };
@@ -119,25 +105,20 @@ ya)
     return;
   }
 
-  this.getType = function ()
-  {
+  this.getType = function () {
     return type;
   }
 
-  this.min = function ()
-  {
-    var m =
-    {
+  this.min = function () {
+    var m = {
       x: Math.min(Math.min(self.key.x, self.before.x), self.after.x),
       y: Math.min(Math.min(self.key.y, self.before.y), self.after.y)
     };
     return m;
   }
 
-  this.max = function ()
-  {
-    var m =
-    {
+  this.max = function () {
+    var m = {
       x: Math.max(Math.max(self.key.x, self.before.x), self.after.x),
       y: Math.max(Math.max(self.key.y, self.before.y), self.after.y)
     };
@@ -147,8 +128,7 @@ ya)
   /**
    * move the key and its handles
    */
-  this.moveKey = function (dx, dy)
-  {
+  this.moveKey = function (dx, dy) {
     self.key.x = self.key.x + dx;
     self.key.y = self.key.y + dy;
 
@@ -162,12 +142,10 @@ ya)
   /**
    * move the before node
    */
-  this.moveBefore = function (dx, dy)
-  {
+  this.moveBefore = function (dx, dy) {
     self.before.x = self.before.x + dx;
     self.before.y = self.before.y + dy;
-    switch (type)
-    {
+    switch (type) {
     case CK_SYMMETRIC:
       self.after.x = 2 * self.key.x - self.before.x;
       self.after.y = 2 * self.key.y - self.before.y;
@@ -188,12 +166,10 @@ ya)
   /**
    * move the after node
    */
-  this.moveAfter = function (dx, dy)
-  {
+  this.moveAfter = function (dx, dy) {
     self.after.x = self.after.x + dx;
     self.after.y = self.after.y + dy;
-    switch (type)
-    {
+    switch (type) {
     case CK_SYMMETRIC:
       self.before.x = 2 * self.key.x - self.after.x;
       self.before.y = 2 * self.key.y - self.after.y;
@@ -214,18 +190,15 @@ ya)
 
   // initialise all members
   var type;
-  this.key =
-  {
+  this.key = {
     x: x,
     y: y
   };
-  this.before =
-  {
+  this.before = {
     x: xb,
     y: yb
   };
-  this.after =
-  {
+  this.after = {
     x: xa,
     y: ya
   };
@@ -240,27 +213,18 @@ ya)
  * a profile is a closed bezier curve
  */
 
-function Profile()
-{
-  var getContext = function ()
-  {
-    if (!ctx)
-    {
-      try
-      {
-        if (canvas.getContext)
-        {
+function Profile() {
+  var getContext = function () {
+    if (!ctx) {
+      try {
+        if (canvas.getContext) {
           ctx = canvas.getContext("2d");
-        }
-        else if (G_vmlCanvasManager) //!< it could be an IE and we try to initialize the element first
+        } else if (G_vmlCanvasManager) //!< it could be an IE and we try to initialize the element first
         {
           canvas = G_vmlCanvasManager.initElement(canvas);
           ctx = canvas.getContext("2d");
         }
-      }
-      catch (e)
-      {
-      }
+      } catch (e) {}
     }
     return ctx;
   }
@@ -268,8 +232,7 @@ function Profile()
   /**
    * get the view object
    */
-  this.getView = function ()
-  {
+  this.getView = function () {
     return view;
   }
 
@@ -277,12 +240,10 @@ function Profile()
    * get the bounding box of the profile
    * take care, that there are some points ...
    */
-  var boundingBox = function ()
-  {
+  var boundingBox = function () {
     min = keys[0].min();
     max = keys[0].max();
-    for (i = 1; i < keys.length; ++i)
-    {
+    for (i = 1; i < keys.length; ++i) {
       var m = keys[i].min();
       min.x = Math.min(m.x, min.x);
       min.y = Math.min(m.y, min.y);
@@ -309,8 +270,7 @@ function Profile()
    *
    * @return boolean
    */
-  this.isInside = function (x, y)
-  {
+  this.isInside = function (x, y) {
     return (
     x >= min.x && x <= max.x && y >= min.y && y <= max.y);
   }
@@ -319,22 +279,19 @@ function Profile()
    * update the screen context
    * top, left, width, heigth and scale in world coordinates
    */
-  this.updateScreen = function (l)
-  {
+  this.updateScreen = function (l) {
     screen = l;
     boundingBox();
     return;
   }
 
-  this.clearCanvas = function ()
-  {
+  this.clearCanvas = function () {
     var ctx = getContext();
     if (ctx) ctx.clearRect(0, 0, max.x - min.x, max.y - min.y);
     return;
   }
 
-  this.place = function ()
-  {
+  this.place = function () {
     view.style.top = Math.floor((min.y - screen.y) * screen.scale) + "px";
     view.style.left = Math.floor((min.x - screen.x) * screen.scale) + "px";
     return;
@@ -343,11 +300,9 @@ function Profile()
   /**
    * draw the profile using all bezier points
    */
-  this.draw = function ()
-  {
+  this.draw = function () {
     var ctx = getContext();
-    if (ctx)
-    {
+    if (ctx) {
       ctx.fillStyle = "rgba(255,128,0,0.75)";
 
       ctx.beginPath();
@@ -355,8 +310,7 @@ function Profile()
       screen.scale * (keys[0].key.x - min.x), screen.scale * (keys[0].key.y - min.y));
       var i;
       var n = keys.length;
-      for (i = 1; i < n; ++i)
-      {
+      for (i = 1; i < n; ++i) {
         var p1 = keys[i - 1].after;
         var p2 = keys[i].before;
         var p3 = keys[i].key;
@@ -381,11 +335,9 @@ function Profile()
   /**
    * draw the profiles outline using all bezier points
    */
-  this.drawOutline = function ()
-  {
+  this.drawOutline = function () {
     var ctx = getContext();
-    if (ctx)
-    {
+    if (ctx) {
       ctx.strokeStyle = "rgba(255,128,0,0.75)";
       ctx.lineWidth = 4;
 
@@ -394,8 +346,7 @@ function Profile()
       screen.scale * (keys[0].key.x - min.x), screen.scale * (keys[0].key.y - min.y));
       var i;
       var n = keys.length;
-      for (i = 1; i < n; ++i)
-      {
+      for (i = 1; i < n; ++i) {
         var p1 = keys[i - 1].after;
         var p2 = keys[i].before;
         var p3 = keys[i].key;
@@ -420,16 +371,13 @@ function Profile()
   /**
    * draw the handles of all bezier points
    */
-  this.drawHandles = function ()
-  {
+  this.drawHandles = function () {
     var ctx = getContext();
-    if (ctx)
-    {
+    if (ctx) {
       ctx.strokeStyle = "rgb(0,0,255)";
       ctx.lineWidth = 0.5;
       var n = keys.length;
-      for (var i = 0; i < n; ++i)
-      {
+      for (var i = 0; i < n; ++i) {
         var p1x = (keys[i].before.x - min.x) * screen.scale;
         var p1y = (keys[i].before.y - min.y) * screen.scale;
         var p2x = (keys[i].key.x - min.x) * screen.scale;
@@ -438,8 +386,7 @@ function Profile()
         var p3y = (keys[i].after.y - min.y) * screen.scale;
         var t = keys[i].getType();
 
-        if (t != CK_CORNER)
-        {
+        if (t != CK_CORNER) {
           ctx.beginPath();
           ctx.moveTo(p1x, p1y);
           ctx.lineTo(p2x, p2y);
@@ -450,16 +397,14 @@ function Profile()
         ctx.fillStyle = "rgb(255,0,0)";
         ctx.fillRect(p2x - 3, p2y - 3, 6, 6);
         ctx.fillStyle = "rgb(0,0,255)";
-        switch (t)
-        {
+        switch (t) {
         case CK_CUSP:
         case CK_LINE_AFTER:
         case CK_ASYMMETRIC:
         case CK_SYMMETRIC:
           ctx.fillRect(p1x - 3, p1y - 3, 6, 6);
         }
-        switch (t)
-        {
+        switch (t) {
         case CK_CUSP:
         case CK_LINE_BEFORE:
         case CK_ASYMMETRIC:
@@ -471,18 +416,14 @@ function Profile()
     return;
   }
 
-  this.isVisible = function ()
-  {
+  this.isVisible = function () {
     return (
     max.x >= screen.x && max.y >= screen.y && min.x <= screen.x + screen.width && min.y <= screen.y + screen.height);
   }
 
-  this.onmousemove = function (e)
-  {
-    if (spi)
-    {
-      switch (spt)
-      {
+  this.onmousemove = function (e) {
+    if (spi) {
+      switch (spt) {
       case "key":
         spi.moveKey(ui.diffX / screen.scale, ui.diffY / screen.scale);
         break;
@@ -493,11 +434,8 @@ function Profile()
         spi.moveAfter(ui.diffX / screen.scale, ui.diffY / screen.scale);
         break;
       }
-    }
-    else
-    {
-      for (var i = 0; i < keys.length; ++i)
-      {
+    } else {
+      for (var i = 0; i < keys.length; ++i) {
         keys[i].moveKey(ui.diffX / screen.scale, ui.diffY / screen.scale);
       }
     }
@@ -509,16 +447,13 @@ function Profile()
     return false;
   }
 
-  this.onmousedown = function (e)
-  {
+  this.onmousedown = function (e) {
     spi = undefined;
     spt = undefined;
     var m = ui.getMouse(e);
-    if (m)
-    {
+    if (m) {
       var i;
-      FOUND: for (i = 0; i < keys.length; ++i)
-      {
+      FOUND: for (i = 0; i < keys.length; ++i) {
         var x;
         var y;
         var d;
@@ -526,13 +461,11 @@ function Profile()
         x = screen.scale * (keys[i].key.x - screen.x) - m.offsetX;
         y = screen.scale * (keys[i].key.y - screen.y) - m.offsetY;
         d = Math.sqrt(x * x + y * y);
-        if (d < 4)
-        {
+        if (d < 4) {
           spt = "key";
           break;
         }
-        switch (t)
-        {
+        switch (t) {
         case CK_CUSP:
         case CK_LINE_AFTER:
         case CK_ASYMMETRIC:
@@ -540,14 +473,12 @@ function Profile()
           x = screen.scale * (keys[i].before.x - screen.x) - m.offsetX;
           y = screen.scale * (keys[i].before.y - screen.y) - m.offsetY;
           d = Math.sqrt(x * x + y * y);
-          if (d < 4)
-          {
+          if (d < 4) {
             spt = "before";
             break FOUND;
           }
         }
-        switch (t)
-        {
+        switch (t) {
         case CK_CUSP:
         case CK_LINE_BEFORE:
         case CK_ASYMMETRIC:
@@ -555,15 +486,13 @@ function Profile()
           x = screen.scale * (keys[i].after.x - screen.x) - m.offsetX;
           y = screen.scale * (keys[i].after.y - screen.y) - m.offsetY;
           d = Math.sqrt(x * x + y * y);
-          if (d < 4)
-          {
+          if (d < 4) {
             spt = "after";
             break FOUND;
           }
         }
       }
-      if (spt)
-      {
+      if (spt) {
         spi = keys[i];
       }
     }
@@ -581,13 +510,11 @@ function Profile()
   var canvas = document.createElement("canvas");
   view.appendChild(canvas);
   var ctx; //!< 2d drawing context
-  if (canvas.getContext)
-  {
+  if (canvas.getContext) {
     ctx = canvas.getContext("2d");
   }
 
-  var screen =
-  {
+  var screen = {
     x: 0,
     y: 0,
     width: 0,
@@ -639,13 +566,11 @@ function Profile()
 		5000 );
 	*/
 
-  var min =
-  {
+  var min = {
     x: 0,
     y: 0
   };
-  var max =
-  {
+  var max = {
     x: 0,
     y: 0
   };

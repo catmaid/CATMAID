@@ -23,23 +23,23 @@ if ( $pid )
 	{
 		// instances to display
 		$nid = $db->getClassId( $pid, "neuron" );
-    if(!$nid) { echo makeJSON( array( '"error"' => 'Can not find "neuron" class for this project' ) ); return; }
+    if(!$nid) { echo makeJSON( array( 'error' => 'Can not find "neuron" class for this project' ) ); return; }
 		$skid = $db->getClassId( $pid, "skeleton" );
-    if(!$skid) { echo makeJSON( array( '"error"' => 'Can not find "skeleton" class for this project' ) ); return; }
+    if(!$skid) { echo makeJSON( array( 'error' => 'Can not find "skeleton" class for this project' ) ); return; }
 		$gid = $db->getClassId( $pid, "group" );
-    if(!$gid) { echo makeJSON( array( '"error"' => 'Can not find "group" class for this project' ) ); return; }
+    if(!$gid) { echo makeJSON( array( 'error' => 'Can not find "group" class for this project' ) ); return; }
 		$rid = $db->getClassId( $pid, "root" );
-    if(!$rid) { echo makeJSON( array( '"error"' => 'Can not find "root" class for this project' ) ); return; }
+    if(!$rid) { echo makeJSON( array( 'error' => 'Can not find "root" class for this project' ) ); return; }
 		
 		// relations
 		$presyn_id = $db->getRelationId( $pid, "presynaptic_to" );
-    if(!$presyn_id) { echo makeJSON( array( '"error"' => 'Can not find "presynaptic_to" relation for this project' ) ); return; }
+    if(!$presyn_id) { echo makeJSON( array( 'error' => 'Can not find "presynaptic_to" relation for this project' ) ); return; }
 		$postsyn_id = $db->getRelationId( $pid, "postsynaptic_to" );
-    if(!$postsyn_id) { echo makeJSON( array( '"error"' => 'Can not find "postsynaptic_to" relation for this project' ) ); return; }
+    if(!$postsyn_id) { echo makeJSON( array( 'error' => 'Can not find "postsynaptic_to" relation for this project' ) ); return; }
 		$modid = $db->getRelationId( $pid, "model_of" );
-    if(!$modid) { echo makeJSON( array( '"error"' => 'Can not find "model_of" relation for this project' ) ); return; }
+    if(!$modid) { echo makeJSON( array( 'error' => 'Can not find "model_of" relation for this project' ) ); return; }
 		$partof_id = $db->getRelationId( $pid, "part_of" );
-    if(!$partof_id) { echo makeJSON( array( '"error"' => 'Can not find "part_of" relation for this project' ) ); return; }
+    if(!$partof_id) { echo makeJSON( array( 'error' => 'Can not find "part_of" relation for this project' ) ); return; }
 
 		if ( !$parentid ) {
 			// retrieve the id of the root node for this project

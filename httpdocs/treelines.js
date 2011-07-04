@@ -392,7 +392,7 @@ function Viewer(divID) {
     ac.color = "#1a5607";
 
     this.commissures = [pc, ac];
-    for (i = 0; i < this.commisures.length; ++i) {
+    for (i = 0; i < this.commissures.length; ++i) {
       c = this.commissures[i];
       xdiff = c.x2 - c.x1;
       ydiff = c.y2 - c.y1;
@@ -456,19 +456,21 @@ function Viewer(divID) {
 
     this.currentTransformation = createTransformation(phi, theta, psi, scale);
 
-    for (i = 0; i < this.commisures.length; ++i) {
-      c = this.commissures[i];
-      p = this.transformPoint(c.ballx, c.bally, c.ballz);
-      if (c.ball) {
-        c.ball.attr({
-          cx: p.x,
-          cy: p.y
-        });
-      } else {
-        c.ball = this.r.circle(p.x, p.y, c.radius * scale).attr({
-          fill: c.color,
-          stroke: c.color
-        });
+    if (this.showVNCLandmarks) {
+      for (i = 0; i < this.commissures.length; ++i) {
+        c = this.commissures[i];
+        p = this.transformPoint(c.ballx, c.bally, c.ballz);
+        if (c.ball) {
+          c.ball.attr({
+            cx: p.x,
+            cy: p.y
+          });
+        } else {
+          c.ball = this.r.circle(p.x, p.y, c.radius * scale).attr({
+            fill: c.color,
+            stroke: c.color
+          });
+        }
       }
     }
 

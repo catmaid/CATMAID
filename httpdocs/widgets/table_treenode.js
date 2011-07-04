@@ -20,6 +20,7 @@ initTreenodeTable = function (pid) {
       // remove all selected elements in table
       for (key in project.selectedObjects.table_treenode) {
         if (project.selectedObjects.table_treenode.hasOwnProperty(key)) {
+          // FIXME: use splice(1,1) instead
           delete project.selectedObjects.table_treenode[key];
         }
       }

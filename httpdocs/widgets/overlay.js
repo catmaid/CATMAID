@@ -6,7 +6,7 @@ var atn = null;
 var atn_fillcolor = "rgb(0, 255, 0)";
 
 var active_skeleton_id = null;
-var active_skeleton_color = "rgb(255, 100, 0)";
+var active_skeleton_color = "rgb(60, 145, 56)";
 
 function activateNode(node) {
   // changes the color attributes of

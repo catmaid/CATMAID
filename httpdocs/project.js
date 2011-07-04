@@ -892,7 +892,7 @@ function Project(pid) {
   this.focusedStack;
 
   var editable = false;
-  var mode = "move";
+  var mode = "trace";
   var show_textlabels = true;
 
   var icon_text_apply = document.getElementById("icon_text_apply");

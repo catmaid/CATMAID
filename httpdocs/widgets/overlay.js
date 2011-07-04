@@ -45,7 +45,7 @@ current_scale // current scale of the stack
   this.translation = translation;
   this.dimension = dimension;
 
-  var speedtoggle = false;
+  var speedtoggle = true;
   var nodes = {};
   var labels = {};
   var show_labels = false;

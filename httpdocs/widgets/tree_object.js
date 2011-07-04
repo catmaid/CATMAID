@@ -452,6 +452,7 @@ initObjectTree = function (pid) {
     // remove all previously selected nodes (or push it to the history)
     for (key in project.selectedObjects.tree_object) {
       if(project.selectedObjects.tree_object.hasOwnProperty(key)) {
+        // FIXME: use splice(1,1) instead
         delete project.selectedObjects.tree_object[key];
       }
     }
@@ -473,6 +474,7 @@ initObjectTree = function (pid) {
     // remove all previously selected nodes (or push it to the history)
     for (key in project.selectedObjects.tree_object) {
       if(project.selectedObjects.tree_object.hasOwnProperty(key)) {
+        // FIXME: use splice(1,1) instead
         delete project.selectedObjects.tree_object[key];
       }
     }

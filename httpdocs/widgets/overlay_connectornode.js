@@ -165,6 +165,7 @@ zdiff) // the different from the current slices
       for (i in this.parent.children) {
         if (this.parent.children.hasOwnProperty(i)) {
           if (this.parent.children[i].id === id) {
+            // FIXME: use splice(1,1) instead
             delete this.parent.children[i];
           }
         }

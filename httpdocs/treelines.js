@@ -626,7 +626,7 @@ function Viewer(divID) {
     for (i = 0; i < this.neurons.length; ++i) {
       if (this.neurons[i].basename === neuronBasename) {
         this.neurons[i].removeLinesAndCircles();
-        delete this.neurons[i];
+        this.neurons.splice(i,1);
         this.updateViewBounds();
         this.redraw();
         return;

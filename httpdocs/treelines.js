@@ -566,7 +566,7 @@ function Viewer(divID) {
     });
     newElement.append(linkElement);
     newElement.css('color', neuron.color);
-    $('#3d-view-object-list').append(newElement);
+    $('#view-3d-object-list').append(newElement);
   };
 
   this.addFromCATMAID = function (projectID, skeletonID, neuronName) {

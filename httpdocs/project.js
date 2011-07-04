@@ -540,7 +540,7 @@ function Project(pid) {
     var widget = $('#view_in_3d_widget');
     widget.css('display', 'block');
     ui.onresize();
-    createViewerFromCATMAID('3d-viewer-canvas');
+    createViewerFromCATMAID('viewer-3d-canvas');
     return;
   }
 
@@ -565,7 +565,7 @@ function Project(pid) {
           alert(e.error);
         } else {
           e['project_id'] = project.id;
-          addNeuronFromCATMAID('3d-viewer-canvas', e);
+          addNeuronFromCATMAID('viewer-3d-canvas', e);
         }
       } else {
         alert("Bad status code " + status + " mapping treenode ID to skeleton and neuron");

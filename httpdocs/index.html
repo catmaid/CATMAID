@@ -113,7 +113,7 @@
 				</div>
 				<div class="box" id="toolbox_data" style="display:none">
 					<a href="#" class="button" id="data_button_table_treenode" onclick="project.showDatatableWidget( 'treenode' );"><img src="widgets/themes/kde/table.gif" alt="table" title="treenode table" /></a>
-          <a href="#" class="button" id="data_button_table_connector" onclick="project.showDatatableWidget( 'connector' );"><img src="widgets/themes/kde/table_connector.gif" alt="table" title="connector table" /></a>
+                    <a href="#" class="button" id="data_button_table_connector" onclick="project.showDatatableWidget( 'connector' );"><img src="widgets/themes/kde/table_connector.gif" alt="table" title="connector table" /></a>
 					<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'entities' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="object tree" /></a>
 					<!--<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'classes' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="class tree" /></a>-->
 					<a href="#" class="button" id="data_button_stats" onclick="project.showStatisticsWidget( );"><img src="widgets/themes/kde/stats.gif" alt="tree" title="project statistics" /></a>
@@ -139,10 +139,10 @@
 			<div id="toolbar_nav" class="toolbar" style="display:none">
 				<div class="box"><p>x&nbsp;</p><p><input type="text" id="x" name="x" size="5" /><img src="widgets/themes/kde/input_topdown.gif" alt="" usemap="#xmap" /></p></div>
 				<div class="box"><p>y&nbsp;</p><p><input type="text" id="y" name="y" size="5" /><img src="widgets/themes/kde/input_topdown.gif" alt="" usemap="#ymap" /></p></div>
-  			<div class="box_right"><p><a id="a_url" name="a_url" title="This is the URL to this view. You can bookmark it or send it to the people." href="">URL to this view</a></p></div>
-        <div class="box" id="z_index_box"><p>z-index&nbsp;&nbsp;</p><div id="slider_z"></div><p>&nbsp;&nbsp;</p></div>
-        <div class="box" id="zoom_level_box"><p>zoom-level&nbsp;&nbsp;</p><div id="slider_s"></div><p>&nbsp;&nbsp;</p></div>
-        <div class="toolbar_fill"></div>
+  			    <div class="box_right"><p><a id="a_url" name="a_url" title="This is the URL to this view. You can bookmark it or send it to the people." href="">URL to this view</a></p></div>
+                <div class="box" id="z_index_box_navigation"><p>z-index&nbsp;&nbsp;</p><div id="slider_z"></div><p>&nbsp;&nbsp;</p></div>
+                <div class="box" id="zoom_level_box_navigation"><p>zoom-level&nbsp;&nbsp;</p><div id="slider_s"></div><p>&nbsp;&nbsp;</p></div>
+                <div class="toolbar_fill"></div>
 			</div>
 			<!--
 			*******************************************************************
@@ -177,32 +177,29 @@
 				  <a href="#" class="button" id="trace_button_synapse">
 				    <img src="widgets/themes/kde/trace_synapse.png"/></a>
 				    
-          <a href="#" class="button" id="trace_button_sync">
-            <img src="widgets/themes/kde/trace_sync.png"/></a>
-            
-          <a href="#" class="button" id="trace_button_goactive">
-            <img src="widgets/themes/kde/trace_active.png"/></a>
+                  <a href="#" class="button" id="trace_button_sync">
+                    <img src="widgets/themes/kde/trace_sync.png"/></a>
 
-          <a href="#" class="button" id="trace_button_skelsplitting">
-            <img src="widgets/themes/kde/trace_skelsplitting.png"/></a>
+                  <a href="#" class="button" id="trace_button_goactive">
+                    <img src="widgets/themes/kde/trace_active.png"/></a>
 
-          <a href="#" class="button" id="trace_button_skelrerooting">
-            <img src="widgets/themes/kde/trace_skelrerooting.png"/></a>
+                  <a href="#" class="button" id="trace_button_skelsplitting">
+                    <img src="widgets/themes/kde/trace_skelsplitting.png"/></a>
 
-          <a href="#" class="button" id="trace_button_togglelabels">
-            <img src="widgets/themes/kde/trace_labels.png"/></a>
+                  <a href="#" class="button" id="trace_button_skelrerooting">
+                    <img src="widgets/themes/kde/trace_skelrerooting.png"/></a>
 
-          <a href="#" class="button" id="trace_button_exportswc">
-            <img src="widgets/themes/kde/trace_3dview.png"/></a>
+                  <a href="#" class="button" id="trace_button_togglelabels">
+                    <img src="widgets/themes/kde/trace_labels.png"/></a>
 
-        
+                  <a href="#" class="button" id="trace_button_exportswc">
+                    <img src="widgets/themes/kde/trace_3dview.png"/></a>
+
 				</div>
-        <div class="box" id="z_index_box"><p>z-index&nbsp;&nbsp;</p><div id="slider_trace_z"></div><p>&nbsp;&nbsp;</p></div>
-        <div class="box" id="zoom_level_box"><p>zoom-level&nbsp;&nbsp;</p><div id="slider_trace_s"></div><p>&nbsp;&nbsp;</p></div>
-        <input type="checkbox" id="speedtoggle" name="speedtoggle" value="speedtoggle">&nbsp;Show edges?<br>
-
-        <div class="toolbar_fill"></div>
-
+                <div class="box" id="z_index_box_tracing"><p>z-index&nbsp;&nbsp;</p><div id="slider_trace_z"></div><p>&nbsp;&nbsp;</p></div>
+                <div class="box" id="zoom_level_box_tracing"><p>zoom-level&nbsp;&nbsp;</p><div id="slider_trace_s"></div><p>&nbsp;&nbsp;</p></div>
+                <input type="checkbox" id="speedtoggle" name="speedtoggle" value="speedtoggle">&nbsp;Show edges?<br>
+                <div class="toolbar_fill"></div>
 			</div>
 			<!--
 			*******************************************************************
@@ -238,15 +235,12 @@
 		<!-- Table widgets
 		***********************************************************************
 		-->
-
 		<div id="treenode_table_widget" class="sliceView" style="width:50%; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
 			<div class="stackInfo_selected" style="position:relative">
-				<p id="table_widget_title" class="stackTitle">Treenode Table</p>
-				<p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
-
-			<div id="table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
-			
-				<div id="treenodetable_container">
+				<p id="treenode_table_widget_title" class="stackTitle">Treenode Table</p>
+				<p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p>
+            </div>
+			<div id="treenode_table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
 				<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable">
 					<thead>
 						<tr>
@@ -279,26 +273,22 @@
 						</tr>
 					</tfoot>
 				</table>
-				</div>
-				
 			</div>
-
 		</div>
         
 		<div id="connectortable_widget" class="sliceView" style="width:50%; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
 			<div class="stackInfo_selected" style="position:relative">
-				<p id="table_widget_title" class="stackTitle">Connector Table</p>
-				<p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>	
-
-			<div id="table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
-        name of skeleton: <br />
-				<div id="connector_container">
+				<p id="connector_table_widget_title" class="stackTitle">Connector Table</p>
+				<p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p>
+            </div>
+			<div id="connector_table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
+                Name of skeleton: <br />
 				<table cellpadding="0" cellspacing="0" border="0" class="display" id="connectortable">
 					<thead>
 						<tr>
 							<th>subject</th>
 							<th>predicated</th>
-              <th>object</th>
+                            <th>object</th>
 							<th>tags</th>
 							<th>username</th>
 							<th>last modified</th>
@@ -310,17 +300,14 @@
 						<tr>
 							<th>subject</th>
 							<th>predicated</th>
-              <th>object</th>
+                            <th>object</th>
 							<th><input type="text" name="search_labels" value="Search tags" class="search_init" /></th>
 							<th>username</th>
 							<th>last modified</th>
 						</tr>
 					</tfoot>
 				</table>
-				</div>
-
 			</div>
-
 		</div>
 		<!--
 		<div id="table_widget" class="sliceView" style="width:50%; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
@@ -430,12 +417,12 @@
 
 		<div id="project_stats_widget" class="sliceView" style="width:350px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
 			<div class="stackInfo_selected" style="position:relative">
-			  <p id="tree_widget_title" class="stackTitle">Project statistics</p>
-			  <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
+			  <p id="statistics_widget_title" class="stackTitle">Project statistics</p>
+			  <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p>
+            </div>
 			  
-			<div id="tree_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">	
+			<div id="statistics_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
 			<input type="button" id="refresh_stats" value="refresh" style="display:block; float:left;" />
-			
 				<br clear="all" /> 
 				<div id="project_stats">
 				<table cellpadding="0" cellspacing="0" border="0" class="display" id="project_stats_table">
@@ -480,9 +467,7 @@
                 <!-- piechart -->
                 <h2>Treenode Annotators</h2>
                 <div id="piechart_treenode_holder"></div>
-				
 			</div>
-			  
 		</div>
 		
 		
@@ -492,21 +477,19 @@
 		<div id="class_tree_widget" class="sliceView" style="width:350px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
 			<div class="stackInfo_selected" style="position:relative"><p id="tree_widget_title" class="stackTitle">Class Tree</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
 			<div id="tree_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
-			
+
 			<input type="button" id="refresh_class_tree" value="refresh" style="display:block; float:left;" />
 			<br clear="all" />
-			<div id="tree_class"></div>			
+			<div id="tree_class"></div>
 			</div>
 		</div>
-		
+
 		<div id="object_tree_widget" class="sliceView" style="width:350px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
 			<div class="stackInfo_selected" style="position:relative"><p id="tree_widget_title" class="stackTitle">Object Tree</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
 			<div id="tree_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
-			
-			<input type="button" id="refresh_object_tree" value="refresh" style="display:block; float:left;" />
-			
-			<br clear="all" />
-			<div id="tree_object"></div>			
+			    <input type="button" id="refresh_object_tree" value="refresh" style="display:block; float:left;" />
+			    <br clear="all" />
+			    <div id="tree_object"></div>
 			</div>
 		</div>
 		

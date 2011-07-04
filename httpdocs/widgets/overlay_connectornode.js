@@ -215,7 +215,7 @@ zdiff) // the different from the current slices
 /*
      * compute better position for arrowhead pointer
      */
-    var rloc = 3;
+    var rloc = 8;
     var xdiff = (x2 - x1);
     var ydiff = (y2 - y1);
     var le = Math.sqrt(xdiff * xdiff + ydiff * ydiff);
@@ -234,9 +234,9 @@ zdiff) // the different from the current slices
       "fill": strocol,
       "stroke": strocol
     });
-    // XXX: uncomment this for speedup
-    linePath.toBack();
-    arrowPath.toBack();
+    // XXX: no toBack for speedup
+    //linePath.toBack();
+    //arrowPath.toBack();
   };
 
   // updates the raphael path coordinates

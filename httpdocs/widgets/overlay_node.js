@@ -375,7 +375,7 @@ is_root_node) // the id of the skeleton this node is an element of
 
     this.parentnode.needsync = true;
   };
-    
+
   mc.up = function () {
     c.attr({
       opacity: 1
@@ -389,7 +389,7 @@ is_root_node) // the id of the skeleton this node is an element of
       opacity: 0.7
     });
   };
-    
+
   mc.drag(mc.move, mc.start, mc.up);
-    
+
 };

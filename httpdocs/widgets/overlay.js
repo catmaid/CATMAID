@@ -9,31 +9,22 @@ var active_skeleton_id = null;
 var active_skeleton_color = "rgb(60, 145, 56)";
 
 function activateNode(node) {
-  // changes the color attributes of
-  // the newly activated node
-  if (atn !== null) {
-    atn.setDefaultColor();
-  }
+
   // if node === null, just deactivate
   if (node === null) {
     atn = null;
-    return;
-  }
-  atn = node;
-  atn.getC().attr({
-    fill: atn_fillcolor
-  });
-  // If the skeleton has changed, redraw everything:
-  if (active_skeleton_id !== atn.skeleton_id) {
-    active_skeleton_id = atn.skeleton_id;
-    project.updateNodes();
-  }
-  // update statusBar
-  if (atn.type === "treenode") {
-    statusBar.replaceLast("activated treenode with id " + atn.id);
+    active_skeleton_id = null;
   } else {
-    statusBar.replaceLast("activated node with id " + atn.id);
+    atn = node;
+    active_skeleton_id = atn.skeleton_id;
+    // update statusBar
+    if (atn.type === "treenode") {
+      statusBar.replaceLast("activated treenode with id " + atn.id);
+    } else {
+      statusBar.replaceLast("activated node with id " + atn.id);
+    }
   }
+  project.recolorAllNodes();
 }
 
 SVGOverlay = function (
@@ -82,6 +73,18 @@ current_scale // current scale of the stack
         if (nodes[nodeid].id === id) {
           activateNode(nodes[nodeid]);
         }
+      }
+    }
+  };
+
+  this.recolorAllNodes = function () {
+    // Assumes that atn and active_skeleton_id are correct:
+    var nodeid, node;
+    for (nodeid in nodes) {
+      if (nodes.hasOwnProperty(nodeid)) {
+        node = nodes[nodeid];
+        node.setColor();
+        node.draw();
       }
     }
   };
@@ -575,7 +578,6 @@ current_scale // current scale of the stack
             }
 
             nodes[jso.treenode_id] = nn;
-            nn.draw();
             activateNode(nn);
 
           }

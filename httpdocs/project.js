@@ -654,6 +654,12 @@ function Project(pid) {
     return;
   }
 
+  this.recolorAllNodes = function () {
+    var i;
+    for (i = 0; i < stacks.length; ++i) {
+      stacks[i].recolorAllNodes();
+    }
+  }
 
   /**
    * register all GUI elements

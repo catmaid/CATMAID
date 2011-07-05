@@ -1150,6 +1150,10 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     svgOverlay.selectNode(id);
   }
 
+  this.recolorAllNodes = function () {
+    svgOverlay.recolorAllNodes();
+  }
+
   this.tracingCommand = function (m) {
     switch (m) {
     case "skeletontracing":

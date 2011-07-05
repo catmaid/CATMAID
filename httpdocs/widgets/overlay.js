@@ -19,7 +19,7 @@ function activateNode(node) {
     active_skeleton_id = atn.skeleton_id;
     // update statusBar
     if (atn.type === "treenode") {
-      statusBar.replaceLast("activated treenode with id " + atn.id);
+      statusBar.replaceLast("activated treenode with id " + atn.id + " skeleton id " + atn.skeleton_id );
     } else {
       statusBar.replaceLast("activated node with id " + atn.id);
     }

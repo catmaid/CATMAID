@@ -701,7 +701,7 @@ function init() {
       id: "project_menu_new",
       action: function () {
         if (project) project.unregister();
-        document.getElementById("project list").style.display = "none";
+        document.getElementById("project_list").style.display = "none";
         document.getElementById("new_project_dialog").style.display = "block";
         updateUsers();
         return;

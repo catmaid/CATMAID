@@ -990,9 +990,7 @@ COPY class (id, user_id, creation_time, edition_time, project_id, class_name, ur
 5	1	2010-08-26 18:23:53.551017+02	2010-08-26 18:23:53.551017+02	3	neuron	http://flybase.org/.bin/cvreport.html?cvterm=FBbt:00005106+childdepth=2+parentdepth=all	\N	t
 106	3	2010-10-12 09:42:55.856494+02	2010-10-12 09:42:55.856494+02	3	group	\N	A group helps to organize the data, i.e. it can contain neuron or other groups.	t
 33	3	2010-08-27 17:28:08.713582+02	2010-08-27 17:28:08.713582+02	3	label	\N	\N	f
-107	3	2010-10-12 10:11:23.015507+02	2010-10-12 10:11:23.015507+02	3	neurongroup	\N	a group of neurons	t
 112	3	2010-10-12 11:29:38.385393+02	2010-10-12 11:29:38.385393+02	3	root	\N	\N	f
-12	1	2010-08-26 19:18:02.355176+02	2010-08-26 19:18:02.355176+02	3	soma	http://flybase.org/cgi-bin/cvreport.html?rel=is_a&id=FBbt:00005107	\N	t
 7	3	2010-08-26 18:30:53.288021+02	2010-08-26 18:30:53.288021+02	3	synapse	http://flybase.org/.bin/cvreport.html?cvterm=GO:0045202	\N	t
 755	3	2010-12-20 16:17:48.122167+01	2010-12-20 16:17:48.122167+01	3	presynaptic terminal			t
 756	3	2010-12-20 16:18:07.231631+01	2010-12-20 16:18:07.231631+01	3	postsynaptic terminal			t

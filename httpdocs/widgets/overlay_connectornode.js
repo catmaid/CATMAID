@@ -193,16 +193,18 @@ zdiff) // the different from the current slices
     /*
      * compute position for arrowhead pointer
      */
-    var rloc = 8;
+    var rloc = 9;
     var xdiff = (x2 - x1);
     var ydiff = (y2 - y1);
     var le = Math.sqrt(xdiff * xdiff + ydiff * ydiff);
+    var x1new = (x1 - x2) * (1 - rloc / le) + x2;
+    var y1new = (y1 - y2) * (1 - rloc / le) + y2;
     var x2new = (x2 - x1) * (1 - rloc / le) + x1;
     var y2new = (y2 - y1) * (1 - rloc / le) + y1;
 
     var angle = Math.atan2(x1 - x2, y2 - y1);
     angle = (angle / (2 * Math.PI)) * 360;
-    var linePath = paper.path("M" + x1 + " " + y1 + " L" + x2new + " " + y2new);
+    var linePath = paper.path("M" + x1new + " " + y1new + " L" + x2new + " " + y2new);
     var arrowPath = paper.path("M" + x2new + " " + y2new + " L" + (x2new - size) + " " + (y2new - size) + " L" + (x2new - size) + " " + (y2new + size) + " L" + x2new + " " + y2new).attr("fill", "black").rotate((90 + angle), x2new, y2new);
     linePath.attr({
       "stroke-width": strowi,
@@ -232,9 +234,6 @@ zdiff) // the different from the current slices
   this.postLines = {};
 
   this.updateLines = function () {
-    console.log("updateLines called");
-    console.log("prelines", this.preLines);
-    console.log("postlines", this.postLines);
     var i, l;
     for (i in this.preLines) {
       if(this.preLines.hasOwnProperty(i)) {

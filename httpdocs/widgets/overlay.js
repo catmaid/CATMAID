@@ -36,7 +36,7 @@ current_scale // current scale of the stack
   this.translation = translation;
   this.dimension = dimension;
 
-  var speedtoggle = true;
+  var edgetoggle = true;
   var nodes = {};
   var connectornodes = {};
   var labels = {};
@@ -721,7 +721,7 @@ current_scale // current scale of the stack
         activateNode(nn);
       }
     }
-    if (speedtoggle) {
+    if (edgetoggle) {
       // loop again and add correct parent objects and parent's children update
       for (var i in jso)
       {
@@ -971,14 +971,14 @@ current_scale // current scale of the stack
     view.style.display = "none";
   };
 
-  $('input#speedtoggle').change(function () {
+  $('input#edgetoggle').change(function () {
     if ($(this).attr("checked")) {
       //do the stuff that you would do when 'checked'
-      speedtoggle = true;
+      edgetoggle = true;
       project.updateNodes();
       return;
     } else {
-      speedtoggle = false;
+      edgetoggle = false;
       project.updateNodes();
       return;
     }

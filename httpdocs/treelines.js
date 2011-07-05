@@ -544,6 +544,10 @@ function Viewer(divID) {
     if (this.neurons.length === 0) {
       newMinX = newMinY = newMinZ = -1;
       newMaxX = newMaxY = newMaxZ = -1;
+      this.centreX = 0;
+      this.centreY = 0;
+      this.centreZ = 0;
+      this.scale = 1;
     } else {
       for (i = 0; i < this.neurons.length; ++i) {
         neuron = this.neurons[i];
@@ -556,13 +560,13 @@ function Viewer(divID) {
           newMaxZ = Math.max(newMaxZ, neuron.max_z);
         }
       }
+      this.centreX = (newMinX + newMaxX) / 2;
+      this.centreY = (newMinY + newMaxY) / 2;
+      this.centreZ = (newMinZ + newMaxZ) / 2;
+      ideal_x_scale = this.divWidth / (newMaxX - newMinX);
+      ideal_y_scale = this.divWidth / (newMaxY - newMinY);
+      this.scale = Math.min(ideal_x_scale, ideal_y_scale);
     }
-    this.centreX = (newMinX + newMaxX) / 2;
-    this.centreY = (newMinY + newMaxY) / 2;
-    this.centreZ = (newMinZ + newMaxZ) / 2;
-    ideal_x_scale = this.divWidth / (newMaxX - newMinX);
-    ideal_y_scale = this.divWidth / (newMaxY - newMinY);
-    this.scale = Math.min(ideal_x_scale, ideal_y_scale);
   };
 
   this.redraw = function () {

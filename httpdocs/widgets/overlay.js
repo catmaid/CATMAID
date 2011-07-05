@@ -571,7 +571,7 @@ current_scale // current scale of the stack
             if (parid == -1) {
               var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id);
             } else {
-              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, jso.skeleton_id);
+              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id);
             }
 
             nodes[jso.treenode_id] = nn;

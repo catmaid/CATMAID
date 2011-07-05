@@ -39,7 +39,11 @@ Make sure that the catmaid database is accessible using MD5 hashed
 passwords - you have to add this line as the *first* rule in
 /etc/postgresql/8.4/main/pg_hba.conf:
 
-	local   catmaid     all                               md5
+	local   catmaid     catmaid_user          md5
+
+After the above please restart the database:
+
+  sudo /etc/init.d/posgresql-8.4 restart
 
 Update catmaid database connection for user in
 inc/setup.inc.php.template and rename the file to

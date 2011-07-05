@@ -113,13 +113,8 @@ current_scale // current scale of the stack
     }
     labels = {};
 
-    // update state variable
-    if (toval === null) {
-      if (show_labels) {
-        show_labels = false;
-      } else {
-        show_labels = true;
-      }
+    if(toval === undefined) {
+      show_labels = !show_labels;
     } else {
       show_labels = toval;
     }

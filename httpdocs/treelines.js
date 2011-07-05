@@ -246,7 +246,7 @@ function NeuronView(basename, color, viewer, projectID, skeletonID) {
       // centrePoint.attr("fill","#f00");
       // centrePoint.attr("stroke","#f00");
       for (i in enclosingObject.all_points) {
-        if (enclosingObject.hasOwnProperty(i)) {
+        if (enclosingObject.all_points.hasOwnProperty(i)) {
           point = enclosingObject.all_points[i];
           p = point.map_to_screen();
           if (this.circles) {
@@ -259,7 +259,7 @@ function NeuronView(basename, color, viewer, projectID, skeletonID) {
       // Now find all the end points, i.e. those with no parents:
       enclosingObject.endPoints = enclosingObject.all_points.slice(0);
       for (i in enclosingObject.all_points) {
-        if (enclosingObject.hasOwnProperty(i)) {
+        if (enclosingObject.all_points.hasOwnProperty(i)) {
           parent_id = enclosingObject.all_points[i].parent_id;
           if (parent_id > 0) {
             delete enclosingObject.endPoints[parent_id];
@@ -544,6 +544,10 @@ function Viewer(divID) {
     if (this.neurons.length === 0) {
       newMinX = newMinY = newMinZ = -1;
       newMaxX = newMaxY = newMaxZ = -1;
+      this.centreX = 0;
+      this.centreY = 0;
+      this.centreZ = 0;
+      this.scale = 1;
     } else {
       for (i = 0; i < this.neurons.length; ++i) {
         neuron = this.neurons[i];
@@ -556,13 +560,13 @@ function Viewer(divID) {
           newMaxZ = Math.max(newMaxZ, neuron.max_z);
         }
       }
+      this.centreX = (newMinX + newMaxX) / 2;
+      this.centreY = (newMinY + newMaxY) / 2;
+      this.centreZ = (newMinZ + newMaxZ) / 2;
+      ideal_x_scale = this.divWidth / (newMaxX - newMinX);
+      ideal_y_scale = this.divWidth / (newMaxY - newMinY);
+      this.scale = Math.min(ideal_x_scale, ideal_y_scale);
     }
-    this.centreX = (newMinX + newMaxX) / 2;
-    this.centreY = (newMinY + newMaxY) / 2;
-    this.centreZ = (newMinZ + newMaxZ) / 2;
-    ideal_x_scale = this.divWidth / (newMaxX - newMinX);
-    ideal_y_scale = this.divWidth / (newMaxY - newMinY);
-    this.scale = Math.min(ideal_x_scale, ideal_y_scale);
   };
 
   this.redraw = function () {

@@ -45,7 +45,6 @@ var project_stats_widget;
 var key_shortcut_widget;
 var view_in_3d_widget;
 var object_tree_widget;
-var class_tree_widget;
 
 var pid;
 var sids = new Array();
@@ -483,7 +482,6 @@ function global_resize(e) {
   table_widget.style.height = height + "px";
   table_connector_widget.style.height = height + "px";
   object_tree_widget.style.height = height + "px";
-  class_tree_widget.style.height = height + "px";
   project_stats_widget.style.height = height + "px";
   key_shortcut_widget.style.height = height + "px";
   view_in_3d_widget.style.height = height + "px";
@@ -703,7 +701,7 @@ function init() {
       id: "project_menu_new",
       action: function () {
         if (project) project.unregister();
-        document.getElementById("project list").style.display = "none";
+        document.getElementById("project_list").style.display = "none";
         document.getElementById("new_project_dialog").style.display = "block";
         updateUsers();
         return;
@@ -752,10 +750,6 @@ function init() {
   object_tree_widget = document.getElementById("object_tree_widget");
   var tree_widget_resize_handle = new ResizeHandle("h");
   object_tree_widget.appendChild(tree_widget_resize_handle.getView());
-
-  class_tree_widget = document.getElementById("class_tree_widget");
-  var tree_widget_resize_handle = new ResizeHandle("h");
-  class_tree_widget.appendChild(tree_widget_resize_handle.getView());
 
   //! auto login by url (unsafe as can be but convenient)
   if (account && password) login(account, password);

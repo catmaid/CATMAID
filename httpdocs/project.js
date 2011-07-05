@@ -419,15 +419,6 @@ function Project(pid) {
       width -= object_tree_widget.offsetWidth;
       left += object_tree_widget.offsetWidth;
     }
-/*if ( class_tree_widget.offsetWidth )
-		{
-			if ( object_tree_widget.offsetWidth )
-				class_tree_widget.style.left = left + "px";
-			else
-				class_tree_widget.style.left = "0px";
-			width -= class_tree_widget.offsetWidth;
-			left += class_tree_widget.offsetWidth;
-		}*/
     var old_width = 0;
     for (var i = 0; i < stacks.length; ++i) {
       old_width += stacks[i].getView().offsetWidth;
@@ -468,15 +459,6 @@ function Project(pid) {
         document.getElementById('object_tree_widget').style.display = 'block';
         ui.onresize();
         initObjectTree(this.id);
-      }
-      break;
-    case "classes":
-      var tw_status = document.getElementById('class_tree_widget').style.display;
-      // check if not opened before to prevent messing up with event handlers
-      if (tw_status != 'block') {
-        document.getElementById('class_tree_widget').style.display = 'block';
-        ui.onresize();
-        initClassTree(this.id);
       }
       break;
     }

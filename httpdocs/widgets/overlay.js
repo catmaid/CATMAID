@@ -6,34 +6,25 @@ var atn = null;
 var atn_fillcolor = "rgb(0, 255, 0)";
 
 var active_skeleton_id = null;
-var active_skeleton_color = "rgb(255, 100, 0)";
+var active_skeleton_color = "rgb(60, 145, 56)";
 
 function activateNode(node) {
-  // changes the color attributes of
-  // the newly activated node
-  if (atn !== null) {
-    atn.setDefaultColor();
-  }
+
   // if node === null, just deactivate
   if (node === null) {
     atn = null;
-    return;
-  }
-  atn = node;
-  atn.getC().attr({
-    fill: atn_fillcolor
-  });
-  // If the skeleton has changed, redraw everything:
-  if (active_skeleton_id !== atn.skeleton_id) {
-    active_skeleton_id = atn.skeleton_id;
-    project.updateNodes();
-  }
-  // update statusBar
-  if (atn.type === "treenode") {
-    statusBar.replaceLast("activated treenode with id " + atn.id);
+    active_skeleton_id = null;
   } else {
-    statusBar.replaceLast("activated node with id " + atn.id);
+    atn = node;
+    active_skeleton_id = atn.skeleton_id;
+    // update statusBar
+    if (atn.type === "treenode") {
+      statusBar.replaceLast("activated treenode with id " + atn.id);
+    } else {
+      statusBar.replaceLast("activated node with id " + atn.id);
+    }
   }
+  project.recolorAllNodes();
 }
 
 SVGOverlay = function (
@@ -82,6 +73,18 @@ current_scale // current scale of the stack
         if (nodes[nodeid].id === id) {
           activateNode(nodes[nodeid]);
         }
+      }
+    }
+  };
+
+  this.recolorAllNodes = function () {
+    // Assumes that atn and active_skeleton_id are correct:
+    var nodeid, node;
+    for (nodeid in nodes) {
+      if (nodes.hasOwnProperty(nodeid)) {
+        node = nodes[nodeid];
+        node.setColor();
+        node.draw();
       }
     }
   };
@@ -505,9 +508,9 @@ current_scale // current scale of the stack
             var jso = $.parseJSON(text);
             // FIXME: isn't this always true?
             if (parid == -1) {
-              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, null);
+              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, null, true);
             } else {
-              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, null);
+              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, null, false);
             }
 
             nodes[jso.treenode_id] = nn;
@@ -569,13 +572,12 @@ current_scale // current scale of the stack
             // add treenode to the display and update it
             var jso = $.parseJSON(text);
             if (parid == -1) {
-              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id);
+              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
             } else {
-              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, jso.skeleton_id);
+              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, false);
             }
 
             nodes[jso.treenode_id] = nn;
-            nn.draw();
             activateNode(nn);
 
           }
@@ -667,7 +669,7 @@ current_scale // current scale of the stack
 
   this.refreshNodes = function (jso)
   {
-    var rad, nrtn = 0, nrcn = 0, parid, nid, nn;
+    var rad, nrtn = 0, nrcn = 0, parid, nid, nn, isRootNode;
     this.paper.clear();
     nodes = new Object();
     labels = new Object();
@@ -702,7 +704,8 @@ current_scale // current scale of the stack
         if (jso[i].skeleton_id) {
           skeleton_id = parseInt(jso[i].skeleton_id);
         }
-        nn = new Node(id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff, skeleton_id);
+        isRootNode = isNaN(parseInt(jso[i].parentid));
+        nn = new Node(id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff, skeleton_id, isRootNode);
         nrtn++;
       }
       else
@@ -726,10 +729,6 @@ current_scale // current scale of the stack
         if (jso[i].type == "treenode")
         {
           parid = parseInt(jso[i].parentid);
-          if(isNaN(parid))
-          {
-            nodes[nid].setAsRootNode();
-          }
           if (nodes[parid])
           {
             // if parent is existing, update the references

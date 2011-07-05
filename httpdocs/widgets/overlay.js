@@ -23,9 +23,19 @@ function activateNode(node) {
     } else {
       statusBar.replaceLast("activated node with id " + atn.id);
     }
+    openSkeletonNodeInObjectTree(node);
   }
   project.recolorAllNodes();
 }
+
+var openSkeletonNodeInObjectTree = function(node) {
+  // Check if the Object Tree div is visible
+  if ($('#object_tree_widget').css('display') === "none" || ! $('#synchronize_object_tree').attr('checked')) {
+    return;
+  }
+  // Else, synchronize:
+  requestOpenTreePath(node.id);
+};
 
 SVGOverlay = function (
 resolution, translation, dimension, // dimension of the stack

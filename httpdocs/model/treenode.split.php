@@ -25,7 +25,7 @@ if ( ! $tnid ) {
 
 # 2. There must be a project id
 if ( ! $pid ) {
-  echo makeJSON( array( 'error' => 'Project closed. Can not apply operation.' ) );
+  echo makeJSON( array( 'error' => 'Project closed. Cannot apply operation.' ) );
 	return;
 }
 
@@ -52,13 +52,13 @@ $eleof = 'element_of';
 
 // relation ids
 $modof_id = $db->getRelationId( $pid, $modof );
-if(!$modof_id) { echo makeJSON( array( 'error' => 'Can not find "'.$modof.'" relation for this project' ) ); return; }
+if(!$modof_id) { echo makeJSON( array( 'error' => 'Cannot find "'.$modof.'" relation for this project' ) ); return; }
 
 $eleof_id = $db->getRelationId( $pid, $eleof );
-if(!$eleof_id) { echo makeJSON( array( 'error' => 'Can not find "'.$eleof.'" relation for this project' ) ); return; }
+if(!$eleof_id) { echo makeJSON( array( 'error' => 'Cannot find "'.$eleof.'" relation for this project' ) ); return; }
 
 $skeletonClassID = $db->getClassId( $pid, "skeleton" );
-if(!$skeletonClassID) { echo makeJSON( array( 'error' => 'Can not find "skeleton" class for this project' ) ); return; }
+if(!$skeletonClassID) { echo makeJSON( array( 'error' => 'Cannot find "skeleton" class for this project' ) ); return; }
 
 // retrieve class_instances for the treenode, should only be one id
 //$ci_id = $db->getClassInstanceForTreenode( $pid, $tnid, 'model_of');
@@ -66,12 +66,12 @@ if(!$skeletonClassID) { echo makeJSON( array( 'error' => 'Can not find "skeleton
 //$ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$ci_id[0]['class_instance_id']);
 
 // retrieve skeleton id
-$sk = $db->getClassInstanceForTreenode( $pid, $tnid, 'element_of');
+$sk = $db->getClassInstanceForTreenode( $pid, $tnid, $eleof );
 if (!empty($sk)) {
 	// DECLARE sk_id for the first time
 	$sk_id = $sk[0]['class_instance_id'];
 } else {
-	echo makeJSON( array( 'error' => 'Can not find skeleton for treenode with id: '.$tnid ) );
+	echo makeJSON( array( 'error' => 'Cannot find skeleton for treenode with id: '.$tnid ) );
 	return;
 }
 
@@ -82,7 +82,7 @@ if (!empty($neu)) {
 	// DECLARE neu_id for the first time
 	$neu_id = $neu[0]['id'];
 } else {
-	echo makeJSON( array( 'error' => 'Can not find neuron for the skeleton with id: '.$sk_id ) );
+	echo makeJSON( array( 'error' => 'Cannot find neuron for the skeleton with id: '.$sk_id ) );
 	return;
 }
 

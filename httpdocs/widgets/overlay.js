@@ -505,9 +505,9 @@ current_scale // current scale of the stack
             var jso = $.parseJSON(text);
             // FIXME: isn't this always true?
             if (parid == -1) {
-              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, null);
+              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, null, true);
             } else {
-              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, null);
+              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, null, false);
             }
 
             nodes[jso.treenode_id] = nn;
@@ -569,9 +569,9 @@ current_scale // current scale of the stack
             // add treenode to the display and update it
             var jso = $.parseJSON(text);
             if (parid == -1) {
-              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id);
+              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
             } else {
-              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id);
+              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, false);
             }
 
             nodes[jso.treenode_id] = nn;
@@ -667,7 +667,7 @@ current_scale // current scale of the stack
 
   this.refreshNodes = function (jso)
   {
-    var rad, nrtn = 0, nrcn = 0, parid, nid, nn;
+    var rad, nrtn = 0, nrcn = 0, parid, nid, nn, isRootNode;
     this.paper.clear();
     nodes = new Object();
     labels = new Object();
@@ -702,7 +702,8 @@ current_scale // current scale of the stack
         if (jso[i].skeleton_id) {
           skeleton_id = parseInt(jso[i].skeleton_id);
         }
-        nn = new Node(id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff, skeleton_id);
+        isRootNode = isNaN(parseInt(jso[i].parentid));
+        nn = new Node(id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff, skeleton_id, isRootNode);
         nrtn++;
       }
       else
@@ -726,10 +727,6 @@ current_scale // current scale of the stack
         if (jso[i].type == "treenode")
         {
           parid = parseInt(jso[i].parentid);
-          if(isNaN(parid))
-          {
-            nodes[nid].setAsRootNode();
-          }
           if (nodes[parid])
           {
             // if parent is existing, update the references

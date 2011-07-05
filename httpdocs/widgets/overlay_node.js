@@ -13,7 +13,8 @@ x, // the x coordinate in pixel coordinates
 y, // y coordinates
 z, // z coordinates
 zdiff, // the different from the current slices
-skeleton_id) // the id of the skeleton this node is an element of
+skeleton_id,
+is_root_node) // the id of the skeleton this node is an element of
 {
 
   // the database treenode id
@@ -26,7 +27,7 @@ skeleton_id) // the id of the skeleton this node is an element of
   this.needsync = false;
 
   // is this node a root node
-  this.isroot = false;
+  this.isroot = is_root_node;
 
   // local screen coordinates relative to the div
   // pixel coordinates
@@ -78,17 +79,6 @@ skeleton_id) // the id of the skeleton this node is an element of
   }
   else {
     this.rcatch = 0;
-  }
-
-  this.setAsRootNode = function () {
-    this.isroot = true;
-    if (atn !== null && this.id === atn.id) {
-      fillcolor = atn_fillcolor;
-    } else {
-      fillcolor = "rgb(255, 0, 0)";
-    }
-    this.setDefaultColor();
-    // console.log("called set root");
   }
 
   // update the parent node of this node

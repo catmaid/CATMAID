@@ -256,7 +256,7 @@ skeleton_id) // the id of the skeleton this node is an element of
   };
 
   // updates the raphael path coordinates
-  this.drawLine = function () {
+  this.drawLineToParent = function () {
     if (this.parent != null) {
       var strokecolor = this.colorFromZDiff(this.parent);
 
@@ -280,7 +280,7 @@ skeleton_id) // the id of the skeleton this node is an element of
     for (i in this.children) {
       if (this.children.hasOwnProperty(i)) {
         if (this.children[i].parent !== null) {
-          this.children[i].drawLine();
+          this.children[i].drawLineToParent();
         }
       }
     }
@@ -291,7 +291,7 @@ skeleton_id) // the id of the skeleton this node is an element of
       }
     }
     if (this.parent !== null) {
-      this.drawLine();
+      this.drawLineToParent();
     }
   };
 

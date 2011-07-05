@@ -38,7 +38,6 @@ current_scale // current scale of the stack
 
   var edgetoggle = true;
   var nodes = {};
-  var connectornodes = {};
   var labels = {};
   var show_labels = false;
 
@@ -146,7 +145,6 @@ current_scale // current scale of the stack
           for (nodeid in nodeitems) {
             if (nodeitems.hasOwnProperty(nodeid)) {
               var tl = new OverlayLabel(nodeitems[nodeid], r, nodes[nodeid].x, nodes[nodeid].y, nodeitems[nodeid]);
-              // console.log(tl);
               labels[nodeid] = tl;
             }
           }
@@ -468,12 +466,9 @@ current_scale // current scale of the stack
               // postsynaptic case, no requirement to create new connector
               // but we need to update the postgroup with corresponding original treenod
               nodes[locid_retrieved].postgroup[id] = nodes[id];
-              //FIXME
-              // console.log("postsynaptic case, need to update postgroup id of node", nodes[locid_retrieved], "with node", nodes[id] );
               // do not activate anything but redraw
               nodes[locid_retrieved].draw();
               // update the reference to the connector from the treenode
-              // FIXME: why connectors and postgroup, with id and locid_retrieved?
               nodes[id].connectors[locid_retrieved] = nodes[locid_retrieved];
             }
 
@@ -750,7 +745,6 @@ current_scale // current scale of the stack
               if (preloctnid in nodes)
               {
                 // link it to pregroup, to connect it to the connector
-                // FIXME: should be stored in connectornodes if introduce array
                 nodes[nid].pregroup[preloctnid] = nodes[preloctnid];
                 // add to pregroup of treenode
                 nodes[preloctnid].connectors[nid] = nodes[nid];
@@ -765,7 +759,6 @@ current_scale // current scale of the stack
               if (postloctnid in nodes)
               {
                 // link it to postgroup, to connect it to the connector
-                // FIXME: should be stored in connectornodes if introduce array
                 nodes[nid].postgroup[postloctnid] = nodes[postloctnid];
                 // add to postgroup of treenode
                 nodes[postloctnid].connectors[nid] = nodes[nid];
@@ -785,8 +778,6 @@ current_scale // current scale of the stack
 
     // show tags if necessary again
     this.showTags(show_labels);
-    // show nodes
-    // console.log(nodes);
   };
 
   var updateDimension = function () {

@@ -599,3 +599,32 @@ initObjectTree = function (pid) {
   });
 
 };
+
+
+/* A function that takes an array of ids starting from the root id
+ * and ending in any given node,
+ * and walks the array opening each child node as requested.
+ */
+var openTreePath = function(treeOb, path) {
+  if (path.length < 1) return;
+  // Invoke the open_node method on the jstree instance of the treeOb DOM element:
+  treeOb.jstree("open_node", $("#node_" + path[0]), function() { __openTreePath(treeOb, path.slice(1)) }, false );
+};
+
+requestOpenTreePath = function(treenodeID) {
+  $.ajax({
+    async: true,
+    type: 'POST',
+    url: "model/tree.object.expand.php",
+    data: { "tnid" : treenodeID,
+            "pid" : pid },
+    success: function (r, status) {
+               r = $.parseJSON(r);
+               if (r['error']) {
+                 alert("ERROR: " + r['error']);
+               } else {
+                 openTreePath($('#tree_object'), r);
+               }
+             }
+  });
+};

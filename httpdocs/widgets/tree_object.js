@@ -608,10 +608,14 @@ initObjectTree = function (pid) {
 var openTreePath = function(treeOb, path) {
   if (path.length < 1) return;
   // Invoke the open_node method on the jstree instance of the treeOb DOM element:
-  treeOb.jstree("open_node", $("#node_" + path[0]), function() { __openTreePath(treeOb, path.slice(1)) }, false );
+  treeOb.jstree("open_node", $("#node_" + path[0]), function() { openTreePath(treeOb, path.slice(1)) }, false );
+  if (1 == path.length) {
+    // Set the skeleton node (the last id) as selected:
+    treeOb.jstree("select_node", $('#node_' + path[0]));
+  }
 };
 
-requestOpenTreePath = function(treenodeID) {
+var requestOpenTreePath = function(treenodeID) {
   $.ajax({
     async: true,
     type: 'POST',
@@ -623,7 +627,8 @@ requestOpenTreePath = function(treenodeID) {
                if (r['error']) {
                  alert("ERROR: " + r['error']);
                } else {
-                 openTreePath($('#tree_object'), r);
+                 var treeOb = $('#tree_object');
+                 openTreePath(treeOb, r);
                }
              }
   });

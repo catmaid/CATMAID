@@ -212,10 +212,10 @@ var stringToKeyAction = {
     }
   },
   "Tab": {
-    helpText: "Switch to the next project (or the previous with Shift)",
+    helpText: "Switch to the next open stack (or the previous with Shift+Tab)",
     specialKeyCodes: [9],
     run: function (e) {
-      if (shift) {
+      if (e.shiftKey) {
         project.switchFocus(-1);
       } else {
         project.switchFocus(1);

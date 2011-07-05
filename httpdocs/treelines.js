@@ -246,7 +246,7 @@ function NeuronView(basename, color, viewer, projectID, skeletonID) {
       // centrePoint.attr("fill","#f00");
       // centrePoint.attr("stroke","#f00");
       for (i in enclosingObject.all_points) {
-        if (enclosingObject.hasOwnProperty(i)) {
+        if (enclosingObject.all_points.hasOwnProperty(i)) {
           point = enclosingObject.all_points[i];
           p = point.map_to_screen();
           if (this.circles) {
@@ -259,7 +259,7 @@ function NeuronView(basename, color, viewer, projectID, skeletonID) {
       // Now find all the end points, i.e. those with no parents:
       enclosingObject.endPoints = enclosingObject.all_points.slice(0);
       for (i in enclosingObject.all_points) {
-        if (enclosingObject.hasOwnProperty(i)) {
+        if (enclosingObject.all_points.hasOwnProperty(i)) {
           parent_id = enclosingObject.all_points[i].parent_id;
           if (parent_id > 0) {
             delete enclosingObject.endPoints[parent_id];

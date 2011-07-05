@@ -113,7 +113,7 @@ is_root_node) // the id of the skeleton this node is an element of
   // update the parent if it exists
   if (this.parent !== null) {
     // if parent exists, update it
-    this.updateParent(parent);
+    this.updateParent(this.parent);
   }
 
   // update the local x,y coordinates

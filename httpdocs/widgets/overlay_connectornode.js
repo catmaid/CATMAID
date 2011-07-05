@@ -51,14 +51,15 @@ zdiff) // the different from the current slices
   // the node fill color depending on its distance for the
   // current slice
   var fillcolor;
-  if (zdiff === 0) {
-    fillcolor = "rgb(235, 117, 0)";
-  }
-  else if (zdiff === 1) {
-    fillcolor = "rgb(0, 0, 255)";
-  }
-  else if (zdiff === -1) {
-    fillcolor = "rgb(255, 0, 0)";
+
+  this.colorFromZDiff = function(node) {
+    if (node.zdiff > 0) {
+      return "rgb(0, 0, 255)";
+    } else if (node.zdiff < 0) {
+      return "rgb(255, 0, 0)";
+    } else {
+      return "rgb(235, 117, 0)";
+    }
   }
 
   // if the zdiff is bigger than zero we do not allow
@@ -69,24 +70,6 @@ zdiff) // the different from the current slices
   else {
     this.rcatch = 0;
   }
-
-  // XXX: update the parent node of this node
-  // update parent's children array
-/*
-  this.updateParent = function(par)
-  {
-    // par must be a Node object
-    this.parent = par;
-    // update reference to oneself
-    this.parent.children[id] = this;
-  }*/
-
-  // update the parent if it exists
-/*
-  if ( this.parent != null ) {
-    // if parent exists, update it
-    this.updateParent(parent);
-  }*/
 
   // update the local x,y coordinates
   // updated them for the raphael object as well
@@ -104,8 +87,19 @@ zdiff) // the different from the current slices
     this.draw();
   };
 
-  // set to default fill color
-  this.setDefaultColor = function () {
+  // Set the connector node fill color depending on whether it is active
+  // or not
+  this.setColor = function () {
+
+    if (atn !== null && this.id === atn.id) {
+      // The active node is always in green:
+      fillcolor = atn_fillcolor;
+    } else {
+      // If none of the above applies, just colour according to the z
+      // difference.
+      fillcolor = this.colorFromZDiff(this);
+    }
+
     c.attr({
       fill: fillcolor
     });
@@ -135,6 +129,9 @@ zdiff) // the different from the current slices
   // to do something sensible
   mc.parentnode = this;
 
+  // set the fill color of this connector
+  this.setColor();
+
   // an array storing the children Node objects of the this node
   // this.children = new Object();
   // XXX: delete all objects relevant to this node
@@ -142,15 +139,6 @@ zdiff) // the different from the current slices
   // javascript's garbage collection should do the rest
   this.deleteall = function () {
     var i;
-    // test if there is any child of type ConnectorNode
-    // if so, it is not allowed to remove the treenode
-/*for ( var i = 0; i < children.length; ++i ) {
-      if( children[i] instanceof ConnectorNode ) {
-        console.log("not allowed to delete treenode with connector attached. first remove connector.")
-        return;
-      }
-    }
-    */
     // remove the parent of all the children
     for (i = 0; i < this.children.length; ++i) {
       this.children[i].line.remove();
@@ -166,7 +154,8 @@ zdiff) // the different from the current slices
         if (this.parent.children.hasOwnProperty(i)) {
           if (this.parent.children[i].id === id) {
             // FIXME: use splice(1,1) instead
-            delete this.parent.children[i];
+            this.parent.children.splice(i, 1);
+            // delete this.parent.children[i];
           }
         }
       }
@@ -194,17 +183,6 @@ zdiff) // the different from the current slices
     // and not have references to the connector anymore in the
     // treenodes
     project.updateNodes();
-/*
-    // remove from view
-    c.remove();
-    mc.remove();
-    for(var i in this.preLines) {
-      this.preLines[i].remove();
-    }
-    for(var i in this.postLines) {
-      this.postLines[i].remove();
-    }
-    */
   };
 
   var arrowLine = function (paper, x1, y1, x2, y2, size, strowi, strocol) {
@@ -212,8 +190,8 @@ zdiff) // the different from the current slices
       arrowPath.remove();
       linePath.remove();
     };
-/*
-     * compute better position for arrowhead pointer
+    /*
+     * compute position for arrowhead pointer
      */
     var rloc = 8;
     var xdiff = (x2 - x1);
@@ -254,6 +232,9 @@ zdiff) // the different from the current slices
   this.postLines = {};
 
   this.updateLines = function () {
+    console.log("updateLines called");
+    console.log("prelines", this.preLines);
+    console.log("postlines", this.postLines);
     var i, l;
     for (i in this.preLines) {
       if(this.preLines.hasOwnProperty(i)) {

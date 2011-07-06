@@ -600,7 +600,6 @@ initObjectTree = function (pid) {
 
 };
 
-
 /* A function that takes an array of ids starting from the root id
  * and ending in any given node,
  * and walks the array opening each child node as requested.
@@ -611,6 +610,7 @@ var openTreePath = function(treeOb, path) {
   treeOb.jstree("open_node", $("#node_" + path[0]), function() { openTreePath(treeOb, path.slice(1)) }, false );
   if (1 == path.length) {
     // Set the skeleton node (the last id) as selected:
+    treeOb.jstree("deselect_all");
     treeOb.jstree("select_node", $('#node_' + path[0]));
   }
 };

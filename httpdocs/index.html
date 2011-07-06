@@ -172,33 +172,33 @@
 				<div class="box">
 
 				  <a href="#" class="button" id="trace_button_skeleton">
-				    <img src="widgets/themes/kde/trace_skeleton.png" alt="skeleton tracing mode"/></a>
+				    <img src="widgets/themes/kde/trace_skeleton.png"/></a>
 				    
 				  <a href="#" class="button" id="trace_button_synapse">
-				    <img src="widgets/themes/kde/trace_synapse.png" alt="synapse dropping mode"/></a>
+				    <img src="widgets/themes/kde/trace_synapse.png"/></a>
 				    
                   <a href="#" class="button" id="trace_button_sync">
-                    <img src="widgets/themes/kde/trace_sync.png" alt="manually syn tracings to the database"/></a>
+                    <img src="widgets/themes/kde/trace_sync.png"/></a>
 
                   <a href="#" class="button" id="trace_button_goactive">
-                    <img src="widgets/themes/kde/trace_active.png" alt="go to the active node"/></a>
+                    <img src="widgets/themes/kde/trace_active.png"/></a>
 
                   <a href="#" class="button" id="trace_button_skelsplitting">
-                    <img src="widgets/themes/kde/trace_skelsplitting.png" alt="split the skeleton"/></a>
+                    <img src="widgets/themes/kde/trace_skelsplitting.png"/></a>
 
                   <a href="#" class="button" id="trace_button_skelrerooting">
-                    <img src="widgets/themes/kde/trace_skelrerooting.png" alt="re-root the skeleton"/></a>
+                    <img src="widgets/themes/kde/trace_skelrerooting.png"/></a>
 
                   <a href="#" class="button" id="trace_button_togglelabels">
-                    <img src="widgets/themes/kde/trace_labels.png" alt="toggle display of tags"/></a>
+                    <img src="widgets/themes/kde/trace_labels.png"/></a>
 
                   <a href="#" class="button" id="trace_button_exportswc">
-                    <img src="widgets/themes/kde/trace_3dview.png" alt="toggle the 3d view"/></a>
+                    <img src="widgets/themes/kde/trace_3dview.png"/></a>
 
 				</div>
                 <div class="box" id="z_index_box_tracing"><p>z-index&nbsp;&nbsp;</p><div id="slider_trace_z"></div><p>&nbsp;&nbsp;</p></div>
                 <div class="box" id="zoom_level_box_tracing"><p>zoom-level&nbsp;&nbsp;</p><div id="slider_trace_s"></div><p>&nbsp;&nbsp;</p></div>
-                <div class="box" id="toggle_lines_tracing"><p>Show edges?&nbsp;&nbsp;<input type="checkbox" id="edgetoggle" name="edgetoggle" value="edgetoggle" checked="checked"/></p></div>
+                <div class="box" id="toggle_lines_tracing"><p>Show edges?&nbsp;&nbsp;<input type="checkbox" id="edgetoggle" name="edgetoggle" value="edgetoggle" checked="yes"></p></div>
                 <div class="toolbar_fill"></div>
 			</div>
 			<!--
@@ -315,24 +315,24 @@
 
         <div id="key_shortcut_widget" class="sliceView" style="width:350px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
           <div class="stackInfo_selected" style="position:relative">
-            <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p>
+            <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
+            <p id="keyShortcutsText">[BUG: keyboard shortcut help should be here...]</p>
           </div>
-          <p id="keyShortcutsText">[BUG: keyboard shortcut help should be here...]</p>
         </div>
 
         <div id="view_in_3d_widget" class="sliceView" style="width:512px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
           <div class="stackInfo_selected" style="position:relative">
-            <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p>
-          </div>
-          <input type="button" id="add_current_to_3d_view" value="Add current skeleton to 3D view" onclick="project.addTo3DView();"/>
-          <p id="view3DIntroduction"></p>
-          <ul id="view-3d-object-list">
-          </ul>
-          <div id="viewer-3d-canvas" style="width: 500px; height: 500px"/>
-          <div id="viewer-3d-buttons">
-            <input id="xy-button" type="button" value="XY"/>
-            <input id="xz-button" type="button" value="XZ"/>
-            <input id="zy-button" type="button" value="ZY"/>
+            <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
+            <input type="button" id="add_current_to_3d_view" value="Add current skeleton to 3D view" onclick="project.addTo3DView();"/>
+            <p id="view3DIntroduction"></p>
+            <ul id="view-3d-object-list">
+            </ul>
+            <div id="viewer-3d-canvas" style="width: 500px; height: 500px"/>
+            <div id="viewer-3d-buttons">
+              <input id="xy-button" type="button" value="XY">
+              <input id="xz-button" type="button" value="XZ">
+              <input id="zy-button" type="button" value="ZY">
+            </div>
           </div>
         </div>
 
@@ -398,8 +398,8 @@
 		-->
 
 		<div id="object_tree_widget" class="sliceView" style="width:350px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
-			<div class="stackInfo_selected" style="position:relative"><p id="object_tree_widget_title" class="stackTitle">Object Tree</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
-			<div id="object_tree_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
+			<div class="stackInfo_selected" style="position:relative"><p id="tree_widget_title" class="stackTitle">Object Tree</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
+			<div id="tree_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
 			    <input type="button" id="refresh_object_tree" value="refresh" style="display:block; float:left;" />
 				  &nbsp; Synchronize <input type="checkbox" id="synchronize_object_tree" checked="yes" />
 			    <br clear="all" />
@@ -421,7 +421,7 @@
 		<div id="content">
 			<h1>CATMAID v0.24beta</h1>
 		
-			<div id="project_list">
+			<div id="project list">
 				<p>Please feel free to open one of the public projects or log in with your account and password.</p>
 		
 				<h2 id="projects_h">Projects</h2>

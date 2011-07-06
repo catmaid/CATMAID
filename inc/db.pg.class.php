@@ -99,6 +99,24 @@ class DB
 			$result = false;
 		return $result;
 	}
+
+	/** Begin a transaction. Must be followed by zero or more
+	 * queries and insertions and then, finally, by a call to commit().
+	 */
+	function begin()
+	{
+		return pg_query( $this->handle, "BEGIN" );
+	}
+
+	function rollback()
+	{
+		return pg_query( $this->handle, "ROLLBACK" );
+	}
+
+	function commit()
+	{
+		return pg_query( $this->handle, "COMMIT" );
+	}
 	
 	/**
 	 * get the results of an SQL query keyed by id

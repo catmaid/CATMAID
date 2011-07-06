@@ -58,8 +58,8 @@ try {
 	}
 
 	if (empty($parent_res)) {
-		 // no parent found or is root, then return
-		 emitErrorAndExit( $db, 'An error occured while rerooting. No valid query result.' );
+		// no parent found or is root, then return
+		emitErrorAndExit( $db, 'An error occured while rerooting. No valid query result.' );
 	}
 
 
@@ -73,7 +73,7 @@ try {
 																					WHERE "treenode"."id" = '.$parent_id.'
 																					AND "treenode"."project_id" = '.$pid);
 		
-		if (false === $parents_parent_res) {
+		if (false === $parents_parent_res || empty($parents_parent_res)) {
 			emitErrorAndExit($db, 'Failed to select parent with id: '.$parent_id);
 		}
 

@@ -301,7 +301,7 @@ current_scale // current scale of the stack
             } else {
               // just redraw all for now
               project.updateNodes();
-              $("#tree_object").jstree("refresh", -1);
+              refreshObjectTree();
             }
           } // endif
         } // end if
@@ -325,7 +325,7 @@ current_scale // current scale of the stack
           } else {
             // just redraw all for now
             project.updateNodes();
-            $("#tree_object").jstree("refresh", -1);
+            refreshObjectTree();
           }
         } // endif
       } // end if

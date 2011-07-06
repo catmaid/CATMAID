@@ -301,6 +301,7 @@ current_scale // current scale of the stack
             } else {
               // just redraw all for now
               project.updateNodes();
+              $("#tree_object").jstree("refresh", -1);
             }
           } // endif
         } // end if
@@ -308,6 +309,7 @@ current_scale // current scale of the stack
     }
   };
 
+  // Used to join two skeleton together
   this.createTreenodeLink = function (fromid, toid) {
     // first make sure to reroot target
     requestQueue.register("model/treenode.reroot.php", "POST", {
@@ -323,6 +325,7 @@ current_scale // current scale of the stack
           } else {
             // just redraw all for now
             project.updateNodes();
+            $("#tree_object").jstree("refresh", -1);
           }
         } // endif
       } // end if

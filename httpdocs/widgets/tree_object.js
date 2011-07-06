@@ -616,6 +616,7 @@ var openTreePath = function(treeOb, path) {
 };
 
 var requestOpenTreePath = function(treenodeID) {
+  // Check if the node is already highlighted
   $.ajax({
     async: true,
     type: 'POST',
@@ -633,3 +634,11 @@ var requestOpenTreePath = function(treenodeID) {
              }
   });
 };
+
+// Refresh the Object Tree if it is visible.
+var refreshObjectTree = function() {
+  if ($('#object_tree_widget').css('display') === "block") {
+    $("#tree_object").jstree("refresh", -1);
+  }
+};
+

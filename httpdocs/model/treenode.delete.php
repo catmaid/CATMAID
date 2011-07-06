@@ -151,6 +151,7 @@ if ( $pid )
 			// finally delete the treenode to be consistent with the foreign key constraint
 			// with on cascade delete, this will delete all its labels
 			$ids = $db->deleteFrom("treenode", ' "treenode"."id" = '.$tnid);
+            
 
 			echo "Removed treenode successfully.";  
 

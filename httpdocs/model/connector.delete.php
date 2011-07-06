@@ -65,6 +65,9 @@ if ( $pid )
        
       // delete connector
       $ids = $db->deleteFrom("connector", ' "connector"."id" = '.$cid);
+
+      // delete connector from geometyr domain
+      $ids = $db->deleteFrom("treenode_connector", ' "connector_id" = '.$cid);
       
       // delete class_instance      
       $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$classin_id);

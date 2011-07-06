@@ -5,6 +5,7 @@ include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
 include_once( 'json.inc.php' );
+include_once( 'utils.php' );
 
 $db =& getDB();
 $ses =& getSession();
@@ -84,82 +85,79 @@ if (!empty($neu)) {
 	return;
 }
 
-/** Echo an error message as JSON and terminate execution.
- */
-function emitErrorAndExit( $error ) {
-	global $db;
-	if (! $db->rollback() ) {
-		$error = $error." AND FAILED TO ROLLBACK!";
-	}
-	echo makeJSON( array ( 'error' => $error ) );
-	exit();
-}
 
+// Start transaction
 if (! $db->begin() ) {
 	echo makeJSON( array( 'error' => 'Could not start transaction.' ) );
 	return;
 }
 
-// Split $tnid from its parent in $sk_id
-$ids = $db->getResult('UPDATE "treenode" SET "parent_id" = NULL WHERE "treenode"."id" = '.$tnid);
+try {
 
-if ( false === $ids ) {
-	emitErrorAndExit('Failed to update treenode with id '.$tnid);
-}
+	// Split $tnid from its parent in $sk_id
+	$ids = $db->getResult('UPDATE "treenode" SET "parent_id" = NULL WHERE "treenode"."id" = '.$tnid);
 
-// Create new skeleton that will be used for each children treenode
-//   which becomes the root of a new skeleton
-$data = array(
-  'user_id' => $uid,
-  'project_id' => $pid,
-  'class_id' => $skeletonClassID,
-  'name' => 'skeleton'
-  );
-$newSkeletonID = $db->insertIntoId('class_instance', $data );
-
-if ( false === $newSkeletonID ) {
-	emitErrorAndExit('Failed to create a new skeleton');
-}
-
-// Update skeleton name by adding its id to the end
-$up = array('name' => 'skeleton '.$newSkeletonID);
-$upw = 'id = '.$newSkeletonID;
-
-if (0 == $db->update( "class_instance", $up, $upw)) {
-	emitErrorAndExit('Failed to update the name of the skeleton');
-}
-
-// Attach skeleton to neuron
-$data = array(
-    'user_id' => $uid,
-    'project_id' => $pid,
-    'relation_id' => $modof_id,
-    'class_instance_a' => $newSkeletonID,
-    'class_instance_b' => $neu_id 
-  );
-if ( false === $db->insertInto('class_instance_class_instance', $data ) ) {
-	emitErrorAndExit('Failed to update the name of the skeleton');
-}
-
-// Traverse the entire subtree starting at $tnid and set their skeleton to a new one
-//    Update element_of of sub-skeleton
-//    Retrieve all treenode ids by traversing the subtree
-$children = $db->getAllTreenodeChildrenRecursively( $pid, $tnid );
-foreach($children as $key => $childTreenode) {
-  // Update the element_of to the newly created skeleton
-  // and the new root treenode
-	$ids = $db->getResult('UPDATE "treenode_class_instance" SET "class_instance_id" = '.$newSkeletonID.'
-                         WHERE "treenode_class_instance"."treenode_id" = '.$childTreenode['id'].'
-                               AND "treenode_class_instance"."relation_id" = '.$eleof_id);
 	if ( false === $ids ) {
-		emitErrorAndExit('Failed to update the skeleton id of the splitted nodes.');
+		emitErrorAndExit($db, 'Failed to update treenode with id '.$tnid);
 	}
-};
 
-if (! $db->commit() ) {
-	emitErrorAndExit( 'Failed to commit split!' );
+	// Create new skeleton that will be used for each children treenode
+	//   which becomes the root of a new skeleton
+	$data = array(
+		'user_id' => $uid,
+		'project_id' => $pid,
+		'class_id' => $skeletonClassID,
+		'name' => 'skeleton'
+		);
+	$newSkeletonID = $db->insertIntoId('class_instance', $data );
+
+	if ( false === $newSkeletonID ) {
+		emitErrorAndExit($db, 'Failed to create a new skeleton');
+	}
+
+	// Update skeleton name by adding its id to the end
+	$up = array('name' => 'skeleton '.$newSkeletonID);
+	$upw = 'id = '.$newSkeletonID;
+
+	if (0 == $db->update( "class_instance", $up, $upw)) {
+		emitErrorAndExit($db, 'Failed to update the name of the skeleton');
+	}
+
+	// Attach skeleton to neuron
+	$data = array(
+			'user_id' => $uid,
+			'project_id' => $pid,
+			'relation_id' => $modof_id,
+			'class_instance_a' => $newSkeletonID,
+			'class_instance_b' => $neu_id 
+		);
+	if ( false === $db->insertInto('class_instance_class_instance', $data ) ) {
+		emitErrorAndExit($db, 'Failed to update the name of the skeleton');
+	}
+
+	// Traverse the entire subtree starting at $tnid and set their skeleton to a new one
+	//    Update element_of of sub-skeleton
+	//    Retrieve all treenode ids by traversing the subtree
+	$children = $db->getAllTreenodeChildrenRecursively( $pid, $tnid );
+	foreach($children as $key => $childTreenode) {
+		// Update the element_of to the newly created skeleton
+		// and the new root treenode
+		$ids = $db->getResult('UPDATE "treenode_class_instance" SET "class_instance_id" = '.$newSkeletonID.'
+													 WHERE "treenode_class_instance"."treenode_id" = '.$childTreenode['id'].'
+																 AND "treenode_class_instance"."relation_id" = '.$eleof_id);
+		if ( false === $ids ) {
+			emitErrorAndExit($db, 'Failed to update the skeleton id of the splitted nodes.');
+		}
+	};
+
+	if (! $db->commit() ) {
+		emitErrorAndExit( $db, 'Failed to commit split!' );
+	}
+
+	echo json_encode( array( 'message' => 'success' ) );
+
+} catch (Exception $e) {
+	emitErrorAndExit( $db, 'ERROR: '.$e );
 }
-
-echo json_encode( array( 'message' => 'success' ) );
   
 ?>

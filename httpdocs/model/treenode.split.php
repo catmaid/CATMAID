@@ -64,26 +64,6 @@ if(!$skeletonClassID) { echo makeJSON( array( 'error' => 'Cannot find "skeleton"
 // delete the model of, assume only one
 //$ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$ci_id[0]['class_instance_id']);
 
-// retrieve skeleton id
-$sk = $db->getClassInstanceForTreenode( $pid, $tnid, $eleof );
-if (!empty($sk)) {
-	// DECLARE sk_id for the first time
-	$sk_id = $sk[0]['class_instance_id'];
-} else {
-	echo makeJSON( array( 'error' => 'Cannot find skeleton for treenode with id: '.$tnid ) );
-	return;
-}
-
-// retrieve neuron id of the skeleton
-// getCIFromCI means "getClassInstanceFromClassInstance"
-$neu = $db->getCIFromCI( $pid, $sk_id, 'model_of' );
-if (!empty($neu)) {
-	// DECLARE neu_id for the first time
-	$neu_id = $neu[0]['id'];
-} else {
-	echo makeJSON( array( 'error' => 'Cannot find neuron for the skeleton with id: '.$sk_id ) );
-	return;
-}
 
 
 // Start transaction
@@ -93,6 +73,25 @@ if (! $db->begin() ) {
 }
 
 try {
+
+	// retrieve skeleton id
+	$sk = $db->getClassInstanceForTreenode( $pid, $tnid, $eleof );
+	if (!empty($sk)) {
+		// DECLARE sk_id for the first time
+		$sk_id = $sk[0]['class_instance_id'];
+	} else {
+		emitErrorAndExit( $db, 'Cannot find skeleton for treenode with id: '.$tnid );
+	}
+
+	// retrieve neuron id of the skeleton
+	// getCIFromCI means "getClassInstanceFromClassInstance"
+	$neu = $db->getCIFromCI( $pid, $sk_id, 'model_of' );
+	if (!empty($neu)) {
+		// DECLARE neu_id for the first time
+		$neu_id = $neu[0]['id'];
+	} else {
+		emitErrorAndExit( 'Cannot find neuron for the skeleton with id: '.$sk_id );
+	}
 
 	// Split $tnid from its parent in $sk_id
 	$ids = $db->getResult('UPDATE "treenode" SET "parent_id" = NULL WHERE "treenode"."id" = '.$tnid);

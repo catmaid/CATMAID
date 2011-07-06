@@ -13,7 +13,8 @@ x, // the x coordinate in pixel coordinates
 y, // y coordinates
 z, // z coordinates
 zdiff, // the different from the current slices
-skeleton_id) // the id of the skeleton this node is an element of
+skeleton_id,
+is_root_node) // the id of the skeleton this node is an element of
 {
 
   // the database treenode id
@@ -26,7 +27,7 @@ skeleton_id) // the id of the skeleton this node is an element of
   this.needsync = false;
 
   // is this node a root node
-  this.isroot = false;
+  this.isroot = is_root_node;
 
   // local screen coordinates relative to the div
   // pixel coordinates
@@ -49,23 +50,43 @@ skeleton_id) // the id of the skeleton this node is an element of
   // the line that is drawn to its parent
   var line = this.paper.path();
 
+  var fillcolor;
+
   this.colorFromZDiff = function(node) {
     if (node.zdiff > 0) {
       return "rgb(0, 0, 255)";
     } else if (node.zdiff < 0) {
       return "rgb(255, 0, 0)";
     } else {
-      if (this.skeleton_id && this.skeleton_id === active_skeleton_id) {
-        return active_skeleton_color;
-      } else {
-        return "rgb(255, 255, 0)";
-      }
+      return "rgb(255, 255, 0)";
     }
   }
 
-  // the node fill color depending on its distance for the
-  // current slice
-  var fillcolor = this.colorFromZDiff(this);
+
+  // Set the node fill color depending on its distance from the
+  // current slice, whether it's the active node, the root node, or in
+  // an active skeleton.
+  this.setColor = function () {
+
+    if (atn !== null && this.id === atn.id) {
+      // The active node is always in green:
+      fillcolor = atn_fillcolor;
+    } else if (this.isroot) {
+      // The root node should be colored red unless it's active:
+      fillcolor = "rgb(255, 0, 0)";
+    } else if (this.skeleton_id && this.skeleton_id === active_skeleton_id) {
+      // Otherwise nodes in the active skeleton should be green:
+      fillcolor = active_skeleton_color;
+    } else {
+      // If none of the above applies, just colour according to the z
+      // difference.
+      fillcolor = this.colorFromZDiff(this);
+    }
+
+    c.attr({
+      fill: fillcolor
+    });
+  };
 
   if (this.r < 0) {
     this.r = 3;
@@ -80,14 +101,6 @@ skeleton_id) // the id of the skeleton this node is an element of
     this.rcatch = 0;
   }
 
-
-  this.setAsRootNode = function () {
-    this.isroot = true;
-    fillcolor = "rgb(255, 0, 0)";
-    this.setDefaultColor();
-    // console.log("called set root");
-  }
-
   // update the parent node of this node
   // update parent's children array
   this.updateParent = function (par) {
@@ -100,7 +113,7 @@ skeleton_id) // the id of the skeleton this node is an element of
   // update the parent if it exists
   if (this.parent !== null) {
     // if parent exists, update it
-    this.updateParent(parent);
+    this.updateParent(this.parent);
   }
 
   // update the local x,y coordinates
@@ -117,13 +130,6 @@ skeleton_id) // the id of the skeleton this node is an element of
       cy: this.y
     });
     this.draw();
-  };
-
-  // set to default fill color
-  this.setDefaultColor = function () {
-    c.attr({
-      fill: fillcolor
-    });
   };
 
   // the accessor method for the display node
@@ -149,6 +155,8 @@ skeleton_id) // the id of the skeleton this node is an element of
   // raphael object in order to being able for the drag event handler
   // to do something sensible
   mc.parentnode = this;
+
+  this.setColor();
 
   // an array storing the children Node objects of the this node
   this.children = {};
@@ -184,6 +192,7 @@ skeleton_id) // the id of the skeleton this node is an element of
       for (i in this.parent.children) {
         if (this.parent.children.hasOwnProperty(i)) {
           if (this.parent.children[i].id === id) {
+            // FIXME: use splice(1,1) instead
             delete this.parent.children[i];
           }
         }
@@ -252,10 +261,12 @@ skeleton_id) // the id of the skeleton this node is an element of
   };
 
   // updates the raphael path coordinates
-  this.drawLine = function () {
+  this.drawLineToParent = function () {
     if (this.parent != null) {
       var strokecolor = this.colorFromZDiff(this.parent);
-
+      if (this.skeleton_id && this.skeleton_id == active_skeleton_id) {
+        strokecolor = active_skeleton_color;
+      }
       line.attr({
         path: [
           ["M", c.attrs.cx, c.attrs.cy],
@@ -276,7 +287,7 @@ skeleton_id) // the id of the skeleton this node is an element of
     for (i in this.children) {
       if (this.children.hasOwnProperty(i)) {
         if (this.children[i].parent !== null) {
-          this.children[i].drawLine();
+          this.children[i].drawLineToParent();
         }
       }
     }
@@ -287,7 +298,7 @@ skeleton_id) // the id of the skeleton this node is an element of
       }
     }
     if (this.parent !== null) {
-      this.drawLine();
+      this.drawLineToParent();
     }
   };
 
@@ -364,7 +375,7 @@ skeleton_id) // the id of the skeleton this node is an element of
 
     this.parentnode.needsync = true;
   };
-    
+
   mc.up = function () {
     c.attr({
       opacity: 1
@@ -378,7 +389,7 @@ skeleton_id) // the id of the skeleton this node is an element of
       opacity: 0.7
     });
   };
-    
+
   mc.drag(mc.move, mc.start, mc.up);
-    
+
 };

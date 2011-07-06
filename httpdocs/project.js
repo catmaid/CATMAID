@@ -212,10 +212,10 @@ var stringToKeyAction = {
     }
   },
   "Tab": {
-    helpText: "Switch to the next project (or the previous with Shift)",
+    helpText: "Switch to the next open stack (or the previous with Shift+Tab)",
     specialKeyCodes: [9],
     run: function (e) {
-      if (shift) {
+      if (e.shiftKey) {
         project.switchFocus(-1);
       } else {
         project.switchFocus(1);
@@ -419,15 +419,6 @@ function Project(pid) {
       width -= object_tree_widget.offsetWidth;
       left += object_tree_widget.offsetWidth;
     }
-/*if ( class_tree_widget.offsetWidth )
-		{
-			if ( object_tree_widget.offsetWidth )
-				class_tree_widget.style.left = left + "px";
-			else
-				class_tree_widget.style.left = "0px";
-			width -= class_tree_widget.offsetWidth;
-			left += class_tree_widget.offsetWidth;
-		}*/
     var old_width = 0;
     for (var i = 0; i < stacks.length; ++i) {
       old_width += stacks[i].getView().offsetWidth;
@@ -468,15 +459,6 @@ function Project(pid) {
         document.getElementById('object_tree_widget').style.display = 'block';
         ui.onresize();
         initObjectTree(this.id);
-      }
-      break;
-    case "classes":
-      var tw_status = document.getElementById('class_tree_widget').style.display;
-      // check if not opened before to prevent messing up with event handlers
-      if (tw_status != 'block') {
-        document.getElementById('class_tree_widget').style.display = 'block';
-        ui.onresize();
-        initClassTree(this.id);
       }
       break;
     }
@@ -540,7 +522,7 @@ function Project(pid) {
     var widget = $('#view_in_3d_widget');
     widget.css('display', 'block');
     ui.onresize();
-    createViewerFromCATMAID('3d-viewer-canvas');
+    createViewerFromCATMAID('viewer-3d-canvas');
     return;
   }
 
@@ -565,7 +547,7 @@ function Project(pid) {
           alert(e.error);
         } else {
           e['project_id'] = project.id;
-          addNeuronFromCATMAID('3d-viewer-canvas', e);
+          addNeuronFromCATMAID('viewer-3d-canvas', e);
         }
       } else {
         alert("Bad status code " + status + " mapping treenode ID to skeleton and neuron");
@@ -654,6 +636,12 @@ function Project(pid) {
     return;
   }
 
+  this.recolorAllNodes = function () {
+    var i;
+    for (i = 0; i < stacks.length; ++i) {
+      stacks[i].recolorAllNodes();
+    }
+  }
 
   /**
    * register all GUI elements
@@ -892,7 +880,7 @@ function Project(pid) {
   this.focusedStack;
 
   var editable = false;
-  var mode = "move";
+  var mode = "trace";
   var show_textlabels = true;
 
   var icon_text_apply = document.getElementById("icon_text_apply");

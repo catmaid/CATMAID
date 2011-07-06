@@ -6,35 +6,36 @@ var atn = null;
 var atn_fillcolor = "rgb(0, 255, 0)";
 
 var active_skeleton_id = null;
-var active_skeleton_color = "rgb(255, 100, 0)";
+var active_skeleton_color = "rgb(60, 145, 56)";
 
 function activateNode(node) {
-  // changes the color attributes of
-  // the newly activated node
-  if (atn !== null) {
-    atn.setDefaultColor();
-  }
+
   // if node === null, just deactivate
   if (node === null) {
     atn = null;
+    active_skeleton_id = null;
+  } else {
+    atn = node;
+    active_skeleton_id = atn.skeleton_id;
+    // update statusBar
+    if (atn.type === "treenode") {
+      statusBar.replaceLast("activated treenode with id " + atn.id + " skeleton id " + atn.skeleton_id );
+    } else {
+      statusBar.replaceLast("activated node with id " + atn.id);
+    }
+    openSkeletonNodeInObjectTree(node);
+  }
+  project.recolorAllNodes();
+}
+
+var openSkeletonNodeInObjectTree = function(node) {
+  // Check if the Object Tree div is visible
+  if ($('#object_tree_widget').css('display') === "none" || ! $('#synchronize_object_tree').attr('checked')) {
     return;
   }
-  atn = node;
-  atn.getC().attr({
-    fill: atn_fillcolor
-  });
-  // If the skeleton has changed, redraw everything:
-  if (active_skeleton_id !== atn.skeleton_id) {
-    active_skeleton_id = atn.skeleton_id;
-    project.updateNodes();
-  }
-  // update statusBar
-  if (atn.type === "treenode") {
-    statusBar.replaceLast("activated treenode with id " + atn.id);
-  } else {
-    statusBar.replaceLast("activated node with id " + atn.id);
-  }
-}
+  // Else, synchronize:
+  requestOpenTreePath(node.id);
+};
 
 SVGOverlay = function (
 resolution, translation, dimension, // dimension of the stack
@@ -45,7 +46,7 @@ current_scale // current scale of the stack
   this.translation = translation;
   this.dimension = dimension;
 
-  var speedtoggle = false;
+  var edgetoggle = true;
   var nodes = {};
   var labels = {};
   var show_labels = false;
@@ -86,6 +87,18 @@ current_scale // current scale of the stack
     }
   };
 
+  this.recolorAllNodes = function () {
+    // Assumes that atn and active_skeleton_id are correct:
+    var nodeid, node;
+    for (nodeid in nodes) {
+      if (nodes.hasOwnProperty(nodeid)) {
+        node = nodes[nodeid];
+        node.setColor();
+        node.draw();
+      }
+    }
+  };
+
   this.showTags = function (val) {
     this.toggleLabels(val);
   };
@@ -100,13 +113,8 @@ current_scale // current scale of the stack
     }
     labels = {};
 
-    // update state variable
-    if (toval === null) {
-      if (show_labels) {
-        show_labels = false;
-      } else {
-        show_labels = true;
-      }
+    if(toval === undefined) {
+      show_labels = !show_labels;
     } else {
       show_labels = toval;
     }
@@ -142,7 +150,6 @@ current_scale // current scale of the stack
           for (nodeid in nodeitems) {
             if (nodeitems.hasOwnProperty(nodeid)) {
               var tl = new OverlayLabel(nodeitems[nodeid], r, nodes[nodeid].x, nodes[nodeid].y, nodeitems[nodeid]);
-              // console.log(tl);
               labels[nodeid] = tl;
             }
           }
@@ -409,17 +416,18 @@ current_scale // current scale of the stack
     }); // endfunction
   };
 
+  // Create a new connector. We also use this function to join connector and treenode (postsynaptic case)
+  // when the locidval is not null, but the id of the connector
   var createConnector = function (locidval, id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z) {
     var ip_type, iplre, locid;
-    //console.log("start: locidval", locidval, "id", id);
     // id is treenode id
     if (locidval === null) {
-      // we have the presynaptic case
+      // we have the presynaptic case where the connector has to be created
       ip_type = 'presynaptic terminal';
       iplre = 'presynaptic_to';
       locid = 0;
     } else {
-      // we have the postsynaptic case where the location and synapse is already existing
+      // we have the postsynaptic case where the connector and treenode is already existing
       ip_type = 'postsynaptic terminal';
       iplre = 'postsynaptic_to';
       locid = locidval;
@@ -444,16 +452,13 @@ current_scale // current scale of the stack
           if (e.error) {
             alert(e.error);
           } else {
-            // add treenode to the display and update it
             var jso = $.parseJSON(text);
             var locid_retrieved = parseInt(jso.location_id, 10);
-            //alert("locid retrieved"+ locid_retrieved);
-            //console.log("handler: locidval", locidval, "id", id);
-            if (locidval === null) {
-              // presynaptic case
-              var nn = new ConnectorNode(locid_retrieved, r, 8, pos_x, pos_y, pos_z, 0);
 
-              // take the currently activated treenode into the pregroup
+            if (locidval === null) {
+              // presynaptic case, we create a new connector node and use the retrieved id
+              var nn = new ConnectorNode(locid_retrieved, r, 8, pos_x, pos_y, pos_z, 0);
+              // store the currently activated treenode into the pregroup of the connector
               nn.pregroup[id] = nodes[id];
               nodes[locid_retrieved] = nn;
               nn.draw();
@@ -461,10 +466,10 @@ current_scale // current scale of the stack
               nodes[id].connectors[locid_retrieved] = nn;
               // activate the newly created connector
               activateNode(nn);
+
             } else {
-              // do not need to create a new connector, already existing
-              // need to update the postgroup with corresponding original treenode
-              //console.log("existing syn", nodes[locid_retrieved], "locid", locid,  "retrieved", locid_retrieved);
+              // postsynaptic case, no requirement to create new connector
+              // but we need to update the postgroup with corresponding original treenod
               nodes[locid_retrieved].postgroup[id] = nodes[id];
               // do not activate anything but redraw
               nodes[locid_retrieved].draw();
@@ -480,10 +485,12 @@ current_scale // current scale of the stack
     return;
   };
 
+  // Create a new postsynaptic treenode from a connector. Store new skeleton/neuron in Isolated synaptic terminals
+  // We create the treenode first, then we create the link from the connector
   var createNodeWithConnector = function (locid, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
-    // no parent exists
-    // this is invoked to create a new node giving a location_id for a postynaptic linking
+    // set to rootnode (no parent exists)
     var parid = -1;
+
     requestQueue.register("model/treenode.create.php", "POST", {
       pid: project.id,
       parent_id: parid,
@@ -504,19 +511,16 @@ current_scale // current scale of the stack
             // add treenode to the display and update it
             var jso = $.parseJSON(text);
             // FIXME: isn't this always true?
-            if (parid == -1) {
-              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, null);
-            } else {
-              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, null);
-            }
+            // always create a new treenode which is the root of a new skeleton
+            var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, null, true);
 
+            // add node to nodes list
             nodes[jso.treenode_id] = nn;
             nn.draw();
-            //activateNode( nn );
+
             // grab the treenode id
             tnid = jso.treenode_id;
 
-            //console.log("treenode id to use for the create connector", tnid, "with locid", locid);
             // create connector : new atn postsynaptic_to deactivated atn.id (location)
             createConnector(locid, tnid, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
 
@@ -569,13 +573,12 @@ current_scale // current scale of the stack
             // add treenode to the display and update it
             var jso = $.parseJSON(text);
             if (parid == -1) {
-              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id);
+              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
             } else {
-              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, jso.skeleton_id);
+              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, false);
             }
 
             nodes[jso.treenode_id] = nn;
-            nn.draw();
             activateNode(nn);
 
           }
@@ -667,7 +670,7 @@ current_scale // current scale of the stack
 
   this.refreshNodes = function (jso)
   {
-    var rad, nrtn = 0, nrcn = 0, parid, nid, nn;
+    var rad, nrtn = 0, nrcn = 0, parid, nid, nn, isRootNode, j;
     this.paper.clear();
     nodes = new Object();
     labels = new Object();
@@ -702,7 +705,8 @@ current_scale // current scale of the stack
         if (jso[i].skeleton_id) {
           skeleton_id = parseInt(jso[i].skeleton_id);
         }
-        nn = new Node(id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff, skeleton_id);
+        isRootNode = isNaN(parseInt(jso[i].parentid));
+        nn = new Node(id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff, skeleton_id, isRootNode);
         nrtn++;
       }
       else
@@ -717,7 +721,7 @@ current_scale // current scale of the stack
         activateNode(nn);
       }
     }
-    if (speedtoggle) {
+    if (edgetoggle) {
       // loop again and add correct parent objects and parent's children update
       for (var i in jso)
       {
@@ -726,10 +730,6 @@ current_scale // current scale of the stack
         if (jso[i].type == "treenode")
         {
           parid = parseInt(jso[i].parentid);
-          if(isNaN(parid))
-          {
-            nodes[nid].setAsRootNode();
-          }
           if (nodes[parid])
           {
             // if parent is existing, update the references
@@ -740,22 +740,35 @@ current_scale // current scale of the stack
         }
         else if (jso[i].type == "location")
         {
+          //console.log("locations retrieved, check pre and post", jso)
           // update pregroup and postgroup
-          for (var j in jso[i].pre)
-          {
-            // check if presynaptic trenode id in list, if so,
-            // link to its pbject
-            preloctnid = parseInt(jso[i].pre[j].tnid);
-            if (preloctnid in nodes)
-            {
-              // add presyn treenode to pregroup of
-              // the location object
-              nodes[nid].pregroup[preloctnid] = nodes[preloctnid];
-              // add to pregroup of treenode
-              nodes[preloctnid].connectors[nid] = nodes[nid];
+          // loop over pregroup
+          if (jso[i].hasOwnProperty('pre')) {
+            for (j = 0; j < jso[i].pre.length; j++ ) {
+              // check if presynaptic treenode exist in nodes
+              preloctnid = parseInt(jso[i].pre[j].tnid);
+              if (preloctnid in nodes)
+              {
+                // link it to pregroup, to connect it to the connector
+                nodes[nid].pregroup[preloctnid] = nodes[preloctnid];
+                // add to pregroup of treenode
+                nodes[preloctnid].connectors[nid] = nodes[nid];
+              }
             }
-
-
+          }
+          // loop over postgroup
+          if (jso[i].hasOwnProperty('post')) {
+            for (j = 0; j < jso[i].post.length; j++ ) {
+              // check if postsynaptic treenode exist in nodes
+              postloctnid = parseInt(jso[i].post[j].tnid);
+              if (postloctnid in nodes)
+              {
+                // link it to postgroup, to connect it to the connector
+                nodes[nid].postgroup[postloctnid] = nodes[postloctnid];
+                // add to postgroup of treenode
+                nodes[postloctnid].connectors[nid] = nodes[nid];
+              }
+            }
           }
         }
       }
@@ -767,13 +780,9 @@ current_scale // current scale of the stack
       }
 
     } // end speed toggle
-    // statusBar.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 3 ) + "]" );
-    // debugging the node retrieval
-    //    statusBar.replaceLast( "number of treenodes (retrieved): " + nrtn +"; number of connectors: " + nrcn);
+
     // show tags if necessary again
     this.showTags(show_labels);
-    // show nodes
-    // console.log(nodes);
   };
 
   var updateDimension = function () {
@@ -861,7 +870,7 @@ current_scale // current scale of the stack
         }
       } else {
         if (atn instanceof Node) {
-          // here we could create new synapse presynaptic to the activated treenode
+          // here we could create new connector presynaptic to the activated treenode
           // remove the automatic synapse creation for now
           // the user has to change into the synapsedropping mode and add the
           // connector, then active the original treenode again, and shift-click
@@ -872,15 +881,8 @@ current_scale // current scale of the stack
           return true;
         } else if (atn instanceof ConnectorNode) {
           // create new treenode (and skeleton) postsynaptic to activated connector
-          // deactiveate atn, cache atn id
           locid = atn.id;
-          // keep connector active because you might want
-          // to quickly add several postsynaptic treenodes
-          //activateNode( null );
-          // create root node, creates a new active node
-          // because the treenode creation is asynchronous, we have to invoke
-          // the connector creation in the event handler
-          statusBar.replaceLast("created connector postsynaptic to treenode with id " + atn.id);
+          statusBar.replaceLast("created treenode with id " + atn.id + "postsynaptic to activated connector");
           createNodeWithConnector(locid, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
           e.stopPropagation();
           return true;
@@ -965,14 +967,14 @@ current_scale // current scale of the stack
     view.style.display = "none";
   };
 
-  $('input#speedtoggle').change(function () {
+  $('input#edgetoggle').change(function () {
     if ($(this).attr("checked")) {
       //do the stuff that you would do when 'checked'
-      speedtoggle = true;
+      edgetoggle = true;
       project.updateNodes();
       return;
     } else {
-      speedtoggle = false;
+      edgetoggle = false;
       project.updateNodes();
       return;
     }

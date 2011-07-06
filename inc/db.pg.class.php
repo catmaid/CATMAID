@@ -542,6 +542,31 @@ class DB
     
     return $res;
    }
+
+  /*
+   * get class_instance parent from a class_instance given its relation
+	 * with additional table information in the results.
+   */
+   function getCIFromCIWithClassNameAndId( $pid, $cid, $relation )
+   {
+    // element of id
+    $rel_id = $this->getRelationId( $pid, $relation );
+    if(!$rel_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$relation.'" relation for this project' ) ); return; }
+
+    $res = $this->getResult(
+			'SELECT "hierarchy"."class_instance_b" as "parent_id",
+			        "objects"."class_id",
+							"class"."class_name"
+			 FROM "class_instance_class_instance" AS "hierarchy",
+			      "class_instance" AS "objects",
+			      "class"
+			 WHERE "hierarchy"."project_id" = '.$pid.'
+			       AND "hierarchy"."relation_id" = '.$rel_id.'
+						 AND "hierarchy"."class_instance_a" = '.$cid.'
+					   AND "hierarchy"."class_instance_b" = "objects"."id" AND "objects"."class_id" = "class"."id"');
+    
+    return $res;
+   }
    
    /*
     * get children of a treenode in a flat list

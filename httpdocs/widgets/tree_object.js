@@ -452,6 +452,7 @@ initObjectTree = function (pid) {
     // remove all previously selected nodes (or push it to the history)
     for (key in project.selectedObjects.tree_object) {
       if(project.selectedObjects.tree_object.hasOwnProperty(key)) {
+        // FIXME: use splice(1,1) instead
         delete project.selectedObjects.tree_object[key];
       }
     }
@@ -473,6 +474,7 @@ initObjectTree = function (pid) {
     // remove all previously selected nodes (or push it to the history)
     for (key in project.selectedObjects.tree_object) {
       if(project.selectedObjects.tree_object.hasOwnProperty(key)) {
+        // FIXME: use splice(1,1) instead
         delete project.selectedObjects.tree_object[key];
       }
     }
@@ -596,4 +598,38 @@ initObjectTree = function (pid) {
     });
   });
 
+};
+
+/* A function that takes an array of ids starting from the root id
+ * and ending in any given node,
+ * and walks the array opening each child node as requested.
+ */
+var openTreePath = function(treeOb, path) {
+  if (path.length < 1) return;
+  // Invoke the open_node method on the jstree instance of the treeOb DOM element:
+  treeOb.jstree("open_node", $("#node_" + path[0]), function() { openTreePath(treeOb, path.slice(1)) }, false );
+  if (1 == path.length) {
+    // Set the skeleton node (the last id) as selected:
+    treeOb.jstree("deselect_all");
+    treeOb.jstree("select_node", $('#node_' + path[0]));
+  }
+};
+
+var requestOpenTreePath = function(treenodeID) {
+  $.ajax({
+    async: true,
+    type: 'POST',
+    url: "model/tree.object.expand.php",
+    data: { "tnid" : treenodeID,
+            "pid" : pid },
+    success: function (r, status) {
+               r = $.parseJSON(r);
+               if (r['error']) {
+                 alert("ERROR: " + r['error']);
+               } else {
+                 var treeOb = $('#tree_object');
+                 openTreePath(treeOb, r);
+               }
+             }
+  });
 };

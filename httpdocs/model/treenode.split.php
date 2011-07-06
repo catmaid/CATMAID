@@ -43,8 +43,6 @@ if ( ! $uid ) {
 # Proceed to split the given node from its parent,
 # so that the node becomes the root of its own subtree in a new skeleton.
 
-# TODO: TRANSACTIONAL! Put all database queries into a single transaction.
-
 // Split treenode
 
 $modof = 'model_of';
@@ -86,8 +84,28 @@ if (!empty($neu)) {
 	return;
 }
 
+/** Echo an error message as JSON and terminate execution.
+ */
+function emitErrorAndExit( $error ) {
+	global $db;
+	if (! $db->rollback() ) {
+		$error = $error." AND FAILED TO ROLLBACK!";
+	}
+	echo makeJSON( array ( 'error' => $error ) );
+	exit();
+}
+
+if (! $db->begin() ) {
+	echo makeJSON( array( 'error' => 'Could not start transaction.' ) );
+	return;
+}
+
 // Split $tnid from its parent in $sk_id
 $ids = $db->getResult('UPDATE "treenode" SET "parent_id" = NULL WHERE "treenode"."id" = '.$tnid);
+
+if ( false === $ids ) {
+	emitErrorAndExit('Failed to update treenode with id '.$tnid);
+}
 
 // Create new skeleton that will be used for each children treenode
 //   which becomes the root of a new skeleton
@@ -99,10 +117,17 @@ $data = array(
   );
 $newSkeletonID = $db->insertIntoId('class_instance', $data );
 
+if ( false === $newSkeletonID ) {
+	emitErrorAndExit('Failed to create a new skeleton');
+}
+
 // Update skeleton name by adding its id to the end
 $up = array('name' => 'skeleton '.$newSkeletonID);
 $upw = 'id = '.$newSkeletonID;
-$db->update( "class_instance", $up, $upw);
+
+if (0 == $db->update( "class_instance", $up, $upw)) {
+	emitErrorAndExit('Failed to update the name of the skeleton');
+}
 
 // Attach skeleton to neuron
 $data = array(
@@ -112,7 +137,9 @@ $data = array(
     'class_instance_a' => $newSkeletonID,
     'class_instance_b' => $neu_id 
   );
-$db->insertInto('class_instance_class_instance', $data );
+if ( false === $db->insertInto('class_instance_class_instance', $data ) ) {
+	emitErrorAndExit('Failed to update the name of the skeleton');
+}
 
 // Traverse the entire subtree starting at $tnid and set their skeleton to a new one
 //    Update element_of of sub-skeleton
@@ -124,8 +151,14 @@ foreach($children as $key => $childTreenode) {
 	$ids = $db->getResult('UPDATE "treenode_class_instance" SET "class_instance_id" = '.$newSkeletonID.'
                          WHERE "treenode_class_instance"."treenode_id" = '.$childTreenode['id'].'
                                AND "treenode_class_instance"."relation_id" = '.$eleof_id);
+	if ( false === $ids ) {
+		emitErrorAndExit('Failed to update the skeleton id of the splitted nodes.');
+	}
 };
 
+if (! $db->commit() ) {
+	emitErrorAndExit( 'Failed to commit split!' );
+}
 
 echo json_encode( array( 'message' => 'success' ) );
   

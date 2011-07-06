@@ -20,10 +20,11 @@ function activateNode(node) {
     // update statusBar
     if (atn.type === "treenode") {
       statusBar.replaceLast("activated treenode with id " + atn.id + " skeleton id " + atn.skeleton_id );
+      openSkeletonNodeInObjectTree(node);
     } else {
-      statusBar.replaceLast("activated node with id " + atn.id);
+      statusBar.replaceLast("activated connector node with id " + atn.id);
     }
-    openSkeletonNodeInObjectTree(node);
+
   }
   project.recolorAllNodes();
 }

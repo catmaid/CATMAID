@@ -583,8 +583,27 @@ current_scale // current scale of the stack
             }
 
             nodes[jso.treenode_id] = nn;
-            activateNode(nn);
+            var active_node = atn;
+            activateNode(nn); // will alter atn
 
+            // Check whether the Z coordinate of the new node is beyond one section away 
+            // from the Z coordinate of the parent node (which is the active by definition)
+            if (atn) {
+				console.log("uh?", active_node.z, nn.z);
+				if (Math.abs(active_node.z - nn.z) > 1) {
+					console.log("growl");
+					var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
+					//var g = $('#growl-alert'); // doesn't work
+					g.growlAlert({
+						autoShow: true,
+						content: 'Node added beyond one section from its parent node!',
+						title: 'BEWARE',
+						position: 'top-right',
+						delayTime: 2500,
+						onComplete: function() { g.remove(); }
+					});
+				}
+			}
           }
         }
       }

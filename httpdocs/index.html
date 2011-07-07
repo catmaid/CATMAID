@@ -113,7 +113,7 @@
 				</div>
 				<div class="box" id="toolbox_data" style="display:none">
 					<a href="#" class="button" id="data_button_table_treenode" onclick="project.showDatatableWidget( 'treenode' );"><img src="widgets/themes/kde/table.gif" alt="table" title="treenode table" /></a>
-                    <!--<a href="#" class="button" id="data_button_table_connector" onclick="project.showDatatableWidget( 'connector' );"><img src="widgets/themes/kde/table_connector.gif" alt="table" title="connector table" /></a>-->
+                    <a href="#" class="button" id="data_button_table_connector" onclick="project.showDatatableWidget( 'connector' );"><img src="widgets/themes/kde/table_connector.gif" alt="table" title="connector table" /></a>
 					<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'entities' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="object tree" /></a>
 					<!--<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'classes' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="class tree" /></a>-->
 					<a href="#" class="button" id="data_button_stats" onclick="project.showStatisticsWidget( );"><img src="widgets/themes/kde/stats.gif" alt="tree" title="project statistics" /></a>
@@ -282,14 +282,20 @@
 				<p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p>
             </div>
 			<div id="connector_table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
-                Name of skeleton: <br />
+
+                <select id="connector_relation_type">
+                    <option value="0">Presynaptic</option>
+                    <option value="1">Postsynaptic</option>
+                </select>
+                Skeleton ID: <br />
+
 				<table cellpadding="0" cellspacing="0" border="0" class="display" id="connectortable">
 					<thead>
 						<tr>
-							<th>subject</th>
-							<th>predicated</th>
-                            <th>object</th>
-							<th>tags</th>
+							<th>subject (skeleton)</th>
+							<th>predicated (pre/post)</th>
+                            <th>object (connector)</th>
+                            <th>connector tags</th>
 							<th>username</th>
 							<th>last modified</th>
 						</tr>
@@ -301,7 +307,7 @@
 							<th>subject</th>
 							<th>predicated</th>
                             <th>object</th>
-							<th><input type="text" name="search_labels" value="Search tags" class="search_init" /></th>
+                            <th>connector tags</th>
 							<th>username</th>
 							<th>last modified</th>
 						</tr>

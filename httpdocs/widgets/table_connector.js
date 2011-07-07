@@ -4,6 +4,7 @@
 var connectorTable;
 var asInitValsSyn = new Array();
 
+
 initConnectorTable = function (pid)
 {
   var prestr = '1';
@@ -19,7 +20,20 @@ initConnectorTable = function (pid)
     "bProcessing": true,
     "bServerSide": true,
     "bAutoWidth": false,
-    "sAjaxSource": 'model/connector.list.php?pid=' + pid + '&pre=' + prestr,
+    "sAjaxSource": 'model/connector.list.php',
+    "fnServerData": function (sSource, aoData, fnCallback) {
+        aoData.push({
+          "pid": pid,
+          "relation_type": prestr
+        });
+        $.ajax({
+          "dataType": 'json',
+          "type": "POST",
+          "url": sSource,
+          "data": aoData,
+          "success": fnCallback
+        });
+    },
     "aLengthMenu": [
       [10, 25, 50, -1],
       [10, 25, 50, "All"]
@@ -27,7 +41,6 @@ initConnectorTable = function (pid)
     "bJQueryUI": true,
     "fnRowCallback": function (nRow, aData, iDisplayIndex)
     {
-
       if (parseInt(aData[5]) in selectedObjects)
       {
         $(nRow).addClass('row_selected');
@@ -48,10 +61,6 @@ initConnectorTable = function (pid)
       "bSearchable": false
     }, // object
     {
-      "bSearchable": true,
-      "bSortable": false
-    }, // tags
-    {
       "bSearchable": false,
       "bSortable": true
     }, // username
@@ -60,8 +69,7 @@ initConnectorTable = function (pid)
       "bSortable": true
     } // last modified
     ]
-    
-    
+
   });
 
   $(tableid + " tfoot input").keyup(function ()

@@ -41,7 +41,7 @@ if ( ! $pid ) {
 
 # There must be a user id
 if ( ! $uid ) {
-    echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to add treenodes.' ) );
+    echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to connect treenode and connector.' ) );
     return;
 }
 

@@ -15,6 +15,7 @@ $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 // use, 0 for presynaptic_to, 1 for postsynaptic_to
 $relation_type = isset( $_REQUEST[ 'relation_type' ] ) ? intval( $_REQUEST[ 'relation_type' ] ) : 0;
 // skeleton id used
+$skeletonID = isset( $_REQUEST[ 'skeleton_id' ] ) ? intval( $_REQUEST[ 'skeleton_id' ] ) : 0;
 
 /* Paging */
 $sLimit = "";
@@ -25,20 +26,12 @@ if ( isset( $_REQUEST['iDisplayStart'] ) )
 	$sLimit = "LIMIT ".$displayLength." OFFSET ".$displayStart;
 }
 
-$columnToFieldArray = array( "instance_name",
-			     "tnid",
-			     "username",
-			     "labels",
-			     "last_modified",
-			     "instance_id" );
+$columnToFieldArray = array( "connector_id", "tags", "nrnodes", "username");
 
 function fnColumnToField( $i )
 {
 	global $columnToFieldArray;
-	if ( $i < 0 || $i >= count($columnToFieldArray) )
-		return "tnid";
-	else
-		return $columnToFieldArray[$i];
+	return $columnToFieldArray[$i];
 }
 
 /* Ordering */
@@ -53,6 +46,11 @@ if ( isset( $_REQUEST['iSortCol_0'] ) )
 		$sOrder .= fnColumnToField($columnIndex)." ".$direction.", ";
 	}
 	$sOrder = substr_replace( $sOrder, "", -2 );
+}
+
+if ( ! $skeletonID ) {
+    echo makeJSON( array( 'error' => 'You need to activate a treenode with a valid skeleton id to retrieve the connector list.' ) );
+    return;
 }
 
 # There must be a project id
@@ -77,6 +75,12 @@ if(!$presyn_id) {
 $postsyn_id = $db->getRelationId( $pid, 'postsynaptic_to' );
 if(!$postsyn_id) {
     echo makeJSON( array( 'error' => 'Can not find "postsynaptic_to" relation for this project' ) );
+    return;
+}
+
+$elementof_id = $db->getRelationId( $pid, 'element_of' );
+if(!$elementof_id) {
+    echo makeJSON( array( 'error' => 'Can not find "element_of" relation for this project' ) );
     return;
 }
 
@@ -112,65 +116,73 @@ if( !empty($tlabelrel_res) )
 }
 */
 
-// class_instance_id name, username, treenode id
-
-if ( $pre )
+if ( $relation_type )
 {
+    $relation_id = $presyn_id;
+    // inverse relation to fetch postsynaptic skeletons
+    $relation_inverse_id = $postsyn_id;
+} else {
+    $relation_id = $postsyn_id;
+    $relation_inverse_id = $presyn_id;
+}
 
-    $t = $db->getResult('SELECT	"tc"."treenode_id" AS "tnid",
-        "tc"."connector_id" AS "cnid",
-        "tc"."user_id" AS "user_id",
-        to_char("ci"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
-        FROM "treenode_connector" as "tc"
-        WHERE "tci"."relation_id" = '.$presyn_id.' AND
-        "tci"."project_id" = '.$pid.'
-        '.$sOrder.'
+// Retrieve all the connector ids that are presynaptic or
+// postsynaptic to the treenodes of the given skeleton
+
+$t = $db->getResult('SELECT	"tc"."connector_id" AS "connector_id",
+"tc"."user_id" AS "user_id",
+"user"."name" AS "username"
+FROM "treenode_connector" as "tc", "treenode_class_instance" as "tci", "user"
+WHERE "tc"."relation_id" = '.$relation_id.' AND
+"tc"."user_id" = "user"."id" AND
+"tci"."project_id" = '.$pid.' AND
+"tc"."treenode_id" = "tci"."treenode_id" AND
+"tci"."class_instance_id" = '.$skeletonID.' AND
+"tci"."relation_id" = '.$elementof_id.'
+'.$sLimit
+);
+
+$result = array();
+
+// For each connector, find all the pre/postsynaptic treenodes
+// and retrieve the number of treenodes for a given skeleton id
+foreach($t as $key => $value) {
+
+    // Retrieve the treenodes on the "other" side first
+    // then retrieve the skeleton ids and count their number of treenodes
+
+    $t2 = $db->getResult('SELECT	"tc"."treenode_id" AS "treenode_id",
+        "tci"."class_instance_id" AS "skeleton_id",
+        "tc"."user_id" AS "user_id"
+        FROM "treenode_connector" as "tc", "treenode_class_instance" as "tci"
+        WHERE "tc"."relation_id" = '.$relation_inverse_id.' AND
+        "tci"."project_id" = '.$pid.' AND
+        "tc"."connector_id" = '.$value["connector_id"].' AND
+        "tc"."treenode_id" = "tci"."treenode_id" AND
+        "tci"."relation_id" = '.$elementof_id.'
         '.$sLimit
-        );
-    print_r($t);
-    
-// retrieve from treenode_class_instance for relation ids
-$t = $db->getResult(
-    'SELECT	"tci"."treenode_id" AS "tnid",
-    "tci"."user_id" AS "user_id",
-    "user"."name" AS "username",
-    "ci"."name" AS "instance_name",
-    "ci"."id" AS "instance_id",
-    ( "tci"."user_id" = '.$uid.' ) AS "can_edit",
-    to_char("ci"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
-    FROM "treenode_class_instance" as "tci", "user", "class_instance" as "ci"
-    WHERE "tci"."relation_id" = '.$presyn_id.' AND
-    "tci"."project_id" = '.$pid.' AND
-    "tci"."user_id" = "user"."id" AND
-    "tci"."class_instance_id" = "ci"."id"
-    '.$sOrder.'
-    '.$sLimit
     );
-}
-else
-{
 
-$t = $db->getResult(
-    'SELECT	"tci"."treenode_id" AS "tnid",
-    "tci"."user_id" AS "user_id",
-    "user"."name" AS "username",
-    "ci"."name" AS "instance_name",
-    "ci"."id" AS "instance_id",
-    ( "tci"."user_id" = '.$uid.' ) AS "can_edit",
-    to_char("ci"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
-    FROM "treenode_class_instance" as "tci", "user", "class_instance" as "ci"
-    WHERE "tci"."relation_id" = '.$postsyn_id.' AND
-    "tci"."project_id" = '.$pid.' AND
-    "tci"."user_id" = "user"."id" AND
-    "tci"."class_instance_id" = "ci"."id"
-    '.$sOrder.'
-    '.$sLimit
-    );
+    if(!empty($t2)) {
+        // loop over treenodes and count the number
+        foreach($t2 as $key2 => $value2 ) {
+            $data = $value;
+            $data["nr_treenodes"] = $db->getTreenodeCountForSkeleton( $pid, $value2["skeleton_id"] );
+            $result[] = $data;
+        }
+
+    } else {
+        // a connector no treenodes beyond counts as zero
+        $data = $value;
+        $data["nr_treenodes"] = 0;
+        $result[] = $data;
+    }
+
 }
 
-// synapse list logic
+// build table
 
-$iTotal = count($t);
+$iTotal = count($result);
 
 reset( $t );
 
@@ -179,41 +191,24 @@ $sOutput .= '"iTotalRecords": '.$iTotal.', ';
 $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
 $sOutput .= '"aaData": [ ';
 
-while ( list( $key, $val) = each( $t ) )
+
+
+while ( list( $key, $val) = each( $result ) )
 {
     $sRow = "";
     $sRow .= "[";
-    $sRow .= '"'.addslashes($val["instance_name"]).'",';
-    $sRow .= '"'.addslashes($val["tnid"]).'",';
-    $sRow .= '"'.addslashes($val["username"]).'",';
+    $sRow .= '"'.addslashes($val["connector_id"]).'",';
 
-    // use tags
-    if(!empty($tlabel2))
-    {
-        if( array_key_exists($val['instance_id'], $tlabel2) )
-        {
-            $out = implode(', ', $tlabel2[$val['instance_id']]);
-        }
-        else
-        {
-            $out = '';
-        }
-        $val['label'] = $out;
-        $sRow .= '"'.addslashes($out).'",';
+    // $sRow .= '"'.addslashes($val["tnid"]).'",';
+    // tags
+    $sRow .= '"'.addslashes("").'",';
 
-    }
-    else
-    {
-        $sRow .= '"",';
-    }
-
-    // last modified
-    $sRow .= '"'.addslashes($val["last_modified"]).'",';
-    // instance_id
-    $sRow .= '"'.addslashes($val["instance_id"]).'",';
+    $sRow .= '"'.addslashes($val["nr_treenodes"]).'",';
+    $sRow .= '"'.addslashes($val["username"]).'"';
 
     $sRow .= "],";
 
+    /* dummy tag search logic
     $skip = False;
     if ( $_GET['sSearch_2'] != "" )
     {
@@ -225,7 +220,8 @@ while ( list( $key, $val) = each( $t ) )
 
     if ( !$skip )
         $sOutput .= $sRow;
-
+    */
+    $sOutput .= $sRow;
 
 }
 $sOutput = substr_replace( $sOutput, "", -1 );
@@ -234,4 +230,3 @@ $sOutput .= '] }';
 echo $sOutput;
 
 ?>
-

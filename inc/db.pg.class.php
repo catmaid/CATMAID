@@ -403,8 +403,16 @@ class DB
     "tci"."class_instance_id" = '.$skelid.' AND
     "treenode"."id" = "tci"."treenode_id"
     ORDER BY "treenode"."parent_id" DESC');
-    
+
     return $res;
+   }
+
+   /*
+    * return the number of treenodes for a skeleton
+    */
+   function getTreenodeCountForSkeleton( $pid, $skelid )
+   {
+    return count( $this->getTreenodeIdsForSkeleton( $pid, $skelid ) );
    }
    
    /*

@@ -7,9 +7,7 @@ var asInitValsSyn = new Array();
 
 initConnectorTable = function (pid)
 {
-  var prestr = '1';
   var tableid = '#connectortable';
-  var stype = 'presynaptic';
 
   connectorTable = $(tableid).dataTable(
   {
@@ -22,52 +20,66 @@ initConnectorTable = function (pid)
     "bAutoWidth": false,
     "sAjaxSource": 'model/connector.list.php',
     "fnServerData": function (sSource, aoData, fnCallback) {
-        aoData.push({
-          "pid": pid,
-          "relation_type": prestr
-        });
-        $.ajax({
-          "dataType": 'json',
-          "type": "POST",
-          "url": sSource,
-          "data": aoData,
-          "success": fnCallback
-        });
+      
+      var skeletonid;
+      if(atn !== null) {
+        skeletonid = atn.skeleton_id;
+      } else {
+        skeletonid = 0;
+      }
+
+      aoData.push({
+        "name": "relation_type",
+         "value" : $('#connector_relation_type :selected').attr("value")
+      });
+      aoData.push({
+        "name" : "pid",
+        "value" : pid
+      });
+      aoData.push({
+        "name" : "skeleton_id",
+        "value" : skeletonid
+      });
+      $.ajax({
+        "dataType": 'json',
+        "type": "POST",
+        "url": sSource,
+        "data": aoData,
+        "success": function(data, text) {
+          if (data.error ) {
+            // hide widget
+            document.getElementById('connectortable_widget').style.display = 'none';
+            ui.onresize();
+            alert( data.error );
+            return;
+          }
+          fnCallback(data);
+        }
+      });
+
     },
     "aLengthMenu": [
       [10, 25, 50, -1],
       [10, 25, 50, "All"]
     ],
     "bJQueryUI": true,
-    "fnRowCallback": function (nRow, aData, iDisplayIndex)
-    {
-      if (parseInt(aData[5]) in selectedObjects)
-      {
-        $(nRow).addClass('row_selected');
-      }
-      return nRow;
-    },
     "aoColumns": [
     {
       "bSearchable": false,
       "bSortable": true
-    }, // subject
-    {
-      "bSearchable": false,
-      "bSortable": true,
-      "sClass": "center"
-    }, // predicated
-    {
-      "bSearchable": false
-    }, // object
+    }, // connector id
     {
       "bSearchable": false,
       "bSortable": true
-    }, // username
+    }, // connectortags
+    {
+      "bSearchable": false,
+      "bSortable": true
+    }, // number of nodes
     {
       "bVisible": true,
       "bSortable": true
-    } // last modified
+    } // username
     ]
 
   });
@@ -107,6 +119,10 @@ initConnectorTable = function (pid)
   $(tableid + " tbody tr").live('click', function ()
   {
 
+  });
+
+  $('#connector_relation_type').change(function() {
+    connectorTable.fnDraw();
   });
 
 }

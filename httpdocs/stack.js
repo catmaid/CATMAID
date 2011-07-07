@@ -1693,7 +1693,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 
   // svg overlay for the tracing
   var svgOverlay = new SVGOverlay(resolution, translation, dimension, scale);
-  view.appendChild(svgOverlay.view);
+  mouseCatcher.appendChild(svgOverlay.view);
   svgOverlay.hide();
 
   var LAST_XT = Math.floor(MAX_X * scale / X_TILE_SIZE);

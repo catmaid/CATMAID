@@ -19,19 +19,19 @@ $tnid = isset( $_REQUEST[ 'tnid' ] ) ? intval( $_REQUEST[ 'tnid' ] ) : -1;
 
 # 1. There must be a treenode id
 if ( ! $tnid ) {
-	echo makeJSON( array( 'error' => 'A treenode id has not been provided!' ) );
+	echo json_encode( array( 'error' => 'A treenode id has not been provided!' ) );
 	return;
 }
 
 # 2. There must be a project id
 if ( ! $pid ) {
-  echo makeJSON( array( 'error' => 'Project closed. Cannot apply operation.' ) );
+  echo json_encode( array( 'error' => 'Project closed. Cannot apply operation.' ) );
 	return;
 }
 
 # 3. There must be a user id
 if ( ! $uid ) {
-    echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to add treenodes.' ) );
+    echo json_encode( array( 'error' => 'You are not logged in.' ) );
 	return;
 }
 
@@ -41,7 +41,7 @@ if ( ! $uid ) {
 
 // Start transaction
 if (! $db->begin() ) {
-	echo makeJSON( array( 'error' => 'Could not start transaction.' ) );
+	echo json_encode( array( 'error' => 'Could not start transaction.' ) );
 	return;
 }
 

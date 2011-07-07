@@ -20,19 +20,19 @@ $tnid = isset( $_REQUEST[ 'tnid' ] ) ? intval( $_REQUEST[ 'tnid' ] ) : -1;
 
 # 1. There must be a treenode id
 if ( ! $tnid ) {
-	echo makeJSON( array( 'error' => 'A treenode id has not been provided!' ) );
+	echo json_encode( array( 'error' => 'A treenode id has not been provided!' ) );
 	return;
 }
 
 # 2. There must be a project id
 if ( ! $pid ) {
-  echo makeJSON( array( 'error' => 'Project closed. Cannot apply operation.' ) );
+  echo json_encode( array( 'error' => 'Project closed. Cannot apply operation.' ) );
 	return;
 }
 
 # 3. There must be a user id
 if ( ! $uid ) {
-    echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to add treenodes.' ) );
+    echo json_encode( array( 'error' => 'You are not logged in.' ) );
 	return;
 }
 
@@ -51,13 +51,13 @@ $eleof = 'element_of';
 
 // relation ids
 $modof_id = $db->getRelationId( $pid, $modof );
-if(!$modof_id) { echo makeJSON( array( 'error' => 'Cannot find "'.$modof.'" relation for this project' ) ); return; }
+if(!$modof_id) { echo json_encode( array( 'error' => 'Cannot find "'.$modof.'" relation for this project' ) ); return; }
 
 $eleof_id = $db->getRelationId( $pid, $eleof );
-if(!$eleof_id) { echo makeJSON( array( 'error' => 'Cannot find "'.$eleof.'" relation for this project' ) ); return; }
+if(!$eleof_id) { echo json_encode( array( 'error' => 'Cannot find "'.$eleof.'" relation for this project' ) ); return; }
 
 $skeletonClassID = $db->getClassId( $pid, "skeleton" );
-if(!$skeletonClassID) { echo makeJSON( array( 'error' => 'Cannot find "skeleton" class for this project' ) ); return; }
+if(!$skeletonClassID) { echo json_encode( array( 'error' => 'Cannot find "skeleton" class for this project' ) ); return; }
 
 // retrieve class_instances for the treenode, should only be one id
 //$ci_id = $db->getClassInstanceForTreenode( $pid, $tnid, 'model_of');
@@ -68,7 +68,7 @@ if(!$skeletonClassID) { echo makeJSON( array( 'error' => 'Cannot find "skeleton"
 
 // Start transaction
 if (! $db->begin() ) {
-	echo makeJSON( array( 'error' => 'Could not start transaction.' ) );
+	echo json_encode( array( 'error' => 'Could not start transaction.' ) );
 	return;
 }
 
@@ -158,5 +158,5 @@ try {
 } catch (Exception $e) {
 	emitErrorAndExit( $db, 'ERROR: '.$e );
 }
-  
+ 
 ?>

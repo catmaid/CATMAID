@@ -5,7 +5,7 @@ function emitErrorAndExit( $db, $error ) {
 	if (! $db->rollback() ) {
 		$error = $error." AND FAILED TO ROLLBACK!";
 	}
-	echo makeJSON( array ( 'error' => $error ) );
+	echo json_encode( array ( 'error' => $error ) );
 	exit();
 }
 

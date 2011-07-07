@@ -221,6 +221,7 @@ class DB
 	{
 		$this->insertInto( $table, $values );
 		$id = $this->getResult( 'SELECT lastval() AS "id"' );
+		if (false === $id) return false; // query failed
 		return $id[ 0 ][ 'id' ];
 	}
 	
@@ -399,6 +400,7 @@ class DB
 		"SELECT class.id FROM class ".
 		"WHERE class.project_id = $pid AND ".
 		"class.class_name = '$escaped_classname'");
+		if (false === $res) return false;
 		$resid = !empty($res) ? $res[0]['id'] : 0;
 		return $resid;
 	}

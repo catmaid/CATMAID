@@ -17,13 +17,13 @@ $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
 # 1. There must be a project id
 if ( ! $pid ) {
-  echo makeJSON( array( 'error' => 'Project closed. Cannot apply operation.' ) );
+  echo json_encode( array( 'error' => 'Project closed. Cannot apply operation.' ) );
 	return;
 }
 
 # 2. There must be a user id
 if ( ! $uid ) {
-    echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to add treenodes.' ) );
+    echo json_encode( array( 'error' => 'You are not logged in currently.  Please log in to be able to add treenodes.' ) );
 	return;
 }
 
@@ -62,38 +62,38 @@ $targetgroup = isset( $_REQUEST[ 'targetgroup' ] ) ? $_REQUEST[ 'targetgroup' ] 
 
 $skid = $db->getClassId( $pid, "skeleton" );
 if (!$skid) {
-	echo makeJSON( array( 'error' => 'Can not find "skeleton" class for this project' ) );
+	echo json_encode( array( 'error' => 'Can not find "skeleton" class for this project' ) );
 	return;
 }
 
 $nid = $db->getClassId( $pid, "neuron" );
 if (!$nid) {
-	echo makeJSON( array( 'error' => 'Can not find "neuron" class for this project' ) );
+	echo json_encode( array( 'error' => 'Can not find "neuron" class for this project' ) );
 	return;
 }
 
 $eleof = $db->getRelationId( $pid, "element_of" );
 if (!$eleof) {
-	echo makeJSON( array( 'error' => 'Can not find "element_of" relation for this project' ) );
+	echo json_encode( array( 'error' => 'Can not find "element_of" relation for this project' ) );
 	return;
 }
 
 $modid = $db->getRelationId( $pid, "model_of" );
 if (!$modid) {
-	echo makeJSON( array( 'error' => 'Can not find "model_of" relation for this project' ) );
+	echo json_encode( array( 'error' => 'Can not find "model_of" relation for this project' ) );
 	return;
 }
 
 $partof_id = $db->getRelationId( $pid, "part_of" );
 if (!$partof_id) {
-	echo makeJSON( array( 'error' => 'Can not find "part_of" relation for this project' ) );
+	echo json_encode( array( 'error' => 'Can not find "part_of" relation for this project' ) );
 	return;
 }
 
 
 // Start transaction
 if (! $db->begin() ) {
-	echo makeJSON( array( 'error' => 'Could not start transaction.' ) );
+	echo json_encode( array( 'error' => 'Could not start transaction.' ) );
 	return;
 }
 
@@ -406,7 +406,7 @@ try {
 		if (! $db->commit() ) {
 			emitErrorAndExit( $db, 'Failed to commit for expand!' );
 		}
-		echo makeJSON( $json );
+		echo json_encode( $json );
 	} else {
 		emitErrorAndExit( $db, 'Failed to produce a JSON string!' );
 	}

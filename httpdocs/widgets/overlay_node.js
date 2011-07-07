@@ -5,16 +5,16 @@
  * A treenode object
  */
 Node = function (
-id, // unique id for the node from the database
-paper, // the raphael paper this node is drawn to
-parent, // the parent node
-r, // the radius
-x, // the x coordinate in pixel coordinates
-y, // y coordinates
-z, // z coordinates
-zdiff, // the different from the current slices
-skeleton_id,
-is_root_node) // the id of the skeleton this node is an element of
+	id, // unique id for the node from the database
+	paper, // the raphael paper this node is drawn to
+	parent, // the parent node
+	r, // the radius
+	x, // the x coordinate in pixel coordinates
+	y, // y coordinates
+	z, // z coordinates
+	zdiff, // the different from the current slices
+	skeleton_id,
+	is_root_node) // the id of the skeleton this node is an element of
 {
 
   // the database treenode id

@@ -101,19 +101,9 @@ Node = function (
     this.rcatch = 0;
   }
 
-  // update the parent node of this node
-  // update parent's children array
-  this.updateParent = function (par) {
-    // par must be a Node object
-    this.parent = par;
-    // update reference to oneself
-    this.parent.children[id] = this;
-  };
-
-  // update the parent if it exists
-  if (this.parent !== null) {
-    // if parent exists, update it
-    this.updateParent(this.parent);
+  // Update the parent's children if it exists
+  if (this.parent) {
+    this.parent.children[this.id] = this;
   }
 
   // update the local x,y coordinates

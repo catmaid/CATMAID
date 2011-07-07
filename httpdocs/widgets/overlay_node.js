@@ -256,7 +256,7 @@ Node = function (
 
   // updates the raphael path coordinates
   this.drawLineToParent = function () {
-    if (this.parent != null) {
+    if (this.parent) {
       var strokecolor = this.colorFromZDiff(this.parent);
       if (this.skeleton_id && this.skeleton_id == active_skeleton_id) {
         strokecolor = active_skeleton_color;
@@ -266,7 +266,8 @@ Node = function (
           ["M", c.attrs.cx, c.attrs.cy],
           ["L", this.parent.getC().attrs.cx, this.parent.getC().attrs.cy]
         ],
-        stroke: strokecolor
+        stroke: strokecolor,
+        "stroke-width": 2
       });
       // XXX: comment toBack for now because it takes much resources
       line.toBack();

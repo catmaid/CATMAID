@@ -14,14 +14,14 @@ $ses =& getSession();
 $pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
 # User id
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
-# Treenode id
-$treenodeID = isset( $_REQUEST[ 'tnid' ] ) ? intval( $_REQUEST[ 'tnid' ] ) : -1;
+# Skeleton id
+$skeletonID = isset( $_REQUEST[ 'skeleton_id' ] ) ? intval( $_REQUEST[ 'skeleton_id' ] ) : -1;
 
 # Check preconditions:
 
-# 1. There must be a treenode id
-if ( ! $treenodeID ) {
-	echo makeJSON( array( 'error' => 'A treenode id has not been provided!' ) );
+# 1. There must be a skeleton id
+if ( ! $skeletonID ) {
+	echo makeJSON( array( 'error' => 'A skeleton id has not been provided!' ) );
 	return;
 }
 
@@ -51,18 +51,6 @@ $model_of = 'model_of';
 $element_of = 'element_of';
 $part_of = 'part_of';
 
-$model_of_ID = $db->getRelationId( $pid, $model_of );
-if (!$model_of_ID) { echo makeJSON( array( 'error' => 'Cannot find "'.$model_of.'" relation for this project' ) ); return; }
-
-$element_of_ID = $db->getRelationId( $pid, $element_of );
-if (!$element_of_ID) { echo makeJSON( array( 'error' => 'Cannot find "'.$element_of.'" relation for this project' ) ); return; }
-
-$part_of_ID = $db->getRelationID( $pid, $part_of );
-if (!$part_of_ID) { echo makeJSON( array( 'error' => 'Cannot find "'.$part_of.'" relation for this project' ) ); return; }
-
-$skeletonClassID = $db->getClassId( $pid, "skeleton" );
-if (!$skeletonClassID) { echo makeJSON( array( 'error' => 'Cannot find "skeleton" class for this project' ) ); return; }
-
 
 // Start transaction
 if (! $db->begin() ) {
@@ -72,15 +60,7 @@ if (! $db->begin() ) {
 
 try {
 
-	# 1. The skeleton id:
-	$skeleton = $db->getClassInstanceForTreenode( $pid, $treenodeID, $element_of );
-	if ( false === $skeleton || empty($skeleton) ) {
-		emitErrorAndExit( $db, 'Cannot find skeleton for treenode with id: '.$treenodeID );
-	}
-
-	$skeletonID = $skeleton[0]['class_instance_id'];
-
-	# 2. Retrieve neuron id of the skeleton
+	# 1. Retrieve neuron id of the skeleton
 	# (getCIFromCI means "getClassInstanceFromClassInstance")
 	$neuron = $db->getCIFromCI( $pid, $skeletonID, $model_of );
 	if ( false === $neuron || empty($neuron) ) {
@@ -89,7 +69,7 @@ try {
 
 	$neuronID = $neuron[0]['id'];
 
-	# 3. Retrieve, recursively, all the nodes of which the neuron is a part of.
+	# 2. Retrieve, recursively, all the nodes of which the neuron is a part of.
 	$path = array( $skeletonID, $neuronID );
 	while(true) {
 		$q = $db->getCIFromCIWithClassNameAndId( $pid, end($path), $part_of );
@@ -109,7 +89,7 @@ try {
 		emitErrorAndExit( $db, 'Failed to commit for expand!' );
 	}
 
-	# 4. Return the list of ids that represent the path from the root id to the skeleton id in the object hierarchy:
+	# 3. Return the list of ids that represent the path from the root id to the skeleton id in the object hierarchy:
 	echo json_encode( array_reverse($path) );
 
 } catch (Exception $e) {

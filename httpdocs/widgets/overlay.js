@@ -35,7 +35,7 @@ var openSkeletonNodeInObjectTree = function(node) {
     return;
   }
   // Else, synchronize:
-  requestOpenTreePath(node.id);
+  requestOpenTreePath(node);
 };
 
 SVGOverlay = function (

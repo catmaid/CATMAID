@@ -207,11 +207,15 @@ Node = function (
     });
 
     // activate parent node when deleted
-    if (this.parent === null) {
-      activateNode(null);
-    } else {
+    if (this.parent) {
       // loop over nodes to see if parent is retrieved
       project.selectNode(this.parent.id);
+      if (!atn) {
+		  // fetch the parent node from the database and select it
+		  // TODO
+	  }
+    } else {
+      activateNode(null);
     }
     // redraw everything for now
     project.updateNodes();

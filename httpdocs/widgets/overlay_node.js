@@ -1,6 +1,7 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
+
 /*
  * A treenode object
  */
@@ -54,12 +55,14 @@ Node = function (
 
   this.colorFromZDiff = function(node) {
     if (node.zdiff > 0) {
-      return "rgb(0, 0, 255)";
+      return inactive_skeleton_color_above;
     } else if (node.zdiff < 0) {
-      return "rgb(255, 0, 0)";
+      return inactive_skeleton_color_below;
+    } else if (atn) {
+      return inactive_skeleton_color;
     } else {
-      return "rgb(255, 255, 0)";
-    }
+      return active_skeleton_color;
+	}
   }
 
 

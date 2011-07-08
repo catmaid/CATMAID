@@ -582,7 +582,7 @@ SVGOverlay = function (
 
             // Check whether the Z coordinate of the new node is beyond one section away 
             // from the Z coordinate of the parent node (which is the active by definition)
-            if (atn) {
+            if (active_node) {
 				if (Math.abs(active_node.z - nn.z) > 1) {
 					var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
 					//var g = $('#growl-alert'); // doesn't work

@@ -392,4 +392,8 @@ is_root_node) // the id of the skeleton this node is an element of
 
   mc.drag(mc.move, mc.start, mc.up);
 
+  mc.mousedown(function (e) {
+    e.stopPropagation();
+  });
+
 };

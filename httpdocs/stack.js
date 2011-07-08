@@ -682,7 +682,11 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       // take into account the shift of the svgOverlay
       var xp;
       var yp;
-      var m = ui.getMouse(e);
+      // If we don't allow propagation (with the optional second parameter)
+      // then dragging of nodes in Raphaël doesn't work, for reasons
+      // that are obscure to me. [1]
+      // [1] See http://stackoverflow.com/q/6617548/223092
+      var m = ui.getMouse(e, true);
 
       if (m) {
         // add right move of svgOverlay to the m.offsetX
@@ -758,9 +762,8 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     trace: function (e) {
 
       var b = ui.getMouseButton(e);
-      switch (b) {
-      case MOUSE_BUTTON_MIDDLE:
-        // afford dradding in tracing mode
+      if (b === MOUSE_BUTTON_MIDDLE) {
+        // afford dragging in tracing mode
         ui.registerEvent("onmousemove", onmousemove.move);
         ui.registerEvent("onmouseup", onmouseup.move);
         ui.catchEvents("move");
@@ -768,7 +771,8 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 
         //! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
         document.body.firstChild.focus();
-        break;
+      } else {
+        svgOverlay.whenclicked(e);
       }
 
       return true;
@@ -1046,11 +1050,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 
       // for the surrounding mouse event catcher
       mouseCatcher.onmousedown = onmousedown.move;
-      mouseCatcher.onmousemove = onmousemove.pos;
-      // but also for the svgoverlay, stops dragging node mdoe
-      svgOverlay.view.onmousedown = onmousedown.trace;
-      // XXX: coordinates are adjusted, either position or dragging but not both :(
-      // svgOverlay.view.onmousemove = onmousemove.trace;
+      mouseCatcher.onmousemove = onmousemove.trace;
       try {
         svgOverlay.view.addEventListener("DOMMouseScroll", onmousewheel.zoom, false); /* Webkit takes the event but does not understand it ... */
         svgOverlay.view.addEventListener("mousewheel", onmousewheel.zoom, false);
@@ -1693,7 +1693,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 
   // svg overlay for the tracing
   var svgOverlay = new SVGOverlay(resolution, translation, dimension, scale);
-  view.appendChild(svgOverlay.view);
+  mouseCatcher.appendChild(svgOverlay.view);
   svgOverlay.hide();
 
   var LAST_XT = Math.floor(MAX_X * scale / X_TILE_SIZE);

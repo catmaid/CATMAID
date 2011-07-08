@@ -87,6 +87,6 @@ while ( list( $key, $val) = each( $textlabels ) )
 	$textlabels[ $key ][ 'scaling' ] = $textlabels[ $key ][ 'scaling' ] == 't';
 }
 
-echo makeJSON( $textlabels );
+echo json_encode( $textlabels );
 
 ?>

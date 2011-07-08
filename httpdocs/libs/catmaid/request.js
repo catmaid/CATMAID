@@ -31,8 +31,6 @@ var requestQueue = function()
 		}
 	}
 	
-	alert( xmlHttp );
-	
 	var encodeArray = function( a, p )
 	{
 		var q = "";

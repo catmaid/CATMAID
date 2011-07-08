@@ -592,13 +592,16 @@ var SVGOverlay = function (
           } else {
             // add treenode to the display and update it
             var jso = $.parseJSON(text);
+            var treenodeID = parseInt(jso.treenode_id);
+            var skeletonID = parseInt(jso.skeleton_id);
+            //console.log("Create Node:", typeof jso.treenode_id);
             if (parid == -1) {
-              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
+              var nn = new Node(treenodeID, r, null, radius, pos_x, pos_y, pos_z, 0, skeletonID, true);
             } else {
-              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, false);
+              var nn = new Node(treenodeID, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, skeletonID, false);
             }
 
-            nodes[jso.treenode_id] = nn;
+            nodes[treenodeID] = nn;
             nn.draw();
             var active_node = atn;
             activateNode(nn); // will alter atn

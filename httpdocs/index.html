@@ -41,7 +41,10 @@
 		<script type="text/javascript" src="widgets/menu.js"></script>
 		<script type="text/javascript" src="widgets/resize_handle.js"></script>
 		<script type="text/javascript" src="project.js"></script>
+		<script type="text/javascript" src="overview.js"></script>
+		<script type="text/javascript" src="transition.js"></script>
 		<script type="text/javascript" src="stack.js"></script>
+		<script type="text/javascript" src="tilelayer.js"></script>
 		<!--[if gte IE 5]>
 		<script type="text/javascript" src="libs/excanvas/excanvas.js"></script>
 		<script type="text/javascript">var IE = true;</script>
@@ -180,7 +183,7 @@
 		-->
 		<div id="message_widget" class="sliceView" style="z-index:0; height:200px; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
 			<div class="stackInfo_selected" style="position:relative"><p class="stackTitle">Messages</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
-			<div style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto"><dl id="message_container" style="margin-top:2em; margin-bottom:2em;"></dl></div>
+			<div style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto"><dl id="message_container" style="margin-top:2em; margin-bottom:2em;"><dt></dt><dd></dd></dl></div>
 		</div>
 		
 		<!-- Table widget
@@ -212,9 +215,6 @@
 							<th>last modfied</th>
 						</tr>
 					</thead>
-					<tbody>
-					</tbody>
-					
 					<tfoot>
 						<tr>
 							<th>id</th>
@@ -229,6 +229,9 @@
 							<th>last modfied</th>			
 						</tr>
 					</tfoot>
+					<tbody>
+						<tr><td colspan="10"></td></tr>
+					</tbody>
 				</table>
 				</div>
 				
@@ -244,8 +247,6 @@
 							<th>instance id</th>
 						</tr>
 					</thead>
-					<tbody>
-					</tbody>
 					<tfoot>
 						<tr>
 							<th>name</th>
@@ -256,6 +257,9 @@
 							<th>instance id</th>
 						</tr>
 					</tfoot>
+					<tbody>
+						<tr><td colspan="6"></td></tr>
+					</tbody>
 				</table>
 				</div>
 				
@@ -271,8 +275,6 @@
 							<th>instance id</th>
 						</tr>
 					</thead>
-					<tbody>
-					</tbody>
 					<tfoot>
 						<tr>
 							<th>name</th>
@@ -283,6 +285,9 @@
 							<th>instance id</th>
 						</tr>
 					</tfoot>
+					<tbody>
+						<tr><td colspan="6"></td></tr>
+					</tbody>
 				</table>
 				</div>
 				
@@ -319,12 +324,12 @@
 		<div id="content">
 			<h1>CATMAID v0.24beta</h1>
 		
-			<div id="project list">
+			<div id="project_list">
 				<p>Please feel free to open one of the public projects or log in with your account and password.</p>
 		
 				<h2 id="projects_h">Projects</h2>
 		
-				<dl id="projects_dl"></dl>
+				<dl id="projects_dl"><dt></dt><dd></dd></dl>
 			</div>
 			
 			<div id="new_project_dialog" class="form">
@@ -338,7 +343,7 @@
 						<td><p>Visibiliy:</p></td><td><input type="radio" name="public" value="1" checked="checked" /> public &nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="public" value="0" /> private</td>
 					</tr>
 					<tr>
-						<td><p>Owners:</p></td><td><p id="new_project_owners_wait" class="wait_bgwhite">loading ...</p><select name="owners" id="new_project_owners" multiple="multiple"></select></td>
+						<td><p>Owners:</p></td><td><p id="new_project_owners_wait" class="wait_bgwhite">loading ...</p><select name="owners" id="new_project_owners" multiple="multiple"><option></option></select></td>
 			
 					</tr>
 					<tr><td>&nbsp;</td><td>&nbsp;</td></tr>

@@ -30,10 +30,9 @@ function Stack(
 		id,							//!< {Integer} the stack's id
 		title,						//!< {String} the stack's title
 		dimension,					//!< {Array} pixel dimensions [x, y, z, ...]
-		dimensionLabels,			//!< {Array} labels for dimensions ["x", "y", "z", "t", ...]
-		resolution,					//!< {Array} physical resolution in nm/pixel [x, y, z, ...]
-		overview_url,				//!< {String} URL to the overview image
-		skip_planes,				//!< {Array} planes to be excluded from the stack's view [[z],[t], ...]
+		resolution,					//!< {Array} physical resolution in units/pixel [x, y, z, ...]
+		overviewName,				//!< {String} file name of the overview image (e.g. 'overview.jpg')
+		skip_planes,				//!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
 		trakem2_project				//!< {boolean} that states if a TrakEM2 project is available for this stack
 )
 {
@@ -47,21 +46,23 @@ function Stack(
 		var meter = scale / resolution[ 0 ];
 		var width = 0;
 		var text = "";
-		for ( var i = 0; i < Stack.SCALEBAR_SIZES.length; ++i )
+		for ( var i = 0; i < Stack.SCALE_BAR_SIZES.length; ++i )
 		{
-			text = Stack.SCALEBAR_SIZES[ i ];
-			width = Stack.SCALEBAR_SIZES[ i ] * meter;
+			text = Stack.SCALE_BAR_SIZES[ i ];
+			width = Stack.SCALE_BAR_SIZES[ i ] * meter;
 			if ( width > Math.min( 192, viewWidth / 5 ) )
 				break;
 		}
 		var ui = 0;
-		while ( benchmark_text >= 1000 && ui < BENCHMARK_UNITS.length - 1 )
+		while ( text >= 1000 && ui < Stack.SCALE_BAR_UNITS.length - 1 )
 		{
-			benchmark_text /= 1000;
+			text /= 1000;
 			++ui;
 		}
-		benchmark.style.width = benchmark_width + "px";
-		benchmark.firstChild.firstChild.replaceChild( document.createTextNode( benchmark_text + " " + BENCHMARK_UNITS[ ui ] ), benchmark.firstChild.firstChild.firstChild );
+		scaleBar.style.width = width + "px";
+		scaleBar.firstChild.firstChild.replaceChild(
+			document.createTextNode( text + " " + Stack.SCALE_BAR_UNITS[ ui ] ),
+			scaleBar.firstChild.firstChild.firstChild );
 		return;
 	}
 	
@@ -84,8 +85,8 @@ function Stack(
 	 */
 	var update = function( now )
 	{
-		smallMap.update( z, y, x, s, viewHeight, viewWidth );
-		updateBenchmark();
+		overview.update( this.z, this.y, this.x, this.s, this.viewHeight, this.viewWidth );
+		updateScaleBar();
 		
 		//statusBar.replaceLast( "[" + ( Math.round( x * 10000 * resolution.x ) / 10000 ) + ", " + ( Math.round( y * 10000 * resolution.y ) / 10000 ) + "]" );
 		
@@ -105,17 +106,13 @@ function Stack(
 	 */
 	this.screenCoordinates = function()
 	{
-		var l =
+		var width : this.viewWidth / this.scale,
+		var height : this.viewHeight / this.scale,
+		return
 		{
-			width : viewWidth / scale,
-			height : viewHeight / scale,
-			z : z,
-			s : s,
-			scale : scale
+			y : Math.floor( this.y - height / 2 ),
+			x : Math.floor( this.x - width / 2 )
 		};
-		l.y = Math.floor( y - l.height / 2 );
-		l.x = Math.floor( x - l.width / 2 );
-		return l;
 	}
 	
 	/**
@@ -125,233 +122,25 @@ function Stack(
 	{
 		var l =
 		{
-			z : z * resolution.z + translation.z,
-			s : s,
-			scale : scale,
-			y : y * resolution.y + translation.y,
-			x : x * resolution.x + translation.x
+			z : this.z * resolution.z + translation.z,
+			s : this.s,
+			scale : this.scale,
+			y : this.y * resolution.y + translation.y,
+			x : this.x * resolution.x + translation.x
 		};
 		return l;
 	}
 	
 	/**
-	 * update textlabels by querying it from the server
-	 */
-	this.updateTextlabels = function()
-	{
-		var tl_width;
-		var tl_height;
-		if ( tiles.length == 0 )
-		{
-			tl_width = 0;
-			tl_height = 0;
-		}
-		else
-		{
-			tl_width = tiles[ 0 ].length * X_TILE_SIZE / scale;
-			tl_height = tiles.length * Y_TILE_SIZE / scale;
-		}
-		requestQueue.register(
-			'model/textlabels.php',
-			'POST',
-			{
-				pid : project.id,
-				sid : id,
-				z : z * resolution.z + translation.z,
-				top : ( y - tl_height / 2 ) * resolution.y + translation.y,
-				left : ( x - tl_width / 2 ) * resolution.x + translation.x,
-				width : tl_width * resolution.x,
-				height : tl_height * resolution.y,
-				//scale : ( mode == "text" ? 1 : scale ),	// should we display all textlabels when being in text-edit mode?  could be really cluttered
-				scale : scale,
-				resolution : resolution.y
-			},
-			handle_updateTextlabels );
-		return;
-	}
-
-	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */
 	var redraw = function()
 	{
-		var yc = Math.floor( y * scale - ( viewHeight / 2 ) );
-		var xc = Math.floor( x * scale - ( viewWidth / 2 ) );
+		this.yc = Math.floor( y * scale - ( viewHeight / 2 ) );
+		this.xc = Math.floor( x * scale - ( viewWidth / 2 ) );
 
-		var fr = Math.floor( yc / Y_TILE_SIZE );
-		var fc = Math.floor( xc / X_TILE_SIZE );
-		
-		var xd = 0;
-		var yd = 0;
-		
-		if ( z == old_z && s == old_s )
-		{
-			var old_yc = Math.floor( old_y * old_scale - ( viewHeight / 2 ) );
-			var old_xc = Math.floor( old_x * old_scale - ( viewWidth / 2 ) );
-			
-			var old_fr = Math.floor( old_yc / Y_TILE_SIZE );
-			var old_fc = Math.floor( old_xc / X_TILE_SIZE );
-			
-			xd = fc - old_fc;
-			yd = fr - old_fr;
-			
-			// re-order the tiles array on demand
-			if ( xd < 0 )
-			{
-				for ( var i = 0; i < tiles.length; ++i )
-				{
-					tilesContainer.removeChild( tiles[ i ].pop() );
-					var img = document.createElement( "img" );
-					img.alt = "empty";
-					img.src = "gfx/empty256.gif";
-					img.style.visibility = "hidden";
-					tilesContainer.appendChild( img );
-					tiles[ i ].unshift( img );
-				}
-			}
-			else if ( xd > 0 )
-			{
-				for ( var i = 0; i < tiles.length; ++i )
-				{
-					tilesContainer.removeChild( tiles[ i ].shift() );
-					var img = document.createElement( "img" );
-					img.alt = "empty";
-					img.src = "gfx/empty256.gif";
-					img.style.visibility = "hidden";
-					tilesContainer.appendChild( img );
-					tiles[ i ].push( img );
-				}
-			}
-			else if ( yd < 0 )
-			{
-				var old_row = tiles.pop();
-				var new_row = new Array();
-				for ( var i = 0; i < tiles[ 0 ].length; ++i )
-				{
-					tilesContainer.removeChild( old_row.pop() );
-					var img = document.createElement( "img" );
-					img.alt = "empty";
-					img.src = "gfx/empty256.gif";
-					img.style.visibility = "hidden";
-					tilesContainer.appendChild( img );
-					new_row.push( img );
-				}
-				tiles.unshift( new_row );
-			}
-			else if ( yd > 0 )
-			{
-				var old_row = tiles.shift();
-				var new_row = new Array();
-				for ( var i = 0; i < tiles[ 0 ].length; ++i )
-				{
-					tilesContainer.removeChild( old_row.pop() );
-					var img = document.createElement( "img" );
-					img.alt = "empty";
-					img.src = "gfx/empty256.gif";
-					img.style.visibility = "hidden";
-					tilesContainer.appendChild( img );
-					new_row.push( img );
-				}
-				tiles.push( new_row );
-			}
-		}
-		
-		var top;
-		var left;
-		
-		if ( yc >= 0 )
-			top  = -( yc % Y_TILE_SIZE );
-		else
-			top  = -( ( yc + 1 ) % Y_TILE_SIZE ) - Y_TILE_SIZE + 1;
-		if ( xc >= 0 )
-			left = -( xc % X_TILE_SIZE );
-		else
-			left = -( ( xc + 1 ) % X_TILE_SIZE ) - X_TILE_SIZE + 1;
-		
-		var t = top;
-		var l = left;
-
-		// update the images sources
-		for ( var i = 0; i < tiles.length; ++i )
-		{
-			var r = fr + i;
-			for ( var j = 0; j < tiles[ 0 ].length; ++j )
-			{
-				var c = fc + j;
-				if ( r < 0 || c < 0 || r > LAST_YT || c > LAST_XT )
-				{
-					tiles[ i ][ j ].alt = "";
-					tiles[ i ][ j ].src = "widgets/black.gif";
-				}
-				else
-				{
-					tiles[ i ][ j ].alt = z + "/" + ( fr + i ) + "_" + ( fc + j ) + "_" + s;
-					tiles[ i ][ j ].src = image_base + tiles[ i ][ j ].alt + ".jpg";
-				}
-				tiles[ i ][ j ].style.top = t + "px";
-				tiles[ i ][ j ].style.left = l + "px";
-				tiles[ i ][ j ].style.visibility = "visible";
-				
-				l += X_TILE_SIZE;
-			}
-			l = left;
-			t += Y_TILE_SIZE;
-		}
-		
-		// render the profiles
-		
-		/*
-		var l = self.screenCoordinates();
-		for ( var i = 0; i < profiles.length; ++i )
-		{
-			profiles[ i ].updateScreen( l );
-			var v = profiles[ i ].getView();
-			var a = v.parentNode && v.parentNode == view;		//!< already on the screen	
-			if ( profiles[ i ].isVisible() )
-			{
-				if ( !a ) view.appendChild( v );
-				profiles[ i ].place();
-				profiles[ i ].clearCanvas();
-				if ( i == spi && mode == "edit" )
-				{
-					profiles[ i ].drawOutline();
-					profiles[ i ].drawHandles();
-				}
-				else
-					profiles[ i ].draw();
-			}
-			else if ( a )
-				view.removeChild( v );
-		}
-		*/
-		
-		// update and request textlabels
-		if ( show_textlabels )
-		{
-			if ( z != old_z ||
-				s != old_s ||
-				xd != 0 ||
-				yd != 0 )
-			{
-				self.updateTextlabels();
-			}
-			
-			//! left-most border of the view in physical project coordinates
-			var screen_left = ( ( x - viewWidth / scale / 2 ) ) * resolution.x + translation.x;
-			var screen_top = ( ( y - viewHeight / scale / 2 ) ) * resolution.y + translation.y;
-			
-			for ( var i = 0; i < textlabels.length; ++i )
-			{
-				textlabels[ i ].redraw(
-					screen_left,
-					screen_top,
-					scale );
-			}
-		}
-		
-		// update crop box if available
-		if ( mode == "crop" && cropBox )
-			updateCropBox();
+		for ( var i = 0; i < layers.length; ++i )
+			layers[ i ].redraw();
 			
 		//----------------------------------------------------------------------
 		/**
@@ -362,44 +151,15 @@ function Stack(
 		var a = view.offsetWidth;
 		//----------------------------------------------------------------------
 			
-		
-		old_z = z;
-		old_y = y;
-		old_x = x;
-		old_s = s;
-		old_scale = scale;
+		this.old_z = this.z;
+		this.old_y = this.y;
+		this.old_x = this.x;
+		this.old_s = this.s;
+		this.old_scale = this.scale;
+		this.old_yc = this.yc;
+		this.old_xc = this.xc
 		
 		return 2;
-	}
-	
-	/**
-	 * initialise the tiles array
-	 */
-	var initTiles = function( rows, cols )
-	{
-		while ( tilesContainer.firstChild )
-			tilesContainer.removeChild( tilesContainer.firstChild );
-		
-		delete tiles;
-		tiles = new Array();
-		
-		for ( var i = 0; i < rows; ++i )
-		{
-			tiles[ i ] = new Array();
-			for ( var j = 0; j < cols; ++j )
-			{
-				tiles[ i ][ j ] = document.createElement( "img" );
-				tiles[ i ][ j ].alt = "empty";
-				tiles[ i ][ j ].src = "gfx/empty256.gif";
-				
-				tilesContainer.appendChild( tiles[ i ][ j ] );
-			}
-		}
-		
-		updateControls();
-		update();
-		
-		return;
 	}
 	
 	/**
@@ -788,140 +548,6 @@ function Stack(
 		return false
 	}
 	
-	/**
-	 * change the input mode of the slice
-	 *
-	 * @param string m { "select", "move", "edit" }
-	 */
-	this.setMode = function( m )
-	{
-		if ( cropBox )
-		{
-			view.removeChild( cropBox.view );
-			delete cropBox;
-			cropBox = false;
-		}
-		mouseCatcher.style.zIndex = 5;
-		switch( m )
-		{
-		/*
-		case "profile":
-			mode = "profile";
-			mouseCatcher.style.display = "block";
-			mouseCatcher.style.cursor = "crosshair";
-			mouseCatcher.onmousedown = onmousedown.edit;
-			mouseCatcher.onmousemove = onmousemove.pos;
-			try
-			{
-				mouseCatcher.removeEventListener( "DOMMouseScroll", onmousewheel.move, false );
-			}
-			catch ( error )
-			{
-				try
-				{
-					mouseCatcher.onmousewheel = null;
-				}
-				catch ( error ) {}
-			}
-			//! @todo import the available profiles of the slice
-			break;
-		*/
-		case "text":
-			mode = "text";
-			mouseCatcher.style.cursor = "crosshair";
-			//mouseCatcher.style.display = "none";
-			mouseCatcher.onmousedown = onmousedown.text;
-			mouseCatcher.onmousemove = onmousemove.pos;
-			/*
-			try
-			{
-				mouseCatcher.removeEventListener( "DOMMouseScroll", onmousewheel.move, false );
-			}
-			catch ( error )
-			{
-				try
-				{
-					mouseCatcher.onmousewheel = null;
-				}
-				catch ( error ) {}
-			}
-			*/
-			show_textlabels = true;
-			self.updateTextlabels();
-			/*
-			for ( var i = 0; i < textlabels.length; ++i )
-			{
-				textlabels[ i ].setEditable( true );
-			}
-			*/
-			//updateControls();
-			//update();
-			break;
-		case "crop":
-			mode = "crop";
-			mouseCatcher.style.cursor = "crosshair";
-			mouseCatcher.onmousedown = onmousedown.crop;
-			mouseCatcher.onmousemove = onmousemove.pos;
-			if ( show_textlabels ) self.updateTextlabels();
-			break;
-		case "select":
-		case "move":
-		default:
-			mode = "move";
-			//mouseCatcher.style.display = "block";
-			mouseCatcher.style.cursor = "move";
-			mouseCatcher.onmousedown = onmousedown.move;
-			mouseCatcher.onmousemove = onmousemove.pos;
-			try
-			{
-				mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel.zoom, false );
-				/* Webkit takes the event but does not understand it ... */
-				mouseCatcher.addEventListener( "mousewheel", onmousewheel.zoom, false );
-			}
-			catch ( error )
-			{
-				try
-				{
-					mouseCatcher.onmousewheel = onmousewheel.zoom;
-				}
-				catch ( error ) {}
-			}
-			if ( show_textlabels ) self.updateTextlabels();
-			/*
-			for ( var i = 0; i < textlabels.length; ++i )
-			{
-				textlabels[ i ].setEditable( false );
-			}
-			*/
-			//updateControls();
-			//update();
-			break;
-		}
-		return;
-	}
-	
-	
-	this.showTextlabels = function( b )
-	{
-		show_textlabels = b;
-		if ( show_textlabels )
-			self.updateTextlabels();
-		else
-		{
-			//! remove all old text labels
-			while ( textlabels.length > 0 )
-			{
-				var t = textlabels.pop();
-				try		//!< we do not know if it really is in the DOM currently
-				{
-					view.removeChild( t.getView() );
-				}
-				catch ( error ) {}
-			}
-		}
-		return;
-	}
-	
 	var resize = function()
 	{
 		alert( "resize stack " + id );
@@ -929,66 +555,9 @@ function Stack(
 		var width = stackWindow.getFrame().offsetWidth;
 		var height = stackWindow.getFrame().offsetHeight;
 		
-		var rows = Math.floor( height / Y_TILE_SIZE ) + 2;
-		var cols = Math.floor( width / X_TILE_SIZE ) + 2;
-		initTiles( rows, cols );
-		return;
-	}
-	
-	/**
-	 * crop a microstack by initiating a server backend
-	 * @todo which has to be built
-	 */
-	var crop = function()
-	{
-		var scale = 1 / Math.pow( 2, slider_crop_s.val );
-		var numSections = Math.max( slider_crop_top_z.val, slider_crop_bottom_z.val ) - Math.min( slider_crop_top_z.val, slider_crop_bottom_z.val ) + 1;
-		var pixelWidth = Math.round( ( Math.max( cropBox.left, cropBox.right ) - Math.min( cropBox.left, cropBox.right ) ) / resolution.x * scale );
-		var pixelHeight = Math.round( ( Math.max( cropBox.top, cropBox.bottom ) - Math.min( cropBox.top, cropBox.bottom ) ) / resolution.y * scale );
-		var str = "The generated stack will have " + numSections + " sections.\n";
-		str += "Each section will have a size of " + pixelWidth + "x" + pixelHeight + "px.\n";
-		str += "Do you really want to crop this microstack?";
+		for ( var i = 0; i < layers.length; ++i )
+			layers[ i ].resize( width, height );
 		
-		if ( !window.confirm( str ) ) return false; 
-		requestQueue.register(
-		'model/crop.php',
-		'POST',
-		{
-			pid : project.id,
-			sid : id,
-			left : cropBox.left,
-			top : cropBox.top,
-			front : slider_crop_top_z.val * resolution.z + translation.z,
-			right : cropBox.right,
-			bottom : cropBox.bottom,
-			back : slider_crop_bottom_z.val * resolution.z + translation.z,
-			scale : scale,
-			reregister : ( document.getElementById( "crop_reregister" ).checked ? 1 : 0 )
-		},
-		handle_crop );
-		return false;
-	}
-	
-	/**
-	 * handle the answer of a microstack crop request
-	 * this answer is not the ready made microstack itself but a confirmation that the cropping process was invoked
-	 */
-	var handle_crop = function( status, text, xml )
-	{
-		if ( status = 200 )
-		{
-			statusBar.replaceLast( text );
-			var e = eval( "(" + text + ")" );
-			if ( e.error )
-			{
-				alert( e.error );
-			}
-			else
-			{
-				//alert( "crop microstack ( " + e.left + ", " + e.top + ", " + e.front + " ) -> ( " + e.right + ", " + e.bottom + ", " + e.back + " ) at scale " + e.scale );
-				alert( "Cropping the microstack...\nThis operation may take some time, you will be notified as soon as the cropped stack is ready." );
-			}
-		}
 		return;
 	}
 	
@@ -1013,30 +582,6 @@ function Stack(
 	this.registerYControl = function( c )
 	{
 		input_y = c;
-		return;
-	}
-	
-	this.registerCropTopSliceControl = function( c )
-	{
-		slider_crop_top_z = c;
-		return;
-	}
-	
-	this.registerCropBottomSliceControl = function( c )
-	{
-		slider_crop_bottom_z = c;
-		return;
-	}
-	
-	this.registerCropZoomControl = function( c )
-	{
-		slider_crop_s = c;
-		return;
-	}
-	
-	this.registerCropApplyControl = function( c )
-	{
-		button_crop_apply = c;
 		return;
 	}
 	
@@ -1210,79 +755,6 @@ function Stack(
 	}
 	
 	/**
-	 * handle an update-textlabels-request answer
-	 *
-	 */
-	var handle_updateTextlabels = function( status, text, xml )
-	{
-		if ( status = 200 )
-		{
-			//alert( "data: " + text );
-			var e = eval( "(" + text + ")" );
-			if ( e.error )
-			{
-				alert( e.error );
-			}
-			else
-			{
-				//! remove all old text labels
-				while ( textlabels.length > 0 )
-				{
-					var t = textlabels.pop();
-					try		//!< we do not know if it really is in the DOM currently
-					{
-						view.removeChild( t.getView() );
-					}
-					catch ( error ) {}
-				}
-				
-				if ( text )
-				{
-					//! import the new
-					for ( var i in e )
-					{
-						var t = new Textlabel( e[ i ], resolution, translation );
-						textlabels.push( t );
-						view.appendChild( t.getView() );
-						if ( mode == "text" )
-							t.setEditable( true );
-					}
-				}
-			}
-			update();
-		}
-		return;
-	}
-	
-	/**
-	 * display the cropBox
-	 */
-	var updateCropBox = function()
-	{
-		var t = Math.min( cropBox.top, cropBox.bottom );
-		var b = Math.max( cropBox.top, cropBox.bottom );
-		var l = Math.min( cropBox.left, cropBox.right );
-		var r = Math.max( cropBox.left, cropBox.right );
-		//! left-most border of the view in physical project coordinates
-	    var screen_left = ( ( x - viewWidth / scale / 2 ) + translation.x ) * resolution.x;
-		var screen_top = ( ( y - viewHeight / scale / 2 ) + translation.y ) * resolution.y;
-							
-		var rx = resolution.x / scale;
-		var ry = resolution.y / scale;
-		
-		cropBox.view.style.left = Math.floor( ( l - screen_left ) / rx ) + "px";
-		cropBox.view.style.top = Math.floor( ( t - screen_top ) / ry ) + "px";
-		cropBox.view.style.width = Math.floor( ( r - l ) / rx ) + "px";
-		cropBox.view.style.height = Math.floor( ( b - t ) / ry ) + "px";
-		
-		statusBar.replaceLast( l.toFixed( 3 ) + ", " + t.toFixed( 3 ) + " -> " + r.toFixed( 3 ) + "," + b.toFixed( 3 ) );
-		
-		cropBox.text.replaceChild( document.createTextNode( ( r - l ).toFixed( 3 ) + " x " + ( b - t ).toFixed( 3 ) ), cropBox.text.firstChild );
-		
-		return;
-	}
-	
-	/**
 	 * Get the stack window.
 	 */
 	this.getWindow = function() { return stackWindow; }
@@ -1335,11 +807,7 @@ function Stack(
 	 */
 	this.resolution = function()
 	{
-		return {
-			x : resolution.x,
-			y : resolution.y,
-			z : resolution.z
-		};
+		return resolution;
 	}
 	
 	/**
@@ -1361,8 +829,6 @@ function Stack(
 	if ( !ui ) ui = new UI();
 	
 	this.id = id;
-	
-	this.image_base = image_base;
 	
 	
 	
@@ -1393,7 +859,7 @@ function Stack(
 	var slices = new Array();
 	for ( var i = 0; i < dimension.z; ++i )
 	{
-		if ( !broken_slices[ i ] )
+		if ( !skip_planes[ i ] )
 			slices.push( i );
 	}
 	
@@ -1442,7 +908,7 @@ function Stack(
 			return true;	
 		} );
 	
-	var smallMap = new SmallMap( self, MAX_Y, MAX_X );
+	var smallMap = new Overview( self, MAX_Y, MAX_X );
 	view.appendChild( smallMap.getView() );
 	
 	var benchmark = document.createElement( "div" );

@@ -366,7 +366,7 @@ function Project( pid )
 			url += "&zp=" + self.coordinates.z + "&yp=" + self.coordinates.y + "&xp=" + self.coordinates.x;
 			for ( var i = 0; i < stacks.length; ++i )
 			{
-				url += "&sid" + i + "=" + stacks[ i ].id + "&s" + i + "=" + stacks[ i ].screenCoordinates().s;
+				url += "&sid" + i + "=" + stacks[ i ].id + "&s" + i + "=" + stacks[ i ].s;
 			}
 		}
 		return url;

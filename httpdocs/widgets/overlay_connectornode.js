@@ -359,5 +359,11 @@ zdiff) // the different from the current slices
     };
     
     this.mc.drag(this.mc.move, this.mc.start, this.mc.up);
+
+    this.mc.mousedown(function (e) {
+      e.stopPropagation();
+    });
+    
   }
+
 };

@@ -318,6 +318,7 @@ Node = function (
   };
 
 
+
   this.createEventHandlers = function () {
 		var self = this;
 		/*
@@ -408,5 +409,12 @@ Node = function (
 		};
 
 		this.mc.drag(this.mc.move, this.mc.start, this.mc.up);
+
+    this.mc.mousedown(function (e) {
+      e.stopPropagation();
+    });
+
+
 	}
+
 };

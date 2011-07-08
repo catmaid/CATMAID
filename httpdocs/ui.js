@@ -172,12 +172,18 @@ UI = function () {
 
   /**
    * get the mouse location absolute and relative to the element, which fired the event
+   * The parameter 'propagate' is optional - you should set it to 'true'
+   * if you want the event to continue propagation as normal.  The default
+   * is 'false', which stops propagation of the event.
    */
-  this.getMouse = function (e) {
+  this.getMouse = function (e, propagate) {
+    propagate = (typeof propagate == "undefined") ? false : propagate;
     m = new Object();
     if (e) {
-      e.preventDefault();
-      e.stopPropagation();
+      if (!propagate) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       m.x = e.screenX;
       m.y = e.screenY;
       if (e.offsetX) m.offsetX = e.offsetX;
@@ -186,7 +192,9 @@ UI = function () {
       else if (e.layerY) m.offsetY = e.layerY - 1;
 
     } else if (event) {
-      event.cancelBubble = true;
+      if (!propagate) {
+        event.cancelBubble = true;
+      }
       m.x = event.clientX;
       m.y = event.clientY;
       m.offsetX = event.offsetX;

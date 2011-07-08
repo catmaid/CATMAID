@@ -7,7 +7,6 @@ var atn_fillcolor = "rgb(0, 255, 0)";
 
 var active_skeleton_id = null;
 
-
 function activateNode(node) {
 
   // if node === null, just deactivate
@@ -406,7 +405,7 @@ SVGOverlay = function (
 
             var nn = new ConnectorNode(cid, r, 8, pos_x, pos_y, pos_z, 0);
             nodes[cid] = nn;
-            nn.drawEdges();
+            nn.draw();
             activateNode(nn);
           }
         } // endif
@@ -459,7 +458,7 @@ SVGOverlay = function (
               // store the currently activated treenode into the pregroup of the connector
               nn.pregroup[id] = nodes[id];
               nodes[locid_retrieved] = nn;
-              nn.drawEdges();
+              nn.draw();
               // update the reference to the connector from the treenode
               nodes[id].connectors[locid_retrieved] = nn;
               // activate the newly created connector
@@ -470,7 +469,7 @@ SVGOverlay = function (
               // but we need to update the postgroup with corresponding original treenod
               nodes[locid_retrieved].postgroup[id] = nodes[id];
               // do not activate anything but redraw
-              nodes[locid_retrieved].drawEdges();
+              nodes[locid_retrieved].draw();
               // update the reference to the connector from the treenode
               nodes[id].connectors[locid_retrieved] = nodes[locid_retrieved];
             }
@@ -514,7 +513,7 @@ SVGOverlay = function (
 
             // add node to nodes list
             nodes[jso.treenode_id] = nn;
-            nn.drawEdges();
+            nn.draw();
 
             // grab the treenode id
             tnid = jso.treenode_id;
@@ -577,6 +576,7 @@ SVGOverlay = function (
             }
 
             nodes[jso.treenode_id] = nn;
+            nn.draw();
             var active_node = atn;
             activateNode(nn); // will alter atn
 
@@ -863,7 +863,12 @@ SVGOverlay = function (
     return view;
   };
 
-  this.onclick = function (e) {
+  // This isn't called "onclick" to avoid confusion - click events
+  // aren't generated when clicking in the overlay since the mousedown
+  // and mouseup events happen in different divs.  This is actually
+  // called from mousedown (or mouseup if we ever need to make
+  // click-and-drag work with the left hand button too...)
+  this.whenclicked = function (e) {
     var locid;
     var m = ui.getMouse(e);
 
@@ -945,7 +950,6 @@ SVGOverlay = function (
   var view = document.createElement("div");
   view.className = "sliceSVGOverlay";
   view.id = "sliceSVGOverlayId";
-  view.onclick = this.onclick;
   view.style.zIndex = 6;
   view.style.cursor = "crosshair";
   // make view accessible from outside for setting additional mouse handlers

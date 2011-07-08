@@ -95,6 +95,28 @@ var SVGOverlay = function (
     }
   };
 
+  this.activateNearestNode = function (x, y, z) {
+    var xdiff, ydiff, zdiff, distsq, mindistsq = Number.MAX_VALUE, nearestnode = null;
+    for (nodeid in nodes) {
+      if (nodes.hasOwnProperty(nodeid)) {
+        node = nodes[nodeid];
+        xdiff = x - this.pix2physX(node.x);
+        ydiff = y - this.pix2physY(node.y);
+        zdiff = z - this.pix2physZ(node.z);
+        distsq = xdiff*xdiff + ydiff*ydiff + zdiff*zdiff;
+        if (distsq < mindistsq) {
+          mindistsq = distsq;
+          nearestnode = node;
+        }
+      }
+    }
+    if (nearestnode) {
+      activateNode(nearestnode);
+    } else {
+      statusBar.replaceLast("No nodes were visible - can't activate the nearest");
+    }
+  }
+
   this.showTags = function (val) {
     this.toggleLabels(val);
   };
@@ -509,7 +531,7 @@ var SVGOverlay = function (
             var jso = $.parseJSON(text);
             // FIXME: isn't this always true?
             // always create a new treenode which is the root of a new skeleton
-            var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, null, true);
+            var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
 
             // add node to nodes list
             nodes[jso.treenode_id] = nn;

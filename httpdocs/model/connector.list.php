@@ -219,6 +219,7 @@ foreach($t as $key => $value) {
             $data = $value;
             $data["nr_treenodes"] = $db->getTreenodeCountForSkeleton( $pid, $value2["skeleton_id"] );
             $data["labels"] = $label_string;
+            $data["treenode_id"] = $value2["treenode_id"];
             $result[] = $data;
         }
 
@@ -227,6 +228,7 @@ foreach($t as $key => $value) {
         $data = $value;
         $data["nr_treenodes"] = 0;
         $data["labels"] = $label_string;
+        $data["treenode_id"] = 0;
         $result[] = $data;
     }
 
@@ -261,7 +263,8 @@ while ( list( $key, $val) = each( $result2 ) )
     $sRow .= '"'.addslashes($val["z"]).'",';
     $sRow .= '"'.addslashes($val["labels"]).'",';
     $sRow .= '"'.addslashes($val["nr_treenodes"]).'",';
-    $sRow .= '"'.addslashes($val["username"]).'"';
+    $sRow .= '"'.addslashes($val["username"]).'",';
+    $sRow .= '"'.addslashes($val["treenode_id"]).'"';
 
     $sRow .= "],";
 

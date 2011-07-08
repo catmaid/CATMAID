@@ -1,0 +1,37 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8x]{inputenc}
+\usepackage{mathpazo,helvet}
+
+%opening
+\title{CATMAID Specifications}
+\author{Tobias Pietzsch \and Stephan Saalfeld}
+
+
+
+\begin{document}
+
+\maketitle
+
+
+\section{Introduction}
+
+Recently, CATMAID has been extended to support $n$-dimensional datasets with each dataset being registered into a project space by an affine transformation.  This document aims at clarifying how coordinates are related, which coordinate spaces are used by which control and display, how this change affects the naming scheme for image tiles and `interface' methods of displays and controls.
+
+
+\section{Coordinate Spaces}
+
+CATMAID uses four distinct coordinate spaces:
+
+\begin{description}
+\item[project space]{Each \emph{project} specifies a continuous $n$-dimensional Euclidean space with each of its axes being labeled as a particular physical dimension.  For the sake of flexibility, we have not specified units to particular physical dimensions but leave that open to be specified by each project individually.}
+\item[stack space]{Each stack specifies a discrete $n$-dimensional pixel space that, usually, is dictated by the resolution of the pixel data in this data set.  Accordingly, it is related to project space through a resolution vector that specifies a linear scale of a pixel in stack space into the corresponding physical unit in project space.  Furthermore, stack space coordinates can be transferred into project space by an optional affine transformation.  Stack space coordinates are transferred into project coordinates by first applying the affine transformation and then scaling as indicated by the resolution vector.}
+\item[tile space]{Image data is displayed split into equally sized tiles at a particular scale.  Tile coordinates thus have an additional discrete scale dimension $s$ with $scale = 1/2^s$.  The first two dimensions, usually $x$ and $y$ in the spatial domain represent the column and row in the grid of tiles and thus depend on $s$.}
+\item[screen space]{}
+\end{description}
+
+
+\section{Tile Naming Scheme}
+
+Image tiles are addressed by their scale level $s$ with $scale = 1/2^s$ and coordinates in tile space.
+
+\end{document}

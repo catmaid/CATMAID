@@ -19,7 +19,7 @@ initConnectorTable = function (pid)
     "bAutoWidth": false,
     "sAjaxSource": 'model/connector.list.php',
     "fnServerData": function (sSource, aoData, fnCallback) {
-      
+
       var skeletonid;
       if(atn !== null) {
         skeletonid = atn.skeleton_id;
@@ -67,32 +67,36 @@ initConnectorTable = function (pid)
       "bSearchable": false,
       "bSortable": true
     }, // connector id
-    {
+      {
       "sClass": "center",
       "bSearchable": false
     }, // x
-    {
+      {
       "sClass": "center",
       "bSearchable": false
     }, // y
-    {
+      {
       "sClass": "center",
       "bSearchable": false
     }, // z
-    {
+      {
       "bSearchable": false,
       "bSortable": true
     }, // connectortags
-    {
+      {
       "bSearchable": false,
       "bSortable": true
     }, // number of nodes
-    {
+      {
       "bVisible": true,
       "bSortable": true
-    } // username
+    }, // username
+    {
+      "bSearchable": false,
+      "bSortable": true,
+      "bVisible": false
+    } // treenodes
     ]
-
   });
 
   $(tableid + " tfoot input").keyup(function ()
@@ -136,8 +140,8 @@ initConnectorTable = function (pid)
     var z = parseFloat(aData[3]);
     project.moveTo(z, y, x);
 
-    // activate the node with a delay
-    var id = parseInt(aData[0], 10);
+    // activate the treenode with a delay 
+    var id = parseInt(aData[7], 10);
     window.setTimeout("project.selectNode( " + id + " )", 1000);
 
   });

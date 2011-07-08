@@ -1472,6 +1472,9 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
         input_x.onmousewheel = null;
       } catch (error) {}
     }
+
+    
+
     return;
   }
 

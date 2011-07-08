@@ -481,13 +481,7 @@ function Project(pid) {
       document.getElementById('connectortable_widget').style.display = 'block';
       ui.onresize();
       initConnectorTable(this.id);
-      break;
-    /*case "presynapse":
-      initPreSynapseTable(this.id);
-      break;
-    case "postsynapse":
-      initPostSynapseTable(this.id);
-      break;*/
+      break;  
     }
     return;
   }

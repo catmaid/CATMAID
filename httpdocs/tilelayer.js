@@ -14,7 +14,7 @@
  */
 function TileLayer(
 		stack,						//!< reference to the parent stack
-		baseURL,`					//!< base URL for image tiles
+		baseURL,					//!< base URL for image tiles
 		tileWitdh,
 		tileHeight
 		)

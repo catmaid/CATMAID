@@ -38,8 +38,8 @@ var openSkeletonNodeInObjectTree = function(node) {
 };
 
 SVGOverlay = function (
-	resolution, translation, dimension, // dimension of the stack
-	current_scale // current scale of the stack
+  resolution, translation, dimension, // dimension of the stack
+  current_scale // current scale of the stack
 ) {
 
   this.resolution = resolution;
@@ -583,19 +583,19 @@ SVGOverlay = function (
             // Check whether the Z coordinate of the new node is beyond one section away 
             // from the Z coordinate of the parent node (which is the active by definition)
             if (active_node) {
-				if (Math.abs(active_node.z - nn.z) > 1) {
-					var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
-					//var g = $('#growl-alert'); // doesn't work
-					g.growlAlert({
-						autoShow: true,
-						content: 'Node added beyond one section from its parent node!',
-						title: 'BEWARE',
-						position: 'top-right',
-						delayTime: 2500,
-						onComplete: function() { g.remove(); }
-					});
-				}
-			}
+              if (Math.abs(active_node.z - nn.z) > 1) {
+                var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
+                //var g = $('#growl-alert'); // doesn't work
+                g.growlAlert({
+                  autoShow: true,
+                  content: 'Node added beyond one section from its parent node!',
+                  title: 'BEWARE',
+                  position: 'top-right',
+                  delayTime: 2500,
+                  onComplete: function() { g.remove(); }
+                });
+              }
+            }
           }
         }
       }
@@ -798,7 +798,7 @@ SVGOverlay = function (
       for (i in nodes) {
         if (nodes.hasOwnProperty(i)) {
           nodes[i].createCircle();
-				}
+        }
       }
 
     } // end speed toggle

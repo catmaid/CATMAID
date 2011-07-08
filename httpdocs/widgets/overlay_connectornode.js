@@ -76,15 +76,17 @@ zdiff) // the different from the current slices
   this.setXY = function (xnew, ynew) {
     this.x = xnew;
     this.y = ynew;
-    c.attr({
-      cx: this.x,
-      cy: this.y
-    });
-    mc.attr({
-      cx: this.x,
-      cy: this.y
-    });
-    this.draw();
+    if (c) {
+      c.attr({
+        cx: this.x,
+        cy: this.y
+      });
+      mc.attr({
+        cx: this.x,
+        cy: this.y
+      });
+    }
+    this.drawEdges();
   };
 
   // Set the connector node fill color depending on whether it is active
@@ -99,10 +101,12 @@ zdiff) // the different from the current slices
       // difference.
       fillcolor = this.colorFromZDiff(this);
     }
-
-    c.attr({
-      fill: fillcolor
-    });
+    
+    if (this.c) {
+      this.c.attr({
+        fill: fillcolor
+      });
+    }
   };
 
   // the accessor method for the display node
@@ -110,24 +114,23 @@ zdiff) // the different from the current slices
     return c;
   };
 
-  // create a raphael circle object
-  c = this.paper.circle(this.x, this.y, this.r).attr({
-    fill: fillcolor,
-    stroke: "none",
-    opacity: 1.0
-  });
+  this.createCircle = function () {
+    // create a raphael circle object
+    this.c = this.paper.circle(this.x, this.y, this.r).attr({
+      fill: fillcolor,
+      stroke: "none",
+      opacity: 1.0
+    });
 
-  // a raphael circle oversized for the mouse logic
-  mc = this.paper.circle(this.x, this.y, this.rcatch).attr({
-    fill: "rgb(0, 1, 0)",
-    stroke: "none",
-    opacity: 0
-  });
-
-  // add a reference to the parent container node in the
-  // raphael object in order to being able for the drag event handler
-  // to do something sensible
-  mc.parentnode = this;
+    // a raphael circle oversized for the mouse logic
+    this.mc = this.paper.circle(this.x, this.y, this.rcatch).attr({
+      fill: "rgb(0, 1, 0)",
+      stroke: "none",
+      opacity: 0
+    });
+    
+    this.createEventHandlers();
+  };
 
   // set the fill color of this connector
   this.setColor();
@@ -145,8 +148,10 @@ zdiff) // the different from the current slices
       this.children[i].removeParent();
     }
     // remove the raphael svg elements from the DOM
-    c.remove();
-    mc.remove();
+    if (c) {
+      c.remove();
+      mc.remove();
+    }
     if (this.parent !== null) {
       this.removeLine();
       // remove this node from parent's children list
@@ -214,18 +219,15 @@ zdiff) // the different from the current slices
       "fill": strocol,
       "stroke": strocol
     });
-    // XXX: no toBack for speedup
-    //linePath.toBack();
-    //arrowPath.toBack();
   };
 
   // updates the raphael path coordinates
   this.drawLine = function (to_id, pre) {
     var line = this.paper.path();
     if (pre) {
-      line = new arrowLine(this.paper, this.pregroup[to_id].getC().attrs.cx, this.pregroup[to_id].getC().attrs.cy, c.attrs.cx, c.attrs.cy, 5, 2, "rgb(126, 57, 112)");
+      line = new arrowLine(this.paper, this.pregroup[to_id].x, this.pregroup[to_id].y, this.x, this.y, 5, 2, "rgb(126, 57, 112)");
     } else {
-      line = new arrowLine(this.paper, c.attrs.cx, c.attrs.cy, this.postgroup[to_id].getC().attrs.cx, this.postgroup[to_id].getC().attrs.cy, 5, 2, "rgb(67, 67, 128)");
+      line = new arrowLine(this.paper, this.x, this.y, this.postgroup[to_id].x, this.postgroup[to_id].y, 5, 2, "rgb(67, 67, 128)");
     }
     return line;
   };
@@ -270,89 +272,98 @@ zdiff) // the different from the current slices
   this.draw = function () {
     // delete lines and recreate them with the current list
     this.updateLines();
-  };
-
-/*
-   * event handlers
-   */
-  mc.dblclick(function (e) {
-    if (e.altKey) {
-      // zoom in
-      slider_trace_s.move(-1);
-    }
-    else {
-      // zoom out
-      slider_trace_s.move(1);
-    }
-    project.tracingCommand('goactive');
-  });
-
-  mc.click(function (e) {
-
-    // return some log information when clicked on the node
-    // this usually refers here to the mc object
-    if (e.shiftKey) {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-        if (atn != null && this.parentnode.id == atn.id) {
-          activateNode(null);
-        }
-        statusBar.replaceLast("deleted connector with id " + this.parentnode.id);
-        this.parentnode.deletenode();
-        e.stopPropagation();
-        return true;
-      }
-      if (atn !== null) {
-        // connected activated treenode or connectornode
-        // to existing treenode or connectornode
-        // console.log("from", atn.id, "to", this.parentnode.id);
-        project.createLink(atn.id, this.parentnode.id, "presynaptic_to", "presynaptic terminal", "synapse", "treenode", "connector");
-        statusBar.replaceLast("joined active connector to treenode with id " + this.parentnode.id);
-      } else {
-        alert("You need to activate a treenode before joining it to a connector node!");
-      }
-      e.stopPropagation();
-    } else {
-      //console.log("Try to activate node");
-      // activate this node
-      activateNode(this.parentnode);
-      // stop propagation of the event
-      e.stopPropagation();
-    }
-  });
-
-  mc.move = function (dx, dy) {
-    activateNode(this.parentnode);
-    this.parentnode.x = ox + dx;
-    this.parentnode.y = oy + dy;
-    c.attr({
-      cx: this.parentnode.x,
-      cy: this.parentnode.y
-    });
-    mc.attr({
-      cx: this.parentnode.x,
-      cy: this.parentnode.y
-    });
-    this.parentnode.draw();
-    statusBar.replaceLast("move connector with id " + this.parentnode.id);
-  };
-
-  mc.up = function () {
-    c.attr({
-      opacity: 1
-    });
-    this.parentnode.needsync = true;
-  };
-
-  mc.start = function () {
-    // as soon you do something with the node, activate it
-    // activateNode( this.parentnode );
-    ox = mc.attr("cx");
-    oy = mc.attr("cy");
-    c.attr({
-      opacity: 0.7
-    });
+    this.createCircle();
   };
   
-  mc.drag(mc.move, mc.start, mc.up);
+  this.drawEdges = this.updateLines;
+
+  this.createEventHandlers = function () {
+    var self = this;
+    /*
+     * event handlers
+     */
+    this.mc.dblclick(function (e) {
+      if (e.altKey) {
+        // zoom in
+        slider_trace_s.move(-1);
+      }
+      else {
+        // zoom out
+        slider_trace_s.move(1);
+      }
+      project.tracingCommand('goactive');
+    });
+
+    this.mc.click(function (e) {
+
+      // return some log information when clicked on the node
+      // this usually refers here to the mc object
+      if (e.shiftKey) {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          if (atn != null && self.id == atn.id) {
+            activateNode(null);
+          }
+          statusBar.replaceLast("deleted connector with id " + self.id);
+          self.deletenode();
+          e.stopPropagation();
+          return true;
+        }
+        if (atn !== null) {
+          // connected activated treenode or connectornode
+          // to existing treenode or connectornode
+          // console.log("from", atn.id, "to", this.parentnode.id);
+          project.createLink(atn.id, self.id, "presynaptic_to", "presynaptic terminal", "synapse", "treenode", "connector");
+          statusBar.replaceLast("joined active connector to treenode with id " + self.id);
+        } else {
+          alert("You need to activate a treenode before joining it to a connector node!");
+        }
+        e.stopPropagation();
+      } else {
+        //console.log("Try to activate node");
+        // activate this node
+        activateNode(self);
+        // stop propagation of the event
+        e.stopPropagation();
+      }
+    });
+
+    this.mc.move = function (dx, dy) {
+      activateNode(self);
+      self.x = ox + dx;
+      self.y = oy + dy;
+      self.c.attr({
+        cx: self.x,
+        cy: self.y
+      });
+      self.mc.attr({
+        cx: self.x,
+        cy: self.y
+      });
+      self.drawEdges();
+      statusBar.replaceLast("move connector with id " + self.id);
+    };
+
+    this.mc.up = function () {
+      self.c.attr({
+        opacity: 1
+      });
+      self.needsync = true;
+    };
+
+    this.mc.start = function () {
+      ox = self.x;
+      oy = self.y;
+      self.c.attr({
+        opacity: 0.7
+      });
+    };
+    
+    this.mc.drag(this.mc.move, this.mc.start, this.mc.up);
+
+    this.mc.mousedown(function (e) {
+      e.stopPropagation();
+    });
+    
+  }
 
 };

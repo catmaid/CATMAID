@@ -615,12 +615,17 @@ var openTreePath = function(treeOb, path) {
   }
 };
 
-var requestOpenTreePath = function(treenodeID) {
+var requestOpenTreePath = function(treenode) {
+  // Check if the node is already highlighted
+  if ($('#node_' + treenode.skeleton_id + ' a').hasClass('jstree-clicked')) {
+    return;
+  }
+  // Else, highlight it:
   $.ajax({
     async: true,
     type: 'POST',
     url: "model/tree.object.expand.php",
-    data: { "tnid" : treenodeID,
+    data: { "skeleton_id" : treenode.skeleton_id,
             "pid" : pid },
     success: function (r, status) {
                r = $.parseJSON(r);
@@ -633,3 +638,11 @@ var requestOpenTreePath = function(treenodeID) {
              }
   });
 };
+
+// Refresh the Object Tree if it is visible.
+var refreshObjectTree = function() {
+  if ($('#object_tree_widget').css('display') === "block") {
+    $("#tree_object").jstree("refresh", -1);
+  }
+};
+

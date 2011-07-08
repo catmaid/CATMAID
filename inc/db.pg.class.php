@@ -99,6 +99,24 @@ class DB
 			$result = false;
 		return $result;
 	}
+
+	/** Begin a transaction. Must be followed by zero or more
+	 * queries and insertions and then, finally, by a call to commit().
+	 */
+	function begin()
+	{
+		return pg_query( $this->handle, "BEGIN" );
+	}
+
+	function rollback()
+	{
+		return pg_query( $this->handle, "ROLLBACK" );
+	}
+
+	function commit()
+	{
+		return pg_query( $this->handle, "COMMIT" );
+	}
 	
 	/**
 	 * get the results of an SQL query keyed by id
@@ -187,8 +205,7 @@ class DB
 		//echo $queryStr, "<br />\n";
 		if( $this->debug )
 			error_log("In insertInto: ".preg_replace('/\s+/', ' ', $queryStr));
-		pg_query( $this->handle, $queryStr );
-		return;
+		return pg_query( $this->handle, $queryStr );
 	}
 	
 	/**
@@ -204,6 +221,7 @@ class DB
 	{
 		$this->insertInto( $table, $values );
 		$id = $this->getResult( 'SELECT lastval() AS "id"' );
+		if (false === $id) return false; // query failed
 		return $id[ 0 ][ 'id' ];
 	}
 	
@@ -382,6 +400,7 @@ class DB
 		"SELECT class.id FROM class ".
 		"WHERE class.project_id = $pid AND ".
 		"class.class_name = '$escaped_classname'");
+		if (false === $res) return false;
 		$resid = !empty($res) ? $res[0]['id'] : 0;
 		return $resid;
 	}

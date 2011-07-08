@@ -509,7 +509,7 @@ SVGOverlay = function (
             var jso = $.parseJSON(text);
             // FIXME: isn't this always true?
             // always create a new treenode which is the root of a new skeleton
-            var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, null, true);
+            var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
 
             // add node to nodes list
             nodes[jso.treenode_id] = nn;

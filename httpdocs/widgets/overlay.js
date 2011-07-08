@@ -39,8 +39,8 @@ var openSkeletonNodeInObjectTree = function(node) {
 };
 
 SVGOverlay = function (
-resolution, translation, dimension, // dimension of the stack
-current_scale // current scale of the stack
+	resolution, translation, dimension, // dimension of the stack
+	current_scale // current scale of the stack
 ) {
 
   this.resolution = resolution;
@@ -67,10 +67,6 @@ current_scale // current scale of the stack
         recipe.document.open();
         recipe.document.write(html);
         recipe.document.close();
-
-
-
-
       }
     }); // endfunction
   };
@@ -144,11 +140,9 @@ current_scale // current scale of the stack
             x.overrideMimeType("application/json;charset=UTF-8");
           }
         },
-        success: function (result) {
-          var nodeitems = result, nodeid;
-
+        success: function (nodeitems) {
           // for all retrieved, create a label
-          for (nodeid in nodeitems) {
+          for (var nodeid in nodeitems) {
             if (nodeitems.hasOwnProperty(nodeid)) {
               var tl = new OverlayLabel(nodeitems[nodeid], r, nodes[nodeid].x, nodes[nodeid].y, nodeitems[nodeid]);
               labels[nodeid] = tl;

@@ -1233,6 +1233,9 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
         alert('Need to activate a treenode or connector before tagging!');
       }
       break;
+    case "selectnearestnode":
+      svgOverlay.activateNearestNode(project.lastX, project.lastY, project.coordinates.z);
+      break;
     case "togglelabels":
       svgOverlay.toggleLabels();
       break;

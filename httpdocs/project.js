@@ -211,6 +211,15 @@ var stringToKeyAction = {
       return true;
     }
   },
+  "G": {
+    helpText: "Select the nearest node to the mouse cursor",
+    run: function (e) {
+      if (!(e.ctrlKey || e.metaKey)) {
+        project.tracingCommand('selectnearestnode');
+      }
+      return true;
+    }
+  },
   "Tab": {
     helpText: "Switch to the next open stack (or the previous with Shift+Tab)",
     specialKeyCodes: [9],

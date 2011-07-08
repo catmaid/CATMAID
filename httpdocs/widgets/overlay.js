@@ -100,6 +100,28 @@ current_scale // current scale of the stack
     }
   };
 
+  this.activateNearestNode = function (x, y, z) {
+    var xdiff, ydiff, zdiff, distsq, mindistsq = Number.MAX_VALUE, nearestnode = null;
+    for (nodeid in nodes) {
+      if (nodes.hasOwnProperty(nodeid)) {
+        node = nodes[nodeid];
+        xdiff = x - this.pix2physX(node.x);
+        ydiff = y - this.pix2physY(node.y);
+        zdiff = z - this.pix2physZ(node.z);
+        distsq = xdiff*xdiff + ydiff*ydiff + zdiff*zdiff;
+        if (distsq < mindistsq) {
+          mindistsq = distsq;
+          nearestnode = node;
+        }
+      }
+    }
+    if (nearestnode) {
+      activateNode(nearestnode);
+    } else {
+      statusBar.replaceLast("No nodes were visible - can't activate the nearest");
+    }
+  }
+
   this.showTags = function (val) {
     this.toggleLabels(val);
   };

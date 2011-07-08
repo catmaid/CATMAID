@@ -682,7 +682,11 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       // take into account the shift of the svgOverlay
       var xp;
       var yp;
-      var m = ui.getMouse(e);
+      // If we don't allow propagation (with the optional second parameter)
+      // then dragging of nodes in Raphaël doesn't work, for reasons
+      // that are obscure to me. [1]
+      // [1] See http://stackoverflow.com/q/6617548/223092
+      var m = ui.getMouse(e, true);
 
       if (m) {
         // add right move of svgOverlay to the m.offsetX

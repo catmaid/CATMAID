@@ -35,32 +35,36 @@ if ( $pid )
     
     if(count($stuimp) == 0) {
     	$stuw = "false AND";
+        $stuw2 = "false AND";
     } else {
     	$stuw = '"tci"."treenode_id" IN (';
     	$stuw .= implode(",", $stuimp);
     	$stuw .= ") AND";
+
+    	$stuw2 = '"cci"."connector_id" IN (';
+    	$stuw2 .= implode(",", $stuimp);
+    	$stuw2 .= ") AND";
     }
 
-    if($ntype == "treenode") {
-      $res = $db->getResult('SELECT "tci"."treenode_id" as "id", "ci"."name" as "name" FROM "class_instance" as "ci", "treenode_class_instance" as "tci" WHERE
-      '.$stuw.'
-      "tci"."class_instance_id" = "ci"."id" AND
-      "tci"."relation_id" = '.$labeled_as_id.' AND
-      "ci"."class_id" = '.$label_id.' AND 
-      "ci"."project_id" = '.$pid);
-      
-    } else if ($ntype == "location") {
-      $res = $db->getResult('SELECT "tci"."treenode_id" as "id", "ci"."name" as "name" FROM "class_instance" as "ci", "connector_class_instance" as "cci" WHERE
-      '.$stuw.'
-      "cci"."class_instance_id" = "ci"."id" AND
-      "cci"."relation_id" = '.$labeled_as_id.' AND
-      "ci"."class_id" = '.$label_id.' AND 
-      "ci"."project_id" = '.$pid);
-      
-    }
+    $res = $db->getResult('SELECT "tci"."treenode_id" as "id", "ci"."name" as "name" FROM "class_instance" as "ci", "treenode_class_instance" as "tci" WHERE
+    '.$stuw.'
+    "tci"."class_instance_id" = "ci"."id" AND
+    "tci"."relation_id" = '.$labeled_as_id.' AND
+    "ci"."class_id" = '.$label_id.' AND
+    "ci"."project_id" = '.$pid);
+
+    $res2 = $db->getResult('SELECT "cci"."connector_id" as "id", "ci"."name" as "name"
+     FROM "class_instance" as "ci", "connector_class_instance" as "cci" WHERE
+    '.$stuw2.'
+    "cci"."class_instance_id" = "ci"."id" AND
+    "cci"."relation_id" = '.$labeled_as_id.' AND
+    "ci"."class_id" = '.$label_id.' AND
+    "ci"."project_id" = '.$pid);
+
+    $result = array_merge( $res, $res2 );
 
     $list = array();
-    foreach($res as $key => $val) {
+    foreach($result as $key => $val) {
       if(empty($list[$val['id']]))
       {
         $list[$val['id']] = array();

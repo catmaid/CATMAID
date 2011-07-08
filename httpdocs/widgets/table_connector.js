@@ -6,10 +6,7 @@ var asInitValsSyn = new Array();
 
 initConnectorTable = function (pid)
 {
-
-  prestr = '1';
-  tableid = '#connectortable';
-  stype = 'presynaptic';
+  var tableid = '#connectortable';
 
   connectorTable = $(tableid).dataTable(
   {
@@ -20,49 +17,82 @@ initConnectorTable = function (pid)
     "bProcessing": true,
     "bServerSide": true,
     "bAutoWidth": false,
-    "sAjaxSource": 'model/connector.list.php?pid=' + pid + '&pre=' + prestr,
+    "sAjaxSource": 'model/connector.list.php',
+    "fnServerData": function (sSource, aoData, fnCallback) {
+      
+      var skeletonid;
+      if(atn !== null) {
+        skeletonid = atn.skeleton_id;
+      } else {
+        skeletonid = 0;
+      }
+
+      aoData.push({
+        "name": "relation_type",
+         "value" : $('#connector_relation_type :selected').attr("value")
+      });
+      aoData.push({
+        "name" : "pid",
+        "value" : pid
+      });
+      aoData.push({
+        "name" : "skeleton_id",
+        "value" : skeletonid
+      });
+      $.ajax({
+        "dataType": 'json',
+        "type": "POST",
+        "url": sSource,
+        "data": aoData,
+        "success": function(data, text) {
+          if (data.error ) {
+            // hide widget
+            // document.getElementById('connectortable_widget').style.display = 'none';
+            // ui.onresize();
+            alert( data.error );
+            return;
+          }
+          fnCallback(data);
+        }
+      });
+
+    },
     "aLengthMenu": [
       [10, 25, 50, -1],
       [10, 25, 50, "All"]
     ],
     "bJQueryUI": true,
-    "fnRowCallback": function (nRow, aData, iDisplayIndex)
-    {
-
-      if (parseInt(aData[5]) in selectedObjects)
-      {
-        $(nRow).addClass('row_selected');
-      }
-      return nRow;
-    },
     "aoColumns": [
     {
       "bSearchable": false,
       "bSortable": true
-    }, // subject
+    }, // connector id
     {
-      "bSearchable": false,
-      "bSortable": true,
-      "sClass": "center"
-    }, // predicated
-    {
+      "sClass": "center",
       "bSearchable": false
-    }, // object
+    }, // x
     {
-      "bSearchable": true,
-      "bSortable": false
-    }, // tags
+      "sClass": "center",
+      "bSearchable": false
+    }, // y
+    {
+      "sClass": "center",
+      "bSearchable": false
+    }, // z
     {
       "bSearchable": false,
       "bSortable": true
-    }, // username
+    }, // connectortags
+    {
+      "bSearchable": false,
+      "bSortable": true
+    }, // number of nodes
     {
       "bVisible": true,
       "bSortable": true
-    } // last modified
+    } // username
     ]
-    
-    
+
   });
 
   $(tableid + " tfoot input").keyup(function ()
@@ -97,8 +127,28 @@ initConnectorTable = function (pid)
     }
   });
 
-  $(tableid + " tbody tr").live('click', function ()
-  {
+  $(tableid + " tbody tr").live('dblclick', function () {
+
+    var aData = connectorTable.fnGetData(this);
+    // retrieve coordinates and moveTo
+    var x = parseFloat(aData[1]);
+    var y = parseFloat(aData[2]);
+    var z = parseFloat(aData[3]);
+    project.moveTo(z, y, x);
+
+    // activate the node with a delay
+    var id = parseInt(aData[0], 10);
+    window.setTimeout("project.selectNode( " + id + " )", 1000);
+
+  });
+
+  $('#connector_relation_type').change(function() {
+    connectorTable.fnDraw();
+    if( $('#connector_relation_type :selected').attr("value")  ) {
+      $("#connector_nr_nodes_top").text("# nodes for source(s)");
+    } else {
+      $("#connector_nr_nodes_top").text("# nodes for target(s)");
+    }
 
   });
 

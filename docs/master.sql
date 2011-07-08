@@ -505,6 +505,19 @@ INHERITS (relation_instance);
 
 ALTER TABLE public.connector_class_instance OWNER TO catmaid_user;
 
+
+
+CREATE TABLE treenode_connector (
+    treenode_id bigint NOT NULL,
+    connector_id bigint NOT NULL
+)
+INHERITS (relation_instance);
+
+
+ALTER TABLE public.treenode_connector OWNER TO catmaid_user;
+
+
+
 --
 -- Name: message; Type: TABLE; Schema: public; Owner: catmaid_user; Tablespace: 
 --

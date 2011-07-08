@@ -26,15 +26,34 @@ if ( isset( $_REQUEST['iDisplayStart'] ) )
 	$sLimit = "LIMIT ".$displayLength." OFFSET ".$displayStart;
 }
 
-$columnToFieldArray = array( "connector_id", "tags", "nrnodes", "username");
+$columnToFieldArray = array( "connector_id", "x", "y", "z", "tags", "nr_treenodes", "username");
 
-function fnColumnToField( $i )
-{
+function fnColumnToField( $i ) {
 	global $columnToFieldArray;
 	return $columnToFieldArray[$i];
 }
 
+$direction = (strtoupper($_REQUEST['sSortDir_0']) === "DESC") ? "DESC" : "ASC";
+
+function subval_sort($a,$subkey) {
+    global $direction;
+	foreach($a as $k=>$v) {
+		$b[$k] = strtolower($v[$subkey]);
+	}
+    if( $direction === 'DESC' ) {
+        asort($b);
+    } else {
+        arsort($b);
+    }
+
+	foreach($b as $key=>$val) {
+		$c[] = $a[$key];
+	}
+	return $c;
+}
+
 /* Ordering */
+/*
 if ( isset( $_REQUEST['iSortCol_0'] ) )
 {
 	$sOrder = "ORDER BY  ";
@@ -46,6 +65,12 @@ if ( isset( $_REQUEST['iSortCol_0'] ) )
 		$sOrder .= fnColumnToField($columnIndex)." ".$direction.", ";
 	}
 	$sOrder = substr_replace( $sOrder, "", -2 );
+}*/
+
+if ( isset( $_REQUEST['iSortCol_0'] ) ) {
+    $columnIndex = intval( $_REQUEST['iSortCol_0'] );
+} else {
+    $columnIndex = 0;
 }
 
 if ( ! $skeletonID ) {
@@ -130,16 +155,20 @@ if ( $relation_type )
 // postsynaptic to the treenodes of the given skeleton
 
 $t = $db->getResult('SELECT	"tc"."connector_id" AS "connector_id",
-"tc"."user_id" AS "user_id",
-"user"."name" AS "username"
-FROM "treenode_connector" as "tc", "treenode_class_instance" as "tci", "user"
-WHERE "tc"."relation_id" = '.$relation_id.' AND
-"tc"."user_id" = "user"."id" AND
-"tci"."project_id" = '.$pid.' AND
-"tc"."treenode_id" = "tci"."treenode_id" AND
-"tci"."class_instance_id" = '.$skeletonID.' AND
-"tci"."relation_id" = '.$elementof_id.'
-'.$sLimit
+        "tc"."user_id" AS "user_id",
+        "user"."name" AS "username",
+        ("connector"."location")."x" AS "x",
+        ("connector"."location")."y" AS "y",
+        ("connector"."location")."z" AS "z"
+        FROM "treenode_connector" as "tc", "treenode_class_instance" as "tci", "user", "connector"
+        WHERE "tc"."relation_id" = '.$relation_id.' AND
+        "tc"."user_id" = "user"."id" AND
+        "tci"."project_id" = '.$pid.' AND
+        "tc"."treenode_id" = "tci"."treenode_id" AND
+        "tci"."class_instance_id" = '.$skeletonID.' AND
+        "tci"."relation_id" = '.$elementof_id.' AND
+        "connector"."id" = "tc"."connector_id"
+        '.$sLimit
 );
 
 $result = array();
@@ -180,9 +209,16 @@ foreach($t as $key => $value) {
 
 }
 
+// if not empty, sort it
+if( !empty($result) ) {
+    $result2 = subval_sort($result, fnColumnToField($columnIndex) );
+} else {
+    $result2 = $result;
+}
+
 // build table
 
-$iTotal = count($result);
+$iTotal = count($result2);
 
 reset( $t );
 
@@ -191,13 +227,15 @@ $sOutput .= '"iTotalRecords": '.$iTotal.', ';
 $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
 $sOutput .= '"aaData": [ ';
 
-
-
-while ( list( $key, $val) = each( $result ) )
+while ( list( $key, $val) = each( $result2 ) )
 {
     $sRow = "";
     $sRow .= "[";
     $sRow .= '"'.addslashes($val["connector_id"]).'",';
+
+    $sRow .= '"'.addslashes($val["x"]).'",';
+    $sRow .= '"'.addslashes($val["y"]).'",';
+    $sRow .= '"'.addslashes($val["z"]).'",';
 
     // $sRow .= '"'.addslashes($val["tnid"]).'",';
     // tags

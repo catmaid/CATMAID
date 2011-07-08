@@ -4,7 +4,6 @@
 var connectorTable;
 var asInitValsSyn = new Array();
 
-
 initConnectorTable = function (pid)
 {
   var tableid = '#connectortable';
@@ -48,8 +47,8 @@ initConnectorTable = function (pid)
         "success": function(data, text) {
           if (data.error ) {
             // hide widget
-            document.getElementById('connectortable_widget').style.display = 'none';
-            ui.onresize();
+            // document.getElementById('connectortable_widget').style.display = 'none';
+            // ui.onresize();
             alert( data.error );
             return;
           }
@@ -68,6 +67,18 @@ initConnectorTable = function (pid)
       "bSearchable": false,
       "bSortable": true
     }, // connector id
+    {
+      "sClass": "center",
+      "bSearchable": false
+    }, // x
+    {
+      "sClass": "center",
+      "bSearchable": false
+    }, // y
+    {
+      "sClass": "center",
+      "bSearchable": false
+    }, // z
     {
       "bSearchable": false,
       "bSortable": true
@@ -116,13 +127,29 @@ initConnectorTable = function (pid)
     }
   });
 
-  $(tableid + " tbody tr").live('click', function ()
-  {
+  $(tableid + " tbody tr").live('dblclick', function () {
+
+    var aData = connectorTable.fnGetData(this);
+    // retrieve coordinates and moveTo
+    var x = parseFloat(aData[1]);
+    var y = parseFloat(aData[2]);
+    var z = parseFloat(aData[3]);
+    project.moveTo(z, y, x);
+
+    // activate the node with a delay
+    var id = parseInt(aData[0], 10);
+    window.setTimeout("project.selectNode( " + id + " )", 1000);
 
   });
 
   $('#connector_relation_type').change(function() {
     connectorTable.fnDraw();
+    if( $('#connector_relation_type :selected').attr("value")  ) {
+      $("#connector_nr_nodes_top").text("# nodes for source(s)");
+    } else {
+      $("#connector_nr_nodes_top").text("# nodes for target(s)");
+    }
+
   });
 
 }

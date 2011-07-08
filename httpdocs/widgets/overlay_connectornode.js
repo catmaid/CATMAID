@@ -355,4 +355,8 @@ zdiff) // the different from the current slices
   
   mc.drag(mc.move, mc.start, mc.up);
 
+  mc.mousedown(function (e) {
+    e.stopPropagation();
+  });
+
 };

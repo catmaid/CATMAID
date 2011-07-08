@@ -236,8 +236,8 @@ try {
 			}
 
 			$json = array( 'treenode_id' => $tnid,
-                           'skeleton_id' => $skelid,
-                               'neuron_id' => $neuronid );
+                     'skeleton_id' => $skelid,
+                     'neuron_id' => $neuronid );
 
 		} else {
 			// A neuron does not exist, therefore we put the new skeleton

@@ -1165,9 +1165,6 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     case "synapsedropping":
       svgOverlay.set_tracing_mode(m);
       break;
-    case "dbsync":
-      svgOverlay.updateNodeCoordinatesinDB();
-      break;
     case "goparent":
       if (atn != null) {
         if (atn.parent != null) {

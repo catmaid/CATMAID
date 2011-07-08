@@ -148,14 +148,6 @@ var stringToKeyAction = {
       return false;
     }
   },
-  "3": {
-    helpText: "Manually sync with the database",
-    buttonID: 'trace_button_sync',
-    run: function (e) {
-      project.tracingCommand('dbsync');
-      return false;
-    }
-  },
   "P": {
     helpText: "Go to the parent of the active node (?)",
     run: function (e) {

@@ -1050,11 +1050,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 
       // for the surrounding mouse event catcher
       mouseCatcher.onmousedown = onmousedown.move;
-      mouseCatcher.onmousemove = onmousemove.pos;
-      // but also for the svgoverlay, stops dragging node mdoe
-      svgOverlay.view.onmousedown = onmousedown.trace;
-      // XXX: coordinates are adjusted, either position or dragging but not both :(
-      // svgOverlay.view.onmousemove = onmousemove.trace;
+      mouseCatcher.onmousemove = onmousemove.trace;
       try {
         svgOverlay.view.addEventListener("DOMMouseScroll", onmousewheel.zoom, false); /* Webkit takes the event but does not understand it ... */
         svgOverlay.view.addEventListener("mousewheel", onmousewheel.zoom, false);

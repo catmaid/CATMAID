@@ -187,10 +187,6 @@ SVGOverlay = function (
     var e = $("<div class='tagBox' id='tagBoxId" + atn.id + "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: " + atn.x + "px; top: " + atn.y + "px;'>" +
     //var e = $("<div class='tagBox' id='tagBoxId' style='z-index: 7; left: 0px; top: 0px; color:white; bgcolor:blue;font-size:12pt'>" +
     "Tag (id:" + atn.id + "): <input id='Tags" + atn.id + "' name='Tags' type='text' value='' />" + "<button id='SaveCloseButton" + atn.id + "'>Save</button>" + "<button id='CloseButton" + atn.id + "'>Cancel</button>" + "</div>");
-    e.onclick = function (e) {
-      e.stopPropagation();
-      return true;
-    };
     e.css('background-color', 'white');
     //e.css('width', '200px');
     //e.css('height', '200px');

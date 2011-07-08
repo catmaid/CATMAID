@@ -6,7 +6,7 @@ var atn = null;
 var atn_fillcolor = "rgb(0, 255, 0)";
 
 var active_skeleton_id = null;
-var active_skeleton_color = "rgb(60, 145, 56)";
+
 
 function activateNode(node) {
 
@@ -95,7 +95,7 @@ current_scale // current scale of the stack
       if (nodes.hasOwnProperty(nodeid)) {
         node = nodes[nodeid];
         node.setColor();
-        node.draw();
+        node.drawEdges();
       }
     }
   };
@@ -346,8 +346,8 @@ current_scale // current scale of the stack
             nodes[toid].parent = nodes[fromid];
             // update the parents children
             nodes[fromid].children[toid] = nodes[toid];
-            nodes[toid].draw();
-            nodes[fromid].draw();
+            nodes[toid].drawEdges();
+            nodes[fromid].drawEdges();
             // make target active treenode
             activateNode(nodes[toid]);
           }
@@ -412,7 +412,7 @@ current_scale // current scale of the stack
 
             var nn = new ConnectorNode(cid, r, 8, pos_x, pos_y, pos_z, 0);
             nodes[cid] = nn;
-            nn.draw();
+            nn.drawEdges();
             activateNode(nn);
           }
         } // endif
@@ -465,7 +465,7 @@ current_scale // current scale of the stack
               // store the currently activated treenode into the pregroup of the connector
               nn.pregroup[id] = nodes[id];
               nodes[locid_retrieved] = nn;
-              nn.draw();
+              nn.drawEdges();
               // update the reference to the connector from the treenode
               nodes[id].connectors[locid_retrieved] = nn;
               // activate the newly created connector
@@ -476,7 +476,7 @@ current_scale // current scale of the stack
               // but we need to update the postgroup with corresponding original treenod
               nodes[locid_retrieved].postgroup[id] = nodes[id];
               // do not activate anything but redraw
-              nodes[locid_retrieved].draw();
+              nodes[locid_retrieved].drawEdges();
               // update the reference to the connector from the treenode
               nodes[id].connectors[locid_retrieved] = nodes[locid_retrieved];
             }
@@ -520,7 +520,7 @@ current_scale // current scale of the stack
 
             // add node to nodes list
             nodes[jso.treenode_id] = nn;
-            nn.draw();
+            nn.drawEdges();
 
             // grab the treenode id
             tnid = jso.treenode_id;
@@ -583,8 +583,25 @@ current_scale // current scale of the stack
             }
 
             nodes[jso.treenode_id] = nn;
-            activateNode(nn);
+            var active_node = atn;
+            activateNode(nn); // will alter atn
 
+            // Check whether the Z coordinate of the new node is beyond one section away 
+            // from the Z coordinate of the parent node (which is the active by definition)
+            if (atn) {
+				if (Math.abs(active_node.z - nn.z) > 1) {
+					var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
+					//var g = $('#growl-alert'); // doesn't work
+					g.growlAlert({
+						autoShow: true,
+						content: 'Node added beyond one section from its parent node!',
+						title: 'BEWARE',
+						position: 'top-right',
+						delayTime: 2500,
+						onComplete: function() { g.remove(); }
+					});
+				}
+			}
           }
         }
       }
@@ -776,11 +793,18 @@ current_scale // current scale of the stack
           }
         }
       }
-      // draw nodes
+      // Draw node edges first
       for (i in nodes) {
         if (nodes.hasOwnProperty(i)) {
-          nodes[i].draw();
+          nodes[i].drawEdges();
         }
+      }
+      // Create raphael's circles on top of the edges
+      // so that the events reach the circles first
+      for (i in nodes) {
+        if (nodes.hasOwnProperty(i)) {
+          nodes[i].createCircle();
+				}
       }
 
     } // end speed toggle

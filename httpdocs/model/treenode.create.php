@@ -17,13 +17,13 @@ $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
 # 1. There must be a project id
 if ( ! $pid ) {
-  echo json_encode( array( 'error' => 'Project closed. Cannot apply operation.' ) );
+	echo json_encode( array( 'error' => 'Project closed. Cannot apply operation.' ) );
 	return;
 }
 
 # 2. There must be a user id
 if ( ! $uid ) {
-    echo json_encode( array( 'error' => 'You are not logged in currently.  Please log in to be able to add treenodes.' ) );
+		echo json_encode( array( 'error' => 'You are not logged in currently.	Please log in to be able to add treenodes.' ) );
 	return;
 }
 
@@ -98,7 +98,7 @@ if (! $db->begin() ) {
 }
 
 try {
-    
+
 	// The result JSON message, if any:
 	$json = false;
 
@@ -112,16 +112,16 @@ try {
 		// and skeleton group and element_of relation
 
 		$skelid = $db->getResult('SELECT "tci"."class_instance_id" AS "cli"
-															FROM "treenode_class_instance" as "tci"
-															WHERE "tci"."treenode_id" = '.$parentid.'
-															AND "tci"."relation_id" = '.$eleof.'
-															AND "tci"."project_id" = '.$pid);
+								  FROM "treenode_class_instance" as "tci"
+								  WHERE "tci"."treenode_id" = '.$parentid.'
+								  AND "tci"."relation_id" = '.$eleof.'
+								  AND "tci"."project_id" = '.$pid);
 
-    if (false === $skelid || empty($skelid)) {
-       emitErrorAndExit( $db, 'Can not find skeleton for parent treenode '.$parentid.' in this project' );
-    }
+		if (false === $skelid || empty($skelid)) {
+			 emitErrorAndExit( $db, 'Can not find skeleton for parent treenode '.$parentid.' in this project' );
+		}
 
-    $skid = $skelid[0]['cli'];
+		$skid = $skelid[0]['cli'];
  
 		$data = array(
 				'user_id' => $uid,
@@ -129,7 +129,7 @@ try {
 				'location' => '('.$x.','.$y.','.$z.')',
 				'radius' => $radius,
 				'confidence' => $confidence);
-    
+		
 		// this is not a root node
 		$data['parent_id'] = $parentid;
 		
@@ -184,7 +184,7 @@ try {
 		}
 
 		// If a neuron already exists, use it:
-	  if (-1 != $neuronid) {
+		if (-1 != $neuronid) {
 
 			// Make the skeleton a model of the existing neuron
 			$data = array(
@@ -243,50 +243,50 @@ try {
 			// A neuron does not exist, therefore we put the new skeleton
 			// into a new neuron, and put the new neuron into the fragments group.
 
-      // Create a new neuron
-      $data = array(
-        'user_id' => $uid,
-        'project_id' => $pid,
-        'class_id' => $nid,
-        'name' => 'neuron'
-        );
-      $neuid = $db->insertIntoId('class_instance', $data );
+			// Create a new neuron
+			$data = array(
+				'user_id' => $uid,
+				'project_id' => $pid,
+				'class_id' => $nid,
+				'name' => 'neuron'
+				);
+			$neuid = $db->insertIntoId('class_instance', $data );
 
 			if (false === $neuid) {
 				emitErrorAndExit($db, 'Failed to insert new instance of a neuron.');
 			}
 
-      // Update neuron name by adding its id to the end
-      $up = array('name' => 'neuron '.$neuid);
-      $upw = 'id = '.$neuid;
-      $nRows = $db->update( "class_instance", $up, $upw); 
+			// Update neuron name by adding its id to the end
+			$up = array('name' => 'neuron '.$neuid);
+			$upw = 'id = '.$neuid;
+			$nRows = $db->update( "class_instance", $up, $upw); 
 
 			if (0 === $nRows) {
 				emitErrorAndExit($db, 'Failed to append the neuron id to its name.');
 			}
 
-      // Add skeleton model_of neuron
-      $data = array(
-          'user_id' => $uid,
-          'project_id' => $pid,
-          'relation_id' => $modid,
-          'class_instance_a' => $skelid,
-          'class_instance_b' => $neuid 
-        );
-      $q = $db->insertInto('class_instance_class_instance', $data );
+			// Add skeleton model_of neuron
+			$data = array(
+					'user_id' => $uid,
+					'project_id' => $pid,
+					'relation_id' => $modid,
+					'class_instance_a' => $skelid,
+					'class_instance_b' => $neuid 
+				);
+			$q = $db->insertInto('class_instance_class_instance', $data );
 
 			if (false === $q) {
 				emitErrorAndExit($db, 'Failed to insert new model_of relation between skeleton and neuron.');
 			}
 
 			// Add neuron to Fragments 
-      $fid = $db->getResult('SELECT "ci"."id" FROM "class_instance" AS "ci"
+			$fid = $db->getResult('SELECT "ci"."id" FROM "class_instance" AS "ci"
 														 WHERE "ci"."name" = \''.pg_escape_string($targetgroup).'\'
 														 AND "ci"."project_id" = '.$pid);
 
 			// If the fragments group does not exist yet, must create it and add it:
-      if (!$fid) {
-        $gid = $db->getClassId( $pid, "group" );
+			if (!$fid) {
+				$gid = $db->getClassId( $pid, "group" );
 
 				if (false === $gid) {
 					emitErrorAndExit($db, 'The query for class ID of "group" failed.');
@@ -295,71 +295,71 @@ try {
 					emitErrorAndExit($db, 'Can not find "group" class for this project');
 				}
 
-        $data = array(
-          'user_id' => $uid,
-          'project_id' => $pid,
-          'class_id' => $gid,
-          'name' => $targetgroup
-          );
-        $frid = $db->insertIntoId('class_instance', $data );
+				$data = array(
+					'user_id' => $uid,
+					'project_id' => $pid,
+					'class_id' => $gid,
+					'name' => $targetgroup
+					);
+				$frid = $db->insertIntoId('class_instance', $data );
 
 				if (false === $frid) {
 					emitErrorAndExit($db, 'Failed to insert new instance of group.');
 				}
 
-        // Add Fragments part_of root, but first find root id.
-        $pari = $db->getResult('SELECT "class"."id" FROM "class"
-																WHERE "class"."project_id" = '.$pid.' 
-																AND "class"."class_name" = \'root\'');
+				// Add Fragments part_of root, but first find root id.
+				$pari = $db->getResult('SELECT "class"."id" FROM "class"
+										WHERE "class"."project_id" = '.$pid.' 
+										AND "class"."class_name" = \'root\'');
 
 				if (false === $pari) {
 					emitErrorAndExit($db, 'Failed to select the root id.');
 				}
 
-        $paridc = !empty($pari) ? $pari[0]['id'] : 0;
+				$paridc = !empty($pari) ? $pari[0]['id'] : 0;
 				$parii = $db->getResult('SELECT "class_instance"."id"
-				                         FROM "class_instance"
-				                         WHERE "class_instance"."project_id" = '.$pid.'
-                                 AND "class_instance"."class_id" = '.$paridc);
+										 FROM "class_instance"
+										 WHERE "class_instance"."project_id" = '.$pid.'
+										 AND "class_instance"."class_id" = '.$paridc);
 
 				if (false === $parii) {
 					emitErrorAndExit($db, 'Failed to select ids for class instances.');
 				}
 
-        $rootid = !empty($parii) ? $parii[0]['id'] : 0;
+				$rootid = !empty($parii) ? $parii[0]['id'] : 0;
 
-        $data = array(
-            'user_id' => $uid,
-            'project_id' => $pid,
-            'relation_id' => $partof_id,
-            'class_instance_a' => $frid,
-            'class_instance_b' => $rootid
-          );
-        $q = $db->insertInto('class_instance_class_instance', $data );
+				$data = array(
+						'user_id' => $uid,
+						'project_id' => $pid,
+						'relation_id' => $partof_id,
+						'class_instance_a' => $frid,
+						'class_instance_b' => $rootid
+					);
+				$q = $db->insertInto('class_instance_class_instance', $data );
 
 				if (false === $q) {
 					emitErrorAndExit($db, 'Failed to insert part_of relation between root node and fragments group.');
 				}
 
-      } else {
-        $frid = $fid[0]['id'];
-      }
+			} else {
+				$frid = $fid[0]['id'];
+			}
 
-      // Add neuron part_of fragments relation:
-      $data = array(
-          'user_id' => $uid,
-          'project_id' => $pid,
-          'relation_id' => $partof_id,
-          'class_instance_a' => $neuid,
-          'class_instance_b' => $frid
-        );
-      $q = $db->insertInto('class_instance_class_instance', $data );
+			// Add neuron part_of fragments relation:
+			$data = array(
+					'user_id' => $uid,
+					'project_id' => $pid,
+					'relation_id' => $partof_id,
+					'class_instance_a' => $neuid,
+					'class_instance_b' => $frid
+				);
+			$q = $db->insertInto('class_instance_class_instance', $data );
 
 			if (false === $q) {
 				emitErrorAndExit($db, 'Failed to insert part_of relation between neuron id and fragments group.');
 			}
 
-      // Create a new treenode
+			// Create a new treenode
 			$data = array(
 				'user_id' => $uid,
 				'project_id' => $pid,
@@ -395,9 +395,9 @@ try {
 			}
 	
 			$json = array( 'treenode_id' => $tnid,
-									   'skeleton_id' => $skelid,
-						 			 	 'neuron_id' => $neuid,
-						  			 'fragmentgroup_id' => $frid );
+							'skeleton_id' => $skelid,
+						 	'neuron_id' => $neuid,
+							'fragmentgroup_id' => $frid );
 
 		}
 	}

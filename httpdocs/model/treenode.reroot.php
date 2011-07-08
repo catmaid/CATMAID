@@ -31,7 +31,7 @@ if ( ! $pid ) {
 
 # 3. There must be a user id
 if ( ! $uid ) {
-    echo json_encode( array( 'error' => 'You are not logged in currently.  Please log in to be able to add treenodes.' ) );
+    echo json_encode( array( 'error' => 'You are not logged in.' ) );
 	return;
 }
 

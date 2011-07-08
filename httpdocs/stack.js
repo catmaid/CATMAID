@@ -698,6 +698,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
         var pos_y = translation.x + (y + (offY - viewHeight / 2) / scale) * resolution.y;
         project.lastX = pos_x;
         project.lastY = pos_y;
+        project.lastStackID = self.id;
         statusBar.replaceLast("[" + pos_x.toFixed(3) + ", " + pos_y.toFixed(3) + "]");
       }
       // continue with event handling
@@ -714,6 +715,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
         var pos_z = translation.z + z * resolution.z;
         project.lastX = pos_x;
         project.lastY = pos_y;
+        project.lastStackID = self.id;
         statusBar.replaceLast("[" + pos_x.toFixed(3) + ", " + pos_y.toFixed(3) + ", " + pos_z + "]");
       }
       return false;

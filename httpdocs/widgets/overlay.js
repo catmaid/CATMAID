@@ -38,8 +38,8 @@ var openSkeletonNodeInObjectTree = function(node) {
 };
 
 SVGOverlay = function (
-resolution, translation, dimension, // dimension of the stack
-current_scale // current scale of the stack
+  resolution, translation, dimension, // dimension of the stack
+  current_scale // current scale of the stack
 ) {
 
   this.resolution = resolution;
@@ -66,10 +66,6 @@ current_scale // current scale of the stack
         recipe.document.open();
         recipe.document.write(html);
         recipe.document.close();
-
-
-
-
       }
     }); // endfunction
   };
@@ -143,11 +139,9 @@ current_scale // current scale of the stack
             x.overrideMimeType("application/json;charset=UTF-8");
           }
         },
-        success: function (result) {
-          var nodeitems = result, nodeid;
-
+        success: function (nodeitems) {
           // for all retrieved, create a label
-          for (nodeid in nodeitems) {
+          for (var nodeid in nodeitems) {
             if (nodeitems.hasOwnProperty(nodeid)) {
               var tl = new OverlayLabel(nodeitems[nodeid], r, nodes[nodeid].x, nodes[nodeid].y, nodeitems[nodeid]);
               labels[nodeid] = tl;
@@ -588,20 +582,20 @@ current_scale // current scale of the stack
 
             // Check whether the Z coordinate of the new node is beyond one section away 
             // from the Z coordinate of the parent node (which is the active by definition)
-            if (atn) {
-				if (Math.abs(active_node.z - nn.z) > 1) {
-					var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
-					//var g = $('#growl-alert'); // doesn't work
-					g.growlAlert({
-						autoShow: true,
-						content: 'Node added beyond one section from its parent node!',
-						title: 'BEWARE',
-						position: 'top-right',
-						delayTime: 2500,
-						onComplete: function() { g.remove(); }
-					});
-				}
-			}
+            if (active_node) {
+              if (Math.abs(active_node.z - nn.z) > 1) {
+                var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
+                //var g = $('#growl-alert'); // doesn't work
+                g.growlAlert({
+                  autoShow: true,
+                  content: 'Node added beyond one section from its parent node!',
+                  title: 'BEWARE',
+                  position: 'top-right',
+                  delayTime: 2500,
+                  onComplete: function() { g.remove(); }
+                });
+              }
+            }
           }
         }
       }
@@ -804,7 +798,7 @@ current_scale // current scale of the stack
       for (i in nodes) {
         if (nodes.hasOwnProperty(i)) {
           nodes[i].createCircle();
-				}
+        }
       }
 
     } // end speed toggle

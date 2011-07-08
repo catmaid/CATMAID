@@ -10,6 +10,24 @@
  */
 
 /**
+ * Get the part of the tile name that consists of dimensions z, t, ...
+ * For a 3D stack this will return "z/", for a 4D stack "t/z/", etc.
+ *
+ * @param pixelPos pixel position of the stack [x, y, z, t, ...]
+ */
+function getTileBaseName( pixelPos )
+{
+	var n = pixelPos.length;
+	var dir = ""
+	for ( var i = n - 1; i > 1; --i )
+	{
+		dir += pixelPos[ i ] + "/";
+	}
+	return dir;
+}
+
+
+/**
  * 
  */
 function TileLayer(
@@ -24,6 +42,9 @@ function TileLayer(
 	 */
 	var redraw = function()
 	{
+		var pixelPos = [ stack.x, stack.y, stack.z ];
+		var tileBaseName = getTileBaseName( pixelPos );
+
 		var fr = Math.floor( stack.yc / tileHeight );
 		var fc = Math.floor( stack.xc / tileWidth );
 		
@@ -135,7 +156,9 @@ function TileLayer(
 				}
 				else
 				{
-					tiles[ i ][ j ].alt = stack.z + "/" + ( fr + i ) + "_" + ( fc + j ) + "_" + stack.s;
+					// TODO: use this for the new tile naming scheme:
+					// tiles[ i ][ j ].alt = tileBaseName + stack.s + "/" + ( fr + i ) + "/" + ( fc + j );
+					tiles[ i ][ j ].alt = tileBaseName + ( fr + i ) + "_" + ( fc + j ) + "_" + stack.s;
 					tiles[ i ][ j ].src = baseURL + tiles[ i ][ j ].alt + ".jpg";
 				}
 				tiles[ i ][ j ].style.top = t + "px";

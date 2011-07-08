@@ -352,6 +352,11 @@ try {
 	}
 	// $sOutput = substr_replace( $sOutput, "", -1 );
 	$sOutput .= ']}';
+  
+  // Nothing to commit, but just to finish the transaction cleanly.
+  if (! $db->commit() ) {
+		emitErrorAndExit( $db, 'Failed to commit!' );
+	}
 
 	echo $sOutput;
 

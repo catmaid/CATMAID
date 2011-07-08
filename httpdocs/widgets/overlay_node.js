@@ -11,7 +11,7 @@ var inactive_skeleton_color_below = "rgb(255,0,0)";
 /*
  * A treenode object
  */
-Node = function (
+var Node = function (
 	id, // unique id for the node from the database
 	paper, // the raphael paper this node is drawn to
 	parent, // the parent node
@@ -59,12 +59,13 @@ Node = function (
 
   var fillcolor;
 
-  this.colorFromZDiff = function(node) {
+  var colorFromZDiff = function(node) {
     if (node.zdiff > 0) {
       return inactive_skeleton_color_above;
     } else if (node.zdiff < 0) {
       return inactive_skeleton_color_below;
-    } else if (atn) {
+    } else if (atn && atn.skeleton_id != node.skeleton_id) {
+      //console.log("active_skeleton_id:", active_skeleton_id, "node.skid:", typeof node.skeleton_id, " atn.skid:", typeof atn.skeleton_id);
       return inactive_skeleton_color;
     } else {
       return active_skeleton_color;
@@ -89,7 +90,7 @@ Node = function (
     } else {
       // If none of the above applies, just colour according to the z
       // difference.
-      fillcolor = this.colorFromZDiff(this);
+      fillcolor = colorFromZDiff(this);
     }
 
     if (this.c) {
@@ -274,7 +275,7 @@ Node = function (
   // updates the raphael path coordinates
   this.drawLineToParent = function () {
     if (this.parent) {
-      var strokecolor = this.colorFromZDiff(this.parent);
+      var strokecolor = colorFromZDiff(this.parent);
       if (this.skeleton_id && this.skeleton_id == active_skeleton_id) {
         strokecolor = active_skeleton_color;
       }
@@ -296,9 +297,7 @@ Node = function (
     // draws/updates path to parent and children
     for (i in this.children) {
       if (this.children.hasOwnProperty(i)) {
-        if (this.children[i].parent !== null) {
-          this.children[i].drawLineToParent();
-        }
+        this.children[i].drawLineToParent();
       }
     }
     for (i in this.connectors) {
@@ -312,8 +311,20 @@ Node = function (
     }
   };
 
+  var lineToBack = function(line) {
+    if (line) line.toBack();
+  };
+
   this.draw = function () {
     this.drawEdges();
+    // Push new edges to the back.
+    for (i in this.children) {
+      if (this.children.hasOwnProperty(i)) {
+        lineToBack(this.children[i].line);
+      }
+    }
+    if (this.parent !== null) lineToBack(this.line);
+    //
     this.createCircle();
   };
 

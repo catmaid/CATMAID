@@ -71,9 +71,9 @@ if ( $pid )
 		
 	}
 	else
-		echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to retrieve the tree.' ) );
+		echo json_encode( array( 'error' => 'You are not logged in currently.  Please log in to be able to retrieve the tree.' ) );
 }
 else
-	echo makeJSON( array( 'error' => 'Project closed. Can not retrieve the tree.' ) );
+	echo json_encode( array( 'error' => 'Project closed. Can not retrieve the tree.' ) );
 
 ?>

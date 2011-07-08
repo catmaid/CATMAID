@@ -759,7 +759,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 
       var b = ui.getMouseButton(e);
       if (b === MOUSE_BUTTON_MIDDLE) {
-        // afford dradding in tracing mode
+        // afford dragging in tracing mode
         ui.registerEvent("onmousemove", onmousemove.move);
         ui.registerEvent("onmouseup", onmouseup.move);
         ui.catchEvents("move");

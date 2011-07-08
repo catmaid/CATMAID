@@ -1051,6 +1051,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       // for the surrounding mouse event catcher
       mouseCatcher.onmousedown = onmousedown.move;
       mouseCatcher.onmousemove = onmousemove.trace;
+      svgOverlay.view.onmousedown = onmousedown.trace;
       try {
         svgOverlay.view.addEventListener("DOMMouseScroll", onmousewheel.zoom, false); /* Webkit takes the event but does not understand it ... */
         svgOverlay.view.addEventListener("mousewheel", onmousewheel.zoom, false);

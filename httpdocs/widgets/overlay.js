@@ -199,6 +199,11 @@ SVGOverlay = function (
       event.stopPropagation();
     });
 
+    $("#tagBoxId" + atn.id).mousedown(function (event) {
+      // console.log(event);
+      event.stopPropagation();
+    });
+
     // add autocompletion
     requestQueue.register("model/label.all.list.php", "POST", {
       pid: project.id

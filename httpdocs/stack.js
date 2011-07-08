@@ -758,8 +758,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     trace: function (e) {
 
       var b = ui.getMouseButton(e);
-      switch (b) {
-      case MOUSE_BUTTON_MIDDLE:
+      if (b === MOUSE_BUTTON_MIDDLE) {
         // afford dradding in tracing mode
         ui.registerEvent("onmousemove", onmousemove.move);
         ui.registerEvent("onmouseup", onmouseup.move);
@@ -768,7 +767,8 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 
         //! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
         document.body.firstChild.focus();
-        break;
+      } else {
+        svgOverlay.whenclicked(e);
       }
 
       return true;

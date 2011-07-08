@@ -845,7 +845,12 @@ current_scale // current scale of the stack
     return view;
   };
 
-  this.onclick = function (e) {
+  // This isn't called "onclick" to avoid confusion - click events
+  // aren't generated when clicking in the overlay since the mousedown
+  // and mouseup events happen in different divs.  This is actually
+  // called from mousedown (or mouseup if we ever need to make
+  // click-and-drag work with the left hand button too...)
+  this.whenclicked = function (e) {
     var locid;
     var m = ui.getMouse(e);
 
@@ -927,7 +932,6 @@ current_scale // current scale of the stack
   var view = document.createElement("div");
   view.className = "sliceSVGOverlay";
   view.id = "sliceSVGOverlayId";
-  view.onclick = this.onclick;
   view.style.zIndex = 6;
   view.style.cursor = "crosshair";
   // make view accessible from outside for setting additional mouse handlers

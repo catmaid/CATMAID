@@ -335,6 +335,7 @@ function handle_openProjectStack(status, text, xml) {
               project.lastX = xp;
               project.lastY = yp;
               project.lastZ = zp;
+              project.lastStackID = stack.id;
               project.moveTo(zp, yp, xp);
               stack.changeScale(ss[i]);
               sids.splice(i, 1);

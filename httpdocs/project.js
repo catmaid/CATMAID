@@ -211,6 +211,15 @@ var stringToKeyAction = {
       return true;
     }
   },
+  "G": {
+    helpText: "Select the nearest node to the mouse cursor",
+    run: function (e) {
+      if (!(e.ctrlKey || e.metaKey)) {
+        project.activateNearestNode();
+      }
+      return true;
+    }
+  },
   "Tab": {
     helpText: "Switch to the next open stack (or the previous with Shift+Tab)",
     specialKeyCodes: [9],
@@ -289,6 +298,7 @@ function setButtons() {
 function Project(pid) {
   this.lastX = null;
   this.lastY = null;
+  this.lastStackID = null;
 
   this.getView = function () {
     return view;
@@ -634,6 +644,20 @@ function Project(pid) {
     for (var i = 0; i < stacks.length; ++i)
     stacks[i].selectNode(id);
     return;
+  }
+
+  this.activateNearestNode = function () {
+    if (project.lastStackID === null) {
+      alert("No last stack ID was found");
+    } else {
+      for (var i = 0; i < stacks.length; ++i) {
+        if (stacks[i].id === project.lastStackID) {
+          stacks[i].tracingCommand("selectnearestnode");
+          return;
+        }
+      }
+      alert("Couldn't find the stack with ID "+project.lastStackID);
+    }
   }
 
   this.recolorAllNodes = function () {

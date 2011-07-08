@@ -37,7 +37,7 @@ var openSkeletonNodeInObjectTree = function(node) {
   requestOpenTreePath(node);
 };
 
-SVGOverlay = function (
+var SVGOverlay = function (
   resolution, translation, dimension, // dimension of the stack
   current_scale // current scale of the stack
 ) {

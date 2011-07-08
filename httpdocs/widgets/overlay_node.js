@@ -11,7 +11,7 @@ var inactive_skeleton_color_below = "rgb(255,0,0)";
 /*
  * A treenode object
  */
-Node = function (
+var Node = function (
 	id, // unique id for the node from the database
 	paper, // the raphael paper this node is drawn to
 	parent, // the parent node

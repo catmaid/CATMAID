@@ -26,7 +26,7 @@ if ( isset( $_REQUEST['iDisplayStart'] ) )
 	$sLimit = "LIMIT ".$displayLength." OFFSET ".$displayStart;
 }
 
-$columnToFieldArray = array( "connector_id", "x", "y", "z", "tags", "nr_treenodes", "username");
+$columnToFieldArray = array( "connector_id", "x", "y", "z", "labels", "nr_treenodes", "username");
 
 function fnColumnToField( $i ) {
 	global $columnToFieldArray;
@@ -124,7 +124,8 @@ if( !empty($tlabelrel_res) )
     $tlabel = $db->getResult(
     'SELECT "cici"."class_instance_a" as "cia", "class_instance"."name" as "label"
     FROM "class_instance_class_instance" AS "cici" , "class_instance"
-    WHERE "cici"."project_id" = '.$pid.' AND "cici"."relation_id" = '.$tlabelrel.' AND "class_instance"."id" = "cici"."class_instance_b"'
+    WHERE "cici"."project_id" = '.$pid.' AND "cici"."relation_id" = '.$tlabelrel.' AND
+     "class_instance"."id" = "cici"."class_instance_b"'
     );
 
     reset( $tlabel );
@@ -177,10 +178,30 @@ $result = array();
 // and retrieve the number of treenodes for a given skeleton id
 foreach($t as $key => $value) {
 
+    // populate resulting connectors with labels
+    $tlabel = $db->getResult('SELECT "class_instance"."name" as "label"
+                              FROM "connector_class_instance" AS "cci", "class_instance"
+                              WHERE "cci"."project_id" = '.$pid.' AND
+                                    "cci"."connector_id" = '.$value["connector_id"].' AND
+                                    "cci"."relation_id" = '.$labeledas_id.' AND
+                                    "cci"."class_instance_id" = "class_instance"."id" ');
+    
+    $label_arr = array();
+    while ( list( $key, $val) = each( $tlabel ) )
+    {
+        $label_arr[] = $val['label'];
+    }
+
+    if(!empty($tlabel)) {
+        $label_string = implode(",", $label_arr);
+    } else {
+        $label_string = "";
+    }
+
     // Retrieve the treenodes on the "other" side first
     // then retrieve the skeleton ids and count their number of treenodes
 
-    $t2 = $db->getResult('SELECT	"tc"."treenode_id" AS "treenode_id",
+    $t2 = $db->getResult('SELECT "tc"."treenode_id" AS "treenode_id",
         "tci"."class_instance_id" AS "skeleton_id",
         "tc"."user_id" AS "user_id"
         FROM "treenode_connector" as "tc", "treenode_class_instance" as "tci"
@@ -197,6 +218,7 @@ foreach($t as $key => $value) {
         foreach($t2 as $key2 => $value2 ) {
             $data = $value;
             $data["nr_treenodes"] = $db->getTreenodeCountForSkeleton( $pid, $value2["skeleton_id"] );
+            $data["labels"] = $label_string;
             $result[] = $data;
         }
 
@@ -204,6 +226,7 @@ foreach($t as $key => $value) {
         // a connector no treenodes beyond counts as zero
         $data = $value;
         $data["nr_treenodes"] = 0;
+        $data["labels"] = $label_string;
         $result[] = $data;
     }
 
@@ -236,11 +259,7 @@ while ( list( $key, $val) = each( $result2 ) )
     $sRow .= '"'.addslashes($val["x"]).'",';
     $sRow .= '"'.addslashes($val["y"]).'",';
     $sRow .= '"'.addslashes($val["z"]).'",';
-
-    // $sRow .= '"'.addslashes($val["tnid"]).'",';
-    // tags
-    $sRow .= '"'.addslashes("").'",';
-
+    $sRow .= '"'.addslashes($val["labels"]).'",';
     $sRow .= '"'.addslashes($val["nr_treenodes"]).'",';
     $sRow .= '"'.addslashes($val["username"]).'"';
 

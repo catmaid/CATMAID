@@ -674,6 +674,7 @@ function Project(pid) {
    * @todo: should not the stack handle the navigation toolbar?
    */
   this.unregister = function () {
+    console.log('unregister');
     //! close all stacks
     for (var i = 0; i < stacks.length; ++i) {
       stacks[i].unregister();
@@ -691,6 +692,7 @@ function Project(pid) {
       document.getElementById("toolbox_data").style.display = "none";
       document.getElementById("toolbox_show").style.display = "none";
       document.getElementById("toolbar_crop").style.display = "none";
+      document.getElementById("toolbar_trace").style.display = "none";
 
       // hide data table and tree view widgets
       // in order to reload the data for a new project

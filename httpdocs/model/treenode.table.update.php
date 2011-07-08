@@ -22,7 +22,7 @@ if ( ! $pid ) {
 
 # 2. There must be a user id
 if ( ! $uid ) {
-    echo json_encode( array( 'error' => 'You are not logged in currently.' ) );
+  echo json_encode( array( 'error' => 'You are not logged in currently.' ) );
 	return;
 }
 

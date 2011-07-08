@@ -625,7 +625,6 @@ function init()
 	statusBar = new Console();
 	document.body.appendChild( statusBar.getView() );
 	
-	requestQueue = new RequestQueue();
 	ui = new UI();
 	
 	input_x = document.getElementById( "x" );

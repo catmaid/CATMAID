@@ -1,20 +1,27 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
+
+// Global color properties
+var active_skeleton_color = "rgb(255,255,0)";
+var inactive_skeleton_color = "rgb(255,0,255)";
+var inactive_skeleton_color_above = "rgb(0,0,255)";
+var inactive_skeleton_color_below = "rgb(255,0,0)";
+
 /*
  * A treenode object
  */
 Node = function (
-id, // unique id for the node from the database
-paper, // the raphael paper this node is drawn to
-parent, // the parent node
-r, // the radius
-x, // the x coordinate in pixel coordinates
-y, // y coordinates
-z, // z coordinates
-zdiff, // the different from the current slices
-skeleton_id,
-is_root_node) // the id of the skeleton this node is an element of
+	id, // unique id for the node from the database
+	paper, // the raphael paper this node is drawn to
+	parent, // the parent node
+	r, // the radius
+	x, // the x coordinate in pixel coordinates
+	y, // y coordinates
+	z, // z coordinates
+	zdiff, // the different from the current slices
+	skeleton_id,
+	is_root_node) // the id of the skeleton this node is an element of
 {
 
   // the database treenode id
@@ -48,18 +55,20 @@ is_root_node) // the id of the skeleton this node is an element of
   // slightly bigger one for dragging
   var c, mc;
   // the line that is drawn to its parent
-  var line = this.paper.path();
+  var line = this.paper.path(); // TODO not all!
 
   var fillcolor;
 
   this.colorFromZDiff = function(node) {
     if (node.zdiff > 0) {
-      return "rgb(0, 0, 255)";
+      return inactive_skeleton_color_above;
     } else if (node.zdiff < 0) {
-      return "rgb(255, 0, 0)";
+      return inactive_skeleton_color_below;
+    } else if (atn) {
+      return inactive_skeleton_color;
     } else {
-      return "rgb(255, 255, 0)";
-    }
+      return active_skeleton_color;
+		}
   }
 
 
@@ -83,9 +92,11 @@ is_root_node) // the id of the skeleton this node is an element of
       fillcolor = this.colorFromZDiff(this);
     }
 
-    c.attr({
-      fill: fillcolor
-    });
+    if (this.c) {
+      this.c.attr({
+        fill: fillcolor
+      });
+    }
   };
 
   if (this.r < 0) {
@@ -101,19 +112,9 @@ is_root_node) // the id of the skeleton this node is an element of
     this.rcatch = 0;
   }
 
-  // update the parent node of this node
-  // update parent's children array
-  this.updateParent = function (par) {
-    // par must be a Node object
-    this.parent = par;
-    // update reference to oneself
-    this.parent.children[id] = this;
-  };
-
-  // update the parent if it exists
-  if (this.parent !== null) {
-    // if parent exists, update it
-    this.updateParent(this.parent);
+  // Update the parent's children if it exists
+  if (this.parent) {
+    this.parent.children[this.id] = this;
   }
 
   // update the local x,y coordinates
@@ -121,15 +122,17 @@ is_root_node) // the id of the skeleton this node is an element of
   this.setXY = function (xnew, ynew) {
     this.x = xnew;
     this.y = ynew;
-    c.attr({
-      cx: this.x,
-      cy: this.y
-    });
-    mc.attr({
-      cx: this.x,
-      cy: this.y
-    });
-    this.draw();
+    if (c) {
+			c.attr({
+				cx: this.x,
+				cy: this.y
+			});
+			mc.attr({
+				cx: this.x,
+				cy: this.y
+			});
+		}
+		this.drawEdges();
   };
 
   // the accessor method for the display node
@@ -137,24 +140,26 @@ is_root_node) // the id of the skeleton this node is an element of
     return c;
   };
 
-  // create a raphael circle object
-  c = this.paper.circle(this.x, this.y, this.r).attr({
-    fill: fillcolor,
-    stroke: "none",
-    opacity: 1.0
-  });
+  this.createCircle = function () {
+    // Create c and mc ONLY if the node is in the current section
+    if (0 == this.zdiff) {
+      // create a raphael circle object
+      this.c = this.paper.circle(this.x, this.y, this.r).attr({
+        fill: fillcolor,
+        stroke: "none",
+        opacity: 1.0
+      });
 
-  // a raphael circle oversized for the mouse logic
-  mc = this.paper.circle(this.x, this.y, this.rcatch).attr({
-    fill: "rgb(0, 1, 0)",
-    stroke: "none",
-    opacity: 0
-  });
-
-  // add a reference to the parent container node in the
-  // raphael object in order to being able for the drag event handler
-  // to do something sensible
-  mc.parentnode = this;
+      // a raphael circle oversized for the mouse logic
+      this.mc = this.paper.circle(this.x, this.y, this.rcatch).attr({
+        fill: "rgb(0, 1, 0)",
+        stroke: "none",
+        opacity: 0
+      });
+      
+      this.createEventHandlers();
+    }
+  }
 
   this.setColor();
 
@@ -184,8 +189,10 @@ is_root_node) // the id of the skeleton this node is an element of
       this.children[i].removeParent();
     }
     // remove the raphael svg elements from the DOM
-    c.remove();
-    mc.remove();
+    if (c) {
+      c.remove();
+      mc.remove();
+    }
     if (this.parent !== null) {
       this.removeLine();
       // remove this node from parent's children list
@@ -217,11 +224,15 @@ is_root_node) // the id of the skeleton this node is an element of
     });
 
     // activate parent node when deleted
-    if (this.parent === null) {
-      activateNode(null);
-    } else {
+    if (this.parent) {
       // loop over nodes to see if parent is retrieved
       project.selectNode(this.parent.id);
+      if (!atn) {
+		  // fetch the parent node from the database and select it
+		  // TODO
+	  }
+    } else {
+      activateNode(null);
     }
     // redraw everything for now
     project.updateNodes();
@@ -262,26 +273,25 @@ is_root_node) // the id of the skeleton this node is an element of
 
   // updates the raphael path coordinates
   this.drawLineToParent = function () {
-    if (this.parent != null) {
+    if (this.parent) {
       var strokecolor = this.colorFromZDiff(this.parent);
       if (this.skeleton_id && this.skeleton_id == active_skeleton_id) {
         strokecolor = active_skeleton_color;
       }
       line.attr({
         path: [
-          ["M", c.attrs.cx, c.attrs.cy],
-          ["L", this.parent.getC().attrs.cx, this.parent.getC().attrs.cy]
+          ["M", this.x, this.y],
+          ["L", this.parent.x, this.parent.y]
         ],
-        stroke: strokecolor
+        stroke: strokecolor,
+        "stroke-width": 2
       });
-      // XXX: comment toBack for now because it takes much resources
-      line.toBack();
     }
   };
 
   // draw function to update the paths from the children
   // and to its parent
-  this.draw = function () {
+  this.drawEdges = function () {
     var i;
     // draws/updates path to parent and children
     for (i in this.children) {
@@ -294,7 +304,7 @@ is_root_node) // the id of the skeleton this node is an element of
     for (i in this.connectors) {
       if (this.children.hasOwnProperty(i)) {
         // should update the connector paths
-        this.connectors[i].draw();
+        this.connectors[i].drawEdges();
       }
     }
     if (this.parent !== null) {
@@ -302,94 +312,109 @@ is_root_node) // the id of the skeleton this node is an element of
     }
   };
 
-/*
-   * event handlers
-   */
+  this.draw = function () {
+    this.drawEdges();
+    this.createCircle();
+  };
 
-  mc.dblclick(function (e) {
-    if (e.altKey) {
-      // zoom in
-      slider_trace_s.move(-1);
-    }
-    else {
-      // zoom out
-      slider_trace_s.move(1);
-    }
-    project.tracingCommand('goactive');
-  });
 
-  mc.click(function (e) {
-    //    console.log("atn.id", atn.id);
-    //  console.log("treenode: clicked", this.parentnode.id, "active is", atn.id);
-    // return some log information when clicked on the node
-    // this usually refers here to the mc object
-    if (e.shiftKey) {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-        // if it is active node, set active node to null
-        if (atn !== null && this.parentnode.id === atn.id) {
-          activateNode(null);
-        }
-        statusBar.replaceLast("deleted treenode with id " + this.parentnode.id);
-        this.parentnode.deletenode();
-        e.stopPropagation();
-        return true;
-      }
-      if (atn !== null) {
-        // connected activated treenode or connectornode
-        // to existing treenode or connectornode
-        if (atn.type === "location") {
-          project.createLink(atn.id, this.parentnode.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
-          statusBar.replaceLast("joined active treenode to connector with id " + this.parentnode.id);
-        } else if (atn.type === "treenode") {
-          statusBar.replaceLast("joined active treenode to treenode with id " + this.parentnode.id);
-          project.createTreenodeLink(atn.id, this.parentnode.id);
-        }
 
-      } else {
-        alert("Nothing to join without an active node!");
-      }
+  this.createEventHandlers = function () {
+		var self = this;
+		/*
+		 * event handlers
+		 */
+		this.mc.dblclick(function (e) {
+			if (e.altKey) {
+				// zoom in
+				slider_trace_s.move(-1);
+			}
+			else {
+				// zoom out
+				slider_trace_s.move(1);
+			}
+			project.tracingCommand('goactive');
+		});
+
+		this.mc.click(function (e) {
+			//    console.log("atn.id", atn.id);
+			//  console.log("treenode: clicked", this.parentnode.id, "active is", atn.id);
+			// return some log information when clicked on the node
+			// this usually refers here to the mc object
+			if (e.shiftKey) {
+				if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+					// if it is active node, set active node to null
+					if (atn !== null && self.id === atn.id) {
+						activateNode(null);
+					}
+					statusBar.replaceLast("deleted treenode with id " + self.id);
+					self.deletenode();
+					e.stopPropagation();
+					return true;
+				}
+				if (atn !== null) {
+					// connected activated treenode or connectornode
+					// to existing treenode or connectornode
+					if (atn.type === "location") {
+						project.createLink(atn.id, self.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
+						statusBar.replaceLast("joined active treenode to connector with id " + self.id);
+					} else if (atn.type === "treenode") {
+						statusBar.replaceLast("joined active treenode to treenode with id " + self.id);
+						project.createTreenodeLink(atn.id, self.id);
+					}
+
+				} else {
+					alert("Nothing to join without an active node!");
+				}
+				e.stopPropagation();
+
+			} else {
+				// activate this node
+				activateNode(self);
+				// stop propagation of the event
+				e.stopPropagation();
+			}
+		});
+
+		this.mc.move = function (dx, dy) {
+			activateNode(self);
+			self.x = ox + dx;
+			self.y = oy + dy;
+			self.c.attr({
+				cx: self.x,
+				cy: self.y
+			});
+			self.mc.attr({
+				cx: self.x,
+				cy: self.y
+			});
+			self.drawEdges();
+			statusBar.replaceLast("move treenode with id " + self.id);
+
+			self.needsync = true;
+		};
+
+		this.mc.up = function () {
+			self.c.attr({
+				opacity: 1
+			});
+		};
+
+		this.mc.start = function () {
+			ox = self.x;
+			oy = self.y;
+			self.c.attr({
+				opacity: 0.7
+			});
+		};
+
+		this.mc.drag(this.mc.move, this.mc.start, this.mc.up);
+
+    this.mc.mousedown(function (e) {
       e.stopPropagation();
-
-    } else {
-      // activate this node
-      activateNode(this.parentnode);
-      // stop propagation of the event
-      e.stopPropagation();
-    }
-  });
-
-  mc.move = function (dx, dy) {
-    activateNode(this.parentnode);
-    this.parentnode.x = ox + dx;
-    this.parentnode.y = oy + dy;
-    c.attr({
-      cx: this.parentnode.x,
-      cy: this.parentnode.y
     });
-    mc.attr({
-      cx: this.parentnode.x,
-      cy: this.parentnode.y
-    });
-    this.parentnode.draw();
-    statusBar.replaceLast("move treenode with id " + this.parentnode.id);
 
-    this.parentnode.needsync = true;
-  };
 
-  mc.up = function () {
-    c.attr({
-      opacity: 1
-    });
-  };
-
-  mc.start = function () {
-    ox = mc.attr("cx");
-    oy = mc.attr("cy");
-    c.attr({
-      opacity: 0.7
-    });
-  };
-
-  mc.drag(mc.move, mc.start, mc.up);
+	}
 
 };

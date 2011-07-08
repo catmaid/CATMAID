@@ -6,7 +6,6 @@ var atn = null;
 var atn_fillcolor = "rgb(0, 255, 0)";
 
 var active_skeleton_id = null;
-var active_skeleton_color = "rgb(60, 145, 56)";
 
 function activateNode(node) {
 
@@ -35,7 +34,7 @@ var openSkeletonNodeInObjectTree = function(node) {
     return;
   }
   // Else, synchronize:
-  requestOpenTreePath(node.id);
+  requestOpenTreePath(node);
 };
 
 SVGOverlay = function (
@@ -95,7 +94,7 @@ current_scale // current scale of the stack
       if (nodes.hasOwnProperty(nodeid)) {
         node = nodes[nodeid];
         node.setColor();
-        node.draw();
+        node.drawEdges();
       }
     }
   };
@@ -302,6 +301,7 @@ current_scale // current scale of the stack
             } else {
               // just redraw all for now
               project.updateNodes();
+              refreshObjectTree();
             }
           } // endif
         } // end if
@@ -309,6 +309,7 @@ current_scale // current scale of the stack
     }
   };
 
+  // Used to join two skeleton together
   this.createTreenodeLink = function (fromid, toid) {
     // first make sure to reroot target
     requestQueue.register("model/treenode.reroot.php", "POST", {
@@ -324,6 +325,7 @@ current_scale // current scale of the stack
           } else {
             // just redraw all for now
             project.updateNodes();
+            refreshObjectTree();
           }
         } // endif
       } // end if
@@ -343,8 +345,8 @@ current_scale // current scale of the stack
             nodes[toid].parent = nodes[fromid];
             // update the parents children
             nodes[fromid].children[toid] = nodes[toid];
-            nodes[toid].draw();
-            nodes[fromid].draw();
+            nodes[toid].drawEdges();
+            nodes[fromid].drawEdges();
             // make target active treenode
             activateNode(nodes[toid]);
           }
@@ -580,8 +582,26 @@ current_scale // current scale of the stack
             }
 
             nodes[jso.treenode_id] = nn;
-            activateNode(nn);
+            nn.draw();
+            var active_node = atn;
+            activateNode(nn); // will alter atn
 
+            // Check whether the Z coordinate of the new node is beyond one section away 
+            // from the Z coordinate of the parent node (which is the active by definition)
+            if (atn) {
+				if (Math.abs(active_node.z - nn.z) > 1) {
+					var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
+					//var g = $('#growl-alert'); // doesn't work
+					g.growlAlert({
+						autoShow: true,
+						content: 'Node added beyond one section from its parent node!',
+						title: 'BEWARE',
+						position: 'top-right',
+						delayTime: 2500,
+						onComplete: function() { g.remove(); }
+					});
+				}
+			}
           }
         }
       }
@@ -773,11 +793,18 @@ current_scale // current scale of the stack
           }
         }
       }
-      // draw nodes
+      // Draw node edges first
       for (i in nodes) {
         if (nodes.hasOwnProperty(i)) {
-          nodes[i].draw();
+          nodes[i].drawEdges();
         }
+      }
+      // Create raphael's circles on top of the edges
+      // so that the events reach the circles first
+      for (i in nodes) {
+        if (nodes.hasOwnProperty(i)) {
+          nodes[i].createCircle();
+				}
       }
 
     } // end speed toggle
@@ -842,7 +869,12 @@ current_scale // current scale of the stack
     return view;
   };
 
-  this.onclick = function (e) {
+  // This isn't called "onclick" to avoid confusion - click events
+  // aren't generated when clicking in the overlay since the mousedown
+  // and mouseup events happen in different divs.  This is actually
+  // called from mousedown (or mouseup if we ever need to make
+  // click-and-drag work with the left hand button too...)
+  this.whenclicked = function (e) {
     var locid;
     var m = ui.getMouse(e);
 
@@ -924,7 +956,6 @@ current_scale // current scale of the stack
   var view = document.createElement("div");
   view.className = "sliceSVGOverlay";
   view.id = "sliceSVGOverlayId";
-  view.onclick = this.onclick;
   view.style.zIndex = 6;
   view.style.cursor = "crosshair";
   // make view accessible from outside for setting additional mouse handlers

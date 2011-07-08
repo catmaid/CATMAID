@@ -7,7 +7,6 @@ var atn_fillcolor = "rgb(0, 255, 0)";
 
 var active_skeleton_id = null;
 
-
 function activateNode(node) {
 
   // if node === null, just deactivate
@@ -412,7 +411,7 @@ current_scale // current scale of the stack
 
             var nn = new ConnectorNode(cid, r, 8, pos_x, pos_y, pos_z, 0);
             nodes[cid] = nn;
-            nn.drawEdges();
+            nn.draw();
             activateNode(nn);
           }
         } // endif
@@ -465,7 +464,7 @@ current_scale // current scale of the stack
               // store the currently activated treenode into the pregroup of the connector
               nn.pregroup[id] = nodes[id];
               nodes[locid_retrieved] = nn;
-              nn.drawEdges();
+              nn.draw();
               // update the reference to the connector from the treenode
               nodes[id].connectors[locid_retrieved] = nn;
               // activate the newly created connector
@@ -476,7 +475,7 @@ current_scale // current scale of the stack
               // but we need to update the postgroup with corresponding original treenod
               nodes[locid_retrieved].postgroup[id] = nodes[id];
               // do not activate anything but redraw
-              nodes[locid_retrieved].drawEdges();
+              nodes[locid_retrieved].draw();
               // update the reference to the connector from the treenode
               nodes[id].connectors[locid_retrieved] = nodes[locid_retrieved];
             }
@@ -520,7 +519,7 @@ current_scale // current scale of the stack
 
             // add node to nodes list
             nodes[jso.treenode_id] = nn;
-            nn.drawEdges();
+            nn.draw();
 
             // grab the treenode id
             tnid = jso.treenode_id;
@@ -583,6 +582,7 @@ current_scale // current scale of the stack
             }
 
             nodes[jso.treenode_id] = nn;
+            nn.draw();
             var active_node = atn;
             activateNode(nn); // will alter atn
 

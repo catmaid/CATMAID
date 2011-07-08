@@ -626,7 +626,7 @@ var requestOpenTreePath = function(treenode) {
     type: 'POST',
     url: "model/tree.object.expand.php",
     data: { "skeleton_id" : treenode.skeleton_id,
-            "pid" : pid },
+            "pid" : project.id },
     success: function (r, status) {
                r = $.parseJSON(r);
                if (r['error']) {

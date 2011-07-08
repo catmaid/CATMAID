@@ -5,6 +5,7 @@ include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
 include_once( 'json.inc.php' );
+include_once( 'utils.php' );
 
 $db =& getDB( 'write' );
 $ses =& getSession();
@@ -30,60 +31,84 @@ $scaling = ( isset( $_REQUEST[ 'scaling' ] ) && $_REQUEST[ 'scaling' ] ) ? true 
 
 //$text = preg_replace( '/\r?\n/', "\r\n", $text );
 
-
-if ( $pid )
-{
-	if ( $uid )
-	{
-	
-		//! @todo do that all in a transition
-		
-		$canEdit = $db->getResult(
-			'SELECT	"textlabel"."id" AS "tid"
-			
-				FROM "textlabel" INNER JOIN "project"
-					ON "project"."id" = "textlabel"."project_id" INNER JOIN "project_user"
-						ON "project"."id" = "project_user"."project_id"
-						
-				WHERE "textlabel"."id" = '.$tid.' AND
-					"project_user"."user_id" = '.$uid.' AND
-					"project_user"."project_id" = '.$pid );
-		
-		if ( $canEdit )
-		{
-			$data = array(
-					'text' => $text,
-					'type' => $type,
-					'colour' => '('.$r.','.$g.','.$b.','.$a.')',
-					'project_id' => $pid,
-					'scaling' => $scaling );
-			
-			if ( $fontname ) $data[ 'font_name' ] = $fontame;
-			if ( $fontstyle ) $data[ 'font_style' ] = $fontstyle;
-			if ( $fontsize ) $data[ 'font_size' ] = $fontsize;
-			
-			$db->update(
-				'textlabel',
-				$data,
-				'"id" = '.$tid );
-			$db->update(
-				'textlabel_location',
-				array(
-					'location' => '('.$x.','.$y.','.$z.')' ),
-				'"textlabel_id" = '.$tid.' AND abs( ("location")."z" - '.$z.' ) < 0.001' );
-			
-			echo " "; //!< one char for Safari, otherwise its xmlHttp.status is undefined...
-		}
-		else
-			echo makeJSON( array( 'error' => 'You do not have the permission to edit this textlabel.' ) );
-	}
-	else
-		echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to edit textlabels.' ) );
+# 1. There must be a project id
+if ( ! $pid ) {
+  echo json_encode( array( 'error' => 'Project closed. Cannot apply operation.' ) );
+	return;
 }
-else
-	echo makeJSON( array( 'error' => 'Project closed while editing text. Last changes might be lost.' ) );
+
+# 2. There must be a user id
+if ( ! $uid ) {
+    echo json_encode( array( 'error' => 'You are not logged in.' ) );
+	return;
+}
 
 
-//print_r( $_REQUEST );
+// Start transaction
+if (! $db->begin() ) {
+	echo json_encode( array( 'error' => 'Could not start transaction.' ) );
+	return;
+}
+
+try {
+
+  $labelID = $db->getResult(
+    'SELECT	"textlabel"."id" AS "tid"
+      FROM "textlabel" INNER JOIN "project"
+        ON "project"."id" = "textlabel"."project_id" INNER JOIN "project_user"
+          ON "project"."id" = "project_user"."project_id"
+          
+      WHERE "textlabel"."id" = '.$tid.' AND
+        "project_user"."user_id" = '.$uid.' AND
+        "project_user"."project_id" = '.$pid );
+        
+  if (false === $labelID) {
+    emitErrorAndExit($db, 'Failed to determine if the label can be edited.');
+  }
+
+  if ( $labelID ) {
+    $data = array(
+        'text' => $text,
+        'type' => $type,
+        'colour' => '('.$r.','.$g.','.$b.','.$a.')',
+        'project_id' => $pid,
+        'scaling' => $scaling );
+
+    if ( $fontname ) $data[ 'font_name' ] = $fontame;
+    if ( $fontstyle ) $data[ 'font_style' ] = $fontstyle;
+    if ( $fontsize ) $data[ 'font_size' ] = $fontsize;
+
+    $q = $db->update(
+      'textlabel',
+      $data,
+      '"id" = '.$tid );
+    
+    if (false === $q) {
+      emitErrorAndExit($db, 'Failed to update textlabel with id '.$tid);
+    }
+      
+    $q = $db->update(
+      'textlabel_location',
+      array(
+        'location' => '('.$x.','.$y.','.$z.')' ),
+      '"textlabel_id" = '.$tid.' AND abs( ("location")."z" - '.$z.' ) < 0.001' );
+
+    if (false === $q) {
+      emitErrorAndExit($db, 'Failed to update the location of textlabel with id '.$tid);
+    }
+
+    echo " "; //!< one char for Safari, otherwise its xmlHttp.status is undefined...
+
+  } else {
+    emitErrorAndExit($db, 'You do not have the permission to edit this textlabel.');
+  }
+
+  if (! $db->commit() ) {
+		emitErrorAndExit( $db, 'Failed to commit!' );
+	}
+
+} catch (Exception $e) {
+	emitErrorAndExit( $db, 'ERROR: '.$e );
+}
 
 ?>

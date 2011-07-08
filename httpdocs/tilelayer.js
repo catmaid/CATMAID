@@ -135,7 +135,7 @@ function TileLayer(
 				}
 				else
 				{
-					tiles[ i ][ j ].alt = z + "/" + ( fr + i ) + "_" + ( fc + j ) + "_" + s;
+					tiles[ i ][ j ].alt = stack.z + "/" + ( fr + i ) + "_" + ( fc + j ) + "_" + stack.s;
 					tiles[ i ][ j ].src = baseURL + tiles[ i ][ j ].alt + ".jpg";
 				}
 				tiles[ i ][ j ].style.top = t + "px";

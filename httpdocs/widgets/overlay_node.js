@@ -296,9 +296,7 @@ var Node = function (
     // draws/updates path to parent and children
     for (i in this.children) {
       if (this.children.hasOwnProperty(i)) {
-        if (this.children[i].parent !== null) {
-          this.children[i].drawLineToParent();
-        }
+        this.children[i].drawLineToParent();
       }
     }
     for (i in this.connectors) {
@@ -312,8 +310,20 @@ var Node = function (
     }
   };
 
+  var lineToBack = function(line) {
+    if (line) line.toBack();
+  };
+
   this.draw = function () {
     this.drawEdges();
+    // Push new edges to the back.
+    for (i in this.children) {
+      if (this.children.hasOwnProperty(i)) {
+        lineToBack(this.children[i].line);
+      }
+    }
+    if (this.parent !== null) lineToBack(this.line);
+    //
     this.createCircle();
   };
 

@@ -315,7 +315,15 @@ zdiff) // the different from the current slices
           project.createLink(atn.id, self.id, "presynaptic_to", "presynaptic terminal", "synapse", "treenode", "connector");
           statusBar.replaceLast("joined active connector to treenode with id " + self.id);
         } else {
-          alert("You need to activate a treenode before joining it to a connector node!");
+          var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
+          g.growlAlert({
+            autoShow: true,
+            content: 'You need to activate a treenode before joining it to a connector node!',
+            title: 'BEWARE',
+            position: 'top-right',
+            delayTime: 2500,
+            onComplete: function() { g.remove(); }
+          });
         }
         e.stopPropagation();
       } else {

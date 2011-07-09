@@ -912,7 +912,15 @@ var SVGOverlay = function (
     } else if (e.shiftKey) {
       if (atn === null) {
         if (getMode() === "skeletontracing") {
-          alert("You need to activate a treenode first (skeleton tracing mode)");
+          var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
+          g.growlAlert({
+            autoShow: true,
+            content: 'You need to activate a treenode first (skeleton tracing mode)!',
+            title: 'BEWARE',
+            position: 'top-right',
+            delayTime: 2500,
+            onComplete: function() { g.remove(); }
+          });
           return true;
         }
       } else {

@@ -331,11 +331,18 @@ function handle_openProjectStack( status, text, xml )
 					e.dimension,
 					e.resolution,
 					e.translation,		//!< @todo replace by an affine transform
-					e.image_base,
 					e.broken_slices,
 					e.trakem2_project );
 			
 			document.getElementById( "toolbox_project" ).style.display = "block";
+			
+			var tilelayer = new TileLayer(
+					stack,
+					e.image_base,
+					e.tile_width,
+					e.tile_height );
+			
+			stack.addLayer( "TileLayer", tilelayer );
 			
 			project.addStack( stack );
 			

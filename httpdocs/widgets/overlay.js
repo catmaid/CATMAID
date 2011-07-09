@@ -530,19 +530,18 @@ var SVGOverlay = function (
           } else {
             // add treenode to the display and update it
             var jso = $.parseJSON(text);
-            // FIXME: isn't this always true?
+            var treenodeID = parseInt(jso.treenode_id);
+            var skeletonID = parseInt(jso.skeleton_id);
+
             // always create a new treenode which is the root of a new skeleton
-            var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
+            var nn = new Node(treenodeID, r, null, radius, pos_x, pos_y, pos_z, 0, skeletonID, true);
 
             // add node to nodes list
-            nodes[jso.treenode_id] = nn;
+            nodes[treenodeID] = nn;
             nn.draw();
 
-            // grab the treenode id
-            tnid = jso.treenode_id;
-
             // create connector : new atn postsynaptic_to deactivated atn.id (location)
-            createConnector(locid, tnid, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
+            createConnector(locid, treenodeID, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
 
           }
         }

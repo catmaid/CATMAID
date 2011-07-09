@@ -246,7 +246,6 @@ initObjectTree = function (pid) {
                   pid: project.id,
                   skeletonid: skelid
                 }, function (status, text, xml) {
-
                   if (status === 200) {
                     if (text && text !== " ") {
                       var e = $.parseJSON(text);
@@ -254,7 +253,6 @@ initObjectTree = function (pid) {
                         alert(e.error);
                       } else {
                         // go to node
-                        // console.log("returned", e, e.root_id);
                         project.moveTo(e.z, e.y, e.x);
 
                         // activate the node with a delay

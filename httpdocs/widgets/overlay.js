@@ -419,9 +419,7 @@ var SVGOverlay = function (
           } else {
             // add treenode to the display and update it
             var jso = $.parseJSON(text);
-            var cid = parseInt(jso.connector_id, 10);
-
-            var nn = new ConnectorNode(cid, r, 8, pos_x, pos_y, pos_z, 0);
+            var nn = new ConnectorNode(jso.connector_id, r, 8, pos_x, pos_y, pos_z, 0);
             nodes[cid] = nn;
             nn.draw();
             activateNode(nn);
@@ -463,12 +461,11 @@ var SVGOverlay = function (
     }, function (status, text, xml) {
       if (status === 200) {
         if (text && text !== " ") {
-          var e = $.parseJSON(text);
-          if (e.error) {
-            alert(e.error);
+          var jso = $.parseJSON(text);
+          if (jso.error) {
+            alert(jso.error);
           } else {
-            var jso = $.parseJSON(text);
-            var locid_retrieved = parseInt(jso.location_id, 10);
+            var locid_retrieved = jso.location_id;
 
             if (locidval === null) {
               // presynaptic case, we create a new connector node and use the retrieved id
@@ -525,18 +522,16 @@ var SVGOverlay = function (
           } else {
             // add treenode to the display and update it
             var jso = $.parseJSON(text);
-            var treenodeID = parseInt(jso.treenode_id);
-            var skeletonID = parseInt(jso.skeleton_id);
 
             // always create a new treenode which is the root of a new skeleton
-            var nn = new Node(treenodeID, r, null, radius, pos_x, pos_y, pos_z, 0, skeletonID, true);
+            var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
 
             // add node to nodes list
-            nodes[treenodeID] = nn;
+            nodes[jso.treenode_id] = nn;
             nn.draw();
 
             // create connector : new atn postsynaptic_to deactivated atn.id (location)
-            createConnector(locid, treenodeID, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
+            createConnector(locid, jso.treenode_id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
 
           }
         }
@@ -586,16 +581,13 @@ var SVGOverlay = function (
           } else {
             // add treenode to the display and update it
             var jso = $.parseJSON(text);
-            var treenodeID = parseInt(jso.treenode_id);
-            var skeletonID = parseInt(jso.skeleton_id);
-            //console.log("Create Node:", typeof jso.treenode_id);
             if (parid == -1) {
-              var nn = new Node(treenodeID, r, null, radius, pos_x, pos_y, pos_z, 0, skeletonID, true);
+              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
             } else {
-              var nn = new Node(treenodeID, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, skeletonID, false);
+              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, false);
             }
 
-            nodes[treenodeID] = nn;
+            nodes[jso.treenode_id] = nn;
             nn.draw();
             var active_node = atn;
             activateNode(nn); // will alter atn
@@ -737,11 +729,8 @@ var SVGOverlay = function (
 
       if (jso[i].type == "treenode")
       {
-        if (jso[i].skeleton_id) {
-          skeleton_id = parseInt(jso[i].skeleton_id);
-        }
         isRootNode = isNaN(parseInt(jso[i].parentid));
-        nn = new Node(id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff, skeleton_id, isRootNode);
+        nn = new Node(id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff, jso[i].skeleton_id, isRootNode);
         nrtn++;
       }
       else

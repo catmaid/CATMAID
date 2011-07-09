@@ -121,7 +121,7 @@ try {
 			 emitErrorAndExit( $db, 'Can not find skeleton for parent treenode '.$parentid.' in this project' );
 		}
 
-		$skid = $skelid[0]['cli'];
+		$skid = intval($skelid[0]['cli']);
  
 		$data = array(
 				'user_id' => $uid,
@@ -229,7 +229,7 @@ try {
 					'treenode_id' => $tnid,
 					'class_instance_id' => $skelid 
 				);
-			$q = $db->insertInto('treenode_class_instance',$data );
+			$q = $db->insertInto('treenode_class_instance', $data );
 
 			if (false === $q) {
 				emitErrorAndExit($db, 'Could not create element_of relation between treenode and skeleton!');
@@ -342,7 +342,7 @@ try {
 				}
 
 			} else {
-				$frid = $fid[0]['id'];
+				$frid = intval($fid[0]['id']);
 			}
 
 			// Add neuron part_of fragments relation:

@@ -222,7 +222,7 @@ class DB
 		$this->insertInto( $table, $values );
 		$id = $this->getResult( 'SELECT lastval() AS "id"' );
 		if (false === $id) return false; // query failed
-		return $id[ 0 ][ 'id' ];
+		return intval($id[ 0 ][ 'id' ]);
 	}
 	
 	/**

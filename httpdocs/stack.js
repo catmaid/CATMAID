@@ -236,15 +236,15 @@ function Stack(
 			var m = ui.getMouse( e );
 			if ( m )
 			{
-				var pos_x = translation.x + ( x + ( m.offsetX - viewWidth / 2 ) / scale ) * resolution.x;
-				var pos_y = translation.x + ( y + ( m.offsetY - viewHeight / 2 ) / scale ) * resolution.y;
+				var pos_x = translation.x + ( self.x + ( m.offsetX - self.viewWidth / 2 ) / self.scale ) * resolution.x;
+				var pos_y = translation.x + ( self.y + ( m.offsetY - self.viewHeight / 2 ) / self.scale ) * resolution.y;
 				statusBar.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 3 ) + "]" );
 			}
 			return false;
 		},
 		move : function( e )
 		{
-			self.moveToPixel( z, y - ui.diffY / scale, x - ui.diffX / scale, s );
+			self.moveToPixel( self.z, self.y - ui.diffY / self.scale, self.x - ui.diffX / self.scale, self.s );
 			return false;
 		}
 	};
@@ -409,7 +409,7 @@ function Stack(
 	var self = this;
 	if ( !ui ) ui = new UI();
 	
-	this.id = id;
+	self.id = id;
 	
 	var layers = {};
 	

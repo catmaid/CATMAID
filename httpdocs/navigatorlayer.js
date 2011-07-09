@@ -211,7 +211,7 @@ function NavigatorLayer(
 	
 	this.changeSlice = function( val )
 	{
-		stack.moveToPixel( val, y, x, s );
+		stack.moveToPixel( val, stack.y, stack.x, stack.s );
 		return;
 	}
 	//--------------------------------------------------------------------------
@@ -240,7 +240,7 @@ function NavigatorLayer(
 	
 	this.changeScale = function( val )
 	{
-		stack.moveToPixel( z, y, x, val );
+		stack.moveToPixel( stack.z, stack.y, stack.x, val );
 		return;
 	}
 	//--------------------------------------------------------------------------

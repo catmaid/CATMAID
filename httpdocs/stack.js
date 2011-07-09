@@ -67,20 +67,6 @@ function Stack(
 		return;
 	}
 	
-	var updateControls = function()
-	{
-		if ( registered )
-		{
-			if ( slider_s ) slider_s.setByValue( s, true );
-			if ( slider_z ) slider_z.setByValue( z, true );
-
-			if ( input_x ) input_x.value = x;
-			if ( input_y ) input_y.value = y;
-		}
-		
-		return;
-	}
-	
 	/**
 	 * update all state informations and the screen content
 	 */
@@ -179,7 +165,7 @@ function Stack(
 	 */
 	this.moveTo = function( zp, yp, xp, sp )
 	{
-		alert( "moveTo" );
+		alert( "moveTo called" );
 		
 		if ( typeof sp == "number" )
 		{
@@ -220,8 +206,6 @@ function Stack(
 			zp * resolution.z + translation.z,
 			yp * resolution.y + translation.y,
 			xp * resolution.x + translation.x );
-		
-		updateControls();
 		
 		return true;
 	}

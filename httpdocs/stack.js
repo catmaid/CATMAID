@@ -430,7 +430,7 @@ function Stack(
 	for ( var i = 0; i < dimension.z; ++i )
 	{
 		if ( !skip_planes[ i ] )
-			slices.push( i );
+			self.slices.push( i );
 	}
 	
 	//-------------------------------------------------------------------------

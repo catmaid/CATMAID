@@ -178,30 +178,36 @@ var SVGOverlay = function (
   this.tagATN = function () {
 
     // tagbox from
-    // http://blog.crazybeavers.se/wp-content/demos/jquery.tag.editor/
+    // http://blog.crazybeavers.se/wp-content/Demos/jquery.tag.editor/
     if ($("#tagBoxId" + atn.id).length !== 0) {
       alert("TagBox is already open!");
       return;
     }
 
     var e = $("<div class='tagBox' id='tagBoxId" + atn.id + "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: " + atn.x + "px; top: " + atn.y + "px;'>" +
-    //var e = $("<div class='tagBox' id='tagBoxId' style='z-index: 7; left: 0px; top: 0px; color:white; bgcolor:blue;font-size:12pt'>" +
-    "Tag (id:" + atn.id + "): <input id='Tags" + atn.id + "' name='Tags' type='text' value='' />" + "<button id='SaveCloseButton" + atn.id + "'>Save</button>" + "<button id='CloseButton" + atn.id + "'>Cancel</button>" + "</div>");
+    "Tag: <input id='Tags" + atn.id + "' name='Tags' type='text' value='' />" );
     e.css('background-color', 'white');
-    //e.css('width', '200px');
-    //e.css('height', '200px');
     e.css('position', 'absolute');
     e.appendTo("#sliceSVGOverlayId");
 
     // update click event handling
     $("#tagBoxId" + atn.id).click(function (event) {
-      // console.log(event);
       event.stopPropagation();
+      // update the tags
+      updateTags();
+      $("#tagBoxId" + atn.id).remove();
     });
 
     $("#tagBoxId" + atn.id).mousedown(function (event) {
-      // console.log(event);
       event.stopPropagation();
+    });
+
+    $("#Tags" + atn.id).bind('focusout', function() {
+      // focus out with tab updates tags and remove tagbox
+      updateTags();
+      $("#tagBoxId" + atn.id).fadeOut( 1500, function() {
+        $("#tagBoxId" + atn.id).remove();
+      });
     });
 
     // add autocompletion
@@ -222,7 +228,8 @@ var SVGOverlay = function (
           }
         }
       }
-    }); // endfunction
+    });
+
     requestQueue.register("model/label.node.list.php", "POST", {
       pid: project.id,
       nid: atn.id,
@@ -236,11 +243,9 @@ var SVGOverlay = function (
             alert(e.error);
           } else {
             var nodeitems = $.parseJSON(text);
-            // retrieved nodeitems should be for active
-            // node anyways
             $("#Tags" + atn.id).tagEditor({
               items: nodeitems[atn.id],
-              confirmRemoval: true,
+              confirmRemoval: false,
               completeOnSeparator: true
             });
             $("#Tags" + atn.id).focus();
@@ -248,16 +253,9 @@ var SVGOverlay = function (
           }
         }
       }
-    }); // endfunction
-    $("#CloseButton" + atn.id).click(function (event) {
-      // save and close
-      // alert($("#Tags" + atn.id).tagEditorGetTags());
-      $("#tagBoxId" + atn.id).remove();
-      event.stopPropagation();
     });
 
-    $("#SaveCloseButton" + atn.id).click(function (event) {
-      // save and close
+    var updateTags = function() {
       requestQueue.register("model/label.update.php", "POST", {
         pid: project.id,
         nid: atn.id,
@@ -271,16 +269,13 @@ var SVGOverlay = function (
             if (e.error) {
               alert(e.error);
             } else {
+              $("#Tags" + atn.id).focus();
               project.showTags(true);
             }
           }
         }
-      }); // endfunction
-      $("#tagBoxId" + atn.id).remove();
-      event.stopPropagation();
-    });
-
-
+      });
+    }
   };
 
   this.rerootSkeleton = function () {
@@ -298,9 +293,9 @@ var SVGOverlay = function (
               // just redraw all for now
               project.updateNodes();
             }
-          } // endif
-        } // end if
-      }); // endfunction
+          }
+        }
+      });
     }
   };
 
@@ -320,9 +315,9 @@ var SVGOverlay = function (
               project.updateNodes();
               refreshObjectTree();
             }
-          } // endif
-        } // end if
-      }); // endfunction
+          }
+        }
+      });
     }
   };
 
@@ -344,9 +339,9 @@ var SVGOverlay = function (
             project.updateNodes();
             refreshObjectTree();
           }
-        } // endif
-      } // end if
-    }); // endfunction
+        }
+      }
+    });
     // then link again
     requestQueue.register("model/treenode.link.php", "POST", {
       pid: project.id,

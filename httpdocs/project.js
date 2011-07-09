@@ -386,6 +386,7 @@ function Project(pid) {
  * resize the view and its content on window.onresize event
  */
   var resize = function (e) {
+    var stack_view_width;
     var top = document.getElementById("toolbar_container").offsetHeight;
     if (message_widget.offsetHeight) top += message_widget.offsetHeight;
     //var bottom = document.getElementById( 'console' ).offsetHeight;
@@ -398,6 +399,7 @@ function Project(pid) {
       left += table_widget.offsetWidth;
     }
     if (table_connector_widget.offsetWidth) {
+      table_connector_widget.style.left = left + "px";
       width -= table_connector_widget.offsetWidth;
       left += table_connector_widget.offsetWidth;
     }
@@ -421,6 +423,7 @@ function Project(pid) {
       width -= object_tree_widget.offsetWidth;
       left += object_tree_widget.offsetWidth;
     }
+    width = Math.max(width,0);
     var old_width = 0;
     for (var i = 0; i < stacks.length; ++i) {
       old_width += stacks[i].getView().offsetWidth;
@@ -431,10 +434,19 @@ function Project(pid) {
     view.style.left = left + "px";
     left = 0;
     for (var i = 0; i < stacks.length; ++i) {
-      //stacks[ i ].resize( i * stack_view_width, 0, stack_view_width, height );
-      var stack_view_width = Math.floor(stacks[i].getView().offsetWidth * width_ratio);
-      stacks[i].resize(left, 0, stack_view_width, height);
-      left += stack_view_width;
+      if (isFinite(width_ratio)) {
+        //stacks[ i ].resize( i * stack_view_width, 0, stack_view_width, height );
+        stack_view_width = Math.floor(stacks[i].getView().offsetWidth * width_ratio);
+        stacks[i].resize(left, 0, stack_view_width, height);
+        left += stack_view_width;
+      } else {
+        // If width_ratio is Infinity, then all the stacks were shrunk
+        // down to zero width on the last resize.  In that case, just
+        // split the space equally between them when expanding again:
+        stack_view_width = width / stacks.length;
+        stacks[i].resize(left, 0, stack_view_width, height);
+        left += stack_view_width;
+      }
     }
 
     view.style.top = top + "px";
@@ -474,12 +486,10 @@ function Project(pid) {
     switch (m) {
     case "treenode":
       document.getElementById('treenode_table_widget').style.display = 'block';
-      document.getElementById('connectortable_widget').style.display = 'none';
       ui.onresize();
       initTreenodeTable(this.id);
       break;
     case "connector":
-      document.getElementById('treenode_table_widget').style.display = 'none';
       document.getElementById('connectortable_widget').style.display = 'block';
       ui.onresize();
       initConnectorTable(this.id);
@@ -696,7 +706,7 @@ function Project(pid) {
       // hide data table and tree view widgets
       // in order to reload the data for a new project
       document.getElementById("treenode_table_widget").style.display = "none";
-      document.getElementById("treenode_connector_table_widget").style.display = "none";
+      document.getElementById("connectortable_widget").style.display = "none";
       document.getElementById("object_tree_widget").style.display = "none";
       document.getElementById("project_stats_widget").style.display = "none";
 

@@ -201,7 +201,7 @@ function TileLayer(
 		return;
 	}
 	
-	var resize = function( width, height )
+	this.resize = function( width, height )
 	{
 		alert( "resize tileLayer of stack" + stack.getId() );
 		

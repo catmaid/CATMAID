@@ -85,7 +85,6 @@ function Project( pid )
 		{
 			if ( stacks[ i ].id == sid )
 			{
-				stacks[ i ].unregister();
 				stacks[ i ].close();
 				stacks.splice( i, 1 );
 				if ( stacks.length == 0 )
@@ -191,6 +190,14 @@ function Project( pid )
 		return;
 	}
 	
+	this.hideToolbars = function()
+	{
+		document.getElementById( "toolbar_nav" ).style.display = "none";
+		document.getElementById( "toolbar_text" ).style.display = "none";
+		document.getElementById( "toolbar_crop" ).style.display = "none";
+		document.getElementById( "toolbar_trace" ).style.display = "none";
+	}
+	
 	this.setMode = function( m )
 	{
 		document.getElementById( "edit_button_select" ).className = "button";
@@ -198,14 +205,20 @@ function Project( pid )
 		document.getElementById( "edit_button_text" ).className = "button";
 		document.getElementById( "edit_button_crop" ).className = "button";
 		//document.getElementById( "edit_button_profile" ).className = "button";
-		document.getElementById( "toolbar_nav" ).style.display = "none";
-		document.getElementById( "toolbar_text" ).style.display = "none";
-		document.getElementById( "toolbar_crop" ).style.display = "none";
+		
+		self.hideToolbars();
+		
+		if ( !self.focusedStack )
+			self.focusedStack = stacks[ 0 ];
+		
 		switch ( m )
 		{
 		case "select":
 			break;
 		case "move":
+			var navigatorLayer = new NavigatorLayer( self.focusedStack );
+			self.focusedStack.addLayer( "nav", navigatorLayer );
+			
 			document.getElementById( "toolbar_nav" ).style.display = "block";
 			break;
 		case "text":

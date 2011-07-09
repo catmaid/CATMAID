@@ -31,6 +31,7 @@ function Stack(
 		title,						//!< {String} the stack's title
 		dimension,					//!< {Array} pixel dimensions [x, y, z, ...]
 		resolution,					//!< {Array} physical resolution in units/pixel [x, y, z, ...]
+		translation,				//!< @todo replace by an affine transform
 		overviewName,				//!< {String} file name of the overview image (e.g. 'overview.jpg')
 		skip_planes,				//!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
 		trakem2_project				//!< {boolean} that states if a TrakEM2 project is available for this stack
@@ -39,18 +40,18 @@ function Stack(
 	var n = dimension.length;
 	
 	/**
-	 * update the benchmark (x-resolution) to a proper size
+	 * update the scale bar (x-resolution) to a proper size
 	 */
 	var updateScaleBar = function()
 	{
-		var meter = scale / resolution[ 0 ];
+		var meter = self.scale / resolution[ 0 ];
 		var width = 0;
 		var text = "";
 		for ( var i = 0; i < Stack.SCALE_BAR_SIZES.length; ++i )
 		{
 			text = Stack.SCALE_BAR_SIZES[ i ];
 			width = Stack.SCALE_BAR_SIZES[ i ] * meter;
-			if ( width > Math.min( 192, viewWidth / 5 ) )
+			if ( width > Math.min( 192, self.viewWidth / 5 ) )
 				break;
 		}
 		var ui = 0;
@@ -85,7 +86,7 @@ function Stack(
 	 */
 	var update = function( now )
 	{
-		overview.update( this.z, this.y, this.x, this.s, this.viewHeight, this.viewWidth );
+		overview.update( self.z, self.y, self.x, self.s, self.viewHeight, self.viewWidth );
 		updateScaleBar();
 		
 		//statusBar.replaceLast( "[" + ( Math.round( x * 10000 * resolution.x ) / 10000 ) + ", " + ( Math.round( y * 10000 * resolution.y ) / 10000 ) + "]" );
@@ -102,31 +103,34 @@ function Stack(
 	}
 	
 	/**
-	 * get the pixel coordinates of the current view's top left corner
+	 * Get stack coordinates of the current view's top left corner.
+	 * These values might be used as an offset to get the stack coordinates of a
+	 * mouse event handled by the stack.
 	 */
-	this.screenCoordinates = function()
+	this.screenPosition = function()
 	{
-		var width : this.viewWidth / this.scale,
-		var height : this.viewHeight / this.scale,
-		return
+		var width = self.viewWidth / self.scale;
+		var height = self.viewHeight / self.scale;
+		var l =
 		{
-			y : Math.floor( this.y - height / 2 ),
-			x : Math.floor( this.x - width / 2 )
+			top : Math.floor( self.y - height / 2 ),
+			left : Math.floor( self.x - width / 2 )
 		};
+		return l;
 	}
 	
 	/**
-	 * get the physical project-coordinates to the current view
+	 * Get the project coordinates of the current view.
 	 */
 	this.projectCoordinates = function()
 	{
 		var l =
 		{
-			z : this.z * resolution.z + translation.z,
-			s : this.s,
-			scale : this.scale,
-			y : this.y * resolution.y + translation.y,
-			x : this.x * resolution.x + translation.x
+			z : self.z * resolution.z + translation.z,
+			s : self.s,
+			scale : self.scale,
+			y : self.y * resolution.y + translation.y,
+			x : self.x * resolution.x + translation.x
 		};
 		return l;
 	}
@@ -136,11 +140,11 @@ function Stack(
 	 */
 	var redraw = function()
 	{
-		this.yc = Math.floor( y * scale - ( viewHeight / 2 ) );
-		this.xc = Math.floor( x * scale - ( viewWidth / 2 ) );
+		self.yc = Math.floor( self.y * self.scale - ( self.viewHeight / 2 ) );
+		self.xc = Math.floor( self.x * self.scale - ( self.viewWidth / 2 ) );
 
-		for ( var i = 0; i < layers.length; ++i )
-			layers[ i ].redraw();
+		for ( var key in layers )
+			layers[ key ].redraw();
 			
 		//----------------------------------------------------------------------
 		/**
@@ -151,13 +155,13 @@ function Stack(
 		var a = view.offsetWidth;
 		//----------------------------------------------------------------------
 			
-		this.old_z = this.z;
-		this.old_y = this.y;
-		this.old_x = this.x;
-		this.old_s = this.s;
-		this.old_scale = this.scale;
-		this.old_yc = this.yc;
-		this.old_xc = this.xc
+		self.old_z = self.z;
+		self.old_y = self.y;
+		self.old_x = self.x;
+		self.old_s = self.s;
+		self.old_scale = self.scale;
+		self.old_yc = self.yc;
+		self.old_xc = self.xc
 		
 		return 2;
 	}
@@ -171,7 +175,7 @@ function Stack(
 	}
 	
 	/**
-	 * move to physical project-coordinates in nanometer
+	 * move to project-coordinates
 	 */
 	this.moveTo = function( zp, yp, xp, sp )
 	{
@@ -179,27 +183,24 @@ function Stack(
 		
 		if ( typeof sp == "number" )
 		{
-			s = Math.max( 0, Math.min( MAX_S, Math.round( sp ) ) );
-			scale = 1 / Math.pow( 2, s );
+			self.s = Math.max( 0, Math.min( MAX_S, Math.round( sp ) ) );
+			self.scale = 1 / Math.pow( 2, self.s );
 		}
 		
-		LAST_XT = Math.floor( MAX_X * scale / X_TILE_SIZE );
-		LAST_YT = Math.floor( MAX_Y * scale / Y_TILE_SIZE );
-		
-		x = Math.max( 0, Math.min( MAX_X, Math.round( ( xp - translation.x ) / resolution.x ) ) );
-		y = Math.max( 0, Math.min( MAX_Y, Math.round( ( yp - translation.y ) / resolution.y ) ) );
+		self.x = Math.max( 0, Math.min( MAX_X, Math.round( ( xp - translation.x ) / resolution.x ) ) );
+		self.y = Math.max( 0, Math.min( MAX_Y, Math.round( ( yp - translation.y ) / resolution.y ) ) );
 		
 		var z1;
 		var z2;
 		z1 = z2 = Math.round( ( zp - translation.z ) / resolution.z );
-		while ( broken_slices[ z1 ] && broken_slices[ z2 ] )
+		while ( skip_planes[ z1 ] && skip_planes[ z2 ] )
 		{
 			z1 = Math.max( 0, z1 - 1 );
 			z2 = Math.min( MAX_Z, z2 + 1 );
 		}
-		if ( !broken_slices[ z1 ] ) z = z1;
-		else z = z2;
-		z = Math.max( 0, Math.min( MAX_Z, z ) );
+		if ( !skip_planes[ z1 ] ) self.z = z1;
+		else self.z = z2;
+		self.z = Math.max( 0, Math.min( MAX_Z, self.z ) );
 		
 		update();
 		
@@ -211,9 +212,9 @@ function Stack(
 	 */
 	this.moveToPixel = function( zp, yp, xp, sp )
 	{
-		s = Math.max( 0, Math.min( MAX_S, sp ) );
+		self.s = Math.max( 0, Math.min( MAX_S, sp ) );
 
-		scale = 1 / Math.pow( 2, s );
+		self.scale = 1 / Math.pow( 2, self.s );
 		
 		project.moveTo(
 			zp * resolution.z + translation.z,
@@ -226,7 +227,7 @@ function Stack(
 	}
 	
 	
-	var onmousemove = 
+	this.onmousemove = 
 	{
 		pos : function( e )
 		{
@@ -245,19 +246,10 @@ function Stack(
 		{
 			self.moveToPixel( z, y - ui.diffY / scale, x - ui.diffX / scale, s );
 			return false;
-		},
-		crop : function( e )
-		{
-			if ( cropBox )
-			{
-				cropBox.right += ui.diffX / scale * resolution.x;
-				cropBox.bottom += ui.diffY / scale * resolution.y;
-				updateCropBox();
-			}
 		}
 	};
 	
-	var onmouseup =
+	this.onmouseup =
 	{
 		move : function( e )
 		{
@@ -265,24 +257,10 @@ function Stack(
 			ui.removeEvent( "onmousemove", onmousemove.move );
 			ui.removeEvent( "onmouseup", onmouseup.move );
 			return false;
-		},
-		edit : function( e )
-		{
-			ui.releaseEvents()
-			ui.removeEvent( "onmousemove", profiles[ spi ].onmousemove );
-			ui.removeEvent( "onmouseup", onmouseup.edit );
-			
-			return false;
-		},
-		crop : function( e )
-		{
-			ui.releaseEvents();
-			ui.removeEvent( "onmousemove", onmousemove.crop );
-			ui.removeEvent( "onmouseup", onmouseup.crop );
 		}
 	};
 	
-	var onmousedown =
+	this.onmousedown =
 	{
 		move : function( e )
 		{
@@ -290,111 +268,7 @@ function Stack(
 			ui.registerEvent( "onmouseup", onmouseup.move );
 			ui.catchEvents( "move" );
 			ui.onmousedown( e );
-			
-			//! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
-			document.body.firstChild.focus();
-			
-			return false;
-		},
-		edit : function( e )
-		{
-			var m = ui.getMouse( e );
-			if ( m )
-			{
-				var pos_x = Math.round( x + ( m.offsetX - viewWidth / 2 ) / scale );
-				var pos_y = Math.round( y + ( m.offsetY - viewHeight / 2 ) / scale );
-				var spi = -1;
-				for ( var i = 0; i < profiles.length; ++i )
-				{
-					if ( profiles[ i ].isInside( pos_x, pos_y ) )
-					{
-						spi = i;
-						break;
-					}
-				}
-				if ( spi >= 0 )
-				{
-					profiles[ spi ].onmousedown( e );
-					profiles[ spi ].clearCanvas();
-					profiles[ spi ].drawOutline();
-					profiles[ spi ].drawHandles();
-					ui.registerEvent( "onmousemove", profiles[ spi ].onmousemove );
-					ui.registerEvent( "onmouseup", onmouseup.edit );
-					ui.catchEvents();
-					ui.onmousedown( e );
-				}
-			}
-			
-			//! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
-			document.body.firstChild.focus();
-			
-			return false;
-		},
-		text : function( e )
-		{
-			var b = ui.getMouseButton( e );
-			switch ( b )
-			{
-			case 2:
-				ui.registerEvent( "onmousemove", onmousemove.move );
-				ui.registerEvent( "onmouseup", onmouseup.move );
-				ui.catchEvents( "move" );
-				ui.onmousedown( e );
-
-				//! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
-				document.body.firstChild.focus();
-				break;
-			default:
-				var m = ui.getMouse( e );
-				var tlx = ( x + ( m.offsetX - viewWidth / 2 ) / scale ) * resolution.x + translation.x;
-				var tly = ( y + ( m.offsetY - viewHeight / 2 ) / scale ) * resolution.y + translation.y;
-				var tlz = z * resolution.z + translation.z;
-			
-				project.createTextlabel( tlx, tly, tlz, resolution.y, scale );
-			}
-			
-			return false;
-		},
-		crop : function( e )
-		{
-			var b = ui.getMouseButton( e );
-			switch ( b )
-			{
-			case 2:
-				ui.registerEvent( "onmousemove", onmousemove.move );
-				ui.registerEvent( "onmouseup", onmouseup.move );
-				ui.catchEvents( "move" );
-				break;
-			default:
-				if ( cropBox )
-				{
-					view.removeChild( cropBox.view );
-					delete cropBox;
-					cropBox = false;
-				}
-				var m = ui.getMouse( e );
-				cropBox = {
-					left : ( x + ( m.offsetX - viewWidth / 2 ) / scale ) * resolution.x + translation.x,
-					top : ( y + ( m.offsetY - viewHeight / 2 ) / scale ) * resolution.y + translation.y
-				};
-				cropBox.right = cropBox.left;
-				cropBox.bottom = cropBox.top;
-				cropBox.view = document.createElement( "div" );
-				cropBox.view.className = "cropBox";
-				cropBox.text = document.createElement( "p" );
-				cropBox.text.appendChild( document.createTextNode( "0 x 0" ) );
-				
-				cropBox.view.appendChild( cropBox.text );				
-				view.appendChild( cropBox.view );
-				
-				ui.registerEvent( "onmousemove", onmousemove.crop );
-				ui.registerEvent( "onmouseup", onmouseup.crop );
-				ui.catchEvents( "crosshair" );
-			}
-			ui.onmousedown( e );
-			
-			//! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
-			document.body.firstChild.focus();
+			ui.catchFocus();
 			
 			return false;
 		}
@@ -460,94 +334,6 @@ function Stack(
 		}
 	};
 	
-	//--------------------------------------------------------------------------
-	/**
-	 * Slider commands for changing the slice come in too frequently, thus the
-	 * execution of the actual slice change has to be delayed slightly.  The
-	 * timer is overridden if a new action comes in before the last had time to
-	 * be executed.
-	 */
-	var changeSliceDelayedTimer = null;
-	var changeSliceDelayedParam = null;
-	
-	var changeSliceDelayedAction = function()
-	{
-		window.clearTimeout( changeSliceDelayedTimer );
-		self.changeSlice( changeSliceDelayedParam.z );
-		changeSliceDelayedParam = null;
-		return false;
-	}
-	
-	this.changeSliceDelayed = function( val )
-	{
-		if ( changeSliceDelayedTimer ) window.clearTimeout( changeSliceDelayedTimer );
-		changeSliceDelayedParam = { z : val };
-		changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 100 );
-	}
-	
-	this.changeSlice = function( val )
-	{
-		self.moveToPixel( val, y, x, s );
-		return;
-	}
-	//--------------------------------------------------------------------------
-	
-	//--------------------------------------------------------------------------
-	/**
-	 * ... same as said before for scale changes ...
-	 */
-	var changeScaleDelayedTimer = null;
-	var changeScaleDelayedParam = null;
-	
-	var changeScaleDelayedAction = function()
-	{
-		window.clearTimeout( changeScaleDelayedTimer );
-		self.changeScale( changeScaleDelayedParam.s );
-		changeScaleDelayedParam = null;
-		return false;
-	}
-	
-	this.changeScaleDelayed = function( val )
-	{
-		if ( changeScaleDelayedTimer ) window.clearTimeout( changeScaleDelayedTimer );
-		changeScaleDelayedParam = { s : val };
-		changeScaleDelayedTimer = window.setTimeout( changeScaleDelayedAction, 100 );
-	}
-	
-	this.changeScale = function( val )
-	{
-		self.moveToPixel( z, y, x, val );
-		return;
-	}
-	//--------------------------------------------------------------------------
-	
-	var changeXByInput = function( e )
-	{
-		var val = parseInt( this.value );
-		if ( isNaN( val ) ) this.value = x;
-		else self.moveToPixel( z, y, val, s );
-		return;
-	}
-	
-	var changeYByInput = function( e )
-	{
-		var val = parseInt( this.value );
-		if ( isNaN( val ) ) this.value = y;
-		self.moveToPixel( z, val, x, s );
-		return;
-	}
-	
-	var YXMouseWheel = function( e )
-	{
-		var w = ui.getMouseWheel( e );
-		if ( w )
-		{
-			this.value = parseInt( this.value ) - w;
-			this.onchange();
-		}
-		return false
-	}
-	
 	var resize = function()
 	{
 		alert( "resize stack " + id );
@@ -555,201 +341,8 @@ function Stack(
 		var width = stackWindow.getFrame().offsetWidth;
 		var height = stackWindow.getFrame().offsetHeight;
 		
-		for ( var i = 0; i < layers.length; ++i )
-			layers[ i ].resize( width, height );
-		
-		return;
-	}
-	
-	this.registerZoomControl = function( c )
-	{
-		slider_s = c;
-		return;
-	}
-	
-	this.registerSliceControl = function( c )
-	{
-		slider_z = c;
-		return;
-	}
-	
-	this.registerXControl = function( c )
-	{
-		input_x = c;
-		return;
-	}
-	
-	this.registerYControl = function( c )
-	{
-		input_y = c;
-		return;
-	}
-	
-	/**
-	 * register all GUI control elements and event handlers
-	 */
-	this.register = function()
-	{
-		registered = true;
-		slider_s.update(
-			MAX_S,
-			0,
-			MAX_S + 1,
-			s,
-			this.changeScaleDelayed );
-		
-		if ( slices.length < 2 )	//!< hide the slider_z if there is only one slice
-		{
-			slider_z.getView().parentNode.style.display = "none";
-			slider_crop_top_z.getView().parentNode.style.display = "none";
-			slider_crop_bottom_z.getView().parentNode.style.display = "none";
-		}
-		else
-		{
-			slider_z.getView().parentNode.style.display = "block";
-			slider_crop_top_z.getView().parentNode.style.display = "block";
-			slider_crop_bottom_z.getView().parentNode.style.display = "block";
-		}
-		slider_z.update(
-			0,
-			0,
-			slices,
-			z,
-			this.changeSliceDelayed );
-		slider_crop_top_z.update(
-			0,
-			0,
-			slices,
-			z,
-			this.changeSliceDelayed );
-		slider_crop_bottom_z.update(
-			0,
-			0,
-			slices,
-			z,
-			this.changeSliceDelayed );
-		
-		/**
-		 * Cropping is possible with an attached TrakEM2 project only.
-		 */
-		if ( trakem2_project )
-		{
-			document.getElementById( "edit_button_crop" ).style.display = "block";	
-			button_crop_apply.onclick = crop;
-		}
-		else
-		{
-			document.getElementById( "edit_button_crop" ).style.display = "none";
-		}
-		
-		input_x.onchange = changeXByInput;
-		try
-		{
-			input_x.addEventListener( "DOMMouseScroll", YXMouseWheel, false );
-		}
-		catch ( error )
-		{
-			try
-			{
-				input_x.onmousewheel = YXMouseWheel;
-			}
-			catch ( error ) {}
-		}
-		
-		input_y.onchange = changeYByInput;
-		try
-		{
-			input_y.addEventListener( "DOMMouseScroll", YXMouseWheel, false );
-		}
-		catch ( error )
-		{
-			try
-			{
-				input_x.onmousewheel = YXMouseWheel;
-			}
-			catch ( error ) {}
-		}
-		return;
-	}
-	
-	/**
-	 * unregister all GUI control connections and event handlers
-	 */
-	this.unregister = function()
-	{
-		registered = false;
-		slider_s.update(
-			0,
-			1,
-			undefined,
-			0,
-			null );
-		
-		slider_z.update(
-			0,
-			1,
-			undefined,
-			0,
-			null );
-		
-		input_x.onchange = null;
-		try
-		{
-			input_x.removeEventListener( "DOMMouseScroll", YXMouseWheel, false );
-		}
-		catch ( error )
-		{
-			try
-			{
-				input_x.onmousewheel = null;
-			}
-			catch ( error ) {}
-		}
-		
-		input_y.onchange = null;
-		try
-		{
-			input_y.removeEventListener( "DOMMouseScroll", YXMouseWheel, false );
-		}
-		catch ( error )
-		{
-			try
-			{
-				input_x.onmousewheel = null;
-			}
-			catch ( error ) {}
-		}
-		return;
-	}
-	
-	
-	/**
-	 * set the GUI focus to the stack
-	 */
-	this.focus = function()
-	{
-		project.setFocusedStack( self );
-		
-		smallMap.focus();
-		self.setMode( mode );
-		self.register();
-		self.moveToPixel( z, y, x, s );
-		
-		if ( cropBox ) cropBox.view.style.display = "block";
-		
-		return;
-	}
-	
-	/**
-	 * remove the GUI focus from the stack
-	 */
-	this.blur = function()
-	{
-		self.unregister();
-		mouseCatcher.style.cursor = "default";
-		mouseCatcher.style.zIndex = 7;
-		
-		if ( cropBox ) cropBox.view.style.display = "none";
+		for ( var key in layers )
+			layers[ key ].resize( width, height );
 		
 		return;
 	}
@@ -758,37 +351,6 @@ function Stack(
 	 * Get the stack window.
 	 */
 	this.getWindow = function() { return stackWindow; }
-	
-	/**
-	 * Get the width of an image tile.
-	 */
-	this.getTileWidth = function(){ return X_TILE_SIZE; }
-	
-	/**
-	 * Get the height of an image tile.
-	 */
-	this.getTileHeight = function(){ return Y_TILE_SIZE; }
-	
-	/**
-	 * Get the current (x,y)-scale factor of the stack.
-	 */
-	this.getScale = function(){ return scale; }
-	
-	/**
-	 * Get the number of tile columns.
-	 */
-	this.numTileColumns = function()
-	{
-		if ( tiles.length == 0 )
-			return 0;
-		else
-			return tiles[ 0 ].length;
-	}
-	
-	/**
-	 * Get the number of tile rows.
-	 */
-	this.numTileColumns = function(){ return tiles.length; }
 	
 	/**
 	 * Get the project.
@@ -804,6 +366,7 @@ function Stack(
 	 * Get the stack resolution.
 	 * 
 	 * @return a copy of the private resolution parameter
+	 * @todo that's not a copy!
 	 */
 	this.resolution = function()
 	{
@@ -824,49 +387,51 @@ function Stack(
 		};
 	}
 	
+	this.addLayer = function( key, layer )
+	{
+		if ( layers[ key ] )
+			layers[ key ].unregister();
+		layers[ key ] = layer;
+		layer.register( self );
+		return;
+	}
+	
+	this.removeLayer = function( key )
+	{
+		var layer = layers[ key ];
+		if ( layer )
+			layer.unregister();
+		layers[ key ] = null;
+		return layer;
+	}
+	
 	// initialise
 	var self = this;
 	if ( !ui ) ui = new UI();
 	
 	this.id = id;
 	
+	var layers = {};
 	
-	
-	
-	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	// these parameters should be get dynamically from the server,
-	// they define the size and resolution properties of the slice stack
-	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	
-	//var Y_TILE_SIZE = parseInt( getPropertyFromCssRules( 3, 2, "height" ) );
-	//var X_TILE_SIZE = parseInt( getPropertyFromCssRules( 3, 2, "width" ) );
-	var Y_TILE_SIZE = 256;
-	var X_TILE_SIZE = 256;
 	
 	var MAX_X = dimension.x - 1;   //!< the last possible x-coordinate
 	var MAX_Y = dimension.y - 1;   //!< the last possible y-coordinate
 	var MAX_Z = dimension.z - 1;   //!< the last possible z-coordinate
 	
 	//! estimate the zoom levels
-	var MAX_S = 0;
+	self.MAX_S = 0;
 	var min_max = Math.min( MAX_X, MAX_Y );
-	var tile_size = Y_TILE_SIZE;
-	if ( min_max == MAX_X ) tile_size = X_TILE_SIZE;
-	while ( min_max / Math.pow( 2, MAX_S ) / tile_size > 3 )
-		++MAX_S;
+	var min_size = 256;
+	while ( min_max / Math.pow( 2, self.MAX_S ) / min_size > 1 )
+		++self.MAX_S;
 	
 	//! all possible slices
-	var slices = new Array();
+	self.slices = new Array();
 	for ( var i = 0; i < dimension.z; ++i )
 	{
 		if ( !skip_planes[ i ] )
 			slices.push( i );
 	}
-	
-	//profiles have to be requested from the server as well
-	var profiles = new Array();					//!< list of recent profiles
-	//profiles[ 0 ] = new Profile();
-	var spi = 0;								//!< selected profile index
 	
 	//-------------------------------------------------------------------------
 	
@@ -878,19 +443,8 @@ function Stack(
 	var viewLeft   = parseInt( getPropertyFromCssRules( 3, 0, "left" ) );
 	var viewRight  = parseInt( getPropertyFromCssRules( 3, 0, "right" ) );
 	
-	var tiles = new Array();
-	
 	var stackWindow = new CMWWindow( title );
 	var view = stackWindow.getFrame();
-	
-	var tilesContainer = document.createElement( "div" );
-	tilesContainer.className = "sliceTiles";
-	view.appendChild( tilesContainer );
-	
-	//! mouse catcher
-	var mouseCatcher = document.createElement( "div" );
-	mouseCatcher.className = "sliceMouseCatcher";
-	view.appendChild( mouseCatcher );
 	
 	stackWindow.addListener(
 		function( callingWindow, signal )
@@ -908,56 +462,32 @@ function Stack(
 			return true;	
 		} );
 	
-	var smallMap = new Overview( self, MAX_Y, MAX_X );
-	view.appendChild( smallMap.getView() );
+	var overview = new Overview( self, MAX_Y, MAX_X );
+	view.appendChild( overview.getView() );
 	
-	var benchmark = document.createElement( "div" );
-	benchmark.className = "sliceBenchmark";
-	benchmark.appendChild( document.createElement( "p" ) );
-	benchmark.firstChild.appendChild( document.createElement( "span" ) );
-	benchmark.firstChild.firstChild.appendChild( document.createTextNode( "test" ) );
-	view.appendChild( benchmark );
-	
-	var textlabels = new Array();
-	
-	var cropBox = false;
+	var scaleBar = document.createElement( "div" );
+	scaleBar.className = "sliceBenchmark";
+	scaleBar.appendChild( document.createElement( "p" ) );
+	scaleBar.firstChild.appendChild( document.createElement( "span" ) );
+	scaleBar.firstChild.firstChild.appendChild( document.createTextNode( "test" ) );
+	view.appendChild( scaleBar );
 	
 	// take care, that all values are within a proper range
-	var z = 1;
-	var y = Math.floor( MAX_Y / 2 );
-	var x = Math.floor( MAX_X / 2 );
-	var s = MAX_S;
+	self.z = 1;
+	self.y = Math.floor( MAX_Y / 2 );
+	self.x = Math.floor( MAX_X / 2 );
+	self.s = self.MAX_S;
 	
-	var old_z = -1;
-	var old_y = y;
-	var old_x = x;
-	var old_s = s;
+	self.old_z = -1;
+	self.old_y = self.y;
+	self.old_x = self.x;
+	self.old_s = self.s;
 	
-	var viewWidth;
-	var viewHeight;
+	self.viewWidth;
+	self.viewHeight;
 	
-	var scale = 1 / Math.pow( 2, s );
-	var old_scale = scale;
-	
-	var LAST_XT = Math.floor( MAX_X * scale / X_TILE_SIZE );
-	var LAST_YT = Math.floor( MAX_Y * scale / Y_TILE_SIZE );
-	
-	var mode = "move";
-	var show_textlabels = true;
-	
-	var registered = false;
-	
-	var slider_s;
-	var slider_z;
-	var input_x;
-	var input_y;
-	
-	var slider_crop_top_z;
-	var slider_crop_bottom_z;
-	var slider_crop_s;
-	var button_crop_apply;
-
-	//self.setMode( "move" );
+	self.scale = 1 / Math.pow( 2, self.s );
+	self.old_scale = self.scale;
 }
 
 //!< in nanometers

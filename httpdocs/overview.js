@@ -48,18 +48,6 @@ function Overview(
 		return;
 	}
 	
-	this.focus = function()
-	{
-		view.style.zIndex = 6;
-		return;
-	}
-	
-	this.blur = function()
-	{
-		view.style.zIndex = 4;
-		return;
-	}
-	
 	// initialize
 	if ( !ui ) ui = new UI();
 	

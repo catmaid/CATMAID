@@ -430,6 +430,7 @@ function Project(pid) {
       width -= object_tree_widget.offsetWidth;
       left += object_tree_widget.offsetWidth;
     }
+    width = Math.max(width,0);
     var old_width = 0;
     for (var i = 0; i < stacks.length; ++i) {
       old_width += stacks[i].getView().offsetWidth;

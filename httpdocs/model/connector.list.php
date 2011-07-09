@@ -17,39 +17,49 @@ $relation_type = isset( $_REQUEST[ 'relation_type' ] ) ? intval( $_REQUEST[ 'rel
 // skeleton id used
 $skeletonID = isset( $_REQUEST[ 'skeleton_id' ] ) ? intval( $_REQUEST[ 'skeleton_id' ] ) : 0;
 
+// if there is no valid skeleton id, just return an empty table
+if ( ! $skeletonID ) {
+    $sOutput = '{';
+	$sOutput .= '"iTotalRecords": 0, ';
+	$sOutput .= '"iTotalDisplayRecords": 0, ';
+	$sOutput .= '"aaData": [] } ';
+    echo $sOutput;
+    return;
+}
+
 /* Paging */
 $sLimit = "";
 if ( isset( $_REQUEST['iDisplayStart'] ) )
 {
-	$displayLength = intval( $_REQUEST['iDisplayLength'] );
-	$displayStart = intval( $_REQUEST['iDisplayStart'] );
-	$sLimit = "LIMIT ".$displayLength." OFFSET ".$displayStart;
+    $displayLength = intval( $_REQUEST['iDisplayLength'] );
+    $displayStart = intval( $_REQUEST['iDisplayStart'] );
+    $sLimit = "LIMIT ".$displayLength." OFFSET ".$displayStart;
 }
 
 $columnToFieldArray = array( "connector_id", "x", "y", "z", "labels", "nr_treenodes", "username");
 
 function fnColumnToField( $i ) {
-	global $columnToFieldArray;
-	return $columnToFieldArray[$i];
+    global $columnToFieldArray;
+    return $columnToFieldArray[$i];
 }
 
 $direction = (strtoupper($_REQUEST['sSortDir_0']) === "DESC") ? "DESC" : "ASC";
 
 function subval_sort($a,$subkey) {
     global $direction;
-	foreach($a as $k=>$v) {
-		$b[$k] = strtolower($v[$subkey]);
-	}
+    foreach($a as $k=>$v) {
+        $b[$k] = strtolower($v[$subkey]);
+    }
     if( $direction === 'DESC' ) {
         asort($b);
     } else {
         arsort($b);
     }
 
-	foreach($b as $key=>$val) {
-		$c[] = $a[$key];
-	}
-	return $c;
+    foreach($b as $key=>$val) {
+        $c[] = $a[$key];
+    }
+    return $c;
 }
 
 /* Ordering */
@@ -73,10 +83,6 @@ if ( isset( $_REQUEST['iSortCol_0'] ) ) {
     $columnIndex = 0;
 }
 
-if ( ! $skeletonID ) {
-    echo makeJSON( array( 'error' => 'You need to activate a treenode with a valid skeleton id to retrieve the connector list.' ) );
-    return;
-}
 
 # There must be a project id
 if ( ! $pid ) {

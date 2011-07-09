@@ -19,11 +19,20 @@ initConnectorTable = function (pid)
     "bAutoWidth": false,
     "sAjaxSource": 'model/connector.list.php',
     "fnServerData": function (sSource, aoData, fnCallback) {
-
+      
       var skeletonid;
       if(atn !== null) {
         skeletonid = atn.skeleton_id;
       } else {
+        var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
+        g.growlAlert({
+          autoShow: true,
+          content: 'You need to activate a treenode to display the connector table of its skeleton.',
+          title: 'BEWARE',
+          position: 'top-right',
+          delayTime: 2500,
+          onComplete: function() { g.remove(); }
+        });
         skeletonid = 0;
       }
 
@@ -44,16 +53,7 @@ initConnectorTable = function (pid)
         "type": "POST",
         "url": sSource,
         "data": aoData,
-        "success": function(data, text) {
-          if (data.error ) {
-            // hide widget
-            // document.getElementById('connectortable_widget').style.display = 'none';
-            // ui.onresize();
-            alert( data.error );
-            return;
-          }
-          fnCallback(data);
-        }
+        "success": fnCallback
       });
 
     },

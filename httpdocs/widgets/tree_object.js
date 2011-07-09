@@ -6,10 +6,6 @@ initObjectTree = function (pid) {
   // id of object tree
   object_tree_id = "#tree_object";
 
-  $("#refresh_object_tree").click(function () {
-    $("#tree_object").jstree("refresh", -1);
-  });
-
   $(object_tree_id).jstree({
     "core": {
       "html_titles": false

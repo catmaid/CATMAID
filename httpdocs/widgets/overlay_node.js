@@ -77,22 +77,18 @@ var Node = function (
   // current slice, whether it's the active node, the root node, or in
   // an active skeleton.
   this.setColor = function () {
-
     if (atn !== null && this.id === atn.id) {
       // The active node is always in green:
       fillcolor = atn_fillcolor;
     } else if (this.isroot) {
       // The root node should be colored red unless it's active:
       fillcolor = "rgb(255, 0, 0)";
-    } else if (this.skeleton_id && this.skeleton_id === active_skeleton_id) {
-      // Otherwise nodes in the active skeleton should be green:
-      fillcolor = active_skeleton_color;
     } else {
       // If none of the above applies, just colour according to the z
       // difference.
       fillcolor = colorFromZDiff(this);
     }
-
+    
     if (this.c) {
       this.c.attr({
         fill: fillcolor
@@ -275,14 +271,12 @@ var Node = function (
   // updates the raphael path coordinates
   this.drawLineToParent = function () {
     if (this.parent) {
-      var strokecolor = colorFromZDiff(this.parent);
-
       line.attr({
         path: [
           ["M", this.x, this.y],
           ["L", this.parent.x, this.parent.y]
         ],
-        stroke: strokecolor,
+        stroke: colorFromZDiff(this.parent),
         "stroke-width": 2
       });
     }

@@ -64,14 +64,19 @@ var Node = function (
       return inactive_skeleton_color_above;
     } else if (node.zdiff < 0) {
       return inactive_skeleton_color_below;
-    } else if (atn && atn.skeleton_id != node.skeleton_id) {
-      //console.log("active_skeleton_id:", active_skeleton_id, "node.skid:", typeof node.skeleton_id, " atn.skid:", typeof atn.skeleton_id);
-      return inactive_skeleton_color;
     } else {
-      return active_skeleton_color;
-		}
-  }
-
+      
+      if (atn && atn.skeleton_id != node.skeleton_id) {
+        return inactive_skeleton_color;
+      } else {
+        if( node.skeleton_id == active_skeleton_id ) {
+          return active_skeleton_color;
+        } else {
+          return inactive_skeleton_color;
+        }
+		  }
+    }
+  };
 
   // Set the node fill color depending on its distance from the
   // current slice, whether it's the active node, the root node, or in
@@ -172,13 +177,6 @@ var Node = function (
   this.deleteall = function () {
     // test if there is any child of type ConnectorNode
     // if so, it is not allowed to remove the treenode
-/*for ( var i = 0; i < children.length; ++i ) {
-      if( children[i] instanceof ConnectorNode ) {
-      alert("Not allowed to delete treenode with connector attached. Please remove connector first.");
-        return;
-      }
-    }
-    */
     var i;
     // remove the parent of all the children
     for (i = 0; i < this.children.length; ++i) {
@@ -213,7 +211,7 @@ var Node = function (
     requestQueue.register("model/treenode.delete.php", "POST", {
       pid: project.id,
       tnid: this.id
-    }, function (status, text, xml) {
+    }, function (status, text) {
       if (status !== 200) {
         alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
       }

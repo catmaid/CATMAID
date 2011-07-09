@@ -23,7 +23,6 @@ function activateNode(node) {
     } else {
       statusBar.replaceLast("activated connector node with id " + atn.id);
     }
-
   }
   project.recolorAllNodes();
 }

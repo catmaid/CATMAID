@@ -13,7 +13,7 @@
 /**
  * Navigator tool.  Moves the stack around 
  */
-function NavigatorLayer(
+function Navigator(
 		stack						//!< reference to the parent stack
 		)
 {

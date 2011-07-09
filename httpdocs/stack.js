@@ -398,6 +398,22 @@ function Stack(
 		return layer;
 	}
 	
+	
+	/**
+	 * Register a tool at this stack.  Unregisters the current tool and then
+	 * makes the tool working.
+	 */
+	this.setTool = function( tool )
+	{
+		self.tool.unregister();
+		self.tool = tool;
+		tool.register( self );
+	}
+	
+	
+	
+	
+	
 	// initialise
 	var self = this;
 	if ( !ui ) ui = new UI();
@@ -455,7 +471,7 @@ function Stack(
 				resize();
 				break;
 			}
-			return true;	
+			return true;
 		} );
 	
 	var overview = new Overview( self, MAX_Y, MAX_X );

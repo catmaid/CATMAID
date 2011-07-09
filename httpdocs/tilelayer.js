@@ -60,7 +60,6 @@ function TileLayer(
 				tilesContainer.appendChild( tiles[ i ][ j ] );
 			}
 		}
-		stack.
 		return;
 	}
 	
@@ -193,6 +192,9 @@ function TileLayer(
 				tiles[ i ][ j ].style.visibility = "visible";
 				
 				l += tileWidth;
+				
+				//alert( l + ", " + t );
+				
 			}
 			l = left;
 			t += tileHeight;
@@ -209,6 +211,7 @@ function TileLayer(
 		var rows = Math.floor( height / tileHeight ) + 2;
 		var cols = Math.floor( width / tileWidth ) + 2;
 		initTiles( rows, cols );
+		self.redraw();
 		return;
 	}
 	

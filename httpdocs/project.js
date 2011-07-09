@@ -710,7 +710,7 @@ function Project(pid) {
       // hide data table and tree view widgets
       // in order to reload the data for a new project
       document.getElementById("treenode_table_widget").style.display = "none";
-      document.getElementById("treenode_connector_table_widget").style.display = "none";
+      document.getElementById("connectortable_widget").style.display = "none";
       document.getElementById("object_tree_widget").style.display = "none";
       document.getElementById("project_stats_widget").style.display = "none";
 

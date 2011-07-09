@@ -276,9 +276,7 @@ var Node = function (
   this.drawLineToParent = function () {
     if (this.parent) {
       var strokecolor = colorFromZDiff(this.parent);
-      if (this.skeleton_id && this.skeleton_id == active_skeleton_id) {
-        strokecolor = active_skeleton_color;
-      }
+
       line.attr({
         path: [
           ["M", this.x, this.y],

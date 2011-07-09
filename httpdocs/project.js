@@ -483,12 +483,10 @@ function Project(pid) {
     switch (m) {
     case "treenode":
       document.getElementById('treenode_table_widget').style.display = 'block';
-      document.getElementById('connectortable_widget').style.display = 'none';
       ui.onresize();
       initTreenodeTable(this.id);
       break;
     case "connector":
-      document.getElementById('treenode_table_widget').style.display = 'none';
       document.getElementById('connectortable_widget').style.display = 'block';
       ui.onresize();
       initConnectorTable(this.id);

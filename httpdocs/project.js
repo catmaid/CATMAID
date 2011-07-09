@@ -56,11 +56,11 @@ function Project( pid )
 		{
 			var c = stack.projectCoordinates();
 			self.moveTo( c.z, c.y, c.x );
+			self.setFocusedStack( stack ); // if this is the only stack, focus it.
 		}
 		
 		self.setMode( mode );
 		
-		stack.focus();
 		return;
 	}
 	
@@ -237,12 +237,16 @@ function Project( pid )
 		mode = m;
 		document.getElementById( "edit_button_" + mode ).className = "button_active";
 		
+
+		// TODO: remove? (Tobias)
+		/*
 		for ( var i = 0; i < stacks.length; ++i )
 		{
 			stacks[ i ].setMode( mode );
 			if ( stacks[ i ] != self.focusedStack )
 				stacks[ i ].blur();
 		}
+		*/
 		
 		window.onresize();
 		return;

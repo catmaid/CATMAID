@@ -21,8 +21,8 @@ function NavigatorLayer(
 	if ( !ui ) ui = new UI();
 	
 	var sliders_box = document.getElementById( "sliders_box" );
-	var input_x;		//!< x_input
-	var input_y;		//!< y_input
+	var input_x = document.getElementById( "x" );		//!< x_input
+	var input_y = document.getElementById( "y" );		//!< y_input
 	
 	/* remove all existing dimension sliders */
 	while ( sliders_box.firstChild )
@@ -312,26 +312,26 @@ function NavigatorLayer(
 		slider_z.update(
 			0,
 			0,
-			slices,
+			stack.slices,
 			stack.z,
 			this.changeSliceDelayed );
 		slider_crop_top_z.update(
 			0,
 			0,
-			slices,
+			stack.slices,
 			stack.z,
 			this.changeSliceDelayed );
 		slider_crop_bottom_z.update(
 			0,
 			0,
-			slices,
-			z,
+			stack.slices,
+			stack.z,
 			this.changeSliceDelayed );
 		
 		/**
 		 * Cropping is possible with an attached TrakEM2 project only.
 		 */
-		if ( trakem2_project )
+		if ( stack.trakem2_project )
 		{
 			document.getElementById( "edit_button_crop" ).style.display = "block";	
 			button_crop_apply.onclick = crop;

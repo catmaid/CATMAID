@@ -406,6 +406,7 @@ function Project(pid) {
       left += table_widget.offsetWidth;
     }
     if (table_connector_widget.offsetWidth) {
+      table_connector_widget.style.left = left + "px";
       width -= table_connector_widget.offsetWidth;
       left += table_connector_widget.offsetWidth;
     }

@@ -32,7 +32,8 @@ function Stack(
 		dimension,					//!< {Array} pixel dimensions [x, y, z, ...]
 		resolution,					//!< {Array} physical resolution in units/pixel [x, y, z, ...]
 		translation,				//!< @todo replace by an affine transform
-		overviewName,				//!< {String} file name of the overview image (e.g. 'overview.jpg')
+		// TODO: Do we need this here? (Tobias)
+		// overviewName,				//!< {String} file name of the overview image (e.g. 'overview.jpg')
 		skip_planes,				//!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
 		trakem2_project				//!< {boolean} that states if a TrakEM2 project is available for this stack
 )
@@ -165,7 +166,7 @@ function Stack(
 	 */
 	this.moveTo = function( zp, yp, xp, sp )
 	{
-		alert( "moveTo called" );
+		//alert( "moveTo" );
 		
 		if ( typeof sp == "number" )
 		{
@@ -320,13 +321,11 @@ function Stack(
 	
 	var resize = function()
 	{
-		alert( "resize stack " + id );
-		
-		var width = stackWindow.getFrame().offsetWidth;
-		var height = stackWindow.getFrame().offsetHeight;
+		self.viewWidth = stackWindow.getFrame().offsetWidth;
+		self.viewHeight = stackWindow.getFrame().offsetHeight;
 		
 		for ( var key in layers )
-			layers[ key ].resize( width, height );
+			layers[ key ].resize( self.viewWidth, self.viewHeight );
 		
 		return;
 	}
@@ -345,6 +344,17 @@ function Stack(
 	 * Get stack ID.
 	 */
 	this.getId = function(){ return id; }
+	
+	/**
+	 * Get the stack dimension.
+	 * 
+	 * @return a copy of the private dimension parameter
+	 * @todo that's not a copy!
+	 */
+	this.dimension = function()
+	{
+		return dimension;
+	}
 	
 	/**
 	 * Get the stack resolution.
@@ -376,7 +386,6 @@ function Stack(
 		if ( layers[ key ] )
 			layers[ key ].unregister();
 		layers[ key ] = layer;
-		layer.register( self );
 		return;
 	}
 	
@@ -406,7 +415,7 @@ function Stack(
 	self.MAX_S = 0;
 	var min_max = Math.min( MAX_X, MAX_Y );
 	var min_size = 256;
-	while ( min_max / Math.pow( 2, self.MAX_S ) / min_size > 1 )
+	while ( min_max / Math.pow( 2, self.MAX_S ) / min_size > 4 )
 		++self.MAX_S;
 	
 	//! all possible slices
@@ -429,11 +438,14 @@ function Stack(
 	
 	var stackWindow = new CMWWindow( title );
 	var view = stackWindow.getFrame();
+
+	var viewWidth = stackWindow.getFrame().offsetWidth;
+	var viewHeight = stackWindow.getFrame().offsetHeight;
 	
 	stackWindow.addListener(
 		function( callingWindow, signal )
 		{
-			alert( signal );
+			//alert( signal );
 			switch ( signal )
 			{
 			case CMWWindow.CLOSE:
@@ -466,9 +478,6 @@ function Stack(
 	self.old_y = self.y;
 	self.old_x = self.x;
 	self.old_s = self.s;
-	
-	self.viewWidth;
-	self.viewHeight;
 	
 	self.scale = 1 / Math.pow( 2, self.s );
 	self.old_scale = self.scale;

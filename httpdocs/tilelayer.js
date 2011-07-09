@@ -33,14 +33,41 @@ function getTileBaseName( pixelPos )
 function TileLayer(
 		stack,						//!< reference to the parent stack
 		baseURL,					//!< base URL for image tiles
-		tileWitdh,
+		tileWidth,
 		tileHeight
 		)
 {
 	/**
+	 * initialise the tiles array
+	 */
+	var initTiles = function( rows, cols )
+	{
+		while ( tilesContainer.firstChild )
+			tilesContainer.removeChild( tilesContainer.firstChild );
+		
+		delete tiles;
+		tiles = new Array();
+		
+		for ( var i = 0; i < rows; ++i )
+		{
+			tiles[ i ] = new Array();
+			for ( var j = 0; j < cols; ++j )
+			{
+				tiles[ i ][ j ] = document.createElement( "img" );
+				tiles[ i ][ j ].alt = "empty";
+				tiles[ i ][ j ].src = "gfx/empty256.gif";
+				
+				tilesContainer.appendChild( tiles[ i ][ j ] );
+			}
+		}
+		stack.
+		return;
+	}
+	
+	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */
-	var redraw = function()
+	this.redraw = function()
 	{
 		var pixelPos = [ stack.x, stack.y, stack.z ];
 		var tileBaseName = getTileBaseName( pixelPos );
@@ -123,14 +150,14 @@ function TileLayer(
 		var top;
 		var left;
 		
-		if ( yc >= 0 )
-			top  = -( yc % tileHeight );
+		if ( stack.yc >= 0 )
+			top  = -( stack.yc % tileHeight );
 		else
-			top  = -( ( yc + 1 ) % tileHeight ) - tileHeight + 1;
-		if ( xc >= 0 )
-			left = -( xc % tileWidth );
+			top  = -( ( stack.yc + 1 ) % tileHeight ) - tileHeight + 1;
+		if ( stack.xc >= 0 )
+			left = -( stack.xc % tileWidth );
 		else
-			left = -( ( xc + 1 ) % tileWidth ) - tileWidth + 1;
+			left = -( ( stack.xc + 1 ) % tileWidth ) - tileWidth + 1;
 		
 		var t = top;
 		var l = left;
@@ -174,36 +201,9 @@ function TileLayer(
 		return 2;
 	}
 	
-	/**
-	 * initialise the tiles array
-	 */
-	var initTiles = function( rows, cols )
-	{
-		while ( tilesContainer.firstChild )
-			tilesContainer.removeChild( tilesContainer.firstChild );
-		
-		delete tiles;
-		tiles = new Array();
-		
-		for ( var i = 0; i < rows; ++i )
-		{
-			tiles[ i ] = new Array();
-			for ( var j = 0; j < cols; ++j )
-			{
-				tiles[ i ][ j ] = document.createElement( "img" );
-				tiles[ i ][ j ].alt = "empty";
-				tiles[ i ][ j ].src = "gfx/empty256.gif";
-				
-				tilesContainer.appendChild( tiles[ i ][ j ] );
-			}
-		}
-		stack.
-		return;
-	}
-	
 	this.resize = function( width, height )
 	{
-		alert( "resize tileLayer of stack" + stack.getId() );
+//		alert( "resize tileLayer of stack" + stack.getId() );
 		
 		/* TODO 2 more?  Should be 1---not?! */
 		var rows = Math.floor( height / tileHeight ) + 2;
@@ -242,7 +242,7 @@ function TileLayer(
 	 * Get the stack.
 	 */
 	this.getStack = function(){ return stack; }
-	
+
 	// initialise
 	var self = this;
 	
@@ -253,6 +253,6 @@ function TileLayer(
 	tilesContainer.className = "sliceTiles";
 	stack.getView().appendChild( tilesContainer );
 	
-	var LAST_XT = Math.floor( stack.dimension.x * stack.scale / tileWidth );
-	var LAST_YT = Math.floor( stack.dimension.y * stack.scale / tileHeight );
+	var LAST_XT = Math.floor( stack.dimension().x * stack.scale / tileWidth );
+	var LAST_YT = Math.floor( stack.dimension().y * stack.scale / tileHeight );
 }

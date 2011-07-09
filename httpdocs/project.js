@@ -674,7 +674,6 @@ function Project(pid) {
    * @todo: should not the stack handle the navigation toolbar?
    */
   this.unregister = function () {
-    console.log('unregister');
     //! close all stacks
     for (var i = 0; i < stacks.length; ++i) {
       stacks[i].unregister();

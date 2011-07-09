@@ -394,6 +394,7 @@ function Project(pid) {
  * resize the view and its content on window.onresize event
  */
   var resize = function (e) {
+    var stack_view_width;
     var top = document.getElementById("toolbar_container").offsetHeight;
     if (message_widget.offsetHeight) top += message_widget.offsetHeight;
     //var bottom = document.getElementById( 'console' ).offsetHeight;
@@ -441,10 +442,19 @@ function Project(pid) {
     view.style.left = left + "px";
     left = 0;
     for (var i = 0; i < stacks.length; ++i) {
-      //stacks[ i ].resize( i * stack_view_width, 0, stack_view_width, height );
-      var stack_view_width = Math.floor(stacks[i].getView().offsetWidth * width_ratio);
-      stacks[i].resize(left, 0, stack_view_width, height);
-      left += stack_view_width;
+      if (isFinite(width_ratio)) {
+        //stacks[ i ].resize( i * stack_view_width, 0, stack_view_width, height );
+        stack_view_width = Math.floor(stacks[i].getView().offsetWidth * width_ratio);
+        stacks[i].resize(left, 0, stack_view_width, height);
+        left += stack_view_width;
+      } else {
+        // If width_ratio is Infinity, then all the stacks were shrunk
+        // down to zero width on the last resize.  In that case, just
+        // split the space equally between them when expanding again:
+        stack_view_width = width / stacks.length;
+        stacks[i].resize(left, 0, stack_view_width, height);
+        left += stack_view_width;
+      }
     }
 
     view.style.top = top + "px";

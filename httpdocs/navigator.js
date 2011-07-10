@@ -22,7 +22,6 @@ function Navigator()
 	var sliders_box = document.getElementById( "sliders_box" );
 	var input_x = document.getElementById( "x" );		//!< x_input
 	var input_y = document.getElementById( "y" );		//!< y_input
-
 	
 	/* remove all existing dimension sliders */
 	while ( sliders_box.firstChild )
@@ -76,11 +75,11 @@ function Navigator()
 	
 	var updateControls = function()
 	{
-		slider_s.setByValue( s, true );
-		slider_z.setByValue( z, true );
+		slider_s.setByValue( self.stack.s, true );
+		slider_z.setByValue( self.stack.z, true );
 
-		input_x.value = x;
-		input_y.value = y;
+		input_x.value = self.stack.x;
+		input_y.value = self.stack.y;
 		
 		return;
 	}
@@ -99,7 +98,8 @@ function Navigator()
 	
 	var onmousemove = function( e )
 	{
-		self.moveToPixel( z, y - ui.diffY / scale, x - ui.diffX / scale, s );
+		self.stack.moveToPixel( self.stack.z, self.stack.y - ui.diffY / self.stack.scale, self.stack.x - ui.diffX / self.stack.scale, self.stack.s );
+		updateControls();
 		return false;
 	};
 	
@@ -140,48 +140,65 @@ function Navigator()
 		return false;
 	};
 
-/*	
-	var onmousewheel = function( e )
+	var onmousewheel = 
 	{
-		var xp = x;
-		var yp = y;
-		var m = ui.getMouse( e );
-		var w = ui.getMouseWheel( e );
-		if ( m )
+		zoom : function( e )
 		{
-			xp = m.offsetX - viewWidth / 2;
-			yp = m.offsetY - viewHeight / 2;
-			//statusBar.replaceLast( ( m.offsetX - viewWidth / 2 ) + " " + ( m.offsetY - viewHeight / 2 ) );
-		}
-		if ( w )
-		{
-			if ( w > 0 )
+			var w = ui.getMouseWheel( e );
+			if ( w )
 			{
-				if ( s < MAX_S )
+				if ( w > 0 )
 				{
-					self.moveToPixel(
-						z,
-						y - Math.floor( yp / scale ),
-						x - Math.floor( xp / scale ),
-						s + 1 );
+					slider_z.move( -1 );
+				}
+				else
+				{
+					slider_z.move( 1 );
 				}
 			}
-			else
+			return false;
+		},
+		move : function( e )
+		{
+			var xp = self.stack.x;
+			var yp = self.stack.y;
+			var m = ui.getMouse( e );
+			var w = ui.getMouseWheel( e );
+			if ( m )
 			{
-				if ( s > 0 )
+				xp = m.offsetX - self.stack.viewWidth / 2;
+				yp = m.offsetY - self.stack.viewHeight / 2;
+				//statusBar.replaceLast( ( m.offsetX - viewWidth / 2 ) + " " + ( m.offsetY - viewHeight / 2 ) );
+			}
+			if ( w )
+			{
+				if ( w > 0 )
 				{
-					var ns = scale * 2;
-					self.moveToPixel(
-						z,
-						y + Math.floor( yp / ns ),
-						x + Math.floor( xp / ns ),
-						s - 1 );
+					if ( self.stack.s < self.stack.MAX_S )
+					{
+						self.stack.moveToPixel(
+							self.stack.z,
+							self.stack.y - Math.floor( yp / self.stack.scale ),
+							self.stack.x - Math.floor( xp / self.stack.scale ),
+							self.stack.s + 1 );
+					}
+				}
+				else
+				{
+					if ( self.stack.s > 0 )
+					{
+						var ns = self.stack.scale * 2;
+						self.moveToPixel(
+							self.stack.z,
+							self.stack.y + Math.floor( yp / ns ),
+							self.stack.x + Math.floor( xp / ns ),
+							self.stack.s - 1 );
+					}
 				}
 			}
+			return false;
 		}
-		return false;
 	};
-*/
 	
 	//--------------------------------------------------------------------------
 	/**
@@ -210,7 +227,7 @@ function Navigator()
 	
 	this.changeSlice = function( val )
 	{
-		stack.moveToPixel( val, stack.y, stack.x, stack.s );
+		self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
 		return;
 	}
 	//--------------------------------------------------------------------------
@@ -239,7 +256,7 @@ function Navigator()
 	
 	this.changeScale = function( val )
 	{
-		stack.moveToPixel( stack.z, stack.y, stack.x, val );
+		self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, val );
 		return;
 	}
 	//--------------------------------------------------------------------------
@@ -247,16 +264,16 @@ function Navigator()
 	var changeXByInput = function( e )
 	{
 		var val = parseInt( this.value );
-		if ( isNaN( val ) ) this.value = stack.x;
-		else stack.moveToPixel( stack.z, stack.y, val, stack.s );
+		if ( isNaN( val ) ) this.value = self.stack.x;
+		else self.stack.moveToPixel( self.stack.z, self.stack.y, val, self.stack.s );
 		return;
 	}
 	
 	var changeYByInput = function( e )
 	{
 		var val = parseInt( this.value );
-		if ( isNaN( val ) ) this.value = stack.y;
-		else stack.moveToPixel( stack.z, val, stack.x, stack.s );
+		if ( isNaN( val ) ) this.value = self.stack.y;
+		else self.stack.moveToPixel( self.stack.z, val, self.stack.x, self.stack.s );
 		return;
 	}
 	
@@ -271,18 +288,6 @@ function Navigator()
 		return false
 	}
 	
-	this.registerXControl = function( c )
-	{
-		input_x = c;
-		return;
-	}
-	
-	this.registerYControl = function( c )
-	{
-		input_y = c;
-		return;
-	}
-	
 	/**
 	 * install this tool in a stack.
 	 * register all GUI control elements and event handlers
@@ -291,8 +296,23 @@ function Navigator()
 	{
 		self.stack = stack;
 
-
-		stack.getView().appendChild( mouseCatcher );
+		mouseCatcher.onmousedown = onmousedown;
+		try
+		{
+			mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel.zoom, false );
+			/* Webkit takes the event but does not understand it ... */
+			mouseCatcher.addEventListener( "mousewheel", onmousewheel.zoom, false );
+		}
+		catch ( error )
+		{
+			try
+			{
+				mouseCatcher.onmousewheel = onmousewheel.zoom;
+			}
+			catch ( error ) {}
+		}
+		
+		self.stack.getView().appendChild( mouseCatcher );
 
 		registered = true;
 		slider_s.update(
@@ -300,51 +320,22 @@ function Navigator()
 			0,
 			stack.MAX_S + 1,
 			stack.s,
-			this.changeScaleDelayed );
+			self.changeScaleDelayed );
 		
 		if ( stack.slices.length < 2 )	//!< hide the slider_z if there is only one slice
 		{
 			slider_z.getView().parentNode.style.display = "none";
-			slider_crop_top_z.getView().parentNode.style.display = "none";
-			slider_crop_bottom_z.getView().parentNode.style.display = "none";
 		}
 		else
 		{
 			slider_z.getView().parentNode.style.display = "block";
-			slider_crop_top_z.getView().parentNode.style.display = "block";
-			slider_crop_bottom_z.getView().parentNode.style.display = "block";
 		}
 		slider_z.update(
 			0,
 			0,
 			stack.slices,
 			stack.z,
-			this.changeSliceDelayed );
-		slider_crop_top_z.update(
-			0,
-			0,
-			stack.slices,
-			stack.z,
-			this.changeSliceDelayed );
-		slider_crop_bottom_z.update(
-			0,
-			0,
-			stack.slices,
-			stack.z,
-			this.changeSliceDelayed );
-		
-		/**
-		 * Cropping is possible with an attached TrakEM2 project only.
-		 */
-		if ( stack.trakem2_project )
-		{
-			document.getElementById( "edit_button_crop" ).style.display = "block";	
-			button_crop_apply.onclick = crop;
-		}
-		else
-		{
-			document.getElementById( "edit_button_crop" ).style.display = "none";
-		}
+			self.changeSliceDelayed );
 		
 		input_x.onchange = changeXByInput;
 		try
@@ -373,6 +364,9 @@ function Navigator()
 			}
 			catch ( error ) {}
 		}
+		
+		updateControls();
+		
 		return;
 	}
 	

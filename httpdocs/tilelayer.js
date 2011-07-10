@@ -146,6 +146,12 @@ function TileLayer(
 			}
 		}
 		
+		if ( stack.s != stack.old_s )
+		{
+			LAST_XT = Math.floor( ( stack.dimension().x * stack.scale - 1 ) / tileWidth );
+			LAST_YT = Math.floor( ( stack.dimension().y * stack.scale - 1 ) / tileHeight );	
+		}
+		
 		var top;
 		var left;
 		
@@ -184,7 +190,7 @@ function TileLayer(
 				{
 					// TODO: use this for the new tile naming scheme:
 					// tiles[ i ][ j ].alt = tileBaseName + stack.s + "/" + ( fr + i ) + "/" + ( fc + j );
-					tiles[ i ][ j ].alt = tileBaseName + ( fr + i ) + "_" + ( fc + j ) + "_" + stack.s;
+					tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + stack.s;
 					tiles[ i ][ j ].src = baseURL + tiles[ i ][ j ].alt + ".jpg";
 				}
 				tiles[ i ][ j ].style.top = t + "px";
@@ -256,6 +262,6 @@ function TileLayer(
 	tilesContainer.className = "sliceTiles";
 	stack.getView().appendChild( tilesContainer );
 	
-	var LAST_XT = Math.floor( stack.dimension().x * stack.scale / tileWidth );
-	var LAST_YT = Math.floor( stack.dimension().y * stack.scale / tileHeight );
+	var LAST_XT = Math.floor( ( stack.dimension().x * stack.scale - 1 ) / tileWidth );
+	var LAST_YT = Math.floor( ( stack.dimension().y * stack.scale - 1 ) / tileHeight );
 }

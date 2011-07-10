@@ -617,11 +617,7 @@ function init()
 	
 	ui = new UI();
 	
-	input_x = document.getElementById( "x" );
-	input_y = document.getElementById( "y" );
-	
 	input_fontsize = document.getElementById( "fontsize" );
-	input_y = document.getElementById( "y" );
 	
 	a_url = document.getElementById( "a_url" );
 	a_url.onmouseover = function( e )

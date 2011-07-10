@@ -170,7 +170,7 @@ function Stack(
 		
 		if ( typeof sp == "number" )
 		{
-			self.s = Math.max( 0, Math.min( MAX_S, Math.round( sp ) ) );
+			self.s = Math.max( 0, Math.min( self.MAX_S, Math.round( sp ) ) );
 			self.scale = 1 / Math.pow( 2, self.s );
 		}
 		
@@ -199,7 +199,7 @@ function Stack(
 	 */
 	this.moveToPixel = function( zp, yp, xp, sp )
 	{
-		self.s = Math.max( 0, Math.min( MAX_S, sp ) );
+		self.s = Math.max( 0, Math.min( self.MAX_S, sp ) );
 
 		self.scale = 1 / Math.pow( 2, self.s );
 		
@@ -210,114 +210,6 @@ function Stack(
 		
 		return true;
 	}
-	
-	
-	this.onmousemove = 
-	{
-		pos : function( e )
-		{
-			var xp;
-			var yp;
-			var m = ui.getMouse( e );
-			if ( m )
-			{
-				var pos_x = translation.x + ( self.x + ( m.offsetX - self.viewWidth / 2 ) / self.scale ) * resolution.x;
-				var pos_y = translation.x + ( self.y + ( m.offsetY - self.viewHeight / 2 ) / self.scale ) * resolution.y;
-				statusBar.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 3 ) + "]" );
-			}
-			return false;
-		},
-		move : function( e )
-		{
-			self.moveToPixel( self.z, self.y - ui.diffY / self.scale, self.x - ui.diffX / self.scale, self.s );
-			return false;
-		}
-	};
-	
-	this.onmouseup =
-	{
-		move : function( e )
-		{
-			ui.releaseEvents()
-			ui.removeEvent( "onmousemove", onmousemove.move );
-			ui.removeEvent( "onmouseup", onmouseup.move );
-			return false;
-		}
-	};
-	
-	this.onmousedown =
-	{
-		move : function( e )
-		{
-			ui.registerEvent( "onmousemove", onmousemove.move );
-			ui.registerEvent( "onmouseup", onmouseup.move );
-			ui.catchEvents( "move" );
-			ui.onmousedown( e );
-			ui.catchFocus();
-			
-			return false;
-		}
-	};
-	
-	var onmousewheel = 
-	{
-		zoom : function( e )
-		{
-			var w = ui.getMouseWheel( e );
-			if ( w )
-			{
-				if ( w > 0 )
-				{
-					slider_z.move( -1 );
-				}
-				else
-				{
-					slider_z.move( 1 );
-				}
-			}
-			return false;
-		},
-		move : function( e )
-		{
-			var xp = x;
-			var yp = y;
-			var m = ui.getMouse( e );
-			var w = ui.getMouseWheel( e );
-			if ( m )
-			{
-				xp = m.offsetX - viewWidth / 2;
-				yp = m.offsetY - viewHeight / 2;
-				//statusBar.replaceLast( ( m.offsetX - viewWidth / 2 ) + " " + ( m.offsetY - viewHeight / 2 ) );
-			}
-			if ( w )
-			{
-				if ( w > 0 )
-				{
-					if ( s < MAX_S )
-					{
-						self.moveToPixel(
-							z,
-							y - Math.floor( yp / scale ),
-							x - Math.floor( xp / scale ),
-							s + 1 );
-					}
-				}
-				else
-				{
-					if ( s > 0 )
-					{
-						var ns = scale * 2;
-						self.moveToPixel(
-							z,
-							y + Math.floor( yp / ns ),
-							x + Math.floor( xp / ns ),
-							s - 1 );
-					}
-				}
-			}
-			return false;
-		}
-	};
 	
 	var resize = function()
 	{

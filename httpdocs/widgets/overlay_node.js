@@ -57,19 +57,18 @@ var Node = function (
   // the line that is drawn to its parent
   var line = this.paper.path(); // TODO not all!
 
-  var fillcolor;
+  this.fillcolor = inactive_skeleton_color;
 
-  var colorFromZDiff = function(node) {
-    if (node.zdiff > 0) {
+  this.colorFromZDiff = function() {
+    if (this.zdiff > 0) {
       return inactive_skeleton_color_above;
-    } else if (node.zdiff < 0) {
+    } else if (this.zdiff < 0) {
       return inactive_skeleton_color_below;
     } else {
-      
-      if (atn && atn.skeleton_id != node.skeleton_id) {
+      if (atn && atn.skeleton_id != this.skeleton_id) {
         return inactive_skeleton_color;
       } else {
-        if( node.skeleton_id == active_skeleton_id ) {
+        if (this.skeleton_id == active_skeleton_id ) {
           return active_skeleton_color;
         } else {
           return inactive_skeleton_color;
@@ -91,7 +90,7 @@ var Node = function (
     } else {
       // If none of the above applies, just colour according to the z
       // difference.
-      fillcolor = colorFromZDiff(this);
+      fillcolor = this.colorFromZDiff();
     }
     
     if (this.c) {
@@ -274,7 +273,7 @@ var Node = function (
           ["M", this.x, this.y],
           ["L", this.parent.x, this.parent.y]
         ],
-        stroke: colorFromZDiff(this.parent),
+        stroke: this.parent.colorFromZDiff(),
         "stroke-width": 2
       });
     }

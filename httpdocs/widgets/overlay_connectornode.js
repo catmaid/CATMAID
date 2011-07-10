@@ -52,15 +52,15 @@ zdiff) // the different from the current slices
   // current slice
   var fillcolor;
 
-  this.colorFromZDiff = function(node) {
-    if (node.zdiff > 0) {
+  this.colorFromZDiff = function() {
+    if (this.zdiff > 0) {
       return "rgb(0, 0, 255)";
-    } else if (node.zdiff < 0) {
+    } else if (this.zdiff < 0) {
       return "rgb(255, 0, 0)";
     } else {
       return "rgb(235, 117, 0)";
     }
-  }
+  };
 
   // if the zdiff is bigger than zero we do not allow
   // to drag the nodes
@@ -99,7 +99,7 @@ zdiff) // the different from the current slices
     } else {
       // If none of the above applies, just colour according to the z
       // difference.
-      fillcolor = this.colorFromZDiff(this);
+      fillcolor = this.colorFromZDiff();
     }
     
     if (this.c) {

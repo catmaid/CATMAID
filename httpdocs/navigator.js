@@ -1,10 +1,11 @@
 /**
- * stack.js
+ * navigator.js
  *
  * requirements:
  *	 tools.js
  *	 ui.js
  *	 slider.js
+ *   stack.js
  */
 
 /**
@@ -16,6 +17,7 @@
 function Navigator()
 {
 	var self = this;
+	var stack = null;
 
 	if ( !ui ) ui = new UI();
 
@@ -75,11 +77,11 @@ function Navigator()
 	
 	var updateControls = function()
 	{
-		slider_s.setByValue( self.stack.s, true );
-		slider_z.setByValue( self.stack.z, true );
+		slider_s.setByValue( stack.s, true );
+		slider_z.setByValue( stack.z, true );
 
-		input_x.value = self.stack.x;
-		input_y.value = self.stack.y;
+		input_x.value = stack.x;
+		input_y.value = stack.y;
 		
 		return;
 	}
@@ -98,7 +100,7 @@ function Navigator()
 	
 	var onmousemove = function( e )
 	{
-		self.stack.moveToPixel( self.stack.z, self.stack.y - ui.diffY / self.stack.scale, self.stack.x - ui.diffX / self.stack.scale, self.stack.s );
+		stack.moveToPixel( stack.z, stack.y - ui.diffY / stack.scale, stack.x - ui.diffX / stack.scale, stack.s );
 		updateControls();
 		return false;
 	};
@@ -160,39 +162,39 @@ function Navigator()
 		},
 		move : function( e )
 		{
-			var xp = self.stack.x;
-			var yp = self.stack.y;
+			var xp = stack.x;
+			var yp = stack.y;
 			var m = ui.getMouse( e );
 			var w = ui.getMouseWheel( e );
 			if ( m )
 			{
-				xp = m.offsetX - self.stack.viewWidth / 2;
-				yp = m.offsetY - self.stack.viewHeight / 2;
+				xp = m.offsetX - stack.viewWidth / 2;
+				yp = m.offsetY - stack.viewHeight / 2;
 				//statusBar.replaceLast( ( m.offsetX - viewWidth / 2 ) + " " + ( m.offsetY - viewHeight / 2 ) );
 			}
 			if ( w )
 			{
 				if ( w > 0 )
 				{
-					if ( self.stack.s < self.stack.MAX_S )
+					if ( stack.s < stack.MAX_S )
 					{
-						self.stack.moveToPixel(
-							self.stack.z,
-							self.stack.y - Math.floor( yp / self.stack.scale ),
-							self.stack.x - Math.floor( xp / self.stack.scale ),
-							self.stack.s + 1 );
+						stack.moveToPixel(
+							stack.z,
+							stack.y - Math.floor( yp / stack.scale ),
+							stack.x - Math.floor( xp / stack.scale ),
+							stack.s + 1 );
 					}
 				}
 				else
 				{
-					if ( self.stack.s > 0 )
+					if ( stack.s > 0 )
 					{
-						var ns = self.stack.scale * 2;
+						var ns = stack.scale * 2;
 						self.moveToPixel(
-							self.stack.z,
-							self.stack.y + Math.floor( yp / ns ),
-							self.stack.x + Math.floor( xp / ns ),
-							self.stack.s - 1 );
+							stack.z,
+							stack.y + Math.floor( yp / ns ),
+							stack.x + Math.floor( xp / ns ),
+							stack.s - 1 );
 					}
 				}
 			}
@@ -227,7 +229,7 @@ function Navigator()
 	
 	this.changeSlice = function( val )
 	{
-		self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
+		stack.moveToPixel( val, stack.y, stack.x, stack.s );
 		return;
 	}
 	//--------------------------------------------------------------------------
@@ -256,7 +258,7 @@ function Navigator()
 	
 	this.changeScale = function( val )
 	{
-		self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, val );
+		stack.moveToPixel( stack.z, stack.y, stack.x, val );
 		return;
 	}
 	//--------------------------------------------------------------------------
@@ -264,16 +266,16 @@ function Navigator()
 	var changeXByInput = function( e )
 	{
 		var val = parseInt( this.value );
-		if ( isNaN( val ) ) this.value = self.stack.x;
-		else self.stack.moveToPixel( self.stack.z, self.stack.y, val, self.stack.s );
+		if ( isNaN( val ) ) this.value = stack.x;
+		else stack.moveToPixel( stack.z, stack.y, val, stack.s );
 		return;
 	}
 	
 	var changeYByInput = function( e )
 	{
 		var val = parseInt( this.value );
-		if ( isNaN( val ) ) this.value = self.stack.y;
-		else self.stack.moveToPixel( self.stack.z, val, self.stack.x, self.stack.s );
+		if ( isNaN( val ) ) this.value = stack.y;
+		else stack.moveToPixel( stack.z, val, stack.x, stack.s );
 		return;
 	}
 	
@@ -292,9 +294,12 @@ function Navigator()
 	 * install this tool in a stack.
 	 * register all GUI control elements and event handlers
 	 */
-	this.register = function( stack )
+	this.register = function( parentStack )
 	{
-		self.stack = stack;
+		document.getElementById( "edit_button_move" ).className = "button_active";
+		document.getElementById( "toolbar_nav" ).style.display = "block";
+		
+		stack = parentStack;
 
 		mouseCatcher.onmousedown = onmousedown;
 		try
@@ -312,9 +317,8 @@ function Navigator()
 			catch ( error ) {}
 		}
 		
-		self.stack.getView().appendChild( mouseCatcher );
+		stack.getView().appendChild( mouseCatcher );
 
-		registered = true;
 		slider_s.update(
 			stack.MAX_S,
 			0,
@@ -375,7 +379,9 @@ function Navigator()
 	 */
 	this.unregister = function()
 	{
-		registered = false;
+		document.getElementById( "edit_button_move" ).className = "button";
+		document.getElementById( "toolbar_nav" ).style.display = "none";
+		
 		slider_s.update(
 			0,
 			1,
@@ -417,109 +423,10 @@ function Navigator()
 			}
 			catch ( error ) {}
 		}
+
+		stack.getView().removeChild( mouseCatcher );
+
 		return;
-	}
-	
-	
-	/**
-	 * set the GUI focus to the stack
-	 */
-	this.focus = function()
-	{
-		project.setFocusedStack( self );
-		
-		smallMap.focus();
-		self.setMode( mode );
-		self.register();
-		self.moveToPixel( z, y, x, s );
-		
-		if ( cropBox ) cropBox.view.style.display = "block";
-		
-		return;
-	}
-	
-	/**
-	 * remove the GUI focus from the stack
-	 */
-	this.blur = function()
-	{
-		self.unregister();
-		mouseCatcher.style.cursor = "default";
-		mouseCatcher.style.zIndex = 7;
-		
-		if ( cropBox ) cropBox.view.style.display = "none";
-		
-		return;
-	}
-	
-	/**
-	 * Get the stack window.
-	 */
-	this.getWindow = function() { return stackWindow; }
-	
-	/**
-	 * Get the width of an image tile.
-	 */
-	this.getTileWidth = function(){ return X_TILE_SIZE; }
-	
-	/**
-	 * Get the height of an image tile.
-	 */
-	this.getTileHeight = function(){ return Y_TILE_SIZE; }
-	
-	/**
-	 * Get the current (x,y)-scale factor of the stack.
-	 */
-	this.getScale = function(){ return scale; }
-	
-	/**
-	 * Get the number of tile columns.
-	 */
-	this.numTileColumns = function()
-	{
-		if ( tiles.length == 0 )
-			return 0;
-		else
-			return tiles[ 0 ].length;
-	}
-	
-	/**
-	 * Get the number of tile rows.
-	 */
-	this.numTileColumns = function(){ return tiles.length; }
-	
-	/**
-	 * Get the project.
-	 */
-	this.getProject = function(){ return project; }
-	
-	/**
-	 * Get stack ID.
-	 */
-	this.getId = function(){ return id; }
-	
-	/**
-	 * Get the stack resolution.
-	 * 
-	 * @return a copy of the private resolution parameter
-	 */
-	this.resolution = function()
-	{
-		return resolution;
-	}
-	
-	/**
-	 * Get the stack translation relative to the project.
-	 * 
-	 * @return a copy of the private translation parameter
-	 */
-	this.translation = function()
-	{
-		return {
-			x : translation.x,
-			y : translation.y,
-			z : translation.z
-		};
 	}
 }
 

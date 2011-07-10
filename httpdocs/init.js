@@ -165,7 +165,7 @@ function handle_logout()
 			
 	updateProjects();
 	
-	if ( project && project.id ) project.setMode( "move" );
+	if ( project && project.id ) project.setTool( new Navigator() );
 	
 	return;
 }

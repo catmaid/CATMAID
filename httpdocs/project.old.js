@@ -59,9 +59,7 @@ function Project( pid )
 			self.setFocusedStack( stack ); // if this is the only stack, focus it.
 		}
 		
-		if ( !tool )
-			tool = new Navigator();
-		self.setTool( tool );
+		self.setMode( mode );
 		
 		return;
 	}
@@ -106,7 +104,7 @@ function Project( pid )
 	{
 		self.focusedStack = stack;
 		if ( tool )
-			self.focusedStack.setTool( tool );
+			stack.setTool( tool );
 		return;
 	}
 	
@@ -145,6 +143,12 @@ function Project( pid )
 		return true;
 	}
 	
+	this.getMode = function()
+	{
+		return mode;
+	}
+	
+
 	/*
 	 * Shows the tree view for the loaded project
 	 */
@@ -197,16 +201,59 @@ function Project( pid )
 	}
 	
 	
-	this.setTool = function( tool )
+	/*
+	this.setMode = function( m )
 	{
+		document.getElementById( "edit_button_select" ).className = "button";
+		document.getElementById( "edit_button_move" ).className = "button";
+		document.getElementById( "edit_button_text" ).className = "button";
+		document.getElementById( "edit_button_crop" ).className = "button";
+		//document.getElementById( "edit_button_profile" ).className = "button";
+		
+		self.hideToolbars();
+		
 		if ( !self.focusedStack )
 			self.focusedStack = stacks[ 0 ];
 		
-		self.focusedStack.setTool( tool );
+		switch ( m )
+		{
+		case "select":
+			break;
+		case "move":
+			var navigator = new Navigator( self.focusedStack );
+			self.focusedStack.setTool( navigator );
+			
+			document.getElementById( "toolbar_nav" ).style.display = "block";
+			break;
+		case "text":
+			document.getElementById( "toolbar_text" ).style.display = "block";
+			if ( !show_textlabels ) self.toggleShow( "text" );
+			break;
+		case "crop":
+			document.getElementById( "toolbar_crop" ).style.display = "block";
+			break;
+		case "trace":
+           document.getElementById( "toolbar_trace" ).style.display = "block";
+           if ( !show_traces ) self.toggleShow( "trace" );
+           break;
+		}
+		
+		mode = m;
+		document.getElementById( "edit_button_" + mode ).className = "button_active";
+		
+
+		// TODO: remove? (Tobias)
+		for ( var i = 0; i < stacks.length; ++i )
+		{
+			stacks[ i ].setMode( mode );
+			if ( stacks[ i ] != self.focusedStack )
+				stacks[ i ].blur();
+		}
+		
 		window.onresize();
 		return;
 	}
-	
+	*/
 	
 	this.toggleShow = function( m )
 	{

@@ -295,23 +295,21 @@ function Stack(
 	 * Register a tool at this stack.  Unregisters the current tool and then
 	 * makes the tool working.
 	 */
-	this.setTool = function( tool )
+	this.setTool = function( newTool )
 	{
-		if ( self.tool != null )
-			self.tool.unregister();
-		self.tool = tool;
+		if ( tool )
+			tool.unregister();
+		tool = newTool;
 		tool.register( self );
 	}
-	
-	var tool;
-	
-	
 	
 	// initialise
 	var self = this;
 	if ( !ui ) ui = new UI();
 	
 	self.id = id;
+	
+	var tool = null;
 	
 	var layers = {};
 	
@@ -362,6 +360,15 @@ function Stack(
 				break;
 			case CMWWindow.RESIZE:
 				resize();
+				redraw();
+				break;
+			case CMWWindow.FOCUS:
+				project.setFocusedStack( self );
+				break;
+			case CMWWindow.BLUR:
+				if ( tool )
+					tool.unregister();
+				tool = null;
 				break;
 			}
 			return true;

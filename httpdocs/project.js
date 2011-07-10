@@ -216,8 +216,8 @@ function Project( pid )
 		case "select":
 			break;
 		case "move":
-			var navigatorLayer = new NavigatorLayer( self.focusedStack );
-			self.focusedStack.addLayer( "nav", navigatorLayer );
+			var navigator = new Navigator( self.focusedStack );
+			self.focusedStack.setTool( navigator );
 			
 			document.getElementById( "toolbar_nav" ).style.display = "block";
 			break;

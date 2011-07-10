@@ -13,16 +13,16 @@
 /**
  * Navigator tool.  Moves the stack around 
  */
-function Navigator(
-		stack						//!< reference to the parent stack
-		)
+function Navigator()
 {
 	var self = this;
+
 	if ( !ui ) ui = new UI();
-	
+
 	var sliders_box = document.getElementById( "sliders_box" );
 	var input_x = document.getElementById( "x" );		//!< x_input
 	var input_y = document.getElementById( "y" );		//!< y_input
+
 	
 	/* remove all existing dimension sliders */
 	while ( sliders_box.firstChild )
@@ -73,7 +73,6 @@ function Navigator(
 	//! mouse catcher
 	var mouseCatcher = document.createElement( "div" );
 	mouseCatcher.className = "sliceMouseCatcher";
-	stack.getView().appendChild( mouseCatcher );
 	
 	var updateControls = function()
 	{
@@ -285,10 +284,16 @@ function Navigator(
 	}
 	
 	/**
+	 * install this tool in a stack.
 	 * register all GUI control elements and event handlers
 	 */
-	this.register = function()
+	this.register = function( stack )
 	{
+		self.stack = stack;
+
+
+		stack.getView().appendChild( mouseCatcher );
+
 		registered = true;
 		slider_s.update(
 			stack.MAX_S,

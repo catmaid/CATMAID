@@ -405,12 +405,13 @@ function Stack(
 	 */
 	this.setTool = function( tool )
 	{
-		self.tool.unregister();
+		if ( self.tool != null )
+			self.tool.unregister();
 		self.tool = tool;
 		tool.register( self );
 	}
 	
-	
+	var tool;
 	
 	
 	

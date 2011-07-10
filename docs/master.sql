@@ -1958,3 +1958,77 @@ create index connector_x_index on connector (((location).x));
 create index connector_y_index on connector (((location).y));
 create index connector_z_index on connector (((location).z));
 
+CREATE TRIGGER on_edit
+    BEFORE UPDATE ON textlabel
+    FOR EACH ROW
+    EXECUTE PROCEDURE on_edit();
+
+CREATE TRIGGER on_edit_bezierprofile
+    BEFORE UPDATE ON bezierprofile
+    FOR EACH ROW
+    EXECUTE PROCEDURE on_edit();
+
+CREATE TRIGGER on_edit_class
+    BEFORE UPDATE ON class
+    FOR EACH ROW
+    EXECUTE PROCEDURE on_edit();
+
+CREATE TRIGGER on_edit_relation_instance
+    BEFORE UPDATE ON relation_instance
+    FOR EACH ROW
+    EXECUTE PROCEDURE on_edit();
+
+CREATE TRIGGER on_edit_class_class
+    BEFORE UPDATE ON class_class
+    FOR EACH ROW
+    EXECUTE PROCEDURE on_edit();
+
+CREATE TRIGGER on_edit_class_instance
+    BEFORE UPDATE ON class_instance
+    FOR EACH ROW
+    EXECUTE PROCEDURE on_edit();
+
+CREATE TRIGGER on_edit_relation_instance
+    BEFORE UPDATE ON relation_instance
+    FOR EACH ROW
+    EXECUTE PROCEDURE on_edit();
+
+CREATE TRIGGER on_edit_class_instance_class_instance
+    BEFORE UPDATE ON class_instance_class_instance
+    FOR EACH ROW
+    EXECUTE PROCEDURE on_edit();
+
+CREATE TRIGGER on_edit_location
+    BEFORE UPDATE ON location
+    FOR EACH ROW
+    EXECUTE PROCEDURE on_edit();
+
+CREATE TRIGGER on_edit_connector
+    BEFORE UPDATE ON connector
+    FOR EACH ROW
+    EXECUTE PROCEDURE on_edit();
+
+CREATE TRIGGER on_edit_connector_class_instance
+    BEFORE UPDATE ON connector_class_instance
+    FOR EACH ROW
+    EXECUTE PROCEDURE on_edit();
+
+CREATE TRIGGER on_edit_treenode_connector
+    BEFORE UPDATE ON treenode_connector
+    FOR EACH ROW
+    EXECUTE PROCEDURE on_edit();
+
+CREATE TRIGGER on_edit_relation
+    BEFORE UPDATE ON relation
+    FOR EACH ROW
+    EXECUTE PROCEDURE on_edit();
+
+CREATE TRIGGER on_edit_treenode
+    BEFORE UPDATE ON treenode
+    FOR EACH ROW
+    EXECUTE PROCEDURE on_edit();
+
+CREATE TRIGGER on_edit_treenode_class_instance
+    BEFORE UPDATE ON treenode_class_instance
+    FOR EACH ROW
+    EXECUTE PROCEDURE on_edit();

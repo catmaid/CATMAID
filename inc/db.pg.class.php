@@ -247,8 +247,6 @@ class DB
 			elseif ( is_bool( $values[ $keys[ $i ] ] ) ) $query .= ( $values[ $keys[ $i ] ] ? 'TRUE' : 'FALSE' );
 			if ( $i != $max - 1 ) $query .= ', ';
 		}
-		if( $table == 'treenode' || $table == 'location' )
-			$query .= ', edition_time = now()';
 		$query .= ' WHERE '.$cond;
 		//echo $query;
 		if( $this->debug )

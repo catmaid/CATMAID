@@ -342,6 +342,7 @@ var SVGOverlay = function (
             } else {
               // just redraw all for now
               project.updateNodes();
+              refreshObjectTree();
               refreshAllWidgets();
             }
           }

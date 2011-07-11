@@ -52,7 +52,7 @@ if (! $db->begin() ) {
 
 try {
 
-  $labelID = $db->getResult(
+  $canEdit = $db->getResult(
     'SELECT	"textlabel"."id" AS "tid"
       FROM "textlabel" INNER JOIN "project"
         ON "project"."id" = "textlabel"."project_id" INNER JOIN "project_user"
@@ -61,12 +61,12 @@ try {
       WHERE "textlabel"."id" = '.$tid.' AND
         "project_user"."user_id" = '.$uid.' AND
         "project_user"."project_id" = '.$pid );
-        
-  if (false === $labelID) {
+
+  if (false === $canEdit) {
     emitErrorAndExit($db, 'Failed to determine if the label can be edited.');
   }
 
-  if ( $labelID ) {
+  if ( $canEdit ) {
     $data = array(
         'text' => $text,
         'type' => $type,
@@ -82,11 +82,11 @@ try {
       'textlabel',
       $data,
       '"id" = '.$tid );
-    
+
     if (false === $q) {
       emitErrorAndExit($db, 'Failed to update textlabel with id '.$tid);
     }
-      
+
     $q = $db->update(
       'textlabel_location',
       array(
@@ -97,15 +97,17 @@ try {
       emitErrorAndExit($db, 'Failed to update the location of textlabel with id '.$tid);
     }
 
+    if (! $db->commit() ) {
+      emitErrorAndExit( $db, 'Failed to commit!' );
+    } /*else {
+      emitErrorAndExit($db, 'OK new location: '.$x.','.$y.','.$z);
+    }*/
+
     echo " "; //!< one char for Safari, otherwise its xmlHttp.status is undefined...
 
   } else {
     emitErrorAndExit($db, 'You do not have the permission to edit this textlabel.');
   }
-
-  if (! $db->commit() ) {
-		emitErrorAndExit( $db, 'Failed to commit!' );
-	}
 
 } catch (Exception $e) {
 	emitErrorAndExit( $db, 'ERROR: '.$e );

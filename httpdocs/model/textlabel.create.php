@@ -5,6 +5,7 @@ include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
 include_once( 'json.inc.php' );
+include_once( 'utils.php' );
 
 $db =& getDB( 'write' );
 $ses =& getSession();
@@ -27,52 +28,69 @@ $fontstyle = isset( $_REQUEST[ 'fontstyle' ] ) ? $_REQUEST[ 'fontstyle' ] : fals
 $fontsize = isset( $_REQUEST[ 'fontsize' ] ) ? intval( $_REQUEST[ 'fontsize' ] ) : false;
 $scaling = ( isset( $_REQUEST[ 'scaling' ] ) && $_REQUEST[ 'scaling' ] ) ? true : false;
 
-if ( $pid )
-{
-	if ( $uid )
-	{
-	
-		//! @todo do that all in a transition
-		
-		$canEdit = $db->countEntries(
-			'project_user',
-			'"project_id" = '.$pid.' AND "user_id" = '.$uid ) > 0;
-		
-		if ( $canEdit )
-		{
-			$data = array(
-					'text' => $text,
-					'type' => $type,
-					'colour' => '('.$r.','.$g.','.$b.','.$a.')',
-					'project_id' => $pid,
-					'scaling' => $scaling );
-			
-			if ( $fontname ) $data[ 'font_name' ] = $fontame;
-			if ( $fontstyle ) $data[ 'font_style' ] = $fontstyle;
-			if ( $fontsize ) $data[ 'font_size' ] = $fontsize;
-			
-			$tid = $db->insertIntoId(
-				'textlabel',
-				$data );
-			
-			$db->insertInto(
-				'textlabel_location',
-				array(
-					'location' => '('.$x.','.$y.','.$z.')',
-					'textlabel_id' => $tid ) );
-			
-			makeJSON( array( 'tid' => $tid ) );
-		}
-		else
-			echo makeJSON( array( 'error' => 'You do not have the permission to edit this textlabel.' ) );
-	}
-	else
-		echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to edit textlabels.' ) );
+
+# 1. There must be a project id
+if ( ! $pid ) {
+  echo json_encode( array( 'error' => 'Project closed. Cannot apply operation.' ) );
+	return;
 }
-else
-	echo makeJSON( array( 'error' => 'Project closed while editing text. Last changes might be lost.' ) );
+
+# 2. There must be a user id
+if ( ! $uid ) {
+    echo json_encode( array( 'error' => 'You are not logged in.' ) );
+	return;
+}
+
+# 3. User has permissions?
+canEditOrExit( $db, $uid, $pid );
 
 
-//print_r( $_REQUEST );
+// Start transaction
+if (! $db->begin() ) {
+	echo json_encode( array( 'error' => 'Could not start transaction.' ) );
+	return;
+}
+
+try {
+  
+  $data = array(
+      'text' => $text,
+      'type' => $type,
+      'colour' => '('.$r.','.$g.','.$b.','.$a.')',
+      'project_id' => $pid,
+      'scaling' => $scaling );
+  
+  if ( $fontname ) $data[ 'font_name' ] = $fontame;
+  if ( $fontstyle ) $data[ 'font_style' ] = $fontstyle;
+  if ( $fontsize ) $data[ 'font_size' ] = $fontsize;
+  
+  $tid = $db->insertIntoId(
+    'textlabel',
+    $data );
+  
+  if (false === $tid) {
+    emitErrorAndExit($db, 'Failed to insert new text label.');
+  }
+  
+  $q = $db->insertInto(
+    'textlabel_location',
+    array(
+      'location' => '('.$x.','.$y.','.$z.')',
+      'textlabel_id' => $tid ) );
+
+  if (false === $q) {
+    emitErrorAndExit($db, 'Failed to insert text label location.');
+  }
+
+  if (! $db->commit() ) {
+    emitErrorAndExit( $db, 'Failed to commit!' );
+  }
+
+  json_encode( array( 'tid' => $tid ) );
+
+
+} catch (Exception $e) {
+	emitErrorAndExit( $db, 'ERROR: '.$e );
+}
 
 ?>

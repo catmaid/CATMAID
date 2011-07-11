@@ -53,7 +53,6 @@ var openSkeletonNodeInObjectTree = function(node) {
 };
 
 var refreshAllWidgets = function() {
-  console.log("refresh all widgets");
 
   if ($('#connectortable_widget').css('display') === "block" && $('#synchronize_connectortable').attr('checked')) {
     initConnectorTable(pid);
@@ -368,6 +367,7 @@ var SVGOverlay = function (
             // just redraw all for now
             project.updateNodes();
             refreshObjectTree();
+            refreshAllWidgets();
           }
         }
       }

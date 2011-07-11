@@ -43,10 +43,6 @@ $rid = $db->getClassId( $pid, "root" );
 if(!$rid) { echo makeJSON( array( 'error' => 'Can not find "root" class for this project' ) ); return; }
 
 // relations
-$presyn_id = $db->getRelationId( $pid, "presynaptic_to" );
-if(!$presyn_id) { echo makeJSON( array( 'error' => 'Can not find "presynaptic_to" relation for this project' ) ); return; }
-$postsyn_id = $db->getRelationId( $pid, "postsynaptic_to" );
-if(!$postsyn_id) { echo makeJSON( array( 'error' => 'Can not find "postsynaptic_to" relation for this project' ) ); return; }
 $modid = $db->getRelationId( $pid, "model_of" );
 if(!$modid) { echo makeJSON( array( 'error' => 'Can not find "model_of" relation for this project' ) ); return; }
 $partof_id = $db->getRelationId( $pid, "part_of" );
@@ -96,9 +92,7 @@ $res = $db->getResult(
       ON "ci"."class_id" = "cl"."id"
   WHERE "ci"."project_id" = '.$pid.' AND
      "cici"."class_instance_b" = '.$parentid.' AND
-     ("cici"."relation_id" = '.$presyn_id.'
-    OR "cici"."relation_id" = '.$postsyn_id.'
-    OR "cici"."relation_id" = '.$modid.'
+     ("cici"."relation_id" = '.$modid.'
     OR "cici"."relation_id" = '.$partof_id.')
   ORDER BY "ci"."edition_time" DESC
   LIMIT '.$maxnodes);

@@ -164,75 +164,6 @@ initObjectTree = function (pid) {
             },
             "ccp": false
           };
-        } else if (type_of_node === "presynapticterminal") {
-          menu = {
-            "goto_connector": {
-              "separator_before": false,
-              "separator_after": false,
-              "label": "Go to connector node",
-              "action": function (obj) {
-
-                var terminid = obj.attr("id").replace("node_", "");
-                requestQueue.register("model/connector.location.get.php", "POST", {
-                  pid: project.id,
-                  terminalid: terminid,
-                  relationtype: "presynaptic_to"
-                }, function (status, text, xml) {
-
-                  if (status === 200) {
-                    if (text && text !== " ") {
-                      var e = $.parseJSON(text);
-                      if (e.error) {
-                        alert(e.error);
-                      } else {
-                        // go to node
-                        project.moveTo(e.z, e.y, e.x);
-
-                        // activate the node with a delay
-                        window.setTimeout("project.selectNode( " + e.connector_id + " )", 1000);
-
-                      }
-                    }
-                  }
-                });
-              }
-            }
-          };
-        } else if (type_of_node === "postsynapticterminal") {
-          menu = {
-            "goto_connector": {
-              "separator_before": false,
-              "separator_after": false,
-              "label": "Go to connector node",
-              "action": function (obj) {
-
-                var terminid = obj.attr("id").replace("node_", "");
-                requestQueue.register("model/connector.location.get.php", "POST", {
-                  pid: project.id,
-                  terminalid: terminid,
-                  relationtype: "postsynaptic_to"
-                }, function (status, text, xml) {
-
-                  if (status === 200) {
-                    if (text && text !== " ") {
-                      var e = $.parseJSON(text);
-                      if (e.error) {
-                        alert(e.error);
-                      } else {
-                        // go to node
-                        project.moveTo(e.z, e.y, e.x);
-
-                        // activate the node with a delay
-                        window.setTimeout("project.selectNode( " + e.connector_id + " )", 1000);
-
-                      }
-                    }
-                  }
-                });
-
-              }
-            }
-          };
         } else if (type_of_node === "skeleton") {
           menu = {
             "goto_parent": {
@@ -268,7 +199,7 @@ initObjectTree = function (pid) {
             "show_treenode": {
               "separator_before": false,
               "separator_after": false,
-              "label": "Show treenodes in table",
+              "label": "Show treenode table",
               "action": function (obj) {
                 // deselect all (XXX: only skeletons? context?)
                 this.deselect_all();
@@ -278,6 +209,21 @@ initObjectTree = function (pid) {
                 project.showDatatableWidget("treenode");
                 // datatables grabs automatically the selected skeleton
                 oTable.fnDraw();
+              }
+            },
+            "show_connectortable": {
+              "separator_before": false,
+              "separator_after": false,
+              "label": "Show connector table",
+              "action": function (obj) {
+                // deselect all (XXX: only skeletons? context?)
+                this.deselect_all();
+                // select the node
+                this.select_node(obj);
+
+                project.showDatatableWidget("connector");
+                // datatables grabs automatically the selected skeleton
+                connectorTable.fnDraw();
               }
             },
             "rename_skeleton": {
@@ -374,8 +320,6 @@ initObjectTree = function (pid) {
           "icon": {
             "image": "widgets/themes/kde/jsTree/neuron/neuron.png"
           },
-          // XXX: need to discuss
-          // "valid_children" : [ "modelof", "presynaptic", "postsynaptic" ],
           "valid_children": ["skeleton"],
           "start_drag": true,
           "select_node": true
@@ -384,16 +328,8 @@ initObjectTree = function (pid) {
           "icon": {
             "image": "widgets/themes/kde/jsTree/neuron/skeleton.png"
           },
-          "valid_children": ["synapse"],
+          "valid_children": "none",
           "start_drag": true,
-          "select_node": true
-        },
-        "synapse": {
-          "icon": {
-            "image": "widgets/themes/kde/jsTree/neuron/synapse.png"
-          },
-          "valid_children": ["none"],
-          "start_drag": false,
           "select_node": true
         },
         "modelof": {
@@ -404,26 +340,6 @@ initObjectTree = function (pid) {
             return false;
           },
           "valid_children": ["skeleton"],
-          "start_drag": false
-        },
-        "presynapticterminal": {
-          "icon": {
-            "image": "widgets/themes/kde/jsTree/neuron/presynapse.png"
-          },
-          "select_node": function () {
-            return false;
-          },
-          "valid_children": ["synapse"],
-          "start_drag": false
-        },
-        "postsynapticterminal": {
-          "icon": {
-            "image": "widgets/themes/kde/jsTree/neuron/postsynapse.png"
-          },
-          "select_node": function () {
-            return false;
-          },
-          "valid_children": ["synapse"],
           "start_drag": false
         }
       }

@@ -352,6 +352,7 @@ var SVGOverlay = function (
 
   // Used to join two skeleton together
   this.createTreenodeLink = function (fromid, toid) {
+    // TODO: rerooting operation should be called on the backend
     // first make sure to reroot target
     requestQueue.register("model/treenode.reroot.php", "POST", {
       pid: project.id,
@@ -390,7 +391,9 @@ var SVGOverlay = function (
             nodes[toid].drawEdges();
             nodes[fromid].drawEdges();
             // make target active treenode
-            activateNode(nodes[toid]);
+            // activateNode(nodes[toid]);
+            requestOpenTreePath( nodes[fromid] );
+            refreshAllWidgets();
           }
         }
       }

@@ -41,6 +41,8 @@ if ( $pid )
 		 'x' => $res[0]['x'],
 		 'y' => $res[0]['y'],
 		 'z' => $res[0]['z']) );
+    } else {
+		echo makeJSON( array( 'error' => 'Could not find a root node for skeleton. You might want to remove it.' ) );
     }
     
   }

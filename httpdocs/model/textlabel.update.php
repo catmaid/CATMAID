@@ -82,7 +82,7 @@ try {
       'textlabel',
       $data,
       '"id" = '.$tid );
-    
+
     if (false === $q) {
       emitErrorAndExit($db, 'Failed to update textlabel with id '.$tid);
     }

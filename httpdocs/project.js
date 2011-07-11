@@ -47,7 +47,8 @@ function Project( pid )
 				rootWindow.replaceChild( stack.getWindow() );
 			else
 				rootWindow.replaceChild( new CMWHSplitNode( rootWindow.getChild(), stack.getWindow() ) );
-				
+			
+			stack.getWindow().focus();	
 			ui.onresize();
 		}
 		if ( stacks.length > 1 )
@@ -87,7 +88,6 @@ function Project( pid )
 		{
 			if ( stacks[ i ].id == sid )
 			{
-				stacks[ i ].close();
 				stacks.splice( i, 1 );
 				if ( stacks.length == 0 )
 					self.unregister();
@@ -253,31 +253,13 @@ function Project( pid )
 	 */
 	this.unregister = function()
 	{
-		//! close all stacks
-		for ( var i = 0; i < stacks.length; ++i )
-		{
-			stacks[ i ].unregister();
-			view.removeChild( stacks[ i ].getView() );
-			stacks.splice( i, 1 );
-		}
-		
+		//! close all windows
+		rootWindow.close();
+			
 		ui.removeEvent( "onresize", resize );
 		try
 		{
 			document.body.removeChild( view );
-			document.getElementById( "toolbar_nav" ).style.display = "none";
-			document.getElementById( "toolbar_text" ).style.display = "none";
-			document.getElementById( "toolbox_project" ).style.display = "none";
-			document.getElementById( "toolbox_edit" ).style.display = "none";
-			document.getElementById( "toolbox_data" ).style.display = "none";
-			document.getElementById( "toolbox_show" ).style.display = "none";
-			document.getElementById( "toolbar_crop" ).style.display = "none";
-			
-			// hide data table and tree view widgets
-			// in order to reload the data for a new project
-			document.getElementById( "table_widget" ).style.display = "none";
-			document.getElementById( "tree_widget" ).style.display = "none";
-			
 		}
 		catch ( error ) {}
 		self.id = 0;

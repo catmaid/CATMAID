@@ -8,20 +8,34 @@ var atn_fillcolor = "rgb(0, 255, 0)";
 var active_skeleton_id = null;
 
 function activateNode(node) {
-
+  var skeleton_switched = false;
   // if node === null, just deactivate
   if (node === null) {
     atn = null;
     active_skeleton_id = null;
   } else {
+
+    if ( node.type === "treenode" && node.skeleton_id !== active_skeleton_id ) {
+      skeleton_switched = true;
+    }
+
     atn = node;
     active_skeleton_id = atn.skeleton_id;
+
     // update statusBar
     if (atn.type === "treenode") {
       statusBar.replaceLast("activated treenode with id " + atn.id + " skeleton id " + atn.skeleton_id );
-      openSkeletonNodeInObjectTree(node);
-      openSkeletonNodeInConnectorTable(node);
-      openSkeletonNodeInTreenodeTable(node);
+      if ( skeleton_switched ) {
+        // if we switched the skeleton, we need to reopen the object tree
+        openSkeletonNodeInObjectTree(node);
+      }
+      // refresh all widgets except for the object tree
+      // the reason is that calling a refresh just after a request to open tree path
+      // prevents the opening of the tree path. thus, the opening of the treepath
+      // and/or refresh have to be added to the individual operation's
+      // (such as split tree) callbacks
+      refreshAllWidgets();
+
     } else {
       statusBar.replaceLast("activated connector node with id " + atn.id);
     }
@@ -38,23 +52,18 @@ var openSkeletonNodeInObjectTree = function(node) {
   requestOpenTreePath(node);
 };
 
-var openSkeletonNodeInConnectorTable = function(node) {
-  // Check if the Object Tree div is visible
-  if ($('#connectortable_widget').css('display') === "none" || ! $('#synchronize_connectortable').attr('checked')) {
-    return;
-  }
-  // Else, synchronize:
-  initConnectorTable(pid);
-};
+var refreshAllWidgets = function() {
+  console.log("refresh all widgets");
 
-var openSkeletonNodeInTreenodeTable = function(node) {
-  // Check if the Object Tree div is visible
-  if ($('#treenode_table_widget').css('display') === "none" || ! $('#synchronize_treenodetable').attr('checked')) {
-    return;
+  if ($('#connectortable_widget').css('display') === "block" && $('#synchronize_connectortable').attr('checked')) {
+    initConnectorTable(pid);
   }
-  // Else, synchronize:
-  initTreenodeTable(pid);
-};
+
+  if ($('#treenode_table_widget').css('display') === "block" && $('#synchronize_treenodetable').attr('checked')) {
+    initTreenodeTable(pid);
+  }
+
+}
 
 
 var SVGOverlay = function (
@@ -333,7 +342,7 @@ var SVGOverlay = function (
             } else {
               // just redraw all for now
               project.updateNodes();
-              refreshObjectTree();
+              refreshAllWidgets();
             }
           }
         }
@@ -611,7 +620,8 @@ var SVGOverlay = function (
             nn.draw();
             var active_node = atn;
             activateNode(nn); // will alter atn
-
+            refreshAllWidgets();
+            
             // Check whether the Z coordinate of the new node is beyond one section away 
             // from the Z coordinate of the parent node (which is the active by definition)
             if (active_node) {

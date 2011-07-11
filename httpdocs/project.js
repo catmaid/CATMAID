@@ -92,7 +92,7 @@ function Project( pid )
 				if ( stacks.length == 0 )
 					self.unregister();
 				else
-					stacks[ ( i + 1 ) % stacks.length ].focus();
+					stacks[ ( i + 1 ) % stacks.length ].getWindow().focus();
 			}
 		}
 		ui.onresize();
@@ -253,6 +253,8 @@ function Project( pid )
 	 */
 	this.unregister = function()
 	{
+		if ( tool ) tool.unregister();
+		
 		//! close all windows
 		rootWindow.close();
 			

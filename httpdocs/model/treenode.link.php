@@ -45,6 +45,7 @@ if ( $pid )
     }
         
     // update element_of relationships of target skeleton
+    // the target skeleton is removed and its treenode assume the skeleton id of the from-skeleton
     $ids = $db->update("treenode_class_instance", array("class_instance_id" => $skelid_from) ,' "class_instance_id" = '.$skelid_to.' AND 
            "relation_id" = '.$eleof);
             

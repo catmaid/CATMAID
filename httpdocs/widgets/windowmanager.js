@@ -546,7 +546,7 @@ function CMWWindow( title )
 	this.close = function( e )
 	{
 		if ( e ) e.stopPropagation();
-		else if ( event ) event.cancelBubble = true;
+		else if ( typeof event != "undefined" && event ) event.cancelBubble = true;
 
 		var root = self.getRootNode();
 		

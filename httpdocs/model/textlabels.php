@@ -87,6 +87,8 @@ while ( list( $key, $val) = each( $textlabels ) )
 	$textlabels[ $key ][ 'scaling' ] = $textlabels[ $key ][ 'scaling' ] == 't';
 }
 
-echo json_encode( $textlabels );
+// Doesn't work: bad encoding or .js side expects the bad encoding
+//echo json_encode( $textlabels );
+echo makeJSON( $textlabels );
 
 ?>

@@ -114,7 +114,7 @@ try {
 
 
     if (! $db->commit() ) {
-      emitErrorAndExit( $db, 'Failed to commit split!' );
+      emitErrorAndExit( $db, 'Failed to commit!' );
     }
 
     echo makeJSON( $project_stack );

@@ -20,6 +20,8 @@ function activateNode(node) {
     if (atn.type === "treenode") {
       statusBar.replaceLast("activated treenode with id " + atn.id + " skeleton id " + atn.skeleton_id );
       openSkeletonNodeInObjectTree(node);
+      openSkeletonNodeInConnectorTable(node);
+      openSkeletonNodeInTreenodeTable(node);
     } else {
       statusBar.replaceLast("activated connector node with id " + atn.id);
     }
@@ -35,6 +37,25 @@ var openSkeletonNodeInObjectTree = function(node) {
   // Else, synchronize:
   requestOpenTreePath(node);
 };
+
+var openSkeletonNodeInConnectorTable = function(node) {
+  // Check if the Object Tree div is visible
+  if ($('#connectortable_widget').css('display') === "none" || ! $('#synchronize_connectortable').attr('checked')) {
+    return;
+  }
+  // Else, synchronize:
+  initConnectorTable(pid);
+};
+
+var openSkeletonNodeInTreenodeTable = function(node) {
+  // Check if the Object Tree div is visible
+  if ($('#treenode_table_widget').css('display') === "none" || ! $('#synchronize_treenodetable').attr('checked')) {
+    return;
+  }
+  // Else, synchronize:
+  initTreenodeTable(pid);
+};
+
 
 var SVGOverlay = function (
   resolution, translation, dimension, // dimension of the stack

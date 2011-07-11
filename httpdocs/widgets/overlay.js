@@ -834,6 +834,9 @@ var SVGOverlay = function (
 
     // show tags if necessary again
     this.showTags(show_labels);
+    // recolor all nodes
+    project.recolorAllNodes();
+
   };
 
   var updateDimension = function () {

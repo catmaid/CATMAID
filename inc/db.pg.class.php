@@ -162,6 +162,7 @@ class DB
 	{
 		$entries = $this->getResult( 'SELECT count( * ) AS "count" FROM "'.$table.'" WHERE '.$cond );
 		//echo( "SELECT count(*) AS 'count' FROM `".$table."` WHERE ".$cond );
+		if (false === $entries) return false;
 		return ( $entries[ 0 ][ 'count' ] );
 	}
 

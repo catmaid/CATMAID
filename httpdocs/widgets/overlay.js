@@ -163,7 +163,7 @@ var SVGOverlay = function (
       // create node id array
       for (nodeid in nodes) {
         if (nodes.hasOwnProperty(nodeid)) {
-          if (nodes[nodeid].zdiff === 0) {
+          if (0 === nodes[nodeid].zdiff) {
             nods[nodeid] = nodeid;
           }
         }

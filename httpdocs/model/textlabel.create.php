@@ -5,6 +5,7 @@ include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
 include_once( 'json.inc.php' );
+include_once( 'utils.php' );
 
 $db =& getDB( 'write' );
 $ses =& getSession();
@@ -40,6 +41,10 @@ if ( ! $uid ) {
 	return;
 }
 
+# 3. User has permissions?
+canEditOrExit( $db, $uid, $pid );
+
+
 // Start transaction
 if (! $db->begin() ) {
 	echo json_encode( array( 'error' => 'Could not start transaction.' ) );
@@ -47,51 +52,42 @@ if (! $db->begin() ) {
 }
 
 try {
-
-  $canEdit = $db->countEntries(
-    'project_user',
-    '"project_id" = '.$pid.' AND "user_id" = '.$uid ) > 0;
   
-  if ( $canEdit )
-  {
-    $data = array(
-        'text' => $text,
-        'type' => $type,
-        'colour' => '('.$r.','.$g.','.$b.','.$a.')',
-        'project_id' => $pid,
-        'scaling' => $scaling );
-    
-    if ( $fontname ) $data[ 'font_name' ] = $fontame;
-    if ( $fontstyle ) $data[ 'font_style' ] = $fontstyle;
-    if ( $fontsize ) $data[ 'font_size' ] = $fontsize;
-    
-    $tid = $db->insertIntoId(
-      'textlabel',
-      $data );
-    
-    if (false === $tid) {
-      emitErrorAndExit($db, 'Failed to insert new text label.');
-    }
-    
-    $q = $db->insertInto(
-      'textlabel_location',
-      array(
-        'location' => '('.$x.','.$y.','.$z.')',
-        'textlabel_id' => $tid ) );
-
-    if (false === $q) {
-      emitErrorAndExit($db, 'Failed to insert text label location.');
-    }
-
-    if (! $db->commit() ) {
-      emitErrorAndExit( $db, 'Failed to commit!' );
-    }
-
-    json_encode( array( 'tid' => $tid ) );
-
-  } else {
-    emitErrorAndExit($db, 'You do not have the permission to edit this textlabel.');
+  $data = array(
+      'text' => $text,
+      'type' => $type,
+      'colour' => '('.$r.','.$g.','.$b.','.$a.')',
+      'project_id' => $pid,
+      'scaling' => $scaling );
+  
+  if ( $fontname ) $data[ 'font_name' ] = $fontame;
+  if ( $fontstyle ) $data[ 'font_style' ] = $fontstyle;
+  if ( $fontsize ) $data[ 'font_size' ] = $fontsize;
+  
+  $tid = $db->insertIntoId(
+    'textlabel',
+    $data );
+  
+  if (false === $tid) {
+    emitErrorAndExit($db, 'Failed to insert new text label.');
   }
+  
+  $q = $db->insertInto(
+    'textlabel_location',
+    array(
+      'location' => '('.$x.','.$y.','.$z.')',
+      'textlabel_id' => $tid ) );
+
+  if (false === $q) {
+    emitErrorAndExit($db, 'Failed to insert text label location.');
+  }
+
+  if (! $db->commit() ) {
+    emitErrorAndExit( $db, 'Failed to commit!' );
+  }
+
+  json_encode( array( 'tid' => $tid ) );
+
 
 } catch (Exception $e) {
 	emitErrorAndExit( $db, 'ERROR: '.$e );

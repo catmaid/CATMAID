@@ -271,6 +271,7 @@ class DB
 		if( $this->debug )
 			error_log("In delete: ".preg_replace('/\s+/', ' ', $query));
 		$r = pg_query( $this->handle, $query );
+		if (false === $r) return false; // failed
 		return pg_affected_rows( $r );
 	}
 	

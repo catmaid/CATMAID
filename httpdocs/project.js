@@ -267,6 +267,9 @@ function Project( pid )
 		self.id = 0;
 		document.onkeydown = null;
 		document.getElementById( "content" ).style.display = "block";
+		
+		project = null;
+
 		return;
 	}
 	

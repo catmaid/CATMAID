@@ -39,3 +39,5 @@ if ( $pid )
 }
 else
   echo makeJSON( array( 'error' => 'Project closed. Can not apply operation.' ) );
+
+?>

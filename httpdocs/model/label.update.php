@@ -141,11 +141,11 @@ try {
     }
 
   }
-  
+
+
   if (! $db->commit() ) {
     emitErrorAndExit( $db, 'Failed to commit!' );
-  }
-  
+  }  
   
   echo json_encode( array('message' => 'success') );  
 

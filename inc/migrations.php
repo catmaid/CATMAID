@@ -18,7 +18,7 @@ class Migration {
 				error_log("Ignoring the failed migration: ".$e);
 				$db->getResult("ROLLBACK TO SAVEPOINT sp");
 			} else {
-				error_log("The migration failed.");
+				error_log("The migration failed: ".$e);
 				throw $e;
 			}
 		}

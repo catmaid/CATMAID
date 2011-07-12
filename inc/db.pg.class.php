@@ -657,12 +657,7 @@ class DB
 
 				$newSchemaVersion = NULL;
 
-				// If there's no currentSchemaVersion then just try to
-				// apply every migration, ignoring errors. In general this
-				// wouldn't work, but it only needs to work for migrations
-				// to get to the point where we've introduced the settings
-				// table and schema_version setting.
-				$ignoreErrors = $currentSchemaVersion;
+				$ignoreErrors = FALSE;
 
 				foreach ($migrations as $migrationID => $migration) {
 					$pretty = $migrationID." (".$migration->name.")";
@@ -709,6 +704,8 @@ class DB
 		} catch (Exception $e) {
 			error_log("Migrating the database failed: ".$e);
 			$this->rollback();
+			echo json_encode( array ( 'error' => 'Migrating the database failed.  See http://bit.ly/nGVIB6 for help.' ) );
+			exit();
 		}
 
 	}

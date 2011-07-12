@@ -32,11 +32,7 @@ Update the password for your catmaid user in /var/www/catmaid/docs/createuser.sq
 
 	sudo -u postgres psql < docs/createuser.sql
 
-Dump the database in docs/master.sql::
-
-	sudo -u postgres psql catmaid < docs/master.sql
-
-Check if you can login and see the contents::
+Check if you can login - the database should still be empty, however:
 
 	http://localhost/phppgadmin/
 
@@ -152,7 +148,17 @@ Try to start CATMAID::
 
 	firefox http://catmaid/
 
-And use the default login::
+... or with:
+
+        firefox http://localhost/catmaid/
+
+... depending on the approach you took above.  You will get an error
+to tell you that no projects are found.  If you want to create some
+example projects, stacks and a user account for testing, you should do:
+
+        psql -U catmaid_user < docs/example-projects.sql
+
+Then you can use the default login::
 
 	user: gerhard
 	pass: gerhard

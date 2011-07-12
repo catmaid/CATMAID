@@ -453,7 +453,7 @@ var SVGOverlay = function (
             // add treenode to the display and update it
             var jso = $.parseJSON(text);
             var nn = new ConnectorNode(jso.connector_id, r, 8, pos_x, pos_y, pos_z, 0);
-            nodes[cid] = nn;
+            nodes[jso.connector_id] = nn;
             nn.draw();
             activateNode(nn);
           }

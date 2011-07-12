@@ -5,6 +5,7 @@ include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
 include_once( 'json.inc.php' );
+include_once( 'utils.php' );
 
 $db =& getDB();
 $ses =& getSession();
@@ -21,6 +22,32 @@ $id = isset( $_REQUEST[ 'id' ] ) ? intval($_REQUEST[ 'id' ]) : 0;
 $src = isset( $_REQUEST[ 'src' ] ) ? intval($_REQUEST[ 'src' ]) : 0;
 $ref = isset( $_REQUEST[ 'ref' ] ) ? intval($_REQUEST[ 'ref' ]) : 0;
 $rel = isset( $_REQUEST[ 'rel' ] ) ? $_REQUEST[ 'rel' ] : 0;
+
+
+# 1. There must be a project id
+if ( ! $pid ) {
+  echo json_encode( array( 'error' => 'Project closed. Cannot apply operation.' ) );
+	return;
+}
+
+# 2. There must be a user id
+if ( ! $uid ) {
+    echo json_encode( array( 'error' => 'You are not logged in.' ) );
+	return;
+}
+
+# 3. Permissions?
+canEditOrExit($db, $uid, $pid);
+
+
+// Start transaction
+if (! $db->begin() ) {
+	echo json_encode( array( 'error' => 'Could not start transaction.' ) );
+	return;
+}
+
+
+
 
 // remove skeleton, i.e. treenodes and corresponding relations 
 function remove_skeleton($db, $pid, $skelid) {
@@ -43,6 +70,9 @@ function remove_skeleton($db, $pid, $skelid) {
 			    ON "tci2"."treenode_id" = "tn"."id" 
 			    WHERE "tci2"."class_instance_id" = '.$skelid.' AND "tci2"."project_id" = '.$pid.'
 			  ) AND "tci"."relation_id" = '.$val);
+    if (false === $res) {
+      emitErrorAndExit($db, 'Failed to delete treenode instances for skeleton #'.$skid);
+    }
 	}
 	// remove treenodes from treenode table, should remove the remaining
 	// connected treenodes to the skeleton with the element_of relationship using cascade deletion (does it XXX?)
@@ -54,160 +84,217 @@ function remove_skeleton($db, $pid, $skelid) {
 			    FROM "treenode_class_instance" AS "tci"
 			    WHERE "tci"."class_instance_id" = '.$skelid.' AND "tci"."project_id" = '.$pid.')');
 	
+  if (false === $res) {
+    emitErrorAndExit($db, 'Failed to delete treenodes fro skeleton #'.$skid);
+  }
 }
 
-if ( $pid )
-{
-	if ( $uid )
-	{
-		
-		if ( $op == 'rename_node')
-		{
-			$ids = $db->update("class_instance", array("name" => $name) ,' "class_instance"."id" = '.$id);
-			echo makeJSON( array( 'class_instance_id' => $ids) );
-		}
-		else if ( $op == 'remove_node')
-		{
-			// check if the object belongs to you
-			$isuser = $db->getResult('SELECT "ci"."id" FROM "class_instance" AS "ci" WHERE
-			"ci"."id" = '.$id.' AND
-			"ci"."user_id" = '.$uid);			
-			if( !empty($isuser) )
-			{
-				// check if node is a skeleton. if so, we have to remove its treenodes as well!
-				if ( $rel ) {
-					if ( $rel == "skeleton" )
-					{
-						remove_skeleton($db, $pid, $id);
-						$ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
-						echo "Removed skeleton successfully.";		
-					}
-					else
-					{
-						$ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
-						echo "Removed node successfully.";						
-					}
-				}
-				
-			}
-			else
-			{
-				echo "You are not the creator of the object, thus you can not remove it.";
-			}
-		}
-		else if ( $op == 'create_node')
-		{
 
-			$classname = isset( $_REQUEST[ 'classname' ] ) ? $_REQUEST[ 'classname' ] : 0;
-			$relname = isset( $_REQUEST[ 'relationname' ] ) ? $_REQUEST[ 'relationname' ] : 0;
-			$objname = isset( $_REQUEST[ 'objname' ] ) ? $_REQUEST[ 'objname' ] : 0;
-			$parentid = isset( $_REQUEST[ 'parentid' ] ) ? intval($_REQUEST[ 'parentid' ]) : 0;
-
-			// These are both subsequently used directly in queries:
-			$classname = pg_escape_string($classname);
-			$relname = pg_escape_string($relname);
-
-			// create class_instance
-			$classi = $db->getResult(
-			'SELECT "class"."id" FROM "class"
-			WHERE "class"."project_id" = '.$pid.' AND
-			"class"."class_name" = \''.$classname.'\'');
-			$classid = !empty($classi) ? $classi[0]['id'] : 0;
-
-			$ins = array('user_id' => $uid,
-						 'project_id' => $pid,
-						 'class_id' => $classid,
-						 'name' => $objname);
-			
-			$cid = $db->insertIntoId( "class_instance", $ins);
-			
-			// find correct root element
-			if($parentid)
-				$parid = $parentid;
-			else
-			{
-				$pari = $db->getResult(
-				'SELECT "class"."id" FROM "class"
-				WHERE "class"."project_id" = '.$pid.' AND
-				"class"."class_name" = \'root\'');
-				$paridc = !empty($pari) ? $pari[0]['id'] : 0;
-				$parii = $db->getResult(
-				'SELECT "class_instance"."id" FROM "class_instance"
-				WHERE "class_instance"."project_id" = '.$pid.' AND
-				"class_instance"."class_id" = '.$paridc);
-				$parid = !empty($parii) ? $parii[0]['id'] : 0;
-			}
-			
-			// create class_instance_class_instance with given relation
-			$relres = $db->getResult(
-			'SELECT "relation"."id" FROM "relation"
-			WHERE "relation"."project_id" = '.$pid.' AND
-			"relation"."relation_name" = \''.$relname.'\'');
-			$relid = !empty($relres) ? $relres[0]['id'] : 0;
-			
-			$ins = array('user_id' => $uid,
-						 'project_id' => $pid,
-						 'relation_id' => $relid,
-						 'class_instance_a' => $cid,
-						 'class_instance_b' => $parid);
-			$db->insertInto( "class_instance_class_instance", $ins);
-			
-			echo makeJSON( array( 'class_instance_id' => $cid) );
-			
-		}
-		else if ( $op == 'move_node' )
-		{
-			if ( $src && $ref )
-			{
-				$presyn_id = $db->getRelationId( $pid, "presynaptic_to" );
-				$postsyn_id = $db->getRelationId( $pid, "postsynaptic_to" );
-				$modid = $db->getRelationId( $pid, "model_of" );
-				$partof_id = $db->getRelationId( $pid, "part_of" );
-				
-				// only update for updateable relations of the object tree
-				$up = array('class_instance_b' => $ref);
-				$upw = 'user_id = '.$uid.' AND project_id = '.$pid.' 
-				AND (relation_id = '.$presyn_id.'
-				OR relation_id = '.$postsyn_id.'
-				OR relation_id = '.$modid.'
-				OR relation_id = '.$partof_id.')
-				AND class_instance_a = '.$src;
-				$db->update( "class_instance_class_instance", $up, $upw);
-				echo "True";	
-			}
-		}
-			else if ( $op == 'has_relations' )
-		{
-			
-			$relnr = isset( $_REQUEST[ 'relationnr' ] ) ? intval($_REQUEST[ 'relationnr' ]) : 0;
-			
-			$relwhere = "";
-			for ($i = 0; $i < $relnr; $i++) {
-				
-				$re = isset( $_REQUEST[ 'relation'.$i ] ) ? $_REQUEST[ 'relation'.$i ] : "none";
-				
-			    $relid = $db->getRelationId( $pid, $re );
-			    $relwhere .= 'relation_id = '.$relid;
-			    if( $i < ($relnr - 1)) {
-			    	$relwhere .= ' OR ';
-			    };
-			}
-			
-			$rels = $db->getResult(
-			'SELECT "cici"."id" FROM "class_instance_class_instance" AS "cici"
-			WHERE "cici"."project_id" = '.$pid.' AND
-			"cici"."class_instance_b" = '.$id.' AND
-			('.$relwhere.')');
-			$ret = !empty($rels) ? "True" : "False";
-			echo $ret;
-
-		}
-		
-	}
-	else
-		echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to apply operation.' ) );
+function finish($output) {
+  global $db;
+  if (! $db->commit() ) {
+    emitErrorAndExit( $db, 'Failed to commit!' );
+  }
+  echo makeJSON($output);
 }
-else
-	echo makeJSON( array( 'error' => 'Project closed. Can not apply operation.' ) );
+
+
+try {
+
+  if ( $op == 'rename_node')
+  {
+    $ids = $db->update("class_instance", array("name" => $name) ,' "class_instance"."id" = '.$id);
+    if (false === $ids) {
+      emitErrorAndExit($db, 'Failed to update class instance.');
+    }
+    finish( array( 'class_instance_id' => $ids) );
+  }
+  else if ( $op == 'remove_node')
+  {
+    // check if the object belongs to you
+    $isuser = $db->getResult('SELECT "ci"."id" FROM "class_instance" AS "ci"
+                              WHERE "ci"."id" = '.$id.'
+                              AND "ci"."user_id" = '.$uid);
+    
+    if (false === $isuser) {
+      emitErrorAndExit($db, 'Failed to select from instance table.');
+    }
+    	
+    if( !empty($isuser) )
+    {
+      // check if node is a skeleton. if so, we have to remove its treenodes as well!
+      if ( $rel ) {
+        if ( $rel == "skeleton" )
+        {
+          remove_skeleton($db, $pid, $id);
+          $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
+          
+          if (false === $ids) {
+            emitErrorAndExit($db, 'Failed to delete skeleton from instance able.');
+          }
+          
+          finish("Removed skeleton successfully.");		
+        }
+        else
+        {
+          $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
+          
+          if (false === $ids) {
+            emitErrorAndExit($db, 'Failed to delete node from instance table.');
+          }
+          
+          finish("Removed node successfully.");						
+        }
+      }
+      
+    }
+    else
+    {
+      emitErrorAndExit($db, "You are not the creator of the object, thus you can not remove it.");
+    }
+  }
+  else if ( $op == 'create_node')
+  {
+
+    $classname = isset( $_REQUEST[ 'classname' ] ) ? $_REQUEST[ 'classname' ] : 0;
+    $relname = isset( $_REQUEST[ 'relationname' ] ) ? $_REQUEST[ 'relationname' ] : 0;
+    $objname = isset( $_REQUEST[ 'objname' ] ) ? $_REQUEST[ 'objname' ] : 0;
+    $parentid = isset( $_REQUEST[ 'parentid' ] ) ? intval($_REQUEST[ 'parentid' ]) : 0;
+
+    // These are both subsequently used directly in queries:
+    $classname = pg_escape_string($classname);
+    $relname = pg_escape_string($relname);
+
+    // create class_instance
+    $classi = $db->getResult('SELECT "class"."id" FROM "class"
+                              WHERE "class"."project_id" = '.$pid.' 
+                              AND "class"."class_name" = \''.$classname.'\'');
+    if (false === $classi) {
+      emitErrorAndExit($db, 'Failed to select class.');
+    }
+
+    $classid = !empty($classi) ? $classi[0]['id'] : 0;
+
+    $ins = array('user_id' => $uid,
+           'project_id' => $pid,
+           'class_id' => $classid,
+           'name' => $objname);
+    
+    $cid = $db->insertIntoId( "class_instance", $ins);
+    
+    if (false === $cid) {
+      emitErrorAndExit($db, 'Failed to insert instance of class.');
+    }
+    
+    // find correct root element
+    if($parentid)
+      $parid = $parentid;
+    else
+    {
+      $pari = $db->getResult('SELECT "class"."id" FROM "class"
+                              WHERE "class"."project_id" = '.$pid.' 
+                              AND "class"."class_name" = \'root\'');
+      if (false === $pari) {
+        emitErrorAndExit($db, 'Failed to select root.');
+      }
+
+      $paridc = !empty($pari) ? $pari[0]['id'] : 0;
+      $parii = $db->getResult('SELECT "class_instance"."id" FROM "class_instance"
+                                WHERE "class_instance"."project_id" = '.$pid.' 
+                                AND "class_instance"."class_id" = '.$paridc);
+      if (false === $parii) {
+        emitErrorAndExit($db, 'Failed to select pairdc.');
+      }
+
+      $parid = !empty($parii) ? $parii[0]['id'] : 0;
+    }
+    
+    // create class_instance_class_instance with given relation
+    $relres = $db->getResult('SELECT "relation"."id" FROM "relation"
+                              WHERE "relation"."project_id" = '.$pid.' 
+                              AND "relation"."relation_name" = \''.$relname.'\'');
+    if (false === $relres) {
+      emitErrorAndExit($db, 'Failed to select relation '.$relname);
+    }
+    $relid = !empty($relres) ? $relres[0]['id'] : 0;
+    
+    $ins = array('user_id' => $uid,
+           'project_id' => $pid,
+           'relation_id' => $relid,
+           'class_instance_a' => $cid,
+           'class_instance_b' => $parid);
+    $q = $db->insertInto( "class_instance_class_instance", $ins);
+    
+    if (false === $q) {
+      emitErrorAndExit($db, 'Failed to insert relation.');
+    }
+    
+    finish( array( 'class_instance_id' => $cid) );
+
+  }
+  else if ( $op == 'move_node' )
+  {
+    if ( $src && $ref )
+    {
+      $presyn_id = $db->getRelationId( $pid, "presynaptic_to" );
+      $postsyn_id = $db->getRelationId( $pid, "postsynaptic_to" );
+      $modid = $db->getRelationId( $pid, "model_of" );
+      $partof_id = $db->getRelationId( $pid, "part_of" );
+      
+      // only update for updateable relations of the object tree
+      $up = array('class_instance_b' => $ref);
+      $upw = 'user_id = '.$uid.' AND project_id = '.$pid.' 
+      AND (relation_id = '.$presyn_id.'
+      OR relation_id = '.$postsyn_id.'
+      OR relation_id = '.$modid.'
+      OR relation_id = '.$partof_id.')
+      AND class_instance_a = '.$src;
+      $q = $db->update( "class_instance_class_instance", $up, $upw);
+      
+      if (false === $q) {
+        emitErrorAndExit($db, 'Failed to update relation.');
+      }
+      
+      finish("True");	
+    }
+  }
+    else if ( $op == 'has_relations' )
+  {
+    
+    $relnr = isset( $_REQUEST[ 'relationnr' ] ) ? intval($_REQUEST[ 'relationnr' ]) : 0;
+    
+    $relwhere = "";
+    for ($i = 0; $i < $relnr; $i++) {
+      
+      $re = isset( $_REQUEST[ 'relation'.$i ] ) ? $_REQUEST[ 'relation'.$i ] : "none";
+      
+        $relid = $db->getRelationId( $pid, $re );
+        
+        if (false === $relid) {
+          emitErrorAndExit($db, 'Failed to select relation '.$re);
+        }
+        
+        $relwhere .= 'relation_id = '.$relid;
+        if( $i < ($relnr - 1)) {
+          $relwhere .= ' OR ';
+        };
+    }
+    
+    $rels = $db->getResult('SELECT "cici"."id" FROM "class_instance_class_instance" AS "cici"
+                            WHERE "cici"."project_id" = '.$pid.' 
+                            AND "cici"."class_instance_b" = '.$id.' 
+                            AND ('.$relwhere.')');
+    if (false === $rels) {
+      emitErrorAndExit($db, 'Failed to select CICI.');
+    }
+    $ret = !empty($rels) ? "True" : "False";
+    
+    finish($ret);
+  }
+
+
+} catch (Exception $e) {
+	emitErrorAndExit( $db, 'ERROR: '.$e );
+}
 
 ?>

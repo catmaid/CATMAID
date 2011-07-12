@@ -1016,8 +1016,8 @@ var SVGOverlay = function (
   view.className = "sliceSVGOverlay";
   view.id = "sliceSVGOverlayId";
   view.style.zIndex = 6;
-  // TODO: custom cursor for tracing
-  view.style.cursor ="url(widgets/themes/kde/face.cur),crosshair";
+  // Custom cursor for tracing
+  view.style.cursor ="url(widgets/themes/kde/svg-circle.cur) 15 15, crosshair";
   // make view accessible from outside for setting additional mouse handlers
   this.view = view;
 

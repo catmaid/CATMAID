@@ -5,6 +5,7 @@
 # Mark Longair 2010
 
 import os
+import re
 
 from ini.trakem2 import Project
 from ini.trakem2.display import Tree, Treeline, AreaTree, Connector
@@ -43,20 +44,22 @@ except:
   IJ.log("Failed to find the postgresql driver...")
   raise
 
-catmaid_db_user = None
-catmaid_db_password = None
+conf = {}
+fp = open(os.path.join(os.environ['HOME'],'.catmaid-db'))
+for line in fp:
+  line = line.strip()
+  if len(line) == 0:
+    continue
+  m = re.search('(\S*)\s*:\s*(\S*)', line)
+  if m:
+    conf[m.group(1)] = m.group(2)
+fp.close()
 
-db_login_filename = os.path.join(os.environ['HOME'],'.catmaid-db')
-fp = open(db_login_filename)
-for i, line in enumerate(fp):
-  if i == 0:
-    catmaid_db_user = line.strip()
-  elif i == 1:
-    catmaid_db_password = line.strip()
+database_url = "jdbc:postgresql://%s/%s" % (conf['host'], conf['database'])
 
-c = DriverManager.getConnection("jdbc:postgresql://localhost/catmaid",
-                                catmaid_db_user,
-                                catmaid_db_password)
+c = DriverManager.getConnection(database_url,
+                                conf['username'],
+                                conf['password'])
 
 required_classes = [
  "skeleton",

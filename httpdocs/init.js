@@ -284,7 +284,6 @@ function openProjectStack( pid, sid )
 	if ( project && project.id != pid )
 	{
 		project.unregister();
-		delete project;
 	}
 	ui.catchEvents( "wait" );
 	requestQueue.register(

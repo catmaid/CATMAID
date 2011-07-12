@@ -159,7 +159,7 @@ UI = function()
 		{
 			which = e.which;
 		}
-		else if ( event && event.button )
+		else if ( !( typeof event == "undefined" || event == null || event.button ) )
 		{
 			which = event.button;
 			if ( which == 2 ) which = 3;	//!< right

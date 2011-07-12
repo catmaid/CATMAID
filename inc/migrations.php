@@ -530,6 +530,16 @@ ALTER TABLE "class" DROP COLUMN "uri";
 EOMIGRATION
 ),
 
+	'2011-07-12T19:48:11' => new Migration(
+		'Create table broken_slice',
+		<<<EOMIGRATION
+CREATE TABLE broken_slice (
+    stack_id integer NOT NULL,
+    index integer NOT NULL
+	);
+EOMIGRATION
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

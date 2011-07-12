@@ -101,7 +101,6 @@ try {
   }
 
   if (! $db->commit() ) {
-    // Not needed, but be nice to postgres
     emitErrorAndExit( $db, 'Failed to commit!' );
   }
 

@@ -342,7 +342,7 @@ def insert_project_root_node( name ):
     ps.close()
   return root_id
 
-ps_get_fragments_id = c.prepareStatement("SELECT ci.id from class_instance as ci, class_instance_class_instance as cici WHERE ci.project_id = ? AND cici.project_id = ? AND ci.user_id = ? AND cici.user_id = ? AND ci.name = '{}' AND cici.class_instance_a = ci.id and cici.class_instance_b = ?"%(fragments_group_name,))
+ps_get_fragments_id = c.prepareStatement("SELECT ci.id from class_instance as ci, class_instance_class_instance as cici WHERE ci.project_id = ? AND cici.project_id = ? AND ci.user_id = ? AND cici.user_id = ? AND ci.name = '%s' AND cici.class_instance_a = ci.id and cici.class_instance_b = ?"%(fragments_group_name,))
 ps_get_fragments_id.setInt(1,project_id)
 ps_get_fragments_id.setInt(2,project_id)
 ps_get_fragments_id.setInt(3,user_id)

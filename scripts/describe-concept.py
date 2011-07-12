@@ -3,6 +3,18 @@
 import sys
 import psycopg2
 import os
+import yaml
+
+try:
+    conf = yaml.load(open(os.path.join(os.environ['HOME'], '.catmaid-db')))
+except:
+    print >> sys.stderr, '''Your ~/.catmaid-db file should look like:
+
+host: localhost
+database: catmaid
+username: catmaid_user
+password: password_of_your_catmaid_user'''
+    sys.exit(1)
 
 limit = 50
 
@@ -12,15 +24,10 @@ if len(sys.argv) != 2:
 
 cid = int(sys.argv[1])
 
-db_login_filename = os.path.join(os.environ['HOME'],'.catmaid-db.test')
-fp = open(db_login_filename)
-for i, line in enumerate(fp):
-  if i == 0:
-    catmaid_db_user = line.strip()
-  elif i == 1:
-    catmaid_db_password = line.strip()
-
-conn = psycopg2.connect(database="catmaid-dev",user=catmaid_db_user,password=catmaid_db_password)
+conn = psycopg2.connect(host=conf['host'],
+                        database=conf['database'],
+                        user=conf['username'],
+                        password=conf['password'])
 
 c = conn.cursor()
 

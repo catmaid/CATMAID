@@ -10,6 +10,7 @@
 /**
  */
 include_once( 'setup.inc.php' );
+include_once( 'migrations.php' );
 
 /**
  * factory method to get the single instance of the object
@@ -65,6 +66,8 @@ class DB
 		$this->db = $db_db[ $mode ];
 		
 		$this->handle = pg_connect( 'host='.$this->host.' port=5432 dbname='.$this->db.' user='.$this->user.' password= '.$this->pw ) or die( pg_last_error() );
+
+		$this->migrate();
 	}
 	/**#@-*/
 	
@@ -253,6 +256,7 @@ class DB
 		if( $this->debug )
 			error_log("In update: ".preg_replace('/\s+/', ' ', $query));	
 		$r = pg_query( $this->handle, $query );
+		if (false === $r) return false; // failed
 		return pg_affected_rows( $r );
 	}
 	
@@ -631,6 +635,95 @@ class DB
     
     return $res;
    }
+
+	function getCurrentSchemaVersion()
+	{
+		try {
+			$this->getResult("SAVEPOINT sp");
+			$res = $this->getResult("SELECT value FROM settings WHERE key = 'schema_version'");
+			return $res[0]['value'];
+		} catch (Exception $e) {
+			$this->getResult("ROLLBACK TO SAVEPOINT sp");
+			return NULL;
+		}
+	}
+
+	/* Ensure that the database is up to date */
+	function migrate()
+	{
+		global $migrations;
+
+		// Within this transaction, we use savepoints to allow
+		// individual queries to fail without stopping further
+		// queries from working.  See:
+		//     http://stackoverflow.com/q/2741919/223092
+		$this->begin();
+
+		try {
+			$currentSchemaVersion = $this->getCurrentSchemaVersion();
+
+			ksort($migrations);
+			end($migrations);
+			$mostRecentSchemaVersion = key($migrations);
+			reset($migrations);
+
+			if ((!$currentSchemaVersion) ||
+				($currentSchemaVersion < $mostRecentSchemaVersion)) {
+
+				$newSchemaVersion = NULL;
+
+				$ignoreErrors = FALSE;
+
+				foreach ($migrations as $migrationID => $migration) {
+					$pretty = $migrationID." (".$migration->name.")";
+					if ($currentSchemaVersion &&
+						$currentSchemaVersion >= $migrationID) {
+						error_log("Skipping migration '".$pretty.'"');
+						continue;
+					}
+					// Otherwise try to apply it:
+					$migration->apply($this, $ignoreErrors);
+					$newSchemaVersion = $migrationID;
+				}
+
+				// Now set the new schema version in the settings table.
+				// Since we can't be sure that the table exists, try
+				// to create it, try to insert the line and then try to
+				// update it.  Normally the first two will fail.
+				error_log("Updating the schema version to ".$newSchemaVersion);
+
+				try {
+					$this->getResult("SAVEPOINT sp");
+					$this->getResult("CREATE TABLE settings (key text PRIMARY KEY, value text)");
+				} catch (Exception $e) {
+					$this->getResult("ROLLBACK TO SAVEPOINT sp");
+					error_log("The table already exists");
+				}
+
+				try {
+					$this->getResult("SAVEPOINT sp");
+					$this->getResult("INSERT INTO settings (key, value) VALUES ('schema_version', '".pg_escape_string($newSchemaVersion)."')");
+				} catch (Exception $e) {
+					$this->getResult("ROLLBACK TO SAVEPOINT sp");
+					error_log("There is already a schema_version entry in settings");
+				}
+
+				$this->getResult("UPDATE settings SET value = '".pg_escape_string($newSchemaVersion)."' WHERE key = 'schema_version'");
+			}
+
+			// Finally, we can commit all those changes (or no changes
+			// if we were up to date already...)
+
+			$this->commit();
+
+		} catch (Exception $e) {
+			error_log("Migrating the database failed: ".$e);
+			$this->rollback();
+			echo json_encode( array ( 'error' => 'Migrating the database failed.  See http://bit.ly/nGVIB6 for help.' ) );
+			exit();
+		}
+
+	}
 
 }
 

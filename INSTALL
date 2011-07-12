@@ -8,6 +8,11 @@
 
 sudo apt-get install libapache2-mod-php5 php5-pgsql imagemagick
 
+To use the Python-based helper scripts, you should also install
+the following packages:
+
+sudo apt-get install python-psycopg2 python-yaml
+
 == Ubuntu 10.10 ==
 
 The git repository is hosted here::

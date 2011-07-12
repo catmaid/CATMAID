@@ -456,31 +456,37 @@ initObjectTree = function (pid) {
       "pid": pid
     }, function (retdata) {
       if (retdata === "True") {
-        alert("Object Treenode has child relations. (Re-)move them first before you can delete it.");
+        alert("Object Treenode has child relations. (Re-)move them before you can delete it.");
         $.jstree.rollback(treebefore);
         return false;
       } else {
-        // can remove
-        if (confirm('Really remove "' + data.rslt.obj.text() + '" ?')) {
-          $.post("model/instance.operation.php", {
-            "operation": "remove_node",
-            "id": data.rslt.obj.attr("id").replace("node_", ""),
-            "title": data.rslt.new_name,
-            "pid": pid,
-            "rel": data.rslt.obj.attr("rel")
-          }, function (retdata) {
-            // need to deactive any currently active node
-            // in the display. if the active treenode would
-            // be element of the deleted skeleton, the
-            // active node would become invalid
-            activateNode(null);
-            project.updateNodes();
+
+        $.post("model/instance.operation.php", {
+          "operation": "remove_node",
+          "id": data.rslt.obj.attr("id").replace("node_", ""),
+          "title": data.rslt.new_name,
+          "pid": pid,
+          "rel": data.rslt.obj.attr("rel")
+        }, function (retdata) {
+          // need to deactive any currently active node
+          // in the display. if the active treenode would
+          // be element of the deleted skeleton, the
+          // active node would become invalid
+          activateNode(null);
+          project.updateNodes();
+
+          var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
+          g.growlAlert({
+            autoShow: true,
+            content: 'Object tree element' + data.rslt.obj.text() + ' removed.',
+            title: 'SUCCESS',
+            position: 'top-right',
+            delayTime: 2500,
+            onComplete: function() { g.remove(); }
           });
-          return true;
-        } else {
-          $.jstree.rollback(treebefore);
-          return false;
-        }
+
+        });
+        return true;
       }
 
     });

@@ -7,32 +7,38 @@
 # You may need to install psycopg2, e.g. with:
 #   sudo apt-get install python-psycopg2
 
-# Requires the file .catmaid-db in the home folder present
-# with username and password of the catmaid database user
+# Requires the file .catmaid-db to be present in your
+# home directory, with the following format:
+#
+# host: localhost
+# database: catmaid
+# username: catmaid_user
+# password: password_of_your_catmaid_user
 
 import sys
 import psycopg2
 import os
+import yaml
+
+try:
+    conf = yaml.load(open(os.path.join(os.environ['HOME'], '.catmaid-db')))
+except:
+    print >> sys.stderr, '''Your ~/.catmaid-db file should look like:
+
+host: localhost
+database: catmaid
+username: catmaid_user
+password: password_of_your_catmaid_user'''
+    sys.exit(1)
 
 limit = 50
 
-if len(sys.argv) != 3:
-    print >> sys.stderr, "Usage: create-project.py <host> <database-name>"
+if len(sys.argv) != 1:
+    print >> sys.stderr, "Usage: create-project.py"
     sys.exit(1)
 
-database_host = sys.argv[1]
-database_name = sys.argv[2]
-
-db_login_filename = os.path.join(os.environ['HOME'],'.catmaid-db')
-fp = open(db_login_filename)
-for i, line in enumerate(fp):
-  if i == 0:
-    catmaid_db_user = line.strip()
-  elif i == 1:
-    catmaid_db_password = line.strip()
-
-conn = psycopg2.connect(host=database_host, database=database_name,
-                        user=catmaid_db_user,password=catmaid_db_password)
+conn = psycopg2.connect(host=conf['host'], database=conf['database'],
+                        user=conf['username'], password=conf['password'])
 
 # Helper function
 def create_annotation(user_id, project_id):

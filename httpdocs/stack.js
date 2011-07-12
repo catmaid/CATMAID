@@ -1048,7 +1048,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     case "trace":
       // console.log("in tracing mode");
       mode = "trace"
-      mouseCatcher.style.cursor = "crosshair";
+       mouseCatcher.style.cursor = "crosshair";
 
       // for the surrounding mouse event catcher
       mouseCatcher.onmousedown = onmousedown.move;

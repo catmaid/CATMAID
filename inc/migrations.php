@@ -522,6 +522,14 @@ DROP TABLE "profile" CASCADE;
 EOMIGRATION
 ),
 
+	'2011-07-12T17:30:44' => new Migration(
+		'Removed unused columns from class table. Closes #83',
+		<<<EOMIGRATION
+ALTER TABLE "class" DROP COLUMN "showintree";
+ALTER TABLE "class" DROP COLUMN "uri";
+EOMIGRATION
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

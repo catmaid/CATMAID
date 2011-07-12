@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="744.09448819"
+   height="1052.3622047"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.0 r9654"
+   sodipodi:docname="svg-cursor.svg">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="5.6"
+     inkscape:cx="1049.7948"
+     inkscape:cy="680.45032"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1255"
+     inkscape:window-height="780"
+     inkscape:window-x="25"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid3755"
+       empspacing="5"
+       visible="true"
+       enabled="true"
+       snapvisiblegridlinesonly="true" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="color:#000000;fill:#000000;fill-opacity:0.50588229;fill-rule:nonzero;stroke:#ffffff;stroke-width:12;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:28;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect3996"
+       width="118.39286"
+       height="112.5"
+       x="984.10712"
+       y="317.71933" />
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 1018.9286,353.07647 20,60 c 10.5164,-39.48357 -2.7708,-32.77075 40,-40 z"
+       id="path3976-5"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccc"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-arrow-300.png"
+       inkscape:export-xdpi="427.64908"
+       inkscape:export-ydpi="427.64908" />
+    <rect
+       style="color:#000000;fill:#ffffff;fill-opacity:0.50588238;stroke:none;stroke-width:3;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect2996-6-9-0"
+       width="20"
+       height="20"
+       x="840"
+       y="342.36218"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle-2.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       sodipodi:type="arc"
+       style="color:#000000;fill:none;stroke:#ffffff;stroke-width:12;stroke-miterlimit:4;stroke-opacity:0.5076142;stroke-dasharray:none;stroke-dashoffset:27.99999998999999917;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="path2985-1-9-3"
+       sodipodi:cx="281.42856"
+       sodipodi:cy="353.79074"
+       sodipodi:rx="60.714283"
+       sodipodi:ry="60.714283"
+       d="m 342.14284,353.79074 a 60.714283,60.714283 0 1 1 -121.42856,0 60.714283,60.714283 0 1 1 121.42856,0 z"
+       transform="matrix(1.1307473,-0.49411772,0.49411772,1.1307473,356.96113,92.087363)"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle-2.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       sodipodi:type="arc"
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:4;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:48, 48;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="path2985"
+       sodipodi:cx="281.42856"
+       sodipodi:cy="353.79074"
+       sodipodi:rx="60.714283"
+       sodipodi:ry="60.714283"
+       d="m 342.14284,353.79074 a 60.714283,60.714283 0 1 1 -121.42856,0 60.714283,60.714283 0 1 1 121.42856,0 z"
+       transform="matrix(0.91633111,-0.4004214,0.4004214,0.91633111,-119.54713,141.57702)" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 190,352.36218 30,0"
+       id="path3757"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 340,352.36218 30,0"
+       id="path3757-8"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 280,262.36218 0,30"
+       id="path3757-6"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 280,412.36218 0,30"
+       id="path3757-6-8"
+       inkscape:connector-curvature="0" />
+    <rect
+       style="color:#000000;fill:#000000;stroke:none;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;fill-opacity:1"
+       id="rect2996"
+       width="10"
+       height="10"
+       x="275"
+       y="347.36218" />
+    <path
+       sodipodi:type="arc"
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:12;stroke-miterlimit:4;stroke-opacity:0.48730962999999999;stroke-dasharray:none;stroke-dashoffset:27.99999998999999917;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="path2985-1"
+       sodipodi:cx="281.42856"
+       sodipodi:cy="353.79074"
+       sodipodi:rx="60.714283"
+       sodipodi:ry="60.714283"
+       d="m 342.14284,353.79074 a 60.714283,60.714283 0 1 1 -121.42856,0 60.714283,60.714283 0 1 1 121.42856,0 z"
+       transform="matrix(0.91633111,-0.4004214,0.4004214,0.91633111,140.45287,151.57702)"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 450,362.36218 30,0"
+       id="path3757-4"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 600,362.36218 30,0"
+       id="path3757-8-9"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 540,272.36218 0,30"
+       id="path3757-6-2"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 540,422.36218 0,30"
+       id="path3757-6-8-0"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <rect
+       style="color:#000000;fill:#000000;fill-opacity:1;stroke:none;stroke-width:3;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect2996-6"
+       width="10"
+       height="10"
+       x="535"
+       y="357.36218"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       sodipodi:type="arc"
+       style="color:#000000;fill:none;stroke:#000000;stroke-width:12;stroke-miterlimit:4;stroke-opacity:0.48730965;stroke-dasharray:none;stroke-dashoffset:27.99999999;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="path2985-1-9"
+       sodipodi:cx="281.42856"
+       sodipodi:cy="353.79074"
+       sodipodi:rx="60.714283"
+       sodipodi:ry="60.714283"
+       d="m 342.14284,353.79074 a 60.714283,60.714283 0 1 1 -121.42856,0 60.714283,60.714283 0 1 1 121.42856,0 z"
+       transform="matrix(0.91633111,-0.4004214,0.4004214,0.91633111,450.45287,141.57702)"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle-2.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 760,352.36218 30,0"
+       id="path3757-4-1"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle-2.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 910,352.36218 30,0"
+       id="path3757-8-9-0"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle-2.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 850,262.36218 0,30"
+       id="path3757-6-2-3"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle-2.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 850,412.36218 0,30"
+       id="path3757-6-8-0-5"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle-2.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <rect
+       style="color:#000000;fill:#000000;fill-opacity:1;stroke:none;stroke-width:3;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       id="rect2996-6-9"
+       width="10"
+       height="10"
+       x="845"
+       y="347.36218"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle-2.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 910,349.36218 30,0"
+       id="path3757-8-9-0-9"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle-2.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 760,349.36218 30,0"
+       id="path3757-8-9-0-9-7"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle-2.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 853,262.36218 0,30"
+       id="path3757-8-9-0-9-8"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle-2.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 847,412.36218 0,30"
+       id="path3757-8-9-0-9-5"
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-circle-2.png"
+       inkscape:export-xdpi="15.5"
+       inkscape:export-ydpi="15.5" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 1020.8928,350.57648 21.25,62.85714 c 10.5164,-39.48357 -5.8065,-35.80647 36.9643,-43.03572 z"
+       id="path3976"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccc"
+       inkscape:export-filename="/home/albert/Programming/catmaid/httpdocs/widgets/themes/kde/svg-arrow-300.png"
+       inkscape:export-xdpi="427.64908"
+       inkscape:export-ydpi="427.64908" />
+  </g>
+</svg>

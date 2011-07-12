@@ -53,9 +53,6 @@ try {
 
   $elementof_id = $db->getRelationId( $pid, 'element_of');
   if(!$elementof_id)  { echo makeJSON( array( 'error' => 'Can not find "element_of" relation for this project' ) ); return; }
-  
-  $partof_id = $db->getRelationId( $pid, 'part_of');
-  if(!$partof_id)  { echo makeJSON( array( 'error' => 'Can not find "part_of" relation for this project' ) ); return; }
 
   // case distinctions for links
   if ($link_type == "presynaptic_to") {
@@ -96,31 +93,6 @@ try {
         emitErrorAndExit($db, 'Failed to create instance of connector.');
       }
     }
-    
-    // if from is treenode, retrieve skeleton and connect with part_of
-     $res = $db->getClassInstanceForTreenode( $pid, $from_id, "element_of" );
-     
-     if (false === $res) {
-       emitErrorAndExit($db, 'Failed to get instance of treenode.');
-     }
-     
-     if(!empty($res)) {
-        $skelid = $res[0]['class_instance_id'];
-        $data = array(
-          'user_id' => $uid,
-          'project_id' => $pid,
-          'relation_id' => $partof_id,
-          'class_instance_a' => $from_ci_id,
-          'class_instance_b' => $skelid
-          );
-        $q = $db->insertInto('class_instance_class_instance', $data );
-        if (false === $q) {
-          emitErrorAndExit($db, 'Failed to create relation between treenode and connector instances.');
-        }
-     } else {
-        echo makeJSON( array( 'error' => 'Can not find skeleton for this treenode.' ) );
-        return;
-     }
 
     // connect the two
     $data = array(
@@ -176,27 +148,6 @@ try {
         emitErrorAndExit($db, 'Failed to create instance of treenode.');
       }
     }
-
-     // if to is treenode, retrieve skeleton and connect with part_of
-     $res = $db->getClassInstanceForTreenode( $pid, $to_id, "element_of" );
-     if (false === $res) {
-       emitErrorAndExit($db, 'Failed to get instance of treenode.');
-     }
-     if(!empty($res)) {
-        $skelid = $res[0]['class_instance_id'];
-        $data = array(
-          'user_id' => $uid,
-          'project_id' => $pid,
-          'relation_id' => $partof_id,
-          'class_instance_a' => $to_ci_id,
-          'class_instance_b' => $skelid
-          );
-        $q = $db->insertInto('class_instance_class_instance', $data );
-        if (false === $q) {
-          emitErrorAndExit($db, 'Failed to insert part_of relation between post and skeleton.');
-        }
-      } else {
-        echo makeJSON( array( 'error' => 'Can not find skeleton for this treenode.' ) ); return; }
 
     // connect the two, take care, it is
     // presynaptic terminal presynaptic_to synapse

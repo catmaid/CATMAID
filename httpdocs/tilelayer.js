@@ -148,8 +148,8 @@ function TileLayer(
 		
 		if ( stack.s != stack.old_s )
 		{
-			LAST_XT = Math.floor( ( stack.dimension().x * stack.scale - 1 ) / tileWidth );
-			LAST_YT = Math.floor( ( stack.dimension().y * stack.scale - 1 ) / tileHeight );	
+			LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
+			LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );	
 		}
 		
 		var top;
@@ -262,6 +262,6 @@ function TileLayer(
 	tilesContainer.className = "sliceTiles";
 	stack.getView().appendChild( tilesContainer );
 	
-	var LAST_XT = Math.floor( ( stack.dimension().x * stack.scale - 1 ) / tileWidth );
-	var LAST_YT = Math.floor( ( stack.dimension().y * stack.scale - 1 ) / tileHeight );
+	var LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
+	var LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
 }

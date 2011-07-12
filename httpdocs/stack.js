@@ -237,42 +237,14 @@ function Stack(
 	 */
 	this.getId = function(){ return id; }
 	
-	/**
-	 * Get the stack dimension.
-	 * 
-	 * @return a copy of the private dimension parameter
-	 * @todo that's not a copy!
-	 */
-	this.dimension = function()
-	{
-		return dimension;
-	}
 	
 	/**
-	 * Get the stack resolution.
+	 * Add a layer.  Layers are associated by a unique key.
+	 * If a layer with the passed key exists, then this layer will be replaced.
 	 * 
-	 * @return a copy of the private resolution parameter
-	 * @todo that's not a copy!
+	 * @param key
+	 * @param layer
 	 */
-	this.resolution = function()
-	{
-		return resolution;
-	}
-	
-	/**
-	 * Get the stack translation relative to the project.
-	 * 
-	 * @return a copy of the private translation parameter
-	 */
-	this.translation = function()
-	{
-		return {
-			x : translation.x,
-			y : translation.y,
-			z : translation.z
-		};
-	}
-	
 	this.addLayer = function( key, layer )
 	{
 		if ( layers[ key ] )
@@ -281,13 +253,22 @@ function Stack(
 		return;
 	}
 	
+	/**
+	 * Remove a layer specified by its key.  If no layer with this key exists,
+	 * then nothing will happen.  The layer is returned;
+	 * 
+	 */
 	this.removeLayer = function( key )
 	{
 		var layer = layers[ key ];
-		if ( layer )
+		if ( typeof layer != "undefined" && layer )
+		{
 			layer.unregister();
-		layers[ key ] = null;
-		return layer;
+			layers[ key ] = null;
+			return layer;
+		}
+		else
+			return null;
 	}
 	
 	
@@ -303,16 +284,18 @@ function Stack(
 		tool.register( self );
 	}
 	
-	// initialise
+	// initialize
 	var self = this;
 	if ( !ui ) ui = new UI();
 	
 	self.id = id;
 	
+	self.resolution = resolution;
+	self.translation = translation;
+	self.dimension = dimension;
+	
 	var tool = null;
-	
 	var layers = {};
-	
 	
 	var MAX_X = dimension.x - 1;   //!< the last possible x-coordinate
 	var MAX_Y = dimension.y - 1;   //!< the last possible y-coordinate

@@ -46,6 +46,7 @@
 		<script type="text/javascript" src="stack.js"></script>
 		<script type="text/javascript" src="tilelayer.js"></script>
 		<script type="text/javascript" src="navigator.js"></script>
+		<script type="text/javascript" src="selector.js"></script>
 		<!--[if gte IE 5]>
 		<script type="text/javascript" src="libs/excanvas/excanvas.js"></script>
 		<script type="text/javascript">var IE = true;</script>
@@ -91,8 +92,8 @@
 						<div class="pulldown" id="message_menu"></div></div>
 				</div>
 				<div class="box" id="toolbox_project" style="display:none">
-					<a href="#" class="button" id="edit_button_select" onclick="project.setMode( 'select' );"><img src="widgets/themes/kde/select.gif" alt="select" title="select" /></a>
-					<a href="#" class="button" id="edit_button_move" onclick="project.setMode( 'move' );"><img src="widgets/themes/kde/move.gif" alt="move" title="move" /></a>
+					<a href="#" class="button" id="edit_button_select" onclick="project.setTool( new Selector() );"><img src="widgets/themes/kde/select.gif" alt="select" title="select" /></a>
+					<a href="#" class="button" id="edit_button_move" onclick="project.setTool( new Navigator() );"><img src="widgets/themes/kde/move.gif" alt="move" title="move" /></a>
 				</div>
 				<div class="box" id="toolbox_edit" style="display:none">
 					<a href="#" class="button" id="edit_button_text" onclick="project.setMode( 'text' );"><img src="widgets/themes/kde/text.gif" alt="text" title="text" /></a>

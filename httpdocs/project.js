@@ -119,7 +119,7 @@ function Project( pid )
 		for ( i = 0; i < stacks.length; ++i )
 			if ( self.focusedStack == stacks[ i ] ) break;
 			
-		stacks[ ( i + stacks.length + s ) % stacks.length ].focus();
+		stacks[ ( i + stacks.length + s ) % stacks.length ].getWindow().focus();
 		return;
 	}
 	
@@ -197,8 +197,9 @@ function Project( pid )
 	}
 	
 	
-	this.setTool = function( tool )
+	this.setTool = function( newTool )
 	{
+		tool = newTool;
 		if ( !self.focusedStack )
 			self.focusedStack = stacks[ 0 ];
 		

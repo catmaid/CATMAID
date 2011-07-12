@@ -511,6 +511,17 @@ ALTER TABLE ONLY treenode
 EOMIGRATION
 ),
 
+	'2011-07-12T17:22:30' => new Migration(
+		'Remove unused table. Closes #79',
+		<<<EOMIGRATION
+DROP TABLE "bezierkey" CASCADE;
+DROP TABLE "bezierprofile" CASCADE;
+DROP TABLE "broken_slice" CASCADE;
+DROP TABLE "object" CASCADE;
+DROP TABLE "profile" CASCADE;
+EOMIGRATION
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

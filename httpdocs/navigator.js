@@ -259,8 +259,31 @@ function Navigator()
 	this.changeScale = function( val )
 	{
 		stack.moveToPixel( stack.z, stack.y, stack.x, val );
-		return;
+    return;
 	}
+
+  /**
+   * change the scale, making sure that the point keep_[xyz] stays in
+   * the same position in the view
+   */
+  this.scalePreservingLastPosition = function (keep_x, keep_y, sp) {
+    var old_s = stack.s;
+    var old_scale = stack.scale;
+    var new_s = Math.max(0, Math.min(stack.MAX_S, Math.round(sp)));
+    var new_scale = 1 / Math.pow(2, new_s);
+
+    if (old_s == new_s) return;
+
+    var dx = keep_x - stack.getProject().coordinates.x;
+    var dy = keep_y - stack.getProject().coordinates.y;
+
+    var new_centre_x = keep_x - dx * (old_scale / new_scale);
+    var new_centre_y = keep_y - dy * (old_scale / new_scale);
+
+    stack.moveTo(stack.getProject().coordinates.z, new_centre_y, new_centre_x, sp);
+  }
+  
+  
 	//--------------------------------------------------------------------------
 	
 	var changeXByInput = function( e )

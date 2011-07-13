@@ -48,6 +48,7 @@ var session;
 var msg_timeout;
 var MSG_TIMEOUT_INTERVAL = 60000; //!< length of the message lookup interval in milliseconds
 var messageWindow = null;
+var keyboardShortcutsWindow = null;
 
 var rootWindow;
 
@@ -848,6 +849,57 @@ function showMessages()
 				}
 				else
 					messageWindow.close();
+				break;
+			}
+			return true;
+		} );
+}
+
+function showKeyboardShortcuts()
+{
+	if ( !keyboardShortcutsWindow )
+	{
+		keyboardShortcutsWindow = new CMWWindow( "KeyboardShortcuts" );
+		var keyboardShortcutsContent = keyboardShortcutsWindow.getFrame();
+		keyboardShortcutsContent.style.backgroundColor = "#ffffff";
+		keyboardShortcutsContent.style.overflow = "auto";
+    var keyboardShortcutsList = document.createElement( "p" );
+    keyboardShortcutsList.id="keyShortcutsText";
+    var keysHTML = '';
+    for (i in stringToKeyAction) {
+      keysHTML += '<strong><tt>' + i + '</tt></strong>: ' + stringToKeyAction[i].helpText + "<br />";
+    }
+    keyboardShortcutsList.innerHTML = keysHTML;
+		keyboardShortcutsList.style.marginTop = "2em";
+		keyboardShortcutsList.style.marginBottom = "2em";
+		keyboardShortcutsContent.appendChild( keyboardShortcutsList );
+		
+		document.getElementById( "content" ).style.display = "none";
+		
+		if ( rootWindow.getFrame().parentNode != document.body )
+			document.body.appendChild( rootWindow.getFrame() );
+			
+		if ( rootWindow.getChild() == null )
+			rootWindow.replaceChild( keyboardShortcutsWindow );
+		else
+			rootWindow.replaceChild( new CMWHSplitNode( keyboardShortcutsWindow, rootWindow.getChild() ) );
+			
+		keyboardShortcutsWindow.focus();
+	}
+	
+	keyboardShortcutsWindow.addListener(
+		function( callingWindow, signal )
+		{
+			switch ( signal )
+			{
+			case CMWWindow.CLOSE:
+				if ( typeof project == undefined || project == null )
+				{
+					rootWindow.close();
+					document.getElementById( "content" ).style.display = "none";
+				}
+				else
+					keyboardShortcutsWindow.close();
 				break;
 			}
 			return true;

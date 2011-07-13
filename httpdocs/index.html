@@ -16,7 +16,8 @@
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/themes/kde/datatable/themes/smoothness/jquery-ui-1.8.4.custom.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/themes/kde/resize_handle.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="libs/jquery/growlAlert.css" />
-		
+		<link rel="stylesheet" type="text/css" media="all" href="widgets/themes/kde/windowmanager.css" />
+
 		<!--[if gte IE 5]>
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/ui.ie.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/themes/kde/stack.ie.css" />
@@ -48,7 +49,12 @@
 		<script type="text/javascript" src="widgets/menu.js"></script>
 		<script type="text/javascript" src="widgets/resize_handle.js"></script>
 		<script type="text/javascript" src="project.js"></script>
+		<script type="text/javascript" src="overview.js"></script>
+		<script type="text/javascript" src="transition.js"></script>
 		<script type="text/javascript" src="stack.js"></script>
+		<script type="text/javascript" src="tilelayer.js"></script>
+		<script type="text/javascript" src="navigator.js"></script>
+		<script type="text/javascript" src="selector.js"></script>
 		<!--[if gte IE 5]>
 		<script type="text/javascript" src="libs/excanvas/excanvas.js"></script>
 		<script type="text/javascript">var IE = true;</script>
@@ -71,6 +77,13 @@
 		<script type="text/javascript" src="libs/sylvester/sylvester.js"></script>
 		<script type="text/javascript" src="treelines.js"></script>
 		<script type="text/javascript" src="libs/jquery/growlAlert.plugin.js"></script>
+		<script type="text/javascript" src="libs/jquery/jquery.js"></script>
+		<script type="text/javascript" src="libs/jquery/jquery.dataTables.js"></script>
+		<script type="text/javascript" src="libs/jquery/jquery.jstree.js"></script>
+		<script type="text/javascript" src="widgets/tracing.js"></script>
+		<script type="text/javascript" src="widgets/datatable.js"></script>
+		<script type="text/javascript" src="widgets/treeview.js"></script>
+		<script type="text/javascript" src="widgets/windowmanager.js"></script>
 		
 	</head>
 	<body onload="init();"><a></a>
@@ -97,12 +110,12 @@
 						<div class="pulldown" id="project_menu"></div></div>
 				</div>
 				<div id="message_box" class="box" style="display:none">
-					<div class="menu_item" onclick="document.getElementById( 'message_widget' ).style.display = 'block'; ui.onresize();" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p id="message_menu_text"><a>Messages</a>&nbsp;&nbsp;</p>
+					<div class="menu_item" onclick="showMessages();" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p id="message_menu_text"><a>Messages</a>&nbsp;&nbsp;</p>
 						<div class="pulldown" id="message_menu"></div></div>
 				</div>
 				<div class="box" id="toolbox_project" style="display:none">
-					<a href="#" class="button" id="edit_button_select" onclick="project.setMode( 'select' );"><img src="widgets/themes/kde/select.gif" alt="select" title="select" /></a>
-					<a href="#" class="button" id="edit_button_move" onclick="project.setMode( 'move' );"><img src="widgets/themes/kde/move.gif" alt="move" title="move" /></a>
+					<a href="#" class="button" id="edit_button_select" onclick="project.setTool( new Selector() );"><img src="widgets/themes/kde/select.gif" alt="select" title="select" /></a>
+					<a href="#" class="button" id="edit_button_move" onclick="project.setTool( new Navigator() );"><img src="widgets/themes/kde/move.gif" alt="move" title="move" /></a>
 				</div>
 				<div class="box" id="toolbox_edit" style="display:none">
 					<a href="#" class="button" id="edit_button_text" onclick="project.setMode( 'text' );"><img src="widgets/themes/kde/text.gif" alt="text" title="text" /></a>
@@ -138,10 +151,10 @@
 			<div id="toolbar_nav" class="toolbar" style="display:none">
 				<div class="box"><p>x&nbsp;</p><p><input type="text" id="x" name="x" size="5" /><img src="widgets/themes/kde/input_topdown.gif" alt="" usemap="#xmap" /></p></div>
 				<div class="box"><p>y&nbsp;</p><p><input type="text" id="y" name="y" size="5" /><img src="widgets/themes/kde/input_topdown.gif" alt="" usemap="#ymap" /></p></div>
-  			    <div class="box_right"><p><a id="a_url" name="a_url" title="This is the URL to this view. You can bookmark it or send it to the people." href="">URL to this view</a></p></div>
-                <div class="box" id="z_index_box_navigation"><p>z-index&nbsp;&nbsp;</p><div id="slider_z"></div><p>&nbsp;&nbsp;</p></div>
-                <div class="box" id="zoom_level_box_navigation"><p>zoom-level&nbsp;&nbsp;</p><div id="slider_s"></div><p>&nbsp;&nbsp;</p></div>
-                <div class="toolbar_fill"></div>
+				<div id="sliders_box"></div>
+				<div class="box" id="zoom_level_box"><p>zoom-level&nbsp;&nbsp;</p><div id="slider_s"></div><p>&nbsp;&nbsp;</p></div>
+				<div class="box_right"><p><a id="a_url" name="a_url" title="This is the URL to this view. You can bookmark it or send it to the people." href="">URL to this view</a></p></div>
+				<div class="toolbar_fill"></div>
 			</div>
 			<!--
 			*******************************************************************
@@ -223,10 +236,7 @@
 		<!-- Message widget
 		***********************************************************************
 		-->
-		<div id="message_widget" class="sliceView" style="z-index:0; height:200px; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
-			<div class="stackInfo_selected" style="position:relative"><p class="stackTitle">Messages</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
-			<div style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto"><dl id="message_container" style="margin-top:2em; margin-bottom:2em;"></dl></div>
-		</div>
+		
 		
 		<!-- Table widgets
 		***********************************************************************
@@ -253,8 +263,6 @@
 							<th>last modified</th>
 						</tr>
 					</thead>
-					<tbody>
-					</tbody>
 					<tfoot>
 						<tr>
 							<th>id</th>
@@ -269,6 +277,9 @@
 							<th>last modified</th>			
 						</tr>
 					</tfoot>
+					<tbody>
+						<tr><td colspan="10"></td></tr>
+					</tbody>
 				</table>
 			</div>
 		</div>
@@ -297,8 +308,6 @@
                             <th>treenode id</th>
                         </tr>
 					</thead>
-					<tbody>
-					</tbody>
 					<tfoot>
 						<tr>
 							<th>connector id</th>
@@ -426,12 +435,12 @@
 		<div id="content">
 			<h1>CATMAID v0.24beta</h1>
 		
-			<div id="project list">
+			<div id="project_list">
 				<p>Please feel free to open one of the public projects or log in with your account and password.</p>
 		
 				<h2 id="projects_h">Projects</h2>
 		
-				<dl id="projects_dl"></dl>
+				<dl id="projects_dl"><dt></dt><dd></dd></dl>
 			</div>
 			
 			<div id="new_project_dialog" class="form">
@@ -445,7 +454,7 @@
 						<td><p>Visibiliy:</p></td><td><input type="radio" name="public" value="1" checked="checked" /> public &nbsp;&nbsp;&nbsp;&nbsp;<input type="radio" name="public" value="0" /> private</td>
 					</tr>
 					<tr>
-						<td><p>Owners:</p></td><td><p id="new_project_owners_wait" class="wait_bgwhite">loading ...</p><select name="owners" id="new_project_owners" multiple="multiple"></select></td>
+						<td><p>Owners:</p></td><td><p id="new_project_owners_wait" class="wait_bgwhite">loading ...</p><select name="owners" id="new_project_owners" multiple="multiple"><option></option></select></td>
 			
 					</tr>
 					<tr><td>&nbsp;</td><td>&nbsp;</td></tr>

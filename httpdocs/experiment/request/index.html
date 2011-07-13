@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Request test</title>
+	<script type="text/javascript" src="../../libs/catmaid/request.js"></script>
+	<script type="text/javascript">
+//<![CDATA[
+function init()
+{
+	requestQueue.register(
+			'request.php',
+			'POST',
+			{
+				param1 : "Hello",
+				param2 : "Request"
+			},
+			handle_request );
+}
+
+function handle_request( status, text, xml )
+{
+	document.getElementById( "status" ).replaceChild( document.createTextNode( status ), document.getElementById( "status" ).firstChild );
+	document.getElementById( "text" ).replaceChild( document.createTextNode( text ), document.getElementById( "text" ).firstChild );
+	document.getElementById( "xml" ).replaceChild( document.createTextNode( xml ), document.getElementById( "xml" ).firstChild );
+	return;
+}
+//]]>
+	</script>
+</head>
+<body onload="init();"><a></a>
+	<p>Status:</p>
+	<pre id="status" style="margin:0px; height:200px; overflow:auto; background:#ddeeff">null</pre>
+	<p>Text:</p>
+	<pre id="text" style="margin:0px; height:200px; overflow:auto; background:#ffddee">null</pre>
+	<p>XML:</p>
+	<pre id="xml" style="margin:0px; height:200px; overflow:auto; background:#eeffdd">null</pre>
+</body>
+</html>

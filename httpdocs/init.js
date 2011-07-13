@@ -351,7 +351,7 @@ function handle_openProjectStack( status, text, xml )
 							typeof xp == "number" )
 						{
 							project.moveTo( zp, yp, xp );
-							stack.changeScale( ss[ i ] );
+							stack.moveToPixel( stack.z, stack.y, stack.x, ss[i] );
 							sids.splice( i, 1 );
 							ss.splice( i, 1 );
 							break;

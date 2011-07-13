@@ -57,8 +57,9 @@ function Project( pid )
 		{
 			var c = stack.projectCoordinates();
 			self.moveTo( c.z, c.y, c.x );
-			self.setFocusedStack( stack ); // if this is the only stack, focus it.
 		}
+		
+		self.setFocusedStack( stack );
 		
 		if ( !tool )
 			tool = new Navigator();
@@ -123,27 +124,6 @@ function Project( pid )
 		return;
 	}
 	
-	
-	/**
-	 * resize the view and its content on window.onresize event
-	 */
-	var resize = function( e )
-	{
-		var rootFrame = rootWindow.getFrame();
-		var top = document.getElementById( "toolbar_container" ).offsetHeight;
-		if ( message_widget.offsetHeight ) top += message_widget.offsetHeight;
-		//var bottom = document.getElementById( 'console' ).offsetHeight;
-		var bottom = 64;
-		var height = Math.max( 0, ui.getFrameHeight() - top - bottom );
-		
-		rootFrame.style.top = top + "px";
-		rootFrame.style.width = UI.getFrameWidth() + "px";
-		rootFrame.style.height = height + "px";
-		
-		rootWindow.redraw();
-		
-		return true;
-	}
 	
 	/*
 	 * Shows the tree view for the loaded project
@@ -257,6 +237,7 @@ function Project( pid )
 		if ( tool ) tool.unregister();
 		
 		//! close all windows
+		//rootWindow.closeAllChildren();
 		rootWindow.close();
 			
 		ui.removeEvent( "onresize", resize );
@@ -476,9 +457,6 @@ function Project( pid )
 	if ( typeof requestQueue == "undefined" ) requestQueue = new RequestQueue();
 	
 	var tool = null;
-	
-	var rootWindow = new CMWRootNode();
-	ui.registerEvent( "onresize", resize );
 	
 	var view = rootWindow.getFrame();
 	view.className = "projectView";

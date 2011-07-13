@@ -156,6 +156,16 @@ function CMWRootNode()
 	{
 		return "<root id\"" + id + "\">\n" + child.toXML( "\t" ) + "\n</root>";
 	}
+	
+	/**
+	 * Empty close method that can be overridden to any needs.  The method is
+	 * called by the last open window on closing.
+	 */
+	this.close = function()
+	{
+		child = null;
+		return;
+	}
 }
 
 CMWRootNode.prototype = new CMWNode();
@@ -163,11 +173,13 @@ CMWRootNode.prototype.constructor = CMWRootNode;
 
 CMWRootNode.prototype.getRootNode = function(){ return this; }
 
-/**
- * Empty close method that cna be overridden to any needs.  The method is
- * called by the last open window on closing.
- */
-CMWRootNode.prototype.close = function(){ return; }
+CMWRootNode.prototype.closeAllChildren = function()
+{
+	var windows = this.getWindows();
+	for ( var i = 0; i < windows.length; ++i )
+		windows[ i ].close();
+	return;
+}
 
 
 
@@ -553,7 +565,8 @@ function CMWWindow( title )
 		if ( root == parent )
 		{
 			var rootFrame = root.getFrame();
-			rootFrame.parentNode.removeChild( rootFrame );
+			if ( rootFrame.parentNode )
+				rootFrame.parentNode.removeChild( rootFrame );
 			root.close();
 		}
 		else

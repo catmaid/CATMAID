@@ -1,5 +1,5 @@
 /**
- * navigator.js
+ * selector.js
  *
  * requirements:
  *	 tools.js
@@ -12,7 +12,8 @@
  */
 
 /**
- * Navigator tool.  Moves the stack around 
+ * Selector tool.  Moves the stack around and should serve as a general selector
+ * of any annotated structure.
  */
 function Selector()
 {
@@ -43,7 +44,7 @@ function Selector()
 			if ( m )
 			{
 				var pos_x = stack.translation.x + ( stack.x + ( m.offsetX - stack.viewWidth / 2 ) / stack.scale ) * stack.resolution.x;
-				var pos_y = stack.translation.x + ( stack.y + ( m.offsetY - stack.viewHeight / 2 ) / stack.scale ) * stack.resolution.y;
+				var pos_y = stack.translation.y + ( stack.y + ( m.offsetY - stack.viewHeight / 2 ) / stack.scale ) * stack.resolution.y;
 				statusBar.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 3 ) + "]" );
 			}
 			return false;

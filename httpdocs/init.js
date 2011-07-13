@@ -25,8 +25,6 @@ var project_menu_open;
 
 var message_menu;
 
-var message_widget;
-
 var pid;
 var sids = new Array();
 var ss = new Array();
@@ -37,6 +35,9 @@ var xp;
 var session;
 var msg_timeout;
 var MSG_TIMEOUT_INTERVAL = 60000;	//!< length of the message lookup interval in milliseconds
+var messageWindow = null;
+
+var rootWindow;
 
 var selectedObjects = {}; //!< associative array of selected objects like class_instances, treenodes etc.
 
@@ -403,32 +404,36 @@ function handle_message( status, text, xml )
 		}
 		else
 		{
-			//! remove old messages
 			var message_container = document.getElementById( "message_container" );
-			while ( message_container.firstChild ) message_container.removeChild( message_container.firstChild );
-			
-			var n = 0;
-			for ( var i in e )
+			if ( !( typeof message_container == "undefined" || message_container == null ) )
 			{
-				e[ i ].action = "model/message.read.php?id=" + e[ i ].id;
-				e[ i ].note = e[ i ].time_formatted;
-				++n;
-				var dt = document.createElement( "dt" );
-				dt.appendChild( document.createTextNode( e[ i ].time_formatted ) );
-				var dd1 = document.createElement( "dd" );
-				var dd1a = document.createElement( "a" );
-				dd1a.href = e[ i ].action;
-				dd1a.appendChild( document.createTextNode( e[ i ].title ) );
-				dd1.appendChild( dd1a );
-				var dd2 = document.createElement( "dd" );
-				dd2.innerHTML = e[ i ].text;
-				message_container.appendChild( dt );
-				message_container.appendChild( dd1 );
-				message_container.appendChild( dd2 );
+				//! remove old messages	
+				while ( message_container.firstChild ) message_container.removeChild( message_container.firstChild );
+				
+				//! add new messages
+				var n = 0;
+				for ( var i in e )
+				{
+					e[ i ].action = "model/message.read.php?id=" + e[ i ].id;
+					e[ i ].note = e[ i ].time_formatted;
+					++n;
+					var dt = document.createElement( "dt" );
+					dt.appendChild( document.createTextNode( e[ i ].time_formatted ) );
+					var dd1 = document.createElement( "dd" );
+					var dd1a = document.createElement( "a" );
+					dd1a.href = e[ i ].action;
+					dd1a.appendChild( document.createTextNode( e[ i ].title ) );
+					dd1.appendChild( dd1a );
+					var dd2 = document.createElement( "dd" );
+					dd2.innerHTML = e[ i ].text;
+					message_container.appendChild( dt );
+					message_container.appendChild( dd1 );
+					message_container.appendChild( dd2 );
+				}
+				message_menu.update( e );
+				if ( n > 0 ) document.getElementById( "message_menu_text" ).className = "alert";
+				else document.getElementById( "message_menu_text" ).className = "";
 			}
-			message_menu.update( e );
-			if ( n > 0 ) document.getElementById( "message_menu_text" ).className = "alert";
-			else document.getElementById( "message_menu_text" ).className = "";
 		}
 	}
 	
@@ -512,15 +517,10 @@ function read_message( id )
 function global_resize( e )
 {
 	var top = document.getElementById( "toolbar_container" ).offsetHeight;
-	message_widget.style.top = table_widget.style.top = tree_widget.style.top = top + "px";
-	if ( message_widget.offsetHeight ) top += message_widget.offsetHeight;
 	var bottom = 64;
 	var height = Math.max( 0, ui.getFrameHeight() - top - bottom );
 	var width = ui.getFrameWidth();
-	message_widget.style.width = width + "px";
-	table_widget.style.height = height + "px";
-	tree_widget.style.height = height + "px";
-
+	
 	var content = document.getElementById( "content" );
 	content.style.top = top + "px";
 	content.style.width = width + "px";
@@ -534,7 +534,7 @@ function global_resize( e )
  * initialise everything
  * to be called by the onload-handler of document.body
  */
-function init()
+var init = function()
 {
 	//! set some non standard attributes
 	/*
@@ -732,10 +732,6 @@ function init()
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
 	
-	message_widget = document.getElementById( "message_widget" );
-	var message_widget_resize_handle = new ResizeHandle( "v" );
-	message_widget.appendChild( message_widget_resize_handle.getView() );
-	
 	table_widget = document.getElementById( "table_widget" );
 	var table_widget_resize_handle = new ResizeHandle( "h" );
 	table_widget.appendChild( table_widget_resize_handle.getView() );
@@ -777,7 +773,83 @@ function init()
 	*/
 	
 	ui.registerEvent( "onresize", global_resize );
+	
+	rootWindow = new CMWRootNode();
+	ui.registerEvent( "onresize", resize );
+	
 	window.onresize();
 	
 	return;
+}
+
+/**
+ * resize the view and its content on window.onresize event
+ */
+var resize = function( e )
+{
+	var top = document.getElementById( "toolbar_container" ).offsetHeight;
+	var bottom = 64;
+	var height = Math.max( 0, ui.getFrameHeight() - top - bottom );
+	var width = ui.getFrameWidth();
+	
+	var content = document.getElementById( "content" );
+	content.style.top = top + "px";
+	content.style.width = width + "px";
+	content.style.height = height + "px";
+	
+	rootFrame = rootWindow.getFrame();
+	rootFrame.style.top = top + "px";
+	rootFrame.style.width = UI.getFrameWidth() + "px";
+	rootFrame.style.height = height + "px";
+	
+	rootWindow.redraw();
+	
+	return true;
+}
+
+function showMessages()
+{
+	if ( !messageWindow )
+	{
+		messageWindow = new CMWWindow( "Messages" );
+		var messageContent = messageWindow.getFrame();
+		messageContent.style.backgroundColor = "#ffff00";
+		messageContent.style.overflow = "auto";
+		var messageList = document.createElement( "dl" );
+		messageList.id = "message_container";
+		messageList.style.marginTop = "2em";
+		messageList.style.marginBottom = "2em";
+		messageContent.appendChild( messageList );
+		
+		document.getElementById( "content" ).style.display = "none";
+		
+		if ( rootWindow.getFrame().parentNode != document.body )
+			document.body.appendChild( rootWindow.getFrame() );
+			
+		if ( rootWindow.getChild() == null )
+			rootWindow.replaceChild( messageWindow );
+		else
+			rootWindow.replaceChild( new CMWVSplitNode( messageWindow, rootWindow.getChild() ) );
+			
+		messageWindow.focus();
+		//ui.onresize();
+	}
+	
+	messageWindow.addListener(
+		function( callingWindow, signal )
+		{
+			switch ( signal )
+			{
+			case CMWWindow.CLOSE:
+				if ( typeof project == undefined || project == null )
+				{
+					rootWindow.close();
+					document.getElementById( "content" ).style.display = "none";
+				}
+				else
+					messageWindow.close();
+				break;
+			}
+			return true;
+		} );
 }

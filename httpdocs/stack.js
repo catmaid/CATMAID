@@ -166,8 +166,6 @@ function Stack(
 	 */
 	this.moveTo = function( zp, yp, xp, sp )
 	{
-		//alert( "moveTo" );
-		
 		if ( typeof sp == "number" )
 		{
 			self.s = Math.max( 0, Math.min( self.MAX_S, Math.round( sp ) ) );
@@ -278,10 +276,11 @@ function Stack(
 	 */
 	this.setTool = function( newTool )
 	{
-		if ( tool )
+		if ( typeof tool != "undefined" && tool )
 			tool.unregister();
 		tool = newTool;
-		tool.register( self );
+		if ( typeof tool != "undefined" && tool )
+			tool.register( self );
 	}
 	
 	// initialize
@@ -349,8 +348,8 @@ function Stack(
 				project.setFocusedStack( self );
 				break;
 			case CMWWindow.BLUR:
-				if ( tool )
-					tool.unregister();
+				//if ( tool )
+				//	tool.unregister();
 				tool = null;
 				break;
 			}

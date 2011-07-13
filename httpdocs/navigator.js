@@ -424,7 +424,7 @@ function Navigator()
 			catch ( error ) {}
 		}
 
-		stack.getView().removeChild( mouseCatcher );
+		try { stack.getView().removeChild( mouseCatcher ); } catch ( error ) {}
 
 		return;
 	}

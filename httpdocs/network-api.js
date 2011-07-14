@@ -9,28 +9,38 @@
 var CM = function()
 {
   var cm = this;
+  
+  /** If instance contains a valid object in instance[cachedInstance], return it.
+   * Else fetch it from the database using the fetchFunction(fetchID).
+   * If innerInstance is defined, instance is set as the value of the innerInstance.
+   * 
+   * For example, if skeleton instance has a valid skeleton["neuron_instance"], return it.
+   * Else fetch the neuron from the databse using cm.fetchNeuron(skeleton.neuron_id).
+   * If the innerInstance "skeleton_instance" is defined, set the skeleton instance
+   * into the new neuron instance as "skeleton_instance" member. */
+  var memoizedFetch = function(instance, cachedInstance, fetchID, fetchFunction, innerInstance) {
+    if (0 === fetchID) return null;
+    if (instance.hasOwnProperty(cachedInstance)) {
+      if (cachedInstance) return cachedInstance;
+    }
+    instance[cachedInstance] = fetchFunction(fetchID);
+    if (innerInstance && instance[cachedInstance]) {
+      instance[cachedInstance][innerInstance] = instance;
+    }
+    return instance[cachedInstance];
+  };
 
   var Node = function(json) {
     jQuery.extend(this, json);
     /** Return the parent Node or null if it is the root. */
     this.parent = function() {
-      if (0 === this.parent_id) return null;
-      if (this.hasOwnProperty("parent_node")) {
-        if (this.parent_node) return this.parent_node;
-      }
-      this.parent_node = cm.fetchNode(this.parent_id);
-      return this.parent_node;
+      return memoizedFetch(this, "parent_node", this.parent_id, cm.fetchNode);
     };
     this.skeleton = function() {
-      if (0 === this.skeleton_id) return null;
-      if (this.hasOwnProperty("skeleton_instance")) {
-        if (this.skeleton_instance) return this.skeleton_instance;
-      }
-      this.skeleton_instance = cm.fetchSkeleton(this.skeleton_id);
-      return this.skeleton_instance;
+      return memoizedFetch(this, "skeleton_instance", this.skeleton_id, cm.fetchSkeleton);
     };
   };
-  
+
   var Skeleton = function(json) {
     jQuery.extend(this, json);
     
@@ -40,6 +50,7 @@ var CM = function()
       if (this.hasOwnProperty("nodes_array")) {
         if (this.nodes_array) return this.nodes_array;
       }
+      // Fetch all nodes in one single call
       var json = synchFetch("model/network.api.treenodes.php", {skid: this.id});
       if (null === json) return null;
       var ns = jQuery.map(json, function(x) { return new Node(x); });
@@ -56,15 +67,7 @@ var CM = function()
     };
     
     this.neuron = function() {
-      if (0 === this.neuron_id) return null;
-      if (this.hasOwnProperty("neuron_instance")) {
-        if (this.neuron_instance) return this.neuron_instance;
-      }
-      this.neuron_instance = cm.fetchNeuron(this.neuron_id);
-      if (this.neuron_instance) {
-        this.neuron_instance.skeleton_instance = this;
-      }
-      return this.neuron_instance;
+      return memoizedFetch(this, "neuron_instance", this.neuron_id, cm.fetchNeuron, "skeleton_instance");
     };
   };
   
@@ -72,15 +75,7 @@ var CM = function()
     jQuery.extend(this, json);
     
     this.skeleton = function() {
-      if (0 === this.skeleton_id) return null;
-      if (this.hasOwnProperty("skeleton_instance")) {
-        if (this.skeleton_instance) return this.skeleton_instance;
-      }
-      this.skeleton_instance = cm.fetchSkeleton(this.skeleton_id);
-      if (this.skeleton_instance) {
-        this.skeleton_instance.neuron_instance = this;
-      }
-      return this.skeleton_instance;
+      return memoizedFetch(this, "skeleton_instance", this.skeleton_id, cm.fetchSkeleton, "neuron_instance");
     };
   };
  

@@ -1,3 +1,4 @@
+
 <?php
 
 include_once( 'errors.inc.php' );
@@ -13,14 +14,14 @@ $ses =& getSession();
 $pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
-# Skeleton id
-$skid = isset( $_REQUEST[ 'skid' ] ) ? intval( $_REQUEST[ 'skid' ] ) : -1;
+# Neuron id
+$neuron_id = isset( $_REQUEST[ 'neuron_id' ] ) ? intval( $_REQUEST[ 'neuron_id' ] ) : -1;
 
 # Check preconditions:
 
-# 1. There must be a skeleton id
-if ( ! $skid ) {
-	echo json_encode( array( 'error' => 'A skeleton id has not been provided!' ) );
+# 1. There must be a neuron id
+if ( ! $neuron_id ) {
+	echo json_encode( array( 'error' => 'A neuron id has not been provided!' ) );
 	return;
 }
 
@@ -43,43 +44,43 @@ if (! $db->begin() ) {
 }
 
 try {
-  # Retrieve relation 'model_of'
+  # Check if relation 'model_of' exists
   $model_of_id = $db->getRelationId( $pid, 'model_of' );
   if (false === $model_of_id || !$model_of_id) {
-    emitErrorAndExit( $db, 'Cannot find "model_of" relation for this project' );
+    emitErrorAndExit( $db, 'Can not find "model_of" relation for this project' );
   }
 
-  # Retrieve class 'skeleton'
-  $skeleton_class_id = $db->getResult(
-    'SELECT class.id FROM class WHERE class.class_name = \'skeleton\'');
-  if (false === $skeleton_class_id) {
-    emitErrorAndExit( $db, 'Cannot find class "skeleton".' );
+  # Retrieve class 'neuron'
+  $neuron_class_id = $db->getResult(
+    'SELECT class.id FROM class WHERE class.class_name = \'neuron\'');
+  if (false === $neuron_class_id) {
+    emitErrorAndExit( $db, 'Cannot find class "neuron".' );
   }
-  $skeleton_class_id = $skeleton_class_id[0]['id'];
+  $neuron_class_id = $neuron_class_id[0]['id'];
 
-  # Select info for the given skeleton ID
+  # Retrieve neuron properties
   # Skeleton is a 'model_of' a Neuron
   $q = $db->getResult(
   'SELECT class_instance.id,
           class_instance.user_id,
           class_instance.name,
-          cici.class_instance_b AS neuron_id
+          cici.class_instance_a AS skeleton_id
   FROM class_instance,
        class_instance_class_instance AS cici
   WHERE class_instance.project_id = '.$pid.'
-    AND class_instance.id = '.$skid.'
-    AND class_instance.class_id = '.$skeleton_class_id.'
-    AND cici.class_instance_a = '.$skid.'
+    AND class_instance.id = '.$neuron_id.'
+    AND class_instance.class_id = '.$neuron_class_id.'
+    AND cici.class_instance_b = '.$neuron_id.'
     AND cici.relation_id = '.$model_of_id);
 
-  # WARNING: ASSUMES that class_instance_b will be an ID of an instance of a neuron.
+  # WARNING: ASSUMES that class_instance_a will be an ID of an instance of a skeleton.
 
   if (false === $q) {
-    emitErrorAndExit($db, 'Failed to retrieve information for skeleton #'.$skid);
+    emitErrorAndExit($db, 'Failed to retrieve information for neuron #'.$neuron_id);
   }
 
   if (1 != count($q)) {
-    emitErrorAndExit($db, 'Found not 1 but '.count($q).' skeletons with ID #'.$skid);
+    emitErrorAndExit($db, 'Found not 1 but '.count($q).' neurons with ID #'.$skid);
   }
 
   # Only one row expected
@@ -88,7 +89,7 @@ try {
   # Convert numeric entries to integers
   $q['id'] = (int)$q['id'];
   $q['user_id'] = (int)$q['user_id'];
-  $q['neuron_id'] = (int)$q['neuron_id'];
+  $q['skeleton_id'] = (int)$q['skeleton_id'];
 
   if (! $db->commit() ) {
 		emitErrorAndExit( $db, 'Failed to commit!' );

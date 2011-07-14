@@ -2,7 +2,7 @@
  * Intended for use from the console:
  * 
  * var cm = new CM();
- * var skeleton = cm.pickSkeleton(123);
+ * var skeleton = cm.fetchSkeleton(123);
  * 
  * All access is read-only: no changes in the database.
  */
@@ -16,13 +16,18 @@ var CM = function()
     this.parent = function() {
       if (0 === this.parent_id) return null;
       if (this.hasOwnProperty("parent_node")) {
-        return this.parent_node;
+        if (this.parent_node) return this.parent_node;
       }
-      this.parent_node = cm.pickNode(this.parent_id);
+      this.parent_node = cm.fetchNode(this.parent_id);
       return this.parent_node;
     };
     this.skeleton = function() {
-      return cm.pickSkeleton(this.skeleton_id);
+      if (0 === this.skeleton_id) return null;
+      if (this.hasOwnProperty("skeleton_instance")) {
+        if (this.skeleton_instance) return this.skeleton_instance;
+      }
+      this.skeleton_instance = cm.fetchSkeleton(this.skeleton_id);
+      return this.skeleton_instance;
     };
   };
   
@@ -32,6 +37,9 @@ var CM = function()
     /** Return the set of Node instances ordered by ID;
      * each Node has a pointer "parent_node" to its parent Node. */
     this.nodes = function() {
+      if (this.hasOwnProperty("nodes_array")) {
+        if (this.nodes_array) return this.nodes_array;
+      }
       var json = synchFetch("model/network.api.treenodes.php", {skid: this.id});
       if (null === json) return null;
       var ns = jQuery.map(json, function(x) { return new Node(x); });
@@ -41,8 +49,38 @@ var CM = function()
       }
       for (var i=0, len=ns.length; i<len; ++i) {
         ns[i].parent_node = dict[ns[i].parent_id];
+        ns[i].skeleton_instance = this;
       }
-      return ns;
+      this.nodes_array = ns;
+      return this.nodes_array;
+    };
+    
+    this.neuron = function() {
+      if (0 === this.neuron_id) return null;
+      if (this.hasOwnProperty("neuron_instance")) {
+        if (this.neuron_instance) return this.neuron_instance;
+      }
+      this.neuron_instance = cm.fetchNeuron(this.neuron_id);
+      if (this.neuron_instance) {
+        this.neuron_instance.skeleton_instance = this;
+      }
+      return this.neuron_instance;
+    };
+  };
+  
+  var Neuron = function(json) {
+    jQuery.extend(this, json);
+    
+    this.skeleton = function() {
+      if (0 === this.skeleton_id) return null;
+      if (this.hasOwnProperty("skeleton_instance")) {
+        if (this.skeleton_instance) return this.skeleton_instance;
+      }
+      this.skeleton_instance = cm.fetchSkeleton(this.skeleton_id);
+      if (this.skeleton_instance) {
+        this.skeleton_instance.neuron_instance = this;
+      }
+      return this.skeleton_instance;
     };
   };
  
@@ -73,26 +111,29 @@ var CM = function()
   };
 
   /** Query the database for the properties of the node with ID. */
-  this.pickNode = function(ID) {
+  this.fetchNode = function(ID) {
     var json = synchFetch("model/network.api.treenode.php", {tnid: ID});
     if (null !== json) return new Node(json);
     return null;
   };
 
   /** Query the database for the properties of the skeleton with ID. */
-  this.pickSkeleton = function(ID) {
+  this.fetchSkeleton = function(ID) {
     var json = synchFetch("model/network.api.skeleton.php", {skid: ID});
     if (null !== json) return new Skeleton(json);
     return null;
   };
   
-  this.pickNeuron = function(ID) {
+  this.fetchNeuron = function(ID) {
+    var json = synchFetch("model/network.api.neuron.php", {neuron_id: ID});
+    if (null !== json) return new Neuron(json);
+    return null;
   }
   
-  /** Find what ID is (a skeleton or a node) and return the appropriate
+  /** Find what ID is (a skeleton, node or a neuron) and return the appropriate
    * object instance for reading out its properties. */
-  this.pick = function(ID) {
-    var fns = [this.pickNeuron, this.pickSkeleton, this.pickNode];
+  this.fetch = function(ID) {
+    var fns = [this.fetchNeuron, this.fetchSkeleton, this.fetchNode];
     for (var i=0, len=fns.length; i<len; ++i) {
       var r = fns[i](ID);
       if (r !== null) return r;

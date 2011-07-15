@@ -36,14 +36,14 @@ if ( ! $uid ) {
 	return;
 }
 
-// Start transaction
+# Start transaction
 if (! $db->begin() ) {
 	echo json_encode( array( 'error' => 'Could not start transaction.' ) );
 	return;
 }
 
 try {
-  // Check if relation 'element_of' exists
+  # Check if relation 'element_of' exists
   $ele_id = $db->getRelationId( $pid, 'element_of' );
   if (false === $ele_id || !$ele_id) {
     emitErrorAndExit( $db, 'Can not find "element_of" relation for this project' );

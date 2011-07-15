@@ -36,10 +36,14 @@ var CM = function()
     /** Return the parent Node or null if it is the root. */
     this.parent = function() {
       if (this.parent_node) return this.parent_node;
+      if (0 === this.parent_id) return null; // root
       return cm.node(this.parent_id);
     };
     this.skeleton = function() {
       return cm.skeleton(this.skeleton_id);
+    };
+    this.isRoot = function() {
+      return 0 === this.parent_id;
     };
   };
 

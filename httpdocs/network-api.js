@@ -1,55 +1,57 @@
-/** A high-level object to inspect the contents of the reconstructed skeletons and their relations.
+/** A high-level object to inspect the contents of
+ * the reconstructed skeletons and their relations.
  * Intended for use from the console:
  * 
- * var cm = new CM();
- * var skeleton = cm.fetchSkeleton(123);
+ *   var cm = new CM();
+ *   var skeleton = cm.fetchSkeleton(123);
+ *   var nodes = skeleton.nodes();
+ *   var connectors = skeleton.connectors();
+ *   var downstreamPartners = skeleton.downstreamPartners();
  * 
  * All access is read-only: no changes in the database.
+ * 
+ * All constructors have the side effect of registering themselves
+ * into the appropriate cache of ID vs instance.
  */
 var CM = function()
 {
   var cm = this;
+  // Cache:
   this.IDskeletons = {};
   this.IDNeurons = {};
-  
-  /** If instance contains a valid object in instance[cachedInstance], return it.
-   * Else fetch it from the database using the fetchFunction(fetchID).
-   * If innerInstance is defined, instance is set as the value of the innerInstance.
-   * 
-   * For example, if skeleton instance has a valid skeleton["neuron_instance"], return it.
-   * Else fetch the neuron from the databse using cm.fetchNeuron(skeleton.neuron_id).
-   * If the innerInstance "skeleton_instance" is defined, set the skeleton instance
-   * into the new neuron instance as "skeleton_instance" member. */
-  var memoizedFetch = function(instance, cachedInstance, fetchID, fetchFunction, innerInstance) {
-    if (0 === fetchID) return null;
-    if (instance.hasOwnProperty(cachedInstance)) {
-      if (cachedInstance) return cachedInstance;
-    }
-    instance[cachedInstance] = fetchFunction(fetchID);
-    if (innerInstance && instance[cachedInstance]) {
-      instance[cachedInstance][innerInstance] = instance;
-    }
-    return instance[cachedInstance];
-  };
+  this.IDNodes = {};
 
+  /** id: the Node's ID.
+   *  parent_id: null if it is root.
+   *  confidence: from 0 to 5, confidence of edge with parent.
+   *  skeleton_id: ID of the skeleton this node belongs to.
+   *  x, y, z: position in calibrated coordinates.
+   *  user_id: ID of the user that last edited this Node.
+   */
   var Node = function(json) {
     jQuery.extend(this, json);
+    // Register instance
+    cm.IDNodes[this.id] = this;
     /** Return the parent Node or null if it is the root. */
     this.parent = function() {
-      return memoizedFetch(this, "parent_node", this.parent_id, cm.fetchNode);
+      if (this.parent_node) return this.parent_node;
+      return cm.node(this.parent_id);
     };
     this.skeleton = function() {
-      return memoizedFetch(this, "skeleton_instance", this.skeleton_id, cm.fetchSkeleton);
+      return cm.skeleton(this.skeleton_id);
     };
   };
 
   var Skeleton = function(json) {
     jQuery.extend(this, json);
-    // Register, for connectors to find existing instances
+    // Register instance
     cm.IDskeletons[this.id] = this;
 
     /** Return the set of Node instances as {123: Node, 245: Node, ...}.
-     * Each Node has a pointer "parent_node" to its parent Node. */
+     * Each Node has a pointer "parent_node" to its parent Node.
+     * This function is different than all others in that the skeleton
+     * caches its own map of ID vs Node instances, and retrieves all
+     * nodes in one single call to the database. */
     this.nodes = function() {
       if (this.hasOwnProperty("node_map")) {
         if (this.node_map) return this.node_map;
@@ -60,7 +62,6 @@ var CM = function()
       var map = {};
       for (var i=0, len=json.length; i<len; ++i) {
         var node = new Node(json[i]);
-        node.skeleton_instance = this;
         map[node.id] = node;
       }
       for (var node in map) {
@@ -72,12 +73,17 @@ var CM = function()
       return this.node_map;
     };
 
+    /** Retrieve a cached node, or fetch all nodes and then do so. */
     this.node = function(ID) {
       return this.nodes()[ID];
     };
+    
+    this.size = function() {
+      return Object.keys(this.nodes()).length;
+    };
 
     this.neuron = function() {
-      return memoizedFetch(this, "neuron_instance", this.neuron_id, cm.fetchNeuron, "skeleton_instance");
+      return cm.neuron(this.neuron_id);
     };
     
     /** Returns a new object:
@@ -89,11 +95,15 @@ var CM = function()
      *  ... where the numbers are the IDs of the nodes in this skeleton that link to the connectors.
      */
     this.connectors = function() {
+      if (this.hasOwnProperty('cs')) {
+        if (this.cs) return this.cs;
+      }
       var json = synchFetch('model/network.api.connectors.php', {skid: this.id});
       if (null === json) return null;
+      /** 'j' is the JSON object describing one connector in the json array. */
       var fn = function(map, j) {
-        var tid = j.treenode_id;
-        delete j.treenode_id;
+        var tid = j.node_id;
+        delete j.node_id;
         map[tid] = new Connector(j);
         return map;
       };
@@ -103,13 +113,45 @@ var CM = function()
       };
       return this.cs;
     };
+
+    /** Invoke function fnName in every value of the properties in map,
+     * which is expected to return an array of values,
+     * and return the joint array of unique values. */
+    var partners = function(map, fnName) {
+      // First use a map to ensure no elements are repeated
+      var skeletons = {};
+      for (var c in map) {
+        if (map.hasOwnProperty(c)) {
+          var list = map[c][fnName]();
+          for (var i=0, len=list.length; i<len; ++i) {
+            skeletons[list[i].id] = list[i];
+          }
+        }
+      }
+      // Then place them all in an array
+      var array = [];
+      for (var sk in skeletons) {
+        if (skeletons.hasOwnProperty(sk)) {
+          array.push(skeletons[sk]);
+        }
+      }
+      return array;
+    };
+
+    this.downstreamPartners = function() {
+      return partners(this.connectors().pre, "postSkeletons");
+    };
+
+    this.upstreamPartners = function() {
+      return partners(this.connectors().post, "preSkeletons");
+    };
   };
 
   /**
    * id: the ID of the Connector instance.
    * x,y,z: the position of the Connector instance.
    * user_id: the ID of the user that owns the Connector instance.
-   * pre: an array of origins in the format {treenode_id: 123, skeleton_id: 456}
+   * pre: an array of origins in the format [{node_id: 123, skeleton_id: 456}, ...]
    *      where the skeleton_id is the ID of the skeleton that has this Connector as presynatic at node 123.
    * post: an array like pre, but for the postsynaptic skeletons.
    */
@@ -117,14 +159,21 @@ var CM = function()
     jQuery.extend(this, json);
     
     this.preSkeletons = function() {
-      // TODO
+      return this.pre.map(function(o) { return cm.skeleton(o.skeleton_id); });
     };
     this.postSkeletons = function() {
-      // TODO
+      return this.post.map(function(o) { return cm.skeleton(o.skeleton_id); });
+    };
+    this.preNodes = function() {
+      return this.pre.map(function(o) { return cm.node(o.node_id); });
+    };
+    this.postNodes = function() {
+      return this.post.map(function(o) { return cm.node(o.node_id); });
     };
   };
 
 
+  /** Currently provided by Connector
   // TODO
   var Synapse = function(json) {
     jQuery.extend(this, json);
@@ -136,12 +185,17 @@ var CM = function()
     this.postsynapticNodes = function() {
     };
   };
+  */
 
   var Neuron = function(json) {
     jQuery.extend(this, json);
+    // Register instance
+    cm.IDNeurons[this.id] = this;
     
+    // TODO there could be more than one skeleton in this Neuron!
+    // If so, the json with which this neuron is initialized will be unexpected!
     this.skeleton = function() {
-      return memoizedFetch(this, "skeleton_instance", this.skeleton_id, cm.fetchSkeleton, "neuron_instance");
+      return cm.skeleton(this.skeleton_id);
     };
   };
  
@@ -169,6 +223,24 @@ var CM = function()
                }
     });
     return r;
+  };
+  
+  this.skeleton = function(ID) {
+    var sk = this.IDskeletons[ID];
+    if (sk) return sk;
+    return this.fetchSkeleton(ID);
+  };
+  
+  this.neuron = function(ID) {
+    var neu = this.IDNeurons[ID];
+    if (neu) return neu;
+    return this.fetchNeuron(ID);
+  };
+  
+  this.node = function(ID) {
+    var node = this.IDNodes[ID];
+    if (node) return node;
+    return this.fetchNode(ID);
   };
 
   /** Query the database for the properties of the node with ID. */

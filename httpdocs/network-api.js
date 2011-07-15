@@ -17,9 +17,10 @@ var CM = function()
 {
   var cm = this;
   // Cache:
-  this.IDskeletons = {};
+  this.IDSkeletons = {};
   this.IDNeurons = {};
   this.IDNodes = {};
+  this.IDConnectors = {};
 
   /** id: the Node's ID.
    *  parent_id: null if it is root.
@@ -45,7 +46,7 @@ var CM = function()
   var Skeleton = function(json) {
     jQuery.extend(this, json);
     // Register instance
-    cm.IDskeletons[this.id] = this;
+    cm.IDSkeletons[this.id] = this;
 
     /** Return the set of Node instances as {123: Node, 245: Node, ...}.
      * Each Node has a pointer "parent_node" to its parent Node.
@@ -157,6 +158,8 @@ var CM = function()
    */
   var Connector = function(json) {
     jQuery.extend(this, json);
+    // Register
+    cm.IDConnectors[this.id] = this;
     
     this.preSkeletons = function() {
       return this.pre.map(function(o) { return cm.skeleton(o.skeleton_id); });
@@ -226,7 +229,7 @@ var CM = function()
   };
   
   this.skeleton = function(ID) {
-    var sk = this.IDskeletons[ID];
+    var sk = this.IDSkeletons[ID];
     if (sk) return sk;
     return this.fetchSkeleton(ID);
   };
@@ -243,10 +246,22 @@ var CM = function()
     return this.fetchNode(ID);
   };
 
+  this.connector = function(ID) {
+    var c = this.IDConnectors[ID];
+    if (c) return c;
+    return this.fetchConnector(ID);
+  };
+
   /** Query the database for the properties of the node with ID. */
   this.fetchNode = function(ID) {
     var json = synchFetch("model/network.api.treenode.php", {tnid: ID});
     if (null !== json) return new Node(json);
+    return null;
+  };
+  
+  this.fetchConnector = function(ID) {
+    var json = synchFetch("model/network.api.connector.php", {cid: ID});
+    if (null !== json) return new Connector(json);
     return null;
   };
 
@@ -256,13 +271,13 @@ var CM = function()
     if (null !== json) return new Skeleton(json);
     return null;
   };
-  
+
   this.fetchNeuron = function(ID) {
     var json = synchFetch("model/network.api.neuron.php", {neuron_id: ID});
     if (null !== json) return new Neuron(json);
     return null;
   }
-  
+
   /** Find what ID is (a skeleton, node or a neuron) and return the appropriate
    * object instance for reading out its properties. */
   this.fetch = function(ID) {
@@ -270,6 +285,23 @@ var CM = function()
     for (var i=0, len=fns.length; i<len; ++i) {
       var r = fns[i](ID);
       if (r !== null) return r;
+    }
+    return null;
+  };
+
+  this.selectedNode = function() {
+    // In overlay.js, "atn" is a global variable holding the active node or the active connector.
+    // A node is an instance of class Node in overlay_node.js,
+    // and a connector is an instance of class ConnectorNode in overlay_connector.js.
+    if (typeof atn === Node) return this.node(atn.id);
+    if (typeof atn === ConnectorNode) return this.connector(atn.id);
+    return null;
+  };
+
+  this.selectedSkeleton = function() {
+    if (typeof atn === Node) {
+      var node = this.node(atn.id);
+      if (node) return node.skeleton();
     }
     return null;
   };

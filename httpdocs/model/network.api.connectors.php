@@ -63,7 +63,7 @@ try {
     'SELECT	"tc"."connector_id" AS "id",
             "tc"."user_id" AS "user_id",
             "tc"."relation_id",
-            "tci"."treenode_id",
+            "tci"."treenode_id" AS "node_id",
             ("connector"."location")."x" AS "x",
             ("connector"."location")."y" AS "y",
             ("connector"."location")."z" AS "z"
@@ -127,7 +127,7 @@ try {
     $p['y'] = (int)$p['y'];
     $p['z'] = (int)$p['z'];
     $p['user_id'] = (int)$p['user_id'];
-    $p['treenode_id'] = (int)$p['treenode_id'];
+    $p['node_id'] = (int)$p['node_id'];
     
     # Add all found pre and post treenodes and skeletons
     $p['pre'] = $pPre;

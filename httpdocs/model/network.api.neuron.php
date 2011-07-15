@@ -80,10 +80,10 @@ try {
   }
 
   if (1 != count($q)) {
-    emitErrorAndExit($db, 'Found not 1 but '.count($q).' neurons with ID #'.$skid);
+    emitErrorAndExit($db, 'Found not 1 but '.count($q).' rows for neuron with ID #'.$neuron_id);
   }
 
-  # Only one row expected
+  # Only one row expected -- TODO a neuron may have multiple skeletons!
   $q = $q[0];
   
   # Convert numeric entries to integers

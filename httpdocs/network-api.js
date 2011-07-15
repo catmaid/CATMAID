@@ -9,6 +9,8 @@
 var CM = function()
 {
   var cm = this;
+  this.IDskeletons = {};
+  this.IDNeurons = {};
   
   /** If instance contains a valid object in instance[cachedInstance], return it.
    * Else fetch it from the database using the fetchFunction(fetchID).
@@ -43,34 +45,98 @@ var CM = function()
 
   var Skeleton = function(json) {
     jQuery.extend(this, json);
-    
-    /** Return the set of Node instances ordered by ID;
-     * each Node has a pointer "parent_node" to its parent Node. */
+    // Register, for connectors to find existing instances
+    cm.IDskeletons[this.id] = this;
+
+    /** Return the set of Node instances as {123: Node, 245: Node, ...}.
+     * Each Node has a pointer "parent_node" to its parent Node. */
     this.nodes = function() {
-      if (this.hasOwnProperty("nodes_array")) {
-        if (this.nodes_array) return this.nodes_array;
+      if (this.hasOwnProperty("node_map")) {
+        if (this.node_map) return this.node_map;
       }
       // Fetch all nodes in one single call
       var json = synchFetch("model/network.api.treenodes.php", {skid: this.id});
       if (null === json) return null;
-      var ns = jQuery.map(json, function(x) { return new Node(x); });
-      var dict = {};
-      for (var i=0, len=ns.length; i<len; ++i) {
-        dict[ns[i].id] = ns[i];
+      var map = {};
+      for (var i=0, len=json.length; i<len; ++i) {
+        var node = new Node(json[i]);
+        node.skeleton_instance = this;
+        map[node.id] = node;
       }
-      for (var i=0, len=ns.length; i<len; ++i) {
-        ns[i].parent_node = dict[ns[i].parent_id];
-        ns[i].skeleton_instance = this;
+      for (var node in map) {
+        if (map.hasOwnProperty(node)) {
+          node.parent_node = map[node.parent_id];
+        }
       }
-      this.nodes_array = ns;
-      return this.nodes_array;
+      this.node_map = map;
+      return this.node_map;
     };
-    
+
+    this.node = function(ID) {
+      return this.nodes()[ID];
+    };
+
     this.neuron = function() {
       return memoizedFetch(this, "neuron_instance", this.neuron_id, cm.fetchNeuron, "skeleton_instance");
     };
+    
+    /** Returns a new object:
+     *      {
+     *       pre: {123: Connector, 456: Connector, ...},
+     *       post: {789: Connector, ...}
+     *      }
+     * 
+     *  ... where the numbers are the IDs of the nodes in this skeleton that link to the connectors.
+     */
+    this.connectors = function() {
+      var json = synchFetch('model/network.api.connectors.php', {skid: this.id});
+      if (null === json) return null;
+      var fn = function(map, j) {
+        var tid = j.treenode_id;
+        delete j.treenode_id;
+        map[tid] = new Connector(j);
+        return map;
+      };
+      this.cs = {
+        pre: json.presynaptic.reduce(fn, {}),
+        post: json.postsynaptic.reduce(fn, {})
+      };
+      return this.cs;
+    };
   };
-  
+
+  /**
+   * id: the ID of the Connector instance.
+   * x,y,z: the position of the Connector instance.
+   * user_id: the ID of the user that owns the Connector instance.
+   * pre: an array of origins in the format {treenode_id: 123, skeleton_id: 456}
+   *      where the skeleton_id is the ID of the skeleton that has this Connector as presynatic at node 123.
+   * post: an array like pre, but for the postsynaptic skeletons.
+   */
+  var Connector = function(json) {
+    jQuery.extend(this, json);
+    
+    this.preSkeletons = function() {
+      // TODO
+    };
+    this.postSkeletons = function() {
+      // TODO
+    };
+  };
+
+
+  // TODO
+  var Synapse = function(json) {
+    jQuery.extend(this, json);
+    
+    this.node = function() {
+    };
+    this.presynapticNodes = function() {
+    };
+    this.postsynapticNodes = function() {
+    };
+  };
+
   var Neuron = function(json) {
     jQuery.extend(this, json);
     

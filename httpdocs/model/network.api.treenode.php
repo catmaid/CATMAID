@@ -1,0 +1,127 @@
+<?php
+
+include_once( 'errors.inc.php' );
+include_once( 'db.pg.class.php' );
+include_once( 'session.class.php' );
+include_once( 'tools.inc.php' );
+include_once( 'json.inc.php' );
+include_once( 'utils.php' );
+
+$db =& getDB();
+$ses =& getSession();
+
+$pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
+$uid = $ses->isSessionValid() ? $ses->getId() : 0;
+
+# Treenode id
+$tnid = isset( $_REQUEST[ 'tnid' ] ) ? intval( $_REQUEST[ 'tnid' ] ) : -1;
+
+# Check preconditions:
+
+# 1. There must be a treenode id
+if ( ! $tnid ) {
+	echo json_encode( array( 'error' => 'A treenode id has not been provided!' ) );
+	return;
+}
+
+# 2. There must be a project id
+if ( ! $pid ) {
+  echo json_encode( array( 'error' => 'Project closed. Cannot apply operation.' ) );
+	return;
+}
+
+# 3. There must be a user id
+if ( ! $uid ) {
+    echo json_encode( array( 'error' => 'You are not logged in.' ) );
+	return;
+}
+
+// Start transaction
+if (! $db->begin() ) {
+	echo json_encode( array( 'error' => 'Could not start transaction.' ) );
+	return;
+}
+
+try {
+  // Check if relation 'element_of' exists
+  $ele_id = $db->getRelationId( $pid, 'element_of' );
+  if (false === $ele_id || !$ele_id) {
+    emitErrorAndExit( $db, 'Can not find "element_of" relation for this project' );
+  }
+
+  /*
+  // Retrieve skeleton for treenode
+  $q = $db->getClassInstanceForTreenode( $pid, $tnid, "element_of");
+
+  if (false === $q || !$q) {
+    emitErrorAndExit( $db, array( '"error"' => 'There seems not to exist a skeleton for treenode id ') );
+  }
+
+  $skeletonID = $q[0]['class_instance_id']; }
+  
+  // Select all treenodes of the skeleton
+  $q = $db->getResult(
+    'SELECT "treenode"."id",
+            ("treenode"."location")."x",
+            ("treenode"."location")."y", 
+            ("treenode"."location")."z",
+            "treenode"."confidence",
+            "treenode"."parent_id"
+    FROM "treenode_class_instance" AS "tci",
+         "treenode"
+    WHERE "tci"."project_id" = '.$pid.'
+    AND "tci"."relation_id" = '.$ele_id.'
+    AND "tci"."class_instance_id" = '.$skelid.'
+    AND "treenode"."id" = "tci"."treenode_id"
+    ORDER BY "treenode"."parent_id" DESC');
+  */
+
+  # Select info for the given treenode ID
+  $q = $db->getResult(
+  'SELECT treenode.id,
+          (treenode.location).x,
+          (treenode.location).y,
+          (treenode.location).z,
+          treenode.confidence,
+          treenode.user_id,
+          treenode.parent_id,
+          tci.class_instance_id AS skeleton_id
+  FROM treenode_class_instance AS tci,
+       treenode
+  WHERE tci.project_id = '.$pid.'
+    AND treenode.id = '.$tnid.'
+    AND tci.relation_id = '.$ele_id.'
+    AND treenode.id = tci.treenode_id');
+
+  if (false === $q) {
+    emitErrorAndExit($db, 'Failed to retrieve information for treenode #'.$tnid);
+  }
+
+  if (count($q) > 1) {
+    emitErrorAndExit($db, 'Found not 1 but '.count($q).' nodes in the database!');
+  }
+
+  # Only one row expected
+  $q = $q[0];
+  
+  # Convert numeric entries to integers
+  $q['id'] = (int)$q['id'];
+  $q['x'] = (int)$q['x'];
+  $q['y'] = (int)$q['y'];
+  $q['z'] = (int)$q['z'];
+  $q['confidence'] = (int)$q['confidence'];
+  $q['user_id'] = (int)$q['user_id'];
+  $q['parent_id'] = (int)$q['parent_id'];
+  $q['skeleton_id'] = (int)$q['skeleton_id'];
+
+  if (! $db->commit() ) {
+		emitErrorAndExit( $db, 'Failed to commit!' );
+	}
+
+  echo json_encode( $q );
+
+} catch (Exception $e) {
+	emitErrorAndExit( $db, 'ERROR: '.$e );
+}
+
+?>

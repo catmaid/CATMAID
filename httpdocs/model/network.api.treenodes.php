@@ -48,6 +48,11 @@ try {
   if (false === $ele_id || !$ele_id) {
     emitErrorAndExit( $db, 'Can not find "element_of" relation for this project' );
   }
+  # Relation 'labeled_as'
+  $labeled_as_id = $db->getRelationId( $pid, 'labeled_as' );
+  if (false === $labeled_as_id || !$labeled_as_id) {
+    emitErrorAndExit( $db, 'Cannot find "labeled_as" relation for this project.' );
+  }
 
   // Select all treenodes of the skeleton
   $q = $db->getResult(
@@ -71,8 +76,30 @@ try {
     emitErrorAndExit($db, 'Failed to retrieve information for treenode #'.$tnid);
   }
 
-  # Convert numeric entries to integers
   foreach ($q as &$p) {
+    # Select text labels for node $tnid
+    $tags = $db->getResult(
+      'SELECT "class_instance"."name"
+      FROM "treenode_class_instance" AS "tci",
+           "class_instance"
+      WHERE "tci"."project_id" = '.$pid.'
+        AND "tci"."treenode_id" = '.$p['id'].'
+        AND "tci"."relation_id" = '.$labeled_as_id.'
+        AND "tci"."class_instance_id" = "class_instance"."id"');
+  
+    if (false === $tags) {
+      emitErrorAndExit( $db, 'Failed to retrieve tags for treenode '.$tnid);
+    }
+    
+    if (count($tags) > 0) {
+      $a = array();
+      foreach ($tags as $tag) { $a[] = $tag['name']; }
+      $p['tags'] = $a;
+    } else {
+      $p['tags'] = null;
+    }
+
+    # Convert numeric entries to integers
     $p['id'] = (int)$p['id'];
     $p['x'] = (int)$p['x'];
     $p['y'] = (int)$p['y'];

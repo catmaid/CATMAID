@@ -43,38 +43,16 @@ if (! $db->begin() ) {
 }
 
 try {
-  // Check if relation 'element_of' exists
+  # Relation 'element_of'
   $ele_id = $db->getRelationId( $pid, 'element_of' );
   if (false === $ele_id || !$ele_id) {
-    emitErrorAndExit( $db, 'Can not find "element_of" relation for this project' );
+    emitErrorAndExit( $db, 'Cannot find "element_of" relation for this project.' );
   }
-
-  /*
-  // Retrieve skeleton for treenode
-  $q = $db->getClassInstanceForTreenode( $pid, $tnid, "element_of");
-
-  if (false === $q || !$q) {
-    emitErrorAndExit( $db, array( '"error"' => 'There seems not to exist a skeleton for treenode id ') );
+  # Relation 'labeled_as'
+  $labeled_as_id = $db->getRelationId( $pid, 'labeled_as' );
+  if (false === $labeled_as_id || !$labeled_as_id) {
+    emitErrorAndExit( $db, 'Cannot find "labeled_as" relation for this project.' );
   }
-
-  $skeletonID = $q[0]['class_instance_id']; }
-  
-  // Select all treenodes of the skeleton
-  $q = $db->getResult(
-    'SELECT "treenode"."id",
-            ("treenode"."location")."x",
-            ("treenode"."location")."y", 
-            ("treenode"."location")."z",
-            "treenode"."confidence",
-            "treenode"."parent_id"
-    FROM "treenode_class_instance" AS "tci",
-         "treenode"
-    WHERE "tci"."project_id" = '.$pid.'
-    AND "tci"."relation_id" = '.$ele_id.'
-    AND "tci"."class_instance_id" = '.$skelid.'
-    AND "treenode"."id" = "tci"."treenode_id"
-    ORDER BY "treenode"."parent_id" DESC');
-  */
 
   # Select info for the given treenode ID
   $q = $db->getResult(
@@ -113,6 +91,29 @@ try {
   $q['user_id'] = (int)$q['user_id'];
   $q['parent_id'] = (int)$q['parent_id'];
   $q['skeleton_id'] = (int)$q['skeleton_id'];
+
+
+  # Select text labels for node $tnid
+  $tags = $db->getResult(
+		'SELECT "class_instance"."name"
+		FROM "treenode_class_instance" AS "tci",
+         "class_instance"
+		WHERE "tci"."project_id" = '.$pid.'
+      AND "tci"."treenode_id" = '.$tnid.'
+      AND "tci"."relation_id" = '.$labeled_as_id.'
+      AND "tci"."class_instance_id" = "class_instance"."id"');
+
+  if (false === $tags) {
+    emitErrorAndExit( $db, 'Failed to retrieve tags for treenode '.$tnid);
+  }
+
+  if (count($tags) > 0) {
+    $a = array();
+    foreach ($tags as $tag) { $a[] = $tag['name']; }
+    $q['tags'] = $a;
+  } else {
+    $q['tags'] = null;
+  }
 
   if (! $db->commit() ) {
 		emitErrorAndExit( $db, 'Failed to commit!' );

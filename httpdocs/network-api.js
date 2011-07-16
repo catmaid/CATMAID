@@ -12,9 +12,15 @@
  * 
  * All constructors have the side effect of registering themselves
  * into the appropriate cache of ID vs instance.
+ * 
+ * TODO: collect text labels for each node
+ * TODO: add function to find nodes with a given label in a skeleton or in the whole project.
+ * TODO: add function to Node to find the nearest upstream node with a specific label, return the ordered array of nodes to it.
+ * TODO: add Node.goto() which centers the display on the node.
  */
 var CM = function()
 {
+  "use strict";
   var cm = this;
   // Cache:
   this.IDSkeletons = {};

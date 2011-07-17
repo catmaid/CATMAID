@@ -303,14 +303,16 @@ var CM = function()
     // In overlay.js, "atn" is a global variable holding the active node or the active connector.
     // A node is an instance of class Node in overlay_node.js,
     // and a connector is an instance of class ConnectorNode in overlay_connector.js.
-    if (typeof atn === Node) return this.node(atn.id);
-    if (typeof atn === ConnectorNode) return this.connector(atn.id);
+    if (!window.atn) return null;
+    if (window.atn.constructor === window.Node) return this.node(window.atn.id);
+    if (window.atn.constructor === window.ConnectorNode) return this.connector(window.atn.id);
     return null;
   };
 
   this.selectedSkeleton = function() {
-    if (typeof atn === Node) {
-      var node = this.node(atn.id);
+    if (!window.atn) return null;
+    if (window.atn.constructor === window.Node) {
+      var node = this.node(window.atn.id);
       if (node) return node.skeleton();
     }
     return null;

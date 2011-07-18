@@ -75,9 +75,9 @@ var CM = function()
         var node = new Node(json[i]);
         map[node.id] = node;
       }
-      for (var node in map) {
-        if (map.hasOwnProperty(node)) {
-          node.parent_node = map[node.parent_id];
+      for (var ID in map) {
+        if (map.hasOwnProperty(ID)) {
+          map[ID].parent_node = map[map[ID].parent_id];
         }
       }
       this.node_map = map;

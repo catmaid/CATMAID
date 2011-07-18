@@ -156,6 +156,61 @@ var CM = function()
     this.upstreamPartners = function() {
       return partners(this.connectors().post, "preSkeletons");
     };
+    
+    this.measure = function() {
+      var node_map = this.nodes();
+      var count = 0;
+      var cable = 0;
+      var nChildren = {};
+      for (var ID in node_map) {
+        if (node_map.hasOwnProperty(ID)) {
+          count += 1;
+          var n1 = node_map[ID];
+          var n2 = n1.parent_node;
+          if (n2) {
+            cable += Math.sqrt(Math.pow(n2.x - n1.x, 2)
+                             + Math.pow(n2.y - n1.y, 2)
+                             + Math.pow(n2.z - n1.z, 2));
+            if (nChildren[n2.id]) {
+              nChildren[n2.id] += 1;
+            } else {
+              nChildren[n2.id] = 1;
+            }
+          }
+        }
+      }
+      var slabNodes = 0;
+      var branchNodes = 0;
+      for (var parentID in nChildren) {
+        if (nChildren.hasOwnProperty(parentID)) {
+          if (1 === nChildren[parentID]) {
+            slabNodes += 1;
+          } else {
+            branchNodes +=1;
+          }
+        }
+      }
+      var cs = this.connectors();
+      var downstreamPartners = this.downstreamPartners();
+      var upstreamPartners = this.upstreamPartners();
+      var fn = function (sum, sk) { return sk.size() > 1 ? 0 : 1; };
+      var downstreamPartnersSingleNode = downstreamPartners.reduce(fn, 0);
+      var upstreamPartnersSingleNode = upstreamPartners.reduce(fn, 0);
+
+      return {
+        cable: cable,
+        nodes: count,
+        endNodes: count - slabNodes - branchNodes,
+        branchNodes: branchNodes,
+        slabNodes: slabNodes,
+        presynapticSites: Object.keys(cs.pre).length,
+        downstreamPartners: downstreamPartners.length,
+        downstreamPartnersSingleNode: downstreamPartnersSingleNode,
+        postsynapticSites: Object.keys(cs.post).length,
+        upstreamPartners: upstreamPartners.length,
+        upstreamPartnersSingleNode: upstreamPartnersSingleNode
+      };
+    };
   };
 
   /**

@@ -54,23 +54,22 @@ try {
     emitErrorAndExit( $db, 'Cannot find "labeled_as" relation for this project.' );
   }
 
-  // Select all treenodes of the skeleton
+  # Select all treenodes of the skeleton
   $q = $db->getResult(
-    'SELECT DISTINCT treenode.id,
+    'SELECT treenode.id,
             (treenode.location).x,
             (treenode.location).y, 
             (treenode.location).z,
             treenode.confidence,
             treenode.parent_id,
             treenode.user_id,
-            treenode.parent_id,
             tci.class_instance_id AS skeleton_id
-    FROM treenode_class_instance AS tci,
-         treenode
+    FROM treenode,
+         treenode_class_instance AS tci
     WHERE tci.project_id = '.$pid.'
       AND tci.relation_id = '.$ele_id.'
-      AND tci.class_instance_id = '.$skid.'
-    ORDER BY treenode.id DESC');
+      AND tci.treenode_id = treenode.id
+      AND tci.class_instance_id = '.$skid);
 
   if (false === $q) {
     emitErrorAndExit($db, 'Failed to retrieve information for treenode #'.$tnid);
@@ -78,6 +77,7 @@ try {
 
   foreach ($q as &$p) {
     # Select text labels for node $tnid
+    # TODO there must be a way to select all tags for all nodes of the skeleton in one shot
     $tags = $db->getResult(
       'SELECT "class_instance"."name"
       FROM "treenode_class_instance" AS "tci",

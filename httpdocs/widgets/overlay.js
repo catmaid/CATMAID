@@ -928,14 +928,25 @@ var SVGOverlay = function (
     var phys_y = pix2physY(pos_y);
     var phys_z = project.coordinates.z;
 
+    var ctrl, shift, meta;
+    if (e) {
+        ctrl = e.ctrlKey;
+        shift = e.shiftKey;
+        meta = e.metaKey;
+    } else if (event) {
+        ctrl = event.ctrlKey;
+        shift = event.shiftKey;
+        meta = event.metaKey;
+    }
+
     // e.metaKey should correspond to the command key on Mac OS
-    if (e.ctrlKey || e.metaKey) {
+    if (ctrl || meta) {
       // ctrl-click deselects the current active node
       if (atn !== null) {
         statusBar.replaceLast("deactivated active node with id " + atn.id);
       }
       activateNode(null);
-    } else if (e.shiftKey) {
+    } else if (shift) {
       if (atn === null) {
         if (getMode() === "skeletontracing") {
           var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');

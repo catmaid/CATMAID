@@ -958,14 +958,14 @@ var SVGOverlay = function (
           // on the target connector to link them presynaptically
           statusBar.replaceLast("created connector presynaptic to treenode with id " + atn.id);
           createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
-          e.stopPropagation();
+          stopEventPropagation(e);
           return true;
         } else if (atn instanceof ConnectorNode) {
           // create new treenode (and skeleton) postsynaptic to activated connector
           locid = atn.id;
           statusBar.replaceLast("created treenode with id " + atn.id + "postsynaptic to activated connector");
           createNodeWithConnector(locid, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
-          e.stopPropagation();
+          stopEventPropagation(e);
           return true;
         }
       }
@@ -981,7 +981,7 @@ var SVGOverlay = function (
             statusBar.replaceLast("created new treenode as child of treenode" + atn.id);
           }
           createNode(atn, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
-          e.stopPropagation();
+          stopEventPropagation(e);
           return true;
         }
       } else if (getMode() === "synapsedropping") {
@@ -989,7 +989,7 @@ var SVGOverlay = function (
         createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5);
       }
     }
-    e.stopPropagation();
+    stopEventPropagation(e);
     return true;
   };
 

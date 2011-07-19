@@ -16,6 +16,14 @@ var MOUSE_BUTTON_LEFT = 1;
 var MOUSE_BUTTON_MIDDLE = 2;
 var MOUSE_BUTTON_RIGHT = 3;
 
+var stopEventPropagation = function(e) {
+    if (e) {
+        e.stopPropagation();
+    } else if (event) {
+        event.cancelBubble = true;
+    }
+}
+
 /**
  * container for generic user interface actions
  */

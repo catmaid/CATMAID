@@ -13,7 +13,6 @@
  * All constructors have the side effect of registering themselves
  * into the appropriate cache of ID vs instance.
  *
- * TODO: add function to Node to find the nearest upstream node with a specific label, return the ordered array of nodes to it.
  * TODO: add Node.goto() which centers the display on the node.
  */
 var CM = function()
@@ -49,6 +48,21 @@ var CM = function()
     this.isRoot = function() {
       return 0 === this.parent_id;
     };
+    /**  Return the array of nodes, including this node,
+     * all the way to the first parent that contains the tag.
+     * Returns null if no parent matches. */
+    this.pathTo = function(tag) {
+      var node_map = this.skeleton().nodes();
+      var parent = node_map[this.parent_id];
+      var path = new Array(this);
+      var matches = function(t) { return t === tag; };
+      while (true) {
+        if (!parent) return null;
+        path.push(parent);
+        if (parent.tags && parent.tags.filter(matches).length > 0) return path;
+        parent = node_map[parent.parent_id];
+      }
+    }; 
   };
 
   var Skeleton = function(json) {

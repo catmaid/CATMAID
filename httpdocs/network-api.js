@@ -211,6 +211,19 @@ var CM = function()
         upstreamPartnersSingleNode: upstreamPartnersSingleNode
       };
     };
+    
+    /** Return an array of nodes tagged with 'tag'.
+     * If none found, returns an empty array. */
+    this.tagged = function(tag) {
+      var nodes_map = this.nodes();
+      var a = new Array();
+      for (var ID in nodes_map) {
+        if (nodes_map.hasOwnProperty(ID)) {
+          a.push(nodes_map[ID]);
+        }
+      }
+      return a;
+    };
   };
 
   /**

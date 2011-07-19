@@ -869,6 +869,10 @@ function Project(pid) {
   var view = document.createElement("div");
   view.className = "projectView";
 
+  view.onselectstart = function() {
+      return false;
+  }
+
   var templateView = document.createElement("div");
   templateView.className = "projectTemplateView";
 

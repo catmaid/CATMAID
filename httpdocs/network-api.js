@@ -61,7 +61,21 @@ var CM = function()
         if (parent.tags && parent.tags.filter(matches).length > 0) return path;
         parent = node_map[parent.parent_id];
       }
-    }; 
+    };
+  };
+
+  /** First check if an instance of json.id exists in the cache,
+   * and if so, just update it with the json object.
+   * Otherwise, return a new ctor(json).
+   * This works for Node, Skeleton, Neuron and Connector,
+   * which are all cached and whose only constructor argument is a json object. */
+  var create = function(ctor, cache, json) {
+    var o = cache[json.id];
+    if (o) {
+      jQuery.extend(o, json);
+      return o;
+    }
+    return new ctor(json);
   };
 
   var Skeleton = function(json) {
@@ -70,10 +84,8 @@ var CM = function()
     cm.IDSkeletons[this.id] = this;
 
     /** Return the set of Node instances as {123: Node, 245: Node, ...}.
-     * Each Node has a pointer "parent_node" to its parent Node.
-     * This function is different than all others in that the skeleton
-     * caches its own map of ID vs Node instances, and retrieves all
-     * nodes in one single call to the database. */
+     * This function retrieves all nodes in one single call to the database.
+     * The creation of each Node puts that Node into the IDNodes cache. */
     this.nodes = function() {
       if (this.hasOwnProperty("node_map")) {
         if (this.node_map) return this.node_map;
@@ -83,8 +95,7 @@ var CM = function()
       if (null === json) return null;
       var map = {};
       for (var i=0, len=json.length; i<len; ++i) {
-        var node = new Node(json[i]);
-        map[node.id] = node;
+        map[json[i].id] = create(Node, cm.IDNodes, json[i]);
       }
       this.node_map = map;
       return this.node_map;
@@ -339,7 +350,7 @@ var CM = function()
   /** Query the database for the properties of the node with ID. */
   this.fetchNode = function(ID) {
     var json = synchFetch("model/network.api.treenode.php", {tnid: ID});
-    if (null !== json) return new Node(json);
+    if (null !== json) return create(Node, this.IDNodes, json);
     return null;
   };
   
@@ -398,7 +409,7 @@ var CM = function()
    * @param maxResults The maximum number of results, or 0 for all. */
   this.fetchTagged = function(tag, maxResults) {
     var json = synchFetch("model/network.api.nodes.tagged.php", {tag: tag, limit: maxResults});
-    if (json) return json.map(function(j) { return new Node(j); });
+    if (json) return json.map(function(j) { return create(Node, this.IDNodes, j); });
     return null;
   };
 };

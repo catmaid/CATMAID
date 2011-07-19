@@ -12,9 +12,7 @@
  * 
  * All constructors have the side effect of registering themselves
  * into the appropriate cache of ID vs instance.
- * 
- * TODO: collect text labels for each node
- * TODO: add function to find nodes with a given label in a skeleton or in the whole project.
+ *
  * TODO: add function to Node to find the nearest upstream node with a specific label, return the ordered array of nodes to it.
  * TODO: add Node.goto() which centers the display on the node.
  */
@@ -383,6 +381,16 @@ var CM = function()
       var node = this.node(window.atn.id);
       if (node) return node.skeleton();
     }
+    return null;
+  };
+
+  /** Query the database for nodes that have the given tag,
+   * and return an array of them.
+   * @param tag The tag to match.
+   * @param maxResults The maximum number of results, or 0 for all. */
+  this.fetchTagged = function(tag, maxResults) {
+    var json = synchFetch("model/network.api.nodes.tagged.php", {tag: tag, limit: maxResults});
+    if (json) return json.map(function(j) { return new Node(j); });
     return null;
   };
 };

@@ -494,6 +494,7 @@ initObjectTree = function (pid) {
   });
 
   $(object_tree_id).bind("move_node.jstree", function (e, data) {
+    var parsedReply;
 
     src = data.rslt.o;
     ref = data.rslt.r;
@@ -511,7 +512,8 @@ initObjectTree = function (pid) {
         "pid": pid
       },
       success: function (r, status) {
-        if (r !== "True") {
+        parsedReply = $.parseJSON(r);
+        if (parsedReply !== "True") {
           $.jstree.rollback(data.rlbk);
         }
       }

@@ -38,7 +38,6 @@ var CM = function()
     cm.IDNodes[this.id] = this;
     /** Return the parent Node or null if it is the root. */
     this.parent = function() {
-      if (this.parent_node) return this.parent_node;
       if (0 === this.parent_id) return null; // root
       return cm.node(this.parent_id);
     };
@@ -86,11 +85,6 @@ var CM = function()
       for (var i=0, len=json.length; i<len; ++i) {
         var node = new Node(json[i]);
         map[node.id] = node;
-      }
-      for (var ID in map) {
-        if (map.hasOwnProperty(ID)) {
-          map[ID].parent_node = map[map[ID].parent_id];
-        }
       }
       this.node_map = map;
       return this.node_map;
@@ -178,7 +172,7 @@ var CM = function()
         if (node_map.hasOwnProperty(ID)) {
           count += 1;
           var n1 = node_map[ID];
-          var n2 = n1.parent_node;
+          var n2 = node_map[n1.parent_id];
           if (n2) {
             cable += Math.sqrt(Math.pow(n2.x - n1.x, 2)
                              + Math.pow(n2.y - n1.y, 2)

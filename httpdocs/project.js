@@ -46,13 +46,6 @@ var stringToKeyAction = {
       return false;
     }
   },
-  "J": {
-    helpText: "Nothing right now",
-    run: function (e) {
-      alert("J was pressed");
-      return false;
-    }
-  },
   "+": {
     helpText: "Zoom in",
     specialKeyCodes: [107, 61, 187],

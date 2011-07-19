@@ -43,7 +43,7 @@ if (! $db->begin() ) {
 }
 
 try {
-  # Check if relation 'element_of' exists
+  # Relation 'element_of'
   $ele_id = $db->getRelationId( $pid, 'element_of' );
   if (false === $ele_id || !$ele_id) {
     emitErrorAndExit( $db, 'Can not find "element_of" relation for this project' );
@@ -88,7 +88,7 @@ try {
         AND "tci"."class_instance_id" = "class_instance"."id"');
   
     if (false === $tags) {
-      emitErrorAndExit( $db, 'Failed to retrieve tags for treenode '.$tnid);
+      emitErrorAndExit( $db, 'Failed to retrieve tags for treenode '.$p['id']);
     }
     
     if (count($tags) > 0) {

@@ -1,19 +1,41 @@
 /** A high-level object to inspect the contents of
  * the reconstructed skeletons and their relations.
- * Intended for use from the console:
+ * Intended for use from the console.
+ * 
+ * Example 1:
  * 
  *   var cm = new CM();
- *   var skeleton = cm.fetchSkeleton(123);
- *   var nodes = skeleton.nodes();
+ *   var node = cm.fetchNode(4199);
+ *   var sk = node.skeleton();
+ *   var nodes = sk.nodes();
  *   var connectors = skeleton.connectors();
  *   var downstreamPartners = skeleton.downstreamPartners();
+ * 
+ * Example 2:
+ *   var cm = new CM();
+ *   var node = cm.selectedNode();
+ *   console.log("ID", node.id);
+ *   // An array from node to the first parent that has the tag 'TODO':
+ *   var path = node.pathTo('TODO');
+ *   // An object with multiple measurements:
+ *   var m = node.measure();
+ *   console.log("cable length:", m.cable);
+ * 
+ * Example 3:
+ *   var cm = new CM();
+ *   var sk = cm.selectedSkeleton();
+ *   var cs = sk.connectors();
+ *   // Retrieve all nodes and cache them
+ *   var nodes = sk.nodes();
+ *   // An array of Node instances that are presynaptic:
+ *   var nodesWithPre = Object.getOwnPropertyNames(cs.pre).map(cm.node);
  * 
  * All access is read-only: no changes in the database.
  * 
  * All constructors have the side effect of registering themselves
  * into the appropriate cache of ID vs instance.
  *
- * TODO: add Node.goto() which centers the display on the node.
+ * TODO: add Node.go() which centers the display on the node and selects it.
  */
 var CM = function()
 {
@@ -53,7 +75,7 @@ var CM = function()
     this.pathTo = function(tag) {
       var node_map = this.skeleton().nodes();
       var parent = node_map[this.parent_id];
-      var path = new Array(this);
+      var path = [this];
       var matches = function(t) { return t === tag; };
       while (true) {
         if (!parent) return null;
@@ -132,7 +154,7 @@ var CM = function()
       var fn = function(map, j) {
         var tid = j.node_id;
         delete j.node_id;
-        map[tid] = new Connector(j);
+        map[tid] = create(Connector, cm.IDConnectors, j);
         return map;
       };
       this.cs = {
@@ -233,7 +255,7 @@ var CM = function()
      * If none found, returns an empty array. */
     this.tagged = function(tag) {
       var nodes_map = this.nodes();
-      var a = new Array();
+      var a = [];
       for (var ID in nodes_map) {
         if (nodes_map.hasOwnProperty(ID)) {
           a.push(nodes_map[ID]);
@@ -324,59 +346,59 @@ var CM = function()
   };
   
   this.skeleton = function(ID) {
-    var sk = this.IDSkeletons[ID];
+    var sk = cm.IDSkeletons[ID];
     if (sk) return sk;
-    return this.fetchSkeleton(ID);
+    return cm.fetchSkeleton(ID);
   };
   
   this.neuron = function(ID) {
-    var neu = this.IDNeurons[ID];
+    var neu = cm.IDNeurons[ID];
     if (neu) return neu;
-    return this.fetchNeuron(ID);
+    return cm.fetchNeuron(ID);
   };
   
   this.node = function(ID) {
-    var node = this.IDNodes[ID];
+    var node = cm.IDNodes[ID];
     if (node) return node;
-    return this.fetchNode(ID);
+    return cm.fetchNode(ID);
   };
 
   this.connector = function(ID) {
-    var c = this.IDConnectors[ID];
+    var c = cm.IDConnectors[ID];
     if (c) return c;
-    return this.fetchConnector(ID);
+    return cm.fetchConnector(ID);
   };
 
   /** Query the database for the properties of the node with ID. */
   this.fetchNode = function(ID) {
     var json = synchFetch("model/network.api.treenode.php", {tnid: ID});
-    if (null !== json) return create(Node, this.IDNodes, json);
+    if (null !== json) return create(Node, cm.IDNodes, json);
     return null;
   };
   
   this.fetchConnector = function(ID) {
     var json = synchFetch("model/network.api.connector.php", {cid: ID});
-    if (null !== json) return new Connector(json);
+    if (null !== json) return create(Connector, cm.IDConnectors, json);
     return null;
   };
 
   /** Query the database for the properties of the skeleton with ID. */
   this.fetchSkeleton = function(ID) {
     var json = synchFetch("model/network.api.skeleton.php", {skid: ID});
-    if (null !== json) return new Skeleton(json);
+    if (null !== json) return create(Skeleton, cm.IDSkeletons, json);
     return null;
   };
 
   this.fetchNeuron = function(ID) {
     var json = synchFetch("model/network.api.neuron.php", {neuron_id: ID});
-    if (null !== json) return new Neuron(json);
+    if (null !== json) return create(Neuron, cm.IDNeurons, json);
     return null;
   }
 
   /** Find what ID is (a skeleton, node or a neuron) and return the appropriate
    * object instance for reading out its properties. */
   this.fetch = function(ID) {
-    var fns = [this.fetchNeuron, this.fetchSkeleton, this.fetchNode];
+    var fns = [cm.fetchNeuron, cm.fetchSkeleton, cm.fetchNode];
     for (var i=0, len=fns.length; i<len; ++i) {
       var r = fns[i](ID);
       if (r !== null) return r;
@@ -389,15 +411,15 @@ var CM = function()
     // A node is an instance of class Node in overlay_node.js,
     // and a connector is an instance of class ConnectorNode in overlay_connector.js.
     if (!window.atn) return null;
-    if (window.atn.constructor === window.Node) return this.node(window.atn.id);
-    if (window.atn.constructor === window.ConnectorNode) return this.connector(window.atn.id);
+    if (window.atn.constructor === window.Node) return cm.node(window.atn.id);
+    if (window.atn.constructor === window.ConnectorNode) return cm.connector(window.atn.id);
     return null;
   };
 
   this.selectedSkeleton = function() {
     if (!window.atn) return null;
     if (window.atn.constructor === window.Node) {
-      var node = this.node(window.atn.id);
+      var node = cm.node(window.atn.id);
       if (node) return node.skeleton();
     }
     return null;
@@ -409,7 +431,7 @@ var CM = function()
    * @param maxResults The maximum number of results, or 0 for all. */
   this.fetchTagged = function(tag, maxResults) {
     var json = synchFetch("model/network.api.nodes.tagged.php", {tag: tag, limit: maxResults});
-    if (json) return json.map(function(j) { return create(Node, this.IDNodes, j); });
+    if (json) return json.map(function(j) { return create(Node, cm.IDNodes, j); });
     return null;
   };
 };

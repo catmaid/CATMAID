@@ -455,7 +455,8 @@ initObjectTree = function (pid) {
       "id": data.rslt.obj.attr("id").replace("node_", ""),
       "pid": pid
     }, function (retdata) {
-      if (retdata === "True") {
+      var parsedReply = $.parseJSON(retdata);
+      if (parsedReply === "True") {
         alert("Object Treenode has child relations. (Re-)move them before you can delete it.");
         $.jstree.rollback(treebefore);
         return false;
@@ -494,7 +495,6 @@ initObjectTree = function (pid) {
   });
 
   $(object_tree_id).bind("move_node.jstree", function (e, data) {
-    var parsedReply;
 
     src = data.rslt.o;
     ref = data.rslt.r;
@@ -512,7 +512,7 @@ initObjectTree = function (pid) {
         "pid": pid
       },
       success: function (r, status) {
-        parsedReply = $.parseJSON(r);
+        var parsedReply = $.parseJSON(r);
         if (parsedReply !== "True") {
           $.jstree.rollback(data.rlbk);
         }

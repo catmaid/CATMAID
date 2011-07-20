@@ -140,7 +140,7 @@ var requestQueue = function()
 				r,		//!< string  request
 				m,		//!< string  method		"GET" or "POST"
 				d,		//!< object  data		object with key=>value
-				c,		//!< funtion callback
+				c,		//!< function callback
 				id		//!< string  id
 		)
 		{

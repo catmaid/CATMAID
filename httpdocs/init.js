@@ -816,10 +816,10 @@ function showMessages()
 		messageWindow = new CMWWindow( "Messages" );
 		var messageContent = messageWindow.getFrame();
 		messageContent.style.backgroundColor = "#ffffff";
-		var messageList = document.getElementById( "message_container" );
-		if ( messageList.parentNode )
-			messageList.parentNode.removeChild( messageList );
-		messageContent.appendChild( messageList );
+		var messageContext = document.getElementById( "message_context" );
+		if ( messageContext.parentNode )
+			messageContext.parentNode.removeChild( messageContext );
+		messageContent.appendChild( messageContext );
 		
 		messageWindow.addListener(
 			function( callingWindow, signal )
@@ -827,15 +827,18 @@ function showMessages()
 				switch ( signal )
 				{
 				case CMWWindow.CLOSE:
-					if ( messageList.parentNode )
-						messageList.parentNode.removeChild( messageList );
-					document.getElementById( "dump" ).appendChild( messageList );
+					if ( messageContext.parentNode )
+						messageContext.parentNode.removeChild( messageContext );
+					document.getElementById( "dump" ).appendChild( messageContext );
 					if ( typeof project == undefined || project == null )
 					{
 						rootWindow.close();
 						document.getElementById( "content" ).style.display = "block";
 					}
 					messageWindow = null;
+					break;
+				case CMWWindow.RESIZE:
+					messageContext.style.height = messageWindow.getContentHeight() + "px";
 					break;
 				}
 				return true;
@@ -863,7 +866,13 @@ function showKeyboardShortcuts()
 	{
 		keyboardShortcutsWindow = new CMWWindow( "KeyboardShortcuts" );
 		var keyboardShortcutsContent = keyboardShortcutsWindow.getFrame();
+		var keyboardShortcutsContext = document.createElement( "div" );
 		keyboardShortcutsContent.style.backgroundColor = "#ffffff";
+		keyboardShortcutsContext.style.position = "absolute";
+		keyboardShortcutsContext.style.bottom = "0px";
+		keyboardShortcutsContext.style.width = "100%";
+		keyboardShortcutsContext.style.overflow = "auto";
+		
 		var keyboardShortcutsList = document.createElement( "p" );
     keyboardShortcutsList.id="keyShortcutsText";
     var keysHTML = '';
@@ -871,24 +880,10 @@ function showKeyboardShortcuts()
       keysHTML += '<button style="width:3em; margin-right:1em">' + i + '</button>' + stringToKeyAction[i].helpText + "<br />";
     }
     keyboardShortcutsList.innerHTML = keysHTML;
-		keyboardShortcutsList.style.marginTop = "2em";
-		keyboardShortcutsList.style.marginBottom = "2em";
-		keyboardShortcutsContent.appendChild( keyboardShortcutsList );
+    keyboardShortcutsContext.appendChild( keyboardShortcutsList );
+		keyboardShortcutsContent.appendChild( keyboardShortcutsContext );
 		
-		document.getElementById( "content" ).style.display = "none";
-		
-		if ( rootWindow.getFrame().parentNode != document.body )
-			document.body.appendChild( rootWindow.getFrame() );
-			
-		if ( rootWindow.getChild() == null )
-			rootWindow.replaceChild( keyboardShortcutsWindow );
-		else
-			rootWindow.replaceChild( new CMWHSplitNode( keyboardShortcutsWindow, rootWindow.getChild() ) );
-			
-		keyboardShortcutsWindow.focus();
-	}
-	
-	keyboardShortcutsWindow.addListener(
+		keyboardShortcutsWindow.addListener(
 		function( callingWindow, signal )
 		{
 			switch ( signal )
@@ -901,8 +896,29 @@ function showKeyboardShortcuts()
 				}
 				else
 					keyboardShortcutsWindow.close();
+				keyboardShortcutsWindow = null;
 				break;
+			case CMWWindow.RESIZE:
+					keyboardShortcutsContext.style.height = keyboardShortcutsWindow.getContentHeight() + "px";
+					break;
 			}
 			return true;
 		} );
+		
+		document.getElementById( "content" ).style.display = "none";
+		
+		/* be the first window */
+		if ( rootWindow.getFrame().parentNode != document.body )
+		{
+			document.body.appendChild( rootWindow.getFrame() );
+			document.getElementById( "content" ).style.display = "none";
+		}
+		
+		if ( rootWindow.getChild() == null )
+			rootWindow.replaceChild( keyboardShortcutsWindow );
+		else
+			rootWindow.replaceChild( new CMWHSplitNode( rootWindow.getChild(), keyboardShortcutsWindow ) );
+	}
+	
+	keyboardShortcutsWindow.focus();
 }

@@ -81,15 +81,6 @@
 		
 	</head>
 	<body onload="init();"><a></a>
-	
-		<!-- Maps for input extension
-		***********************************************************************
-		-->
-		<map id="xmap" name="xmap"><area shape="rect" coords="0,0,13,9" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) + 1; x.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) - 1; x.onchange();" alt="-" /></map>
-		<map id="ymap" name="ymap"><area shape="rect" coords="0,0,13,9" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) + 1; y.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) - 1; y.onchange();" alt="-" /></map>
-		<!--
-		***********************************************************************
-		-->
 		
 		<!-- Toolbars
 		***********************************************************************
@@ -484,7 +475,20 @@
 			</table>
 			</form>
 			</div>
-		</div>		
+		</div>
+		
+		<!-- Dump for elements that should be available in the DOM but not visible for now -->
+		<div id="dump" style="display:none">
+			<!-- Maps for input extension
+			***********************************************************************
+			-->
+			<map id="xmap" name="xmap"><area shape="rect" coords="0,0,13,9" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) + 1; x.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) - 1; x.onchange();" alt="-" /></map>
+			<map id="ymap" name="ymap"><area shape="rect" coords="0,0,13,9" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) + 1; y.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) - 1; y.onchange();" alt="-" /></map>
+			<!--
+			***********************************************************************
+			-->
+			<dl id="message_container" style="margin-top:2em; margin-bottom:2em;"><dt>No new messages.</dt><dd></dd></dl>
+		</div>
 		
 	</body>
 </html>

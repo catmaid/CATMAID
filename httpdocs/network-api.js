@@ -2,8 +2,11 @@
  * the reconstructed skeletons and their relations.
  * Intended for use from the console.
  * 
- * Example 1:
+ * All access is read-only: no changes in the database.
+ * All constructors have the side effect of registering themselves
+ * into the appropriate cache of ID vs instance.
  * 
+ * Example 1:
  *   var cm = new CM();
  *   var node = cm.fetchNode(4199);
  *   var sk = node.skeleton();
@@ -30,12 +33,18 @@
  *   // An array of Node instances that are presynaptic:
  *   var nodesWithPre = Object.getOwnPropertyNames(cs.pre).map(cm.node);
  * 
- * All access is read-only: no changes in the database.
- * 
- * All constructors have the side effect of registering themselves
- * into the appropriate cache of ID vs instance.
+ * Example 4: AVOID poluting the global namespace, by creating a single var 'ns':
+ *   var ns = new function() {
+ *     this.cm = new CM();
+ *     this.node = this.cm.selectedNode();
+ *     this.sk = this.node.skeleton();
+ *     this.cs = this.sk.connectors();
+ *   };
+ *   ns.sk.measure();
  *
  * TODO: add Node.go() which centers the display on the node and selects it.
+ * TODO: add a table widget that is able to visualize one object per row, where all objects
+ *       have the same property names.
  */
 var CM = function()
 {

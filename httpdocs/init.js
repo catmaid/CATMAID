@@ -714,7 +714,8 @@ var init = function()
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
 	
-  table_widget = document.getElementById("treenode_table_widget");
+	
+	table_widget = document.getElementById("treenode_table_widget");
   var table_widget_resize_handle = new ResizeHandle("h");
   table_widget.appendChild(table_widget_resize_handle.getView());
   
@@ -814,45 +815,46 @@ function showMessages()
 	{
 		messageWindow = new CMWWindow( "Messages" );
 		var messageContent = messageWindow.getFrame();
-		messageContent.style.backgroundColor = "#ffff00";
-		messageContent.style.overflow = "auto";
-		var messageList = document.createElement( "dl" );
-		messageList.id = "message_container";
-		messageList.style.marginTop = "2em";
-		messageList.style.marginBottom = "2em";
+		messageContent.style.backgroundColor = "#ffffff";
+		var messageList = document.getElementById( "message_container" );
+		if ( messageList.parentNode )
+			messageList.parentNode.removeChild( messageList );
 		messageContent.appendChild( messageList );
 		
-		document.getElementById( "content" ).style.display = "none";
-		
+		messageWindow.addListener(
+			function( callingWindow, signal )
+			{
+				switch ( signal )
+				{
+				case CMWWindow.CLOSE:
+					if ( messageList.parentNode )
+						messageList.parentNode.removeChild( messageList );
+					document.getElementById( "dump" ).appendChild( messageList );
+					if ( typeof project == undefined || project == null )
+					{
+						rootWindow.close();
+						document.getElementById( "content" ).style.display = "block";
+					}
+					messageWindow = null;
+					break;
+				}
+				return true;
+			} );
+	
+		/* be the first window */
 		if ( rootWindow.getFrame().parentNode != document.body )
+		{
 			document.body.appendChild( rootWindow.getFrame() );
-			
+			document.getElementById( "content" ).style.display = "none";
+		}
+		
 		if ( rootWindow.getChild() == null )
 			rootWindow.replaceChild( messageWindow );
 		else
 			rootWindow.replaceChild( new CMWVSplitNode( messageWindow, rootWindow.getChild() ) );
-			
-		messageWindow.focus();
-		//ui.onresize();
 	}
-	
-	messageWindow.addListener(
-		function( callingWindow, signal )
-		{
-			switch ( signal )
-			{
-			case CMWWindow.CLOSE:
-				if ( typeof project == undefined || project == null )
-				{
-					rootWindow.close();
-					document.getElementById( "content" ).style.display = "none";
-				}
-				else
-					messageWindow.close();
-				break;
-			}
-			return true;
-		} );
+			
+	messageWindow.focus();
 }
 
 function showKeyboardShortcuts()
@@ -862,12 +864,11 @@ function showKeyboardShortcuts()
 		keyboardShortcutsWindow = new CMWWindow( "KeyboardShortcuts" );
 		var keyboardShortcutsContent = keyboardShortcutsWindow.getFrame();
 		keyboardShortcutsContent.style.backgroundColor = "#ffffff";
-		keyboardShortcutsContent.style.overflow = "auto";
-    var keyboardShortcutsList = document.createElement( "p" );
+		var keyboardShortcutsList = document.createElement( "p" );
     keyboardShortcutsList.id="keyShortcutsText";
     var keysHTML = '';
     for (i in stringToKeyAction) {
-      keysHTML += '<strong><tt>' + i + '</tt></strong>: ' + stringToKeyAction[i].helpText + "<br />";
+      keysHTML += '<button style="width:3em; margin-right:1em">' + i + '</button>' + stringToKeyAction[i].helpText + "<br />";
     }
     keyboardShortcutsList.innerHTML = keysHTML;
 		keyboardShortcutsList.style.marginTop = "2em";

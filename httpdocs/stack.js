@@ -276,8 +276,8 @@ function Stack(
 	 */
 	this.setTool = function( newTool )
 	{
-		if ( typeof tool != "undefined" && tool )
-			tool.unregister();
+//		if ( typeof tool != "undefined" && tool )
+//			tool.unregister();
 		tool = newTool;
 		if ( typeof tool != "undefined" && tool )
 			tool.register( self );
@@ -348,9 +348,10 @@ function Stack(
 				project.setFocusedStack( self );
 				break;
 			case CMWWindow.BLUR:
-				//if ( tool )
-				//	tool.unregister();
+				if ( tool )
+					tool.unregister();
 				tool = null;
+				window.onresize();
 				break;
 			}
 			return true;

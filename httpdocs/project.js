@@ -374,6 +374,7 @@ function Project( pid )
 		self.focusedStack = stack;
 		if ( tool )
 			self.focusedStack.setTool( tool );
+		window.onresize();
 		return;
 	}
 	
@@ -445,11 +446,16 @@ function Project( pid )
 	
 	this.setTool = function( newTool )
 	{
+		if ( tool )
+			tool.destroy();
 		tool = newTool;
-		if ( !self.focusedStack )
+		
+		if ( !self.focusedStack && stacks.length > 0 )
 			self.focusedStack = stacks[ 0 ];
 		
-		self.focusedStack.setTool( tool );
+		if ( self.focusedStack )
+			self.focusedStack.getWindow().focus();
+
 		window.onresize();
 		return;
 	}

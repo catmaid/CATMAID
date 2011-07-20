@@ -397,11 +397,26 @@ function Navigator()
 		return;
 	}
 	
+	
 	/**
-	 * unregister all GUI control connections and event handlers
+	 * unregister all stack related mouse and keyboard controls
 	 */
 	this.unregister = function()
 	{
+		if ( stack && mouseCatcher.parentNode == stack.getView() )
+			stack.getView().removeChild( mouseCatcher );	
+		return;
+	}
+	
+	
+	/**
+	 * unregister all project related GUI control connections and event
+	 * handlers, toggle off tool activity signals (like buttons)
+	 */
+	this.destroy = function()
+	{
+		self.unregister();
+		
 		document.getElementById( "edit_button_move" ).className = "button";
 		document.getElementById( "toolbar_nav" ).style.display = "none";
 		
@@ -446,10 +461,11 @@ function Navigator()
 			}
 			catch ( error ) {}
 		}
-
-		try { stack.getView().removeChild( mouseCatcher ); } catch ( error ) {}
-
+		
+		stack = null;
+		
 		return;
 	}
+	
 }
 

@@ -407,7 +407,7 @@ var CM = function()
   /** Find what ID is (a skeleton, node or a neuron) and return the appropriate
    * object instance for reading out its properties. */
   this.fetch = function(ID) {
-    var fns = [cm.fetchNeuron, cm.fetchSkeleton, cm.fetchNode];
+    var fns = [cm.neuron, cm.skeleton, cm.connector, cm.node];
     for (var i=0, len=fns.length; i<len; ++i) {
       var r = fns[i](ID);
       if (r !== null) return r;

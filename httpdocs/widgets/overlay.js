@@ -853,15 +853,7 @@ var SVGOverlay = function (
 
   };
 
-  var updateDimension = function () {
-    wi = Math.floor(dimension.x * s);
-    he = Math.floor(dimension.y * s);
-    // update width/height with the dimension from the database, which is in pixel unit
-    view.style.width = wi + "px";
-    view.style.height = he + "px";
-    // update the raphael canvas as well
-    r.setSize(wi, he);
-  };
+
 
   this.redraw = function (
   pl, //!< float left-most coordinate of the parent DOM element in nanometer

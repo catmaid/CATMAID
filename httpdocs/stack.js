@@ -121,7 +121,20 @@ function Stack(
 		};
 		return l;
 	}
-	
+
+  /*
+   * Get the top and left coordinates in physical project coordinates of
+   * stack's window
+   */
+  this.getWorldTopLeft = function()
+  {
+    return {
+      worldTop : ( ( y - viewHeight / self.scale / 2 ) ) * self.resolution.y + self.translation.y,
+      worldLeft : ( ( x - viewWidth / self.scale / 2 ) ) * self.resolution.x + self.translation.x,
+      scale : self.scale
+    }
+  }
+  
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */
@@ -214,8 +227,12 @@ function Stack(
 		self.viewWidth = stackWindow.getFrame().offsetWidth;
 		self.viewHeight = stackWindow.getFrame().offsetHeight;
 		
-		for ( var key in layers )
-			layers[ key ].resize( self.viewWidth, self.viewHeight );
+		for ( var key in layers ) {
+      if( layers.hasOwnProperty( key )) {
+        layers[ key ].resize( self.viewWidth, self.viewHeight );
+      }
+    }
+
 		
 		return;
 	}
@@ -262,7 +279,7 @@ function Stack(
 		if ( typeof layer != "undefined" && layer )
 		{
 			layer.unregister();
-			layers[ key ] = null;
+			delete layers[ key ];
 			return layer;
 		}
 		else

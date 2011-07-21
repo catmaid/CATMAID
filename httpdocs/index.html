@@ -321,6 +321,14 @@
         <div id="key_shortcut_widget" class="sliceView" style="width:350px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
           <div class="stackInfo_selected" style="position:relative">
             <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
+             <p>
+              <strong>click on a node:</strong> make that node active<br />
+              <strong>ctrl-click in space:</strong> deselect the active node<br />
+              <strong>ctrl-shift-click on a node:</strong> delete that node<br />
+              <strong>shift-click in space:</strong> create a synapse (if there was an active treenode)<br />
+              <strong>shift-click in space:</strong> create a post-synaptic node (if there was an active synapse)<br />
+              <strong>shift-click on a treenode:</strong> join two skeletons (if there was an active treenode)<br />
+            </p>
             <p id="keyShortcutsText">[BUG: keyboard shortcut help should be here...]</p>
           </div>
         </div>

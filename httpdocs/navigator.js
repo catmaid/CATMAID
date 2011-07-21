@@ -17,7 +17,7 @@
 function Navigator()
 {
 	var self = this;
-	var stack = null;
+	this.stack = null;
 
 	if ( !ui ) ui = new UI();
 
@@ -77,11 +77,11 @@ function Navigator()
 	
 	var updateControls = function()
 	{
-		slider_s.setByValue( stack.s, true );
-		slider_z.setByValue( stack.z, true );
+		slider_s.setByValue( self.stack.s, true );
+		slider_z.setByValue( self.stack.z, true );
 
-		input_x.value = stack.x;
-		input_y.value = stack.y;
+		input_x.value = self.stack.x;
+		input_y.value = self.stack.y;
 		
 		return;
 	}
@@ -100,7 +100,7 @@ function Navigator()
 	
 	var onmousemove = function( e )
 	{
-		stack.moveToPixel( stack.z, stack.y - ui.diffY / stack.scale, stack.x - ui.diffX / stack.scale, stack.s );
+		self.stack.moveToPixel( self.stack.z, self.stack.y - ui.diffY / self.stack.scale, self.stack.x - ui.diffX / self.stack.scale, self.stack.s );
 		updateControls();
 		return false;
 	};
@@ -162,39 +162,39 @@ function Navigator()
 		},
 		move : function( e )
 		{
-			var xp = stack.x;
-			var yp = stack.y;
+			var xp = self.stack.x;
+			var yp = self.stack.y;
 			var m = ui.getMouse( e );
 			var w = ui.getMouseWheel( e );
 			if ( m )
 			{
-				xp = m.offsetX - stack.viewWidth / 2;
-				yp = m.offsetY - stack.viewHeight / 2;
+				xp = m.offsetX - self.stack.viewWidth / 2;
+				yp = m.offsetY - self.stack.viewHeight / 2;
 				//statusBar.replaceLast( ( m.offsetX - viewWidth / 2 ) + " " + ( m.offsetY - viewHeight / 2 ) );
 			}
 			if ( w )
 			{
 				if ( w > 0 )
 				{
-					if ( stack.s < stack.MAX_S )
+					if ( self.stack.s < self.stack.MAX_S )
 					{
-						stack.moveToPixel(
-							stack.z,
-							stack.y - Math.floor( yp / stack.scale ),
-							stack.x - Math.floor( xp / stack.scale ),
-							stack.s + 1 );
+						self.stack.moveToPixel(
+							self.stack.z,
+							self.stack.y - Math.floor( yp / self.stack.scale ),
+							self.stack.x - Math.floor( xp / self.stack.scale ),
+							self.stack.s + 1 );
 					}
 				}
 				else
 				{
-					if ( stack.s > 0 )
+					if ( self.stack.s > 0 )
 					{
-						var ns = stack.scale * 2;
+						var ns = self.stack.scale * 2;
 						self.moveToPixel(
-							stack.z,
-							stack.y + Math.floor( yp / ns ),
-							stack.x + Math.floor( xp / ns ),
-							stack.s - 1 );
+							self.stack.z,
+							self.stack.y + Math.floor( yp / ns ),
+							self.stack.x + Math.floor( xp / ns ),
+							self.stack.s - 1 );
 					}
 				}
 			}
@@ -229,7 +229,7 @@ function Navigator()
 	
 	this.changeSlice = function( val )
 	{
-		stack.moveToPixel( val, stack.y, stack.x, stack.s );
+		self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
 		return;
 	}
 	//--------------------------------------------------------------------------
@@ -258,7 +258,7 @@ function Navigator()
 	
 	this.changeScale = function( val )
 	{
-		stack.moveToPixel( stack.z, stack.y, stack.x, val );
+		self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, val );
     return;
 	}
 
@@ -267,20 +267,20 @@ function Navigator()
    * the same position in the view
    */
   this.scalePreservingLastPosition = function (keep_x, keep_y, sp) {
-    var old_s = stack.s;
-    var old_scale = stack.scale;
-    var new_s = Math.max(0, Math.min(stack.MAX_S, Math.round(sp)));
+    var old_s = self.stack.s;
+    var old_scale = self.stack.scale;
+    var new_s = Math.max(0, Math.min(self.stack.MAX_S, Math.round(sp)));
     var new_scale = 1 / Math.pow(2, new_s);
 
     if (old_s == new_s) return;
 
-    var dx = keep_x - stack.getProject().coordinates.x;
-    var dy = keep_y - stack.getProject().coordinates.y;
+    var dx = keep_x - self.stack.getProject().coordinates.x;
+    var dy = keep_y - self.stack.getProject().coordinates.y;
 
     var new_centre_x = keep_x - dx * (old_scale / new_scale);
     var new_centre_y = keep_y - dy * (old_scale / new_scale);
 
-    stack.moveTo(stack.getProject().coordinates.z, new_centre_y, new_centre_x, sp);
+    self.stack.moveTo(self.stack.getProject().coordinates.z, new_centre_y, new_centre_x, sp);
   }
   
   
@@ -289,16 +289,16 @@ function Navigator()
 	var changeXByInput = function( e )
 	{
 		var val = parseInt( this.value );
-		if ( isNaN( val ) ) this.value = stack.x;
-		else stack.moveToPixel( stack.z, stack.y, val, stack.s );
+		if ( isNaN( val ) ) this.value = self.stack.x;
+		else self.stack.moveToPixel( self.stack.z, self.stack.y, val, self.stack.s );
 		return;
 	}
 	
 	var changeYByInput = function( e )
 	{
 		var val = parseInt( this.value );
-		if ( isNaN( val ) ) this.value = stack.y;
-		else stack.moveToPixel( stack.z, val, stack.x, stack.s );
+		if ( isNaN( val ) ) this.value = self.stack.y;
+		else self.stack.moveToPixel( self.stack.z, val, self.stack.x, self.stack.s );
 		return;
 	}
 	
@@ -317,12 +317,13 @@ function Navigator()
 	 * install this tool in a stack.
 	 * register all GUI control elements and event handlers
 	 */
-	this.register = function( parentStack )
+	this.register = function( parentStack, buttonName )
 	{
-		document.getElementById( "edit_button_move" ).className = "button_active";
+
+		document.getElementById( typeof buttonName == "undefined" ? "edit_button_move" : buttonName ).className = "button_active";
 		document.getElementById( "toolbar_nav" ).style.display = "block";
 		
-		stack = parentStack;
+		self.stack = parentStack;
 
 		mouseCatcher.onmousedown = onmousedown;
 		try
@@ -340,16 +341,16 @@ function Navigator()
 			catch ( error ) {}
 		}
 		
-		stack.getView().appendChild( mouseCatcher );
+		self.stack.getView().appendChild( mouseCatcher );
 
 		slider_s.update(
-			stack.MAX_S,
+			self.stack.MAX_S,
 			0,
-			stack.MAX_S + 1,
-			stack.s,
+			self.stack.MAX_S + 1,
+			self.stack.s,
 			self.changeScaleDelayed );
 		
-		if ( stack.slices.length < 2 )	//!< hide the slider_z if there is only one slice
+		if ( self.stack.slices.length < 2 )	//!< hide the slider_z if there is only one slice
 		{
 			slider_z.getView().parentNode.style.display = "none";
 		}
@@ -360,8 +361,8 @@ function Navigator()
 		slider_z.update(
 			0,
 			0,
-			stack.slices,
-			stack.z,
+			self.stack.slices,
+			self.stack.z,
 			self.changeSliceDelayed );
 		
 		input_x.onchange = changeXByInput;
@@ -403,8 +404,8 @@ function Navigator()
 	 */
 	this.unregister = function()
 	{
-		if ( stack && mouseCatcher.parentNode == stack.getView() )
-			stack.getView().removeChild( mouseCatcher );	
+		if ( self.stack && mouseCatcher.parentNode == self.stack.getView() )
+			self.stack.getView().removeChild( mouseCatcher );
 		return;
 	}
 	
@@ -413,11 +414,11 @@ function Navigator()
 	 * unregister all project related GUI control connections and event
 	 * handlers, toggle off tool activity signals (like buttons)
 	 */
-	this.destroy = function()
+	this.destroy = function( buttonName )
 	{
 		self.unregister();
 		
-		document.getElementById( "edit_button_move" ).className = "button";
+		document.getElementById( typeof buttonName == "undefined" ? "edit_button_move" : buttonName ).className = "button";
 		document.getElementById( "toolbar_nav" ).style.display = "none";
 		
 		slider_s.update(
@@ -462,7 +463,7 @@ function Navigator()
 			catch ( error ) {}
 		}
 		
-		stack = null;
+		self.stack = null;
 		
 		return;
 	}

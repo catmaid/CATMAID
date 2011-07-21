@@ -32,12 +32,6 @@ if ( ! $pid ) {
 	return;
 }
 
-# 3. There must be a user id
-if ( ! $uid ) {
-    echo json_encode( array( 'error' => 'You are not logged in.' ) );
-	return;
-}
-
 // Start transaction
 if (! $db->begin() ) {
 	echo json_encode( array( 'error' => 'Could not start transaction.' ) );

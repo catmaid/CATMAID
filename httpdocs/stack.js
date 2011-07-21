@@ -121,7 +121,20 @@ function Stack(
 		};
 		return l;
 	}
-	
+
+  /*
+   * Get the top and left coordinates in physical project coordinates of
+   * stack's window
+   */
+  this.getWorldTopLeft = function()
+  {
+    return {
+      worldTop : ( ( y - viewHeight / self.scale / 2 ) ) * self.resolution.y + self.translation.y,
+      worldLeft : ( ( x - viewWidth / self.scale / 2 ) ) * self.resolution.x + self.translation.x,
+      scale : self.scale
+    }
+  }
+  
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */

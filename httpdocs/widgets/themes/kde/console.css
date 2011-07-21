@@ -20,9 +20,3 @@ div.console pre
 	color:#000000;
 	float: left;
 }
-div#spinner
-{
-	float: right;
-	margin: 8px;
-	display: none;
-}

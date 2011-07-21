@@ -279,7 +279,7 @@ function Stack(
 		if ( typeof layer != "undefined" && layer )
 		{
 			layer.unregister();
-			layers[ key ] = null;
+			delete layers[ key ];
 			return layer;
 		}
 		else

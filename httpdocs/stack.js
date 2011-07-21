@@ -227,8 +227,12 @@ function Stack(
 		self.viewWidth = stackWindow.getFrame().offsetWidth;
 		self.viewHeight = stackWindow.getFrame().offsetHeight;
 		
-		for ( var key in layers )
-			layers[ key ].resize( self.viewWidth, self.viewHeight );
+		for ( var key in layers ) {
+      if( layers.hasOwnProperty( key )) {
+        layers[ key ].resize( self.viewWidth, self.viewHeight );
+      }
+    }
+
 		
 		return;
 	}

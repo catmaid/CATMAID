@@ -82,6 +82,13 @@ div#imprint p
 	vertical-align:middle;
 	line-height:20px;
 }
+div#spinner
+{
+	position:absolute;
+  right:20px;
+  top:4px;
+  display:none;
+}
 
 div#content
 {

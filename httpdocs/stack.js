@@ -129,8 +129,8 @@ function Stack(
   this.getWorldTopLeft = function()
   {
     return {
-      worldTop : ( ( y - viewHeight / self.scale / 2 ) ) * self.resolution.y + self.translation.y,
-      worldLeft : ( ( x - viewWidth / self.scale / 2 ) ) * self.resolution.x + self.translation.x,
+      worldTop : ( ( self.y - self.viewHeight / self.scale / 2 ) ) * self.resolution.y + self.translation.y,
+      worldLeft : ( ( self.x - self.viewWidth / self.scale / 2 ) ) * self.resolution.x + self.translation.x,
       scale : self.scale
     }
   }

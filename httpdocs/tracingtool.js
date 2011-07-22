@@ -34,16 +34,24 @@ function TracingTool()
 	 */
 	this.register = function( parentStack )
 	{
-        self.prototype.register( parentStack, "edit_button_trace" );
-        var box = $('<div class="box" id="tracingbuttons"></div>');
-        ["skeleton", "synapse", "goactive", "skelsplitting", "skelrerooting", "togglelabels", "3dview"].map(
-            function(name) {
-                box.append($('<a href="#" class="button" id="trace_button_' + name + '"><img src="widgets/themes/kde/trace_' + name + '.png"/></a>'));
-            }
-        );
-        $("#toolbar_nav").prepend(box);
-        self.tracingLayer = new TracingLayer(parentStack);
-        parentStack.addLayer("TracingLayer", self.tracingLayer);
+    if ( self.prototype.stack == null ) {
+      var box = $( '<div class="box" id="tracingbuttons"></div>' );
+      [ { name : "skeleton", alt : "skeleton" },
+        { name : "synapse", alt : "synapse" },
+        { name : "goactive", alt : "go to active element" },
+        { name : "skelsplitting", alt : "split skeleton" },
+        { name : "skelrerooting", alt : "reroot skeleton" },
+        { name : "togglelabels", alt : "toggle labels" },
+        { name : "3dview", alt : "3d view" } ].map(
+        function( button ) {
+          box.append( $('<a href="#" class="button" id="trace_button_' + button.name + '"><img src="widgets/themes/kde/trace_' + button.name + '.png" title="'+ button.alt + '" alt="'+ button.alt + '" /></a>' ) );
+        }
+      );
+      $( "#toolbar_nav" ).prepend( box );
+    }
+    self.prototype.register( parentStack, "edit_button_trace" );
+    var tracinglayer = new TracingLayer( parentStack );
+    parentStack.addLayer( "TracingLayer", tracinglayer );
 
 		return;
 	}

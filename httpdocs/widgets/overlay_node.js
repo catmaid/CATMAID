@@ -125,7 +125,6 @@ var Node = function (
   this.setXY = function (xnew, ynew) {
     self.x = xnew;
     self.y = ynew;
-    console.log(self.id, "c", c);
     if (c) {
 			c.attr({
 				cx: self.x,

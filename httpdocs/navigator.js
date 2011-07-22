@@ -239,7 +239,6 @@ function Navigator()
 	
 	this.changeSlice = function( val )
 	{
-    console.log("navigator changeSlice", val);
 		self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
 		return;
 	}

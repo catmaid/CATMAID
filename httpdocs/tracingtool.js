@@ -101,7 +101,6 @@ function TracingTool()
     var proto_changeSlice = self.prototype.changeSlice;
     self.prototype.changeSlice =
       function( val ) {
-        console.log("tracing changeSlice", val);
         proto_changeSlice( val );
         tracingLayer.svgOverlay.updateNodes();
       };
@@ -141,10 +140,8 @@ function TracingTool()
 
 
   var updateStatusBar = function( e ) {
-    console.log("updateStatusBar", e);
     var m = ui.getMouse(e, true);
     var offX, offY, pos_x, pos_y;
-    console.log(m);
     if (m) {
       // add right move of svgOverlay to the m.offsetX
       offX = m.offsetX + tracingLayer.svgOverlay.offleft;

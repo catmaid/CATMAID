@@ -564,6 +564,8 @@ function Project( pid )
 		{
 			stacks[ i ].moveTo( zp, yp, xp, sp );
 		}
+		if ( tool && tool.redraw )
+			tool.redraw();
 		return;
 	}
 	

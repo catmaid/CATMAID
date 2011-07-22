@@ -1060,14 +1060,12 @@ var SVGOverlay = function ( stack )
     //Here do the stuff you want to do when 'unchecked'
   });
 
-        /**
+  /**
    * update treeline nodes by querying them from the server
    * with a bounding volume dependant on the current view
    */
-  this.updateNodes = function () {
-
-    var tl_width = Math.floor( stack.viewWidth );
-    var tl_height = Math.floor( stack.viewHeight );
+  this.updateNodes = function ()
+  {
 /*
 		console.log("In updateTreelinenodes");
 		console.log("scale is: "+scale);
@@ -1094,14 +1092,18 @@ var SVGOverlay = function ( stack )
     // first synchronize with database
     self.updateNodeCoordinatesinDB();
 
+    // stack.viewWidth and .viewHeight are in screen pixels
+    // so they must be scaled and then transformed to nanometers
+    // and stack.x, .y are in absolute pixels, so they also must be brought to nanometers
+
     requestQueue.register('model/node.list.php', 'POST', {
       pid: stack.getProject().id,
       sid: stack.getId(),
-      z: stack.z *stack.resolution.z + stack.translation.z,
-      top: (stack.y - tl_height / 2) * stack.resolution.y + stack.translation.y,
-      left: (stack.x - tl_width / 2) * stack.resolution.x + stack.translation.x,
-      width: tl_width * stack.resolution.x,
-      height: tl_height * stack.resolution.y,
+      z: stack.z * stack.resolution.z + stack.translation.z,
+      top: (stack.y - (stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y,
+      left: (stack.x - (stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x,
+      width: (stack.viewWidth / stack.scale) * stack.resolution.x,
+      height: (stack.viewHeight / stack.scale) * stack.resolution.y,
       zres: stack.resolution.z
     }, handle_updateNodes);
     return;

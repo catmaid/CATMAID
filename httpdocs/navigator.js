@@ -72,8 +72,8 @@ function Navigator()
 			slider_s_view.nextSibling );
 			
 	//! mouse catcher
-	var mouseCatcher = document.createElement( "div" );
-	mouseCatcher.className = "sliceMouseCatcher";
+	this.mouseCatcher = document.createElement( "div" );
+	self.mouseCatcher.className = "sliceMouseCatcher";
 	
 	var updateControls = function()
 	{
@@ -88,8 +88,8 @@ function Navigator()
 	
 	this.resize = function( width, height )
 	{
-		mouseCatcher.style.width = width + "px";
-		mouseCatcher.style.height = height + "px";
+		self.mouseCatcher.style.width = width + "px";
+		self.mouseCatcher.style.height = height + "px";
 		return;
 	}
 	
@@ -325,23 +325,23 @@ function Navigator()
 		
 		self.stack = parentStack;
 
-		mouseCatcher.onmousedown = onmousedown;
+		self.mouseCatcher.onmousedown = onmousedown;
 		try
 		{
-			mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel.zoom, false );
+			self.mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel.zoom, false );
 			/* Webkit takes the event but does not understand it ... */
-			mouseCatcher.addEventListener( "mousewheel", onmousewheel.zoom, false );
+			self.mouseCatcher.addEventListener( "mousewheel", onmousewheel.zoom, false );
 		}
 		catch ( error )
 		{
 			try
 			{
-				mouseCatcher.onmousewheel = onmousewheel.zoom;
+				self.mouseCatcher.onmousewheel = onmousewheel.zoom;
 			}
 			catch ( error ) {}
 		}
 		
-		self.stack.getView().appendChild( mouseCatcher );
+		self.stack.getView().appendChild( self.mouseCatcher );
 
 		slider_s.update(
 			self.stack.MAX_S,

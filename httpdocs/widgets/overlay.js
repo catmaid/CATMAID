@@ -715,15 +715,15 @@ var SVGOverlay = function (
     }
   };
 
-  var updateNodeCoordinates = function (newscale) {
+  this.updateNodeCoordinates = function (newscale) {
     var i, x, y, fact;
     // depending on the scale, update all the node coordinates
     for (i = 0; i < nodes.length; ++i) {
       x = nodes[i].x;
       y = nodes[i].y;
       fact = newscale / s;
-      xnew = Math.floor(x * fact);
-      ynew = Math.floor(y * fact);
+      var xnew = Math.floor(x * fact);
+      var ynew = Math.floor(y * fact);
       // use call to get the function working on this
       this.setXY.call(nodes[i], xnew, ynew);
     }
@@ -1006,6 +1006,16 @@ var SVGOverlay = function (
   var s = current_scale;
   var r = Raphael(view, Math.floor(dimension.x * s), Math.floor(dimension.y * s));
   this.paper = r;
+
+  this.updateDimension = function (stack) {
+    var wi = Math.floor(stack.dimension.x * stack.s);
+    var he = Math.floor(stack.dimension.y * stack.s);
+    // update width/height with the dimension from the database, which is in pixel unit
+    view.style.width = wi + "px";
+    view.style.height = he + "px";
+    // update the raphael canvas as well
+    this.paper.setSize(wi, he);
+  };
 
   var phys2pixX = function (x) {
     return (x - translation.x) / resolution.x * s;

@@ -16,27 +16,17 @@
  */
 function TracingTool()
 {
-
-  this.prototype = new Navigator();
+    this.prototype = new Navigator();
   
 	var self = this;
+    var tracingLayer = null;
 
-	if ( !ui ) ui = new UI();
-
-	//! mouse catcher
-	var mouseCatcher = document.createElement( "div" );
-	mouseCatcher.className = "sliceMouseCatcher";
-	mouseCatcher.style.cursor = "default";
-
-
-
+    // TODO given that the function adds nothing relative to the prototype, it is not necessary to declare it
 	this.resize = function( width, height )
 	{
-		mouseCatcher.style.width = width + "px";
-		mouseCatcher.style.height = height + "px";
+        self.prototype.resize( width, height );
 		return;
 	}
-
 
 	/**
 	 * install this tool in a stack.
@@ -44,16 +34,16 @@ function TracingTool()
 	 */
 	this.register = function( parentStack )
 	{
-    self.prototype.register( parentStack, "edit_button_trace" );
-    var box = $( '<div class="box" id="tracingbuttons"></div>' );
-    ["skeleton", "synapse", "goactive", "skelsplitting", "skelrerooting", "togglelabels", "3dview"].map(
-      function( name ) {
-        box.append( $('<a href="#" class="button" id="trace_button_' + name + '"><img src="widgets/themes/kde/trace_' + name + '.png"/></a>' ) );
-      }
-    );
-    $( "#toolbar_nav" ).prepend( box );
-    var tracinglayer = new TracingLayer( parentStack );
-    parentStack.addLayer( "TracingLayer", tracinglayer );
+        self.prototype.register( parentStack, "edit_button_trace" );
+        var box = $('<div class="box" id="tracingbuttons"></div>');
+        ["skeleton", "synapse", "goactive", "skelsplitting", "skelrerooting", "togglelabels", "3dview"].map(
+            function(name) {
+                box.append($('<a href="#" class="button" id="trace_button_' + name + '"><img src="widgets/themes/kde/trace_' + name + '.png"/></a>'));
+            }
+        );
+        $("#toolbar_nav").prepend(box);
+        self.tracingLayer = new TracingLayer(parentStack);
+        parentStack.addLayer("TracingLayer", self.tracingLayer);
 
 		return;
 	}
@@ -63,11 +53,12 @@ function TracingTool()
 	 */
 	this.unregister = function()
 	{
-    // do it before calling the prototype destroy that sets stack to null
-    if (self.prototype.stack)
-      self.prototype.stack.removeLayer( "TracingLayer" );
-    self.prototype.unregister();
-		return;
+        // do it before calling the prototype destroy that sets stack to null
+        if (self.prototype.stack) {
+            self.prototype.stack.removeLayer( "TracingLayer" );
+        }
+        self.prototype.unregister();
+        return;
 	}
 
 	/**
@@ -76,16 +67,15 @@ function TracingTool()
 	 */
 	this.destroy = function()
 	{
-    // TODO: synchronize data with database
+        // Synchronize data with database
+        self.tracingLayer.svgOverlay.updateNodeCoordinatesinDB();
 
-
-    // the prototype destroy calls the prototype's unregister, not self.unregister
-    // do it before calling the prototype destroy that sets stack to null
-    self.prototype.stack.removeLayer( "TracingLayer" );
-    self.prototype.destroy( "edit_button_trace" );
-    $( "#tracingbuttons" ).remove();
-
-    return;
+        // the prototype destroy calls the prototype's unregister, not self.unregister
+        // do it before calling the prototype destroy that sets stack to null
+        self.prototype.stack.removeLayer( "TracingLayer" );
+        self.prototype.destroy( "edit_button_trace" );
+        $( "#tracingbuttons" ).remove();
+        return;
 	}
 }
 

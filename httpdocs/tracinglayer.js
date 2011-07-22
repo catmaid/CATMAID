@@ -7,7 +7,7 @@ function TracingLayer( stack )
   var self = this;
 
   this.svgOverlay = new SVGOverlay( stack );
-  stack.getView().appendChild( this.svgOverlay.getView() );
+  //stack.getView().appendChild( this.svgOverlay.getView() );
 
 
   this.resize = function ( width, height )

@@ -202,7 +202,7 @@ UI = function()
 			if (!propagate) {
  				e.preventDefault();
 				e.stopPropagation();
-   			}
+			}
 			m.x = e.screenX;
 			m.y = e.screenY;
 			if ( e.offsetX )

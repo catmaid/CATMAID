@@ -24,6 +24,8 @@ var Node = function (
 	is_root_node) // the id of the skeleton this node is an element of
 {
 
+  var self = this;
+
   // the database treenode id
   this.id = id;
 
@@ -73,7 +75,7 @@ var Node = function (
         } else {
           return inactive_skeleton_color;
         }
-		  }
+      }
     }
   };
 
@@ -81,20 +83,20 @@ var Node = function (
   // current slice, whether it's the active node, the root node, or in
   // an active skeleton.
   this.setColor = function () {
-    if (atn !== null && this.id === atn.id) {
+    if (atn !== null && self.id === atn.id) {
       // The active node is always in green:
       fillcolor = atn_fillcolor;
-    } else if (this.isroot) {
+    } else if (self.isroot) {
       // The root node should be colored red unless it's active:
       fillcolor = "rgb(255, 0, 0)";
     } else {
       // If none of the above applies, just colour according to the z
       // difference.
-      fillcolor = this.colorFromZDiff();
+      fillcolor = self.colorFromZDiff();
     }
     
-    if (this.c) {
-      this.c.attr({
+    if (c) {
+      c.attr({
         fill: fillcolor
       });
     }
@@ -121,44 +123,40 @@ var Node = function (
   // update the local x,y coordinates
   // updated them for the raphael object as well
   this.setXY = function (xnew, ynew) {
-    this.x = xnew;
-    this.y = ynew;
+    self.x = xnew;
+    self.y = ynew;
+    console.log(self.id, "c", c);
     if (c) {
 			c.attr({
-				cx: this.x,
-				cy: this.y
+				cx: self.x,
+				cy: self.y
 			});
 			mc.attr({
-				cx: this.x,
-				cy: this.y
+				cx: self.x,
+				cy: self.y
 			});
 		}
-		this.drawEdges();
-  };
-
-  // the accessor method for the display node
-  this.getC = function () {
-    return c;
+		self.drawEdges();
   };
 
   this.createCircle = function () {
     // Create c and mc ONLY if the node is in the current section
-    if (0 == this.zdiff) {
+    if (0 == self.zdiff) {
       // create a raphael circle object
-      this.c = this.paper.circle(this.x, this.y, this.r).attr({
+      c = self.paper.circle(self.x, self.y, self.r).attr({
         fill: fillcolor,
         stroke: "none",
         opacity: 1.0
       });
 
       // a raphael circle oversized for the mouse logic
-      this.mc = this.paper.circle(this.x, this.y, this.rcatch).attr({
+      mc = self.paper.circle(self.x, self.y, self.rcatch).attr({
         fill: "rgb(0, 1, 0)",
         stroke: "none",
         opacity: 0
       });
       
-      this.createEventHandlers();
+      self.createEventHandlers();
     }
   }
 
@@ -178,23 +176,23 @@ var Node = function (
     // if so, it is not allowed to remove the treenode
     var i;
     // remove the parent of all the children
-    for (i = 0; i < this.children.length; ++i) {
-      this.children[i].removeLine();
-      this.children[i].removeParent();
+    for (i = 0; i < self.children.length; ++i) {
+      self.children[i].removeLine();
+      self.children[i].removeParent();
     }
     // remove the raphael svg elements from the DOM
     if (c) {
       c.remove();
       mc.remove();
     }
-    if (this.parent !== null) {
-      this.removeLine();
+    if (self.parent !== null) {
+      self.removeLine();
       // remove this node from parent's children list
-      for (i in this.parent.children) {
-        if (this.parent.children.hasOwnProperty(i)) {
-          if (this.parent.children[i].id === id) {
+      for (i in self.parent.children) {
+        if (self.parent.children.hasOwnProperty(i)) {
+          if (self.parent.children[i].id === id) {
             // FIXME: use splice(1,1) instead
-            delete this.parent.children[i];
+            delete self.parent.children[i];
           }
         }
       }
@@ -209,7 +207,7 @@ var Node = function (
   this.deletenode = function () {
     requestQueue.register("model/treenode.delete.php", "POST", {
       pid: project.id,
-      tnid: this.id
+      tnid: self.id
     }, function (status, text) {
       if (status !== 200) {
         alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
@@ -218,9 +216,9 @@ var Node = function (
     });
 
     // activate parent node when deleted
-    if (this.parent) {
+    if (self.parent) {
       // loop over nodes to see if parent is retrieved
-      project.selectNode(this.parent.id);
+      project.selectNode(self.parent.id);
       if (!atn) {
 		  // fetch the parent node from the database and select it
 		  // TODO
@@ -261,19 +259,19 @@ var Node = function (
 
   // remove the parent node
   this.removeParent = function () {
-    delete this.parent;
-    this.parent = null;
+    delete self.parent;
+    self.parent = null;
   };
 
   // updates the raphael path coordinates
   this.drawLineToParent = function () {
-    if (this.parent) {
+    if (self.parent) {
       line.attr({
         path: [
-          ["M", this.x, this.y],
-          ["L", this.parent.x, this.parent.y]
+          ["M", self.x, self.y],
+          ["L", self.parent.x, self.parent.y]
         ],
-        stroke: this.parent.colorFromZDiff(),
+        stroke: self.parent.colorFromZDiff(),
         "stroke-width": 2
       });
     }
@@ -284,19 +282,19 @@ var Node = function (
   this.drawEdges = function () {
     var i;
     // draws/updates path to parent and children
-    for (i in this.children) {
-      if (this.children.hasOwnProperty(i)) {
-        this.children[i].drawLineToParent();
+    for (i in self.children) {
+      if (self.children.hasOwnProperty(i)) {
+        self.children[i].drawLineToParent();
       }
     }
-    for (i in this.connectors) {
-      if (this.children.hasOwnProperty(i)) {
+    for (i in self.connectors) {
+      if (self.children.hasOwnProperty(i)) {
         // should update the connector paths
-        this.connectors[i].drawEdges();
+        self.connectors[i].drawEdges();
       }
     }
-    if (this.parent !== null) {
-      this.drawLineToParent();
+    if (self.parent !== null) {
+      self.drawLineToParent();
     }
   };
 
@@ -305,16 +303,16 @@ var Node = function (
   };
 
   this.draw = function () {
-    this.drawEdges();
+    self.drawEdges();
     // Push new edges to the back.
-    for (i in this.children) {
-      if (this.children.hasOwnProperty(i)) {
-        lineToBack(this.children[i].line);
+    for (i in self.children) {
+      if (self.children.hasOwnProperty(i)) {
+        lineToBack(self.children[i].line);
       }
     }
-    if (this.parent !== null) lineToBack(this.line);
+    if (self.parent !== null) lineToBack(self.line);
     //
-    this.createCircle();
+    self.createCircle();
   };
 
 
@@ -324,7 +322,7 @@ var Node = function (
 		/*
 		 * event handlers
 		 */
-		this.mc.dblclick(function (e) {
+		mc.dblclick(function (e) {
 			if (e.altKey) {
 				// zoom in
 				slider_trace_s.move(-1);
@@ -336,7 +334,7 @@ var Node = function (
 			project.tracingCommand('goactive');
 		});
 
-		this.mc.click(function (e) {
+		mc.click(function (e) {
 			//    console.log("atn.id", atn.id);
 			//  console.log("treenode: clicked", this.parentnode.id, "active is", atn.id);
 			// return some log information when clicked on the node
@@ -376,15 +374,15 @@ var Node = function (
 			}
 		});
 
-		this.mc.move = function (dx, dy) {
+		mc.move = function (dx, dy) {
 			activateNode(self);
 			self.x = ox + dx;
 			self.y = oy + dy;
-			self.c.attr({
+			c.attr({
 				cx: self.x,
 				cy: self.y
 			});
-			self.mc.attr({
+			mc.attr({
 				cx: self.x,
 				cy: self.y
 			});
@@ -394,23 +392,23 @@ var Node = function (
 			self.needsync = true;
 		};
 
-		this.mc.up = function () {
-			self.c.attr({
+		mc.up = function () {
+			c.attr({
 				opacity: 1
 			});
 		};
 
-		this.mc.start = function () {
+		mc.start = function () {
 			ox = self.x;
 			oy = self.y;
-			self.c.attr({
+			c.attr({
 				opacity: 0.7
 			});
 		};
 
-		this.mc.drag(this.mc.move, this.mc.start, this.mc.up);
+		mc.drag(mc.move, mc.start, mc.up);
 
-    this.mc.mousedown(function (e) {
+    mc.mousedown(function (e) {
       e.stopPropagation();
     });
 

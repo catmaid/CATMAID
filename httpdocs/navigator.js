@@ -24,6 +24,10 @@ function Navigator()
 	var sliders_box = document.getElementById( "sliders_box" );
 	var input_x = document.getElementById( "x" );		//!< x_input
 	var input_y = document.getElementById( "y" );		//!< y_input
+
+  // Last mouse position for proper zoom with + and -
+  var lastX = 0,
+      lastY = 0;
 	
 	/* remove all existing dimension sliders */
 	while ( sliders_box.firstChild )
@@ -105,14 +109,15 @@ function Navigator()
 	
 	var onmousemove = function( e )
 	{
+    self.lastX = self.stack.x + ui.diffX;
 		self.stack.moveToPixel( self.stack.z, self.stack.y - ui.diffY / self.stack.scale, self.stack.x - ui.diffX / self.stack.scale, self.stack.s );
 		updateControls();
-		return false;
+		return true;
 	};
 	
 	var onmouseup = function( e )
 	{
-		ui.releaseEvents()
+		ui.releaseEvents(); 
 		ui.removeEvent( "onmousemove", onmousemove );
 		ui.removeEvent( "onmouseup", onmouseup );
 		return false;
@@ -234,6 +239,7 @@ function Navigator()
 	
 	this.changeSlice = function( val )
 	{
+    console.log("navigator changeSlice", val);
 		self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
 		return;
 	}

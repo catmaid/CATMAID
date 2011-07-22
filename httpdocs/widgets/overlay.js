@@ -188,7 +188,7 @@ var SVGOverlay = function ( stack )
           // for all retrieved, create a label
           for (var nodeid in nodeitems) {
             if (nodeitems.hasOwnProperty(nodeid)) {
-              var tl = new OverlayLabel(nodeitems[nodeid], r, nodes[nodeid].x, nodes[nodeid].y, nodeitems[nodeid]);
+              var tl = new OverlayLabel(nodeitems[nodeid], self.paper, nodes[nodeid].x, nodes[nodeid].y, nodeitems[nodeid]);
               labels[nodeid] = tl;
             }
           }
@@ -447,7 +447,7 @@ var SVGOverlay = function ( stack )
           } else {
             // add treenode to the display and update it
             var jso = $.parseJSON(text);
-            var nn = new ConnectorNode(jso.connector_id, r, 8, pos_x, pos_y, pos_z, 0);
+            var nn = new ConnectorNode(jso.connector_id, self.paper, 8, pos_x, pos_y, pos_z, 0);
             nodes[jso.connector_id] = nn;
             nn.draw();
             activateNode(nn);
@@ -497,7 +497,7 @@ var SVGOverlay = function ( stack )
 
             if (locidval === null) {
               // presynaptic case, we create a new connector node and use the retrieved id
-              var nn = new ConnectorNode(locid_retrieved, r, 8, pos_x, pos_y, pos_z, 0);
+              var nn = new ConnectorNode(locid_retrieved, self.paper, 8, pos_x, pos_y, pos_z, 0);
               // store the currently activated treenode into the pregroup of the connector
               nn.pregroup[id] = nodes[id];
               nodes[locid_retrieved] = nn;
@@ -552,7 +552,7 @@ var SVGOverlay = function ( stack )
             var jso = $.parseJSON(text);
 
             // always create a new treenode which is the root of a new skeleton
-            var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
+            var nn = new Node(jso.treenode_id, self.paper, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
 
             // add node to nodes list
             nodes[jso.treenode_id] = nn;
@@ -582,7 +582,8 @@ var SVGOverlay = function ( stack )
 
     // check if we want the newly create node to be
     // a model of a neuron
-    selneuron = project.selectedObjects.selectedneuron;
+    console.log("TODO select a neuron from the project tree");
+    selneuron = null; // project.selectedObjects.selectedneuron;
     if (selneuron !== null) {
       useneuron = selneuron;
     } else {
@@ -610,9 +611,9 @@ var SVGOverlay = function ( stack )
             // add treenode to the display and update it
             var jso = $.parseJSON(text);
             if (parid == -1) {
-              var nn = new Node(jso.treenode_id, r, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
+              var nn = new Node(jso.treenode_id, self.paper, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
             } else {
-              var nn = new Node(jso.treenode_id, r, nodes[parid], radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, false);
+              var nn = new Node(jso.treenode_id, self.paper, nodes[parid], radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, false);
             }
 
             nodes[jso.treenode_id] = nn;
@@ -710,17 +711,20 @@ var SVGOverlay = function ( stack )
     }
   };
 
-  this.updateNodeCoordinates = function (newscale) {
-    var i, x, y, fact;
+  // Only called when changing magnification
+  this.updateNodeCoordinates = function (new_scale) {
+    var i, x, y, fact, node, ID, xnew, ynew;
     // depending on the scale, update all the node coordinates
-    for (i = 0; i < nodes.length; ++i) {
-      x = nodes[i].x;
-      y = nodes[i].y;
-      fact = newscale / s;
-      var xnew = Math.floor(x * fact);
-      var ynew = Math.floor(y * fact);
-      // use call to get the function working on this
-      self.setXY.call(nodes[i], xnew, ynew);
+    for (ID in nodes) {
+      if (nodes.hasOwnProperty(ID)) {
+        node = nodes[ID];
+        x = node.x;
+        y = node.y;
+        fact = new_scale / old_scale;
+        xnew = Math.floor(x * fact);
+        ynew = Math.floor(y * fact);
+        node.setXY(xnew, ynew);
+      }
     }
   };
 
@@ -848,25 +852,25 @@ var SVGOverlay = function ( stack )
 
   };
 
+  // Initialize to the value of stack.scale at instantiation of SVGOverlay
+  var old_scale = stack.scale;
 
   this.redraw = function( stack ) {
-
-    console.log("called redraw");
-
-    var c = stack.getWorldTopLeft();
-    var pl = c.windowLeft,
-        pt = c.windowTop,
-        ns = c.scale;
+    var wc = stack.getWorldTopLeft();
+    var pl = wc.worldLeft,
+        pt = wc.worldTop,
+        new_scale = wc.scale;
 
     // check if new scale changed, if so, update all node coordinates
-    if (ns !== stack.s) {
-        self.updateNodeCoordinates(ns);
+    if (old_scale !== new_scale) {
+        self.updateNodeCoordinates(new_scale);
+        old_scale = new_scale;
     }
 
-    self.view.style.left = Math.floor(-pl / stack.resolution.x * stack.s) + "px";
-    self.view.style.top = Math.floor(-pt / stack.resolution.y * stack.s) + "px";
+    self.view.style.left = Math.floor((-pl / stack.resolution.x) * new_scale) + "px";
+    self.view.style.top = Math.floor((-pt / stack.resolution.y) * new_scale) + "px";
 
-    self.updateDimension(stack);
+    self.updatePaperDimensions(stack);
   }
 
 
@@ -996,11 +1000,11 @@ var SVGOverlay = function ( stack )
   // make view accessible from outside for setting additional mouse handlers
   this.view = view;
 
-  this.paper = Raphael(view, Math.floor(stack.dimension.x * stack.s), Math.floor(stack.dimension.y * stack.s));
+  this.paper = Raphael(view, Math.floor(stack.dimension.x * stack.scale), Math.floor(stack.dimension.y * stack.scale));
 
-  this.updateDimension = function () {
-    var wi = Math.floor(stack.dimension.x * stack.s);
-    var he = Math.floor(stack.dimension.y * stack.s);
+  this.updatePaperDimensions = function () {
+    var wi = Math.floor(stack.dimension.x * stack.scale);
+    var he = Math.floor(stack.dimension.y * stack.scale);
     // update width/height with the dimension from the database, which is in pixel unit
     view.style.width = wi + "px";
     view.style.height = he + "px";
@@ -1009,26 +1013,26 @@ var SVGOverlay = function ( stack )
   };
 
   var phys2pixX = function (x) {
-    return (x - stack.translation.x) / stack.resolution.x * stack.s;
+    return (x - stack.translation.x) / stack.resolution.x * stack.scale;
   };
   var phys2pixY = function (y) {
-    return (y - stack.translation.y) / stack.resolution.y * stack.s;
+    return (y - stack.translation.y) / stack.resolution.y * stack.scale;
   };
   var phys2pixZ = function (z) {
     return (z - stack.translation.z) / stack.resolution.z;
   };
 
   var pix2physX = function (x) {
-    return stack.translation.x + ((x) / s) * stack.resolution.x;
+    return stack.translation.x + ((x) / stack.scale) * stack.resolution.x;
   };
   var pix2physY = function (y) {
-    return stack.translation.y + ((y) / s) * stack.resolution.y;
+    return stack.translation.y + ((y) / stack.scale) * stack.resolution.y;
   };
   this.pix2physX = function (x) {
-    return stack.translation.x + ((x) / s) * stack.resolution.x;
+    return stack.translation.x + ((x) / stack.scale) * stack.resolution.x;
   };
   this.pix2physY = function (y) {
-    return stack.translation.y + ((y) / s) * stack.resolution.y;
+    return stack.translation.y + ((y) / stack.scale) * stack.resolution.y;
   };
   this.pix2physZ = function (z) {
     return z *stack.resolution.z + stack.translation.z;
@@ -1045,11 +1049,11 @@ var SVGOverlay = function ( stack )
     if ($(this).attr("checked")) {
       //do the stuff that you would do when 'checked'
       edgetoggle = true;
-      project.updateNodes();
+      self.updateNodes();
       return;
     } else {
       edgetoggle = false;
-      project.updateNodes();
+      self.updateNodes();
       return;
     }
     //Here do the stuff you want to do when 'unchecked'

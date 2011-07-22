@@ -16,11 +16,11 @@
  */
 function TracingTool()
 {
-    this.prototype = new Navigator();
+  this.prototype = new Navigator();
   
-	var self = this;
-    var tracingLayer = null;
-    var stack = null;
+  var self = this;
+  var tracingLayer = null;
+  var stack = null;
 
 	this.resize = function( width, height )
 	{
@@ -35,6 +35,7 @@ function TracingTool()
 	this.register = function( parentStack )
 	{
 
+    // TODO: replace with project.js strings
     if ( self.prototype.stack == null ) {
       var box = $( '<div class="box" id="tracingbuttons"></div>' );
       [ { name : "skeleton", alt : "skeleton" },
@@ -55,6 +56,7 @@ function TracingTool()
     if (tracingLayer && stack && stack !== parentStack) {
       stack.removeLayer( tracingLayer );
     }
+    stack = parentStack;
     tracingLayer = new TracingLayer( parentStack );
     //this.prototype.mouseCatcher = tracingLayer.svgOverlay.getView();
     this.prototype.setMouseCatcher( tracingLayer.svgOverlay.getView() );
@@ -66,6 +68,43 @@ function TracingTool()
     // NOW set the mode TODO cleanup this initialization problem
     tracingLayer.svgOverlay.set_tracing_mode( "skeletontracing" );
     tracingLayer.svgOverlay.updateNodes();
+
+    // view is the mouseCatcher now
+    var view = tracingLayer.svgOverlay.getView();
+
+    var proto_onmousedown = view.onmousedown;
+    view.onmousedown = function( e ) {
+      switch ( ui.getMouseButton( e ) )
+      {
+        case 1:
+          tracingLayer.svgOverlay.whenclicked( e );
+          break;
+        case 2:
+          proto_onmousedown( e );
+          ui.registerEvent( "onmousemove", updateStatusBar );
+          ui.registerEvent( "onmouseup",
+            function onmouseup (e) {
+              ui.releaseEvents();
+              ui.removeEvent( "onmousemove", updateStatusBar );
+              ui.removeEvent( "onmouseup", onmouseup );
+              // Recreate nodes by feching them from the database for the new field of view
+              tracingLayer.svgOverlay.updateNodes();
+            });
+          break;
+        default:
+          proto_onmousedown( e );
+          break;
+      }
+      return;
+    };
+
+    var proto_changeSlice = self.prototype.changeSlice;
+    self.prototype.changeSlice =
+      function( val ) {
+        console.log("tracing changeSlice", val);
+        proto_changeSlice( val );
+        tracingLayer.svgOverlay.updateNodes();
+      };
 
 	return;
 	}
@@ -98,6 +137,26 @@ function TracingTool()
         self.prototype.destroy( "edit_button_trace" );
         $( "#tracingbuttons" ).remove();
         return;
-	}
+	};
+
+
+  var updateStatusBar = function( e ) {
+    console.log("updateStatusBar", e);
+    var m = ui.getMouse(e, true);
+    var offX, offY, pos_x, pos_y;
+    console.log(m);
+    if (m) {
+      // add right move of svgOverlay to the m.offsetX
+      offX = m.offsetX + tracingLayer.svgOverlay.offleft;
+      // add down move of svgOverlay to the m.offsetY
+      offY = m.offsetY + tracingLayer.svgOverlay.offtop;
+
+      // TODO pos_x and pos_y never change
+      pos_x = stack.translation.x + (stack.x + (offX - stack.viewWidth / 2) / stack.scale) * stack.resolution.x;
+      pos_y = stack.translation.x + (stack.y + (offY - stack.viewHeight / 2) / stack.scale) * stack.resolution.y;
+      statusBar.replaceLast("[" + pos_x.toFixed(3) + ", " + pos_y.toFixed(3) + "]" + " stack.x,y: " + stack.x + ", " + stack.y);
+    }
+    return true;
+  };
 }
 

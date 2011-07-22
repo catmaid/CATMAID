@@ -7,42 +7,6 @@ var atn_fillcolor = "rgb(0, 255, 0)";
 
 var active_skeleton_id = null;
 
-function activateNode(node) {
-  var skeleton_switched = false;
-  // if node === null, just deactivate
-  if (node === null) {
-    atn = null;
-    active_skeleton_id = null;
-  } else {
-
-    if ( node.type === "treenode" && node.skeleton_id !== active_skeleton_id ) {
-      skeleton_switched = true;
-    }
-
-    atn = node;
-    active_skeleton_id = atn.skeleton_id;
-
-    // update statusBar
-    if (atn.type === "treenode") {
-      statusBar.replaceLast("activated treenode with id " + atn.id + " skeleton id " + atn.skeleton_id );
-      if ( skeleton_switched ) {
-        // if we switched the skeleton, we need to reopen the object tree
-        openSkeletonNodeInObjectTree(node);
-      }
-      // refresh all widgets except for the object tree
-      // the reason is that calling a refresh just after a request to open tree path
-      // prevents the opening of the tree path. thus, the opening of the treepath
-      // and/or refresh have to be added to the individual operation's
-      // (such as split tree) callbacks
-      refreshAllWidgets();
-
-    } else {
-      statusBar.replaceLast("activated connector node with id " + atn.id);
-    }
-  }
-  project.recolorAllNodes();
-}
-
 var openSkeletonNodeInObjectTree = function(node) {
   // Check if the Object Tree div is visible
   if ($('#object_tree_widget').css('display') === "none" || ! $('#synchronize_object_tree').attr('checked')) {
@@ -65,14 +29,9 @@ var refreshAllWidgets = function() {
 }
 
 
-var SVGOverlay = function (
-  resolution, translation, dimension, // dimension of the stack
-  current_scale // current scale of the stack
-) {
-
-  this.resolution = resolution;
-  this.translation = translation;
-  this.dimension = dimension;
+var SVGOverlay = function ( stack )
+{
+  var self = this;
 
   var edgetoggle = true;
   var nodes = {};
@@ -122,6 +81,42 @@ var SVGOverlay = function (
       }
     }
   };
+
+  function activateNode(node) {
+      var skeleton_switched = false;
+      // if node === null, just deactivate
+      if (node === null) {
+        atn = null;
+        active_skeleton_id = null;
+      } else {
+
+        if ( node.type === "treenode" && node.skeleton_id !== active_skeleton_id ) {
+          skeleton_switched = true;
+        }
+
+        atn = node;
+        active_skeleton_id = atn.skeleton_id;
+
+        // update statusBar
+        if (atn.type === "treenode") {
+          statusBar.replaceLast("activated treenode with id " + atn.id + " skeleton id " + atn.skeleton_id );
+          if ( skeleton_switched ) {
+            // if we switched the skeleton, we need to reopen the object tree
+            openSkeletonNodeInObjectTree(node);
+          }
+          // refresh all widgets except for the object tree
+          // the reason is that calling a refresh just after a request to open tree path
+          // prevents the opening of the tree path. thus, the opening of the treepath
+          // and/or refresh have to be added to the individual operation's
+          // (such as split tree) callbacks
+          refreshAllWidgets();
+
+      } else {
+        statusBar.replaceLast("activated connector node with id " + atn.id);
+      }
+    }
+    self.recolorAllNodes();
+  }
 
   this.activateNearestNode = function (x, y, z) {
     var xdiff, ydiff, zdiff, distsq, mindistsq = Number.MAX_VALUE, nearestnode = null;
@@ -725,14 +720,14 @@ var SVGOverlay = function (
       var xnew = Math.floor(x * fact);
       var ynew = Math.floor(y * fact);
       // use call to get the function working on this
-      this.setXY.call(nodes[i], xnew, ynew);
+      self.setXY.call(nodes[i], xnew, ynew);
     }
   };
 
   this.refreshNodes = function (jso)
   {
     var rad, nrtn = 0, nrcn = 0, parid, nid, nn, isRootNode, j;
-    this.paper.clear();
+    self.paper.clear();
     nodes = new Object();
     labels = new Object();
 
@@ -742,7 +737,7 @@ var SVGOverlay = function (
       var pos_x = phys2pixX(jso[i].x);
       var pos_y = phys2pixY(jso[i].y);
       var pos_z = phys2pixZ(jso[i].z);
-      var zdiff = Math.floor(parseFloat(jso[i].z_diff) / resolution.z);
+      var zdiff = Math.floor(parseFloat(jso[i].z_diff) / stack.resolution.z);
       var skeleton_id = null;
       if (zdiff == 0)
       {
@@ -847,36 +842,34 @@ var SVGOverlay = function (
     } // end speed toggle
 
     // show tags if necessary again
-    this.showTags(show_labels);
+    self.showTags(show_labels);
     // recolor all nodes
-    project.recolorAllNodes();
+    self.recolorAllNodes();
 
   };
 
 
+  this.redraw = function( stack ) {
 
-  this.redraw = function (
-  pl, //!< float left-most coordinate of the parent DOM element in nanometer
-  pt, //!< float top-most coordinate of the parent DOM element in nanometer
-  ns //!< scale factor to be applied to resolution [and fontsize]
-  ) {
+    console.log("called redraw");
+
+    var c = stack.getWorldTopLeft();
+    var pl = c.windowLeft,
+        pt = c.windowTop,
+        ns = c.scale;
 
     // check if new scale changed, if so, update all node coordinates
-    if (ns !== s) {
-      updateNodeCoordinates(ns);
+    if (ns !== stack.s) {
+        self.updateNodeCoordinates(ns);
     }
-    // update the scale of the internal scale variable
-    s = ns;
-    // pl/pt are in physical coordinates
-    view.style.left = Math.floor(-pl / resolution.x * s) + "px";
-    this.offleft = Math.floor(-pl / resolution.x * s);
-    view.style.top = Math.floor(-pt / resolution.y * s) + "px";
-    this.offtop = Math.floor(-pt / resolution.y * s);
-    updateDimension(s);
-    // do not want do updated node coordinates on
-    // every redraw
-    // updateNodeCoordinatesinDB();
-  };
+
+    self.view.style.left = Math.floor(-pl / stack.resolution.x * stack.s) + "px";
+    self.view.style.top = Math.floor(-pt / stack.resolution.y * stack.s) + "px";
+
+    self.updateDimension(stack);
+  }
+
+
 
   this.set_tracing_mode = function (mode) {
     // toggels the button correctly
@@ -991,7 +984,8 @@ var SVGOverlay = function (
 
   // currently there are two modes: skeletontracing and synapsedropping
   var currentmode = "skeletontracing";
-  this.set_tracing_mode(currentmode);
+  // TODO must set the tracing mode at some point
+  //this.set_tracing_mode(currentmode);
 
   var view = document.createElement("div");
   view.className = "sliceSVGOverlay";
@@ -1002,45 +996,42 @@ var SVGOverlay = function (
   // make view accessible from outside for setting additional mouse handlers
   this.view = view;
 
+  this.paper = Raphael(view, Math.floor(stack.dimension.x * stack.s), Math.floor(stack.dimension.y * stack.s));
 
-  var s = current_scale;
-  var r = Raphael(view, Math.floor(dimension.x * s), Math.floor(dimension.y * s));
-  this.paper = r;
-
-  this.updateDimension = function (stack) {
+  this.updateDimension = function () {
     var wi = Math.floor(stack.dimension.x * stack.s);
     var he = Math.floor(stack.dimension.y * stack.s);
     // update width/height with the dimension from the database, which is in pixel unit
     view.style.width = wi + "px";
     view.style.height = he + "px";
     // update the raphael canvas as well
-    this.paper.setSize(wi, he);
+    self.paper.setSize(wi, he);
   };
 
   var phys2pixX = function (x) {
-    return (x - translation.x) / resolution.x * s;
+    return (x - stack.translation.x) / stack.resolution.x * stack.s;
   };
   var phys2pixY = function (y) {
-    return (y - translation.y) / resolution.y * s;
+    return (y - stack.translation.y) / stack.resolution.y * stack.s;
   };
   var phys2pixZ = function (z) {
-    return (z - translation.z) / resolution.z;
+    return (z - stack.translation.z) / stack.resolution.z;
   };
 
   var pix2physX = function (x) {
-    return translation.x + ((x) / s) * resolution.x;
+    return stack.translation.x + ((x) / s) * stack.resolution.x;
   };
   var pix2physY = function (y) {
-    return translation.y + ((y) / s) * resolution.y;
+    return stack.translation.y + ((y) / s) * stack.resolution.y;
   };
   this.pix2physX = function (x) {
-    return translation.x + ((x) / s) * resolution.x;
+    return stack.translation.x + ((x) / s) * stack.resolution.x;
   };
   this.pix2physY = function (y) {
-    return translation.y + ((y) / s) * resolution.y;
+    return stack.translation.y + ((y) / s) * stack.resolution.y;
   };
   this.pix2physZ = function (z) {
-    return z * resolution.z + translation.z;
+    return z *stack.resolution.z + stack.translation.z;
   };
 
   this.show = function () {
@@ -1064,4 +1055,70 @@ var SVGOverlay = function (
     //Here do the stuff you want to do when 'unchecked'
   });
 
+        /**
+   * update treeline nodes by querying them from the server
+   * with a bounding volume dependant on the current view
+   */
+  this.updateNodes = function () {
+
+    var tl_width = Math.floor( stack.viewWidth );
+    var tl_height = Math.floor( stack.viewHeight );
+/*
+		console.log("In updateTreelinenodes");
+		console.log("scale is: "+scale);
+		console.log("X_TILE_SIZE is: "+X_TILE_SIZE);
+		console.log("Y_TILE_SIZE is: "+Y_TILE_SIZE);
+		console.log("tl_width is: "+tl_width);
+		console.log("tl_height is: "+tl_height);
+		console.log("x is: "+x);
+		console.log("y is: "+y);
+		console.log("resolution.x is: "+resolution.x);
+		console.log("resolution.y is: "+resolution.y);
+		console.log("translation.x is: "+translation.x);
+		console.log("translation.y is: "+translation.y);
+		console.log('-----computed');
+		console.log('z', z * resolution.z + translation.z);
+		console.log('top', ( y - tl_height / 2 ) * resolution.y + translation.y);
+		console.log('left', ( x - tl_width / 2 ) * resolution.x + translation.x);
+		console.log('width', tl_width * resolution.x);
+		console.log('height', tl_height * resolution.y);
+			*/
+
+    // FIXME: check if we need to wait for the result of this, which
+    // can now be done with completedCallback...
+    // first synchronize with database
+    self.updateNodeCoordinatesinDB();
+
+    requestQueue.register('model/node.list.php', 'POST', {
+      pid: stack.getProject().id,
+      sid: stack.getId(),
+      z: stack.z *stack.resolution.z + stack.translation.z,
+      top: (y - tl_height / 2) *stack.resolution.y + stack.translation.y,
+      left: (x - tl_width / 2) *stack.resolution.x + stack.translation.x,
+      width: tl_width * stack.resolution.x,
+      height: tl_height * stack.resolution.y,
+      zres: stack.resolution.z
+    }, handle_updateNodes);
+    return;
+  };
+
+      /**
+   * handle an update-treelinenodes-request answer
+   *
+   */
+  var handle_updateNodes = function (status, text, xml) {
+    if (status == 200) {
+      //console.log("update noded text", $.parseJSON(text));
+      var e = eval("(" + text + ")");
+      //var e = $.parseJSON(text);
+      if (e.error) {
+        alert(e.error);
+      } else {
+        var jso = $.parseJSON(text);
+        // XXX: how much time does calling the function like this take?
+        self.refreshNodes(jso);
+      }
+    }
+    return;
+  }
 };

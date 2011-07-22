@@ -74,6 +74,11 @@ function Navigator()
 	//! mouse catcher
 	this.mouseCatcher = document.createElement( "div" );
 	self.mouseCatcher.className = "sliceMouseCatcher";
+
+    this.setMouseCatcher = function( mc )
+    {
+        self.mouseCatcher = mc;
+    }
 	
 	var updateControls = function()
 	{
@@ -404,8 +409,8 @@ function Navigator()
 	 */
 	this.unregister = function()
 	{
-		if ( self.stack && mouseCatcher.parentNode == self.stack.getView() )
-			self.stack.getView().removeChild( mouseCatcher );
+		if ( self.stack && self.mouseCatcher.parentNode == self.stack.getView() )
+			self.stack.getView().removeChild( self.mouseCatcher );
 		return;
 	}
 	

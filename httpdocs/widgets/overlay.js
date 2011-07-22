@@ -293,7 +293,7 @@ var SVGOverlay = function ( stack )
               alert(e.error);
             } else {
               $("#Tags" + atn.id).focus();
-              project.showTags(true);
+              self.showTags(true);
             }
           }
         }
@@ -314,7 +314,7 @@ var SVGOverlay = function ( stack )
               alert(e.error);
             } else {
               // just redraw all for now
-              project.updateNodes();
+              self.updateNodes();
             }
           }
         }
@@ -335,7 +335,7 @@ var SVGOverlay = function ( stack )
               alert(e.error);
             } else {
               // just redraw all for now
-              project.updateNodes();
+              self.updateNodes();
               refreshObjectTree();
               refreshAllWidgets();
             }
@@ -361,7 +361,7 @@ var SVGOverlay = function ( stack )
             alert(e.error);
           } else {
             // just redraw all for now
-            project.updateNodes();
+            self.updateNodes();
             refreshObjectTree();
             refreshAllWidgets();
           }
@@ -418,7 +418,7 @@ var SVGOverlay = function ( stack )
             alert(e.error);
           } else {
             // just redraw all for now
-            project.updateNodes();
+            self.updateNodes();
           }
         }
       }
@@ -1097,8 +1097,8 @@ var SVGOverlay = function ( stack )
       pid: stack.getProject().id,
       sid: stack.getId(),
       z: stack.z *stack.resolution.z + stack.translation.z,
-      top: (y - tl_height / 2) *stack.resolution.y + stack.translation.y,
-      left: (x - tl_width / 2) *stack.resolution.x + stack.translation.x,
+      top: (stack.y - tl_height / 2) * stack.resolution.y + stack.translation.y,
+      left: (stack.x - tl_width / 2) * stack.resolution.x + stack.translation.x,
       width: tl_width * stack.resolution.x,
       height: tl_height * stack.resolution.y,
       zres: stack.resolution.z

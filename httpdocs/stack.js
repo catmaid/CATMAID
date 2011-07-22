@@ -32,8 +32,6 @@ function Stack(
 		dimension,					//!< {Array} pixel dimensions [x, y, z, ...]
 		resolution,					//!< {Array} physical resolution in units/pixel [x, y, z, ...]
 		translation,				//!< @todo replace by an affine transform
-		// TODO: Do we need this here? (Tobias)
-		// overviewName,				//!< {String} file name of the overview image (e.g. 'overview.jpg')
 		skip_planes,				//!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
 		trakem2_project				//!< {boolean} that states if a TrakEM2 project is available for this stack
 )
@@ -73,7 +71,7 @@ function Stack(
 	 */
 	var update = function( now )
 	{
-		overview.update( self.z, self.y, self.x, self.s, self.viewHeight, self.viewWidth );
+		self.overview.redraw();
 		updateScaleBar();
 		
 		//statusBar.replaceLast( "[" + ( Math.round( x * 10000 * resolution.x ) / 10000 ) + ", " + ( Math.round( y * 10000 * resolution.y ) / 10000 ) + "]" );
@@ -232,7 +230,8 @@ function Stack(
         layers[ key ].resize( self.viewWidth, self.viewHeight );
       }
     }
-
+		
+		self.overview.redraw();
 		
 		return;
 	}
@@ -362,9 +361,11 @@ function Stack(
 				redraw();
 				break;
 			case CMWWindow.FOCUS:
+				self.overview.getView().style.zIndex = "6";
 				project.setFocusedStack( self );
 				break;
 			case CMWWindow.BLUR:
+				self.overview.getView().style.zIndex = "5";
 				if ( tool )
 					tool.unregister();
 				tool = null;
@@ -374,8 +375,8 @@ function Stack(
 			return true;
 		} );
 	
-	var overview = new Overview( self, MAX_Y, MAX_X );
-	view.appendChild( overview.getView() );
+	self.overview = new Overview( self );
+	view.appendChild( self.overview.getView() );
 	
 	var scaleBar = document.createElement( "div" );
 	scaleBar.className = "sliceBenchmark";

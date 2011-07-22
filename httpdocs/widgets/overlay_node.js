@@ -217,16 +217,16 @@ var Node = function (
     // activate parent node when deleted
     if (self.parent) {
       // loop over nodes to see if parent is retrieved
-      project.selectNode(self.parent.id);
+      paper.catmaidSVGOverlay.selectNode(self.parent.id);
       if (!atn) {
 		  // fetch the parent node from the database and select it
 		  // TODO
 	  }
     } else {
-      activateNode(null);
+      paper.catmaidSVGOverlay.activateNode(null);
     }
     // redraw everything for now
-    project.updateNodes();
+    paper.catmaidSVGOverlay.updateNodes();
 
     // infact, doing everything done on the server-side
     // (like relinking) again in the ui not best-practice
@@ -342,7 +342,7 @@ var Node = function (
 				if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
 					// if it is active node, set active node to null
 					if (atn !== null && self.id === atn.id) {
-						activateNode(null);
+						paper.catmaidSVGOverlay.activateNode(null);
 					}
 					statusBar.replaceLast("deleted treenode with id " + self.id);
 					self.deletenode();
@@ -353,11 +353,11 @@ var Node = function (
 					// connected activated treenode or connectornode
 					// to existing treenode or connectornode
 					if (atn.type === "location") {
-						project.createLink(atn.id, self.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
+						paper.catmaidSVGOverlay.createLink(atn.id, self.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
 						statusBar.replaceLast("joined active treenode to connector with id " + self.id);
 					} else if (atn.type === "treenode") {
 						statusBar.replaceLast("joined active treenode to treenode with id " + self.id);
-						project.createTreenodeLink(atn.id, self.id);
+						paper.catmaidSVGOverlay.createTreenodeLink(atn.id, self.id);
 					}
 
 				} else {
@@ -367,14 +367,14 @@ var Node = function (
 
 			} else {
 				// activate this node
-				activateNode(self);
+				paper.catmaidSVGOverlay.activateNode(self);
 				// stop propagation of the event
 				e.stopPropagation();
 			}
 		});
 
 		mc.move = function (dx, dy) {
-			activateNode(self);
+			paper.catmaidSVGOverlay.activateNode(self);
 			self.x = ox + dx;
 			self.y = oy + dy;
 			c.attr({

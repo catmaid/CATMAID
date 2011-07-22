@@ -28,6 +28,24 @@ var refreshAllWidgets = function() {
 
 }
 
+function exportSWC() {
+  // retrieve SWC file of currently active treenode's skeleton
+  var recipe = window.open('', 'RecipeWindow', 'width=600,height=600');
+
+  requestQueue.register("model/export.skeleton.php", "GET", {
+    pid: project.id,
+    tnid: atn.id
+  }, function (status, text, xml) {
+    if (status === 200) {
+
+      $('#recipe1').clone().appendTo('#myprintrecipe');
+      var html = "<html><head><title>Skeleton as SWC</title></head><body><pre><div id='myprintrecipe'>" + text + "</div></pre></body></html>";
+      recipe.document.open();
+      recipe.document.write(html);
+      recipe.document.close();
+    }
+  }); // endfunction
+};
 
 var SVGOverlay = function ( stack )
 {
@@ -38,25 +56,6 @@ var SVGOverlay = function ( stack )
   var labels = {};
   var show_labels = false;
 
-  this.exportSWC = function () {
-    // retrieve SWC file of currently active treenode's skeleton
-    var recipe = window.open('', 'RecipeWindow', 'width=600,height=600');
-
-    requestQueue.register("model/export.skeleton.php", "GET", {
-      pid: project.id,
-      tnid: atn.id
-    }, function (status, text, xml) {
-      if (status === 200) {
-
-        $('#recipe1').clone().appendTo('#myprintrecipe');
-        var html = "<html><head><title>Skeleton as SWC</title></head><body><pre><div id='myprintrecipe'>" + text + "</div></pre></body></html>";
-        recipe.document.open();
-        recipe.document.write(html);
-        recipe.document.close();
-      }
-    }); // endfunction
-  };
-
   this.selectNode = function (id) {
     var nodeid;
     // activates the given node id if it exists
@@ -64,7 +63,7 @@ var SVGOverlay = function ( stack )
     for (nodeid in nodes) {
       if (nodes.hasOwnProperty(nodeid)) {
         if (nodes[nodeid].id === id) {
-          activateNode(nodes[nodeid]);
+          self.activateNode(nodes[nodeid]);
         }
       }
     }
@@ -82,50 +81,50 @@ var SVGOverlay = function ( stack )
     }
   };
 
-  function activateNode(node) {
-      var skeleton_switched = false;
-      // if node === null, just deactivate
-      if (node === null) {
-        atn = null;
-        active_skeleton_id = null;
-      } else {
+  this.activateNode = function(node) {
+    var skeleton_switched = false;
+    // if node === null, just deactivate
+    if (node === null) {
+      atn = null;
+      active_skeleton_id = null;
+    } else {
 
-        if ( node.type === "treenode" && node.skeleton_id !== active_skeleton_id ) {
-          skeleton_switched = true;
+      if (node.type === "treenode" && node.skeleton_id !== active_skeleton_id) {
+        skeleton_switched = true;
+      }
+
+      atn = node;
+      active_skeleton_id = atn.skeleton_id;
+
+      // update statusBar
+      if (atn.type === "treenode") {
+        statusBar.replaceLast("activated treenode with id " + atn.id + " skeleton id " + atn.skeleton_id);
+        if (skeleton_switched) {
+          // if we switched the skeleton, we need to reopen the object tree
+          openSkeletonNodeInObjectTree(node);
         }
-
-        atn = node;
-        active_skeleton_id = atn.skeleton_id;
-
-        // update statusBar
-        if (atn.type === "treenode") {
-          statusBar.replaceLast("activated treenode with id " + atn.id + " skeleton id " + atn.skeleton_id );
-          if ( skeleton_switched ) {
-            // if we switched the skeleton, we need to reopen the object tree
-            openSkeletonNodeInObjectTree(node);
-          }
-          // refresh all widgets except for the object tree
-          // the reason is that calling a refresh just after a request to open tree path
-          // prevents the opening of the tree path. thus, the opening of the treepath
-          // and/or refresh have to be added to the individual operation's
-          // (such as split tree) callbacks
-          refreshAllWidgets();
+        // refresh all widgets except for the object tree
+        // the reason is that calling a refresh just after a request to open tree path
+        // prevents the opening of the tree path. thus, the opening of the treepath
+        // and/or refresh have to be added to the individual operation's
+        // (such as split tree) callbacks
+        refreshAllWidgets();
 
       } else {
         statusBar.replaceLast("activated connector node with id " + atn.id);
       }
     }
     self.recolorAllNodes();
-  }
+  };
 
   this.activateNearestNode = function (x, y, z) {
-    var xdiff, ydiff, zdiff, distsq, mindistsq = Number.MAX_VALUE, nearestnode = null;
+    var xdiff, ydiff, zdiff, distsq, mindistsq = Number.MAX_VALUE, nearestnode = null, node, nodeid;
     for (nodeid in nodes) {
       if (nodes.hasOwnProperty(nodeid)) {
         node = nodes[nodeid];
-        xdiff = x - this.pix2physX(node.x);
-        ydiff = y - this.pix2physY(node.y);
-        zdiff = z - this.pix2physZ(node.z);
+        xdiff = x - self.pix2physX(node.x);
+        ydiff = y - self.pix2physY(node.y);
+        zdiff = z - self.pix2physZ(node.z);
         distsq = xdiff*xdiff + ydiff*ydiff + zdiff*zdiff;
         if (distsq < mindistsq) {
           mindistsq = distsq;
@@ -134,7 +133,7 @@ var SVGOverlay = function ( stack )
       }
     }
     if (nearestnode) {
-      activateNode(nearestnode);
+      self.activateNode(nearestnode);
     } else {
       statusBar.replaceLast("No nodes were visible - can't activate the nearest");
     }
@@ -570,6 +569,7 @@ var SVGOverlay = function ( stack )
 
   };
 
+  // Create a node and activate it
   var createNode = function (parentid, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
 
     var parid, selneuron, useneuron;
@@ -619,7 +619,7 @@ var SVGOverlay = function ( stack )
             nodes[jso.treenode_id] = nn;
             nn.draw();
             var active_node = atn;
-            activateNode(nn); // will alter atn
+            self.activateNode(nn); // will alter atn
             refreshAllWidgets();
             
             // Check whether the Z coordinate of the new node is beyond one section away 
@@ -763,19 +763,19 @@ var SVGOverlay = function ( stack )
       if (jso[i].type == "treenode")
       {
         isRootNode = isNaN(parseInt(jso[i].parentid));
-        nn = new Node(id, this.paper, null, rad, pos_x, pos_y, pos_z, zdiff, jso[i].skeleton_id, isRootNode);
+        nn = new Node(id, self.paper, null, rad, pos_x, pos_y, pos_z, zdiff, jso[i].skeleton_id, isRootNode);
         nrtn++;
       }
       else
       {
-        nn = new ConnectorNode(id, this.paper, rad, pos_x, pos_y, pos_z, zdiff);
+        nn = new ConnectorNode(id, self.paper, rad, pos_x, pos_y, pos_z, zdiff);
         nrcn++;
       }
       nodes[id] = nn;
       // keep active state of previous active node
       if (atn != null && atn.id == id)
       {
-        activateNode(nn);
+        self.activateNode(nn);
       }
     }
     if (edgetoggle) {
@@ -803,7 +803,7 @@ var SVGOverlay = function ( stack )
           if (jso[i].hasOwnProperty('pre')) {
             for (j = 0; j < jso[i].pre.length; j++ ) {
               // check if presynaptic treenode exist in nodes
-              preloctnid = parseInt(jso[i].pre[j].tnid);
+              var preloctnid = parseInt(jso[i].pre[j].tnid);
               if (preloctnid in nodes)
               {
                 // link it to pregroup, to connect it to the connector
@@ -817,7 +817,7 @@ var SVGOverlay = function ( stack )
           if (jso[i].hasOwnProperty('post')) {
             for (j = 0; j < jso[i].post.length; j++ ) {
               // check if postsynaptic treenode exist in nodes
-              postloctnid = parseInt(jso[i].post[j].tnid);
+              var postloctnid = parseInt(jso[i].post[j].tnid);
               if (postloctnid in nodes)
               {
                 // link it to postgroup, to connect it to the connector
@@ -1001,6 +1001,7 @@ var SVGOverlay = function ( stack )
   this.view = view;
 
   this.paper = Raphael(view, Math.floor(stack.dimension.x * stack.scale), Math.floor(stack.dimension.y * stack.scale));
+  this.paper.catmaidSVGOverlay = this;
 
   this.updatePaperDimensions = function () {
     var wi = Math.floor(stack.dimension.x * stack.scale);

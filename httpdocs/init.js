@@ -48,8 +48,6 @@ var session;
 var msg_timeout;
 var MSG_TIMEOUT_INTERVAL = 60000; //!< length of the message lookup interval in milliseconds
 var messageWindow = null;
-var keyboardShortcutsWindow = null;
-var view3dWindow = null;
 
 var rootWindow;
 
@@ -502,7 +500,6 @@ function global_resize( e )
 	content.style.width = width + "px";
 	content.style.height = height + "px";
 
-  table_widget.style.height = height + "px";
   table_connector_widget.style.height = height + "px";
   object_tree_widget.style.height = height + "px";
   project_stats_widget.style.height = height + "px";
@@ -712,11 +709,6 @@ var init = function()
 	
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
-	
-	
-	table_widget = document.getElementById("treenode_table_widget");
-  var table_widget_resize_handle = new ResizeHandle("h");
-  table_widget.appendChild(table_widget_resize_handle.getView());
   
   table_connector_widget = document.getElementById("connectortable_widget");
   var table_connector_widget_resize_handle = new ResizeHandle("h");
@@ -849,78 +841,4 @@ function showMessages()
 	}
 			
 	messageWindow.focus();
-}
-
-
-function show3DViewWindow()
-{
-  if ( !view3dWindow )
-  {
-    view3dWindow = create3dWindow();
-    view3dWindow.focus();
-  }
-}
-
-
-function showKeyboardShortcuts()
-{
-	if ( !keyboardShortcutsWindow )
-	{
-		keyboardShortcutsWindow = new CMWWindow( "KeyboardShortcuts" );
-		var keyboardShortcutsContent = keyboardShortcutsWindow.getFrame();
-		var keyboardShortcutsContext = document.createElement( "div" );
-		keyboardShortcutsContent.style.backgroundColor = "#ffffff";
-		keyboardShortcutsContext.style.position = "absolute";
-		keyboardShortcutsContext.style.bottom = "0px";
-		keyboardShortcutsContext.style.width = "100%";
-		keyboardShortcutsContext.style.overflow = "auto";
-		
-		var keyboardShortcutsList = document.createElement( "p" );
-    keyboardShortcutsList.id="keyShortcutsText";
-    var keysHTML = '';
-    for (i in stringToKeyAction) {
-      keysHTML += '<button style="width:3em; margin-right:1em">' + i + '</button>' + stringToKeyAction[i].helpText + "<br />";
-    }
-    keyboardShortcutsList.innerHTML = keysHTML;
-    keyboardShortcutsContext.appendChild( keyboardShortcutsList );
-		keyboardShortcutsContent.appendChild( keyboardShortcutsContext );
-		
-		keyboardShortcutsWindow.addListener(
-		function( callingWindow, signal )
-		{
-			switch ( signal )
-			{
-			case CMWWindow.CLOSE:
-				if ( typeof project == undefined || project == null )
-				{
-					rootWindow.close();
-					document.getElementById( "content" ).style.display = "none";
-				}
-				else
-					keyboardShortcutsWindow.close();
-				keyboardShortcutsWindow = null;
-				break;
-			case CMWWindow.RESIZE:
-					keyboardShortcutsContext.style.height = keyboardShortcutsWindow.getContentHeight() + "px";
-					break;
-			}
-			return true;
-		} );
-		
-		document.getElementById( "content" ).style.display = "none";
-		
-		/* be the first window */
-		if ( rootWindow.getFrame().parentNode != document.body )
-		{
-			document.body.appendChild( rootWindow.getFrame() );
-			document.getElementById( "content" ).style.display = "none";
-		}
-		
-		if ( rootWindow.getChild() == null )
-			rootWindow.replaceChild( keyboardShortcutsWindow );
-		else
-			rootWindow.replaceChild( new CMWHSplitNode( rootWindow.getChild(), keyboardShortcutsWindow ) );
-	}
-	
-	keyboardShortcutsWindow.focus();
 }

@@ -79,7 +79,7 @@
 		<script type="text/javascript" src="widgets/stats.js"></script>
 		<script type="text/javascript" src="libs/sylvester/sylvester.js"></script>
 		<script type="text/javascript" src="treelines.js"></script>
-		<script type="text/javascript" src="view3d.js"></script>
+		<script type="text/javascript" src="WindowMaker.js"></script>
 		<script type="text/javascript" src="widgets/windowmanager.js"></script>
 		
 	</head>
@@ -112,13 +112,13 @@
 					<!--<a href="#" class="button" id="edit_button_profile" onclick="project.setMode( 'profile' );"><img src="widgets/themes/kde/draw.gif" alt="profile" title="profile" /></a>-->
 				</div>
 				<div class="box" id="toolbox_data" style="display:none">
-					<a href="#" class="button" id="data_button_table_treenode" onclick="project.showDatatableWidget( 'treenode' );"><img src="widgets/themes/kde/table.gif" alt="table" title="treenode table" /></a>
+					<a href="#" class="button" id="data_button_table_treenode" onclick="WindowMaker.show('node-table');"><img src="widgets/themes/kde/table.gif" alt="table" title="treenode table" /></a>
                     <a href="#" class="button" id="data_button_table_connector" onclick="project.showDatatableWidget( 'connector' );"><img src="widgets/themes/kde/table_connector.gif" alt="table" title="connector table" /></a>
 					<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'entities' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="object tree" /></a>
 					<!--<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'classes' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="class tree" /></a>-->
 					<a href="#" class="button" id="data_button_stats" onclick="project.showStatisticsWidget( );"><img src="widgets/themes/kde/stats.gif" alt="tree" title="project statistics" /></a>
-					<a href="#" class="button" id="key_help_button" onclick="showKeyboardShortcuts( );"><img src="widgets/themes/kde/help.png" alt="help for key shorcuts" title="help for key shortcuts" /></a>
-					<a href="#" class="button" id="view_3d_button" onclick="show3DViewWindow( );"><img src="widgets/themes/kde/3d-view.png" alt="Show the 3D view" title="Show the 3D view" /></a>
+					<a href="#" class="button" id="key_help_button" onclick="WindowMaker.show('keyboard-shortcuts');"><img src="widgets/themes/kde/help.png" alt="help for key shorcuts" title="help for key shortcuts" /></a>
+					<a href="#" class="button" id="view_3d_button" onclick="WindowMaker.show('3d-view');"><img src="widgets/themes/kde/3d-view.png" alt="Show the 3D view" title="Show the 3D view" /></a>
 				</div>
 				<div id="logout_box" class="box_right" style="display:none"><p><a id="logout" name="logout" title="Logout" onclick="logout();" href="#">Logout</a></p></div>
 				<div id="login_box" class="box_right" style="display:none"><p>account&nbsp;</p><p><input type="text" id="account" name="account" size="8" /></p><p>&nbsp;&nbsp;password&nbsp;</p><p><input type="password" id="password" name="password" size="8" /></p><p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p></div>
@@ -191,49 +191,8 @@
 		<!-- Table widgets
 		***********************************************************************
 		-->
-		<div id="treenode_table_widget" class="sliceView" style="width:50%; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
-			<div class="stackInfo_selected" style="position:relative">
-				<p id="treenode_table_widget_title" class="stackTitle">Treenode Table</p>
-				<p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p>
-            </div>
-			<div id="treenode_table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
-                &nbsp; Synchronize <input type="checkbox" id="synchronize_treenodetable" />
-				<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable">
-					<thead>
-						<tr>
-							<th>id</th>
-							<th>x</th>
-							<th>y</th>
-							<th>z</th>
-							<th>type</th>
-							<th>confidence</th>
-							<th>radius</th>
-							<th>username</th>
-							<th>tags</th>
-							<th>last modified</th>
-						</tr>
-					</thead>
-					<tfoot>
-						<tr>
-							<th>id</th>
-							<th>x</th>
-							<th>y</th>
-							<th>z</th>
-							<th><input type="text" name="search_type" value="Search" class="search_init" size="5" /></th>
-							<th>confidence</th>
-							<th>radius</th>
-							<th>username</th>
-							<th><input type="text" name="search_labels" value="Search" class="search_init" size="5" /></th>
-							<th>last modified</th>			
-						</tr>
-					</tfoot>
-					<tbody>
-						<tr><td colspan="10"></td></tr>
-					</tbody>
-				</table>
-			</div>
-		</div>
-        
+
+
 		<div id="connectortable_widget" class="sliceView" style="width:50%; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
 			<div class="stackInfo_selected" style="position:relative">
 				<p id="connector_table_widget_title" class="stackTitle">Connector Table</p>
@@ -289,7 +248,7 @@
 			  <p id="statistics_widget_title" class="stackTitle">Project statistics</p>
 			  <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p>
             </div>
-			  
+
 			<div id="statistics_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
 			  <input type="button" id="refresh_stats" value="refresh" style="display:block; float:left;" />
 				<br clear="all" /> 

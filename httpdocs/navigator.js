@@ -109,8 +109,12 @@ function Navigator()
 	
 	var onmousemove = function( e )
 	{
-    self.lastX = self.stack.x + ui.diffX;
-		self.stack.moveToPixel( self.stack.z, self.stack.y - ui.diffY / self.stack.scale, self.stack.x - ui.diffX / self.stack.scale, self.stack.s );
+		self.lastX = self.stack.x + ui.diffX; // TODO - or + ?
+		self.lastY = self.stack.y + ui.diffY;
+		self.stack.moveToPixel( self.stack.z,
+														self.stack.y - ui.diffY / self.stack.scale,
+														self.stack.x - ui.diffX / self.stack.scale,
+														self.stack.s );
 		updateControls();
 		return true;
 	};

@@ -506,8 +506,6 @@ function global_resize( e )
   table_connector_widget.style.height = height + "px";
   object_tree_widget.style.height = height + "px";
   project_stats_widget.style.height = height + "px";
-  key_shortcut_widget.style.height = height + "px";
-  view_in_3d_widget.style.height = height + "px";
 
 	return true;
 }
@@ -727,14 +725,6 @@ var init = function()
   project_stats_widget = document.getElementById("project_stats_widget");
   var project_stats_widget_resize_handle = new ResizeHandle("h");
   project_stats_widget.appendChild(project_stats_widget_resize_handle.getView());
-
-  key_shortcut_widget = document.getElementById("key_shortcut_widget");
-  var key_shortcut_widget_resize_handle = new ResizeHandle("h");
-  key_shortcut_widget.appendChild(key_shortcut_widget_resize_handle.getView());
-
-  view_in_3d_widget = document.getElementById("view_in_3d_widget");
-  var view_in_3d_widget_resize_handle = new ResizeHandle("h");
-  view_in_3d_widget.appendChild(view_in_3d_widget_resize_handle.getView());
 
   object_tree_widget = document.getElementById("object_tree_widget");
   var tree_widget_resize_handle = new ResizeHandle("h");

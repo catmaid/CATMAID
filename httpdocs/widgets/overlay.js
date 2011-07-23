@@ -385,7 +385,7 @@ var SVGOverlay = function ( stack )
             nodes[toid].drawEdges();
             nodes[fromid].drawEdges();
             // make target active treenode
-            // activateNode(nodes[toid]);
+            // self.activateNode(nodes[toid]);
             requestOpenTreePath( nodes[fromid] );
             refreshAllWidgets();
           }
@@ -449,7 +449,7 @@ var SVGOverlay = function ( stack )
             var nn = new ConnectorNode(jso.connector_id, self.paper, 8, pos_x, pos_y, pos_z, 0);
             nodes[jso.connector_id] = nn;
             nn.draw();
-            activateNode(nn);
+            self.activateNode(nn);
           }
         } // endif
       } // end if
@@ -873,31 +873,6 @@ var SVGOverlay = function ( stack )
     self.updatePaperDimensions(stack);
   }
 
-
-
-  this.set_tracing_mode = function (mode) {
-    // toggels the button correctly
-    // might update the mouse pointer
-    document.getElementById("trace_button_skeleton").className = "button";
-    document.getElementById("trace_button_synapse").className = "button";
-
-    if (mode === "skeletontracing") {
-      currentmode = mode;
-      document.getElementById("trace_button_skeleton").className = "button_active";
-    } else if (currentmode === "skeletontracing") {
-      currentmode = mode;
-      document.getElementById("trace_button_synapse").className = "button_active";
-    }
-  };
-
-  var getMode = function (e) {
-    return currentmode;
-  };
-
-  this.getView = function () {
-    return view;
-  };
-
   // This isn't called "onclick" to avoid confusion - click events
   // aren't generated when clicking in the overlay since the mousedown
   // and mouseup events happen in different divs.  This is actually
@@ -988,8 +963,6 @@ var SVGOverlay = function ( stack )
 
   // currently there are two modes: skeletontracing and synapsedropping
   var currentmode = "skeletontracing";
-  // TODO must set the tracing mode at some point
-  //this.set_tracing_mode(currentmode);
 
   var view = document.createElement("div");
   view.className = "sliceSVGOverlay";
@@ -1127,5 +1100,129 @@ var SVGOverlay = function ( stack )
       }
     }
     return;
+  }
+
+
+
+
+  this.set_tracing_mode = function (mode) {
+    // toggles the button correctly
+    // might update the mouse pointer
+    document.getElementById("trace_button_skeleton").className = "button";
+    document.getElementById("trace_button_synapse").className = "button";
+
+    if (mode === "skeletontracing") {
+      currentmode = mode;
+      document.getElementById("trace_button_skeleton").className = "button_active";
+    } else if (currentmode === "skeletontracing") {
+      currentmode = mode;
+      document.getElementById("trace_button_synapse").className = "button_active";
+    }
+  };
+
+  var getMode = function (e) {
+    return currentmode;
+  };
+
+  // Commands for the sub-buttons of the tracing tool
+  this.tracingCommand = function (m) {
+    switch (m) {
+    case "skeleton":
+      self.set_tracing_mode("skeletontracing");
+      break;
+    case "synapse":
+      self.set_tracing_mode("synapsedropping");
+      break;
+    case "goparent":
+      if (atn !== null) {
+        if (atn.parent !== null) {
+          stack.moveTo(self.pix2physZ(atn.parent.z),
+                       self.pix2physY(atn.parent.y),
+                       self.pix2physX(atn.parent.x));
+          window.setTimeout("project.selectNode( " + atn.parent.id + " )", 1000);
+        } else {
+          alert("This is the root node.");
+        }
+      } else {
+        alert("No active node selected.");
+      }
+      break;
+    case "goactive":
+      if (atn !== null) {
+        stack.moveTo(self.pix2physZ(atn.z),
+                     self.pix2physY(atn.y),
+                     self.pix2physX(atn.x));
+      } else {
+        alert("No active node to go to!");
+      }
+      break;
+    case "golastedited":
+      if (atn === null) {
+        alert("There was no active node.  One is required to find the\n" + "last edited node in the same skeleton.");
+        break;
+      }
+      self.updateNodeCoordinatesinDB(function () {
+        requestQueue.register("model/last.edited.or.added.php", "POST", {
+          pid: project.id,
+          tnid: atn.id
+        }, function (status, text, xml) {
+          if (status === 200) {
+            if (text && text != " ") {
+              var e = eval("(" + text + ")");
+              if (e.error) {
+                alert(e.error);
+              } else {
+                stack.moveTo(e.z, e.y, e.x);
+              }
+            }
+          }
+        });
+
+      });
+      break;
+    case "skelsplitting":
+      if (atn !== null) {
+        self.splitSkeleton();
+      } else {
+        alert('Need to activate a treenode before splitting!');
+      }
+      break;
+    case "skelrerooting":
+      if (atn !== null) {
+        self.rerootSkeleton();
+      } else {
+        alert('Need to activate a treenode before rerooting!');
+      }
+      break;
+    case "tagging":
+      if (atn != null) {
+        self.tagATN();
+      } else {
+        alert('Need to activate a treenode or connector before tagging!');
+      }
+      break;
+    case "selectnearestnode":
+      self.activateNearestNode(project.lastX, project.lastY, project.coordinates.z);
+      break;
+    case "togglelabels":
+      self.toggleLabels();
+      break;
+    case "exportswc":
+      if (atn != null) {
+        self.exportSWC();
+      } else {
+        alert('Need to activate a treenode before exporting to SWC!');
+      }
+      break;
+    case "3dview":
+      if (atn != null) {
+        self.showSkeleton();
+      } else {
+        alert('Need to activate a treenode or connector before showing them!');
+      }
+      break;
+    }
+    return;
+
   }
 };

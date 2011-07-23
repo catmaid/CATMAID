@@ -46,7 +46,19 @@ function TracingTool()
         { name : "togglelabels", alt : "toggle labels" },
         { name : "3dview", alt : "3d view" } ].map(
         function( button ) {
-          box.append( $('<a href="#" class="button" id="trace_button_' + button.name + '"><img src="widgets/themes/kde/trace_' + button.name + '.png" title="'+ button.alt + '" alt="'+ button.alt + '" /></a>' ) );
+          var a = document.createElement('a');
+          a.setAttribute('class', 'button');
+          a.setAttribute('id', 'trace_button_' + button.name);
+          a.onclick = function( e ) {
+            tracingLayer.svgOverlay.tracingCommand(button.name);
+            return false;
+          };
+          var img = document.createElement('img');
+          img.setAttribute('title', button.alt);
+          img.setAttribute('alt', button.alt);
+          img.setAttribute('src', 'widgets/themes/kde/trace_' + button.name + '.png');
+          a.appendChild(img);
+          box.append(a);
         }
       );
       $( "#toolbar_nav" ).prepend( box );
@@ -59,7 +71,7 @@ function TracingTool()
     stack = parentStack;
     tracingLayer = new TracingLayer( parentStack );
     //this.prototype.mouseCatcher = tracingLayer.svgOverlay.getView();
-    this.prototype.setMouseCatcher( tracingLayer.svgOverlay.getView() );
+    this.prototype.setMouseCatcher( tracingLayer.svgOverlay.view );
     parentStack.addLayer( "TracingLayer", tracingLayer );
 
     // Call register AFTER changing the mouseCatcher
@@ -70,7 +82,7 @@ function TracingTool()
     tracingLayer.svgOverlay.updateNodes();
 
     // view is the mouseCatcher now
-    var view = tracingLayer.svgOverlay.getView();
+    var view = tracingLayer.svgOverlay.view;
 
     var proto_onmousedown = view.onmousedown;
     view.onmousedown = function( e ) {
@@ -105,8 +117,8 @@ function TracingTool()
         tracingLayer.svgOverlay.updateNodes();
       };
 
-	return;
-	}
+    return;
+  }
 
 	/**
 	 * unregister all stack related mouse and keyboard controls

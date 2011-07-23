@@ -188,7 +188,7 @@ zdiff) // the different from the current slices
     // refresh the nodes again in order to remove the lines
     // and not have references to the connector anymore in the
     // treenodes
-    project.updateNodes();
+    self.paper.catmaidSVGOverlay.updateNodes();  // TODO this is overkill
   };
 
 

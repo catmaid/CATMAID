@@ -49,6 +49,7 @@ var msg_timeout;
 var MSG_TIMEOUT_INTERVAL = 60000; //!< length of the message lookup interval in milliseconds
 var messageWindow = null;
 var keyboardShortcutsWindow = null;
+var view3dWindow = null;
 
 var rootWindow;
 
@@ -859,6 +860,17 @@ function showMessages()
 			
 	messageWindow.focus();
 }
+
+
+function show3DViewWindow()
+{
+  if ( !view3dWindow )
+  {
+    view3dWindow = create3dWindow();
+    view3dWindow.focus();
+  }
+}
+
 
 function showKeyboardShortcuts()
 {

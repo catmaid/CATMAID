@@ -14,6 +14,7 @@ y, // y coordinates
 z, // z coordinates
 zdiff) // the different from the current slices
 {
+  var self = this;
   // the database treenode id
   this.id = id;
   // this object should be used for synapses, for now only location
@@ -53,9 +54,9 @@ zdiff) // the different from the current slices
   var fillcolor;
 
   this.colorFromZDiff = function() {
-    if (this.zdiff > 0) {
+    if (self.zdiff > 0) {
       return "rgb(0, 0, 255)";
-    } else if (this.zdiff < 0) {
+    } else if (self.zdiff < 0) {
       return "rgb(255, 0, 0)";
     } else {
       return "rgb(235, 117, 0)";
@@ -74,36 +75,36 @@ zdiff) // the different from the current slices
   // update the local x,y coordinates
   // updated them for the raphael object as well
   this.setXY = function (xnew, ynew) {
-    this.x = xnew;
-    this.y = ynew;
+    self.x = xnew;
+    self.y = ynew;
     if (c) {
       c.attr({
-        cx: this.x,
-        cy: this.y
+        cx: self.x,
+        cy: self.y
       });
       mc.attr({
-        cx: this.x,
-        cy: this.y
+        cx: self.x,
+        cy: self.y
       });
     }
-    this.drawEdges();
+    self.drawEdges();
   };
 
   // Set the connector node fill color depending on whether it is active
   // or not
   this.setColor = function () {
 
-    if (atn !== null && this.id === atn.id) {
+    if (atn !== null && self.id === atn.id) {
       // The active node is always in green:
       fillcolor = atn_fillcolor;
     } else {
       // If none of the above applies, just colour according to the z
       // difference.
-      fillcolor = this.colorFromZDiff();
+      fillcolor = self.colorFromZDiff();
     }
     
-    if (this.c) {
-      this.c.attr({
+    if (self.c) {
+      self.c.attr({
         fill: fillcolor
       });
     }
@@ -116,20 +117,20 @@ zdiff) // the different from the current slices
 
   this.createCircle = function () {
     // create a raphael circle object
-    this.c = this.paper.circle(this.x, this.y, this.r).attr({
+    self.c = self.paper.circle(self.x, self.y, self.r).attr({
       fill: fillcolor,
       stroke: "none",
       opacity: 1.0
     });
 
     // a raphael circle oversized for the mouse logic
-    this.mc = this.paper.circle(this.x, this.y, this.rcatch).attr({
+    self.mc = self.paper.circle(self.x, self.y, self.rcatch).attr({
       fill: "rgb(0, 1, 0)",
       stroke: "none",
       opacity: 0
     });
     
-    this.createEventHandlers();
+    self.createEventHandlers();
   };
 
   // set the fill color of this connector
@@ -143,24 +144,24 @@ zdiff) // the different from the current slices
   this.deleteall = function () {
     var i;
     // remove the parent of all the children
-    for (i = 0; i < this.children.length; ++i) {
-      this.children[i].line.remove();
-      this.children[i].removeParent();
+    for (i = 0; i < self.children.length; ++i) {
+      self.children[i].line.remove();
+      self.children[i].removeParent();
     }
     // remove the raphael svg elements from the DOM
     if (c) {
       c.remove();
       mc.remove();
     }
-    if (this.parent !== null) {
-      this.removeLine();
+    if (self.parent !== null) {
+      self.removeLine();
       // remove this node from parent's children list
-      for (i in this.parent.children) {
-        if (this.parent.children.hasOwnProperty(i)) {
-          if (this.parent.children[i].id === id) {
+      for (i in self.parent.children) {
+        if (self.parent.children.hasOwnProperty(i)) {
+          if (self.parent.children[i].id === id) {
             // FIXME: use splice(1,1) instead
-            this.parent.children.splice(i, 1);
-            // delete this.parent.children[i];
+            self.parent.children.splice(i, 1);
+            // delete self.parent.children[i];
           }
         }
       }
@@ -175,7 +176,7 @@ zdiff) // the different from the current slices
   this.deletenode = function () {
     requestQueue.register("model/connector.delete.php", "POST", {
       pid: project.id,
-      cid: this.id,
+      cid: self.id,
       class_instance_type: 'synapse'
     }, function (status, text, xml) {
       if (status !== 200) {
@@ -190,11 +191,9 @@ zdiff) // the different from the current slices
     project.updateNodes();
   };
 
-  var arrowLine = function (paper, x1, y1, x2, y2, size, strowi, strocol) {
-    this.remove = function () {
-      arrowPath.remove();
-      linePath.remove();
-    };
+
+  // Constructor method for ArrowLine
+  var ArrowLine = function (paper, x1, y1, x2, y2, size, strowi, strocol) {
     /*
      * compute position for arrowhead pointer
      */
@@ -219,48 +218,58 @@ zdiff) // the different from the current slices
       "fill": strocol,
       "stroke": strocol
     });
+    // The 'this' refers to the new ArrowLine, so don't use the ConnectorNode.self!
+    this.remove = function () {
+      arrowPath.remove();
+      linePath.remove();
+    };
   };
 
   // updates the raphael path coordinates
-  this.drawLine = function (to_id, pre) {
-    var line = this.paper.path();
+  var createLine = function (to_id, pre) {
+    var line;
     if (pre) {
-      line = new arrowLine(this.paper, this.pregroup[to_id].x, this.pregroup[to_id].y, this.x, this.y, 5, 2, "rgb(126, 57, 112)");
+      line = new ArrowLine(self.paper, self.pregroup[to_id].x, self.pregroup[to_id].y, self.x, self.y, 5, 2, "rgb(126, 57, 112)");
     } else {
-      line = new arrowLine(this.paper, this.x, this.y, this.postgroup[to_id].x, this.postgroup[to_id].y, 5, 2, "rgb(67, 67, 128)");
+      line = new ArrowLine(self.paper, self.x, self.y, self.postgroup[to_id].x, self.postgroup[to_id].y, 5, 2, "rgb(67, 67, 128)");
     }
     return line;
   };
 
+  // TODO convert to arrays: would iterate faster without one function call per line. Measure performance!
   this.preLines = {};
   this.postLines = {};
 
   this.updateLines = function () {
     var i, l;
-    for (i in this.preLines) {
-      if(this.preLines.hasOwnProperty(i)) {
-        this.preLines[i].remove();
+    for (i in self.preLines) {
+      if(self.preLines.hasOwnProperty(i)) {
+        if (self.preLines[i].remove)
+          self.preLines[i].remove();
+        else console.log(i, self.preLines[i]);
       }
     }
 
-    for (i in this.postLines) {
-      if(this.postLines.hasOwnProperty(i)) {
-        this.postLines[i].remove();
+    for (i in self.postLines) {
+      if(self.postLines.hasOwnProperty(i)) {
+        if (self.postLines[i].remove)
+          self.postLines[i].remove();
+        else console.log(i, self.postLines[i]);
       }
     }
 
     // re-create
-    for (i in this.pregroup) {
-      if (this.pregroup.hasOwnProperty(i)) {
-        l = this.drawLine(this.pregroup[i].id, true);
-        this.preLines[this.pregroup[i].id] = l;
+    for (i in self.pregroup) {
+      if (self.pregroup.hasOwnProperty(i)) {
+        l = createLine(self.pregroup[i].id, true);
+        self.preLines[self.pregroup[i].id] = l;
       }
     }
 
-    for (i in this.postgroup) {
-      if (this.postgroup.hasOwnProperty(i)) {
-        l = this.drawLine(this.postgroup[i].id, false);
-        this.postLines[this.postgroup[i].id] = l;
+    for (i in self.postgroup) {
+      if (self.postgroup.hasOwnProperty(i)) {
+        l = createLine(self.postgroup[i].id, false);
+        self.postLines[self.postgroup[i].id] = l;
       }
     }
 
@@ -271,18 +280,17 @@ zdiff) // the different from the current slices
   // and to its parent
   this.draw = function () {
     // delete lines and recreate them with the current list
-    this.updateLines();
-    this.createCircle();
+    self.updateLines();
+    self.createCircle();
   };
   
   this.drawEdges = this.updateLines;
 
   this.createEventHandlers = function () {
-    var self = this;
     /*
      * event handlers
      */
-    this.mc.dblclick(function (e) {
+    self.mc.dblclick(function (e) {
       if (e.altKey) {
         // zoom in
         slider_trace_s.move(-1);
@@ -294,14 +302,14 @@ zdiff) // the different from the current slices
       project.tracingCommand('goactive');
     });
 
-    this.mc.click(function (e) {
+    self.mc.click(function (e) {
 
       // return some log information when clicked on the node
       // this usually refers here to the mc object
       if (e.shiftKey) {
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           if (atn != null && self.id == atn.id) {
-            activateNode(null);
+            self.paper.catmaidSVGOverlay.activateNode(null);
           }
           statusBar.replaceLast("deleted connector with id " + self.id);
           self.deletenode();
@@ -311,7 +319,7 @@ zdiff) // the different from the current slices
         if (atn !== null) {
           // connected activated treenode or connectornode
           // to existing treenode or connectornode
-          // console.log("from", atn.id, "to", this.parentnode.id);
+          // console.log("from", atn.id, "to", self.parentnode.id);
           project.createLink(atn.id, self.id, "presynaptic_to", "presynaptic terminal", "synapse", "treenode", "connector");
           statusBar.replaceLast("joined active connector to treenode with id " + self.id);
         } else {
@@ -329,14 +337,14 @@ zdiff) // the different from the current slices
       } else {
         //console.log("Try to activate node");
         // activate this node
-        activateNode(self);
+        self.paper.catmaidSVGOverlay.activateNode(self);
         // stop propagation of the event
         e.stopPropagation();
       }
     });
 
-    this.mc.move = function (dx, dy) {
-      activateNode(self);
+    self.mc.move = function (dx, dy) {
+      self.paper.catmaidSVGOverlay.activateNode(self);
       self.x = ox + dx;
       self.y = oy + dy;
       self.c.attr({
@@ -351,14 +359,14 @@ zdiff) // the different from the current slices
       statusBar.replaceLast("move connector with id " + self.id);
     };
 
-    this.mc.up = function () {
+    self.mc.up = function () {
       self.c.attr({
         opacity: 1
       });
       self.needsync = true;
     };
 
-    this.mc.start = function () {
+    self.mc.start = function () {
       ox = self.x;
       oy = self.y;
       self.c.attr({
@@ -366,9 +374,9 @@ zdiff) // the different from the current slices
       });
     };
     
-    this.mc.drag(this.mc.move, this.mc.start, this.mc.up);
+    self.mc.drag(self.mc.move, self.mc.start, self.mc.up);
 
-    this.mc.mousedown(function (e) {
+    self.mc.mousedown(function (e) {
       e.stopPropagation();
     });
     

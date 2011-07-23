@@ -297,19 +297,17 @@ var Node = function (
     }
   };
 
-  var lineToBack = function(line) {
-    if (line) line.toBack();
-  };
-
   this.draw = function () {
+    var i, l;
     self.drawEdges();
     // Push new edges to the back.
     for (i in self.children) {
       if (self.children.hasOwnProperty(i)) {
-        lineToBack(self.children[i].line);
+        l = self.children[i].line;
+        if (l) l.toBack();
       }
     }
-    if (self.parent !== null) lineToBack(self.line);
+    if (self.parent !== null && self.line) self.line.toBack();
     //
     self.createCircle();
   };

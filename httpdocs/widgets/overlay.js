@@ -504,7 +504,7 @@ var SVGOverlay = function ( stack )
               // update the reference to the connector from the treenode
               nodes[id].connectors[locid_retrieved] = nn;
               // activate the newly created connector
-              activateNode(nn);
+              self.activateNode(nn);
 
             } else {
               // postsynaptic case, no requirement to create new connector
@@ -923,7 +923,7 @@ var SVGOverlay = function ( stack )
       if (atn !== null) {
         statusBar.replaceLast("deactivated active node with id " + atn.id);
       }
-      activateNode(null);
+      self.activateNode(null);
     } else if (e.shiftKey) {
       if (atn === null) {
         if (getMode() === "skeletontracing") {

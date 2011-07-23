@@ -391,7 +391,17 @@ function Project( pid )
 		return;
 	}
 	
-	
+
+	//!< Associative array of selected objects
+	// in the Treenode Table and Object Tree.
+	// I.e. enables communication between the Object Tree and the Table of Nodes.
+	this.selectedObjects = {
+		'tree_object': {},
+		'table_treenode': {},
+		'selectedneuron': null,
+		'selectedskeleton': null
+	};
+
 	/*
 	 * Shows the tree view for the loaded project
 	 */

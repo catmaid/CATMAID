@@ -208,9 +208,9 @@ var ObjectTree = new function()
                   // select the node
                   this.select_node(obj);
 
-                  project.showDatatableWidget("treenode");
+                  WindowMaker.show("node-table");
                   // datatables grabs automatically the selected skeleton
-                  oTable.fnDraw();
+                  TreenodeTable.oTable.fnDraw();
                 }
               },
               "show_connectortable": {

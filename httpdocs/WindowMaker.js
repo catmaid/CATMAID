@@ -168,7 +168,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    initTreenodeTable( project.getId() );
+    TreenodeTable.init( project.getId() );
 
     return win;
   };

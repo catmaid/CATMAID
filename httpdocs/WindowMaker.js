@@ -220,7 +220,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    initConnectorTable( project.getId() );
+    ConnectorTable.init( project.getId() );
 
     return win;
   };

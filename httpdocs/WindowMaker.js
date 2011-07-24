@@ -269,7 +269,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    initObjectTree( project.getId() );
+    ObjectTree.init( project.getId() );
 
     return win;
   };

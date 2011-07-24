@@ -13,7 +13,7 @@ var openSkeletonNodeInObjectTree = function(node) {
     return;
   }
   // Else, synchronize:
-  requestOpenTreePath(node);
+  ObjectTree.requestOpenTreePath(node);
 };
 
 var refreshAllWidgets = function() {
@@ -335,7 +335,7 @@ var SVGOverlay = function ( stack )
             } else {
               // just redraw all for now
               self.updateNodes();
-              refreshObjectTree();
+              ObjectTree.refresh();
               refreshAllWidgets();
             }
           }
@@ -361,7 +361,7 @@ var SVGOverlay = function ( stack )
           } else {
             // just redraw all for now
             self.updateNodes();
-            refreshObjectTree();
+            ObjectTree.refresh();
             refreshAllWidgets();
           }
         }
@@ -386,7 +386,7 @@ var SVGOverlay = function ( stack )
             nodes[fromid].drawEdges();
             // make target active treenode
             // self.activateNode(nodes[toid]);
-            requestOpenTreePath( nodes[fromid] );
+            ObjectTree.requestOpenTreePath( nodes[fromid] );
             refreshAllWidgets();
           }
         }

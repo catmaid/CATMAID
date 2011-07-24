@@ -298,6 +298,12 @@ function Stack(
 		if ( typeof tool != "undefined" && tool )
 			tool.register( self );
 	}
+
+	/** Return the current tool. */
+	this.getTool = function()
+	{
+		return tool;
+	}
 	
 	// initialize
 	var self = this;

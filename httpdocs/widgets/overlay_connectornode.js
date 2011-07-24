@@ -321,7 +321,7 @@ zdiff) // the different from the current slices
           // connected activated treenode or connectornode
           // to existing treenode or connectornode
           // console.log("from", atn.id, "to", self.parentnode.id);
-          project.createLink(atn.id, self.id, "presynaptic_to", "presynaptic terminal", "synapse", "treenode", "connector");
+          paper.catmaidSVGOverlay.createLink(atn.id, self.id, "presynaptic_to", "presynaptic terminal", "synapse", "treenode", "connector");
           statusBar.replaceLast("joined active connector to treenode with id " + self.id);
         } else {
           var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');

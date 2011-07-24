@@ -401,49 +401,6 @@ function Project( pid )
 		'selectedneuron': null,
 		'selectedskeleton': null
 	};
-
-	/*
-	 * Shows the tree view for the loaded project
-	 */
-	this.showTreeviewWidget = function ( m )
-	{
-		switch ( m )
-		{
-		case "entities":
-			var tw_status = document.getElementById( 'tree_widget' ).style.display;
-			// check if not opened before to prevent messing up with event handlers
-			if ( tw_status != 'block' )
-			{
-				document.getElementById( 'tree_widget' ).style.display = 'block';
-				ui.onresize();			
-				initTreeview( this.id );
-			}
-			break;
-		}
-		return;
-	}
-	
-	/*
-	 * Shows the datatable for the loaded project
-	 */
-	this.showDatatableWidget = function ( m )
-	{
-		document.getElementById( 'table_widget' ).style.display = 'block';
-		ui.onresize();	
-		switch ( m )
-		{
-		case "treenode":
-			initDatatable( 'treenode', this.id );
-			break;
-		case "presynapse":
-			initDatatable( 'presynapse', this.id );
-			break;
-		case "postsynapse":
-			initDatatable( 'postsynapse', this.id );
-			break;
-		}
-		return;
-	}
 	
 	this.hideToolbars = function()
 	{

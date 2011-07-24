@@ -150,7 +150,7 @@ var ConnectorTable = new function()
 
       // activate the treenode with a delay
       var id = parseInt(aData[7], 10);
-      window.setTimeout("project.selectNode( " + id + " )", 1000);
+      window.setTimeout("SkeletonAnnotations.getSVGOverlay(project.getStack()).selectNode( " + id + " )", 1000);
 
     });
 

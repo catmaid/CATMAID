@@ -189,7 +189,7 @@ var ObjectTree = new function()
                           project.moveTo(e.z, e.y, e.x);
 
                           // activate the node with a delay
-                          window.setTimeout("project.selectNode( " + e.root_id + " )", 1000);
+                          window.setTimeout("SkeletonAnnotations.getSVGOverlay(project.getStack()).selectNode( " + e.root_id + " )", 1000);
 
                         }
                       }

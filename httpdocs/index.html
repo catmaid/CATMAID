@@ -113,10 +113,9 @@
 				</div>
 				<div class="box" id="toolbox_data" style="display:none">
 					<a href="#" class="button" id="data_button_table_treenode" onclick="WindowMaker.show('node-table');"><img src="widgets/themes/kde/table.gif" alt="table" title="treenode table" /></a>
-                    <a href="#" class="button" id="data_button_table_connector" onclick="project.showDatatableWidget( 'connector' );"><img src="widgets/themes/kde/table_connector.gif" alt="table" title="connector table" /></a>
-					<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'entities' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="object tree" /></a>
-					<!--<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'classes' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="class tree" /></a>-->
-					<a href="#" class="button" id="data_button_stats" onclick="project.showStatisticsWidget( );"><img src="widgets/themes/kde/stats.gif" alt="tree" title="project statistics" /></a>
+                    <a href="#" class="button" id="data_button_table_connector" onclick="WindowMaker.show( 'connector-table' );"><img src="widgets/themes/kde/table_connector.gif" alt="table" title="connector table" /></a>
+					<a href="#" class="button" id="data_button_tree" onclick="WindowMaker.show('object-tree');"><img src="widgets/themes/kde/tree.gif" alt="tree" title="object tree" /></a>
+					<a href="#" class="button" id="data_button_stats" onclick="WindowMaker.show('statistics');"><img src="widgets/themes/kde/stats.gif" alt="tree" title="project statistics" /></a>
 					<a href="#" class="button" id="key_help_button" onclick="WindowMaker.show('keyboard-shortcuts');"><img src="widgets/themes/kde/help.png" alt="help for key shorcuts" title="help for key shortcuts" /></a>
 					<a href="#" class="button" id="view_3d_button" onclick="WindowMaker.show('3d-view');"><img src="widgets/themes/kde/3d-view.png" alt="Show the 3D view" title="Show the 3D view" /></a>
 				</div>
@@ -179,141 +178,7 @@
 			*******************************************************************
 			-->
 		</div>
-		<!--
-		***********************************************************************
-		-->
-		
-		<!-- Message widget
-		***********************************************************************
-		-->
-		
-		
-		<!-- Table widgets
-		***********************************************************************
-		-->
 
-
-		<div id="connectortable_widget" class="sliceView" style="width:50%; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
-			<div class="stackInfo_selected" style="position:relative">
-				<p id="connector_table_widget_title" class="stackTitle">Connector Table</p>
-				<p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p>
-            </div>
-			<div id="connector_table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
-                <select id="connector_relation_type">
-                    <option value="0">Incoming connectors</option>
-                    <option value="1" selected="yes">Outgoing connectors</option>
-                </select>
-                &nbsp; Synchronize <input type="checkbox" id="synchronize_connectortable" />
-				<table cellpadding="0" cellspacing="0" border="0" class="display" id="connectortable">
-					<thead>
-						<tr>
-							<th>connector id</th>
-                            <th>x</th>
-                            <th>y</th>
-                            <th>z</th>
-                            <th>tags</th>
-                            <th id="connector_nr_nodes_top"># nodes for target(s)</th>
-                            <th>username</th>
-                            <th>treenode id</th>
-                        </tr>
-					</thead>
-					<tfoot>
-						<tr>
-							<th>connector id</th>
-                            <th>x</th>
-                            <th>y</th>
-                            <th>z</th>
-                            <th>tags</th>
-                            <th id="connector_nr_nodes_bottom"># nodes for target(s)</th>
-                            <th>username</th>
-                            <th>treenode id</th>
-                        </tr>
-                    </tfoot>
-                </table>
-			</div>
-		</div>
-		<!-- Project statistics widget
-		***********************************************************************
-		-->
-
-        <div id="key_shortcut_widget" class="sliceView" style="width:350px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
-          <div class="stackInfo_selected" style="position:relative">
-            <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
-            <p id="keyShortcutsText">[BUG: keyboard shortcut help should be here...]</p>
-          </div>
-        </div>
-
-		<div id="project_stats_widget" class="sliceView" style="width:350px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
-			<div class="stackInfo_selected" style="position:relative">
-			  <p id="statistics_widget_title" class="stackTitle">Project statistics</p>
-			  <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p>
-            </div>
-
-			<div id="statistics_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
-			  <input type="button" id="refresh_stats" value="refresh" style="display:block; float:left;" />
-				<br clear="all" /> 
-				<div id="project_stats">
-				<table cellpadding="0" cellspacing="0" border="0" class="display" id="project_stats_table">
-					<tr>
-						<td >#users</td>
-						<td id="proj_users"></td>
-					</tr>
-					<tr>
-						<td >#neurons</td>
-						<td id="proj_neurons"></td>
-					</tr>
-					<tr>
-						<td >#synapses</td>
-						<td id="proj_synapses"></td>
-					</tr>
-					<tr>
-						<td >#treenodes</td>
-						<td id="proj_treenodes"></td>
-					</tr>
-					<tr>
-						<td >#skeletons</td>
-						<td id="proj_skeletons"></td>
-					</tr>
-					<tr>
-						<td >#presynaptic contacts</td>
-						<td id="proj_presyn"></td>
-					</tr>
-					<tr>
-						<td >#postsynaptic contacts</td>
-						<td id="proj_postsyn"></td>
-					</tr>
-					<tr>
-						<td >#textlabels</td>
-						<td id="proj_textlabels"></td>
-					</tr>
-                    <tr>
-                        <td >#tags</td>
-                        <td id="proj_tags"></td>
-                    </tr>
-				</table>
-				</div>
-                <!-- piechart -->
-                <h3>Annotation User Contribution</h3>
-                <div id="piechart_treenode_holder">
-                </div>
-			</div>
-		</div>
-		
-		
-		<!-- Tree widget
-		***********************************************************************
-		-->
-
-		<div id="object_tree_widget" class="sliceView" style="width:350px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
-			<div class="stackInfo_selected" style="position:relative"><p id="tree_widget_title" class="stackTitle">Object Tree</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
-			<div id="tree_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
-			    <input type="button" id="refresh_object_tree" value="refresh" style="display:block; float:left;" />
-				  &nbsp; Synchronize <input type="checkbox" id="synchronize_object_tree" checked="yes" />
-			    <br clear="all" />
-			    <div id="tree_object"></div>
-			</div>
-		</div>
-		
 		<!-- Disclaimer
 		***********************************************************************
 		-->

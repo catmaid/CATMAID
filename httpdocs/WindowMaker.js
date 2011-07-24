@@ -1,6 +1,8 @@
 /** An object that encapsulates the functions for creating accessory windows. */
 var WindowMaker = new function()
 {
+  /** The table of window names versus their open instances..
+   * Only windows that are open are shown. */
   var windows = {};
 
   var createContainer = function(id) {
@@ -66,7 +68,7 @@ var WindowMaker = new function()
 
 
   /** Creates and returns a new 3d window. */
-  this.create3dWindow = function()
+  var create3dWindow = function()
   {
     var win = new CMWWindow("3D View");
     var content = win.getFrame();
@@ -117,9 +119,9 @@ var WindowMaker = new function()
   };
 
 
-  this.createNodeTableWindow = function()
+  var createNodeTableWindow = function()
   {
-    var win = new CMWWindow("Node Table");
+    var win = new CMWWindow("Table of Skeleton Nodes");
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
@@ -127,53 +129,105 @@ var WindowMaker = new function()
     content.appendChild(container);
 
     container.innerHTML =
-      '<div id="treenode_table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">' +
-        '&nbsp; Synchronize <input type="checkbox" id="synchronize_treenodetable" />' +
-        '<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable">' +
-          '<thead>' +
-            '<tr>' +
-              '<th>id</th>' +
-              '<th>x</th>' +
-              '<th>y</th>' +
-              '<th>z</th>' +
-              '<th>type</th>' +
-              '<th>confidence</th>' +
-              '<th>radius</th>' +
-              '<th>username</th>' +
-              '<th>tags</th>' +
-              '<th>last modified</th>' +
-            '</tr>' +
-          '</thead>' +
-          '<tfoot>' +
-            '<tr>' +
-              '<th>id</th>' +
-              '<th>x</th>' +
-              '<th>y</th>' +
-              '<th>z</th>' +
-              '<th><input type="text" name="search_type" value="Search" class="search_init" size="5" /></th>' +
-              '<th>confidence</th>' +
-              '<th>radius</th>' +
-              '<th>username</th>' +
-              '<th><input type="text" name="search_labels" value="Search" class="search_init" size="5" /></th>' +
-              '<th>last modified</th>' +
-            '</tr>' +
-          '</tfoot>' +
-          '<tbody>' +
-            '<tr><td colspan="10"></td></tr>' +
-          '</tbody>' +
-        '</table>' +
-      '</div>';
+      '&nbsp; Synchronize <input type="checkbox" id="synchronize_treenodetable" />' +
+      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable">' +
+        '<thead>' +
+          '<tr>' +
+            '<th>id</th>' +
+            '<th>x</th>' +
+            '<th>y</th>' +
+            '<th>z</th>' +
+            '<th>type</th>' +
+            '<th>confidence</th>' +
+            '<th>radius</th>' +
+            '<th>username</th>' +
+            '<th>tags</th>' +
+            '<th>last modified</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tfoot>' +
+          '<tr>' +
+            '<th>id</th>' +
+            '<th>x</th>' +
+            '<th>y</th>' +
+            '<th>z</th>' +
+            '<th><input type="text" name="search_type" value="Search" class="search_init" size="5" /></th>' +
+            '<th>confidence</th>' +
+            '<th>radius</th>' +
+            '<th>username</th>' +
+            '<th><input type="text" name="search_labels" value="Search" class="search_init" size="5" /></th>' +
+            '<th>last modified</th>' +
+          '</tr>' +
+        '</tfoot>' +
+        '<tbody>' +
+          '<tr><td colspan="10"></td></tr>' +
+        '</tbody>' +
+      '</table>';
 
     addListener(win, container);
 
     addLogic(win);
 
+    initTreenodeTable( project.getId() );
+
+    return win;
+  };
+
+  var createConnectorTableWindow = function()
+  {
+    var win = new CMWWindow("Table of Connectors");
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer("connectortable_widget");
+    content.appendChild(container);
+
+    container.innerHTML =
+      '<select id="connector_relation_type">' +
+        '<option value="0">Incoming connectors</option>' +
+        '<option value="1" selected="yes">Outgoing connectors</option>' +
+      '</select>' +
+      '&nbsp; Synchronize <input type="checkbox" id="synchronize_connectortable" />' +
+      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="connectortable">' +
+        '<thead>' +
+          '<tr>' +
+            '<th>connector id</th>' +
+            '<th>x</th>' +
+            '<th>y</th>' +
+            '<th>z</th>' +
+            '<th>tags</th>' +
+            '<th id="connector_nr_nodes_top"># nodes for target(s)</th>' +
+            '<th>username</th>' +
+            '<th>treenode id</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tfoot>' +
+          '<tr>' +
+            '<th>connector id</th>' +
+            '<th>x</th>' +
+            '<th>y</th>' +
+            '<th>z</th>' +
+            '<th>tags</th>' +
+            '<th id="connector_nr_nodes_bottom"># nodes for target(s)</th>' +
+            '<th>username</th>' +
+            '<th>treenode id</th>' +
+          '</tr>' +
+        '</tfoot>' +
+      '</table>';
+
+
+    addListener(win, container);
+
+    addLogic(win);
+
+    initConnectorTable( project.getId() );
+
     return win;
   };
   
-  this.createKeyboardShortcutsWindow = function()
+  var createKeyboardShortcutsWindow = function()
   {
-    var win = new CMWWindow( "KeyboardShortcuts" );
+    var win = new CMWWindow( "Keyboard Shortcuts" );
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
@@ -196,10 +250,102 @@ var WindowMaker = new function()
     return win;
   };
 
+  var createObjectTreeWindow = function()
+  {
+    var win = new CMWWindow( "Object Tree" );
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer( "object_tree_widget" );
+    content.appendChild( container );
+    
+    container.innerHTML =
+      '<input type="button" id="refresh_object_tree" value="refresh" style="display:block; float:left;" />' +
+      '&nbsp; Synchronize <input type="checkbox" id="synchronize_object_tree" checked="yes" />' +
+      '<br clear="all" />' +
+      '<div id="tree_object"></div>';
+
+    addListener(win, container);
+
+    addLogic(win);
+
+    initObjectTree( project.getId() );
+
+    return win;
+  };
+
+  var createStatisticsWindow = function()
+  {
+    var win = new CMWWindow( "Statistics" );
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer( "project_stats_widget" );
+    content.appendChild( container );
+    
+    container.innerHTML =
+      '<input type="button" id="refresh_stats" value="Refresh" style="display:block; float:left;" />' +
+      '<br clear="all" />' +
+      '<div id="project_stats">' +
+        '<table cellpadding="0" cellspacing="0" border="0" class="display" id="project_stats_table">' +
+          '<tr>' +
+            '<td >#users</td>' +
+            '<td id="proj_users"></td>' +
+          '</tr>' +
+          '<tr>' +
+            '<td >#neurons</td>' +
+            '<td id="proj_neurons"></td>' +
+          '</tr>' +
+          '<tr>' +
+            '<td >#synapses</td>' +
+            '<td id="proj_synapses"></td>' +
+          '</tr>' +
+          '<tr>' +
+            '<td >#treenodes</td>' +
+            '<td id="proj_treenodes"></td>' +
+          '</tr>' +
+          '<tr>' +
+            '<td >#skeletons</td>' +
+            '<td id="proj_skeletons"></td>' +
+          '</tr>' +
+          '<tr>' +
+            '<td >#presynaptic contacts</td>' +
+            '<td id="proj_presyn"></td>' +
+          '</tr>' +
+          '<tr>' +
+            '<td >#postsynaptic contacts</td>' +
+            '<td id="proj_postsyn"></td>' +
+          '</tr>' +
+          '<tr>' +
+            '<td >#textlabels</td>' +
+            '<td id="proj_textlabels"></td>' +
+          '</tr>' +
+          '<tr>' +
+            '<td >#tags</td>' +
+            '<td id="proj_tags"></td>' +
+          '</tr>' +
+        '</table>' +
+      '</div>' +
+      '<!-- piechart -->' +
+      '<h3>Annotation User Contribution</h3>' +
+      '<div id="piechart_treenode_holder"></div>';
+
+    addListener(win, container);
+
+    addLogic(win);
+
+    initProjectStats();
+
+    return win;
+  };
+
   var creators = {
-    "keyboard-shortcuts": this.createKeyboardShortcutsWindow,
-    "3d-view": this.create3dWindow,
-    "node-table": this.createNodeTableWindow
+    "keyboard-shortcuts": createKeyboardShortcutsWindow,
+    "3d-view": create3dWindow,
+    "node-table": createNodeTableWindow,
+    "connector-table": createConnectorTableWindow,
+    "object-tree": createObjectTreeWindow,
+    "statistics": createStatisticsWindow
   };
 
   /** If the window for the fiven name is already showing, just focus it.

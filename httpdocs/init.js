@@ -51,7 +51,6 @@ var messageWindow = null;
 
 var rootWindow;
 
-var selectedObjects = {}; //!< associative array of selected objects like class_instances, treenodes etc.
 
 /**
  * queue a login-request on pressing return
@@ -500,10 +499,6 @@ function global_resize( e )
 	content.style.width = width + "px";
 	content.style.height = height + "px";
 
-  table_connector_widget.style.height = height + "px";
-  object_tree_widget.style.height = height + "px";
-  project_stats_widget.style.height = height + "px";
-
 	return true;
 }
 
@@ -709,18 +704,7 @@ var init = function()
 	
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
-  
-  table_connector_widget = document.getElementById("connectortable_widget");
-  var table_connector_widget_resize_handle = new ResizeHandle("h");
-  table_connector_widget.appendChild(table_connector_widget_resize_handle.getView());
 
-  project_stats_widget = document.getElementById("project_stats_widget");
-  var project_stats_widget_resize_handle = new ResizeHandle("h");
-  project_stats_widget.appendChild(project_stats_widget_resize_handle.getView());
-
-  object_tree_widget = document.getElementById("object_tree_widget");
-  var tree_widget_resize_handle = new ResizeHandle("h");
-  object_tree_widget.appendChild(tree_widget_resize_handle.getView());
 	
 	//! auto login by url (unsafe as can be but convenient)
 	if ( account && password )

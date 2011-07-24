@@ -37,9 +37,8 @@ function update_piechart( data )
 
 function refresh_project_statistics()
 {
-  
   requestQueue.register("model/stats.list.php", "POST", {
-    "pid": project.id
+    "pid": project.getId()
   }, function (status, text, xml) {
       if (status == 200)
       {
@@ -88,5 +87,7 @@ initProjectStats = function () {
   $("#refresh_stats").click(function () {
     refresh_project_statistics();
   });
+
+  refresh_project_statistics();
 
 };

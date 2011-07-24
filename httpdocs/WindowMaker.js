@@ -2,7 +2,7 @@
 var WindowMaker = new function()
 {
   /** The table of window names versus their open instances..
-   * Only windows that are open are shown. */
+   * Only windows that are open are stored. */
   var windows = {};
 
   var createContainer = function(id) {
@@ -348,7 +348,7 @@ var WindowMaker = new function()
     "statistics": createStatisticsWindow
   };
 
-  /** If the window for the fiven name is already showing, just focus it.
+  /** If the window for the given name is already showing, just focus it.
    * Otherwise, create it new. */
   this.show = function( name )
   {

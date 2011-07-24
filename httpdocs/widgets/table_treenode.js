@@ -40,6 +40,7 @@ initTreenodeTable = function (pid) {
       } else {
         // check if a treenode is active
         // send active treenode when set
+        var atn = SkeletonAnnotations.getActiveNode();
         if (atn !== null && atn.type === "treenode") {
           aoData.push({
             "name": "atnid",
@@ -91,6 +92,7 @@ initTreenodeTable = function (pid) {
         $(nRow).addClass('leaf_node');
       }
 
+      var atn = SkeletonAnnotations.getActiveNode();
       if (atn !== null) {
         if (parseInt(aData[0], 10) === atn.id) {
           // just to be sure

@@ -67,10 +67,11 @@ var Node = function (
     } else if (this.zdiff < 0) {
       return inactive_skeleton_color_below;
     } else {
-      if (atn && atn.skeleton_id != this.skeleton_id) {
+      var atn = SkeletonAnnotations.getActiveNode();
+      if (atn && atn.skeleton_id != self.skeleton_id) {
         return inactive_skeleton_color;
       } else {
-        if (this.skeleton_id == active_skeleton_id ) {
+        if (self.skeleton_id == SkeletonAnnotations.getActiveSkeletonId() ) {
           return active_skeleton_color;
         } else {
           return inactive_skeleton_color;
@@ -83,21 +84,22 @@ var Node = function (
   // current slice, whether it's the active node, the root node, or in
   // an active skeleton.
   this.setColor = function () {
+    var atn = SkeletonAnnotations.getActiveNode();
     if (atn !== null && self.id === atn.id) {
       // The active node is always in green:
-      fillcolor = atn_fillcolor;
+      self.fillcolor = SkeletonAnnotations.getActiveNodeColor();
     } else if (self.isroot) {
       // The root node should be colored red unless it's active:
-      fillcolor = "rgb(255, 0, 0)";
+      self.fillcolor = "rgb(255, 0, 0)";
     } else {
       // If none of the above applies, just colour according to the z
       // difference.
-      fillcolor = self.colorFromZDiff();
+      self.fillcolor = self.colorFromZDiff();
     }
     
     if (c) {
       c.attr({
-        fill: fillcolor
+        fill: self.fillcolor
       });
     }
   };
@@ -143,7 +145,7 @@ var Node = function (
     if (0 == self.zdiff) {
       // create a raphael circle object
       c = self.paper.circle(self.x, self.y, self.r).attr({
-        fill: fillcolor,
+        fill: self.fillcolor,
         stroke: "none",
         opacity: 1.0
       });
@@ -218,6 +220,7 @@ var Node = function (
     if (self.parent) {
       // loop over nodes to see if parent is retrieved
       paper.catmaidSVGOverlay.selectNode(self.parent.id);
+      var atn = SkeletonAnnotations.getActiveNode();
       if (!atn) {
 		  // fetch the parent node from the database and select it
 		  // TODO
@@ -332,11 +335,10 @@ var Node = function (
 		});
 
 		mc.click(function (e) {
-			//    console.log("atn.id", atn.id);
-			//  console.log("treenode: clicked", this.parentnode.id, "active is", atn.id);
 			// return some log information when clicked on the node
 			// this usually refers here to the mc object
 			if (e.shiftKey) {
+				var atn = SkeletonAnnotations.getActiveNode();
 				if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
 					// if it is active node, set active node to null
 					if (atn !== null && self.id === atn.id) {

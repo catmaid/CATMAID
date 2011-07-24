@@ -147,6 +147,7 @@ function TracingTool()
         self.prototype.stack.removeLayer( "TracingLayer" );
         self.prototype.destroy( "edit_button_trace" );
         $( "#tracingbuttons" ).remove();
+        tracingLayer.svgOverlay.destroy();
         return;
 	};
 

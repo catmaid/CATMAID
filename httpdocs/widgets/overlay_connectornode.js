@@ -93,7 +93,8 @@ zdiff) // the different from the current slices
   // Set the connector node fill color depending on whether it is active
   // or not
   this.setColor = function () {
-
+    var atn = SkeletonAnnotations.getActiveNode();
+    var atn_fillcolor = SkeletonAnnotations.getActiveNodeColor();
     if (atn !== null && self.id === atn.id) {
       // The active node is always in green:
       fillcolor = atn_fillcolor;
@@ -303,7 +304,7 @@ zdiff) // the different from the current slices
     });
 
     self.mc.click(function (e) {
-
+      var atn = SkeletonAnnotations.getActiveNode();
       // return some log information when clicked on the node
       // this usually refers here to the mc object
       if (e.shiftKey) {

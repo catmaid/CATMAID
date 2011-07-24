@@ -6,9 +6,7 @@ function TracingLayer( stack )
 
   var self = this;
 
-  this.svgOverlay = new SVGOverlay( stack );
-  //stack.getView().appendChild( this.svgOverlay.getView() );
-
+  this.svgOverlay = new SkeletonAnnotations.SVGOverlay( stack );
 
   this.resize = function ( width, height )
   {

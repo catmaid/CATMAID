@@ -739,6 +739,7 @@ function createViewerFromCATMAID(divID) {
 }
 
 function addTo3DView() {
+  var atn = SkeletonAnnotations.getActiveNode();
   if (!atn) {
     alert("You must have an active node selected to add its skeleton to the 3D View.");
     return;

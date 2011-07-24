@@ -11,6 +11,7 @@ var ConnectorTable = new function()
 
   this.init = function (pid) {
     var tableid = '#connectortable';
+    var atn = SkeletonAnnotations.getActiveNode();
 
     self.connectorTable = $(tableid).dataTable(
       {

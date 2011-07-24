@@ -334,7 +334,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    initProjectStats();
+    ProjectStatistics.init();
 
     return win;
   };

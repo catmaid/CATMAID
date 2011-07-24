@@ -618,8 +618,7 @@ var SkeletonAnnotations = new function()
 
       // check if we want the newly create node to be
       // a model of a neuron
-      console.log("TODO select a neuron from the project tree");
-      selneuron = null; // project.selectedObjects.selectedneuron;
+      selneuron = project.selectedObjects.selectedneuron;
       if (selneuron !== null) {
         useneuron = selneuron;
       } else {

@@ -473,8 +473,9 @@ var ObjectTree = new function()
             // in the display. if the active treenode would
             // be element of the deleted skeleton, the
             // active node would become invalid
-            activateNode(null); // TODO this cannot work
-            project.updateNodes(); // TODO this cannot work
+            var svgOverlay = SkeletonAnnotations.getSVGOverlay(project.getStack());
+            svgOverlay.activateNode(null);
+            svgOverlay.updateNodes();
 
             var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
             g.growlAlert({

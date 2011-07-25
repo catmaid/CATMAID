@@ -12,7 +12,7 @@
  */
 
 /**
- * Tracing tool.
+ * Constructor for the tracing tool.
  */
 function TracingTool()
 {
@@ -21,6 +21,7 @@ function TracingTool()
   var self = this;
   var tracingLayer = null;
   var stack = null;
+  var bindings = {};
 
 	this.resize = function( width, height )
 	{
@@ -28,13 +29,8 @@ function TracingTool()
 		return;
 	}
 
-	/**
-	 * install this tool in a stack.
-	 * register all GUI control elements and event handlers
-	 */
-	this.register = function( parentStack )
-	{
-
+  var setupSubTools = function()
+  {
     // TODO: replace with project.js strings
     if ( self.prototype.stack == null ) {
       var box = $( '<div class="box" id="tracingbuttons"></div>' );
@@ -63,15 +59,14 @@ function TracingTool()
       );
       $( "#toolbar_nav" ).prepend( box );
     }
+  }
 
-    // If the tracing layer exists and it belongs to a different stack, remove it
-    if (tracingLayer && stack && stack !== parentStack) {
-      stack.removeLayer( tracingLayer );
-    }
+  var createTracingLayer = function( parentStack )
+  {
     stack = parentStack;
     tracingLayer = new TracingLayer( parentStack );
     //this.prototype.mouseCatcher = tracingLayer.svgOverlay.getView();
-    this.prototype.setMouseCatcher( tracingLayer.svgOverlay.view );
+    self.prototype.setMouseCatcher( tracingLayer.svgOverlay.view );
     parentStack.addLayer( "TracingLayer", tracingLayer );
 
     // Call register AFTER changing the mouseCatcher
@@ -116,21 +111,67 @@ function TracingTool()
         proto_changeSlice( val );
         tracingLayer.svgOverlay.updateNodes();
       };
+  }
+
+	/**
+	 * install this tool in a stack.
+	 * register all GUI control elements and event handlers
+	 */
+	this.register = function( parentStack )
+	{
+    setupSubTools();
+
+    if (tracingLayer && stack) {
+      if (stack !== parentStack) {
+        // If the tracing layer exists and it belongs to a different stack, replace it
+        stack.removeLayer( tracingLayer );
+        createTracingLayer( parentStack );
+      } else {
+        reactivateBindings();
+      }
+    } else {
+      createTracingLayer( parentStack );
+    }
 
     return;
   }
+
+  /** Inactivate only onmousedown, given that the others are injected when onmousedown is called.
+   * Leave alone onmousewheel: it is different in every browser, and it cannot do any harm to have it active. */
+  var inactivateBindings = function() {
+    var c = self.prototype.mouseCatcher;
+    ['onmousedown'].map(
+      function ( fn ) {
+        console.log(c[fn]);
+        if (c[fn]) {
+          bindings[fn] = c[fn];
+          delete c[fn];
+        }
+      });
+  }
+
+  var reactivateBindings = function() {
+    var c = self.prototype.mouseCatcher;
+    for (var b in bindings) {
+      if (bindings.hasOwnProperty(b)) {
+        c[b.name] = b;
+      }
+    }
+  };
 
 	/**
 	 * unregister all stack related mouse and keyboard controls
 	 */
 	this.unregister = function()
 	{
-        // do it before calling the prototype destroy that sets stack to null
-        if (self.prototype.stack) {
-            self.prototype.stack.removeLayer( "TracingLayer" );
-        }
-        self.prototype.unregister();
-        return;
+    // do it before calling the prototype destroy that sets stack to null
+    if (self.prototype.stack) {
+      inactivateBindings();
+    }
+    // Do NOT unregister: would remove the mouseCatcher layer
+    // and the annotations would disappear
+    //self.prototype.unregister();
+    return;
 	}
 
 	/**
@@ -139,16 +180,22 @@ function TracingTool()
 	 */
 	this.destroy = function()
 	{
-        // Synchronize data with database
-        tracingLayer.svgOverlay.updateNodeCoordinatesinDB();
+    // Synchronize data with database
+    tracingLayer.svgOverlay.updateNodeCoordinatesinDB();
 
-        // the prototype destroy calls the prototype's unregister, not self.unregister
-        // do it before calling the prototype destroy that sets stack to null
-        self.prototype.stack.removeLayer( "TracingLayer" );
-        self.prototype.destroy( "edit_button_trace" );
-        $( "#tracingbuttons" ).remove();
-        tracingLayer.svgOverlay.destroy();
-        return;
+    // the prototype destroy calls the prototype's unregister, not self.unregister
+    // do it before calling the prototype destroy that sets stack to null
+    self.prototype.stack.removeLayer( "TracingLayer" );
+    self.prototype.destroy( "edit_button_trace" );
+    $( "#tracingbuttons" ).remove();
+    tracingLayer.svgOverlay.destroy();
+    //
+    for (var b in bindings) {
+      if (bindings.hasOwnProperty(b)) {
+        delete bindings[b];
+      }
+    }
+    return;
 	};
 
 

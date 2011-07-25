@@ -1,16 +1,16 @@
 div.sliceView
 {
 	/* this has to be the 1st rule for automated parsing */
-	position:absolute;
+	position:relative;
 /*
 	margin:20px 20px 20px 200px;
 	width:100px;
 	height:100px;
 */
 	margin:0px;
-	top:68px;
+	top:0px;
 	right:0px;
-	bottom:80px;
+	bottom:0px;
 	left:0px;
 	padding:0px;
 	/*

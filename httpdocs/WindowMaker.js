@@ -9,7 +9,7 @@ var WindowMaker = new function()
     var container = document.createElement("div");
     container.setAttribute("id", id);
     container.setAttribute("class", "sliceView");
-    container.style.position = "absolute";
+    container.style.position = "relative";
     container.style.bottom = "0px";
     container.style.width = "100%";
     container.style.overflow = "auto";

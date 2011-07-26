@@ -1003,7 +1003,7 @@ var SkeletonAnnotations = new function()
     var view = document.createElement("div");
     view.className = "sliceSVGOverlay";
     view.id = "sliceSVGOverlayId";
-    view.style.zIndex = 6;
+    view.style.zIndex = 5;
     // Custom cursor for tracing
     view.style.cursor ="url(widgets/themes/kde/svg-circle.cur) 15 15, crosshair";
     // make view accessible from outside for setting additional mouse handlers

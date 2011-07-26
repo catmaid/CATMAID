@@ -476,7 +476,7 @@ class DB
       );
     $ci_id = $this->insertIntoId('class_instance', $data );
     if (false === $ci_id) return false; // failed
-    // update with class_instanstance_name
+    // update with class_instance_name
     $q = false;
     if($class_instance_name == "") {
       $up = array('name' => $class.' '.$ci_id);

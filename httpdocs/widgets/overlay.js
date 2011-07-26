@@ -825,7 +825,7 @@ var SkeletonAnnotations = new function()
               nodes[nid].parent.children[nid] = nodes[nid];
             }
           }
-          else if (jso[i].type == "location")
+          else if (jso[i].type === "location") // "location" is, surprisingly, a ConnectorNode
           {
             //console.log("locations retrieved, check pre and post", jso)
             // update pregroup and postgroup

@@ -390,7 +390,7 @@ var SkeletonElements = new function()
       var node = this.catmaidNode,
         mc = this,
         c = this.prev;
-      this.paper.catmaidSVGOverlay.activateNode(node);
+
       node.x = ox + dx;
       node.y = oy + dy;
       c.attr({
@@ -401,7 +401,7 @@ var SkeletonElements = new function()
         cx: node.x,
         cy: node.y
       });
-      node.drawEdges();
+      node.drawEdges(true);
       statusBar.replaceLast("Moving node #" + node.id);
 
       node.needsync = true;
@@ -424,6 +424,7 @@ var SkeletonElements = new function()
       c.attr({
         opacity: 0.7
       });
+      this.paper.catmaidSVGOverlay.activateNode(node);
     };
 
     var mc_mousedown = function(e) {

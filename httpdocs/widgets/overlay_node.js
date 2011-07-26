@@ -52,8 +52,9 @@ var SkeletonElements = new function()
     this.draw = nodeDraw;
     this.deleteall = nodeDeleteAll;
     this.deletenode = nodeDelete;
-    this.setColor = nodeSetColor;
-    this.createCircle = nodeCreateCircle;
+    this.setColor = setColor;
+    this.colorFromZDiff = nodeColorFromZDiff;
+    this.createCircle = createCircle;
 
     // Init block
     // 1. Add this node to the parent's children if it exists
@@ -116,7 +117,7 @@ var SkeletonElements = new function()
           ["M", this.x, this.y],
           ["L", parent.x, parent.y]
         ],
-        stroke: colorFromZDiff(parent.zdiff, parent.skeleton_id),
+        stroke: this.colorFromZDiff(parent.zdiff, parent.skeleton_id),
         "stroke-width": 2
       });
     }
@@ -240,7 +241,7 @@ var SkeletonElements = new function()
   * current slice, whether it's the active node, the root node, or in
   * an active skeleton.
    * Here 'this' refers to the node. */
-  var nodeSetColor = function ()
+  var setColor = function ()
   {
     var atn = SkeletonAnnotations.getActiveNode();
     if (atn !== null && this.id === atn.id) {
@@ -251,7 +252,7 @@ var SkeletonElements = new function()
       this.fillcolor = root_node_color;
     } else {
       // If none of the above applies, just colour according to the z difference.
-      this.fillcolor = colorFromZDiff(this.zdiff, this.skeleton_id);
+      this.fillcolor = this.colorFromZDiff(this.zdiff, this.skeleton_id);
     }
 
     if (this.c) {
@@ -265,7 +266,7 @@ var SkeletonElements = new function()
    * such as whether the zdiff with the current section is positive, negative, or zero,
    * and whether the node belongs to the active skeleton.
    */
-  var colorFromZDiff = function(zdiff, skeleton_id)
+  var nodeColorFromZDiff = function(zdiff, skeleton_id)
   {
     if (zdiff > 0) {
       return inactive_skeleton_color_above;
@@ -280,7 +281,7 @@ var SkeletonElements = new function()
   /** Create the Raphael circle elements if and only if the zdiff is zero, that is, if the node lays on the current section.
    * Here 'this' refers to the node.
    * */
-  var nodeCreateCircle = function()
+  var createCircle = function()
   {
     // TODO this could improve. For example the objects given as arguments could be reused forever, given that raphael merely reads them
     // TODO    and that javascript is single-threaded (at least when it comes to creating nodes in overlay.js).
@@ -299,9 +300,9 @@ var SkeletonElements = new function()
         stroke: "none",
         opacity: 0
       });
-      this.mc.treenode = this; // for event handlers
+      this.mc.catmaidNode = this; // for event handlers
 
-      nodeAssignEventHandlers(this.mc);
+      assignEventHandlers(this.mc, this.type);
     }
   };
 
@@ -310,9 +311,12 @@ var SkeletonElements = new function()
   * Realize that:
   *    mc.prev === c
   * and that, on constructing the mc, we declared:
-  *    mc.treenode = this;  // 'this' is the node
+  *    mc.catmaidNode = this;  // 'this' is the node
+   *
+   * Below, the function() is but a namespace that returns the actual nodeAssignEventHandlers function,
+   * which assigns the event handlers to the mc given to it as argument.
   */
-  var nodeAssignEventHandlers = function ()
+  var assignEventHandlers = function ()
   {
     /** Variables used for mouse events, which involve a single node at a time.
      * These are set at mc_start and then used at mc_move. */
@@ -337,8 +341,8 @@ var SkeletonElements = new function()
      * Here 'this' is mc, and treenode is the Node instance
      */
     var mc_click = function(e) {
-      var node = this.treenode,
-        paper = this.paper;
+      var node = this.catmaidNode,
+          paper = this.paper;
       if (e.shiftKey) {
         var atn = SkeletonAnnotations.getActiveNode();
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
@@ -346,7 +350,7 @@ var SkeletonElements = new function()
           if (atn !== null && node.id === atn.id) {
             paper.catmaidSVGOverlay.activateNode(null);
           }
-          statusBar.replaceLast("deleted treenode with id " + node.id);
+          statusBar.replaceLast("Deleted node #" + node.id);
           node.deletenode();
           e.stopPropagation();
           return true;
@@ -354,12 +358,15 @@ var SkeletonElements = new function()
         if (atn !== null) {
           // connected activated treenode or connectornode
           // to existing treenode or connectornode
+          console.log("from source #" + atn.id + " to target #" + node.id);
           if (atn.type === TYPE_CONNECTORNODE) {
-            this.paper.catmaidSVGOverlay.createLink(atn.id, node.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
-            statusBar.replaceLast("joined active treenode to connector with id " + node.id);
+            paper.catmaidSVGOverlay.createLink(atn.id, node.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
+            // TODO check for error
+            statusBar.replaceLast("Joined node #" + atn.id + " to connector #" + node.id);
           } else if (atn.type === TYPE_NODE) {
-            statusBar.replaceLast("joined active treenode to treenode with id " + node.id);
             paper.catmaidSVGOverlay.createTreenodeLink(atn.id, node.id);
+            // TODO check for error
+            statusBar.replaceLast("Joined node #" + atn.id + " to node #" + node.id);
           }
 
         } else {
@@ -377,7 +384,7 @@ var SkeletonElements = new function()
 
     /** Here 'this' is mc, and treenode is the Node instance. */
     var mc_move = function(dx, dy) {
-      var node = this.treenode,
+      var node = this.catmaidNode,
         mc = this,
         c = this.prev;
       this.paper.catmaidSVGOverlay.activateNode(node);
@@ -392,7 +399,7 @@ var SkeletonElements = new function()
         cy: node.y
       });
       node.drawEdges();
-      statusBar.replaceLast("move treenode with id " + node.id);
+      statusBar.replaceLast("Moving node #" + node.id);
 
       node.needsync = true;
     };
@@ -407,7 +414,7 @@ var SkeletonElements = new function()
 
     /** Here 'this' is mc, and treenode is the Node instance. */
     var mc_start = function() {
-      var node = this.treenode,
+      var node = this.catmaidNode,
         c = this.prev;
       ox = node.x;
       oy = node.y;
@@ -420,12 +427,62 @@ var SkeletonElements = new function()
       e.stopPropagation();
     };
 
-    // The actual nodeAssignEventHandlers function:
-    return function(mc) {
-      mc.dblclick(mc_dblclick);
-      mc.click(mc_click);
+    var connector_mc_click = function(e) {
+      var atn = SkeletonAnnotations.getActiveNode(),
+          connectornode = this.catmaidNode,
+          paper = this.paper;
+      // return some log information when clicked on the node
+      // this usually refers here to the mc object
+      if (e.shiftKey) {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          if (atn != null && connectornode.id == atn.id) {
+            paper.catmaidSVGOverlay.activateNode(null);
+          }
+          statusBar.replaceLast("Deleted connector #" + connectornode.id);
+          connectornode.deletenode();
+          e.stopPropagation();
+          return true;
+        }
+        if (atn !== null) {
+          // connected activated treenode or connectornode
+          // to existing treenode or connectornode
+          console.log("from source #", atn.id, "to connector #", connectornode.id);
+          paper.catmaidSVGOverlay.createLink(atn.id, connectornode.id, "presynaptic_to", "presynaptic terminal", "synapse", "treenode", "connector");
+          statusBar.replaceLast("Joined node #" + atn.id + " with connector #" + connectornode.id);
+        } else {
+          var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
+          g.growlAlert({
+            autoShow: true,
+            content: 'You need to activate a node before joining it to a connector node!',
+            title: 'BEWARE',
+            position: 'top-right',
+            delayTime: 2500,
+            onComplete: function() { g.remove(); }
+          });
+        }
+        e.stopPropagation();
+      } else {
+        //console.log("Try to activate node");
+        // activate this node
+        paper.catmaidSVGOverlay.activateNode(connectornode);
+        // stop propagation of the event
+        e.stopPropagation();
+      }
+    };
+
+    // The actual assignEventHandlers function
+    // BEWARE that 'this' cannot be used to refer to the node within this function
+    return function(mc, type) {
       mc.drag(mc_move, mc_start, mc_up);
       mc.mousedown(mc_mousedown);
+      mc.dblclick(mc_dblclick);
+
+      if (TYPE_NODE === type) {
+        mc.click(mc_click);
+      } else {
+        // TYPE_CONNECTORNODE
+        mc.click(connector_mc_click);
+      }
     }
   }();
 
@@ -443,4 +500,174 @@ var SkeletonElements = new function()
   // using a filter to find a node with a specific id would be enough.
 
   // WARNING deleteall is never used!
+
+
+  /**
+   * Constructor for ConnectorNode.
+   */
+  this.ConnectorNode = function (
+    id, // unique id for the node from the database
+    paper, // the raphael paper this node is drawn to
+    r, // radius
+    x, // the x coordinate in pixel coordinates
+    y, // y coordinates
+    z, // z coordinates
+    zdiff) // the different from the current slices
+  {
+    this.id = id;
+    this.type = TYPE_CONNECTORNODE; // TODO update this name!
+    this.needsync = false; // state variable; whether this node is already synchronized with the database
+    this.x = x; // local screen coordinates relative to the div, in pixel coordinates
+    this.y = y;
+    this.z = z;
+    this.zdiff = zdiff;
+    this.paper = paper;
+    this.pregroup = {}; // set of presynaptic treenodes
+    this.postgroup = {}; // set of postsynaptic treenodes
+    this.r = r; // prefixed radius for now
+    this.c = null; // The Raphael circle for drawing
+    this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
+    this.preLines = {}; // The Raphale edges to the presynaptic nodes
+    this.postLines = {}; // The Raphael edges to the postsynaptic nodes
+    this.fillcolor;
+
+    // Member functions
+    this.setXY = setXY;
+    this.setColor = setColor;
+    this.colorFromZDiff = connectorColorFromZDiff;
+    this.createCircle = createCircle;
+    this.deletenode = connectorDelete;
+    this.draw = connectorDraw;
+    this.drawEdges = connectorDrawEdges;
+  };
+
+  /** Here 'this' is the connector node. */
+  var connectorColorFromZDiff =  function(zdiff)
+  {
+    if (zdiff > 0) {
+      return "rgb(0, 0, 255)";
+    } else if (zdiff < 0) {
+      return "rgb(255, 0, 0)";
+    } else {
+      return "rgb(235, 117, 0)";
+    }
+  };
+
+  /** Delete the connector from the database and removes it from
+   * the current view and local objects.
+   * Here 'this' is the connector node.
+   */
+  var connectorDelete = function ()
+  {
+    var connectornode = this;
+    requestQueue.register("model/connector.delete.php", "POST", {
+      pid: project.id,
+      cid: connectornode.id,
+      class_instance_type: 'synapse'
+    }, function (status, text, xml) {
+      if (status !== 200) {
+        alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+      }
+      // Refresh all nodes in any case, to reflect the new state of the database
+      connectornode.paper.catmaidSVGOverlay.updateNodes();
+      return true;
+    });
+  };
+
+  /** Draw function to update the paths from the children and to its parent.
+   * Here 'this' is the connector node.
+   */
+  var connectorDraw = function()
+  {
+    this.drawEdges();
+    this.createCircle();
+  };
+
+  /**
+   * Here 'this' is the connector node.
+   */
+  var connectorDrawEdges = function()
+  {
+    var i,
+        preLines = this.preLines,
+        postLines = this.postLines,
+        pregroup = this.pregroup,
+        postgroup = this.postgroup;
+
+    for (i in preLines) {
+      if (preLines.hasOwnProperty(i)) {
+        if (preLines[i].remove)
+          preLines[i].remove();
+        else console.log(i, preLines[i]);
+      }
+    }
+
+    for (i in postLines) {
+      if (postLines.hasOwnProperty(i)) {
+        if (postLines[i].remove)
+          postLines[i].remove();
+        else console.log(i, postLines[i]);
+      }
+    }
+
+    // re-create
+    for (i in pregroup) {
+      if (pregroup.hasOwnProperty(i)) {
+        preLines[pregroup[i].id] = connectorCreateLine(this, pregroup[i].id, true);
+      }
+    }
+
+    for (i in postgroup) {
+      if (postgroup.hasOwnProperty(i)) {
+        postLines[postgroup[i].id] = connectorCreateLine(this, postgroup[i].id, false);
+      }
+    }
+  };
+
+  /** Below, a function that acts as a namespace and assigns to connectorCreateLine the proper function.
+   * (Notice how it is executed at the end of its declaration. */
+  var connectorCreateLine = function()
+  {
+    /** Constructor method for ArrowLine. */
+    var ArrowLine = function (paper, x1, y1, x2, y2, size, strowi, strocol) {
+      // Compute position for arrowhead pointer
+      var rloc = 9;
+      var xdiff = (x2 - x1);
+      var ydiff = (y2 - y1);
+      var le = Math.sqrt(xdiff * xdiff + ydiff * ydiff);
+      var x1new = (x1 - x2) * (1 - rloc / le) + x2;
+      var y1new = (y1 - y2) * (1 - rloc / le) + y2;
+      var x2new = (x2 - x1) * (1 - rloc / le) + x1;
+      var y2new = (y2 - y1) * (1 - rloc / le) + y1;
+
+      var angle = Math.atan2(x1 - x2, y2 - y1);
+      angle = (angle / (2 * Math.PI)) * 360;
+      var linePath = paper.path("M" + x1new + " " + y1new + " L" + x2new + " " + y2new);
+      var arrowPath = paper.path("M" + x2new + " " + y2new + " L" + (x2new - size) + " " + (y2new - size) + " L" + (x2new - size) + " " + (y2new + size) + " L" + x2new + " " + y2new).attr("fill", "black").rotate((90 + angle), x2new, y2new);
+      linePath.attr({
+        "stroke-width": strowi,
+        "stroke": strocol
+      });
+      arrowPath.attr({
+        "fill": strocol,
+        "stroke": strocol
+      });
+      // The 'this' refers to the new ArrowLine
+      this.remove = function () {
+        arrowPath.remove();
+        linePath.remove();
+      };
+    };
+
+    // Return the actual connectorCreateLine function
+    return function(self, to_id, pre) {
+      if (pre) {
+        return new ArrowLine(self.paper, self.pregroup[to_id].x, self.pregroup[to_id].y, self.x, self.y, 5, 2, "rgb(126, 57, 112)");
+      } else {
+        return new ArrowLine(self.paper, self.x, self.y, self.postgroup[to_id].x, self.postgroup[to_id].y, 5, 2, "rgb(67, 67, 128)");
+      };
+    }
+  }();
+
+
 };

@@ -482,7 +482,7 @@ var SkeletonAnnotations = new function()
             } else {
               // add treenode to the display and update it
               var jso = $.parseJSON(text);
-              var nn = new ConnectorNode(jso.connector_id, self.paper, 8, pos_x, pos_y, pos_z, 0);
+              var nn = new SkeletonElements.ConnectorNode(jso.connector_id, self.paper, 8, pos_x, pos_y, pos_z, 0);
               nodes[jso.connector_id] = nn;
               nn.draw();
               self.activateNode(nn);
@@ -532,7 +532,7 @@ var SkeletonAnnotations = new function()
 
               if (locidval === null) {
                 // presynaptic case, we create a new connector node and use the retrieved id
-                var nn = new ConnectorNode(locid_retrieved, self.paper, 8, pos_x, pos_y, pos_z, 0);
+                var nn = new SkeletonElements.ConnectorNode(locid_retrieved, self.paper, 8, pos_x, pos_y, pos_z, 0);
                 // store the currently activated treenode into the pregroup of the connector
                 nn.pregroup[id] = nodes[id];
                 nodes[locid_retrieved] = nn;
@@ -803,7 +803,7 @@ var SkeletonAnnotations = new function()
         }
         else
         {
-          nn = new ConnectorNode(id, self.paper, rad, pos_x, pos_y, pos_z, zdiff);
+          nn = new SkeletonElements.ConnectorNode(id, self.paper, rad, pos_x, pos_y, pos_z, zdiff);
           nrcn++;
         }
         nodes[id] = nn;
@@ -960,7 +960,7 @@ var SkeletonAnnotations = new function()
             createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
             e.stopPropagation();
             return true;
-          } else if (atn instanceof ConnectorNode) {
+          } else if (atn instanceof SkeletonElements.ConnectorNode) {
             // create new treenode (and skeleton) postsynaptic to activated connector
             locid = atn.id;
             statusBar.replaceLast("created treenode with id " + atn.id + "postsynaptic to activated connector");

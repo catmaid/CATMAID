@@ -683,14 +683,14 @@ var SkeletonAnnotations = new function()
     };
 
     var updateNodePositions = function (nodeArray, completedCallback) {
-      var requestDicitionary = {}, i, k, node, callback;
+      var requestDictionary = {}, i, k, node, callback;
       for (i in nodeArray) {
         if (nodeArray.hasOwnProperty(i)) {
-          requestDicitionary['pid' + i] = project.id;
+          requestDictionary['pid' + i] = project.id;
           node = nodeArray[i];
           for (k in node) {
             if (node.hasOwnProperty(k)) {
-              requestDicitionary[k + i] = node[k];
+              requestDictionary[k + i] = node[k];
             }
           }
         }
@@ -712,7 +712,7 @@ var SkeletonAnnotations = new function()
         }
         return true;
       };
-      requestQueue.register("model/node.update.php", "POST", requestDicitionary, callback);
+      requestQueue.register("model/node.update.php", "POST", requestDictionary, callback);
     };
 
     this.updateNodeCoordinatesinDB = function (completedCallback) {

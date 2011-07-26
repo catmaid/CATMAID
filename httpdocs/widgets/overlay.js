@@ -790,7 +790,7 @@ var SkeletonAnnotations = new function()
           rad = 0;
         }
 
-        if (jso[i].type == "treenode")
+        if (jso[i].type === "treenode")
         {
           isRootNode = isNaN(parseInt(jso[i].parentid));
           nn = new SkeletonElements.Node(id, self.paper, null, rad, pos_x, pos_y, pos_z, zdiff, jso[i].skeleton_id, isRootNode);

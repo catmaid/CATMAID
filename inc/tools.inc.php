@@ -36,7 +36,7 @@ function tv_node( $data )
 	if( array_key_exists('attr', $data))
 	{
 		$sOutput .= ',"attr":{';
-    $i = 0;
+		$i = 0;
 		foreach($data['attr'] as $key => $aval)
 		{
 		  if($i!=0) { $sOutput .= ','; }

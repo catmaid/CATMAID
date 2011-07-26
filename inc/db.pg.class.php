@@ -52,7 +52,7 @@ class DB
 	var $db;
 	var $handle;
 
-    var $debug = true;
+    var $debug = false;
 
 	/**
 	 * Constructor

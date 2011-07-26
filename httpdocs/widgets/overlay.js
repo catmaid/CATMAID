@@ -810,16 +810,16 @@ var SkeletonAnnotations = new function()
       }
       if (edgetoggle) {
         // loop again and add correct parent objects and parent's children update
-        for (var i in jso)
+        for (i=0; i<jso.length; ++i)
         {
           nid = parseInt(jso[i].id);
           // for treenodes, make updates
-          if (jso[i].type == "treenode")
+          if (jso[i].type === "treenode")
           {
             parid = parseInt(jso[i].parentid);
             if (nodes[parid])
             {
-              // if parent is existing, update the references
+              // if parent exists, update the references
               nodes[nid].parent = nodes[parid];
               // update the parents children
               nodes[nid].parent.children[nid] = nodes[nid];

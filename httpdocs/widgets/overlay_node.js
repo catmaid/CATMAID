@@ -307,10 +307,6 @@ var SkeletonElements = new function()
     }
   };
 
-  // TODO should reuse functions, not create them new every time
-  // TODO could be done by adding the node as a variable of the c and mc
-
-
   // Event handling functions for 'mc'
   // Realize that:
   //    mc.prev === c

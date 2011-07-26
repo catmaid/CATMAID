@@ -65,8 +65,16 @@ var SkeletonElements = new function()
   /** Trigger the redrawing of the lines with parent, children and connectors.
    * Here, 'this' is the node, given that it is called in the context of the node only.
    */
-  var nodeDrawEdges = function() {
+  var nodeDrawEdges = function(toChildren) {
     var i;
+    if (toChildren) {
+      for (i in this.children) {
+        if (this.children.hasOwnProperty(i)) {
+          this.children[i].drawLineToParent();
+        }
+      }
+    }
+
     for (i in this.connectors) {
       if (this.children.hasOwnProperty(i)) {
         // should update the connector paths

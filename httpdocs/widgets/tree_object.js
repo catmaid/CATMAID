@@ -355,6 +355,24 @@ initObjectTree = function (pid) {
     // console.log("Object tree loaded.");
   });
 
+  $(object_tree_id).bind("before.jstree", function (e, data) {
+    var node_description, message;
+    if (data.func === "remove") {
+      if (data.args.length > 1) {
+        // I don't think multiple selections are possible, but just
+        // in case:
+        node_description = "multiple objects";
+      } else {
+        node_description = data.args[0].text().replace(/^\W+/,'').replace(/\W+$/,'');
+      }
+      message = "Do you really want to remove '"+node_description+"'?";
+      if (!confirm(message)) {
+        e.stopImmediatePropagation();
+        return false;
+      }
+    }
+  });
+
   $(object_tree_id).bind("deselect_node.jstree", function (event, data) {
     var key;
     id = data.rslt.obj.attr("id").replace("node_", "");

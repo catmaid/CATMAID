@@ -118,6 +118,7 @@ var SkeletonAnnotations = new function()
     };
 
     this.activateNode = function(node) {
+      if (atn === node) return;
       var skeleton_switched = false;
       // if node === null, just deactivate
       if (node === null) {

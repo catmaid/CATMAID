@@ -86,7 +86,7 @@ try {
 
     $neu = $db->getCIFromCI( $pid, $sk_id, 'model_of' );
     if (false === $neu) {
-      emitErrorAndExit($db, 'Coult not retrieve neuron!');
+      emitErrorAndExit($db, 'Could not retrieve neuron!');
     }
     if (!empty($neu)) {
       $neu_id = $neu[0]['id'];
@@ -98,7 +98,7 @@ try {
     $treenodes = $db->getResult('SELECT "treenode"."id" AS "tnid" FROM "treenode" WHERE "treenode"."parent_id" = '.$tnid);
 
     if (false === $treenodes) {
-      emitErrorAndExit($db, 'Coult not retrieve children nodes.');
+      emitErrorAndExit($db, 'Could not retrieve children nodes.');
     }
 
     foreach($treenodes as $key => $tn) {

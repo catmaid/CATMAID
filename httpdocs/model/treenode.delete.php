@@ -101,6 +101,10 @@ try {
       emitErrorAndExit($db, 'Could not retrieve children nodes.');
     }
 
+    if (count($treenodes) > 0) {
+        emitErrorAndExit($db, "You can't delete the root node when it has children.  Please re-root the skeleton.");
+    }
+
     foreach($treenodes as $key => $tn) {
       
       // update all the children to become root
@@ -185,7 +189,7 @@ try {
     // remove original skeleton
     $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$sk_id);
 
-    echo "Removed treenode successfully.";  
+    echo json_encode("Removed treenode successfully.");
 
   } else {
     // treenode is not root
@@ -242,7 +246,7 @@ try {
       emitErrorAndExit($db, 'Could not delete treenode #'.$tnid);
     }
   
-    echo "Removed treenode successfully.";  
+    echo json_encode("Removed treenode successfully.");
 
   }
 

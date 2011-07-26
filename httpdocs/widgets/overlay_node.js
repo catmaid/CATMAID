@@ -211,7 +211,14 @@ var Node = function (
       pid: project.id,
       tnid: this.id
     }, function (status, text) {
-      if (status !== 200) {
+      var e;
+      if (status === 200) {
+        e = $.parseJSON(text);
+        if (e.error) {
+          alert(e.error);
+          return false;
+        }
+      } else {
         alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
       }
       return true;

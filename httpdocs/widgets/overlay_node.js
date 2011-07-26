@@ -41,8 +41,6 @@ var SkeletonElements = new function()
     this.skeleton_id = skeleton_id;
     this.isroot = is_root_node;
     this.fillcolor = inactive_skeleton_color;
-    this.ox = 0;
-    this.oy = 0;
     this.c = null; // The Raphael circle for drawing
     this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
     this.line = paper.path(); // TODO not all! At least root shouldn't have it
@@ -372,6 +370,10 @@ var SkeletonElements = new function()
     }
   };
 
+  /** Variables used for mouse events, which involve a single node at a time.
+   * These are set at mc_start and then used at mc_move. */
+  var ox, oy;
+
   /** Here 'this' is mc, and treenode is the Node instance. */
   var mc_move = function(dx, dy)
   {
@@ -379,8 +381,8 @@ var SkeletonElements = new function()
         mc = this,
         c = this.prev;
     this.paper.catmaidSVGOverlay.activateNode(node);
-      node.x = node.ox + dx;
-      node.y = node.oy + dy;
+      node.x = ox + dx;
+      node.y = oy + dy;
       c.attr({
         cx: node.x,
         cy: node.y
@@ -409,8 +411,8 @@ var SkeletonElements = new function()
   {
     var node = this.treenode,
         c = this.prev;
-    node.ox = node.x;
-    node.oy = node.y;
+    ox = node.x;
+    oy = node.y;
     c.attr({
       opacity: 0.7
     });

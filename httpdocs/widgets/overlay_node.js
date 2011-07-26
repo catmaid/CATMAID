@@ -531,9 +531,9 @@ var SkeletonElements = new function()
     this.r = r; // prefixed radius for now
     this.c = null; // The Raphael circle for drawing
     this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
-    this.preLines = {}; // The Raphale edges to the presynaptic nodes
+    this.preLines = {}; // The Raphael edges to the presynaptic nodes
     this.postLines = {}; // The Raphael edges to the postsynaptic nodes
-    this.fillcolor;
+    this.fillcolor = null;
 
     // Member functions
     this.setXY = setXY;

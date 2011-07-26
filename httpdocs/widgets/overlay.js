@@ -92,16 +92,13 @@ var SkeletonAnnotations = new function()
     var labels = {};
     var show_labels = false;
 
+    /**
+     * Activates the given node id if it exists
+      in the current retrieved set of nodes
+     */
     this.selectNode = function (id) {
-      var nodeid;
-      // activates the given node id if it exists
-      // in the current retrieved set of nodes
-      for (nodeid in nodes) {
-        if (nodes.hasOwnProperty(nodeid)) {
-          if (nodes[nodeid].id === id) {
-            self.activateNode(nodes[nodeid]);
-          }
-        }
+      if (nodes[id]) {
+        self.activateNode(nodes[id]);
       }
     };
 

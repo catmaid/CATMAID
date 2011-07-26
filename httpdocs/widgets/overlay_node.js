@@ -25,7 +25,8 @@ var SkeletonElements = new function()
     y, // y coordinates
     z, // z coordinates
     zdiff, // the different from the current slices
-    skeleton_id, is_root_node) // the id of the skeleton this node is an element of
+    skeleton_id,
+    is_root_node) // the id of the skeleton this node is an element of
   {
     this.id = id;
     this.type = TYPE_NODE;

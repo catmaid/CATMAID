@@ -149,7 +149,7 @@ try {
       // update the element_of relationship for each of the treenode children recursively
       $allchi = $db->getAllTreenodeChildrenRecursively( $pid, $tn['tnid'] );
       
-      if (false === $alchi) {
+      if (false === $allchi) {
         emitErrorAndExit($db, 'Could not retrieve all treenode children.');
       }
       

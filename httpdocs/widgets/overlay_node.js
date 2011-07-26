@@ -305,17 +305,23 @@ var SkeletonElements = new function()
     }
   };
 
-  // Event handling functions for 'mc'
-  // Realize that:
-  //    mc.prev === c
-  // and that, on constructing the mc, we declared:
-  //    mc.treenode = this;  // 'this' is the node
 
-  /** Here 'this' is mc. */
-  var mc_dblclick = function(e)
+  /** Event handling functions for 'mc'
+  * Realize that:
+  *    mc.prev === c
+  * and that, on constructing the mc, we declared:
+  *    mc.treenode = this;  // 'this' is the node
+  */
+  var nodeAssignEventHandlers = function ()
   {
-    // TODO these sliders don't exist anymore
-    if (e.altKey) {
+    /** Variables used for mouse events, which involve a single node at a time.
+     * These are set at mc_start and then used at mc_move. */
+    var ox, oy;
+
+    /** Here 'this' is mc. */
+    var mc_dblclick = function(e) {
+      // TODO these sliders don't exist anymore
+      if (e.altKey) {
         // zoom in
         slider_trace_s.move(-1);
       }
@@ -324,63 +330,57 @@ var SkeletonElements = new function()
         slider_trace_s.move(1);
       }
       this.paper.catmaidSVGOverlay.tracingCommand('goactive');
-  };
+    };
 
-  /**  Log information in the status bar when clicked on the node
-   *
-   * Here 'this' is mc, and treenode is the Node instance
-   */
-  var mc_click = function(e)
-  {
-    var node = this.treenode,
+    /**  Log information in the status bar when clicked on the node
+     *
+     * Here 'this' is mc, and treenode is the Node instance
+     */
+    var mc_click = function(e) {
+      var node = this.treenode,
         paper = this.paper;
-    if (e.shiftKey) {
-      var atn = SkeletonAnnotations.getActiveNode();
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-        // if it is active node, set active node to null
-        if (atn !== null && node.id === atn.id) {
-          paper.catmaidSVGOverlay.activateNode(null);
+      if (e.shiftKey) {
+        var atn = SkeletonAnnotations.getActiveNode();
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          // if it is active node, set active node to null
+          if (atn !== null && node.id === atn.id) {
+            paper.catmaidSVGOverlay.activateNode(null);
+          }
+          statusBar.replaceLast("deleted treenode with id " + node.id);
+          node.deletenode();
+          e.stopPropagation();
+          return true;
         }
-        statusBar.replaceLast("deleted treenode with id " + node.id);
-        node.deletenode();
+        if (atn !== null) {
+          // connected activated treenode or connectornode
+          // to existing treenode or connectornode
+          if (atn.type === TYPE_CONNECTORNODE) {
+            this.paper.catmaidSVGOverlay.createLink(atn.id, node.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
+            statusBar.replaceLast("joined active treenode to connector with id " + node.id);
+          } else if (atn.type === TYPE_NODE) {
+            statusBar.replaceLast("joined active treenode to treenode with id " + node.id);
+            paper.catmaidSVGOverlay.createTreenodeLink(atn.id, node.id);
+          }
+
+        } else {
+          alert("Nothing to join without an active node!");
+        }
         e.stopPropagation();
-        return true;
-      }
-      if (atn !== null) {
-        // connected activated treenode or connectornode
-        // to existing treenode or connectornode
-        if (atn.type === TYPE_CONNECTORNODE) {
-          this.paper.catmaidSVGOverlay.createLink(atn.id, node.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
-          statusBar.replaceLast("joined active treenode to connector with id " + node.id);
-        } else if (atn.type === TYPE_NODE) {
-          statusBar.replaceLast("joined active treenode to treenode with id " + node.id);
-          paper.catmaidSVGOverlay.createTreenodeLink(atn.id, node.id);
-        }
 
       } else {
-        alert("Nothing to join without an active node!");
+        // activate this node
+        paper.catmaidSVGOverlay.activateNode(node);
+        // stop propagation of the event
+        e.stopPropagation();
       }
-      e.stopPropagation();
+    };
 
-    } else {
-      // activate this node
-      paper.catmaidSVGOverlay.activateNode(node);
-      // stop propagation of the event
-      e.stopPropagation();
-    }
-  };
-
-  /** Variables used for mouse events, which involve a single node at a time.
-   * These are set at mc_start and then used at mc_move. */
-  var ox, oy;
-
-  /** Here 'this' is mc, and treenode is the Node instance. */
-  var mc_move = function(dx, dy)
-  {
-    var node = this.treenode,
+    /** Here 'this' is mc, and treenode is the Node instance. */
+    var mc_move = function(dx, dy) {
+      var node = this.treenode,
         mc = this,
         c = this.prev;
-    this.paper.catmaidSVGOverlay.activateNode(node);
+      this.paper.catmaidSVGOverlay.activateNode(node);
       node.x = ox + dx;
       node.y = oy + dy;
       c.attr({
@@ -395,45 +395,39 @@ var SkeletonElements = new function()
       statusBar.replaceLast("move treenode with id " + node.id);
 
       node.needsync = true;
-  };
+    };
 
-  /** Here 'this' is mc. */
-  var mc_up = function()
-  {
-    var c = this.prev;
-    c.attr({
+    /** Here 'this' is mc. */
+    var mc_up = function() {
+      var c = this.prev;
+      c.attr({
         opacity: 1
-    });
-  };
+      });
+    };
 
-  /** Here 'this' is mc, and treenode is the Node instance. */
-  var mc_start = function()
-  {
-    var node = this.treenode,
+    /** Here 'this' is mc, and treenode is the Node instance. */
+    var mc_start = function() {
+      var node = this.treenode,
         c = this.prev;
-    ox = node.x;
-    oy = node.y;
-    c.attr({
-      opacity: 0.7
-    });
-  };
+      ox = node.x;
+      oy = node.y;
+      c.attr({
+        opacity: 0.7
+      });
+    };
 
-  var mc_mousedown = function(e)
-  {
-    e.stopPropagation();
-  };
+    var mc_mousedown = function(e) {
+      e.stopPropagation();
+    };
 
-  /**
-   * Realize that:
-   *  mc.prev === c
-   */
-  var nodeAssignEventHandlers = function (mc)
-  {
-    mc.dblclick(mc_dblclick);
-    mc.click(mc_click);
-    mc.drag(mc_move, mc_start, mc_up);
-    mc.mousedown(mc_mousedown);
-  };
+    // The actual nodeAssignEventHandlers function:
+    return function(mc) {
+      mc.dblclick(mc_dblclick);
+      mc.click(mc_click);
+      mc.drag(mc_move, mc_start, mc_up);
+      mc.mousedown(mc_mousedown);
+    }
+  }();
 
 
   // TODO must reuse nodes instead of creating them new, to avoid DOM insertions.

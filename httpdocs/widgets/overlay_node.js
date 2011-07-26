@@ -66,12 +66,6 @@ var SkeletonElements = new function()
    */
   var nodeDrawEdges = function() {
     var i;
-    // draws/updates path to parent and children
-    for (i in this.children) {
-      if (this.children.hasOwnProperty(i)) {
-        this.children[i].drawLineToParent();
-      }
-    }
     for (i in this.connectors) {
       if (this.children.hasOwnProperty(i)) {
         // should update the connector paths

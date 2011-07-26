@@ -861,6 +861,7 @@ var SkeletonAnnotations = new function()
         // Draw node edges first
         for (i in nodes) {
           if (nodes.hasOwnProperty(i)) {
+            nodes[i].setColor();
             nodes[i].drawEdges();
           }
         }
@@ -876,8 +877,6 @@ var SkeletonAnnotations = new function()
 
       // show tags if necessary again
       self.showTags(show_labels);
-      // recolor all nodes
-      self.recolorAllNodes();
 
     };
 

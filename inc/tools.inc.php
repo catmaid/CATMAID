@@ -22,12 +22,12 @@ function tv_node( $data )
 		$sOutput .= '"data":{';
 		if( array_key_exists('title', $data['data']))
 		{
-		$sOutput .= '"title":"'.$data['data']['title'].'"';
+			$sOutput .= '"title":'.json_encode($data['data']['title']);
 		}
 		
 		if( array_key_exists('icon', $data['data']))
 		{
-			$sOutput .= ',"icon":"'.$data['data']['icon'].'"';
+			$sOutput .= ',"icon":'.json_encode($data['data']['icon']);
 		}
 		
 		$sOutput .= '}';
@@ -39,16 +39,16 @@ function tv_node( $data )
 		$i = 0;
 		foreach($data['attr'] as $key => $aval)
 		{
-		  if($i!=0) { $sOutput .= ','; }
-			$sOutput .= '"'.$key.'" : "'.$aval.'"';		
-      $i++;
+			if($i!=0) { $sOutput .= ','; }
+			$sOutput .= json_encode($key)." : ".json_encode($aval);
+			$i++;
 		}
 		$sOutput .= '}';
 	}		
 	
 	if( array_key_exists('state', $data))
 	{
-		$sOutput .= ',"state":"'.$data['state'].'"';
+		$sOutput .= ',"state":'.json_encode($data['state']);
 	}
 	
 	if( array_key_exists('children', $data) )

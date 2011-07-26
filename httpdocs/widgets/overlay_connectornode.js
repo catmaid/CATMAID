@@ -18,7 +18,7 @@ zdiff) // the different from the current slices
   // the database treenode id
   this.id = id;
   // this object should be used for synapses, for now only location
-  this.type = "location";
+  this.type = "location"; // TODO update this name!
 
   // state variable whether this node is already synchronized with the database
   this.needsync = false;

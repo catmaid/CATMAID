@@ -587,7 +587,7 @@ var SkeletonAnnotations = new function()
               var jso = $.parseJSON(text);
 
               // always create a new treenode which is the root of a new skeleton
-              var nn = new Node(jso.treenode_id, self.paper, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
+              var nn = new SkeletonElements.Node(jso.treenode_id, self.paper, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
 
               // add node to nodes list
               nodes[jso.treenode_id] = nn;
@@ -646,9 +646,9 @@ var SkeletonAnnotations = new function()
               // add treenode to the display and update it
               var jso = $.parseJSON(text);
               if (parid == -1) {
-                var nn = new Node(jso.treenode_id, self.paper, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
+                var nn = new SkeletonElements.Node(jso.treenode_id, self.paper, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
               } else {
-                var nn = new Node(jso.treenode_id, self.paper, nodes[parid], radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, false);
+                var nn = new SkeletonElements.Node(jso.treenode_id, self.paper, nodes[parid], radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, false);
               }
 
               nodes[jso.treenode_id] = nn;
@@ -798,7 +798,7 @@ var SkeletonAnnotations = new function()
         if (jso[i].type == "treenode")
         {
           isRootNode = isNaN(parseInt(jso[i].parentid));
-          nn = new Node(id, self.paper, null, rad, pos_x, pos_y, pos_z, zdiff, jso[i].skeleton_id, isRootNode);
+          nn = new SkeletonElements.Node(id, self.paper, null, rad, pos_x, pos_y, pos_z, zdiff, jso[i].skeleton_id, isRootNode);
           nrtn++;
         }
         else
@@ -908,6 +908,7 @@ var SkeletonAnnotations = new function()
       self.updatePaperDimensions(stack);
     }
 
+    // TODO This doc below is obsolete
     // This isn't called "onclick" to avoid confusion - click events
     // aren't generated when clicking in the overlay since the mousedown
     // and mouseup events happen in different divs.  This is actually
@@ -949,7 +950,7 @@ var SkeletonAnnotations = new function()
             return true;
           }
         } else {
-          if (atn instanceof Node) {
+          if (atn instanceof SkeletonElements.Node) {
             // here we could create new connector presynaptic to the activated treenode
             // remove the automatic synapse creation for now
             // the user has to change into the synapsedropping mode and add the
@@ -972,7 +973,7 @@ var SkeletonAnnotations = new function()
         // depending on what mode we are in
         // do something else when clicking
         if (getMode() === "skeletontracing") {
-          if (atn instanceof Node || atn === null) {
+          if (atn instanceof SkeletonElements.Node || atn === null) {
             // create a new treenode,
             // either root node if atn is null, or child if
             // it is not null

@@ -1,241 +1,225 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-
-// Global color properties
-var active_skeleton_color = "rgb(255,255,0)";
-var inactive_skeleton_color = "rgb(255,0,255)";
-var inactive_skeleton_color_above = "rgb(0,0,255)";
-var inactive_skeleton_color_below = "rgb(255,0,0)";
-
-/*
- * A treenode object
- */
-var Node = function (
-	id, // unique id for the node from the database
-	paper, // the raphael paper this node is drawn to
-	parent, // the parent node
-	r, // the radius
-	x, // the x coordinate in pixel coordinates
-	y, // y coordinates
-	z, // z coordinates
-	zdiff, // the different from the current slices
-	skeleton_id,
-	is_root_node) // the id of the skeleton this node is an element of
+/** Namespace where Node instances are created and edited. */
+var SkeletonElements = new function()
 {
+  var active_skeleton_color = "rgb(255,255,0)";
+  var inactive_skeleton_color = "rgb(255,0,255)";
+  var inactive_skeleton_color_above = "rgb(0,0,255)";
+  var inactive_skeleton_color_below = "rgb(255,0,0)";
+  var root_node_color = "rgb(255, 0, 0)";
 
-  var self = this;
+  var TYPE_NODE = "treenode";
+  var TYPE_CONNECTORNODE = "location"; // TODO update the name in the PHP files
 
-  // the database treenode id
-  this.id = id;
+  var CATCH_RADIUS = 8;
 
-  // this object should be used for treenodes
-  this.type = "treenode";
+  /** Constructor for Node instances. */
+  this.Node = function(
+    id, // unique id for the node from the database
+    paper, // the raphael paper this node is drawn to
+    parent, // the parent node
+    r, // the radius
+    x, // the x coordinate in pixel coordinates
+    y, // y coordinates
+    z, // z coordinates
+    zdiff, // the different from the current slices
+    skeleton_id, is_root_node) // the id of the skeleton this node is an element of
+  {
+    this.id = id;
+    this.type = TYPE_NODE;
+    this.paper = paper;
+    this.parent = parent;
+    this.children = {};
+    this.connectors = {};
+    this.r = r < 0 ? 3 : r;
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.zdiff = zdiff;
+    this.skeleton_id = skeleton_id;
+    this.isroot = is_root_node;
+    this.fillcolor = inactive_skeleton_color;
+    this.ox = 0;
+    this.oy = 0;
+    this.c = null; // The Raphael circle for drawing
+    this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
+    this.line = paper.path(); // TODO not all! At least root shouldn't have it
 
-  // state variable whether this node is already synchronized with the database
-  this.needsync = false;
+    // The member functions:
+    this.setXY = setXY;
+    this.drawEdges = nodeDrawEdges;
+    this.drawLineToParent = nodeDrawLineToParent;
+    this.draw = nodeDraw;
+    this.deleteall = nodeDeleteAll;
+    this.deletenode = nodeDelete;
+    this.setColor = nodeSetColor;
+    this.createCircle = nodeCreateCircle;
 
-  // is this node a root node
-  this.isroot = is_root_node;
+    // Init block
+    // 1. Add this node to the parent's children if it exists
+    if (parent) this.children[id] = this;
+  };
 
-  // local screen coordinates relative to the div
-  // pixel coordinates
-  this.x = x;
-  this.y = y;
-  this.z = z;
-  this.zdiff = zdiff;
-  this.skeleton_id = skeleton_id;
-  this.parent = parent;
-  this.paper = paper;
-  this.r = r;
-
-  // local variables, only valid in the scope of a node
-  // and not accessible to the outisde
-  var ox = 0,
-      oy = 0;
-  // the raphael node objects, one for display, the other
-  // slightly bigger one for dragging
-  var c, mc;
-  // the line that is drawn to its parent
-  var line = this.paper.path(); // TODO not all!
-
-  this.fillcolor = inactive_skeleton_color;
-
-  this.colorFromZDiff = function() {
-    if (this.zdiff > 0) {
-      return inactive_skeleton_color_above;
-    } else if (this.zdiff < 0) {
-      return inactive_skeleton_color_below;
-    } else {
-      var atn = SkeletonAnnotations.getActiveNode();
-      if (atn && atn.skeleton_id != self.skeleton_id) {
-        return inactive_skeleton_color;
-      } else {
-        if (self.skeleton_id == SkeletonAnnotations.getActiveSkeletonId() ) {
-          return active_skeleton_color;
-        } else {
-          return inactive_skeleton_color;
-        }
+  /** Trigger the redrawing of the lines with parent, children and connectors.
+   * Here, 'this' is the node, given that it is called in the context of the node only.
+   */
+  var nodeDrawEdges = function() {
+    var i;
+    // draws/updates path to parent and children
+    for (i in this.children) {
+      if (this.children.hasOwnProperty(i)) {
+        this.children[i].drawLineToParent();
       }
     }
+    for (i in this.connectors) {
+      if (this.children.hasOwnProperty(i)) {
+        // should update the connector paths
+        this.connectors[i].drawEdges();
+      }
+    }
+    if (this.parent !== null) {
+      this.drawLineToParent();
+    }
   };
 
-  // Set the node fill color depending on its distance from the
-  // current slice, whether it's the active node, the root node, or in
-  // an active skeleton.
-  this.setColor = function () {
-    var atn = SkeletonAnnotations.getActiveNode();
-    if (atn !== null && self.id === atn.id) {
-      // The active node is always in green:
-      self.fillcolor = SkeletonAnnotations.getActiveNodeColor();
-    } else if (self.isroot) {
-      // The root node should be colored red unless it's active:
-      self.fillcolor = "rgb(255, 0, 0)";
-    } else {
-      // If none of the above applies, just colour according to the z
-      // difference.
-      self.fillcolor = self.colorFromZDiff();
+  /** Update the local x,y coordinates of the node
+   * Update them for the raphael objects as well.
+   * Redraw the edges as well.
+   * Here 'this' refers to the node.
+   */
+  var setXY = function(xnew, ynew)
+  {
+    this.x = xnew;
+    this.y = ynew;
+    if (this.c) {
+      this.c.attr({
+        cx: xnew,
+        cy: ynew
+      });
+      this.mc.attr({
+        cx: xnew,
+        cy: ynew
+      });
     }
-    
-    if (c) {
-      c.attr({
-        fill: self.fillcolor
+    this.drawEdges();
+  };
+
+  /** Updates the coordinates of the raphael path
+   * that represents the line from the node to the parent.
+   * Here 'this' refers to the node.
+   */
+  var nodeDrawLineToParent = function () {
+    var parent = this.parent;
+    if (parent) {
+      this.line.attr({
+        path: [
+          ["M", this.x, this.y],
+          ["L", parent.x, parent.y]
+        ],
+        stroke: colorFromZDiff(parent.zdiff, parent.skeleton_id),
+        "stroke-width": 2
       });
     }
   };
 
-  if (this.r < 0) {
-    this.r = 3;
-  }
-
-  // if the zdiff is bigger than zero we do not allow
-  // to drag the nodes
-  if (this.zdiff === 0) {
-    this.rcatch = r + 8;
-  }
-  else {
-    this.rcatch = 0;
-  }
-
-  // Update the parent's children if it exists
-  if (this.parent) {
-    this.parent.children[this.id] = this;
-  }
-
-  // update the local x,y coordinates
-  // updated them for the raphael object as well
-  this.setXY = function (xnew, ynew) {
-    self.x = xnew;
-    self.y = ynew;
-    if (c) {
-			c.attr({
-				cx: self.x,
-				cy: self.y
-			});
-			mc.attr({
-				cx: self.x,
-				cy: self.y
-			});
-		}
-		self.drawEdges();
+  /** Recreate the GUI components, namely the circle and edges.
+   * Here 'this' refers to the node.
+   */
+  var nodeDraw = function() {
+    var ID, line, children = this.children;
+    this.drawEdges();
+    // Push new edges to the back.
+    for (ID in children) {
+      if (children.hasOwnProperty(ID)) {
+        line = children[ID].line;
+        if (line) line.toBack();
+      }
+    }
+    if (this.parent !== null && this.line) this.line.toBack();
+    //
+    this.createCircle();
   };
 
-  this.createCircle = function () {
-    // Create c and mc ONLY if the node is in the current section
-    if (0 == self.zdiff) {
-      // create a raphael circle object
-      c = self.paper.circle(self.x, self.y, self.r).attr({
-        fill: self.fillcolor,
-        stroke: "none",
-        opacity: 1.0
-      });
-
-      // a raphael circle oversized for the mouse logic
-      mc = self.paper.circle(self.x, self.y, self.rcatch).attr({
-        fill: "rgb(0, 1, 0)",
-        stroke: "none",
-        opacity: 0
-      });
-      
-      self.createEventHandlers();
+  /** Delete all objects relevant to the node
+  * such as raphael DOM elements and node references
+  * javascript's garbage collection should do the rest.
+   * Here 'this' refers to the node.
+   * TODO this function is never used? */
+  var nodeDeleteAll = function()
+  {
+    // Test if there is any child of type ConnectorNode
+    // If so, it is not allowed to remove the treenode
+    var i,
+        children = this.children,
+        parent = this.parent;
+    // Remove the parent of all the children
+    for (i in children) {
+      if (children.hasOwnProperty(i)) {
+        children[i].line.remove();
+        children[i].parent = null;
+      }
     }
-  }
-
-  this.setColor();
-
-  // an array storing the children Node objects of the this node
-  this.children = {};
-
-  // an array storing the reference to all attached connector
-  this.connectors = {};
-
-  // delete all objects relevant to this node
-  // such as raphael DOM elements and node references
-  // javascript's garbage collection should do the rest
-  this.deleteall = function () {
-    // test if there is any child of type ConnectorNode
-    // if so, it is not allowed to remove the treenode
-    var i;
-    // remove the parent of all the children
-    for (i = 0; i < self.children.length; ++i) {
-      self.children[i].removeLine();
-      self.children[i].removeParent();
+    // Remove the raphael svg elements from the DOM
+    if (this.c) {
+      this.c.remove();
+      this.mc.remove();
     }
-    // remove the raphael svg elements from the DOM
-    if (c) {
-      c.remove();
-      mc.remove();
-    }
-    if (self.parent !== null) {
-      self.removeLine();
+    if (parent !== null) {
+      this.line.remove();
+      var pc = parent.children;
       // remove this node from parent's children list
-      for (i in self.parent.children) {
-        if (self.parent.children.hasOwnProperty(i)) {
-          if (self.parent.children[i].id === id) {
+      for (i in pc) {
+        if (pc.hasOwnProperty(i)) {
+          if (pc[i].id === id) {
             // FIXME: use splice(1,1) instead
-            delete self.parent.children[i];
+            delete pc[i];
           }
         }
       }
     }
   };
 
-/*
-   * delete the node from the database and removes it from
-   * the current view and local objects
-   *
+  /** Delete the node from the database and removes it from
+   * the current view and local objects.
+   * Here 'this' refers to the node.
    */
-  this.deletenode = function () {
+  var nodeDelete = function () {
+    var node = this;
     requestQueue.register("model/treenode.delete.php", "POST", {
       pid: project.id,
-      tnid: self.id
+      tnid: node.id
     }, function (status, text) {
       if (status !== 200) {
         alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+      } else {
+        // activate parent node when deleted
+        if (node.parent) {
+          // loop over nodes to see if parent is retrieved
+          node.paper.catmaidSVGOverlay.selectNode(node.parent.id);
+          var atn = SkeletonAnnotations.getActiveNode();
+          if (!atn) {
+            // The parent does not belong to the set of retrieved nodes.
+            // fetch the parent node from the database and select it and go to it
+            // TODO
+          }
+        } else {
+          node.paper.catmaidSVGOverlay.activateNode(null);
+        }
+        // Redraw everything for now
+        node.paper.catmaidSVGOverlay.updateNodes();
       }
       return true;
     });
 
-    // activate parent node when deleted
-    if (self.parent) {
-      // loop over nodes to see if parent is retrieved
-      paper.catmaidSVGOverlay.selectNode(self.parent.id);
-      var atn = SkeletonAnnotations.getActiveNode();
-      if (!atn) {
-		  // fetch the parent node from the database and select it
-		  // TODO
-	  }
-    } else {
-      paper.catmaidSVGOverlay.activateNode(null);
-    }
-    // redraw everything for now
-    paper.catmaidSVGOverlay.updateNodes();
 
-    // infact, doing everything done on the server-side
+
+    // in fact, doing everything on the server-side
     // (like relinking) again in the ui not best-practice
-/*
+    /*
     // remove the parent of all the children
-    for ( var i in this.children) {
+    for (var i in this.children) {
       this.children[ i ].removeLine();
       this.children[ i ].removeParent();
     }
@@ -244,174 +228,227 @@ var Node = function (
     mc.remove();
     this.removeLine();
 
-    if(this.parent != null) {
+    if (this.parent != null) {
       // remove this node from parent's children list
-      for ( var i in this.parent.children) {
-        if(this.parent.children[i].id == id)
-         delete this.parent.children[i];
+      for (var i in this.parent.children) {
+        if (this.parent.children[i].id == id)
+          delete this.parent.children[i];
       }
     }
     */
   };
 
-  // remove the raphael line to the parent
-  this.removeLine = function () {
-    line.remove();
-  };
+  /** Set the node fill color depending on its distance from the
+  * current slice, whether it's the active node, the root node, or in
+  * an active skeleton.
+   * Here 'this' refers to the node. */
+  var nodeSetColor = function ()
+  {
+    var atn = SkeletonAnnotations.getActiveNode();
+    if (atn !== null && this.id === atn.id) {
+      // The active node is always in green:
+      this.fillcolor = SkeletonAnnotations.getActiveNodeColor();
+    } else if (this.isroot) {
+      // The root node should be colored red unless it's active:
+      this.fillcolor = root_node_color;
+    } else {
+      // If none of the above applies, just colour according to the z difference.
+      this.fillcolor = colorFromZDiff(this.zdiff, this.skeleton_id);
+    }
 
-  // remove the parent node
-  this.removeParent = function () {
-    delete self.parent;
-    self.parent = null;
-  };
-
-  // updates the raphael path coordinates
-  this.drawLineToParent = function () {
-    if (self.parent) {
-      line.attr({
-        path: [
-          ["M", self.x, self.y],
-          ["L", self.parent.x, self.parent.y]
-        ],
-        stroke: self.parent.colorFromZDiff(),
-        "stroke-width": 2
+    if (this.c) {
+      this.c.attr({
+        fill: this.fillcolor
       });
     }
   };
 
-  // draw function to update the paths from the children
-  // and to its parent
-  this.drawEdges = function () {
-    var i;
-    // draws/updates path to parent and children
-    for (i in self.children) {
-      if (self.children.hasOwnProperty(i)) {
-        self.children[i].drawLineToParent();
-      }
+  /** Return a color depending upon some conditions,
+   * such as whether the zdiff with the current section is positive, negative, or zero,
+   * and whether the node belongs to the active skeleton.
+   */
+  var colorFromZDiff = function(zdiff, skeleton_id)
+  {
+    if (zdiff > 0) {
+      return inactive_skeleton_color_above;
+    } else if (zdiff < 0) {
+      return inactive_skeleton_color_below;
+    } else if (skeleton_id == SkeletonAnnotations.getActiveSkeletonId() ) {
+      return active_skeleton_color;
     }
-    for (i in self.connectors) {
-      if (self.children.hasOwnProperty(i)) {
-        // should update the connector paths
-        self.connectors[i].drawEdges();
-      }
-    }
-    if (self.parent !== null) {
-      self.drawLineToParent();
+    return inactive_skeleton_color
+  };
+
+  /** Create the Raphael circle elements if and only if the zdiff is zero, that is, if the node lays on the current section.
+   * Here 'this' refers to the node.
+   * */
+  var nodeCreateCircle = function()
+  {
+    // TODO this could improve. For example the objects given as arguments could be reused forever, given that raphael merely reads them
+    // TODO    and that javascript is single-threaded (at least when it comes to creating nodes in overlay.js).
+    if (0 === this.zdiff) {
+      var paper = this.paper;
+      // create a raphael circle object
+      this.c = paper.circle(this.x, this.y, this.r).attr({
+        fill: this.fillcolor,
+        stroke: "none",
+        opacity: 1.0
+      });
+
+      // a raphael circle oversized for the mouse logic
+      this.mc = paper.circle(this.x, this.y, CATCH_RADIUS).attr({
+        fill: "rgb(0, 1, 0)",
+        stroke: "none",
+        opacity: 0
+      });
+      this.mc.treenode = this; // for event handlers
+
+      nodeAssignEventHandlers(this.mc);
     }
   };
 
-  this.draw = function () {
-    var i, l;
-    self.drawEdges();
-    // Push new edges to the back.
-    for (i in self.children) {
-      if (self.children.hasOwnProperty(i)) {
-        l = self.children[i].line;
-        if (l) l.toBack();
+  // TODO should reuse functions, not create them new every time
+  // TODO could be done by adding the node as a variable of the c and mc
+
+
+  // Event handling functions for 'mc'
+  // Realize that:
+  //    mc.prev === c
+  // and that, on constructing the mc, we declared:
+  //    mc.treenode = this;  // 'this' is the node
+
+  /** Here 'this' is mc. */
+  var mc_dblclick = function(e)
+  {
+    // TODO these sliders don't exist anymore
+    if (e.altKey) {
+        // zoom in
+        slider_trace_s.move(-1);
       }
-    }
-    if (self.parent !== null && self.line) self.line.toBack();
-    //
-    self.createCircle();
+      else {
+        // zoom out
+        slider_trace_s.move(1);
+      }
+      this.paper.catmaidSVGOverlay.tracingCommand('goactive');
   };
 
+  /**  Log information in the status bar when clicked on the node
+   *
+   * Here 'this' is mc, and treenode is the Node instance
+   */
+  var mc_click = function(e)
+  {
+    var node = this.treenode,
+        paper = this.paper;
+    if (e.shiftKey) {
+      var atn = SkeletonAnnotations.getActiveNode();
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+        // if it is active node, set active node to null
+        if (atn !== null && node.id === atn.id) {
+          paper.catmaidSVGOverlay.activateNode(null);
+        }
+        statusBar.replaceLast("deleted treenode with id " + node.id);
+        node.deletenode();
+        e.stopPropagation();
+        return true;
+      }
+      if (atn !== null) {
+        // connected activated treenode or connectornode
+        // to existing treenode or connectornode
+        if (atn.type === TYPE_CONNECTORNODE) {
+          this.paper.catmaidSVGOverlay.createLink(atn.id, node.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
+          statusBar.replaceLast("joined active treenode to connector with id " + node.id);
+        } else if (atn.type === TYPE_NODE) {
+          statusBar.replaceLast("joined active treenode to treenode with id " + node.id);
+          paper.catmaidSVGOverlay.createTreenodeLink(atn.id, node.id);
+        }
 
-
-  this.createEventHandlers = function () {
-		var self = this;
-		/*
-		 * event handlers
-		 */
-		mc.dblclick(function (e) {
-			if (e.altKey) {
-				// zoom in
-				slider_trace_s.move(-1);
-			}
-			else {
-				// zoom out
-				slider_trace_s.move(1);
-			}
-			project.tracingCommand('goactive');
-		});
-
-		mc.click(function (e) {
-			// return some log information when clicked on the node
-			// this usually refers here to the mc object
-			if (e.shiftKey) {
-				var atn = SkeletonAnnotations.getActiveNode();
-				if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-					// if it is active node, set active node to null
-					if (atn !== null && self.id === atn.id) {
-						paper.catmaidSVGOverlay.activateNode(null);
-					}
-					statusBar.replaceLast("deleted treenode with id " + self.id);
-					self.deletenode();
-					e.stopPropagation();
-					return true;
-				}
-				if (atn !== null) {
-					// connected activated treenode or connectornode
-					// to existing treenode or connectornode
-					if (atn.type === "location") {
-						paper.catmaidSVGOverlay.createLink(atn.id, self.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
-						statusBar.replaceLast("joined active treenode to connector with id " + self.id);
-					} else if (atn.type === "treenode") {
-						statusBar.replaceLast("joined active treenode to treenode with id " + self.id);
-						paper.catmaidSVGOverlay.createTreenodeLink(atn.id, self.id);
-					}
-
-				} else {
-					alert("Nothing to join without an active node!");
-				}
-				e.stopPropagation();
-
-			} else {
-				// activate this node
-				paper.catmaidSVGOverlay.activateNode(self);
-				// stop propagation of the event
-				e.stopPropagation();
-			}
-		});
-
-		mc.move = function (dx, dy) {
-			paper.catmaidSVGOverlay.activateNode(self);
-			self.x = ox + dx;
-			self.y = oy + dy;
-			c.attr({
-				cx: self.x,
-				cy: self.y
-			});
-			mc.attr({
-				cx: self.x,
-				cy: self.y
-			});
-			self.drawEdges();
-			statusBar.replaceLast("move treenode with id " + self.id);
-
-			self.needsync = true;
-		};
-
-		mc.up = function () {
-			c.attr({
-				opacity: 1
-			});
-		};
-
-		mc.start = function () {
-			ox = self.x;
-			oy = self.y;
-			c.attr({
-				opacity: 0.7
-			});
-		};
-
-		mc.drag(mc.move, mc.start, mc.up);
-
-    mc.mousedown(function (e) {
+      } else {
+        alert("Nothing to join without an active node!");
+      }
       e.stopPropagation();
+
+    } else {
+      // activate this node
+      paper.catmaidSVGOverlay.activateNode(node);
+      // stop propagation of the event
+      e.stopPropagation();
+    }
+  };
+
+  /** Here 'this' is mc, and treenode is the Node instance. */
+  var mc_move = function(dx, dy)
+  {
+    var node = this.treenode,
+        mc = this,
+        c = this.prev;
+    this.paper.catmaidSVGOverlay.activateNode(node);
+      node.x = node.ox + dx;
+      node.y = node.oy + dy;
+      c.attr({
+        cx: node.x,
+        cy: node.y
+      });
+      mc.attr({
+        cx: node.x,
+        cy: node.y
+      });
+      node.drawEdges();
+      statusBar.replaceLast("move treenode with id " + node.id);
+
+      node.needsync = true;
+  };
+
+  /** Here 'this' is mc. */
+  var mc_up = function()
+  {
+    var c = this.prev;
+    c.attr({
+        opacity: 1
     });
+  };
+
+  /** Here 'this' is mc, and treenode is the Node instance. */
+  var mc_start = function()
+  {
+    var node = this.treenode,
+        c = this.prev;
+    node.ox = node.x;
+    node.oy = node.y;
+    c.attr({
+      opacity: 0.7
+    });
+  };
+
+  var mc_mousedown = function(e)
+  {
+    e.stopPropagation();
+  };
+
+  /**
+   * Realize that:
+   *  mc.prev === c
+   */
+  var nodeAssignEventHandlers = function (mc)
+  {
+    mc.dblclick(mc_dblclick);
+    mc.click(mc_click);
+    mc.drag(mc_move, mc_start, mc_up);
+    mc.mousedown(mc_mousedown);
+  };
 
 
-	}
+  // TODO must reuse nodes instead of creating them new, to avoid DOM insertions.
+  // -- well, it can: just leave as members of each the functions that are really different.
 
+  // Identical functions: setXY, setColor, createCircle, deleteAll, deletenode (but for the php URL), some of the sub-functions of createEventHandlers
+
+  // Also, there shouldn't be a "needsync" flag. Instead, push the node to an array named "needSyncWithDB". Will avoid looping.
+
+  // Regarding the nodes map: it should be an array of keys over objects stored in a a cache of nodes that are already inserted into the DOM
+  // and that can be reused.
+  // Regarding children and connectors: any reason not to make them plain arrays? Given that they are always small,
+  // using a filter to find a node with a specific id would be enough.
+
+  // WARNING deleteall is never used!
 };

@@ -795,7 +795,7 @@ var SkeletonAnnotations = new function()
      */
     this.refreshNodes = function (jso)
     {
-      var rad, nrtn = 0, nrcn = 0, parid, nid, nn, isRootNode, i, j, len;
+      var rad, nrtn = 0, nrcn = 0, parid, nid, nn, pn, isRootNode, i, j, len;
 
       // Reset nodes and labels
       nodes = {};
@@ -859,13 +859,14 @@ var SkeletonAnnotations = new function()
           // for treenodes, make updates
           if (jso[i].type === "treenode")
           {
-            parid = parseInt(jso[i].parentid);
-            if (nodes[parid])
+            pn = nodes[parseInt(jso[i].parentid)];
+            if (pn)
             {
+              nn = nodes[nid];
               // if parent exists, update the references
-              nodes[nid].parent = nodes[parid];
+              nn.parent = pn;
               // update the parents children
-              nodes[nid].parent.children[nid] = nodes[nid];
+              pn.children[nid] = nn;
             }
           }
           else if (jso[i].type === "location") // "location" is, surprisingly, a ConnectorNode

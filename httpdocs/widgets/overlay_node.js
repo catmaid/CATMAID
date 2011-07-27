@@ -108,7 +108,6 @@ var SkeletonElements = new function()
     // The member functions:
     this.setXY = setXY;
     this.drawEdges = nodeDrawEdges;
-    this.drawLineToParent = nodeDrawLineToParent;
     this.draw = nodeDraw;
     this.deleteall = nodeDeleteAll;
     this.deletenode = nodeDelete;
@@ -174,10 +173,11 @@ var SkeletonElements = new function()
     var ID,
         children = this.children,
         connectors = this.connectors;
+    
     if (toChildren) {
       for (ID in children) {
         if (children.hasOwnProperty(ID)) {
-          children[ID].drawLineToParent();
+          drawLineToParent(children[ID]);
         }
       }
     }
@@ -188,7 +188,7 @@ var SkeletonElements = new function()
       }
     }
     if (this.parent !== null) {
-      this.drawLineToParent();
+      drawLineToParent(this);
     }
   };
 
@@ -216,21 +216,20 @@ var SkeletonElements = new function()
 
   /** Updates the coordinates of the raphael path
    * that represents the line from the node to the parent.
-   * Here 'this' refers to the node.
    */
-  var nodeDrawLineToParent = function () {
-    var parent = this.parent;
-    if (parent && this.line) {
-      this.line.attr({
+  var drawLineToParent = function (node) {
+    var parent = node.parent;
+    if (parent && node.line) {
+      node.line.attr({
         path: [
-          ["M", this.x, this.y],
+          ["M", node.x, node.y],
           ["L", parent.x, parent.y]
         ],
-        stroke: this.colorFromZDiff(parent.zdiff, parent.skeleton_id),
+        stroke: node.colorFromZDiff(parent.zdiff, parent.skeleton_id),
         "stroke-width": 2
       });
       // May be hidden if the node was reused
-      if ("none" === this.line.node.style.display) { this.line.show(); }
+      if ("none" === node.line.node.style.display) { node.line.show(); }
     }
   };
 

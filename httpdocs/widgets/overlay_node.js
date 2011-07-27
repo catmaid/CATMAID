@@ -18,6 +18,8 @@ var SkeletonElements = new function()
 
   var CATCH_RADIUS = 8;
 
+  var DISABLED = -1; // ID of the disabled nodes
+
   // Two arrays containing all created Node and ConnectorNode, for their reuse.
   var nodePool = [];
   var connectorPool = [];
@@ -125,6 +127,7 @@ var SkeletonElements = new function()
    * and the c, mc and line will be reused. */
   var disableNode = function(node)
   {
+    node.id = DISABLED;
     node.parent = null;
     node.children = {};
     node.connectors = {};

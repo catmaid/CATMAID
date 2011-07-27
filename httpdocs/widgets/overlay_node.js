@@ -59,7 +59,7 @@ var SkeletonElements = new function()
 
     // Init block
     // 1. Add this node to the parent's children if it exists
-    if (parent) this.children[id] = this;
+    if (parent) parent.children[id] = this;
   };
 
   /** Trigger the redrawing of the lines with parent, children and connectors.

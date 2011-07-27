@@ -108,7 +108,7 @@ var SkeletonElements = new function()
     // The member functions:
     this.setXY = setXY;
     this.drawEdges = nodeDrawEdges;
-    this.draw = nodeDraw;
+    this.draw = draw;
     this.deleteall = nodeDeleteAll;
     this.deletenode = nodeDelete;
     this.setColor = setColor;
@@ -235,20 +235,10 @@ var SkeletonElements = new function()
 
   /** Recreate the GUI components, namely the circle and edges.
    * Here 'this' refers to the node.
-   * TODO revisit this after setting up node reuse. This is called only when creating a single node
+   *  This is called only when creating a single node
    */
-  var nodeDraw = function() {
-    var ID, line, children = this.children;
+  var draw = function() {
     this.drawEdges();
-    // Push new edges to the back.
-    for (ID in children) {
-      if (children.hasOwnProperty(ID)) {
-        line = children[ID].line;
-        if (line) line.toBack();
-      }
-    }
-    if (this.parent !== null && this.line) this.line.toBack();
-    //
     this.createCircle();
   };
 
@@ -690,7 +680,7 @@ var SkeletonElements = new function()
     this.colorFromZDiff = connectorColorFromZDiff;
     this.createCircle = createCircle;
     this.deletenode = connectorDelete;
-    this.draw = connectorDraw;
+    this.draw = draw;
     this.drawEdges = connectorDrawEdges;
   };
 
@@ -767,15 +757,6 @@ var SkeletonElements = new function()
       connectornode.paper.catmaidSVGOverlay.updateNodes();
       return true;
     });
-  };
-
-  /** Draw function to update the paths from the children and to its parent.
-   * Here 'this' is the connector node.
-   */
-  var connectorDraw = function()
-  {
-    this.drawEdges();
-    this.createCircle();
   };
 
   var removeConnectorEdges = function(preLines, postLines) {

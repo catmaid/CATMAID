@@ -194,7 +194,7 @@ var SkeletonElements = new function()
 
   /** Update the local x,y coordinates of the node
    * Update them for the raphael objects as well.
-   * Redraw the edges as well.
+   * Does NOT redraw the edges.
    * Here 'this' refers to the node.
    */
   var setXY = function(xnew, ynew)
@@ -211,7 +211,6 @@ var SkeletonElements = new function()
         cy: ynew
       });
     }
-    this.drawEdges();
   };
 
   /** Updates the coordinates of the raphael path

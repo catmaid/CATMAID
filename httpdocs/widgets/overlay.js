@@ -104,6 +104,11 @@ var SkeletonAnnotations = new function()
   {
     var self = this;
 
+    var edgetoggle = true;
+    var nodes = {};
+    var labels = {};
+    var show_labels = false;
+
     // Register instance: only one per stack allowed
     SVGOverlays[stack] = this;
 
@@ -113,11 +118,6 @@ var SkeletonAnnotations = new function()
         delete SVGOverlays[stack];
       }
     };
-
-    var edgetoggle = true;
-    var nodes = {};
-    var labels = {};
-    var show_labels = false;
 
     /**
      * Activates the given node id if it exists

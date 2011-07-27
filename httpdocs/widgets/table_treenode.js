@@ -44,11 +44,11 @@ var TreenodeTable = new function()
         } else {
           // check if a treenode is active
           // send active treenode when set
-          var atn = SkeletonAnnotations.getActiveNode();
-          if (atn !== null && atn.type === "treenode") {
+          var atnID = SkeletonAnnotations.getActiveNodeId();
+          if (atnID && SkeletonAnnotations.getActiveNodeType() === "treenode") {
             aoData.push({
               "name": "atnid",
-              "value": atn.id
+              "value": atnID
             });
           }
         }
@@ -96,9 +96,9 @@ var TreenodeTable = new function()
           $(nRow).addClass('leaf_node');
         }
 
-        var atn = SkeletonAnnotations.getActiveNode();
-        if (atn !== null) {
-          if (parseInt(aData[0], 10) === atn.id) {
+        var atnID = SkeletonAnnotations.getActiveNodeId();
+        if (atnID) {
+          if (parseInt(aData[0], 10) === atnID) {
             // just to be sure
             $(nRow).removeClass('root_node');
             $(nRow).removeClass('leaf_node');

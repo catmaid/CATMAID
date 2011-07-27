@@ -11,7 +11,7 @@ var ConnectorTable = new function()
 
   this.init = function (pid) {
     var tableid = '#connectortable';
-    var atn = SkeletonAnnotations.getActiveNode();
+    var skeletonID = SkeletonAnnotations.getActiveSkeletonId();
 
     self.connectorTable = $(tableid).dataTable(
       {
@@ -25,10 +25,7 @@ var ConnectorTable = new function()
         "sAjaxSource": 'model/connector.list.php',
         "fnServerData": function (sSource, aoData, fnCallback) {
 
-          var skeletonid;
-          if (atn !== null) {
-            skeletonid = atn.skeleton_id;
-          } else {
+          if (!skeletonID) {
             var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
             g.growlAlert({
               autoShow: true,
@@ -40,7 +37,7 @@ var ConnectorTable = new function()
                 g.remove();
               }
             });
-            skeletonid = 0;
+            skeletonID = 0;
           }
 
           aoData.push({
@@ -53,7 +50,7 @@ var ConnectorTable = new function()
           });
           aoData.push({
             "name" : "skeleton_id",
-            "value" : skeletonid
+            "value" : skeletonID
           });
           $.ajax({
             "dataType": 'json',

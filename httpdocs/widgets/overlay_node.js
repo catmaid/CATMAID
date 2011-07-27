@@ -1,6 +1,9 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
+// TODO connectors are screwed up when zooming in/out
+// TODO check all other TODOS
+
 /** Namespace where Node instances are created and edited. */
 var SkeletonElements = new function()
 {
@@ -14,6 +17,60 @@ var SkeletonElements = new function()
   var TYPE_CONNECTORNODE = "location"; // TODO update the name in the PHP files
 
   var CATCH_RADIUS = 8;
+
+  // Two arrays containing all created Node and ConnectorNode, for their reuse.
+  var nodePool = [];
+  var connectorPool = [];
+  // The two corresponding indices in the pool for the next available instance for reuse
+  var nextNodeIndex = 0;
+  var nextConnectorIndex = 0;
+  var firstDisabledNodeIndex = -1;
+
+  this.resetCache = function() {
+    nextNodeIndex = 0;
+    nextConnectorIndex = 0;
+  };
+
+  /** Disable all cached Node instances at or beyond the cutoff index. */
+  this.disableBeyond = function(nodeCuttoff, connectorCuttoff) {
+    var i;
+    for (i = nodeCuttoff; i < nodePool.length; ++i) {
+      disableNode(nodePool[i]);
+    }
+    for (i = connectorCuttoff; i < connectorPool.length; ++i) {
+      disableConnectorNode(connectorPool[i]);
+    }
+
+    //console.log(nodePool.length, nextNodeIndex, nodeCuttoff);
+  };
+
+  /** Surrogate constructor that may reuse an existing, cached Node instance currently not in use.
+   * Appends any newly created instances to the pool. */
+  this.newNode = function(
+    id, // unique id for the node from the database
+    paper, // the raphael paper this node is drawn to
+    parent, // the parent node, if present within the subset of nodes retrieved for display; otherwise null.
+    r, // the radius
+    x, // the x coordinate in pixel coordinates
+    y, // y coordinates
+    z, // z coordinates
+    zdiff, // the different from the current slices
+    skeleton_id,
+    is_root_node) // the id of the skeleton this node is an element of
+  {
+    var node;
+    if (nextNodeIndex < nodePool.length) {
+      node = nodePool[nextNodeIndex];
+      reuseNode(node, id, r, x, y, z, zdiff, skeleton_id, is_root_node);
+      if (is_root_node && node.line) node.line.hide();
+    } else {
+      node = new this.Node(id, paper, parent, r, x, y, z, zdiff, skeleton_id, is_root_node);
+      nodePool.push(node);
+      if (node.line) node.line.toBack();
+    }
+    nextNodeIndex += 1;
+    return node;
+  };
 
   /** Constructor for Node instances. */
   this.Node = function(
@@ -60,6 +117,51 @@ var SkeletonElements = new function()
     // Init block
     // 1. Add this node to the parent's children if it exists
     if (parent) parent.children[id] = this;
+  };
+
+  /** Before reusing a node, clear all the member variables that
+   * are relevant to the skeleton structure.
+   * All numeric variables will be overwritten,
+   * and the c, mc and line will be reused. */
+  var disableNode = function(node)
+  {
+    node.parent = null;
+    node.children = {};
+    node.connectors = {};
+    if (node.c) {
+      node.c.hide();
+      node.mc.hide();
+    }
+    if (node.line) {
+      node.line.hide();
+    }
+  };
+
+  /** Takes an existing Node and sets all the proper members as given, and resets the children and connectors. */
+  var reuseNode = function(node, id, r, x, y, z, zdiff, skeleton_id, isroot)
+  {
+    node.id = id;
+    node.parent = null;
+    node.children = {};
+    node.connectors = {};
+    node.r = r < 0 ? 3 : r;
+    node.x = x;
+    node.y = y;
+    node.z = z;
+    node.zdiff = zdiff;
+    node.skeleton_id = skeleton_id;
+    node.isroot = isroot;
+
+    if (node.c) {
+      if (0 !== zdiff) {
+        node.c.hide();
+        node.mc.hide();
+      } else {
+        var newCoords = {cx: x, cy: y};
+        node.c.attr(newCoords);
+        node.mc.attr(newCoords);
+      }
+    }
   };
 
   /** Trigger the redrawing of the lines with parent, children and connectors.
@@ -115,7 +217,7 @@ var SkeletonElements = new function()
    */
   var nodeDrawLineToParent = function () {
     var parent = this.parent;
-    if (parent) {
+    if (parent && this.line) {
       this.line.attr({
         path: [
           ["M", this.x, this.y],
@@ -124,11 +226,14 @@ var SkeletonElements = new function()
         stroke: this.colorFromZDiff(parent.zdiff, parent.skeleton_id),
         "stroke-width": 2
       });
+      // May be hidden if the node was reused
+      if ("none" === this.line.node.style.display) { this.line.show(); }
     }
   };
 
   /** Recreate the GUI components, namely the circle and edges.
    * Here 'this' refers to the node.
+   * TODO revisit this after setting up node reuse. This is called only when creating a single node
    */
   var nodeDraw = function() {
     var ID, line, children = this.children;
@@ -201,8 +306,8 @@ var SkeletonElements = new function()
         if (node.parent) {
           // loop over nodes to see if parent is retrieved
           node.paper.catmaidSVGOverlay.selectNode(node.parent.id);
-          var atn = SkeletonAnnotations.getActiveNode();
-          if (!atn) {
+          var atnID = SkeletonAnnotations.getActiveNodeId();
+          if (!atnID) {
             // The parent does not belong to the set of retrieved nodes.
             // fetch the parent node from the database and select it and go to it
             // TODO
@@ -212,6 +317,11 @@ var SkeletonElements = new function()
         }
         // Redraw everything for now
         node.paper.catmaidSVGOverlay.updateNodes();
+
+
+        // TODO something is wrong, in that upon deleting a node updateNodes() is called like 10 times in a row.
+        // TODO   but cannot reproduce it always.
+
       }
       return true;
     });
@@ -247,8 +357,7 @@ var SkeletonElements = new function()
    * Here 'this' refers to the node. */
   var setColor = function ()
   {
-    var atn = SkeletonAnnotations.getActiveNode();
-    if (atn !== null && this.id === atn.id) {
+    if (this.id === SkeletonAnnotations.getActiveNodeId()) {
       // The active node is always in green:
       this.fillcolor = SkeletonAnnotations.getActiveNodeColor();
     } else if (this.isroot) {
@@ -276,7 +385,7 @@ var SkeletonElements = new function()
       return inactive_skeleton_color_above;
     } else if (zdiff < 0) {
       return inactive_skeleton_color_below;
-    } else if (skeleton_id == SkeletonAnnotations.getActiveSkeletonId() ) {
+    } else if (skeleton_id === SkeletonAnnotations.getActiveSkeletonId() ) {
       return active_skeleton_color;
     }
     return inactive_skeleton_color
@@ -291,19 +400,32 @@ var SkeletonElements = new function()
     // TODO    and that javascript is single-threaded (at least when it comes to creating nodes in overlay.js).
     if (0 === this.zdiff) {
       var paper = this.paper;
-      // create a raphael circle object
-      this.c = paper.circle(this.x, this.y, this.r).attr({
+      // c and mc may already exist if the node is being reused
+      if (this.c && this.mc) {
+      } else {
+        // create a raphael circle object
+        this.c = paper.circle(this.x, this.y, this.r);
+        // a raphael circle oversized for the mouse logic
+        this.mc = paper.circle(this.x, this.y, CATCH_RADIUS);
+      }
+
+      this.c.attr({
         fill: this.fillcolor,
         stroke: "none",
         opacity: 1.0
       });
 
-      // a raphael circle oversized for the mouse logic
-      this.mc = paper.circle(this.x, this.y, CATCH_RADIUS).attr({
+      this.mc.attr({
         fill: "rgb(0, 1, 0)",
         stroke: "none",
         opacity: 0
       });
+
+      if ("none" === this.c.node.style.display) {
+        this.c.show();
+        this.mc.show();
+      }
+
       this.mc.catmaidNode = this; // for event handlers
 
       assignEventHandlers(this.mc, this.type);
@@ -348,10 +470,10 @@ var SkeletonElements = new function()
       var node = this.catmaidNode,
           paper = this.paper;
       if (e.shiftKey) {
-        var atn = SkeletonAnnotations.getActiveNode();
+        var atnID = SkeletonAnnotations.getActiveNodeId();
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           // if it is active node, set active node to null
-          if (atn !== null && node.id === atn.id) {
+          if (node.id === atnID) {
             paper.catmaidSVGOverlay.activateNode(null);
           }
           statusBar.replaceLast("Deleted node #" + node.id);
@@ -359,18 +481,19 @@ var SkeletonElements = new function()
           e.stopPropagation();
           return true;
         }
-        if (atn !== null) {
+        if (atnID) {
+          var atnType = SkeletonAnnotations.getActiveNodeType();
           // connected activated treenode or connectornode
           // to existing treenode or connectornode
-          console.log("from source #" + atn.id + " to target #" + node.id);
-          if (atn.type === TYPE_CONNECTORNODE) {
-            paper.catmaidSVGOverlay.createLink(atn.id, node.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
+          console.log("from source #" + atnID + " to target #" + node.id);
+          if (atnType === TYPE_CONNECTORNODE) {
+            paper.catmaidSVGOverlay.createLink(atnID, node.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
             // TODO check for error
-            statusBar.replaceLast("Joined node #" + atn.id + " to connector #" + node.id);
-          } else if (atn.type === TYPE_NODE) {
-            paper.catmaidSVGOverlay.createTreenodeLink(atn.id, node.id);
+            statusBar.replaceLast("Joined node #" + atnID + " to connector #" + node.id);
+          } else if (atnType === TYPE_NODE) {
+            paper.catmaidSVGOverlay.createTreenodeLink(atnID, node.id);
             // TODO check for error
-            statusBar.replaceLast("Joined node #" + atn.id + " to node #" + node.id);
+            statusBar.replaceLast("Joined node #" + atnID + " to node #" + node.id);
           }
 
         } else {
@@ -402,7 +525,7 @@ var SkeletonElements = new function()
         cx: node.x,
         cy: node.y
       });
-      node.drawEdges(true);
+      node.drawEdges(true); // TODO for connector this is overkill
       statusBar.replaceLast("Moving node #" + node.id);
 
       node.needsync = true;
@@ -433,14 +556,14 @@ var SkeletonElements = new function()
     };
 
     var connector_mc_click = function(e) {
-      var atn = SkeletonAnnotations.getActiveNode(),
+      var atnID = SkeletonAnnotations.getActiveNodeId(),
           connectornode = this.catmaidNode,
           paper = this.paper;
       // return some log information when clicked on the node
       // this usually refers here to the mc object
       if (e.shiftKey) {
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-          if (atn != null && connectornode.id == atn.id) {
+          if (connectornode.id === atnID) {
             paper.catmaidSVGOverlay.activateNode(null);
           }
           statusBar.replaceLast("Deleted connector #" + connectornode.id);
@@ -448,12 +571,12 @@ var SkeletonElements = new function()
           e.stopPropagation();
           return true;
         }
-        if (atn !== null) {
+        if (atnID) {
           // connected activated treenode or connectornode
           // to existing treenode or connectornode
-          console.log("from source #", atn.id, "to connector #", connectornode.id);
-          paper.catmaidSVGOverlay.createLink(atn.id, connectornode.id, "presynaptic_to", "presynaptic terminal", "synapse", "treenode", "connector");
-          statusBar.replaceLast("Joined node #" + atn.id + " with connector #" + connectornode.id);
+          console.log("from source #", atnID, "to connector #", connectornode.id);
+          paper.catmaidSVGOverlay.createLink(atnID, connectornode.id, "presynaptic_to", "presynaptic terminal", "synapse", "treenode", "connector");
+          statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
         } else {
           var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
           g.growlAlert({
@@ -507,6 +630,29 @@ var SkeletonElements = new function()
   // WARNING deleteall is never used!
 
 
+  /** Surrogate cosntructor for ConnectorNode.
+   * See "newNode" for explanations. */
+  this.newConnectorNode = function(
+    id, // unique id for the node from the database
+    paper, // the raphael paper this node is drawn to
+    r, // radius
+    x, // the x coordinate in pixel coordinates
+    y, // y coordinates
+    z, // z coordinates
+    zdiff) // the different from the current slices
+  {
+    var connector;
+    if (nextConnectorIndex < connectorPool.length) {
+      connector = connectorPool[nextConnectorIndex];
+      reuseConnectorNode(connector, id, r, x, y, z, zdiff);
+    } else {
+      connector = new this.ConnectorNode(id, paper, r, x, y, z, zdiff);
+      connectorPool.push(connector);
+    }
+    nextConnectorIndex += 1;
+    return connector;
+  };
+
   /**
    * Constructor for ConnectorNode.
    */
@@ -545,6 +691,48 @@ var SkeletonElements = new function()
     this.draw = connectorDraw;
     this.drawEdges = connectorDrawEdges;
   };
+
+
+  /**
+   * @param c The Node to reuse
+   * @param id
+   * @param r
+   * @param x
+   * @param y
+   * @param z
+   * @param zdiff
+   */
+  var reuseConnectorNode = function(c, id, r, x, y, z, zdiff)
+  {
+    c.id = id;
+    c.r = r;
+    c.x = x;
+    c.y = y;
+    c.z = z;
+    c.zdiff = zdiff;
+    c.pregroup = {};
+    c.postgroup = {};
+
+    if (c.c) {
+      var newCoords = {cx: x, cy: y};
+      c.c.attr(newCoords);
+      c.mc.attr(newCoords);
+    }
+
+    // preLines and postLines are always removed and then recreated when calling drawEdges
+  }
+
+  /**
+   *
+   * @param c The ConnectorNode instance to disable
+   */
+  var disableConnectorNode = function(c) {
+    if (c.c) {
+      c.c.hide();
+      c.mc.hide();
+    }
+    removeConnectorEdges(c.preLines, c.postLines);
+  }
 
   /** Here 'this' is the connector node. */
   var connectorColorFromZDiff =  function(zdiff)
@@ -588,17 +776,8 @@ var SkeletonElements = new function()
     this.createCircle();
   };
 
-  /**
-   * Here 'this' is the connector node.
-   */
-  var connectorDrawEdges = function()
-  {
-    var i,
-        preLines = this.preLines,
-        postLines = this.postLines,
-        pregroup = this.pregroup,
-        postgroup = this.postgroup;
-
+  var removeConnectorEdges = function(preLines, postLines) {
+    var i;
     for (i in preLines) {
       if (preLines.hasOwnProperty(i)) {
         if (preLines[i].remove)
@@ -614,6 +793,20 @@ var SkeletonElements = new function()
         else console.log(i, postLines[i]);
       }
     }
+  };
+
+  /**
+   * Here 'this' is the connector node.
+   */
+  var connectorDrawEdges = function()
+  {
+    var i,
+        preLines = this.preLines,
+        postLines = this.postLines,
+        pregroup = this.pregroup,
+        postgroup = this.postgroup;
+
+    removeConnectorEdges(preLines, postLines);
 
     // re-create
     for (i in pregroup) {

@@ -14,21 +14,49 @@ var SkeletonAnnotations = new function()
     return SVGOverlays[stack];
   }
 
-  // active treenode or connector
-  var atn = null;
-  var atn_fillcolor = "rgb(0, 255, 0)";
-  var active_skeleton_id = null;
+  // Data of the active Treenode or ConnectorNode
+  var atn = {
+    id: null,
+    type: null,
+    skeleton_id: null,
+    x: null,
+    y: null,
+    z: null,
+    set: function(node) {
+      if (node) {
+        atn.id = node.id;
+        atn.skeleton_id = node.skeleton_id;
+        atn.type = node.type;
+        atn.z = node.x;
+        atn.y = node.y;
+        atn.z = node.z;
+      } else {
+        atn.id = null;
+        atn.type = null;
+        atn.skeleton_id = null;
+        atn.x = null;
+        atn.y = null;
+        atn.z = null;
+      }
+    }
+  };
 
-  this.getActiveNode = function() {
-    return atn;
+  var atn_fillcolor = "rgb(0, 255, 0)";
+
+  this.getActiveNodeId = function() {
+    return atn.id;
+  };
+
+  this.getActiveSkeletonId = function() {
+    return atn.skeleton_id;
+  };
+
+  this.getActiveNodeType = function() {
+    return atn.type;
   };
 
   this.getActiveNodeColor = function() {
     return atn_fillcolor;
-  };
-
-  this.getActiveSkeletonId = function() {
-    return active_skeleton_id;
   };
 
 
@@ -41,16 +69,15 @@ var SkeletonAnnotations = new function()
     ObjectTree.requestOpenTreePath(node);
   };
 
-  var refreshAllWidgets = function() {
-
+  var refreshAllWidgets = function()
+  {
     if ($('#connectortable_widget').css('display') === "block" && $('#synchronize_connectortable').attr('checked')) {
-      initConnectorTable(pid);
+      ConnectorTable.init(pid);
     }
 
     if ($('#treenode_table_widget').css('display') === "block" && $('#synchronize_treenodetable').attr('checked')) {
-      initTreenodeTable(pid);
+      TreenodeTable.init(pid);
     }
-
   }
 
   this.exportSWC = function() {
@@ -114,40 +141,34 @@ var SkeletonAnnotations = new function()
       }
     };
 
-    this.activateNode = function(node) {
-      if (atn === node) return;
-      var skeleton_switched = false;
-      // if node === null, just deactivate
-      if (node === null) {
-        atn = null;
-        active_skeleton_id = null;
-      } else {
-
-        if (node.type === "treenode" && node.skeleton_id !== active_skeleton_id) {
-          skeleton_switched = true;
+    this.activateNode = function(node)
+    {
+      if (node)
+      {
+        if (node.id === atn.id) {
+          return; // Already active
         }
-
-        atn = node;
-        active_skeleton_id = atn.skeleton_id;
-
-        // update statusBar
-        if (atn.type === "treenode") {
-          statusBar.replaceLast("activated treenode with id " + atn.id + " skeleton id " + atn.skeleton_id);
-          if (skeleton_switched) {
+        // Update statusBar
+        if ("treenode" === node.type) {
+          statusBar.replaceLast("Activated treenode with id " + node.id + " and skeleton id " + node.skeleton_id);
+          if (atn.skeleton_id !== node.skeleton_id) {
             // if we switched the skeleton, we need to reopen the object tree
             openSkeletonNodeInObjectTree(node);
           }
+          atn.set(node);
           // refresh all widgets except for the object tree
           // the reason is that calling a refresh just after a request to open tree path
           // prevents the opening of the tree path. thus, the opening of the treepath
           // and/or refresh have to be added to the individual operation's
           // (such as split tree) callbacks
           refreshAllWidgets();
-
         } else {
-          statusBar.replaceLast("activated connector node with id " + atn.id);
+          statusBar.replaceLast("Activated connector node #" + node.id);
         }
+      } else {
+        atn.set(null);
       }
+      
       self.recolorAllNodes();
     };
 
@@ -480,7 +501,7 @@ var SkeletonAnnotations = new function()
             } else {
               // add treenode to the display and update it
               var jso = $.parseJSON(text);
-              var nn = new SkeletonElements.ConnectorNode(jso.connector_id, self.paper, 8, pos_x, pos_y, pos_z, 0);
+              var nn = SkeletonElements.newConnectorNode(jso.connector_id, self.paper, 8, pos_x, pos_y, pos_z, 0);
               nodes[jso.connector_id] = nn;
               nn.draw();
               self.activateNode(nn);
@@ -530,7 +551,7 @@ var SkeletonAnnotations = new function()
 
               if (locidval === null) {
                 // presynaptic case, we create a new connector node and use the retrieved id
-                var nn = new SkeletonElements.ConnectorNode(locid_retrieved, self.paper, 8, pos_x, pos_y, pos_z, 0);
+                var nn = SkeletonElements.newConnectorNode(locid_retrieved, self.paper, 8, pos_x, pos_y, pos_z, 0);
                 // store the currently activated treenode into the pregroup of the connector
                 nn.pregroup[id] = nodes[id];
                 nodes[locid_retrieved] = nn;
@@ -574,7 +595,7 @@ var SkeletonAnnotations = new function()
         confidence: confidence,
         targetgroup: "Isolated synaptic terminals"
       }, function (status, text, xml) {
-        var nn, jso, e, tnid;
+        var nn, jso, e, nid;
         if (status === 200) {
           if (text && text !== " ") {
             e = $.parseJSON(text);
@@ -583,12 +604,14 @@ var SkeletonAnnotations = new function()
             } else {
               // add treenode to the display and update it
               var jso = $.parseJSON(text);
+              nid = parseInt(jso.treenode_id);
 
               // always create a new treenode which is the root of a new skeleton
-              var nn = new SkeletonElements.Node(jso.treenode_id, self.paper, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
+              var nn = SkeletonElements.newNode(nid, self.paper, null, radius, pos_x, pos_y, pos_z, 0, parseInt(jso.skeleton_id), true);
+              if (nn.line) nn.line.toBack();
 
               // add node to nodes list
-              nodes[jso.treenode_id] = nn;
+              nodes[nid] = nn;
               nn.draw();
 
               // create connector : new atn postsynaptic_to deactivated atn.id (location)
@@ -604,14 +627,12 @@ var SkeletonAnnotations = new function()
     };
 
     // Create a node and activate it
-    var createNode = function (parentid, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
+    var createNode = function (parentID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
+    {
+      var selneuron, useneuron;
 
-      var parid, selneuron, useneuron;
-
-      if (!parentid) {
-        parid = -1;
-      } else {
-        parid = parentid.id;
+      if (!parentID) {
+        parentID = -1;
       }
 
       // check if we want the newly create node to be
@@ -625,7 +646,7 @@ var SkeletonAnnotations = new function()
 
       requestQueue.register("model/treenode.create.php", "POST", {
         pid: project.id,
-        parent_id: parid,
+        parent_id: parentID,
         x: phys_x,
         y: phys_y,
         z: phys_z,
@@ -634,7 +655,7 @@ var SkeletonAnnotations = new function()
         targetgroup: "Fragments",
         useneuron: useneuron
       }, function (status, text, xml) {
-        var e, jso, nn;
+        var e, jso, nn, nid;
         if (status === 200) {
           if (text && text !== " ") {
             e = $.parseJSON(text);
@@ -643,22 +664,20 @@ var SkeletonAnnotations = new function()
             } else {
               // add treenode to the display and update it
               var jso = $.parseJSON(text);
-              if (parid == -1) {
-                var nn = new SkeletonElements.Node(jso.treenode_id, self.paper, null, radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, true);
-              } else {
-                var nn = new SkeletonElements.Node(jso.treenode_id, self.paper, nodes[parid], radius, pos_x, pos_y, pos_z, 0, jso.skeleton_id, false);
-              }
+              nid = parseInt(jso.treenode_id);
+              // The parent will be null if there isn't one or if the parent Node object is not within the set of retrieved nodes.
+              var nn = SkeletonElements.newNode(nid, self.paper, nodes[parentID], radius, pos_x, pos_y, pos_z, 0, parseInt(jso.skeleton_id), -1 === parentID);
 
-              nodes[jso.treenode_id] = nn;
+              nodes[nid] = nn;
               nn.draw();
-              var active_node = atn;
+              var active_node_z = atn.z;
               self.activateNode(nn); // will alter atn
-              refreshAllWidgets();
+              // ALREADY DONE by activate node refreshAllWidgets();
 
               // Check whether the Z coordinate of the new node is beyond one section away
               // from the Z coordinate of the parent node (which is the active by definition)
-              if (active_node) {
-                if (Math.abs(active_node.z - nn.z) > 1) {
+              if (active_node_z) {
+                if (Math.abs(active_node_z - nn.z) > 1) {
                   var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
                   //var g = $('#growl-alert'); // doesn't work
                   g.growlAlert({
@@ -744,31 +763,48 @@ var SkeletonAnnotations = new function()
       }
     };
 
-    // Only called when changing magnification
+    /** Only called when changing magnification. */
     this.updateNodeCoordinates = function (new_scale) {
-      var i, x, y, fact, node, ID, xnew, ynew;
+      var i,
+          fact = new_scale / old_scale,
+          node, ID,
+          cs = [];
       // depending on the scale, update all the node coordinates
+      // First the Node instances, then the connectors (whose edges depend on the nodes)
       for (ID in nodes) {
         if (nodes.hasOwnProperty(ID)) {
           node = nodes[ID];
-          x = node.x;
-          y = node.y;
-          fact = new_scale / old_scale;
-          xnew = Math.floor(x * fact);
-          ynew = Math.floor(y * fact);
-          node.setXY(xnew, ynew);
+          if ("location" === node.type) {
+            cs.push(node);
+            continue;
+          }
+          node.setXY(Math.floor(node.x * fact), Math.floor(node.y * fact));
         }
+      }
+      // Once the Node are updated, update the ConnectorNode instances whose edges depend on the Node coordinates
+      for (i=0; i<cs.length; ++i) {
+        node = cs[i];
+        node.setXY(Math.floor(node.x * fact), Math.floor(node.y * fact));
       }
     };
 
+
+    /** Recreate all nodes (or reuse existing ones if possible).
+     *
+     * @param jso is an array of JSON objects, where each object may specify a Node or a ConnectorNode
+     */
     this.refreshNodes = function (jso)
     {
-      var rad, nrtn = 0, nrcn = 0, parid, nid, nn, isRootNode, j;
-      self.paper.clear();
-      nodes = new Object();
-      labels = new Object();
+      var rad, nrtn = 0, nrcn = 0, parid, nid, nn, isRootNode, i, j, len;
 
-      for (var i in jso)
+      // Reset nodes and labels
+      nodes = {};
+      labels = {};
+
+      // Prepare existing Node and ConnectorNode instances for reuse
+      SkeletonElements.resetCache();
+
+      for (i=0; i<jso.length; ++i)
       {
         var id = parseInt(jso[i].id);
         var pos_x = phys2pixX(jso[i].x);
@@ -776,8 +812,8 @@ var SkeletonAnnotations = new function()
         var pos_z = phys2pixZ(jso[i].z);
         var zdiff = Math.floor(parseFloat(jso[i].z_diff) / stack.resolution.z);
         var skeleton_id = null;
-        if (zdiff == 0) {
-          if (jso[i].type == "treenode")
+        if (0 === zdiff) {
+          if (jso[i].type === "treenode")
           {
             rad = parseFloat(jso[i].radius);
           } else {
@@ -790,21 +826,31 @@ var SkeletonAnnotations = new function()
         if (jso[i].type === "treenode")
         {
           isRootNode = isNaN(parseInt(jso[i].parentid));
-          nn = new SkeletonElements.Node(id, self.paper, null, rad, pos_x, pos_y, pos_z, zdiff, jso[i].skeleton_id, isRootNode);
+          nn = SkeletonElements.newNode(id, self.paper, null, rad, pos_x, pos_y, pos_z, zdiff, parseInt(jso[i].skeleton_id), isRootNode);
           nrtn++;
         }
         else
         {
-          nn = new SkeletonElements.ConnectorNode(id, self.paper, rad, pos_x, pos_y, pos_z, zdiff);
+          nn = SkeletonElements.newConnectorNode(id, self.paper, rad, pos_x, pos_y, pos_z, zdiff);
           nrcn++;
         }
+
         nodes[id] = nn;
-        // keep active state of previous active node
-        if (atn != null && atn.id == id)
-        {
+      }
+
+      // Keep active state of previous active node
+      if (atn !== null)
+      {
+        nn = nodes[atn.id];
+        if (nn) {
+          // Will recolor all nodes
           self.activateNode(nn);
         }
       }
+
+      // Disable any unused instances
+      SkeletonElements.disableBeyond(nrtn, nrcn);
+
       if (edgetoggle) {
         // loop again and add correct parent objects and parent's children update
         for (i=0; i<jso.length; ++i)
@@ -906,7 +952,6 @@ var SkeletonAnnotations = new function()
     // called from mousedown (or mouseup if we ever need to make
     // click-and-drag work with the left hand button too...)
     this.whenclicked = function (e) {
-      var locid;
       var m = ui.getMouse(e);
 
       // take into account current local offset coordinates and scale
@@ -922,12 +967,12 @@ var SkeletonAnnotations = new function()
       // e.metaKey should correspond to the command key on Mac OS
       if (e.ctrlKey || e.metaKey) {
         // ctrl-click deselects the current active node
-        if (atn !== null) {
-          statusBar.replaceLast("deactivated active node with id " + atn.id);
+        if (null !== atn.id) {
+          statusBar.replaceLast("Deactivated node #" + atn.id);
         }
         self.activateNode(null);
       } else if (e.shiftKey) {
-        if (atn === null) {
+        if (null === atn.id) {
           if (getMode() === "skeletontracing") {
             var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
             g.growlAlert({
@@ -941,7 +986,7 @@ var SkeletonAnnotations = new function()
             return true;
           }
         } else {
-          if (atn instanceof SkeletonElements.Node) {
+          if ("treenode" === atn.type) {
             // here we could create new connector presynaptic to the activated treenode
             // remove the automatic synapse creation for now
             // the user has to change into the synapsedropping mode and add the
@@ -951,11 +996,10 @@ var SkeletonAnnotations = new function()
             createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
             e.stopPropagation();
             return true;
-          } else if (atn instanceof SkeletonElements.ConnectorNode) {
+          } else if ("location" === atn.type) {
             // create new treenode (and skeleton) postsynaptic to activated connector
-            locid = atn.id;
             statusBar.replaceLast("created treenode with id " + atn.id + "postsynaptic to activated connector");
-            createNodeWithConnector(locid, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+            createNodeWithConnector(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
             e.stopPropagation();
             return true;
           }
@@ -964,14 +1008,13 @@ var SkeletonAnnotations = new function()
         // depending on what mode we are in
         // do something else when clicking
         if (getMode() === "skeletontracing") {
-          if (atn instanceof SkeletonElements.Node || atn === null) {
-            // create a new treenode,
-            // either root node if atn is null, or child if
-            // it is not null
-            if (atn !== null) {
-              statusBar.replaceLast("created new treenode as child of treenode" + atn.id);
+          if ("treenode" === atn.type || null === atn.id) {
+            // Create a new treenode,
+            // either root node if atn is null, or child if it is not null
+            if (null !== atn.id) {
+              statusBar.replaceLast("Created new node as child of node #" + atn.id);
             }
-            createNode(atn, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+            createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
             e.stopPropagation();
             return true;
           }

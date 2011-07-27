@@ -66,19 +66,20 @@ var SkeletonElements = new function()
    * Here, 'this' is the node, given that it is called in the context of the node only.
    */
   var nodeDrawEdges = function(toChildren) {
-    var i;
+    var ID,
+        children = this.children,
+        connectors = this.connectors;
     if (toChildren) {
-      for (i in this.children) {
-        if (this.children.hasOwnProperty(i)) {
-          this.children[i].drawLineToParent();
+      for (ID in children) {
+        if (children.hasOwnProperty(ID)) {
+          children[ID].drawLineToParent();
         }
       }
     }
 
-    for (i in this.connectors) {
-      if (this.children.hasOwnProperty(i)) {
-        // should update the connector paths
-        this.connectors[i].drawEdges();
+    for (ID in connectors) {
+      if (connectors.hasOwnProperty(ID)) {
+        connectors[ID].drawEdges();
       }
     }
     if (this.parent !== null) {

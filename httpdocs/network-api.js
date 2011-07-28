@@ -265,9 +265,13 @@ var CM = function()
     this.tagged = function(tag) {
       var nodes_map = this.nodes();
       var a = [];
+			var tags;
       for (var ID in nodes_map) {
         if (nodes_map.hasOwnProperty(ID)) {
-          a.push(nodes_map[ID]);
+					tags = nodes_map[ID].tags;
+					if (tags && -1 !== tags.indexOf(tag)) {
+          	a.push(nodes_map[ID]);
+					}
         }
       }
       return a;

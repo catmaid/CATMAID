@@ -150,6 +150,11 @@ var SkeletonAnnotations = new function()
       }
     };
 
+    this.getActiveNode = function() {
+      if (null === atn.id) return null;
+      return nodes[atn.id];
+    };
+
     /**
      * Activates the given node id if it exists
       in the current retrieved set of nodes

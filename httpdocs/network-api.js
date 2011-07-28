@@ -415,22 +415,18 @@ var CM = function()
     return null;
   };
 
+	/** Returns a Node or a Connector, depending upon what kind of node is selected. */
   this.selectedNode = function() {
-    // In overlay.js, "atn" is a global variable holding the active node or the active connector.
-    // A node is an instance of class Node in overlay_node.js,
-    // and a connector is an instance of class ConnectorNode in overlay_connector.js.
-    if (!window.atn) return null;
-    if (window.atn.constructor === window.Node) return cm.node(window.atn.id);
-    if (window.atn.constructor === window.ConnectorNode) return cm.connector(window.atn.id);
-    return null;
+		var ID = SkeletonAnnotations.getActiveNodeId();
+    if (!ID) return null; // nothing selected
+		return SkeletonAnnotations.getActiveNodeType() === "treenode" ?
+			  cm.node(ID)
+			: cm.connector(ID);
   };
 
   this.selectedSkeleton = function() {
-    if (!window.atn) return null;
-    if (window.atn.constructor === window.Node) {
-      var node = cm.node(window.atn.id);
-      if (node) return node.skeleton();
-    }
+		var skID = SkeletonAnnotations.getActiveSkeletonId();
+		if (skID) return cm.skeleton(skID);
     return null;
   };
 

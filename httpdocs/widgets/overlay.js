@@ -900,9 +900,9 @@ var SkeletonAnnotations = new function()
               pn.children[nid] = nn;
             }
           }
-          else if (jso[i].type === "location") // "location" is, surprisingly, a ConnectorNode
+          else if (jso[i].type === "connector")
           {
-            //console.log("locations retrieved, check pre and post", jso)
+            //console.log("connectors retrieved, check pre and post", jso)
             // update pregroup and postgroup
             // loop over pregroup
             if (jso[i].hasOwnProperty('pre')) {
@@ -1028,7 +1028,7 @@ var SkeletonAnnotations = new function()
             createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
             e.stopPropagation();
             return true;
-          } else if ("location" === atn.type) {
+          } else if ("connector" === atn.type) {
             // create new treenode (and skeleton) postsynaptic to activated connector
             statusBar.replaceLast("created treenode with id " + atn.id + "postsynaptic to activated connector");
             createNodeWithConnector(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);

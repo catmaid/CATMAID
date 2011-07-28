@@ -58,7 +58,7 @@ try {
     $ids = $db->deleteFrom("treenode_class_instance", ' "treenode_class_instance"."treenode_id" = '.$nid.' AND
     "treenode_class_instance"."relation_id" = '.$labeled_as_id);
   
-  } else if ($ntype == "location") {
+  } else if ($ntype == "connector") {
 
     $ids = $db->deleteFrom("connector_class_instance", ' "connector_class_instance"."connector_id" = '.$nid.' AND
     "connector_class_instance"."relation_id" = '.$labeled_as_id);
@@ -123,7 +123,7 @@ try {
         emitErrorAndExit($db, 'Failed to insert relation of label with treenode.');
       }
       
-    } else if ($ntype == "location") {
+    } else if ($ntype == "connector") {
 
       $data = array(
         'user_id' => $uid,

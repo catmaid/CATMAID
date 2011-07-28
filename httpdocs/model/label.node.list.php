@@ -51,7 +51,7 @@ try {
     "ci"."class_id" = '.$label_id.' AND 
     "ci"."project_id" = '.$pid);
     
-  } else if ($ntype == "location") {
+  } else if ($ntype == "connector") {
     $res = $db->getResult('SELECT "ci"."name" as "name" FROM "class_instance" as "ci", "connector_class_instance" as "cci" WHERE
     "cci"."connector_id" = '.$nid.' AND
     "cci"."class_instance_id" = "ci"."id" AND

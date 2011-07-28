@@ -295,15 +295,9 @@ var SkeletonElements = new function()
       } else {
         // activate parent node when deleted
         if (node.parent) {
-          // loop over nodes to see if parent is retrieved
           node.paper.catmaidSVGOverlay.selectNode(node.parent.id);
-          var atnID = SkeletonAnnotations.getActiveNodeId();
-          if (!atnID) {
-            // The parent does not belong to the set of retrieved nodes.
-            // fetch the parent node from the database and select it and go to it
-            // TODO
-          }
         } else {
+          // TODO fetch parent id from the database and activate it
           node.paper.catmaidSVGOverlay.activateNode(null);
         }
         // Redraw everything for now

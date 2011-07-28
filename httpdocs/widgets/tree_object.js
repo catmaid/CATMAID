@@ -2,8 +2,7 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
 var ObjectTree = new function()
-  {
-
+{
   this.init = function (pid) {
     // id of object tree
     var object_tree_id = "#tree_object";
@@ -128,6 +127,7 @@ var ObjectTree = new function()
                 "separator_after": false,
                 "label": "Remove group",
                 "action": function (obj) {
+                  // TODO must ask first!!!!
                   this.remove(obj);
                 }
               }
@@ -189,7 +189,7 @@ var ObjectTree = new function()
                           project.moveTo(e.z, e.y, e.x);
 
                           // activate the node with a delay
-                          window.setTimeout("SkeletonAnnotations.getSVGOverlay(project.getStack()).selectNode( " + e.root_id + " )", 1000);
+                          window.setTimeout("SkeletonAnnotations.staticSelectNode( " + e.root_id + "," + skelid + ")", 1000);
 
                         }
                       }
@@ -473,9 +473,7 @@ var ObjectTree = new function()
             // in the display. if the active treenode would
             // be element of the deleted skeleton, the
             // active node would become invalid
-            var svgOverlay = SkeletonAnnotations.getSVGOverlay(project.getStack());
-            svgOverlay.activateNode(null);
-            svgOverlay.updateNodes();
+            SkeletonAnnotations.staticRefresh();
 
             var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
             g.growlAlert({

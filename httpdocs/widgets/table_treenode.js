@@ -192,7 +192,7 @@ var TreenodeTable = new function()
 
       // activate the node with a delay
       var id = parseInt(aData[0], 10);
-      window.setTimeout("SkeletonAnnotations.getSVGOverlay(project.getStack()).selectNode( " + id + " )", 1000);
+      window.setTimeout("SkeletonAnnotations.staticSelectNode(" + id + ")", 1000);
 
     });
   };

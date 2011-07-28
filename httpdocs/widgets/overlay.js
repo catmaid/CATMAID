@@ -14,6 +14,36 @@ var SkeletonAnnotations = new function()
     return SVGOverlays[stack];
   }
 
+  /** Select a node in any of the existing SVGOverlay instances, by its ID and its skeletonID. */
+  this.staticSelectNode = function(nodeID, skeletonID)
+  {
+    var stack, s;
+    for (stack in SVGOverlays) {
+      if (SVGOverlays.hasOwnProperty(stack)) {
+        s = SVGOverlays[stack];
+        s.selectNode(nodeID);
+        if (SkeletonAnnotations.getActiveSkeletonId() === skeletonID) {
+          return;
+        } else {
+          // Should never happen
+          s.selectNode(null);
+        }
+      }
+    }
+    statusBar.replaceLast("Could not find node #" + nodeID + " for skeleton #" + skeletonID);
+  };
+
+  /** Deactivates any active node and updates all nodes for all open SVGOverlays. */
+  this.staticRefresh = function() {
+    var s;
+    for (s in SVGOverlays) {
+      if (SVGOverlays.hasOwnProperty(s)) {
+        s.selectNode(null);
+        s.updateNodes();
+      }
+    }
+  };
+
   // Data of the active Treenode or ConnectorNode
   var atn = {
     id: null,
@@ -1206,7 +1236,7 @@ var SkeletonAnnotations = new function()
             stack.moveTo(self.pix2physZ(atn.parent.z),
                          self.pix2physY(atn.parent.y),
                          self.pix2physX(atn.parent.x));
-            window.setTimeout("project.getStack().getTool().tracingLayer.svgOverlay.selectNode( " + atn.parent.id + " )", 1000);
+            window.setTimeout("SkeletonAnnotations.staticSelectNode( " + atn.parent.id + " )", 1000);
           } else {
             alert("This is the root node.");
           }

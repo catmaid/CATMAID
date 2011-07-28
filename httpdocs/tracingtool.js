@@ -142,7 +142,6 @@ function TracingTool()
     var c = self.prototype.mouseCatcher;
     ['onmousedown'].map(
       function ( fn ) {
-        console.log(c[fn]);
         if (c[fn]) {
           bindings[fn] = c[fn];
           delete c[fn];

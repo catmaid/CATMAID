@@ -122,7 +122,7 @@ var CM = function()
         if (this.node_map) return this.node_map;
       }
       // Fetch all nodes in one single call
-      var json = synchFetch("model/network.api.treenodes.php", {skid: this.id});
+      var json = synchFetch("model/network.api/treenodes.php", {skid: this.id});
       if (null === json) return null;
       var map = {};
       for (var i=0, len=json.length; i<len; ++i) {
@@ -157,7 +157,7 @@ var CM = function()
       if (this.hasOwnProperty('cs')) {
         if (this.cs) return this.cs;
       }
-      var json = synchFetch('model/network.api.connectors.php', {skid: this.id});
+      var json = synchFetch('model/network.api/connectors.php', {skid: this.id});
       if (null === json) return null;
       /** 'j' is the JSON object describing one connector in the json array. */
       var fn = function(map, j) {
@@ -380,26 +380,26 @@ var CM = function()
 
   /** Query the database for the properties of the node with ID. */
   this.fetchNode = function(ID) {
-    var json = synchFetch("model/network.api.treenode.php", {tnid: ID});
+    var json = synchFetch("model/network.api/treenode.php", {tnid: ID});
     if (null !== json) return create(Node, cm.IDNodes, json);
     return null;
   };
   
   this.fetchConnector = function(ID) {
-    var json = synchFetch("model/network.api.connector.php", {cid: ID});
+    var json = synchFetch("model/network.api/connector.php", {cid: ID});
     if (null !== json) return create(Connector, cm.IDConnectors, json);
     return null;
   };
 
   /** Query the database for the properties of the skeleton with ID. */
   this.fetchSkeleton = function(ID) {
-    var json = synchFetch("model/network.api.skeleton.php", {skid: ID});
+    var json = synchFetch("model/network.api/skeleton.php", {skid: ID});
     if (null !== json) return create(Skeleton, cm.IDSkeletons, json);
     return null;
   };
 
   this.fetchNeuron = function(ID) {
-    var json = synchFetch("model/network.api.neuron.php", {neuron_id: ID});
+    var json = synchFetch("model/network.api/neuron.php", {neuron_id: ID});
     if (null !== json) return create(Neuron, cm.IDNeurons, json);
     return null;
   }
@@ -435,7 +435,7 @@ var CM = function()
    * @param tag The tag to match.
    * @param maxResults The maximum number of results, or 0 for all. */
   this.fetchTagged = function(tag, maxResults) {
-    var json = synchFetch("model/network.api.nodes.tagged.php", {tag: tag, limit: maxResults});
+    var json = synchFetch("model/network.api/nodes.tagged.php", {tag: tag, limit: maxResults});
     if (json) return json.map(function(j) { return create(Node, cm.IDNodes, j); });
     return null;
   };

@@ -35,7 +35,7 @@ synaptic relationships, finally a connector with some of both:
     },
     {
         "id": "125",
-        "type": "location",
+        "type": "connector",
         "user_id": "3",
         "x": "8290",
         "y": "3900",
@@ -78,7 +78,7 @@ synaptic relationships, finally a connector with some of both:
                 "tnid": "370"
             }
         ],
-        "type": "location",
+        "type": "connector",
         "user_id": "3",
         "x": "3860",
         "y": "1360",
@@ -232,14 +232,14 @@ try {
   );
 
   if (false === $connectors) {
-    emitErrorAndExit($db, 'Failed to query treenode locations.');
+    emitErrorAndExit($db, 'Failed to query connector locations.');
   }
 
   $already_seen_connectors = array();
   $pushed_treenodes = count($treenodes);
   while ( list( $key, $val) = each( $connectors ) )
   {
-      $val['type'] = "location";
+      $val['type'] = "connector";
       $connector_id = $val['id'];
 
       if (isset($val['tnid'])) {

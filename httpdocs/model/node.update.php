@@ -71,7 +71,7 @@ try {
     $q = false;
     if( $type == "treenode") {
         $q = $db->update("treenode", array('location' => '('.$x.','.$y.','.$z.')' ), 'treenode.id = '.$node_id);
-    } elseif ( $type == "location") {
+    } elseif ( $type == "connector") {
         $q = $db->update("location", array('location' => '('.$x.','.$y.','.$z.')' ), 'location.id = '.$node_id);
     } else {
         echo makeJSON( array( 'error' => "Unknown node type: '$type'" ) );

@@ -14,7 +14,7 @@ var SkeletonElements = new function()
   var root_node_color = "rgb(255, 0, 0)";
 
   var TYPE_NODE = "treenode";
-  var TYPE_CONNECTORNODE = "location"; // TODO update the name in the PHP files
+  var TYPE_CONNECTORNODE = "connector";
 
   var CATCH_RADIUS = 8;
 

@@ -90,7 +90,6 @@ var SkeletonAnnotations = new function()
     return atn_fillcolor;
   };
 
-
   var openSkeletonNodeInObjectTree = function(node) {
     // Check if the Object Tree div is visible
     if ($('#object_tree_widget').css('display') === "none" || ! $('#synchronize_object_tree').attr('checked')) {
@@ -1237,14 +1236,12 @@ var SkeletonAnnotations = new function()
         self.set_tracing_mode("synapsedropping");
         break;
       case "goparent":
-        if (atn !== null) {
-          if (atn.parent !== null) {
+        if (null !== atn.id) {
+          if (null !== atn.parent) {
             stack.moveTo(self.pix2physZ(atn.parent.z),
                          self.pix2physY(atn.parent.y),
                          self.pix2physX(atn.parent.x));
             window.setTimeout("SkeletonAnnotations.staticSelectNode( " + atn.parent.id + " )", 1000);
-          } else {
-            alert("This is the root node.");
           }
         } else {
           alert("No active node selected.");

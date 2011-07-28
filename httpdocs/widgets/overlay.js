@@ -52,6 +52,7 @@ var SkeletonAnnotations = new function()
     x: null,
     y: null,
     z: null,
+    parent: null,
     set: function(node) {
       if (node) {
         atn.id = node.id;
@@ -60,13 +61,13 @@ var SkeletonAnnotations = new function()
         atn.z = node.x;
         atn.y = node.y;
         atn.z = node.z;
+        atn.parent = node.parent;
       } else {
-        atn.id = null;
-        atn.type = null;
-        atn.skeleton_id = null;
-        atn.x = null;
-        atn.y = null;
-        atn.z = null;
+        for (var prop in atn) {
+          if (atn.hasOwnProperty(prop)) {
+            atn[prop] = null;
+          }
+        }
       }
     }
   };

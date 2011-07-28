@@ -46,35 +46,20 @@ synaptic relationships, finally a connector with some of both:
         "id": "284",
         "post": [
             {
-                "lcname": "synapse 282",
-                "lid": "284",
-                "tcname": "postsynaptic terminal 295",
                 "tnid": "293"
             },
             {
-                "lcname": "synapse 282",
-                "lid": "284",
-                "tcname": "postsynaptic terminal 305",
                 "tnid": "303"
             },
             {
-                "lcname": "synapse 282",
-                "lid": "284",
-                "tcname": "postsynaptic terminal 315",
                 "tnid": "313"
             }
         ],
         "pre": [
             {
-                "lcname": "synapse 282",
-                "lid": "284",
-                "tcname": "presynaptic terminal 283",
                 "tnid": "280"
             },
             {
-                "lcname": "synapse 282",
-                "lid": "284",
-                "tcname": "presynaptic terminal 372",
                 "tnid": "370"
             }
         ],

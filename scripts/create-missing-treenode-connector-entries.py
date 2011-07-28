@@ -18,11 +18,9 @@ username: catmaid_user
 password: password_of_your_catmaid_user'''
     sys.exit(1)
 
-if len(sys.argv) != 2:
-    print >> sys.stderr, "Usage: %s <USER-ID>" % (sys.argv[0],)
+if len(sys.argv) != 1:
+    print >> sys.stderr, "Usage: %s" % (sys.argv[0],)
     sys.exit(1)
-
-user_id = sys.argv[1]
 
 conn = psycopg2.connect(host=conf['host'],
                         database=conf['database'],
@@ -57,7 +55,7 @@ for project_id, project_title in project_tuples:
         direction_relation_id = relations[direction + '_to']
         terminal_class_id = classes[direction + ' terminal']
         c.execute('''
-SELECT tn.id, c.id
+SELECT tn.id, c.id, terminal1_to_syn.user_id
   FROM treenode tn,
        treenode_class_instance tci,
        class_instance terminal1,
@@ -83,7 +81,7 @@ SELECT tn.id, c.id
                    'terminal_class_id': terminal_class_id,
                    'direction_relation_id': direction_relation_id,
                    'synapse_class_id': classes['synapse']})
-        for treenode_id, connector_id in c.fetchall():
+        for treenode_id, connector_id, user_id in c.fetchall():
             # Do a quick check that this relationship isn't already
             # recorded in the treenode_connector table.  It shouldn't
             # create a problem if we end up with duplicate entries,

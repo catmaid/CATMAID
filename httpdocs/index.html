@@ -56,6 +56,8 @@
 		<script type="text/javascript" src="tilelayer.js"></script>
 		<script type="text/javascript" src="navigator.js"></script>
 		<script type="text/javascript" src="selector.js"></script>
+		<script type="text/javascript" src="tracingtool.js"></script>
+		<script type="text/javascript" src="tracinglayer.js"></script>
 		<!--[if gte IE 5]>
 		<script type="text/javascript" src="libs/excanvas/excanvas.js"></script>
 		<script type="text/javascript">var IE = true;</script>
@@ -63,34 +65,25 @@
 		<script type="text/javascript" src="widgets/textlabel.js"></script>
 		<script type="text/javascript" src="widgets/profile.js"></script>
 		<script type="text/javascript" src="widgets/overlay_node.js"></script>
-		<script type="text/javascript" src="widgets/overlay_connectornode.js"></script>
-    <script type="text/javascript" src="widgets/overlay_label.js"></script>
+		<script type="text/javascript" src="widgets/overlay_label.js"></script>
 		<script type="text/javascript" src="widgets/overlay.js"></script>
 		<script type="text/javascript" src="init.js"></script>
 		<script type="text/javascript" src="libs/raphael/raphael.js"></script>
 		<script type="text/javascript" src="libs/raphael/g.raphael.js"></script>
 		<script type="text/javascript" src="libs/raphael/g.pie-min.js"></script>
-    <script type="text/javascript" src="libs/raphael/raphael-custom.js"></script>
+		<script type="text/javascript" src="libs/raphael/raphael-custom.js"></script>
 		<script type="text/javascript" src="widgets/table_treenode.js"></script>
-    <script type="text/javascript" src="widgets/table_connector.js"></script>
+		<script type="text/javascript" src="widgets/table_connector.js"></script>
 		<script type="text/javascript" src="widgets/tree_object.js"></script>
 		<script type="text/javascript" src="widgets/stats.js"></script>
 		<script type="text/javascript" src="libs/sylvester/sylvester.js"></script>
 		<script type="text/javascript" src="treelines.js"></script>
+		<script type="text/javascript" src="WindowMaker.js"></script>
 		<script type="text/javascript" src="widgets/windowmanager.js"></script>
     <script type="text/javascript" src="network-api.js"></script>
 		
 	</head>
 	<body onload="init();"><a></a>
-	
-		<!-- Maps for input extension
-		***********************************************************************
-		-->
-		<map id="xmap" name="xmap"><area shape="rect" coords="0,0,13,9" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) + 1; x.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) - 1; x.onchange();" alt="-" /></map>
-		<map id="ymap" name="ymap"><area shape="rect" coords="0,0,13,9" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) + 1; y.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) - 1; y.onchange();" alt="-" /></map>
-		<!--
-		***********************************************************************
-		-->
 		
 		<!-- Toolbars
 		***********************************************************************
@@ -115,17 +108,16 @@
 				<div class="box" id="toolbox_edit" style="display:none">
 					<a href="#" class="button" id="edit_button_text" onclick="project.setMode( 'text' );"><img src="widgets/themes/kde/text.gif" alt="text" title="text" /></a>
 					<a href="#" class="button" id="edit_button_crop" onclick="project.setMode( 'crop' );"><img src="widgets/themes/kde/crop.gif" alt="crop microstack" title="crop microstack" /></a>
-					<a href="#" class="button" id="edit_button_trace" onclick="project.setMode( 'trace' );"><img src="widgets/themes/kde/trace.gif" alt="trace" title="trace" /></a>
+					<a href="#" class="button" id="edit_button_trace" onclick="project.setTool( new TracingTool() );"><img src="widgets/themes/kde/trace.gif" alt="trace" title="trace" /></a>
 					<!--<a href="#" class="button" id="edit_button_profile" onclick="project.setMode( 'profile' );"><img src="widgets/themes/kde/draw.gif" alt="profile" title="profile" /></a>-->
 				</div>
 				<div class="box" id="toolbox_data" style="display:none">
-					<a href="#" class="button" id="data_button_table_treenode" onclick="project.showDatatableWidget( 'treenode' );"><img src="widgets/themes/kde/table.gif" alt="table" title="treenode table" /></a>
-                    <a href="#" class="button" id="data_button_table_connector" onclick="project.showDatatableWidget( 'connector' );"><img src="widgets/themes/kde/table_connector.gif" alt="table" title="connector table" /></a>
-					<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'entities' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="object tree" /></a>
-					<!--<a href="#" class="button" id="data_button_tree" onclick="project.showTreeviewWidget( 'classes' );"><img src="widgets/themes/kde/tree.gif" alt="tree" title="class tree" /></a>-->
-					<a href="#" class="button" id="data_button_stats" onclick="project.showStatisticsWidget( );"><img src="widgets/themes/kde/stats.gif" alt="tree" title="project statistics" /></a>
-					<a href="#" class="button" id="key_help_button" onclick="showKeyboardShortcuts( );"><img src="widgets/themes/kde/help.png" alt="help for key shorcuts" title="help for key shortcuts" /></a>
-					<a href="#" class="button" id="view_3d_button" onclick="project.show3DView( );"><img src="widgets/themes/kde/3d-view.png" alt="Show the 3D view" title="Show the 3D view" /></a>
+					<a href="#" class="button" id="data_button_table_treenode" onclick="WindowMaker.show('node-table');"><img src="widgets/themes/kde/table.gif" alt="table" title="treenode table" /></a>
+                    <a href="#" class="button" id="data_button_table_connector" onclick="WindowMaker.show( 'connector-table' );"><img src="widgets/themes/kde/table_connector.gif" alt="table" title="connector table" /></a>
+					<a href="#" class="button" id="data_button_tree" onclick="WindowMaker.show('object-tree');"><img src="widgets/themes/kde/tree.gif" alt="tree" title="object tree" /></a>
+					<a href="#" class="button" id="data_button_stats" onclick="WindowMaker.show('statistics');"><img src="widgets/themes/kde/stats.gif" alt="tree" title="project statistics" /></a>
+					<a href="#" class="button" id="key_help_button" onclick="WindowMaker.show('keyboard-shortcuts');"><img src="widgets/themes/kde/help.png" alt="help for key shorcuts" title="help for key shortcuts" /></a>
+					<a href="#" class="button" id="view_3d_button" onclick="WindowMaker.show('3d-view');"><img src="widgets/themes/kde/3d-view.png" alt="Show the 3D view" title="Show the 3D view" /></a>
 				</div>
 				<div id="logout_box" class="box_right" style="display:none"><p><a id="logout" name="logout" title="Logout" onclick="logout();" href="#">Logout</a></p></div>
 				<div id="login_box" class="box_right" style="display:none"><p>account&nbsp;</p><p><input type="text" id="account" name="account" size="8" /></p><p>&nbsp;&nbsp;password&nbsp;</p><p><input type="password" id="password" name="password" size="8" /></p><p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p></div>
@@ -171,44 +163,6 @@
 			*******************************************************************
 			-->
 			
-			<!-- Toolbar tracing
-			*******************************************************************
-			-->
-			<div id="toolbar_trace" class="toolbar" style="display:none">
-			  <div class="box_right"><p><a id="a_url2" name="a_url2" title="This is the URL to this view. You can bookmark it or send it to the people." href="">URL to this view</a></p></div>
-				<div class="box">
-
-				  <a href="#" class="button" id="trace_button_skeleton">
-				    <img src="widgets/themes/kde/trace_skeleton.png"/></a>
-				    
-				  <a href="#" class="button" id="trace_button_synapse">
-				    <img src="widgets/themes/kde/trace_synapse.png"/></a>
-
-                  <a href="#" class="button" id="trace_button_goactive">
-                    <img src="widgets/themes/kde/trace_active.png"/></a>
-
-                  <a href="#" class="button" id="trace_button_skelsplitting">
-                    <img src="widgets/themes/kde/trace_skelsplitting.png"/></a>
-
-                  <a href="#" class="button" id="trace_button_skelrerooting">
-                    <img src="widgets/themes/kde/trace_skelrerooting.png"/></a>
-
-                  <a href="#" class="button" id="trace_button_togglelabels">
-                    <img src="widgets/themes/kde/trace_labels.png"/></a>
-
-                  <a href="#" class="button" id="trace_button_exportswc">
-                    <img src="widgets/themes/kde/trace_3dview.png"/></a>
-
-				</div>
-                <div class="box" id="z_index_box_tracing"><p>z-index&nbsp;&nbsp;</p><div id="slider_trace_z"></div><p>&nbsp;&nbsp;</p></div>
-                <div class="box" id="zoom_level_box_tracing"><p>zoom-level&nbsp;&nbsp;</p><div id="slider_trace_s"></div><p>&nbsp;&nbsp;</p></div>
-                <div class="box" id="toggle_lines_tracing"><p>Show edges?&nbsp;&nbsp;<input type="checkbox" id="edgetoggle" name="edgetoggle" value="edgetoggle" checked="yes"></p></div>
-                <div class="toolbar_fill"></div>
-			</div>
-			<!--
-			*******************************************************************
-			-->
-			
 			<!-- Crop
 			*******************************************************************
 			-->
@@ -224,202 +178,11 @@
 			*******************************************************************
 			-->
 		</div>
-		<!--
-		***********************************************************************
-		-->
-		
-		<!-- Message widget
-		***********************************************************************
-		-->
-		
-		
-		<!-- Table widgets
-		***********************************************************************
-		-->
-		<div id="treenode_table_widget" class="sliceView" style="width:50%; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
-			<div class="stackInfo_selected" style="position:relative">
-				<p id="treenode_table_widget_title" class="stackTitle">Treenode Table</p>
-				<p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p>
-            </div>
-			<div id="treenode_table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
-                &nbsp; Synchronize <input type="checkbox" id="synchronize_treenodetable" />
-				<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable">
-					<thead>
-						<tr>
-							<th>id</th>
-							<th>x</th>
-							<th>y</th>
-							<th>z</th>
-							<th>type</th>
-							<th>confidence</th>
-							<th>radius</th>
-							<th>username</th>
-							<th>tags</th>
-							<th>last modified</th>
-						</tr>
-					</thead>
-					<tfoot>
-						<tr>
-							<th>id</th>
-							<th>x</th>
-							<th>y</th>
-							<th>z</th>
-							<th><input type="text" name="search_type" value="Search" class="search_init" size="5" /></th>
-							<th>confidence</th>
-							<th>radius</th>
-							<th>username</th>
-							<th><input type="text" name="search_labels" value="Search" class="search_init" size="5" /></th>
-							<th>last modified</th>			
-						</tr>
-					</tfoot>
-					<tbody>
-						<tr><td colspan="10"></td></tr>
-					</tbody>
-				</table>
-			</div>
-		</div>
-        
-		<div id="connectortable_widget" class="sliceView" style="width:50%; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
-			<div class="stackInfo_selected" style="position:relative">
-				<p id="connector_table_widget_title" class="stackTitle">Connector Table</p>
-				<p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p>
-            </div>
-			<div id="connector_table_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
-                <select id="connector_relation_type">
-                    <option value="0">Incoming connectors</option>
-                    <option value="1" selected="yes">Outgoing connectors</option>
-                </select>
-                &nbsp; Synchronize <input type="checkbox" id="synchronize_connectortable" />
-				<table cellpadding="0" cellspacing="0" border="0" class="display" id="connectortable">
-					<thead>
-						<tr>
-							<th>connector id</th>
-                            <th>x</th>
-                            <th>y</th>
-                            <th>z</th>
-                            <th>tags</th>
-                            <th id="connector_nr_nodes_top"># nodes for target(s)</th>
-                            <th>username</th>
-                            <th>treenode id</th>
-                        </tr>
-					</thead>
-					<tfoot>
-						<tr>
-							<th>connector id</th>
-                            <th>x</th>
-                            <th>y</th>
-                            <th>z</th>
-                            <th>tags</th>
-                            <th id="connector_nr_nodes_bottom"># nodes for target(s)</th>
-                            <th>username</th>
-                            <th>treenode id</th>
-                        </tr>
-                    </tfoot>
-                </table>
-			</div>
-		</div>
-		<!-- Project statistics widget
-		***********************************************************************
-		-->
 
-        <div id="key_shortcut_widget" class="sliceView" style="width:350px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
-          <div class="stackInfo_selected" style="position:relative">
-            <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
-            <p id="keyShortcutsText">[BUG: keyboard shortcut help should be here...]</p>
-          </div>
-        </div>
-
-        <div id="view_in_3d_widget" class="sliceView" style="width:512px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
-          <div class="stackInfo_selected" style="position:relative">
-            <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
-            <input type="button" id="add_current_to_3d_view" value="Add current skeleton to 3D view" onclick="project.addTo3DView();"/>
-            <p id="view3DIntroduction"></p>
-            <ul id="view-3d-object-list">
-            </ul>
-            <div id="viewer-3d-canvas" style="width: 500px; height: 500px"/>
-            <div id="viewer-3d-buttons">
-              <input id="xy-button" type="button" value="XY">
-              <input id="xz-button" type="button" value="XZ">
-              <input id="zy-button" type="button" value="ZY">
-            </div>
-          </div>
-        </div>
-
-		<div id="project_stats_widget" class="sliceView" style="width:350px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
-			<div class="stackInfo_selected" style="position:relative">
-			  <p id="statistics_widget_title" class="stackTitle">Project statistics</p>
-			  <p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p>
-            </div>
-			  
-			<div id="statistics_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
-			  <input type="button" id="refresh_stats" value="refresh" style="display:block; float:left;" />
-				<br clear="all" /> 
-				<div id="project_stats">
-				<table cellpadding="0" cellspacing="0" border="0" class="display" id="project_stats_table">
-					<tr>
-						<td >#users</td>
-						<td id="proj_users"></td>
-					</tr>
-					<tr>
-						<td >#neurons</td>
-						<td id="proj_neurons"></td>
-					</tr>
-					<tr>
-						<td >#synapses</td>
-						<td id="proj_synapses"></td>
-					</tr>
-					<tr>
-						<td >#treenodes</td>
-						<td id="proj_treenodes"></td>
-					</tr>
-					<tr>
-						<td >#skeletons</td>
-						<td id="proj_skeletons"></td>
-					</tr>
-					<tr>
-						<td >#presynaptic contacts</td>
-						<td id="proj_presyn"></td>
-					</tr>
-					<tr>
-						<td >#postsynaptic contacts</td>
-						<td id="proj_postsyn"></td>
-					</tr>
-					<tr>
-						<td >#textlabels</td>
-						<td id="proj_textlabels"></td>
-					</tr>
-                    <tr>
-                        <td >#tags</td>
-                        <td id="proj_tags"></td>
-                    </tr>
-				</table>
-				</div>
-                <!-- piechart -->
-                <h3>Annotation User Contribution</h3>
-                <div id="piechart_treenode_holder">
-                </div>
-			</div>
-		</div>
-		
-		
-		<!-- Tree widget
-		***********************************************************************
-		-->
-
-		<div id="object_tree_widget" class="sliceView" style="width:350px; z-index:0; background-color:#FFFFFF; overflow:auto; display:none; overflow:hidden">
-			<div class="stackInfo_selected" style="position:relative"><p id="tree_widget_title" class="stackTitle">Object Tree</p><p class="stackClose" onclick="this.parentNode.parentNode.style.display = 'none'; ui.onresize();">close [ x ]</p></div>
-			<div id="tree_container" style="position:absolute; top:20px; bottom:4px; width:100%; overflow:auto">
-			    <input type="button" id="refresh_object_tree" value="refresh" style="display:block; float:left;" />
-				  &nbsp; Synchronize <input type="checkbox" id="synchronize_object_tree" checked="yes" />
-			    <br clear="all" />
-			    <div id="tree_object"></div>
-			</div>
-		</div>
-		
 		<!-- Disclaimer
 		***********************************************************************
 		-->
-		<div id="imprint"><p>CATMAID v0.24beta, &copy;&nbsp;2007&ndash;2010 <a href="http://fly.mpi-cbg.de/~saalfeld/">Stephan Saalfeld</a>, <a href="http://www.unidesign.ch/">Stephan Gerhard</a> and <a href="http://longair.net/mark/">Mark Longair</a>, funded by <a href="http://www.mpi-cbg.de/research/research-groups/pavel-tomancak.html">Pavel Toman&#x010d;&aacute;k</a>, MPI-CBG, Dresden, Germany and <a href="http://albert.rierol.net/">Albert Cardona</a>, Uni/ETH, Z&uuml;rich, Switzerland.</p></div>
+		<div id="imprint"><p>CATMAID v0.24beta, &copy;&nbsp;2007&ndash;2010 <a href="http://fly.mpi-cbg.de/~saalfeld/">Stephan Saalfeld</a>, <a href="http://www.unidesign.ch/">Stephan Gerhard</a> and <a href="http://longair.net/mark/">Mark Longair</a>, funded by <a href="http://www.mpi-cbg.de/research/research-groups/pavel-tomancak.html">Pavel Toman&#x010d;&aacute;k</a>, MPI-CBG, Dresden, Germany and <a href="http://albert.rierol.net/">Albert Cardona</a>, Uni/ETH, Z&uuml;rich, Switzerland.</p><div id="spinner"><img src="/widgets/themes/kde/wait_bgtransgrey.gif" alt="spinner" /></div></div>
 		<!--
 		***********************************************************************
 		-->
@@ -485,7 +248,20 @@
 			</table>
 			</form>
 			</div>
-		</div>		
+		</div>
+		
+		<!-- Dump for elements that should be available in the DOM but not visible for now -->
+		<div id="dump" style="display:none">
+			<!-- Maps for input extension
+			***********************************************************************
+			-->
+			<map id="xmap" name="xmap"><area shape="rect" coords="0,0,13,9" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) + 1; x.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) - 1; x.onchange();" alt="-" /></map>
+			<map id="ymap" name="ymap"><area shape="rect" coords="0,0,13,9" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) + 1; y.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) - 1; y.onchange();" alt="-" /></map>
+			<!--
+			***********************************************************************
+			-->
+			<div id="message_context" style="background:#ffffff; position:absolute; bottom:0px; width:100%; overflow:auto"><dl id="message_container" style="margin-top:2em; margin-bottom:2em"><dt>No new messages.</dt><dd></dd></dl></div>
+		</div>
 		
 	</body>
 </html>

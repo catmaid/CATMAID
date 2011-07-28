@@ -374,6 +374,7 @@ function Project( pid )
 		self.focusedStack = stack;
 		if ( tool )
 			self.focusedStack.setTool( tool );
+		window.onresize();
 		return;
 	}
 	
@@ -390,49 +391,16 @@ function Project( pid )
 		return;
 	}
 	
-	
-	/*
-	 * Shows the tree view for the loaded project
-	 */
-	this.showTreeviewWidget = function ( m )
-	{
-		switch ( m )
-		{
-		case "entities":
-			var tw_status = document.getElementById( 'tree_widget' ).style.display;
-			// check if not opened before to prevent messing up with event handlers
-			if ( tw_status != 'block' )
-			{
-				document.getElementById( 'tree_widget' ).style.display = 'block';
-				ui.onresize();			
-				initTreeview( this.id );
-			}
-			break;
-		}
-		return;
-	}
-	
-	/*
-	 * Shows the datatable for the loaded project
-	 */
-	this.showDatatableWidget = function ( m )
-	{
-		document.getElementById( 'table_widget' ).style.display = 'block';
-		ui.onresize();	
-		switch ( m )
-		{
-		case "treenode":
-			initDatatable( 'treenode', this.id );
-			break;
-		case "presynapse":
-			initDatatable( 'presynapse', this.id );
-			break;
-		case "postsynapse":
-			initDatatable( 'postsynapse', this.id );
-			break;
-		}
-		return;
-	}
+
+	//!< Associative array of selected objects
+	// in the Treenode Table and Object Tree.
+	// I.e. enables communication between the Object Tree and the Table of Nodes.
+	this.selectedObjects = {
+		'tree_object': {},
+		'table_treenode': {},
+		'selectedneuron': null,
+		'selectedskeleton': null
+	};
 	
 	this.hideToolbars = function()
 	{
@@ -445,11 +413,16 @@ function Project( pid )
 	
 	this.setTool = function( newTool )
 	{
+		if ( tool )
+			tool.destroy();
 		tool = newTool;
-		if ( !self.focusedStack )
+		
+		if ( !self.focusedStack && stacks.length > 0 )
 			self.focusedStack = stacks[ 0 ];
 		
-		self.focusedStack.setTool( tool );
+		if ( self.focusedStack )
+			self.focusedStack.getWindow().focus();
+
 		window.onresize();
 		return;
 	}
@@ -558,6 +531,8 @@ function Project( pid )
 		{
 			stacks[ i ].moveTo( zp, yp, xp, sp );
 		}
+		if ( tool && tool.redraw )
+			tool.redraw();
 		return;
 	}
 	

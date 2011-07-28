@@ -6,13 +6,6 @@ function Console() {
   view.className = "console";
   view.appendChild(document.createElement("pre"));
 
-  var spinnerDiv = document.createElement("div");
-  spinnerDiv.setAttribute('id', 'spinner');
-  var spinnerImg = document.createElement("img");
-  spinnerImg.setAttribute('src', 'widgets/themes/kde/ajax-loader.gif');
-  spinnerDiv.appendChild(spinnerImg);
-  view.appendChild(spinnerDiv);
-
   var toStr = function (obj, ins) {
     if (typeof ins == "undefined") ins = "";
 

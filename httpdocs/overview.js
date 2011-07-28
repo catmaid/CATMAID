@@ -1,11 +1,7 @@
 /**
  * Overview navigator widget
  */
-function Overview(
-		stack,			//!< a reference to the stack
-		max_y,			//!< maximal height
-		max_x			//!< maximal width
-)
+function Overview( stack )
 {
 	/**
 	 * get the view object
@@ -15,91 +11,156 @@ function Overview(
 		return view;
 	}
 	
-	var onclick = function( e )
+	var onmousedown =
 	{
-		var m = ui.getMouse( e );
-		if ( m )
+		jump : function( e )
 		{
-			//statusBar.replaceLast( m.offsetX + ", " + m.offsetY );
-			stack.moveToPixel( z, Math.floor( m.offsetY / SCALE ), Math.floor( m.offsetX / SCALE ), s );
+			var m = ui.getMouse( e );
+			if ( m )
+			{
+				//statusBar.replaceLast( m.offsetX + ", " + m.offsetY );
+				stack.moveToPixel( stack.z, Math.round( m.offsetY / scale ), Math.round( m.offsetX / scale ), stack.s );
+			}
+			return false;
+		},
+		drag : function( e )
+		{
+			ui.registerEvent( "onmousemove", onmousemove );
+			ui.registerEvent( "onmouseup", onmouseup );
+			ui.catchEvents( "move" );
+			ui.onmousedown( e );
+		
+			ui.catchFocus();
+		
+			return false;
 		}
-		return false;
-	}
+	};
 	
-	this.update = function(
-			nz,
-			y,
-			x,
-			ns,
-			screenHeight,
-			screenWidth
-	)
+	var onmousemove = function( e )
 	{
-		z = nz;
-		s = ns;
-		var scale = 1 / Math.pow( 2, s );
-		img.src = stack.image_base + z + "/small.jpg";
-		var height = SCALE / scale * screenHeight;
-		var width = SCALE / scale * screenWidth;
+		stack.moveToPixel( stack.z, stack.y + ui.diffY / scale, stack.x + ui.diffX / scale, stack.s );
+		return false;
+	};
+	
+	var onmouseup = function( e )
+	{
+		ui.releaseEvents()
+		ui.removeEvent( "onmousemove", onmousemove );
+		ui.removeEvent( "onmouseup", onmouseup );
+		return false;
+	};	
+	
+	this.redraw = function()
+	{
+		var height = scale / stack.scale * stack.viewHeight;
+		var width = scale / stack.scale * stack.viewWidth;
 		rect.style.height = Math.floor( height ) + "px";
 		rect.style.width = Math.floor( width ) + "px";
-		rect.style.top = Math.floor( SCALE * y - height / 2 ) + "px";
-		rect.style.left = Math.floor( SCALE * x - width / 2 ) + "px";
+		rect.style.top = Math.floor( scale * stack.y - height / 2 ) + "px";
+		rect.style.left = Math.floor( scale * stack.x - width / 2 ) + "px";
+		
+		for ( var layer in layers )
+			layers[ layer ].redraw();
+		
+		return;
+	};
+	
+	/**
+	 * Add a layer.  Layers are associated by a unique key.
+	 * If a layer with the passed key exists, then this layer will be replaced.
+	 * 
+	 * @param key
+	 * @param layer
+	 */
+	this.addLayer = function( key, layer )
+	{
+		if ( layers[ key ] )
+			layers[ key ].unregister();
+		layers[ key ] = layer;
 		return;
 	}
+	
+	/**
+	 * Remove a layer specified by its key.  If no layer with this key exists,
+	 * then nothing will happen.  The layer is returned;
+	 * 
+	 */
+	this.removeLayer = function( key )
+	{
+		var layer = layers[ key ];
+		if ( typeof layer != "undefined" && layer )
+		{
+			layer.unregister();
+			delete layers[ key ];
+			return layer;
+		}
+		else
+			return null;
+	}
+	
+	var self = this;
+	
+	var layers = {};
 	
 	// initialize
 	if ( !ui ) ui = new UI();
 	
-	var HEIGHT = parseInt( getPropertyFromCssRules( 3, 3, "height" ) );
-	var WIDTH = parseInt( getPropertyFromCssRules( 3, 3, "width" ) );
-	var SCALE_Y = HEIGHT / max_y;
-	var SCALE_X = WIDTH / max_x;
-	var SCALE = Math.min( SCALE_X, SCALE_Y );
-	HEIGHT = Math.floor( max_y * SCALE );
-	WIDTH = Math.floor( max_x * SCALE );
+	var maxX = stack.dimension.x - 1;
+	var maxY = stack.dimension.y - 1;
 	
-	var s = 0;
-	var z = 0;
+	var height = parseInt( getPropertyFromCssRules( 3, 3, "height" ) );
+	var width = parseInt( getPropertyFromCssRules( 3, 3, "width" ) );
+	var scaleY = height / maxY;
+	var scaleX = width / maxX;
+	var scale = Math.min( scaleX, scaleY );
+	height = Math.floor( maxY * scale );
+	width = Math.floor( maxX * scale );
 	
 	var view = document.createElement( "div" );
 	view.className = "smallMapView";
-	view.style.width = WIDTH + "px";
-	view.style.height = HEIGHT + "px";
+	view.onmousedown = onmousedown.jump;
+	view.style.width = width + "px";
+	view.style.height = height + "px";
 		
-	var img = document.createElement( "img" );
-	img.className = "smallMapMap";
-	img.src = "map/small.jpg";
-	img.onclick = onclick;
-	img.style.width = view.style.width;
-	img.style.height = view.style.height;
-	view.appendChild( img );
-	
 	var rect = document.createElement( "div" );
 	rect.className = "smallMapRect";
+	rect.onmousedown = onmousedown.drag;
+	//function( e )
+	//{
+		//if ( typeof event != "undefined" && event )
+			//event.cancelBubble = true;
+		//if ( e && e.stopPropagation )
+			//e.stopPropagation();
+
+	//}
 	view.appendChild( rect );
 	
 	var toggle = document.createElement( "div" );
 	toggle.className = "smallMapToggle";
 	toggle.title = "hide general view";
-	toggle.onclick = function( e )
+	toggle.onmousedown = function( e )
 	{
+		if ( typeof event != "undefined" && event )
+			event.cancelBubble = true;
+		if ( e && e.stopPropagation )
+			e.stopPropagation();
+
 		if ( view.className == "smallMapView_hidden" )
 		{
-			toggle.title = "hide general view";
+			toggle.title = "hide overview";
 			view.className = "smallMapView";
-			view.style.width = WIDTH + "px";
-			view.style.height = HEIGHT + "px";
+			view.style.width = width + "px";
+			view.style.height = height + "px";
 		}
 		else
 		{
-			toggle.title = "show general view";
+			toggle.title = "show overview";
 			view.className = "smallMapView_hidden";
 			view.style.width = "";
 			view.style.height = "";
 		}
 		return false;
-	}
+	};
 	
 	view.appendChild( toggle );
 }

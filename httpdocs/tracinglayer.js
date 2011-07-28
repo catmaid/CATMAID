@@ -1,34 +1,37 @@
-**
- * 
+/**
+ * The tracing layer that hosts the tracing data
  */
-function TileLayer(
-		stack,						//!< reference to the parent stack
-		baseURL,					//!< base URL for image tiles
-		tileWidth,
-		tileHeight
-		)
+function TracingLayer( stack )
 {
+
+  var self = this;
+
+  this.svgOverlay = new SkeletonAnnotations.SVGOverlay( stack );
+
+  this.resize = function ( width, height )
+  {
+    self.svgOverlay.redraw( stack );
+    return;
+  }
+
 
   /** */
 	this.redraw = function()
 	{
     // should never update from database - is called frequently
     // on dragging
-  };
-  
-  
 
-  /** */
-  this.resize = function( width, height )
+    // TODO: only move the nodes in the Raphael paper
+    // will only update them when releasing the mouse when navigating.
+
+    self.svgOverlay.redraw( stack );
+    return;
+  };
+
+	this.unregister = function()
 	{
-//		alert( "resize tileLayer of stack" + stack.getId() );
-		
-		/* TODO 2 more?  Should be 1---not?! */
-		var rows = Math.floor( height / tileHeight ) + 2;
-		var cols = Math.floor( width / tileWidth ) + 2;
-		initTiles( rows, cols );
-		self.redraw();
-		return;
+        // TODO Remove the SVG raphael object from the DOM
 	};
-  
+
+
 }

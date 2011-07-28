@@ -202,7 +202,7 @@ UI = function()
 			if (!propagate) {
  				e.preventDefault();
 				e.stopPropagation();
-   			}
+			}
 			m.x = e.screenX;
 			m.y = e.screenY;
 			if ( e.offsetX )
@@ -261,8 +261,8 @@ UI = function()
 			lastY = m.y;
 			
 			var r = true;
-			for ( var i = 0; i < events[ "onmousemove" ].length; ++i )
-				r = r && events[ "onmousemove" ][ i ]( e );
+			for ( var i = 0; r && i < events[ "onmousemove" ].length; ++i )
+				r = events[ "onmousemove" ][ i ]( e );
 			
 			return r;
 		}

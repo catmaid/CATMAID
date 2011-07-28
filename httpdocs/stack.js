@@ -32,8 +32,6 @@ function Stack(
 		dimension,					//!< {Array} pixel dimensions [x, y, z, ...]
 		resolution,					//!< {Array} physical resolution in units/pixel [x, y, z, ...]
 		translation,				//!< @todo replace by an affine transform
-		// TODO: Do we need this here? (Tobias)
-		// overviewName,				//!< {String} file name of the overview image (e.g. 'overview.jpg')
 		skip_planes,				//!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
 		trakem2_project				//!< {boolean} that states if a TrakEM2 project is available for this stack
 )
@@ -73,7 +71,7 @@ function Stack(
 	 */
 	var update = function( now )
 	{
-		overview.update( self.z, self.y, self.x, self.s, self.viewHeight, self.viewWidth );
+		self.overview.redraw();
 		updateScaleBar();
 		
 		//statusBar.replaceLast( "[" + ( Math.round( x * 10000 * resolution.x ) / 10000 ) + ", " + ( Math.round( y * 10000 * resolution.y ) / 10000 ) + "]" );
@@ -121,7 +119,20 @@ function Stack(
 		};
 		return l;
 	}
-	
+
+  /*
+   * Get the top and left coordinates in physical project coordinates of
+   * stack's window
+   */
+  this.getWorldTopLeft = function()
+  {
+    return {
+      worldTop : ( ( self.y - self.viewHeight / self.scale / 2 ) ) * self.resolution.y + self.translation.y,
+      worldLeft : ( ( self.x - self.viewWidth / self.scale / 2 ) ) * self.resolution.x + self.translation.x,
+      scale : self.scale
+    }
+  }
+  
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */
@@ -214,8 +225,13 @@ function Stack(
 		self.viewWidth = stackWindow.getFrame().offsetWidth;
 		self.viewHeight = stackWindow.getFrame().offsetHeight;
 		
-		for ( var key in layers )
-			layers[ key ].resize( self.viewWidth, self.viewHeight );
+		for ( var key in layers ) {
+      if( layers.hasOwnProperty( key )) {
+        layers[ key ].resize( self.viewWidth, self.viewHeight );
+      }
+    }
+		
+		self.overview.redraw();
 		
 		return;
 	}
@@ -262,7 +278,7 @@ function Stack(
 		if ( typeof layer != "undefined" && layer )
 		{
 			layer.unregister();
-			layers[ key ] = null;
+			delete layers[ key ];
 			return layer;
 		}
 		else
@@ -276,11 +292,17 @@ function Stack(
 	 */
 	this.setTool = function( newTool )
 	{
-		if ( typeof tool != "undefined" && tool )
-			tool.unregister();
+//		if ( typeof tool != "undefined" && tool )
+//			tool.unregister();
 		tool = newTool;
 		if ( typeof tool != "undefined" && tool )
 			tool.register( self );
+	}
+
+	/** Return the current tool. */
+	this.getTool = function()
+	{
+		return tool;
 	}
 	
 	// initialize
@@ -345,19 +367,22 @@ function Stack(
 				redraw();
 				break;
 			case CMWWindow.FOCUS:
+				self.overview.getView().style.zIndex = "6";
 				project.setFocusedStack( self );
 				break;
 			case CMWWindow.BLUR:
-				//if ( tool )
-				//	tool.unregister();
+				self.overview.getView().style.zIndex = "5";
+				if ( tool )
+					tool.unregister();
 				tool = null;
+				window.onresize();
 				break;
 			}
 			return true;
 		} );
 	
-	var overview = new Overview( self, MAX_Y, MAX_X );
-	view.appendChild( overview.getView() );
+	self.overview = new Overview( self );
+	view.appendChild( self.overview.getView() );
 	
 	var scaleBar = document.createElement( "div" );
 	scaleBar.className = "sliceBenchmark";
@@ -367,6 +392,7 @@ function Stack(
 	view.appendChild( scaleBar );
 	
 	// take care, that all values are within a proper range
+    // Declare the x,y,z,s as coordinates in pixels
 	self.z = 1;
 	self.y = Math.floor( MAX_Y / 2 );
 	self.x = Math.floor( MAX_X / 2 );

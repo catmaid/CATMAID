@@ -548,6 +548,20 @@ function CMWWindow( title )
 	var self = this;
 	
 	/**
+	 * @return height of the window minus titlebar in pixels
+	 */
+	this.getContentHeight = function()
+	{
+		var frame = this.getFrame();
+		var h = 0;
+		if ( frame.offsetHeight )
+			h = frame.offsetHeight;
+		if ( frame.firstChild && frame.firstChild.offsetHeight )
+			h -= frame.firstChild.offsetHeight;
+		return h;
+	}
+	
+	/**
 	 * Remove this window from tree.  If this was the sole child of root,
 	 * remove the root frame from document as well.
 	 * 

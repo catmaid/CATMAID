@@ -737,3 +737,33 @@ function createViewerFromCATMAID(divID) {
     $(divID_jQuery).data('viewer').changeView(0, -Math.PI / 2, 0);
   });
 }
+
+function addTo3DView() {
+  var atn = SkeletonAnnotations.getActiveNode();
+  if (!atn) {
+    alert("You must have an active node selected to add its skeleton to the 3D View.");
+    return;
+  }
+  if (atn.type != "treenode") {
+    alert("You can only add skeletons to the 3D View at the moment - please select a node of a skeleton.");
+    return;
+  }
+
+  requestQueue.register('model/treenode.info.php', 'POST', {
+    pid: project.id,
+    tnid: atn.id
+  }, function (status, text, xml) {
+    if (status == 200) {
+      var e = eval("(" + text + ")");
+      if (e.error) {
+        alert(e.error);
+      } else {
+        e['project_id'] = project.id;
+        addNeuronFromCATMAID('viewer-3d-canvas', e);
+      }
+    } else {
+      alert("Bad status code " + status + " mapping treenode ID to skeleton and neuron");
+    }
+    return true;
+  });
+}

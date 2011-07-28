@@ -48,11 +48,9 @@ var session;
 var msg_timeout;
 var MSG_TIMEOUT_INTERVAL = 60000; //!< length of the message lookup interval in milliseconds
 var messageWindow = null;
-var keyboardShortcutsWindow = null;
 
 var rootWindow;
 
-var selectedObjects = {}; //!< associative array of selected objects like class_instances, treenodes etc.
 
 /**
  * queue a login-request on pressing return
@@ -501,13 +499,6 @@ function global_resize( e )
 	content.style.width = width + "px";
 	content.style.height = height + "px";
 
-  table_widget.style.height = height + "px";
-  table_connector_widget.style.height = height + "px";
-  object_tree_widget.style.height = height + "px";
-  project_stats_widget.style.height = height + "px";
-  key_shortcut_widget.style.height = height + "px";
-  view_in_3d_widget.style.height = height + "px";
-
 	return true;
 }
 
@@ -713,30 +704,7 @@ var init = function()
 	
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
-	
-  table_widget = document.getElementById("treenode_table_widget");
-  var table_widget_resize_handle = new ResizeHandle("h");
-  table_widget.appendChild(table_widget_resize_handle.getView());
-  
-  table_connector_widget = document.getElementById("connectortable_widget");
-  var table_connector_widget_resize_handle = new ResizeHandle("h");
-  table_connector_widget.appendChild(table_connector_widget_resize_handle.getView());
 
-  project_stats_widget = document.getElementById("project_stats_widget");
-  var project_stats_widget_resize_handle = new ResizeHandle("h");
-  project_stats_widget.appendChild(project_stats_widget_resize_handle.getView());
-
-  key_shortcut_widget = document.getElementById("key_shortcut_widget");
-  var key_shortcut_widget_resize_handle = new ResizeHandle("h");
-  key_shortcut_widget.appendChild(key_shortcut_widget_resize_handle.getView());
-
-  view_in_3d_widget = document.getElementById("view_in_3d_widget");
-  var view_in_3d_widget_resize_handle = new ResizeHandle("h");
-  view_in_3d_widget.appendChild(view_in_3d_widget_resize_handle.getView());
-
-  object_tree_widget = document.getElementById("object_tree_widget");
-  var tree_widget_resize_handle = new ResizeHandle("h");
-  object_tree_widget.appendChild(tree_widget_resize_handle.getView());
 	
 	//! auto login by url (unsafe as can be but convenient)
 	if ( account && password )
@@ -814,94 +782,47 @@ function showMessages()
 	{
 		messageWindow = new CMWWindow( "Messages" );
 		var messageContent = messageWindow.getFrame();
-		messageContent.style.backgroundColor = "#ffff00";
-		messageContent.style.overflow = "auto";
-		var messageList = document.createElement( "dl" );
-		messageList.id = "message_container";
-		messageList.style.marginTop = "2em";
-		messageList.style.marginBottom = "2em";
-		messageContent.appendChild( messageList );
+		messageContent.style.backgroundColor = "#ffffff";
+		var messageContext = document.getElementById( "message_context" );
+		if ( messageContext.parentNode )
+			messageContext.parentNode.removeChild( messageContext );
+		messageContent.appendChild( messageContext );
 		
-		document.getElementById( "content" ).style.display = "none";
-		
+		messageWindow.addListener(
+			function( callingWindow, signal )
+			{
+				switch ( signal )
+				{
+				case CMWWindow.CLOSE:
+					if ( messageContext.parentNode )
+						messageContext.parentNode.removeChild( messageContext );
+					document.getElementById( "dump" ).appendChild( messageContext );
+					if ( typeof project == undefined || project == null )
+					{
+						rootWindow.close();
+						document.getElementById( "content" ).style.display = "block";
+					}
+					messageWindow = null;
+					break;
+				case CMWWindow.RESIZE:
+					messageContext.style.height = messageWindow.getContentHeight() + "px";
+					break;
+				}
+				return true;
+			} );
+	
+		/* be the first window */
 		if ( rootWindow.getFrame().parentNode != document.body )
+		{
 			document.body.appendChild( rootWindow.getFrame() );
-			
+			document.getElementById( "content" ).style.display = "none";
+		}
+		
 		if ( rootWindow.getChild() == null )
 			rootWindow.replaceChild( messageWindow );
 		else
 			rootWindow.replaceChild( new CMWVSplitNode( messageWindow, rootWindow.getChild() ) );
-			
-		messageWindow.focus();
-		//ui.onresize();
 	}
-	
-	messageWindow.addListener(
-		function( callingWindow, signal )
-		{
-			switch ( signal )
-			{
-			case CMWWindow.CLOSE:
-				if ( typeof project == undefined || project == null )
-				{
-					rootWindow.close();
-					document.getElementById( "content" ).style.display = "none";
-				}
-				else
-					messageWindow.close();
-				break;
-			}
-			return true;
-		} );
-}
-
-function showKeyboardShortcuts()
-{
-	if ( !keyboardShortcutsWindow )
-	{
-		keyboardShortcutsWindow = new CMWWindow( "KeyboardShortcuts" );
-		var keyboardShortcutsContent = keyboardShortcutsWindow.getFrame();
-		keyboardShortcutsContent.style.backgroundColor = "#ffffff";
-		keyboardShortcutsContent.style.overflow = "auto";
-    var keyboardShortcutsList = document.createElement( "p" );
-    keyboardShortcutsList.id="keyShortcutsText";
-    var keysHTML = '';
-    for (i in stringToKeyAction) {
-      keysHTML += '<strong><tt>' + i + '</tt></strong>: ' + stringToKeyAction[i].helpText + "<br />";
-    }
-    keyboardShortcutsList.innerHTML = keysHTML;
-		keyboardShortcutsList.style.marginTop = "2em";
-		keyboardShortcutsList.style.marginBottom = "2em";
-		keyboardShortcutsContent.appendChild( keyboardShortcutsList );
-		
-		document.getElementById( "content" ).style.display = "none";
-		
-		if ( rootWindow.getFrame().parentNode != document.body )
-			document.body.appendChild( rootWindow.getFrame() );
 			
-		if ( rootWindow.getChild() == null )
-			rootWindow.replaceChild( keyboardShortcutsWindow );
-		else
-			rootWindow.replaceChild( new CMWHSplitNode( keyboardShortcutsWindow, rootWindow.getChild() ) );
-			
-		keyboardShortcutsWindow.focus();
-	}
-	
-	keyboardShortcutsWindow.addListener(
-		function( callingWindow, signal )
-		{
-			switch ( signal )
-			{
-			case CMWWindow.CLOSE:
-				if ( typeof project == undefined || project == null )
-				{
-					rootWindow.close();
-					document.getElementById( "content" ).style.display = "none";
-				}
-				else
-					keyboardShortcutsWindow.close();
-				break;
-			}
-			return true;
-		} );
+	messageWindow.focus();
 }

@@ -1,5 +1,95 @@
 <?php
 
+  /*
+
+I've included below some example JSON output from this script.  First,
+a couple of normal treenodes, then a connector with no pre- or post-
+synaptic relationships, finally a connector with some of both:
+
+[
+    {
+        "confidence": "5",
+        "id": "410",
+        "parentid": null,
+        "radius": "-1",
+        "skeleton_id": "406",
+        "type": "treenode",
+        "user_id": "3",
+        "x": "4440",
+        "y": "5330",
+        "z": "9",
+        "z_diff": "9"
+    },
+    {
+        "confidence": "5",
+        "id": "424",
+        "parentid": "422",
+        "radius": "-1",
+        "skeleton_id": "406",
+        "type": "treenode",
+        "user_id": "3",
+        "x": "7640",
+        "y": "5990",
+        "z": "9",
+        "z_diff": "9"
+    },
+    {
+        "id": "125",
+        "type": "location",
+        "user_id": "3",
+        "x": "8290",
+        "y": "3900",
+        "z": "9",
+        "z_diff": "9"
+    },
+    {
+        "id": "284",
+        "post": [
+            {
+                "lcname": "synapse 282",
+                "lid": "284",
+                "tcname": "postsynaptic terminal 295",
+                "tnid": "293"
+            },
+            {
+                "lcname": "synapse 282",
+                "lid": "284",
+                "tcname": "postsynaptic terminal 305",
+                "tnid": "303"
+            },
+            {
+                "lcname": "synapse 282",
+                "lid": "284",
+                "tcname": "postsynaptic terminal 315",
+                "tnid": "313"
+            }
+        ],
+        "pre": [
+            {
+                "lcname": "synapse 282",
+                "lid": "284",
+                "tcname": "presynaptic terminal 283",
+                "tnid": "280"
+            },
+            {
+                "lcname": "synapse 282",
+                "lid": "284",
+                "tcname": "presynaptic terminal 372",
+                "tnid": "370"
+            }
+        ],
+        "type": "location",
+        "user_id": "3",
+        "x": "3860",
+        "y": "1360",
+        "z": "0",
+        "z_diff": "0"
+    }
+]
+
+   */
+
+
 include_once( 'errors.inc.php' );
 include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
@@ -55,7 +145,7 @@ if(!$syn) { echo makeJSON( array( 'error' => 'Can not find "presynaptic terminal
 $postsyn = $db->getClassId( $pid, "postsynaptic terminal" );
 if(!$syn) { echo makeJSON( array( 'error' => 'Can not find "postsynaptic terminal" class for this project' ) ); return; }
 
-    
+
 // relation ids
 $model_of = $db->getRelationId( $pid, "model_of" );
 if(!$model_of) { echo makeJSON( array( 'error' => 'Can not find "model_of" relation for this project' ) ); return; }
@@ -67,8 +157,6 @@ $postsyn_to = $db->getRelationId( $pid, "postsynaptic_to" );
 if(!$postsyn_to) { echo makeJSON( array( 'error' => 'Can not find "postsynaptic_to" relation for this project' ) ); return; }
 
 
-
-
 // Start transaction
 if (! $db->begin() ) {
 	echo json_encode( array( 'error' => 'Could not start transaction.' ) );
@@ -76,7 +164,7 @@ if (! $db->begin() ) {
 }
 
 try {
-  
+
   $treenodes = $db->getResult(
     'SELECT treenode.id AS id,
          treenode.parent_id AS parentid,
@@ -103,106 +191,99 @@ try {
       ORDER BY parentid DESC, id, z_diff
       LIMIT '.$limit
   );
-  
+
   if (false === $treenodes) {
     emitErrorAndExit($db, 'Failed to query treenodes.');
   }
-  
+
   // loop over and add type
   while ( list( $key, $val) = each( $treenodes ) )
   {
     $treenodes[$key]['type'] = "treenode";
   }
-  
-  // retrieve locations that are synapses
-  // only retrieve synapses
-  $locations = $db->getResult(
-    'SELECT "location"."id" AS "id",
-        ("location"."location")."x" AS "x",
-        ("location"."location")."y" AS "y",
-        ("location"."location")."z" AS "z",
-        "location"."user_id" AS "user_id",
-        ( ("location"."location")."z" - '.$z.' ) AS "z_diff"
-      
-      FROM "location", "connector_class_instance" AS "lci", "class_instance" AS "ci", "project"
-        WHERE "project"."id" = "location"."project_id" AND
-            "project"."id" = '.$pid.' AND
-            ("location"."location")."x" >= '.$left.' AND
-            ("location"."location")."x" <= '.( $left + $width ).' AND
-            ("location"."location")."y" >= '.$top.' AND
-            ("location"."location")."y" <= '.( $top + $height ).' AND
-            ("location"."location")."z" >= '.$z.' - '.$zbound.' * '.$zres.' AND
-            ("location"."location")."z" <= '.$z.' + '.$zbound.' * '.$zres.' AND
-            "location"."id" = "lci"."connector_id" AND
-            "ci"."id" = "lci"."class_instance_id" AND
-            "ci"."class_id" = '.$syn.'
-        
-        ORDER BY "id", "z_diff" LIMIT '.$limit
+
+  // retrieve connectors that are synapses - do a LEFT OUTER JOIN with
+  // the treenode_connector table, so that we get entries even if the
+  // connector is not connected to any treenodes
+  $connectors = $db->getResult(
+    'SELECT connector.id AS id,
+        (connector.location).x AS x,
+        (connector.location).y AS y,
+        (connector.location).z AS z,
+        connector.user_id AS user_id,
+        ( (connector.location).z - '.$z.' ) AS z_diff,
+        treenode_connector.relation_id AS treenode_relation_id,
+        treenode_connector.treenode_id AS tnid
+     FROM connector_class_instance AS lci, class_instance AS ci, connector
+         LEFT OUTER JOIN treenode_connector ON treenode_connector.connector_id = connector.id
+        WHERE connector.project_id = '.$pid.' AND
+            (connector.location).x >= '.$left.' AND
+            (connector.location).x <= '.( $left + $width ).' AND
+            (connector.location).y >= '.$top.' AND
+            (connector.location).y <= '.( $top + $height ).' AND
+            (connector.location).z >= '.$z.' - '.$zbound.' * '.$zres.' AND
+            (connector.location).z <= '.$z.' + '.$zbound.' * '.$zres.' AND
+            connector.id = lci.connector_id AND
+            ci.id = lci.class_instance_id AND
+            lci.relation_id = '.$model_of.' AND
+            ci.class_id = '.$syn.'
+
+        ORDER BY id, z_diff LIMIT '.$limit
   );
-  
-  if (false === $locations) {
+
+  if (false === $connectors) {
     emitErrorAndExit($db, 'Failed to query treenode locations.');
   }
 
-  while ( list( $key, $val) = each( $locations ) )
+  $already_seen_connectors = array();
+  $pushed_treenodes = count($treenodes);
+  while ( list( $key, $val) = each( $connectors ) )
   {
-    $locations[$key]['type'] = "location";
-    // retrieve all pre and post treenodes
-    $pretreenodes = $db->getResult(
-    '
-SELECT "location"."id" AS "lid", "tci"."treenode_id" as "tnid", "ci"."name" as "lcname" , "ci2"."name" AS "tcname"
-FROM location, connector_class_instance as lci, treenode_class_instance as tci, class_instance as ci, class_instance as ci2, class_instance_class_instance as cici where
-location.id = '.$val['id'].' and lci.connector_id = location.id
-and lci.relation_id = '.$model_of.' and lci.class_instance_id = ci.id and ci.class_id = '.$syn.' 
-and tci.relation_id = '.$model_of.' and tci.class_instance_id = ci2.id and ci2.class_id = '.$presyn.'
-and cici.relation_id = '.$presyn_to.' and cici.class_instance_a = ci2.id and cici.class_instance_b = ci.id
-    ');
+      $val['type'] = "location";
+      $connector_id = $val['id'];
 
-    if (false === $pretreenodes) {
-      emitErrorAndExit($db, 'Failed to query pre-treenodes.');
-    }
-    
-    
-    //echo makeJSON($pretreenodes);
-    if(!empty($pretreenodes))
-    {
-      $locations[$key]['pre'] = array();
-      while ( list( $key2, $val2) = each( $pretreenodes ) ) {
-        $locations[$key]['pre'][] = $val2;
+      if (isset($val['tnid'])) {
+          $tnid = $val['tnid'];
+          $relationship = ($val['treenode_relation_id'] === $presyn_to) ? "pre" : "post";
+      } else {
+          // The connector wasn't connected to any treenodes
+          $tnid = NULL;
+          $relationship = NULL;
       }
-    }
-    
-    // retrieve post nodes
-    $posttreenodes = $db->getResult(
-    '
-SELECT "location"."id" AS "lid", "tci"."treenode_id" as "tnid", "ci"."name" as "lcname" , "ci2"."name" AS "tcname"
-FROM location, connector_class_instance as lci, treenode_class_instance as tci, class_instance as ci, class_instance as ci2, class_instance_class_instance as cici where
-location.id = '.$val['id'].' and lci.connector_id = location.id
-and lci.relation_id = '.$model_of.' and lci.class_instance_id = ci.id and ci.class_id = '.$syn.' 
-and tci.relation_id = '.$model_of.' and tci.class_instance_id = ci2.id and ci2.class_id = '.$postsyn.'
-and cici.relation_id = '.$postsyn_to.' and cici.class_instance_a = ci2.id and cici.class_instance_b = ci.id
-    ');
-    
-    
-    if (false === $posttreenodes) {
-      emitErrorAndExit($db, 'Failed to query post-treenodes.');
-    }
-    
-    //echo makeJSON($pretreenodes);
-    if(!empty($posttreenodes))
-    {
-      $locations[$key]['post'] = array();
-      while ( list( $key2, $val2) = each( $posttreenodes ) ) {
-        $locations[$key]['post'][] = $val2;
+      // Now we've saved those values, remove them from the top level:
+      unset($val['tnid']);
+      unset($val['treenode_relation_id']);
+
+      // Should we push a new item onto the $treenodes
+      // array or just reuse the existing one?
+      $reuse = isset($already_seen_connectors[$connector_id]);
+
+      if ($reuse) {
+          $existing_index = $already_seen_connectors[$connector_id];
+          if ($tnid) {
+              $val = $treenodes[$existing_index];
+          } else {
+              // Otherwise, we have no new information to add:
+              $val = NULL;
+          }
       }
-    }
-    
-    array_push($treenodes, $locations[$key]);
-  }
 
+      if ($val) {
+          if ($tnid) {
+              if (!isset($val[$relationship])) {
+                  $val[$relationship] = array();
+              }
+              array_push($val[$relationship],array('tnid' => $tnid));
+          }
 
-  if (! $db->commit() ) {
-    emitErrorAndExit( $db, 'Failed to commit!' );
+          if ($reuse) {
+              $treenodes[$existing_index] = $val;
+          } else {
+              array_push($treenodes, $val);
+              $already_seen_connectors[$connector_id] = $pushed_treenodes;
+              ++$pushed_treenodes;
+          }
+      }
   }
 
   echo json_encode( $treenodes );

@@ -19,264 +19,6 @@
      http://unixpapa.com/js/key.html
  */
 
-var arrowKeyCodes = {
-  left: 37,
-  up: 38,
-  right: 39,
-  down: 40
-};
-
-var stringToKeyAction = {
-  "A": {
-    helpText: "Go to active node",
-    buttonID: 'trace_button_goactive',
-    run: function (e) {
-      project.tracingCommand('goactive');
-      return false;
-    }
-  },
-  "J": {
-    helpText: "Nothing right now",
-    run: function (e) {
-      alert("J was pressed");
-      return false;
-    }
-  },
-  "+": {
-    helpText: "Zoom in",
-    specialKeyCodes: [107, 61, 187],
-    run: function (e) {
-      slider_s.move(1);
-      slider_trace_s.move(1);
-      return false;
-    }
-  },
-  "-": {
-    helpText: "Zoom out",
-    specialKeyCodes: [109, 189, 45],
-    run: function (e) {
-      slider_s.move(-1);
-      slider_trace_s.move(-1);
-      return false;
-    }
-  },
-  ",": {
-    helpText: "Move up 1 slice in z (or 10 with Shift held)",
-    specialKeyCodes: [188, 44],
-    run: function (e) {
-      slider_z.move(-(e.shiftKey ? 10 : 1));
-      slider_trace_z.move(-(e.shiftKey ? 10 : 1));
-      return false;
-    }
-  },
-  ".": {
-    helpText: "Move down 1 slice in z (or 10 with Shift held)",
-    specialKeyCodes: [190, 46],
-    run: function (e) {
-      slider_z.move((e.shiftKey ? 10 : 1));
-      slider_trace_z.move((e.shiftKey ? 10 : 1));
-      return false;
-    }
-  },
-  "\u2190": {
-    helpText: "Move left (towards negative x)",
-    specialKeyCodes: [arrowKeyCodes.left],
-    run: function (e) {
-      input_x.value = parseInt(input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-      input_x.onchange(e);
-      return false;
-    }
-  },
-  "\u2192": {
-    helpText: "Move right (towards positive x)",
-    specialKeyCodes: [arrowKeyCodes.right],
-    run: function (e) {
-      input_x.value = parseInt(input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-      input_x.onchange(e);
-      return false;
-    }
-  },
-  "\u2191": {
-    helpText: "Move up (towards negative y)",
-    specialKeyCodes: [arrowKeyCodes.up],
-    run: function (e) {
-      input_y.value = parseInt(input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-      input_y.onchange(e);
-      return false;
-    }
-  },
-  "\u2193": {
-    helpText: "Move down (towards positive y)",
-    specialKeyCodes: [arrowKeyCodes.down],
-    run: function (e) {
-      input_y.value = parseInt(input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-      input_y.onchange(e);
-      return false;
-    }
-  },
-  "1": {
-    helpText: "Switch to skeleton tracing mode",
-    buttonID: 'trace_button_skeleton',
-    run: function (e) {
-      project.tracingCommand('skeletontracing');
-      return false;
-    }
-  },
-  "2": {
-    helpText: "Switch to synapse dropping mode",
-    buttonID: 'trace_button_synapse',
-    run: function (e) {
-      project.tracingCommand('synapsedropping');
-      return false;
-    }
-  },
-  "M": {
-    helpText: "Deselect the active node",
-    run: function (e) {
-      activateNode(null);
-      return false;
-    }
-  },
-  "P": {
-    helpText: "Go to the parent of the active node (?)",
-    run: function (e) {
-      project.tracingCommand('goparent');
-      return false;
-    }
-  },
-  "E": {
-    helpText: "Go to last edited node in this skeleton",
-    run: function (e) {
-      project.tracingCommand('golastedited');
-      return false;
-    }
-  },
-  "5": {
-    helpText: "Split this skeleton at the active node",
-    buttonID: 'trace_button_skelsplitting',
-    run: function (e) {
-      project.tracingCommand('skeletonsplitting');
-      return false;
-    }
-  },
-  "6": {
-    helpText: "Re-root this skeleton at the active node",
-    buttonID: 'trace_button_skelrerooting',
-    run: function (e) {
-      project.tracingCommand('skeletonreroot');
-      return false;
-    }
-  },
-  "7": {
-    helpText: "Toggle the display of labels",
-    buttonID: 'trace_button_togglelabels',
-    run: function (e) {
-      project.tracingCommand('togglelabels');
-      return false;
-    }
-  },
-  "S": {
-    helpText: "Export to SWC",
-    buttonID: 'trace_button_exportswc',
-    run: function (e) {
-      project.tracingCommand('exportswc');
-      return false;
-    }
-  },
-  "T": {
-    helpText: "Tag the active node",
-    run: function (e) {
-      if (!(e.ctrlKey || e.metaKey)) {
-        project.tracingCommand('tagging');
-      }
-      return true;
-    }
-  },
-  "G": {
-    helpText: "Select the nearest node to the mouse cursor",
-    run: function (e) {
-      if (!(e.ctrlKey || e.metaKey)) {
-        project.activateNearestNode();
-      }
-      return true;
-    }
-  },
-  "Tab": {
-    helpText: "Switch to the next open stack (or the previous with Shift+Tab)",
-    specialKeyCodes: [9],
-    run: function (e) {
-      if (e.shiftKey) {
-        project.switchFocus(-1);
-      } else {
-        project.switchFocus(1);
-      }
-      //e.stopPropagation();
-      return false;
-    }
-  }
-};
-
-var withAliases = jQuery.extend({}, stringToKeyAction);
-withAliases["4"] = withAliases["A"];
-
-/* We now turn that structure into an object for
-   fast lookups from keyCodes */
-
-var keyCodeToKeyAction = {};
-
-{
-  var i;
-  for (i in withAliases) {
-    var keyCodeFromKey = null;
-/* If the string representation of the key is a single upper case
-       letter or a number, we just use its ASCII value as the key
-       code */
-    if (i.length === 1) {
-      k = i.charCodeAt(0);
-      if ((k >= 65 && k <= 90) || (k >= 48 && k <= 57)) {
-        keyCodeFromKey = k;
-      }
-    }
-    var o = withAliases[i]; /* Add any more unusual key codes for that action */
-    var allKeyCodes = o.specialKeyCodes || [];
-    if (keyCodeFromKey && $.inArray(keyCodeFromKey, allKeyCodes) < 0) {
-      allKeyCodes.push(keyCodeFromKey);
-    }
-
-    /* Now add to the keyCodeToKeyAction object */
-    var ki, k;
-    for (ki in allKeyCodes) {
-      k = allKeyCodes[ki];
-      if (keyCodeToKeyAction[k]) {
-        alert("Attempting to define a second action for keyCode " + k + " via '" + i + "'");
-      } else {
-        keyCodeToKeyAction[k] = o;
-      }
-    }
-  }
-}
-
-/** Updates the 'alt' and 'title' attributes on the toolbar
- icons that are documented with help text and key presses.
- Also bind the onClick action for the link that contains
- those icons to the corresponding function */
-
-function setButtons() {
-  for (var i in stringToKeyAction) {
-    var o = stringToKeyAction[i];
-    if (o.buttonID) {
-      var link = $('#' + o.buttonID);
-      link.attr('href', 'foo');
-      link.click(o.run);
-      var img = link.find('img');
-      img.attr('alt', o.helpText);
-      var title = i + ': ' + o.helpText;
-      img.attr('title', title);
-    }
-  }
-}
-
-
 /**
  * A TrakEM2 Web project.
  *
@@ -426,7 +168,10 @@ function Project( pid )
 		window.onresize();
 		return;
 	}
-	
+
+    this.getTool = function( ) {
+	return tool;
+    }
 	
 	this.toggleShow = function( m )
 	{
@@ -607,7 +352,20 @@ function Project( pid )
 			} );
 		return;
 	}
-	
+
+    /** This function should return true if there was any action
+        linked to the key code, or false otherwise. */
+
+    var handleKeyPress = function( e ) {
+        keyAction = self.keyCodeToAction[key];
+        if (keyAction) {
+	    keyAction.run(e || event);
+	    return true;
+	} else {
+            return false;
+	}
+    }
+
 	var onkeydown = function( e )
 	{
 		var key;
@@ -615,6 +373,7 @@ function Project( pid )
 		var shift;
 		var alt;
 		var ctrl;
+	    var keyAction;
 		if ( e )
 		{
 			if ( e.keyCode ) key = e.keyCode;
@@ -634,56 +393,21 @@ function Project( pid )
 			ctrl = event.ctrlKey;
 		}
 		var n = target.nodeName.toLowerCase();
-		if ( !( n == "input" || n == "textarea" || n == "area" ) )		//!< @todo exclude all useful keyboard input elements e.g. contenteditable...
-		{
-			switch( key )
-			{
-			case 61:		//!< +
-			case 107:
-			case 187:		//!< for IE only---take care what this is in other platforms...
-				slider_s.move( 1 );
-				return false;
-			case 109:		//!< -
-			case 189:		//!< for IE only---take care what this is in other platforms...
-				slider_s.move( -1 );
-				return false;
-			case 188:		//!< ,
-				slider_z.move( -( shift ? 10 : 1 ) );
-				return false;
-			case 190:		//!< .
-				slider_z.move( ( shift ? 10 : 1 ) );
-				return false;
-			case 37:		//!< cursor left
-				input_x.value = parseInt( input_x.value ) - ( shift ? 100 : ( alt ? 1 : 10 ) );
-				input_x.onchange( e );
-				return false;
-			case 39:		//!< cursor right
-				input_x.value = parseInt( input_x.value ) + ( shift ? 100 : ( alt ? 1 : 10 ) );
-				input_x.onchange( e );
-				return false;
-			case 38:		//!< cursor up
-				input_y.value = parseInt( input_y.value ) - ( shift ? 100 : ( alt ? 1 : 10 ) );
-				input_y.onchange( e );
-				return false;
-			case 40:		//!< cursor down
-				input_y.value = parseInt( input_y.value ) + ( shift ? 100 : ( alt ? 1 : 10 ) );
-				input_y.onchange( e );
-				return false;
-			case 9:			//!< tab
-				if ( shift ) project.switchFocus( -1 );
-				else project.switchFocus( 1 );
-				//e.stopPropagation();
-				return false;
-			case 13:		//!< return
-				break;
-			/*
-			default:
-				alert( key );
-			*/
-			}
-			return true;
+	    var fromATextField = false;
+	    if (n == "input") {
+		var inputType = target.type.toLowerCase();
+		if (inputType == "text" || inputType == "password") fromATextField = true;
+	    }
+	    if (!(fromATextField || n == "textarea" || n == "area")) //!< @todo exclude all useful keyboard input elements e.g. contenteditable...
+	    {
+		console.log("tool is:",tool);
+		if (tool && tool.handleKeyPress(e || event)) {
+		    return true;
+		} else {
+		    return handleKeyPress(e || event);
 		}
-		else return true;
+	    } else
+		return true;
 	}
 	
 	/**
@@ -720,4 +444,56 @@ function Project( pid )
 	var show_textlabels = true;
 	
 	var icon_text_apply = document.getElementById( "icon_text_apply" );
+
+    /** The only actions that should be added to Project are those
+	that should be run regardless of the current tool, such as
+	actions that switch tools. */
+
+    var actions = [];
+
+    this.addAction = function ( action ) {
+	actions.push( action );
+    }
+
+    this.getActions = function () {
+	return actions;
+    }
+
+    /** FIXME: also add F1 to open the key shortcuts help?
+
+        FIXME: 1 is a bad shortcut to switch tool (1-5 should be used
+        for setting confidences instead) */
+
+    this.addAction( new Action({
+	helpText: "Switch to skeleton tracing mode",
+	buttonIDs: [ 'trace_button_skeleton' ],
+	keyShortcuts: {
+	    '1': [ 49 ]
+	},
+	run: function (e) {
+	    project.setTool( new TracingTool() );
+	    return false;
+	}
+    }) );
+
+    this.addAction( new Action({
+	helpText: "Switch to the next open stack (or the previous with Shift+Tab)",
+	keyShortcuts: {
+	    'Tab': [ 9 ]
+	},
+	run: function (e) {
+	    if (e.shiftKey) {
+		project.switchFocus(-1);
+	    } else {
+		project.switchFocus(1);
+	    }
+	    //e.stopPropagation();
+	    return false;
+	}
+    }) );
+
+    this.keyCodeToAction = getKeyCodeToActionMap(actions);
+
+    setButtonClicksFromActions(actions);
+
 }

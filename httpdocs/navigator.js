@@ -22,8 +22,8 @@ function Navigator()
 	if ( !ui ) ui = new UI();
 
 	var sliders_box = document.getElementById( "sliders_box" );
-	var input_x = document.getElementById( "x" );		//!< x_input
-	var input_y = document.getElementById( "y" );		//!< y_input
+	this.input_x = document.getElementById( "x" );		//!< x_input
+	this.input_y = document.getElementById( "y" );		//!< y_input
 
   // Last mouse position for proper zoom with + and -
   var lastX = 0,
@@ -33,7 +33,7 @@ function Navigator()
 	while ( sliders_box.firstChild )
 		sliders_box.removeChild( sliders_box.firstChild );
 	
-	var slider_z = new Slider(
+	this.slider_z = new Slider(
 			SLIDER_HORIZONTAL,
 			true,
 			1,
@@ -42,7 +42,7 @@ function Navigator()
 			1,
 			function( val ){ statusBar.replaceLast( "z: " + val ); return; } );
 	
-	var slider_s = new Slider(
+	this.slider_s = new Slider(
 			SLIDER_HORIZONTAL,
 			true,
 			undefined,
@@ -61,18 +61,18 @@ function Navigator()
 	slider_z_box.id = "slider_z_box";
 	var slider_z_box_label = document.createElement( "p" );
 	slider_z_box_label.appendChild( document.createTextNode( "z-index&nbsp;&nbsp;" ) );
-	slider_z_box.appendChild( slider_z.getView() );
-	slider_z_box.appendChild( slider_z.getInputView() );
+	slider_z_box.appendChild( self.slider_z.getView() );
+	slider_z_box.appendChild( self.slider_z.getInputView() );
 	
 	sliders_box.appendChild( slider_z_box );
 	
-	var slider_s_view = slider_s.getView();
+	var slider_s_view = self.slider_s.getView();
 	slider_s_view.id = "slider_s";
 	document.getElementById( "slider_s" ).parentNode.replaceChild(
 			slider_s_view,
 			document.getElementById( "slider_s" ) );
 	document.getElementById( "slider_s" ).parentNode.replaceChild(
-			slider_s.getInputView(),
+			self.slider_s.getInputView(),
 			slider_s_view.nextSibling );
 			
 	//! mouse catcher
@@ -86,11 +86,11 @@ function Navigator()
 	
 	var updateControls = function()
 	{
-		slider_s.setByValue( self.stack.s, true );
-		slider_z.setByValue( self.stack.z, true );
+		self.slider_s.setByValue( self.stack.s, true );
+		self.slider_z.setByValue( self.stack.z, true );
 
-		input_x.value = self.stack.x;
-		input_y.value = self.stack.y;
+		self.input_x.value = self.stack.x;
+		self.input_y.value = self.stack.y;
 		
 		return;
 	}
@@ -146,11 +146,11 @@ function Navigator()
 		{
 			if ( w > 0 )
 			{
-				slider_z.move( -1 );
+				self.slider_z.move( -1 );
 			}
 			else
 			{
-				slider_z.move( 1 );
+				self.slider_z.move( 1 );
 			}
 		}
 		return false;
@@ -165,11 +165,11 @@ function Navigator()
 			{
 				if ( w > 0 )
 				{
-					slider_z.move( -1 );
+					self.slider_z.move( -1 );
 				}
 				else
 				{
-					slider_z.move( 1 );
+					self.slider_z.move( 1 );
 				}
 			}
 			return false;
@@ -350,7 +350,7 @@ function Navigator()
 	    '+': [ 43, 107, 61, 187 ]
 	},
 	run: function (e) {
-	    slider_s.move(1);
+	    self.slider_s.move(1);
 	    return false;
 	}
     }) );
@@ -361,7 +361,7 @@ function Navigator()
 	    '-': [ 45, 109, 189 ]
 	},
 	run: function (e) {
-	    slider_s.move(-1);
+	    self.slider_s.move(-1);
 	    return false;
 	}
     }) );
@@ -372,7 +372,7 @@ function Navigator()
 	    ',': [ 44, 188 ]
 	},
 	run: function (e) {
-	    slider_z.move(-(e.shiftKey ? 10 : 1));
+	    self.slider_z.move(-(e.shiftKey ? 10 : 1));
 	    return false;
 	}
     }) );
@@ -383,7 +383,7 @@ function Navigator()
 	    '.': [ 46, 190 ]
 	},
 	run: function (e) {
-	    slider_z.move((e.shiftKey ? 10 : 1));
+	    self.slider_z.move((e.shiftKey ? 10 : 1));
 	    return false;
 	}
     }) );
@@ -394,8 +394,8 @@ function Navigator()
 	    "\u2190": [ arrowKeyCodes.left ]
 	},
 	run: function (e) {
-	    input_x.value = parseInt(input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-	    input_x.onchange(e);
+	    self.input_x.value = parseInt(self.input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+	    self.input_x.onchange(e);
 	    return false;
 	}
     }) );
@@ -406,8 +406,8 @@ function Navigator()
 	    "\u2192": [ arrowKeyCodes.right ],
 	},
 	run: function (e) {
-	    input_x.value = parseInt(input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-	    input_x.onchange(e);
+	    self.input_x.value = parseInt(self.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+	    self.input_x.onchange(e);
 	    return false;
 	}
     }) );
@@ -418,8 +418,8 @@ function Navigator()
 	    "\u2191": [ arrowKeyCodes.up ]
 	},
 	run: function (e) {
-	    input_y.value = parseInt(input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-	    input_y.onchange(e);
+	    self.input_y.value = parseInt(self.input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+	    self.input_y.onchange(e);
 	    return false;
 	}
     }) );
@@ -430,8 +430,8 @@ function Navigator()
 	    "\u2193": [ arrowKeyCodes.down ]
 	},
 	run: function (e) {
-	    input_y.value = parseInt(input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-	    input_y.onchange(e);
+	    self.input_y.value = parseInt(self.input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+	    self.input_y.onchange(e);
 	    return false;
 	}
     }) );
@@ -470,52 +470,52 @@ function Navigator()
 		
 		self.stack.getView().appendChild( self.mouseCatcher );
 
-		slider_s.update(
+		self.slider_s.update(
 			self.stack.MAX_S,
 			0,
 			self.stack.MAX_S + 1,
 			self.stack.s,
 			self.changeScaleDelayed );
 		
-		if ( self.stack.slices.length < 2 )	//!< hide the slider_z if there is only one slice
+		if ( self.stack.slices.length < 2 )	//!< hide the self.slider_z if there is only one slice
 		{
-			slider_z.getView().parentNode.style.display = "none";
+			self.slider_z.getView().parentNode.style.display = "none";
 		}
 		else
 		{
-			slider_z.getView().parentNode.style.display = "block";
+			self.slider_z.getView().parentNode.style.display = "block";
 		}
-		slider_z.update(
+		self.slider_z.update(
 			0,
 			0,
 			self.stack.slices,
 			self.stack.z,
 			self.changeSliceDelayed );
 		
-		input_x.onchange = changeXByInput;
+		self.input_x.onchange = changeXByInput;
 		try
 		{
-			input_x.addEventListener( "DOMMouseScroll", YXMouseWheel, false );
+			self.input_x.addEventListener( "DOMMouseScroll", YXMouseWheel, false );
 		}
 		catch ( error )
 		{
 			try
 			{
-				input_x.onmousewheel = YXMouseWheel;
+				self.input_x.onmousewheel = YXMouseWheel;
 			}
 			catch ( error ) {}
 		}
 		
-		input_y.onchange = changeYByInput;
+		self.input_y.onchange = changeYByInput;
 		try
 		{
-			input_y.addEventListener( "DOMMouseScroll", YXMouseWheel, false );
+			self.input_y.addEventListener( "DOMMouseScroll", YXMouseWheel, false );
 		}
 		catch ( error )
 		{
 			try
 			{
-				input_x.onmousewheel = YXMouseWheel;
+				self.input_x.onmousewheel = YXMouseWheel;
 			}
 			catch ( error ) {}
 		}
@@ -548,44 +548,44 @@ function Navigator()
 		document.getElementById( typeof buttonName == "undefined" ? "edit_button_move" : buttonName ).className = "button";
 		document.getElementById( "toolbar_nav" ).style.display = "none";
 		
-		slider_s.update(
+		self.slider_s.update(
 			0,
 			1,
 			undefined,
 			0,
 			null );
 		
-		slider_z.update(
+		self.slider_z.update(
 			0,
 			1,
 			undefined,
 			0,
 			null );
 		
-		input_x.onchange = null;
+		self.input_x.onchange = null;
 		try
 		{
-			input_x.removeEventListener( "DOMMouseScroll", YXMouseWheel, false );
+			self.input_x.removeEventListener( "DOMMouseScroll", YXMouseWheel, false );
 		}
 		catch ( error )
 		{
 			try
 			{
-				input_x.onmousewheel = null;
+				self.input_x.onmousewheel = null;
 			}
 			catch ( error ) {}
 		}
 		
-		input_y.onchange = null;
+		self.input_y.onchange = null;
 		try
 		{
-			input_y.removeEventListener( "DOMMouseScroll", YXMouseWheel, false );
+			self.input_y.removeEventListener( "DOMMouseScroll", YXMouseWheel, false );
 		}
 		catch ( error )
 		{
 			try
 			{
-				input_x.onmousewheel = null;
+				self.input_x.onmousewheel = null;
 			}
 			catch ( error ) {}
 		}

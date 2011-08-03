@@ -238,7 +238,7 @@ function TracingTool()
 	    '+': [ 43, 107, 61, 187 ]
 	},
 	run: function (e) {
-	    slider_s.move(1);
+	    self.prototype.slider_s.move(1);
 	    return false;
 	}
     }) );
@@ -249,7 +249,7 @@ function TracingTool()
 	    '-': [ 45, 109, 189 ]
 	},
 	run: function (e) {
-	    slider_s.move(-1);
+	    self.prototype.slider_s.move(-1);
 	    return false;
 	}
     }) );
@@ -260,7 +260,7 @@ function TracingTool()
 	    ',': [ 44, 188 ]
 	},
 	run: function (e) {
-	    slider_z.move(-(e.shiftKey ? 10 : 1));
+	    self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
 	    return false;
 	}
     }) );
@@ -271,7 +271,7 @@ function TracingTool()
 	    '.': [ 46, 190 ]
 	},
 	run: function (e) {
-	    slider_z.move((e.shiftKey ? 10 : 1));
+	    self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
 	    return false;
 	}
     }) );
@@ -282,8 +282,8 @@ function TracingTool()
 	    "\u2190": [ arrowKeyCodes.left ]
 	},
 	run: function (e) {
-	    input_x.value = parseInt(input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-	    input_x.onchange(e);
+	    self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+	    self.prototype.input_x.onchange(e);
 	    return false;
 	}
     }) );
@@ -294,8 +294,8 @@ function TracingTool()
 	    "\u2192": [ arrowKeyCodes.right ],
 	},
 	run: function (e) {
-	    input_x.value = parseInt(input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-	    input_x.onchange(e);
+	    self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+	    self.prototype.input_x.onchange(e);
 	    return false;
 	}
     }) );
@@ -306,8 +306,8 @@ function TracingTool()
 	    "\u2191": [ arrowKeyCodes.up ]
 	},
 	run: function (e) {
-	    input_y.value = parseInt(input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-	    input_y.onchange(e);
+	    self.prototype.input_y.value = parseInt(self.prototype.input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+	    self.prototype.input_y.onchange(e);
 	    return false;
 	}
     }) );
@@ -318,8 +318,8 @@ function TracingTool()
 	    "\u2193": [ arrowKeyCodes.down ]
 	},
 	run: function (e) {
-	    input_y.value = parseInt(input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-	    input_y.onchange(e);
+	    self.prototype.input_y.value = parseInt(self.prototype.input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+	    self.prototype.input_y.onchange(e);
 	    return false;
 	}
     }) );

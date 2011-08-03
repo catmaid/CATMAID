@@ -399,7 +399,7 @@ function Project( pid )
 		if (tool && tool.handleKeyPress(e || event)) {
 		    return false;
 		} else {
-		    projectKeyPress = handleKeyPress(e || event);
+		    projectKeyPress = self.handleKeyPress(e || event);
 		    return ! projectKeyPress;
 		}
 	    } else

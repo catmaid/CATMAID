@@ -440,6 +440,8 @@ function Navigator()
 	}
     }) );
 
+    var keyCodeToAction = getKeyCodeToActionMap(actions);
+
     setButtonClicksFromActions(actions);
 
 	/**

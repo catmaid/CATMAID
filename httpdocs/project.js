@@ -492,7 +492,7 @@ function Project( pid )
 	}
     }) );
 
-    this.keyCodeToAction = getKeyCodeToActionMap(actions);
+    var keyCodeToAction = getKeyCodeToActionMap(actions);
 
     setButtonClicksFromActions(actions);
 

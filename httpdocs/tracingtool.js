@@ -447,13 +447,15 @@ function TracingTool()
 	}
     }) );
 
+    var keyCodeToAction = getKeyCodeToActionMap(actions);
+
     setButtonClicksFromActions(actions);
 
     /** This function should return true if there was any action
         linked to the key code, or false otherwise. */
 
-    var handleKeyPress = function( e ) {
-        keyAction = self.keyCodeToAction[key];
+    this.handleKeyPress = function( e ) {
+        var keyAction = keyCodeToAction[e.keyCode];
         if (keyAction) {
 	    keyAction.run(e || event);
 	    return true;

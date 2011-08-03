@@ -11,14 +11,6 @@
 /**
  */
 
-/* Define any new keybindings here.
-
-   There's a helpful page with the different key codes for different
-   browsers here:
-
-     http://unixpapa.com/js/key.html
- */
-
 /**
  * A TrakEM2 Web project.
  *
@@ -356,8 +348,8 @@ function Project( pid )
     /** This function should return true if there was any action
         linked to the key code, or false otherwise. */
 
-    var handleKeyPress = function( e ) {
-        keyAction = self.keyCodeToAction[key];
+    this.handleKeyPress = function( e ) {
+        var keyAction = keyCodeToAction[e.keyCode];
         if (keyAction) {
 	    keyAction.run(e || event);
 	    return true;
@@ -368,6 +360,7 @@ function Project( pid )
 
 	var onkeydown = function( e )
 	{
+	    var projectKeyPress;
 		var key;
 		var target;
 		var shift;
@@ -379,6 +372,7 @@ function Project( pid )
 			if ( e.keyCode ) key = e.keyCode;
 			else if ( e.charCode ) key = e.charCode;
 			else key = e.which;
+		    e.keyCode = key;
 			target = e.target;
 			shift = e.shiftKey;
 			alt = e.altKey;
@@ -396,15 +390,17 @@ function Project( pid )
 	    var fromATextField = false;
 	    if (n == "input") {
 		var inputType = target.type.toLowerCase();
-		if (inputType == "text" || inputType == "password") fromATextField = true;
+		if (inputType == "text" || inputType == "password") {
+		    fromATextField = true;
+		}
 	    }
 	    if (!(fromATextField || n == "textarea" || n == "area")) //!< @todo exclude all useful keyboard input elements e.g. contenteditable...
 	    {
-		console.log("tool is:",tool);
 		if (tool && tool.handleKeyPress(e || event)) {
-		    return true;
+		    return false;
 		} else {
-		    return handleKeyPress(e || event);
+		    projectKeyPress = handleKeyPress(e || event);
+		    return ! projectKeyPress;
 		}
 	    } else
 		return true;

@@ -331,7 +331,15 @@ function TracingTool()
 	    "A": [ 65 ]
 	},
 	run: function (e) {
-	    project.tracingCommand('goactive');
+	    var atn = SkeletonAnnotations.getActiveNode();
+	    if (atn != null) {
+		project.moveTo(
+		    tracingLayer.svgOverlay.pix2physZ(atn.z),
+		    tracingLayer.svgOverlay.pix2physY(atn.y),
+		    tracingLayer.svgOverlay.pix2physX(atn.x));
+	    } else {
+		alert("No active node to go to!");
+	    }
 	    return false;
 	}
     }) );

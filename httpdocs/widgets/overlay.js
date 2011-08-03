@@ -73,6 +73,10 @@ var SkeletonAnnotations = new function()
 
   var atn_fillcolor = "rgb(0, 255, 0)";
 
+  this.getActiveNode = function() {
+    return atn;
+  }
+
   this.getActiveNodeId = function() {
     return atn.id;
   };

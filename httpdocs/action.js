@@ -37,6 +37,10 @@ function Action (properties) {
 	return buttonIDs;
     }
 
+    this.getHelpText = function( ) {
+	return helpText;
+    }
+
     /**
        Add an array of button IDs, for example:
          action.addButtonIDs(['trace_button_togglelabels')

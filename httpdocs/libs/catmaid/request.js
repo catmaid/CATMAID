@@ -122,8 +122,8 @@ var requestQueue = function()
     if ( queue[ 0 ].method == "POST" )
     {
       xmlHttp.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
-      xmlHttp.setRequestHeader( "Content-length", queue[ 0 ].data.length );
-      xmlHttp.setRequestHeader( "Connection", "close" );
+      // xmlHttp.setRequestHeader( "Content-length", queue[ 0 ].data.length );
+      // xmlHttp.setRequestHeader( "Connection", "close" );
     }
     xmlHttp.onreadystatechange = callback;
     xmlHttp.send( queue[ 0 ].data );

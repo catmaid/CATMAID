@@ -112,15 +112,15 @@ function setButtonClicksFromActions(actions) {
     var i, j, buttonIDs, buttonID;
     for (i = 0; i < actions.length; ++i) {
 	action = actions[i];
-	buttonIDs = actions.getButtonIDs();
+	buttonIDs = action.getButtonIDs();
 	for(j = 0; j < buttonIDs.length; ++j ) {
 	    buttonID = buttonIDs[j];
 	    var link = $('#' + buttonID);
 	    link.attr('href', 'foo');
-	    link.click(o.run);
+	    link.click(action.run);
 	    var img = link.find('img');
-	    img.attr('alt', o.helpText);
-	    var title = i + ': ' + o.helpText;
+	    img.attr('alt', action.getHelpText());
+	    var title = i + ': ' + action.getHelpText();
 	    img.attr('title', title);
 	}
     }

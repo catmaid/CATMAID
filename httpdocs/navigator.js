@@ -351,7 +351,6 @@ function Navigator()
 	},
 	run: function (e) {
 	    slider_s.move(1);
-	    slider_trace_s.move(1);
 	    return false;
 	}
     }) );
@@ -363,7 +362,6 @@ function Navigator()
 	},
 	run: function (e) {
 	    slider_s.move(-1);
-	    slider_trace_s.move(-1);
 	    return false;
 	}
     }) );
@@ -375,7 +373,6 @@ function Navigator()
 	},
 	run: function (e) {
 	    slider_z.move(-(e.shiftKey ? 10 : 1));
-	    slider_trace_z.move(-(e.shiftKey ? 10 : 1));
 	    return false;
 	}
     }) );
@@ -387,7 +384,6 @@ function Navigator()
 	},
 	run: function (e) {
 	    slider_z.move((e.shiftKey ? 10 : 1));
-	    slider_trace_z.move((e.shiftKey ? 10 : 1));
 	    return false;
 	}
     }) );

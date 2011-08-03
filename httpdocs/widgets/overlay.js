@@ -57,7 +57,7 @@ var SkeletonAnnotations = new function()
         atn.id = node.id;
         atn.skeleton_id = node.skeleton_id;
         atn.type = node.type;
-        atn.z = node.x;
+        atn.x = node.x;
         atn.y = node.y;
         atn.z = node.z;
       } else {

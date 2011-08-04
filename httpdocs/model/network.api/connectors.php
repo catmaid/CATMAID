@@ -20,26 +20,26 @@ $skid = isset( $_REQUEST[ 'skid' ] ) ? intval( $_REQUEST[ 'skid' ] ) : -1;
 
 # 1. There must be a skeleton id
 if ( ! $skid ) {
-	echo json_encode( array( 'error' => 'A skeleton id has not been provided!' ) );
-	return;
+  echo json_encode( array( 'error' => 'A skeleton id has not been provided!' ) );
+  return;
 }
 
 # 2. There must be a project id
 if ( ! $pid ) {
   echo json_encode( array( 'error' => 'Project closed. Cannot apply operation.' ) );
-	return;
+  return;
 }
 
 # 3. There must be a user id
 if ( ! $uid ) {
     echo json_encode( array( 'error' => 'You are not logged in.' ) );
-	return;
+  return;
 }
 
 # Start transaction
 if (! $db->begin() ) {
-	echo json_encode( array( 'error' => 'Could not start transaction.' ) );
-	return;
+  echo json_encode( array( 'error' => 'Could not start transaction.' ) );
+  return;
 }
 
 try {
@@ -60,7 +60,7 @@ try {
 
   # Select all connector that are pre- or postsynaptic to treenodes in skeleton with ID $skid
   $q = $db->getResult(
-    'SELECT	"tc"."connector_id" AS "id",
+    'SELECT  "tc"."connector_id" AS "id",
             "tc"."user_id" AS "user_id",
             "tc"."relation_id",
             "tci"."treenode_id" AS "node_id",
@@ -144,13 +144,13 @@ try {
   }
 
   if (! $db->commit() ) {
-		emitErrorAndExit( $db, 'Failed to commit!' );
-	}
+    emitErrorAndExit( $db, 'Failed to commit!' );
+  }
 
   echo json_encode( array( 'presynaptic' => $pre, 'postsynaptic' => $post) );
 
 } catch (Exception $e) {
-	emitErrorAndExit( $db, 'ERROR: '.$e );
+  emitErrorAndExit( $db, 'ERROR: '.$e );
 }
 
 ?>

@@ -364,6 +364,20 @@ function TracingTool()
       "P": [ 80 ]
     },
     run: function (e) {
+      var atn = SkeletonAnnotations.getActiveNode();
+      if (atn != null) {
+        if (atn.parent != null) {
+          project.moveTo(
+            tracingLayer.svgOverlay.pix2physZ(atn.parent.z),
+            tracingLayer.svgOverlay.pix2physY(atn.parent.y),
+            tracingLayer.svgOverlay.pix2physX(atn.parent.x));
+          window.setTimeout("project.selectNode( " + atn.parent.id + " )", 1000);
+        } else {
+          alert("This is the root node.");
+        }
+      } else {
+        alert("No active node selected.");
+      }
       project.tracingCommand('goparent');
       return false;
     }

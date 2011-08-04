@@ -33,7 +33,7 @@ function Action (properties) {
   }
 
   this.getKeys = function( ) {
-    return keyShortcuts
+    return keyShortcuts;
   }
 
   this.getButtonIDs = function( ) {

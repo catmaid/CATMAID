@@ -353,7 +353,7 @@ function TracingTool()
       "M": [ 77 ]
     },
     run: function (e) {
-      activateNode(null);
+      tracingLayer.svgOverlay.activateNode(null);
       return false;
     }
   }) );

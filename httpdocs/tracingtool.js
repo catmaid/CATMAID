@@ -1,3 +1,6 @@
+/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
+/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
+
 /**
  * tracingtool.js
  *
@@ -214,5 +217,284 @@ function TracingTool()
     }
     return true;
   };
-}
 
+  var actions = [];
+
+  this.addAction = function ( action ) {
+    actions.push( action );
+  }
+
+  this.getActions = function () {
+    return actions;
+  }
+
+  var arrowKeyCodes = {
+    left: 37,
+    up: 38,
+    right: 39,
+    down: 40
+  };
+
+  this.addAction( new Action({
+    helpText: "Zoom in",
+    keyShortcuts: {
+      '+': [ 43, 107, 61, 187 ]
+    },
+    run: function (e) {
+      self.prototype.slider_s.move(1);
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Zoom out",
+    keyShortcuts: {
+      '-': [ 45, 109, 189 ]
+    },
+    run: function (e) {
+      self.prototype.slider_s.move(-1);
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Move up 1 slice in z (or 10 with Shift held)",
+    keyShortcuts: {
+      ',': [ 44, 188 ]
+    },
+    run: function (e) {
+      self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Move down 1 slice in z (or 10 with Shift held)",
+    keyShortcuts: {
+      '.': [ 46, 190 ]
+    },
+    run: function (e) {
+      self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Move left (towards negative x)",
+    keyShortcuts: {
+      "\u2190": [ arrowKeyCodes.left ]
+    },
+    run: function (e) {
+      self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+      self.prototype.input_x.onchange(e);
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Move right (towards positive x)",
+    keyShortcuts: {
+      "\u2192": [ arrowKeyCodes.right ],
+    },
+    run: function (e) {
+      self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+      self.prototype.input_x.onchange(e);
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Move up (towards negative y)",
+    keyShortcuts: {
+      "\u2191": [ arrowKeyCodes.up ]
+    },
+    run: function (e) {
+      self.prototype.input_y.value = parseInt(self.prototype.input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+      self.prototype.input_y.onchange(e);
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Move down (towards positive y)",
+    keyShortcuts: {
+      "\u2193": [ arrowKeyCodes.down ]
+    },
+    run: function (e) {
+      self.prototype.input_y.value = parseInt(self.prototype.input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+      self.prototype.input_y.onchange(e);
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Go to active node",
+    buttonID: [ 'trace_button_goactive' ],
+    keyShortcuts: {
+      "A": [ 65 ]
+    },
+    run: function (e) {
+      var atn = SkeletonAnnotations.getActiveNode();
+      if (atn.id !== null) {
+	project.moveTo(
+	  tracingLayer.svgOverlay.pix2physZ(atn.z),
+	  tracingLayer.svgOverlay.pix2physY(atn.y),
+	  tracingLayer.svgOverlay.pix2physX(atn.x));
+      } else {
+	alert("No active node to go to!");
+      }
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Deselect the active node",
+    keyShortcuts:  {
+      "M": [ 77 ]
+    },
+    run: function (e) {
+      tracingLayer.svgOverlay.activateNode(null);
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Go to the parent of the active node (?)",
+    keyShortcuts: {
+      "P": [ 80 ]
+    },
+    run: function (e) {
+      var atn = SkeletonAnnotations.getActiveNode();
+      if (atn.id !== null) {
+        if (atn.parent !== null) {
+          project.moveTo(
+            tracingLayer.svgOverlay.pix2physZ(atn.parent.z),
+            tracingLayer.svgOverlay.pix2physY(atn.parent.y),
+            tracingLayer.svgOverlay.pix2physX(atn.parent.x));
+          window.setTimeout("project.selectNode( " + atn.parent.id + " )", 1000);
+        } else {
+          alert("This is the root node.");
+        }
+      } else {
+        alert("No active node selected.");
+      }
+      project.tracingCommand('goparent');
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Go to last edited node in this skeleton",
+    keyShortcuts: {
+      "E": [ 69 ]
+    },
+    run: function (e) {
+      project.tracingCommand('golastedited');
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Split this skeleton at the active node",
+    buttonID: [ 'trace_button_skelsplitting' ],
+    keyShortcuts: {
+      "5": [ 53 ]
+    },
+    run: function (e) {
+      project.tracingCommand('skeletonsplitting');
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Re-root this skeleton at the active node",
+    buttonID: [ 'trace_button_skelrerooting' ],
+    keyShortcuts: {
+      "6": [ 54 ]
+    },
+    run: function (e) {
+      project.tracingCommand('skeletonreroot');
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Toggle the display of labels",
+    buttonID: [ 'trace_button_togglelabels' ],
+    keyShortcuts: {
+      "7": [ 55 ]
+    },
+    run: function (e) {
+      project.tracingCommand('togglelabels');
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Export to SWC",
+    buttonID: [ 'trace_button_exportswc' ],
+    keyShortcuts: {
+      "S": [ 83 ]
+    },
+    run: function (e) {
+      project.tracingCommand('exportswc');
+      return false;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Tag the active node",
+    keyShortcuts: {
+      "T": [ 84 ]
+    },
+    run: function (e) {
+      if (!(e.ctrlKey || e.metaKey)) {
+	project.tracingCommand('tagging');
+      }
+      return true;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Select the nearest node to the mouse cursor",
+    keyShortcuts: {
+      "G": [ 71 ]
+    },
+    run: function (e) {
+      if (!(e.ctrlKey || e.metaKey)) {
+	project.activateNearestNode();
+      }
+      return true;
+    }
+  }) );
+
+  var keyCodeToAction = getKeyCodeToActionMap(actions);
+
+  setButtonClicksFromActions(actions);
+
+  /** This function should return true if there was any action
+      linked to the key code, or false otherwise. */
+
+  this.handleKeyPress = function( e ) {
+    var keyAction = keyCodeToAction[e.keyCode];
+    if (keyAction) {
+      keyAction.run(e || event);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  this.getMouseHelp = function( e ) {
+    var result = '<p>';
+    result += '<strong>click on a node:</strong> make that node active<br />'
+    result += '<strong>ctrl-click in space:</strong> deselect the active node<br />';
+    result += '<strong>ctrl-shift-click on a node:</strong> delete that node<br />';
+    result += '<strong>shift-click in space:</strong> create a synapse (if there was an active treenode)<br />';
+    result += '<strong>shift-click in space:</strong> create a post-synaptic node (if there was an active synapse)<br />';
+    result += '<strong>shift-click on a treenode:</strong> join two skeletons (if there was an active treenode)<br />';
+    result += '</p>';
+    return result;
+  }
+
+}

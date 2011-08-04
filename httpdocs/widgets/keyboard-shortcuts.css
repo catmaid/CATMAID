@@ -1,0 +1,24 @@
+/* Taken from: http://meta.stackoverflow.com/questions/1939/kbd-elements-are-way-intrusive/2049#2049 */
+
+/*
+kbd {
+      background:#EEEEEE none repeat scroll 0 0;
+      border-color:#CCCCCC #AAAAAA #888888 #BBBBBB;
+      border-style:solid;
+      border-width:1px 1px 2px 2px;
+      color:#000000;
+      padding:2px 1px;
+      margin: 5px;
+      line-height: 300%;
+      font-size: larger;
+}
+*/
+
+kbd {
+      font-size:larger;
+}
+
+#keyboard-shortcuts-window {
+      padding-left: 10px;
+      line-height: 150%;
+}

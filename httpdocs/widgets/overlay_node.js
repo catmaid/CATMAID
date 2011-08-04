@@ -33,6 +33,14 @@ var SkeletonElements = new function()
     nextConnectorIndex = 0;
   };
 
+  this.clearCache = function() {
+    nodePool = [];
+    connectorPool = [];
+    nextNodeIndex = 0;
+    nextConnectorIndex = 0;
+    firstDisabledNodeIndex = -1;
+  }
+
   /** Disable all cached Node instances at or beyond the cutoff index. */
   this.disableBeyond = function(nodeCuttoff, connectorCuttoff) {
     var i;
@@ -103,7 +111,7 @@ var SkeletonElements = new function()
     this.fillcolor = inactive_skeleton_color;
     this.c = null; // The Raphael circle for drawing
     this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
-    this.line = is_root_node ? null : paper.path(); // The Raphael line element that represents an edge between nodes
+    this.line = paper.path(); // The Raphael line element that represents an edge between nodes
 
     // The member functions:
     this.setXY = setXY;

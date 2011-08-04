@@ -58,7 +58,7 @@ var SkeletonAnnotations = new function()
         atn.id = node.id;
         atn.skeleton_id = node.skeleton_id;
         atn.type = node.type;
-        atn.z = node.x;
+        atn.x = node.x;
         atn.y = node.y;
         atn.z = node.z;
         atn.parent = node.parent;
@@ -73,6 +73,10 @@ var SkeletonAnnotations = new function()
   };
 
   var atn_fillcolor = "rgb(0, 255, 0)";
+
+  this.getActiveNode = function() {
+    return atn;
+  }
 
   this.getActiveNodeId = function() {
     return atn.id;
@@ -138,6 +142,8 @@ var SkeletonAnnotations = new function()
     var nodes = {};
     var labels = {};
     var show_labels = false;
+
+    SkeletonElements.clearCache();
 
     // Register instance: only one per stack allowed
     SVGOverlays[stack] = this;

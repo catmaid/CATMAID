@@ -745,9 +745,6 @@ var init = function()
 	
 	window.onresize();
 
-	// TODO needs update
-	setButtons();
-	
 	return;
 }
 

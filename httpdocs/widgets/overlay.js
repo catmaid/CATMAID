@@ -143,6 +143,8 @@ var SkeletonAnnotations = new function()
     var labels = {};
     var show_labels = false;
 
+    SkeletonElements.clearCache();
+
     // Register instance: only one per stack allowed
     SVGOverlays[stack] = this;
 

@@ -33,6 +33,14 @@ var SkeletonElements = new function()
     nextConnectorIndex = 0;
   };
 
+  this.clearCache = function() {
+    nodePool = [];
+    connectorPool = [];
+    nextNodeIndex = 0;
+    nextConnectorIndex = 0;
+    firstDisabledNodeIndex = -1;
+  }
+
   /** Disable all cached Node instances at or beyond the cutoff index. */
   this.disableBeyond = function(nodeCuttoff, connectorCuttoff) {
     var i;

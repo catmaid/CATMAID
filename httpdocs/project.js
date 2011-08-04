@@ -26,6 +26,11 @@ var arrowKeyCodes = {
   down: 40
 };
 
+// TODO big assumption below: that there is only one SVGOverlay instance.
+// So instead the function should look for the active window in the window manager,
+// figure out if it contains a tracing layer, and if so, call the function on its svgoverlay
+// by altering the meaning of the word 'this' to point to the SVGOverlay instance. Below, 'this' should replace 'project' everywhere.
+
 var stringToKeyAction = {
   "A": {
     helpText: "Go to active node",

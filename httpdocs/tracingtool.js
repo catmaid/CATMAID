@@ -468,4 +468,16 @@ function TracingTool()
 	}
     }
 
+    this.getMouseHelp = function( e ) {
+	var result = '<p>';
+	result += '<strong>click on a node:</strong> make that node active<br />'
+        result += '<strong>ctrl-click in space:</strong> deselect the active node<br />';
+        result += '<strong>ctrl-shift-click on a node:</strong> delete that node<br />';
+        result += '<strong>shift-click in space:</strong> create a synapse (if there was an active treenode)<br />';
+        result += '<strong>shift-click in space:</strong> create a post-synaptic node (if there was an active synapse)<br />';
+        result += '<strong>shift-click on a treenode:</strong> join two skeletons (if there was an active treenode)<br />';
+        result += '</p>';
+	return result;
+    }
+
 }

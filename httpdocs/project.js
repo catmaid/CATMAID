@@ -158,12 +158,14 @@ function Project( pid )
 			self.focusedStack.getWindow().focus();
 
 		window.onresize();
+		WindowMaker.setKeyShortcuts();
 		return;
 	}
 
-    this.getTool = function( ) {
-	return tool;
-    }
+	this.getTool = function( )
+	{
+		return tool;
+	}
 	
 	this.toggleShow = function( m )
 	{

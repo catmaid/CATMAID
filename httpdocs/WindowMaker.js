@@ -4,6 +4,7 @@ var WindowMaker = new function()
   /** The table of window names versus their open instances..
    * Only windows that are open are stored. */
   var windows = {};
+  var self = this;
 
   var createContainer = function(id) {
     var container = document.createElement("div");
@@ -224,24 +225,70 @@ var WindowMaker = new function()
 
     return win;
   };
-  
+
+  var getHelpForActions = function(actions)
+  {
+    var action, keys, i, k, result = '';
+    for( i = 0; i < actions.length; ++i ) {
+      action = actions[i];
+      keys = action.getKeys();
+      for( k in keys ) {
+	result += '<kbd>' + k + '</kbd> ' + action.getHelpText() + "<br />";
+      }
+    }
+    return result;
+  }
+
+  this.setKeyShortcuts = function(win)
+  {
+    var actions, action, i, tool, content, container;
+
+    // If a window hasn't been passed in, look it up.
+    if (typeof win == 'undefined') {
+      win = windows['keyboard-shortcuts'];
+      if (!win) {
+	return;
+      }
+    }
+
+    content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    container = document.getElementById("keyboard-shortcuts-window");
+    if (!container) {
+      container = createContainer("keyboard-shortcuts-window");
+      content.appendChild( container );
+    }
+
+    keysHTML = '<p id="keyShortcutsText">';
+    keysHTML += '<h4>Global Key Help</h4>';
+
+    actions = project.getActions();
+    keysHTML += getHelpForActions(actions);
+
+    tool = project.getTool();
+    if (tool) {
+
+      if (tool.hasOwnProperty('getMouseHelp')) {
+	keysHTML += '<h4>Tool-specific Mouse Help</h4>';
+	keysHTML += tool.getMouseHelp();
+      }
+
+      if (tool.hasOwnProperty('getActions')) {
+	keysHTML += '<h4>Tool-specific Key Help</h4>';
+	keysHTML += getHelpForActions(tool.getActions());
+      }
+    }
+    keysHTML += '</p>';
+
+    container.innerHTML = keysHTML;
+    return container;
+  }
+
   var createKeyboardShortcutsWindow = function()
   {
     var win = new CMWWindow( "Keyboard Shortcuts" );
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var container = createContainer( "keyboard-shortcuts-window" );
-    content.appendChild( container );
-    
-    var list = document.createElement( "p" );
-    list.id = "keyShortcutsText";
-    var keysHTML = '';
-    for (i in stringToKeyAction) {
-      keysHTML += '<button style="width:3em; margin-right:1em">' + i + '</button>' + stringToKeyAction[i].helpText + "<br />";
-    }
-    list.innerHTML = keysHTML;
-    container.appendChild( list );
+    var container = self.setKeyShortcuts(win);
 
     addListener(win, container);
 

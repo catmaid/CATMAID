@@ -347,34 +347,34 @@ function Project( pid )
 		return;
 	}
 
-    /** This function should return true if there was any action
-        linked to the key code, or false otherwise. */
+	/** This function should return true if there was any action
+		linked to the key code, or false otherwise. */
 
-    this.handleKeyPress = function( e ) {
-        var keyAction = keyCodeToAction[e.keyCode];
-        if (keyAction) {
-	    keyAction.run(e || event);
-	    return true;
-	} else {
-            return false;
+	this.handleKeyPress = function( e ) {
+		var keyAction = keyCodeToAction[e.keyCode];
+		if (keyAction) {
+			keyAction.run(e || event);
+			return true;
+		} else {
+			return false;
+		}
 	}
-    }
 
 	var onkeydown = function( e )
 	{
-	    var projectKeyPress;
+		var projectKeyPress;
 		var key;
 		var target;
 		var shift;
 		var alt;
 		var ctrl;
-	    var keyAction;
+		var keyAction;
 		if ( e )
 		{
 			if ( e.keyCode ) key = e.keyCode;
 			else if ( e.charCode ) key = e.charCode;
 			else key = e.which;
-		    e.keyCode = key;
+			e.keyCode = key;
 			target = e.target;
 			shift = e.shiftKey;
 			alt = e.altKey;
@@ -389,23 +389,24 @@ function Project( pid )
 			ctrl = event.ctrlKey;
 		}
 		var n = target.nodeName.toLowerCase();
-	    var fromATextField = false;
-	    if (n == "input") {
-		var inputType = target.type.toLowerCase();
-		if (inputType == "text" || inputType == "password") {
-		    fromATextField = true;
+		var fromATextField = false;
+		if (n == "input") {
+			var inputType = target.type.toLowerCase();
+			if (inputType == "text" || inputType == "password") {
+				fromATextField = true;
+			}
 		}
-	    }
-	    if (!(fromATextField || n == "textarea" || n == "area")) //!< @todo exclude all useful keyboard input elements e.g. contenteditable...
-	    {
-		if (tool && tool.handleKeyPress(e || event)) {
-		    return false;
+		if (!(fromATextField || n == "textarea" || n == "area")) //!< @todo exclude all useful keyboard input elements e.g. contenteditable...
+		{
+			if (tool && tool.handleKeyPress(e || event)) {
+				return false;
+			} else {
+				projectKeyPress = self.handleKeyPress(e || event);
+				return ! projectKeyPress;
+			}
 		} else {
-		    projectKeyPress = self.handleKeyPress(e || event);
-		    return ! projectKeyPress;
+			return true;
 		}
-	    } else
-		return true;
 	}
 	
 	/**
@@ -443,55 +444,55 @@ function Project( pid )
 	
 	var icon_text_apply = document.getElementById( "icon_text_apply" );
 
-    /** The only actions that should be added to Project are those
-	that should be run regardless of the current tool, such as
-	actions that switch tools. */
+	/** The only actions that should be added to Project are those
+	    that should be run regardless of the current tool, such as
+	    actions that switch tools. */
 
-    var actions = [];
+	var actions = [];
 
-    this.addAction = function ( action ) {
-	actions.push( action );
-    }
-
-    this.getActions = function () {
-	return actions;
-    }
-
-    /** FIXME: also add F1 to open the key shortcuts help?
-
-        FIXME: 1 is a bad shortcut to switch tool (1-5 should be used
-        for setting confidences instead) */
-
-    this.addAction( new Action({
-	helpText: "Switch to skeleton tracing mode",
-	buttonIDs: [ 'trace_button_skeleton' ],
-	keyShortcuts: {
-	    '1': [ 49 ]
-	},
-	run: function (e) {
-	    project.setTool( new TracingTool() );
-	    return false;
+	this.addAction = function ( action ) {
+		actions.push( action );
 	}
-    }) );
 
-    this.addAction( new Action({
-	helpText: "Switch to the next open stack (or the previous with Shift+Tab)",
-	keyShortcuts: {
-	    'Tab': [ 9 ]
-	},
-	run: function (e) {
-	    if (e.shiftKey) {
-		project.switchFocus(-1);
-	    } else {
-		project.switchFocus(1);
-	    }
-	    //e.stopPropagation();
-	    return false;
+	this.getActions = function () {
+		return actions;
 	}
-    }) );
 
-    var keyCodeToAction = getKeyCodeToActionMap(actions);
+	/** FIXME: also add F1 to open the key shortcuts help?
 
-    setButtonClicksFromActions(actions);
+	    FIXME: 1 is a bad shortcut to switch tool (1-5 should be used
+	    for setting confidences instead) */
+
+	this.addAction( new Action({
+		helpText: "Switch to skeleton tracing mode",
+		buttonIDs: [ 'trace_button_skeleton' ],
+		keyShortcuts: {
+			'1': [ 49 ]
+		},
+		run: function (e) {
+			project.setTool( new TracingTool() );
+			return false;
+		}
+	}) );
+
+	this.addAction( new Action({
+		helpText: "Switch to the next open stack (or the previous with Shift+Tab)",
+		keyShortcuts: {
+			'Tab': [ 9 ]
+		},
+		run: function (e) {
+			if (e.shiftKey) {
+				project.switchFocus(-1);
+			} else {
+				project.switchFocus(1);
+			}
+			//e.stopPropagation();
+			return false;
+		}
+	}) );
+
+	var keyCodeToAction = getKeyCodeToActionMap(actions);
+
+	setButtonClicksFromActions(actions);
 
 }

@@ -335,7 +335,7 @@ function TracingTool()
     },
     run: function (e) {
       var atn = SkeletonAnnotations.getActiveNode();
-      if (atn != null) {
+      if (atn.id !== null) {
 	project.moveTo(
 	  tracingLayer.svgOverlay.pix2physZ(atn.z),
 	  tracingLayer.svgOverlay.pix2physY(atn.y),

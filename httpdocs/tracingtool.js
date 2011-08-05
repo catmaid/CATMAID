@@ -372,6 +372,7 @@ function TracingTool()
             tracingLayer.svgOverlay.pix2physZ(atn.parent.z),
             tracingLayer.svgOverlay.pix2physY(atn.parent.y),
             tracingLayer.svgOverlay.pix2physX(atn.parent.x));
+          self.prototype.updateControls();
           window.setTimeout("project.selectNode( " + atn.parent.id + " )", 1000);
         } else {
           alert("This is the root node.");

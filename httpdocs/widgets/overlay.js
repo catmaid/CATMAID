@@ -52,6 +52,7 @@ var SkeletonAnnotations = new function()
     x: null,
     y: null,
     z: null,
+    parent: null,
     set: function(node) {
       if (node) {
         atn.id = node.id;
@@ -60,13 +61,13 @@ var SkeletonAnnotations = new function()
         atn.x = node.x;
         atn.y = node.y;
         atn.z = node.z;
+        atn.parent = node.parent;
       } else {
-        atn.id = null;
-        atn.type = null;
-        atn.skeleton_id = null;
-        atn.x = null;
-        atn.y = null;
-        atn.z = null;
+        for (var prop in atn) {
+          if (atn.hasOwnProperty(prop)) {
+            atn[prop] = null;
+          }
+        }
       }
     }
   };
@@ -92,7 +93,6 @@ var SkeletonAnnotations = new function()
   this.getActiveNodeColor = function() {
     return atn_fillcolor;
   };
-
 
   var openSkeletonNodeInObjectTree = function(node) {
     // Check if the Object Tree div is visible
@@ -153,6 +153,11 @@ var SkeletonAnnotations = new function()
       if (self === SVGOverlays[stack]) {
         delete SVGOverlays[stack];
       }
+    };
+
+    this.getActiveNode = function() {
+      if (null === atn.id) return null;
+      return nodes[atn.id];
     };
 
     /**
@@ -1239,14 +1244,12 @@ var SkeletonAnnotations = new function()
         self.set_tracing_mode("synapsedropping");
         break;
       case "goparent":
-        if (atn !== null) {
-          if (atn.parent !== null) {
+        if (null !== atn.id) {
+          if (null !== atn.parent) {
             stack.moveTo(self.pix2physZ(atn.parent.z),
                          self.pix2physY(atn.parent.y),
                          self.pix2physX(atn.parent.x));
             window.setTimeout("SkeletonAnnotations.staticSelectNode( " + atn.parent.id + " )", 1000);
-          } else {
-            alert("This is the root node.");
           }
         } else {
           alert("No active node selected.");

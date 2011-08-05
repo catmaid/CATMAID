@@ -11,6 +11,276 @@
 /**
  */
 
+/* Define any new keybindings here.
+
+   There's a helpful page with the different key codes for different
+   browsers here:
+
+     http://unixpapa.com/js/key.html
+ */
+
+var arrowKeyCodes = {
+  left: 37,
+  up: 38,
+  right: 39,
+  down: 40
+};
+
+// TODO big assumption below: that there is only one SVGOverlay instance.
+// So instead the function should look for the active window in the window manager,
+// figure out if it contains a tracing layer, and if so, call the function on its svgoverlay
+// by altering the meaning of the word 'this' to point to the SVGOverlay instance. Below, 'this' should replace 'project' everywhere.
+
+var stringToKeyAction = {
+  "A": {
+    helpText: "Go to active node",
+    buttonID: 'trace_button_goactive',
+    run: function (e) {
+      project.tracingCommand('goactive');
+      return false;
+    }
+  },
+  "J": {
+    helpText: "Nothing right now",
+    run: function (e) {
+      alert("J was pressed");
+      return false;
+    }
+  },
+  "+": {
+    helpText: "Zoom in",
+    specialKeyCodes: [107, 61, 187],
+    run: function (e) {
+      slider_s.move(1);
+      slider_trace_s.move(1);
+      return false;
+    }
+  },
+  "-": {
+    helpText: "Zoom out",
+    specialKeyCodes: [109, 189, 45],
+    run: function (e) {
+      slider_s.move(-1);
+      slider_trace_s.move(-1);
+      return false;
+    }
+  },
+  ",": {
+    helpText: "Move up 1 slice in z (or 10 with Shift held)",
+    specialKeyCodes: [188, 44],
+    run: function (e) {
+      slider_z.move(-(e.shiftKey ? 10 : 1));
+      slider_trace_z.move(-(e.shiftKey ? 10 : 1));
+      return false;
+    }
+  },
+  ".": {
+    helpText: "Move down 1 slice in z (or 10 with Shift held)",
+    specialKeyCodes: [190, 46],
+    run: function (e) {
+      slider_z.move((e.shiftKey ? 10 : 1));
+      slider_trace_z.move((e.shiftKey ? 10 : 1));
+      return false;
+    }
+  },
+  "\u2190": {
+    helpText: "Move left (towards negative x)",
+    specialKeyCodes: [arrowKeyCodes.left],
+    run: function (e) {
+      input_x.value = parseInt(input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+      input_x.onchange(e);
+      return false;
+    }
+  },
+  "\u2192": {
+    helpText: "Move right (towards positive x)",
+    specialKeyCodes: [arrowKeyCodes.right],
+    run: function (e) {
+      input_x.value = parseInt(input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+      input_x.onchange(e);
+      return false;
+    }
+  },
+  "\u2191": {
+    helpText: "Move up (towards negative y)",
+    specialKeyCodes: [arrowKeyCodes.up],
+    run: function (e) {
+      input_y.value = parseInt(input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+      input_y.onchange(e);
+      return false;
+    }
+  },
+  "\u2193": {
+    helpText: "Move down (towards positive y)",
+    specialKeyCodes: [arrowKeyCodes.down],
+    run: function (e) {
+      input_y.value = parseInt(input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+      input_y.onchange(e);
+      return false;
+    }
+  },
+  "1": {
+    helpText: "Switch to skeleton tracing mode",
+    buttonID: 'trace_button_skeleton',
+    run: function (e) {
+      project.tracingCommand('skeletontracing');
+      return false;
+    }
+  },
+  "2": {
+    helpText: "Switch to synapse dropping mode",
+    buttonID: 'trace_button_synapse',
+    run: function (e) {
+      project.tracingCommand('synapsedropping');
+      return false;
+    }
+  },
+  "M": {
+    helpText: "Deselect the active node",
+    run: function (e) {
+      activateNode(null);
+      return false;
+    }
+  },
+  "P": {
+    helpText: "Go to the parent of the active node (?)",
+    run: function (e) {
+      project.tracingCommand('goparent');
+      return false;
+    }
+  },
+  "E": {
+    helpText: "Go to last edited node in this skeleton",
+    run: function (e) {
+      project.tracingCommand('golastedited');
+      return false;
+    }
+  },
+  "5": {
+    helpText: "Split this skeleton at the active node",
+    buttonID: 'trace_button_skelsplitting',
+    run: function (e) {
+      project.tracingCommand('skeletonsplitting');
+      return false;
+    }
+  },
+  "6": {
+    helpText: "Re-root this skeleton at the active node",
+    buttonID: 'trace_button_skelrerooting',
+    run: function (e) {
+      project.tracingCommand('skeletonreroot');
+      return false;
+    }
+  },
+  "7": {
+    helpText: "Toggle the display of labels",
+    buttonID: 'trace_button_togglelabels',
+    run: function (e) {
+      project.tracingCommand('togglelabels');
+      return false;
+    }
+  },
+  "S": {
+    helpText: "Export to SWC",
+    buttonID: 'trace_button_exportswc',
+    run: function (e) {
+      project.tracingCommand('exportswc');
+      return false;
+    }
+  },
+  "T": {
+    helpText: "Tag the active node",
+    run: function (e) {
+      if (!(e.ctrlKey || e.metaKey)) {
+        project.tracingCommand('tagging');
+      }
+      return true;
+    }
+  },
+  "G": {
+    helpText: "Select the nearest node to the mouse cursor",
+    run: function (e) {
+      if (!(e.ctrlKey || e.metaKey)) {
+        project.activateNearestNode();
+      }
+      return true;
+    }
+  },
+  "Tab": {
+    helpText: "Switch to the next open stack (or the previous with Shift+Tab)",
+    specialKeyCodes: [9],
+    run: function (e) {
+      if (e.shiftKey) {
+        project.switchFocus(-1);
+      } else {
+        project.switchFocus(1);
+      }
+      //e.stopPropagation();
+      return false;
+    }
+  }
+};
+
+var withAliases = jQuery.extend({}, stringToKeyAction);
+withAliases["4"] = withAliases["A"];
+
+/* We now turn that structure into an object for
+   fast lookups from keyCodes */
+
+var keyCodeToKeyAction = {};
+
+{
+  var i;
+  for (i in withAliases) {
+    var keyCodeFromKey = null;
+/* If the string representation of the key is a single upper case
+       letter or a number, we just use its ASCII value as the key
+       code */
+    if (i.length === 1) {
+      k = i.charCodeAt(0);
+      if ((k >= 65 && k <= 90) || (k >= 48 && k <= 57)) {
+        keyCodeFromKey = k;
+      }
+    }
+    var o = withAliases[i]; /* Add any more unusual key codes for that action */
+    var allKeyCodes = o.specialKeyCodes || [];
+    if (keyCodeFromKey && $.inArray(keyCodeFromKey, allKeyCodes) < 0) {
+      allKeyCodes.push(keyCodeFromKey);
+    }
+
+    /* Now add to the keyCodeToKeyAction object */
+    var ki, k;
+    for (ki in allKeyCodes) {
+      k = allKeyCodes[ki];
+      if (keyCodeToKeyAction[k]) {
+        alert("Attempting to define a second action for keyCode " + k + " via '" + i + "'");
+      } else {
+        keyCodeToKeyAction[k] = o;
+      }
+    }
+  }
+}
+
+/** Updates the 'alt' and 'title' attributes on the toolbar
+ icons that are documented with help text and key presses.
+ Also bind the onClick action for the link that contains
+ those icons to the corresponding function */
+
+function setButtons() {
+  for (var i in stringToKeyAction) {
+    var o = stringToKeyAction[i];
+    if (o.buttonID) {
+      var link = $('#' + o.buttonID);
+      link.attr('href', 'foo');
+      link.click(o.run);
+      var img = link.find('img');
+      img.attr('alt', o.helpText);
+      var title = i + ': ' + o.helpText;
+      img.attr('title', title);
+    }
+  }
+}
+
 /**
  * A TrakEM2 Web project.
  *

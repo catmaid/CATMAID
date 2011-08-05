@@ -111,11 +111,11 @@ function Navigator()
 	{
 		self.lastX = self.stack.x + ui.diffX; // TODO - or + ?
 		self.lastY = self.stack.y + ui.diffY;
-		self.stack.moveToPixel( self.stack.z,
-														self.stack.y - ui.diffY / self.stack.scale,
-														self.stack.x - ui.diffX / self.stack.scale,
-														self.stack.s );
-		self.updateControls();
+		self.stack.moveToPixel(
+			self.stack.z,
+			self.stack.y - ui.diffY / self.stack.scale,
+			self.stack.x - ui.diffX / self.stack.scale,
+			self.stack.s );
 		return true;
 	};
 	

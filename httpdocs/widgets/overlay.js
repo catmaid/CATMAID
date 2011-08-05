@@ -1242,9 +1242,10 @@ var SkeletonAnnotations = new function()
       case "goparent":
         if (null !== atn.id) {
           if (null !== atn.parent) {
-            stack.moveTo(self.pix2physZ(atn.parent.z),
-                         self.pix2physY(atn.parent.y),
-                         self.pix2physX(atn.parent.x));
+            stack.getProject().moveTo(
+              self.pix2physZ(atn.parent.z),
+              self.pix2physY(atn.parent.y),
+              self.pix2physX(atn.parent.x));
             window.setTimeout("SkeletonAnnotations.staticSelectNode( " + atn.parent.id + " )", 1000);
           }
         } else {
@@ -1253,9 +1254,10 @@ var SkeletonAnnotations = new function()
         break;
       case "goactive":
         if (atn !== null) {
-          stack.moveTo(self.pix2physZ(atn.z),
-                       self.pix2physY(atn.y),
-                       self.pix2physX(atn.x));
+          stack.getProject().moveTo(
+            self.pix2physZ(atn.z),
+            self.pix2physY(atn.y),
+            self.pix2physX(atn.x));
         } else {
           alert("No active node to go to!");
         }
@@ -1276,7 +1278,7 @@ var SkeletonAnnotations = new function()
                 if (e.error) {
                   alert(e.error);
                 } else {
-                  stack.moveTo(e.z, e.y, e.x);
+                  stack.getProject().moveTo(e.z, e.y, e.x);
                 }
               }
             }

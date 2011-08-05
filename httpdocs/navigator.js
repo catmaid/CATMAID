@@ -84,7 +84,7 @@ function Navigator()
         self.mouseCatcher = mc;
     }
 	
-	var updateControls = function()
+	this.updateControls = function()
 	{
 		self.slider_s.setByValue( self.stack.s, true );
 		self.slider_z.setByValue( self.stack.z, true );
@@ -104,7 +104,7 @@ function Navigator()
 	
 	this.redraw = function()
 	{
-		updateControls();
+		self.updateControls();
 	}
 	
 	var onmousemove = function( e )
@@ -115,7 +115,7 @@ function Navigator()
 														self.stack.y - ui.diffY / self.stack.scale,
 														self.stack.x - ui.diffX / self.stack.scale,
 														self.stack.s );
-		updateControls();
+		self.updateControls();
 		return true;
 	};
 	
@@ -520,7 +520,7 @@ function Navigator()
 			catch ( error ) {}
 		}
 		
-		updateControls();
+		self.updateControls();
 		
 		return;
 	}

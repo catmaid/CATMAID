@@ -340,6 +340,7 @@ function TracingTool()
 	  tracingLayer.svgOverlay.pix2physZ(atn.z),
 	  tracingLayer.svgOverlay.pix2physY(atn.y),
 	  tracingLayer.svgOverlay.pix2physX(atn.x));
+        self.prototype.updateControls();
       } else {
 	alert("No active node to go to!");
       }

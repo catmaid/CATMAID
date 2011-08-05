@@ -966,10 +966,12 @@ var SkeletonAnnotations = new function()
           pt = wc.worldTop,
           new_scale = wc.scale;
 
-      // check if new scale changed, if so, update all node coordinates
-      if (old_scale !== new_scale) {
-          self.updateNodeCoordinates(new_scale);
-          old_scale = new_scale;
+      if( stack.old_z != stack.z ) {
+        self.updateNodes();
+      } else if (old_scale !== new_scale) {
+        // check if new scale changed, if so, update all node coordinates
+        self.updateNodeCoordinates(new_scale);
+        old_scale = new_scale;
       }
 
       self.view.style.left = Math.floor((-pl / stack.resolution.x) * new_scale) + "px";

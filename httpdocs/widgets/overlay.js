@@ -138,7 +138,13 @@ var SkeletonAnnotations = new function()
     var nodes = {};
     var labels = {};
     var show_labels = false;
-
+    
+    /* padding beyond screen borders for fetching data and updating nodes */
+    var PAD = 256;
+    
+    var old_x = stack.x;
+    var old_y = stack.y;
+    
     SkeletonElements.clearCache();
 
     // Register instance: only one per stack allowed
@@ -966,15 +972,24 @@ var SkeletonAnnotations = new function()
       var pl = wc.worldLeft,
           pt = wc.worldTop,
           new_scale = wc.scale;
-
-      if( stack.old_z != stack.z ) {
-        self.updateNodes();
-      } else if (old_scale !== new_scale) {
-        // check if new scale changed, if so, update all node coordinates
-        self.updateNodeCoordinates(new_scale);
-        old_scale = new_scale;
+      
+      var doNotUpdate = stack.old_z == stack.z && stack.old_s == stack.s;
+      if ( doNotUpdate )
+      {
+        var sPAD = PAD / stack.scale;
+        var dx = old_x - stack.x;
+        doNotUpdate = dx < sPAD && dx > -sPAD;
+        
+        if ( doNotUpdate )
+        {
+          var dy = old_y - stack.y;
+          doNotUpdate = dy < sPAD && dy > -sPAD;
+        }
       }
-
+      
+      if ( !doNotUpdate )
+        self.updateNodes();
+      
       self.view.style.left = Math.floor((-pl / stack.resolution.x) * new_scale) + "px";
       self.view.style.top = Math.floor((-pt / stack.resolution.y) * new_scale) + "px";
 
@@ -1174,6 +1189,8 @@ var SkeletonAnnotations = new function()
       // stack.viewWidth and .viewHeight are in screen pixels
       // so they must be scaled and then transformed to nanometers
       // and stack.x, .y are in absolute pixels, so they also must be brought to nanometers
+      
+      //TODO add the padding to the range
 
       requestQueue.register('model/node.list.php', 'POST', {
         pid: stack.getProject().id,
@@ -1185,6 +1202,9 @@ var SkeletonAnnotations = new function()
         height: (stack.viewHeight / stack.scale) * stack.resolution.y,
         zres: stack.resolution.z
       }, handle_updateNodes);
+      
+      old_x = stack.x;
+      old_y = stack.y;
       return;
     };
 

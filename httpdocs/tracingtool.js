@@ -334,8 +334,8 @@ function TracingTool()
       "A": [ 65 ]
     },
     run: function (e) {
-      var atn = SkeletonAnnotations.getActiveNode();
-      if (atn.id !== null) {
+      var atn = tracingLayer.svgOverlay.getActiveNode();
+      if (atn !== null) {
 	project.moveTo(
 	  tracingLayer.svgOverlay.pix2physZ(atn.z),
 	  tracingLayer.svgOverlay.pix2physY(atn.y),
@@ -365,8 +365,8 @@ function TracingTool()
       "P": [ 80 ]
     },
     run: function (e) {
-      var atn = SkeletonAnnotations.getActiveNode();
-      if (atn.id !== null) {
+      var atn = tracingLayer.svgOverlay.getActiveNode();
+      if (atn !== null) {
         if (atn.parent !== null) {
           project.moveTo(
             tracingLayer.svgOverlay.pix2physZ(atn.parent.z),

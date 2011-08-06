@@ -64,6 +64,10 @@ var SkeletonAnnotations = new function()
         atn.parent = node.parent;
       } else {
         for (var prop in atn) {
+          if ( prop === 'set' ) {
+            // do not alter functions
+            continue;
+          }
           if (atn.hasOwnProperty(prop)) {
             atn[prop] = null;
           }
@@ -207,6 +211,7 @@ var SkeletonAnnotations = new function()
           refreshAllWidgets();
         } else {
           statusBar.replaceLast("Activated connector node #" + node.id);
+          atn.set(node);
         }
       } else {
         atn.set(null);

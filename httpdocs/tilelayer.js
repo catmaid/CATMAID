@@ -55,7 +55,7 @@ function TileLayer(
 			{
 				tiles[ i ][ j ] = document.createElement( "img" );
 				tiles[ i ][ j ].alt = "empty";
-				tiles[ i ][ j ].src = "gfx/empty256.gif";
+				tiles[ i ][ j ].src = "widgets/empty256.gif";
 				
 				tilesContainer.appendChild( tiles[ i ][ j ] );
 			}
@@ -93,7 +93,7 @@ function TileLayer(
 					tilesContainer.removeChild( tiles[ i ].pop() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
-					img.src = "gfx/empty256.gif";
+					img.src = "widgets/empty256.gif";
 					img.style.visibility = "hidden";
 					tilesContainer.appendChild( img );
 					tiles[ i ].unshift( img );
@@ -106,7 +106,7 @@ function TileLayer(
 					tilesContainer.removeChild( tiles[ i ].shift() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
-					img.src = "gfx/empty256.gif";
+					img.src = "widgets/empty256.gif";
 					img.style.visibility = "hidden";
 					tilesContainer.appendChild( img );
 					tiles[ i ].push( img );
@@ -121,7 +121,7 @@ function TileLayer(
 					tilesContainer.removeChild( old_row.pop() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
-					img.src = "gfx/empty256.gif";
+					img.src = "widgets/empty256.gif";
 					img.style.visibility = "hidden";
 					tilesContainer.appendChild( img );
 					new_row.push( img );
@@ -137,7 +137,7 @@ function TileLayer(
 					tilesContainer.removeChild( old_row.pop() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
-					img.src = "gfx/empty256.gif";
+					img.src = "widgets/empty256.gif";
 					img.style.visibility = "hidden";
 					tilesContainer.appendChild( img );
 					new_row.push( img );

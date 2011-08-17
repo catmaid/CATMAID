@@ -185,6 +185,7 @@ UI = function () {
    * is 'false', which stops propagation of the event.
    */
   this.getMouse = function (e, propagate) {
+    var target, realEvent;
     propagate = (typeof propagate == "undefined") ? false : propagate;
     m = new Object();
     if (e) {
@@ -208,7 +209,19 @@ UI = function () {
       m.offsetX = event.offsetX;
       m.offsetY = event.offsetY;
     } else
-    m = undefined;
+      m = undefined;
+    if (m) {
+      // This logic is from:
+      // http://www.quirksmode.org/js/events_properties.html#target
+      realEvent = e || event;
+      if (realEvent.target)
+        target = realEvent.target;
+      else if (realEvent.srcElement)
+        target = realEvent.srcElement;
+      if (target.nodeType == 3) // defeat Safari bug
+        target = target.parentNode;
+      m.target = target;
+    }
     return m;
   }
 

@@ -184,30 +184,28 @@ UI = function () {
    * if you want the event to continue propagation as normal.  The default
    * is 'false', which stops propagation of the event.
    */
-  this.getMouse = function (e, propagate) {
+  this.getMouse = function (e, relativeTo, propagate) {
+    var realPagePosition = UI.getRealPagePosition(e);
+    var offset;
     var target, realEvent;
     propagate = (typeof propagate == "undefined") ? false : propagate;
     m = new Object();
+    m.x = realPagePosition.x;
+    m.y = realPagePosition.y;
+    if (relativeTo) {
+      offset = $(relativeTo).offset();
+      m.offsetX = m.x - offset.left;
+      m.offsetY = m.y - offset.top;
+    }
     if (e) {
       if (!propagate) {
         e.preventDefault();
         e.stopPropagation();
       }
-      m.x = e.screenX;
-      m.y = e.screenY;
-      if (e.offsetX) m.offsetX = e.offsetX;
-      else if (e.layerX) m.offsetX = e.layerX - 1;
-      if (e.offsetY) m.offsetY = e.offsetY;
-      else if (e.layerY) m.offsetY = e.layerY - 1;
-
     } else if (event) {
       if (!propagate) {
         event.cancelBubble = true;
       }
-      m.x = event.clientX;
-      m.y = event.clientY;
-      m.offsetX = event.offsetX;
-      m.offsetY = event.offsetY;
     } else
       m = undefined;
     if (m) {

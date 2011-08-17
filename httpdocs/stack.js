@@ -94,6 +94,9 @@ stack, //!< a reference to the stack
 max_y, //!< maximal height
 max_x //!< maximal width
 ) {
+
+  var self = this;
+
   /**
    * get the view object
    */
@@ -102,7 +105,7 @@ max_x //!< maximal width
   }
 
   var onclick = function (e) {
-    var m = ui.getMouse(e);
+    var m = ui.getMouse(e, self.getView());
     if (m) {
       //statusBar.replaceLast( m.offsetX + ", " + m.offsetY );
       stack.moveToPixel(z, Math.floor(m.offsetY / SCALE), Math.floor(m.offsetX / SCALE), s);
@@ -681,19 +684,18 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
 
       // take into account the shift of the svgOverlay
       var offX, offY;
-      var svgOverlayOffset = $(svgOverlay.view).offset();
 
       // If we don't allow propagation (with the optional second parameter)
       // then dragging of nodes in Raphaël doesn't work, see:
       //   http://stackoverflow.com/q/6617548/223092
-      var m = ui.getMouse(e, true);
+      var m = ui.getMouse(e, svgOverlay.view, true);
       var realPagePosition = UI.getRealPagePosition(e);
 
       if (m) {
         // add right move of svgOverlay to the m.offsetX
-        offX = (realPagePosition.x - svgOverlayOffset.left) + svgOverlay.offleft;
+        offX = m.offsetX + svgOverlay.offleft;
         // add down move of svgOverlay to the m.offsetY
-        offY = (realPagePosition.y - svgOverlayOffset.top) + svgOverlay.offtop;
+        offY = m.offsetY + svgOverlay.offtop;
 
         var pos_x = translation.x + (x + (offX - viewWidth / 2) / scale) * resolution.x;
         var pos_y = translation.x + (y + (offY - viewHeight / 2) / scale) * resolution.y;
@@ -708,7 +710,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     pos: function (e) {
       var xp;
       var yp;
-      var m = ui.getMouse(e);
+      var m = ui.getMouse(e, mouseCatcher);
 
       if (m) {
         var pos_x = translation.x + (x + (m.offsetX - viewWidth / 2) / scale) * resolution.x;
@@ -793,7 +795,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       return false;
     },
     edit: function (e) {
-      var m = ui.getMouse(e);
+      var m = ui.getMouse(e, mouseCatcher);
       if (m) {
         var pos_x = Math.round(x + (m.offsetX - viewWidth / 2) / scale);
         var pos_y = Math.round(y + (m.offsetY - viewHeight / 2) / scale);
@@ -834,7 +836,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
         document.body.firstChild.focus();
         break;
       default:
-        var m = ui.getMouse(e);
+        var m = ui.getMouse(e, mouseCatcher);
         var tlx = (x + (m.offsetX - viewWidth / 2) / scale) * resolution.x + translation.x;
         var tly = (y + (m.offsetY - viewHeight / 2) / scale) * resolution.y + translation.y;
         var tlz = z * resolution.z + translation.z;
@@ -858,7 +860,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
           delete cropBox;
           cropBox = false;
         }
-        var m = ui.getMouse(e);
+        var m = ui.getMouse(e, mouseCatcher);
         cropBox = {
           left: (x + (m.offsetX - viewWidth / 2) / scale) * resolution.x + translation.x,
           top: (y + (m.offsetY - viewHeight / 2) / scale) * resolution.y + translation.y
@@ -903,7 +905,7 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     move: function (e) {
       var xp = x;
       var yp = y;
-      var m = ui.getMouse(e);
+      var m = ui.getMouse(e, mouseCatcher);
       var w = ui.getMouseWheel(e);
       if (m) {
         xp = m.offsetX - viewWidth / 2;

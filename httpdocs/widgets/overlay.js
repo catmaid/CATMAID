@@ -916,7 +916,7 @@ var SVGOverlay = function (
   // click-and-drag work with the left hand button too...)
   this.whenclicked = function (e) {
     var locid;
-    var m = ui.getMouse(e);
+    var m = ui.getMouse(e, this.getView());
 
     // take into account current local offset coordinates and scale
     var pos_x = m.offsetX;

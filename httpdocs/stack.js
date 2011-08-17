@@ -680,18 +680,20 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
     trace: function (e) {
 
       // take into account the shift of the svgOverlay
-      var xp;
-      var yp;
+      var offX, offY;
+      var svgOverlayOffset = $(svgOverlay.view).offset();
+
       // If we don't allow propagation (with the optional second parameter)
       // then dragging of nodes in Raphaël doesn't work, see:
       //   http://stackoverflow.com/q/6617548/223092
       var m = ui.getMouse(e, true);
+      var realPagePosition = UI.getRealPagePosition(e);
 
       if (m) {
         // add right move of svgOverlay to the m.offsetX
-        offX = m.offsetX + svgOverlay.offleft;
+        offX = (realPagePosition.x - svgOverlayOffset.left) + svgOverlay.offleft;
         // add down move of svgOverlay to the m.offsetY
-        offY = m.offsetY + svgOverlay.offtop;
+        offY = (realPagePosition.y - svgOverlayOffset.top) + svgOverlay.offtop;
 
         var pos_x = translation.x + (x + (offX - viewWidth / 2) / scale) * resolution.x;
         var pos_y = translation.x + (y + (offY - viewHeight / 2) / scale) * resolution.y;

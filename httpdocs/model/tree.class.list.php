@@ -1,8 +1,6 @@
 <?php
 
-ini_set( 'error_reporting', E_ALL );
-ini_set( 'display_errors', true );
-
+include_once( 'errors.inc.php' );
 include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
@@ -41,6 +39,8 @@ if ( $pid )
 				$rel = 'group';
 			else if( $cl['class_name'] == 'neurongroup')
 				$rel = 'neurongroup';
+      else if( $cl['class_name'] == 'soma')
+        $rel = 'soma';
 			else
 				$rel = 'anything';
 			
@@ -71,9 +71,9 @@ if ( $pid )
 		
 	}
 	else
-		echo makeJSON( array( 'error' => 'You are not logged in currently.  Please log in to be able to retrieve the tree.' ) );
+		echo json_encode( array( 'error' => 'You are not logged in currently.  Please log in to be able to retrieve the tree.' ) );
 }
 else
-	echo makeJSON( array( 'error' => 'Project closed. Can not retrieve the tree.' ) );
+	echo json_encode( array( 'error' => 'Project closed. Can not retrieve the tree.' ) );
 
 ?>

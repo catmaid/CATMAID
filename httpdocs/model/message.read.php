@@ -1,8 +1,6 @@
 <?php
 
-ini_set( 'error_reporting', E_ALL );
-ini_set( 'display_errors', true );
-
+include_once( 'errors.inc.php' );
 include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 
@@ -10,7 +8,7 @@ $db =& getDB( 'write' );
 $ses =& getSession();
 
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
-$id = isset( $_GET[ 'id' ] ) ? $_GET[ 'id' ] : 0;
+$id = isset( $_GET[ 'id' ] ) ? intval($_GET[ 'id' ]) : 0;
 
 echo '<?xml version="1.0" encoding="us-ascii"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">

@@ -142,6 +142,8 @@ div.sliceView div.sliceMouseCatcher
 	z-index:5;
 	cursor:move;
 	/*
+	background:#993333;
+	
 	background-image:url(../empty.gif);
 	*/
 }

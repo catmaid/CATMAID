@@ -9,5 +9,5 @@ div#eventCatcher
 	height:100%;
 	z-index:9;
 	display:none;
-	cursor:move;
+	/*cursor:move;*/
 }

@@ -1,12 +1,14 @@
 <?php
 
-ini_set( 'error_reporting', E_ALL );
-ini_set( 'display_errors', true );
-
+include_once( 'errors.inc.php' );
 include_once( 'setup.inc.php' );
 include_once( 'tools.inc.php' );
 
-$file = isset( $_REQUEST[ 'file' ] ) ? preg_replace( '=/;\s=si', '', $_REQUEST[ 'file' ] ) : false;
+$file = false;
+if( isset( $_REQUEST[ 'file' ] ) ) {
+	// Just use the first sequence of one or more word characters:
+	$file = preg_replace( '/.*?([A-Za-z0-9\.\-_]+).*/', '\1', $_REQUEST[ 'file' ] );
+}
 
 clearstatcache();
 $list = getFileList( TMP_DIR );

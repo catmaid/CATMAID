@@ -663,7 +663,7 @@ function CMWWindow( title )
 	{
 		if ( self != CMWWindow.selectedWindow ) 
 		{
-			var m = ui.getMouse(e);
+			var m = ui.getMouse(e, eventCatcher);
 			var min = m.offsetY;
 			var s = "Top";
 			if ( m.offsetY > self.getHeight() / 2 ) 

@@ -1,8 +1,6 @@
 <?php
 
-ini_set( 'error_reporting', E_ALL );
-ini_set( 'display_errors', true );
-
+include_once( 'errors.inc.php' );
 include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
@@ -89,6 +87,8 @@ while ( list( $key, $val) = each( $textlabels ) )
 	$textlabels[ $key ][ 'scaling' ] = $textlabels[ $key ][ 'scaling' ] == 't';
 }
 
+// Doesn't work: bad encoding or .js side expects the bad encoding
+//echo json_encode( $textlabels );
 echo makeJSON( $textlabels );
 
 ?>

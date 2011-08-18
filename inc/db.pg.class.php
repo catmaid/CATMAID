@@ -10,6 +10,7 @@
 /**
  */
 include_once( 'setup.inc.php' );
+include_once( 'migrations.php' );
 
 /**
  * factory method to get the single instance of the object
@@ -51,6 +52,8 @@ class DB
 	var $db;
 	var $handle;
 
+    var $debug = false;
+
 	/**
 	 * Constructor
 	 */  
@@ -63,6 +66,8 @@ class DB
 		$this->db = $db_db[ $mode ];
 		
 		$this->handle = pg_connect( 'host='.$this->host.' port=5432 dbname='.$this->db.' user='.$this->user.' password= '.$this->pw ) or die( pg_last_error() );
+
+		$this->migrate();
 	}
 	/**#@-*/
 	
@@ -85,6 +90,8 @@ class DB
 	 */
 	function getResult( $query )
 	{
+		if( $this->debug )
+			error_log("In getResult: ".preg_replace('/\s+/', ' ', $query));
 		$result = array();
 		if ( $temp = pg_query( $this->handle, $query ) )
 		{
@@ -94,6 +101,24 @@ class DB
 		else
 			$result = false;
 		return $result;
+	}
+
+	/** Begin a transaction. Must be followed by zero or more
+	 * queries and insertions and then, finally, by a call to commit().
+	 */
+	function begin()
+	{
+		return pg_query( $this->handle, "BEGIN" );
+	}
+
+	function rollback()
+	{
+		return pg_query( $this->handle, "ROLLBACK" );
+	}
+
+	function commit()
+	{
+		return pg_query( $this->handle, "COMMIT" );
 	}
 	
 	/**
@@ -105,6 +130,8 @@ class DB
 	 */
 	function getResultKeyedById( $query, $id )
 	{
+		if( $this->debug )
+			error_log("In getResultKeyedById with id ".$id.": ".preg_replace('/\s+/', ' ', $query));
 		$result = array();
 		if ( $temp = pg_query( $this->handle, $query ) )
 		{
@@ -138,6 +165,7 @@ class DB
 	{
 		$entries = $this->getResult( 'SELECT count( * ) AS "count" FROM "'.$table.'" WHERE '.$cond );
 		//echo( "SELECT count(*) AS 'count' FROM `".$table."` WHERE ".$cond );
+		if (false === $entries) return false;
 		return ( $entries[ 0 ][ 'count' ] );
 	}
 
@@ -179,8 +207,9 @@ class DB
 		}
 		$queryStr .= ')';
 		//echo $queryStr, "<br />\n";
-		pg_query( $this->handle, $queryStr );
-		return;
+		if( $this->debug )
+			error_log("In insertInto: ".preg_replace('/\s+/', ' ', $queryStr));
+		return pg_query( $this->handle, $queryStr );
 	}
 	
 	/**
@@ -196,7 +225,8 @@ class DB
 	{
 		$this->insertInto( $table, $values );
 		$id = $this->getResult( 'SELECT lastval() AS "id"' );
-		return $id[ 0 ][ 'id' ];
+		if (false === $id) return false; // query failed
+		return intval($id[ 0 ][ 'id' ]);
 	}
 	
 	/**
@@ -223,7 +253,10 @@ class DB
 		}
 		$query .= ' WHERE '.$cond;
 		//echo $query;
+		if( $this->debug )
+			error_log("In update: ".preg_replace('/\s+/', ' ', $query));	
 		$r = pg_query( $this->handle, $query );
+		if (false === $r) return false; // failed
 		return pg_affected_rows( $r );
 	}
 	
@@ -238,7 +271,11 @@ class DB
 	function deleteFrom( $table, $cond = '0' )
 	{
 		//print("DELETE FROM `".$table."` WHERE ".$cond.";<br />\n");
-		$r = pg_query( $this->handle, 'DELETE FROM "'.$table.'" WHERE '.$cond );
+		$query = 'DELETE FROM "'.$table.'" WHERE '.$cond;
+		if( $this->debug )
+			error_log("In delete: ".preg_replace('/\s+/', ' ', $query));
+		$r = pg_query( $this->handle, $query );
+		if (false === $r) return false; // failed
 		return pg_affected_rows( $r );
 	}
 	
@@ -348,10 +385,11 @@ class DB
 	 */
 	function getRelationId( $pid, $relationname )
 	{
+		$escaped_relationname = pg_escape_string($relationname);
 		$res = $this->getResult(
-		'SELECT "relation"."id" FROM "relation"
-		WHERE "relation"."project_id" = '.$pid.' AND
-		"relation"."relation_name" = \''.$relationname.'\'');
+		"SELECT relation.id FROM relation ".
+		"WHERE relation.project_id = $pid AND ".
+		"relation.relation_name = '$escaped_relationname'");
 		$resid = !empty($res) ? $res[0]['id'] : 0;
 		return $resid;
 	}
@@ -361,14 +399,332 @@ class DB
 	 */
 	function getClassId( $pid, $classname )
 	{
+		$escaped_classname = pg_escape_string($classname);
 		$res = $this->getResult(
-		'SELECT "class"."id" FROM "class"
-		WHERE "class"."project_id" = '.$pid.' AND
-		"class"."class_name" = \''.$classname.'\'');
+		"SELECT class.id FROM class ".
+		"WHERE class.project_id = $pid AND ".
+		"class.class_name = '$escaped_classname'");
+		if (false === $res) return false;
 		$resid = !empty($res) ? $res[0]['id'] : 0;
 		return $resid;
 	}
-	
+  
+  /*
+   * return all treenode ids for a skeleton starting with root node as a flat list
+   * using the element_of relationship of the treenodes
+   */
+   function getTreenodeIdsForSkeleton( $pid, $skelid )
+   {
+    // element of id
+    $ele_id = $this->getRelationId( $pid, 'element_of' );
+    if(!$ele_id) { echo makeJSON( array( '"error"' => 'Can not find "element_of" relation for this project' ) ); return; }
+
+    $res = $this->getResult(
+    'SELECT "tci"."id" FROM "treenode_class_instance" AS "tci", "treenode"
+    WHERE "tci"."project_id" = '.$pid.' AND
+    "tci"."relation_id" = '.$ele_id.' AND
+    "tci"."class_instance_id" = '.$skelid.' AND
+    "treenode"."id" = "tci"."treenode_id"
+    ORDER BY "treenode"."parent_id" DESC');
+
+    return $res;
+   }
+
+   /*
+    * return the number of treenodes for a skeleton
+    */
+   function getTreenodeCountForSkeleton( $pid, $skelid )
+   {
+    return count( $this->getTreenodeIdsForSkeleton( $pid, $skelid ) );
+   }
+   
+   /*
+    * return class_instance id of a treenode for a given relation in a project
+    */
+   function getClassInstanceForTreenode( $pid, $tnid, $relation )
+   {
+    // element of id
+    $rel_id = $this->getRelationId( $pid, $relation );
+    if(!$rel_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$relation.'" relation for this project' ) ); return; }
+
+    $res = $this->getResult(
+    'SELECT "tci"."class_instance_id" FROM "treenode_class_instance" AS "tci"
+    WHERE "tci"."project_id" = '.$pid.' AND
+    "tci"."relation_id" = '.$rel_id.' AND
+    "tci"."treenode_id" = '.$tnid);
+    
+    return $res;
+   }
+
+  /*
+   * create class instance for treenode
+   * Returns: class_instance_id
+   */
+   function createClassInstanceForTreenode( $pid, $uid, $tnid, $relation, $class, $class_instance_name = "" )
+   {
+    $rel_id = $this->getRelationId( $pid, $relation );
+    if(!$rel_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$relation.'" relation for this project' ) ); return; }
+
+    $class_id = $this->getClassId( $pid, $class );
+    if(!$class_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$class.'" class for this project' ) ); return; }
+    
+    $data = array(
+      'user_id' => $uid,
+      'project_id' => $pid,
+      'class_id' => $class_id,
+      'name' => $class
+      );
+    $ci_id = $this->insertIntoId('class_instance', $data );
+    if (false === $ci_id) return false; // failed
+    // update with class_instance_name
+    $q = false;
+    if($class_instance_name == "") {
+      $up = array('name' => $class.' '.$ci_id);
+      $q = $this->update( "class_instance", $up, 'id = '.$ci_id); 
+    } else {
+      // use it as name
+      $up = array('name' => $class_instance_name);
+      $q = $this->update( "class_instance", $up, 'id = '.$ci_id); 
+    }
+    
+    if (false === $q) return false; // failed
+    
+    $data = array(
+      'user_id' => $uid,
+      'project_id' => $pid,
+      'relation_id' => $rel_id,
+      'treenode_id' => $tnid,
+      'class_instance_id' => $ci_id
+      );
+    $q = $this->insertInto('treenode_class_instance', $data );
+    
+    if (false === $q) return false; // failed
+    
+    return $ci_id;
+   }
+
+  /*
+   * create class instance for connector
+   * Returns: class_instance_id
+   */
+   function createClassInstanceForConnector( $pid, $uid, $cid, $relation, $class, $class_instance_name = "" )
+   {
+    $rel_id = $this->getRelationId( $pid, $relation );
+    if(!$rel_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$relation.'" relation for this project' ) ); return; }
+
+    $class_id = $this->getClassId( $pid, $class );
+    if(!$class_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$class.'" class for this project' ) ); return; }
+    
+    $data = array(
+      'user_id' => $uid,
+      'project_id' => $pid,
+      'class_id' => $class_id,
+      'name' => $class
+      );
+    $ci_id = $this->insertIntoId('class_instance', $data );
+    if (false === $ci_id) return false;
+  
+    // update with class_instanstance_name
+    $q = false;
+    if($class_instance_name == "") {
+      $up = array('name' => $class.' '.$ci_id);
+      $q = $this->update( "class_instance", $up, 'id = '.$ci_id); 
+    } else {
+      // use it as name
+      $up = array('name' => $class_instance_name);
+      $q = $this->update( "class_instance", $up, 'id = '.$ci_id); 
+    }
+    if (false === $q) return false; // failed
+    
+    $data = array(
+      'user_id' => $uid,
+      'project_id' => $pid,
+      'relation_id' => $rel_id,
+      'connector_id' => $cid,
+      'class_instance_id' => $ci_id
+      );
+    $q = $this->insertInto('connector_class_instance', $data );
+    
+    if (false === $q) return false; // failed
+    
+    return $ci_id;
+   }
+
+   /*
+    * return class_instance id of a connector for a given relation in a project
+    */
+   function getClassInstanceForConnector( $pid, $cid, $relation )
+   {
+    // element of id
+    $rel_id = $this->getRelationId( $pid, $relation );
+    if(!$rel_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$relation.'" relation for this project' ) ); return; }
+
+    $res = $this->getResult(
+    'SELECT "cci"."class_instance_id" FROM "connector_class_instance" AS "cci"
+    WHERE "cci"."project_id" = '.$pid.' AND
+    "cci"."relation_id" = '.$rel_id.' AND
+    "cci"."connector_id" = '.$cid);
+    
+    return $res;
+   }
+
+  /*
+   * get class_instance parent from a class_instance given its relation
+   */
+   function getCIFromCI( $pid, $cid, $relation )
+   {
+    // element of id
+    $rel_id = $this->getRelationId( $pid, $relation );
+    if(!$rel_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$relation.'" relation for this project' ) ); return; }
+
+    $res = $this->getResult(
+    'SELECT "cici"."class_instance_b" as "id" FROM "class_instance_class_instance" AS "cici"
+    WHERE "cici"."project_id" = '.$pid.' AND
+    "cici"."relation_id" = '.$rel_id.' AND
+    "cici"."class_instance_a" = '.$cid);
+    
+    return $res;
+   }
+
+  /*
+   * get class_instance parent from a class_instance given its relation
+	 * with additional table information in the results.
+   */
+   function getCIFromCIWithClassNameAndId( $pid, $cid, $relation )
+   {
+    // element of id
+    $rel_id = $this->getRelationId( $pid, $relation );
+    if(!$rel_id) { echo makeJSON( array( '"error"' => 'Can not find "'.$relation.'" relation for this project' ) ); return; }
+
+    $res = $this->getResult(
+			'SELECT "hierarchy"."class_instance_b" as "parent_id",
+			        "objects"."class_id",
+							"class"."class_name"
+			 FROM "class_instance_class_instance" AS "hierarchy",
+			      "class_instance" AS "objects",
+			      "class"
+			 WHERE "hierarchy"."project_id" = '.$pid.'
+			       AND "hierarchy"."relation_id" = '.$rel_id.'
+						 AND "hierarchy"."class_instance_a" = '.$cid.'
+					   AND "hierarchy"."class_instance_b" = "objects"."id" AND "objects"."class_id" = "class"."id"');
+    
+    return $res;
+   }
+   
+   /*
+    * get children of a treenode in a flat list
+    */
+   function getTreenodeChildren( $pid, $tnid )
+   {
+    $res = $this->getResult(
+    'SELECT "treenode"."id" AS "tnid" FROM "treenode" WHERE 
+    "treenode"."project_id" = '.$pid.' AND
+    "treenode"."parent_id" = '.$tnid);
+    
+    return $res;
+   }
+
+  /*
+   * get all downstream treenodes for a given treenode
+   */
+   function getAllTreenodeChildrenRecursively( $pid, $tnid )
+   {
+    $res = $this->getResult(
+    "SELECT * FROM connectby('treenode', 'id', 'parent_id', 'parent_id', '".$tnid."', 0)
+    AS t(id int, parent_id int, level int, branch int);");
+    
+    return $res;
+   }
+
+	function getCurrentSchemaVersion()
+	{
+		try {
+			$this->getResult("SAVEPOINT sp");
+			$res = $this->getResult("SELECT value FROM settings WHERE key = 'schema_version'");
+			return $res[0]['value'];
+		} catch (Exception $e) {
+			$this->getResult("ROLLBACK TO SAVEPOINT sp");
+			return NULL;
+		}
+	}
+
+	/* Ensure that the database is up to date */
+	function migrate()
+	{
+		global $migrations;
+
+		// Within this transaction, we use savepoints to allow
+		// individual queries to fail without stopping further
+		// queries from working.  See:
+		//     http://stackoverflow.com/q/2741919/223092
+		$this->begin();
+
+		try {
+			$currentSchemaVersion = $this->getCurrentSchemaVersion();
+
+			ksort($migrations);
+			end($migrations);
+			$mostRecentSchemaVersion = key($migrations);
+			reset($migrations);
+
+			if ((!$currentSchemaVersion) ||
+				($currentSchemaVersion < $mostRecentSchemaVersion)) {
+
+				$newSchemaVersion = NULL;
+
+				$ignoreErrors = FALSE;
+
+				foreach ($migrations as $migrationID => $migration) {
+					$pretty = $migrationID." (".$migration->name.")";
+					if ($currentSchemaVersion &&
+						$currentSchemaVersion >= $migrationID) {
+						error_log("Skipping migration '".$pretty.'"');
+						continue;
+					}
+					// Otherwise try to apply it:
+					$migration->apply($this, $ignoreErrors);
+					$newSchemaVersion = $migrationID;
+				}
+
+				// Now set the new schema version in the settings table.
+				// Since we can't be sure that the table exists, try
+				// to create it, try to insert the line and then try to
+				// update it.  Normally the first two will fail.
+				error_log("Updating the schema version to ".$newSchemaVersion);
+
+				try {
+					$this->getResult("SAVEPOINT sp");
+					$this->getResult("CREATE TABLE settings (key text PRIMARY KEY, value text)");
+				} catch (Exception $e) {
+					$this->getResult("ROLLBACK TO SAVEPOINT sp");
+					error_log("The table already exists");
+				}
+
+				try {
+					$this->getResult("SAVEPOINT sp");
+					$this->getResult("INSERT INTO settings (key, value) VALUES ('schema_version', '".pg_escape_string($newSchemaVersion)."')");
+				} catch (Exception $e) {
+					$this->getResult("ROLLBACK TO SAVEPOINT sp");
+					error_log("There is already a schema_version entry in settings");
+				}
+
+				$this->getResult("UPDATE settings SET value = '".pg_escape_string($newSchemaVersion)."' WHERE key = 'schema_version'");
+			}
+
+			// Finally, we can commit all those changes (or no changes
+			// if we were up to date already...)
+
+			$this->commit();
+
+		} catch (Exception $e) {
+			error_log("Migrating the database failed: ".$e);
+			$this->rollback();
+			echo json_encode( array ( 'error' => 'Migrating the database failed.  See http://bit.ly/nGVIB6 for help.' ) );
+			exit();
+		}
+
+	}
+
 }
 
 ?>

@@ -96,3 +96,67 @@ synapse manipulation mode
 % add to tn, tci
 
 
+DELETE FROM treenode_class_instance;
+DELETE FROM treenode;
+DELETE FROM location_class_instance;
+DELETE FROM location;
+DELETE FROM class_instance;
+DELETE FROM class_instance_class_instance;
+DELETE FROM class_instance WHERE class_instance.id > 400;
+
+
+schema applied for synapses
+---------------------------
+
+
+Yes.  E.g. <location>l1 model_of <synapse>s1 realized through the
+following table entries:
+
+class: synapse
+class_instance: s1 class=synapse
+relation: model_of
+location: l1
+location_class_instance: l1 s1 relation=model_of
+
+  In the class_instance table:
+    Z class=synapse
+
+  In the location table:
+    L
+
+  In the location_class_instance table:
+    L model_of Z
+
+That way, a connector is an abstract thing that, on demand, can have a
+location/shape/whatever you want.  With its own table, it has to have a
+point location but nothing else.
+
+Instead of the last table, one could even better but also more
+complicated separate connectivity and annotation completely (mix this
+with the above definitions):
+
+  In the class_instance table:
+    TA class=postsynaptic terminal
+    TB class=postsynaptic terminal
+    TC class=presynaptic terminal
+    TD class=presynaptic terminal
+    TE class=presynaptic terminal
+
+  In the treenode_class_instance table:
+    A model_of TA
+    B model_of TB
+    C model_of TC
+    D model_of TD
+    E model_of TE
+
+  In the class_instance_class_instance table:
+    TA presynaptic_to Z 
+    TB presynaptic_to Z
+    TC postsynaptic_to Z
+    TD postsynaptic_to Z
+    TE postsynaptic_to Z
+
+That way, the connection is fully described in the abstract domain
+whereas location or shape are in the annotation domain.  That is, a
+complete connectivity graph could be built exclusively from the abstract
+semantic description.

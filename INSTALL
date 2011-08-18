@@ -8,6 +8,11 @@
 
 sudo apt-get install libapache2-mod-php5 php5-pgsql imagemagick
 
+To use the Python-based helper scripts, you should also install
+the following packages:
+
+sudo apt-get install python-psycopg2 python-yaml
+
 == Ubuntu 10.10 ==
 
 The git repository is hosted here::
@@ -21,17 +26,13 @@ the folder /var/www/catmaid/httpdocs/ in place
 
 https://help.ubuntu.com/community/PostgreSQL
 
-	sudo apt-get install postgresql pgadmin3 phppgadmin
+	sudo apt-get install postgresql pgadmin3 phppgadmin postgresql-contrib
 
 Update the password for your catmaid user in /var/www/catmaid/docs/createuser.sql
 
 	sudo -u postgres psql < docs/createuser.sql
 
-Dump the database in docs/master.sql::
-
-	sudo -u postgres psql catmaid < docs/master.sql
-
-Check if you can login and see the contents::
+Check if you can login - the database should still be empty, however:
 
 	http://localhost/phppgadmin/
 
@@ -39,11 +40,15 @@ Make sure that the catmaid database is accessible using MD5 hashed
 passwords - you have to add this line as the *first* rule in
 /etc/postgresql/8.4/main/pg_hba.conf:
 
-	local   catmaid     all                               md5
+	local   catmaid     catmaid_user          md5
 
-Update catmaid database connection for user in::
+After the above please restart the database:
 
-	/var/www/catmaid/inc/setup.inc.php
+  sudo /etc/init.d/posgresql-8.4 restart
+
+Update catmaid database connection for user in
+inc/setup.inc.php.template and rename the file to
+inc/setup.inc
 
 2. Apache2 Server
 
@@ -55,39 +60,53 @@ of an existing host:
 
 http://wiki.ubuntuusers.de/Apache/Virtual_Hosts
 
+Your clone of the CATMAID source code should be *outside* any
+web-accessible directory.  For example, let's say that you have the
+source code in /home/bob/catmaid/
+
+Create a directory for the log files, for example with:
+
+   sudo mkdir -p /var/log/apache2/catmaid/
+
 Create in /etc/apache2/sites-available a file called "catmaid":
 ----
 <VirtualHost *:80>
-ServerName catmaid
+    ServerName catmaid
 
-DocumentRoot "/var/www/catmaid/httpdocs"
+    DocumentRoot "/home/bob/catmaid/httpdocs/"
 
-php_admin_value register_globals off
-php_admin_value include_path ".:/var/www/catmaid/inc"
-php_admin_value session.use_only_cookies 1
-php_admin_value error_reporting 2047
-php_admin_value display_errors true
+    php_admin_value register_globals off
+    php_admin_value include_path ".:/home/bob/catmaid/inc"
+    php_admin_value session.use_only_cookies 1
+    php_admin_value error_reporting 2047
+    php_admin_value display_errors true
 
-<Directory /var/www/catmaid/httpdocs>
+    <Directory /home/bob/catmaid/httpdocs/>
 
-	Options FollowSymLinks
-	AllowOverride AuthConfig Limit FileInfo
+        Options FollowSymLinks
+        AllowOverride AuthConfig Limit FileInfo
 
-                Order allow,deny
-                allow from all
+        Order allow,deny
+        allow from all
 
-</Directory>
+    </Directory>
 
-CustomLog /var/www/catmaid/logs/access_log combined
-ErrorLog /var/www/catmaid/logs/error.log
+    CustomLog /var/log/apache2/catmaid/access_log combined
+    ErrorLog /var/log/apache2/catmaid/error.log
 
 </VirtualHost>
 ---
 
+... then make apache aware of the virtual host:
 	sudo a2ensite catmaid
-	/etc/init.d/apache2 reload
 
-You might have to update /etc/hosts
+... then restart apache:
+	/etc/init.d/apache2 restart
+
+... and finally add this entry to "/etc/hosts" :
+
+127.0.0.1	catmaid
+
 
 2.2 As a directory of an existing virtual host
 
@@ -129,31 +148,37 @@ Try to start CATMAID::
 
 	firefox http://catmaid/
 
-And use the default login::
+... or with:
+
+        firefox http://localhost/catmaid/
+
+... depending on the approach you took above.  You will get an error
+to tell you that no projects are found.  If you want to create some
+example projects, stacks and a user account for testing, you should do:
+
+        psql -U catmaid_user < docs/example-projects.sql
+
+Then you can use the default login::
 
 	user: gerhard
 	pass: gerhard
 
-Deprecated
-==========
+4. Adding a new project
 
+You can generate the image tiles for a stack with the scripts/tile_stack
+script or by exporting from TrakEM2 with its "Export > Flat Images" option
+and selecting the "Export for web" checkbox.
 
-===Database===
+Then you can create a new project with the script scripts/create_project_stack.py 
 
-Create the database using the included dump.sql file.  In Debian/Ubuntu, this
-is:
+Usage: create-project.py <host> <database-name>
 
-sudo -u postgres pgsql < dump.sql
+The script enables the generation of a new project or uses an existing project.
+For a new project, it creates the classes and relations necessary for SVG-based
+annotation and associates the project with the users.
+It enables the creation of new stacks associated with the project.
 
-for a fresh Postgres installation.  The dump adds the login role `catmaid_user'
-with default password `catmaid_user_password'.  Change that to your personal
-needs either in dump.sql or afterwards via
+More details about the data model can be found in docs/data-model.lyx - a PDF
+generated from that file can be found here:
 
-ALTER ROLE "catmaid_user" PASSWORD '<new password>'
-
-Add the respective password authentication rule to your pg_hba.conf before the
-rule for ident authentication:
-
-local   catmaid     catmaid_user                      md5
-local   all         all                               ident
-
+  http://incf.ini.uzh.ch/docs/catmaid-data-model.pdf

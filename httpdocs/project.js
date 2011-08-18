@@ -898,7 +898,7 @@ function Project(pid) {
   this.focusedStack;
 
   var editable = false;
-  var mode = "trace";
+  var mode = "move";
   var show_textlabels = true;
 
   var icon_text_apply = document.getElementById("icon_text_apply");

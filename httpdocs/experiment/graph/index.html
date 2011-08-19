@@ -71,6 +71,7 @@
                 
                 // fetch data
                 var networ_json = synchFetch("../../model/network.api/annotations.php", {pid : 3});
+                console.log(networ_json);
                 
                 // initialization options
                 var options = {
@@ -87,21 +88,21 @@
                 // visual style we will use
                 var visual_style = {
                     global: {
-                        backgroundColor: "#ABCFD6"
+                        backgroundColor: "#ffffff"
                     },
                     nodes: {
-                        shape: "OCTAGON",
-                        borderWidth: 3,
-                        borderColor: "#ffffff",
+                        shape: "ELLIPSE",
+                        borderWidth: 1,
+                        borderColor: "#a7a7a7",
                         size: {
-                            defaultValue: 25,
+                            defaultValue: 30,
                             continuousMapper: { attrName: "weight", minValue: 25, maxValue: 75 }
                         },
                         color: {
                             discreteMapper: {
                                 attrName: "type",
                                 entries: [
-                                    { attrValue: "neuron", value: "#85beff" },
+                                    { attrValue: "neuron", value: "#85beff"},
                                     { attrValue: "group", value: "#85be13" },
                                     { attrValue: "skeleton", value: "#dddd00" },
                                     { attrValue: "root", value: "#ff6b6b" },
@@ -111,11 +112,15 @@
                                 ]
                             }
                         },
-                        labelHorizontalAnchor: "center"
+                        labelHorizontalAnchor: "center",
+                        labelFontSize: 12,
+                        labelFontWeight: "bold"
                     },
                     edges: {
                         width: 3,
-                        color: "#0B94B1"
+                        color: "#0B94B1",
+                        labelFontSize: 10,
+                        labelFontWeight: "bold"
                     }
                 };
 
@@ -127,7 +132,7 @@
                     edgeLabelsVisible: true,
                     
                     // let's try another layout
-                    layout: "Tree",
+                    layout: "ForceDirected",
                     
                     // set the style at initialisation
                     visualStyle: visual_style,

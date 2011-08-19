@@ -1,9 +1,28 @@
 #!/usr/bin/python
 
+# This script dumps the complete tracing geometry (skeletons and connectors)
+# into an irregular NeuroHDF dataset (neurohdf.org) and associates it to
+# a Region which corresponds to the Stack in CATMAID.
+
+# The complete microcircuitry of the NeuroHDF file can be visualized
+# with fos-pyside (github.com/fos/fos-pyside)
+
 import sys
 import psycopg2
 import os
+import yaml
 import numpy as np
+
+try:
+    conf = yaml.load(open(os.path.join(os.environ['HOME'], '.catmaid-db')))
+except:
+    print >> sys.stderr, '''Your ~/.catmaid-db file should look like:
+
+host: localhost
+database: catmaid
+username: catmaid_user
+password: password_of_your_catmaid_user'''
+    sys.exit(1)
 
 if len(sys.argv) != 2:
     print >> sys.stderr, "Usage: export_from_catmaid.py <PROJECT-ID>"
@@ -11,13 +30,12 @@ if len(sys.argv) != 2:
 
 pid = int(sys.argv[1])
 
-db_login_filename = os.path.join(os.environ['HOME'],'.catmaid-db.test')
-fp = open(db_login_filename)
-for i, line in enumerate(fp):
-	if i == 0:
-		catmaid_db_user = line.strip()
-	elif i == 1:
-		catmaid_db_password = line.strip()
+conn = psycopg2.connect(host=conf['host'],
+                        database=conf['database'],
+                        user=conf['username'],
+                        password=conf['password'])
+
+c = conn.cursor()
 
 def treenodes_to_numpy(tnrows):
 	""" Converts retrieved list of treenode tuples to an array 
@@ -64,9 +82,6 @@ def treenodes_to_numpy(tnrows):
 
 	return locarr, loctop, idx
 	
-
-conn = psycopg2.connect(database="catmaid",user=catmaid_db_user,password=catmaid_db_password)
-c = conn.cursor()
 
 # Find project information
 select = 'SELECT p.title '

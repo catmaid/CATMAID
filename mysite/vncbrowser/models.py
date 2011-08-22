@@ -78,7 +78,7 @@ class ClassInstance(models.Model):
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
     # Default=Now new columns:
-    class = models.ForeignKey(Class)
+    class_ = models.ForeignKey(Class) # underscore since class is a keyword
     name = models.CharField(max_length=255)
 
 
@@ -125,14 +125,14 @@ class ClassInstanceClassInstance(models.Model):
     class_instance_a = models.ForeignKey(ClassInstance)
     class_instance_b = models.ForeignKey(ClassInstance)
 
-class BrokenSlice(models.model):
+class BrokenSlice(models.Model):
     class Meta:
         db_table = "broken_slice"
         managed = False
     stack = models.ForeignKey(Stack)
     index = models.IntegerField()
 
-class ClassClass(models.model):
+class ClassClass(models.Model):
     class Meta:
         db_table = "class_class"
         managed = False
@@ -147,7 +147,7 @@ class ClassClass(models.model):
     class_a = models.ForeignKey(Class)
     class_b = models.ForeignKey(Class)
 
-class Message(models.model):
+class Message(models.Model):
     class Meta:
         db_table = "message"
         managed = False
@@ -159,14 +159,14 @@ class Message(models.model):
     text = models.TextField(null=True)
     action = models.TextField()
 
-class Settings(models.model):
+class Settings(models.Model):
     class Meta:
         db_table = "settings"
         managed = False
     key = models.TextField()
     value = models.TextField(null=True)
 
-class Textlabel(models.model):
+class Textlabel(models.Model):
     class Meta:
         db_table = "textlabel"
         managed = False
@@ -183,10 +183,10 @@ class Textlabel(models.model):
     edition_time = models.DateTimeField(default=now)
     deleted = models.BooleanField()
 
-class TextlabelLocation(models.model):
+class TextlabelLocation(models.Model):
     class Meta:
         db_table = "textlabel_location"
         managed = False
-    textlabel = ForeignKey(Textlabel)
+    textlabel = models.ForeignKey(Textlabel)
     # location is of type double3d, can't represent that yet
     deleted = models.BooleanField()

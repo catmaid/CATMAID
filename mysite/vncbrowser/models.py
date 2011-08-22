@@ -1,8 +1,42 @@
 from django.db import models
 from datetime import datetime
+import sys
+import re
 
 def now():
     return datetime.now()
+
+class Double3D:
+    def __init__(self, x=0, y=0, z=0):
+        self.x, self.y, self.z = x, y, z
+    double_re = '[-+0-9\.Ee]+'
+    tuple_pattern = re.compile('^\((%s),(%s),(%s)\)$'%((double_re,)*3))
+    @classmethod
+    def from_str(cls, s):
+        print >> sys.stderr, "in from_str"
+        m = cls.tuple_pattern.match(s)
+        if m:
+            return Double3D(x=float(m.group(1)),
+                            y=float(m.group(2)),
+                            z=float(m.group(3)))
+        else:
+            raise Exception, "Couldn't parse value from the database as a Double3D: "+str(s)
+
+class Double3DField(models.Field):
+    __metaclass__ = models.SubfieldBase
+    def db_type(self, connection):
+        return 'double3d'
+    def to_python(self, value):
+        if isinstance(value, Double3D):
+            return value
+        # When contructing a Location, we get the empty string
+        # here; return a new Double3D for any falsy value:
+        if not value:
+            return Double3D()
+        print >> sys.stderr, "value is %s, of type %s" % (value, type(value))
+        return Double3D.from_str(value)
+    def get_db_prep_value(self, value, connection, prepared=False):
+        return "(%f,%f,%f)" % (value.x, value.y, value.z)
 
 class Project(models.Model):
     class Meta:
@@ -190,3 +224,14 @@ class TextlabelLocation(models.Model):
     textlabel = models.ForeignKey(Textlabel)
     # location is of type double3d, can't represent that yet
     deleted = models.BooleanField()
+
+class Location(models.Model):
+    class Meta:
+        db_table = "location"
+        managed = False
+    # id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User)
+    creation_time = models.DateTimeField(default=now)
+    edition_time = models.DateTimeField(default=now)
+    project = models.ForeignKey(Project)
+    location = Double3DField()

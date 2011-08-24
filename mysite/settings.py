@@ -11,7 +11,7 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'ENGINE': 'custom_postgresql_psycopg2', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
         'NAME': 'catmaid',                    # Or path to database file if using sqlite3.
         'USER': 'catmaid_user',               # Not used with sqlite3.
         'PASSWORD': 'catmaid_user_password',  # Not used with sqlite3.

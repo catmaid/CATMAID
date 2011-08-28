@@ -30,7 +30,7 @@ password: password_of_your_catmaid_user'''
 #    print >> sys.stderr, "Usage: export_from_catmaid.py <PROJECT-ID>"
 #    sys.exit(1)
 
-pid = 3 # int(sys.argv[1])
+pid = int(sys.argv[1])
 
 conn = psycopg2.connect(host=conf['host'],
                         database=conf['database'],
@@ -83,9 +83,12 @@ if len(rows) == 0:
 
 # fetch skeleton nodes
 query = """
-select tn.id, (tn.location).x, (tn.location).y, (tn.location).z, tn.parent_id, tci.class_instance_id as skeleton_id from treenode as tn, treenode_class_instance as tci where tn.project_id = 3 and tci.treenode_id = tn.id and tci.relation_id = 11 order by tci.class_instance_id asc
-"""
-c.execute(query,(pid,scid))
+SELECT tn.id, (tn.location).x, (tn.location).y, (tn.location).z, tn.parent_id, tci.class_instance_id as skeleton_id
+FROM treenode as tn, treenode_class_instance as tci
+WHERE tn.project_id = {pid} and tci.treenode_id = tn.id and tci.relation_id = {eleof}
+ORDER BY tci.class_instance_id asc
+""".format(pid = pid, eleof = eleofid)
+c.execute(query,)
 tn_nr = c.rowcount
 tn_xyz = np.zeros( (tn_nr, 3), dtype = np.float32 )
 tn_connectivity = np.zeros( (tn_nr, 2), dtype = np.uint32 )
@@ -116,16 +119,17 @@ for i,row in enumerate(c):
 tn_connectivity = tn_connectivity[:-(cnt),:]
 # map connectivity to index
 for row in tn_connectivity:
-    print row
     row[1] = tn_mapid2idx[row[1]]
 # type, only skeleton now
 tn_type =  np.ones( (len(tn_connectivity), 1), dtype = np.uint32 )
 
 # fetch connector nodes
 query = """
-select cn.id, (cn.location).x, (cn.location).y, (cn.location).z from connector as cn where cn.project_id = 3
-"""
-c.execute(query,(pid,scid))
+SELECT cn.id, (cn.location).x, (cn.location).y, (cn.location).z
+FROM connector as cn
+WHERE cn.project_id = {pid}
+""".format(pid = pid)
+c.execute(query)
 cn_nr = c.rowcount
 cn_id = np.zeros( (cn_nr, 1), dtype = np.uint32 )
 cn_xyz = np.zeros( (cn_nr, 3), dtype = np.float32 )
@@ -139,9 +143,10 @@ for i,row in enumerate(c):
 
 # fetch treenode - connector connectivity, transform to index connectivity
 query = """
-select tc.relation_id, tc.treenode_id, tc.connector_id from treenode_connector as tc where tc.project_id = 3
-"""
-c.execute(query,(pid,scid))
+SELECT tc.relation_id, tc.treenode_id, tc.connector_id
+FROM treenode_connector as tc where tc.project_id = {pid}
+""".format(pid = pid)
+c.execute(query)
 tc_nr = c.rowcount
 tc_connectivity = np.zeros( (tc_nr, 2), dtype = np.uint32 )
 tc_type = np.zeros( (tc_nr, 1), dtype = np.uint32 )
@@ -152,8 +157,6 @@ for i,row in enumerate(c):
     tc_connectivity[i,0] = tn_mapid2idx[row[1]]
     tc_connectivity[i,1] = cn_mapid2idx[row[2]] + len(tn_xyz)
 
-print tc_connectivity
-
 vertices = np.concatenate( (tn_xyz, cn_xyz) )
 connectivity = np.concatenate( (tn_connectivity, tc_connectivity) )
 connectivity_type = np.concatenate( (tn_type, tc_type) )
@@ -163,13 +166,10 @@ print "vertices", vertices
 print "connectivity", connectivity
 print "type", connectivity_type
 print "skeletonid", connectivity_skeletonid
-
 print "cnids", cn_id
+
 # output into neurohdf irregular dataset for stack region
 
 np.save('/home/stephan/vert.npy', vertices)
 np.save('/home/stephan/conn.npy', connectivity)
 np.save('/home/stephan/conn_id.npy', connectivity_skeletonid)
-
-# act.deselect()
-

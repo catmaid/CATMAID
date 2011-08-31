@@ -753,10 +753,18 @@ var SkeletonElements = new function()
     }, function (status, text, xml) {
       if (status !== 200) {
         alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+      } else {
+          if (text && text !== " ") {
+            var e = $.parseJSON(text);
+            if (e.error) {
+              alert(e.error);
+            } else {
+              // Refresh all nodes in any case, to reflect the new state of the database
+              connectornode.paper.catmaidSVGOverlay.updateNodes();
+              return true;
+            }
+          }
       }
-      // Refresh all nodes in any case, to reflect the new state of the database
-      connectornode.paper.catmaidSVGOverlay.updateNodes();
-      return true;
     });
   };
 

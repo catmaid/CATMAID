@@ -106,11 +106,11 @@ var SkeletonAnnotations = new function()
   var refreshAllWidgets = function()
   {
     if ($('#connectortable_widget').css('display') === "block" && $('#synchronize_connectortable').attr('checked')) {
-      ConnectorTable.init(pid);
+      ConnectorTable.init( project.getId() );
     }
 
     if ($('#treenode_table_widget').css('display') === "block" && $('#synchronize_treenodetable').attr('checked')) {
-      TreenodeTable.init(pid);
+      TreenodeTable.init( project.getId() );
     }
   }
 

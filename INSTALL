@@ -17,7 +17,7 @@ sudo apt-get install python-psycopg2 python-yaml
 
 The git repository is hosted here::
 
-	http://pacific.mpi-cbg.de/cgi-bin/gitweb.cgi
+        https://github.com/acardona/CATMAID
 
 0. Clone the repository into /var/www/catmaid so that you have
 the folder /var/www/catmaid/httpdocs/ in place

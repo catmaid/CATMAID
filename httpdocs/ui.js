@@ -169,13 +169,19 @@ UI = function () {
    * -1 - down
    */
   this.getMouseWheel = function (e) {
-    if (e && e.detail) return (e.detail > 0 ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN);
-    else if (event && event.wheelDelta) {
-      if (window.opera) return (event.wheelDelta > 0 ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN);
-      else
-      return (event.wheelDelta < 0 ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN);
+    var result;
+    if (e && e.detail) {
+      result = (e.detail > 0 ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN);
+    } else if (event && event.wheelDelta) {
+      if (window.opera) {
+        result = (event.wheelDelta > 0 ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN);
+      } else {
+        result = (event.wheelDelta < 0 ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN);
+      }
     } else
-    return undefined;
+      return undefined;
+    stopEventPropagation(e);
+    return result;
   }
 
   /**

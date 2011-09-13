@@ -44,22 +44,22 @@ conn = psycopg2.connect(host=conf['host'], database=conf['database'],
 def create_annotation(user_id, project_id):
 
     print("Create annotations for project with id {0} as user with id {1}".format(project_id, user_id) )
-    classes_required = [ ( "skeleton", True ),
-                         ( "neuron", True ),
-                         ( "group", True ),
-                         ( "label", False ),
-                         ( "root", False ),
-                         ( "synapse", True ),
-                         ( "presynaptic terminal", True ),
-                         ( "postsynaptic terminal", True ) ]
+    classes_required = [ ( "skeleton" ),
+                         ( "neuron" ),
+                         ( "group" ),
+                         ( "label" ),
+                         ( "root" ),
+                         ( "synapse" ),
+                         ( "presynaptic terminal" ),
+                         ( "postsynaptic terminal" ) ]
 
     class_dictionary = {}
 
-    for required_class, show_in_tree in classes_required:
-        class_dictionary[required_class] = {'show_in_tree': show_in_tree};
-        c.execute("INSERT INTO class (user_id, project_id, class_name, showintree) "+
-                  "VALUES (%s, %s, %s, %s) RETURNING id",
-                  (user_id, project_id, required_class, show_in_tree))
+    for required_class in classes_required:
+        class_dictionary[required_class] = {};
+        c.execute("INSERT INTO class (user_id, project_id, class_name) "+
+                  "VALUES (%s, %s, %s) RETURNING id",
+                  (user_id, project_id, required_class,))
         class_dictionary[required_class]['id'] = c.fetchone()[0]
 
     c.execute("INSERT INTO class_instance (user_id, project_id, class_id, name) "+
@@ -117,8 +117,8 @@ else:
         project_public = "TRUE"
 
     # Check if project already exists
-    insert = 'INSERT INTO project (title, public) VALUES (%s, %s) RETURNING id'
-    c.execute(insert, (project_name, project_public) )
+    insert = "INSERT INTO project (title, public) VALUES (%s, %s) RETURNING id"
+    c.execute(insert, (project_name, project_public,) )
 
     project_id = c.fetchone()[0]
 

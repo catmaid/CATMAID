@@ -365,8 +365,6 @@ var SkeletonElements = new function()
    * */
   var createCircle = function()
   {
-    // TODO this could improve. For example the objects given as arguments could be reused forever, given that raphael merely reads them
-    // TODO    and that javascript is single-threaded (at least when it comes to creating nodes in overlay.js).
     if (0 === this.zdiff) {
       var paper = this.paper;
       // c and mc may already exist if the node is being reused

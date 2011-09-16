@@ -318,30 +318,6 @@ var SkeletonElements = new function()
       }
       return true;
     });
-
-
-
-    // in fact, doing everything on the server-side
-    // (like relinking) again in the ui not best-practice
-    /*
-    // remove the parent of all the children
-    for (var i in this.children) {
-      this.children[ i ].removeLine();
-      this.children[ i ].removeParent();
-    }
-    // remove the raphael svg elements from the DOM
-    c.remove();
-    mc.remove();
-    this.removeLine();
-
-    if (this.parent != null) {
-      // remove this node from parent's children list
-      for (var i in this.parent.children) {
-        if (this.parent.children[i].id == id)
-          delete this.parent.children[i];
-      }
-    }
-    */
   };
 
   /** Set the node fill color depending on its distance from the

@@ -720,7 +720,7 @@ var SkeletonAnnotations = new function()
               nn.draw();
               var active_node_z = atn.z;
               self.activateNode(nn); // will alter atn
-              // ALREADY DONE by activate node refreshAllWidgets();
+              // ALREADY DONE by activate node // refreshAllWidgets();
 
               // Check whether the Z coordinate of the new node is beyond one section away
               // from the Z coordinate of the parent node (which is the active by definition)

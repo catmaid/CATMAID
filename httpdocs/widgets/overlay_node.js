@@ -245,8 +245,8 @@ var SkeletonElements = new function()
    *  This is called only when creating a single node
    */
   var draw = function() {
-    this.drawEdges();
     this.createCircle();
+    this.drawEdges();
   };
 
   /** Delete all objects relevant to the node

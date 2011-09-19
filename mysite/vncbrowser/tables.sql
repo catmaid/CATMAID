@@ -22,24 +22,6 @@ CREATE TYPE rgba AS (
 	b real,
 	a real
 );
-CREATE TYPE tablefunc_crosstab_2 AS (
-	row_name text,
-	category_1 text,
-	category_2 text
-);
-CREATE TYPE tablefunc_crosstab_3 AS (
-	row_name text,
-	category_1 text,
-	category_2 text,
-	category_3 text
-);
-CREATE TYPE tablefunc_crosstab_4 AS (
-	row_name text,
-	category_1 text,
-	category_2 text,
-	category_3 text,
-	category_4 text
-);
 CREATE FUNCTION on_edit() RETURNS trigger
     LANGUAGE plpgsql
     AS $$BEGIN

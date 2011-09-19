@@ -112,7 +112,7 @@ class ClassInstance(models.Model):
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
     # Default=Now new columns:
-    class_ = models.ForeignKey(Class, db_column="class") # underscore since class is a keyword
+    class_column = models.ForeignKey(Class, db_column="class") # underscore since class is a keyword
     name = models.CharField(max_length=255)
 
 

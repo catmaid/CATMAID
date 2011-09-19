@@ -30,102 +30,6 @@ CREATE FUNCTION on_edit() RETURNS trigger
 END;
 $$;
 SET default_with_oids = false;
-CREATE TABLE auth_group (
-    id integer NOT NULL,
-    name character varying(80) NOT NULL
-);
-CREATE SEQUENCE auth_group_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-ALTER SEQUENCE auth_group_id_seq OWNED BY auth_group.id;
-CREATE TABLE auth_group_permissions (
-    id integer NOT NULL,
-    group_id integer NOT NULL,
-    permission_id integer NOT NULL
-);
-CREATE SEQUENCE auth_group_permissions_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-ALTER SEQUENCE auth_group_permissions_id_seq OWNED BY auth_group_permissions.id;
-CREATE TABLE auth_message (
-    id integer NOT NULL,
-    user_id integer NOT NULL,
-    message text NOT NULL
-);
-CREATE SEQUENCE auth_message_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-ALTER SEQUENCE auth_message_id_seq OWNED BY auth_message.id;
-CREATE TABLE auth_permission (
-    id integer NOT NULL,
-    name character varying(50) NOT NULL,
-    content_type_id integer NOT NULL,
-    codename character varying(100) NOT NULL
-);
-CREATE SEQUENCE auth_permission_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-ALTER SEQUENCE auth_permission_id_seq OWNED BY auth_permission.id;
-CREATE TABLE auth_user (
-    id integer NOT NULL,
-    username character varying(30) NOT NULL,
-    first_name character varying(30) NOT NULL,
-    last_name character varying(30) NOT NULL,
-    email character varying(75) NOT NULL,
-    password character varying(128) NOT NULL,
-    is_staff boolean NOT NULL,
-    is_active boolean NOT NULL,
-    is_superuser boolean NOT NULL,
-    last_login timestamp with time zone NOT NULL,
-    date_joined timestamp with time zone NOT NULL
-);
-CREATE TABLE auth_user_groups (
-    id integer NOT NULL,
-    user_id integer NOT NULL,
-    group_id integer NOT NULL
-);
-CREATE SEQUENCE auth_user_groups_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-ALTER SEQUENCE auth_user_groups_id_seq OWNED BY auth_user_groups.id;
-CREATE SEQUENCE auth_user_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-ALTER SEQUENCE auth_user_id_seq OWNED BY auth_user.id;
-CREATE TABLE auth_user_user_permissions (
-    id integer NOT NULL,
-    user_id integer NOT NULL,
-    permission_id integer NOT NULL
-);
-CREATE SEQUENCE auth_user_user_permissions_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-ALTER SEQUENCE auth_user_user_permissions_id_seq OWNED BY auth_user_user_permissions.id;
-CREATE TABLE broken_slice (
-    stack_id integer NOT NULL,
-    index integer NOT NULL
-);
 CREATE TABLE concept (
     id bigint NOT NULL,
     user_id bigint NOT NULL,
@@ -180,53 +84,6 @@ CREATE TABLE connector_class_instance (
     class_instance_id bigint NOT NULL
 )
 INHERITS (relation_instance);
-CREATE TABLE django_content_type (
-    id integer NOT NULL,
-    name character varying(100) NOT NULL,
-    app_label character varying(100) NOT NULL,
-    model character varying(100) NOT NULL
-);
-CREATE SEQUENCE django_content_type_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-ALTER SEQUENCE django_content_type_id_seq OWNED BY django_content_type.id;
-CREATE TABLE django_session (
-    session_key character varying(40) NOT NULL,
-    session_data text NOT NULL,
-    expire_date timestamp with time zone NOT NULL
-);
-CREATE TABLE django_site (
-    id integer NOT NULL,
-    domain character varying(100) NOT NULL,
-    name character varying(50) NOT NULL
-);
-CREATE SEQUENCE django_site_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-ALTER SEQUENCE django_site_id_seq OWNED BY django_site.id;
-CREATE TABLE message (
-    id integer NOT NULL,
-    user_id integer NOT NULL,
-    "time" timestamp with time zone DEFAULT now() NOT NULL,
-    read boolean DEFAULT false NOT NULL,
-    title text DEFAULT 'New message'::text NOT NULL,
-    text text,
-    action text
-);
-COMMENT ON COLUMN message.action IS 'URL to be executed (remember that this is not safe against man in the middle when not encrypted)';
-CREATE SEQUENCE message_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-ALTER SEQUENCE message_id_seq OWNED BY message.id;
 CREATE TABLE project (
     id integer NOT NULL,
     title text NOT NULL,
@@ -337,47 +194,11 @@ CREATE SEQUENCE user_id_seq
     NO MINVALUE
     CACHE 1;
 ALTER SEQUENCE user_id_seq OWNED BY "user".id;
-ALTER TABLE auth_group ALTER COLUMN id SET DEFAULT nextval('auth_group_id_seq'::regclass);
-ALTER TABLE auth_group_permissions ALTER COLUMN id SET DEFAULT nextval('auth_group_permissions_id_seq'::regclass);
-ALTER TABLE auth_message ALTER COLUMN id SET DEFAULT nextval('auth_message_id_seq'::regclass);
-ALTER TABLE auth_permission ALTER COLUMN id SET DEFAULT nextval('auth_permission_id_seq'::regclass);
-ALTER TABLE auth_user ALTER COLUMN id SET DEFAULT nextval('auth_user_id_seq'::regclass);
-ALTER TABLE auth_user_groups ALTER COLUMN id SET DEFAULT nextval('auth_user_groups_id_seq'::regclass);
-ALTER TABLE auth_user_user_permissions ALTER COLUMN id SET DEFAULT nextval('auth_user_user_permissions_id_seq'::regclass);
 ALTER TABLE concept ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
-ALTER TABLE django_content_type ALTER COLUMN id SET DEFAULT nextval('django_content_type_id_seq'::regclass);
-ALTER TABLE django_site ALTER COLUMN id SET DEFAULT nextval('django_site_id_seq'::regclass);
-ALTER TABLE message ALTER COLUMN id SET DEFAULT nextval('message_id_seq'::regclass);
 ALTER TABLE project ALTER COLUMN id SET DEFAULT nextval('project_id_seq'::regclass);
 ALTER TABLE stack ALTER COLUMN id SET DEFAULT nextval('stack_id_seq'::regclass);
 ALTER TABLE textlabel ALTER COLUMN id SET DEFAULT nextval('textlabel_id_seq'::regclass);
 ALTER TABLE "user" ALTER COLUMN id SET DEFAULT nextval('user_id_seq'::regclass);
-ALTER TABLE ONLY auth_group
-    ADD CONSTRAINT auth_group_name_key UNIQUE (name);
-ALTER TABLE ONLY auth_group_permissions
-    ADD CONSTRAINT auth_group_permissions_group_id_key UNIQUE (group_id, permission_id);
-ALTER TABLE ONLY auth_group_permissions
-    ADD CONSTRAINT auth_group_permissions_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY auth_group
-    ADD CONSTRAINT auth_group_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY auth_message
-    ADD CONSTRAINT auth_message_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY auth_permission
-    ADD CONSTRAINT auth_permission_content_type_id_key UNIQUE (content_type_id, codename);
-ALTER TABLE ONLY auth_permission
-    ADD CONSTRAINT auth_permission_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY auth_user_groups
-    ADD CONSTRAINT auth_user_groups_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY auth_user_groups
-    ADD CONSTRAINT auth_user_groups_user_id_key UNIQUE (user_id, group_id);
-ALTER TABLE ONLY auth_user
-    ADD CONSTRAINT auth_user_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY auth_user_user_permissions
-    ADD CONSTRAINT auth_user_user_permissions_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY auth_user_user_permissions
-    ADD CONSTRAINT auth_user_user_permissions_user_id_key UNIQUE (user_id, permission_id);
-ALTER TABLE ONLY auth_user
-    ADD CONSTRAINT auth_user_username_key UNIQUE (username);
 ALTER TABLE ONLY class
     ADD CONSTRAINT class_id_key UNIQUE (id);
 ALTER TABLE ONLY class_instance
@@ -406,20 +227,10 @@ ALTER TABLE ONLY connector
     ADD CONSTRAINT connector_id_key UNIQUE (id);
 ALTER TABLE ONLY connector
     ADD CONSTRAINT connector_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY django_content_type
-    ADD CONSTRAINT django_content_type_app_label_key UNIQUE (app_label, model);
-ALTER TABLE ONLY django_content_type
-    ADD CONSTRAINT django_content_type_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY django_session
-    ADD CONSTRAINT django_session_pkey PRIMARY KEY (session_key);
-ALTER TABLE ONLY django_site
-    ADD CONSTRAINT django_site_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY location
     ADD CONSTRAINT location_id_key UNIQUE (id);
 ALTER TABLE ONLY location
     ADD CONSTRAINT location_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY message
-    ADD CONSTRAINT message_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY project
     ADD CONSTRAINT project_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY project_stack
@@ -452,8 +263,6 @@ ALTER TABLE ONLY "user"
     ADD CONSTRAINT users_name_key UNIQUE (name);
 ALTER TABLE ONLY "user"
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
-CREATE INDEX auth_message_user_id ON auth_message USING btree (user_id);
-CREATE INDEX auth_permission_content_type_id ON auth_permission USING btree (content_type_id);
 CREATE INDEX connector_x_index ON connector USING btree (((location).x));
 CREATE INDEX connector_y_index ON connector USING btree (((location).y));
 CREATE INDEX connector_z_index ON connector USING btree (((location).z));
@@ -521,20 +330,6 @@ CREATE TRIGGER on_edit_treenode_connector
     BEFORE UPDATE ON treenode_connector
     FOR EACH ROW
     EXECUTE PROCEDURE on_edit();
-ALTER TABLE ONLY auth_group_permissions
-    ADD CONSTRAINT auth_group_permissions_group_id_fkey FOREIGN KEY (group_id) REFERENCES auth_group(id) DEFERRABLE INITIALLY DEFERRED;
-ALTER TABLE ONLY auth_group_permissions
-    ADD CONSTRAINT auth_group_permissions_permission_id_fkey FOREIGN KEY (permission_id) REFERENCES auth_permission(id) DEFERRABLE INITIALLY DEFERRED;
-ALTER TABLE ONLY auth_message
-    ADD CONSTRAINT auth_message_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED;
-ALTER TABLE ONLY auth_user_groups
-    ADD CONSTRAINT auth_user_groups_group_id_fkey FOREIGN KEY (group_id) REFERENCES auth_group(id) DEFERRABLE INITIALLY DEFERRED;
-ALTER TABLE ONLY auth_user_groups
-    ADD CONSTRAINT auth_user_groups_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED;
-ALTER TABLE ONLY auth_user_user_permissions
-    ADD CONSTRAINT auth_user_user_permissions_permission_id_fkey FOREIGN KEY (permission_id) REFERENCES auth_permission(id) DEFERRABLE INITIALLY DEFERRED;
-ALTER TABLE ONLY auth_user_user_permissions
-    ADD CONSTRAINT auth_user_user_permissions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED;
 ALTER TABLE ONLY class_class
     ADD CONSTRAINT class_class_class_a_fkey FOREIGN KEY (class_a) REFERENCES class(id) ON DELETE CASCADE;
 ALTER TABLE ONLY class_class
@@ -569,10 +364,6 @@ ALTER TABLE ONLY connector_class_instance
     ADD CONSTRAINT connector_class_instance_relation_id_fkey FOREIGN KEY (relation_id) REFERENCES relation(id);
 ALTER TABLE ONLY connector_class_instance
     ADD CONSTRAINT connector_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
-ALTER TABLE ONLY auth_permission
-    ADD CONSTRAINT content_type_id_refs_id_728de91f FOREIGN KEY (content_type_id) REFERENCES django_content_type(id) DEFERRABLE INITIALLY DEFERRED;
-ALTER TABLE ONLY message
-    ADD CONSTRAINT message_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
 ALTER TABLE ONLY project_stack
     ADD CONSTRAINT project_stack_project_id_fkey FOREIGN KEY (project_id) REFERENCES project(id);
 ALTER TABLE ONLY project_stack

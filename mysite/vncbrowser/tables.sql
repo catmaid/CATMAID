@@ -40,39 +40,6 @@ CREATE TYPE tablefunc_crosstab_4 AS (
 	category_3 text,
 	category_4 text
 );
-CREATE FUNCTION connectby(text, text, text, text, integer, text) RETURNS SETOF record
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'connectby_text';
-CREATE FUNCTION connectby(text, text, text, text, integer) RETURNS SETOF record
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'connectby_text';
-CREATE FUNCTION connectby(text, text, text, text, text, integer, text) RETURNS SETOF record
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'connectby_text_serial';
-CREATE FUNCTION connectby(text, text, text, text, text, integer) RETURNS SETOF record
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'connectby_text_serial';
-CREATE FUNCTION crosstab(text) RETURNS SETOF record
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'crosstab';
-CREATE FUNCTION crosstab(text, integer) RETURNS SETOF record
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'crosstab';
-CREATE FUNCTION crosstab(text, text) RETURNS SETOF record
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'crosstab_hash';
-CREATE FUNCTION crosstab2(text) RETURNS SETOF tablefunc_crosstab_2
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'crosstab';
-CREATE FUNCTION crosstab3(text) RETURNS SETOF tablefunc_crosstab_3
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'crosstab';
-CREATE FUNCTION crosstab4(text) RETURNS SETOF tablefunc_crosstab_4
-    LANGUAGE c STABLE STRICT
-    AS '$libdir/tablefunc', 'crosstab';
-CREATE FUNCTION normal_rand(integer, double precision, double precision) RETURNS SETOF double precision
-    LANGUAGE c STRICT
-    AS '$libdir/tablefunc', 'normal_rand';
 CREATE FUNCTION on_edit() RETURNS trigger
     LANGUAGE plpgsql
     AS $$BEGIN

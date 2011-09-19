@@ -135,6 +135,7 @@ class Relation(models.Model):
 class RelationInstance(models.Model):
     class Meta:
         db_table = "relation_instance"
+        managed = False
     # Repeat the columns inherited from 'concept'
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User)

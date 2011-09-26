@@ -1,8 +1,11 @@
 from django.test import TestCase
 from django.db import connection
 import os
+import sys
 
-from vncbrowser.models import Project, Stack
+from models import Project, Stack, Integer3D, Double3D, ProjectStack
+
+print os.getcwd()
 
 class SimpleTest(TestCase):
     def test_basic_addition(self):
@@ -27,8 +30,26 @@ def ensure_schema_exists():
         cursor.execute(fp.read())
 
 class InsertionTest(TestCase):
+
     def setUp(self):
         ensure_schema_exists()
+
+    def insert_project(self):
+        p = Project()
+        p.title = "Example Project"
+        p.comment = "This is an example project for the Django tests"
+        p.save()
+        return p
+
+    def insert_stack(self):
+        s = Stack()
+        s.title = "Example Stack"
+        s.image_base = "http://incf.ini.uzh.ch/image-stack-fib/"
+        s.trakem2_project = False
+        s.dimension = Integer3D(x=2048, y=1536, z=460)
+        s.resolution = Double3D(x=5.0001, y = 5.0002, z=9.0003)
+        s.save()
+        return s
 
     def test_project_insertion(self):
         """
@@ -36,21 +57,25 @@ class InsertionTest(TestCase):
         id is retrievable afterwards.  (This is something that
         the custom psycopg2 driver is needed for.)
         """
+        p = self.insert_project()
+        self.assertEqual(p.id, 1)
+
+    def insert_project(self):
         p = Project()
         p.title = "Example Project"
         p.comment = "This is an example project for the Django tests"
         p.save()
-        self.assertEqual(p.id, 1)
+        return p
 
     def test_stack_insertion(self):
-        s = Stack()
-        s.title = "Example Stack"
-        s.image_base = "http://incf.ini.uzh.ch/image-stack-fib/"
-        s.trakem2_project = False
-        s.save()
+        p = self.insert_project()
+        s = self.insert_stack()
         self.assertEqual(s.id, 1)
         # Now try to associate this stack with the project:
         p = Project.objects.get(pk=1)
         self.assertTrue(p)
-        p.stacks.add(s)
-        self.assertEqual(len(self.stacks))
+
+        ps = ProjectStack(project=p, stack=s)
+        ps.save()
+
+        self.assertEqual(p.stacks.count(), 1)

@@ -13,7 +13,6 @@ class Double3D:
     tuple_pattern = re.compile('^\((%s),(%s),(%s)\)$'%((double_re,)*3))
     @classmethod
     def from_str(cls, s):
-        print >> sys.stderr, "in from_str"
         m = cls.tuple_pattern.match(s)
         if m:
             return Double3D(x=float(m.group(1)),

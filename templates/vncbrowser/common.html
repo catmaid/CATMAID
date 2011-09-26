@@ -1,0 +1,31 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-15">
+    <link rel="stylesheet" type="text/css" href="{{ static }}css/style.css" title="home">
+    <title>{% block title %}Default Title{% endblock %}</title>
+    <script src="{{ static }}js/raphael-min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="{{ static }}js/jquery-1.4.3.min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="{{ static }}js/sylvester/sylvester.js" type="text/javascript" charset="utf-8"></script>
+    <script src="{{ static }}js/treelines.js" type="text/javascript" charset="utf-8"></script>
+    {% block extrascript %}
+    {% endblock %}
+</head>
+
+<body>
+
+  <div class="header-navigation">
+    {% if user %}
+       You are logged in as: <strong>{{ user.username }}</strong>
+       <a href="{% url django.contrib.auth.views.logout %}">(logout)</a>
+    {% endif %}
+    | <a href="{% url vncbrowser.views.index %}">All neurons (text)</a>
+    | <a href="{% url vncbrowser.views.visual_index %}">All neurons (visual)</a>
+  </div>
+
+{% block main %}
+{% endblock %}
+
+</body>
+
+</html>

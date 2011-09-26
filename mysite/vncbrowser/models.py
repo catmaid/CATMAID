@@ -92,8 +92,8 @@ class Stack(models.Model):
         managed = False
     id = models.AutoField(primary_key=True)
     title = models.TextField()
-    # dimension is of type integer3d, can't represent that yet
-    # resolution is of type double3d, can't represent that yet
+    dimension = Integer3DField()
+    resolution = Double3DField()
     image_base = models.TextField()
     comment = models.TextField(null=True)
     trakem2_project = models.BooleanField()

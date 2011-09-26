@@ -97,7 +97,7 @@ class Class(models.Model):
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
-    # Default=Now new columns:
+    # Now new columns:
     class_name = models.CharField(max_length=255)
     description = models.TextField()
 
@@ -111,7 +111,7 @@ class ClassInstance(models.Model):
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
-    # Default=Now new columns:
+    # Now new columns:
     class_column = models.ForeignKey(Class, db_column="class") # underscore since class is a keyword
     name = models.CharField(max_length=255)
 
@@ -126,7 +126,7 @@ class Relation(models.Model):
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
-    # Default=Now new columns:
+    # Now new columns:
     relation_name = models.CharField(max_length=255)
     uri = models.TextField()
     description = models.TextField()
@@ -142,7 +142,7 @@ class RelationInstance(models.Model):
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
-    # Default=Now new columns:
+    # Now new columns:
     relation = models.ForeignKey(Relation)
 
 class ClassInstanceClassInstance(models.Model):
@@ -156,7 +156,7 @@ class ClassInstanceClassInstance(models.Model):
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
-    # Default=Now new columns:
+    # Now new columns:
     class_instance_a = models.ForeignKey(ClassInstance, related_name='class_instances_a')
     class_instance_b = models.ForeignKey(ClassInstance, related_name='class_instances_b')
 
@@ -178,7 +178,7 @@ class ClassClass(models.Model):
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
-    # Default=Now new columns:
+    # Now new columns:
     class_a = models.ForeignKey(Class, related_name='classes_a')
     class_b = models.ForeignKey(Class, related_name='classes_b')
 

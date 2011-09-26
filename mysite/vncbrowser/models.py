@@ -6,7 +6,43 @@ import re
 def now():
     return datetime.now()
 
-class Double3D:
+# ------------------------------------------------------------------------
+# Classes to support the integer3d compound type:
+
+class Integer3D(object):
+    def __init__(self, x=0, y=0, z=0):
+        self.x, self.y, self.z = x, y, z
+    integer_re = '[-+0-9]+'
+    tuple_pattern = re.compile('^\((%s),(%s),(%s)\)$'%((integer_re,)*3))
+    @classmethod
+    def from_str(cls, s):
+        m = cls.tuple_pattern.match(s)
+        if m:
+            return Integer3D(x=int(m.group(1), 10),
+                             y=int(m.group(2), 10),
+                             z=int(m.group(3), 10))
+        else:
+            raise Exception, "Couldn't parse value from the database as an Integer3D: "+str(s)
+
+class Integer3DField(models.Field):
+    __metaclass__ = models.SubfieldBase
+    def db_type(self, connection):
+        return 'integer3d'
+    def to_python(self, value):
+        if isinstance(value, Integer3D):
+            return value
+        # When contructing a Location, we get the empty string
+        # here; return a new Integer3D for any falsy value:
+        if not value:
+            return Integer3D()
+        return Integer3D.from_str(value)
+    def get_db_prep_value(self, value, connection, prepared=False):
+        return "(%d,%d,%d)" % (value.x, value.y, value.z)
+
+# ------------------------------------------------------------------------
+# Classes to support the integer3d compound type:
+
+class Double3D(object):
     def __init__(self, x=0, y=0, z=0):
         self.x, self.y, self.z = x, y, z
     double_re = '[-+0-9\.Ee]+'
@@ -36,6 +72,8 @@ class Double3DField(models.Field):
         return Double3D.from_str(value)
     def get_db_prep_value(self, value, connection, prepared=False):
         return "(%f,%f,%f)" % (value.x, value.y, value.z)
+
+# ------------------------------------------------------------------------
 
 class Project(models.Model):
     class Meta:

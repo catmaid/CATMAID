@@ -1,3 +1,4 @@
+from django import forms
 from django.db import models
 from datetime import datetime
 import sys
@@ -273,3 +274,58 @@ class Location(models.Model):
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
     location = Double3DField()
+
+# ------------------------------------------------------------------------
+# Now the non-Django tables:
+
+SORT_ORDERS_TUPLES = [ ( 'name', ('name', False, 'Neuron name') ),
+                       ( 'namer', ('name', True, 'Neuron name (reversed)') ),
+                       ( 'gal4', ('gal4', False, 'GAL4 lines') ),
+                       ( 'gal4r', ('gal4', True, 'GAL4 lines (reversed)') ),
+                       ( 'cellbody', ('cell_body', False, 'Cell body location') ),
+                       ( 'cellbodyr' , ('cell_body', True, 'Cell body location (reversed)') ) ]
+SORT_ORDERS_DICT = dict(SORT_ORDERS_TUPLES)
+SORT_ORDERS_CHOICES = tuple((x[0],SORT_ORDERS_DICT[x[0]][2]) for x in SORT_ORDERS_TUPLES)
+
+class Neuron(object):
+    # name = models.CharField(max_length=1000,unique=True,null=False)
+    # trakem2_id = models.IntegerField(null=True)
+    # lines = models.ManyToManyField(Line)
+    CELL_BODY_UNKNOWN = 0
+    CELL_BODY_LOCAL = 1
+    CELL_BODY_NON_LOCAL = 2
+    CELL_BODY_CHOICES = ( (CELL_BODY_UNKNOWN, 'Unknown'),
+                          (CELL_BODY_LOCAL, 'Local'),
+                          (CELL_BODY_NON_LOCAL, 'Non-Local') )
+    cell_body_choices_dict = dict(CELL_BODY_CHOICES)
+    # cell_body = models.IntegerField(default=CELL_BODY_UNKNOWN,choices=CELL_BODY_CHOICES)
+    def __unicode__(self):
+        return self.name
+    def lines_as_str(self):
+        return ', '.join([unicode(x) for x in self.lines.all()])
+    def to_dict(self):
+        return {'id': self.id,
+                'trakem2_id': self.trakem2_id,
+                'lineage' : 'unknown',
+                'neurotransmitters': [],
+                'cell_body_location': [ self.cell_body, Neuron.cell_body_choices_dict[self.cell_body] ],
+                'name': self.name}
+
+class NeuronSearch(forms.Form):
+    search = forms.CharField(max_length=100,required=False)
+    cell_body_location = forms.ChoiceField(
+        choices=(((-1,'Any'),)+Neuron.CELL_BODY_CHOICES))
+    order_by = forms.ChoiceField(SORT_ORDERS_CHOICES)
+    def minimal_search_path(self):
+        result = ""
+        parameters = [ ( 'search', '/find/', '' ),
+                       ( 'order_by', '/sorted/', 'name' ),
+                       ( 'cell_body_location', '/cell_body_location/', "-1" ) ]
+        for p in parameters:
+            if self.cleaned_data[p[0]] != p[2]:
+                result += p[1] + urllib.quote(str(self.cleaned_data[p[0]]))
+        return result
+
+class ApiKey(models.Model):
+    description = models.TextField()
+    key = models.CharField(max_length=128)

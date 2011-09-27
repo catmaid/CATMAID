@@ -6,7 +6,6 @@ SET client_min_messages = warning;
 SET escape_string_warning = off;
 SET search_path = public, pg_catalog;
 SELECT pg_catalog.setval('concept_id_seq', 410, true);
-SELECT pg_catalog.setval('message_id_seq', 1, false);
 SELECT pg_catalog.setval('project_id_seq', 3, true);
 SELECT pg_catalog.setval('stack_id_seq', 1, false);
 SELECT pg_catalog.setval('textlabel_id_seq', 1, false);

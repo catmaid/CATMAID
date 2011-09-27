@@ -69,6 +69,8 @@ def print_all_relationships(cid):
                      { 'this': 'class_instance_b', 'other': 'class_instance_a', 't': 'class_instance_class_instance', 'f': '  {value} {relation_name} [this]' },
                      { 'this': 'class_instance_id', 'other': 'treenode_id', 't': 'treenode_class_instance', 'f': '  {value} {relation_name} [this]' },
                      { 'this': 'treenode_id', 'other': 'class_instance_id', 't': 'treenode_class_instance', 'f': '  [this] {relation_name} {value}' },
+                     { 'this': 'connector_id', 'other': 'treenode_id', 't': 'treenode_connector', 'f': '  {value} {relation_name} [this]' },
+                     { 'this': 'treenode_id', 'other': 'connector_id', 't': 'treenode_connector', 'f': '  [this] {relation_name} {value}' },
                      { 'this': 'class_instance_id', 'other': 'connector_id', 't': 'connector_class_instance', 'f': '  {value} {relation_name} [this]' },
                      { 'this': 'connector_id', 'other': 'class_instance_id', 't': 'connector_class_instance', 'f': '  [this] {relation_name} {value}' } ]
     for comb in combinations:

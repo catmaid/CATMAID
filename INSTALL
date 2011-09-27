@@ -141,6 +141,10 @@ Create in /etc/apache2/sites-available a file called "catmaid":
 	...
 </VirtualHost>
 
+You should then restart Apache:
+
+    /etc/init.d/apache2 restart
+
 
 3. Now try it out!
 
@@ -156,7 +160,7 @@ Try to start CATMAID::
 to tell you that no projects are found.  If you want to create some
 example projects, stacks and a user account for testing, you should do:
 
-        psql -U catmaid_user < docs/example-projects.sql
+        psql -U catmaid_user catmaid < docs/example-projects.sql
 
 Then you can use the default login::
 

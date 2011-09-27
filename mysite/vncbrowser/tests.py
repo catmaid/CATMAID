@@ -3,7 +3,7 @@ from django.db import connection
 import os
 import sys
 
-from models import Project, Stack, Integer3D, Double3D, ProjectStack
+from models import Project, Stack, Integer3D, Double3D, ProjectStack, ClassInstance
 
 print os.getcwd()
 
@@ -27,6 +27,16 @@ def ensure_schema_exists():
         return
     current_directory = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(current_directory, "tables.sql")) as fp:
+        cursor.execute(fp.read())
+
+def add_example_data():
+    """
+    This function will add some example data to the CATMAID
+    database.
+    """
+    cursor = connection.cursor()
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(current_directory, "data.sql")) as fp:
         cursor.execute(fp.read())
 
 class InsertionTest(TestCase):
@@ -79,3 +89,19 @@ class InsertionTest(TestCase):
         ps.save()
 
         self.assertEqual(p.stacks.count(), 1)
+
+class RelationQueryTests(TestCase):
+
+    def setUp(self):
+        ensure_schema_exists()
+        add_example_data()
+        self.test_project_id = 3
+
+    def test_find_all_neurons(self):
+        all_neurons = ClassInstance.objects.filter(class_column__class_name='neuron',
+                                                   project=self.test_project_id)
+        self.assertEqual(all_neurons.count(), 4)
+
+    def test_find_downstream_neurons(self):
+        upstream = ClassInstance.objects.get(name='branched neuron')
+        self.assertTrue(upstream)

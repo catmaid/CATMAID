@@ -152,7 +152,51 @@ class ClassInstance(models.Model):
     # Now new columns:
     class_column = models.ForeignKey(Class, db_column="class_id") # underscore since class is a keyword
     name = models.CharField(max_length=255)
-
+    @classmethod
+    def all_neurons_downstream(cls, upstream):
+        return ClassInstance.objects.raw("""
+SELECT down_neurons.*
+   FROM class_instance up_neuron,
+        relation model_of,
+        class_instance_class_instance up_skeletons_to_neuron,
+        class_instance up_skeletons,
+        relation element_of,
+        treenode_class_instance up_treenodes_to_skeletons,
+        treenode up_treenodes,
+        relation post_to,
+        treenode_connector up_treenodes_to_synapse,
+        connector synapse,
+        relation pre_to,
+        treenode_connector down_treenodes_to_synapse,
+        treenode down_treenodes,
+        treenode_class_instance down_treenode_to_skeletons,
+        class_instance down_skeletons,
+        class_instance_class_instance down_skeletons_to_neuron,
+        class_instance down_neurons
+   WHERE
+        model_of.relation_name = 'model_of' AND
+        element_of.relation_name = 'element_of' AND
+        post_to.relation_name = 'postsynaptic_to' AND
+        pre_to.relation_name = 'presynaptic_to' AND
+        up_skeletons.id = up_skeletons_to_neuron.class_instance_a AND
+           up_skeletons_to_neuron.class_instance_b = up_neuron.id AND
+           model_of.id = up_skeletons_to_neuron.relation_id AND
+        up_treenodes.id = up_treenodes_to_skeletons.treenode_id AND
+           up_treenodes_to_skeletons.class_instance_id = up_skeletons.id AND
+           element_of.id = up_treenodes_to_skeletons.relation_id AND
+        up_treenodes.id = up_treenodes_to_synapse.treenode_id AND
+           up_treenodes_to_synapse.connector_id = synapse.id AND
+           pre_to.id = up_treenodes_to_synapse.relation_id AND
+        down_treenodes.id = down_treenodes_to_synapse.treenode_id AND
+           down_treenodes_to_synapse.connector_id = synapse.id AND
+           post_to.id = down_treenodes_to_synapse.relation_id AND
+        down_treenodes.id = down_treenode_to_skeletons.treenode_id AND
+           down_treenode_to_skeletons.class_instance_id = down_skeletons.id AND
+           element_of.id = down_treenode_to_skeletons.relation_id AND
+        down_skeletons.id = down_skeletons_to_neuron.class_instance_a AND
+           down_skeletons_to_neuron.class_instance_b = down_neurons.id AND
+           model_of.id = down_skeletons_to_neuron.relation_id AND
+        up_neuron.id = %s""", [upstream.id])
 
 class Relation(models.Model):
     class Meta:

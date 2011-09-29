@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.db import connection
 import os
 import sys
+import re
 
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, generate_catmaid_sql, SQLPlaceholder
@@ -122,16 +123,16 @@ class RelationQueryTests(TestCase):
         self.assertEqual(upstreams[0].name, "branched neuron")
 
 def condense_whitespace(s):
-    return re.sub('\w+(?ims)',' ',s)
+    return re.sub('\s+(?ims)',' ',s).strip()
 
 class SQLGenerationTests(TestCase):
 
-    def test_condense_whitespace(s):
+    def test_condense_whitespace(self):
         input = """ blah\thello
    foo
 bar  \tbaz  """
         self.assertEqual(condense_whitespace(input),
-                         " blah hello foo bar baz ")
+                         "blah hello foo bar baz")
 
     def test_basic_generation(self):
         simple = [ ( 'class_instance:neuron', { 'id': 2, 'project_id': 3 } ) ]
@@ -148,11 +149,12 @@ SELECT ci0.*
       ci0.class_id = c0.id AND
       c0.name = 'neuron'
 """
+
         self.assertEqual(condense_whitespace(simple_query),
                          condense_whitespace(expected_result))
 
-        one_relation = [ ( 'class_instance:neuron', { 'project_id': 3 } )
-                         '<model_of',
+        one_relation = [ ( 'class_instance:neuron', { 'project_id': 3 } ),
+                         ( '<model_of', {} ),
                          ( 'class_instance:skeleton', { 'name': 'dull skeleton' } ) ]
 
         one_relation_query = generate_catmaid_sql(one_relation)
@@ -163,8 +165,8 @@ SELECT ci0.*
       class_instance ci0,
       class c0,
       class_instance_class_instance cici0,
-      relation r0
-      class_instance ci1
+      relation r0,
+      class_instance ci1,
       class c1
    WHERE
       ci0.project_id = 3 AND
@@ -182,12 +184,14 @@ SELECT ci0.*
                          condense_whitespace(expected_result))
 
         treenode_relation = [ ( 'treenode', { 'project_id': SQLPlaceholder() } ),
-                              ( 'element_of>', { 'project_id' SQLPlaceholder() } ),
+                              ( 'element_of>', { 'project_id': SQLPlaceholder() } ),
                               ( 'class_instance:skeleton', {} ),
-                              ( 'model_of>', {} )
+                              ( 'model_of>', {} ),
                               ( 'class_instance:neuron', {} ) ]
 
-        treenode_relation_query = '''
+        treenode_relation_query = generate_catmaid_sql(treenode_relation)
+
+        expected_result = '''
 SELECT t0.*
    FROM
       treenode t0,
@@ -205,6 +209,7 @@ SELECT t0.*
       tci0.class_instance_id = ci1.id AND
       tci0.relation_id = r0.id AND
       r0.relation_name = 'element_of' AND
+      r0.project_id = %s AND
       ci1.class_id = c1.id AND
       c1.name = 'skeleton' AND
       cici1.class_instance_a = ci1.id AND

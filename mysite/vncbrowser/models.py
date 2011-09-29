@@ -139,6 +139,10 @@ class Class(models.Model):
     class_name = models.CharField(max_length=255)
     description = models.TextField()
 
+class ConnectivityDirection:
+    PRESYNAPTIC_PARTNERS = 0
+    POSTSYNAPTIC_PARTNERS = 1
+
 class ClassInstance(models.Model):
     class Meta:
         db_table = "class_instance"
@@ -153,50 +157,72 @@ class ClassInstance(models.Model):
     class_column = models.ForeignKey(Class, db_column="class_id") # underscore since class is a keyword
     name = models.CharField(max_length=255)
     @classmethod
-    def all_neurons_downstream(cls, upstream):
+    def get_connected_neurons(cls, direction, original_neuron):
+        if direction == ConnectivityDirection.POSTSYNAPTIC_PARTNERS:
+            con_to_syn_relation = 'postsynaptic_to'
+            src_to_syn_relation = 'presynaptic_to'
+        elif direction == ConnectivityDirection.PRESYNAPTIC_PARTNERS:
+            con_to_syn_relation = 'presynaptic_to'
+            src_to_syn_relation = 'postsynaptic_to'
+        else:
+            raise Exception, "Unknown connectivity direction"
         return ClassInstance.objects.raw("""
-SELECT down_neurons.*
-   FROM class_instance up_neuron,
+SELECT connected_neurons.*
+   FROM class_instance source_neuron,
         relation model_of,
-        class_instance_class_instance up_skeletons_to_neuron,
-        class_instance up_skeletons,
+        class_instance_class_instance source_skeletons_to_neuron,
+        class_instance source_skeletons,
         relation element_of,
-        treenode_class_instance up_treenodes_to_skeletons,
-        treenode up_treenodes,
-        relation post_to,
-        treenode_connector up_treenodes_to_synapse,
+        treenode_class_instance source_treenodes_to_skeletons,
+        treenode source_treenodes,
+        relation con_to_syn,
+        treenode_connector source_treenodes_to_synapse,
         connector synapse,
-        relation pre_to,
-        treenode_connector down_treenodes_to_synapse,
-        treenode down_treenodes,
-        treenode_class_instance down_treenode_to_skeletons,
-        class_instance down_skeletons,
-        class_instance_class_instance down_skeletons_to_neuron,
-        class_instance down_neurons
+        relation src_to_syn,
+        treenode_connector connected_treenodes_to_synapse,
+        treenode connected_treenodes,
+        treenode_class_instance connected_treenode_to_skeletons,
+        class_instance connected_skeletons,
+        class_instance_class_instance connected_skeletons_to_neuron,
+        class_instance connected_neurons
    WHERE
         model_of.relation_name = 'model_of' AND
         element_of.relation_name = 'element_of' AND
-        post_to.relation_name = 'postsynaptic_to' AND
-        pre_to.relation_name = 'presynaptic_to' AND
-        up_skeletons.id = up_skeletons_to_neuron.class_instance_a AND
-           up_skeletons_to_neuron.class_instance_b = up_neuron.id AND
-           model_of.id = up_skeletons_to_neuron.relation_id AND
-        up_treenodes.id = up_treenodes_to_skeletons.treenode_id AND
-           up_treenodes_to_skeletons.class_instance_id = up_skeletons.id AND
-           element_of.id = up_treenodes_to_skeletons.relation_id AND
-        up_treenodes.id = up_treenodes_to_synapse.treenode_id AND
-           up_treenodes_to_synapse.connector_id = synapse.id AND
-           pre_to.id = up_treenodes_to_synapse.relation_id AND
-        down_treenodes.id = down_treenodes_to_synapse.treenode_id AND
-           down_treenodes_to_synapse.connector_id = synapse.id AND
-           post_to.id = down_treenodes_to_synapse.relation_id AND
-        down_treenodes.id = down_treenode_to_skeletons.treenode_id AND
-           down_treenode_to_skeletons.class_instance_id = down_skeletons.id AND
-           element_of.id = down_treenode_to_skeletons.relation_id AND
-        down_skeletons.id = down_skeletons_to_neuron.class_instance_a AND
-           down_skeletons_to_neuron.class_instance_b = down_neurons.id AND
-           model_of.id = down_skeletons_to_neuron.relation_id AND
-        up_neuron.id = %s""", [upstream.id])
+        con_to_syn.relation_name = %s AND
+        src_to_syn.relation_name = %s AND
+        source_skeletons.id = source_skeletons_to_neuron.class_instance_a AND
+           source_skeletons_to_neuron.class_instance_b = source_neuron.id AND
+           model_of.id = source_skeletons_to_neuron.relation_id AND
+        source_treenodes.id = source_treenodes_to_skeletons.treenode_id AND
+           source_treenodes_to_skeletons.class_instance_id = source_skeletons.id AND
+           element_of.id = source_treenodes_to_skeletons.relation_id AND
+        source_treenodes.id = source_treenodes_to_synapse.treenode_id AND
+           source_treenodes_to_synapse.connector_id = synapse.id AND
+           src_to_syn.id = source_treenodes_to_synapse.relation_id AND
+        connected_treenodes.id = connected_treenodes_to_synapse.treenode_id AND
+           connected_treenodes_to_synapse.connector_id = synapse.id AND
+           con_to_syn.id = connected_treenodes_to_synapse.relation_id AND
+        connected_treenodes.id = connected_treenode_to_skeletons.treenode_id AND
+           connected_treenode_to_skeletons.class_instance_id = connected_skeletons.id AND
+           element_of.id = connected_treenode_to_skeletons.relation_id AND
+        connected_skeletons.id = connected_skeletons_to_neuron.class_instance_a AND
+           connected_skeletons_to_neuron.class_instance_b = connected_neurons.id AND
+           model_of.id = connected_skeletons_to_neuron.relation_id AND
+        source_neuron.id = %s""", [con_to_syn_relation,
+                                   src_to_syn_relation,
+                                   original_neuron.id])
+
+    @classmethod
+    def all_neurons_upstream(cls, downstream_neuron):
+        return cls.get_connected_neurons(
+            ConnectivityDirection.PRESYNAPTIC_PARTNERS,
+            downstream_neuron)
+
+    @classmethod
+    def all_neurons_downstream(cls, upstream_neuron):
+        return cls.get_connected_neurons(
+            ConnectivityDirection.POSTSYNAPTIC_PARTNERS,
+            upstream_neuron)
 
 class Relation(models.Model):
     class Meta:

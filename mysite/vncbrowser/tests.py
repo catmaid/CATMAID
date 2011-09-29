@@ -112,3 +112,10 @@ class RelationQueryTests(TestCase):
         downstreams.sort(key=lambda x: x.name)
         self.assertEqual(downstreams[0].name, "downstream-A")
         self.assertEqual(downstreams[1].name, "downstream-B")
+
+    def test_find_upstream_neurons(self):
+        downstream = ClassInstance.objects.get(name='downstream-A')
+        self.assertTrue(downstream)
+
+        upstreams = list(ClassInstance.all_neurons_upstream(downstream))
+        self.assertEqual(upstreams[0].name, "branched neuron")

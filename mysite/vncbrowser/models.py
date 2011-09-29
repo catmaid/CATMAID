@@ -399,3 +399,9 @@ class NeuronSearch(forms.Form):
 class ApiKey(models.Model):
     description = models.TextField()
     key = models.CharField(max_length=128)
+
+class SQLPlaceholder:
+    pass
+
+def generate_catmaid_sql():
+    return "nonsense"

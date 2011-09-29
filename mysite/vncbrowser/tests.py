@@ -3,7 +3,8 @@ from django.db import connection
 import os
 import sys
 
-from models import Project, Stack, Integer3D, Double3D, ProjectStack, ClassInstance
+from models import Project, Stack, Integer3D, Double3D, ProjectStack
+from models import ClassInstance, generate_catmaid_sql, SQLPlaceholder
 
 print os.getcwd()
 
@@ -119,3 +120,100 @@ class RelationQueryTests(TestCase):
 
         upstreams = list(ClassInstance.all_neurons_upstream(downstream))
         self.assertEqual(upstreams[0].name, "branched neuron")
+
+def condense_whitespace(s):
+    return re.sub('\w+(?ims)',' ',s)
+
+class SQLGenerationTests(TestCase):
+
+    def test_condense_whitespace(s):
+        input = """ blah\thello
+   foo
+bar  \tbaz  """
+        self.assertEqual(condense_whitespace(input),
+                         " blah hello foo bar baz ")
+
+    def test_basic_generation(self):
+        simple = [ ( 'class_instance:neuron', { 'id': 2, 'project_id': 3 } ) ]
+        simple_query = generate_catmaid_sql(simple)
+
+        expected_result = """
+SELECT ci0.*
+   FROM
+      class_instance ci0,
+      class c0
+   WHERE
+      ci0.id = 2 AND
+      ci0.project_id = 3 AND
+      ci0.class_id = c0.id AND
+      c0.name = 'neuron'
+"""
+        self.assertEqual(condense_whitespace(simple_query),
+                         condense_whitespace(expected_result))
+
+        one_relation = [ ( 'class_instance:neuron', { 'project_id': 3 } )
+                         '<model_of',
+                         ( 'class_instance:skeleton', { 'name': 'dull skeleton' } ) ]
+
+        one_relation_query = generate_catmaid_sql(one_relation)
+
+        expected_result = """
+SELECT ci0.*
+   FROM
+      class_instance ci0,
+      class c0,
+      class_instance_class_instance cici0,
+      relation r0
+      class_instance ci1
+      class c1
+   WHERE
+      ci0.project_id = 3 AND
+      ci0.class_id = c0.id AND
+      c0.name = 'neuron' AND
+      cici0.class_instance_a = ci1.id AND
+      cici0.class_instance_b = ci0.id AND
+      cici0.relation_id = r0.id AND
+      r0.relation_name = 'model_of' AND
+      ci1.name = 'dull skeleton' AND
+      ci1.class_id = c1.id AND
+      c1.name = 'skeleton'
+"""
+        self.assertEqual(condense_whitespace(one_relation_query),
+                         condense_whitespace(expected_result))
+
+        treenode_relation = [ ( 'treenode', { 'project_id': SQLPlaceholder() } ),
+                              ( 'element_of>', { 'project_id' SQLPlaceholder() } ),
+                              ( 'class_instance:skeleton', {} ),
+                              ( 'model_of>', {} )
+                              ( 'class_instance:neuron', {} ) ]
+
+        treenode_relation_query = '''
+SELECT t0.*
+   FROM
+      treenode t0,
+      treenode_class_instance tci0,
+      relation r0,
+      class_instance ci1,
+      class c1,
+      class_instance_class_instance cici1,
+      relation r1,
+      class_instance ci2,
+      class c2
+   WHERE
+      t0.project_id = %s AND
+      tci0.treenode_id = t0.id AND
+      tci0.class_instance_id = ci1.id AND
+      tci0.relation_id = r0.id AND
+      r0.relation_name = 'element_of' AND
+      ci1.class_id = c1.id AND
+      c1.name = 'skeleton' AND
+      cici1.class_instance_a = ci1.id AND
+      cici1.class_instance_b = ci2.id AND
+      cici1.relation_id = r1.id AND
+      r1.relation_name = 'model_of' AND
+      ci2.class_id = c2.id AND
+      c2.name = 'neuron'
+'''
+
+        self.assertEqual(condense_whitespace(treenode_relation_query),
+                         condense_whitespace(expected_result))

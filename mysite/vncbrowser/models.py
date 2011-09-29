@@ -403,5 +403,136 @@ class ApiKey(models.Model):
 class SQLPlaceholder:
     pass
 
-def generate_catmaid_sql():
-    return "nonsense"
+table_abbrev = {
+    'treenode': 't',
+    'class_instance': 'ci',
+    'class': 'c',
+    'connector': 'cn',
+    'class_instance_class_instance': 'cici',
+    'treenode_class_instance': 'tci',
+    'connector_class_instance': 'cnci',
+    'treenode_connector': 'tcn',
+    'relation': 'r'
+}
+
+join_table_columns = {
+    'class_instance_class_instance': ('class_instance_a', 'class_instance_b'),
+    'treenode_class_instance': ('treenode_id', 'class_instance_id'),
+    'connector_class_instance': ('connector_id', 'class_instance_id'),
+    'treenode_connector': ('treenode_id', 'connector_id')
+}
+
+def split_table_name(s):
+    l = s.split(':')
+    if len(l) == 1:
+        return (l[0], None)
+    elif len(l) == 2:
+        return tuple(l)
+    else:
+        raise Exception, "Malformed table name '%s'" % (s,)
+
+def parse_relation_name(s):
+    if s.startswith('<'):
+        return s[1:], False
+    elif s.endswith('>'):
+        return s[:-1], True
+    else:
+        raise Exception, "Relation ('%s') should start with '<' or end with '>'" % (s,)
+
+def quote_value(v):
+    if isinstance(v, SQLPlaceholder):
+        return '%s'
+    # FIXME: shouldn't be using isinstance, find a better way
+    if isinstance(v, int) or isinstance(v, float):
+        return str(v)
+    else:
+        # FIXME: lookup proper quoting function when I have
+        # internet again:
+        return "'" + v.replace("'", "'\\''") + "'"
+
+def generate_catmaid_sql(joins):
+    """
+    Querying across CATMAID's relations requires huge SQL statements
+    with many joins.  This helper method takes a reduced
+    representation and generates an SQL statement.  (For examples, see
+    tests.py.)
+    """
+    if (len(joins) % 2) == 0:
+        raise Exception, 'Malformed joins - there must be an odd number of entries'
+    from_list = []
+    where_list = []
+    for i, e in enumerate(joins):
+        suffix = i / 2
+        if (i % 2) == 1:
+            # Odd lines represent relations between the table in the
+            # previous and next line.  Find the name of the relation,
+            # and the direction it goes in:
+            relation_name, forward = parse_relation_name(e[0])
+            # Get the names of the tables in the previous and next elements:
+            prev_table_name = split_table_name(joins[i-1][0])[0]
+            next_table_name  = split_table_name(joins[i+1][0])[0]
+            # Derive unique abbreviated names for those tables:
+            short_prev_table_name = table_abbrev[prev_table_name] + str(suffix)
+            short_next_table_name = table_abbrev[next_table_name] + str(suffix + 1)
+            # Find the name of the join table:
+            if forward:
+                join_table = "%s_%s" % (prev_table_name, next_table_name)
+            else:
+                join_table = "%s_%s" % (next_table_name, prev_table_name)
+            # Get the abbreviated join table name:
+            short_join_table = table_abbrev[join_table] + str(suffix)
+            # Add the join table to the FROM list:
+            from_list.append('%s %s' % (join_table, short_join_table))
+            # Find the names of the two columns in the join table:
+            columns = join_table_columns[join_table]
+            if forward:
+                first, second = short_prev_table_name, short_next_table_name
+            else:
+                first, second = short_next_table_name, short_prev_table_name
+            # Add the join condition to the WHERE list:
+            where_list.append(
+                "%s.%s = %s.id" % (short_join_table,
+                                   join_table_columns[join_table][0],
+                                   first))
+            where_list.append(
+                "%s.%s = %s.id" % (short_join_table,
+                                   join_table_columns[join_table][1],
+                                   second))
+            # And make sure the relation in the join table is right:
+            where_list.append("%s.relation_id = r%d.id" % (short_join_table, suffix))
+            from_list.append("relation r%d" % (suffix,))
+            where_list.append("r%d.relation_name = '%s'" % (suffix, relation_name))
+            # Now add any addition conditions on the relation:
+            for k, v in sorted(e[1].items()):
+                where_list.append("r%d.%s = %s" % (suffix, k, quote_value(v)))
+        else:
+            # Even lines represent tables of class instances,
+            # treenodes or connectors.  Find the table name, and the
+            # class name in the case that this is a class_instance
+            # table.
+            table, class_name = split_table_name(e[0])
+            # Find the abbreviated form of the table name:
+            short_table_name = "%s%d" % (table_abbrev[table], suffix)
+            # Store the first such abbreviated table name to use in
+            # the SELECT clause:
+            if suffix == 0:
+                first_abbreviated_table_name = short_table_name
+            # Append the table name to the FROM list:
+            from_list.append("%s %s" % (table, short_table_name))
+            # Add any additional constraints on the rows in this table:
+            for k, v in sorted(e[1].items()):
+                where_list.append(
+                    "%s.%s = %s" % (short_table_name,
+                                    k,
+                                    quote_value(v)))
+            # If this was a class_instance, join with the class table:
+            if class_name:
+                from_list.append("class c%d" % (suffix,))
+                where_list.append("%s.class_id = c%d.id" % (short_table_name, suffix))
+                where_list.append("c%d.name = %s" % (suffix, quote_value(class_name)))
+    select_columns = split_table_name(joins[0][0])[0]
+    result = "SELECT %s.*\n   FROM\n      " % (first_abbreviated_table_name,)
+    result += ",\n      ".join(from_list)
+    result += "\n   WHERE\n      "
+    result += " AND\n      ".join(where_list)
+    return result

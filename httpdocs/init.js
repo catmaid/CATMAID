@@ -12,6 +12,7 @@ if (!window.console) {
   window.console.log = function() {}
 }
 
+var global_bottom = 64;
 var statusBar; //!< global statusBar
 var slider_trace_z;
 var slider_trace_s;
@@ -490,8 +491,7 @@ function read_message(id) {
 function global_resize( e )
 {
 	var top = document.getElementById( "toolbar_container" ).offsetHeight;
-	var bottom = 64;
-	var height = Math.max( 0, ui.getFrameHeight() - top - bottom );
+	var height = Math.max( 0, ui.getFrameHeight() - top - global_bottom );
 	var width = ui.getFrameWidth();
 	
 	var content = document.getElementById( "content" );
@@ -742,7 +742,11 @@ var init = function()
 	
 	rootWindow = new CMWRootNode();
 	ui.registerEvent( "onresize", resize );
-	
+
+  // change global bottom bar height, hide the copyright notice
+  // and move the statusBar
+  window.setTimeout( "global_bottom = 35; $('#imprint').hide(2000); statusBar.setBottom(); window.onresize();", 2000 );
+  
 	window.onresize();
 
 	return;
@@ -754,8 +758,7 @@ var init = function()
 var resize = function( e )
 {
 	var top = document.getElementById( "toolbar_container" ).offsetHeight;
-	var bottom = 64;
-	var height = Math.max( 0, ui.getFrameHeight() - top - bottom );
+	var height = Math.max( 0, ui.getFrameHeight() - top - global_bottom );
 	var width = ui.getFrameWidth();
 	
 	var content = document.getElementById( "content" );

@@ -4,6 +4,7 @@
 function Console() {
   var view = document.createElement("div");
   view.className = "console";
+  view.style.height = "35px";
   view.appendChild(document.createElement("pre"));
 
   var toStr = function (obj, ins) {
@@ -29,6 +30,10 @@ function Console() {
       break;
     }
     return str;
+  }
+
+  this.setBottom = function() {
+    view.style.bottom = "0px";
   }
 
   this.print = function (obj) {

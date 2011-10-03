@@ -84,6 +84,11 @@ if(!$elementof_id)  {
     return;
 }
 
+$partof_id = $db->getRelationId( $pid, 'part_of');
+if(!$partof_id)  {
+    echo json_encode( array( 'error' => 'Can not find "part_of" relation for this project' ) );
+    return;
+}
 
 // Start transaction
 if (! $db->begin() ) {
@@ -225,6 +230,20 @@ try {
     emitErrorAndExit($db, 'There seems not to exist a skeleton for treenode id');
   } else {
     $skeleton_id = $skeleton[0]['id'];
+  }
+  
+  // insert terminal part_of skeleton_id into cici
+  $data = array(
+    'user_id' => $uid,
+    'project_id' => $pid,
+    'relation_id' => $partof_id,
+    'class_instance_a' => $input_type_instance_id,
+    'class_instance_b' => $skeleton_id
+  );
+  $q = $db->insertInto('class_instance_class_instance', $data );
+
+  if (false === $q) {
+    emitErrorAndExit($db, 'Failed to insert CICI for terminal part_of');
   }
   
   // insert treenode-connector in geometry domain

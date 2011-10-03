@@ -245,8 +245,8 @@ var SkeletonElements = new function()
    *  This is called only when creating a single node
    */
   var draw = function() {
-    this.drawEdges();
     this.createCircle();
+    this.drawEdges();
   };
 
   /** Delete all objects relevant to the node
@@ -318,30 +318,6 @@ var SkeletonElements = new function()
       }
       return true;
     });
-
-
-
-    // in fact, doing everything on the server-side
-    // (like relinking) again in the ui not best-practice
-    /*
-    // remove the parent of all the children
-    for (var i in this.children) {
-      this.children[ i ].removeLine();
-      this.children[ i ].removeParent();
-    }
-    // remove the raphael svg elements from the DOM
-    c.remove();
-    mc.remove();
-    this.removeLine();
-
-    if (this.parent != null) {
-      // remove this node from parent's children list
-      for (var i in this.parent.children) {
-        if (this.parent.children[i].id == id)
-          delete this.parent.children[i];
-      }
-    }
-    */
   };
 
   /** Set the node fill color depending on its distance from the
@@ -389,8 +365,6 @@ var SkeletonElements = new function()
    * */
   var createCircle = function()
   {
-    // TODO this could improve. For example the objects given as arguments could be reused forever, given that raphael merely reads them
-    // TODO    and that javascript is single-threaded (at least when it comes to creating nodes in overlay.js).
     if (0 === this.zdiff) {
       var paper = this.paper;
       // c and mc may already exist if the node is being reused
@@ -753,10 +727,18 @@ var SkeletonElements = new function()
     }, function (status, text, xml) {
       if (status !== 200) {
         alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+      } else {
+          if (text && text !== " ") {
+            var e = $.parseJSON(text);
+            if (e.error) {
+              alert(e.error);
+            } else {
+              // Refresh all nodes in any case, to reflect the new state of the database
+              connectornode.paper.catmaidSVGOverlay.updateNodes();
+              return true;
+            }
+          }
       }
-      // Refresh all nodes in any case, to reflect the new state of the database
-      connectornode.paper.catmaidSVGOverlay.updateNodes();
-      return true;
     });
   };
 

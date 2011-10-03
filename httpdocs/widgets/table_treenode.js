@@ -8,11 +8,6 @@ var TreenodeTable = new function()
   ns.oTable = null;
   var asInitVals = [];
 
-  this.refresh = function()
-  {
-      this.init(ns.pid);
-  }
-
   this.init = function (pid)
   {
     ns.pid = pid;

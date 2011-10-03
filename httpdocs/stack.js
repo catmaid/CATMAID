@@ -393,7 +393,7 @@ function Stack(
 	
 	// take care, that all values are within a proper range
     // Declare the x,y,z,s as coordinates in pixels
-	self.z = 1;
+	self.z = 0;
 	self.y = Math.floor( MAX_Y / 2 );
 	self.x = Math.floor( MAX_X / 2 );
 	self.s = self.MAX_S;

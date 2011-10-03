@@ -110,7 +110,8 @@ var SkeletonAnnotations = new function()
     }
 
     if ($('#treenode_table_widget').css('display') === "block" && $('#synchronize_treenodetable').attr('checked')) {
-      TreenodeTable.init(pid);
+      // TreenodeTable.init(pid);
+      TreenodeTable.refresh();
     }
   }
 

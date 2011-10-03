@@ -8,8 +8,14 @@ var TreenodeTable = new function()
   ns.oTable = null;
   var asInitVals = [];
 
+  this.refresh = function()
+  {
+      this.init(ns.pid);
+  }
+
   this.init = function (pid)
   {
+    ns.pid = pid;
     ns.oTable = $('#treenodetable').dataTable({
       // http://www.datatables.net/usage/options
       "bDestroy": true,

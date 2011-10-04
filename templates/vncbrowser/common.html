@@ -15,12 +15,8 @@
 <body>
 
   <div class="header-navigation">
-    {% if user %}
-       You are logged in as: <strong>{{ user.username }}</strong>
-       <a href="{% url django.contrib.auth.views.logout %}">(logout)</a>
-    {% endif %}
-    | <a href="{% url vncbrowser.views.index %}">All neurons (text)</a>
-    | <a href="{% url vncbrowser.views.visual_index %}">All neurons (visual)</a>
+    | <a href="{% url vncbrowser.views.index project_id=project_id %}">All neurons (text)</a>
+    | <a href="{% url vncbrowser.views.visual_index project_id=project_id %}">All neurons (visual)</a>
   </div>
 
 {% block main %}

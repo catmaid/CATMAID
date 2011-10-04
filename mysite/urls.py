@@ -4,14 +4,14 @@ from django.conf.urls.defaults import patterns, include, url
 # from django.contrib import admin
 # admin.autodiscover()
 
-urlpatterns = patterns('',
-    # Examples:
-    # url(r'^$', 'mysite.views.home', name='home'),
-    # url(r'^mysite/', include('mysite.foo.urls')),
-
-    # Uncomment the admin/doc line below to enable admin documentation:
-    # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-
-    # Uncomment the next line to enable the admin:
-    # url(r'^admin/', include(admin.site.urls)),
-)
+urlpatterns = patterns(
+    '',
+    (r'^(?P<project_id>\d+)$', 'vncbrowser.views.index'),
+    (r'^(?P<project_id>\d+)/view/(?P<neuron_id>\d+)$', 'vncbrowser.views.view'),
+    (r'^(?P<project_id>\d+)/view/(?P<neuron_name>.*)$', 'vncbrowser.views.view'),
+    (r'^neuron/set_cell_body$', 'vncbrowser.views.set_cell_body'),
+    (r'^lines/add$', 'vncbrowser.views.lines_add'),
+    (r'^(?P<project_id>\d+)/visual_index$', 'vncbrowser.views.visual_index'),
+    (r'^(?P<project_id>\d+)/visual_index(/find/(?P<search>[^/]*))?(/sorted/(?P<order_by>[^/]*))?(/cell_body_location/(?P<cell_body_location>[^/]*))?(/page/(?P<page>[0-9]*))?$', 'vncbrowser.views.visual_index'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'vncbrowser.views.skeleton_swc'),
+    )

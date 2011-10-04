@@ -147,7 +147,7 @@ SELECT ci0.*
       ci0.id = 2 AND
       ci0.project_id = 3 AND
       ci0.class_id = c0.id AND
-      c0.name = 'neuron'
+      c0.class_name = 'neuron'
 """
 
         self.assertEqual(condense_whitespace(simple_query),
@@ -171,14 +171,14 @@ SELECT ci0.*
    WHERE
       ci0.project_id = 3 AND
       ci0.class_id = c0.id AND
-      c0.name = 'neuron' AND
+      c0.class_name = 'neuron' AND
       cici0.class_instance_a = ci1.id AND
       cici0.class_instance_b = ci0.id AND
       cici0.relation_id = r0.id AND
       r0.relation_name = 'model_of' AND
       ci1.name = 'dull skeleton' AND
       ci1.class_id = c1.id AND
-      c1.name = 'skeleton'
+      c1.class_name = 'skeleton'
 """
         self.assertEqual(condense_whitespace(one_relation_query),
                          condense_whitespace(expected_result))
@@ -211,13 +211,13 @@ SELECT t0.*
       r0.relation_name = 'element_of' AND
       r0.project_id = %s AND
       ci1.class_id = c1.id AND
-      c1.name = 'skeleton' AND
+      c1.class_name = 'skeleton' AND
       cici1.class_instance_a = ci1.id AND
       cici1.class_instance_b = ci2.id AND
       cici1.relation_id = r1.id AND
       r1.relation_name = 'model_of' AND
       ci2.class_id = c2.id AND
-      c2.name = 'neuron'
+      c2.class_name = 'neuron'
 '''
 
         self.assertEqual(condense_whitespace(treenode_relation_query),

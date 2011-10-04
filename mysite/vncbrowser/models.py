@@ -204,7 +204,7 @@ def generate_catmaid_sql(joins):
             if class_name:
                 from_list.append("class c%d" % (suffix,))
                 where_list.append("%s.class_id = c%d.id" % (short_table_name, suffix))
-                where_list.append("c%d.name = %s" % (suffix, quote_value(class_name)))
+                where_list.append("c%d.class_name = %s" % (suffix, quote_value(class_name)))
     select_columns = split_table_name(joins[0][0])[0]
     result = "SELECT %s.*\n   FROM\n      " % (first_abbreviated_table_name,)
     result += ",\n      ".join(from_list)

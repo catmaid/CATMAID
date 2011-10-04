@@ -1,20 +1,9 @@
 #!/usr/bin/python
 
+from common import db_connection
+
 import sys
-import psycopg2
 import os
-import yaml
-
-try:
-    conf = yaml.load(open(os.path.join(os.environ['HOME'], '.catmaid-db')))
-except:
-    print >> sys.stderr, '''Your ~/.catmaid-db file should look like:
-
-host: localhost
-database: catmaid
-username: catmaid_user
-password: password_of_your_catmaid_user'''
-    sys.exit(1)
 
 limit = 50
 
@@ -24,12 +13,7 @@ if len(sys.argv) != 2:
 
 orphaned_skeleton_id = int(sys.argv[1])
 
-conn = psycopg2.connect(host=conf['host'],
-                        database=conf['database'],
-                        user=conf['username'],
-                        password=conf['password'])
-
-c = conn.cursor()
+c = db_connection.cursor()
 
 # Get the project ID first of all:
 
@@ -68,6 +52,6 @@ c.execute("INSERT INTO class_instance_class_instance (user_id, project_id, relat
           "VALUES (%s, %s, %s, %s, %s)",
           (user_id, project_id, model_of_id, orphaned_skeleton_id, new_neuron_id))
 
-conn.commit()
+db_connection.commit()
 c.close()
-conn.close()
+db_connection.close()

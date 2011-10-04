@@ -1,20 +1,8 @@
 #!/usr/bin/python
 
+from common import db_connection
+
 import sys
-import psycopg2
-import os
-import yaml
-
-try:
-    conf = yaml.load(open(os.path.join(os.environ['HOME'], '.catmaid-db')))
-except:
-    print >> sys.stderr, '''Your ~/.catmaid-db file should look like:
-
-host: localhost
-database: catmaid
-username: catmaid_user
-password: password_of_your_catmaid_user'''
-    sys.exit(1)
 
 limit = 50
 
@@ -24,12 +12,7 @@ if len(sys.argv) != 2:
 
 cid = int(sys.argv[1])
 
-conn = psycopg2.connect(host=conf['host'],
-                        database=conf['database'],
-                        user=conf['username'],
-                        password=conf['password'])
-
-c = conn.cursor()
+c = db_connection.cursor()
 
 # Find which table the concept is really in, and also the project_id:
 
@@ -113,3 +96,6 @@ elif table_name == 'relation':
 
 else:
     print "There's currently no support for entities from the table '{0}'".format(table_name)
+
+c.close()
+db_connection.close()

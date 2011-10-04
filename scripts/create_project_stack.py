@@ -16,29 +16,13 @@
 # password: password_of_your_catmaid_user
 
 import sys
-import psycopg2
-import os
-import yaml
-
-try:
-    conf = yaml.load(open(os.path.join(os.environ['HOME'], '.catmaid-db')))
-except:
-    print >> sys.stderr, '''Your ~/.catmaid-db file should look like:
-
-host: localhost
-database: catmaid
-username: catmaid_user
-password: password_of_your_catmaid_user'''
-    sys.exit(1)
+from common import db_connection
 
 limit = 50
 
 if len(sys.argv) != 1:
     print >> sys.stderr, "Usage: create-project.py"
     sys.exit(1)
-
-conn = psycopg2.connect(host=conf['host'], database=conf['database'],
-                        user=conf['username'], password=conf['password'])
 
 # Helper function
 def create_annotation(user_id, project_id):
@@ -87,7 +71,7 @@ def create_annotation(user_id, project_id):
     print("Annotation classes and relations successfully created.")
 
 # Start dialog
-c = conn.cursor()
+c = db_connection.cursor()
 
 username = raw_input("What is your CATMAID user name: ")
 select = 'SELECT u.id FROM "user" u WHERE u.name = %s'
@@ -181,8 +165,8 @@ while True:
 
     print("Created stack with id {0} and project-stack association.".format(stack_id) )
 
-conn.commit()
+db_connection.commit()
 c.close()
-conn.close()
+db_connection.close()
 
 print("Finished script. Closed database connection.")

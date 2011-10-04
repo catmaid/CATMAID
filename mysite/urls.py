@@ -1,4 +1,5 @@
 from django.conf.urls.defaults import patterns, include, url
+from django.conf import settings
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -15,3 +16,9 @@ urlpatterns = patterns(
     (r'^(?P<project_id>\d+)/visual_index(/find/(?P<search>[^/]*))?(/sorted/(?P<order_by>[^/]*))?(/cell_body_location/(?P<cell_body_location>[^/]*))?(/page/(?P<page>[0-9]*))?$', 'vncbrowser.views.visual_index'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'vncbrowser.views.skeleton_swc'),
     )
+
+if settings.DEBUG:
+    urlpatterns += patterns('',
+                            (r'^static/(?P<path>.*)$',
+                             'django.views.static.serve',
+                             {'document_root': settings.STATICFILES_LOCAL}))

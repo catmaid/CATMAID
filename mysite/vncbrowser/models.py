@@ -464,6 +464,7 @@ class Location(models.Model):
     project = models.ForeignKey(Project)
     location = Double3DField()
 
+
 # ------------------------------------------------------------------------
 # Now the non-Django tables:
 

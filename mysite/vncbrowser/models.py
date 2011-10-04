@@ -324,58 +324,12 @@ class ClassInstance(models.Model):
     @classmethod
     def get_connected_neurons(cls, direction, original_neuron):
         if direction == ConnectivityDirection.POSTSYNAPTIC_PARTNERS:
-            con_to_syn_relation = 'postsynaptic_to'
-            src_to_syn_relation = 'presynaptic_to'
+            query = cls.connected_downstream_query
         elif direction == ConnectivityDirection.PRESYNAPTIC_PARTNERS:
-            con_to_syn_relation = 'presynaptic_to'
-            src_to_syn_relation = 'postsynaptic_to'
+            query = cls.connected_upstream_query
         else:
-            raise Exception, "Unknown connectivity direction"
-        return ClassInstance.objects.raw("""
-SELECT connected_neurons.*
-   FROM class_instance source_neuron,
-        relation model_of,
-        class_instance_class_instance source_skeletons_to_neuron,
-        class_instance source_skeletons,
-        relation element_of,
-        treenode_class_instance source_treenodes_to_skeletons,
-        treenode source_treenodes,
-        relation con_to_syn,
-        treenode_connector source_treenodes_to_synapse,
-        connector synapse,
-        relation src_to_syn,
-        treenode_connector connected_treenodes_to_synapse,
-        treenode connected_treenodes,
-        treenode_class_instance connected_treenode_to_skeletons,
-        class_instance connected_skeletons,
-        class_instance_class_instance connected_skeletons_to_neuron,
-        class_instance connected_neurons
-   WHERE
-        model_of.relation_name = 'model_of' AND
-        element_of.relation_name = 'element_of' AND
-        con_to_syn.relation_name = %s AND
-        src_to_syn.relation_name = %s AND
-        source_skeletons.id = source_skeletons_to_neuron.class_instance_a AND
-           source_skeletons_to_neuron.class_instance_b = source_neuron.id AND
-           model_of.id = source_skeletons_to_neuron.relation_id AND
-        source_treenodes.id = source_treenodes_to_skeletons.treenode_id AND
-           source_treenodes_to_skeletons.class_instance_id = source_skeletons.id AND
-           element_of.id = source_treenodes_to_skeletons.relation_id AND
-        source_treenodes.id = source_treenodes_to_synapse.treenode_id AND
-           source_treenodes_to_synapse.connector_id = synapse.id AND
-           src_to_syn.id = source_treenodes_to_synapse.relation_id AND
-        connected_treenodes.id = connected_treenodes_to_synapse.treenode_id AND
-           connected_treenodes_to_synapse.connector_id = synapse.id AND
-           con_to_syn.id = connected_treenodes_to_synapse.relation_id AND
-        connected_treenodes.id = connected_treenode_to_skeletons.treenode_id AND
-           connected_treenode_to_skeletons.class_instance_id = connected_skeletons.id AND
-           element_of.id = connected_treenode_to_skeletons.relation_id AND
-        connected_skeletons.id = connected_skeletons_to_neuron.class_instance_a AND
-           connected_skeletons_to_neuron.class_instance_b = connected_neurons.id AND
-           model_of.id = connected_skeletons_to_neuron.relation_id AND
-        source_neuron.id = %s""", [con_to_syn_relation,
-                                   src_to_syn_relation,
-                                   original_neuron.id])
+            raise Exception, "Unknown connectivity direction "+str(direction)
+        return ClassInstance.objects.raw(query, (original_neuron.id,))
 
     @classmethod
     def all_neurons_upstream(cls, downstream_neuron):

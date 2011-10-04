@@ -69,7 +69,6 @@ class Double3DField(models.Field):
         # here; return a new Double3D for any falsy value:
         if not value:
             return Double3D()
-        print >> sys.stderr, "value is %s, of type %s" % (value, type(value))
         return Double3D.from_str(value)
     def get_db_prep_value(self, value, connection, prepared=False):
         return "(%f,%f,%f)" % (value.x, value.y, value.z)

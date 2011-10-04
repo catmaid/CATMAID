@@ -318,9 +318,9 @@ class ClassInstance(models.Model):
              ('model_of>', {}),
              ('class_instance:neuron', {'id': SQLPlaceholder()})])
     connected_downstream_query = get_connected_query(
-        ConnectivityDirection.PRESYNAPTIC_TO)
-    connected_downstream_query = get_connected_query(
-        ConnectivityDirection.POSTSYNAPTIC_TO)
+        ConnectivityDirection.POSTSYNAPTIC_PARTNERS)
+    connected_upstream_query = get_connected_query(
+        ConnectivityDirection.PRESYNAPTIC_PARTNERS)
     @classmethod
     def get_connected_neurons(cls, direction, original_neuron):
         if direction == ConnectivityDirection.POSTSYNAPTIC_PARTNERS:

@@ -4,6 +4,7 @@ from django.db import connection
 import os
 import sys
 import re
+import urllib
 
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, generate_catmaid_sql, SQLPlaceholder
@@ -285,3 +286,17 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         self.compare_swc_data(response.content, swc_output_for_skeleton_235)
+
+    def test_view_neuron(self):
+        neuron_name = 'branched neuron'
+        neuron = ClassInstance.objects.get(name=neuron_name)
+        self.assertTrue(neuron)
+
+        url = '/%d/view/%d' % (self.test_project_id, neuron.id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        url = '/%d/view/%s' % (self.test_project_id,
+                               urllib.quote(neuron_name))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)

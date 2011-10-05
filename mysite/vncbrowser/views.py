@@ -5,6 +5,8 @@ from models import NeuronSearch, ClassInstance
 from collections import defaultdict
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
+from django.db import connection, transaction
+from django.http import HttpResponse, HttpResponseRedirect
 
 # Tip from: http://lincolnloop.com/blog/2008/may/10/getting-requestcontext-your-templates/
 # Required because we need a RequestContext, not just a Context - the
@@ -169,5 +171,39 @@ def lines_delete(request):
     n.lines.remove(l)
     return HttpResponseRedirect(reverse('vncbrowser.views.view',kwargs={'neuron_id':neuron_id}))
 
-def skeleton_swc(request):
-    pass
+def skeleton_swc(request, project_id=None, skeleton_id=None):
+    cursor = connection.cursor()
+    cursor.execute("""
+SELECT t.id, (t.location).x, (t.location).y, (t.location).z, t.radius, t.parent_id
+   FROM
+      treenode t,
+      class_instance ci,
+      class c,
+      relation r,
+      treenode_class_instance tci
+   WHERE
+      ci.class_id = c.id AND
+      c.class_name = 'skeleton' AND
+      t.id = tci.treenode_id AND
+      tci.class_instance_id = ci.id AND
+      tci.relation_id = r.id AND
+      r.relation_name = 'element_of' AND
+      t.project_id = %s AND
+      ci.id = %s
+""",
+                   (project_id, skeleton_id))
+    all_rows = []
+    for row in cursor.fetchall():
+        swc_row = [row[0]]
+        swc_row.append(0)
+        swc_row += row[1:]
+        if swc_row[-1] is None:
+            swc_row[-1] = -1
+        if swc_row[-2] < 0:
+            swc_row[-2] = 0
+        all_rows.append(swc_row)
+    all_rows.sort(key=lambda x: x[0])
+    result = ""
+    for row in all_rows:
+        result += " ".join(str(x) for x in row) + "\n"
+    return HttpResponse(result, mimetype="text/plain")

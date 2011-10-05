@@ -281,7 +281,7 @@ class ViewPageTests(TestCase):
                                   float(e2[d[f]]))
 
     def test_swc_file(self):
-        response = self.client.get('/3/skeleton/235/swc')
+        response = self.client.get('/%d/skeleton/235/swc' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
 
         self.compare_swc_data(response.content, swc_output_for_skeleton_235)

@@ -6,14 +6,57 @@ import re
 def now():
     return datetime.now()
 
-class Double3D:
+# ------------------------------------------------------------------------
+# Classes to support the integer3d compound type:
+
+class Integer3D(object):
+    def __init__(self, x=0, y=0, z=0):
+        self.x, self.y, self.z = x, y, z
+    integer_re = '[-+0-9]+'
+    tuple_pattern = re.compile('^\((%s),(%s),(%s)\)$'%((integer_re,)*3))
+    @classmethod
+    def from_str(cls, s):
+        m = cls.tuple_pattern.match(s)
+        if m:
+            return Integer3D(x=int(m.group(1), 10),
+                             y=int(m.group(2), 10),
+                             z=int(m.group(3), 10))
+        else:
+            raise Exception, "Couldn't parse value from the database as an Integer3D: "+str(s)
+
+class Integer3DField(models.Field):
+    __metaclass__ = models.SubfieldBase
+    def db_type(self, connection):
+        return 'integer3d'
+    def to_python(self, value):
+        a = Integer3D()
+        print >> sys.stderr, "value is %s, of type %s" % (value, type(value))
+        print >> sys.stderr, "but a new Integer3D instance is", type(a)
+        #print >> sys.stderr, "at start of to_python, value is %s, of type %s" % (value, type(value))
+        #print >> sys.stderr, "but the type of a newly created Integer3D is %s" % (type(value),)
+        if isinstance(value, Integer3D):
+            print >> sys.stderr, "isinstance check worked"
+            return value
+        print >> sys.stderr, "isinstance check failed"
+        # When contructing a Location, we get the empty string
+        # here; return a new Integer3D for any falsy value:
+        if not value:
+            return Integer3D()
+        print >> sys.stderr, "value is %s, of type %s" % (value, type(value))
+        return Integer3D.from_str(value)
+    def get_db_prep_value(self, value, connection, prepared=False):
+        return "(%d,%d,%d)" % (value.x, value.y, value.z)
+
+# ------------------------------------------------------------------------
+# Classes to support the integer3d compound type:
+
+class Double3D(object):
     def __init__(self, x=0, y=0, z=0):
         self.x, self.y, self.z = x, y, z
     double_re = '[-+0-9\.Ee]+'
     tuple_pattern = re.compile('^\((%s),(%s),(%s)\)$'%((double_re,)*3))
     @classmethod
     def from_str(cls, s):
-        print >> sys.stderr, "in from_str"
         m = cls.tuple_pattern.match(s)
         if m:
             return Double3D(x=float(m.group(1)),
@@ -38,6 +81,8 @@ class Double3DField(models.Field):
     def get_db_prep_value(self, value, connection, prepared=False):
         return "(%f,%f,%f)" % (value.x, value.y, value.z)
 
+# ------------------------------------------------------------------------
+
 class Project(models.Model):
     class Meta:
         db_table = "project"
@@ -55,8 +100,8 @@ class Stack(models.Model):
         managed = False
     id = models.AutoField(primary_key=True)
     title = models.TextField()
-    # dimension is of type integer3d, can't represent that yet
-    # resolution is of type double3d, can't represent that yet
+    dimension = Integer3DField()
+    resolution = Double3DField()
     image_base = models.TextField()
     comment = models.TextField(null=True)
     trakem2_project = models.BooleanField()
@@ -97,7 +142,7 @@ class Class(models.Model):
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
-    # Default=Now new columns:
+    # Now new columns:
     class_name = models.CharField(max_length=255)
     description = models.TextField()
 
@@ -111,7 +156,7 @@ class ClassInstance(models.Model):
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
-    # Default=Now new columns:
+    # Now new columns:
     class_column = models.ForeignKey(Class, db_column="class") # underscore since class is a keyword
     name = models.CharField(max_length=255)
 
@@ -126,7 +171,7 @@ class Relation(models.Model):
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
-    # Default=Now new columns:
+    # Now new columns:
     relation_name = models.CharField(max_length=255)
     uri = models.TextField()
     description = models.TextField()
@@ -142,7 +187,7 @@ class RelationInstance(models.Model):
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
-    # Default=Now new columns:
+    # Now new columns:
     relation = models.ForeignKey(Relation)
 
 class ClassInstanceClassInstance(models.Model):
@@ -156,7 +201,7 @@ class ClassInstanceClassInstance(models.Model):
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
-    # Default=Now new columns:
+    # Now new columns:
     class_instance_a = models.ForeignKey(ClassInstance, related_name='class_instances_a')
     class_instance_b = models.ForeignKey(ClassInstance, related_name='class_instances_b')
 
@@ -178,7 +223,7 @@ class ClassClass(models.Model):
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
-    # Default=Now new columns:
+    # Now new columns:
     class_a = models.ForeignKey(Class, related_name='classes_a')
     class_b = models.ForeignKey(Class, related_name='classes_b')
 

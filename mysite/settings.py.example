@@ -1,0 +1,49 @@
+# If you don't have settings.py in this directory, you should copy
+# this file to settings.py and customize it.
+
+from settings_base import *
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'custom_postgresql_psycopg2', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': 'catmaid',                    # Or path to database file if using sqlite3.
+        'USER': 'catmaid_user',               # Not used with sqlite3.
+        'PASSWORD': 'catmaid_user_password',  # Not used with sqlite3.
+        'HOST': '',                           # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': '',                           # Set to empty string for default. Not used with sqlite3.
+    }
+}
+
+# Make this unique, and don't share it with anybody.
+# (You can generate a key with:
+# >>> from random import choice
+# >>> ''.join([choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)])
+# '@er^vm3$w#9n$)z3avny*hh+l^#ezv+sx*(72qwp0c%%cg1$i+'
+# ... which is how "django-admin startproject" does it.)
+SECRET_KEY = ''
+
+TEMPLATE_DIRS = (
+    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
+    # Always use forward slashes, even on Windows.
+    # Don't forget to use absolute paths, not relative paths.
+    '/home/mark/neuron-catalogue/templates'
+)
+
+DEBUG = True
+TEMPLATE_DEBUG = DEBUG
+
+# Local time zone for this installation. Choices can be found here:
+# http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
+# although not all choices may be available on all operating systems.
+# If running in a Windows environment this must be set to the same as your
+# system time zone.
+TIME_ZONE = 'Europe/Zurich'
+
+# Language code for this installation. All choices can be found here:
+# http://www.i18nguy.com/unicode/language-identifiers.html
+LANGUAGE_CODE = 'en-gb'
+
+SITE_ID = 1
+
+STATICFILES_URL = '/static/'
+STATICFILES_LOCAL = '/home/mark/neuron-catalogue/static/'

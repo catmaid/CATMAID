@@ -29,7 +29,13 @@ SELECT adsrc
 ''', (table_name, pk_name))
         # The default value should look like:
         #   nextval('concept_id_seq'::regclass)
-        default_value = cursor.fetchone()[0]
+        result_row = cursor.fetchone()
+        if not result_row:
+            # Then there's no column of that name, which may mean, for
+            # example, that this is a managed join table with no "id"
+            # column:
+            return None
+        default_value = result_row[0]
         m = re.search(r'nextval\(\'(.*?)\'::regclass\)', default_value)
         if not m:
             raise DatabaseError("Couldn't find the sequence for column '%s' in table '%s'" % (pk_name, table_name))

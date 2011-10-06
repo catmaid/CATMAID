@@ -343,6 +343,15 @@ class ClassInstance(models.Model):
             ConnectivityDirection.POSTSYNAPTIC_PARTNERS,
             upstream_neuron)
 
+    @classmethod
+    def neuron_to_skeletons(cls, project_id, neuron_id):
+        query = generate_catmaid_sql(
+            [('class_instance:skeleton', {'project_id': project_id}),
+             ('model_of>', {'project_id': project_id}),
+             ('class_instance:neuron', {'id': SQLPlaceholder(),
+                                        'project_id': project_id})])
+        return ClassInstance.objects.raw(query, (neuron_id,))
+
 class Relation(models.Model):
     class Meta:
         db_table = "relation"

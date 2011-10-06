@@ -1,6 +1,5 @@
-# Create your views here.
-
 import sys
+import json
 from models import NeuronSearch, ClassInstance
 from collections import defaultdict
 from django.shortcuts import render_to_response, get_object_or_404
@@ -207,3 +206,7 @@ SELECT t.id, (t.location).x, (t.location).y, (t.location).z, t.radius, t.parent_
     for row in all_rows:
         result += " ".join(str(x) for x in row) + "\n"
     return HttpResponse(result, mimetype="text/plain")
+
+def neuron_to_skeletons(request, project_id=None, neuron_id=None):
+    raw_result = ClassInstance.neuron_to_skeletons(project_id, neuron_id)
+    return HttpResponse(json.dumps([x.id for x in raw_result]), mimetype="text/json")

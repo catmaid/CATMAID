@@ -5,6 +5,7 @@ import os
 import sys
 import re
 import urllib
+import json
 
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, generate_catmaid_sql, SQLPlaceholder
@@ -300,3 +301,13 @@ class ViewPageTests(TestCase):
                                urllib.quote(neuron_name))
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+
+    def test_skeletons_from_neuron(self):
+        url = '/%d/neuron-to-skeletons/%d' % (self.test_project_id,
+                                              233)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        parsed_data = json.loads(response.content)
+        self.assertEqual(len(parsed_data), 1)
+        self.assertEqual(parsed_data[0], 235)

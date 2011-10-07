@@ -3,11 +3,11 @@ function shuffle(array) {
     var tmp, current, top = array.length;
 
     if(top) while(--top) {
-            current = Math.floor(Math.random() * (top + 1));
-            tmp = array[current];
-            array[current] = array[top];
-            array[top] = tmp;
-        }
+        current = Math.floor(Math.random() * (top + 1));
+        tmp = array[current];
+        array[current] = array[top];
+        array[top] = tmp;
+    }
 
     return array;
 }
@@ -22,9 +22,9 @@ shuffle(colors);
 
 $(document).ready( function() {
 
-        $('.delete-form').submit(function(e){
-                return confirm('Really delete from this neuron?');
-            });
+    $('.delete-form').submit(function(e){
+        return confirm('Really delete from this neuron?');
+    });
 
     $('.show-neuron').change(function () {
         // AArgh, all horrible.  FIXME.
@@ -41,18 +41,18 @@ $(document).ready( function() {
         }
     });
 
-        setNeuronView( 'viewer', [ [ neuronName, 'black' ] ] );
+    setNeuronView( 'viewer', [ [ neuronName, 'black' ] ] );
 
-        $('#xy-button').click( function () {
-                $('#viewer').data('viewer').changeView( 0, 0, 0 );
-            } );
+    $('#xy-button').click( function () {
+        $('#viewer').data('viewer').changeView( 0, 0, 0 );
+    } );
 
-        $('#xz-button').click( function () {
-                $('#viewer').data('viewer').changeView( -Math.PI / 2, 0, 0 );
-            } );
+    $('#xz-button').click( function () {
+        $('#viewer').data('viewer').changeView( -Math.PI / 2, 0, 0 );
+    } );
 
-        $('#zy-button').click( function () {
-                $('#viewer').data('viewer').changeView( 0, -Math.PI / 2, 0 );
-            } );
+    $('#zy-button').click( function () {
+        $('#viewer').data('viewer').changeView( 0, -Math.PI / 2, 0 );
+    } );
 
-    });
+});

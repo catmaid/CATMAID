@@ -256,8 +256,19 @@ function Stack(
 	 * Get stack ID.
 	 */
 	this.getId = function(){ return id; }
-	
-	
+
+	/**
+	 * Get a layer. Layers are associated by a unique key.
+	 *
+	 * @param key
+	 */
+	this.getLayer = function( key )
+	{
+		if ( layers[ key ] )
+			return layers[key];
+        return;
+	}
+
 	/**
 	 * Add a layer.  Layers are associated by a unique key.
 	 * If a layer with the passed key exists, then this layer will be replaced.
@@ -389,6 +400,9 @@ function Stack(
 	
 	self.overview = new Overview( self );
 	view.appendChild( self.overview.getView() );
+
+    self.overviewlayer = new OverviewLayer( self );
+    view.appendChild( self.overviewlayer.getView() );
 	
 	var scaleBar = document.createElement( "div" );
 	scaleBar.className = "sliceBenchmark";

@@ -270,12 +270,16 @@ function TileLayer(
 		
 		var img = document.createElement( "img" );
 		img.className = "smallMapMap";
-		img.src = "map/small.jpg";
+		img.src = baseURL + stack.z + "/small.jpg";
 		
 		stack.overview.getView().appendChild( img );
 		stack.overview.addLayer( "tilelayer", this );
 	}
-	
+
+    this.setOpacity = function( val )
+    {
+        tilesContainer.style.opacity = val+"";
+    }
 
 	// initialise
 	var self = this;

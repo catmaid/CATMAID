@@ -24,7 +24,7 @@ function Project( pid )
 	{
 		return view;
 	}
-	
+
 	/**
 	 * add a stack to the project
 	 */
@@ -227,7 +227,12 @@ function Project( pid )
 		self.id = 0;
 		document.onkeydown = null;
 		document.getElementById( "content" ).style.display = "block";
-		
+        // TODO: bars should be unset by tool on unregister
+		document.getElementById("toolbox_edit").style.display = "none";
+		document.getElementById("toolbox_data").style.display = "none";
+        document.getElementById( "toolbox_project" ).style.display = "none";
+        document.getElementById( "toolbar_nav" ).style.display = "none";
+
 		project = null;
 
 		return;

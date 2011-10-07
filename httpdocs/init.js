@@ -304,6 +304,7 @@ function handle_openProjectStack( status, text, xml )
 		}
 		else
 		{
+            console.log(e);
 			//console.replaceLast( e );
 			
 			//! look if the project is already opened, otherwise open a new one
@@ -333,9 +334,19 @@ function handle_openProjectStack( status, text, xml )
 					e.image_base,
 					e.tile_width,
 					e.tile_height );
-			
+
 			stack.addLayer( "TileLayer", tilelayer );
-			
+
+            
+            var tilelayer = new TileLayer(
+                    stack,
+                    "http://localhost/fib/",
+                    e.tile_width,
+                    e.tile_height );
+
+            tilelayer.setOpacity( 0.2 );
+            stack.addLayer( "TileLayer2", tilelayer );
+
 			project.addStack( stack );
 
 			if ( inittool === 'tracingtool' ) {

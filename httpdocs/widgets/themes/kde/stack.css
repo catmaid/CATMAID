@@ -130,6 +130,14 @@ div.smallMapView_hidden div.smallMapRect div
 	opacity:.25;
 }
 
+div.OverviewLayer
+{
+	border:solid 2px #0000FF;
+	margin:0px;
+	padding:0px;
+	position:absolute;
+}
+
 div.sliceView div.sliceMouseCatcher
 {
 	position:absolute;

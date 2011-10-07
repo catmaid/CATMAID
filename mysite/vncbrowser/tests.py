@@ -111,11 +111,12 @@ class RelationQueryTests(TestCase):
         self.assertTrue(upstream)
 
         downstreams = list(ClassInstance.all_neurons_downstream(upstream))
-        self.assertEqual(len(downstreams), 2)
+        self.assertEqual(len(downstreams), 3)
 
         downstreams.sort(key=lambda x: x.name)
         self.assertEqual(downstreams[0].name, "downstream-A")
-        self.assertEqual(downstreams[1].name, "downstream-B")
+        self.assertEqual(downstreams[1].name, "downstream-A")
+        self.assertEqual(downstreams[2].name, "downstream-B")
 
     def test_find_upstream_neurons(self):
         downstream = ClassInstance.objects.get(name='downstream-A')
@@ -226,6 +227,8 @@ SELECT t0.*
                          condense_whitespace(expected_result))
 
 swc_output_for_skeleton_235 = '''237 0 1065 3035 0 0 -1
+417 0 4990 4200 0 0 415
+415 0 5810 3950 0 0 289
 289 0 6210 3480 0 0 287
 287 0 6315 3270 0 0 285
 285 0 6100 2980 0 0 283
@@ -251,7 +254,8 @@ swc_output_for_skeleton_235 = '''237 0 1065 3035 0 0 -1
 245 0 1970 2595 0 0 243
 243 0 1780 2570 0 0 241
 241 0 1340 2660 0 0 239
-239 0 1135 2800 0 0 237'''
+239 0 1135 2800 0 0 237
+'''
 
 def swc_string_to_sorted_matrix(s):
     m = [ re.split("\s+", x) for x in s.splitlines() if not re.search('^\s*(#|$)', x) ]

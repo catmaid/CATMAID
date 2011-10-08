@@ -165,12 +165,21 @@ function Stack(
 	}
 	
 	/**
-	 * get the view element
+	 * Get the view element
 	 */
 	this.getView = function()
 	{
 		return view;
 	}
+
+    /**
+     * Get layers
+     */
+    this.getLayers = function()
+    {
+        return layers;
+    }
+
 	
 	/**
 	 * move to project-coordinates
@@ -281,6 +290,7 @@ function Stack(
 		if ( layers[ key ] )
 			layers[ key ].unregister();
 		layers[ key ] = layer;
+        self.overviewlayer.refresh();
 		return;
 	}
 	
@@ -296,6 +306,7 @@ function Stack(
 		{
 			layer.unregister();
 			delete layers[ key ];
+            self.overviewlayer.refresh();
 			return layer;
 		}
 		else

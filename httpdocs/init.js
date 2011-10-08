@@ -337,15 +337,15 @@ function handle_openProjectStack( status, text, xml )
 
 			stack.addLayer( "TileLayer", tilelayer );
 
-            
-            var tilelayer = new TileLayer(
+            /* for testing */
+            var tilelayer2 = new TileLayer(
                     stack,
                     "http://localhost/fib/",
                     e.tile_width,
                     e.tile_height );
 
-            tilelayer.setOpacity( 0.2 );
-            stack.addLayer( "TileLayer2", tilelayer );
+            // tilelayer.setOpacity( 0.2 );
+            stack.addLayer( "TileLayer22", tilelayer2 );
 
 			project.addStack( stack );
 

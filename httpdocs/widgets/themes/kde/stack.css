@@ -132,10 +132,14 @@ div.smallMapView_hidden div.smallMapRect div
 
 div.OverviewLayer
 {
-	border:solid 2px #0000FF;
+	/*border:solid 2px #0000FF;*/
 	margin:0px;
 	padding:0px;
-	position:absolute;
+	position:relative;
+    top:10px;
+    left:10px;
+    width:100px;
+    color:#FFFFFF;
 }
 
 div.sliceView div.sliceMouseCatcher

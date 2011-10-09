@@ -433,6 +433,9 @@ function Stack(
 	self.old_y = self.y;
 	self.old_x = self.x;
 	self.old_s = self.s;
+
+    self.yc = 0;
+    self.xc = 0;
 	
 	self.scale = 1 / Math.pow( 2, self.s );
 	self.old_scale = self.scale;

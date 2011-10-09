@@ -304,7 +304,7 @@ function handle_openProjectStack( status, text, xml )
 		}
 		else
 		{
-            console.log(e);
+            // console.log(e);
 			//console.replaceLast( e );
 			
 			//! look if the project is already opened, otherwise open a new one
@@ -337,7 +337,7 @@ function handle_openProjectStack( status, text, xml )
 
 			stack.addLayer( "TileLayer", tilelayer );
 
-            /* for testing */
+            /* XXX: for testing */
             var tilelayer2 = new TileLayer(
                     stack,
                     "http://localhost/fib/",
@@ -345,7 +345,7 @@ function handle_openProjectStack( status, text, xml )
                     e.tile_height );
 
             // tilelayer.setOpacity( 0.2 );
-            stack.addLayer( "TileLayer22", tilelayer2 );
+            stack.addLayer( "TileLayer  22", tilelayer2 );
 
 			project.addStack( stack );
 

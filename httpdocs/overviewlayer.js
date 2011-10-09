@@ -11,10 +11,20 @@ function OverviewLayer( stack )
 		return view;
 	}
 
+    /**
+	 * set opacity for a layer
+	 */
+    this.setOpacity = function ( key, val )
+    {
+        self.layers[key].setOpacity( val / 100 );
+    }
+
     this.refresh = function()
     {
 
         var layers = stack.getLayers();
+        self.sliderfunct = {};
+        self.sliderslider = {};
         
         if ( view.hasChildNodes() )
         {
@@ -28,9 +38,9 @@ function OverviewLayer( stack )
         {
             var container = document.createElement("div");
 
-            var setOpacity = function( val )
+            var setOpac = function ( val )
             {
-                layers[ key ].setOpacity( val / 100 );
+                self.setOpacity( this.idd, val );
                 return;
             }
 
@@ -41,18 +51,18 @@ function OverviewLayer( stack )
                     100,
                     100,
                     100,
-                    setOpacity );
-            // XXX: not independent sliders
+                    setOpac );
+
+            slider.idd = key;
             container.innerHTML += key + "<br />";
             container.appendChild( slider.getView() );
             view.appendChild(container);
         }
     };
 
-    // need to keep for each layer visibility & opacity
-    var layers_state = {};
-
 	var self = this;
+
+    self.layers = stack.getLayers();
 
 	var view = document.createElement( "div" );
 	view.className = "OverviewLayer";
@@ -62,38 +72,7 @@ function OverviewLayer( stack )
     //view.style.backgroundColor = "#FF0000";
     view.style.zIndex = 6;
 
-    var slider = new Slider(
-            SLIDER_HORIZONTAL,
-            false,
-            1,
-            100,
-            100,
-            50,
-            function( val ){
-                //console.log( val );
-                var st = stack.getLayer( "TileLayer2");
-                st.setOpacity( val / 100 );
-                return;
-            } );
 
-    var stackname = document.createTextNode("Tile Layer 2");
-    var para = document.createElement("p");
-    para.appendChild( stackname );
-    view.appendChild( para );
-    view.appendChild( slider.getView() );
-/*
-      var createContainer = function(id) {
-        var container = document.createElement("div");
-        container.setAttribute("id", id);
-        container.setAttribute("class", "sliceView");
-        container.style.position = "relative";
-        container.style.bottom = "0px";
-        container.style.width = "100%";
-        container.style.overflow = "auto";
-        container.style.backgroundColor = "#ffffff";
-        return container;
-      };
-*/
 
 
 }

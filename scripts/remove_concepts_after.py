@@ -45,7 +45,7 @@ def run():
     # FIXME: ask in a dialog for the ID instead
     first_id = 3859376
 
-    where = ' where id > %d'%(first_id,)
+    where = ' where id > %d and project_id = %d' % (first_id, project_id)
 
     s = c.createStatement('delete from treenode_class_instance'+where)
     s.executeQuery()

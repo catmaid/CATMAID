@@ -449,7 +449,7 @@ def add_recursively(pt,parent_id,depth=0):
   if not parent_id:
     # Then this should be the root:
     new_id = insert_project_root_node(name_with_id)
-  elif pt_type in ("sensory", "class", "vnc", "contour", "group", "neuropile", "synapses", "trachea", "imported_labels"):
+  elif pt_type in ("sensory", "class", "vnc", "contour", "group", "neuropile", "synapses", "trachea", "imported_labels", "commissures"):
     # Just create all of these as groups for the moment:
     new_id = insert_group(parent_id,name_with_id)
   elif pt_type == "nucleus":

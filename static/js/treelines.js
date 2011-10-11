@@ -219,7 +219,7 @@ function Viewer( divID ) {
         this.changeView( this.currentPhi, this.currentTheta, this.currentPsi );
     }
 
-    this.setNeuron = function( neuronBasename, neuronColor ) {
+    this.setNeuron = function( neuronBasename, swcURL, neuronColor ) {
 
         // Is there an exisiting view of this neuron?  If so, just set
         // the color.
@@ -232,7 +232,7 @@ function Viewer( divID ) {
         }
 
         // Otherwise create a new one and add it...
-        this.neurons.push( new NeuronView( neuronBasename, neuronColor, this ) );
+        this.neurons.push( new NeuronView( neuronBasename, swcURL, neuronColor, this ) );
         this.redraw();
     }
 
@@ -313,7 +313,7 @@ function Point( id,
     }
 }
 
-function NeuronView( basename, color, viewer ) {
+function NeuronView( basename, swcURL, color, viewer ) {
 
     this.basename = basename;
     this.color = color;
@@ -339,8 +339,6 @@ function NeuronView( basename, color, viewer ) {
     this.max_z = Number.MIN_VALUE;
 
     this.test = "foo";
-
-    var swcURI = basenameToURI( basename, "swc" );
 
     // Load the neuron morphology from the SWC file:
 

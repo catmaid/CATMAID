@@ -344,7 +344,7 @@ function NeuronView( basename, swcURL, color, viewer ) {
 
     var enclosingObject = this; // Since the meaning of 'this' is changed in the callback
 
-    $.get(swcURI, function(data) {
+    $.get(swcURL, function(data) {
 
             var lines = data.split("\n");
             for( var i = 0; i < lines.length; ++i ) {

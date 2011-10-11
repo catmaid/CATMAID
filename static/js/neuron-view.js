@@ -20,6 +20,27 @@ for( var i = 0; i < numberOfColors; ++i ) {
 }
 shuffle(colors);
 
+function addOrRemoveNeuron( add, neuronName, neuronId, color ) {
+    var self = this;
+    $.get('/'+projectId+'/neuron-to-skeletons/'+neuronId,
+          function (data) {
+              var i, skeletonID, swcURL, skeletonName;
+              for (var i in data) {
+                  skeletonID = data[i];
+                  skeletonName = neuronName+'(skeleton: '+skeletonID+')';
+                  swcURL = '/'+projectId+'/skeleton/'+skeletonID+'/swc';
+                  if (add) {
+                      $(self).parent().css("background-color",color);
+                      $('#viewer').data('viewer').setNeuron(skeletonName,swcURL,color);
+                  } else {
+                      $(self).parent().css("background-color","#fff");
+                      $('#viewer').data('viewer').deleteNeuron(skeletonName,color);
+                  }
+              }
+          },
+          "json");
+}
+
 $(document).ready( function() {
 
     $('.delete-form').submit(function(e){
@@ -28,20 +49,24 @@ $(document).ready( function() {
 
     $('.show-neuron').change(function () {
         // AArgh, all horrible.  FIXME.
-        var neuronId = parseInt($(this).attr('id').substring(1));
+        var groups = $(this).attr('id').match('p([0-9]+)c([0-9]+)');
+        var neuronId = parseInt(groups[2]);
+        var projectId = parseInt(groups[1]);
         var neuronLink = $(this).parent().parent().find('a');
         var neuronName = neuronLink.text();
-        if ($(this).attr("checked")) {
-            var newColor = colors[neuronId % numberOfColors];
-            $(this).parent().css("background-color",newColor);
-            $('#viewer').data('viewer').setNeuron(neuronName,newColor);
-        } else {
-            $(this).parent().css("background-color","#fff");
-            $('#viewer').data('viewer').deleteNeuron(neuronName,newColor);
-        }
+        var newColor = colors[neuronId % numberOfColors];
+        addOrRemoveNeuron($(this).attr("checked"),
+                          neuronName,
+                          neuronId,
+                          newColor );
     });
 
-    setNeuronView( 'viewer', [ [ neuronName, 'black' ] ] );
+    setNeuronView( 'viewer', [] );
+
+    addOrRemoveNeuron(true,
+                      neuronName,
+                      neuronID,
+                      'black');
 
     $('#xy-button').click( function () {
         $('#viewer').data('viewer').changeView( 0, 0, 0 );

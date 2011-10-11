@@ -7,6 +7,7 @@
       var neuronName = "{{neuron.name|escapejs}}";
       var neuronID = "{{neuron.id|escapejs}}";
       var staticURLPrefix = "{{static|escapejs}}";
+      var projectId = "{{project_id|escapejs}}";
     </script>
     <script src="{{ static }}js/treelines.js" type="text/javascript" charset="utf-8"></script>
     <script src="{{ static }}js/neuron-view.js" type="text/javascript" charset="utf-8"></script>
@@ -22,7 +23,7 @@
     <tr>
       <td>{{ c.count }}</td>
       <td><a href="{% url vncbrowser.views.view project_id=project_id, neuron_id=c.id %}">{{c.name}}</a></td>
-      <td><input type="checkbox" class="show-neuron" id="c{{c.id}}"></td>
+      <td><input type="checkbox" class="show-neuron" id="p{{project_id}}c{{c.id}}"></td>
     </tr>
     {% endfor %}
   </table>
@@ -36,7 +37,7 @@
     <tr>
       <td>{{ c.count }}</td>
       <td><a href="{% url vncbrowser.views.view project_id=project_id, neuron_id=c.id %}">{{c.name}}</a></td>
-      <td><input type="checkbox" class="show-neuron" id="c{{c.id}}"></td>
+      <td><input type="checkbox" class="show-neuron" id="p{{project_id}}c{{c.id}}"></td>
     </tr>
     {% endfor %}
   </table>

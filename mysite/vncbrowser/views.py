@@ -247,5 +247,13 @@ SELECT t.id, (t.location).x, (t.location).y, (t.location).z, t.radius, t.parent_
     return HttpResponse(result, mimetype="text/plain")
 
 def neuron_to_skeletons(request, project_id=None, neuron_id=None):
-    raw_result = ClassInstance.neuron_to_skeletons(project_id, neuron_id)
-    return HttpResponse(json.dumps([x.id for x in raw_result]), mimetype="text/json")
+    p = get_object_or_404(Project, pk=project_id)
+    neuron = get_object_or_404(ClassInstance,
+                               pk=neuron_id,
+                               class_column__class_name='neuron',
+                               project=p)
+    qs = ClassInstance.objects.filter(
+        project=p,
+        class_instances_a__relation__relation_name='model_of',
+        class_instances_a__class_instance_b=neuron)
+    return HttpResponse(json.dumps([x.id for x in qs]), mimetype="text/json")

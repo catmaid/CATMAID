@@ -9,7 +9,7 @@ import json
 
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, generate_catmaid_sql, SQLPlaceholder
-from models import Treenode
+from models import Treenode, Connector
 
 print os.getcwd()
 
@@ -347,3 +347,17 @@ class TreenodeTests(TestCase):
         # But the next should have this as a parent:
         self.assertEqual(tns[1].parent, tns[0])
 
+        x = tns[0].location.x
+        y = tns[0].location.y
+        z = tns[0].location.z
+
+        self.assertTrue(1030 < x < 1090)
+        self.assertTrue(3000 < y < 3060)
+        self.assertTrue(-30 < z < 30)
+
+        # There should be 2 connectors attached to the skeleton via
+        # treenodes:
+
+        connectors = Connector.objects.filter(
+            treenodeconnector__treenode__treenodeclassinstance__class_instance=skeleton)
+        self.assertEqual(len(connectors), 2)

@@ -393,8 +393,12 @@ class ClassInstanceClassInstance(models.Model):
     project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
     # Now new columns:
-    class_instance_a = models.ForeignKey(ClassInstance, related_name='class_instances_a')
-    class_instance_b = models.ForeignKey(ClassInstance, related_name='class_instances_b')
+    class_instance_a = models.ForeignKey(ClassInstance,
+                                         related_name='class_instances_a',
+                                         db_column='class_instance_a')
+    class_instance_b = models.ForeignKey(ClassInstance,
+                                         related_name='class_instances_b',
+                                         db_column='class_instance_b')
 
 class BrokenSlice(models.Model):
     class Meta:

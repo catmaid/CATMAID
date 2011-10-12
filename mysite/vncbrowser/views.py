@@ -106,6 +106,7 @@ def group_neurons_descending_count(neurons):
 
 def view(request, project_id=None, neuron_id=None, neuron_name=None):
     p = get_object_or_404(Project, pk=project_id)
+    # FIXME: add the class name as well
     if neuron_id:
         n = get_object_or_404(ClassInstance, pk=neuron_id, project=project_id)
     else:

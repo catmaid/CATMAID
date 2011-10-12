@@ -8,6 +8,7 @@ from django.template import RequestContext
 from django.db import connection, transaction
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
+from django.views.generic import DetailView
 
 # Tip from: http://lincolnloop.com/blog/2008/may/10/getting-requestcontext-your-templates/
 # Required because we need a RequestContext, not just a Context - the
@@ -157,6 +158,17 @@ def line(request, project_id=None, line_id=None):
                                  {'line': l,
                                   'project_id': p.id,
                                   'neurons': sorted_neurons})
+
+class LineDetailView(DetailView):
+    model = ClassInstance
+    template_name='vncbrowser/jennyline.html'
+    context_object_name = 'line'
+    def get_context_data(self, **kwargs):
+        context = super(LineDetailView, self).get_context_data(**kwargs)
+        context['neurons'] = ClassInstance.objects.filter(
+            class_instances_b__relation__relation_name='expresses_in',
+            class_instances_b__class_instance_a=self.object).order_by('name')
+        return context
 
 def visual_line(request, line_name=None):
     l = get_object_or_404(Line,name=line_name)

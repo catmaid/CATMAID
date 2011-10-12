@@ -214,6 +214,14 @@ def generate_catmaid_sql(joins):
 
 # ------------------------------------------------------------------------
 
+class User(models.Model):
+    class Meta:
+        db_table = "user"
+        managed = False
+    name = models.CharField(max_length=30)
+    pwd = models.CharField(max_length=30)
+    longname = models.TextField()
+
 class Project(models.Model):
     class Meta:
         db_table = "project"
@@ -221,8 +229,16 @@ class Project(models.Model):
     title = models.TextField()
     public = models.BooleanField(default=True)
     stacks = models.ManyToManyField("Stack",
-                                    through='ProjectStack',
-                                    related_name='projects')
+                                    through='ProjectStack')
+    users = models.ManyToManyField("User",
+                                   through='ProjectUser')
+
+class ProjectUser(models.Model):
+    class Meta:
+        db_table = "project_user"
+        managed = False
+    project = models.ForeignKey(Project)
+    user = models.ForeignKey(User)
 
 class Stack(models.Model):
     class Meta:
@@ -241,14 +257,6 @@ class ProjectStack(models.Model):
         managed = False
     project = models.ForeignKey(Project)
     stack = models.ForeignKey(Stack)
-
-class User(models.Model):
-    class Meta:
-        db_table = "user"
-        managed = False
-    name = models.CharField(max_length=30)
-    pwd = models.CharField(max_length=30)
-    longname = models.TextField()
 
 class Concept(models.Model):
     class Meta:
@@ -455,6 +463,71 @@ class Location(models.Model):
     project = models.ForeignKey(Project)
     location = Double3DField()
 
+class Treenode(models.Model):
+    class Meta:
+        db_table = "treenode"
+        managed = False
+    user = models.ForeignKey(User)
+    creation_time = models.DateTimeField(default=now)
+    edition_time = models.DateTimeField(default=now)
+    project = models.ForeignKey(Project)
+    location = Double3DField()
+    parent = models.ForeignKey('Treenode', null=True)
+    radius = models.FloatField()
+    confidence = models.IntegerField(default=5)
+
+class Connector(models.Model):
+    class Meta:
+        db_table = "connector"
+        managed = False
+    user = models.ForeignKey(User)
+    creation_time = models.DateTimeField(default=now)
+    edition_time = models.DateTimeField(default=now)
+    project = models.ForeignKey(Project)
+    location = Double3DField()
+    confidence = models.IntegerField(default=5)
+
+class TreenodeClassInstance(models.Model):
+    class Meta:
+        db_table = "treenode_class_instance"
+        managed = False
+    # Repeat the columns inherited from 'relation_instance'
+    user = models.ForeignKey(User)
+    creation_time = models.DateTimeField(default=now)
+    edition_time = models.DateTimeField(default=now)
+    project = models.ForeignKey(Project)
+    relation = models.ForeignKey(Relation)
+    # Now new columns:
+    treenode = models.ForeignKey(Treenode)
+    class_instance = models.ForeignKey(ClassInstance)
+
+class ConnectorClassInstance(models.Model):
+    class Meta:
+        db_table = "connector_class_instance"
+        managed = False
+    # Repeat the columns inherited from 'relation_instance'
+    user = models.ForeignKey(User)
+    creation_time = models.DateTimeField(default=now)
+    edition_time = models.DateTimeField(default=now)
+    project = models.ForeignKey(Project)
+    relation = models.ForeignKey(Relation)
+    # Now new columns:
+    connector = models.ForeignKey(Treenode)
+    class_instance = models.ForeignKey(ClassInstance)
+
+class TreenodeConnector(models.Model):
+    class Meta:
+        db_table = "treenode_connector"
+        managed = False
+    # Repeat the columns inherited from 'relation_instance'
+    user = models.ForeignKey(User)
+    creation_time = models.DateTimeField(default=now)
+    edition_time = models.DateTimeField(default=now)
+    project = models.ForeignKey(Project)
+    relation = models.ForeignKey(Relation)
+    # Now new columns:
+    treenode = models.ForeignKey(Treenode)
+    connector = models.ForeignKey(Connector)
 
 # ------------------------------------------------------------------------
 # Now the non-Django tables:

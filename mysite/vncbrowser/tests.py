@@ -9,6 +9,7 @@ import json
 
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, generate_catmaid_sql, SQLPlaceholder
+from models import Treenode
 
 print os.getcwd()
 
@@ -315,3 +316,34 @@ class ViewPageTests(TestCase):
         parsed_data = json.loads(response.content)
         self.assertEqual(len(parsed_data), 1)
         self.assertEqual(parsed_data[0], 235)
+
+class TreenodeTests(TestCase):
+
+    def setUp(self):
+        ensure_schema_exists()
+        add_example_data()
+        self.test_project_id = 3
+
+    def test_find_all_treenodes(self):
+
+        # These next two could be done in one query, of course:
+        neuron = ClassInstance.objects.get(name='branched neuron',
+                                           class_column__class_name='neuron')
+        skeleton = ClassInstance.objects.get(
+            class_column__class_name='skeleton',
+            class_instances_a__relation__relation_name='model_of',
+            class_instances_a__class_instance_b=neuron)
+
+        tns = Treenode.objects.filter(
+            treenodeclassinstance__class_instance=skeleton).order_by('id')
+
+        self.assertEqual(len(tns), 29)
+
+        self.assertEqual(tns[0].id, 237)
+
+        # That's a root node, so parent should be None:
+        self.assertTrue(tns[0].parent is None)
+
+        # But the next should have this as a parent:
+        self.assertEqual(tns[1].parent, tns[0])
+

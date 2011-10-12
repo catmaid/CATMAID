@@ -152,7 +152,6 @@ def line(request, project_id=None, line_id=None):
     sorted_neurons = ClassInstance.objects.filter(
         class_instances_b__relation__relation_name='expresses_in',
         class_instances_b__class_instance_a=l).order_by('name')
-    print >> sys.stderr, "sorted_neurons:", sorted_neurons
     return my_render_to_response(request,
                                  'vncbrowser/line.html',
                                  {'line': l,

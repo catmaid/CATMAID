@@ -122,10 +122,17 @@ def view(request, project_id=None, neuron_id=None, neuron_name=None):
     incoming = group_neurons_descending_count(
         ClassInstance.all_neurons_upstream(n))
 
+    skeletons = ClassInstance.objects.filter(
+        project=p,
+        class_instances_a__relation__relation_name='model_of',
+        class_column__class_name='skeleton',
+        class_instances_a__class_instance_b=n)
+
     return my_render_to_response(request,
                                  'vncbrowser/view.html',
                                  {'neuron': n,
                                   'lines': lines,
+                                  'skeletons': skeletons,
                                   'project_id': project_id,
                                   'incoming': incoming,
                                   'outgoing': outgoing} )

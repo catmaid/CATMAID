@@ -50,7 +50,7 @@
 
   <div id="lines">
   <h4>GAL4 Lines</h4>
-  <form action="{% url vncbrowser.views.lines_add %}" method="post">
+  <form action="{% url vncbrowser.views.lines_add project_id=project_id %}" method="post">
   <p><label for="id_name">Line: </label><input type="text" name="line_name"></input>
   <input type="submit" value="Add"></input><input type="hidden" name="neuron_id" value="{{neuron.id}}"></input>
   </p>
@@ -58,7 +58,7 @@
 {% if lines %}
     <ul>
     {% for l in lines %}
-        <li><a href="{% url vncbrowser.views.line_name line_name=l.name %}">{{ l.name }}</a> <form action="{% url vncbrowser.views.lines_delete %}" method="POST" class="delete-form inline-form">
+        <li><a href="{% url vncbrowser.views.line project_id=project_id, line_id=l.id %}">{{ l.name }}</a> <form action="{% url vncbrowser.views.lines_delete project_id=project_id %}" method="POST" class="delete-form inline-form">
                            <input type="hidden" name="neuron_id" value="{{neuron.id}}">
                            <input type="hidden" name="line_name" value="{{l.name}}">
                            <input class="delete-submit" type="submit" value="delete">

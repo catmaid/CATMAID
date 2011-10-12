@@ -1,11 +1,12 @@
 import sys
 import json
-from models import NeuronSearch, ClassInstance
+from models import NeuronSearch, ClassInstance, Project, User, ClassInstanceClassInstance, Relation, Class
 from collections import defaultdict
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.db import connection, transaction
 from django.http import HttpResponse, HttpResponseRedirect
+from django.core.urlresolvers import reverse
 
 # Tip from: http://lincolnloop.com/blog/2008/may/10/getting-requestcontext-your-templates/
 # Required because we need a RequestContext, not just a Context - the
@@ -103,13 +104,16 @@ def group_neurons_descending_count(neurons):
     return result
 
 def view(request, project_id=None, neuron_id=None, neuron_name=None):
+    p = get_object_or_404(Project, pk=project_id)
     if neuron_id:
         n = get_object_or_404(ClassInstance, pk=neuron_id, project=project_id)
     else:
         n = get_object_or_404(ClassInstance, name=neuron_name, project=project_id)
 
-    # FIXME:
-    # l = n.lines.all()
+    lines = ClassInstance.objects.filter(
+        project=p,
+        class_instances_a__class_instance_b=n,
+        class_instances_a__relation__relation_name='expresses_in').all()
 
     outgoing = group_neurons_descending_count(
         ClassInstance.all_neurons_downstream(n))
@@ -119,8 +123,7 @@ def view(request, project_id=None, neuron_id=None, neuron_name=None):
     return my_render_to_response(request,
                                  'vncbrowser/view.html',
                                  {'neuron': n,
-                                  # 'lines': l,
-                                  'lines': [],
+                                  'lines': lines,
                                   'project_id': project_id,
                                   'incoming': incoming,
                                   'outgoing': outgoing} )
@@ -134,11 +137,18 @@ def set_cell_body(request):
         n.save()
     return HttpResponseRedirect(reverse('vncbrowser.views.view',kwargs={'neuron_id':neuron_id}))
 
-def line_name(request, line_name=None):
-    l = get_object_or_404(Line,name=line_name)
+def line(request, project_id=None, line_id=None):
+    p = get_object_or_404(Project, pk=project_id)
+    l = get_object_or_404(ClassInstance, pk=line_id, project=p, class_column__class_name='driver_line')
+    sorted_neurons = ClassInstance.objects.filter(
+        class_instances_b__relation__relation_name='expresses_in',
+        class_instances_b__class_instance_a=l).order_by('name')
+    print >> sys.stderr, "sorted_neurons:", sorted_neurons
     return my_render_to_response(request,
                                  'vncbrowser/line.html',
-                                 {'line': l})
+                                 {'line': l,
+                                  'project_id': p.id,
+                                  'neurons': sorted_neurons})
 
 def visual_line(request, line_name=None):
     l = get_object_or_404(Line,name=line_name)
@@ -147,28 +157,57 @@ def visual_line(request, line_name=None):
                                  {'line': l,
                                   'sorted_neurons': l.neuron_set.all()})
 
-def lines_add(request):
-    neuron_id = request.POST['neuron_id']
-    print >> sys.stderr, 'Got the neuron_id ', neuron_id
-    line_name = request.POST['line_name']
-    print >> sys.stderr, 'Got the line_name ', line_name
-    n = get_object_or_404(Neuron,pk=neuron_id)
-    l = None
-    try:
-        l = Line.objects.get(name=line_name)
-    except Line.DoesNotExist:
-        l = Line(name=line_name)
-        l.save()
-    n.lines.add(l)
-    return HttpResponseRedirect(reverse('vncbrowser.views.view',kwargs={'neuron_id':neuron_id}))
+def lines_add(request, project_id=None):
+    p = Project.objects.get(pk=project_id)
+    # FIXME: for the moment, just hardcode the user ID:
+    user = User.objects.get(pk=3)
+    neuron = get_object_or_404(ClassInstance,
+                               pk=request.POST['neuron_id'],
+                               project=p)
 
-def lines_delete(request):
-    neuron_id = request.POST['neuron_id']
-    line_name = request.POST['line_name']
-    n = get_object_or_404(Neuron,pk=neuron_id)
-    l = Line.objects.get(name=line_name)
-    n.lines.remove(l)
-    return HttpResponseRedirect(reverse('vncbrowser.views.view',kwargs={'neuron_id':neuron_id}))
+    # There's a race condition here, if two people try to add a line
+    # with the same name at the same time.  The normal way to deal
+    # with this would be to make the `name` column unique in the
+    # table, but since the class_instance table isn't just for driver
+    # lines, we can't do that.  (FIXME)
+    try:
+        line = ClassInstance.objects.get(name=request.POST['line_name'])
+    except ClassInstance.DoesNotExist:
+        line = ClassInstance()
+        line.name=request.POST['line_name']
+        line.project = p
+        line.user = user
+        line.class_column = Class.objects.get(class_name='driver_line')
+        line.save()
+
+    r = Relation.objects.get(relation_name='expresses_in', project=p)
+
+    cici = ClassInstanceClassInstance()
+    cici.class_instance_a = line
+    cici.class_instance_b = neuron
+    cici.relation = r
+    cici.user = user
+    cici.project = p
+    cici.save()
+
+    return HttpResponseRedirect(reverse('vncbrowser.views.view',
+                                        kwargs={'neuron_id':neuron.id,
+                                                'project_id':p.id}))
+
+def lines_delete(request, project_id=None):
+    p = Project.objects.get(pk=project_id)
+    neuron = get_object_or_404(ClassInstance,
+                               pk=request.POST['neuron_id'],
+                               project=p)
+    r = Relation.objects.get(relation_name='expresses_in', project=p)
+
+    ClassInstanceClassInstance.objects.filter(relation=r,
+                                              project=p,
+                                              class_instance_a__name=request.POST['line_name'],
+                                              class_instance_b=neuron).delete()
+    return HttpResponseRedirect(reverse('vncbrowser.views.view',
+                                        kwargs={'neuron_id':neuron.id,
+                                                'project_id':p.id}))
 
 def skeleton_swc(request, project_id=None, skeleton_id=None):
     cursor = connection.cursor()

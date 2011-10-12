@@ -1,6 +1,7 @@
 import sys
 import json
-from models import NeuronSearch, ClassInstance, Project, User, ClassInstanceClassInstance, Relation, Class
+from models import NeuronSearch, ClassInstance, Project, User, Treenode
+from models import ClassInstanceClassInstance, Relation, Class
 from collections import defaultdict
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
@@ -199,6 +200,7 @@ def lines_delete(request, project_id=None):
     neuron = get_object_or_404(ClassInstance,
                                pk=request.POST['neuron_id'],
                                project=p)
+
     r = Relation.objects.get(relation_name='expresses_in', project=p)
 
     ClassInstanceClassInstance.objects.filter(relation=r,
@@ -210,35 +212,23 @@ def lines_delete(request, project_id=None):
                                                 'project_id':p.id}))
 
 def skeleton_swc(request, project_id=None, skeleton_id=None):
-    cursor = connection.cursor()
-    cursor.execute("""
-SELECT t.id, (t.location).x, (t.location).y, (t.location).z, t.radius, t.parent_id
-   FROM
-      treenode t,
-      class_instance ci,
-      class c,
-      relation r,
-      treenode_class_instance tci
-   WHERE
-      ci.class_id = c.id AND
-      c.class_name = 'skeleton' AND
-      t.id = tci.treenode_id AND
-      tci.class_instance_id = ci.id AND
-      tci.relation_id = r.id AND
-      r.relation_name = 'element_of' AND
-      t.project_id = %s AND
-      ci.id = %s
-""",
-                   (project_id, skeleton_id))
+    p = Project.objects.get(pk=project_id)
+    skeleton = get_object_or_404(ClassInstance,
+                                 pk=skeleton_id,
+                                 class_column__class_name='skeleton',
+                                 project=p)
+    qs = Treenode.objects.filter(
+        treenodeclassinstance__class_instance=skeleton).order_by('id')
+
     all_rows = []
-    for row in cursor.fetchall():
-        swc_row = [row[0]]
+    for tn in qs:
+        swc_row = [tn.id]
         swc_row.append(0)
-        swc_row += row[1:]
-        if swc_row[-1] is None:
-            swc_row[-1] = -1
-        if swc_row[-2] < 0:
-            swc_row[-2] = 0
+        swc_row.append(tn.location.x)
+        swc_row.append(tn.location.y)
+        swc_row.append(tn.location.z)
+        swc_row.append(max(tn.radius, 0))
+        swc_row.append(-1 if tn.parent is None else tn.parent.id)
         all_rows.append(swc_row)
     all_rows.sort(key=lambda x: x[0])
     result = ""

@@ -218,7 +218,6 @@ class Project(models.Model):
     class Meta:
         db_table = "project"
         managed = False
-    id = models.AutoField(primary_key=True)
     title = models.TextField()
     public = models.BooleanField(default=True)
     stacks = models.ManyToManyField("Stack",
@@ -229,7 +228,6 @@ class Stack(models.Model):
     class Meta:
         db_table = "stack"
         managed = False
-    id = models.AutoField(primary_key=True)
     title = models.TextField()
     dimension = Integer3DField()
     resolution = Double3DField()
@@ -248,7 +246,6 @@ class User(models.Model):
     class Meta:
         db_table = "user"
         managed = False
-    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=30)
     pwd = models.CharField(max_length=30)
     longname = models.TextField()
@@ -257,7 +254,6 @@ class Concept(models.Model):
     class Meta:
         db_table = "concept"
         managed = False
-    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
@@ -268,7 +264,6 @@ class Class(models.Model):
         db_table = "class"
         managed = False
     # Repeat the columns inherited from 'concept'
-    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
@@ -286,7 +281,6 @@ class ClassInstance(models.Model):
         db_table = "class_instance"
         managed = False
     # Repeat the columns inherited from 'concept'
-    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
@@ -348,7 +342,6 @@ class Relation(models.Model):
         db_table = "relation"
         managed = False
     # Repeat the columns inherited from 'concept'
-    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
@@ -364,7 +357,6 @@ class RelationInstance(models.Model):
         db_table = "relation_instance"
         managed = False
     # Repeat the columns inherited from 'concept'
-    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
@@ -377,7 +369,6 @@ class ClassInstanceClassInstance(models.Model):
         db_table = "class_instance_class_instance"
         managed = False
     # Repeat the columns inherited from 'relation_instance'
-    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
@@ -403,7 +394,6 @@ class ClassClass(models.Model):
         db_table = "class_class"
         managed = False
     # Repeat the columns inherited from 'relation_instance'
-    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
@@ -417,7 +407,6 @@ class Message(models.Model):
     class Meta:
         db_table = "message"
         managed = False
-    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User)
     time = models.DateTimeField(default=now)
     read = models.BooleanField()
@@ -436,7 +425,6 @@ class Textlabel(models.Model):
     class Meta:
         db_table = "textlabel"
         managed = False
-    id = models.AutoField(primary_key=True)
     type = models.CharField(max_length=32)
     text = models.TextField(default="Edit this text ...")
     # colour is of type rgba, can't represent that yet
@@ -461,7 +449,6 @@ class Location(models.Model):
     class Meta:
         db_table = "location"
         managed = False
-    # id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)

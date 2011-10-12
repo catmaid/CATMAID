@@ -442,7 +442,7 @@ class TextlabelLocation(models.Model):
         db_table = "textlabel_location"
         managed = False
     textlabel = models.ForeignKey(Textlabel)
-    # location is of type double3d, can't represent that yet
+    location = Double3DField()
     deleted = models.BooleanField()
 
 class Location(models.Model):

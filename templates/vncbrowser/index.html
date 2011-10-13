@@ -4,13 +4,11 @@
 
 {% block main %}
 
-{% load cell_body_location %}
-
 <p class="intro">
-  Alternatively, you can use the <a href="{% url vncbrowser.views.visual_index %}">visual index and search page</a>.
+  Alternatively, you can use the <a href="{% url vncbrowser.views.visual_index project_id=project_id %}">visual index and search page</a>.
 </p>
 
-<form method="post" action="{% url vncbrowser.views.index %}">
+<form method="post" action="{% url vncbrowser.views.index project_id=project_id %}">
   {{ search_form }}
   <input type="submit" value="Search">
 </form>
@@ -19,14 +17,17 @@
     <table class="hor-minimalist-b hor-minimalist-b-wider">
       <tbody>
         <tr>
-          <th><a href="{% url vncbrowser.views.index order_by='name' %}">Neuron</a> <a href="{% url vncbrowser.views.index order_by='namer' %}">&#8593;</a></th>
-          <th><a href="{% url vncbrowser.views.index order_by='cellbody' %}">Cell Body Location</a> <a href="{% url vncbrowser.views.index order_by='cellbodyr' %}">&#8593;</a></th>
-          <th><a href="{% url vncbrowser.views.index order_by='gal4' %}">Possible GAL4 Lines</a> <a href="{% url vncbrowser.views.index order_by='gal4r' %}">&#8593;</a></th>
+          <th><a href="{% url vncbrowser.views.index order_by='name', project_id=project_id %}">Neuron</a>
+              <a href="{% url vncbrowser.views.index order_by='namer', project_id=project_id %}">&#8593;</a></th>
+          <th><a href="{% url vncbrowser.views.index order_by='cellbody', project_id=project_id %}">Cell Body Location</a>
+              <a href="{% url vncbrowser.views.index order_by='cellbodyr', project_id=project_id %}">&#8593;</a></th>
+          <th><a href="{% url vncbrowser.views.index order_by='gal4', project_id=project_id %}">Possible GAL4 Lines</a>
+              <a href="{% url vncbrowser.views.index order_by='gal4r', project_id=project_id %}">&#8593;</a></th>
         </tr>
         {% for n in all_neurons_list %}
             <tr>
-              <td><a href="{% url vncbrowser.views.view n.id %}">{{ n.name }})</a></td>
-              <td>{{ n.cell_body|cell_body_location }}</td>
+              <td><a href="{% url vncbrowser.views.view neuron_id=n.id, project_id=project_id %}">{{ n.name }}</a></td>
+              <td>{{ n.cell_body_location }}</td>
               <td>{% for l in n.lines.all %}
                     <a href="{% url vncbrowser.views.visual_line l.name %}">{{ l.name }}</a>
                 {% endfor %}

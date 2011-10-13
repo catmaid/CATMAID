@@ -9,6 +9,7 @@ from vncbrowser.views import LineDetailView
 urlpatterns = patterns(
     '',
     (r'^(?P<project_id>\d+)$', 'vncbrowser.views.index'),
+    (r'^(?P<project_id>\d+)/sorted/(?P<order_by>[^/]+)$', 'vncbrowser.views.index'),
     (r'^(?P<project_id>\d+)/view/(?P<neuron_id>\d+)$', 'vncbrowser.views.view'),
     (r'^(?P<project_id>\d+)/view/(?P<neuron_name>.*)$', 'vncbrowser.views.view'),
     (r'^neuron/set_cell_body$', 'vncbrowser.views.set_cell_body'),

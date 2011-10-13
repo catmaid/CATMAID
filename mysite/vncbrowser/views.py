@@ -2,7 +2,7 @@ import sys
 import json
 from models import NeuronSearch, ClassInstance, Project, User, Treenode
 from models import ClassInstanceClassInstance, Relation, Class
-from models import CELL_BODY_CHOICES
+from models import CELL_BODY_CHOICES, SORT_ORDERS_DICT
 from collections import defaultdict
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
@@ -19,6 +19,23 @@ def my_render_to_response(req, *args, **kwargs):
     kwargs['context_instance'] = RequestContext(req)
     return render_to_response(*args, **kwargs)
 
+def order_neuron_queryset( qs, order_by = None ):
+    qs_list = list(qs)
+    column, reverse = 'name', False
+    if order_by and (order_by in SORT_ORDERS_DICT):
+        column, reverse, long_name = SORT_ORDERS_DICT[order_by]
+        if column == 'name':
+            qs_list.sort(key=lambda x: x.name)
+        elif column == 'gal4':
+            qs_list.sort(key=lambda x: x.lines_as_str())
+        elif column == 'cell_body':
+            qs_list.sort(key=lambda x: x.cell_body_location())
+        else:
+            raise Exception, "Unknown column (%s) in order_neuron_queryset" % (column,)
+        if reverse:
+            qs_list.reverse()
+    return qs_list
+
 # Both index and visual_index take a request and kwargs and then
 # return a list of neurons and a NeuronSearch form:
 
@@ -30,7 +47,7 @@ def get_form_and_neurons(request, project_id, kwargs):
     rest_keys = ('search','cell_body_location','order_by')
     if any((x in kwargs) for x in rest_keys):
         kw_search = kwargs.get('search',None) or ""
-        kw_cell_body_choice = kwargs.get('cell_body_location',None) or "-1"
+        kw_cell_body_choice = kwargs.get('cell_body_location',None) or "a"
         kw_order_by = kwargs.get('order_by',None) or 'name'
         search_form = NeuronSearch({'search': kw_search,
                                     'cell_body_location': kw_cell_body_choice,
@@ -39,21 +56,28 @@ def get_form_and_neurons(request, project_id, kwargs):
         search_form = NeuronSearch(request.POST)
     else:
         search_form = NeuronSearch({'search': '',
-                                    'cell_body_location': -1,
+                                    'cell_body_location': 'a',
                                     'order_by': 'name'})
-
     if search_form.is_valid():
         search = search_form.cleaned_data['search']
-        cell_body_location = int(search_form.cleaned_data['cell_body_location'])
+        cell_body_location = search_form.cleaned_data['cell_body_location']
         order_by = search_form.cleaned_data['order_by']
     else:
         search = ''
-        cell_body_location = -1
+        cell_body_location = 'a'
         order_by = 'name'
 
-    all_neurons = Neuron.objects.filter(name__icontains=search)
-    if cell_body_location >= 0:
-        all_neurons = all_neurons.filter(cell_body=cell_body_location)
+    cell_body_choices_dict = dict(CELL_BODY_CHOICES)
+
+    all_neurons = ClassInstance.objects.filter(
+        class_column__class_name='neuron',
+        name__icontains=search)
+    if cell_body_location != 'a':
+        location = cell_body_choices_dict[cell_body_location]
+        all_neurons = all_neurons.filter(
+            class_instances_a__relation__relation_name='has_cell_body',
+            class_instances_a__class_instance_b__name=location)
+
     all_neurons = order_neuron_queryset(all_neurons,order_by)
     return ( all_neurons, search_form )
 
@@ -64,6 +88,7 @@ def index(request, **kwargs):
     return my_render_to_response(request,
                                  'vncbrowser/index.html',
                                  {'all_neurons_list': all_neurons,
+                                  'project_id': kwargs['project_id'],
                                   'search_form': search_form})
 
 def visual_index(request, **kwargs):

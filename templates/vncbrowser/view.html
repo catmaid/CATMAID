@@ -73,8 +73,8 @@
     <div id="cell-body-location">
     <h4>Cell Body Location</h4>
     <form action="{% url vncbrowser.views.set_cell_body %}" method="POST">
-       {% for choice in neuron.CELL_BODY_CHOICES %}
-         <input type="radio" {% ifequal choice.0 neuron.cell_body %}CHECKED{% endifequal %} name="cell-body-choice" id="choice-{{ choice.0 }}" value="{{ choice.0 }}">
+       {% for choice in cell_body_choices %}
+         <input type="radio" {% ifequal choice.1 neuron.cell_body_location %}CHECKED{% endifequal %} name="cell-body-choice" id="choice-{{ choice.0 }}" value="{{ choice.0 }}">
          <input type="hidden" name="neuron_id" value="{{neuron.id}}">
          <label for="choice-{{ choice.0 }}">{{choice.1}}</label><br>
        {% endfor %}

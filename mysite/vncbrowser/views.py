@@ -2,6 +2,7 @@ import sys
 import json
 from models import NeuronSearch, ClassInstance, Project, User, Treenode
 from models import ClassInstanceClassInstance, Relation, Class
+from models import CELL_BODY_CHOICES
 from collections import defaultdict
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
@@ -135,17 +136,22 @@ def view(request, project_id=None, neuron_id=None, neuron_name=None):
                                   'lines': lines,
                                   'skeletons': skeletons,
                                   'project_id': project_id,
+                                  'cell_body_choices': CELL_BODY_CHOICES,
                                   'incoming': incoming,
                                   'outgoing': outgoing} )
 
 def set_cell_body(request):
     neuron_id = request.POST['neuron_id']
-    n = get_object_or_404(Neuron,pk=neuron_id)
-    cell_body_location = int(request.POST['cell-body-choice'])
-    if cell_body_location in (x[0] for x in Neuron.CELL_BODY_CHOICES):
-        n.cell_body = cell_body_location
-        n.save()
-    return HttpResponseRedirect(reverse('vncbrowser.views.view',kwargs={'neuron_id':neuron_id}))
+    n = get_object_or_404(ClassInstance, pk=neuron_id)
+    new_location_code = request.POST['cell-body-choice']
+    choices_dict = dict(CELL_BODY_CHOICES)
+    if new_location_code not in choices_dict:
+        raise Exception, "Unknown cell body location: "+str(new_location_code)
+    new_location = choices_dict[new_location_code]
+    n.set_cell_body_location(new_location)
+    return HttpResponseRedirect(reverse('vncbrowser.views.view',
+                                        kwargs={'neuron_id':neuron_id,
+                                                'project_id':n.project.id}))
 
 def line(request, project_id=None, line_id=None):
     p = get_object_or_404(Project, pk=project_id)

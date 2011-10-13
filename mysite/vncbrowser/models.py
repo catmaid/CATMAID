@@ -7,6 +7,11 @@ import re
 def now():
     return datetime.now()
 
+CELL_BODY_CHOICES = (
+    ('u', 'Unknown'),
+    ('l', 'Local'),
+    ('n', 'Non-Local' ))
+
 # ------------------------------------------------------------------------
 # Classes to support the integer3d compound type:
 
@@ -332,18 +337,61 @@ class ClassInstance(models.Model):
         else:
             raise Exception, "Unknown connectivity direction "+str(direction)
         return ClassInstance.objects.raw(query, (original_neuron.id,))
-
     @classmethod
     def all_neurons_upstream(cls, downstream_neuron):
         return cls.get_connected_neurons(
             ConnectivityDirection.PRESYNAPTIC_PARTNERS,
             downstream_neuron)
-
     @classmethod
     def all_neurons_downstream(cls, upstream_neuron):
         return cls.get_connected_neurons(
             ConnectivityDirection.POSTSYNAPTIC_PARTNERS,
             upstream_neuron)
+    def cell_body_location(self):
+        qs = list(ClassInstance.objects.filter(
+                class_instances_b__relation__relation_name='has_cell_body',
+                class_instances_b__class_instance_a=self))
+        if len(qs) == 0:
+            return 'Unknown'
+        elif len(qs) == 1:
+            return qs[0].name
+        elif qs:
+            raise Exception, "Multiple cell body locations found for neuron '%s'" % (self.name,)
+    def set_cell_body_location(self, new_location):
+        # FIXME: for the moment, just hardcode the user ID:
+        user = User.objects.get(pk=3)
+        if new_location not in [x[1] for x in CELL_BODY_CHOICES]:
+            raise Exception, "Incorrect cell body location '%s'" % (new_location,)
+        # Just delete the ClassInstance - ON DELETE CASCADE should deal with the rest:
+        ClassInstance.objects.filter(
+            class_instances_b__relation__relation_name='has_cell_body',
+            class_instances_b__class_instance_a=self).delete()
+        if new_location != 'Unknown':
+            location = ClassInstance()
+            location.name=new_location
+            location.project = self.project
+            location.user = user
+            location.class_column = Class.objects.get(class_name='cell_body_location')
+            location.save()
+            r = Relation.objects.get(relation_name='has_cell_body', project=self.project)
+            cici = ClassInstanceClassInstance()
+            cici.class_instance_a = self
+            cici.class_instance_b = location
+            cici.relation = r
+            cici.user = user
+            cici.project = self.project
+            cici.save()
+    def lines_as_str(self):
+        # FIXME: not expected to work yet
+        return ', '.join([unicode(x) for x in self.lines.all()])
+    def to_dict(self):
+        # FIXME: not expected to work yet
+        return {'id': self.id,
+                'trakem2_id': self.trakem2_id,
+                'lineage' : 'unknown',
+                'neurotransmitters': [],
+                'cell_body_location': [ self.cell_body, Neuron.cell_body_choices_dict[self.cell_body] ],
+                'name': self.name}
 
 class Relation(models.Model):
     class Meta:
@@ -541,34 +589,10 @@ SORT_ORDERS_TUPLES = [ ( 'name', ('name', False, 'Neuron name') ),
 SORT_ORDERS_DICT = dict(SORT_ORDERS_TUPLES)
 SORT_ORDERS_CHOICES = tuple((x[0],SORT_ORDERS_DICT[x[0]][2]) for x in SORT_ORDERS_TUPLES)
 
-class Neuron(object):
-    # name = models.CharField(max_length=1000,unique=True,null=False)
-    # trakem2_id = models.IntegerField(null=True)
-    # lines = models.ManyToManyField(Line)
-    CELL_BODY_UNKNOWN = 0
-    CELL_BODY_LOCAL = 1
-    CELL_BODY_NON_LOCAL = 2
-    CELL_BODY_CHOICES = ( (CELL_BODY_UNKNOWN, 'Unknown'),
-                          (CELL_BODY_LOCAL, 'Local'),
-                          (CELL_BODY_NON_LOCAL, 'Non-Local') )
-    cell_body_choices_dict = dict(CELL_BODY_CHOICES)
-    # cell_body = models.IntegerField(default=CELL_BODY_UNKNOWN,choices=CELL_BODY_CHOICES)
-    def __unicode__(self):
-        return self.name
-    def lines_as_str(self):
-        return ', '.join([unicode(x) for x in self.lines.all()])
-    def to_dict(self):
-        return {'id': self.id,
-                'trakem2_id': self.trakem2_id,
-                'lineage' : 'unknown',
-                'neurotransmitters': [],
-                'cell_body_location': [ self.cell_body, Neuron.cell_body_choices_dict[self.cell_body] ],
-                'name': self.name}
-
 class NeuronSearch(forms.Form):
     search = forms.CharField(max_length=100,required=False)
     cell_body_location = forms.ChoiceField(
-        choices=(((-1,'Any'),)+Neuron.CELL_BODY_CHOICES))
+        choices=((('a','Any'),)+CELL_BODY_CHOICES))
     order_by = forms.ChoiceField(SORT_ORDERS_CHOICES)
     def minimal_search_path(self):
         result = ""

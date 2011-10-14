@@ -72,7 +72,8 @@ def get_form_and_neurons(request, project_id, kwargs):
 
     all_neurons = ClassInstance.objects.filter(
         class_column__class_name='neuron',
-        name__icontains=search)
+        name__icontains=search).exclude(name='orphaned pre').exclude(name='orphaned post')
+
     if cell_body_location != 'a':
         location = cell_body_choices_dict[cell_body_location]
         all_neurons = all_neurons.filter(

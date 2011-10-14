@@ -14,7 +14,7 @@ urlpatterns = patterns(
     (r'^(?P<project_id>\d+)/view/(?P<neuron_name>.*)$', 'vncbrowser.views.view'),
     (r'^neuron/set_cell_body$', 'vncbrowser.views.set_cell_body'),
     (r'^(?P<project_id>\d+)/lines/add$', 'vncbrowser.views.lines_add'),
-    (r'^(?P<project_id>\d+)/line/(?P<line_id>.*)$', 'vncbrowser.views.line'),
+    (r'^(?P<project_id>\d+)/line/(?P<line_id>\d+)$', 'vncbrowser.views.line'),
     (r'^(?P<project_id>\d+)/jennyline/(?P<pk>\d+)$', LineDetailView.as_view()),
     (r'^(?P<project_id>\d+)/lines/delete$', 'vncbrowser.views.lines_delete'),
     (r'^(?P<project_id>\d+)/visual_index$', 'vncbrowser.views.visual_index'),

@@ -350,6 +350,7 @@ class ClassInstance(models.Model):
             upstream_neuron)
     def cell_body_location(self):
         qs = list(ClassInstance.objects.filter(
+                class_column__class_name='cell_body_location',
                 class_instances_b__relation__relation_name='has_cell_body',
                 class_instances_b__class_instance_a=self))
         if len(qs) == 0:

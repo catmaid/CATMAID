@@ -27,9 +27,9 @@
         {% for n in all_neurons_list %}
             <tr>
               <td><a href="{% url vncbrowser.views.view neuron_id=n.id, project_id=project_id %}">{{ n.name }}</a></td>
-              <td>{{ n.cell_body_location }}</td>
-              <td>{% for l in n.lines.all %}
-                    <a href="{% url vncbrowser.views.visual_line l.name %}">{{ l.name }}</a>
+              <td>{{ n.cached_cell_body }}</td>
+              <td>{% for l in n.cached_sorted_lines %}
+                    <a href="{% url vncbrowser.views.line line_id=l.id, project_id=project_id %}">{{ l.name }}</a>
                 {% endfor %}
               </td>
           </tr>

@@ -3,6 +3,7 @@ from django.db import models
 from datetime import datetime
 import sys
 import re
+import urllib
 
 def now():
     return datetime.now()

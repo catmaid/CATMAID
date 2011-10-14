@@ -10,6 +10,7 @@ from django.db import connection, transaction
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.views.generic import DetailView
+from django.core.paginator import Paginator
 
 # Tip from: http://lincolnloop.com/blog/2008/may/10/getting-requestcontext-your-templates/
 # Required because we need a RequestContext, not just a Context - the
@@ -93,7 +94,9 @@ def index(request, **kwargs):
 
 def visual_index(request, **kwargs):
 
-    all_neurons, search_form = get_form_and_neurons( request, kwargs )
+    all_neurons, search_form = get_form_and_neurons( request,
+                                                     kwargs['project_id'],
+                                                     kwargs )
 
     # From: http://docs.djangoproject.com/en/1.0/topics/pagination/
     paginator = Paginator(all_neurons, 20)
@@ -113,8 +116,9 @@ def visual_index(request, **kwargs):
 
     return my_render_to_response(request,
                                  'vncbrowser/visual_index.html',
-                                 {'sorted_neurons': neurons.object_list.all(),
+                                 {'sorted_neurons': all_neurons,
                                   'sorted_neurons_page' : neurons,
+                                  'project_id': kwargs['project_id'],
                                   'search_form': search_form })
 
 def group_neurons_descending_count(neurons):

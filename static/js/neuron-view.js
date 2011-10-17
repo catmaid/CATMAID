@@ -20,27 +20,6 @@ for( var i = 0; i < numberOfColors; ++i ) {
 }
 shuffle(colors);
 
-function addOrRemoveNeuron( add, neuronName, neuronId, color ) {
-    var self = this;
-    $.get('/'+projectId+'/neuron-to-skeletons/'+neuronId,
-          function (data) {
-              var i, skeletonID, swcURL, skeletonName;
-              for (var i in data) {
-                  skeletonID = data[i];
-                  skeletonName = neuronName+'(skeleton: '+skeletonID+')';
-                  swcURL = '/'+projectId+'/skeleton/'+skeletonID+'/swc';
-                  if (add) {
-                      $(self).parent().css("background-color",color);
-                      $('#viewer').data('viewer').setNeuron(skeletonName,swcURL,color);
-                  } else {
-                      $(self).parent().css("background-color","#fff");
-                      $('#viewer').data('viewer').deleteNeuron(skeletonName,color);
-                  }
-              }
-          },
-          "json");
-}
-
 $(document).ready( function() {
 
     $('.delete-form').submit(function(e){
@@ -55,18 +34,14 @@ $(document).ready( function() {
         var neuronLink = $(this).parent().parent().find('a');
         var neuronName = neuronLink.text();
         var newColor = colors[neuronId % numberOfColors];
-        addOrRemoveNeuron($(this).attr("checked"),
+        addOrRemoveNeuron("viewer",
+			  $(this).attr("checked"),
                           neuronName,
                           neuronId,
                           newColor );
     });
 
-    setNeuronView( 'viewer', [] );
-
-    addOrRemoveNeuron(true,
-                      neuronName,
-                      neuronID,
-                      'black');
+    setNeuronView( 'viewer', [ [neuronName, neuronID, 'black'] ] );
 
     $('#xy-button').click( function () {
         $('#viewer').data('viewer').changeView( 0, 0, 0 );

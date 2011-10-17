@@ -477,6 +477,27 @@ function NeuronView( basename, swcURL, color, viewer ) {
     }
 }
 
+function addOrRemoveNeuron( viewerID, add, neuronName, neuronId, color ) {
+    var self = this;
+    $.get('/'+projectId+'/neuron-to-skeletons/'+neuronId,
+          function (data) {
+              var i, skeletonID, swcURL, skeletonName;
+              for (var i in data) {
+                  skeletonID = data[i];
+                  skeletonName = neuronName+'(skeleton: '+skeletonID+')';
+                  swcURL = '/'+projectId+'/skeleton/'+skeletonID+'/swc';
+                  if (add) {
+                      $(self).parent().css("background-color",color);
+                      $('#'+viewerID).data('viewer').setNeuron(skeletonName,swcURL,color);
+                  } else {
+                      $(self).parent().css("background-color","#fff");
+                      $('#'+viewerID).data('viewer').deleteNeuron(skeletonName,color);
+                  }
+              }
+          },
+          "json");
+}
+
 function setNeuronView( divID, neuronsAndColors ) {
 
     var divID_jQuery = '#'+divID;
@@ -487,8 +508,15 @@ function setNeuronView( divID, neuronsAndColors ) {
 
     for( var nci in neuronsAndColors ) {
         var neuronBasename = neuronsAndColors[nci][0];
-        var neuronColor = neuronsAndColors[nci][1];
-        $(divID_jQuery).data('viewer').setNeuron( neuronBasename, neuronColor );
+	var neuronID = neuronsAndColors[nci][1];
+        var neuronColor = neuronsAndColors[nci][2];
+
+	addOrRemoveNeuron(divID,
+			  true,
+			  neuronBasename,
+			  neuronID,
+			  neuronColor);
     }
+
 
 }

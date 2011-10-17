@@ -144,7 +144,7 @@ def visual_index(request, **kwargs):
 
     return my_render_to_response(request,
                                  'vncbrowser/visual_index.html',
-                                 {'sorted_neurons': all_neurons,
+                                 {'sorted_neurons': neurons.object_list,
                                   'sorted_neurons_page' : neurons,
                                   'project_id': kwargs['project_id'],
                                   'search_form': search_form })

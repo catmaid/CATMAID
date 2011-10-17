@@ -17,7 +17,7 @@
   <div class="pagination">
       <span class="step-links">
           {% if sorted_neurons_page.has_previous %}
-              <a href="{% url vncbrowser.views.visual_index %}{{ search_form.minimal_search_path }}/page/{{ sorted_neurons_page.previous_page_number }}  ">previous</a>
+              <a href="{% url vncbrowser.views.visual_index project_id=project_id %}{{ search_form.minimal_search_path }}/page/{{ sorted_neurons_page.previous_page_number }}  ">previous</a>
           {% endif %}
 
           <span class="current">

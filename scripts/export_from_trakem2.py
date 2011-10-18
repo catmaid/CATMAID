@@ -576,7 +576,7 @@ def add_synapse( name, connector, pre_nodes, post_nodes ):
         terminal_class_name = side_string + "synaptic terminal"
         terminal_relationship = side_string + "synaptic_to"
         terminal_id = new_class_instance(terminal_class_name,terminal_class_name)
-        #    * make the treenode a model_of the pre/postsynaptic terminal
+        # * make the treenode a model_of the pre/postsynaptic terminal
         new_treenode_class_instance('model_of',tn.treenode_id,terminal_id)
         # * make the terminal pre/postsynaptic_to the synapse
         new_class_instance_class_instance(terminal_relationship,terminal_id,synapse_id)

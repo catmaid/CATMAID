@@ -210,6 +210,21 @@ def new_treenode_class_instance(relation_name,t,ci):
 
 # ------------------------------------------------------------------------
 
+ps_treenode_connector = c.prepareStatement(
+  "INSERT INTO treenode_connector " +
+  "(user_id,project_id,relation_id,treenode_id,connector_id) " +
+  "VALUES (?,?,?,?,?)")
+ps_treenode_connector.setInt(1,user_id)
+ps_treenode_connector.setInt(2,project_id)
+
+def new_treenode_connector(relation_name,t,ci):
+  ps_treenode_connector.setInt(3,relation_to_relation_id[relation_name])
+  ps_treenode_connector.setInt(4,t)
+  ps_treenode_connector.setInt(5,ci)
+  ps_treenode_connector.executeUpdate()
+
+# ------------------------------------------------------------------------
+
 ps_connector_class_instance = c.prepareStatement(
   "INSERT INTO connector_class_instance " +
   "(user_id,project_id,relation_id,connector_id,class_instance_id) " +
@@ -240,11 +255,11 @@ def insert_connector_and_synapse( x, y, z, synapse_name ):
   ps_new_connector.setDouble(5,z)
   rs = ps_new_connector.executeQuery()
   rs.next()
-  new_id = rs.getLong(1)
+  connector_id = rs.getLong(1)
   rs.close()
   synapse_id = new_class_instance('synapse',synapse_name)
-  new_connector_class_instance('model_of',new_id,synapse_id)
-  return synapse_id
+  new_connector_class_instance('model_of',connector_id,synapse_id)
+  return (connector_id, synapse_id)
 
 def new_treenode_class_instance(relation_name,t,ci):
   ps_treenode_class_instance.setInt(3,relation_to_relation_id[relation_name])
@@ -537,7 +552,7 @@ def add_synapse( name, connector, pre_nodes, post_nodes ):
   # * create a connector at the centroid
   # * create a synapse
   # * make the connector a model_of the synapse
-  synapse_id = insert_connector_and_synapse( centroid[0], centroid[1], centroid[2], name )
+  connector_id, synapse_id = insert_connector_and_synapse( centroid[0], centroid[1], centroid[2], name )
   # * for each node pre and post:
   for side in (SynapseSides.PRE,SynapseSides.POST):
     side_string = "pre" if side == SynapseSides.PRE else "post"
@@ -565,6 +580,8 @@ def add_synapse( name, connector, pre_nodes, post_nodes ):
         new_treenode_class_instance('model_of',tn.treenode_id,terminal_id)
         # * make the terminal pre/postsynaptic_to the synapse
         new_class_instance_class_instance(terminal_relationship,terminal_id,synapse_id)
+        # * make the treenode pre/postsynaptic_to the connector
+        new_treenode_connector(terminal_relationship,tn.treenode_id,connector_id)
 
 def add_connectors_recursively(pt,depth=0):
   name_with_id = get_project_thing_name(pt)

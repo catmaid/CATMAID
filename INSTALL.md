@@ -37,9 +37,12 @@ short, you should do the following:
 phppgadmin is optional, but is suggested if you are not
 comfortable with interacting with PostgreSQL from a terminal.
 Update the password for your catmaid user in
-`/home/alice/catmaid/docs/createuser.sql`
+`/home/alice/catmaid/docs/createuser.sql`.  If you want the
+database to be called something other than `catmaid` you
+also change that in the lines beginning `CREATE DATABASE`
+and `\c` in the same file.
 
-Then run those commands as the postgres user:
+Then you should run the commands in that file as the postgres user:
 
 	sudo -u postgres psql < docs/createuser.sql
 

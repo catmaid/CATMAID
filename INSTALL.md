@@ -177,9 +177,9 @@ Try to start CATMAID::
 ... depending on the approach you took above.  You will get an
 error to tell you that no projects are found.  If you want to
 create some example projects, stacks and a user account for
-testing, you should do:
+testing, you should run:
 
-     psql -U catmaid_user catmaid < docs/example-projects.sql
+     scripts/insert-example/projects.py
 
 Then you can use the default login::
 

@@ -57,11 +57,13 @@ def run(project_id, last_untouched_id):
 
     ij.IJ.showStatus("Removing concepts from class_instance_class_instance")
     s = c.createStatement()
+    print >> sys.stderr, 'delete from class_instance_class_instance'+where
     s.executeUpdate('delete from class_instance_class_instance'+where)
     s.close()
 
     ij.IJ.showStatus("Removing concepts from class_instance")
     s = c.createStatement()
+    print >> sys.stderr, 'delete from class_instance'+where
     s.executeUpdate('delete from class_instance'+where)
     s.close()
 
@@ -70,6 +72,7 @@ def run(project_id, last_untouched_id):
     s.executeUpdate('alter table treenode drop constraint treenode_parent_id_fkey')
     s.close()
     s = c.createStatement()
+    print >> sys.stderr, 'delete from treenode'+where
     s.executeUpdate('delete from treenode'+where)
     s.close()
     s = c.createStatement()
@@ -78,16 +81,19 @@ def run(project_id, last_untouched_id):
 
     ij.IJ.showStatus("Removing concepts from relation")
     s = c.createStatement()
+    print >> sys.stderr, 'delete from relation'+where
     s.executeUpdate('delete from relation'+where)
     s.close()
 
     ij.IJ.showStatus("Removing concepts from connector")
     s = c.createStatement()
+    print >> sys.stderr, 'delete from connector'+where
     s.executeUpdate('delete from connector'+where)
     s.close()
 
     ij.IJ.showStatus("Removing concepts from class")
     s = c.createStatement()
+    print >> sys.stderr, 'delete from class'+where
     s.executeUpdate('delete from class'+where)
     s.close()
 

@@ -5,7 +5,7 @@ from common import db_connection
 import sys
 
 if len(sys.argv) != 3:
-    print >> sys.stderr, "Usage: %s <PROJECT-ID> <USER-ID>"
+    print >> sys.stderr, "Usage: %s <PROJECT-ID> <USER-ID>" % (sys.argv[0],)
     sys.exit(1)
 
 project_id = int(sys.argv[1])

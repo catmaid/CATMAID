@@ -412,6 +412,8 @@ def node_to_coordinates(aff,nd):
     return (x,y,z)
 
 def insertTree(tree,skeleton_id):
+  if isinstance(tree, unicode):
+    return
   root = tree.getRoot()
   if root is None:
     return None

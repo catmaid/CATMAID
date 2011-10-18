@@ -280,6 +280,21 @@ ps_get_root_nodes.setInt(2,class_to_class_id['root'])
 
 # ------------------------------------------------------------------------
 
+ps_get_class_instance_from_treenode = c.prepareStatement(
+  "SELECT class_instance_id FROM treenode_class_instance WHERE project_id = ? AND treenode_id = ? AND relation_id = ?")
+ps_get_class_instance_from_treenode.setInt(1, project_id)
+
+def get_class_instance_from_treenode(treenode_id, relation):
+  ps_get_class_instance_from_treenode.setInt(2, treenode_id)
+  ps_get_class_instance_from_treenode.setInt(3, relation_to_relation_id[relation])
+  rs = ps_get_class_instance_from_treenode.executeQuery()
+  rs.next()
+  class_instance_b_id = rs.getLong(1)
+  rs.close()
+  return class_instance_b_id
+
+# ------------------------------------------------------------------------
+
 ps_get_treenodes = c.prepareStatement(
   "SELECT id,(t.location).x,(t.location).y,(t.location).z "+
   "FROM treenode AS t WHERE project_id = ? AND "+
@@ -580,6 +595,10 @@ def add_synapse( name, connector, pre_nodes, post_nodes ):
         new_treenode_class_instance('model_of',tn.treenode_id,terminal_id)
         # * make the terminal pre/postsynaptic_to the synapse
         new_class_instance_class_instance(terminal_relationship,terminal_id,synapse_id)
+        # * make the pre/postsynaptic terminal a part_of the skeleton
+        # * find the skeleton ID
+        skeleton_id = get_class_instance_from_treenode(tn.treenode_id,'element_of')
+        new_class_instance_class_instance('part_of',terminal_id,skeleton_id)
         # * make the treenode pre/postsynaptic_to the connector
         new_treenode_connector(terminal_relationship,tn.treenode_id,connector_id)
 

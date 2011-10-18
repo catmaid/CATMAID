@@ -481,6 +481,8 @@ def add_recursively(pt,parent_id,depth=0):
     pass
   elif pt_type == "profile_list":
     pass
+  elif pt_type == "area_list":
+    pass
   else:
     raise Exception, "Unknown type: "+str(pt_type)
   children = pt.getChildren()

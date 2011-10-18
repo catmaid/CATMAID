@@ -56,6 +56,9 @@ in `/etc/postgresql/8.4/main/pg_hba.conf`:
 
     local catmaid catmaid_user md5
 
+(If you have changed the database name or user, you should change
+them in that rule as well.)
+
 After the above please restart the database:
 
     sudo /etc/init.d/posgresql-8.4 restart

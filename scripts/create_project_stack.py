@@ -16,6 +16,7 @@
 # password: password_of_your_catmaid_user
 
 import sys
+import os
 from common import db_connection
 from subprocess import check_call
 

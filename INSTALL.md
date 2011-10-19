@@ -65,7 +65,7 @@ After the above please restart the database:
 
 Update the catmaid database configuration in:
 `inc/setup.inc.php.template` and rename the file to
-`inc/setup.inc`
+`inc/setup.inc.php`
 
 #### 2. Configure Apache
 

@@ -579,6 +579,14 @@ class TreenodeConnector(models.Model):
     treenode = models.ForeignKey(Treenode)
     connector = models.ForeignKey(Connector)
 
+class Session(models.Model):
+    class Meta:
+        db_table = "sessions"
+        managed = False
+    session_id = models.CharField(max_length=26)
+    data = models.TextField(default='')
+    last_accessed = models.DateTimeField(default=now)
+
 # ------------------------------------------------------------------------
 # Now the non-Django tables:
 

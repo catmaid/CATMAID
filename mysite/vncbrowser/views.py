@@ -1,7 +1,8 @@
 import sys
 import json
+import re
 from models import NeuronSearch, ClassInstance, Project, User, Treenode
-from models import ClassInstanceClassInstance, Relation, Class
+from models import ClassInstanceClassInstance, Relation, Class, Session
 from models import CELL_BODY_CHOICES, SORT_ORDERS_DICT
 from collections import defaultdict
 from django.shortcuts import render_to_response, get_object_or_404
@@ -35,6 +36,72 @@ def order_neurons( neurons, order_by = None ):
         if reverse:
             neurons.reverse()
     return neurons
+
+# A decorator that will check that the user is logged into CATMAID,
+# and if not, redirect to the login page:
+def catmaid_login_required(f):
+
+    def need_to_login():
+        return HttpResponseRedirect('/whevs')
+
+    # Note that this method does not work in general - there could be
+    # ';'s within a string, for example.  However, it is sufficient
+    # for parsing the data that we know may be in CATMAID sessions.  I
+    # think that one is supposed to be able to deserialize that with
+    # the phpserialize module, but in practice that always fails -
+    # perhaps this field is in some different format.  And example of
+    # this field would be:
+    # u'id|s:1:"5";key|s:54:"7gtmcy8g03457xg3hmuxdgregtyu45ty57ycturemuzm934etmvo56";'
+    def parse_php_session_data(s):
+        result = {}
+        for kv in s.split(';'):
+            if not kv:
+                continue
+            m = re.match('^(.*?)\|(.*)',kv)
+            if not m:
+                raise Exception, "Failed to parse the PHP session key / value pair: " + kv
+            k, v = m.groups()
+            m = re.match('^s:(\d+):"(.*)"$', v)
+            if not m:
+                raise Exception, "Failed to parse a PHP session value: " + v
+            length = int(m.group(1), 10)
+            value_string = m.group(2)
+            if length != len(value_string):
+                raise Exception, "The string length in a PHP session value was wrong"
+            result[k] = value_string
+        return result
+
+    def decorated(request, *args, **kwargs):
+        if 'PHPSESSID' not in request.COOKIES:
+            print >> sys.stderr, "PHPSESSID cookie not found"
+            return need_to_login()
+        phpsessid = request.COOKIES['PHPSESSID']
+        try:
+            s = Session.objects.get(session_id=phpsessid)
+        except Session.DoesNotExist:
+            print >> sys.stderr, "Couldn't find the PHPSESSID in the session table"
+            return need_to_login()
+        parsed_session_data = parse_php_session_data(s.data)
+        if 'id' not in parsed_session_data:
+            print >> sys.stderr, "Couldn't find the 'id' key in the parsed PHP session data"
+            return need_to_login()
+        user_id = parsed_session_data['id']
+        try:
+           u = User.objects.get(pk=int(user_id, 10))
+        except User.DoesNotExist:
+            print >> sys.stderr, "There was no user with id '%s'" % (user_id,)
+            return need_to_login
+        except ValueError:
+            print >> sys.stderr, "There was a strange value in the 'id' field: '%s'" % (user_id,)
+        if 'key' not in parsed_session_data:
+            print >> sys.stderr, "Couldn't find the 'key' key in the parsed PHP session data"
+            return need_to_login()
+        if parsed_session_data['key'] != '7gtmcy8g03457xg3hmuxdgregtyu45ty57ycturemuzm934etmvo56':
+            print >> sys.stderr, "The date associated with 'key' didn't match the known value"
+            return need_to_login()
+        kwargs['logged_in_user'] = u
+        return f(request, *args, **kwargs)
+    return decorated
 
 # Both index and visual_index take a request and kwargs and then
 # return a list of neurons and a NeuronSearch form:
@@ -110,6 +177,7 @@ def get_form_and_neurons(request, project_id, kwargs):
     all_neurons = order_neurons(all_neurons, order_by)
     return (all_neurons, search_form)
 
+@catmaid_login_required
 def index(request, **kwargs):
     all_neurons, search_form = get_form_and_neurons(request,
                                                     kwargs['project_id'],
@@ -118,6 +186,7 @@ def index(request, **kwargs):
                                  'vncbrowser/index.html',
                                  {'all_neurons_list': all_neurons,
                                   'project_id': kwargs['project_id'],
+                                  'user': kwargs['logged_in_user'],
                                   'search_form': search_form})
 
 def visual_index(request, **kwargs):

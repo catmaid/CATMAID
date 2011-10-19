@@ -15,6 +15,7 @@
 <body>
 
   <div class="header-navigation">
+    Logged in as <strong>{{ user.longname }}</strong>
     | <a href="{% url vncbrowser.views.index project_id=project_id %}">All neurons (text)</a>
     | <a href="{% url vncbrowser.views.visual_index project_id=project_id %}">All neurons (visual)</a>
   </div>

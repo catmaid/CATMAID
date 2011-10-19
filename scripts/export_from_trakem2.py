@@ -373,9 +373,9 @@ def get_fragments_node_id():
 # grab the confidence, create dummy treenodes for endpoints, etc.)
 
 def findConnections(tree):
-  """ Return two tables: one of outgoing and one of incomming connections,
+  """ Return two tables: one of outgoing and one of incoming connections,
   with the name versus the number of connections. """
-  outgoing, incomming = tree.findConnectors()
+  outgoing, incoming = tree.findConnectors()
   tableOut = {}
   for c in outgoing:
     for targetSet in c.getTargets(Tree):
@@ -387,7 +387,7 @@ def findConnections(tree):
         else:
           tableOut[target] = 1
   tableIn = {}
-  for c in incomming:
+  for c in incoming:
     for origin in c.getOrigins(Tree):
       if isinstance(origin, Connector):
         continue

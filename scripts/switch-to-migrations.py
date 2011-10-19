@@ -1,35 +1,19 @@
 #!/usr/bin/python
 
+from common import db_connection
+
 import sys
-import psycopg2
 import os
-import yaml
 
 first_migration = '2011-07-10T19:23:39'
-
-try:
-    conf = yaml.load(open(os.path.join(os.environ['HOME'], '.catmaid-db')))
-except:
-    print >> sys.stderr, '''Your ~/.catmaid-db file should look like:
-
-host: localhost
-database: catmaid
-username: catmaid_user
-password: password_of_your_catmaid_user'''
-    sys.exit(1)
 
 if len(sys.argv) != 1:
     print >> sys.stderr, "Usage: " + sys.argv[0]
     sys.exit(1)
 
-conn = psycopg2.connect(host=conf['host'],
-                        database=conf['database'],
-                        user=conf['username'],
-                        password=conf['password'])
-
 everything_ok = True
 
-c = conn.cursor()
+c = db_connection.cursor()
 
 c.execute("select tablename from pg_tables")
 tables = set(x[0] for x in c.fetchall())
@@ -131,6 +115,6 @@ c.execute("UPDATE settings SET value = %s WHERE key = 'schema_version'",
 
 print "done."
 
-conn.commit()
+db_connection.commit()
 c.close()
-conn.close()
+db_connection.close()

@@ -16,20 +16,8 @@
 # password: password_of_your_catmaid_user
 
 import sys
-import psycopg2
-import os
-import yaml
-
-try:
-    conf = yaml.load(open(os.path.join(os.environ['HOME'], '.catmaid-db')))
-except:
-    print >> sys.stderr, '''Your ~/.catmaid-db file should look like:
-
-host: localhost
-database: catmaid
-username: catmaid_user
-password: password_of_your_catmaid_user'''
-    sys.exit(1)
+from common import db_connection
+from subprocess import check_call
 
 limit = 50
 
@@ -37,57 +25,8 @@ if len(sys.argv) != 1:
     print >> sys.stderr, "Usage: create-project.py"
     sys.exit(1)
 
-conn = psycopg2.connect(host=conf['host'], database=conf['database'],
-                        user=conf['username'], password=conf['password'])
-
-# Helper function
-def create_annotation(user_id, project_id):
-
-    print("Create annotations for project with id {0} as user with id {1}".format(project_id, user_id) )
-    classes_required = [ ( "skeleton" ),
-                         ( "neuron" ),
-                         ( "group" ),
-                         ( "label" ),
-                         ( "root" ),
-                         ( "synapse" ),
-                         ( "presynaptic terminal" ),
-                         ( "postsynaptic terminal" ) ]
-
-    class_dictionary = {}
-
-    for required_class in classes_required:
-        class_dictionary[required_class] = {};
-        c.execute("INSERT INTO class (user_id, project_id, class_name) "+
-                  "VALUES (%s, %s, %s) RETURNING id",
-                  (user_id, project_id, required_class,))
-        class_dictionary[required_class]['id'] = c.fetchone()[0]
-
-    c.execute("INSERT INTO class_instance (user_id, project_id, class_id, name) "+
-              "VALUES (%s, %s, %s, %s)",
-              (user_id,
-               project_id,
-               class_dictionary['root']['id'],
-               'neuropile'))
-
-    relations_required = (
-        "labeled_as",
-        "postsynaptic_to",
-        "presynaptic_to",
-        "element_of",
-        "model_of",
-        "part_of",
-        "is_a"
-        )
-
-    for required_relation in relations_required:
-        c.execute("INSERT INTO relation (user_id, project_id, relation_name) "+
-                  "VALUES (%s, %s, %s)",
-                  (user_id, project_id, required_relation))
-
-    print("Annotation classes and relations successfully created.")
-
 # Start dialog
-c = conn.cursor()
+c = db_connection.cursor()
 
 username = raw_input("What is your CATMAID user name: ")
 select = 'SELECT u.id FROM "user" u WHERE u.name = %s'
@@ -122,7 +61,10 @@ else:
 
     project_id = c.fetchone()[0]
 
-    create_annotation( user_id, project_id )
+    print("Create annotations for project with id {0} as user with id {1}".format(project_id, user_id) )
+    helper_script = os.path.join(sys.path[0], 'setup-tracing-for-project.py')
+    check_call([helper_script,  str(project_id), str(user_id)])
+    print("Annotation classes and relations successfully created.")
 
     print("Project successfully created with ID {0}".format(project_id) )
 
@@ -181,8 +123,8 @@ while True:
 
     print("Created stack with id {0} and project-stack association.".format(stack_id) )
 
-conn.commit()
+db_connection.commit()
 c.close()
-conn.close()
+db_connection.close()
 
 print("Finished script. Closed database connection.")

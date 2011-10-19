@@ -3,17 +3,11 @@
 
 # Mark Longair 2010
 
-import os
-import re
+import os, re, sys, ij
 
 from jarray import array
 
 from java.sql import DriverManager, Connection, SQLException, Types
-
-# FIXME: Just hardcode the user_id and project_id for the moment
-
-user_id = 3
-project_id = 4
 
 # Set up the JDBC connection:
 
@@ -40,34 +34,83 @@ c = DriverManager.getConnection(database_url,
                                 conf['username'],
                                 conf['password'])
 
-def run():
+def run(project_id, last_untouched_id):
 
-    # FIXME: ask in a dialog for the ID instead
-    first_id = 3859376
+    where = ' where id > %d and project_id = %d' % (last_untouched_id, project_id)
 
-    where = ' where id > %d'%(first_id,)
+    ij.IJ.showStatus("Removing concepts from treenode_class_instance")
+    s = c.createStatement()
+    s.executeUpdate('delete from treenode_class_instance')
+    s.close()
 
-    s = c.createStatement('delete from treenode_class_instance'+where)
-    s.executeQuery()
+    ij.IJ.showStatus("Removing concepts from connector_class_instance")
+    s = c.createStatement()
+    print >> sys.stderr, 'delete from connector_class_instance'+where
+    s.executeUpdate('delete from connector_class_instance'+where)
+    s.close()
 
-    s = c.createStatement('delete from connector_class_instance'+where)
-    s.executeQuery()
+    ij.IJ.showStatus("Removing concepts from treenode_connector")
+    s = c.createStatement()
+    print >> sys.stderr, 'delete from treenode_connector'+where
+    s.executeUpdate('delete from treenode_connector'+where)
+    s.close()
 
-    s = c.createStatement('delete from class_instance'+where)
-    s.executeQuery()
+    ij.IJ.showStatus("Removing concepts from class_instance_class_instance")
+    s = c.createStatement()
+    s.executeUpdate('delete from class_instance_class_instance'+where)
+    s.close()
 
-    s = c.createStatement('alter table treenode drop constraint treenode_parent_id_fkey')
-    s.executeQuery()
-    s = c.createStatement('delete from treenode'+where)
-    s.executeQuery()
-    s = c.createStatement('alter table only treenode add constraint treenode_parent_id_fkey foreign key (parent_id) REFERENCES treenode(id)');
-    s.executeQuery()
+    ij.IJ.showStatus("Removing concepts from class_instance")
+    s = c.createStatement()
+    s.executeUpdate('delete from class_instance'+where)
+    s.close()
 
-    s = c.createStatement('delete from relation'+where)
-    s.executeQuery()
+    ij.IJ.showStatus("Removing concepts from treenode")
+    s = c.createStatement()
+    s.executeUpdate('alter table treenode drop constraint treenode_parent_id_fkey')
+    s.close()
+    s = c.createStatement()
+    s.executeUpdate('delete from treenode'+where)
+    s.close()
+    s = c.createStatement()
+    s.executeUpdate('alter table only treenode add constraint treenode_parent_id_fkey foreign key (parent_id) REFERENCES treenode(id)')
+    s.close()
 
-    s = c.createStatement('delete from connector'+where)
-    s.executeQuery()
+    ij.IJ.showStatus("Removing concepts from relation")
+    s = c.createStatement()
+    s.executeUpdate('delete from relation'+where)
+    s.close()
 
-    s = c.createStatement('delete from class_instance_class_instance'+where)
-    s.executeQuery()
+    ij.IJ.showStatus("Removing concepts from connector")
+    s = c.createStatement()
+    s.executeUpdate('delete from connector'+where)
+    s.close()
+
+    ij.IJ.showStatus("Removing concepts from class")
+    s = c.createStatement()
+    s.executeUpdate('delete from class'+where)
+    s.close()
+
+gd = ij.gui.GenericDialog('Remove CATMAID Concepts')
+gd.addNumericField("CATMAID Project ID:", 4, 0)
+gd.showDialog()
+if not gd.wasCanceled():
+
+  project_id = int(gd.getNextNumber())
+
+  s = c.createStatement()
+  rs = s.executeQuery('SELECT id FROM concept WHERE project_id = %d ORDER BY id LIMIT 1' % (project_id,))
+  rs.next()
+  first_id = rs.getLong(1)
+  rs.close()
+  s.close()
+
+  gd = ij.gui.GenericDialog('Remove CATMAID Concepts')
+  gd.addNumericField("Last concept ID to keep:", first_id - 1, 0)
+  gd.showDialog()
+  if not gd.wasCanceled():
+    last_untouched_id = int(gd.getNextNumber())
+    run(project_id, last_untouched_id)
+    ij.IJ.showMessage("Finished removing concepts.")
+
+c.close()

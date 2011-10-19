@@ -12,6 +12,65 @@
  */
 include_once( 'db.pg.class.php' );
 
+/* These functions for recording sessions in the database rather than
+   the filesystem are are based on this article:
+   http://tuxradar.com/practicalphp/10/3/7
+*/
+
+function sess_open($sess_path, $sess_name) {
+    return true;
+}
+
+function sess_close() {
+    return true;
+}
+
+function sess_read($sess_id) {
+    $db =& getDB();
+    $escaped_session_id = pg_escape_string($sess_id);
+    $result = $db->getResult("SELECT data FROM sessions WHERE session_id = '$escaped_session_id'");
+    $current_time = date('Y-m-d H:i:s');
+    if($result) {
+        $db->getResult("UPDATE sessions SET last_accessed = TIMESTAMP '$current_time' WHERE session_id = '$escaped_session_id'");
+        return $result[0]['data'];
+    } else {
+        $db->getResult("INSERT INTO sessions (session_id, last_accessed) VALUES ('$escaped_session_id', TIMESTAMP '$current_time')");
+        return '';
+    }
+}
+
+function sess_write($sess_id, $data) {
+    $db =& getDB();
+    $escaped_session_id = pg_escape_string($sess_id);
+    $escaped_data = pg_escape_string($data);
+    $current_time = date('Y-m-d H:i:s');
+    error_log('going to run UPDATE');
+    $db->getResult("UPDATE sessions SET data = '$escaped_data', last_accessed = TIMESTAMP '$current_time' WHERE session_id = '$escaped_session_id'");
+    error_log('after running UPDATE');
+    return true;
+}
+
+function sess_destroy($sess_id) {
+    $db =& getDB();
+    $escaped_session_id = pg_escape_string($sess_id);
+    $db->getResult("DELETE FROM sessions WHERE session_id = '$escaped_session_id'");
+    return true;
+}
+
+function sess_gc($sess_maxlifetime) {
+    $db =& getDB();
+    $current_time = date('Y-m-d H:i:s');
+    $db->getResult("DELETE FROM sessions WHERE (last_accessed + INTERVAL '$sess_maxlifetime seconds') < TIMESTAMP '$current_time'");
+    return true;
+}
+
+session_set_save_handler("sess_open",
+                         "sess_close",
+                         "sess_read",
+                         "sess_write",
+                         "sess_destroy",
+                         "sess_gc");
+
 /**
  * factory method to get the single instance of the object
  *

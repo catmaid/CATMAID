@@ -540,6 +540,13 @@ CREATE TABLE broken_slice (
 EOMIGRATION
 ),
 
+	'2011-10-19T08:33:49' => new Migration(
+		'Introduce a sessions table for storing PHP sessions',
+		<<<EOMIGRATION
+CREATE TABLE sessions ( id SERIAL PRIMARY KEY, session_id CHAR(26), data TEXT DEFAULT '', last_accessed TIMESTAMP )
+EOMIGRATION
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

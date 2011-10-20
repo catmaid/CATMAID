@@ -29,8 +29,12 @@ function basenameToURI( basename, extension ) {
 }
 
 $(document).ajaxError( function( event, request, ajaxOptions, thrownError ) {
+    /* We get an AJAX error with status 0 if you change page and a
+       request is cancelled, so ignore that. */
+    if (request.status != 0) {
         alert("Got an AJAX error with status: "+request.status+" for URL: "+ajaxOptions.url);
-    } );
+    }
+} );
 
 var contourPoints = [[ 45440.0,23412.0 ],
                      [ 44035.75551306795,22078.054025230456, 40362.54152325645,19242.228765625186, 39907.67847152703,19030.385714338456 ],

@@ -61,7 +61,7 @@ them in that rule as well.)
 
 After the above please restart the database:
 
-    sudo /etc/init.d/posgresql-8.4 restart
+    sudo /etc/init.d/postgresql-8.4 restart
 
 Update the catmaid database configuration in:
 `inc/setup.inc.php.template` and rename the file to

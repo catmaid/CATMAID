@@ -285,18 +285,6 @@ def line(request, project_id=None, line_id=None):
                                   'neurons': sorted_neurons})
 
 @catmaid_login_required
-class LineDetailView(DetailView):
-    model = ClassInstance
-    template_name='vncbrowser/jennyline.html'
-    context_object_name = 'line'
-    def get_context_data(self, **kwargs):
-        context = super(LineDetailView, self).get_context_data(**kwargs)
-        context['neurons'] = ClassInstance.objects.filter(
-            class_instances_b__relation__relation_name='expresses_in',
-            class_instances_b__class_instance_a=self.object).order_by('name')
-        return context
-
-@catmaid_login_required
 def visual_line(request, line_name=None, logged_in_user=None):
     l = get_object_or_404(Line,name=line_name)
     return my_render_to_response(request,

@@ -220,22 +220,7 @@ def visual_index(request, **kwargs):
                                   'search_form': search_form })
 
 @catmaid_login_required
-def group_neurons_descending_count(neurons):
-    id_to_neurons = defaultdict(set)
-    for neuron in neurons:
-        id_to_neurons[neuron.id].add(neuron)
-    reverse_sorted = sorted(id_to_neurons.items(),
-                            key=lambda x: -len(id_to_neurons[x[0]]))
-    result = []
-    for neuron_id, neurons in reverse_sorted:
-        count = len(neurons)
-        neuron = list(neurons)[0]
-        neuron.count = count
-        result.append(neuron)
-    return result
-
-@catmaid_login_required
-def view(request, project_id=None, neuron_id=None, neuron_name=None):
+def view(request, project_id=None, neuron_id=None, neuron_name=None, logged_in_user=None):
     p = get_object_or_404(Project, pk=project_id)
     # FIXME: add the class name as well
     if neuron_id:

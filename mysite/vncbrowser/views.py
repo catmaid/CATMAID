@@ -189,6 +189,7 @@ def index(request, **kwargs):
                                   'user': kwargs['logged_in_user'],
                                   'search_form': search_form})
 
+@catmaid_login_required
 def visual_index(request, **kwargs):
 
     all_neurons, search_form = get_form_and_neurons( request,
@@ -218,6 +219,7 @@ def visual_index(request, **kwargs):
                                   'project_id': kwargs['project_id'],
                                   'search_form': search_form })
 
+@catmaid_login_required
 def group_neurons_descending_count(neurons):
     id_to_neurons = defaultdict(set)
     for neuron in neurons:
@@ -232,6 +234,7 @@ def group_neurons_descending_count(neurons):
         result.append(neuron)
     return result
 
+@catmaid_login_required
 def view(request, project_id=None, neuron_id=None, neuron_name=None):
     p = get_object_or_404(Project, pk=project_id)
     # FIXME: add the class name as well
@@ -263,11 +266,13 @@ def view(request, project_id=None, neuron_id=None, neuron_name=None):
                                   'lines': lines,
                                   'skeletons': skeletons,
                                   'project_id': project_id,
+                                  'user': logged_in_user,
                                   'cell_body_choices': CELL_BODY_CHOICES,
                                   'incoming': incoming,
                                   'outgoing': outgoing} )
 
-def set_cell_body(request):
+@catmaid_login_required
+def set_cell_body(request, logged_in_user=None):
     neuron_id = request.POST['neuron_id']
     n = get_object_or_404(ClassInstance, pk=neuron_id)
     new_location_code = request.POST['cell-body-choice']
@@ -280,6 +285,7 @@ def set_cell_body(request):
                                         kwargs={'neuron_id':neuron_id,
                                                 'project_id':n.project.id}))
 
+@catmaid_login_required
 def line(request, project_id=None, line_id=None):
     p = get_object_or_404(Project, pk=project_id)
     l = get_object_or_404(ClassInstance, pk=line_id, project=p, class_column__class_name='driver_line')
@@ -290,8 +296,10 @@ def line(request, project_id=None, line_id=None):
                                  'vncbrowser/line.html',
                                  {'line': l,
                                   'project_id': p.id,
+                                  'user': logged_in_user,
                                   'neurons': sorted_neurons})
 
+@catmaid_login_required
 class LineDetailView(DetailView):
     model = ClassInstance
     template_name='vncbrowser/jennyline.html'
@@ -303,14 +311,17 @@ class LineDetailView(DetailView):
             class_instances_b__class_instance_a=self.object).order_by('name')
         return context
 
-def visual_line(request, line_name=None):
+@catmaid_login_required
+def visual_line(request, line_name=None, logged_in_user=None):
     l = get_object_or_404(Line,name=line_name)
     return my_render_to_response(request,
                                  'vncbrowser/visual_line.html',
                                  {'line': l,
+                                  'user': logged_in_user,
                                   'sorted_neurons': l.neuron_set.all()})
 
-def lines_add(request, project_id=None):
+@catmaid_login_required
+def lines_add(request, project_id=None, logged_in_user=None):
     p = Project.objects.get(pk=project_id)
     # FIXME: for the moment, just hardcode the user ID:
     user = User.objects.get(pk=3)
@@ -347,7 +358,8 @@ def lines_add(request, project_id=None):
                                         kwargs={'neuron_id':neuron.id,
                                                 'project_id':p.id}))
 
-def lines_delete(request, project_id=None):
+@catmaid_login_required
+def lines_delete(request, project_id=None, logged_in_user=None):
     p = Project.objects.get(pk=project_id)
     neuron = get_object_or_404(ClassInstance,
                                pk=request.POST['neuron_id'],
@@ -363,7 +375,8 @@ def lines_delete(request, project_id=None):
                                         kwargs={'neuron_id':neuron.id,
                                                 'project_id':p.id}))
 
-def skeleton_swc(request, project_id=None, skeleton_id=None):
+@catmaid_login_required
+def skeleton_swc(request, project_id=None, skeleton_id=None, logged_in_user=None):
     p = Project.objects.get(pk=project_id)
     skeleton = get_object_or_404(ClassInstance,
                                  pk=skeleton_id,
@@ -388,7 +401,8 @@ def skeleton_swc(request, project_id=None, skeleton_id=None):
         result += " ".join(str(x) for x in row) + "\n"
     return HttpResponse(result, mimetype="text/plain")
 
-def neuron_to_skeletons(request, project_id=None, neuron_id=None):
+@catmaid_login_required
+def neuron_to_skeletons(request, project_id=None, neuron_id=None, logged_in_user=None):
     p = get_object_or_404(Project, pk=project_id)
     neuron = get_object_or_404(ClassInstance,
                                pk=neuron_id,

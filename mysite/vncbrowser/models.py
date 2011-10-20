@@ -133,8 +133,8 @@ def quote_value(v):
 
 def generate_catmaid_sql(joins):
     """
-    Querying across CATMAID's relations requires huge SQL statements
-    with many joins.  This helper method takes a reduced
+    Querying across CATMAID's relations sometimes requires huge SQL
+    statements with many joins.  This helper method takes a reduced
     representation and generates an SQL statement.  (For examples, see
     tests.py.)
     """

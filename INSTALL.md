@@ -1,6 +1,6 @@
 ## Basic Installation Instructions
 
-### Prerequisites 
+### Prerequisites
 
 1. PostgreSQL > 8.2
 2. Apache2 Webserver
@@ -91,28 +91,28 @@ Create in /etc/apache2/sites-available a file called "catmaid":
 
      <VirtualHost *:80>
          ServerName catmaid
-     
+
          DocumentRoot "/home/alice/catmaid/httpdocs/"
-     
+
          php_admin_value register_globals off
          php_admin_value include_path ".:/home/alice/catmaid/inc"
          php_admin_value session.use_only_cookies 1
          php_admin_value error_reporting 2047
          php_admin_value display_errors true
-     
+
          <Directory /home/alice/catmaid/httpdocs/>
-     
+
              Options FollowSymLinks
              AllowOverride AuthConfig Limit FileInfo
-     
+
              Order allow,deny
              allow from all
-     
+
          </Directory>
-     
+
          CustomLog /var/log/apache2/catmaid/access_log combined
          ErrorLog /var/log/apache2/catmaid/error.log
-     
+
      </VirtualHost>
 
 Then make apache aware of the virtual host:
@@ -131,7 +131,7 @@ Then make apache aware of the virtual host:
 
      <VirtualHost *:80>
              ServerAdmin webmaster@localhost
-     
+
              DocumentRoot /var/www
              <Directory />
                      Options FollowSymLinks
@@ -156,9 +156,9 @@ Then make apache aware of the virtual host:
                      Order allow,deny
                      Allow from all
              </Directory>
-     
-     	...
-     	...
+
+             ...
+             ...
      </VirtualHost>
 
 You should then restart Apache:

@@ -306,22 +306,26 @@ class ClassInstance(models.Model):
         if direction == ConnectivityDirection.POSTSYNAPTIC_PARTNERS:
             con_to_syn_relation = 'postsynaptic_to>'
             src_to_syn_relation = '<presynaptic_to'
+            src_terminal = 'presynaptic terminal'
+            con_terminal = 'postsynaptic terminal'
         elif direction == ConnectivityDirection.PRESYNAPTIC_PARTNERS:
             con_to_syn_relation = 'presynaptic_to>'
             src_to_syn_relation = '<postsynaptic_to'
+            src_terminal = 'postsynaptic terminal'
+            con_terminal = 'presynaptic terminal'
         else:
             raise Exception, "Unknown connectivity direction"
         return generate_catmaid_sql(
             [('class_instance:neuron', {}),
              ('<model_of', {}),
              ('class_instance:skeleton', {}),
-             ('<element_of', {}),
-             ('treenode', {}),
+             ('<part_of', {}),
+             ('class_instance:'+con_terminal, {}),
              (con_to_syn_relation, {}),
-             ('connector', {}),
+             ('class_instance:synapse', {}),
              (src_to_syn_relation, {}),
-             ('treenode', {}),
-             ('element_of>', {}),
+             ('class_instance:'+src_terminal, {}),
+             ('part_of>', {}),
              ('class_instance:skeleton', {}),
              ('model_of>', {}),
              ('class_instance:neuron', {'id': SQLPlaceholder()})])

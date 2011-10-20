@@ -21,7 +21,7 @@
     <tr><th>Number of Connections</th><th>Neuron</th><th>Show</th></tr>
     {% for c in outgoing %}
     <tr>
-      <td>{{ c.count }}</td>
+      <td>{{ c.id__count }}</td>
       <td><a href="{% url vncbrowser.views.view project_id=project_id, neuron_id=c.id %}">{{c.name}}</a></td>
       <td><input type="checkbox" class="show-neuron" id="p{{project_id}}c{{c.id}}"></td>
     </tr>
@@ -35,7 +35,7 @@
     <tr><th>Number of Connections</th><th>Neuron</th><th>Show</th></tr>
     {% for c in incoming %}
     <tr>
-      <td>{{ c.count }}</td>
+      <td>{{ c.id__count }}</td>
       <td><a href="{% url vncbrowser.views.view project_id=project_id, neuron_id=c.id %}">{{c.name}}</a></td>
       <td><input type="checkbox" class="show-neuron" id="p{{project_id}}c{{c.id}}"></td>
     </tr>

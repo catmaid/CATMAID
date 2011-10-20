@@ -333,25 +333,50 @@ class ClassInstance(models.Model):
         ConnectivityDirection.POSTSYNAPTIC_PARTNERS)
     connected_upstream_query = get_connected_query(
         ConnectivityDirection.PRESYNAPTIC_PARTNERS)
-    @classmethod
-    def get_connected_neurons(cls, direction, original_neuron):
-        if direction == ConnectivityDirection.POSTSYNAPTIC_PARTNERS:
-            query = cls.connected_downstream_query
-        elif direction == ConnectivityDirection.PRESYNAPTIC_PARTNERS:
-            query = cls.connected_upstream_query
+
+    def get_connected_neurons(self, project_id, direction):
+
+        if direction == ConnectivityDirection.PRESYNAPTIC_PARTNERS:
+            this_to_syn = 'post'
+            syn_to_con = 'pre'
+        elif direction == ConnectivityDirection.POSTSYNAPTIC_PARTNERS:
+            this_to_syn = 'pre'
+            syn_to_con = 'post'
         else:
-            raise Exception, "Unknown connectivity direction "+str(direction)
-        return ClassInstance.objects.raw(query, (original_neuron.id,))
-    @classmethod
-    def all_neurons_upstream(cls, downstream_neuron):
-        return cls.get_connected_neurons(
-            ConnectivityDirection.PRESYNAPTIC_PARTNERS,
-            downstream_neuron)
-    @classmethod
-    def all_neurons_downstream(cls, upstream_neuron):
-        return cls.get_connected_neurons(
-            ConnectivityDirection.POSTSYNAPTIC_PARTNERS,
-            upstream_neuron)
+            raise Exception, "Unknown connectivity direction: "+str(direction)
+
+        synapses = ClassInstance.objects.filter(
+            class_column__class_name='synapse',
+            project__id=project_id,
+            class_instances_b__relation__relation_name=this_to_syn+'synaptic_to',
+            class_instances_b__class_instance_a__class_column__class_name=this_to_syn+'synaptic terminal',
+            class_instances_b__class_instance_a__class_instances_a__relation__relation_name='part_of',
+            class_instances_b__class_instance_a__class_instances_a__class_instance_b__class_column__class_name='skeleton',
+            class_instances_b__class_instance_a__class_instances_a__class_instance_b__class_instances_a__relation__relation_name='model_of',
+            class_instances_b__class_instance_a__class_instances_a__class_instance_b__class_instances_a__class_instance_b=self.id)
+
+        connected_neurons = ClassInstance.objects.filter(
+            class_column__class_name='neuron',
+            project__id=4,
+            class_instances_b__relation__relation_name='model_of',
+            class_instances_b__class_instance_a__class_column__class_name='skeleton',
+            class_instances_b__class_instance_a__class_instances_b__relation__relation_name='part_of',
+            class_instances_b__class_instance_a__class_instances_b__class_instance_a__class_column__class_name=syn_to_con+'synaptic terminal',
+            class_instances_b__class_instance_a__class_instances_b__class_instance_a__class_instances_a__relation__relation_name=syn_to_con+'synaptic_to',
+            class_instances_b__class_instance_a__class_instances_b__class_instance_a__class_instances_a__class_instance_b__id__in=[s.id for s in list(synapses)])
+
+        return connected_neurons.values('id','name').annotate(models.Count('id')).order_by('-id__count')
+
+    def all_neurons_upstream(self, project_id):
+        return self.get_connected_neurons(
+            project_id,
+            ConnectivityDirection.PRESYNAPTIC_PARTNERS)
+
+    def all_neurons_downstream(self, project_id):
+        return self.get_connected_neurons(
+            project_id,
+            ConnectivityDirection.POSTSYNAPTIC_PARTNERS)
+
     def cell_body_location(self):
         qs = list(ClassInstance.objects.filter(
                 class_column__class_name='cell_body_location',

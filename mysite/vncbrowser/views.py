@@ -245,10 +245,11 @@ def view(request, project_id=None, neuron_id=None, neuron_name=None):
         class_instances_a__class_instance_b=n,
         class_instances_a__relation__relation_name='expresses_in').all()
 
-    outgoing = group_neurons_descending_count(
-        ClassInstance.all_neurons_downstream(n))
-    incoming = group_neurons_descending_count(
-        ClassInstance.all_neurons_upstream(n))
+    outgoing = n.all_neurons_downstream(project_id)
+    incoming = n.all_neurons_upstream(project_id)
+
+    outgoing = [x for x in outgoing if not re.match('orphaned (pre|post)$', x['name'])]
+    incoming = [x for x in incoming if not re.match('orphaned (pre|post)$', x['name'])]
 
     skeletons = ClassInstance.objects.filter(
         project=p,

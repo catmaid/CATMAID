@@ -137,19 +137,20 @@ Then make apache aware of the virtual host:
                      Options FollowSymLinks
                      AllowOverride None
              </Directory>
-     	...
-     	...
-     
-     	# Add CATMAID configuration here:
-             # CATMAID stuff:
-             php_admin_value register_globals off
-             php_admin_value include_path ".:/home/mark/catmaid-local-instance/inc"
-             php_admin_value session.use_only_cookies 1
-             php_admin_value error_reporting 2047
-             php_admin_value display_errors true
-     
+             ...
+             ...
+
+             # Add CATMAID configuration here:
+
              Alias /catmaid/ /home/mark/catmaid-local-instance/httpdocs/
              <Directory /home/mark/catmaid-local-instance/httpdocs/>
+
+                     php_admin_value register_globals off
+                     php_admin_value include_path ".:/home/mark/catmaid-local-instance/inc"
+                     php_admin_value session.use_only_cookies 1
+                     php_admin_value error_reporting 2047
+                     php_admin_value display_errors true
+
                      Options FollowSymLinks
                      AllowOverride AuthConfig Limit FileInfo
                      Order allow,deny

@@ -102,6 +102,10 @@ select {
    font-size: 0.7em;
 }
 
+/* These nice table styles are from:
+   http://hp.copilaser.com.mx/encuestas/tablecss/
+*/
+
 .hor-minimalist-b
 {
     font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif;

@@ -450,6 +450,7 @@ def insertTree(tree,skeleton_id):
     return None
   aff = tree.getAffineTransform()
   table = {}
+  print 'number of subtreenodes is:', len(tree.getRoot().getSubtreeNodes()), 'for TrakEM2 treeline', tree.getId()
   for nd in tree.getRoot().getSubtreeNodes():
     x, y, z = node_to_coordinates(aff,nd)
     confidence = nd.getConfidence()

@@ -464,6 +464,8 @@ def insertTree(tree,skeleton_id):
     if radius == 0:
       radius = -1
     new_id = insert_treenode( parent, x, y, z, radius, confidence )
+    if not new_id:
+      raise Exception, "No new_id was found inserting treenode "+str(nd)
     table[nd] = new_id
     new_treenode_class_instance('element_of',new_id,skeleton_id)
     # Also try to find any tags:

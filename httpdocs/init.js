@@ -209,7 +209,7 @@ function updateProjects() {
 
 function handle_updateProjects(status, text, xml) {
   if (status == 200 && text) {
-    var e = eval("(" + text + ")");
+    var e = $.parseJSON(text);
 
     var keep_project_alive = false;
     var keep_project_editable = false;

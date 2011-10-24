@@ -629,8 +629,8 @@ def add_connectors_recursively(pt,depth=0):
       if not connector_target_nodes:
         print prefix, "Connector had no target nodes"
       else:
-        originNode = ConnectorNode(node_to_coordinates(aff,c.root),c.root.getData())
-        targetNodes = [ ConnectorNode(node_to_coordinates(aff,x),x.getData()) for x in connector_target_nodes ]
+        originNode = ConnectorNode(node_to_coordinates(aff,c.root),c.root.getData()*x_separation)
+        targetNodes = [ ConnectorNode(node_to_coordinates(aff,x),x.getData()*x_separation) for x in connector_target_nodes ]
         print prefix, "Got originNode:", originNode
         for t in targetNodes:
           print prefix, "Got targetNode:", t

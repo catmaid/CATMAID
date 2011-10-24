@@ -7,3 +7,4 @@
 /.pydevproject
 .idea/
 *.pyc
+/mysite/settings.py

@@ -32,6 +32,7 @@ fragments_group_name = "Isolated synaptic terminals"
 
 # FIXME: And also hardcode the separation:
 
+x_separation = 4.0
 z_separation = 50.0
 
 radius_node_class = Class.forName('ini.trakem2.display.Treeline$RadiusNode')
@@ -352,11 +353,11 @@ def get_root_node_ids():
   return result
 
 def insert_project_root_node( name ):
-  root_id = None
   existing_root_ids = get_root_node_ids()
   if len(existing_root_ids) > 1:
     raise Exception, "There is more than one root node in project: "+str(project_id)
-  if root_id:
+  elif len(existing_root_ids) == 1:
+    root_id = existing_root_ids[0]
     IJ.log("Project root node already existed - just updating the name...")
     ps = c.prepareStatement("UPDATE class_instance SET name = ? WHERE id = ?")
     ps.setString(1,name)

@@ -19,12 +19,14 @@ if ( $ses->isSessionValid() )
 				"stack"."title" AS "stitle",
 				"stack"."comment" AS "comment",
 				"project"."public" AS "public",
-				( "project_user"."user_id" IS NOT NULL ) AS "editable"
+				( "project_user"."user_id" IS NOT NULL ) AS "editable",
+				"class"."class_name" AS "driver_line_class"
 				
 			FROM "project" LEFT JOIN "project_user"
 				ON "project"."id" = "project_user"."project_id" INNER JOIN "project_stack"
 					ON "project"."id" = "project_stack"."project_id" INNER JOIN "stack"
 						ON "stack"."id" = "project_stack"."stack_id"
+                        LEFT OUTER JOIN class ON (class.project_id = project.id AND class.class_name = \'driver_line\')
 			
 			WHERE	"project_user"."user_id" = '.$ses->getId().' OR
 					"project"."public"
@@ -87,6 +89,7 @@ foreach ( $pprojects as $p )
 				'public_project'	=> $p[ 'public' ] == 't',
 				'action'	=> array(),
 				'editable'	=> $p[ 'editable' ] == 't',
+				'catalogue'	=> (bool) $p[ 'driver_line_class' ],
 				'note'		=> ( $p[ 'editable' ] == 't' ? '[ editable ]' : '' ) );
 	}
 	$projects[ $p[ 'pid' ] ][ 'action' ][ $p[ 'sid' ] ] = array(

@@ -2,7 +2,7 @@
 
 {% block extrascript %}
     <script type="text/javascript" charset="utf-8">
-      var projectId = "{{project_id|escapejs}}";
+        var projectId = "{{project_id|escapejs}}";
         var staticURLPrefix = "{{static|escapejs}}";
         {% if sorted_neurons %}
             $(document).ready( function() {

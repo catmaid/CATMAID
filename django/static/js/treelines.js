@@ -483,13 +483,13 @@ function NeuronView( basename, swcURL, color, viewer ) {
 
 function addOrRemoveNeuron( viewerID, add, neuronName, neuronId, color ) {
     var self = this;
-    $.get('/'+projectId+'/neuron-to-skeletons/'+neuronId,
+    $.get(projectIndexURL+'/neuron-to-skeletons/'+neuronId,
           function (data) {
               var i, skeletonID, swcURL, skeletonName;
               for (var i in data) {
                   skeletonID = data[i];
                   skeletonName = neuronName+'(skeleton: '+skeletonID+')';
-                  swcURL = '/'+projectId+'/skeleton/'+skeletonID+'/swc';
+                  swcURL = projectIndexURL+'/skeleton/'+skeletonID+'/swc';
                   if (add) {
                       $(self).parent().css("background-color",color);
                       $('#'+viewerID).data('viewer').setNeuron(skeletonName,swcURL,color);

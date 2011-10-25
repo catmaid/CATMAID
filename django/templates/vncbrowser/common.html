@@ -8,6 +8,9 @@
     <script src="{{ static }}js/jquery-1.4.3.min.js" type="text/javascript" charset="utf-8"></script>
     <script src="{{ static }}js/sylvester/sylvester.js" type="text/javascript" charset="utf-8"></script>
     <script src="{{ static }}js/treelines.js" type="text/javascript" charset="utf-8"></script>
+    <script type="text/javascript">
+       var projectIndexURL = "{% url vncbrowser.views.index project_id %}";
+    </script>
     {% block extrascript %}
     {% endblock %}
 </head>

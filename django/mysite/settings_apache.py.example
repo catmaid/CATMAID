@@ -37,5 +37,5 @@ LANGUAGE_CODE = 'en-gb'
 
 SITE_ID = 1
 
-STATICFILES_URL = '/catmaid/dj/static/'
+STATICFILES_URL = '/catmaid/dj-static/'
 STATICFILES_LOCAL = '/home/mark/catmaid-local-instance/django/static/'

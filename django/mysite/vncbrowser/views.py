@@ -314,7 +314,7 @@ def lines_add(request, project_id=None, logged_in_user=None):
         line.name=request.POST['line_name']
         line.project = p
         line.user = user
-        line.class_column = Class.objects.get(class_name='driver_line')
+        line.class_column = Class.objects.get(class_name='driver_line', project=p)
         line.save()
 
     r = Relation.objects.get(relation_name='expresses_in', project=p)

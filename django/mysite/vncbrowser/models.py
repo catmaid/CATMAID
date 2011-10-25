@@ -232,7 +232,7 @@ class ClassInstance(models.Model):
             location.name=new_location
             location.project = self.project
             location.user = user
-            location.class_column = Class.objects.get(class_name='cell_body_location')
+            location.class_column = Class.objects.get(class_name='cell_body_location', project=self.project)
             location.save()
             r = Relation.objects.get(relation_name='has_cell_body', project=self.project)
             cici = ClassInstanceClassInstance()

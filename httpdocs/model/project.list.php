@@ -82,6 +82,11 @@ else
 $projects = array();
 foreach ( $pprojects as $p )
 {
+	$neuron_catalogue_available = false;
+	if ( isset($p['driver_line_class']) ) {
+		$neuron_catalogue_available = (bool) $p[ 'driver_line_class' ];
+	}
+
 	if ( !isset( $projects[ $p[ 'pid' ] ] ) )
 	{
 		$projects[ $p[ 'pid' ] ] = array(
@@ -89,7 +94,7 @@ foreach ( $pprojects as $p )
 				'public_project'	=> $p[ 'public' ] == 't',
 				'action'	=> array(),
 				'editable'	=> $p[ 'editable' ] == 't',
-				'catalogue'	=> (bool) $p[ 'driver_line_class' ],
+				'catalogue'	=> $neuron_catalogue_available,
 				'note'		=> ( $p[ 'editable' ] == 't' ? '[ editable ]' : '' ) );
 	}
 	$projects[ $p[ 'pid' ] ][ 'action' ][ $p[ 'sid' ] ] = array(

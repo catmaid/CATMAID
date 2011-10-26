@@ -34,8 +34,11 @@ $(document).ready( function() {
         var neuronLink = $(this).parent().parent().find('a');
         var neuronName = neuronLink.text();
         var newColor = colors[neuronId % numberOfColors];
+        var add = $(this).attr("checked");
+        var cellBackgroundColor = add ? newColor : "#fff";
+        $(this).parent().css("background-color", cellBackgroundColor);
         addOrRemoveNeuron("viewer",
-			  $(this).attr("checked"),
+                          add,
                           neuronName,
                           neuronId,
                           newColor );

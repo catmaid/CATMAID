@@ -358,14 +358,11 @@ def lines_delete(request, project_id=None, logged_in_user=None):
 
 @catmaid_login_required
 def skeleton_swc(request, project_id=None, skeleton_id=None, logged_in_user=None):
-    p = Project.objects.get(pk=project_id)
-    skeleton = get_object_or_404(ClassInstance,
-                                 pk=skeleton_id,
-                                 class_column__class_name='skeleton',
-                                 project=p)
     qs = Treenode.objects.filter(
-        treenodeclassinstance__class_instance=skeleton).order_by('id')
-
+        treenodeclassinstance__class_instance__id=skeleton_id,
+        treenodeclassinstance__relation__relation_name='element_of',
+        treenodeclassinstance__class_instance__class_column__class_name='skeleton',
+        project=project_id).order_by('id')
     all_rows = []
     for tn in qs:
         swc_row = [tn.id]
@@ -376,7 +373,6 @@ def skeleton_swc(request, project_id=None, skeleton_id=None, logged_in_user=None
         swc_row.append(max(tn.radius, 0))
         swc_row.append(-1 if tn.parent is None else tn.parent.id)
         all_rows.append(swc_row)
-    all_rows.sort(key=lambda x: x[0])
     result = ""
     for row in all_rows:
         result += " ".join(str(x) for x in row) + "\n"

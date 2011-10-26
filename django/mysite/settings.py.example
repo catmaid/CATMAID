@@ -45,5 +45,6 @@ LANGUAGE_CODE = 'en-gb'
 
 SITE_ID = 1
 
+CATMAID_URL = '/'
 STATICFILES_URL = '/static/'
 STATICFILES_LOCAL = '/home/mark/neuron-catalogue/static/'

@@ -21,10 +21,10 @@ if ( !$id )
 	if ( $name || $pwd )
 	{
 		sleep( 2 );
-		echo '{ error : "Invalid account or password." }';
+		echo '{ "error" : "Invalid account or password." }';
 	}
 	else
-		echo '{ notice : "Session closed." }';
+		echo '{ "notice" : "Session closed." }';
 }
 else
 {

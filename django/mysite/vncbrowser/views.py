@@ -12,6 +12,9 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.views.generic import DetailView
 from django.core.paginator import Paginator
+from django.conf import settings
+import urllib
+
 
 # Tip from: http://lincolnloop.com/blog/2008/may/10/getting-requestcontext-your-templates/
 # Required because we need a RequestContext, not just a Context - the
@@ -37,12 +40,23 @@ def order_neurons( neurons, order_by = None ):
             neurons.reverse()
     return neurons
 
+import hashlib
+
+def login(request, return_url=''):
+    return my_render_to_response(request,
+                                 'vncbrowser/login.html',
+                                {'return_url': request.GET['return_url'],
+                                 'project_id': 0,
+                                 'catmaid_url': settings.CATMAID_URL,
+                                 'catmaid_login': settings.CATMAID_URL+'model/login.php'})
+
 # A decorator that will check that the user is logged into CATMAID,
 # and if not, redirect to the login page:
 def catmaid_login_required(f):
 
-    def need_to_login():
-        return HttpResponseRedirect('/whevs')
+    def need_to_login(return_url):
+        return HttpResponseRedirect(
+            reverse('vncbrowser.views.login')+"?return_url="+urllib.quote(return_url,''))
 
     # Note that this method does not work in general - there could be
     # ';'s within a string, for example.  However, it is sufficient
@@ -74,17 +88,17 @@ def catmaid_login_required(f):
     def decorated(request, *args, **kwargs):
         if 'PHPSESSID' not in request.COOKIES:
             print >> sys.stderr, "PHPSESSID cookie not found"
-            return need_to_login()
+            return need_to_login(request.get_full_path())
         phpsessid = request.COOKIES['PHPSESSID']
         try:
             s = Session.objects.get(session_id=phpsessid)
         except Session.DoesNotExist:
             print >> sys.stderr, "Couldn't find the PHPSESSID in the session table"
-            return need_to_login()
+            return need_to_login(request.get_full_path())
         parsed_session_data = parse_php_session_data(s.data)
         if 'id' not in parsed_session_data:
             print >> sys.stderr, "Couldn't find the 'id' key in the parsed PHP session data"
-            return need_to_login()
+            return need_to_login(request.get_full_path())
         user_id = parsed_session_data['id']
         try:
            u = User.objects.get(pk=int(user_id, 10))
@@ -95,10 +109,10 @@ def catmaid_login_required(f):
             print >> sys.stderr, "There was a strange value in the 'id' field: '%s'" % (user_id,)
         if 'key' not in parsed_session_data:
             print >> sys.stderr, "Couldn't find the 'key' key in the parsed PHP session data"
-            return need_to_login()
+            return need_to_login(request.get_full_path())
         if parsed_session_data['key'] != '7gtmcy8g03457xg3hmuxdgregtyu45ty57ycturemuzm934etmvo56':
             print >> sys.stderr, "The date associated with 'key' didn't match the known value"
-            return need_to_login()
+            return need_to_login(request.get_full_path())
         kwargs['logged_in_user'] = u
         return f(request, *args, **kwargs)
     return decorated

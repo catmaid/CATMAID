@@ -9,7 +9,9 @@
     <script src="{{ static }}js/sylvester/sylvester.js" type="text/javascript" charset="utf-8"></script>
     <script src="{{ static }}js/treelines.js" type="text/javascript" charset="utf-8"></script>
     <script type="text/javascript">
-       var projectIndexURL = "{% url vncbrowser.views.index project_id %}";
+        {% if project_id %}
+            var projectIndexURL = "{% url vncbrowser.views.index project_id=project_id %}";
+        {% endif %}
     </script>
     {% block extrascript %}
     {% endblock %}

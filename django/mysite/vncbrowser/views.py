@@ -186,6 +186,7 @@ def index(request, **kwargs):
                                  'vncbrowser/index.html',
                                  {'all_neurons_list': all_neurons,
                                   'project_id': kwargs['project_id'],
+                                  'catmaid_url': settings.CATMAID_URL,
                                   'user': kwargs['logged_in_user'],
                                   'search_form': search_form})
 
@@ -217,6 +218,7 @@ def visual_index(request, **kwargs):
                                  {'sorted_neurons': neurons.object_list,
                                   'sorted_neurons_page' : neurons,
                                   'project_id': kwargs['project_id'],
+                                  'catmaid_url': settings.CATMAID_URL,
                                   'search_form': search_form })
 
 @catmaid_login_required
@@ -251,6 +253,7 @@ def view(request, project_id=None, neuron_id=None, neuron_name=None, logged_in_u
                                   'lines': lines,
                                   'skeletons': skeletons,
                                   'project_id': project_id,
+                                  'catmaid_url': settings.CATMAID_URL,
                                   'user': logged_in_user,
                                   'cell_body_choices': CELL_BODY_CHOICES,
                                   'incoming': incoming,
@@ -268,7 +271,8 @@ def set_cell_body(request, logged_in_user=None):
     n.set_cell_body_location(new_location)
     return HttpResponseRedirect(reverse('vncbrowser.views.view',
                                         kwargs={'neuron_id':neuron_id,
-                                                'project_id':n.project.id}))
+                                                'project_id':n.project.id,
+                                                'catmaid_url': settings.CATMAID_URL}))
 
 @catmaid_login_required
 def line(request, project_id=None, line_id=None):
@@ -281,6 +285,7 @@ def line(request, project_id=None, line_id=None):
                                  'vncbrowser/line.html',
                                  {'line': l,
                                   'project_id': p.id,
+                                  'catmaid_url': settings.CATMAID_URL,
                                   'user': logged_in_user,
                                   'neurons': sorted_neurons})
 
@@ -290,6 +295,7 @@ def visual_line(request, line_name=None, logged_in_user=None):
     return my_render_to_response(request,
                                  'vncbrowser/visual_line.html',
                                  {'line': l,
+                                  'catmaid_url': settings.CATMAID_URL,
                                   'user': logged_in_user,
                                   'sorted_neurons': l.neuron_set.all()})
 
@@ -329,7 +335,8 @@ def lines_add(request, project_id=None, logged_in_user=None):
 
     return HttpResponseRedirect(reverse('vncbrowser.views.view',
                                         kwargs={'neuron_id':neuron.id,
-                                                'project_id':p.id}))
+                                                'project_id':p.id,
+                                                'catmaid_url': settings.CATMAID_URL}))
 
 @catmaid_login_required
 def lines_delete(request, project_id=None, logged_in_user=None):
@@ -346,7 +353,8 @@ def lines_delete(request, project_id=None, logged_in_user=None):
                                               class_instance_b=neuron).delete()
     return HttpResponseRedirect(reverse('vncbrowser.views.view',
                                         kwargs={'neuron_id':neuron.id,
-                                                'project_id':p.id}))
+                                                'project_id':p.id,
+                                                'catmaid_url': settings.CATMAID_URL}))
 
 @catmaid_login_required
 def skeleton_swc(request, project_id=None, skeleton_id=None, logged_in_user=None):

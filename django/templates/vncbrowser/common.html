@@ -18,9 +18,16 @@
 <body>
 
   <div class="header-navigation">
-    Logged in as <strong>{{ user.longname }}</strong>
-    | <a href="{% url vncbrowser.views.index project_id=project_id %}">All neurons (text)</a>
+    <a href="{{ catmaid_url }}">Return to CATMAID</a> |
+    {% if user.longname %}
+       Logged in as <strong>{{ user.longname }}</strong> |
+    {% else %}
+       Not logged in
+    {% endif %}
+    {% if project_id %}
+    <a href="{% url vncbrowser.views.index project_id=project_id %}">All neurons (text)</a>
     | <a href="{% url vncbrowser.views.visual_index project_id=project_id %}">All neurons (visual)</a>
+    {% endif %}
   </div>
 
 {% block main %}

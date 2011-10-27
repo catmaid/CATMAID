@@ -187,7 +187,7 @@ class ClassInstance(models.Model):
 
         connected_neurons = ClassInstance.objects.filter(
             class_column__class_name='neuron',
-            project__id=4,
+            project__id=project_id,
             class_instances_b__relation__relation_name='model_of',
             class_instances_b__class_instance_a__class_column__class_name='skeleton',
             class_instances_b__class_instance_a__class_instances_b__relation__relation_name='part_of',

@@ -112,7 +112,7 @@ class RelationQueryTests(TestCase):
         upstream = ClassInstance.objects.get(name='branched neuron')
         self.assertTrue(upstream)
 
-        downstreams = list(ClassInstance.all_neurons_downstream(upstream))
+        downstreams = list(upstream.all_neurons_downstream(self.test_project_id))
         self.assertEqual(len(downstreams), 3)
 
         downstreams.sort(key=lambda x: x.name)
@@ -124,7 +124,7 @@ class RelationQueryTests(TestCase):
         downstream = ClassInstance.objects.get(name='downstream-A')
         self.assertTrue(downstream)
 
-        upstreams = list(ClassInstance.all_neurons_upstream(downstream))
+        upstreams = list(downstream.all_neurons_upstream(self.test_project_id))
         self.assertEqual(upstreams[0].name, "branched neuron")
 
 swc_output_for_skeleton_235 = '''237 0 1065 3035 0 0 -1

@@ -285,8 +285,7 @@ def set_cell_body(request, logged_in_user=None):
     n.set_cell_body_location(new_location)
     return HttpResponseRedirect(reverse('vncbrowser.views.view',
                                         kwargs={'neuron_id':neuron_id,
-                                                'project_id':n.project.id,
-                                                'catmaid_url': settings.CATMAID_URL}))
+                                                'project_id':n.project.id}))
 
 @catmaid_login_required
 def line(request, project_id=None, line_id=None):
@@ -349,8 +348,7 @@ def lines_add(request, project_id=None, logged_in_user=None):
 
     return HttpResponseRedirect(reverse('vncbrowser.views.view',
                                         kwargs={'neuron_id':neuron.id,
-                                                'project_id':p.id,
-                                                'catmaid_url': settings.CATMAID_URL}))
+                                                'project_id':p.id}))
 
 @catmaid_login_required
 def lines_delete(request, project_id=None, logged_in_user=None):
@@ -367,8 +365,7 @@ def lines_delete(request, project_id=None, logged_in_user=None):
                                               class_instance_b=neuron).delete()
     return HttpResponseRedirect(reverse('vncbrowser.views.view',
                                         kwargs={'neuron_id':neuron.id,
-                                                'project_id':p.id,
-                                                'catmaid_url': settings.CATMAID_URL}))
+                                                'project_id':p.id}))
 
 @catmaid_login_required
 def skeleton_swc(request, project_id=None, skeleton_id=None, logged_in_user=None):

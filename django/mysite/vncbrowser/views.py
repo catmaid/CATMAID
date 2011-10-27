@@ -289,7 +289,7 @@ def set_cell_body(request, logged_in_user=None):
                                                 'project_id':n.project.id}))
 
 @catmaid_login_required
-def line(request, project_id=None, line_id=None):
+def line(request, project_id=None, line_id=None, logged_in_user=None):
     p = get_object_or_404(Project, pk=project_id)
     l = get_object_or_404(ClassInstance, pk=line_id, project=p, class_column__class_name='driver_line')
     sorted_neurons = ClassInstance.objects.filter(

@@ -30,6 +30,10 @@ CREATE FUNCTION on_edit() RETURNS trigger
 END;
 $$;
 SET default_with_oids = false;
+CREATE TABLE broken_slice (
+    stack_id integer NOT NULL,
+    index integer NOT NULL
+);
 CREATE TABLE concept (
     id bigint NOT NULL,
     user_id bigint NOT NULL,
@@ -84,6 +88,23 @@ CREATE TABLE connector_class_instance (
     class_instance_id bigint NOT NULL
 )
 INHERITS (relation_instance);
+CREATE TABLE message (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    "time" timestamp with time zone DEFAULT now() NOT NULL,
+    read boolean DEFAULT false NOT NULL,
+    title text DEFAULT 'New message'::text NOT NULL,
+    text text,
+    action text
+);
+COMMENT ON COLUMN message.action IS 'URL to be executed (remember that this is not safe against man in the middle when not encrypted)';
+CREATE SEQUENCE message_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+ALTER SEQUENCE message_id_seq OWNED BY message.id;
 CREATE TABLE project (
     id integer NOT NULL,
     title text NOT NULL,
@@ -114,6 +135,19 @@ CREATE TABLE relation (
 )
 INHERITS (concept);
 COMMENT ON COLUMN relation.isreciprocal IS 'Is the converse of the relationship valid?';
+CREATE TABLE sessions (
+    id integer NOT NULL,
+    session_id character(26),
+    data text DEFAULT ''::text,
+    last_accessed timestamp without time zone
+);
+CREATE SEQUENCE sessions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+ALTER SEQUENCE sessions_id_seq OWNED BY sessions.id;
 CREATE TABLE settings (
     key text NOT NULL,
     value text
@@ -195,7 +229,9 @@ CREATE SEQUENCE user_id_seq
     CACHE 1;
 ALTER SEQUENCE user_id_seq OWNED BY "user".id;
 ALTER TABLE concept ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE message ALTER COLUMN id SET DEFAULT nextval('message_id_seq'::regclass);
 ALTER TABLE project ALTER COLUMN id SET DEFAULT nextval('project_id_seq'::regclass);
+ALTER TABLE sessions ALTER COLUMN id SET DEFAULT nextval('sessions_id_seq'::regclass);
 ALTER TABLE stack ALTER COLUMN id SET DEFAULT nextval('stack_id_seq'::regclass);
 ALTER TABLE textlabel ALTER COLUMN id SET DEFAULT nextval('textlabel_id_seq'::regclass);
 ALTER TABLE "user" ALTER COLUMN id SET DEFAULT nextval('user_id_seq'::regclass);
@@ -231,6 +267,8 @@ ALTER TABLE ONLY location
     ADD CONSTRAINT location_id_key UNIQUE (id);
 ALTER TABLE ONLY location
     ADD CONSTRAINT location_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY message
+    ADD CONSTRAINT message_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY project
     ADD CONSTRAINT project_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY project_stack
@@ -245,6 +283,8 @@ ALTER TABLE ONLY relation_instance
     ADD CONSTRAINT relation_instance_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY relation
     ADD CONSTRAINT relation_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY sessions
+    ADD CONSTRAINT sessions_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY settings
     ADD CONSTRAINT settings_pkey PRIMARY KEY (key);
 ALTER TABLE ONLY stack
@@ -364,6 +404,8 @@ ALTER TABLE ONLY connector_class_instance
     ADD CONSTRAINT connector_class_instance_relation_id_fkey FOREIGN KEY (relation_id) REFERENCES relation(id);
 ALTER TABLE ONLY connector_class_instance
     ADD CONSTRAINT connector_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+ALTER TABLE ONLY message
+    ADD CONSTRAINT message_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
 ALTER TABLE ONLY project_stack
     ADD CONSTRAINT project_stack_project_id_fkey FOREIGN KEY (project_id) REFERENCES project(id);
 ALTER TABLE ONLY project_stack

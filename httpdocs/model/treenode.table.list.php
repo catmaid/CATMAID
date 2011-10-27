@@ -49,6 +49,7 @@ $columnToFieldArray = array( "tid",
 function fnColumnToField( $i )
 {
 	global $columnToFieldArray;
+	// FIXME: perhaps should just be an error?
 	if ( $i < 0 || $i >= count($columnToFieldArray) )
 		return "tid";
 	else
@@ -214,6 +215,9 @@ try {
 	}
 
 	$iTotal = count($t);
+
+	// FIXME: there's no need to do another query to find all the parents, so
+	// long as we don't limit the treenodes fetched.
 
 	// count treenode parents to derive
 	// treenode type

@@ -34,16 +34,26 @@ SELECT cit.id, cis.id
     c.execute(query)
     rows = c.fetchall()
     for terminal_id, skeleton_id in rows:
-        c.execute('''
-INSERT INTO class_instance_class_instance
-    (user_id, project_id, relation_id, class_instance_a, class_instance_b)
-    VALUES (%(u)s, %(p)s, %(r)s, %(ca)s, %(cb)s)
-''',
-                  {'u': user_id,
-                   'p': project_id,
-                   'r': part_of_id,
-                   'ca': terminal_id,
-                   'cb': skeleton_id})
+        new_values = {'u': user_id,
+                      'p': project_id,
+                      'r': part_of_id,
+                      'ca': terminal_id,
+                      'cb': skeleton_id}
+        # Check whether that link is already present:
+        c.execute('''SELECT id
+                         FROM class_instance_class_instance
+                         WHERE class_instance_a = %(ca)s AND
+                               class_instance_b = %(cb)s AND
+                               project_id = %(p)s AND
+                               relation_id = %(r)s''',
+                  new_values)
+        if len(c.fetchall()) < 1:
+            c.execute('''INSERT INTO class_instance_class_instance
+                             (user_id, project_id, relation_id, class_instance_a, class_instance_b)
+                             VALUES (%(u)s, %(p)s, %(r)s, %(ca)s, %(cb)s)''',
+                      new_values)
+        else:
+            print >> sys.stderr, "The part_of relation between terminal {0} and skeleton {1} already exists".format(terminal_id, skeleton_id)
 
 db_connection.commit()
 c.close()

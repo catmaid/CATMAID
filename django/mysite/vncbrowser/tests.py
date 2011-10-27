@@ -6,9 +6,10 @@ import sys
 import re
 import urllib
 import json
+import datetime
 
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
-from models import ClassInstance
+from models import ClassInstance, Session
 from models import Treenode, Connector
 
 print os.getcwd()
@@ -113,19 +114,19 @@ class RelationQueryTests(TestCase):
         self.assertTrue(upstream)
 
         downstreams = list(upstream.all_neurons_downstream(self.test_project_id))
-        self.assertEqual(len(downstreams), 3)
+        self.assertEqual(len(downstreams), 2)
 
-        downstreams.sort(key=lambda x: x.name)
-        self.assertEqual(downstreams[0].name, "downstream-A")
-        self.assertEqual(downstreams[1].name, "downstream-A")
-        self.assertEqual(downstreams[2].name, "downstream-B")
+        self.assertEqual(downstreams[0]['name'], "downstream-A")
+        self.assertEqual(downstreams[0]['id__count'], 2)
+        self.assertEqual(downstreams[1]['name'], "downstream-B")
+        self.assertEqual(downstreams[1]['id__count'], 1)
 
     def test_find_upstream_neurons(self):
         downstream = ClassInstance.objects.get(name='downstream-A')
         self.assertTrue(downstream)
 
         upstreams = list(downstream.all_neurons_upstream(self.test_project_id))
-        self.assertEqual(upstreams[0].name, "branched neuron")
+        self.assertEqual(upstreams[0]['name'], "branched neuron")
 
 swc_output_for_skeleton_235 = '''237 0 1065 3035 0 0 -1
 417 0 4990 4200 0 0 415
@@ -170,6 +171,16 @@ class ViewPageTests(TestCase):
         self.test_project_id = 3
         self.client = Client()
 
+    def fake_authentication(self):
+        session = Session()
+        session.session_id = 'f9v85q77vuvamsr0tlnv5inkk5'
+        session.data = 'id|s:1:"3";key|s:54:"7gtmcy8g03457xg3hmuxdgregtyu45ty57ycturemuzm934etmvo56";'
+        session.last_accessed = datetime.datetime.now()
+        session.save()
+        # And insert the corresponding cookie:
+        self.client.cookies['PHPSESSID'] = 'f9v85q77vuvamsr0tlnv5inkk5'
+        self.client.cookies['PHPSESSID']['path'] = '/'
+
     def compare_swc_data(self, s1, s2):
         m1 = swc_string_to_sorted_matrix(s1)
         m2 = swc_string_to_sorted_matrix(s2)
@@ -186,13 +197,24 @@ class ViewPageTests(TestCase):
                 self.assertAlmostEqual(float(e1[d[f]]),
                                   float(e2[d[f]]))
 
+    def test_authentication(self):
+        response = self.client.get('/%d' % (self.test_project_id,))
+        self.assertEqual('http://testserver/login?return_url=%2F3', response['Location'])
+        self.assertEqual(response.status_code, 302)
+        # Now insert a fake session:
+        self.fake_authentication()
+        response = self.client.get('/%d' % (self.test_project_id,))
+        self.assertEqual(response.status_code, 200)
+
     def test_swc_file(self):
+        self.fake_authentication()
         response = self.client.get('/%d/skeleton/235/swc' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
 
         self.compare_swc_data(response.content, swc_output_for_skeleton_235)
 
     def test_view_neuron(self):
+        self.fake_authentication()
         neuron_name = 'branched neuron'
         neuron = ClassInstance.objects.get(name=neuron_name)
         self.assertTrue(neuron)
@@ -207,6 +229,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_skeletons_from_neuron(self):
+        self.fake_authentication()
         url = '/%d/neuron-to-skeletons/%d' % (self.test_project_id,
                                               233)
         response = self.client.get(url)

@@ -233,6 +233,7 @@ def visual_index(request, **kwargs):
                                   'sorted_neurons_page' : neurons,
                                   'project_id': kwargs['project_id'],
                                   'catmaid_url': settings.CATMAID_URL,
+                                  'user': kwargs['logged_in_user'],
                                   'search_form': search_form })
 
 @catmaid_login_required

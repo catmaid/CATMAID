@@ -259,4 +259,4 @@ class TreenodeTests(TestCase):
 
         connectors = Connector.objects.filter(
             treenodeconnector__treenode__treenodeclassinstance__class_instance=skeleton)
-        self.assertEqual(len(connectors), 2)
+        self.assertEqual(len(connectors), 3)

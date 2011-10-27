@@ -87,31 +87,25 @@ def catmaid_login_required(f):
 
     def decorated(request, *args, **kwargs):
         if 'PHPSESSID' not in request.COOKIES:
-            print >> sys.stderr, "PHPSESSID cookie not found"
             return need_to_login(request.get_full_path())
         phpsessid = request.COOKIES['PHPSESSID']
         try:
             s = Session.objects.get(session_id=phpsessid)
         except Session.DoesNotExist:
-            print >> sys.stderr, "Couldn't find the PHPSESSID in the session table"
             return need_to_login(request.get_full_path())
         parsed_session_data = parse_php_session_data(s.data)
         if 'id' not in parsed_session_data:
-            print >> sys.stderr, "Couldn't find the 'id' key in the parsed PHP session data"
             return need_to_login(request.get_full_path())
         user_id = parsed_session_data['id']
         try:
            u = User.objects.get(pk=int(user_id, 10))
         except User.DoesNotExist:
-            print >> sys.stderr, "There was no user with id '%s'" % (user_id,)
-            return need_to_login
+            return need_to_login(request.get_full_path())
         except ValueError:
-            print >> sys.stderr, "There was a strange value in the 'id' field: '%s'" % (user_id,)
+            raise Exception, "There was a strange value in the 'id' field: '%s'" % (user_id,)
         if 'key' not in parsed_session_data:
-            print >> sys.stderr, "Couldn't find the 'key' key in the parsed PHP session data"
             return need_to_login(request.get_full_path())
         if parsed_session_data['key'] != '7gtmcy8g03457xg3hmuxdgregtyu45ty57ycturemuzm934etmvo56':
-            print >> sys.stderr, "The date associated with 'key' didn't match the known value"
             return need_to_login(request.get_full_path())
         kwargs['logged_in_user'] = u
         return f(request, *args, **kwargs)

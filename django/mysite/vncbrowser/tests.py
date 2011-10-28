@@ -228,6 +228,17 @@ class ViewPageTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
+    def test_line(self):
+        # FIXME: write a test for the line view
+        self.assertTrue(False)
+
+    def test_login(self):
+        self.fake_authentication()
+        response = self.client.get('/login')
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get('/login?return_url=%2F3')
+        self.assertEqual(response.status_code, 200)
+
     def test_skeletons_from_neuron(self):
         self.fake_authentication()
         url = '/%d/neuron-to-skeletons/%d' % (self.test_project_id,
@@ -238,6 +249,22 @@ class ViewPageTests(TestCase):
         parsed_data = json.loads(response.content)
         self.assertEqual(len(parsed_data), 1)
         self.assertEqual(parsed_data[0], 235)
+
+    def test_index(self):
+        self.fake_authentication()
+        url = '/%d' % (self.test_project_id,)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        for order in ('cellbody', 'cellbodyr', 'name', 'namer', 'gal4', 'gal4r'):
+            url = '/%d/sorted/%s' % (self.test_project_id, order)
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200)
+
+    def test_visual_index(self):
+        self.fake_authentication()
+        url = '/%d/visual_index' % (self.test_project_id,)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
 
 class TreenodeTests(TestCase):
 

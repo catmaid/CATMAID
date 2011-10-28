@@ -107,7 +107,7 @@ class RelationQueryTests(TestCase):
     def test_find_all_neurons(self):
         all_neurons = ClassInstance.objects.filter(class_column__class_name='neuron',
                                                    project=self.test_project_id)
-        self.assertEqual(all_neurons.count(), 4)
+        self.assertEqual(all_neurons.count(), 5)
 
     def test_find_downstream_neurons(self):
         upstream = ClassInstance.objects.get(name='branched neuron')
@@ -131,8 +131,7 @@ class RelationQueryTests(TestCase):
 swc_output_for_skeleton_235 = '''237 0 1065 3035 0 0 -1
 417 0 4990 4200 0 0 415
 415 0 5810 3950 0 0 289
-289 0 6210 3480 0 0 287
-287 0 6315 3270 0 0 285
+289 0 6210 3480 0 0 285
 285 0 6100 2980 0 0 283
 283 0 5985 2745 0 0 281
 281 0 5675 2635 0 0 279
@@ -286,7 +285,7 @@ class TreenodeTests(TestCase):
         tns = Treenode.objects.filter(
             treenodeclassinstance__class_instance=skeleton).order_by('id')
 
-        self.assertEqual(len(tns), 29)
+        self.assertEqual(len(tns), 28)
 
         self.assertEqual(tns[0].id, 237)
 

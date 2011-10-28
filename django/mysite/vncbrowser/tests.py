@@ -228,8 +228,15 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_line(self):
-        # FIXME: write a test for the line view
-        self.assertTrue(False)
+        self.fake_authentication()
+        line = ClassInstance.objects.get(
+            name='c005',
+            class_column__class_name='driver_line')
+        self.assertTrue(line)
+        url = '/%d/line/%d' % (self.test_project_id,
+                               line.id,)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
 
     def test_login(self):
         self.fake_authentication()

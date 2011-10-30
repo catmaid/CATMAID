@@ -20,6 +20,7 @@ urlpatterns = patterns(
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'vncbrowser.views.skeleton_swc'),
     (r'^(?P<project_id>\d+)/neuron-to-skeletons/(?P<neuron_id>\d+)$', 'vncbrowser.views.neuron_to_skeletons'),
     (r'^login$', 'vncbrowser.views.login'),
+    (r'^projects$', 'vncbrowser.views.projects'),
     )
 
 if settings.DEBUG:

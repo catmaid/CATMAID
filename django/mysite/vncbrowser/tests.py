@@ -240,6 +240,46 @@ class ViewPageTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
+    def test_project_list(self):
+        # Check that, pre-authentication, we can see two of the
+        # projects:
+        response = self.client.get('/projects')
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.content)
+        self.assertEqual(len(result.keys()), 2)
+
+        # Check the first project:
+        stacks = result['1']['action']
+        self.assertEqual(len(stacks), 1)
+
+        # Check the second project:
+        stacks = result['3']['action']
+        self.assertEqual(len(stacks), 1)
+        stack = stacks['3']
+        self.assertTrue(re.search(r'javascript:openProjectStack\( *3, *3 *\)', stack['action']))
+
+        # Now log in and check that we see a different set of projects:
+        self.client = Client()
+        self.fake_authentication()
+        response = self.client.get('/projects')
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.content)
+        self.assertEqual(len(result.keys()), 3)
+
+        # Check the first project:
+        stacks = result['1']['action']
+        self.assertEqual(len(stacks), 1)
+
+        # Check the second project:
+        stacks = result['3']['action']
+        self.assertEqual(len(stacks), 1)
+        stack = stacks['3']
+        self.assertTrue(re.search(r'javascript:openProjectStack\( *3, *3 *\)', stack['action']))
+
+        # Check the third project:
+        stacks = result['5']['action']
+        self.assertEqual(len(stacks), 2)
+
     def test_login(self):
         self.fake_authentication()
         response = self.client.get('/login')

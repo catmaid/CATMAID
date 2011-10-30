@@ -16,7 +16,6 @@ from django.core.paginator import Paginator
 from django.conf import settings
 import urllib
 
-
 # Tip from: http://lincolnloop.com/blog/2008/may/10/getting-requestcontext-your-templates/
 # Required because we need a RequestContext, not just a Context - the
 # former looks at TEMPLATE_CONTEXT_PROCESSORS, while the latter doesn't.

@@ -8,6 +8,8 @@ import urllib
 import json
 import datetime
 
+from lxml import etree
+
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, Session
 from models import Treenode, Connector

@@ -2,7 +2,8 @@
 
 Make sure that you have the following packages installed:
 
-  sudo apt-get install python-virtualenv libpq-dev python-dev
+  sudo apt-get install python-virtualenv libpq-dev python-dev \
+    libxml2-dev libxslt1-dev
 
 You first need to create a Python virtualenv.  In this directory, run:
 

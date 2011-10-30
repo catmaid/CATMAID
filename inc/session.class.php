@@ -44,9 +44,7 @@ function sess_write($sess_id, $data) {
     $escaped_session_id = pg_escape_string($sess_id);
     $escaped_data = pg_escape_string($data);
     $current_time = date('Y-m-d H:i:s');
-    error_log('going to run UPDATE');
     $db->getResult("UPDATE sessions SET data = '$escaped_data', last_accessed = TIMESTAMP '$current_time' WHERE session_id = '$escaped_session_id'");
-    error_log('after running UPDATE');
     return true;
 }
 

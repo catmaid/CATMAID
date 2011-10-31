@@ -1,8 +1,10 @@
 from collections import defaultdict
+from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from vncbrowser.models import SORT_ORDERS_DICT, NeuronSearch, CELL_BODY_CHOICES, \
     ClassInstance, ClassInstanceClassInstance
+import json
 
 # Tip from: http://lincolnloop.com/blog/2008/may/10/getting-requestcontext-your-templates/
 # Required because we need a RequestContext, not just a Context - the
@@ -11,6 +13,13 @@ from vncbrowser.models import SORT_ORDERS_DICT, NeuronSearch, CELL_BODY_CHOICES,
 def my_render_to_response(req, *args, **kwargs):
     kwargs['context_instance'] = RequestContext(req)
     return render_to_response(*args, **kwargs)
+
+# When an operation fails we should return a JSON dictionary
+# with the key 'error' set to an error message.  This is a
+# helper method to return such a structure:
+def json_error_response(message):
+    return HttpResponse(json.dumps({'error': message}),
+                        mimetype='text/json')
 
 def order_neurons( neurons, order_by = None ):
     column, reverse = 'name', False

@@ -24,6 +24,7 @@ urlpatterns = patterns(
     (r'^(?P<project_id>\d+)/labels-all$', 'vncbrowser.views.labels_all'),
     (r'^(?P<project_id>\d+)/labels-for-nodes$', 'vncbrowser.views.labels_for_nodes'),
     (r'^(?P<project_id>\d+)/labels-for-node/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'vncbrowser.views.labels_for_node'),
+    (r'^(?P<project_id>\d+)/label-update/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'vncbrowser.views.label_update'),
     )
 
 if settings.DEBUG:

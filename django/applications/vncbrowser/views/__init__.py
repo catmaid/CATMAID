@@ -4,6 +4,7 @@ from common import get_form_and_neurons
 from authentication import login
 from authentication import catmaid_login_optional
 from authentication import catmaid_login_required
+from authentication import catmaid_can_edit_project
 
 from views import visual_index
 from views import index
@@ -19,3 +20,4 @@ from catmaid_replacements import projects
 from catmaid_replacements import labels_all
 from catmaid_replacements import labels_for_node
 from catmaid_replacements import labels_for_nodes
+from catmaid_replacements import label_update

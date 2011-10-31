@@ -214,7 +214,7 @@ class ViewPageTests(TestCase):
 
         self.compare_swc_data(response.content, swc_output_for_skeleton_235)
 
-    def test_label_list(self):
+    def test_labels(self):
         self.fake_authentication()
         response = self.client.get('/%d/labels-all' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
@@ -293,6 +293,19 @@ class ViewPageTests(TestCase):
         returned_labels = json.loads(response.content)
         self.assertEqual(len(returned_labels), 1)
         self.assertEqual(returned_labels[0], "uncertain end")
+
+        response = self.client.post('/%d/label-update/treenode/%d' % (self.test_project_id,
+                                                                      403),
+                                    {'tags': json.dumps(['foo', 'bar'])})
+        parsed_response = json.loads(response.content)
+        self.assertTrue('message' in parsed_response)
+        self.assertTrue(parsed_response['message'] == 'success')
+
+        response = self.client.post('/%d/labels-for-node/treenode/%d' % (self.test_project_id,
+                                                                    403))
+        returned_labels = json.loads(response.content)
+        self.assertEqual(len(returned_labels), 2)
+        self.assertEqual(set(returned_labels), set(['foo', 'bar']))
 
     def test_view_neuron(self):
         self.fake_authentication()

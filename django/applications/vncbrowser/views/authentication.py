@@ -4,7 +4,8 @@ from vncbrowser.views import my_render_to_response
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
-from vncbrowser.models import Session, User
+from vncbrowser.models import Project, Session, User
+from vncbrowser.views.common import json_error_response
 
 def login(request):
     return my_render_to_response(request,
@@ -95,3 +96,20 @@ def catmaid_login_optional(f):
         return f(request, *args, **kwargs)
 
     return decorated_with_catmaid_login_optional
+
+# This decorator will return a JSON error response unless the user
+# is logged in and allowed to edit the project:
+def catmaid_can_edit_project(f):
+
+    def decorated_with_catmaid_can_edit_project(request, *args, **kwargs):
+        u = valid_catmaid_login(request)
+        if not u:
+            return json_error_response(request.get_full_path()+" is not accessible unless you are logged in")
+        p = Project(pk=kwargs['project_id'])
+        if u in p.users.all():
+            kwargs['logged_in_user'] = u
+            return f(request, *args, **kwargs)
+        else:
+            return json_error_response("The user '%s' may not edit project %d" % (u.longname, kwargs['project_id']))
+
+    return decorated_with_catmaid_can_edit_project

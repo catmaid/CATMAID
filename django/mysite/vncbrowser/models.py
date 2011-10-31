@@ -421,7 +421,7 @@ class ConnectorClassInstance(models.Model):
     project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
     # Now new columns:
-    connector = models.ForeignKey(Treenode)
+    connector = models.ForeignKey(Connector)
     class_instance = models.ForeignKey(ClassInstance)
 
 class TreenodeConnector(models.Model):

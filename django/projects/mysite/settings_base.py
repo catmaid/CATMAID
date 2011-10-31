@@ -43,7 +43,7 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
-    'mysite.vncbrowser',
+    'vncbrowser',
     'django.contrib.admin',
 )
 

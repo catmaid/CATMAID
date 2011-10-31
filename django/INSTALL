@@ -26,8 +26,9 @@ databases.  You can do that with:
    ALTER ROLE
 
 ... and you should also add this line at the top of
+/etc/postgresql/8.4/main/pg_hba.conf
 
-    /etc/postgresql/8.4/main/pg_hba.conf local test_catmaid catmaid_user md5
+    local test_catmaid catmaid_user md5
 
 ... and then restart PostgreSQL:
 
@@ -67,7 +68,7 @@ file and set up the appropriate aliases.  An example is given here:
 
     Alias /catmaid/dj-static/ /home/mark/catmaid-local-instance/django/static/
 
-    Alias /catmaid/dj /home/mark/catmaid-local-instance/django/mysite/django.wsgi
+    Alias /catmaid/dj /home/mark/catmaid-local-instance/django/projects/mysite/django.wsgi
     <Location /catmaid/dj>
             SetHandler wsgi-script
             Options +ExecCGI

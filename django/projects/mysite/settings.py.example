@@ -1,4 +1,8 @@
+# If you don't have settings.py in this directory, you should copy
+# this file to settings.py and customize it.
+
 from settings_base import *
+import sys, os
 
 DATABASES = {
     'default': {
@@ -12,13 +16,18 @@ DATABASES = {
 }
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = 'reola!-865!v@95cq*#8c@c^#h#bw_u6&89!33y6^_3&!kqcva'
+# (You can generate a key with:
+# >>> from random import choice
+# >>> ''.join([choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)])
+# '@er^vm3$w#9n$)z3avny*hh+l^#ezv+sx*(72qwp0c%%cg1$i+'
+# ... which is how "django-admin startproject" does it.)
+SECRET_KEY = ''
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    '/home/mark/catmaid-local-instance/django/templates'
+    '/home/mark/neuron-catalogue/templates'
 )
 
 DEBUG = True
@@ -37,6 +46,11 @@ LANGUAGE_CODE = 'en-gb'
 
 SITE_ID = 1
 
-CATMAID_URL = '/catmaid/'
-STATICFILES_URL = '/catmaid/dj-static/'
-STATICFILES_LOCAL = '/home/mark/catmaid-local-instance/django/static/'
+CATMAID_URL = '/'
+STATICFILES_URL = '/static/'
+STATICFILES_LOCAL = '/home/mark/neuron-catalogue/static/'
+
+PROJECT_ROOT = os.path.realpath(os.path.join(
+        os.path.dirname(__file__), '..', '..'))
+for subdirectory in ('projects', 'applications', 'lib'):
+    sys.path.insert(0, os.path.join(PROJECT_ROOT, subdirectory))

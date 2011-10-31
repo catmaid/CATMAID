@@ -3,13 +3,13 @@ import json
 import re
 from models import NeuronSearch, ClassInstance, Project, User, Treenode
 from models import ClassInstanceClassInstance, Relation, Class, Session
-from models import Stack
+from models import Stack, TreenodeClassInstance, ConnectorClassInstance
 from models import CELL_BODY_CHOICES, SORT_ORDERS_DICT
 from collections import defaultdict
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.db import connection, transaction
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.core.urlresolvers import reverse
 from django.views.generic import DetailView
 from django.core.paginator import Paginator
@@ -473,3 +473,54 @@ def projects(request, logged_in_user=None):
             'note': '[ editable ]' if editable else '',
             'action': stacks_dict}
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")
+
+@catmaid_login_required
+def labels_all(request, project_id=None, logged_in_user=None):
+    qs = ClassInstance.objects.filter(
+        class_column__class_name='label',
+        project=project_id)
+    return HttpResponse(json.dumps(list(x.name for x in qs)), mimetype="text/plain")
+
+@catmaid_login_required
+def labels_for_node(request, project_id=None, ntype=None, location_id=None, logged_in_user=None):
+    if ntype == 'treenode':
+        qs = TreenodeClassInstance.objects.filter(
+            relation__relation_name='labeled_as',
+            class_instance__class_column__class_name='label',
+            treenode=location_id,
+            project=project_id).select_related('class_instance')
+    elif ntype == 'location' or ntype == 'connector':
+        qs = ConnectorClassInstance.objects.filter(
+            relation__relation_name='labeled_as',
+            class_instance__class_column__class_name='label',
+            connector=location_id,
+            project=project_id).select_related('class_instance')
+    else:
+        raise Http404('Unknown node type: "%s"' % (ntype,))
+    return HttpResponse(json.dumps(list(x.class_instance.name for x in qs)), mimetype="text/plain")
+
+@catmaid_login_required
+def labels_for_nodes(request, project_id=None, logged_in_user=None):
+    nodes = [int(x, 10) for x in json.loads(request.POST['nods']).keys()]
+
+    qs_treenodes = TreenodeClassInstance.objects.filter(
+        relation__relation_name='labeled_as',
+        class_instance__class_column__class_name='label',
+        treenode__id__in=nodes,
+        project=project_id).select_related('treenode', 'class_instance')
+
+    qs_connectors = ConnectorClassInstance.objects.filter(
+        relation__relation_name='labeled_as',
+        class_instance__class_column__class_name='label',
+        connector__id__in=nodes,
+        project=project_id).select_related('connector', 'class_instance')
+
+    result = defaultdict(list)
+
+    for tci in qs_treenodes:
+        result[tci.treenode.id].append(tci.class_instance.name)
+
+    for cci in qs_connectors:
+        result[cci.connector.id].append(cci.class_instance.name)
+
+    return HttpResponse(json.dumps(result), mimetype="text/plain")

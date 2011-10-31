@@ -214,6 +214,86 @@ class ViewPageTests(TestCase):
 
         self.compare_swc_data(response.content, swc_output_for_skeleton_235)
 
+    def test_label_list(self):
+        self.fake_authentication()
+        response = self.client.get('/%d/labels-all' % (self.test_project_id,))
+        self.assertEqual(response.status_code, 200)
+        returned_labels = json.loads(response.content)
+        self.assertEqual(set(returned_labels),
+                         set(["t",
+                              "synapse with more targets",
+                              "uncertain end",
+                              "TODO"]))
+        nods = {"7":"7",
+                "237":"237",
+                "367":"367",
+                "377":"377",
+                "417":"417",
+                "409":"409",
+                "407":"407",
+                "399":"399",
+                "397":"397",
+                "395":"395",
+                "393":"393",
+                "387":"387",
+                "385":"385",
+                "403":"403",
+                "405":"405",
+                "383":"383",
+                "391":"391",
+                "415":"415",
+                "289":"289",
+                "285":"285",
+                "283":"283",
+                "281":"281",
+                "277":"277",
+                "275":"275",
+                "273":"273",
+                "271":"271",
+                "279":"279",
+                "267":"267",
+                "269":"269",
+                "265":"265",
+                "261":"261",
+                "259":"259",
+                "257":"257",
+                "255":"255",
+                "263":"263",
+                "253":"253",
+                "251":"251",
+                "249":"249",
+                "247":"247",
+                "245":"245",
+                "243":"243",
+                "241":"241",
+                "239":"239",
+                "356":"356",
+                "421":"421",
+                "432":"432"}
+        response = self.client.post('/%d/labels-for-nodes' % (self.test_project_id,),
+                              {'nods': json.dumps(nods)})
+
+        returned_node_map = json.loads(response.content)
+        self.assertEqual(len(returned_node_map.keys()), 3)
+        self.assertEqual(set(returned_node_map['403']),
+                         set(["uncertain end"]))
+        self.assertEqual(set(returned_node_map['261']),
+                         set(["TODO"]))
+        self.assertEqual(set(returned_node_map['432']),
+                         set(["synapse with more targets", "TODO"]))
+
+        response = self.client.post('/%d/labels-for-node/location/%d' % (self.test_project_id,
+                                                                    432))
+        returned_labels = json.loads(response.content)
+        self.assertEqual(set(returned_labels),
+                         set(["synapse with more targets", "TODO"]))
+
+        response = self.client.post('/%d/labels-for-node/treenode/%d' % (self.test_project_id,
+                                                                    403))
+        returned_labels = json.loads(response.content)
+        self.assertEqual(len(returned_labels), 1)
+        self.assertEqual(returned_labels[0], "uncertain end")
+
     def test_view_neuron(self):
         self.fake_authentication()
         neuron_name = 'branched neuron'

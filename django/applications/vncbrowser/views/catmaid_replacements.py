@@ -3,7 +3,8 @@ from django.db import transaction, connection
 from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import Project, Stack, Class, ClassInstance, \
-    TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode, Connector
+    TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode, \
+    Connector, User
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional, \
     catmaid_login_required
 import json
@@ -163,3 +164,13 @@ def label_update(request, project_id=None, location_id=None, ntype=None, logged_
                 class_instance=tag)
         tci.save()
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+
+@catmaid_login_required
+def user_list(request, logged_in_user=None):
+    result = {}
+    for u in User.objects.all().order_by('longname'):
+        result[str(u.id)] = {
+            "id": u.id,
+            "name": u.name,
+            "longname": u.longname}
+    return HttpResponse(json.dumps(result), mimetype='text/json')

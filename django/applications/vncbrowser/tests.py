@@ -407,6 +407,22 @@ class ViewPageTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
+    def test_user_list(self):
+        self.fake_authentication()
+        response = self.client.get('/user-list')
+        expected_result = {
+            "3": {"id": 3,
+                  "name": "gerhard",
+                  "longname": "Stephan Gerhard"},
+            "1": {"id": 1,
+                  "name": "saalfeld",
+                  "longname": "Stephan Saalfeld"},
+            "2": {"id": 2,
+                  "name": "test",
+                  "longname": "Theo Test"}}
+        parsed_response = json.loads(response.content)
+        self.assertEqual(expected_result, parsed_response)
+
 class TreenodeTests(TestCase):
 
     def setUp(self):

@@ -1,6 +1,7 @@
 from collections import defaultdict
 from django.db import transaction, connection
 from django.http import HttpResponse, Http404
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import Project, Stack, Class, ClassInstance, \
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode, \
@@ -187,3 +188,14 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user
                 'y': tn.location.y,
                 'z': tn.location.z}),
                         mimetype='text/json')
+
+def stats(request, project_id=None):
+    qs = Treenode.objects.filter(project=project_id)
+    qs = qs.values('user__name').annotate(count=Count('user__name'))
+    result = {'users': [],
+              'values': []}
+    for d in qs:
+        result['values'].append(d['count'])
+        user_name = '%s (%d)' % (d['user__name'], d['count'])
+        result['users'].append(user_name)
+    return HttpResponse(json.dumps(result), mimetype='text/json')

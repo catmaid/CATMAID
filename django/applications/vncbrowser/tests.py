@@ -434,6 +434,22 @@ class ViewPageTests(TestCase):
         self.assertAlmostEqual(parsed_response['y'], 3035)
         self.assertAlmostEqual(parsed_response['z'], 0)
 
+    def test_treenode_stats(self):
+        self.fake_authentication()
+        response = self.client.get('/%d/stats' % (self.test_project_id,))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        values = parsed_response['values']
+        users = parsed_response['users']
+        values_and_users = zip(values, users)
+        for t in values_and_users:
+            if t[0] == 6:
+                assertEqual(t[1], 'test (6)')
+            elif t[0] == 71:
+                assertEqual(t[1], 'gerhard (71)')
+            else:
+                raise Exception, "Unexpected value in returned stats: "+str(t)
+
 class TreenodeTests(TestCase):
 
     def setUp(self):

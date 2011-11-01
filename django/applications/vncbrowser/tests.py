@@ -420,6 +420,7 @@ class ViewPageTests(TestCase):
             "2": {"id": 2,
                   "name": "test",
                   "longname": "Theo Test"}}
+        self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         self.assertEqual(expected_result, parsed_response)
 

@@ -174,3 +174,16 @@ def user_list(request, logged_in_user=None):
             "name": u.name,
             "longname": u.longname}
     return HttpResponse(json.dumps(result), mimetype='text/json')
+
+@catmaid_login_required
+def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user=None):
+    tn = Treenode.objects.get(
+        project=project_id,
+        parent__isnull=True,
+        treenodeclassinstance__class_instance__id=skeleton_id)
+    return HttpResponse(json.dumps({
+                'root_id': tn.id,
+                'x': tn.location.x,
+                'y': tn.location.y,
+                'z': tn.location.z}),
+                        mimetype='text/json')

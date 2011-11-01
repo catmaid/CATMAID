@@ -22,3 +22,4 @@ from catmaid_replacements import labels_for_node
 from catmaid_replacements import labels_for_nodes
 from catmaid_replacements import label_update
 from catmaid_replacements import user_list
+from catmaid_replacements import root_for_skeleton

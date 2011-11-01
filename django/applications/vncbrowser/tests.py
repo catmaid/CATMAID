@@ -424,6 +424,16 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         self.assertEqual(expected_result, parsed_response)
 
+    def test_skeleton_root(self):
+        self.fake_authentication()
+        response = self.client.get('/%d/root-for-skeleton/%d' % (self.test_project_id, 235))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(parsed_response['root_id'], 237)
+        self.assertAlmostEqual(parsed_response['x'], 1065)
+        self.assertAlmostEqual(parsed_response['y'], 3035)
+        self.assertAlmostEqual(parsed_response['z'], 0)
+
 class TreenodeTests(TestCase):
 
     def setUp(self):

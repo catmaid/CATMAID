@@ -27,7 +27,7 @@ if ( $pid )
           $name = array();
           foreach($users_treenodes as $key => $ele)
           {
-            $dat[] = $ele['cnt'];
+            $dat[] = intval($ele['cnt']);
             $name[] = $ele['name'].' ('.$ele['cnt'].')';
           }
           echo json_encode( array('values' => $dat, 'users' => $name ) );

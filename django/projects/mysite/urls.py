@@ -28,6 +28,7 @@ urlpatterns = patterns(
     (r'^user-list$', 'vncbrowser.views.user_list'),
     (r'^(?P<project_id>\d+)/root-for-skeleton/(?P<skeleton_id>\d+)$', 'vncbrowser.views.root_for_skeleton'),
     (r'^(?P<project_id>\d+)/stats$', 'vncbrowser.views.stats'),
+    (r'^(?P<project_id>\d+)/node-list$', 'vncbrowser.views.node_list'),
     )
 
 if settings.DEBUG:

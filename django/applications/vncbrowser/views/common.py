@@ -79,8 +79,8 @@ def get_form_and_neurons(request, project_id, kwargs):
         location = cell_body_choices_dict[cell_body_location]
         all_neurons = all_neurons.filter(
             project__id=project_id,
-            class_instances_a__relation__relation_name='has_cell_body',
-            class_instances_a__class_instance_b__name=location)
+            cici_via_a__relation__relation_name='has_cell_body',
+            cici_via_a__class_instance_b__name=location)
 
     cici_qs = ClassInstanceClassInstance.objects.filter(
         project__id=project_id,

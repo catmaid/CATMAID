@@ -67,8 +67,8 @@ def view(request, project_id=None, neuron_id=None, neuron_name=None, logged_in_u
 
     lines = ClassInstance.objects.filter(
         project=p,
-        class_instances_a__class_instance_b=n,
-        class_instances_a__relation__relation_name='expresses_in').all()
+        cici_via_a__class_instance_b=n,
+        cici_via_a__relation__relation_name='expresses_in').all()
 
     outgoing = n.all_neurons_downstream(project_id)
     incoming = n.all_neurons_upstream(project_id)
@@ -78,9 +78,9 @@ def view(request, project_id=None, neuron_id=None, neuron_name=None, logged_in_u
 
     skeletons = ClassInstance.objects.filter(
         project=p,
-        class_instances_a__relation__relation_name='model_of',
+        cici_via_a__relation__relation_name='model_of',
         class_column__class_name='skeleton',
-        class_instances_a__class_instance_b=n)
+        cici_via_a__class_instance_b=n)
 
     return my_render_to_response(request,
                                  'vncbrowser/view.html',
@@ -113,8 +113,8 @@ def line(request, project_id=None, line_id=None, logged_in_user=None):
     p = get_object_or_404(Project, pk=project_id)
     l = get_object_or_404(ClassInstance, pk=line_id, project=p, class_column__class_name='driver_line')
     sorted_neurons = ClassInstance.objects.filter(
-        class_instances_b__relation__relation_name='expresses_in',
-        class_instances_b__class_instance_a=l).order_by('name')
+        cici_via_b__relation__relation_name='expresses_in',
+        cici_via_b__class_instance_a=l).order_by('name')
     return my_render_to_response(request,
                                  'vncbrowser/line.html',
                                  {'line': l,
@@ -209,6 +209,6 @@ def neuron_to_skeletons(request, project_id=None, neuron_id=None, logged_in_user
                                project=p)
     qs = ClassInstance.objects.filter(
         project=p,
-        class_instances_a__relation__relation_name='model_of',
-        class_instances_a__class_instance_b=neuron)
+        cici_via_a__relation__relation_name='model_of',
+        cici_via_a__class_instance_b=neuron)
     return HttpResponse(json.dumps([x.id for x in qs]), mimetype="text/json")

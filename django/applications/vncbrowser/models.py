@@ -178,22 +178,22 @@ class ClassInstance(models.Model):
         synapses = ClassInstance.objects.filter(
             class_column__class_name='synapse',
             project__id=project_id,
-            class_instances_b__relation__relation_name=this_to_syn+'synaptic_to',
-            class_instances_b__class_instance_a__class_column__class_name=this_to_syn+'synaptic terminal',
-            class_instances_b__class_instance_a__class_instances_a__relation__relation_name='part_of',
-            class_instances_b__class_instance_a__class_instances_a__class_instance_b__class_column__class_name='skeleton',
-            class_instances_b__class_instance_a__class_instances_a__class_instance_b__class_instances_a__relation__relation_name='model_of',
-            class_instances_b__class_instance_a__class_instances_a__class_instance_b__class_instances_a__class_instance_b=self.id)
+            cici_via_b__relation__relation_name=this_to_syn+'synaptic_to',
+            cici_via_b__class_instance_a__class_column__class_name=this_to_syn+'synaptic terminal',
+            cici_via_b__class_instance_a__cici_via_a__relation__relation_name='part_of',
+            cici_via_b__class_instance_a__cici_via_a__class_instance_b__class_column__class_name='skeleton',
+            cici_via_b__class_instance_a__cici_via_a__class_instance_b__cici_via_a__relation__relation_name='model_of',
+            cici_via_b__class_instance_a__cici_via_a__class_instance_b__cici_via_a__class_instance_b=self.id)
 
         connected_neurons = ClassInstance.objects.filter(
             class_column__class_name='neuron',
             project__id=project_id,
-            class_instances_b__relation__relation_name='model_of',
-            class_instances_b__class_instance_a__class_column__class_name='skeleton',
-            class_instances_b__class_instance_a__class_instances_b__relation__relation_name='part_of',
-            class_instances_b__class_instance_a__class_instances_b__class_instance_a__class_column__class_name=syn_to_con+'synaptic terminal',
-            class_instances_b__class_instance_a__class_instances_b__class_instance_a__class_instances_a__relation__relation_name=syn_to_con+'synaptic_to',
-            class_instances_b__class_instance_a__class_instances_b__class_instance_a__class_instances_a__class_instance_b__id__in=[s.id for s in list(synapses)])
+            cici_via_b__relation__relation_name='model_of',
+            cici_via_b__class_instance_a__class_column__class_name='skeleton',
+            cici_via_b__class_instance_a__cici_via_b__relation__relation_name='part_of',
+            cici_via_b__class_instance_a__cici_via_b__class_instance_a__class_column__class_name=syn_to_con+'synaptic terminal',
+            cici_via_b__class_instance_a__cici_via_b__class_instance_a__cici_via_a__relation__relation_name=syn_to_con+'synaptic_to',
+            cici_via_b__class_instance_a__cici_via_b__class_instance_a__cici_via_a__class_instance_b__id__in=[s.id for s in list(synapses)])
 
         return connected_neurons.values('id','name').annotate(models.Count('id')).order_by('-id__count')
 
@@ -210,8 +210,8 @@ class ClassInstance(models.Model):
     def cell_body_location(self):
         qs = list(ClassInstance.objects.filter(
                 class_column__class_name='cell_body_location',
-                class_instances_b__relation__relation_name='has_cell_body',
-                class_instances_b__class_instance_a=self))
+                cici_via_b__relation__relation_name='has_cell_body',
+                cici_via_b__class_instance_a=self))
         if len(qs) == 0:
             return 'Unknown'
         elif len(qs) == 1:
@@ -225,8 +225,8 @@ class ClassInstance(models.Model):
             raise Exception, "Incorrect cell body location '%s'" % (new_location,)
         # Just delete the ClassInstance - ON DELETE CASCADE should deal with the rest:
         ClassInstance.objects.filter(
-            class_instances_b__relation__relation_name='has_cell_body',
-            class_instances_b__class_instance_a=self).delete()
+            cici_via_b__relation__relation_name='has_cell_body',
+            cici_via_b__class_instance_a=self).delete()
         if new_location != 'Unknown':
             location = ClassInstance()
             location.name=new_location
@@ -293,10 +293,10 @@ class ClassInstanceClassInstance(models.Model):
     relation = models.ForeignKey(Relation)
     # Now new columns:
     class_instance_a = models.ForeignKey(ClassInstance,
-                                         related_name='class_instances_a',
+                                         related_name='cici_via_a',
                                          db_column='class_instance_a')
     class_instance_b = models.ForeignKey(ClassInstance,
-                                         related_name='class_instances_b',
+                                         related_name='cici_via_b',
                                          db_column='class_instance_b')
 
 class BrokenSlice(models.Model):

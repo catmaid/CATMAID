@@ -464,8 +464,8 @@ class TreenodeTests(TestCase):
                                            class_column__class_name='neuron')
         skeleton = ClassInstance.objects.get(
             class_column__class_name='skeleton',
-            class_instances_a__relation__relation_name='model_of',
-            class_instances_a__class_instance_b=neuron)
+            cici_via_a__relation__relation_name='model_of',
+            cici_via_a__class_instance_b=neuron)
 
         tns = Treenode.objects.filter(
             treenodeclassinstance__class_instance=skeleton).order_by('id')

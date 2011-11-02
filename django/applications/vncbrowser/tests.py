@@ -444,9 +444,9 @@ class ViewPageTests(TestCase):
         values_and_users = zip(values, users)
         for t in values_and_users:
             if t[0] == 6:
-                assertEqual(t[1], 'test (6)')
+                self.assertEqual(t[1], 'test (6)')
             elif t[0] == 71:
-                assertEqual(t[1], 'gerhard (71)')
+                self.assertEqual(t[1], 'gerhard (71)')
             else:
                 raise Exception, "Unexpected value in returned stats: "+str(t)
 

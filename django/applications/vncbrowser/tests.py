@@ -14,8 +14,6 @@ from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, Session
 from models import Treenode, Connector
 
-print os.getcwd()
-
 class SimpleTest(TestCase):
     def test_basic_addition(self):
         """

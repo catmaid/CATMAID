@@ -207,10 +207,11 @@ class ViewPageTests(TestCase):
 
     def test_swc_file(self):
         self.fake_authentication()
-        response = self.client.get('/%d/skeleton/235/swc' % (self.test_project_id,))
-        self.assertEqual(response.status_code, 200)
-
-        self.compare_swc_data(response.content, swc_output_for_skeleton_235)
+        for url in ['/%d/skeleton/235/swc' % (self.test_project_id,),
+                    '/%d/skeleton-for-treenode/245/swc' % (self.test_project_id,)]:
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200)
+            self.compare_swc_data(response.content, swc_output_for_skeleton_235)
 
     def test_labels(self):
         self.fake_authentication()

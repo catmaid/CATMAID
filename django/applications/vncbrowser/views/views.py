@@ -179,7 +179,14 @@ def lines_delete(request, project_id=None, logged_in_user=None):
                                                 'project_id':p.id}))
 
 @catmaid_login_required
-def skeleton_swc(request, project_id=None, skeleton_id=None, logged_in_user=None):
+def skeleton_swc(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None):
+    if treenode_id and not skeleton_id:
+        ci = ClassInstance.objects.get(
+            project=project_id,
+            class_column__class_name='skeleton',
+            treenodeclassinstance__relation__relation_name='element_of',
+            treenodeclassinstance__treenode__id=treenode_id)
+        skeleton_id = ci.id
     qs = Treenode.objects.filter(
         treenodeclassinstance__class_instance__id=skeleton_id,
         treenodeclassinstance__relation__relation_name='element_of',

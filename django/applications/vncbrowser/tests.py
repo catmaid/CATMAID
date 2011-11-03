@@ -448,6 +448,22 @@ class ViewPageTests(TestCase):
             else:
                 raise Exception, "Unexpected value in returned stats: "+str(t)
 
+    def test_stats_summary(self):
+        self.fake_authentication()
+        response = self.client.get('/%d/stats-summary' % (self.test_project_id,))
+        self.assertEqual(response.status_code, 200)
+        expected_result = {u"proj_users" : 2,
+                           u"proj_neurons": 5,
+                           u"proj_synapses": 3,
+                           u"proj_treenodes": 77,
+                           u"proj_skeletons" : 5,
+                           u"proj_presyn" : 3,
+                           u"proj_postsyn" : 3,
+                           u"proj_textlabels": 0,
+                           u"proj_tags" : 4}
+        parsed_response = json.loads(response.content)
+        self.assertEqual(expected_result, parsed_response)
+
     def test_node_list(self):
         self.fake_authentication()
         expected_result = [{"id":"367","parentid":None,"x":"7030","y":"1980","z":"0","confidence":"5","user_id":"3","radius":"-1","z_diff":"0","skeleton_id":"361","type":"treenode"},

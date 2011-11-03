@@ -24,4 +24,5 @@ from catmaid_replacements import label_update
 from catmaid_replacements import user_list
 from catmaid_replacements import root_for_skeleton
 from catmaid_replacements import stats
+from catmaid_replacements import stats_summary
 from catmaid_replacements import node_list

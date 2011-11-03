@@ -189,7 +189,8 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user
                 'z': tn.location.z}),
                         mimetype='text/json')
 
-def stats(request, project_id=None):
+@catmaid_login_required
+def stats(request, project_id=None, logged_in_user=None):
     qs = Treenode.objects.filter(project=project_id)
     qs = qs.values('user__name').annotate(count=Count('user__name'))
     result = {'users': [],

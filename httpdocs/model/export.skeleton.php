@@ -45,14 +45,14 @@ try {
   $skelid = isset( $_REQUEST[ 'skeletonid' ] ) ? intval( $_REQUEST[ 'skeletonid' ] ) : 0;
   if( ! $skelid ) {
       if( ! $tnid ) {
-          emitErrorAndExit('export.skeleton.php requires either a treenode ID or a skeleton ID');
+          emitErrorAndExit( $db, 'export.skeleton.php requires either a treenode ID or a skeleton ID');
       }
       // retrieve skeleton for treenode
       $res = $db->getClassInstanceForTreenode( $pid, $tnid, "element_of");
 
       if(!empty($res)) {$skelid = $res[0]['class_instance_id']; }
       else {
-          emitErrorAndExit('There seems not to exist a skeleton for treenode id ');
+          emitErrorAndExit( $db, 'There seems not to exist a skeleton for treenode id ');
       }
   }
   // SWC columns are

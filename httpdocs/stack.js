@@ -43,7 +43,7 @@ function Stack(
 	 */
 	var updateScaleBar = function()
 	{
-		var meter = self.scale / resolution[ 0 ];
+		var meter = self.scale / resolution.x;
 		var width = 0;
 		var text = "";
 		for ( var i = 0; i < Stack.SCALE_BAR_SIZES.length; ++i )

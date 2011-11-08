@@ -213,7 +213,7 @@ var SVGOverlay = function (
     }
 
     var e = $("<div class='tagBox' id='tagBoxId" + atn.id + "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: " + atn.x + "px; top: " + atn.y + "px;'>" +
-    "Tag: <input id='Tags" + atn.id + "' name='Tags' type='text' value='' />" );
+    "Tag: <input id='Tags" + atn.id + "' name='Tags' type='text' value='' /><div style='color:#949494'>(Confirm Tag: Enter, Save&Close: TAB)</div>" );
     e.css('background-color', 'white');
     e.css('position', 'absolute');
     e.appendTo("#sliceSVGOverlayId");

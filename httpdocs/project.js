@@ -172,7 +172,7 @@ var stringToKeyAction = {
     }
   },
   "7": {
-    helpText: "Toggle the display of labels",
+    helpText: "Toggle the display of tags",
     buttonID: 'trace_button_togglelabels',
     run: function (e) {
       project.tracingCommand('togglelabels');

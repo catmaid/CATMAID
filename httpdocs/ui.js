@@ -418,6 +418,26 @@ UI.getFrameWidth = function()
 	catch ( exception ) { return 0; }
 }
 
+UI.getRealPagePosition = function (e) {
+	// This function is taken from:
+	//    http://www.quirksmode.org/js/events_properties.html#position
+	var posx = 0;
+	var posy = 0;
+	if (!e)
+		var e = window.event;
+	if (e.pageX || e.pageY) {
+		posx = e.pageX;
+		posy = e.pageY;
+	} else if (e.clientX || e.clientY) {
+		posx = e.clientX + document.body.scrollLeft
+			+ document.documentElement.scrollLeft;
+		posy = e.clientY + document.body.scrollTop
+			+ document.documentElement.scrollTop;
+	}
+	// posx and posy contain the mouse position relative to the document
+	return {'x': posx, 'y': posy};
+}
+
 UI.getTargetElement = function (e) {
 	var target;
 	// This logic is from:

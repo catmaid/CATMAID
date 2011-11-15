@@ -739,19 +739,19 @@ function createViewerFromCATMAID(divID) {
 }
 
 function addTo3DView() {
-  var atn = SkeletonAnnotations.getActiveNode();
-  if (!atn) {
+  var atn_id = SkeletonAnnotations.getActiveNodeId();
+  if (!atn_id) {
     alert("You must have an active node selected to add its skeleton to the 3D View.");
     return;
   }
-  if (atn.type != "treenode") {
+  if (SkeletonAnnotations.getActiveNodeType() != "treenode") {
     alert("You can only add skeletons to the 3D View at the moment - please select a node of a skeleton.");
     return;
   }
 
   requestQueue.register('model/treenode.info.php', 'POST', {
     pid: project.id,
-    tnid: atn.id
+    tnid: atn_id
   }, function (status, text, xml) {
     if (status == 200) {
       var e = eval("(" + text + ")");

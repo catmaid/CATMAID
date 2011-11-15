@@ -624,7 +624,7 @@ function Project( pid )
 	this.handleKeyPress = function( e ) {
 		var keyAction = keyCodeToAction[e.keyCode];
 		if (keyAction) {
-			keyAction.run(e || event);
+			keyAction.run(e);
 			return true;
 		} else {
 			return false;

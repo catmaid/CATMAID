@@ -40,7 +40,7 @@ function Selector()
 		{
 			var xp;
 			var yp;
-			var m = ui.getMouse( e );
+			var m = ui.getMouse( e, stack.getView() );
 			if ( m )
 			{
 				var pos_x = stack.translation.x + ( stack.x + ( m.offsetX - stack.viewWidth / 2 ) / stack.scale ) * stack.resolution.x;
@@ -97,7 +97,7 @@ function Selector()
 	{
 		var xp = stack.x;
 		var yp = stack.y;
-		var m = ui.getMouse( e );
+		var m = ui.getMouse( e, stack.getView() );
 		var w = ui.getMouseWheel( e );
 		if ( m )
 		{

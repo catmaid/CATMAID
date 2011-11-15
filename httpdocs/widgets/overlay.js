@@ -1008,7 +1008,7 @@ var SkeletonAnnotations = new function()
     // called from mousedown (or mouseup if we ever need to make
     // click-and-drag work with the left hand button too...)
     this.whenclicked = function (e) {
-      var m = ui.getMouse(e);
+      var m = ui.getMouse(e, self.view);
 
       // take into account current local offset coordinates and scale
       var pos_x = m.offsetX;

@@ -3,6 +3,7 @@
  */
 function Overview( stack )
 {
+	var self = this;
 	/**
 	 * get the view object
 	 */
@@ -15,7 +16,7 @@ function Overview( stack )
 	{
 		jump : function( e )
 		{
-			var m = ui.getMouse( e );
+			var m = ui.getMouse( e, self.getView() );
 			if ( m )
 			{
 				//statusBar.replaceLast( m.offsetX + ", " + m.offsetY );

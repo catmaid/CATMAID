@@ -450,7 +450,7 @@ function Profile() {
   this.onmousedown = function (e) {
     spi = undefined;
     spt = undefined;
-    var m = ui.getMouse(e);
+    var m = ui.getMouse(e, canvas);
     if (m) {
       var i;
       FOUND: for (i = 0; i < keys.length; ++i) {

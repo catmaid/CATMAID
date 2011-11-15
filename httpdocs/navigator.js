@@ -179,7 +179,7 @@ function Navigator()
 		{
 			var xp = self.stack.x;
 			var yp = self.stack.y;
-			var m = ui.getMouse( e );
+			var m = ui.getMouse( e, self.stack.getView() );
 			var w = ui.getMouseWheel( e );
 			if ( m )
 			{

@@ -203,7 +203,7 @@ function TracingTool()
 
 
   var updateStatusBar = function( e ) {
-    var m = ui.getMouse(e, true);
+    var m = ui.getMouse(e, tracingLayer.svgOverlay.view, true);
     var offX, offY, pos_x, pos_y;
     if (m) {
       // add right move of svgOverlay to the m.offsetX

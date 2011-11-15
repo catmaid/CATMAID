@@ -511,8 +511,12 @@ var ObjectTree = new function()
           "pid": pid
         },
         success: function (r, status) {
-          if (r !== "True") {
+          r = $.parseJSON(r);
+          if(!r['status']) {
             $.jstree.rollback(data.rlbk);
+          }
+          else {
+            $("#tree_object").jstree("refresh", -1);
           }
         }
       });

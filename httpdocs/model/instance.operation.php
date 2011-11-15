@@ -255,7 +255,7 @@ try {
         emitErrorAndExit($db, 'Failed to update relation.');
       }
       
-      finish("True");	
+      finish( array( 'status' => 1) );
     }
   }
     else if ( $op == 'has_relations' )

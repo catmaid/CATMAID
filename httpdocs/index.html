@@ -106,6 +106,7 @@
 				<div class="box" id="toolbox_project" style="display:none">
 					<a href="#" class="button" id="edit_button_select" onclick="project.setTool( new Selector() );"><img src="widgets/themes/kde/select.gif" alt="select" title="select" /></a>
 					<a href="#" class="button" id="edit_button_move" onclick="project.setTool( new Navigator() );"><img src="widgets/themes/kde/move.gif" alt="move" title="move" /></a>
+                    <a href="#" class="button" id="key_help_button" onclick="WindowMaker.show('keyboard-shortcuts');"><img src="widgets/themes/kde/help.png" alt="help for key shortcuts" title="help for key shortcuts" /></a>
 				</div>
 				<div class="box" id="toolbox_edit" style="display:none">
 					<a href="#" class="button" id="edit_button_text" onclick="project.setMode( 'text' );"><img src="widgets/themes/kde/text.gif" alt="text" title="text" /></a>
@@ -118,7 +119,6 @@
                     <a href="#" class="button" id="data_button_table_connector" onclick="WindowMaker.show( 'connector-table' );"><img src="widgets/themes/kde/table_connector.gif" alt="table" title="connector table" /></a>
 					<a href="#" class="button" id="data_button_tree" onclick="WindowMaker.show('object-tree');"><img src="widgets/themes/kde/tree.gif" alt="tree" title="object tree" /></a>
 					<a href="#" class="button" id="data_button_stats" onclick="WindowMaker.show('statistics');"><img src="widgets/themes/kde/stats.gif" alt="tree" title="project statistics" /></a>
-					<a href="#" class="button" id="key_help_button" onclick="WindowMaker.show('keyboard-shortcuts');"><img src="widgets/themes/kde/help.png" alt="help for key shorcuts" title="help for key shortcuts" /></a>
 					<a href="#" class="button" id="view_3d_button" onclick="WindowMaker.show('3d-view');"><img src="widgets/themes/kde/3d-view.png" alt="Show the 3D view" title="Show the 3D view" /></a>
 				</div>
 				<div id="logout_box" class="box_right" style="display:none"><p><a id="logout" name="logout" title="Logout" onclick="logout();" href="#">Logout</a></p></div>

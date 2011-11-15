@@ -462,7 +462,7 @@ function TracingTool()
     },
     run: function (e) {
       if (!(e.ctrlKey || e.metaKey)) {
-	project.activateNearestNode();
+        tracingLayer.svgOverlay.tracingCommand('selectnearestnode');
       }
       return true;
     }

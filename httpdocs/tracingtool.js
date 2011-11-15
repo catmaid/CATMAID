@@ -25,6 +25,7 @@ function TracingTool()
   var tracingLayer = null;
   var stack = null;
   var bindings = {};
+  this.toolname = "tracingtool";
 
 	this.resize = function( width, height )
 	{

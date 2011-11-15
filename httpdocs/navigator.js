@@ -18,6 +18,7 @@ function Navigator()
 {
 	var self = this;
 	this.stack = null;
+	this.toolname = "navigator";
 
 	if ( !ui ) ui = new UI();
 

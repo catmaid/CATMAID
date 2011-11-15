@@ -336,7 +336,13 @@ function handle_openProjectStack( status, text, xml )
 			stack.addLayer( "TileLayer", tilelayer );
 			
 			project.addStack( stack );
-			
+
+			if ( inittool === 'tracingtool' ) {
+			  project.setTool( new TracingTool() );
+			} else if ( inittool === 'navigator' ) {
+			  project.setTool( new Navigator() );
+			}
+
 			//! if the stack was initialized by an URL query, move it to a given position
 			if ( pid == e.pid && sids.length > 0 )
 			{
@@ -561,6 +567,7 @@ var init = function()
 			if ( isNaN( y ) ) delete yp;
 			if ( values[ "xp" ] ) xp = parseInt( values[ "xp" ] );
 			if ( isNaN( x ) ) delete xp;
+			if ( values[ "tool" ] ) inittool = values[ "tool"];
 			
 			for ( var i = 0; values[ "sid" + i ]; ++i )
 			{

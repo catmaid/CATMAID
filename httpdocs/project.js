@@ -556,6 +556,7 @@ function Project( pid )
 		{
 			//coords = stacks[ 0 ].projectCoordinates();		//!< @todo get this from the SELECTED stack to avoid approximation errors!
 			url += "&zp=" + self.coordinates.z + "&yp=" + self.coordinates.y + "&xp=" + self.coordinates.x;
+			url += "&tool=" + project.getTool().toolname;
 			for ( var i = 0; i < stacks.length; ++i )
 			{
 				url += "&sid" + i + "=" + stacks[ i ].id + "&s" + i + "=" + stacks[ i ].s;

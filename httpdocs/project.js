@@ -635,7 +635,6 @@ function Project( pid )
 	{
 		var projectKeyPress;
 		var key;
-		var target;
 		var shift;
 		var alt;
 		var ctrl;
@@ -659,8 +658,6 @@ function Project( pid )
 			fakeEvent.shiftKey = e.shiftKey;
 			fakeEvent.altKey = e.altKey;
 			fakeEvent.ctrlKey = e.ctrlKey;
-			fakeEvent.target = e.target
-			fakeEvent.srcElement = e.srcElement
 			shift = e.shiftKey;
 			alt = e.altKey;
 			ctrl = e.ctrlKey;
@@ -671,17 +668,15 @@ function Project( pid )
 			fakeEvent.shiftKey = event.shiftKey;
 			fakeEvent.altKey = event.altKey;
 			fakeEvent.ctrlKey = event.ctrlKey;
-			fakeEvent.target = event.target
-			fakeEvent.srcElement = event.srcElement
 			shift = event.shiftKey;
 			alt = event.altKey;
 			ctrl = event.ctrlKey;
 		}
-		target = UI.getTargetElement(fakeEvent);
-		var n = target.nodeName.toLowerCase();
+		fakeEvent.target = UI.getTargetElement(e || event);
+		var n = fakeEvent.target.nodeName.toLowerCase();
 		var fromATextField = false;
 		if (n == "input") {
-			var inputType = target.type.toLowerCase();
+			var inputType = fakeEvent.target.type.toLowerCase();
 			if (inputType == "text" || inputType == "password") {
 				fromATextField = true;
 			}

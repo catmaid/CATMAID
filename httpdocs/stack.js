@@ -689,7 +689,6 @@ trakem2_project //!< boolean that states if a TrakEM2 project is available for t
       // then dragging of nodes in Raphaël doesn't work, see:
       //   http://stackoverflow.com/q/6617548/223092
       var m = ui.getMouse(e, svgOverlay.view, true);
-      var realPagePosition = UI.getRealPagePosition(e);
 
       if (m) {
         // add right move of svgOverlay to the m.offsetX

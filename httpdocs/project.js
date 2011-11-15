@@ -659,7 +659,8 @@ function Project( pid )
 			fakeEvent.shiftKey = e.shiftKey;
 			fakeEvent.altKey = e.altKey;
 			fakeEvent.ctrlKey = e.ctrlKey;
-			target = e.target;
+			fakeEvent.target = e.target
+			fakeEvent.srcElement = e.srcElement
 			shift = e.shiftKey;
 			alt = e.altKey;
 			ctrl = e.ctrlKey;
@@ -670,11 +671,13 @@ function Project( pid )
 			fakeEvent.shiftKey = event.shiftKey;
 			fakeEvent.altKey = event.altKey;
 			fakeEvent.ctrlKey = event.ctrlKey;
-			target = event.srcElement;
+			fakeEvent.target = event.target
+			fakeEvent.srcElement = event.srcElement
 			shift = event.shiftKey;
 			alt = event.altKey;
 			ctrl = event.ctrlKey;
 		}
+		target = UI.getTargetElement(fakeEvent);
 		var n = target.nodeName.toLowerCase();
 		var fromATextField = false;
 		if (n == "input") {

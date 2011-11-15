@@ -195,6 +195,7 @@ UI = function()
 	 */
 	this.getMouse = function( e, propagate )
 	{
+		var target;
 		propagate = (typeof propagate == "undefined") ? false : propagate;
 		m = new Object();
 		if ( e )
@@ -228,6 +229,7 @@ UI = function()
 		else {
 			m = undefined;
 		}
+		m.target = UI.getTargetElement(e || event);
 		return m;
 	}
 	
@@ -414,6 +416,19 @@ UI.getFrameWidth = function()
 		return 0;
 	}
 	catch ( exception ) { return 0; }
+}
+
+UI.getTargetElement = function (e) {
+	var target;
+	// This logic is from:
+	// http://www.quirksmode.org/js/events_properties.html#target
+	if (e.target)
+		target = e.target;
+	else if (e.srcElement)
+		target = e.srcElement;
+	if (target.nodeType == 3) // defeat Safari bug
+		target = target.parentNode;
+	return target;
 }
 
 //var UI = new UI();

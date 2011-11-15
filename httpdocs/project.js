@@ -667,9 +667,9 @@ function Project( pid )
 		else if ( event && event.keyCode )
 		{
 			fakeEvent.keyCode = event.keyCode;
-			fakeEvent.shiftKey = e.shiftKey;
-			fakeEvent.altKey = e.altKey;
-			fakeEvent.ctrlKey = e.ctrlKey;
+			fakeEvent.shiftKey = event.shiftKey;
+			fakeEvent.altKey = event.altKey;
+			fakeEvent.ctrlKey = event.ctrlKey;
 			target = event.srcElement;
 			shift = event.shiftKey;
 			alt = event.altKey;

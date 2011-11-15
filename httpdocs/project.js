@@ -639,12 +639,25 @@ function Project( pid )
 		var alt;
 		var ctrl;
 		var keyAction;
+
+		/* The code here used to modify 'e' and pass it
+		   on, but Firefox no longer allows this.  So, create
+		   a fake event object instead, and pass that down. */
+		var fakeEvent = {};
+
 		if ( e )
 		{
-			if ( e.keyCode ) key = e.keyCode;
-			else if ( e.charCode ) key = e.charCode;
-			else key = e.which;
-			e.keyCode = key;
+			if ( e.keyCode ) {
+				key = e.keyCode;
+			} else if ( e.charCode ) {
+				key = e.charCode;
+			} else {
+				key = e.which;
+			}
+			fakeEvent.keyCode = key;
+			fakeEvent.shiftKey = e.shiftKey;
+			fakeEvent.altKey = e.altKey;
+			fakeEvent.ctrlKey = e.ctrlKey;
 			target = e.target;
 			shift = e.shiftKey;
 			alt = e.altKey;
@@ -652,7 +665,10 @@ function Project( pid )
 		}
 		else if ( event && event.keyCode )
 		{
-			key = event.keyCode;
+			fakeEvent.keyCode = event.keyCode;
+			fakeEvent.shiftKey = e.shiftKey;
+			fakeEvent.altKey = e.altKey;
+			fakeEvent.ctrlKey = e.ctrlKey;
 			target = event.srcElement;
 			shift = event.shiftKey;
 			alt = event.altKey;
@@ -668,10 +684,10 @@ function Project( pid )
 		}
 		if (!(fromATextField || n == "textarea" || n == "area")) //!< @todo exclude all useful keyboard input elements e.g. contenteditable...
 		{
-			if (tool && tool.handleKeyPress(e || event)) {
+			if (tool && tool.handleKeyPress(fakeEvent)) {
 				return false;
 			} else {
-				projectKeyPress = self.handleKeyPress(e || event);
+				projectKeyPress = self.handleKeyPress(fakeEvent);
 				return ! projectKeyPress;
 			}
 		} else {

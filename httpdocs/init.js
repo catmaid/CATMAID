@@ -44,6 +44,7 @@ var ss = new Array();
 var zp;
 var yp;
 var xp;
+var inittool;
 
 var session;
 var msg_timeout;

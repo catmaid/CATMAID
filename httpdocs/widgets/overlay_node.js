@@ -515,7 +515,6 @@ var SkeletonElements = new function()
       c.attr({
         opacity: 0.7
       });
-      this.paper.catmaidSVGOverlay.activateNode(node);
     };
 
     var mc_mousedown = function(e) {

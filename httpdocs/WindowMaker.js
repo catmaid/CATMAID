@@ -36,13 +36,12 @@ var WindowMaker = new function()
                 if (windows.hasOwnProperty(name)) {
                   if (win === windows[name]) {
                     delete windows[name];
-                    console.log("deleted " + name);
+                    // console.log("deleted " + name);
                     break;
                   }
                 }
               }
-              //
-              win.close();
+              // win.close();
             }
             break;
           case CMWWindow.RESIZE:

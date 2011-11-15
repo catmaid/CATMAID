@@ -538,11 +538,16 @@ var SkeletonElements = new function()
           return true;
         }
         if (atnID) {
+          var atnType = SkeletonAnnotations.getActiveNodeType();
           // connected activated treenode or connectornode
           // to existing treenode or connectornode
-          console.log("from source #", atnID, "to connector #", connectornode.id);
-          paper.catmaidSVGOverlay.createLink(atnID, connectornode.id, "presynaptic_to", "presynaptic terminal", "synapse", "treenode", "connector");
-          statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
+          if (atnType === TYPE_CONNECTORNODE) {
+            alert("Can not join two connector nodes!");
+          } else if (atnType === TYPE_NODE) {
+            console.log("from source #", atnID, "to connector #", connectornode.id);
+            paper.catmaidSVGOverlay.createLink(atnID, connectornode.id, "presynaptic_to", "presynaptic terminal", "synapse", "treenode", "connector");
+            statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
+          }
         } else {
           var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
           g.growlAlert({

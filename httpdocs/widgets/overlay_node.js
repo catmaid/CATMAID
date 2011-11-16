@@ -374,6 +374,8 @@ var SkeletonElements = new function()
         this.c = paper.circle(this.x, this.y, this.r);
         // a raphael circle oversized for the mouse logic
         this.mc = paper.circle(this.x, this.y, CATCH_RADIUS);
+
+        assignEventHandlers(this.mc, this.type);
       }
 
       this.c.attr({
@@ -394,8 +396,6 @@ var SkeletonElements = new function()
       }
 
       this.mc.catmaidNode = this; // for event handlers
-
-      assignEventHandlers(this.mc, this.type);
     }
   };
 

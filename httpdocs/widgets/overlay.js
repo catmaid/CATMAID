@@ -94,6 +94,14 @@ var SkeletonAnnotations = new function()
     return atn_fillcolor;
   };
 
+  this.getActiveNodePosition = function() {
+    if (atn.id === null) {
+      return null;
+    } else {
+      return {'x': atn.x, 'y': atn.y, 'z': atn.z};
+    }
+  }
+
   var openSkeletonNodeInObjectTree = function(node) {
     // Check if the Object Tree div is visible
     if ($('#object_tree_widget').css('display') === "none" || ! $('#synchronize_object_tree').attr('checked')) {

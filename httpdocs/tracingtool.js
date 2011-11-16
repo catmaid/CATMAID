@@ -372,14 +372,17 @@ function TracingTool()
             tracingLayer.svgOverlay.pix2physZ(atn.parent.z),
             tracingLayer.svgOverlay.pix2physY(atn.parent.y),
             tracingLayer.svgOverlay.pix2physX(atn.parent.x));
-          window.setTimeout("project.selectNode( " + atn.parent.id + " )", 1000);
+          tracingLayer.svgOverlay.selectNode(atn.parent.id);
         } else {
           alert("This is the root node.");
         }
       } else {
-        alert("No active node selected.");
+        if (SkeletonAnnotations.getActiveNodeId() === null) {
+          alert('There must be a currently active node in order to move to its parent.');
+        } else {
+          alert("There active node must be visible in order to move to its parent");
+        }
       }
-      project.tracingCommand('goparent');
       return false;
     }
   }) );

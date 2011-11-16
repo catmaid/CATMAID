@@ -335,14 +335,14 @@ function TracingTool()
       "A": [ 65 ]
     },
     run: function (e) {
-      var atn = tracingLayer.svgOverlay.getActiveNode();
-      if (atn !== null) {
-        project.moveTo(
-          tracingLayer.svgOverlay.pix2physZ(atn.z),
-          tracingLayer.svgOverlay.pix2physY(atn.y),
-          tracingLayer.svgOverlay.pix2physX(atn.x));
-      } else {
+      var activeNodePosition = SkeletonAnnotations.getActiveNodePosition();
+      if (activeNodePosition === null) {
         alert("No active node to go to!");
+      } else {
+        project.moveTo(
+          tracingLayer.svgOverlay.pix2physZ(activeNodePosition.z),
+          tracingLayer.svgOverlay.pix2physY(activeNodePosition.y),
+          tracingLayer.svgOverlay.pix2physX(activeNodePosition.x));
       }
       return false;
     }

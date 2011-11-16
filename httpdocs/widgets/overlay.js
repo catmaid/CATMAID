@@ -192,7 +192,7 @@ var SkeletonAnnotations = new function()
     {
       if (node)
       {
-        if (node.id === atn.id) {
+        if (node.id === atn.id && node.skeleton_id === atn.skeleton_id) {
           return; // Already active
         }
         // Update statusBar
@@ -440,6 +440,7 @@ var SkeletonAnnotations = new function()
                 self.updateNodes();
                 ObjectTree.refresh();
                 refreshAllWidgets();
+                self.selectNode(atn.id);
               }
             }
           }

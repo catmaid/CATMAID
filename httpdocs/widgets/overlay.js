@@ -169,9 +169,18 @@ var SkeletonAnnotations = new function()
       }
     };
 
+    // Note that this function will not return the active node if it
+    // is not currently being displayed (e.g. if you pan such that the
+    // active node is no longer in the set of nodes which are fetched)
     this.getActiveNode = function() {
-      if (null === atn.id) return null;
-      return nodes[atn.id];
+      var result;
+      if (null === atn.id)
+        return null;
+      result = nodes[atn.id];
+      if (result === undefined)
+        return null;
+      else
+        return result;
     };
 
     /**

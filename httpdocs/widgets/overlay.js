@@ -830,6 +830,7 @@ var SkeletonAnnotations = new function()
     };
 
     /** Only called when changing magnification. */
+/*
     this.updateNodeCoordinates = function (new_scale) {
       var i,
           fact = new_scale / old_scale,
@@ -849,7 +850,7 @@ var SkeletonAnnotations = new function()
         }
       }
     };
-
+*/
 
     /** Recreate all nodes (or reuse existing ones if possible).
      *

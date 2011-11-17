@@ -439,7 +439,7 @@ function Navigator()
 
 	var keyCodeToAction = getKeyCodeToActionMap(actions);
 
-	setButtonClicksFromActions(actions);
+	// setButtonClicksFromActions(actions);
 
 	/**
 	 * install this tool in a stack.

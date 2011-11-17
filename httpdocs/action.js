@@ -96,7 +96,7 @@ var getKeyCodeToActionMap = function( actionArray ) {
 	for( j = 0; j < keyCodes.length; ++j ) {
 	  keyCode = keyCodes[j];
 	  if (keyCodeToKeyAction[keyCode]) {
-	    alert("BUG: overwriting action for keyCode " + k + " (via '" + name + "')");
+	    alert("BUG: overwriting action for keyCode " + keyCode + " (via '" + name + "')");
 	  }
 	  keyCodeToKeyAction[keyCode] = action;
 	}

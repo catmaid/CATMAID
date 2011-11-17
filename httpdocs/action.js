@@ -27,7 +27,7 @@ function Action (properties) {
   */
   this.addKey = function( name, keyCodes ) {
     if (keyShortcuts.hasOwnProperty(name)) {
-      alert("BUG: reaplcing the keyCodes for "+name+" with Action.addKey");
+      alert("BUG: replacing the keyCodes for "+name+" with Action.addKey");
     }
     keyShortcuts[name] = keyCodes;
   }

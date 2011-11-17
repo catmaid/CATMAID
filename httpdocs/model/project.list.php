@@ -31,7 +31,7 @@ if ( $ses->isSessionValid() )
 			WHERE	"project_user"."user_id" = '.$ses->getId().' OR
 					"project"."public"
 					
-			ORDER BY "ptitle"'
+			ORDER BY "ptitle", "stitle"'
 	);
 }
 else
@@ -51,7 +51,7 @@ else
 			
 			WHERE	"project"."public"
 					
-			ORDER BY "ptitle"'
+			ORDER BY "ptitle", "stitle"'
 	);
 }
 /*
@@ -103,6 +103,19 @@ foreach ( $pprojects as $p )
 			'action' => 'javascript:openProjectStack( '.$p[ 'pid' ].', '.$p[ 'sid' ].' )',
 			'note' => '' );
 }
+
+// a sorting function to sort by title
+function sortByTitle($a, $b) {
+	$title1 = (string)($a['title']);
+	$title2 = (string)($b['title']);
+    return strnatcasecmp($title1, $title2);
+}
+
+if ( $projects ) {
+	// sort the projects
+	usort($projects, 'sortByTitle');
+}
+
 /*
 foreach ( $private_projects as $p )
 {

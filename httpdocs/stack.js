@@ -208,14 +208,11 @@ function Stack(
 	 */
 	this.moveToPixel = function( zp, yp, xp, sp )
 	{
-		self.s = Math.max( 0, Math.min( self.MAX_S, sp ) );
-
-		self.scale = 1 / Math.pow( 2, self.s );
-		
 		project.moveTo(
 			zp * resolution.z + translation.z,
 			yp * resolution.y + translation.y,
-			xp * resolution.x + translation.x );
+			xp * resolution.x + translation.x,
+			sp);
 		
 		return true;
 	}

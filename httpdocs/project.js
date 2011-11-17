@@ -480,7 +480,7 @@ function Project( pid )
 
 	this.addAction( new Action({
 		helpText: "Switch to skeleton tracing mode",
-		buttonIDs: [ 'trace_button_skeleton' ],
+		buttonID: 'trace_button_skeleton',
 		keyShortcuts: {
 			'1': [ 49 ]
 		},

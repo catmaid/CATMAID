@@ -15,7 +15,8 @@
 function Action (properties) {
 
   var helpText = "[No help text set]";
-  var buttonIDs = [];
+  var buttonID = null;
+  var buttonName = null;
   var keyShortcuts = {};
 
   /**
@@ -32,24 +33,42 @@ function Action (properties) {
     keyShortcuts[name] = keyCodes;
   }
 
+  this.hasButton = function( ) {
+    return buttonID !== null;
+  }
+
   this.getKeys = function( ) {
     return keyShortcuts;
   }
 
-  this.getButtonIDs = function( ) {
-    return buttonIDs;
+  this.getKeyShortcutsString = function( ) {
+    result = [];
+    for (var name in keyShortcuts) {
+      if (keyShortcuts.hasOwnProperty(name)) {
+        result.push(name);
+      }
+    }
+    return result.join(', ');
+  }
+
+  this.getButtonID = function( ) {
+    return buttonID;
+  }
+
+  this.getButtonName = function( ) {
+    return buttonName;
   }
 
   this.getHelpText = function( ) {
     return helpText;
   }
 
-  /**
-     Add an array of button IDs, for example:
-       action.addButtonIDs(['trace_button_togglelabels')
-  */
-  this.addButtonIDs = function( newButtonIDs ) {
-    buttonIDs.push( newButtonIDs );
+  this.setButtonID = function( newButtonID ) {
+    buttonID = newButtonID;
+  }
+
+  this.setButtonName = function( newButtonName ) {
+    buttonName = newButtonName;
   }
 
   this.setHelpText = function( newHelpText ) {
@@ -67,8 +86,11 @@ function Action (properties) {
       if (key === 'helpText') {
 	this.setHelpText(properties.helpText);
       }
-      if (key === 'buttonIDs') {
-	this.addButtonIDs(properties.buttonIDs);
+      if (key === 'buttonID') {
+	this.setButtonID(properties.buttonID);
+      }
+      if (key === 'buttonName') {
+	this.setButtonName(properties.buttonName);
       }
       if (key === 'keyShortcuts') {
 	for (name in properties.keyShortcuts) {
@@ -111,20 +133,25 @@ var getKeyCodeToActionMap = function( actionArray ) {
     Also bind the onClick action for the link that contains
     those icons to the corresponding function */
 
-function setButtonClicksFromActions(actions) {
-  var i, j, buttonIDs, buttonID;
+function createButtonsFromActions(actions, boxID, iconPrefix) {
+  var box, action, a, img, buttonID;
+  box = $( '<div class="box" id="'+boxID+'"></div>' );
   for (i = 0; i < actions.length; ++i) {
     action = actions[i];
-    buttonIDs = action.getButtonIDs();
-    for(j = 0; j < buttonIDs.length; ++j ) {
-      buttonID = buttonIDs[j];
-      var link = $('#' + buttonID);
-      link.attr('href', 'foo');
-      link.click(action.run);
-      var img = link.find('img');
-      img.attr('alt', action.getHelpText());
-      var title = i + ': ' + action.getHelpText();
-      img.attr('title', title);
+    if (action.hasButton()) {
+      buttonID = action.getButtonID();
+      a = document.createElement('a');
+      a.setAttribute('class', 'button');
+      a.setAttribute('id', action.getButtonID());
+      a.onclick = action.run;
+      img = document.createElement('img');
+      img.setAttribute('src', 'widgets/themes/kde/' + iconPrefix + action.getButtonName() + '.png');
+      img.setAttribute('alt', action.getHelpText());
+      var title = action.getKeyShortcutsString() + ': ' + action.getHelpText();
+      img.setAttribute('title', title);
+      a.appendChild(img);
+      box.append(a);
     }
   }
+  return box;
 }

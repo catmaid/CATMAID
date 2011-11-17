@@ -35,32 +35,12 @@ function TracingTool()
 
   var setupSubTools = function()
   {
-    // TODO: replace with project.js strings
+    var box;
     if ( self.prototype.stack == null ) {
-      var box = $( '<div class="box" id="tracingbuttons"></div>' );
-      [ { name : "skeleton", alt : "skeleton" },
-        { name : "synapse", alt : "synapse" },
-        { name : "goactive", alt : "go to active element" },
-        { name : "skelsplitting", alt : "split skeleton" },
-        { name : "skelrerooting", alt : "reroot skeleton" },
-        { name : "togglelabels", alt : "toggle labels" },
-        { name : "3dview", alt : "3d view" } ].map(
-        function( button ) {
-          var a = document.createElement('a');
-          a.setAttribute('class', 'button');
-          a.setAttribute('id', 'trace_button_' + button.name);
-          a.onclick = function( e ) {
-            tracingLayer.svgOverlay.tracingCommand(button.name);
-            return false;
-          };
-          var img = document.createElement('img');
-          img.setAttribute('title', button.alt);
-          img.setAttribute('alt', button.alt);
-          img.setAttribute('src', 'widgets/themes/kde/trace_' + button.name + '.png');
-          a.appendChild(img);
-          box.append(a);
-        }
-      );
+      box = createButtonsFromActions(
+        actions,
+        "tracingbuttons",
+        "trace_");
       $( "#toolbar_nav" ).prepend( box );
     }
   }
@@ -329,8 +309,35 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
+    helpText: "Switch to skeleton tracing mode",
+    buttonName: "skeleton",
+    buttonID: 'trace_button_skeleton',
+    keyShortcuts: {
+      "K": [ 75 ]
+    },
+    run: function (e) {
+      tracingLayer.svgOverlay.tracingCommand('skeleton');
+      return false;
+    }
+  } ) );
+
+  this.addAction( new Action({
+    helpText: "Switch to synapse dropping mode",
+    buttonName: "synapse",
+    buttonID: 'trace_button_synapse',
+    keyShortcuts: {
+      "Y": [ 89 ]
+    },
+    run: function (e) {
+      tracingLayer.svgOverlay.tracingCommand('synapse');
+      return false;
+    }
+  } ) );
+
+  this.addAction( new Action({
     helpText: "Go to active node",
-    buttonID: [ 'trace_button_goactive' ],
+    buttonName: "goactive",
+    buttonID: 'trace_button_goactive',
     keyShortcuts: {
       "A": [ 65 ]
     },
@@ -400,7 +407,8 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Split this skeleton at the active node",
-    buttonID: [ 'trace_button_skelsplitting' ],
+    buttonName: "skelsplitting",
+    buttonID: 'trace_button_skelsplitting',
     keyShortcuts: {
       "5": [ 53 ]
     },
@@ -412,7 +420,8 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Re-root this skeleton at the active node",
-    buttonID: [ 'trace_button_skelrerooting' ],
+    buttonName: "skelrerooting",
+    buttonID: 'trace_button_skelrerooting',
     keyShortcuts: {
       "6": [ 54 ]
     },
@@ -424,7 +433,8 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Toggle the display of labels",
-    buttonID: [ 'trace_button_togglelabels' ],
+    buttonName: "togglelabels",
+    buttonID: 'trace_button_togglelabels',
     keyShortcuts: {
       "7": [ 55 ]
     },
@@ -436,7 +446,8 @@ function TracingTool()
 
   this.addAction( new Action({
     helpText: "Export to SWC",
-    buttonID: [ 'trace_button_exportswc' ],
+    buttonName: "exportswc",
+    buttonID: 'trace_button_exportswc',
     keyShortcuts: {
       "S": [ 83 ]
     },

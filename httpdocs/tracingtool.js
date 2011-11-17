@@ -393,7 +393,7 @@ function TracingTool()
       "E": [ 69 ]
     },
     run: function (e) {
-      project.tracingCommand('golastedited');
+      tracingLayer.svgOverlay.tracingCommand('golastedited');
       return false;
     }
   }) );
@@ -405,7 +405,7 @@ function TracingTool()
       "5": [ 53 ]
     },
     run: function (e) {
-      project.tracingCommand('skeletonsplitting');
+      tracingLayer.svgOverlay.tracingCommand('skeletonsplitting');
       return false;
     }
   }) );
@@ -417,7 +417,7 @@ function TracingTool()
       "6": [ 54 ]
     },
     run: function (e) {
-      project.tracingCommand('skeletonreroot');
+      tracingLayer.svgOverlay.tracingCommand('skeletonreroot');
       return false;
     }
   }) );
@@ -429,7 +429,7 @@ function TracingTool()
       "7": [ 55 ]
     },
     run: function (e) {
-      project.tracingCommand('togglelabels');
+      tracingLayer.svgOverlay.tracingCommand('togglelabels');
       return false;
     }
   }) );
@@ -441,7 +441,7 @@ function TracingTool()
       "S": [ 83 ]
     },
     run: function (e) {
-      project.tracingCommand('exportswc');
+      tracingLayer.svgOverlay.tracingCommand('exportswc');
       return false;
     }
   }) );
@@ -453,7 +453,7 @@ function TracingTool()
     },
     run: function (e) {
       if (!(e.ctrlKey || e.metaKey)) {
-	project.tracingCommand('tagging');
+	tracingLayer.svgOverlay.tracingCommand('tagging');
       }
       return true;
     }

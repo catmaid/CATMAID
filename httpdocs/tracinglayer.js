@@ -14,6 +14,10 @@ function TracingLayer( stack )
     return;
   }
 
+    this.beforeMove = function () {
+	this.svgOverlay.updateNodeCoordinatesinDB();
+    }
+
 
   /** */
 	this.redraw = function()

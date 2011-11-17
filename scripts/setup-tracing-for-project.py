@@ -34,10 +34,16 @@ classes_required = [ "skeleton",
 class_dictionary = {}
 
 for required_class in classes_required:
-    c.execute("INSERT INTO class (user_id, project_id, class_name) "+
-              "VALUES (%s, %s, %s) RETURNING id",
-              (user_id, project_id, required_class))
-    class_dictionary[required_class] = c.fetchone()[0]
+    c.execute("SELECT id FROM class WHERE class_name = %s AND project_id = %s",
+              (required_class, project_id))
+    rows = c.fetchall()
+    if len(rows) > 0:
+        class_dictionary[required_class] = rows[0][0]
+    else:
+        c.execute("INSERT INTO class (user_id, project_id, class_name) "+
+                  "VALUES (%s, %s, %s) RETURNING id",
+                  (user_id, project_id, required_class))
+        class_dictionary[required_class] = c.fetchone()[0]
 
 c.execute("INSERT INTO class_instance (user_id, project_id, class_id, name) "+
           "VALUES (%s, %s, %s, %s)",
@@ -57,9 +63,13 @@ relations_required = (
     )
 
 for required_relation in relations_required:
-    c.execute("INSERT INTO relation (user_id, project_id, relation_name) "+
-              "VALUES (%s, %s, %s)",
-              (user_id, project_id, required_relation))
+    c.execute("SELECT id FROM relation WHERE relation_name = %s AND project_id = %s",
+              (required_relation, project_id))
+    rows = c.fetchall()
+    if 0 == len(rows):
+        c.execute("INSERT INTO relation (user_id, project_id, relation_name) "+
+                  "VALUES (%s, %s, %s)",
+                  (user_id, project_id, required_relation))
 
 db_connection.commit()
 c.close()

@@ -31,7 +31,10 @@ tables_to_truncate = (
     'class_instance_class_instance',
     'class_instance',
     'treenode',
-    'connector'
+    'connector',
+    'class_class',
+    'class',
+    'relation'
 )
 
 c.execute('TRUNCATE '+', '.join(tables_to_truncate))

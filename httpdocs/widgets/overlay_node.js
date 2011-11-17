@@ -292,7 +292,7 @@ var SkeletonElements = new function()
    * the current view and local objects.
    * Here 'this' refers to the node.
    */
-  var nodeDelete = function () {
+  var nodeDelete = function (wasActiveNode) {
     var node = this;
     requestQueue.register("model/treenode.delete.php", "POST", {
       pid: project.id,
@@ -302,11 +302,13 @@ var SkeletonElements = new function()
         alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
       } else {
         // activate parent node when deleted
-        if (node.parent) {
-          node.paper.catmaidSVGOverlay.selectNode(node.parent.id);
-        } else {
+        if (wasActiveNode) {
           // TODO fetch parent id from the database and activate it
-          node.paper.catmaidSVGOverlay.activateNode(null);
+          if (node.parent) {
+            node.paper.catmaidSVGOverlay.selectNode(node.parent.id);
+          } else {
+            node.paper.catmaidSVGOverlay.activateNode(null);
+          }
         }
         // Redraw everything for now
         node.paper.catmaidSVGOverlay.updateNodes();
@@ -435,16 +437,18 @@ var SkeletonElements = new function()
      */
     var mc_click = function(e) {
       var node = this.catmaidNode,
-          paper = this.paper;
+        paper = this.paper,
+        wasActiveNode = false;
       if (e.shiftKey) {
         var atnID = SkeletonAnnotations.getActiveNodeId();
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           // if it is active node, set active node to null
           if (node.id === atnID) {
             paper.catmaidSVGOverlay.activateNode(null);
+            wasActiveNode = true;
           }
           statusBar.replaceLast("Deleted node #" + node.id);
-          node.deletenode();
+          node.deletenode(wasActiveNode);
           e.stopPropagation();
           return true;
         }
@@ -524,16 +528,18 @@ var SkeletonElements = new function()
     var connector_mc_click = function(e) {
       var atnID = SkeletonAnnotations.getActiveNodeId(),
           connectornode = this.catmaidNode,
-          paper = this.paper;
+          paper = this.paper,
+          wasActiveNode = false;
       // return some log information when clicked on the node
       // this usually refers here to the mc object
       if (e.shiftKey) {
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           if (connectornode.id === atnID) {
             paper.catmaidSVGOverlay.activateNode(null);
+            wasActiveNode = true;
           }
           statusBar.replaceLast("Deleted connector #" + connectornode.id);
-          connectornode.deletenode();
+          connectornode.deletenode(wasActiveNode);
           e.stopPropagation();
           return true;
         }

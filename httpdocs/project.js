@@ -508,6 +508,6 @@ function Project( pid )
 
 	var keyCodeToAction = getKeyCodeToActionMap(actions);
 
-	setButtonClicksFromActions(actions);
+	// setButtonClicksFromActions(actions);
 
 }

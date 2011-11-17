@@ -177,6 +177,15 @@ function Stack(
 	 */
 	this.moveTo = function( zp, yp, xp, sp )
 	{
+		for ( var key in layers ) {
+			if (layers.hasOwnProperty(key)) {
+				l = layers[key];
+				if (l.beforeMove) {
+					l.beforeMove();
+				}
+			}
+		}
+
 		if ( typeof sp == "number" )
 		{
 			self.s = Math.max( 0, Math.min( self.MAX_S, Math.round( sp ) ) );

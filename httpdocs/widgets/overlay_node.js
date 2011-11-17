@@ -71,7 +71,7 @@ var SkeletonElements = new function()
     var node;
     if (nextNodeIndex < nodePool.length) {
       node = nodePool[nextNodeIndex];
-      reuseNode(node, id, r, x, y, z, zdiff, skeleton_id, is_root_node);
+      reuseNode(node, id, parent, r, x, y, z, zdiff, skeleton_id, is_root_node);
       if (is_root_node && node.line) node.line.hide();
     } else {
       node = new this.Node(id, paper, parent, r, x, y, z, zdiff, skeleton_id, is_root_node);
@@ -148,10 +148,10 @@ var SkeletonElements = new function()
   };
 
   /** Takes an existing Node and sets all the proper members as given, and resets the children and connectors. */
-  var reuseNode = function(node, id, r, x, y, z, zdiff, skeleton_id, isroot)
+  var reuseNode = function(node, id, parent, r, x, y, z, zdiff, skeleton_id, isroot)
   {
     node.id = id;
-    node.parent = null;
+    node.parent = parent;
     node.children = {};
     node.connectors = {};
     node.r = r < 0 ? 3 : r;

@@ -328,12 +328,6 @@ function Navigator()
 		return false
 	}
 
-	var actions = [];
-
-	this.addAction = function ( action ) {
-		actions.push( action );
-	}
-
 	this.getActions = function () {
 		return actions;
 	}
@@ -345,101 +339,101 @@ function Navigator()
 		down: 40
 	};
 
-	this.addAction( new Action({
-		helpText: "Zoom in",
-		keyShortcuts: {
-			'+': [ 43, 107, 61, 187 ]
-		},
-		run: function (e) {
-			self.slider_s.move(1);
-			return false;
-		}
-	}) );
+	var actions = [
 
-	this.addAction( new Action({
-		helpText: "Zoom out",
-		keyShortcuts: {
-			'-': [ 45, 109, 189 ]
-		},
-		run: function (e) {
-			self.slider_s.move(-1);
-			return false;
-		}
-	}) );
+		new Action({
+			helpText: "Zoom in",
+			keyShortcuts: {
+				'+': [ 43, 107, 61, 187 ]
+			},
+			run: function (e) {
+				self.slider_s.move(1);
+				return false;
+			}
+		}),
 
-	this.addAction( new Action({
-		helpText: "Move up 1 slice in z (or 10 with Shift held)",
-		keyShortcuts: {
-			',': [ 44, 188 ]
-		},
-		run: function (e) {
-			self.slider_z.move(-(e.shiftKey ? 10 : 1));
-			return false;
-		}
-	}) );
+		new Action({
+			helpText: "Zoom out",
+			keyShortcuts: {
+				'-': [ 45, 109, 189 ]
+			},
+			run: function (e) {
+				self.slider_s.move(-1);
+				return false;
+			}
+		}),
 
-	this.addAction( new Action({
-		helpText: "Move down 1 slice in z (or 10 with Shift held)",
-		keyShortcuts: {
-			'.': [ 46, 190 ]
-		},
-		run: function (e) {
-			self.slider_z.move((e.shiftKey ? 10 : 1));
-			return false;
-		}
-	}) );
+		new Action({
+			helpText: "Move up 1 slice in z (or 10 with Shift held)",
+			keyShortcuts: {
+				',': [ 44, 188 ]
+			},
+			run: function (e) {
+				self.slider_z.move(-(e.shiftKey ? 10 : 1));
+				return false;
+			}
+		}),
 
-	this.addAction( new Action({
-		helpText: "Move left (towards negative x)",
-		keyShortcuts: {
-			"\u2190": [ arrowKeyCodes.left ]
-		},
-		run: function (e) {
-			self.input_x.value = parseInt(self.input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-			self.input_x.onchange(e);
-			return false;
-		}
-	}) );
+		new Action({
+			helpText: "Move down 1 slice in z (or 10 with Shift held)",
+			keyShortcuts: {
+				'.': [ 46, 190 ]
+			},
+			run: function (e) {
+				self.slider_z.move((e.shiftKey ? 10 : 1));
+				return false;
+			}
+		}),
 
-	this.addAction( new Action({
-		helpText: "Move right (towards positive x)",
-		keyShortcuts: {
-			"\u2192": [ arrowKeyCodes.right ],
-		},
-		run: function (e) {
-			self.input_x.value = parseInt(self.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-			self.input_x.onchange(e);
-			return false;
-		}
-	}) );
+		new Action({
+			helpText: "Move left (towards negative x)",
+			keyShortcuts: {
+				"\u2190": [ arrowKeyCodes.left ]
+			},
+			run: function (e) {
+				self.input_x.value = parseInt(self.input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+				self.input_x.onchange(e);
+				return false;
+			}
+		}),
 
-	this.addAction( new Action({
-		helpText: "Move up (towards negative y)",
-		keyShortcuts: {
-			"\u2191": [ arrowKeyCodes.up ]
-		},
-		run: function (e) {
-			self.input_y.value = parseInt(self.input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-			self.input_y.onchange(e);
-			return false;
-		}
-	}) );
+		new Action({
+			helpText: "Move right (towards positive x)",
+			keyShortcuts: {
+				"\u2192": [ arrowKeyCodes.right ],
+			},
+			run: function (e) {
+				self.input_x.value = parseInt(self.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+				self.input_x.onchange(e);
+				return false;
+			}
+		}),
 
-	this.addAction( new Action({
-		helpText: "Move down (towards positive y)",
-		keyShortcuts: {
-			"\u2193": [ arrowKeyCodes.down ]
-		},
-		run: function (e) {
-			self.input_y.value = parseInt(self.input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-			self.input_y.onchange(e);
-			return false;
-		}
-	}) );
+		new Action({
+			helpText: "Move up (towards negative y)",
+			keyShortcuts: {
+				"\u2191": [ arrowKeyCodes.up ]
+			},
+			run: function (e) {
+				self.input_y.value = parseInt(self.input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+				self.input_y.onchange(e);
+				return false;
+			}
+		}),
+
+		new Action({
+			helpText: "Move down (towards positive y)",
+			keyShortcuts: {
+				"\u2193": [ arrowKeyCodes.down ]
+			},
+			run: function (e) {
+				self.input_y.value = parseInt(self.input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+				self.input_y.onchange(e);
+				return false;
+			}
+		})]
 
 	var keyCodeToAction = getKeyCodeToActionMap(actions);
-
-	// setButtonClicksFromActions(actions);
 
 	/**
 	 * install this tool in a stack.

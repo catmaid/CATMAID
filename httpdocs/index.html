@@ -103,24 +103,11 @@
 					<div class="menu_item" onclick="showMessages();" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p id="message_menu_text"><a>Messages</a>&nbsp;&nbsp;</p>
 						<div class="pulldown" id="message_menu"></div></div>
 				</div>
-				<div class="box" id="toolbox_project" style="display:none">
-					<a href="#" class="button" id="edit_button_select" onclick="project.setTool( new Selector() );"><img src="widgets/themes/kde/select.gif" alt="select" title="select" /></a>
-					<a href="#" class="button" id="edit_button_move" onclick="project.setTool( new Navigator() );"><img src="widgets/themes/kde/move.gif" alt="move" title="move" /></a>
-                    <a href="#" class="button" id="key_help_button" onclick="WindowMaker.show('keyboard-shortcuts');"><img src="widgets/themes/kde/help.png" alt="help for key shortcuts" title="help for key shortcuts" /></a>
-				</div>
-				<div class="box" id="toolbox_edit" style="display:none">
-					<a href="#" class="button" id="edit_button_text" onclick="project.setMode( 'text' );"><img src="widgets/themes/kde/text.gif" alt="text" title="text" /></a>
-					<a href="#" class="button" id="edit_button_crop" onclick="project.setMode( 'crop' );"><img src="widgets/themes/kde/crop.gif" alt="crop microstack" title="crop microstack" /></a>
-					<a href="#" class="button" id="edit_button_trace" onclick="project.setTool( new TracingTool() );"><img src="widgets/themes/kde/trace.gif" alt="trace" title="trace" /></a>
-					<!--<a href="#" class="button" id="edit_button_profile" onclick="project.setMode( 'profile' );"><img src="widgets/themes/kde/draw.gif" alt="profile" title="profile" /></a>-->
-				</div>
-				<div class="box" id="toolbox_data" style="display:none">
-					<a href="#" class="button" id="data_button_table_treenode" onclick="WindowMaker.show('node-table');"><img src="widgets/themes/kde/table.gif" alt="table" title="treenode table" /></a>
-                    <a href="#" class="button" id="data_button_table_connector" onclick="WindowMaker.show( 'connector-table' );"><img src="widgets/themes/kde/table_connector.gif" alt="table" title="connector table" /></a>
-					<a href="#" class="button" id="data_button_tree" onclick="WindowMaker.show('object-tree');"><img src="widgets/themes/kde/tree.gif" alt="tree" title="object tree" /></a>
-					<a href="#" class="button" id="data_button_stats" onclick="WindowMaker.show('statistics');"><img src="widgets/themes/kde/stats.gif" alt="tree" title="project statistics" /></a>
-					<a href="#" class="button" id="view_3d_button" onclick="WindowMaker.show('3d-view');"><img src="widgets/themes/kde/3d-view.png" alt="Show the 3D view" title="Show the 3D view" /></a>
-				</div>
+
+				<div class="box" id="toolbox_project" style="display:none"></div>
+				<div class="box" id="toolbox_edit" style="display:none"></div>
+				<div class="box" id="toolbox_data" style="display:none"></div>
+
 				<div id="logout_box" class="box_right" style="display:none"><p><a id="logout" name="logout" title="Logout" onclick="logout();" href="#">Logout</a></p></div>
 				<div id="login_box" class="box_right" style="display:none"><p>account&nbsp;</p><p><input type="text" id="account" name="account" size="8" /></p><p>&nbsp;&nbsp;password&nbsp;</p><p><input type="password" id="password" name="password" size="8" /></p><p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p></div>
 				<div id="session_box" class="box_right" style="display:none"><p>You are <span id="session_longname">&nbsp;</span>.</p></div>

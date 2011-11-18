@@ -478,51 +478,11 @@ function Project( pid )
 	    that should be run regardless of the current tool, such as
 	    actions that switch tools. */
 
-	var actions = [];
-
-	this.addAction = function ( action ) {
-		actions.push( action );
-	}
+	var actions = toolActions.concat(editToolActions);
 
 	this.getActions = function () {
 		return actions;
 	}
 
-	/** FIXME: also add F1 to open the key shortcuts help?
-
-	    FIXME: 1 is a bad shortcut to switch tool (1-5 should be used
-	    for setting confidences instead) */
-
-	this.addAction( new Action({
-		helpText: "Switch to skeleton tracing mode",
-		buttonID: 'trace_button_skeleton',
-		keyShortcuts: {
-			'1': [ 49 ]
-		},
-		run: function (e) {
-			project.setTool( new TracingTool() );
-			return false;
-		}
-	}) );
-
-	this.addAction( new Action({
-		helpText: "Switch to the next open stack (or the previous with Shift+Tab)",
-		keyShortcuts: {
-			'Tab': [ 9 ]
-		},
-		run: function (e) {
-			if (e.shiftKey) {
-				project.switchFocus(-1);
-			} else {
-				project.switchFocus(1);
-			}
-			//e.stopPropagation();
-			return false;
-		}
-	}) );
-
 	var keyCodeToAction = getKeyCodeToActionMap(actions);
-
-	// setButtonClicksFromActions(actions);
-
 }

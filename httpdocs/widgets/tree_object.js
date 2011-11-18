@@ -461,6 +461,14 @@ var ObjectTree = new function()
             $.jstree.rollback(treebefore);
             return false;
           } else {
+              // When removing a skeleton or neuron, we want to make sure
+              // that it is not activated in the stack view, because if it would be
+              // and we add a new treenode, it would try to connect it to the
+              // not-existing active treenode
+              if(type === "skeleton" || type === "neuron") {
+                  project.deselectActiveNode();
+              }
+
               // Remove group, neuron, skeleton
               $.post("model/instance.operation.php", {
                     "operation": "remove_node",

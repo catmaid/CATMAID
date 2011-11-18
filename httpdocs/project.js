@@ -281,6 +281,15 @@ function Project( pid )
             tool.updateLayer();
     }
 
+    // Need to add this "tool-specific" function
+    // to project because need to call it from the
+    // object tree widget
+    this.deselectActiveNode = function()
+    {
+		if ( tool && tool.deselectActiveNode )
+            tool.deselectActiveNode();
+    }
+
 	/**
 	 * create a URL to the current view
 	 */

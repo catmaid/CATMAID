@@ -38,6 +38,11 @@ function TracingTool()
     tracingLayer.svgOverlay.updateNodes();
   }
 
+  this.deselectActiveNode = function()
+  {
+    tracingLayer.svgOverlay.activateNode(null);
+  }
+
   var setupSubTools = function()
   {
     var box;

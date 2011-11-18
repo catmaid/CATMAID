@@ -1,3 +1,4 @@
+/* -*- mode: espresso; espresso-indent-level: 8; indent-tabs-mode: t -*- */
 /**
  * navigator.js
  *
@@ -26,9 +27,8 @@ function Navigator()
 	this.input_x = document.getElementById( "x" );		//!< x_input
 	this.input_y = document.getElementById( "y" );		//!< y_input
 
-  // Last mouse position for proper zoom with + and -
-  var lastX = 0,
-      lastY = 0;
+	// Last mouse position for proper zoom with + and -
+	var lastX = 0, lastY = 0;
 	
 	/* remove all existing dimension sliders */
 	while ( sliders_box.firstChild )
@@ -80,10 +80,10 @@ function Navigator()
 	this.mouseCatcher = document.createElement( "div" );
 	self.mouseCatcher.className = "sliceMouseCatcher";
 
-    this.setMouseCatcher = function( mc )
-    {
-        self.mouseCatcher = mc;
-    }
+	this.setMouseCatcher = function( mc )
+	{
+		self.mouseCatcher = mc;
+	}
 	
 	this.updateControls = function()
 	{
@@ -274,31 +274,31 @@ function Navigator()
 	this.changeScale = function( val )
 	{
 		self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, val );
-    return;
+		return;
 	}
 
-  /**
-   * change the scale, making sure that the point keep_[xyz] stays in
-   * the same position in the view
-   */
-  this.scalePreservingLastPosition = function (keep_x, keep_y, sp) {
-    var old_s = self.stack.s;
-    var old_scale = self.stack.scale;
-    var new_s = Math.max(0, Math.min(self.stack.MAX_S, Math.round(sp)));
-    var new_scale = 1 / Math.pow(2, new_s);
+	/**
+	 * change the scale, making sure that the point keep_[xyz] stays in
+	 * the same position in the view
+	 */
+	this.scalePreservingLastPosition = function (keep_x, keep_y, sp) {
+		var old_s = self.stack.s;
+		var old_scale = self.stack.scale;
+		var new_s = Math.max(0, Math.min(self.stack.MAX_S, Math.round(sp)));
+		var new_scale = 1 / Math.pow(2, new_s);
 
-    if (old_s == new_s) return;
+		if (old_s == new_s)
+			return;
 
-    var dx = keep_x - self.stack.getProject().coordinates.x;
-    var dy = keep_y - self.stack.getProject().coordinates.y;
+		var dx = keep_x - self.stack.getProject().coordinates.x;
+		var dy = keep_y - self.stack.getProject().coordinates.y;
 
-    var new_centre_x = keep_x - dx * (old_scale / new_scale);
-    var new_centre_y = keep_y - dy * (old_scale / new_scale);
+		var new_centre_x = keep_x - dx * (old_scale / new_scale);
+		var new_centre_y = keep_y - dy * (old_scale / new_scale);
 
-    self.stack.moveTo(self.stack.getProject().coordinates.z, new_centre_y, new_centre_x, sp);
-  }
-  
-  
+		self.stack.moveTo(self.stack.getProject().coordinates.z, new_centre_y, new_centre_x, sp);
+	}
+
 	//--------------------------------------------------------------------------
 	
 	var changeXByInput = function( e )
@@ -441,7 +441,6 @@ function Navigator()
 	 */
 	this.register = function( parentStack, buttonName )
 	{
-
 		document.getElementById( typeof buttonName == "undefined" ? "edit_button_move" : buttonName ).className = "button_active";
 		document.getElementById( "toolbar_nav" ).style.display = "block";
 		

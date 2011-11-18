@@ -31,7 +31,7 @@ function TracingTool()
 	{
         self.prototype.resize( width, height );
 		return;
-	}
+	};
 
   this.updateLayer = function()
   {
@@ -53,7 +53,7 @@ function TracingTool()
         "trace_");
       $( "#toolbar_nav" ).prepend( box );
     }
-  }
+  };
 
   var createTracingLayer = function( parentStack )
   {
@@ -105,7 +105,7 @@ function TracingTool()
         proto_changeSlice( val );
         tracingLayer.svgOverlay.updateNodes();
       };
-  }
+  };
 
 	/**
 	 * install this tool in a stack.
@@ -128,7 +128,7 @@ function TracingTool()
     }
 
     return;
-  }
+  };
 
   /** Inactivate only onmousedown, given that the others are injected when onmousedown is called.
    * Leave alone onmousewheel: it is different in every browser, and it cannot do any harm to have it active. */
@@ -141,7 +141,7 @@ function TracingTool()
           delete c[fn];
         }
       });
-  }
+  };
 
   var reactivateBindings = function() {
     var c = self.prototype.mouseCatcher;
@@ -213,11 +213,11 @@ function TracingTool()
 
   this.addAction = function ( action ) {
     actions.push( action );
-  }
+  };
 
   this.getActions = function () {
     return actions;
-  }
+  };
 
   var arrowKeyCodes = {
     left: 37,
@@ -506,7 +506,7 @@ function TracingTool()
     } else {
       return false;
     }
-  }
+  };
 
   this.getMouseHelp = function( e ) {
     var result = '<p>';
@@ -518,10 +518,11 @@ function TracingTool()
     result += '<strong>shift-click on a treenode:</strong> join two skeletons (if there was an active treenode)<br />';
     result += '</p>';
     return result;
-  }
+  };
   
   this.redraw = function()
   {
     self.prototype.redraw();
-  }
+  };
+
 }

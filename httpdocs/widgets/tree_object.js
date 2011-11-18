@@ -472,7 +472,7 @@ var ObjectTree = new function()
                     r = $.parseJSON(r);
                     if(r['status']) {
                         $("#tree_object").jstree("refresh", -1);
-                        project.updateAndredraw();
+                        project.updateTool();
                         var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
                         g.growlAlert({
                           autoShow: true,

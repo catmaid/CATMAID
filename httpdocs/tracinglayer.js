@@ -31,6 +31,13 @@ function TracingLayer( stack )
     self.svgOverlay.redraw( stack );
     return;
   };
+/*
+  this.update = function()
+  {
+      // this fetches from the database, e.g. after deleting a node in the object tree
+      self.svgOverlay.updateNodes();
+      self.svgOverlay.redraw( stack );
+  }*/
 
 	this.unregister = function()
 	{

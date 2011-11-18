@@ -33,6 +33,11 @@ function TracingTool()
 		return;
 	}
 
+  this.updateLayer = function()
+  {
+    tracingLayer.svgOverlay.updateNodes();
+  }
+
   var setupSubTools = function()
   {
     var box;

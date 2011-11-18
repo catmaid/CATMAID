@@ -274,7 +274,13 @@ function Project( pid )
 			tool.redraw();
 		return;
 	}
-	
+
+    this.updateTool = function()
+    {
+		if ( tool && tool.updateLayer )
+            tool.updateLayer();
+    }
+
 	/**
 	 * create a URL to the current view
 	 */

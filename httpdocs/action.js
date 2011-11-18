@@ -134,7 +134,7 @@ var getKeyCodeToActionMap = function( actionArray ) {
     those icons to the corresponding function */
 
 function createButtonsFromActions(actions, boxID, iconPrefix) {
-  var box, action, a, img, buttonID;
+  var box, action, a, img, buttonID, title, shorcuts;
   box = $( '<div class="box" id="'+boxID+'"></div>' );
   for (i = 0; i < actions.length; ++i) {
     action = actions[i];
@@ -147,7 +147,12 @@ function createButtonsFromActions(actions, boxID, iconPrefix) {
       img = document.createElement('img');
       img.setAttribute('src', 'widgets/themes/kde/' + iconPrefix + action.getButtonName() + '.png');
       img.setAttribute('alt', action.getHelpText());
-      var title = action.getKeyShortcutsString() + ': ' + action.getHelpText();
+      shortcuts = action.getKeyShortcutsString();
+      if (shortcuts.length === 0) {
+        title = action.getHelpText();
+      } else {
+        title = shortcuts + ': ' + action.getHelpText();
+      }
       img.setAttribute('title', title);
       a.appendChild(img);
       box.append(a);

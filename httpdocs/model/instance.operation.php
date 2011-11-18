@@ -133,7 +133,30 @@ try {
             emitErrorAndExit($db, 'Failed to delete skeleton from instance able.');
           }
           
-          finish("Removed skeleton successfully.");		
+          // finish("Removed skeleton successfully.");
+          finish( array('status' => 1, 'message' => "Removed skeleton successfully.") );
+        }
+        else if( $rel == "neuron" )
+        {
+          // retrieve skeleton ids
+          $model_of_id = $db->getRelationId( $pid, "model_of" );
+          $res = $db->getResult('SELECT "cici"."class_instance_a" AS "skeleton_id"
+			    FROM "class_instance_class_instance" AS "cici"
+			    WHERE "cici"."class_instance_b" = '.$id.' AND "cici"."project_id" = '.$pid.'
+			    AND "cici"."relation_id" = '.$model_of_id);
+			    
+	      foreach($res as $key => $val) {
+	            remove_skeleton($db, $pid, $val['skeleton_id']);
+	            $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$val['skeleton_id']);
+	      }
+          $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
+
+          if (false === $ids) {
+            emitErrorAndExit($db, 'Failed to delete node from instance table.');
+          }
+
+          finish( array('status' => 1, 'message' => "Removed neuron successfully.") );
+	        
         }
         else
         {
@@ -258,7 +281,7 @@ try {
       finish( array( 'status' => 1) );
     }
   }
-    else if ( $op == 'has_relations' )
+  else if ( $op == 'has_relations' )
   {
     
     $relnr = isset( $_REQUEST[ 'relationnr' ] ) ? intval($_REQUEST[ 'relationnr' ]) : 0;
@@ -287,9 +310,9 @@ try {
     if (false === $rels) {
       emitErrorAndExit($db, 'Failed to select CICI.');
     }
-    $ret = !empty($rels) ? "True" : "False";
+    $ret = !empty($rels) ? finish(array('has_relation' => 1)) : finish(array('has_relation' => 0));
     
-    finish($ret);
+
   }
 
 

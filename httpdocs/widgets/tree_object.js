@@ -127,7 +127,6 @@ var ObjectTree = new function()
                 "separator_after": false,
                 "label": "Remove group",
                 "action": function (obj) {
-                  // TODO must ask first!!!!
                   this.remove(obj);
                 }
               }
@@ -446,50 +445,51 @@ var ObjectTree = new function()
 
     $(object_tree_id).bind("remove.jstree", function (e, data) {
       var treebefore = data.rlbk;
-      // check if there are any subelements related to the object tree
-      // part_of and model_of relationships
+          type = data.rslt.obj.attr("rel");
+
       $.post("model/instance.operation.php", {
-        "operation": "has_relations",
-        "relationnr": 2,
-        "relation0": "part_of",
-        "relation1": "model_of",
-        "id": data.rslt.obj.attr("id").replace("node_", ""),
-        "pid": pid
-      }, function (retdata) {
-        if (retdata === "True") {
-          alert("Object Treenode has child relations. (Re-)move them before you can delete it.");
-          $.jstree.rollback(treebefore);
-          return false;
-        } else {
-
-          $.post("model/instance.operation.php", {
-            "operation": "remove_node",
+            "operation": "has_relations",
+            "relationnr": 2,
+            "relation0": "part_of",
+            "relation1": "model_of",
             "id": data.rslt.obj.attr("id").replace("node_", ""),
-            "title": data.rslt.new_name,
-            "pid": pid,
-            "rel": data.rslt.obj.attr("rel")
-          }, function (retdata) {
-            // need to deactive any currently active node
-            // in the display. if the active treenode would
-            // be element of the deleted skeleton, the
-            // active node would become invalid
-            SkeletonAnnotations.staticRefresh();
+            "pid": pid
+        }, function (r) {
+          r = $.parseJSON(r);
+          if(type === "group" && r['has_relation']) {
+            alert("Group node has subgroups or neurons. (Re)move them before you can delete it.");
+            $.jstree.rollback(treebefore);
+            return false;
+          } else {
+              // Remove group, neuron, skeleton
+              $.post("model/instance.operation.php", {
+                    "operation": "remove_node",
+                    "id": data.rslt.obj.attr("id").replace("node_", ""),
+                    "title": data.rslt.new_name,
+                    "pid": pid,
+                    "rel": data.rslt.obj.attr("rel")
+                  }, function (r) {
+                    r = $.parseJSON(r);
+                    if(r['status']) {
+                        $("#tree_object").jstree("refresh", -1);
+                        project.updateAndredraw();
+                        var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
+                        g.growlAlert({
+                          autoShow: true,
+                          content: 'Object tree element' + data.rslt.obj.text() + ' removed.',
+                          title: 'SUCCESS',
+                          position: 'top-right',
+                          delayTime: 2500,
+                          onComplete: function() { g.remove(); }
+                        });
+                    } else {
+                        if(r['error'])
+                            alert(r['error']);
+                    };
+              });
+          }
 
-            var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
-            g.growlAlert({
-              autoShow: true,
-              content: 'Object tree element' + data.rslt.obj.text() + ' removed.',
-              title: 'SUCCESS',
-              position: 'top-right',
-              delayTime: 2500,
-              onComplete: function() { g.remove(); }
-            });
-
-          });
-          return true;
-        }
-
-      });
+        });
 
     });
 

@@ -150,6 +150,8 @@ var SkeletonAnnotations = new function()
     var nodes = {};
     var labels = {};
     var show_labels = false;
+
+    var lastX = null, lastY = null;
     
     /* padding beyond screen borders for fetching data and updating nodes */
     var PAD = 256;
@@ -1118,6 +1120,21 @@ var SkeletonAnnotations = new function()
     // make view accessible from outside for setting additional mouse handlers
     this.view = view;
 
+    view.onmousemove = function( e ) {
+      var wc;
+      var worldX, worldY;
+      var stackX, stackY;
+      m = ui.getMouse(e, stack.getView(), true);
+      if (m) {
+        wc = stack.getWorldTopLeft();
+        worldX = wc.worldLeft + ((m.offsetX / stack.scale) * stack.resolution.x);
+        worldY = wc.worldTop + ((m.offsetY / stack.scale) * stack.resolution.y);
+        lastX = worldX;
+        lastY = worldY;
+        statusBar.replaceLast('['+worldX+', '+worldY+', '+project.coordinates.z+']');
+      }
+    }
+
     this.paper = Raphael(view, Math.floor(stack.dimension.x * stack.scale), Math.floor(stack.dimension.y * stack.scale));
     this.paper.catmaidSVGOverlay = this;
 
@@ -1352,7 +1369,9 @@ var SkeletonAnnotations = new function()
         }
         break;
       case "selectnearestnode":
-        self.activateNearestNode(project.lastX, project.lastY, project.coordinates.z);
+        if (lastX !== null && lastY !== null) {
+          self.activateNearestNode(lastX, lastY, project.coordinates.z);
+        }
         break;
       case "togglelabels":
         self.toggleLabels();

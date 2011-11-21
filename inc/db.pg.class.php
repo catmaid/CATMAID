@@ -53,6 +53,7 @@ class DB
 	var $handle;
 
     var $debug = true;
+    var $debugTimings = true;
 
 	/**
 	 * Constructor
@@ -90,6 +91,8 @@ class DB
 	 */
 	function getResult( $query )
 	{
+        if ($this->debugTimings)
+            $queryStart = microtime(TRUE);
 		if( $this->debug )
 			error_log("In getResult: ".preg_replace('/\s+/', ' ', $query));
 		$result = array();
@@ -100,6 +103,8 @@ class DB
 		}
 		else
 			$result = false;
+        if ($this->debugTimings)
+            error_log(sprintf("Query took: %.3f seconds", (microtime(TRUE) - $queryStart)));
 		return $result;
 	}
 

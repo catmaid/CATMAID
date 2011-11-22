@@ -413,7 +413,24 @@ class DB
 		$resid = !empty($res) ? $res[0]['id'] : 0;
 		return $resid;
 	}
-  
+
+	/* Retrieve all classes or relations for a given project */
+	function getMap( $pid, $type ) {
+		if (!($type === "class" || $type === "relation")) {
+			throw new Exception("The type passed to getMap must be 'class' or 'relation'");
+		}
+		$result = array();
+		$query_result = pg_query($this->handle,
+					 "SELECT {$type}_name, id FROM $type WHERE project_id = $pid");
+		if (!$query_result) {
+			return FALSE;
+		}
+		while ($row = pg_fetch_array($query_result, NULL, PGSQL_NUM)) {
+			$result[$row[0]] = $row[1];
+		}
+		return $result;
+	}
+
   /*
    * return all treenode ids for a skeleton starting with root node as a flat list
    * using the element_of relationship of the treenodes

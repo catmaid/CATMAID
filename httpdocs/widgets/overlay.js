@@ -1313,6 +1313,7 @@ var SkeletonAnnotations = new function()
           alert("No active node selected.");
         }
         break;
+      // FIXME: no longer used - probably should move button action's code here
       case "goactive":
         if (atn !== null) {
           stack.getProject().moveTo(

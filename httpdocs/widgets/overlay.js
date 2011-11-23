@@ -743,7 +743,7 @@ var SkeletonAnnotations = new function()
 
               // Check whether the Z coordinate of the new node is beyond one section away
               // from the Z coordinate of the parent node (which is the active by definition)
-              if (active_node_z) {
+              if (active_node_z !== null) {
                 if (Math.abs(active_node_z - nn.z) > 1) {
                   $('#growl-alert').growlAlert({
                     autoShow: true,

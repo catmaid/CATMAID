@@ -20,20 +20,15 @@ if ( $pid )
   if ( $uid )
   {
 
-    $eof_id = $db->getRelationId( $pid, 'element_of' );
-    if(!$eof_id) { echo makeJSON( array( 'error' => 'Can not find "element_of" relation for this project' ) ); return; }
-    
     // retrieve parent from tci
 	  $res = $db->getResult('SELECT "tci"."treenode_id" AS "id", "tn"."parent_id" AS "parent",
 	  					("tn"."location")."x" AS "x",
 						("tn"."location")."y" AS "y",
 						("tn"."location")."z" AS "z" 
-	   FROM "treenode_class_instance" as "tci", "treenode" as "tn"
+	   FROM "treenode" as "tn"
 		WHERE 
-		"tci"."treenode_id" = "tn"."id" AND
-		"tci"."project_id" = '.$pid.' AND
-		"tci"."class_instance_id" = '.$skelid.' AND
-		"tci"."relation_id" = '.$eof_id.' AND
+		"tn"."project_id" = '.$pid.' AND
+		"tn"."skeleton_id" = '.$skelid.' AND
 		"tn"."parent_id" is null');
      
     if(!empty($res)) {

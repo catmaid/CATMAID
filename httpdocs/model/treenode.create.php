@@ -128,6 +128,7 @@ try {
 				'project_id' => $pid,
 				'location' => '('.$x.','.$y.','.$z.')',
 				'radius' => $radius,
+				'skeleton_id' => $skid,
 				'confidence' => $confidence);
 		
 		// this is not a root node
@@ -206,6 +207,7 @@ try {
 				'project_id' => $pid,
 				'location' => '('.$x.','.$y.','.$z.')',
 				'radius' => $radius,
+				'skeleton_id' => $skelid,
 				'confidence' => $confidence
 				);
 
@@ -365,6 +367,7 @@ try {
 				'project_id' => $pid,
 				'location' => '('.$x.','.$y.','.$z.')',
 				'radius' => $radius,
+				'skeleton_id' => $skelid,
 				'confidence' => $confidence);
 
 			// Only set parent_id if given, otherwise

@@ -163,12 +163,8 @@ try {
          treenode.user_id AS user_id,
          treenode.radius AS radius,
          ((treenode.location).z - $z) AS z_diff,
-         treenode_class_instance.class_instance_id AS skeleton_id
+         skeleton_id
      FROM treenode
-         LEFT OUTER JOIN (treenode_class_instance
-                          INNER JOIN class_instance
-                          ON treenode_class_instance.class_instance_id = class_instance.id AND class_instance.class_id = {$classes['skeleton']})
-         ON (treenode_class_instance.treenode_id = treenode.id AND treenode_class_instance.relation_id = {$relations['element_of']})
      WHERE treenode.project_id = $pid
       AND (treenode.location).x >= $left
       AND (treenode.location).x <= ($left + $width)

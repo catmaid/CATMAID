@@ -423,7 +423,7 @@ function TracingTool()
       "5": [ 53 ]
     },
     run: function (e) {
-      tracingLayer.svgOverlay.tracingCommand('skeletonsplitting');
+      tracingLayer.svgOverlay.tracingCommand('skelsplitting');
       return false;
     }
   }) );
@@ -436,7 +436,7 @@ function TracingTool()
       "6": [ 54 ]
     },
     run: function (e) {
-      tracingLayer.svgOverlay.tracingCommand('skeletonreroot');
+      tracingLayer.svgOverlay.tracingCommand('skelrerooting');
       return false;
     }
   }) );

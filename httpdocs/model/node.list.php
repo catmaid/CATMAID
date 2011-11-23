@@ -121,7 +121,6 @@ if (!$classes) {
     echo makeJSON( array( 'error' => "Could not find classes for project $pid" ) );
     return;
 }
-error_log("got classes map ".print_r($classes, TRUE));
 
 $relations = $db->getMap( $pid, 'relation' );
 if (!$relations) {

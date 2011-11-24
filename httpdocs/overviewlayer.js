@@ -62,18 +62,12 @@ function OverviewLayer( stack )
 
 	var self = this;
 
-    self.layers = stack.getLayers();
+	self.layers = stack.getLayers();
 
 	var view = document.createElement( "div" );
 	view.className = "OverviewLayer";
-    view.id = "OverviewLayer";
-	// view.style.width = "300px";
-	//view.style.height = "150px";
-    //view.style.backgroundColor = "#FF0000";
-    view.style.zIndex = 6;
-
-
-
+	view.id = "OverviewLayer";
+	view.style.zIndex = 6;
 
 }
 

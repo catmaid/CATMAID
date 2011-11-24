@@ -304,9 +304,6 @@ function handle_openProjectStack( status, text, xml )
 		}
 		else
 		{
-            // console.log(e);
-			//console.replaceLast( e );
-			
 			//! look if the project is already opened, otherwise open a new one
 			if ( !( project && project.id == e.pid ) )
 			{
@@ -337,15 +334,14 @@ function handle_openProjectStack( status, text, xml )
 
 			stack.addLayer( "TileLayer", tilelayer );
 
-            /* XXX: for testing */
-            var tilelayer2 = new TileLayer(
-                    stack,
-                    "http://localhost/fib/",
-                    e.tile_width,
-                    e.tile_height );
-
-            // tilelayer.setOpacity( 0.2 );
-            stack.addLayer( "TileLayer  22", tilelayer2 );
+			$.each(e.overlay, function(key, value) {
+				var tilelayer2 = new TileLayer(
+								stack,
+								value.image_base,
+								e.tile_width,
+								e.tile_height );
+				stack.addLayer( value.title, tilelayer2 );
+			});
 
 			project.addStack( stack );
 

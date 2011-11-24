@@ -481,8 +481,7 @@ var ObjectTree = new function()
                     if(r['status']) {
                         $("#tree_object").jstree("refresh", -1);
                         project.updateTool();
-                        var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
-                        g.growlAlert({
+                        $('#growl-alert').growlAlert({
                           autoShow: true,
                           content: 'Object tree element' + data.rslt.obj.text() + ' removed.',
                           title: 'SUCCESS',

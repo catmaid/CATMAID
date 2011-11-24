@@ -757,6 +757,10 @@ var init = function()
   
 	window.onresize();
 
+	$('#growl-alert').growlAlert({
+					autoShow: false
+	});
+
 	return;
 }
 

@@ -26,8 +26,7 @@ var ConnectorTable = new function()
         "fnServerData": function (sSource, aoData, fnCallback) {
 
           if (!skeletonID) {
-            var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
-            g.growlAlert({
+            $('#growl-alert').growlAlert({
               autoShow: true,
               content: 'You need to activate a treenode to display the connector table of its skeleton.',
               title: 'BEWARE',

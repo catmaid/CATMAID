@@ -744,9 +744,7 @@ var SkeletonAnnotations = new function()
               // from the Z coordinate of the parent node (which is the active by definition)
               if (active_node_z) {
                 if (Math.abs(active_node_z - nn.z) > 1) {
-                  var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
-                  //var g = $('#growl-alert'); // doesn't work
-                  g.growlAlert({
+                  $('#growl-alert').growlAlert({
                     autoShow: true,
                     content: 'Node added beyond one section from its parent node!',
                     title: 'BEWARE',
@@ -1049,8 +1047,7 @@ var SkeletonAnnotations = new function()
       } else if (e.shiftKey) {
         if (null === atn.id) {
           if (getMode() === "skeletontracing") {
-            var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
-            g.growlAlert({
+            $('#growl-alert').growlAlert({
               autoShow: true,
               content: 'You need to activate a treenode first (skeleton tracing mode)!',
               title: 'BEWARE',

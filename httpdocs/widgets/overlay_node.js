@@ -555,8 +555,7 @@ var SkeletonElements = new function()
             statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
           }
         } else {
-          var g = $('body').append('<div id="growl-alert" class="growl-message"></div>').find('#growl-alert');
-          g.growlAlert({
+          $('#growl-alert').growlAlert({
             autoShow: true,
             content: 'You need to activate a node before joining it to a connector node!',
             title: 'BEWARE',

@@ -164,6 +164,11 @@ try {
         if (false === $ids) {
           emitErrorAndExit($db, 'Could not update skeleton id of children treenodes.');
         }
+
+        $result = $db->getResult("UPDATE treenode SET skeleton_id = $skelid WHERE id = {$chitn['id']}");
+        if (FALSE === $result) {
+            emitErrorAndExit($db, 'Failed to set the skeleton_id column for a child treenode.');
+        }
       }
     }
 

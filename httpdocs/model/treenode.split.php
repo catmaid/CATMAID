@@ -147,6 +147,11 @@ try {
 		if ( false === $ids ) {
 			emitErrorAndExit($db, 'Failed to update the skeleton id of the splitted nodes.');
 		}
+
+        $ids = $db->getResult("UPDATE treenode SET skeleton_id = $newSkeletonID WHERE id = {$childTreenode['id']}");
+        if (FALSE === $ids) {
+            emitErrorAndExit($db, "Failed to update the skeleton_id column of one of the split-off nodes");
+        }
 	};
 
 	if (! $db->commit() ) {

@@ -1,3 +1,4 @@
+/* -*- mode: espresso; espresso-indent-level: 8; indent-tabs-mode: t -*- */
 /**
  * navigator.js
  *
@@ -26,9 +27,8 @@ function Navigator()
 	this.input_x = document.getElementById( "x" );		//!< x_input
 	this.input_y = document.getElementById( "y" );		//!< y_input
 
-  // Last mouse position for proper zoom with + and -
-  var lastX = 0,
-      lastY = 0;
+	// Last mouse position for proper zoom with + and -
+	var lastX = 0, lastY = 0;
 	
 	/* remove all existing dimension sliders */
 	while ( sliders_box.firstChild )
@@ -80,10 +80,10 @@ function Navigator()
 	this.mouseCatcher = document.createElement( "div" );
 	self.mouseCatcher.className = "sliceMouseCatcher";
 
-    this.setMouseCatcher = function( mc )
-    {
-        self.mouseCatcher = mc;
-    }
+	this.setMouseCatcher = function( mc )
+	{
+		self.mouseCatcher = mc;
+	}
 	
 	this.updateControls = function()
 	{
@@ -274,31 +274,31 @@ function Navigator()
 	this.changeScale = function( val )
 	{
 		self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, val );
-    return;
+		return;
 	}
 
-  /**
-   * change the scale, making sure that the point keep_[xyz] stays in
-   * the same position in the view
-   */
-  this.scalePreservingLastPosition = function (keep_x, keep_y, sp) {
-    var old_s = self.stack.s;
-    var old_scale = self.stack.scale;
-    var new_s = Math.max(0, Math.min(self.stack.MAX_S, Math.round(sp)));
-    var new_scale = 1 / Math.pow(2, new_s);
+	/**
+	 * change the scale, making sure that the point keep_[xyz] stays in
+	 * the same position in the view
+	 */
+	this.scalePreservingLastPosition = function (keep_x, keep_y, sp) {
+		var old_s = self.stack.s;
+		var old_scale = self.stack.scale;
+		var new_s = Math.max(0, Math.min(self.stack.MAX_S, Math.round(sp)));
+		var new_scale = 1 / Math.pow(2, new_s);
 
-    if (old_s == new_s) return;
+		if (old_s == new_s)
+			return;
 
-    var dx = keep_x - self.stack.getProject().coordinates.x;
-    var dy = keep_y - self.stack.getProject().coordinates.y;
+		var dx = keep_x - self.stack.getProject().coordinates.x;
+		var dy = keep_y - self.stack.getProject().coordinates.y;
 
-    var new_centre_x = keep_x - dx * (old_scale / new_scale);
-    var new_centre_y = keep_y - dy * (old_scale / new_scale);
+		var new_centre_x = keep_x - dx * (old_scale / new_scale);
+		var new_centre_y = keep_y - dy * (old_scale / new_scale);
 
-    self.stack.moveTo(self.stack.getProject().coordinates.z, new_centre_y, new_centre_x, sp);
-  }
-  
-  
+		self.stack.moveTo(self.stack.getProject().coordinates.z, new_centre_y, new_centre_x, sp);
+	}
+
 	//--------------------------------------------------------------------------
 	
 	var changeXByInput = function( e )
@@ -328,12 +328,6 @@ function Navigator()
 		return false
 	}
 
-	var actions = [];
-
-	this.addAction = function ( action ) {
-		actions.push( action );
-	}
-
 	this.getActions = function () {
 		return actions;
 	}
@@ -345,101 +339,101 @@ function Navigator()
 		down: 40
 	};
 
-	this.addAction( new Action({
-		helpText: "Zoom in",
-		keyShortcuts: {
-			'+': [ 43, 107, 61, 187 ]
-		},
-		run: function (e) {
-			self.slider_s.move(1);
-			return false;
-		}
-	}) );
+	var actions = [
 
-	this.addAction( new Action({
-		helpText: "Zoom out",
-		keyShortcuts: {
-			'-': [ 45, 109, 189 ]
-		},
-		run: function (e) {
-			self.slider_s.move(-1);
-			return false;
-		}
-	}) );
+		new Action({
+			helpText: "Zoom in",
+			keyShortcuts: {
+				'+': [ 43, 107, 61, 187 ]
+			},
+			run: function (e) {
+				self.slider_s.move(1);
+				return false;
+			}
+		}),
 
-	this.addAction( new Action({
-		helpText: "Move up 1 slice in z (or 10 with Shift held)",
-		keyShortcuts: {
-			',': [ 44, 188 ]
-		},
-		run: function (e) {
-			self.slider_z.move(-(e.shiftKey ? 10 : 1));
-			return false;
-		}
-	}) );
+		new Action({
+			helpText: "Zoom out",
+			keyShortcuts: {
+				'-': [ 45, 109, 189 ]
+			},
+			run: function (e) {
+				self.slider_s.move(-1);
+				return false;
+			}
+		}),
 
-	this.addAction( new Action({
-		helpText: "Move down 1 slice in z (or 10 with Shift held)",
-		keyShortcuts: {
-			'.': [ 46, 190 ]
-		},
-		run: function (e) {
-			self.slider_z.move((e.shiftKey ? 10 : 1));
-			return false;
-		}
-	}) );
+		new Action({
+			helpText: "Move up 1 slice in z (or 10 with Shift held)",
+			keyShortcuts: {
+				',': [ 44, 188 ]
+			},
+			run: function (e) {
+				self.slider_z.move(-(e.shiftKey ? 10 : 1));
+				return false;
+			}
+		}),
 
-	this.addAction( new Action({
-		helpText: "Move left (towards negative x)",
-		keyShortcuts: {
-			"\u2190": [ arrowKeyCodes.left ]
-		},
-		run: function (e) {
-			self.input_x.value = parseInt(self.input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-			self.input_x.onchange(e);
-			return false;
-		}
-	}) );
+		new Action({
+			helpText: "Move down 1 slice in z (or 10 with Shift held)",
+			keyShortcuts: {
+				'.': [ 46, 190 ]
+			},
+			run: function (e) {
+				self.slider_z.move((e.shiftKey ? 10 : 1));
+				return false;
+			}
+		}),
 
-	this.addAction( new Action({
-		helpText: "Move right (towards positive x)",
-		keyShortcuts: {
-			"\u2192": [ arrowKeyCodes.right ],
-		},
-		run: function (e) {
-			self.input_x.value = parseInt(self.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-			self.input_x.onchange(e);
-			return false;
-		}
-	}) );
+		new Action({
+			helpText: "Move left (towards negative x)",
+			keyShortcuts: {
+				"\u2190": [ arrowKeyCodes.left ]
+			},
+			run: function (e) {
+				self.input_x.value = parseInt(self.input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+				self.input_x.onchange(e);
+				return false;
+			}
+		}),
 
-	this.addAction( new Action({
-		helpText: "Move up (towards negative y)",
-		keyShortcuts: {
-			"\u2191": [ arrowKeyCodes.up ]
-		},
-		run: function (e) {
-			self.input_y.value = parseInt(self.input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-			self.input_y.onchange(e);
-			return false;
-		}
-	}) );
+		new Action({
+			helpText: "Move right (towards positive x)",
+			keyShortcuts: {
+				"\u2192": [ arrowKeyCodes.right ],
+			},
+			run: function (e) {
+				self.input_x.value = parseInt(self.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+				self.input_x.onchange(e);
+				return false;
+			}
+		}),
 
-	this.addAction( new Action({
-		helpText: "Move down (towards positive y)",
-		keyShortcuts: {
-			"\u2193": [ arrowKeyCodes.down ]
-		},
-		run: function (e) {
-			self.input_y.value = parseInt(self.input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-			self.input_y.onchange(e);
-			return false;
-		}
-	}) );
+		new Action({
+			helpText: "Move up (towards negative y)",
+			keyShortcuts: {
+				"\u2191": [ arrowKeyCodes.up ]
+			},
+			run: function (e) {
+				self.input_y.value = parseInt(self.input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+				self.input_y.onchange(e);
+				return false;
+			}
+		}),
+
+		new Action({
+			helpText: "Move down (towards positive y)",
+			keyShortcuts: {
+				"\u2193": [ arrowKeyCodes.down ]
+			},
+			run: function (e) {
+				self.input_y.value = parseInt(self.input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+				self.input_y.onchange(e);
+				return false;
+			}
+		})]
 
 	var keyCodeToAction = getKeyCodeToActionMap(actions);
-
-	// setButtonClicksFromActions(actions);
 
 	/**
 	 * install this tool in a stack.
@@ -447,7 +441,6 @@ function Navigator()
 	 */
 	this.register = function( parentStack, buttonName )
 	{
-
 		document.getElementById( typeof buttonName == "undefined" ? "edit_button_move" : buttonName ).className = "button_active";
 		document.getElementById( "toolbar_nav" ).style.display = "block";
 		

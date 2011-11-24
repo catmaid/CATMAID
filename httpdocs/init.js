@@ -509,7 +509,6 @@ function global_resize( e )
 	return true;
 }
 
-
 /**
  * initialise everything
  * to be called by the onload-handler of document.body
@@ -667,12 +666,22 @@ var init = function()
 	document.getElementById( "login_box" ).style.display = "block";
 	document.getElementById( "logout_box" ).style.display = "none";
 	document.getElementById( "session_box" ).style.display = "none";
-	
+
+	// Add the toolbar buttons:
+
+	$('#toolbox_project').replaceWith(createButtonsFromActions(
+		toolActions, 'toolbox_project', ''));
+	$('#toolbox_edit').replaceWith(createButtonsFromActions(
+		editToolActions, 'toolbox_edit', ''));
+	$('#toolbox_data').replaceWith(createButtonsFromActions(
+		tracingWindowActions, 'toolbox_data', ''));
+
 	document.getElementById( "toolbar_nav" ).style.display = "none";
 	document.getElementById( "toolbar_text" ).style.display = "none";
 	document.getElementById( "toolbar_crop" ).style.display = "none";
 	document.getElementById( "toolbox_project" ).style.display = "none";
 	document.getElementById( "toolbox_edit" ).style.display = "none";
+	document.getElementById( "toolbox_data" ).style.display = "none";
 	document.getElementById( "toolbox_show" ).style.display = "none";
 	
 	document.getElementById( "account" ).onkeydown = login_oninputreturn;

@@ -21,7 +21,7 @@ if ( $pid )
   {
 
     // retrieve parent from tci
-	  $res = $db->getResult('SELECT "tci"."treenode_id" AS "id", "tn"."parent_id" AS "parent",
+	  $res = $db->getResult('SELECT "tn"."id" AS "id", "tn"."parent_id" AS "parent",
 	  					("tn"."location")."x" AS "x",
 						("tn"."location")."y" AS "y",
 						("tn"."location")."z" AS "z" 

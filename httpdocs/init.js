@@ -304,8 +304,6 @@ function handle_openProjectStack( status, text, xml )
 		}
 		else
 		{
-			//console.replaceLast( e );
-			
 			//! look if the project is already opened, otherwise open a new one
 			if ( !( project && project.id == e.pid ) )
 			{
@@ -333,9 +331,22 @@ function handle_openProjectStack( status, text, xml )
 					e.image_base,
 					e.tile_width,
 					e.tile_height );
-			
+
 			stack.addLayer( "TileLayer", tilelayer );
-			
+
+			$.each(e.overlay, function(key, value) {
+				var tilelayer2 = new TileLayer(
+								stack,
+								value.image_base,
+								e.tile_width,
+								e.tile_height );
+				// set default opacity internally
+				tilelayer2.setOpacity( value.default_opacity );
+				stack.addLayer( value.title, tilelayer2 );
+				stack.overviewlayer.setOpacity( value.title,  value.default_opacity );
+			});
+
+
 			project.addStack( stack );
 
 			if ( inittool === 'tracingtool' ) {

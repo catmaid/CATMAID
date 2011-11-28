@@ -707,6 +707,31 @@ EOMIGRATION
 
 	'2011-11-23T10:18:23' => new AddSkeletonIDsMigration(),
 
+	'2011-11-24T14:35:19' => new Migration(
+		'Adding overlay table',
+		<<<EOMIGRATION
+CREATE TABLE "overlay" (
+    id integer NOT NULL,
+    stack_id integer NOT NULL,
+    title text NOT NULL,
+    image_base text NOT NULL,
+    default_opacity integer DEFAULT 0 NOT NULL
+);
+CREATE SEQUENCE overlay_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+ALTER SEQUENCE overlay_id_seq OWNED BY "overlay".id;
+ALTER TABLE ONLY "overlay"
+    ADD CONSTRAINT overlay_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY "overlay"
+    ADD CONSTRAINT overlay_stack_id_fkey FOREIGN KEY (stack_id) REFERENCES stack(id) ON DELETE CASCADE;
+ALTER TABLE "overlay" ALTER COLUMN id SET DEFAULT nextval('overlay_id_seq'::regclass);
+EOMIGRATION
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

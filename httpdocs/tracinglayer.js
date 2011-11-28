@@ -14,10 +14,15 @@ function TracingLayer( stack )
     return;
   }
 
-    this.beforeMove = function () {
-	this.svgOverlay.updateNodeCoordinatesinDB();
-    }
 
+  this.beforeMove = function () {
+    this.svgOverlay.updateNodeCoordinatesinDB();
+  }
+
+  this.setOpacity = function ( val )
+  {
+    self.svgOverlay.view.style.opacity = val+"";
+  };
 
   /** */
 	this.redraw = function()

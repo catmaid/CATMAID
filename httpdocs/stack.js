@@ -165,12 +165,21 @@ function Stack(
 	}
 	
 	/**
-	 * get the view element
+	 * Get the view element
 	 */
 	this.getView = function()
 	{
 		return view;
 	}
+
+    /**
+     * Get layers
+     */
+    this.getLayers = function()
+    {
+        return layers;
+    }
+
 	
 	/**
 	 * move to project-coordinates
@@ -256,8 +265,19 @@ function Stack(
 	 * Get stack ID.
 	 */
 	this.getId = function(){ return id; }
-	
-	
+
+	/**
+	 * Get a layer. Layers are associated by a unique key.
+	 *
+	 * @param key
+	 */
+	this.getLayer = function( key )
+	{
+		if ( layers[ key ] )
+			return layers[key];
+        return;
+	}
+
 	/**
 	 * Add a layer.  Layers are associated by a unique key.
 	 * If a layer with the passed key exists, then this layer will be replaced.
@@ -270,6 +290,7 @@ function Stack(
 		if ( layers[ key ] )
 			layers[ key ].unregister();
 		layers[ key ] = layer;
+    self.overviewlayer.refresh();
 		return;
 	}
 	
@@ -285,6 +306,7 @@ function Stack(
 		{
 			layer.unregister();
 			delete layers[ key ];
+      self.overviewlayer.refresh();
 			return layer;
 		}
 		else
@@ -389,6 +411,9 @@ function Stack(
 	
 	self.overview = new Overview( self );
 	view.appendChild( self.overview.getView() );
+
+	self.overviewlayer = new OverviewLayer( self );
+	view.appendChild( self.overviewlayer.getView() );
 	
 	var scaleBar = document.createElement( "div" );
 	scaleBar.className = "sliceBenchmark";
@@ -408,6 +433,9 @@ function Stack(
 	self.old_y = self.y;
 	self.old_x = self.x;
 	self.old_s = self.s;
+
+    self.yc = 0;
+    self.xc = 0;
 	
 	self.scale = 1 / Math.pow( 2, self.s );
 	self.old_scale = self.scale;

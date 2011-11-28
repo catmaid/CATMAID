@@ -97,7 +97,10 @@ try {
     {
       $bs[ $b[ 'i' ] ] = 1;
     }
-    
+
+    // retrieve overlays
+    $overlays = $db->getResult('SELECT id, title, image_base, default_opacity FROM overlay WHERE overlay.stack_id = '.$project_stacks[ 0 ]['sid']);
+
     $project_stack = $project_stacks[ 0 ];
     $project_stack[ 'editable' ] = $editable;
     $project_stack[ 'translation' ] = double3dXYZ( $project_stack[ 'translation' ] );
@@ -107,7 +110,7 @@ try {
 	$project_stack[ 'tile_height' ] = 256;    
 	$project_stack[ 'broken_slices' ] = $bs;
     $project_stack[ 'trakem2_project' ] = $project_stack[ 'trakem2_project' ] == 't';
-
+    $project_stack[ 'overlay' ] = $overlays;
 
     if (! $db->commit() ) {
       emitErrorAndExit( $db, 'Failed to commit!' );

@@ -270,15 +270,28 @@ function TileLayer(
 		
 		var img = document.createElement( "img" );
 		img.className = "smallMapMap";
-		img.src = "map/small.jpg";
+		img.src = baseURL + stack.z + "/small.jpg";
 		
 		stack.overview.getView().appendChild( img );
 		stack.overview.addLayer( "tilelayer", this );
 	}
-	
+
+	this.setOpacity = function( val )
+	{
+		tilesContainer.style.opacity = val+"";
+		opacity = val;
+	}
+
+	this.getOpacity = function()
+	{
+		return opacity;
+	}
 
 	// initialise
 	var self = this;
+
+	// internal opacity variable
+	var opacity = 100;
 	
 	/* Contains all tiles in a 2d-array */
 	var tiles = new Array();
@@ -288,7 +301,6 @@ function TileLayer(
 	stack.getView().appendChild( tilesContainer );
 	
 	var overviewLayer = new OverviewLayer();
-	
 	
 	var LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
 	var LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );

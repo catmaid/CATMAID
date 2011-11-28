@@ -191,7 +191,7 @@ function TileLayer(
 					// TODO: use this for the new tile naming scheme:
 					// tiles[ i ][ j ].alt = tileBaseName + stack.s + "/" + ( fr + i ) + "/" + ( fc + j );
 					tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + stack.s;
-					tiles[ i ][ j ].src = baseURL + tiles[ i ][ j ].alt + ".png";
+					tiles[ i ][ j ].src = baseURL + tiles[ i ][ j ].alt + ".jpg";
 				}
 				tiles[ i ][ j ].style.top = t + "px";
 				tiles[ i ][ j ].style.left = l + "px";
@@ -256,7 +256,7 @@ function TileLayer(
 	{
 		this.redraw = function()
 		{
-			img.src = baseURL + stack.z + "/small.png";
+			img.src = baseURL + stack.z + "/small.jpg";
 			return;
 		}
 		
@@ -270,7 +270,7 @@ function TileLayer(
 		
 		var img = document.createElement( "img" );
 		img.className = "smallMapMap";
-		img.src = "map/small.png";
+		img.src = "map/small.jpg";
 		
 		stack.overview.getView().appendChild( img );
 		stack.overview.addLayer( "tilelayer", this );

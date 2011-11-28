@@ -290,7 +290,7 @@ function Stack(
 		if ( layers[ key ] )
 			layers[ key ].unregister();
 		layers[ key ] = layer;
-        self.overviewlayer.refresh();
+    self.overviewlayer.refresh();
 		return;
 	}
 	
@@ -306,7 +306,7 @@ function Stack(
 		{
 			layer.unregister();
 			delete layers[ key ];
-            self.overviewlayer.refresh();
+      self.overviewlayer.refresh();
 			return layer;
 		}
 		else
@@ -412,8 +412,8 @@ function Stack(
 	self.overview = new Overview( self );
 	view.appendChild( self.overview.getView() );
 
-    self.overviewlayer = new OverviewLayer( self );
-    view.appendChild( self.overviewlayer.getView() );
+	self.overviewlayer = new OverviewLayer( self );
+	view.appendChild( self.overviewlayer.getView() );
 	
 	var scaleBar = document.createElement( "div" );
 	scaleBar.className = "sliceBenchmark";

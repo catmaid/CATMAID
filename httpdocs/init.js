@@ -340,8 +340,12 @@ function handle_openProjectStack( status, text, xml )
 								value.image_base,
 								e.tile_width,
 								e.tile_height );
+				// set default opacity internally
+				tilelayer2.setOpacity( value.default_opacity );
 				stack.addLayer( value.title, tilelayer2 );
+				stack.overviewlayer.setOpacity( value.title,  value.default_opacity );
 			});
+
 
 			project.addStack( stack );
 

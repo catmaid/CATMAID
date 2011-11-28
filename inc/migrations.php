@@ -660,7 +660,8 @@ CREATE TABLE "overlay" (
     id integer NOT NULL,
     stack_id integer NOT NULL,
     title text NOT NULL,
-    image_base text NOT NULL
+    image_base text NOT NULL,
+    default_opacity integer DEFAULT 0 NOT NULL
 );
 CREATE SEQUENCE overlay_id_seq
     START WITH 1

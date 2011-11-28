@@ -99,7 +99,7 @@ try {
     }
 
     // retrieve overlays
-    $overlays = $db->getResult('SELECT id, title, image_base FROM overlay WHERE overlay.stack_id = '.$project_stacks[ 0 ]['sid']);
+    $overlays = $db->getResult('SELECT id, title, image_base, default_opacity FROM overlay WHERE overlay.stack_id = '.$project_stacks[ 0 ]['sid']);
 
     $project_stack = $project_stacks[ 0 ];
     $project_stack[ 'editable' ] = $editable;

@@ -349,7 +349,8 @@ function Stack(
 	var MAX_X = dimension.x - 1;   //!< the last possible x-coordinate
 	var MAX_Y = dimension.y - 1;   //!< the last possible y-coordinate
 	var MAX_Z = dimension.z - 1;   //!< the last possible z-coordinate
-	
+	self.MAX_Z = MAX_Z;
+
 	//! estimate the zoom levels
 	self.MAX_S = 0;
 	var min_max = Math.min( MAX_X, MAX_Y );

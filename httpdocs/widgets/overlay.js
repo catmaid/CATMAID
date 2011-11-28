@@ -1104,6 +1104,8 @@ var SkeletonAnnotations = new function()
     // offset of stack in physical coordinates
     this.offleft = 0;
     this.offtop = 0;
+		this.offsetXPhysical = 0;
+		this.offsetYPhysical = 0;
 
     // currently there are two modes: skeletontracing and synapsedropping
     var currentmode = "skeletontracing";
@@ -1129,6 +1131,8 @@ var SkeletonAnnotations = new function()
         lastX = worldX;
         lastY = worldY;
         statusBar.replaceLast('['+worldX+', '+worldY+', '+project.coordinates.z+']');
+				self.offsetXPhysical = worldX;
+				self.offsetYPhysical = worldY;
       }
     }
 
@@ -1148,12 +1152,15 @@ var SkeletonAnnotations = new function()
     var phys2pixX = function (x) {
       return (x - stack.translation.x) / stack.resolution.x * stack.scale;
     };
+		this.phys2pixX = phys2pixX;
     var phys2pixY = function (y) {
       return (y - stack.translation.y) / stack.resolution.y * stack.scale;
     };
+		this.phys2pixY = phys2pixY;
     var phys2pixZ = function (z) {
       return (z - stack.translation.z) / stack.resolution.z;
     };
+		this.phys2pixZ = phys2pixZ;
 
     var pix2physX = function (x) {
       return stack.translation.x + ((x) / stack.scale) * stack.resolution.x;
@@ -1388,6 +1395,36 @@ var SkeletonAnnotations = new function()
           alert('Need to activate a treenode or connector before showing them!');
         }
         break;
+			case "createtreenodedown":
+				// take into account current local offset coordinates and scale
+				var pos_x = self.phys2pixX(self.offsetXPhysical);
+				var pos_y = self.phys2pixY(self.offsetYPhysical);
+				// at this point of the execution
+				// project.coordinates.z is not on the new z index, thus simulate it here
+				var pos_z = self.phys2pixZ(project.coordinates.z) + 1;
+				if(pos_z > stack.MAX_Z)
+					break;
+				var phys_z = self.pix2physZ(pos_z);
+				// get physical coordinates for node position creation
+				var phys_x = self.pix2physX(pos_x);
+				var phys_y = self.pix2physY(pos_y);
+				createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+				break;
+			case "createtreenodeup":
+				// take into account current local offset coordinates and scale
+				var pos_x = self.phys2pixX(self.offsetXPhysical);
+				var pos_y = self.phys2pixY(self.offsetYPhysical);
+				// at this point of the execution
+				// project.coordinates.z is not on the new z index, thus simulate it here
+				var pos_z = self.phys2pixZ(project.coordinates.z) - 1;
+				if(pos_z < 0)
+					break;
+				var phys_z = self.pix2physZ(pos_z);
+				// get physical coordinates for node position creation
+				var phys_x = self.pix2physX(pos_x);
+				var phys_y = self.pix2physY(pos_y);
+				createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+				break;
       }
       return;
 

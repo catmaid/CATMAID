@@ -384,7 +384,7 @@ function Navigator()
 				return false;
 			}
 		}),
-
+		
 		new Action({
 			helpText: "Move left (towards negative x)",
 			keyShortcuts: {

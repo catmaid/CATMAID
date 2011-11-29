@@ -466,10 +466,11 @@ function Navigator()
 
 		self.slider_s.update(
 			self.stack.MAX_S,
-			0,
-			self.stack.MAX_S + 1,
+			self.stack.MIN_S,
+			(Math.abs(self.stack.MAX_S) + Math.abs(self.stack.MIN_S)) + 1,
 			self.stack.s,
-			self.changeScaleDelayed );
+			self.changeScaleDelayed,
+			-1 );
 		
 		if ( self.stack.slices.length < 2 )	//!< hide the self.slider_z if there is only one slice
 		{

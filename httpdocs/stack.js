@@ -34,7 +34,8 @@ function Stack(
 		translation,				//!< @todo replace by an affine transform
 		skip_planes,				//!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
 		trakem2_project,			//!< {boolean} that states if a TrakEM2 project is available for this stack
-		min_zoom_level				//!< {int} that defines the maximum available zoom level
+		min_zoom_level,				//!< {int} that defines the minimum available zoom level
+		max_zoom_level				//!< {int} that defines the maximum available zoom level
 )
 {
 	var n = dimension.length;
@@ -198,7 +199,7 @@ function Stack(
 
 		if ( typeof sp == "number" )
 		{
-			self.s = Math.max( 0, Math.min( self.MAX_S, Math.round( sp ) ) );
+			self.s = Math.max( self.MIN_S, Math.min( self.MAX_S, Math.round( sp ) ) );
 			self.scale = 1 / Math.pow( 2, self.s );
 		}
 		
@@ -362,6 +363,7 @@ function Stack(
 	} else {
 		self.MAX_S = min_zoom_level;
 	}
+	self.MIN_S = max_zoom_level;
 	
 	//! all possible slices
 	self.slices = new Array();

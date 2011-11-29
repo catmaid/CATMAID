@@ -328,7 +328,8 @@ function handle_openProjectStack( status, text, xml )
 					e.resolution,
 					e.translation,		//!< @todo replace by an affine transform
 					e.broken_slices,
-					e.trakem2_project );
+					e.trakem2_project,
+					e.min_zoom_level );
 			
 			document.getElementById( "toolbox_project" ).style.display = "block";
 			

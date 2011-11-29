@@ -112,6 +112,7 @@ try {
 	$project_stack[ 'broken_slices' ] = $bs;
     $project_stack[ 'trakem2_project' ] = $project_stack[ 'trakem2_project' ] == 't';
     $project_stack[ 'overlay' ] = $overlays;
+    $project_stack[ 'min_zoom_level' ] = $project_stack[ 'min_zoom_level' ];
 
     if (! $db->commit() ) {
       emitErrorAndExit( $db, 'Failed to commit!' );

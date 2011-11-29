@@ -493,29 +493,29 @@ function TracingTool()
     }
   }) );
 
-	this.addAction( new Action({
-			helpText: "Move up 1 slice in z and click",
-			keyShortcuts: {
-				'N': [ 78 ]
-			},
-			run: function (e) {
-				self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
-				tracingLayer.svgOverlay.tracingCommand('createtreenodeup');
-				return false;
-			}
-		}) );
+  this.addAction( new Action({
+    helpText: "Move up 1 slice in z and click",
+    keyShortcuts: {
+      'N': [ 78 ]
+    },
+    run: function (e) {
+      self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
+      tracingLayer.svgOverlay.tracingCommand('createtreenodeup');
+      return false;
+    }
+  }) );
 
-	this.addAction( new Action({
-			helpText: "Move down 1 slice in z and click",
-			keyShortcuts: {
-				'M': [ 77 ]
-			},
-			run: function (e) {
-				self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
-				tracingLayer.svgOverlay.tracingCommand('createtreenodedown');
-				return false;
-			}
-		}) );
+  this.addAction( new Action({
+    helpText: "Move down 1 slice in z and click",
+    keyShortcuts: {
+      'M': [ 77 ]
+    },
+    run: function (e) {
+      self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
+      tracingLayer.svgOverlay.tracingCommand('createtreenodedown');
+      return false;
+    }
+  }) );
 
   var keyCodeToAction = getKeyCodeToActionMap(actions);
 

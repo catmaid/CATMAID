@@ -177,15 +177,17 @@ Try to start CATMAID::
 
 ... depending on the approach you took above.  You will get an
 error to tell you that no projects are found.  If you want to
-create some example projects, stacks and a user account for
-testing, you should run:
+create some example projects and stacks for testing, you should
+run:
 
-     scripts/insert-example/projects.py
+     scripts/insert-example-projects.py
 
-Then you can use the default login::
+To create a login, you should use the `scripts/create-user.py`
+script, such as with:
 
-     user: gerhard
-     pass: gerhard
+     scripts/create-user.py humpy "Sir Humphrey Appleby"
+
+This will prompt you for a password for this new user.
 
 #### 4. Adding a new project
 

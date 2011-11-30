@@ -259,7 +259,7 @@ try {
       
       // only update for updateable relations of the object tree
       $up = array('class_instance_b' => $ref);
-      $upw = 'user_id = '.$uid.' AND project_id = '.$pid.' 
+      $upw = 'project_id = '.$pid.'
       AND (relation_id = '.$presyn_id.'
       OR relation_id = '.$postsyn_id.'
       OR relation_id = '.$modid.'

@@ -154,8 +154,8 @@ var TreenodeTable = new function()
       ]
     });
 
-    $("#treenodetable tfoot input").keyup(function () { /* Filter on the column (the index) of this element */
-      ns.oTable.fnFilter(this.value, $("tfoot input").index(this));
+    $("#treenodetable thead input").keyup(function () { /* Filter on the column (the index) of this element */
+      ns.oTable.fnFilter(this.value, $("thead input").index(this));
     });
 
   /*
@@ -163,11 +163,11 @@ var TreenodeTable = new function()
    * the footer
    */
 
-    $("#treenodetable tfoot input").each(function (i) {
+    $("#treenodetable thead input").each(function (i) {
       asInitVals[i] = this.value;
     });
 
-    $("#treenodetable tfoot input").focus(function () {
+    $("#treenodetable thead input").focus(function () {
       // console.log("focus");
       if (this.className === "search_init") {
         this.className = "";
@@ -175,10 +175,10 @@ var TreenodeTable = new function()
       }
     });
 
-    $("#treenodetable tfoot input").blur(function (i) {
+    $("#treenodetable  thead input").blur(function (i) {
       if (this.value === "") {
         this.className = "search_init";
-        this.value = asInitVals[$("tfoot input").index(this)];
+        this.value = asInitVals[$("thead input").index(this)];
       }
     });
 

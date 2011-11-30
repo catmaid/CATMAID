@@ -46,6 +46,10 @@ Then you should run the commands in that file as the postgres user:
 
 	sudo -u postgres psql < docs/createuser.sql
 
+(On some systems you may get the the error
+`ERROR: language "plpgsql" already exists`
+which can be safely ignored.)
+
 Check if you can login - the database should still be empty, however:
 
 	http://localhost/phppgadmin/

@@ -17,3 +17,6 @@ CREATE FUNCTION connectby(text, text, text, text, text, integer, text) RETURNS S
 CREATE FUNCTION connectby(text, text, text, text, text, integer) RETURNS SETOF record
     LANGUAGE c STABLE STRICT
     AS '$libdir/tablefunc', 'connectby_text_serial';
+
+
+CREATE PROCEDURAL LANGUAGE plpgsql;

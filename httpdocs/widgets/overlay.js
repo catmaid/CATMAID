@@ -414,7 +414,6 @@ var SkeletonAnnotations = new function()
                 alert(e.error);
               } else {
                 $("#Tags" + atn.id).focus();
-                self.showTags(true);
               }
             }
           }

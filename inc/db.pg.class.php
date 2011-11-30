@@ -66,8 +66,6 @@ class DB
 		$this->db = $db_db[ $mode ];
 		
 		$this->handle = pg_connect( 'host='.$this->host.' port=5432 dbname='.$this->db.' user='.$this->user.' password= '.$this->pw ) or die( pg_last_error() );
-
-		$this->migrate();
 	}
 	/**#@-*/
 	
@@ -639,13 +637,51 @@ class DB
 	function getCurrentSchemaVersion()
 	{
 		try {
-			$this->getResult("SAVEPOINT sp");
+			$this->getResult("SAVEPOINT get_schema_version");
 			$res = $this->getResult("SELECT value FROM settings WHERE key = 'schema_version'");
 			return $res[0]['value'];
 		} catch (Exception $e) {
-			$this->getResult("ROLLBACK TO SAVEPOINT sp");
+			$this->getResult("ROLLBACK TO SAVEPOINT get_schema_version");
 			return NULL;
 		}
+	}
+
+	function appliedMigrationsTableExists()
+	{
+		$result = $this->getResult("SELECT * FROM pg_tables WHERE tablename = 'applied_migrations'");
+		if ($result === FALSE) {
+			throw new Exception("Checking if the 'applied_migrations' table exists failed");
+		}
+		return count($result) > 0;
+	}
+
+	function getAppliedMigrationsSet()
+	{
+		$rows = $this->getResult("SELECT * FROM applied_migrations");
+		if ($rows === FALSE) {
+			throw new Exception("Fetching the already applied migrations failed");
+		}
+		$result = array();
+		foreach ($rows as $row) {
+			$result[$row['id']] = TRUE;
+		}
+		return $result;
+	}
+
+	function markMigrationApplied( $migrationID )
+	{
+		try {
+			$this->getResult("SAVEPOINT mark_migration");
+			$result = $this->getResult("INSERT INTO applied_migrations (id) VALUES ('$migrationID')");
+			if ($result === FALSE) {
+				$this->getResult("ROLLBACK TO SAVEPOINT mark_migration");
+				return FALSE;
+			}
+		} catch (Exception $e) {
+			$this->getResult("ROLLBACK TO SAVEPOINT mark_migration");
+			return FALSE;
+		}
+		return TRUE;
 	}
 
 	/* Ensure that the database is up to date */
@@ -660,59 +696,124 @@ class DB
 		$this->begin();
 
 		try {
+			// FIXME: should just remove this option,
+			// since it's unused:
+			$ignoreErrors = FALSE;
+
+			// Fetch the schema version from the database:
 			$currentSchemaVersion = $this->getCurrentSchemaVersion();
 
+			// Sort all the available migrations, and find the latest
+			// one (last in the list).
 			ksort($migrations);
 			end($migrations);
 			$mostRecentSchemaVersion = key($migrations);
 			reset($migrations);
 
-			if ((!$currentSchemaVersion) ||
-				($currentSchemaVersion < $mostRecentSchemaVersion)) {
-
-				$newSchemaVersion = NULL;
-
-				$ignoreErrors = FALSE;
-
-				foreach ($migrations as $migrationID => $migration) {
-					$pretty = $migrationID." (".$migration->name.")";
-					if ($currentSchemaVersion &&
-						$currentSchemaVersion >= $migrationID) {
-						error_log("Skipping migration '".$pretty.'"');
-						continue;
-					}
-					// Otherwise try to apply it:
-					$migration->apply($this, $ignoreErrors);
-					$newSchemaVersion = $migrationID;
-				}
-
-				// Now set the new schema version in the settings table.
-				// Since we can't be sure that the table exists, try
-				// to create it, try to insert the line and then try to
-				// update it.  Normally the first two will fail.
-				error_log("Updating the schema version to ".$newSchemaVersion);
-
-				try {
-					$this->getResult("SAVEPOINT sp");
-					$this->getResult("CREATE TABLE settings (key text PRIMARY KEY, value text)");
-				} catch (Exception $e) {
-					$this->getResult("ROLLBACK TO SAVEPOINT sp");
-					error_log("The table already exists");
-				}
-
-				try {
-					$this->getResult("SAVEPOINT sp");
-					$this->getResult("INSERT INTO settings (key, value) VALUES ('schema_version', '".pg_escape_string($newSchemaVersion)."')");
-				} catch (Exception $e) {
-					$this->getResult("ROLLBACK TO SAVEPOINT sp");
-					error_log("There is already a schema_version entry in settings");
-				}
-
-				$this->getResult("UPDATE settings SET value = '".pg_escape_string($newSchemaVersion)."' WHERE key = 'schema_version'");
+			// Now make sure that the settings table exists:
+			try {
+				$this->getResult("SAVEPOINT create_settings_table");
+				$this->getResult("CREATE TABLE settings (key text PRIMARY KEY, value text)");
+			} catch (Exception $e) {
+				$this->getResult("ROLLBACK TO SAVEPOINT create_settings_table");
+				error_log("The table already exists");
 			}
 
-			// Finally, we can commit all those changes (or no changes
-			// if we were up to date already...)
+			// This is some legacy code from the previous migrations
+			// system, which just tracked the most recent migration,
+			// rather than every migration that had been applied.  If
+			// the 'applied_migrations' table doesn't exist, that
+			// means that the migration $addAppliedMigrationsMigration
+			// has never been applied.  In that case, go through every
+			// known migration up to and including that one - apply
+			// any that are before the $currentSchemaVersion.  Then
+			// insert all of those migations into the
+			// applied_migrations table.
+
+			$lastMigrationJustApplied = NULL;
+
+			$addAppliedMigrationsMigration = "2011-10-20T15:14:59";
+
+			if (!$this->appliedMigrationsTableExists()) {
+
+				$toMarkAsApplied = array();
+
+				foreach ($migrations as $migrationID => $migration) {
+
+					$pretty = $migrationID." (".$migration->name.")";
+
+					if ($migrationID === $addAppliedMigrationsMigration) {
+						// Then this is the last one to apply, and we
+						// must apply it in order to create the
+						// 'applied_migrations' table, even if the
+						// currentSchemaVersion is more recent.
+						error_log("Applying the special migration '".$pretty.'"');
+						$migration->apply($this, $ignoreErrors);
+						$toMarkAsApplied[] = $migrationID;
+						$lastMigrationJustApplied = $migrationID;
+						break;
+					}
+
+					if ($currentSchemaVersion &&
+					    $currentSchemaVersion >= $migrationID) {
+						error_log("Skipping migration '".$pretty.'"');
+						$toMarkAsApplied[] = $migrationID;
+					} else {
+						// Otherwise try to apply it:
+						error_log("Applying the migration '".$pretty.'"');
+						$migration->apply($this, $ignoreErrors);
+						$toMarkAsApplied[] = $migrationID;
+						$lastMigrationJustApplied = $migrationID;
+					}
+				}
+
+				// Now mark all the applied migrations
+				// as applied in the database.  We
+				// have to do this at the end or the
+				// applied_migrations table won't have
+				// been created yet.
+				foreach( $toMarkAsApplied as $migrationID ) {
+					$this->markMigrationApplied($migrationID);
+				}
+			}
+
+			// Now we can start with the intended migration behaviour.
+			// Go through every migration in $migrations, and apply
+			// any that are not in the 'applied_migrations' table.
+
+			$appliedMigrations = $this->getAppliedMigrationsSet();
+
+			foreach ($migrations as $migrationID => $migration) {
+				if (!array_key_exists($migrationID, $appliedMigrations)) {
+					$migration->apply($this, $ignoreErrors);
+					$this->markMigrationApplied($migrationID);
+					$lastMigrationJustApplied = $migrationID;
+				}
+			}
+
+			// Usually, we would update to the last
+			// migration just applied, but after a merge,
+			// we may end up only applying migrations with
+			// IDs earlier than the current schema version
+			// in the database, in which case just use
+			// that value.  (In fact this entry in the
+			// database is of no use once we have the
+			// applied_migrations table, but we should
+			// nonetheless attempt to make sure that its
+			// value is correct.)
+			$newSchemaVersion = max($lastMigrationJustApplied, $currentSchemaVersion);
+
+			error_log("Updating the schema version to ".$newSchemaVersion);
+
+			try {
+				$this->getResult("SAVEPOINT updating_schema");
+				$this->getResult("INSERT INTO settings (key, value) VALUES ('schema_version', '".pg_escape_string($newSchemaVersion)."')");
+			} catch (Exception $e) {
+				$this->getResult("ROLLBACK TO SAVEPOINT updating_schema");
+				error_log("There is already a schema_version entry in settings");
+			}
+
+			$this->getResult("UPDATE settings SET value = '".pg_escape_string($newSchemaVersion)."' WHERE key = 'schema_version'");
 
 			$this->commit();
 

@@ -537,6 +537,11 @@ ALTER TABLE "class" DROP COLUMN "uri";
 		"CREATE TABLE sessions (id SERIAL PRIMARY KEY, session_id CHAR(26), data TEXT DEFAULT '', last_accessed TIMESTAMP)"
 ),
 
+	'2011-10-20T15:14:59' => new Migration(
+		'Switch to tracking exactly which migrations have been applied',
+		'CREATE TABLE applied_migrations (id VARCHAR(32) PRIMARY KEY)'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

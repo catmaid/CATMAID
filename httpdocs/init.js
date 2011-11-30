@@ -502,13 +502,23 @@ function global_resize(e) {
   return true;
 }
 
+function init() {
+  $.get('model/migrate-db.php', function(data) {
+    if (data.error) {
+      alert(data.error);
+    } else {
+      realInit();
+    }
+  }, 'json');
+}
+
 
 /**
  * initialise everything
  * to be called by the onload-handler of document.body
  */
 
-function init() {
+function realInit() {
   //! set some non standard attributes
 /*
 	document.body.oncontextmenu = function( e ){ return false; };

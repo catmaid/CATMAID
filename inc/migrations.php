@@ -33,8 +33,7 @@ $migrations = array(
 
 	'2011-07-10T19:23:39' => new Migration(
 		'Set up the database as scratch as in 5145c06574a2e',
-		<<<EOMIGRATION
-
+		"
 SET statement_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = off;
@@ -62,7 +61,7 @@ CREATE TYPE rgba AS (
 CREATE FUNCTION on_edit() RETURNS trigger
     LANGUAGE plpgsql
     AS \$\$BEGIN
-    NEW."edition_time" := now();
+    NEW.\"edition_time\" := now();
     RETURN NEW;
 END;
 \$\$;
@@ -153,7 +152,7 @@ INHERITS (relation_instance);
 CREATE TABLE message (
     id integer NOT NULL,
     user_id integer NOT NULL,
-    "time" timestamp with time zone DEFAULT now() NOT NULL,
+    \"time\" timestamp with time zone DEFAULT now() NOT NULL,
     read boolean DEFAULT false NOT NULL,
     title text DEFAULT 'New message'::text NOT NULL,
     text text,
@@ -274,7 +273,7 @@ CREATE TABLE treenode_connector (
     connector_id bigint NOT NULL
 )
 INHERITS (relation_instance);
-CREATE TABLE "user" (
+CREATE TABLE \"user\" (
     id integer NOT NULL,
     name character varying(255) NOT NULL,
     pwd character varying(255) NOT NULL,
@@ -286,7 +285,7 @@ CREATE SEQUENCE user_id_seq
     NO MAXVALUE
     NO MINVALUE
     CACHE 1;
-ALTER SEQUENCE user_id_seq OWNED BY "user".id;
+ALTER SEQUENCE user_id_seq OWNED BY \"user\".id;
 ALTER TABLE concept ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
 ALTER TABLE message ALTER COLUMN id SET DEFAULT nextval('message_id_seq'::regclass);
 ALTER TABLE object ALTER COLUMN id SET DEFAULT nextval('object_id_seq'::regclass);
@@ -294,7 +293,7 @@ ALTER TABLE profile ALTER COLUMN id SET DEFAULT nextval('profile_id_seq'::regcla
 ALTER TABLE project ALTER COLUMN id SET DEFAULT nextval('project_id_seq'::regclass);
 ALTER TABLE stack ALTER COLUMN id SET DEFAULT nextval('stack_id_seq'::regclass);
 ALTER TABLE textlabel ALTER COLUMN id SET DEFAULT nextval('textlabel_id_seq'::regclass);
-ALTER TABLE "user" ALTER COLUMN id SET DEFAULT nextval('user_id_seq'::regclass);
+ALTER TABLE \"user\" ALTER COLUMN id SET DEFAULT nextval('user_id_seq'::regclass);
 ALTER TABLE ONLY broken_slice
     ADD CONSTRAINT broken_layer_pkey PRIMARY KEY (stack_id, index);
 ALTER TABLE ONLY class
@@ -363,9 +362,9 @@ ALTER TABLE ONLY treenode
     ADD CONSTRAINT treenode_id_key UNIQUE (id);
 ALTER TABLE ONLY treenode
     ADD CONSTRAINT treenode_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY "user"
+ALTER TABLE ONLY \"user\"
     ADD CONSTRAINT users_name_key UNIQUE (name);
-ALTER TABLE ONLY "user"
+ALTER TABLE ONLY \"user\"
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 CREATE INDEX connector_x_index ON connector USING btree (((location).x));
 CREATE INDEX connector_y_index ON connector USING btree (((location).y));
@@ -454,17 +453,17 @@ ALTER TABLE ONLY class_instance_class_instance
 ALTER TABLE ONLY class_instance_class_instance
     ADD CONSTRAINT class_instance_relation_instance_relation_id_fkey FOREIGN KEY (relation_id) REFERENCES relation(id);
 ALTER TABLE ONLY class_instance_class_instance
-    ADD CONSTRAINT class_instance_relation_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+    ADD CONSTRAINT class_instance_relation_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"user\"(id);
 ALTER TABLE ONLY class_instance
-    ADD CONSTRAINT class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+    ADD CONSTRAINT class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"user\"(id);
 ALTER TABLE ONLY class_class
     ADD CONSTRAINT class_relation_instance_relation_id_fkey FOREIGN KEY (relation_id) REFERENCES relation(id);
 ALTER TABLE ONLY class_class
-    ADD CONSTRAINT class_relation_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+    ADD CONSTRAINT class_relation_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"user\"(id);
 ALTER TABLE ONLY class
-    ADD CONSTRAINT class_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+    ADD CONSTRAINT class_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"user\"(id);
 ALTER TABLE ONLY concept
-    ADD CONSTRAINT concept_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+    ADD CONSTRAINT concept_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"user\"(id);
 ALTER TABLE ONLY connector_class_instance
     ADD CONSTRAINT connector_class_instance_class_instance_id_fkey FOREIGN KEY (class_instance_id) REFERENCES class_instance(id);
 ALTER TABLE ONLY connector_class_instance
@@ -474,9 +473,9 @@ ALTER TABLE ONLY connector_class_instance
 ALTER TABLE ONLY connector_class_instance
     ADD CONSTRAINT connector_class_instance_relation_id_fkey FOREIGN KEY (relation_id) REFERENCES relation(id);
 ALTER TABLE ONLY connector_class_instance
-    ADD CONSTRAINT connector_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+    ADD CONSTRAINT connector_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"user\"(id);
 ALTER TABLE ONLY message
-    ADD CONSTRAINT message_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+    ADD CONSTRAINT message_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"user\"(id);
 ALTER TABLE ONLY object
     ADD CONSTRAINT object_project_fkey FOREIGN KEY (project_id) REFERENCES project(id);
 ALTER TABLE ONLY profile
@@ -488,11 +487,11 @@ ALTER TABLE ONLY project_stack
 ALTER TABLE ONLY project_user
     ADD CONSTRAINT project_user_project_id_fkey FOREIGN KEY (project_id) REFERENCES project(id);
 ALTER TABLE ONLY project_user
-    ADD CONSTRAINT project_user_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+    ADD CONSTRAINT project_user_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"user\"(id);
 ALTER TABLE ONLY relation_instance
-    ADD CONSTRAINT relation_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+    ADD CONSTRAINT relation_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"user\"(id);
 ALTER TABLE ONLY relation
-    ADD CONSTRAINT relation_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+    ADD CONSTRAINT relation_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"user\"(id);
 ALTER TABLE ONLY textlabel_location
     ADD CONSTRAINT textlabel_location_textlabel_id_fkey FOREIGN KEY (textlabel_id) REFERENCES textlabel(id);
 ALTER TABLE ONLY textlabel
@@ -504,47 +503,39 @@ ALTER TABLE ONLY treenode_class_instance
 ALTER TABLE ONLY treenode_class_instance
     ADD CONSTRAINT treenode_class_instance_treenode_id_fkey FOREIGN KEY (treenode_id) REFERENCES treenode(id) ON DELETE CASCADE;
 ALTER TABLE ONLY treenode_class_instance
-    ADD CONSTRAINT treenode_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+    ADD CONSTRAINT treenode_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"user\"(id);
 ALTER TABLE ONLY treenode
     ADD CONSTRAINT treenode_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES treenode(id);
-
-EOMIGRATION
+"
 ),
 
 	'2011-07-12T17:22:30' => new Migration(
 		'Remove unused table. Closes #79',
-		<<<EOMIGRATION
+		'
 DROP TABLE "bezierkey" CASCADE;
 DROP TABLE "bezierprofile" CASCADE;
 DROP TABLE "broken_slice" CASCADE;
 DROP TABLE "object" CASCADE;
 DROP TABLE "profile" CASCADE;
-EOMIGRATION
+'
 ),
 
 	'2011-07-12T17:30:44' => new Migration(
 		'Removed unused columns from class table. Closes #83',
-		<<<EOMIGRATION
+		'
 ALTER TABLE "class" DROP COLUMN "showintree";
 ALTER TABLE "class" DROP COLUMN "uri";
-EOMIGRATION
+'
 ),
 
 	'2011-07-12T19:48:11' => new Migration(
 		'Create table broken_slice',
-		<<<EOMIGRATION
-CREATE TABLE broken_slice (
-    stack_id integer NOT NULL,
-    index integer NOT NULL
-	);
-EOMIGRATION
+		'CREATE TABLE broken_slice (stack_id integer NOT NULL, index integer NOT NULL)'
 ),
 
 	'2011-10-19T08:33:49' => new Migration(
 		'Introduce a sessions table for storing PHP sessions',
-		<<<EOMIGRATION
-CREATE TABLE sessions ( id SERIAL PRIMARY KEY, session_id CHAR(26), data TEXT DEFAULT '', last_accessed TIMESTAMP )
-EOMIGRATION
+		"CREATE TABLE sessions (id SERIAL PRIMARY KEY, session_id CHAR(26), data TEXT DEFAULT '', last_accessed TIMESTAMP)"
 ),
 
 	// INSERT NEW MIGRATIONS HERE

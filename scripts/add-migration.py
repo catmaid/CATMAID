@@ -42,9 +42,9 @@ def quote_string_for_php(s):
 
 migration_text = '''	{0} => new Migration(
 		{1},
-		<<<EOMIGRATION
+		\'
 [Put your migration here.]
-EOMIGRATION
+\'
 ),
 
 '''.format(quote_string_for_php(timestamp),

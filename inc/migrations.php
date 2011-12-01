@@ -11,12 +11,12 @@ class Migration {
 	function apply( $db, $ignoreErrors ) {
 		try {
 			error_log("Running the migration: ".$this->name);
-			$db->getResult("SAVEPOINT sp");
+			$db->getResult("SAVEPOINT generic_migration");
 			$db->getResult($this->sql);
 		} catch( Exception $e ) {
 			if ($ignoreErrors) {
 				error_log("Ignoring the failed migration: ".$e);
-				$db->getResult("ROLLBACK TO SAVEPOINT sp");
+				$db->getResult("ROLLBACK TO SAVEPOINT generic_migration");
 			} else {
 				error_log("The migration failed: ".$e);
 				throw $e;
@@ -34,7 +34,7 @@ class SpecialConnectorMigration {
     function apply( $db, $ignoreErrors) {
         try {
             error_log("Running the migration: ".$this->name);
-			$db->getResult("SAVEPOINT sp");
+            $db->getResult("SAVEPOINT connector_migration");
 
             foreach( $db->getResult("SELECT id FROM project") as $p ) {
                 $project_id = $p['id'];
@@ -126,7 +126,7 @@ EOSQL
 		} catch( Exception $e ) {
 			if ($ignoreErrors) {
 				error_log("Ignoring the failed migration: ".$e);
-				$db->getResult("ROLLBACK TO SAVEPOINT sp");
+				$db->getResult("ROLLBACK TO SAVEPOINT connector_migration");
 			} else {
 				error_log("The migration failed: ".$e);
 				throw $e;

@@ -19,7 +19,13 @@ username: catmaid_user
 password: password_of_your_catmaid_user''' % (path,)
     sys.exit(1)
 
-db_connection = psycopg2.connect(host=conf['host'],
-                                 database=conf['database'],
-                                 user=conf['username'],
-                                 password=conf['password'])
+# Make a variable for each of these so that they can be imported:
+db_host = conf['host']
+db_database = conf['database']
+db_username = conf['username']
+db_password = conf['password']
+
+db_connection = psycopg2.connect(host=db_host,
+                                 database=db_database,
+                                 user=db_username,
+                                 password=db_password)

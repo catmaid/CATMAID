@@ -143,9 +143,16 @@ class AddSkeletonIDsMigration {
     function apply( $db, $ignoreErrors) {
         try {
             error_log("Running the migration: ".$this->name);
-			$db->getResult("SAVEPOINT sp");
+            $db->getResult("SAVEPOINT add_skeleton_column");
 
-            $db->getResult("ALTER TABLE treenode ADD COLUMN skeleton_id bigint REFERENCES class_instance(id)");
+            try {
+                $db->getResult("ALTER TABLE treenode ADD COLUMN skeleton_id bigint REFERENCES class_instance(id)");
+            } catch( Exception $e ) {
+                error_log("Ignoring the failure to add a skeleton_id column to treenode; it's probably already there.");
+                $db->getResult("ROLLBACK TO SAVEPOINT add_skeleton_column");
+            }
+
+            $db->getResult("SAVEPOINT update_skeleton_columns");
 
             foreach( $db->getResult("SELECT id FROM project") as $p ) {
                 $project_id = $p['id'];
@@ -179,7 +186,7 @@ class AddSkeletonIDsMigration {
 		} catch( Exception $e ) {
 			if ($ignoreErrors) {
 				error_log("Ignoring the failed migration: ".$e);
-				$db->getResult("ROLLBACK TO SAVEPOINT sp");
+				$db->getResult("ROLLBACK TO SAVEPOINT update_skeleton_columns");
 			} else {
 				error_log("The migration failed: ".$e);
 				throw $e;

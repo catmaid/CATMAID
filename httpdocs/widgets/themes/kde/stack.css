@@ -1,16 +1,16 @@
 div.sliceView
 {
 	/* this has to be the 1st rule for automated parsing */
-	position:absolute;
+	position:relative;
 /*
 	margin:20px 20px 20px 200px;
 	width:100px;
 	height:100px;
 */
 	margin:0px;
-	top:68px;
+	top:0px;
 	right:0px;
-	bottom:80px;
+	bottom:0px;
 	left:0px;
 	padding:0px;
 	/*
@@ -128,6 +128,18 @@ div.smallMapView_hidden div.smallMapRect div
 	height:100%;
 	background:#0000FF;
 	opacity:.25;
+}
+
+div.OverviewLayer
+{
+	/*border:solid 2px #0000FF;*/
+	margin:0px;
+	padding:0px;
+	position:relative;
+    top:10px;
+    left:10px;
+    width:100px;
+    color:#FFFFFF;
 }
 
 div.sliceView div.sliceMouseCatcher

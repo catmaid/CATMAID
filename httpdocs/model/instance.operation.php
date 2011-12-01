@@ -55,7 +55,6 @@ function remove_skeleton($db, $pid, $skelid) {
 	$lablid = $db->getRelationId( $pid, "labeled_as" );
 	$preid = $db->getRelationId( $pid, "presynaptic_to" );
 	$postid = $db->getRelationId( $pid, "postsynaptic_to" );
-	$elid = $db->getRelationId( $pid, "element_of" );
 	
 	// labeled_as, presynaptic_to, postsynaptic_to, element_of
 	$relarr = array( $lablid, $preid, $postid );
@@ -76,14 +75,8 @@ function remove_skeleton($db, $pid, $skelid) {
 	}
 	// remove treenodes from treenode table, should remove the remaining
 	// connected treenodes to the skeleton with the element_of relationship using cascade deletion (does it XXX?)
-	$res = $db->getResult('DELETE FROM 
-			 "treenode" AS "tn"
-			 WHERE 
-			  "tn"."id" IN (
-			    SELECT "tci"."treenode_id"
-			    FROM "treenode_class_instance" AS "tci"
-			    WHERE "tci"."class_instance_id" = '.$skelid.' AND "tci"."project_id" = '.$pid.')');
-	
+	$res = $db->getResult("DELETE FROM treenode WHERE skeleton_id = $skelid AND project_id = $pid");
+
   if (false === $res) {
     emitErrorAndExit($db, 'Failed to delete treenodes fro skeleton #'.$skid);
   }
@@ -133,7 +126,30 @@ try {
             emitErrorAndExit($db, 'Failed to delete skeleton from instance able.');
           }
           
-          finish("Removed skeleton successfully.");		
+          // finish("Removed skeleton successfully.");
+          finish( array('status' => 1, 'message' => "Removed skeleton successfully.") );
+        }
+        else if( $rel == "neuron" )
+        {
+          // retrieve skeleton ids
+          $model_of_id = $db->getRelationId( $pid, "model_of" );
+          $res = $db->getResult('SELECT "cici"."class_instance_a" AS "skeleton_id"
+			    FROM "class_instance_class_instance" AS "cici"
+			    WHERE "cici"."class_instance_b" = '.$id.' AND "cici"."project_id" = '.$pid.'
+			    AND "cici"."relation_id" = '.$model_of_id);
+			    
+	      foreach($res as $key => $val) {
+	            remove_skeleton($db, $pid, $val['skeleton_id']);
+	            $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$val['skeleton_id']);
+	      }
+          $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
+
+          if (false === $ids) {
+            emitErrorAndExit($db, 'Failed to delete node from instance table.');
+          }
+
+          finish( array('status' => 1, 'message' => "Removed neuron successfully.") );
+	        
         }
         else
         {
@@ -243,7 +259,7 @@ try {
       
       // only update for updateable relations of the object tree
       $up = array('class_instance_b' => $ref);
-      $upw = 'user_id = '.$uid.' AND project_id = '.$pid.' 
+      $upw = 'project_id = '.$pid.'
       AND (relation_id = '.$presyn_id.'
       OR relation_id = '.$postsyn_id.'
       OR relation_id = '.$modid.'
@@ -255,10 +271,10 @@ try {
         emitErrorAndExit($db, 'Failed to update relation.');
       }
       
-      finish("True");	
+      finish( array( 'status' => 1) );
     }
   }
-    else if ( $op == 'has_relations' )
+  else if ( $op == 'has_relations' )
   {
     
     $relnr = isset( $_REQUEST[ 'relationnr' ] ) ? intval($_REQUEST[ 'relationnr' ]) : 0;
@@ -287,9 +303,9 @@ try {
     if (false === $rels) {
       emitErrorAndExit($db, 'Failed to select CICI.');
     }
-    $ret = !empty($rels) ? "True" : "False";
+    $ret = !empty($rels) ? finish(array('has_relation' => 1)) : finish(array('has_relation' => 0));
     
-    finish($ret);
+
   }
 
 

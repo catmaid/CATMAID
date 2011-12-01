@@ -153,7 +153,7 @@ try {
       // update the element_of relationship for each of the treenode children recursively
       $allchi = $db->getAllTreenodeChildrenRecursively( $pid, $tn['tnid'] );
       
-      if (false === $alchi) {
+      if (false === $allchi) {
         emitErrorAndExit($db, 'Could not retrieve all treenode children.');
       }
       
@@ -167,6 +167,11 @@ try {
         
         if (false === $ids) {
           emitErrorAndExit($db, 'Could not update skeleton id of children treenodes.');
+        }
+
+        $result = $db->getResult("UPDATE treenode SET skeleton_id = $skelid WHERE id = {$chitn['id']}");
+        if (FALSE === $result) {
+            emitErrorAndExit($db, 'Failed to set the skeleton_id column for a child treenode.');
         }
       }
     }

@@ -135,8 +135,8 @@ for new_relation in (x for x in required_relations if x not in relation_to_relat
 
 ps_new_treenode = c.prepareStatement(
   "INSERT INTO treenode "+
-  "(user_id,project_id,parent_id,location,radius,confidence) "+
-  "VALUES (?,?,?,(?,?,?),?,?) "+
+  "(user_id,project_id,parent_id,location,radius,confidence,skeleton_id) "+
+  "VALUES (?,?,?,(?,?,?),?,?,?) "+
   "RETURNING id")
 
 ps_new_treenode.setInt(1,user_id)
@@ -152,6 +152,7 @@ def insert_treenode( parent_id, x, y, z, radius, confidence, skeleton_id=None ):
   ps_new_treenode.setDouble(6,z)
   ps_new_treenode.setDouble(7,radius)
   ps_new_treenode.setInt(8,confidence)
+  ps_new_treenode.setInt(9,skeleton_id)
   rs = ps_new_treenode.executeQuery()
   rs.next()
   new_id = rs.getLong(1)
@@ -464,9 +465,7 @@ def insertTree(tree,skeleton_id):
     # we're making "-1" unset for the moment...
     if radius == 0:
       radius = -1
-    new_id = insert_treenode( parent, x, y, z, radius, confidence )
-    if not new_id:
-      raise Exception, "No new_id was found inserting treenode "+str(nd)
+    new_id = insert_treenode( parent, x, y, z, radius, confidence, skeleton_id )
     table[nd] = new_id
     new_treenode_class_instance('element_of',new_id,skeleton_id)
     # Also try to find any tags:
@@ -582,7 +581,7 @@ def add_synapse( name, connector, pre_nodes, post_nodes ):
       # * if not:
       #   * create one isolated treenode in a skeleton
       if not treenodes:
-        treenode_id = insert_treenode( None, node.x, node.y, node.z, -1, 5 )
+        treenode_id = insert_treenode( None, node.x, node.y, node.z, -1, 5, skeleton_id )
         treenodes.append(TreeNode(treenode_id,node.x,node.y,node.z))
         # * create a skeleton, a neuron and make this part of the 'Fragments' group
         fragments_group_id = get_fragments_node_id()

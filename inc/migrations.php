@@ -11,18 +11,188 @@ class Migration {
 	function apply( $db, $ignoreErrors ) {
 		try {
 			error_log("Running the migration: ".$this->name);
-			$db->getResult("SAVEPOINT sp");
+			$db->getResult("SAVEPOINT generic_migration");
 			$db->getResult($this->sql);
 		} catch( Exception $e ) {
 			if ($ignoreErrors) {
 				error_log("Ignoring the failed migration: ".$e);
-				$db->getResult("ROLLBACK TO SAVEPOINT sp");
+				$db->getResult("ROLLBACK TO SAVEPOINT generic_migration");
 			} else {
 				error_log("The migration failed: ".$e);
 				throw $e;
 			}
 		}
 	}
+}
+
+// This is a special migration that we can't easily do with pure SQL.
+// It inserts any missing lines into the treenode_connector table,
+// based on the old way of describing synapses:
+
+class SpecialConnectorMigration {
+    var $name = "Add any rows missing from the treenode_connector table";
+    function apply( $db, $ignoreErrors) {
+        try {
+            error_log("Running the migration: ".$this->name);
+            $db->getResult("SAVEPOINT connector_migration");
+
+            foreach( $db->getResult("SELECT id FROM project") as $p ) {
+                $project_id = $p['id'];
+                error_log("Dealing with project: ".$project_id);
+
+                // Get a map of all the relation names to IDs in this
+                // project:
+                $relation_result = $db->getResult("SELECT relation_name, id FROM relation WHERE project_id = ".$project_id);
+                $relations = array();
+                foreach( $relation_result as $r ) {
+                    $relations[$r['relation_name']] = intval($r['id']);
+                }
+
+                // Get a map of all the class names to IDs in this
+                // project:
+                $class_result = $db->getResult("SELECT class_name, id FROM class WHERE project_id = ".$project_id);
+                $classes = array();
+                foreach( $class_result as $r ) {
+                    $classes[$r['class_name']] = intval($r['id']);
+                }
+
+                if (!isset($relations['presynaptic_to'])) {
+                    // Then this project probably isn't set up for tracing
+                    continue;
+                }
+
+                foreach( array('presynaptic', 'postsynaptic') as $direction ) {
+
+                    $direction_relation_id = $relations[$direction . '_to'];
+                    $terminal_class_id = $classes[$direction . ' terminal'];
+                    $model_of_id = $relations['model_of'];
+                    $synapse_class_id = $classes['synapse'];
+                    $results = $db->getResult(<<<EOSQL
+SELECT tn.id as tnid, c.id as cid, terminal1_to_syn.user_id as user_id
+  FROM treenode tn,
+       treenode_class_instance tci,
+       class_instance terminal1,
+       class_instance_class_instance terminal1_to_syn,
+       class_instance syn,
+       connector_class_instance syn_to_connector,
+       connector c
+  WHERE tn.project_id = $project_id
+    AND tn.id = tci.treenode_id
+    AND tci.relation_id = $model_of_id
+    AND terminal1.id = tci.class_instance_id
+    AND terminal1.class_id = $terminal_class_id
+    AND terminal1.id = terminal1_to_syn.class_instance_a
+    AND terminal1_to_syn.relation_id = $direction_relation_id
+    AND syn.id = terminal1_to_syn.class_instance_b
+    AND syn.class_id = $synapse_class_id
+    AND syn.id = syn_to_connector.class_instance_id
+    AND syn_to_connector.relation_id = $model_of_id
+    AND syn_to_connector.connector_id = c.id
+EOSQL
+                        );
+
+                    foreach ($results as $row) {
+                        $treenode_id = $row['tnid'];
+                        $connector_id = $row['cid'];
+                        $user_id = $row['user_id'];
+
+                        // Do a quick check that this relationship isn't already
+                        // recorded in the treenode_connector table.  It shouldn't
+                        // create a problem if we end up with duplicate entries,
+                        // but try to avoid that:
+
+                        $check_result = $db->getResult(<<<EOSQL
+SELECT id
+  FROM treenode_connector
+  WHERE treenode_id = $treenode_id
+    AND connector_id = $connector_id
+    AND project_id = $project_id
+    AND relation_id = $direction_relation_id
+EOSQL
+                            );
+                        if (count($check_result) < 1) {
+                            // Then actually insert it:
+                            $db->getResult(<<<EOSQL
+INSERT INTO treenode_connector
+  (project_id, user_id, treenode_id, connector_id, relation_id)
+  VALUES ($project_id, $user_id, $treenode_id, $connector_id, $direction_relation_id)
+EOSQL
+                                );
+                        }
+                    }
+                }
+            }
+
+		} catch( Exception $e ) {
+			if ($ignoreErrors) {
+				error_log("Ignoring the failed migration: ".$e);
+				$db->getResult("ROLLBACK TO SAVEPOINT connector_migration");
+			} else {
+				error_log("The migration failed: ".$e);
+				throw $e;
+			}
+		}
+    }
+}
+
+/* This is another non-trivial migration, which adds the skeleton_id
+ * column to the treenode table, and also populates that column */
+
+class AddSkeletonIDsMigration {
+    var $name = "Add skeleton_id column to treenode and populate it";
+    function apply( $db, $ignoreErrors) {
+        try {
+            error_log("Running the migration: ".$this->name);
+            $db->getResult("SAVEPOINT add_skeleton_column");
+
+            try {
+                $db->getResult("ALTER TABLE treenode ADD COLUMN skeleton_id bigint REFERENCES class_instance(id)");
+            } catch( Exception $e ) {
+                error_log("Ignoring the failure to add a skeleton_id column to treenode; it's probably already there.");
+                $db->getResult("ROLLBACK TO SAVEPOINT add_skeleton_column");
+            }
+
+            $db->getResult("SAVEPOINT update_skeleton_columns");
+
+            foreach( $db->getResult("SELECT id FROM project") as $p ) {
+                $project_id = $p['id'];
+                error_log("Dealing with project: ".$project_id);
+
+                // Get a maps of all the class / relation names to IDs
+                // for this project:
+                $relations = $db->getMap( $project_id, 'relation' );
+                $classes = $db->getMap( $project_id, 'class' );
+
+                if (!isset($relations['element_of'])) {
+                    // Then this project probably isn't set up for tracing
+                    continue;
+                }
+
+                $result = $db->getResult(
+"UPDATE treenode SET skeleton_id = found.skeleton_id
+   FROM (SELECT treenode_id, class_instance_id as skeleton_id
+           FROM treenode_class_instance, class_instance
+          WHERE treenode_class_instance.project_id = $project_id AND
+                treenode_class_instance.relation_id = {$relations['element_of']} AND
+                treenode_class_instance.class_instance_id = class_instance.id AND
+                class_instance.class_id = {$classes['skeleton']}) AS found
+   WHERE treenode.id = found.treenode_id");
+                error_log("result was: ".print_r($result, TRUE));
+                if ($result === FALSE) {
+                    throw new Exception("Setting the skeleton_id column failed");
+                }
+            }
+
+		} catch( Exception $e ) {
+			if ($ignoreErrors) {
+				error_log("Ignoring the failed migration: ".$e);
+				$db->getResult("ROLLBACK TO SAVEPOINT update_skeleton_columns");
+			} else {
+				error_log("The migration failed: ".$e);
+				throw $e;
+			}
+		}
+    }
 }
 
 // timestamps must be UTC and in the format
@@ -540,6 +710,35 @@ ALTER TABLE "class" DROP COLUMN "uri";
 	'2011-10-20T15:14:59' => new Migration(
 		'Switch to tracking exactly which migrations have been applied',
 		'CREATE TABLE applied_migrations (id VARCHAR(32) PRIMARY KEY)'
+),
+
+	'2011-10-30T16:10:19' => new SpecialConnectorMigration(),
+
+	'2011-11-23T10:18:23' => new AddSkeletonIDsMigration(),
+
+	'2011-11-24T14:35:19' => new Migration(
+		'Adding overlay table',
+		<<<EOMIGRATION
+CREATE TABLE "overlay" (
+    id integer NOT NULL,
+    stack_id integer NOT NULL,
+    title text NOT NULL,
+    image_base text NOT NULL,
+    default_opacity integer DEFAULT 0 NOT NULL
+);
+CREATE SEQUENCE overlay_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+ALTER SEQUENCE overlay_id_seq OWNED BY "overlay".id;
+ALTER TABLE ONLY "overlay"
+    ADD CONSTRAINT overlay_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY "overlay"
+    ADD CONSTRAINT overlay_stack_id_fkey FOREIGN KEY (stack_id) REFERENCES stack(id) ON DELETE CASCADE;
+ALTER TABLE "overlay" ALTER COLUMN id SET DEFAULT nextval('overlay_id_seq'::regclass);
+EOMIGRATION
 ),
 
 	// INSERT NEW MIGRATIONS HERE

@@ -6,5 +6,5 @@
 /.project
 /.pydevproject
 .idea/
+*.orig
 *.pyc
-/mysite/settings.py

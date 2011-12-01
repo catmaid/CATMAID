@@ -83,13 +83,15 @@ if ( !$parentid ) {
   
 # Just one select query, no transaction needed:
 $res = $db->getResult(
-  'SELECT "ci"."id", "ci"."name", "ci"."class_id",
+  'SELECT "ci"."id", "ci"."name", "ci"."class_id", "user"."name" AS "username",
           "cici"."relation_id", "cici"."class_instance_b" AS "parent", "cl"."class_name"
   FROM "class_instance" AS "ci"
   INNER JOIN "class_instance_class_instance" AS "cici" 
     ON "ci"."id" = "cici"."class_instance_a" 
     INNER JOIN "class" AS "cl" 
       ON "ci"."class_id" = "cl"."id"
+      INNER JOIN "user"
+      ON "ci"."user_id" = "user"."id"
   WHERE "ci"."project_id" = '.$pid.' AND
      "cici"."class_instance_b" = '.$parentid.' AND
      ("cici"."relation_id" = '.$modid.'
@@ -101,9 +103,16 @@ $res = $db->getResult(
 $sOutput = '[';
 $i = 0;
 foreach($res as $key => $ele) {
+
+  if( $ele['class_name'] == "skeleton" ) {
+    $add = ' ('.$ele['username'].')';
+  } else {
+    $add = '';
+  }
+
   $ar = array(		
         'data' => array(
-          'title' => $ele['name'],
+          'title' => $ele['name'].$add,
         ),
         'attr' => array('id' => 'node_'. $ele['id'],
         // replace whitespace because of tree object types

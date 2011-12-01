@@ -710,7 +710,7 @@ CREATE TABLE broken_slice (
 EOMIGRATION
 ),
 
-	'2011-07-28T16:10:19' => new SpecialConnectorMigration(),
+	'2011-10-30T16:10:19' => new SpecialConnectorMigration(),
 
 	'2011-11-23T10:18:23' => new AddSkeletonIDsMigration(),
 

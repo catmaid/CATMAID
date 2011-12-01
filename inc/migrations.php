@@ -3,10 +3,13 @@
 class Migration {
 	var $name;
 	var $sql;
+	var $mayFail;
 	function Migration( $name,
-						$sql ) {
+			    $sql,
+			    $mayFail = FALSE ) {
 		$this->name = $name;
 		$this->sql = $sql;
+		$this->mayFail = $mayFail;
 	}
 	function apply( $db, $ignoreErrors ) {
 		try {
@@ -14,7 +17,7 @@ class Migration {
 			$db->getResult("SAVEPOINT generic_migration");
 			$db->getResult($this->sql);
 		} catch( Exception $e ) {
-			if ($ignoreErrors) {
+			if ($ignoreErrors || $this->mayFail) {
 				error_log("Ignoring the failed migration: ".$e);
 				$db->getResult("ROLLBACK TO SAVEPOINT generic_migration");
 			} else {

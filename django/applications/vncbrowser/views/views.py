@@ -32,7 +32,7 @@ def visual_index(request, **kwargs):
                                                      kwargs )
 
     # From: http://docs.djangoproject.com/en/1.0/topics/pagination/
-    paginator = Paginator(all_neurons, 20)
+    paginator = Paginator(all_neurons, 5)
     if 'page' in kwargs:
         page = kwargs['page'] or 1
     else:

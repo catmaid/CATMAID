@@ -742,6 +742,8 @@ ALTER TABLE ONLY "overlay"
     ADD CONSTRAINT overlay_stack_id_fkey FOREIGN KEY (stack_id) REFERENCES stack(id) ON DELETE CASCADE;
 ALTER TABLE "overlay" ALTER COLUMN id SET DEFAULT nextval('overlay_id_seq'::regclass);
 EOMIGRATION
+		,
+		TRUE
 ),
 
 	// INSERT NEW MIGRATIONS HERE

@@ -197,20 +197,15 @@ try {
         ((connector.location).z - $z) AS z_diff,
         treenode_connector.relation_id AS treenode_relation_id,
         treenode_connector.treenode_id AS tnid
-     FROM connector_class_instance AS lci, class_instance AS ci, connector
-         LEFT OUTER JOIN treenode_connector ON treenode_connector.connector_id = connector.id
+     FROM connector LEFT OUTER JOIN treenode_connector
+             ON treenode_connector.connector_id = connector.id
         WHERE connector.project_id = $pid AND
             (connector.location).x >= $left AND
             (connector.location).x <= ($left + $width) AND
             (connector.location).y >= $top AND
             (connector.location).y <= ($top + $height) AND
             (connector.location).z >= ($z - $zbound * $zres) AND
-            (connector.location).z <= ($z + $zbound * $zres) AND
-            connector.id = lci.connector_id AND
-            ci.id = lci.class_instance_id AND
-            lci.relation_id = {$relations['model_of']} AND
-            ci.class_id = {$classes['synapse']}
-
+            (connector.location).z <= ($z + $zbound * $zres)
         ORDER BY id, z_diff LIMIT $limit"
   );
 

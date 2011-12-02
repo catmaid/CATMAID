@@ -22,6 +22,9 @@ if ( $pid )
   {
     $eleof = $db->getRelationId( $pid, "element_of" );
     if(!$eleof) { echo makeJSON( array( 'error' => 'Can not find "element_of" relation for this project' ) ); return; }
+
+    $partof = $db->getRelationId( $pid, "part_of" );
+    if(!$partof) { echo makeJSON( array( 'error' => 'Can not find "part_of" relation for this project' ) ); return; }
     
     // assume that target to is parent, so only have to set parent to from_id
     
@@ -48,6 +51,10 @@ if ( $pid )
     // the target skeleton is removed and its treenode assume the skeleton id of the from-skeleton
     $ids = $db->update("treenode_class_instance", array("class_instance_id" => $skelid_from) ,' "class_instance_id" = '.$skelid_to.' AND 
            "relation_id" = '.$eleof);
+
+    // also need to update the pre/postsynaptic terminal part_of relationship with the skeleton
+    $ids = $db->update("class_instance_class_instance", array("class_instance_b" => $skelid_from) ,' "class_instance_b" = '.$skelid_to.' AND
+           "relation_id" = '.$partof);
 
     $ids = $db->update("treenode", array("skeleton_id" => $skelid_from), "skeleton_id = $skelid_to");
 

@@ -152,10 +152,12 @@ var ConnectorTable = new function()
 
     $('#connector_relation_type').change(function() {
       self.connectorTable.fnDraw();
-      if ($('#connector_relation_type :selected').attr("value")) {
+      if ($('#connector_relation_type :selected').attr("value") === "0") {
         $("#connector_nr_nodes_top").text("# nodes for source(s)");
+        $("#connector_nr_nodes_bottom").text("# nodes for source(s)");
       } else {
         $("#connector_nr_nodes_top").text("# nodes for target(s)");
+        $("#connector_nr_nodes_bottom").text("# nodes for target(s)");
       }
 
     });

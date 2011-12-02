@@ -129,6 +129,24 @@ var ObjectTree = new function()
                 "action": function (obj) {
                   this.remove(obj);
                 }
+              },
+              "cut": {
+                              "separator_before": true,
+                              "icon": false,
+                              "separator_after": false,
+                              "label": "Cut",
+                              "action": function (obj) {
+                                this.cut(obj);
+                              }
+              },
+              "paste": {
+                              "separator_before": false,
+                              "icon": false,
+                              "separator_after": false,
+                              "label": "Paste",
+                              "action": function (obj) {
+                                this.paste(obj);
+                              }
               }
             };
           } else if (type_of_node === "neuron") {
@@ -162,6 +180,24 @@ var ObjectTree = new function()
                 "action": function (obj) {
                   this.remove(obj);
                 }
+              },
+              "cut": {
+                              "separator_before": true,
+                              "icon": false,
+                              "separator_after": false,
+                              "label": "Cut",
+                              "action": function (obj) {
+                                this.cut(obj);
+                              }
+              },
+              "paste": {
+                              "separator_before": false,
+                              "icon": false,
+                              "separator_after": false,
+                              "label": "Paste",
+                              "action": function (obj) {
+                                this.paste(obj);
+                              }
               },
               "ccp": false
             };

@@ -43,11 +43,6 @@ if (! $db->begin() ) {
 }
 
 try {
-  # Relation 'element_of'
-  $ele_id = $db->getRelationId( $pid, 'element_of' );
-  if (false === $ele_id || !$ele_id) {
-    emitErrorAndExit( $db, 'Can not find "element_of" relation for this project' );
-  }
   # Relation 'labeled_as'
   $labeled_as_id = $db->getRelationId( $pid, 'labeled_as' );
   if (false === $labeled_as_id || !$labeled_as_id) {
@@ -63,42 +58,43 @@ try {
             treenode.confidence,
             treenode.parent_id,
             treenode.user_id,
-            tci.class_instance_id AS skeleton_id
-    FROM treenode,
-         treenode_class_instance AS tci
-    WHERE tci.project_id = '.$pid.'
-      AND tci.relation_id = '.$ele_id.'
-      AND tci.treenode_id = treenode.id
-      AND tci.class_instance_id = '.$skid);
+						treenode.skeleton_id
+    FROM treenode
+    WHERE treenode.skeleton_id = '.$skid);
 
   if (false === $q) {
     emitErrorAndExit($db, 'Failed to retrieve information for treenode #'.$tnid);
   }
 
-  foreach ($q as &$p) {
-    # Select text labels for node $tnid
-    # TODO there must be a way to select all tags for all nodes of the skeleton in one shot
-    $tags = $db->getResult(
-      'SELECT "class_instance"."name"
-      FROM "treenode_class_instance" AS "tci",
-           "class_instance"
-      WHERE "tci"."project_id" = '.$pid.'
-        AND "tci"."treenode_id" = '.$p['id'].'
-        AND "tci"."relation_id" = '.$labeled_as_id.'
-        AND "tci"."class_instance_id" = "class_instance"."id"');
-  
-    if (false === $tags) {
-      emitErrorAndExit( $db, 'Failed to retrieve tags for treenode '.$p['id']);
-    }
-    
-    if (count($tags) > 0) {
-      $a = array();
-      foreach ($tags as $tag) { $a[] = $tag['name']; }
-      $p['tags'] = $a;
-    } else {
-      $p['tags'] = null;
-    }
+  # Select all tag-labeled treenodes of the skeleton
+	$tags = $db->getResult(
+		'SELECT "class_instance"."name",
+		        "treenode"."id"
+		 FROM "treenode_class_instance" AS "tci",
+		      "class_instance",
+					"treenode"
+		 WHERE "treenode"."skeleton_id" = '.$skid.'
+       AND "treenode"."id" = "tci"."treenode_id"
+       AND "tci"."relation_id" = '.$labeled_as_id.'
+			 AND "tci"."class_instance_id" = "class_instance"."id"');
 
+  if (false === $tags) {
+    emitErrorAndExit( $db, 'Failed to retrieve tags for treenodes of skeleton '.$skid);
+  }
+
+	# Prepare a map of id vs array of tags, for each tagged node
+	$tagged = array();
+	foreach ($tags as &$t) {
+	  if (!isset($tagged[$t['id']])) {
+			$tagged[$t['id']] = array();
+		}
+		$tagged[$t['id']][] = $t['name'];
+	}
+
+	# Add the 'tags' entry and convert numeric entries to integers
+	foreach ($q as &$p) {
+		# Add tags
+		if (isset($tagged[$p['id']])) $p['tags'] = $tagged[$p['id']];
     # Convert numeric entries to integers
     $p['id'] = (int)$p['id'];
     $p['x'] = (int)$p['x'];
@@ -108,7 +104,7 @@ try {
     $p['user_id'] = (int)$p['user_id'];
     $p['parent_id'] = (int)$p['parent_id'];
     $p['skeleton_id'] = (int)$p['skeleton_id'];
-  }
+	}
 
   if (! $db->commit() ) {
 		emitErrorAndExit( $db, 'Failed to commit!' );

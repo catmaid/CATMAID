@@ -302,4 +302,14 @@ var tracingWindowActions = [
     run: function (e) {
       WindowMaker.show('3d-view');
     }
+  }),
+
+  new Action({
+    helpText: "Show object tree as graph",
+    buttonID: "view_objecttree_graph",
+    buttonName: 'objecttree-graph',
+    run: function (e) {
+      WREF = window.open("apps/graph/index.html","Object tree graph");
+      if(!WREF.opener){ WREF.opener = this.window; }
+    }
   }) ];

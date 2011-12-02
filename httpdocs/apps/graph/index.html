@@ -2,7 +2,7 @@
 <html>
     
     <head>
-        <title>Cytoscape Web example</title>
+        <title>Object Graph</title>
         
         <!-- JSON support for IE (needed to use JS API) -->
         <script type="text/javascript" src="./js/min/json2.min.js"></script>
@@ -16,7 +16,7 @@
         <script src="../../libs/jquery/jquery.js" type="text/javascript" charset="utf-8"></script>
         
         <script type="text/javascript">
-               
+            
               /** Query the remote database and wait for output. */
               var synchFetch = function(URL, params) {
                 var r = null;
@@ -44,37 +44,14 @@
               };
                     
             window.onload=function() {
-
-
+				
                 // id of Cytoscape Web container div
                 var div_id = "cytoscapeweb";
-                
-                // you could also use other formats (e.g. GraphML) or grab the network data via AJAX
-                var networ_json = {
 
-                    dataSchema: {
-                        nodes: [ { name: "label", type: "string" },
-                                 { name: "score", type: "number" } ],
-                                 
-                        edges: [ { name: "label", type: "string" },
-                                 { name: "weight", type: "number" },
-                                 { name: "directed", type: "boolean", defValue: true} ]
-                    },
-                    
-                    data: {
-                        nodes: [ { id: "n1", label: "Node 1", score: 1.0 },
-                                 { id: "n2", label: "Node 2", score: 2.2 },
-                                 { id: "n3", label: "Node 3", score: 3.5 } ],
-                                 
-                        edges: [ { id: "e1", label: "Edge 1", weight: 1.1, source: "n1", target: "n3" },
-                                 { id: "e2", label: "Edge 2", weight: 3.3, source:"n2", target:"n1"} ]
-                    }
-                };
-                
                 // fetch data
-                var networ_json = synchFetch("../../model/network.api/annotations.php", {pid : 1});
-                console.log(networ_json);
-                
+                var project = opener.globalGetProject();
+                var networ_json = synchFetch("../../model/network.api/annotations.php", {pid : project.id});
+
                 // initialization options
                 var options = {
                     // where you have the Cytoscape Web SWF
@@ -84,8 +61,7 @@
                 };
                 
                 // init and draw
-                var vis = new org.cytoscapeweb.Visualization(div_id, options);
-                
+                var vis = new org.cytoscapeweb.Visualization(div_id, options);  
 
                 // visual style we will use
                 var visual_style = {

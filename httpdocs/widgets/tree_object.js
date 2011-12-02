@@ -172,6 +172,7 @@ var ObjectTree = new function()
                 "separator_after": false,
                 "label": "Go to root node",
                 "action": function (obj) {
+
                   var skelid = obj.attr("id").replace("node_", "");
                   requestQueue.register("model/skeleton.root.get.php", "POST", {
                     pid: project.id,
@@ -194,15 +195,6 @@ var ObjectTree = new function()
                     }
                   });
 
-                }
-              },
-              "show_3d": {
-                "separator_before": false,
-                "separator_after": false,
-                "label": "Show 3D View table",
-                "action": function (obj) {
-                  this.select_node(obj);
-                  WindowMaker.show("3d-view");
                 }
               },
               "show_treenode": {

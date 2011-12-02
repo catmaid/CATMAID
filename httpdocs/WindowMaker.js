@@ -128,11 +128,26 @@ var WindowMaker = new function()
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
+    add.setAttribute("id", "update_treenodetable_current_skeleton");
+    add.setAttribute("value", "Update table for current skeleton");
+    add.onclick = updateTreenodeTable; // function declared in table_treenode.js
+    content.appendChild(add);
+
+    var sync = document.createElement('input');
+    sync.setAttribute("type", "checkbox");
+    sync.setAttribute("id", "synchronize_treenodetable");
+    sync.setAttribute("label", "Synchronize");
+    content.appendChild(sync);
+
+    var label = document.createTextNode('Synchronize');
+    content.appendChild(label);
+
     var container = createContainer("treenode_table_widget");
     content.appendChild(container);
 
     container.innerHTML =
-      '&nbsp; Synchronize <input type="checkbox" id="synchronize_treenodetable" />' +
       '<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable">' +
         '<thead>' +
           '<tr>' +

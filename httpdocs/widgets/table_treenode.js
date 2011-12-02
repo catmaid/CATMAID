@@ -2,6 +2,11 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
 
+function updateTreenodeTable() {
+  console.log('update table');
+  TreenodeTable.init( project.getId() );
+}
+
 var TreenodeTable = new function()
 {
   var ns = this; // reference to the namespace
@@ -23,20 +28,19 @@ var TreenodeTable = new function()
       "fnServerData": function (sSource, aoData, fnCallback) {
         var key;
         // remove all selected elements in table
-        for (key in project.selectedObjects.table_treenode) {
+        for (var key in project.selectedObjects.table_treenode) {
           if (project.selectedObjects.table_treenode.hasOwnProperty(key)) {
             // FIXME: use splice(1,1) instead
             delete project.selectedObjects.table_treenode[key];
           }
         }
 
-        // only for one skeleton
-        var skelid = project.selectedObjects.selectedskeleton;
+        var skelid = SkeletonAnnotations.getActiveSkeletonId();
         if (skelid !== null) {
           // give priority to showing treenodes
           aoData.push({
             "name": "skeleton_0",
-            "value": project.selectedObjects.selectedskeleton
+            "value": skelid
           });
           aoData.push({
             "name": "skeleton_nr",
@@ -175,7 +179,7 @@ var TreenodeTable = new function()
       }
     });
 
-    $("#treenodetable  thead input").blur(function (i) {
+    $("#treenodetable thead input").blur(function (i) {
       if (this.value === "") {
         this.className = "search_init";
         this.value = asInitVals[$("thead input").index(this)];

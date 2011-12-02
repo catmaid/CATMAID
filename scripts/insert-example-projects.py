@@ -109,12 +109,17 @@ c.execute(select, ('root', tracing_project_id))
 row = c.fetchone()
 root_class_id = row[0]
 
-c.execute("INSERT INTO class_instance "+
-          "(user_id, project_id, class_id, name) "+
-          "VALUES (%(user_id)s, %(project_id)s, %(class_id)s, 'neuropile')",
-          {'user_id': gerhard_id,
-           'project_id': tracing_project_id,
-           'class_id': root_class_id})
+# Check if root node already exists
+select = 'SELECT c.id FROM class_instance c WHERE c.class_id = %s and c.project_id = %s'
+c.execute(select, (root_class_id, tracing_project_id))
+row = c.fetchall()
+if len(row) == 0:
+    c.execute("INSERT INTO class_instance "+
+              "(user_id, project_id, class_id, name) "+
+              "VALUES (%(user_id)s, %(project_id)s, %(class_id)s, 'neuropile')",
+              {'user_id': gerhard_id,
+               'project_id': tracing_project_id,
+               'class_id': root_class_id})
 
 db_connection.commit()
 c.close()

@@ -383,7 +383,27 @@ var ObjectTree = new function()
             },
             "valid_children": ["skeleton"],
             "start_drag": false
-          }
+          },
+          "presynapticterminal": {
+            "icon": {
+              "image": "widgets/themes/kde/jsTree/neuron/presynapse.png"
+            },
+            "select_node": function () {
+              return false;
+            },
+            "valid_children": "none",
+            "start_drag": false
+          },
+          "postsynapticterminal": {
+            "icon": {
+              "image": "widgets/themes/kde/jsTree/neuron/postsynapse.png"
+            },
+            "select_node": function () {
+              return false;
+            },
+            "valid_children": "none",
+            "start_drag": false
+          },
         }
       }
     });

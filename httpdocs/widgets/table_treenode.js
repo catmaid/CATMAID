@@ -3,7 +3,6 @@
 
 
 function updateTreenodeTable() {
-  console.log('update table');
   TreenodeTable.init( project.getId() );
 }
 

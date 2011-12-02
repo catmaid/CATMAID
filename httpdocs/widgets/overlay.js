@@ -349,7 +349,7 @@ var SkeletonAnnotations = new function()
       $("#Tags" + atn.id).bind('focusout', function() {
         // focus out with tab updates tags and remove tagbox
         updateTags();
-        $("#tagBoxId" + atn.id).fadeOut( 1500, function() {
+        $("#tagBoxId" + atn.id).fadeOut( 500, function() {
           $("#tagBoxId" + atn.id).remove();
         });
       });

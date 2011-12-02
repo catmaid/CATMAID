@@ -35,7 +35,7 @@ function OverviewLayer( stack )
 
 		for( var key in layers)
 		{
-			var container = document.createElement("div"), default_opacity = 88;
+			var container = document.createElement("div"), default_opacity = 100;
 
 			var setOpac = function ( val )
 			{

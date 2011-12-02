@@ -197,34 +197,39 @@ var ObjectTree = new function()
 
                 }
               },
-              "show_treenode": {
-                "separator_before": false,
-                "separator_after": false,
-                "label": "Show treenode table",
-                "action": function (obj) {
-                  // deselect all (XXX: only skeletons? context?)
-                  this.deselect_all();
-                  // select the node
-                  this.select_node(obj);
+              "show": {
+                "label": "Show",
+                "submenu": {
+                  "show_treenode": {
+                    "separator_before": false,
+                    "separator_after": false,
+                    "label": "Treenode table",
+                    "action": function (obj) {
+                      // deselect all (XXX: only skeletons? context?)
+                      this.deselect_all();
+                      // select the node
+                      this.select_node(obj);
 
-                  WindowMaker.show("node-table");
-                  // datatables grabs automatically the selected skeleton
-                  TreenodeTable.oTable.fnDraw();
+                      WindowMaker.show("node-table");
+                      // datatables grabs automatically the selected skeleton
+                      TreenodeTable.oTable.fnDraw();
+                    }
+                  },
+                  "show_connectortable": {
+                    "separator_before": false,
+                    "separator_after": false,
+                    "label": "Connector table",
+                    "action": function (obj) {
+                      // deselect all (XXX: only skeletons? context?)
+                      this.deselect_all();
+                      // select the node
+                      this.select_node(obj);
+
+                      WindowMaker.show("connector-table");
+                      // datatables grabs automatically the selected skeleton
+                      ConnectorTable.connectorTable.fnDraw();
+                    }
                 }
-              },
-              "show_connectortable": {
-                "separator_before": false,
-                "separator_after": false,
-                "label": "Show connector table",
-                "action": function (obj) {
-                  // deselect all (XXX: only skeletons? context?)
-                  this.deselect_all();
-                  // select the node
-                  this.select_node(obj);
-
-                  WindowMaker.show("connector-table");
-                  // datatables grabs automatically the selected skeleton
-                  ConnectorTable.connectorTable.fnDraw();
                 }
               },
               "rename_skeleton": {

@@ -42,12 +42,10 @@ if ( ! $skeletonID ) {
 }
 
 /* Paging */
-$sLimit = "";
 if ( isset( $_REQUEST['iDisplayStart'] ) )
 {
     $displayLength = intval( $_REQUEST['iDisplayLength'] );
     $displayStart = intval( $_REQUEST['iDisplayStart'] );
-    $sLimit = "LIMIT ".$displayLength." OFFSET ".$displayStart;
 }
 
 $columnToFieldArray = array( "connector_id", "x", "y", "z", "labels", "nr_treenodes", "username");
@@ -76,91 +74,35 @@ function subval_sort($a,$subkey) {
     return $c;
 }
 
-/* Ordering */
-/*
-if ( isset( $_REQUEST['iSortCol_0'] ) )
-{
-	$sOrder = "ORDER BY  ";
-	$sColumns = intval( $_REQUEST['iSortingCols'] );
-	for ( $i=0 ; $i<$sColumns ; $i++ )
-	{
-		$direction = (strtoupper($_REQUEST['sSortDir_'.$i]) === "DESC") ? "DESC" : "ASC";
-		$columnIndex = intval( $_REQUEST['iSortCol_'.$i] );
-		$sOrder .= fnColumnToField($columnIndex)." ".$direction.", ";
-	}
-	$sOrder = substr_replace( $sOrder, "", -2 );
-}*/
-
 if ( isset( $_REQUEST['iSortCol_0'] ) ) {
     $columnIndex = intval( $_REQUEST['iSortCol_0'] );
 } else {
     $columnIndex = 0;
 }
 
-
-// Retrieve relation IDs
-$presyn_id = $db->getRelationId( $pid, 'presynaptic_to' );
-if(!$presyn_id) {
-    echo makeJSON( array( 'error' => 'Can not find "presynaptic_to" relation for this project' ) );
+$relations = $db->getMap( $pid, 'relation' );
+if (!$relations) {
+    echo makeJSON( array( 'error' => "Could not find relations for project $pid" ) );
     return;
 }
 
-$postsyn_id = $db->getRelationId( $pid, 'postsynaptic_to' );
-if(!$postsyn_id) {
-    echo makeJSON( array( 'error' => 'Can not find "postsynaptic_to" relation for this project' ) );
-    return;
-}
-
-$elementof_id = $db->getRelationId( $pid, 'element_of' );
-if(!$elementof_id) {
-    echo makeJSON( array( 'error' => 'Can not find "element_of" relation for this project' ) );
-    return;
-}
-
-$labeledas_id = $db->getRelationId( $pid, 'labeled_as' );
-if(!$labeledas_id) {
-    echo makeJSON( array( 'error' => 'Can not find "labeled_as" relation for this project' ) );
-    return;
-}
-
-/*
-if( !empty($tlabelrel_res) )
-{
-    $tlabelrel = $tlabelrel_res[0]['id'];
-
-    // get treenode_class_instance rows
-    $tlabel = $db->getResult(
-    'SELECT "cici"."class_instance_a" as "cia", "class_instance"."name" as "label"
-    FROM "class_instance_class_instance" AS "cici" , "class_instance"
-    WHERE "cici"."project_id" = '.$pid.' AND "cici"."relation_id" = '.$tlabelrel.' AND
-     "class_instance"."id" = "cici"."class_instance_b"'
-    );
-
-    reset( $tlabel );
-    $tlabel2 = array();
-    while ( list( $key, $val) = each( $tlabel ) )
-    {
-        $k = $val['cia'];
-        if( array_key_exists($k, $tlabel2) )
-            $tlabel2[$k][] = $val['label']; // only append
-        else
-            $tlabel2[$k] = array($val['label']);;
+$required_relations = array('presynaptic_to', 'postsynaptic_to', 'element_of', 'labeled_as');
+foreach ($required_relations as $relation) {
+    if (!array_key_exists($relation, $relations)) {
+        echo makeJSON( array( 'error' => "Failed to find the required relation '$relation'" ) );
+        return;
     }
-    unset( $tlabel );
 }
-*/
 
 if ( $relation_type )
 {
-    $relation_id = $presyn_id;
+    $relation_id = $relations['presynaptic_to'];
     // inverse relation to fetch postsynaptic skeletons
-    $relation_inverse_id = $postsyn_id;
+    $relation_inverse_id = $relations['postsynaptic_to'];
 } else {
-    $relation_id = $postsyn_id;
-    $relation_inverse_id = $presyn_id;
+    $relation_id = $relations['postsynaptic_to'];
+    $relation_inverse_id = $relations['presynaptic_to'];
 }
-
-
 
 // Start transaction
 if (! $db->begin() ) {
@@ -169,161 +111,201 @@ if (! $db->begin() ) {
 }
 
 try {
-  // Retrieve all the connector ids that are presynaptic or
-  // postsynaptic to the treenodes of the given skeleton
-  
-  $t = $db->getResult('SELECT	"tc"."connector_id" AS "connector_id",
-          "tc"."user_id" AS "user_id",
-          "user"."name" AS "username",
-          ("connector"."location")."x" AS "x",
-          ("connector"."location")."y" AS "y",
-          ("connector"."location")."z" AS "z"
-          FROM "treenode_connector" as "tc", "treenode_class_instance" as "tci", "user", "connector"
-          WHERE "tc"."relation_id" = '.$relation_id.' AND
-          "tc"."user_id" = "user"."id" AND
-          "tci"."project_id" = '.$pid.' AND
-          "tc"."treenode_id" = "tci"."treenode_id" AND
-          "tci"."class_instance_id" = '.$skeletonID.' AND
-          "tci"."relation_id" = '.$elementof_id.' AND
-          "connector"."id" = "tc"."connector_id"
-          '.$sLimit
-  );
-  
-  if (false === $t) {
-    emitErrorAndExit($db, 'Failed to select all connector IDs.');
-  }
-  
-  $result = array();
-  
-  // For each connector, find all the pre/postsynaptic treenodes
-  // and retrieve the number of treenodes for a given skeleton id
-  foreach($t as $key => $value) {
-  
-      // populate resulting connectors with labels
-      $tlabel = $db->getResult('SELECT "class_instance"."name" as "label"
-                                FROM "connector_class_instance" AS "cci", "class_instance"
-                                WHERE "cci"."project_id" = '.$pid.' AND
-                                      "cci"."connector_id" = '.$value["connector_id"].' AND
-                                      "cci"."relation_id" = '.$labeledas_id.' AND
-                                      "cci"."class_instance_id" = "class_instance"."id" ');
-      
-      if (false === $tlabel) {
-        emitErrorAndExit($db, 'Faild to select labels for connector.');
-      }
-      
-      $label_arr = array();
-      while ( list( $key, $val) = each( $tlabel ) )
-      {
-          $label_arr[] = $val['label'];
-      }
-  
-      if(!empty($tlabel)) {
-          $label_string = implode(",", $label_arr);
-      } else {
-          $label_string = "";
-      }
-  
-      // Retrieve the treenodes on the "other" side first
-      // then retrieve the skeleton ids and count their number of treenodes
-  
-      $t2 = $db->getResult('SELECT "tc"."treenode_id" AS "treenode_id",
-          "tci"."class_instance_id" AS "skeleton_id",
-          "tc"."user_id" AS "user_id"
-          FROM "treenode_connector" as "tc", "treenode_class_instance" as "tci"
-          WHERE "tc"."relation_id" = '.$relation_inverse_id.' AND
-          "tci"."project_id" = '.$pid.' AND
-          "tc"."connector_id" = '.$value["connector_id"].' AND
-          "tc"."treenode_id" = "tci"."treenode_id" AND
-          "tci"."relation_id" = '.$elementof_id.'
-          '.$sLimit
-      );
-      
-      if (false === $t2) {
-        emitErrorAndExit($db, 'Failed to select pre or postsynaptic treenodes.');
-      }
-  
-      if(!empty($t2)) {
-          // loop over treenodes and count the number
-          foreach($t2 as $key2 => $value2 ) {
-              $data = $value;
-              $data["nr_treenodes"] = $db->getTreenodeCountForSkeleton( $pid, $value2["skeleton_id"] );
-              $data["labels"] = $label_string;
-              $data["treenode_id"] = $value2["treenode_id"];
-              $result[] = $data;
-          }
-  
-      } else {
-          // a connector no treenodes beyond counts as zero
-          $data = $value;
-          $data["nr_treenodes"] = 0;
-          $data["labels"] = $label_string;
-          $data["treenode_id"] = 0;
-          $result[] = $data;
-      }
-  
-  }
-  
-  // if not empty, sort it
-  if( !empty($result) ) {
-      $result2 = subval_sort($result, fnColumnToField($columnIndex) );
-  } else {
-      $result2 = $result;
-  }
-  
-  // build table
-  
-  $iTotal = count($result2);
-  
-  reset( $t );
-  
-  $sOutput = '{';
-  $sOutput .= '"iTotalRecords": '.$iTotal.', ';
-  $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
-  $sOutput .= '"aaData": [ ';
-  
-  while ( list( $key, $val) = each( $result2 ) )
-  {
-      $sRow = "";
-      $sRow .= "[";
-      $sRow .= '"'.addslashes($val["connector_id"]).'",';
-  
-      $sRow .= '"'.addslashes($val["x"]).'",';
-      $sRow .= '"'.addslashes($val["y"]).'",';
-      $sRow .= '"'.addslashes($val["z"]).'",';
-      $sRow .= '"'.addslashes($val["labels"]).'",';
-      $sRow .= '"'.addslashes($val["nr_treenodes"]).'",';
-      $sRow .= '"'.addslashes($val["username"]).'",';
-      $sRow .= '"'.addslashes($val["treenode_id"]).'"';
-  
-      $sRow .= "],";
-  
-      /* dummy tag search logic
-      $skip = False;
-      if ( $_GET['sSearch_2'] != "" )
-      {
-          $pos = strpos(strtoupper($val["label"]),strtoupper($_GET['sSearch_2']));
-          if ( $pos === false ) {
-              $skip = True;
-          }
-      }
-  
-      if ( !$skip )
-          $sOutput .= $sRow;
-      */
-      $sOutput .= $sRow;
-  
-  }
-  $sOutput = substr_replace( $sOutput, "", -1 );
-  $sOutput .= '] }';
 
+  // Retrieve all the connector ids that are presynaptic or
+  // postsynaptic to the treenodes of the given skeleton:
+
+  $connector_rows = $db->getResult("
+    SELECT
+      connector.id AS connector_id,
+      connector.user_id AS connector_user_id,
+      connector_user.name AS connector_username,
+      (connector.location).x AS connector_x,
+      (connector.location).y AS connector_y,
+      (connector.location).z AS connector_z,
+      tn_other.id AS other_treenode_id,
+      (tn_other.location).x AS other_treenode_x,
+      (tn_other.location).y AS other_treenode_y,
+      (tn_other.location).z AS other_treenode_z,
+      tn_other.skeleton_id AS other_skeleton_id,
+      (tn_this.location).x AS this_treenode_x,
+      (tn_this.location).y AS this_treenode_y,
+      (tn_this.location).z AS this_treenode_z,
+      tn_this.id AS this_treenode_id,
+      tc_this.relation_id AS this_to_connector_relation_id,
+      tc_other.relation_id AS connector_to_other_relation_id
+    FROM
+      treenode tn_other,
+      treenode_connector tc_other,
+      connector,
+      \"user\" connector_user,
+      treenode_connector tc_this,
+      treenode tn_this,
+      treenode_class_instance tci_this
+    WHERE
+      tn_other.id = tc_other.treenode_id AND
+      tc_other.connector_id = connector.id AND
+      tc_other.relation_id = $relation_inverse_id AND
+      connector_user.id = tc_other.user_id AND
+      tc_this.connector_id = connector.id AND
+      tn_this.id = tc_this.treenode_id AND
+      tc_this.relation_id = $relation_id AND
+      tci_this.treenode_id = tn_this.id AND
+      tci_this.relation_id = {$relations['element_of']} AND
+      tci_this.class_instance_id = $skeletonID
+    ORDER BY
+      connector_id, other_treenode_id, this_treenode_id");
+
+  if (FALSE === $connector_rows) {
+    emitErrorAndExit($db, 'Failed to select connectors.');
+  }
+
+  // Get the sets of "other skeletons" and connector IDs:
+
+  $other_skeletons = array();
+  $connector_ids = array();
+
+  foreach($connector_rows as $row) {
+      $other_skeletons[$row['other_skeleton_id']] = TRUE;
+      $connector_ids[$row['connector_id']] = TRUE;
+  }
+
+  // For each of the other skeletons, find the number of treenodes in
+  // that skeleton:
+
+  $comma_separated_skeleton_ids = implode(", ", array_keys($other_skeletons));
+
+  $count_rows = array();
+
+  if (count($other_skeletons) > 0) {
+      $count_rows = $db->getResult("
+    SELECT skeleton_id, count(skeleton_id) as skeleton_count
+    FROM treenode
+    WHERE skeleton_id IN ($comma_separated_skeleton_ids)
+    GROUP BY skeleton_id");
+
+      if (FALSE === $count_rows) {
+          emitErrorAndExit($db, 'Failed to find counts of treenodes in skeletons.');
+      }
+  }
+
+  $skeleton_id_to_treenode_counts = array();
+  foreach ($count_rows as $row) {
+      $skeleton_id_to_treenode_counts[$row['skeleton_id']] = $row['skeleton_count'];
+  }
+
+  // For each of the connectors, find all of its labels:
+
+  $comma_separated_connector_ids = implode(", ", array_keys($connector_ids));
+
+  $labels_rows = array();
+
+  if (count($connector_ids) > 0) {
+
+      $labels_rows = $db->getResult("
+    SELECT
+      connector_id,
+      class_instance.name as label
+    FROM
+      connector_class_instance AS cci,
+      class_instance
+    WHERE
+      cci.project_id = $pid AND
+      cci.connector_id IN ($comma_separated_connector_ids) AND
+      cci.relation_id = {$relations['labeled_as']} AND
+      cci.class_instance_id = class_instance.id");
+
+      if (FALSE === $labels_rows) {
+          emitErrorAndExit($db, 'Failed to find the labels for connectors');
+      }
+  }
+
+  $connector_id_to_labels = array();
+
+  foreach ($labels_rows as $row) {
+      $connector_id = $row['connector_id'];
+      if (!array_key_exists($connector_id, $connector_id_to_labels)) {
+          $connector_id_to_labels[$connector_id] = array();
+      }
+      $connector_id_to_labels[$connector_id][] = $row['label'];
+  }
+
+  // Now sort each of the label lists, and join them into a string:
+  foreach ($connector_id_to_labels as $connector_id => $label_array) {
+      asort($label_array);
+      $labels = implode(", ", $label_array);
+      $connector_id_to_labels[$connector_id] = $labels;
+  }
+
+  $output_results = array();
+
+  // Now assemble the output:
+
+  $row_index = 0;
+
+  $last_connector_id = NULL;
+  $last_other_skeleton_id = NULL;
+
+  foreach ($connector_rows as $row) {
+
+      $connector_id = $row['connector_id'];
+      $other_skeleton_id = $row['other_skeleton_id'];
+
+      $row_index_in_range;
+
+      if ($displayLength === -1) {
+          $row_index_in_range = TRUE;
+      } else {
+          if (($row_index >= $displayStart) && ($row_index < ($displayStart + $displayLength))) {
+              $row_index_in_range = TRUE;
+          } else {
+              $row_index_in_range = FALSE;
+          }
+      }
+
+      // Don't include duplicate lines:
+      if (($last_connector_id === NULL) ||
+          !(($connector_id === $last_connector_id) &&
+            ($other_skeleton_id === $last_other_skeleton_id))) {
+
+          if ($row_index_in_range) {
+
+              $output_row = array();
+
+              $output_row[] = $connector_id;
+              $output_row[] = $row['connector_x'];
+              $output_row[] = $row['connector_y'];
+              $output_row[] = $row['connector_z'];
+              if (array_key_exists($connector_id, $connector_id_to_labels)) {
+                  $output_row[] = $connector_id_to_labels[$connector_id];
+              } else {
+                  $output_row[] = '';
+              }
+              $output_row[] = $skeleton_id_to_treenode_counts[$other_skeleton_id];
+              $output_row[] = $row['connector_username'];
+              $output_row[] = $row['other_treenode_id'];
+
+              $output_results[] = $output_row;
+          }
+
+          ++ $row_index;
+      }
+
+      if ($last_connector_id === NULL) {
+          $last_connector_id = $row['connector_id'];
+          $last_other_skeleton_id = $row['other_skeleton_id'];
+      }
+  }
 
   if (! $db->commit() ) {
     // Not needed, but be nice to postgres
     emitErrorAndExit( $db, 'Failed to commit!' );
   }
-  
-  echo $sOutput;
-  
+
+  echo json_encode(array("iTotalRecords" => $row_index,
+                         "iTotalDisplayRecords" => count($output_results),
+                         "aaData" => $output_results));
+
 } catch (Exception $e) {
 	emitErrorAndExit( $db, 'ERROR: '.$e );
 }

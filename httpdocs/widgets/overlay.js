@@ -329,6 +329,8 @@ var SkeletonAnnotations = new function()
     }
 
     this.tagATN = function () {
+      // tagbox from
+      // http://blog.crazybeavers.se/wp-content/Demos/jquery.tag.editor/
 
       if(tagbox) {
         $('#growl-alert').growlAlert({
@@ -342,15 +344,8 @@ var SkeletonAnnotations = new function()
         return;
       }
 
-      // tagbox from
-      // http://blog.crazybeavers.se/wp-content/Demos/jquery.tag.editor/
-      if ($("#tagBoxId" + atn.id).length !== 0) {
-        alert("TagBox is already open!");
-        return;
-      }
-
       var e = $("<div class='tagBox' id='tagBoxId" + atn.id + "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: " + atn.x + "px; top: " + atn.y + "px;'>" +
-      "Tag: <input id='Tags" + atn.id + "' name='Tags' type='text' value='' />" );
+      "Tag: <input id='Tags" + atn.id + "' name='Tags' type='text' value='' /><div style='color:#949494'>(Confirm Tag: Enter, Save&Close: TAB)</div>" );
       e.css('background-color', 'white');
       e.css('position', 'absolute');
       e.appendTo("#sliceSVGOverlayId");
@@ -379,6 +374,7 @@ var SkeletonAnnotations = new function()
       });
 
       $("#Tags" + atn.id).bind('focusout', function() {
+        event.stopPropagation();
         // focus out with tab updates tags and remove tagbox
         updateTags();
         removeTagbox();

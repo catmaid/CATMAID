@@ -273,9 +273,9 @@ try {
               $output_row = array();
 
               $output_row[] = $connector_id;
-              $output_row[] = $row['connector_x'];
-              $output_row[] = $row['connector_y'];
-              $output_row[] = $row['connector_z'];
+              $output_row[] = sprintf("%.2f", $row['connector_x']);
+              $output_row[] = sprintf("%.2f", $row['connector_y']);
+              $output_row[] = sprintf("%.2f", $row['connector_z']);
               if (array_key_exists($connector_id, $connector_id_to_labels)) {
                   $output_row[] = $connector_id_to_labels[$connector_id];
               } else {

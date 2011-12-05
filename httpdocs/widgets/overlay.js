@@ -629,13 +629,17 @@ var SkeletonAnnotations = new function()
                 self.activateNode(nn);
 
               } else {
-                // postsynaptic case, no requirement to create new connector
-                // but we need to update the postgroup with corresponding original treenod
-                nodes[locid_retrieved].postgroup[id] = nodes[id];
-                // do not activate anything but redraw
-                nodes[locid_retrieved].draw();
-                // update the reference to the connector from the treenode
-                nodes[id].connectors[locid_retrieved] = nodes[locid_retrieved];
+                // If the connector is still being displayed, update its postgroup
+                // and redraw:
+                if (locid_retrieved in nodes) {
+                  // postsynaptic case, no requirement to create new connector
+                  // but we need to update the postgroup with corresponding original treenod
+                  nodes[locid_retrieved].postgroup[id] = nodes[id];
+                  // do not activate anything but redraw
+                  nodes[locid_retrieved].draw();
+                  // update the reference to the connector from the treenode
+                  nodes[id].connectors[locid_retrieved] = nodes[locid_retrieved];
+                }
               }
 
             }

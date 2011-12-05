@@ -373,6 +373,7 @@ var SkeletonAnnotations = new function()
       $("#tagBoxId" + atn.id).keyup(function (event) {
         // escape
         if (event.keyCode == 27) {
+          event.stopPropagation();
           removeTagbox();
         }
       });

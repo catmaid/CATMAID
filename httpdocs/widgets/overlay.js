@@ -319,7 +319,28 @@ var SkeletonAnnotations = new function()
 
     };
 
+    var tagbox = null;
+
+    var removeTagbox = function() {
+      if(tagbox) {
+        tagbox.remove();
+        tagbox = null;
+      }
+    }
+
     this.tagATN = function () {
+
+      if(tagbox) {
+        $('#growl-alert').growlAlert({
+          autoShow: true,
+          content: 'Close tagbox first before you tag another node!',
+          title: 'BEWARE',
+          position: 'top-right',
+          delayTime: 2500,
+          onComplete: function() { g.remove(); }
+        });
+        return;
+      }
 
       // tagbox from
       // http://blog.crazybeavers.se/wp-content/Demos/jquery.tag.editor/
@@ -334,24 +355,32 @@ var SkeletonAnnotations = new function()
       e.css('position', 'absolute');
       e.appendTo("#sliceSVGOverlayId");
 
+      tagbox = e;
+
       // update click event handling
       $("#tagBoxId" + atn.id).click(function (event) {
         event.stopPropagation();
         // update the tags
         updateTags();
-        $("#tagBoxId" + atn.id).remove();
+        removeTagbox();
       });
 
       $("#tagBoxId" + atn.id).mousedown(function (event) {
         event.stopPropagation();
+        removeTagbox();
+      });
+
+      $("#tagBoxId" + atn.id).keyup(function (event) {
+        // escape
+        if (event.keyCode == 27) {
+          removeTagbox();
+        }
       });
 
       $("#Tags" + atn.id).bind('focusout', function() {
         // focus out with tab updates tags and remove tagbox
         updateTags();
-        $("#tagBoxId" + atn.id).fadeOut( 500, function() {
-          $("#tagBoxId" + atn.id).remove();
-        });
+        removeTagbox();
       });
 
       // add autocompletion
@@ -406,14 +435,11 @@ var SkeletonAnnotations = new function()
           ntype: atn.type,
           tags: $("#Tags" + atn.id).tagEditorGetTags()
         }, function (status, text, xml) {
-
           if (status === 200) {
             if (text && text !== " ") {
               var e = $.parseJSON(text);
               if (e.error) {
                 alert(e.error);
-              } else {
-                $("#Tags" + atn.id).focus();
               }
             }
           }

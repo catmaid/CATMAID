@@ -13,8 +13,8 @@
         <!-- Cytoscape Web JS API (needed to reference org.cytoscapeweb.Visualization) -->
         <script type="text/javascript" src="./js/min/cytoscapeweb.min.js"></script>
         
-        <script src="../../libs/jquery/jquery.js" type="text/javascript" charset="utf-8"></script>
-        
+        <script type="text/javascript" src="../../libs/jquery/jquery.js" charset="utf-8"></script>
+        <script type="text/javascript" src="../../libs/jquery/jquery.url.js"></script>
         <script type="text/javascript">
             
               /** Query the remote database and wait for output. */
@@ -44,13 +44,11 @@
               };
                     
             window.onload=function() {
-				
                 // id of Cytoscape Web container div
                 var div_id = "cytoscapeweb";
 
                 // fetch data
-                var project = opener.globalGetProject();
-                var networ_json = synchFetch("../../model/network.api/annotations.php", {pid : project.id});
+                var networ_json = synchFetch("../../model/network.api/annotations.php", {pid : $.url().param('project_id')});
 
                 // initialization options
                 var options = {

@@ -30,16 +30,6 @@ var input_fontcolourblue; //!< fontcolour blue input
 var ui;
 var requestQueue;
 var project;
-
-/* Need a global function to get project id across windows
- * This is used for instance in the graph application in the apps/graph folder
- */
-
-var globalGetProject = function() {
-  return project;
-}
-
-
 var project_view;
 
 var project_menu;

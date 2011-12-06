@@ -1,3 +1,7 @@
+django/projects/mysite/settings_apache.py
+django/projects/mysite/django.wsgi
+django/projects/mysite/settings.py
+/django/static/neurohdf
 /inc/setup.inc.php
 /logs/
 /temp/

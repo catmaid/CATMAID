@@ -309,7 +309,6 @@ var tracingWindowActions = [
     buttonID: "view_objecttree_graph",
     buttonName: 'objecttree-graph',
     run: function (e) {
-      WREF = window.open("apps/graph/index.html","Object tree graph");
-      if(!WREF.opener){ WREF.opener = this.window; }
+      window.open("apps/graph/index.html?project_id="+project.id,"Object tree graph");
     }
   }) ];

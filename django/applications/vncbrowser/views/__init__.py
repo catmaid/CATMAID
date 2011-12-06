@@ -14,6 +14,7 @@ from views import lines_add
 from views import line
 from views import lines_delete
 from views import skeleton_swc
+from views import skeleton_json
 from views import neuron_to_skeletons
 
 from catmaid_replacements import projects

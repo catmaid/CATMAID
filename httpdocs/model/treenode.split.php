@@ -56,6 +56,9 @@ if(!$modof_id) { echo json_encode( array( 'error' => 'Cannot find "'.$modof.'" r
 $eleof_id = $db->getRelationId( $pid, $eleof );
 if(!$eleof_id) { echo json_encode( array( 'error' => 'Cannot find "'.$eleof.'" relation for this project' ) ); return; }
 
+$partof = $db->getRelationId( $pid, "part_of" );
+if(!$partof) { echo makeJSON( array( 'error' => 'Can not find "part_of" relation for this project' ) ); return; }
+
 $skeletonClassID = $db->getClassId( $pid, "skeleton" );
 if(!$skeletonClassID) { echo json_encode( array( 'error' => 'Cannot find "skeleton" class for this project' ) ); return; }
 
@@ -138,12 +141,17 @@ try {
 	//    Update element_of of sub-skeleton
 	//    Retrieve all treenode ids by traversing the subtree
 	$children = $db->getAllTreenodeChildrenRecursively( $pid, $tnid );
+	$newskeleton_treenodes = array();
+
 	foreach($children as $key => $childTreenode) {
 		// Update the element_of to the newly created skeleton
 		// and the new root treenode
 		$ids = $db->getResult('UPDATE "treenode_class_instance" SET "class_instance_id" = '.$newSkeletonID.'
 													 WHERE "treenode_class_instance"."treenode_id" = '.$childTreenode['id'].'
 																 AND "treenode_class_instance"."relation_id" = '.$eleof_id);
+
+        $newskeleton_treenodes[$childTreenode['id']] = TRUE;
+
 		if ( false === $ids ) {
 			emitErrorAndExit($db, 'Failed to update the skeleton id of the splitted nodes.');
 		}
@@ -153,6 +161,23 @@ try {
             emitErrorAndExit($db, "Failed to update the skeleton_id column of one of the split-off nodes");
         }
 	};
+
+    // also need to update the pre/postsynaptic terminal part_of relationship for the new skeleton
+    $comma_seperated_newskeleton_treenodes = implode(", ", array_keys($newskeleton_treenodes));
+    // retrieve all terminals
+    $newskeleton_terminals = $db->getResult(
+    "SELECT class_instance_id
+    FROM treenode_class_instance
+    WHERE treenode_class_instance.treenode_id IN ($comma_seperated_newskeleton_treenodes) AND treenode_class_instance.relation_id = $modof_id");
+
+    $newskeleton_terminals_ids = array();
+    foreach($newskeleton_terminals as $row) {
+          $newskeleton_terminals_ids[$row['class_instance_id']] = TRUE;
+      }
+    $comma_seperated_newskeleton_terminals = implode(", ", array_keys($newskeleton_terminals_ids));
+
+    $ids = $db->update("class_instance_class_instance", array("class_instance_b" => $newSkeletonID) ,
+    ' "class_instance_a" IN ('.$comma_seperated_newskeleton_terminals.') AND "relation_id" = '.$partof);
 
 	if (! $db->commit() ) {
 		emitErrorAndExit( $db, 'Failed to commit split!' );

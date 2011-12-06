@@ -122,8 +122,8 @@ try {
   $connector_rows = $db->getResult("
     SELECT
       connector.id AS connector_id,
-      connector.user_id AS connector_user_id,
-      connector_user.name AS connector_username,
+      tn_other.user_id AS connector_user_id,
+      treenode_user.name AS connector_username,
       (connector.location).x AS connector_x,
       (connector.location).y AS connector_y,
       (connector.location).z AS connector_z,
@@ -142,15 +142,15 @@ try {
       treenode tn_other,
       treenode_connector tc_other,
       connector,
-      \"user\" connector_user,
+      \"user\" treenode_user,
       treenode_connector tc_this,
       treenode tn_this,
       treenode_class_instance tci_this
     WHERE
+      treenode_user.id = tn_other.user_id AND
       tn_other.id = tc_other.treenode_id AND
       tc_other.connector_id = connector.id AND
       tc_other.relation_id = $relation_inverse_id AND
-      connector_user.id = tc_other.user_id AND
       tc_this.connector_id = connector.id AND
       tn_this.id = tc_this.treenode_id AND
       tc_this.relation_id = $relation_id AND

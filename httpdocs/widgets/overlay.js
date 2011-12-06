@@ -151,6 +151,10 @@ var SkeletonAnnotations = new function()
     var labels = {};
     var show_labels = false;
 
+    this.getLabelStatus = function() {
+      return show_labels;
+    }
+
     var lastX = null, lastY = null;
     
     /* padding beyond screen borders for fetching data and updating nodes */
@@ -261,63 +265,72 @@ var SkeletonAnnotations = new function()
       }
     }
 
-    this.showTags = function (val) {
-      this.toggleLabels(val);
-    };
-
-    this.toggleLabels = function (toval) {
-      var labid, nods = {}, nodeid;
-
+    this.hideLabels = function() {
+      // remove all labels in the view
+      // empty the labels array
+      document.getElementById( "trace_button_togglelabels" ).className = "button";
       for (labid in labels) {
-        if (labels.hasOwnProperty(labid)) {
-          labels[labid].remove();
-        }
-      }
-      labels = {};
-
-      if(toval === undefined) {
-        show_labels = !show_labels;
-      } else {
-        show_labels = toval;
-      }
-
-      // retrieve labels for the set of currently visible nodes
-      if (show_labels) {
-        // retrieve all currently existing
-        // create node id array
-        for (nodeid in nodes) {
-          if (nodes.hasOwnProperty(nodeid)) {
-            if (0 === nodes[nodeid].zdiff) {
-              nods[nodeid] = nodeid;
-            }
-          }
-        }
-        jQuery.ajax({
-          url: "model/label.node.list.all.php",
-          type: "POST",
-          data: {
-            nods: JSON.stringify(nods),
-            pid: project.id
-          },
-          dataType: "json",
-          beforeSend: function (x) {
-            if (x && x.overrideMimeType) {
-              x.overrideMimeType("application/json;charset=UTF-8");
-            }
-          },
-          success: function (nodeitems) {
-            // for all retrieved, create a label
-            for (var nodeid in nodeitems) {
-              if (nodeitems.hasOwnProperty(nodeid)) {
-                var tl = new OverlayLabel(nodeitems[nodeid], self.paper, nodes[nodeid].x, nodes[nodeid].y, nodeitems[nodeid]);
-                labels[nodeid] = tl;
+              if (labels.hasOwnProperty(labid)) {
+                labels[labid].remove();
               }
             }
-          }
-        });
-      }
+      labels = {};
+      show_labels = false;
+    }
 
-    };
+    this.removeLabels = function() {
+      // remove all labels in the view
+      // empty the labels array
+      for (labid in labels) {
+              if (labels.hasOwnProperty(labid)) {
+                labels[labid].remove();
+              }
+            }
+      labels = {};
+    }
+
+    this.showLabels = function() {
+      var labid, nods = {}, nodeid;
+      
+      // remove all labels in the view
+      self.hideLabels();
+
+      // retrieve all currently existing
+      // create node id array
+      for (nodeid in nodes) {
+        if (nodes.hasOwnProperty(nodeid)) {
+          if (0 === nodes[nodeid].zdiff) {
+            nods[nodeid] = nodeid;
+          }
+        }
+      }
+      jQuery.ajax({
+        url: "model/label.node.list.all.php",
+        type: "POST",
+        data: {
+          nods: JSON.stringify(nods),
+          pid: project.id
+        },
+        dataType: "json",
+        beforeSend: function (x) {
+          if (x && x.overrideMimeType) {
+            x.overrideMimeType("application/json;charset=UTF-8");
+          }
+        },
+        success: function (nodeitems) {
+          // for all retrieved, create a label
+          for (var nodeid in nodeitems) {
+            if (nodeitems.hasOwnProperty(nodeid)) {
+              var tl = new OverlayLabel(nodeitems[nodeid], self.paper, nodes[nodeid].x, nodes[nodeid].y, nodeitems[nodeid]);
+              labels[nodeid] = tl;
+            }
+          }
+          // set show labels to true
+          show_labels = true;
+          document.getElementById( "trace_button_togglelabels" ).className = "button_active";
+        }
+      });
+    }
 
     var tagbox = null;
 
@@ -888,7 +901,8 @@ var SkeletonAnnotations = new function()
 
       // Reset nodes and labels
       nodes = {};
-      labels = {};
+      // remove labels, but do not hide them
+      self.removeLabels();
 
       // Prepare existing Node and ConnectorNode instances for reuse
       SkeletonElements.resetCache();
@@ -1009,8 +1023,9 @@ var SkeletonAnnotations = new function()
 
       } // end speed toggle
 
-      // show tags if necessary again
-      self.showTags(show_labels);
+      if( self.getLabelStatus() ) {
+        self.showLabels();
+      }
 
     };
 
@@ -1404,8 +1419,11 @@ var SkeletonAnnotations = new function()
           self.activateNearestNode(lastX, lastY, project.coordinates.z);
         }
         break;
-      case "togglelabels":
-        self.toggleLabels();
+      case "hidelabels":
+        self.hideLabels();
+        break;
+      case "showlabels":
+        self.showLabels();
         break;
       case "exportswc":
         if (atn != null) {

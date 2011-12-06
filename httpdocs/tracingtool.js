@@ -449,7 +449,11 @@ function TracingTool()
       "7": [ 55 ]
     },
     run: function (e) {
-      tracingLayer.svgOverlay.tracingCommand('togglelabels');
+      if(tracingLayer.svgOverlay.getLabelStatus()) {
+        tracingLayer.svgOverlay.tracingCommand('hidelabels');
+      } else {
+        tracingLayer.svgOverlay.tracingCommand('showlabels');
+      }
       return false;
     }
   }) );

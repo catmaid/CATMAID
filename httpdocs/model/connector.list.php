@@ -197,6 +197,52 @@ try {
   foreach ($count_rows as $row) {
       $skeleton_id_to_treenode_counts[$row['skeleton_id']] = $row['skeleton_count'];
   }
+  // If there's no other skeleton_id (the key is the empty string)
+  // then say return 0 nodes:
+  $skeleton_id_to_treenode_counts[""] = 0;
+
+  // Rather than do a LEFT OUTER JOIN to also include the connectors
+  // with no partners, just do another query to find the connectors
+  // without the conditions:
+
+  $all_connectors = $db->getResult("
+    SELECT
+      connector.id AS connector_id,
+      connector.user_id AS connector_user_id,
+      connector_user.name AS connector_username,
+      (connector.location).x AS connector_x,
+      (connector.location).y AS connector_y,
+      (connector.location).z AS connector_z,
+      tn_this.id AS this_treenode_id,
+      tc_this.relation_id AS this_to_connector_relation_id
+    FROM
+      connector,
+      \"user\" connector_user,
+      treenode_connector tc_this,
+      treenode tn_this,
+      treenode_class_instance tci_this
+    WHERE
+      connector_user.id = connector.user_id AND
+      tc_this.connector_id = connector.id AND
+      tn_this.id = tc_this.treenode_id AND
+      tc_this.relation_id = $relation_id AND
+      tci_this.treenode_id = tn_this.id AND
+      tci_this.relation_id = {$relations['element_of']} AND
+      tci_this.class_instance_id = $skeletonID
+    ORDER BY
+      connector_id, this_treenode_id");
+
+  if (FALSE === $all_connectors) {
+      emitErrorAndExit($db, 'Failed to select all connectors.');
+  }
+
+  foreach ($all_connectors as $row) {
+      $connector_id = $row['connector_id'];
+      if (!array_key_exists($connector_id, $connector_ids)) {
+          $connector_rows[] = $row;
+          $connector_ids[$connector_id] = TRUE;
+      }
+  }
 
   // For each of the connectors, find all of its labels:
 
@@ -250,7 +296,17 @@ try {
   foreach ($connector_rows as $row) {
 
       $connector_id = $row['connector_id'];
-      $other_skeleton_id = $row['other_skeleton_id'];
+      if (array_key_exists('other_skeleton_id', $row)) {
+          $other_skeleton_id = $row['other_skeleton_id'];
+      } else {
+          $other_skeleton_id = "";
+          // And also insert fake values for the missing data.
+          // Make the position to jump to the connector's position:
+          $row['other_treenode_x'] = $row['connector_x'];
+          $row['other_treenode_y'] = $row['connector_y'];
+          $row['other_treenode_z'] = $row['connector_z'];
+          $row['other_treenode_id'] = '';
+      }
 
       $row_index_in_range;
 

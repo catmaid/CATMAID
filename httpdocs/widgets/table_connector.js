@@ -156,15 +156,15 @@ var ConnectorTable = new function()
     });
 
     $('#connector_relation_type').change(function() {
-      var numberOfNodesText, otherSkeletonText;
+      var numberOfNodesText, otherSkeletonText, adjective;
       self.connectorTable.fnDraw();
       if ($('#connector_relation_type :selected').attr("value") === "0") {
-        numberOfNodesText = "# nodes in source skeleton"
-        otherSkeletonText = "source skeleton ID";
+        adjective = "source";
       } else {
-        numberOfNodesText = "# nodes in target skeleton";
-        otherSkeletonText = "target skeleton ID";
+        adjective = "target";
       }
+      numberOfNodesText = "# nodes in " + adjective + " skeleton"
+      otherSkeletonText = adjective + " skeleton ID";
       $("#connector_nr_nodes_top").text(numberOfNodesText);
       $("#connector_nr_nodes_bottom").text(numberOfNodesText);
       $("#other_skeleton_top").text(otherSkeletonText);

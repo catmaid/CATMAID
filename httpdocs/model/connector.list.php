@@ -303,7 +303,7 @@ try {
   }
 
   echo json_encode(array("iTotalRecords" => $row_index,
-                         "iTotalDisplayRecords" => count($output_results),
+                         "iTotalDisplayRecords" => $row_index,
                          "aaData" => $output_results));
 
 } catch (Exception $e) {

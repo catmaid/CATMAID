@@ -48,7 +48,7 @@ if ( isset( $_REQUEST['iDisplayStart'] ) )
     $displayStart = intval( $_REQUEST['iDisplayStart'] );
 }
 
-$columnToFieldArray = array( "connector_id", "other_skeleton_id", "x", "y", "z", "labels", "nr_treenodes", "username");
+$columnToFieldArray = array( "connector_id", "other_skeleton_id", "x", "y", "z", "labels", "nr_treenodes", "username", "treenode_id");
 
 function fnColumnToField( $i ) {
     global $columnToFieldArray;

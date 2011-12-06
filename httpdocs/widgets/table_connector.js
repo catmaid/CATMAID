@@ -109,7 +109,7 @@ var ConnectorTable = new function()
           {
             "bSearchable": false,
             "bSortable": true,
-            "bVisible": false
+            "bVisible": true
           } // treenodes
         ]
       });
@@ -156,7 +156,7 @@ var ConnectorTable = new function()
     });
 
     $('#connector_relation_type').change(function() {
-      var numberOfNodesText, otherSkeletonText, adjective;
+      var numberOfNodesText, otherSkeletonText, otherTreenodeText, adjective;
       self.connectorTable.fnDraw();
       if ($('#connector_relation_type :selected').attr("value") === "0") {
         adjective = "source";
@@ -165,11 +165,13 @@ var ConnectorTable = new function()
       }
       numberOfNodesText = "# nodes in " + adjective + " skeleton"
       otherSkeletonText = adjective + " skeleton ID";
+      otherTreenodeText = adjective + " treenode ID";
       $("#connector_nr_nodes_top").text(numberOfNodesText);
       $("#connector_nr_nodes_bottom").text(numberOfNodesText);
       $("#other_skeleton_top").text(otherSkeletonText);
       $("#other_skeleton_bottom").text(otherSkeletonText);
-
+      $("#other_treenode_top").text(otherTreenodeText);
+      $("#other_treenode_bottom").text(otherTreenodeText);
     });
 
   }

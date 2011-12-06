@@ -450,11 +450,15 @@ var SkeletonAnnotations = new function()
               var e = $.parseJSON(text);
               if (e.error) {
                 alert(e.error);
+              } else {
+                // update was fine
+                self.showLabels();
               }
             }
           }
         });
       }
+
     };
 
     this.rerootSkeleton = function () {

@@ -208,6 +208,42 @@ def skeleton_swc(request, project_id=None, skeleton_id=None, treenode_id=None, l
     return HttpResponse(result, mimetype="text/plain")
 
 @catmaid_login_required
+def skeleton_json(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None):
+    if treenode_id and not skeleton_id:
+        ci = ClassInstance.objects.get(
+            project=project_id,
+            class_column__class_name='skeleton',
+            treenodeclassinstance__relation__relation_name='element_of',
+            treenodeclassinstance__treenode__id=treenode_id)
+        skeleton_id = ci.id
+    qs = Treenode.objects.filter(
+        treenodeclassinstance__class_instance__id=skeleton_id,
+        treenodeclassinstance__relation__relation_name='element_of',
+        treenodeclassinstance__class_instance__class_column__class_name='skeleton',
+        project=project_id).order_by('id')
+    # represent the skeleton as JSON
+    vertices={}; connectivity={}
+    for tn in qs:
+        vertices[tn.id] = {
+            'x': tn.location.x,
+            'y': tn.location.y,
+            'z': tn.location.z,
+            'radius': max(tn.radius, 0)
+        }
+        if not tn.parent is None:
+            if connectivity.has_key(tn.id):
+                connectivity[tn.id][tn.parent.id] = {
+                    'type': 'neurite'
+                }
+            else:
+                connectivity[tn.id] = {
+                    tn.parent.id: {
+                        'type': 'neurite'
+                    }
+                }
+    return HttpResponse(json.dumps({'vertices':vertices,'connectivity':connectivity}, sort_keys=True, indent=4), mimetype="text/json")
+
+@catmaid_login_required
 def neuron_to_skeletons(request, project_id=None, neuron_id=None, logged_in_user=None):
     p = get_object_or_404(Project, pk=project_id)
     neuron = get_object_or_404(ClassInstance,

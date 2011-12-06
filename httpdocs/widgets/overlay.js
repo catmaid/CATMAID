@@ -545,7 +545,7 @@ var SkeletonAnnotations = new function()
               nodes[toid].drawEdges();
               nodes[fromid].drawEdges();
               // make target active treenode
-              // self.activateNode(nodes[toid]);
+              self.activateNode(nodes[toid]);
               ObjectTree.requestOpenTreePath( nodes[fromid] );
               refreshAllWidgets();
             }

@@ -96,7 +96,7 @@ $res = $db->getResult(
      "cici"."class_instance_b" = '.$parentid.' AND
      ("cici"."relation_id" = '.$modid.'
     OR "cici"."relation_id" = '.$partof_id.')
-  ORDER BY "ci"."edition_time" DESC
+  ORDER BY "ci"."creation_time"
   LIMIT '.$maxnodes);
 
 # Loop through the array and generate children to return

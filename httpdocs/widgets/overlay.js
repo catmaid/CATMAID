@@ -358,39 +358,40 @@ var SkeletonAnnotations = new function()
       }
 
       var e = $("<div class='tagBox' id='tagBoxId" + atn.id + "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: " + atn.x + "px; top: " + atn.y + "px;'>" +
-      "Tag: <input id='Tags" + atn.id + "' name='Tags' type='text' value='' /><div style='color:#949494'>(Confirm Tag: Enter, Save&Close: TAB)</div>" );
+      "Tag: <input id='Tags" + atn.id + "' name='Tags' type='text' value='' /><div style='color:#949494'>(Save&Close: Enter)</div>" );
       e.css('background-color', 'white');
       e.css('position', 'absolute');
       e.appendTo("#sliceSVGOverlayId");
 
       tagbox = e;
 
-      // update click event handling
-      $("#tagBoxId" + atn.id).click(function (event) {
-        event.stopPropagation();
-        // update the tags
-        updateTags();
-        removeTagbox();
-      });
-
       $("#tagBoxId" + atn.id).mousedown(function (event) {
+        updateTags();
+        if($("#Tags" + atn.id).tagEditorGetTags()==="") {
+          removeTagbox();
+          self.hideLabels();
+          self.updateNodes();
+        }
         event.stopPropagation();
-        removeTagbox();
       });
 
-      $("#tagBoxId" + atn.id).keyup(function (event) {
-        // escape
-        if (event.keyCode == 27) {
+      $("#tagBoxId" + atn.id).keydown(function (event) {
+        if (event.keyCode == 13) { // ENTER
           event.stopPropagation();
-          removeTagbox();
+          if($("#Tags" + atn.id).val()==="") {
+            updateTags();
+            removeTagbox();
+            self.showLabels();
+            self.updateNodes();
+          }
         }
       });
 
-      $("#Tags" + atn.id).bind('focusout', function() {
-        event.stopPropagation();
-        // focus out with tab updates tags and remove tagbox
-        updateTags();
-        removeTagbox();
+      $("#tagBoxId" + atn.id).keyup(function (event) {
+        if (event.keyCode == 27) { // ESC
+          event.stopPropagation();
+          removeTagbox();
+        }
       });
 
       // add autocompletion
@@ -412,7 +413,7 @@ var SkeletonAnnotations = new function()
           }
         }
       });
-
+      
       requestQueue.register("model/label.node.list.php", "POST", {
         pid: project.id,
         nid: atn.id,
@@ -450,9 +451,6 @@ var SkeletonAnnotations = new function()
               var e = $.parseJSON(text);
               if (e.error) {
                 alert(e.error);
-              } else {
-                // update was fine
-                self.showLabels();
               }
             }
           }

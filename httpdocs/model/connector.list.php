@@ -57,27 +57,31 @@ function fnColumnToField( $i ) {
 
 $direction = (strtoupper($_REQUEST['sSortDir_0']) === "DESC") ? "DESC" : "ASC";
 
-function subval_sort($a,$subkey) {
-    global $direction;
-    foreach($a as $k=>$v) {
-        $b[$k] = strtolower($v[$subkey]);
-    }
-    if( $direction === 'DESC' ) {
-        asort($b);
-    } else {
-        arsort($b);
-    }
-
-    foreach($b as $key=>$val) {
-        $c[] = $a[$key];
-    }
-    return $c;
-}
-
 if ( isset( $_REQUEST['iSortCol_0'] ) ) {
     $columnIndex = intval( $_REQUEST['iSortCol_0'] );
 } else {
     $columnIndex = 0;
+}
+
+$columnFieldName = fnColumnToField($columnIndex);
+
+function compare_rows($a_row, $b_row) {
+    global $direction, $columnIndex, $columnFieldName;
+    $a = $a_row[$columnIndex];
+    $b = $b_row[$columnIndex];
+    if ($a === $b) {
+        return 0;
+    }
+    if ($fieldName === 'labels' || $fieldName === 'username') {
+        $result = strcasecmp($a, $b);
+    } else {
+        $result = ($a < $b) ? -1 : 1;
+    }
+    if ($direction === 'DESC') {
+        return -1 * $result;
+    } else {
+        return $result;
+    }
 }
 
 $relations = $db->getMap( $pid, 'relation' );
@@ -296,6 +300,8 @@ try {
           $last_other_skeleton_id = $row['other_skeleton_id'];
       }
   }
+
+  usort($output_results, 'compare_rows');
 
   if (! $db->commit() ) {
     // Not needed, but be nice to postgres

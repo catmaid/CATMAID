@@ -75,6 +75,11 @@ var ConnectorTable = new function()
             "sClass": "center",
             "bSearchable": false
           },
+          // other skeleton id
+          {
+            "sClass": "center",
+            "bSearchable": false
+          },
           // x
           {
             "sClass": "center",
@@ -139,26 +144,31 @@ var ConnectorTable = new function()
 
       var aData = self.connectorTable.fnGetData(this);
       // retrieve coordinates and moveTo
-      var x = parseFloat(aData[1]);
-      var y = parseFloat(aData[2]);
-      var z = parseFloat(aData[3]);
+      var x = parseFloat(aData[2]);
+      var y = parseFloat(aData[3]);
+      var z = parseFloat(aData[4]);
       project.moveTo(z, y, x);
 
       // activate the treenode with a delay
-      var id = parseInt(aData[7], 10);
+      var id = parseInt(aData[8], 10);
       window.setTimeout("SkeletonAnnotations.staticSelectNode(" + id + ")", 1000);
 
     });
 
     $('#connector_relation_type').change(function() {
+      var numberOfNodesText, otherSkeletonText;
       self.connectorTable.fnDraw();
       if ($('#connector_relation_type :selected').attr("value") === "0") {
-        $("#connector_nr_nodes_top").text("# nodes for source(s)");
-        $("#connector_nr_nodes_bottom").text("# nodes for source(s)");
+        numberOfNodesText = "# nodes in source skeleton"
+        otherSkeletonText = "source skeleton ID";
       } else {
-        $("#connector_nr_nodes_top").text("# nodes for target(s)");
-        $("#connector_nr_nodes_bottom").text("# nodes for target(s)");
+        numberOfNodesText = "# nodes in target skeleton";
+        otherSkeletonText = "target skeleton ID";
       }
+      $("#connector_nr_nodes_top").text(numberOfNodesText);
+      $("#connector_nr_nodes_bottom").text(numberOfNodesText);
+      $("#other_skeleton_top").text(otherSkeletonText);
+      $("#other_skeleton_bottom").text(otherSkeletonText);
 
     });
 

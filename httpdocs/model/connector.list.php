@@ -48,7 +48,7 @@ if ( isset( $_REQUEST['iDisplayStart'] ) )
     $displayStart = intval( $_REQUEST['iDisplayStart'] );
 }
 
-$columnToFieldArray = array( "connector_id", "x", "y", "z", "labels", "nr_treenodes", "username");
+$columnToFieldArray = array( "connector_id", "other_skeleton_id", "x", "y", "z", "labels", "nr_treenodes", "username");
 
 function fnColumnToField( $i ) {
     global $columnToFieldArray;
@@ -72,7 +72,7 @@ function compare_rows($a_row, $b_row) {
     if ($a === $b) {
         return 0;
     }
-    if ($fieldName === 'labels' || $fieldName === 'username') {
+    if ($columnFieldName === 'labels' || $columnFieldName === 'username') {
         $result = strcasecmp($a, $b);
     } else {
         $result = ($a < $b) ? -1 : 1;
@@ -247,9 +247,6 @@ try {
 
   $row_index = 0;
 
-  $last_connector_id = NULL;
-  $last_other_skeleton_id = NULL;
-
   foreach ($connector_rows as $row) {
 
       $connector_id = $row['connector_id'];
@@ -267,38 +264,28 @@ try {
           }
       }
 
-      // Don't include duplicate lines:
-      if (($last_connector_id === NULL) ||
-          !(($connector_id === $last_connector_id) &&
-            ($other_skeleton_id === $last_other_skeleton_id))) {
+      if ($row_index_in_range) {
 
-          if ($row_index_in_range) {
+          $output_row = array();
 
-              $output_row = array();
-
-              $output_row[] = $connector_id;
-              $output_row[] = sprintf("%.2f", $row['connector_x']);
-              $output_row[] = sprintf("%.2f", $row['connector_y']);
-              $output_row[] = sprintf("%.2f", $row['connector_z']);
-              if (array_key_exists($connector_id, $connector_id_to_labels)) {
-                  $output_row[] = $connector_id_to_labels[$connector_id];
-              } else {
-                  $output_row[] = '';
-              }
-              $output_row[] = $skeleton_id_to_treenode_counts[$other_skeleton_id];
-              $output_row[] = $row['connector_username'];
-              $output_row[] = $row['other_treenode_id'];
-
-              $output_results[] = $output_row;
+          $output_row[] = $connector_id;
+          $output_row[] = $other_skeleton_id;
+          $output_row[] = sprintf("%.2f", $row['other_treenode_x']);
+          $output_row[] = sprintf("%.2f", $row['other_treenode_y']);
+          $output_row[] = sprintf("%.2f", $row['other_treenode_z']);
+          if (array_key_exists($connector_id, $connector_id_to_labels)) {
+              $output_row[] = $connector_id_to_labels[$connector_id];
+          } else {
+              $output_row[] = '';
           }
+          $output_row[] = $skeleton_id_to_treenode_counts[$other_skeleton_id];
+          $output_row[] = $row['connector_username'];
+          $output_row[] = $row['other_treenode_id'];
 
-          ++ $row_index;
+          $output_results[] = $output_row;
       }
 
-      if ($last_connector_id === NULL) {
-          $last_connector_id = $row['connector_id'];
-          $last_other_skeleton_id = $row['other_skeleton_id'];
-      }
+      ++ $row_index;
   }
 
   usort($output_results, 'compare_rows');

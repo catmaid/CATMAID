@@ -210,6 +210,7 @@ var WindowMaker = new function()
         '<thead>' +
           '<tr>' +
             '<th>connector id</th>' +
+            '<th id="other_skeleton_top">target skeleton ID</th>' +
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
@@ -222,6 +223,7 @@ var WindowMaker = new function()
         '<tfoot>' +
           '<tr>' +
             '<th>connector id</th>' +
+            '<th id="other_skeleton_bottom">target skeleton ID</th>' +
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +

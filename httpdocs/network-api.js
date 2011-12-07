@@ -152,7 +152,7 @@ var CM = function()
      *      }
      * 
      *  ... where the numbers are the IDs of the nodes in this skeleton
-		 *  that link to an array containing one or more connectors.
+     *  that link to an array containing one or more connectors.
      */
     this.connectors = function(update) {
       if (!update && this.hasOwnProperty('cs')) {
@@ -164,13 +164,13 @@ var CM = function()
       var fn = function(map, j) {
         var tid = j.node_id;
         delete j.node_id;
-				var c = create(Connector, cm.IDConnectors, j);
-				var arr = map[tid];
-				if (arr) {
+        var c = create(Connector, cm.IDConnectors, j);
+        var arr = map[tid];
+        if (arr) {
           arr.push(c);
-				} else {
-					map[tid] = new Array(c);
-				}
+        } else {
+          map[tid] = new Array(c);
+        }
         return map;
       };
       this.cs = {
@@ -180,35 +180,35 @@ var CM = function()
       return this.cs;
     };
 
-		/** From an object that has arrays as values,
-		 * return a single array with all unique values in it.
-		 */
-		var flattenValueArraysById = function(map) {
-			var m = {};
-			var arr = new Array();
-			for (var ID in map) {
-				if (map.hasOwnProperty(ID)) {
-					for (var k in Object.keys(map[ID])) {
-						var o = map[ID][k];
-						if (!m.hasOwnProperty(o.id)) {
-							m[o.id] = o;
-							arr.push(o);
-						}
-					}
-				}
-			}
-			return arr;
-		}
+    /** From an object that has arrays as values,
+     * return a single array with all unique values in it.
+     */
+    var flattenValueArraysById = function(map) {
+      var m = {};
+      var arr = new Array();
+      for (var ID in map) {
+        if (map.hasOwnProperty(ID)) {
+          for (var k in Object.keys(map[ID])) {
+            var o = map[ID][k];
+            if (!m.hasOwnProperty(o.id)) {
+              m[o.id] = o;
+              arr.push(o);
+            }
+          }
+        }
+      }
+      return arr;
+    }
 
-		/** Returns an array of presynaptic connectors. */
-		this.preConnectors = function(update) {
-			return flattenValueArraysById(this.connectors(update).pre);
-		}
+    /** Returns an array of presynaptic connectors. */
+    this.preConnectors = function(update) {
+      return flattenValueArraysById(this.connectors(update).pre);
+    }
 
-		/** Returns an array of postsynaptic connectors. */
-		this.postConnectors = function(update) {
-			return flattenValueArraysById(this.connectors(update).post);
-		}
+    /** Returns an array of postsynaptic connectors. */
+    this.postConnectors = function(update) {
+      return flattenValueArraysById(this.connectors(update).post);
+    }
 
     /** Invoke function fnName in every value of the properties in map,
      * which is expected to return an array of values,
@@ -276,8 +276,8 @@ var CM = function()
         }
       }
 
-			var preCs = this.preConnectors();
-			var postCs = this.postConnectors();
+      var preCs = this.preConnectors();
+      var postCs = this.postConnectors();
       var downstreamPartners = partners(preCs, "postSkeletons");
       var upstreamPartners = partners(postCs, "preSkeletons");
       var fn = function (sum, sk) { return sk.size() > 1 ? 0 : 1; };
@@ -304,13 +304,13 @@ var CM = function()
     this.tagged = function(tag) {
       var nodes_map = this.nodes();
       var a = [];
-			var tags;
+      var tags;
       for (var ID in nodes_map) {
         if (nodes_map.hasOwnProperty(ID)) {
-					tags = nodes_map[ID].tags;
-					if (tags && -1 !== tags.indexOf(tag)) {
-          	a.push(nodes_map[ID]);
-					}
+          tags = nodes_map[ID].tags;
+          if (tags && -1 !== tags.indexOf(tag)) {
+            a.push(nodes_map[ID]);
+          }
         }
       }
       return a;
@@ -322,7 +322,8 @@ var CM = function()
    * x,y,z: the position of the Connector instance.
    * user_id: the ID of the user that owns the Connector instance.
    * pre: an array of origins in the format [{node_id: 123, skeleton_id: 456}, ...]
-   *      where the skeleton_id is the ID of the skeleton that has this Connector as presynatic at node 123.
+   *      where the skeleton_id is the ID of the skeleton that has this Connector
+   *      as presynatic at node 123.
    * post: an array like pre, but for the postsynaptic skeletons.
    */
   var Connector = function(json) {
@@ -458,18 +459,18 @@ var CM = function()
     return null;
   };
 
-	/** Returns a Node or a Connector, depending upon what kind of node is selected. */
+  /** Returns a Node or a Connector, depending upon what kind of node is selected. */
   this.selectedNode = function() {
-		var ID = SkeletonAnnotations.getActiveNodeId();
+    var ID = SkeletonAnnotations.getActiveNodeId();
     if (!ID) return null; // nothing selected
-		return SkeletonAnnotations.getActiveNodeType() === "treenode" ?
-			  cm.node(ID)
-			: cm.connector(ID);
+    return SkeletonAnnotations.getActiveNodeType() === "treenode" ?
+        cm.node(ID)
+      : cm.connector(ID);
   };
 
   this.selectedSkeleton = function() {
-		var skID = SkeletonAnnotations.getActiveSkeletonId();
-		if (skID) return cm.skeleton(skID);
+    var skID = SkeletonAnnotations.getActiveSkeletonId();
+    if (skID) return cm.skeleton(skID);
     return null;
   };
 

@@ -60,23 +60,25 @@ try {
             treenode.user_id,
 						treenode.skeleton_id
     FROM treenode
-    WHERE treenode.skeleton_id = '.$skid);
+		WHERE treenode.project_id = '.$pid.'
+		  AND treenode.skeleton_id = '.$skid);
 
   if (false === $q) {
     emitErrorAndExit($db, 'Failed to retrieve information for treenode #'.$tnid);
   }
 
   # Select all tag-labeled treenodes of the skeleton
-	$tags = $db->getResult(
-		'SELECT "class_instance"."name",
-		        "treenode"."id"
-		 FROM "treenode_class_instance" AS "tci",
-		      "class_instance",
-					"treenode"
-		 WHERE "treenode"."skeleton_id" = '.$skid.'
+  $tags = $db->getResult(
+    'SELECT "class_instance"."name",
+            "treenode"."id"
+     FROM "treenode_class_instance" AS "tci",
+          "class_instance",
+          "treenode"
+     WHERE "treenode"."project_id" = '.$pid.'
+       AND "treenode"."skeleton_id" = '.$skid.'
        AND "treenode"."id" = "tci"."treenode_id"
        AND "tci"."relation_id" = '.$labeled_as_id.'
-			 AND "tci"."class_instance_id" = "class_instance"."id"');
+       AND "tci"."class_instance_id" = "class_instance"."id"');
 
   if (false === $tags) {
     emitErrorAndExit( $db, 'Failed to retrieve tags for treenodes of skeleton '.$skid);

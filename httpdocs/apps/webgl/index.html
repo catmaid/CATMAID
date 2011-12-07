@@ -50,6 +50,95 @@
 			var windowHalfY = window.innerHeight / 2;
             var scale = $.url().param('scale') ? $.url().param('scale') : 1.0;
 
+            // A namespace for the WebGL viewer
+            var WebGLViewer = new function()
+            {
+
+                var Skeleton = function( data )
+                {
+                    this.translate = function( dx, dy, dz )
+                    {
+
+                    }
+
+                    this.scale = function( scale )
+                    {
+
+                    }
+
+                    this.getMin = function()
+                    {
+
+                    }
+
+                    this.getMax = function()
+                    {
+
+                    }
+
+                    // create geometry and line material
+
+
+                    this.getCompositeLineActor = function()
+                    {
+                        for ( var i=0; i<connectivity_types.length; ++i ) {
+                            var line = new THREE.Line( geometry[connectivity_types[i]], line_material[connectivity_types[i]], THREE.LinePieces );
+                            scene.add( line );
+                        }
+                    }
+
+                }
+
+                // the active node as a sphere
+                var ActiveNode = function( data )
+                {
+
+                }
+
+                // array of skeletons
+                var skeletons = new Object();
+                // active node geometry
+                var active_node;
+
+                // fetch skeleton from database
+                var fetchSkeleton = function( skeleton_id )
+                {
+
+                }
+
+                // add skeleton to scene
+                this.addSkeleton = function( skeleton_id )
+                {
+
+                }
+
+                // remove skeleton from scence
+                this.removeSkeleton = function( skeleton_id )
+                {
+
+                }
+
+                this.randomColorizeCurrentSkeletons = function()
+                {
+
+                }
+
+                // fetch again all current skeletons from database and regenerate geometry
+                this.updateSkeletons = function()
+                {
+
+                }
+
+                // center and scale all currently added skeletons
+                this.center_and_scale = function()
+                {
+
+                }
+
+
+
+            }
+
             jQuery.ajax({
               //url: "../../model/export.skeleton.json.php",
               url: "../../dj/"+$.url().param('project_id')+"/skeleton/" +

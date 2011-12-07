@@ -42,35 +42,19 @@
 
 		<script type="text/javascript">
 
-			var mouseX = 0, mouseY = 0,
-
-			windowHalfX = window.innerWidth / 2,
-			windowHalfY = window.innerHeight / 2,
-
-			SEPARATION = 200,
-			AMOUNTX = 10,
-			AMOUNTY = 10,
-
-			camera, scene, renderer, neurontree;
-            
 			var camera, scene, renderer, particles, geometry, materials = [], parameters, i, h, color;
-			var mouseX = 0, mouseY = 0;
+			var mouseX = 0, mouseY = 0,
+                SEPARATION = 200, AMOUNTX = 10, AMOUNTY = 10;
 
 			var windowHalfX = window.innerWidth / 2;
 			var windowHalfY = window.innerHeight / 2;
-            
-			var SCREEN_WIDTH = window.innerWidth,
-				SCREEN_HEIGHT = window.innerHeight;
+            var scale = $.url().param('scale') ? $.url().param('scale') : 1.0;
 
             jQuery.ajax({
               //url: "../../model/export.skeleton.json.php",
               url: "../../dj/"+$.url().param('project_id')+"/skeleton/" +
                       $.url().param('skeleton_id') + "/json",
               type: "GET",
-              data: {
-//                pid: 1,
-  //              tnid: 514
-              },
               dataType: "json",
               success: function (text) {
                 init();
@@ -124,41 +108,62 @@
 
             function draw_skeleton(skeleton) {
 
-				var line_material = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0 } ),
-					geometry = new THREE.Geometry(),
-                    x, y, z;
+				var line_material = new Object(),
+                    type, from_vectr, to_vector, geometry = new Object();
+
+                var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
+
+                geometry[connectivity_types[0]] = new THREE.Geometry();
+                geometry[connectivity_types[1]] = new THREE.Geometry();
+                geometry[connectivity_types[2]] = new THREE.Geometry();
+
+                line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 3 } );
+                line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0x00ff00, opacity: 1.0, linewidth: 6 } )
+                line_material[connectivity_types[2]] =new THREE.LineBasicMaterial( { color: 0x0000ff, opacity: 1.0, linewidth: 6 } )
 
                 var vertices = {
                     5: {'x': 0, 'y': 0, 'z': 0},
                     6: {'x': 300, 'y': 300, 'z': 300},
-                    7: {'x': 300, 'y': 300, 'z': 200}
+                    7: {'x': 300, 'y': 300, 'z': 200},
+                    8: {'x': 200, 'y': 300, 'z': 200}
                 };
 
                 var connectivity = {
                     5 : { 6: {'type': 'neurite'},
                           7: {'type': 'presynaptic_to'}
-                        }
+                        },
+                    7 : { 8: {'type': 'postsynaptic_to'}}
                 };
 
                 vertices = skeleton.vertices;
                 connectivity = skeleton.connectivity;
-                scale = 100.0;
+
                 for (var fromkey in connectivity) {
                     var to = connectivity[fromkey];
                     for (var tokey in to) {
-                        x = vertices[fromkey]['x'] / scale;
-                        y = vertices[fromkey]['y'] / scale;
-                        z = vertices[fromkey]['z'] / scale;
-					    geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( x, y, z ) ) );
-                        x = vertices[tokey]['x'] / scale;
-                        y = vertices[tokey]['y'] / scale;
-                        z = vertices[tokey]['z'] / scale;
-					    geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( x, y, z ) ) );
+
+                        type = connectivity_types[connectivity_types.indexOf(connectivity[fromkey][tokey]['type'])];
+
+                        from_vector = new THREE.Vector3(
+                                vertices[fromkey]['x'],
+                                vertices[fromkey]['y'],
+                                vertices[fromkey]['z'] );
+                        // transform
+                        from_vector.multiplyScalar( scale );
+                        geometry[type].vertices.push( new THREE.Vertex( from_vector ) );
+
+                        to_vector = new THREE.Vector3(
+                                vertices[tokey]['x'],
+                                vertices[tokey]['y'],
+                                vertices[tokey]['z'] );
+                        to_vector.multiplyScalar( scale );
+					    geometry[type].vertices.push( new THREE.Vertex( to_vector ) );
                     }
                 }
-
-				var line = new THREE.Line( geometry, line_material, THREE.LinePieces );
-				scene.add( line );
+                for ( var i=0; i<connectivity_types.length; ++i ) {
+                    var line = new THREE.Line( geometry[connectivity_types[i]], line_material[connectivity_types[i]], THREE.LinePieces );
+                    scene.add( line );
+                }
 
             }
 
@@ -200,40 +205,6 @@
                 mesh = new THREE.Mesh( geometry, material );
                 scene.add( mesh );
 
-                /*
-				geometry = new THREE.Geometry();
-
-				for( i = 0; i < neurontree.length; i ++ ) {
-                    
-                    console.log(x,y,z);
-					var x = parseFloat(neurontree[i].x);
-					var y = parseFloat(neurontree[i].y);
-					var z = parseFloat(neurontree[i].z);
-                    vector = new THREE.Vector3( x, y, z );
-                    vector.addScalar( -2000 );
-                    vector.normalize();
-                    vector.multiplyScalar(100);
-                    console.log(vector);
-
-                    //vector = new THREE.Vector3( x, y, Math.random() * 2000 - 1000  );
-                    //vector.normalize();
-					//particle.position.normalize();
-					//particle.position.multiplyScalar( 100 );
-                    
-                    // console.log(Math.random() * 2000 - 1000, Math.random() * 2000 - 1000, Math.random() * 2000 - 1000 );
-					// vector = new THREE.Vector3( Math.random() * 2000 - 1000, Math.random() * 2000 - 1000, Math.random() * 2000 - 1000 );
-					geometry.vertices.push( new THREE.Vertex( vector ) );                    
-                }
-                
-
-                // simple particle system
-                var material = new THREE.ParticleBasicMaterial( { size: 10 } );
-                material.color.setRGB( 1.0, 0.0, 0.0 );
-                particles = new THREE.ParticleSystem( geometry, material );
-                scene.add( particles );
-
-                */
-
 				renderer = new THREE.WebGLRenderer();
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				container.appendChild( renderer.domElement );
@@ -251,38 +222,25 @@
 
 
 			function onDocumentMouseMove( event ) {
-
 				mouseX = event.clientX - windowHalfX;
 				mouseY = event.clientY - windowHalfY;
-
 			}
 
 			function onDocumentTouchStart( event ) {
-
 				if ( event.touches.length == 1 ) {
-
 					event.preventDefault();
-
 					mouseX = event.touches[ 0 ].pageX - windowHalfX;
 					mouseY = event.touches[ 0 ].pageY - windowHalfY;
-
 				}
 			}
 
 			function onDocumentTouchMove( event ) {
-
 				if ( event.touches.length == 1 ) {
-
 					event.preventDefault();
-
 					mouseX = event.touches[ 0 ].pageX - windowHalfX;
 					mouseY = event.touches[ 0 ].pageY - windowHalfY;
-
 				}
-
 			}
-
-			//
 
 			function animate() {
 				requestAnimationFrame( animate );
@@ -290,15 +248,10 @@
 			}
 
 			function render() {
-				
                 camera.position.x += ( mouseX - camera.position.x ) * 0.05;
 				camera.position.y += ( - mouseY - camera.position.y ) * 0.05;
-
 				camera.lookAt( scene.position );
-                
-
 				renderer.render( scene, camera );
-
 			}
 
 		</script>

@@ -147,14 +147,15 @@ var CM = function()
     
     /** Returns a new object:
      *      {
-     *       pre: {123: Connector, 456: Connector, ...},
-     *       post: {789: Connector, ...}
+     *       pre: {123: [Connector, ...], 456: [Connector, ...], ...},
+     *       post: {789: [Connector, ...], ...}
      *      }
      * 
-     *  ... where the numbers are the IDs of the nodes in this skeleton that link to the connectors.
+     *  ... where the numbers are the IDs of the nodes in this skeleton
+		 *  that link to an array containing one or more connectors.
      */
-    this.connectors = function() {
-      if (this.hasOwnProperty('cs')) {
+    this.connectors = function(update) {
+      if (!update && this.hasOwnProperty('cs')) {
         if (this.cs) return this.cs;
       }
       var json = synchFetch('model/network.api/connectors.php', {skid: this.id});
@@ -163,7 +164,13 @@ var CM = function()
       var fn = function(map, j) {
         var tid = j.node_id;
         delete j.node_id;
-        map[tid] = create(Connector, cm.IDConnectors, j);
+				var c = create(Connector, cm.IDConnectors, j);
+				var arr = map[tid];
+				if (arr) {
+          arr.push(c);
+				} else {
+					map[tid] = new Array(c);
+				}
         return map;
       };
       this.cs = {
@@ -172,6 +179,36 @@ var CM = function()
       };
       return this.cs;
     };
+
+		/** From an object that has arrays as values,
+		 * return a single array with all unique values in it.
+		 */
+		var flattenValueArraysById = function(map) {
+			var m = {};
+			var arr = new Array();
+			for (var ID in map) {
+				if (map.hasOwnProperty(ID)) {
+					for (var k in Object.keys(map[ID])) {
+						var o = map[ID][k];
+						if (!m.hasOwnProperty(o.id)) {
+							m[o.id] = o;
+							arr.push(o);
+						}
+					}
+				}
+			}
+			return arr;
+		}
+
+		/** Returns an array of presynaptic connectors. */
+		this.preConnectors = function(update) {
+			return flattenValueArraysById(this.connectors(update).pre);
+		}
+
+		/** Returns an array of postsynaptic connectors. */
+		this.postConnectors = function(update) {
+			return flattenValueArraysById(this.connectors(update).post);
+		}
 
     /** Invoke function fnName in every value of the properties in map,
      * which is expected to return an array of values,

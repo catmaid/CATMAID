@@ -212,6 +212,10 @@ class ViewPageTests(TestCase):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
             self.compare_swc_data(response.content, swc_output_for_skeleton_235)
+        # One query is to check the session, one is to get the user
+        # for that session, and the third is actually retrieving the
+        # treenodes:
+        self.assertNumQueries(3, lambda: self.client.get('/%d/skeleton/235/swc' % (self.test_project_id,)))
 
     def test_labels(self):
         self.fake_authentication()

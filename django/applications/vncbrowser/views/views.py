@@ -179,52 +179,26 @@ def lines_delete(request, project_id=None, logged_in_user=None):
                                         kwargs={'neuron_id':neuron.id,
                                                 'project_id':p.id}))
 
-@catmaid_login_required
-def skeleton_swc(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None):
-    if treenode_id and not skeleton_id:
-        ci = ClassInstance.objects.get(
-            project=project_id,
-            class_column__class_name='skeleton',
-            treenodeclassinstance__relation__relation_name='element_of',
-            treenodeclassinstance__treenode__id=treenode_id)
-        skeleton_id = ci.id
-    qs = Treenode.objects.filter(
-        treenodeclassinstance__class_instance__id=skeleton_id,
-        treenodeclassinstance__relation__relation_name='element_of',
-        treenodeclassinstance__class_instance__class_column__class_name='skeleton',
-        project=project_id).order_by('id')
+def get_swc_string(treenodes_qs):
     all_rows = []
-    for tn in qs:
+    for tn in treenodes_qs:
         swc_row = [tn.id]
         swc_row.append(0)
         swc_row.append(tn.location.x)
         swc_row.append(tn.location.y)
         swc_row.append(tn.location.z)
         swc_row.append(max(tn.radius, 0))
-        swc_row.append(-1 if tn.parent is None else tn.parent.id)
+        swc_row.append(-1 if tn.parent_id is None else tn.parent_id)
         all_rows.append(swc_row)
     result = ""
     for row in all_rows:
         result += " ".join(str(x) for x in row) + "\n"
-    return HttpResponse(result, mimetype="text/plain")
+    return result
 
-@catmaid_login_required
-def skeleton_json(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None):
-    if treenode_id and not skeleton_id:
-        ci = ClassInstance.objects.get(
-            project=project_id,
-            class_column__class_name='skeleton',
-            treenodeclassinstance__relation__relation_name='element_of',
-            treenodeclassinstance__treenode__id=treenode_id)
-        skeleton_id = ci.id
-    qs = Treenode.objects.filter(
-        treenodeclassinstance__class_instance__id=skeleton_id,
-        treenodeclassinstance__relation__relation_name='element_of',
-        treenodeclassinstance__class_instance__class_column__class_name='skeleton',
-        project=project_id).order_by('id')
+def get_json_string(treenodes_qs):
     # represent the skeleton as JSON
     vertices={}; connectivity={}
-    for tn in qs:
+    for tn in treenodes_qs:
         vertices[tn.id] = {
             'x': tn.location.x,
             'y': tn.location.y,
@@ -232,18 +206,18 @@ def skeleton_json(request, project_id=None, skeleton_id=None, treenode_id=None, 
             'radius': max(tn.radius, 0),
             'type': 'skeleton'
         }
-        if not tn.parent is None:
+        if not tn.parent_id is None:
             if connectivity.has_key(tn.id):
-                connectivity[tn.id][tn.parent.id] = {
+                connectivity[tn.id][tn.parent_id] = {
                     'type': 'neurite'
                 }
             else:
                 connectivity[tn.id] = {
-                    tn.parent.id: {
+                    tn.parent_id: {
                         'type': 'neurite'
                     }
                 }
-                
+
     qs_tc = TreenodeConnector.objects.filter(
         treenode__treenodeclassinstance__class_instance__id=skeleton_id,
         treenode__treenodeclassinstance__relation__relation_name='element_of',
@@ -265,7 +239,37 @@ def skeleton_json(request, project_id=None, skeleton_id=None, treenode_id=None, 
             'type': tc.relation.relation_name
         }
 
-    return HttpResponse(json.dumps({'vertices':vertices,'connectivity':connectivity}, sort_keys=True, indent=4), mimetype="text/json")
+    return json.dumps({'vertices':vertices,'connectivity':connectivity}, sort_keys=True, indent=4)
+
+def export_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None, format=None):
+    if treenode_id and not skeleton_id:
+        ci = ClassInstance.objects.get(
+            project=project_id,
+            class_column__class_name='skeleton',
+            treenodeclassinstance__relation__relation_name='element_of',
+            treenodeclassinstance__treenode__id=treenode_id)
+        skeleton_id = ci.id
+    treenode_qs = Treenode.objects.filter(
+        treenodeclassinstance__class_instance__id=skeleton_id,
+        treenodeclassinstance__relation__relation_name='element_of',
+        treenodeclassinstance__class_instance__class_column__class_name='skeleton',
+        project=project_id).order_by('id')
+    if format == 'swc':
+        return HttpResponse(get_swc_string(treenode_qs), mimetype='text/plain')
+    elif format == 'json':
+        return HttpResponse(get_json_string(treenode_qs), mimetype='text/json')
+    else:
+        raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
+
+@catmaid_login_required
+def skeleton_swc(*args, **kwargs):
+    kwargs['format'] = 'swc'
+    return export_skeleton_response(*args, **kwargs)
+
+@catmaid_login_required
+def skeleton_json(*args, **kwargs):
+    kwargs['format'] = 'json'
+    return export_skeleton_response(*args, **kwargs)
 
 @catmaid_login_required
 def neuron_to_skeletons(request, project_id=None, neuron_id=None, logged_in_user=None):

@@ -175,24 +175,27 @@ class ClassInstance(models.Model):
         else:
             raise Exception, "Unknown connectivity direction: "+str(direction)
 
+        relations = dict((r.relation_name, r.id) for r in Relation.objects.filter(project=project_id))
+        classes = dict((c.class_name, c.id) for c in Class.objects.filter(project=project_id))
+
         synapses = ClassInstance.objects.filter(
             class_column__class_name='synapse',
             project__id=project_id,
-            cici_via_b__relation__relation_name=this_to_syn+'synaptic_to',
-            cici_via_b__class_instance_a__class_column__class_name=this_to_syn+'synaptic terminal',
-            cici_via_b__class_instance_a__cici_via_a__relation__relation_name='part_of',
-            cici_via_b__class_instance_a__cici_via_a__class_instance_b__class_column__class_name='skeleton',
-            cici_via_b__class_instance_a__cici_via_a__class_instance_b__cici_via_a__relation__relation_name='model_of',
+            cici_via_b__relation=relations[this_to_syn+'synaptic_to'],
+            cici_via_b__class_instance_a__class_column=classes[this_to_syn+'synaptic terminal'],
+            cici_via_b__class_instance_a__cici_via_a__relation=relations['part_of'],
+            cici_via_b__class_instance_a__cici_via_a__class_instance_b__class_column=classes['skeleton'],
+            cici_via_b__class_instance_a__cici_via_a__class_instance_b__cici_via_a__relation=relations['model_of'],
             cici_via_b__class_instance_a__cici_via_a__class_instance_b__cici_via_a__class_instance_b=self.id)
 
         connected_neurons = ClassInstance.objects.filter(
             class_column__class_name='neuron',
             project__id=project_id,
-            cici_via_b__relation__relation_name='model_of',
-            cici_via_b__class_instance_a__class_column__class_name='skeleton',
-            cici_via_b__class_instance_a__cici_via_b__relation__relation_name='part_of',
-            cici_via_b__class_instance_a__cici_via_b__class_instance_a__class_column__class_name=syn_to_con+'synaptic terminal',
-            cici_via_b__class_instance_a__cici_via_b__class_instance_a__cici_via_a__relation__relation_name=syn_to_con+'synaptic_to',
+            cici_via_b__relation=relations['model_of'],
+            cici_via_b__class_instance_a__class_column=classes['skeleton'],
+            cici_via_b__class_instance_a__cici_via_b__relation=relations['part_of'],
+            cici_via_b__class_instance_a__cici_via_b__class_instance_a__class_column=classes[syn_to_con+'synaptic terminal'],
+            cici_via_b__class_instance_a__cici_via_b__class_instance_a__cici_via_a__relation=relations[syn_to_con+'synaptic_to'],
             cici_via_b__class_instance_a__cici_via_b__class_instance_a__cici_via_a__class_instance_b__id__in=[s.id for s in list(synapses)])
 
         return connected_neurons.values('id','name').annotate(models.Count('id')).order_by('-id__count')

@@ -195,10 +195,37 @@ def get_swc_string(treenodes_qs):
         result += " ".join(str(x) for x in row) + "\n"
     return result
 
-def get_json_string(treenodes_qs):
+def get_treenodes_qs(project_id=None, skeleton_id=None, treenode_id=None):
+    if treenode_id and not skeleton_id:
+        ci = ClassInstance.objects.get(
+            project=project_id,
+            class_column__class_name='skeleton',
+            treenodeclassinstance__relation__relation_name='element_of',
+            treenodeclassinstance__treenode__id=treenode_id)
+        skeleton_id = ci.id
+    treenode_qs = Treenode.objects.filter(
+        treenodeclassinstance__class_instance__id=skeleton_id,
+        treenodeclassinstance__relation__relation_name='element_of',
+        treenodeclassinstance__class_instance__class_column__class_name='skeleton',
+        project=project_id).order_by('id')
+    return treenode_qs
+
+def export_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None, format=None):
+    treenode_qs = get_treenodes_qs(project_id, skeleton_id, treenode_id)
+
+    if format == 'swc':
+        return HttpResponse(get_swc_string(treenode_qs), mimetype='text/plain')
+    elif format == 'json':
+        return HttpResponse(get_json_string(treenode_qs), mimetype='text/json')
+    else:
+        raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
+
+def export_extended_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None, format=None):
+    treenode_qs = get_treenodes_qs(project_id, skeleton_id, treenode_id)
+
     # represent the skeleton as JSON
     vertices={}; connectivity={}
-    for tn in treenodes_qs:
+    for tn in treenode_qs:
         vertices[tn.id] = {
             'x': tn.location.x,
             'y': tn.location.y,
@@ -239,27 +266,11 @@ def get_json_string(treenodes_qs):
             'type': tc.relation.relation_name
         }
 
-    return json.dumps({'vertices':vertices,'connectivity':connectivity}, sort_keys=True, indent=4)
-
-def export_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None, format=None):
-    if treenode_id and not skeleton_id:
-        ci = ClassInstance.objects.get(
-            project=project_id,
-            class_column__class_name='skeleton',
-            treenodeclassinstance__relation__relation_name='element_of',
-            treenodeclassinstance__treenode__id=treenode_id)
-        skeleton_id = ci.id
-    treenode_qs = Treenode.objects.filter(
-        treenodeclassinstance__class_instance__id=skeleton_id,
-        treenodeclassinstance__relation__relation_name='element_of',
-        treenodeclassinstance__class_instance__class_column__class_name='skeleton',
-        project=project_id).order_by('id')
-    if format == 'swc':
-        return HttpResponse(get_swc_string(treenode_qs), mimetype='text/plain')
-    elif format == 'json':
-        return HttpResponse(get_json_string(treenode_qs), mimetype='text/json')
+    if format == 'json':
+        json_return = json.dumps({'vertices':vertices,'connectivity':connectivity}, sort_keys=True, indent=4)
+        return HttpResponse(json_return, mimetype='text/json')
     else:
-        raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
+        raise Exception, "Unknown format ('%s') in export_extended_skeleton_response" % (format,)
 
 @catmaid_login_required
 def skeleton_swc(*args, **kwargs):
@@ -269,7 +280,7 @@ def skeleton_swc(*args, **kwargs):
 @catmaid_login_required
 def skeleton_json(*args, **kwargs):
     kwargs['format'] = 'json'
-    return export_skeleton_response(*args, **kwargs)
+    return export_extended_skeleton_response(*args, **kwargs)
 
 @catmaid_login_required
 def neuron_to_skeletons(request, project_id=None, neuron_id=None, logged_in_user=None):

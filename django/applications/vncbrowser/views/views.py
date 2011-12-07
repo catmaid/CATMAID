@@ -5,11 +5,12 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
-    Project, User, Treenode
+    Project, User, Treenode, TreenodeConnector
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
 import json
 import re
+import sys
 
 @catmaid_login_required
 def index(request, **kwargs):
@@ -228,7 +229,8 @@ def skeleton_json(request, project_id=None, skeleton_id=None, treenode_id=None, 
             'x': tn.location.x,
             'y': tn.location.y,
             'z': tn.location.z,
-            'radius': max(tn.radius, 0)
+            'radius': max(tn.radius, 0),
+            'type': 'skeleton'
         }
         if not tn.parent is None:
             if connectivity.has_key(tn.id):
@@ -241,6 +243,28 @@ def skeleton_json(request, project_id=None, skeleton_id=None, treenode_id=None, 
                         'type': 'neurite'
                     }
                 }
+                
+    qs_tc = TreenodeConnector.objects.filter(
+        treenode__treenodeclassinstance__class_instance__id=skeleton_id,
+        treenode__treenodeclassinstance__relation__relation_name='element_of',
+        treenode__treenodeclassinstance__class_instance__class_column__class_name='skeleton',
+        project=project_id,
+        relation__relation_name__endswith = 'synaptic_to',
+        treenode__in=list(vertices.keys())
+    ).select_related('treenode', 'connector', 'relation')
+
+    for tc in qs_tc:
+        if not vertices.has_key(tc.connector_id):
+            vertices[tc.connector_id] = {
+                'x': tc.connector.location.x,
+                'y': tc.connector.location.y,
+                'z': tc.connector.location.z,
+                'type': 'connector'
+            }
+        connectivity[tc.treenode_id][tc.connector_id] = {
+            'type': tc.relation.relation_name
+        }
+
     return HttpResponse(json.dumps({'vertices':vertices,'connectivity':connectivity}, sort_keys=True, indent=4), mimetype="text/json")
 
 @catmaid_login_required

@@ -235,11 +235,11 @@ var CM = function()
     };
 
     this.downstreamPartners = function() {
-      return partners(this.connectors().pre, "postSkeletons");
+      return partners(this.preConnectors(), "postSkeletons");
     };
 
     this.upstreamPartners = function() {
-      return partners(this.connectors().post, "preSkeletons");
+      return partners(this.postConnectors(), "preSkeletons");
     };
     
     this.measure = function() {
@@ -275,9 +275,11 @@ var CM = function()
           }
         }
       }
-      var cs = this.connectors();
-      var downstreamPartners = this.downstreamPartners();
-      var upstreamPartners = this.upstreamPartners();
+
+			var preCs = this.preConnectors();
+			var postCs = this.postConnectors();
+      var downstreamPartners = partners(preCs, "postSkeletons");
+      var upstreamPartners = partners(postCs, "preSkeletons");
       var fn = function (sum, sk) { return sk.size() > 1 ? 0 : 1; };
       var downstreamPartnersSingleNode = downstreamPartners.reduce(fn, 0);
       var upstreamPartnersSingleNode = upstreamPartners.reduce(fn, 0);
@@ -285,13 +287,13 @@ var CM = function()
       return {
         cable: cable,
         nodes: count,
-        endNodes: count - slabNodes - branchNodes,
+        endNodes: count - slabNodes - branchNodes + 1, // plus the root
         branchNodes: branchNodes,
-        slabNodes: slabNodes,
-        presynapticSites: Object.keys(cs.pre).length,
+        slabNodes: slabNodes -1, // minus the root
+        presynapticSites: preCs.length,
         downstreamPartners: downstreamPartners.length,
         downstreamPartnersSingleNode: downstreamPartnersSingleNode,
-        postsynapticSites: Object.keys(cs.post).length,
+        postsynapticSites: postCs.length,
         upstreamPartners: upstreamPartners.length,
         upstreamPartnersSingleNode: upstreamPartnersSingleNode
       };

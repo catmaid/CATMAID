@@ -9,6 +9,10 @@ var ConnectorTable = new function()
   var self = this;
   var asInitValsSyn = new Array();
 
+  var possibleLengths = [25, 100, -1];
+  var possibleLengthsLabels = possibleLengths.map(
+    function (n) { return (n === -1) ? "All" : n.toString() });
+
   this.init = function (pid) {
     var tableid = '#connectortable';
     var skeletonID = SkeletonAnnotations.getActiveSkeletonId();
@@ -22,6 +26,7 @@ var ConnectorTable = new function()
         "bProcessing": true,
         "bServerSide": true,
         "bAutoWidth": false,
+        "iDisplayLength": possibleLengths[0],
         "sAjaxSource": 'model/connector.list.php',
         "fnServerData": function (sSource, aoData, fnCallback) {
 
@@ -61,8 +66,8 @@ var ConnectorTable = new function()
 
         },
         "aLengthMenu": [
-          [10, 25, 50, -1],
-          [10, 25, 50, "All"]
+          possibleLengths,
+          possibleLengthsLabels
         ],
         "bJQueryUI": true,
         "aoColumns": [

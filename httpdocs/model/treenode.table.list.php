@@ -256,13 +256,13 @@ try {
 	while ( list( $key, $val) = each( $t ) )
 	{
 		$sRow = "";
-		
+
 		$sRow .= "[";
 		$sRow .= '"'.addslashes($val["tid"]).'",';
-		$sRow .= '"'.addslashes($val["x"]).'",';
-		$sRow .= '"'.addslashes($val["y"]).'",';
-		$sRow .= '"'.addslashes($val["z"]).'",';
-		
+		$sRow .= '"'.addslashes(sprintf("%.2f",$val["x"])).'",';
+		$sRow .= '"'.addslashes(sprintf("%.2f",$val["y"])).'",';
+		$sRow .= '"'.addslashes(sprintf("%.2f",$val["z"])).'",';
+
 		// find node type
 		// R : root
 		// S : slab

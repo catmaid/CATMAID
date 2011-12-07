@@ -200,7 +200,7 @@ def skeleton_swc(request, project_id=None, skeleton_id=None, treenode_id=None, l
         swc_row.append(tn.location.y)
         swc_row.append(tn.location.z)
         swc_row.append(max(tn.radius, 0))
-        swc_row.append(-1 if tn.parent is None else tn.parent.id)
+        swc_row.append(-1 if tn.parent_id is None else tn.parent_id)
         all_rows.append(swc_row)
     result = ""
     for row in all_rows:
@@ -230,14 +230,14 @@ def skeleton_json(request, project_id=None, skeleton_id=None, treenode_id=None, 
             'z': tn.location.z,
             'radius': max(tn.radius, 0)
         }
-        if not tn.parent is None:
+        if not tn.parent_id is None:
             if connectivity.has_key(tn.id):
-                connectivity[tn.id][tn.parent.id] = {
+                connectivity[tn.id][tn.parent_id] = {
                     'type': 'neurite'
                 }
             else:
                 connectivity[tn.id] = {
-                    tn.parent.id: {
+                    tn.parent_id: {
                         'type': 'neurite'
                     }
                 }

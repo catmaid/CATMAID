@@ -49,8 +49,18 @@
 			var windowHalfX = window.innerWidth / 2;
 			var windowHalfY = window.innerHeight / 2;
             var scale = $.url().param('scale') ? $.url().param('scale') : 1.0;
+            var translate_x = $.url().param('translate_x') ? $.url().param('translate_x') : 0.0;
+            var translate_y = $.url().param('translate_y') ? $.url().param('translate_y') : 0.0;
+            var translate_z = $.url().param('translate_z') ? $.url().param('translate_z') : 0.0;
             var project_id = $.url().param('project_id');
             var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
+
+            Array.max = function( array ){
+                return Math.max.apply( Math, array );
+            };
+            Array.min = function( array ){
+                return Math.min.apply( Math, array );
+            };
 
             // A namespace for the WebGL viewer
             var WebGLViewer = new function()
@@ -114,14 +124,19 @@
                                     vertices[fromkey]['y'],
                                     vertices[fromkey]['z'] );
                             // transform
+                            from_vector.add( translate_x, translate_y, translate_z );
                             from_vector.multiplyScalar( scale );
+
                             this.geometry[type].vertices.push( new THREE.Vertex( from_vector ) );
 
                             to_vector = new THREE.Vector3(
                                     vertices[tokey]['x'],
                                     vertices[tokey]['y'],
                                     vertices[tokey]['z'] );
+                            // transform
+                            to_vector.add( translate_x, translate_y, translate_z );
                             to_vector.multiplyScalar( scale );
+                            
                             this.geometry[type].vertices.push( new THREE.Vertex( to_vector ) );
                         }
                     }
@@ -161,6 +176,7 @@
                 this.addSkeleton = function( skeleton_id, skeleton_data )
                 {
                     skeletons[skeleton_id] = new Skeleton( skeleton_data );
+                    console.log('added skeleton', skeletons[skeleton_id]);
                     WebGLViewer.addSkeletonToScene( skeletons[skeleton_id] );
                 }
 

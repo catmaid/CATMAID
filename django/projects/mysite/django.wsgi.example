@@ -5,7 +5,7 @@
 import os
 import sys
 sys.path.append('/home/mark/catmaid-local-instance/django/')
-sys.path.append('/home/mark/catmaid-local-instance/django/mysite/')
+sys.path.append('/home/mark/catmaid-local-instance/django/projects/')
 
 # ------------------------------------------------------------------------
 # This section is to make sure that the virtualenv is

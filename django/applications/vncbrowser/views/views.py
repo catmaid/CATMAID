@@ -254,7 +254,22 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
         treenode__in=list(vertices.keys())
     ).select_related('treenode', 'connector', 'relation')
 
+    #print >> sys.stderr, 'vertices, connectivity', vertices, connectivity
+
     for tc in qs_tc:
+        #print >> sys.stderr, 'vertex, connector', tc.treenode_id, tc.connector_id
+        #print >> sys.stderr, 'relation name', tc.relation.relation_name
+        
+        if not vertices.has_key(tc.treenode_id):
+            print >> sys.stderr, 'vertices was not yet in result set. this should never happen.'
+            print >> sys.stderr, 'in export_extended_skeleton_response()'
+            vertices[tc.treenode_id] = {
+                'x': tc.treenode.location.x,
+                'y': tc.treenode.location.y,
+                'z': tc.treenode.location.z,
+                'type': 'skeleton'
+            }
+
         if not vertices.has_key(tc.connector_id):
             vertices[tc.connector_id] = {
                 'x': tc.connector.location.x,
@@ -262,9 +277,23 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
                 'z': tc.connector.location.z,
                 'type': 'connector'
             }
-        connectivity[tc.treenode_id][tc.connector_id] = {
-            'type': tc.relation.relation_name
-        }
+
+        # if it a single node without connection to anything else,
+        # but to a connector, add it
+        if not connectivity.has_key(tc.treenode_id):
+            connectivity[tc.treenode_id] = {}
+
+        if connectivity[tc.treenode_id].has_key(tc.connector_id):
+            print >> sys.stderr, 'only for postsynaptic to the same skeleton multiple times'
+            print >> sys.stderr, 'for connector', tc.connector_id
+            connectivity[tc.treenode_id][tc.connector_id] = {
+                'type': tc.relation.relation_name
+            }
+        else:
+            print >> sys.stderr, 'does not have key', tc.connector_id, connectivity[tc.treenode_id]
+            connectivity[tc.treenode_id][tc.connector_id] = {
+                'type': tc.relation.relation_name
+            }
 
     if format == 'json':
         json_return = json.dumps({'vertices':vertices,'connectivity':connectivity}, sort_keys=True, indent=4)

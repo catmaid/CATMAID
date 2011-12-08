@@ -49,13 +49,16 @@
 			var windowHalfX = window.innerWidth / 2;
 			var windowHalfY = window.innerHeight / 2;
             var scale = $.url().param('scale') ? $.url().param('scale') : 1.0;
+            var project_id = $.url().param('project_id');
+            var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
 
             // A namespace for the WebGL viewer
             var WebGLViewer = new function()
             {
 
-                var Skeleton = function( data )
+                var Skeleton = function( skeleton_data )
                 {
+
                     this.translate = function( dx, dy, dz )
                     {
 
@@ -76,14 +79,50 @@
 
                     }
 
-                    // create geometry and line material
-
-
                     this.getCompositeLineActor = function()
                     {
                         for ( var i=0; i<connectivity_types.length; ++i ) {
                             var line = new THREE.Line( geometry[connectivity_types[i]], line_material[connectivity_types[i]], THREE.LinePieces );
                             scene.add( line );
+                        }
+                    }
+
+                    var type, from_vectr, to_vector;
+
+                    this.line_material = new Object();
+                    this.geometry = new Object();
+
+                    this.geometry[connectivity_types[0]] = new THREE.Geometry();
+                    this.geometry[connectivity_types[1]] = new THREE.Geometry();
+                    this.geometry[connectivity_types[2]] = new THREE.Geometry();
+
+                    this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 3 } );
+                    this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0x00ff00, opacity: 1.0, linewidth: 6 } )
+                    this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x0000ff, opacity: 1.0, linewidth: 6 } )
+
+                    vertices = skeleton_data.vertices;
+                    connectivity = skeleton_data.connectivity;
+
+                    for (var fromkey in connectivity) {
+                        var to = connectivity[fromkey];
+                        for (var tokey in to) {
+
+                            type = connectivity_types[connectivity_types.indexOf(connectivity[fromkey][tokey]['type'])];
+
+                            from_vector = new THREE.Vector3(
+                                    vertices[fromkey]['x'],
+                                    vertices[fromkey]['y'],
+                                    vertices[fromkey]['z'] );
+                            // transform
+                            from_vector.multiplyScalar( scale );
+                            this.geometry[type].vertices.push( new THREE.Vertex( from_vector ) );
+
+                            to_vector = new THREE.Vector3(
+                                    vertices[tokey]['x'],
+                                    vertices[tokey]['y'],
+                                    vertices[tokey]['z'] );
+                            to_vector.multiplyScalar( scale );
+                            this.geometry[type].vertices.push( new THREE.Vertex( to_vector ) );
                         }
                     }
 
@@ -97,28 +136,55 @@
 
                 // array of skeletons
                 var skeletons = new Object();
+                
                 // active node geometry
                 var active_node;
 
                 // fetch skeleton from database
-                var fetchSkeleton = function( skeleton_id )
+                this.fetchSkeleton = function( skeleton_id )
                 {
-
+                    if( skeleton_id !== undefined )
+                    {
+                        jQuery.ajax({
+                          //url: "../../model/export.skeleton.json.php",
+                          url: "../../dj/"+project_id+"/skeleton/" + skeleton_id + "/json",
+                          type: "GET",
+                          dataType: "json",
+                          success: function (skeleton_data) {
+                            WebGLViewer.addSkeleton( skeleton_id, skeleton_data );
+                          }
+                        });
+                    }
                 }
 
                 // add skeleton to scene
-                this.addSkeleton = function( skeleton_id )
+                this.addSkeleton = function( skeleton_id, skeleton_data )
                 {
+                    skeletons[skeleton_id] = new Skeleton( skeleton_data );
+                    WebGLViewer.addSkeletonToScene( skeletons[skeleton_id] );
+                }
 
+                this.addSkeletonToScene = function( skeleton )
+                {
+                    for ( var i=0; i<connectivity_types.length; ++i ) {
+                        var line = new THREE.Line( skeleton.geometry[connectivity_types[i]],
+                                skeleton.line_material[connectivity_types[i]], THREE.LinePieces );
+                        scene.add( line );
+                    }
                 }
 
                 // remove skeleton from scence
                 this.removeSkeleton = function( skeleton_id )
                 {
-
+                    delete skeletons[skeleton_id];
                 }
 
                 this.randomColorizeCurrentSkeletons = function()
+                {
+
+                }
+
+                this.redraw = function()
                 {
 
                 }
@@ -135,24 +201,14 @@
 
                 }
 
-
-
             }
 
-            jQuery.ajax({
-              //url: "../../model/export.skeleton.json.php",
-              url: "../../dj/"+$.url().param('project_id')+"/skeleton/" +
-                      $.url().param('skeleton_id') + "/json",
-              type: "GET",
-              dataType: "json",
-              success: function (text) {
-                init();
-                animate();
-                debugaxes();
-                draw_grid();
-                draw_skeleton(text);
-              }
-            });
+            init();
+            animate();
+            debugaxes();
+            draw_grid();
+            
+            WebGLViewer.fetchSkeleton( $.url().param('skeleton_id') );
 
             function debugaxes(){
                 //Axes array[x,y,z]
@@ -288,11 +344,11 @@
 				scene = new THREE.Scene();
 				//scene.fog = new THREE.FogExp2( 0x000000, 0.0007 );
 
-                geometry = new THREE.CubeGeometry( 200, 200, 200 );
-                material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
+                // geometry = new THREE.CubeGeometry( 200, 200, 200 );
+                // material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
 
-                mesh = new THREE.Mesh( geometry, material );
-                scene.add( mesh );
+                // mesh = new THREE.Mesh( geometry, material );
+                // scene.add( mesh );
 
 				renderer = new THREE.WebGLRenderer();
 				renderer.setSize( window.innerWidth, window.innerHeight );

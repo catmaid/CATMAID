@@ -291,7 +291,17 @@ var ObjectTree = new function()
                       // datatables grabs automatically the selected skeleton
                       ConnectorTable.connectorTable.fnDraw();
                     }
-                }
+                  },
+                  "show_webglviewer": {
+                    "separator_before": false,
+                    "separator_after": false,
+                    "label": "WebGL Viewer app",
+                    "action": function (obj) {
+                      var skelid = obj.attr("id").replace("node_", "");
+                      window.open("apps/webgl/index.html?project_id="+project.id
+                        +"&skeleton_id="+skelid+"&scale=0.01","WebGL Viewer");
+                    }
+                  }
                 }
               },
               "rename_skeleton": {

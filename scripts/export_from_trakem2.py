@@ -625,15 +625,12 @@ def add_connectors_recursively(pt,depth=0):
       print "Connector had no origin node"
     else:
       connector_target_nodes = c.root.getChildrenNodes()
-      if not connector_target_nodes:
-        print prefix, "Connector had no target nodes"
-      else:
-        originNode = ConnectorNode(node_to_coordinates(aff,c.root),c.root.getData()*x_separation)
-        targetNodes = [ ConnectorNode(node_to_coordinates(aff,x),x.getData()*x_separation) for x in connector_target_nodes ]
-        print prefix, "Got originNode:", originNode
-        for t in targetNodes:
-          print prefix, "Got targetNode:", t
-        add_synapse( name_with_id, c, [ originNode ], targetNodes )
+      originNode = ConnectorNode(node_to_coordinates(aff,c.root),c.root.getData()*x_separation)
+      targetNodes = [ ConnectorNode(node_to_coordinates(aff,x),x.getData()*x_separation) for x in connector_target_nodes ]
+      print prefix, "Got originNode:", originNode
+      for t in targetNodes:
+        print prefix, "Got targetNode:", t
+      add_synapse( name_with_id, c, [ originNode ], targetNodes )
   else:
     children = pt.getChildren()
     if children:

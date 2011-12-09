@@ -34,7 +34,8 @@ function TileLayer(
 		stack,						//!< reference to the parent stack
 		baseURL,					//!< base URL for image tiles
 		tileWidth,
-		tileHeight
+		tileHeight,
+		fileExtension
 		)
 {
 	/**
@@ -215,7 +216,7 @@ function TileLayer(
 					// TODO: use this for the new tile naming scheme:
 					// tiles[ i ][ j ].alt = tileBaseName + stack.s + "/" + ( fr + i ) + "/" + ( fc + j );
 					tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
-					tiles[ i ][ j ].src = baseURL + tiles[ i ][ j ].alt + ".jpg";
+					tiles[ i ][ j ].src = baseURL + tiles[ i ][ j ].alt + "." + fileExtension;
 				}
 				tiles[ i ][ j ].style.top = t + "px";
 				tiles[ i ][ j ].style.left = l + "px";
@@ -283,7 +284,7 @@ function TileLayer(
 	{
 		this.redraw = function()
 		{
-			img.src = baseURL + stack.z + "/small.jpg";
+			img.src = baseURL + stack.z + "/small." + fileExtension;
 			return;
 		}
 		
@@ -297,7 +298,7 @@ function TileLayer(
 		
 		var img = document.createElement( "img" );
 		img.className = "smallMapMap";
-		img.src = "map/small.jpg";
+		img.src = "map/small." + fileExtension;
 		
 		stack.overview.getView().appendChild( img );
 		stack.overview.addLayer( "tilelayer", this );

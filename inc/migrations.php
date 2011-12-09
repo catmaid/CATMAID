@@ -758,6 +758,16 @@ EOMIGRATION
 		'ALTER TABLE stack ALTER COLUMN min_zoom_level SET DEFAULT -1;'
 ),
 
+    '2011-12-14T18:42:00' => new Migration(
+        'Add file extension information to stacks and overlays',
+        "ALTER TABLE stack ADD COLUMN file_extension text;
+         ALTER TABLE overlay ADD COLUMN file_extension text;
+         UPDATE stack SET file_extension = 'jpg';
+         UPDATE overlay SET file_extension = 'jpg';
+         ALTER TABLE stack ALTER COLUMN file_extension SET NOT NULL;
+         ALTER TABLE overlay ALTER COLUMN file_extension SET NOT NULL;"
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

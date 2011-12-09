@@ -179,7 +179,7 @@ class ClassInstance(models.Model):
         classes = dict((c.class_name, c.id) for c in Class.objects.filter(project=project_id))
 
         synapses = ClassInstance.objects.filter(
-            class_column__class_name='synapse',
+            class_column=classes['synapse'],
             project__id=project_id,
             cici_via_b__relation=relations[this_to_syn+'synaptic_to'],
             cici_via_b__class_instance_a__class_column=classes[this_to_syn+'synaptic terminal'],
@@ -189,7 +189,7 @@ class ClassInstance(models.Model):
             cici_via_b__class_instance_a__cici_via_a__class_instance_b__cici_via_a__class_instance_b=self.id)
 
         connected_neurons = ClassInstance.objects.filter(
-            class_column__class_name='neuron',
+            class_column=classes['neuron'],
             project__id=project_id,
             cici_via_b__relation=relations['model_of'],
             cici_via_b__class_instance_a__class_column=classes['skeleton'],

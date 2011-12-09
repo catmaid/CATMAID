@@ -107,7 +107,7 @@ class RelationQueryTests(TestCase):
     def test_find_all_neurons(self):
         all_neurons = ClassInstance.objects.filter(class_column__class_name='neuron',
                                                    project=self.test_project_id)
-        self.assertEqual(all_neurons.count(), 5)
+        self.assertEqual(all_neurons.count(), 6)
 
     def test_find_downstream_neurons(self):
         upstream = ClassInstance.objects.get(name='branched neuron')
@@ -458,7 +458,7 @@ class ViewPageTests(TestCase):
         response = self.client.get('/%d/stats-summary' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
         expected_result = {u"proj_users" : 2,
-                           u"proj_neurons": 5,
+                           u"proj_neurons": 6,
                            u"proj_synapses": 3,
                            u"proj_treenodes": 77,
                            u"proj_skeletons" : 5,

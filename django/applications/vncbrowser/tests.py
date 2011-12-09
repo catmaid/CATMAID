@@ -537,6 +537,11 @@ class ViewPageTests(TestCase):
         self.assertTrue(node_367_found)
         self.assertTrue(node_393_found)
 
+    def test_multiple_treenodes(self):
+        self.fake_authentication()
+        response = self.client.get('/%d/multiple-presynaptic-terminals' % (self.test_project_id,))
+        self.assertEqual(response.status_code, 200)
+
 class TreenodeTests(TestCase):
 
     def setUp(self):

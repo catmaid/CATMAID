@@ -16,6 +16,8 @@ from views import lines_delete
 from views import skeleton_swc
 from views import skeleton_json
 from views import neuron_to_skeletons
+from views import multiple_presynaptic_terminals
+from views import goto_connector
 
 from catmaid_replacements import projects
 from catmaid_replacements import labels_all

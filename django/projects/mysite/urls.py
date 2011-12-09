@@ -32,6 +32,8 @@ urlpatterns = patterns(
     (r'^(?P<project_id>\d+)/stats$', 'vncbrowser.views.stats'),
     (r'^(?P<project_id>\d+)/stats-summary$', 'vncbrowser.views.stats_summary'),
     (r'^(?P<project_id>\d+)/node-list$', 'vncbrowser.views.node_list'),
+    (r'^(?P<project_id>\d+)/multiple-presynaptic-terminals$', 'vncbrowser.views.multiple_presynaptic_terminals'),
+    (r'^(?P<project_id>\d+)/go-to/connector/(?P<connector_id>\d+)/stack/(?P<stack_id>\d+)$', 'vncbrowser.views.goto_connector'),
     )
 
 if settings.DEBUG:

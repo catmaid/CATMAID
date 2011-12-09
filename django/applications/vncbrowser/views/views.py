@@ -1,3 +1,4 @@
+from django.db import models
 from django.conf import settings
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.core.urlresolvers import reverse
@@ -5,12 +6,13 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
-    Project, User, Treenode, TreenodeConnector
+    Project, User, Treenode, TreenodeConnector, Connector
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
 import json
 import re
 import sys
+from urllib import urlencode
 
 @catmaid_login_required
 def index(request, **kwargs):
@@ -294,3 +296,28 @@ def neuron_to_skeletons(request, project_id=None, neuron_id=None, logged_in_user
         cici_via_a__relation__relation_name='model_of',
         cici_via_a__class_instance_b=neuron)
     return HttpResponse(json.dumps([x.id for x in qs]), mimetype="text/json")
+
+@catmaid_login_required
+def multiple_presynaptic_terminals(request, project_id=None, logged_in_user=None):
+    p = get_object_or_404(Project, pk=project_id)
+
+    tcs = TreenodeConnector.objects.filter(project__id=project_id, relation__relation_name='presynaptic_to').values('connector').annotate(number=models.Count('connector')).filter(number__gt=1)
+    return my_render_to_response(request,
+                                 'vncbrowser/multiple_presynaptic_terminals.html',
+                                 {'project_id': p.id,
+                                  'catmaid_url': settings.CATMAID_URL,
+                                  'user': logged_in_user,
+                                  'stacks': p.stacks.all(),
+                                  'connector_counts': tcs})
+
+@catmaid_login_required
+def goto_connector(request, project_id=None, connector_id=None, stack_id=None, logged_in_user=None):
+    c = get_object_or_404(Connector, pk=connector_id)
+    parameters = {"pid": project_id,
+                  "zp": c.location.z,
+                  "yp": c.location.y,
+                  "xp": c.location.x,
+                  "tool": "tracingtool",
+                  "sid0": stack_id,
+                  "s0" : 0}
+    return HttpResponseRedirect(settings.CATMAID_URL + "?" + urlencode(parameters))

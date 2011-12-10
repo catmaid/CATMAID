@@ -1,0 +1,69 @@
+Automatic Database Migrations
+=============================
+
+Historically, keeping your database in sync with what's expected by the code has been error-prone and annoying, but now CATMAID has a simple system for automatic migrations.  If the backend detects that the code requires updates to the database schema, it will apply those automatically.  This page describes what you need to know about these migrations.
+
+I got the error "Migrating the database failed."
+------------------------------------------------
+
+This might occur in one of two cases:
+
+* You're adding a new migration yourself.  Something's wrong with your SQL, and you need to check the error in Apache's `error.log` file and then fix the SQL that you added to `migrations.php`.
+* Or you've just updated the code for an existing installation of CATMAID.  Please see "I want to switch an existing database to use automatic migrations" below.
+
+What happened to `master.sql`?
+------------------------------
+
+`master.sql` is no longer required, and I've removed it to avoid people thinking that they should make changes to that file.  If you want a dump of the schema of the database please use `scripts/dump-database-schema.sh`.
+
+I want to make a change to the database
+---------------------------------------
+
+If you want to make a change to the database, you would start by generating
+a template migration by running the script `scripts/add-migration.py`, supplying a short description of what change the migration makes, e.g.::
+
+    scripts/add-migration.py "Remove the bezierkey table"
+
+This will add a new migration to the file `inc/migrations.php`.  You should
+edit that file, and you will find near the end a section that looks like::
+
+           '2011-07-12T15:27:38' => new Migration(
+                   'Remove the bezierkey table',
+                   <<<EOMIGRATION
+    [Put your migration here.]
+    EOMIGRATION
+    ),
+
+You just replace the line `[Put your migration here.]` with your SQL.  The next time you reload CATMAID from your browser, this migration will be automatically run.  You should commit and push that change before (or in the same commit as) code that relies on the new version of the schema, of course.
+
+I want to switch an existing database to use automatic migrations
+-----------------------------------------------------------------
+
+You can switch an existing database to use the migrations system, but you must start with your database in a known state.  The first migration defined in `migrations.php` takes an empty database to the state described by `docs/master.sql` in commit 5145c06574a.  (You can view that file with [this link](https://github.com/acardona/CATMAID/blob/5145c06574a2e6674faf59de435c220e8e9d3788/docs/master.sql).)
+
+Once you have altered your database so that the schema is as in that commit, you can run `scripts/switch-to-migrations.py` to set the schema version in the database as if the first migration has just been successfully run.  After that point, automatic migrations should Just Work.  That script does some basic sanity checks to see if it looks as if your database is really in the right state, and will refuse to set the schema version if it detects a problem.  However, those checks are quite superficial (e.g. checking for the presence of particular tables, triggers and functions.
+
+If this is just a test installation of the database and it contains no useful data, you could consider dropping the database and recreating it.  See "I just want to drop the database and start from scratch" below.
+
+I just want to drop the database and start from scratch
+-------------------------------------------------------
+
+If you're *really* sure that you don't need any of the data in your catmaid database, you can just drop the database and start again:
+
+    # Drop the database:
+    sudo -u postgres dropdb catmaid
+
+    # Run the commands from createuser.sql to make sure various functions are available:
+    sudo -u postgres psql < docs/createuser.sql
+
+    # (You may get errors saying that the user role has already been created, and that
+    # the functions already exist.  You can safely ignore these.)
+
+Now visit your CATMAID web page and the schema of the database will be updated.  If you want to add back the example projects, you need to run the script `scripts/insert-example-projects.py`.
+
+How does this affect new installations?
+---------------------------------------
+
+I have updated the INSTALL file in this commit: [0630168b7](https://github.com/acardona/CATMAID/commit/0630168b7d493ed92bd172878807d62c5275d89b)
+
+Now you can choose whether to insert the test projects separately from setting up the schema.

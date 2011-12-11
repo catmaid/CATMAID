@@ -4,6 +4,11 @@
 # to take into account missing layers corresponding to particular
 # z-values.  This can occur when exporting the data from TrakEM2.
 
+# Note that you will also have to add:
+#  * add the new "missing" layers to the broken_slice table
+#  * change the dimensions.z field of each stack in the stack
+#    table
+
 import glob, os, re, sys, subprocess
 
 layers_missing_z = [

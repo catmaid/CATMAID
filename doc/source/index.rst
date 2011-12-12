@@ -19,7 +19,7 @@ Contents
 --------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    introduction
    screenshots
@@ -37,7 +37,7 @@ Running instances around the globe
 - `Swiss INCF node <http://incf.ini.uzh.ch/catmaid/>`_
 - `Open Connectome Project <http://openconnectomeproject.org>`_
 - `INCF CATMAID-in-a-box <https://github.com/wholeslide/catmaid_in_a_box>`_
-- `MPI-CBG, Dresden <http://fly.mpi-cbg.de/dev/>`_
+- `Fly MPI CBG Supplementary Material, Dresden <http://fly.mpi-cbg.de/~saalfeld/catmaid/supplementary.html>`_
 
 Publications
 ------------

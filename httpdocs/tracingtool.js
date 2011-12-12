@@ -554,3 +554,81 @@ function TracingTool()
   };
 
 }
+
+TracingTool.goToNearestInNeuron = function(neuronID) {
+  requestQueue.register("model/node.nearest.php", "GET", {
+    pid: project.id,
+    x: project.x,
+    y: project.y,
+    z: project.z,
+    neuron_id: neuronID
+  }, function (status, text) {
+    var data;
+    if (status !== 200) {
+      alert("Finding the nearest node failed with HTTP status code: "+status);
+    } else {
+      data = $.parseJSON(text);
+      if (data.error) {
+        alert("An error was returned when trying to fetch the nearest node: "+data.error);
+      } else {
+        project.moveTo(data.z, data.y, data.x);
+        window.setTimeout("SkeletonAnnotations.staticSelectNode( " + data.treenode_id + ", " + data.skeleton_id + " )", 1000);
+      }
+    }
+  });
+};
+
+TracingTool.search = function()
+{
+  var setSearchingMessage = function(message) {
+    $('#search-results').empty();
+    $('#search-results').append($('<i/>').text(message));
+  };
+
+  setSearchingMessage('Search in progress...');
+  requestQueue.register("model/search.php", "GET", {
+    pid: project.id,
+    substring: $('#search-box').val()
+  }, function (status, text) {
+    var i, table, tbody, row, id, name, class_name, actionLink, data, neuronID;
+    if (status !== 200) {
+      setSearchingMessage('Search failed with HTTP status'+status);
+    } else {
+      data = $.parseJSON(text);
+      if (data.error) {
+        setSearchingMessage('Search failed with error: '+data.error);
+      } else {
+        $('#search-results').empty();
+        $('#search-results').append($('<i/>').data('Found '+data.length+' results:'));
+        table = $('<table/>');
+        $('#search-results').append(table);
+        tbody = $('<tbody/>');
+        tbody.append('<tr><th>ID</th><th>Name</th><th>Class</th><th>Action</th></tr>');
+        table.append(tbody);
+        for (i = 0; i < data.length; ++i) {
+          row = $('<tr/>');
+          row.append($('<td/>').text(data[i].id));
+          row.append($('<td/>').text(data[i].name));
+          row.append($('<td/>').text(data[i].class_name));
+          if (data[i].class_name === 'neuron') {
+            actionLink = $('<a/>');
+            actionLink.attr({'id': ''+data[i].id});
+            actionLink.attr({'href':''});
+            actionLink.click(function() {
+              TracingTool.goToNearestInNeuron(parseInt($(this).attr('id')));
+              return false;
+            });
+            actionLink.text("Go to nearest node");
+            row.append($('<td/>').append(actionLink));
+          } else {
+            row.append($('<td/>').text('IMPLEMENT ME'));
+          }
+          tbody.append(row);
+        }
+      }
+    }
+    return true;
+  });
+
+
+}

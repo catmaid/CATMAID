@@ -287,6 +287,18 @@ var tracingWindowActions = [
   }),
 
   new Action({
+    helpText: "Show search window",
+    buttonID: "data_button_search",
+    buttonName: 'search',
+    keyShortcuts: {
+      '/': [ 191, 47 ]
+    },
+    run: function (e) {
+      WindowMaker.show('search');
+    }
+  }),
+
+  new Action({
     helpText: "Show project statistics",
     buttonID: "data_button_stats",
     buttonName: 'stats',

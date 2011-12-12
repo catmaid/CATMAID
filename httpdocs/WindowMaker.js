@@ -304,7 +304,40 @@ var WindowMaker = new function()
     return container;
   }
 
-  var createKeyboardShortcutsWindow = function()
+  this.setSearchWindow = function(win)
+  {
+    var actions, action, i, tool, content, container;
+
+    // If a window hasn't been passed in, look it up.
+    if (typeof win == 'undefined') {
+      win = windows['search'];
+      if (!win) {
+	return;
+      }
+    }
+
+    content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    container = document.getElementById("search-window");
+    if (!container) {
+      container = createContainer("search-window");
+      content.appendChild( container );
+    }
+
+    keysHTML = '<h4>Search</h4>';
+    keysHTML += '<form onsubmit="TracingTool.search(); return false">';
+    keysHTML += '<input type="text" id="search-box" name="search-box">';
+    keysHTML += '<input type="submit" style="display: hidden">'
+    keysHTML += '</form>';
+    keysHTML += '<div id="search-results">';
+    keysHTML += '</div>';
+
+    container.innerHTML = keysHTML;
+    return container;
+  }
+
+   var createKeyboardShortcutsWindow = function()
   {
     var win = new CMWWindow( "Keyboard Shortcuts" );
     var container = self.setKeyShortcuts(win);
@@ -315,6 +348,19 @@ var WindowMaker = new function()
 
     return win;
   };
+
+   var createSearchWindow = function()
+  {
+    var win = new CMWWindow( "Search" );
+    var container = self.setSearchWindow(win);
+
+    addListener(win, container);
+
+    addLogic(win);
+
+    return win;
+  };
+
 
   var createObjectTreeWindow = function()
   {
@@ -407,6 +453,7 @@ var WindowMaker = new function()
 
   var creators = {
     "keyboard-shortcuts": createKeyboardShortcutsWindow,
+    "search": createSearchWindow,
     "3d-view": create3dWindow,
     "node-table": createNodeTableWindow,
     "connector-table": createConnectorTableWindow,

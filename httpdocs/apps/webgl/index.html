@@ -42,7 +42,7 @@
 
 		<script type="text/javascript">
 
-			var camera, scene, renderer, particles, geometry, materials = [], parameters, i, h, color;
+			var camera, scene, renderer, particles, geometry, materials = [], parameters, i, h, color, grid_lines;
 			var mouseX = 0, mouseY = 0,
                 SEPARATION = 200, AMOUNTX = 10, AMOUNTY = 10;
 
@@ -71,14 +71,28 @@
 
                     this.translate = function( dx, dy, dz )
                     {
-
+                        for ( var i=0; i<connectivity_types.length; ++i ) {
+                            if( dx ) {
+                                this.actor[connectivity_types[i]].translateX( dx );
+                            }
+                            if( dy ) {
+                                this.actor[connectivity_types[i]].translateY( dy );
+                            }
+                            if( dz ) {
+                                this.actor[connectivity_types[i]].translateZ( dz );
+                            }
+                        }
                     }
-
-                    this.scale = function( scale )
+/*
+                    this.scale = function( scaleX, scaleY, scaleZ )
                     {
+                        for ( var i=0; i<connectivity_types.length; ++i ) {
+                            console.log("scale");
+                            this.actor[connectivity_types[i]].scale[0] = scaleX;
+                        }
 
                     }
-
+*/
                     this.getMin = function()
                     {
 
@@ -89,11 +103,27 @@
 
                     }
 
-                    this.getCompositeLineActor = function()
+                    this.updateCompositeActor = function()
                     {
                         for ( var i=0; i<connectivity_types.length; ++i ) {
-                            var line = new THREE.Line( geometry[connectivity_types[i]], line_material[connectivity_types[i]], THREE.LinePieces );
-                            scene.add( line );
+                            this.actor[connectivity_types[i]] = new THREE.Line( this.geometry[connectivity_types[i]],
+                                    this.line_material[connectivity_types[i]], THREE.LinePieces );
+                        }
+                        console.log("compoisite actor", this.actor);
+                    }
+
+                    this.removeActorFromScene = function()
+                    {
+                      for ( var i=0; i<connectivity_types.length; ++i ) {
+                            scene.removeObject( this.actor[connectivity_types[i]] );
+                        }
+                        console.log("rmoeve actor from scene", this.geometry );
+                    }
+
+                    this.addCompositeActorToScene = function()
+                    {
+                        for ( var i=0; i<connectivity_types.length; ++i ) {
+                            scene.add( this.actor[connectivity_types[i]] );
                         }
                     }
 
@@ -101,6 +131,7 @@
 
                     this.line_material = new Object();
                     this.geometry = new Object();
+                    this.actor = new Object();
 
                     this.geometry[connectivity_types[0]] = new THREE.Geometry();
                     this.geometry[connectivity_types[1]] = new THREE.Geometry();
@@ -110,42 +141,37 @@
                     this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0x00ff00, opacity: 1.0, linewidth: 6 } )
                     this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x0000ff, opacity: 1.0, linewidth: 6 } )
 
-                    vertices = skeleton_data.vertices;
-                    connectivity = skeleton_data.connectivity;
+                    this.original_vertices = skeleton_data.vertices;
+                    this.original_connectivity = skeleton_data.connectivity;
 
-                    for (var fromkey in connectivity) {
-                        var to = connectivity[fromkey];
+                    for (var fromkey in this.original_connectivity) {
+                        var to = this.original_connectivity[fromkey];
                         for (var tokey in to) {
 
-                            type = connectivity_types[connectivity_types.indexOf(connectivity[fromkey][tokey]['type'])];
+                            type = connectivity_types[connectivity_types.indexOf(this.original_connectivity[fromkey][tokey]['type'])];
 
                             from_vector = new THREE.Vector3(
-                                    vertices[fromkey]['x'],
-                                    vertices[fromkey]['y'],
-                                    vertices[fromkey]['z'] );
+                                    this.original_vertices[fromkey]['x'],
+                                    this.original_vertices[fromkey]['y'],
+                                    this.original_vertices[fromkey]['z'] );
                             // transform
-                            from_vector.add( translate_x, translate_y, translate_z );
                             from_vector.multiplyScalar( scale );
 
                             this.geometry[type].vertices.push( new THREE.Vertex( from_vector ) );
 
                             to_vector = new THREE.Vector3(
-                                    vertices[tokey]['x'],
-                                    vertices[tokey]['y'],
-                                    vertices[tokey]['z'] );
+                                    this.original_vertices[tokey]['x'],
+                                    this.original_vertices[tokey]['y'],
+                                    this.original_vertices[tokey]['z'] );
                             // transform
-                            to_vector.add( translate_x, translate_y, translate_z );
+                            // to_vector.add( translate_x, translate_y, translate_z );
                             to_vector.multiplyScalar( scale );
                             
                             this.geometry[type].vertices.push( new THREE.Vertex( to_vector ) );
                         }
                     }
 
-                }
-
-                // the active node as a sphere
-                var ActiveNode = function( data )
-                {
+                    this.updateCompositeActor();
 
                 }
 
@@ -175,32 +201,51 @@
                 // add skeleton to scene
                 this.addSkeleton = function( skeleton_id, skeleton_data )
                 {
-                    skeletons[skeleton_id] = new Skeleton( skeleton_data );
-                    console.log('added skeleton', skeletons[skeleton_id]);
-                    WebGLViewer.addSkeletonToScene( skeletons[skeleton_id] );
-                }
-
-                this.addSkeletonToScene = function( skeleton )
-                {
-                    for ( var i=0; i<connectivity_types.length; ++i ) {
-                        var line = new THREE.Line( skeleton.geometry[connectivity_types[i]],
-                                skeleton.line_material[connectivity_types[i]], THREE.LinePieces );
-                        scene.add( line );
+                    if( skeletons.hasOwnProperty(skeleton_id) ){
+                        alert("Skeleton "+skeleton_id+" already added");
+                        return;
+                    } else {
+                        skeletons[skeleton_id] = new Skeleton( skeleton_data );
+                        skeletons[skeleton_id].addCompositeActorToScene();
+                        return true;
                     }
                 }
 
                 // remove skeleton from scence
                 this.removeSkeleton = function( skeleton_id )
                 {
-                    delete skeletons[skeleton_id];
+                    if( !skeletons.hasOwnProperty(skeleton_id) ){
+                        alert("Skeleton "+skeleton_id+" does not exist. Cannot remove it!");
+                        return;
+                    } else {
+                        skeletons[skeleton_id].removeActorFromScene();
+                        delete skeletons[skeleton_id];
+                        return true;
+                    }
+                }
+
+                this.translateSkeletons = function( dx, dy, dz )
+                {
+                    console.log("trnslate skeleton");
+                    for (skeleton_id in skeletons) {
+                        if (skeletons.hasOwnProperty(skeleton_id)) {
+                            console.log("translate");
+                            skeletons[skeleton_id].translate( dx, dy, dz );
+                        }
+                    }
+                }
+
+                this.scaleSkeletons = function( scaleX, scaleY, scaleZ )
+                {
+                    console.log("scale skeleton");
+                    for (skeleton_id in skeletons) {
+                        if (skeletons.hasOwnProperty(skeleton_id)) {
+                            skeletons[skeleton_id].scale( scaleX, scaleY, scaleZ );
+                        }
+                    }
                 }
 
                 this.randomColorizeCurrentSkeletons = function()
-                {
-
-                }
-
-                this.redraw = function()
                 {
 
                 }
@@ -221,111 +266,34 @@
 
             init();
             animate();
-            debugaxes();
+            debugaxes2();
             draw_grid();
+            create_activenode();
             
             WebGLViewer.fetchSkeleton( $.url().param('skeleton_id') );
 
-            function debugaxes(){
-                //Axes array[x,y,z]
-                var axisLength = 50;
+            // the active node as a sphere
+            function create_activenode(  )
+            {
+                var material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
+                var object = THREE.SceneUtils.createMultiMaterialObject( new THREE.SphereGeometry( 75, 20, 10 ), material );
+                // object.position.set( data['x'], data['y'], data['z'] );
+                object.position.set( 0, 0, 0 );
+                scene.add( object );
 
-                var info = [[-axisLength,0,0,axisLength,0,0,0xff0000],[0,-axisLength,0,0,axisLength,0,0x00ff00],[0,0,-axisLength,0,0,axisLength,0x0000ff]];
+                var gg = new THREE.CubeGeometry( 10, 10, 100 );
+                var mm = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
 
-                //Draw some helpful axes
-                for(i=0;i<3;i++){
-                    material = new THREE.MeshBasicMaterial({color: 0xffffff});
-                    geometry = new THREE.Geometry();
-
-                    //Define the start point
-                    particle = new THREE.Particle(material);
-                    particle.position.x = info[i][0];
-                    particle.position.y = info[i][1];
-                    particle.position.z = info[i][2];
-
-                    //Add the new particle to the scene
-                    scene.addObject(particle);
-
-                    //Add the particle position into the geometry object
-                    geometry.vertices.push(new THREE.Vertex(particle.position));
-
-                    //Create the second point
-                    particle = new THREE.Particle(material);
-                    particle.position.x = info[i][3];
-                    particle.position.y = info[i][4];
-                    particle.position.z = info[i][5];
-
-                    //Add the new particle to the scene
-                    scene.addObject(particle);
-
-                    //Add the particle position into the geometry object
-                    geometry.vertices.push(new THREE.Vertex(particle.position));
-
-                    //Create the line between points
-                    var line = new THREE.Line(geometry, new THREE.LineBasicMaterial({color: info[i][6], opacity: 0.8, linewidth: 1}));
-                    scene.addObject(line);
-                }
+                var mesh = new THREE.Mesh( gg, mm );
+                mesh.position.set(100, 100, 0);
+                scene.add( mesh );
             }
 
-            function draw_skeleton(skeleton) {
-
-				var line_material = new Object(),
-                    type, from_vectr, to_vector, geometry = new Object();
-
-                var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
-
-                geometry[connectivity_types[0]] = new THREE.Geometry();
-                geometry[connectivity_types[1]] = new THREE.Geometry();
-                geometry[connectivity_types[2]] = new THREE.Geometry();
-
-                line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 3 } );
-                line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0x00ff00, opacity: 1.0, linewidth: 6 } )
-                line_material[connectivity_types[2]] =new THREE.LineBasicMaterial( { color: 0x0000ff, opacity: 1.0, linewidth: 6 } )
-
-                var vertices = {
-                    5: {'x': 0, 'y': 0, 'z': 0},
-                    6: {'x': 300, 'y': 300, 'z': 300},
-                    7: {'x': 300, 'y': 300, 'z': 200},
-                    8: {'x': 200, 'y': 300, 'z': 200}
-                };
-
-                var connectivity = {
-                    5 : { 6: {'type': 'neurite'},
-                          7: {'type': 'presynaptic_to'}
-                        },
-                    7 : { 8: {'type': 'postsynaptic_to'}}
-                };
-
-                vertices = skeleton.vertices;
-                connectivity = skeleton.connectivity;
-
-                for (var fromkey in connectivity) {
-                    var to = connectivity[fromkey];
-                    for (var tokey in to) {
-
-                        type = connectivity_types[connectivity_types.indexOf(connectivity[fromkey][tokey]['type'])];
-
-                        from_vector = new THREE.Vector3(
-                                vertices[fromkey]['x'],
-                                vertices[fromkey]['y'],
-                                vertices[fromkey]['z'] );
-                        // transform
-                        from_vector.multiplyScalar( scale );
-                        geometry[type].vertices.push( new THREE.Vertex( from_vector ) );
-
-                        to_vector = new THREE.Vector3(
-                                vertices[tokey]['x'],
-                                vertices[tokey]['y'],
-                                vertices[tokey]['z'] );
-                        to_vector.multiplyScalar( scale );
-					    geometry[type].vertices.push( new THREE.Vertex( to_vector ) );
-                    }
-                }
-                for ( var i=0; i<connectivity_types.length; ++i ) {
-                    var line = new THREE.Line( geometry[connectivity_types[i]], line_material[connectivity_types[i]], THREE.LinePieces );
-                    scene.add( line );
-                }
-
+            function debugaxes2() {
+				var object = new THREE.Axes();
+				object.position.set( 0, 0, 0 );
+				object.scale.x = object.scale.y = object.scale.z = 0.5;
+				scene.add( object );
             }
 
             function draw_grid() {
@@ -345,8 +313,8 @@
 
 				}
 
-				var line = new THREE.Line( geometry, line_material, THREE.LinePieces );
-				scene.add( line );
+				grid_lines = new THREE.Line( geometry, line_material, THREE.LinePieces );
+				scene.add( grid_lines );
             }
 
 			function init() {
@@ -358,13 +326,8 @@
 				camera.position.z = 50;
 
 				scene = new THREE.Scene();
+
 				//scene.fog = new THREE.FogExp2( 0x000000, 0.0007 );
-
-                // geometry = new THREE.CubeGeometry( 200, 200, 200 );
-                // material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
-
-                // mesh = new THREE.Mesh( geometry, material );
-                // scene.add( mesh );
 
 				renderer = new THREE.WebGLRenderer();
 				renderer.setSize( window.innerWidth, window.innerHeight );

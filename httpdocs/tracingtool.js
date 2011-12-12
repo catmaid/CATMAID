@@ -555,14 +555,16 @@ function TracingTool()
 
 }
 
-TracingTool.goToNearestInNeuron = function(neuronID) {
-  requestQueue.register("model/node.nearest.php", "GET", {
+TracingTool.goToNearestInNeuron = function(type, objectID) {
+  parameters = {
     pid: project.id,
     x: project.x,
     y: project.y,
     z: project.z,
-    neuron_id: neuronID
-  }, function (status, text) {
+  };
+  parameters[type + '_id'] = objectID;
+  requestQueue.register("model/node.nearest.php", "GET",
+                        parameters, function (status, text) {
     var data;
     if (status !== 200) {
       alert("Finding the nearest node failed with HTTP status code: "+status);
@@ -615,7 +617,7 @@ TracingTool.search = function()
             actionLink.attr({'id': ''+data[i].id});
             actionLink.attr({'href':''});
             actionLink.click(function() {
-              TracingTool.goToNearestInNeuron(parseInt($(this).attr('id')));
+              TracingTool.goToNearestInNeuron('neuron', parseInt($(this).attr('id')));
               return false;
             });
             actionLink.text("Go to nearest node");

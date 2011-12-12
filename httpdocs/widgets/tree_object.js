@@ -151,6 +151,15 @@ var ObjectTree = new function()
             };
           } else if (type_of_node === "neuron") {
             menu = {
+              "select_nearest": {
+                "separator_before": false,
+                "separator_after": false,
+                "label": "Select nearest node",
+                "action": function (obj) {
+                  var neuronid = obj.attr("id").replace("node_", "");
+                  TracingTool.goToNearestInNeuron('neuron', neuronid);
+                }
+              },
   /*
             "create_skeleton" : {
               "separator_before"	: false,
@@ -231,6 +240,15 @@ var ObjectTree = new function()
                     }
                   });
 
+                }
+              },
+              "select_nearest": {
+                "separator_before": false,
+                "separator_after": false,
+                "label": "Select nearest node",
+                "action": function (obj) {
+                  var skelid = obj.attr("id").replace("node_", "");
+                  TracingTool.goToNearestInNeuron('skeleton', skelid);
                 }
               },
               "show": {

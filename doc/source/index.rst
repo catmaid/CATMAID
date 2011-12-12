@@ -2,7 +2,7 @@
    sphinx-quickstart on Sat Dec 10 20:48:29 2011.
 Welcome to CATMAID
 ==================
-Collaborative Annotation Toolkit for Massive Amounts of Image Data
+The **C** ollaborative **A** nnotation **T** oolkit for **M** assive **A** mounts of **I** mage **D** ata
 
 **Features:**
 
@@ -12,24 +12,8 @@ Collaborative Annotation Toolkit for Massive Amounts of Image Data
 - overlay display
 - multiple stack display
 - collaborative annotation
+- Neuron Catalog
 - WebGL neuron viewer
-
-Who uses it?
-------------
-Running instances around the globe
-
-- `Swiss INCF node <http://incf.ini.uzh.ch/catmaid/>`_
-- `Open Connectome Project <http://openconnectomeproject.org>`_
-- INCF CATMAID-in-a-box
-- `Max planck ... <http://fly.mpi-cbg.de/dev/>`_
-
-Community
----------
-- `Google groups <http://groups.google.com/group/CATMAID>`_
-
-Publications
-------------
-- `CATMAID: collaborative annotation toolkit for massive amounts of image data <http://bioinformatics.oxfordjournals.org/content/25/15/1984.abstract>`_
 
 Contents
 --------
@@ -37,9 +21,40 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   introduction
+   screenshots
+   tracing_neurons
+   othertools
+   
    installation
    djangoinstall
-   tracing_neurons
    dbmigration
-   othertools
 
+Who uses it?
+------------
+Running instances around the globe
+
+- `Swiss INCF node <http://incf.ini.uzh.ch/catmaid/>`_
+- `Open Connectome Project <http://openconnectomeproject.org>`_
+- `INCF CATMAID-in-a-box <https://github.com/wholeslide/catmaid_in_a_box>`_
+- `MPI-CBG, Dresden <http://fly.mpi-cbg.de/dev/>`_
+
+Publications
+------------
+- `CATMAID: collaborative annotation toolkit for massive amounts of image data <http://bioinformatics.oxfordjournals.org/content/25/15/1984.abstract>`_
+
+Funding
+-------
+- INCF Swiss Node, Zürich, Switzerland
+- Pavel Tomančák, MPI-CBG, Dresden, Germany
+- Albert Cardona, Uni/ETH, Zürich, Switzerland
+..  INI, JFRC
+
+Developers
+----------
+- Mark Longair
+- Stephan Saalfeld
+- Stephan Gerhard
+- Albert Cardona
+
+see `commit log statistics <https://github.com/acardona/CATMAID/contributors>`_

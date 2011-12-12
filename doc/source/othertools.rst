@@ -1,5 +1,5 @@
-Other tools
-===========
+Other similar tools
+===================
 
 Web-based image viewer
 ----------------------
@@ -7,6 +7,10 @@ Web-based image viewer
 * `Biological Image Viewer Kitware <http://www.cmake.org/Wiki/index.php?title=IMServer:Demos&oldid=39560>`_
 * `iConnectome <http://www.mouseconnectome.org/iConnectome/>`_
 * `FlyBrain <http://flybrain.inf.ed.ac.uk/site/stacks/>`_
+
+iPad Apps
+---------
+* `WholeSlide <http://wholeslide.com/>`_
 
 Desktop-based annotation/reconstruction software
 ------------------------------------------------

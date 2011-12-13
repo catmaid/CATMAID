@@ -147,11 +147,11 @@ function Navigator()
 		{
 			if ( w > 0 )
 			{
-				self.slider_z.move( -1 );
+				self.slider_z.move( 1 );
 			}
 			else
 			{
-				self.slider_z.move( 1 );
+				self.slider_z.move( -1 );
 			}
 		}
 		return false;
@@ -166,11 +166,11 @@ function Navigator()
 			{
 				if ( w > 0 )
 				{
-					self.slider_z.move( -1 );
+					self.slider_z.move( 1 );
 				}
 				else
 				{
-					self.slider_z.move( 1 );
+					self.slider_z.move( -1 );
 				}
 			}
 			return false;

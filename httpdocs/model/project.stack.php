@@ -49,7 +49,8 @@ try {
         "stack"."dimension" AS "dimension",
         "stack"."resolution" AS "resolution",
         "stack"."image_base" AS "image_base",
-        "stack"."trakem2_project" AS "trakem2_project"
+        "stack"."trakem2_project" AS "trakem2_project",
+        "stack"."min_zoom_level" AS "min_zoom_level"
         
       FROM "project" LEFT JOIN "project_user"
           ON "project"."id" = "project_user"."project_id" INNER JOIN "project_stack"

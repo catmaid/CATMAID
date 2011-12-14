@@ -17,3 +17,4 @@ Screenshots
 
    WebGL Viewer
 
+Integration with IPython and Fos (prototype)

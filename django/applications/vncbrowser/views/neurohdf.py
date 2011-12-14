@@ -13,6 +13,8 @@ except ImportError:
     pass
 from contextlib import closing
 from random import choice
+import os
+import sys
 
 # This file defines constants used to correctly define the metadata for NeuroHDF microcircuit data
 
@@ -67,9 +69,9 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
         treenode_xyz[i,2] = tn.location.z
         if not tn.parent_id is None:
             treenode_parentid[i] = tn.parent_id
-            treenode_type[i] = neurohdf.VerticesTypeSkeletonNode['id']
+            treenode_type[i] = VerticesTypeSkeletonNode['id']
         else:
-            treenode_type[i] = neurohdf.VerticesTypeSkeletonRootNode['id']
+            treenode_type[i] = VerticesTypeSkeletonRootNode['id']
             parentrow = i
         treenode_id[i] = tn.id
         treenode_radius[i] = tn.radius
@@ -83,18 +85,15 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
     for i in range(treenode_count):
         if i == parentrow:
             continue
-        treenode_connectivity_type[row_count] = neurohdf.ConnectivityNeurite['id']
+        treenode_connectivity_type[row_count] = ConnectivityNeurite['id']
         treenode_connectivity[row_count,0] = treenode_id[i]
         treenode_connectivity[row_count,1] = treenode_parentid[i]
         row_count += 1
 
     qs_tc = TreenodeConnector.objects.filter(
-        treenode__treenodeclassinstance__class_instance__id=skeleton_id,
-        treenode__treenodeclassinstance__relation__relation_name='element_of',
-        treenode__treenodeclassinstance__class_instance__class_column__class_name='skeleton',
         project=project_id,
+        skeleton=skeleton_id,
         relation__relation_name__endswith = 'synaptic_to',
-        treenode__in=list(treenode_id)
     ).select_related('treenode', 'connector', 'relation')
 
     treenode_connector_connectivity=[]; treenode_connector_connectivity_type=[]
@@ -102,10 +101,10 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
     found_synapse=False
     for tc in qs_tc:
         if tc.relation.relation_name == 'presynaptic_to':
-            treenode_connector_connectivity_type.append( neurohdf.ConnectivityPresynaptic['id'] )
+            treenode_connector_connectivity_type.append( ConnectivityPresynaptic['id'] )
             found_synapse=True
         elif tc.relation.relation_name == 'postsynaptic_to':
-            treenode_connector_connectivity_type.append( neurohdf.ConnectivityPostsynaptic['id'] )
+            treenode_connector_connectivity_type.append( ConnectivityPostsynaptic['id'] )
             found_synapse=True
         else:
             print >> std.err, "non-synaptic relation found: ", tc.relation.relation_name
@@ -117,7 +116,7 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
         cn_confidence.append( tc.connector.confidence )
         cn_userid.append( tc.connector.user_id )
         cn_radius.append( 0 ) # default because no radius for connector
-        cn_type.append( neurohdf.VerticesTypeConnectorNode['id'] )
+        cn_type.append( VerticesTypeConnectorNode['id'] )
 
     data = {'vert':{},'conn':{}}
     # check if we have synaptic connectivity at all

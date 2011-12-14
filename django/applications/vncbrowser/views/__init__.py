@@ -29,3 +29,5 @@ from catmaid_replacements import root_for_skeleton
 from catmaid_replacements import stats
 from catmaid_replacements import stats_summary
 from catmaid_replacements import node_list
+
+from neurohdf import skeleton_neurohdf

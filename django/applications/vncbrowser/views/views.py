@@ -14,6 +14,7 @@ import re
 import sys
 from urllib import urlencode
 
+
 @catmaid_login_required
 def index(request, **kwargs):
     all_neurons, search_form = get_form_and_neurons(request,
@@ -180,6 +181,8 @@ def lines_delete(request, project_id=None, logged_in_user=None):
     return HttpResponseRedirect(reverse('vncbrowser.views.view',
                                         kwargs={'neuron_id':neuron.id,
                                                 'project_id':p.id}))
+
+
 
 def get_swc_string(treenodes_qs):
     all_rows = []

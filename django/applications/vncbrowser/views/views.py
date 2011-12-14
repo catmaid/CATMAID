@@ -248,12 +248,9 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
                 }
 
     qs_tc = TreenodeConnector.objects.filter(
-        treenode__treenodeclassinstance__class_instance__id=skeleton_id,
-        treenode__treenodeclassinstance__relation__relation_name='element_of',
-        treenode__treenodeclassinstance__class_instance__class_column__class_name='skeleton',
         project=project_id,
         relation__relation_name__endswith = 'synaptic_to',
-        treenode__in=list(vertices.keys())
+        skeleton__in=[skeleton_id]
     ).select_related('treenode', 'connector', 'relation')
 
     for tc in qs_tc:

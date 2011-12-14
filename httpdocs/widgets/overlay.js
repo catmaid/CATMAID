@@ -341,6 +341,27 @@ var SkeletonAnnotations = new function()
       }
     }
 
+    this.tagATNwithTODO = function( label ) {
+      requestQueue.register("model/label.update.php", "POST", {
+        pid: project.id,
+        nid: atn.id,
+        ntype: atn.type,
+        tags: label
+      }, function (status, text, xml) {
+        if (status === 200) {
+          if (text && text !== " ") {
+            var e = $.parseJSON(text);
+            if (e.error) {
+              alert(e.error);
+            } else {
+              self.updateNodes();
+            }
+          }
+        }
+      });
+
+    }
+
     this.tagATN = function () {
       // tagbox from
       // http://blog.crazybeavers.se/wp-content/Demos/jquery.tag.editor/
@@ -1414,6 +1435,20 @@ var SkeletonAnnotations = new function()
           self.tagATN();
         } else {
           alert('Need to activate a treenode or connector before tagging!');
+        }
+        break;
+      case "tagTODO":
+        if (atn != null) {
+          self.tagATNwithTODO( 'TODO' );
+        } else {
+          alert('Need to activate a treenode or connector before tagging with TODO!');
+        }
+        break;
+      case "tagTODOremove":
+        if (atn != null) {
+          self.tagATNwithTODO( '' );
+        } else {
+          alert('Need to activate a treenode or connector before removing TODO tag!');
         }
         break;
       case "selectnearestnode":

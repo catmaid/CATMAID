@@ -478,7 +478,22 @@ function TracingTool()
     },
     run: function (e) {
       if (!(e.ctrlKey || e.metaKey)) {
-	tracingLayer.svgOverlay.tracingCommand('tagging');
+	      tracingLayer.svgOverlay.tracingCommand('tagging');
+      }
+      return true;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Add TODO Tag (Shift: Remove) for the active node",
+    keyShortcuts: {
+      "L": [ 76 ]
+    },
+    run: function (e) {
+      if (e.ctrlKey || e.metaKey || e.shiftKey) {
+        tracingLayer.svgOverlay.tracingCommand('tagTODOremove');
+      } else {
+        tracingLayer.svgOverlay.tracingCommand('tagTODO');
       }
       return true;
     }

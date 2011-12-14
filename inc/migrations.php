@@ -746,6 +746,18 @@ EOMIGRATION
 		TRUE
 ),
 
+    '2011-12-13T17:21:03' => new Migration(
+        'Add minimum zoom level information to stack table',
+        'ALTER TABLE stack ADD COLUMN min_zoom_level integer;
+         UPDATE stack SET min_zoom_level = -1;
+         ALTER TABLE stack ALTER COLUMN min_zoom_level SET NOT NULL;'
+),
+
+	'2011-12-14T13:42:27' => new Migration(
+		'Set a default for the min_zoom_level column of stack',
+		'ALTER TABLE stack ALTER COLUMN min_zoom_level SET DEFAULT -1;'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

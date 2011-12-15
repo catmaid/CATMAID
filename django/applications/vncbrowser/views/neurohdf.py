@@ -51,9 +51,14 @@ ConnectivityPostsynaptic = {
 
 def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
     # retrieve all treenodes for a given skeleton
-    qs = Treenode.objects.filter(
-        skeleton=skeleton_id,
-        project=project_id).order_by('id')
+
+    if skeleton_id is None:
+        qs = Treenode.objects.filter(
+            project=project_id).order_by('id')
+    else:
+        qs = Treenode.objects.filter(
+            skeleton=skeleton_id,
+            project=project_id).order_by('id')
 
     treenode_count = qs.count()
     treenode_xyz = np.zeros( (treenode_count, 3), dtype = np.float32 )
@@ -63,41 +68,58 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
     treenode_confidence = np.zeros( (treenode_count,), dtype = np.uint32 )
     treenode_userid = np.zeros( (treenode_count,), dtype = np.uint32 )
     treenode_type = np.zeros( (treenode_count,), dtype = np.uint32 )
+    treenode_skeletonid = np.zeros( (treenode_count,), dtype = np.uint32 )
+
+    treenode_connectivity = np.zeros( (treenode_count, 2), dtype = np.uint32 )
+    treenode_connectivity_type = np.zeros( (treenode_count,), dtype = np.uint32 )
+    treenode_connectivity_skeletonid = np.zeros( (treenode_count,), dtype = np.uint32 )
+
+    row_count = 0
+    parents = 0
     for i,tn in enumerate(qs):
         treenode_xyz[i,0] = tn.location.x
         treenode_xyz[i,1] = tn.location.y
         treenode_xyz[i,2] = tn.location.z
-        if not tn.parent_id is None:
-            treenode_parentid[i] = tn.parent_id
-            treenode_type[i] = VerticesTypeSkeletonNode['id']
-        else:
-            treenode_type[i] = VerticesTypeSkeletonRootNode['id']
-            parentrow = i
         treenode_id[i] = tn.id
         treenode_radius[i] = tn.radius
         treenode_confidence[i] = tn.confidence
         treenode_userid[i] = tn.user_id
+        treenode_skeletonid[i] = tn.skeleton_id
 
-    # Get id-based connectivity
-    treenode_connectivity = np.zeros( (treenode_count-1, 2), dtype = np.uint32 )
-    treenode_connectivity_type = np.zeros( (treenode_count-1,), dtype = np.uint32 )
-    row_count = 0
-    for i in range(treenode_count):
-        if i == parentrow:
-            continue
-        treenode_connectivity_type[row_count] = ConnectivityNeurite['id']
-        treenode_connectivity[row_count,0] = treenode_id[i]
-        treenode_connectivity[row_count,1] = treenode_parentid[i]
-        row_count += 1
+        if not tn.parent_id is None:
+            treenode_parentid[i] = tn.parent_id
+            treenode_type[i] = VerticesTypeSkeletonNode['id']
 
-    qs_tc = TreenodeConnector.objects.filter(
-        project=project_id,
-        skeleton=skeleton_id,
-        relation__relation_name__endswith = 'synaptic_to',
-    ).select_related('treenode', 'connector', 'relation')
+            # only here save it and increment the row_count
+            treenode_connectivity_type[row_count] = ConnectivityNeurite['id']
+            treenode_connectivity_skeletonid[row_count] = treenode_skeletonid[i]
+            treenode_connectivity[row_count,0] = treenode_id[i]
+            treenode_connectivity[row_count,1] = treenode_parentid[i]
+            row_count += 1
+
+        else:
+            treenode_type[i] = VerticesTypeSkeletonRootNode['id']
+            parents+=1
+
+    # correct for too many rows because of empty root relationship
+    treenode_connectivity = treenode_connectivity[:-parents,:]
+    treenode_connectivity_type = treenode_connectivity_type[:-parents]
+    treenode_connectivity_skeletonid = treenode_connectivity_skeletonid[:-parents]
+
+    if skeleton_id is None:
+        qs_tc = TreenodeConnector.objects.filter(
+            project=project_id,
+            relation__relation_name__endswith = 'synaptic_to',
+        ).select_related('treenode', 'connector', 'relation')
+    else:
+        qs_tc = TreenodeConnector.objects.filter(
+            project=project_id,
+            skeleton=skeleton_id,
+            relation__relation_name__endswith = 'synaptic_to',
+        ).select_related('connector', 'relation__relation_name')
 
     treenode_connector_connectivity=[]; treenode_connector_connectivity_type=[]
-    cn_type=[]; cn_xyz=[]; cn_id=[]; cn_confidence=[]; cn_userid=[]; cn_radius=[]
+    cn_type=[]; cn_xyz=[]; cn_id=[]; cn_confidence=[]; cn_userid=[]; cn_radius=[]; cn_skeletonid=[]
     found_synapse=False
     for tc in qs_tc:
         if tc.relation.relation_name == 'presynaptic_to':
@@ -109,14 +131,15 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
         else:
             print >> std.err, "non-synaptic relation found: ", tc.relation.relation_name
             continue
-        treenode_connector_connectivity.append( [tc.treenode.id,tc.connector.id] )
+        treenode_connector_connectivity.append( [tc.treenode_id,tc.connector_id] ) # !!!
         # also need other connector node information
         cn_xyz.append( [tc.connector.location.x, tc.connector.location.y, tc.connector.location.z] )
-        cn_id.append( tc.connector.id )
+        cn_id.append( tc.connector_id )
         cn_confidence.append( tc.connector.confidence )
         cn_userid.append( tc.connector.user_id )
         cn_radius.append( 0 ) # default because no radius for connector
         cn_type.append( VerticesTypeConnectorNode['id'] )
+        cn_skeletonid.append( tc.skeleton_id )
 
     data = {'vert':{},'conn':{}}
     # check if we have synaptic connectivity at all
@@ -129,11 +152,15 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
             'userid': np.hstack((treenode_userid, np.array(cn_userid, dtype=np.uint32).ravel() )),
             'radius': np.hstack((treenode_radius, np.array(cn_radius, dtype=np.int32).ravel() ))
         }
+       # print np.array(cn_skeletonid, dtype=np.uint32)
         data['conn'] = {
             'id': np.vstack((treenode_connectivity, np.array(treenode_connector_connectivity, dtype=np.uint32)) ),
             'type': np.hstack((treenode_connectivity_type,
-                               np.array(treenode_connector_connectivity_type, dtype=np.uint32).ravel() ))
+                               np.array(treenode_connector_connectivity_type, dtype=np.uint32).ravel() )),
+            'skeletonid': np.hstack((treenode_connectivity_skeletonid.T,
+                               np.array(cn_skeletonid, dtype=np.uint32).ravel() ) )
         }
+
     else:
         data['vert'] = {
             'id': treenode_id,
@@ -145,7 +172,8 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
         }
         data['conn'] = {
             'id': treenode_connectivity,
-            'type': treenode_connectivity_type
+            'type': treenode_connectivity_type,
+            'skeletonid': treenode_connectivity_skeletonid
         }
         # no connprop type
     return data
@@ -159,7 +187,7 @@ def get_temporary_neurohdf_filename_and_url():
 
 def create_neurohdf_file(filename, data):
 
-    with closing(h5py.File(filename, 'a')) as hfile:
+    with closing(h5py.File(filename, 'w')) as hfile:
         mcgroup = hfile.create_group("Microcircuit")
         vert = mcgroup.create_group("vertices")
         conn = mcgroup.create_group("connectivity")
@@ -183,6 +211,21 @@ def create_neurohdf_file(filename, data):
         # content_value = [0, 1, 2, 3]
         # content_name = ["blab", "blubb", ...]
 
+@catmaid_login_required
+def microcircuit_neurohdf(request, project_id=None, logged_in_user=None):
+    """ Export the complete microcircuit connectivity to NeuroHDF
+    """
+    data=get_skeleton_as_dataarray(project_id)
+    neurohdf_filename,neurohdf_url=get_temporary_neurohdf_filename_and_url()
+    create_neurohdf_file(neurohdf_filename, data)
+
+    print >> sys.stderr, neurohdf_filename,neurohdf_url
+    result = {
+        'format': 'NeuroHDF',
+        'format_version': 1.0,
+        'url': neurohdf_url
+    }
+    return HttpResponse(json.dumps(result), mimetype="text/plain")
 
 @catmaid_login_required
 def skeleton_neurohdf(request, project_id=None, skeleton_id=None, logged_in_user=None):

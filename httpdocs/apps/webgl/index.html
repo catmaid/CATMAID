@@ -54,6 +54,53 @@
             var translate_z = $.url().param('translate_z') ? $.url().param('translate_z') : 0.0;
             var project_id = $.url().param('project_id');
             var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
+            var controls;
+            var clock = new THREE.Clock();
+            
+            init();
+            animate();
+            debugaxes2();
+            draw_grid();
+            create_activenode();
+
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				scene = new THREE.Scene();
+
+				//scene.fog = new THREE.FogExp2( 0x000000, 0.0007 );
+
+				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 3000 );
+                camera.position.set( -50, 25, 50 );
+				// camera.position.z = 500;
+/*
+                var ne = new THREE.Vector3(100,0,4010);
+                camera.lookAt( ne );
+*/
+                controls = new THREE.FirstPersonControls( camera );
+                controls.movementSpeed = 70;
+                controls.lookSpeed = 0.05;
+                controls.noFly = false;
+                controls.lookVertical = true;
+
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				container.appendChild( stats.domElement );
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+				document.addEventListener( 'touchmove', onDocumentTouchMove, false );
+
+			}
 
             // A namespace for the WebGL viewer
             var WebGLViewer = new function()
@@ -150,8 +197,8 @@
 
                             from_vector = new THREE.Vector3(
                                     this.original_vertices[fromkey]['x'],
-                                    this.original_vertices[fromkey]['y'],
-                                    this.original_vertices[fromkey]['z'] );
+                                    -this.original_vertices[fromkey]['y'],
+                                    -this.original_vertices[fromkey]['z'] );
 
                             if( min_x === undefined ) {
                                 min_x = this.original_vertices[fromkey]['x'];
@@ -178,8 +225,8 @@
 
                             to_vector = new THREE.Vector3(
                                     this.original_vertices[tokey]['x'],
-                                    this.original_vertices[tokey]['y'],
-                                    this.original_vertices[tokey]['z'] );
+                                    -this.original_vertices[tokey]['y'],
+                                    -this.original_vertices[tokey]['z'] );
                             
                             // transform
                             // to_vector.add( translate_x, translate_y, translate_z );
@@ -192,7 +239,8 @@
                     console.log("min/max x,y,z", min_x, max_x, min_y, max_y, min_z, max_z);
 
                     this.updateCompositeActor();
-                    this.translate( -(max_x+min_x)/2.*scale, -(max_y+min_y)/2.*scale, -(max_z+min_z)/2.*scale );
+                    this.translate( (max_x+min_x)/2.*scale, (max_y+min_y)/2.*scale, (max_z+min_z)/2.*scale );
+
 
                 }
 
@@ -285,13 +333,6 @@
 
             }
 
-            init();
-            animate();
-            debugaxes2();
-            draw_grid();
-            create_activenode();
-            
-            WebGLViewer.fetchSkeleton( $.url().param('skeleton_id') );
 
             // the active node as a sphere
             function create_activenode(  )
@@ -305,9 +346,11 @@
                 var gg = new THREE.CubeGeometry( 10, 10, 10 );
                 var mm = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
 
-                var mesh = new THREE.Mesh( gg, mm );
+                /*var mesh = new THREE.Mesh( gg, mm );
                 mesh.position.set(100, 100, 0);
-                scene.add( mesh );
+                scene.add( mesh );*/
+
+
             }
 
             function debugaxes2() {
@@ -322,7 +365,7 @@
 
 				var line_material = new THREE.LineBasicMaterial( { color: 0xffffff, opacity: 0.2 } ),
 					geometry = new THREE.Geometry(),
-					floor = -75, step = 25;
+					floor = 0, step = 25;
 
 				for ( var i = 0; i <= 40; i ++ ) {
 
@@ -338,33 +381,7 @@
 				scene.add( grid_lines );
             }
 
-			function init() {
-
-				container = document.createElement( 'div' );
-				document.body.appendChild( container );
-
-				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 3000 );
-				camera.position.z = 50;
-
-				scene = new THREE.Scene();
-
-				//scene.fog = new THREE.FogExp2( 0x000000, 0.0007 );
-
-				renderer = new THREE.WebGLRenderer();
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				container.appendChild( renderer.domElement );
-
-				stats = new Stats();
-				stats.domElement.style.position = 'absolute';
-				stats.domElement.style.top = '0px';
-				container.appendChild( stats.domElement );
-
-				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-				document.addEventListener( 'touchstart', onDocumentTouchStart, false );
-				document.addEventListener( 'touchmove', onDocumentTouchMove, false );
-
-			}
-
+            WebGLViewer.fetchSkeleton( $.url().param('skeleton_id') );
 
 			function onDocumentMouseMove( event ) {
 				mouseX = event.clientX - windowHalfX;
@@ -393,9 +410,9 @@
 			}
 
 			function render() {
-                camera.position.x += ( mouseX - camera.position.x ) * 0.05;
-				camera.position.y += ( - mouseY - camera.position.y ) * 0.05;
-				camera.lookAt( scene.position );
+                var delta = clock.getDelta();
+                controls.update( delta );
+                renderer.clear();
 				renderer.render( scene, camera );
 			}
 

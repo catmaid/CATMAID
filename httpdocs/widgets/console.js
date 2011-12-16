@@ -54,9 +54,10 @@ function Console() {
 
   this.replaceLast = function (obj) {
     var sp = document.createElement("pre");
-    if (typeof obj == "string") sp.appendChild(document.createTextNode(obj));
+    if (typeof obj == "string")
+      sp.appendChild(document.createTextNode(obj));
     else
-    sp.appendChild(document.createTextNode(toStr(obj)));
+      sp.appendChild(document.createTextNode(toStr(obj)));
     view.replaceChild(sp, view.firstChild);
     return;
   }

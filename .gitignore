@@ -1,3 +1,4 @@
+sphinx-doc/build
 django/projects/mysite/settings_apache.py
 django/projects/mysite/django.wsgi
 django/projects/mysite/settings.py

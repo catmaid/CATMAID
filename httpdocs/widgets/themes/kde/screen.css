@@ -33,6 +33,12 @@ p, dl
 {
 	margin:1.5em 16px 0.5em 20px;
 }
+
+#project_filter_form
+{
+	margin:1.5em 16px 0.5em 20px;
+}
+
 dt,
 dd
 {

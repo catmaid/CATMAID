@@ -237,7 +237,7 @@ var SkeletonAnnotations = new function()
                   message = "Activated treenode with id " + node.id + " and skeleton id " + node.skeleton_id;
                 for (i = 0; i < data.length; ++i) {
                   d = data[i];
-                  message += " <i>part_of</i> <strong>"+d.name+"</strong>:"+d.class;
+                  message += " <i>part_of</i> [<strong>"+d.name+"</strong>]";
                 }
                 statusBar.replaceLastHTML(message);
                 }

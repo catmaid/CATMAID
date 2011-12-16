@@ -1,1 +1,1 @@
-Judith Moosburner <jmoosburner@eaternity.ch> - Iconset for TreeView
+Judith Moosburner - Design of the Iconset for Object Tree

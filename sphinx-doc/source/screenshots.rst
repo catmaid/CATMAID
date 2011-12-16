@@ -3,8 +3,21 @@ Screenshots
 
 .. figure:: _static/screenshots/ui.png
 
-   The CATMAID User Interface with skeleton annnotations
+   The CATMAID User Interface with skeleton annnotations and tags
 
+.. figure:: _static/screenshots/objecttree.png
+
+   The Object Tree for semantic annotations
+
+
+.. figure:: _static/screenshots/tables.png
+
+   The Skeleton Node and Connector Table
+
+
+.. figure:: _static/screenshots/stats.png
+
+   The Statistics Widget
 
 .. figure:: _static/screenshots/ui.png
 
@@ -15,6 +28,8 @@ Screenshots
    :scale: 50 %
    :alt: WebGL Viewer
 
-   WebGL Viewer
+   WebGL Neuronal Morphology Viewer
 
-Integration with IPython and Fos (prototype)
+.. figure:: _static/screenshots/ipythonapp.png
+
+   Integration with IPython and Fos (prototype)

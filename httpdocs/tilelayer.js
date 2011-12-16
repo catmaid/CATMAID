@@ -81,7 +81,7 @@ function TileLayer(
 		 */
 		if (zoom < 0) {
 			artificialZoom = true;
-			mag = -( zoom - 1 );
+			mag = Math.pow(2, -zoom);
 			zoom = 0;
 		}
 

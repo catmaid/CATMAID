@@ -62,6 +62,12 @@ function Console() {
     return;
   }
 
+  this.replaceLastHTML = function (html) {
+    var e = document.createElement("pre");
+    e.innerHTML = html;
+    view.replaceChild(e, view.firstChild);
+  }
+
   this.getView = function () {
     return view;
   }

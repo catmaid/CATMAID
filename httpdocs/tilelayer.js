@@ -216,7 +216,7 @@ function TileLayer(
 					// TODO: use this for the new tile naming scheme:
 					// tiles[ i ][ j ].alt = tileBaseName + stack.s + "/" + ( fr + i ) + "/" + ( fc + j );
 					tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
-					tiles[ i ][ j ].src = baseURL + tiles[ i ][ j ].alt + "." + fileExtension;
+					tiles[ i ][ j ].src = self.getTileURL( tiles[ i ][ j ].alt );
 				}
 				tiles[ i ][ j ].style.top = t + "px";
 				tiles[ i ][ j ].style.left = l + "px";
@@ -235,6 +235,13 @@ function TileLayer(
 		}
 		
 		return 2;
+	}
+
+	/**
+	 * Creates the URL for a tile.
+	 */
+	this.getTileURL = function(tileId) {
+		return baseURL + tileId + "." + fileExtension;
 	}
 	
 	this.resize = function( width, height )

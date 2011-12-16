@@ -19,7 +19,8 @@ Slider = function(
   max,      //!< the maximal value
   steps,    //!< number of steps or an array of values
   def,      //!< default value
-  onchange  //!< method to call
+  onchange,  //!< method to call
+  split     //!< split value
   )
 {
   /**
@@ -52,12 +53,28 @@ Slider = function(
     case SLIDER_VERTICAL:
       barTop.style.height = ( handlePos + handleTop ) + "px";
       barBottom.style.height = ( barSize - handlePos + handleBottom ) + "px";
+      // select CSS class
+      if (i < splitIndex) {
+        barTop.className = "vSliderBarTop";
+        barBottom.className = "vSliderBarBottom";
+      } else {
+        barTop.className = "vSliderBarTop_2";
+        barBottom.className = "vSliderBarBottom_2";
+      }
       break;
     case SLIDER_HORIZONTAL:
       var w = Math.floor( handlePos + handleSize / 2 );
       handle.style.left = ( handlePos + handleTop ) + "px";
       barTop.style.width = ( w + handleTop ) + "px";
       barBottom.style.width = ( barSize - w + handleSize + handleBottom ) + "px";
+      // select CSS class
+      if (i < splitIndex) {
+        barTop.className = "hSliderBarTop";
+        barBottom.className = "hSliderBarBottom";
+      } else {
+        barTop.className = "hSliderBarTop_2";
+        barBottom.className = "hSliderBarBottom_2";
+      }
       break;
     }
     self.val = values[ i ];
@@ -290,7 +307,8 @@ Slider = function(
     max,				//!< the maximal value
     steps,				//!< number of steps or an array of values
     def,				//!< default value
-    onchange			//!< method to call
+    onchange,			//!< method to call
+    split              //!< split value
   )
   {
     this.onchange = onchange;
@@ -309,6 +327,23 @@ Slider = function(
       values = steps;
       min = steps[ 0 ];
       max = steps[ steps.length - 1 ];
+    }
+
+    // was a split parameter passed?
+    if (split === undefined)
+    {
+      // disable splitting
+      splitIndex = values.length;
+    }
+    else
+    {
+      // set split index
+      splitIndex = isValue( split );
+      if (splitIndex == -1)
+      {
+          // disable splitting
+          splitIndex = values.length;
+      }
     }
     
     if ( ( typeof def ) != "undefined" )
@@ -336,7 +371,8 @@ Slider = function(
   var values;
   var ind = 0;  //!< the current index
   this.val;     //!< the current value
-  
+  var splitIndex = 0; //!< index where to change div class
+
   if ( !ui ) ui = new UI();
   
   var view = document.createElement( "div" );
@@ -476,5 +512,5 @@ Slider = function(
     catch ( error ) {}
   }
   
-  this.update( min, max, steps, def, onchange );
+  this.update( min, max, steps, def, onchange, split);
 }

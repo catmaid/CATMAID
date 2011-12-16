@@ -59,17 +59,19 @@ div.hSliderHandle
 }
 
 
-div.vSliderBarTop
+div.vSliderBarTop,
+div.vSliderBarTop_2
 {
 	margin:0px;
 	padding:0px;
 	width:100%;
 	height:50%;
-	background:url(bar_top.gif) no-repeat center top;
 	overflow:hidden;
+	background:url(bar_top.gif) no-repeat center top;
 }
 
-div.vSliderBarBottom
+div.vSliderBarBottom,
+div.vSliderBarBottom_2
 {
 	margin:0px;
 	padding:0px;
@@ -78,8 +80,8 @@ div.vSliderBarBottom
 	background:url(bar_bottom.gif) no-repeat center bottom;
 }
 
-
-div.hSliderBarTop
+div.hSliderBarTop,
+div.hSliderBarTop_2
 {
 	position:absolute;
 	top:0px;
@@ -88,11 +90,21 @@ div.hSliderBarTop
 	padding:0px;
 	width:50%;
 	height:100%;
-	background:url(hslider_bar_left_b.gif) no-repeat left center;
 	overflow:hidden;
 }
 
-div.hSliderBarBottom
+div.hSliderBarTop
+{
+	background:url(hslider_bar_left_b.gif) no-repeat left center;
+}
+
+div.hSliderBarTop_2
+{
+	background:url(hslider_bar_left_o.gif) no-repeat left center;
+}
+
+div.hSliderBarBottom,
+div.hSliderBarBottom_2
 {
 	position:absolute;
 	top:0px;

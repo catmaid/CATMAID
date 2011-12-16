@@ -224,6 +224,28 @@ var SkeletonAnnotations = new function()
           if (atn.skeleton_id !== node.skeleton_id) {
             // if we switched the skeleton, we need to reopen the object tree
             openSkeletonNodeInObjectTree(node);
+            // also update the status with the ancestry of that skeleton:
+            requestQueue.register("model/skeleton.ancestry.php", "POST", {
+              pid: project.id,
+              skeleton_id: node.skeleton_id
+            }, function (status, text) {
+              var data = $.parseJSON(text), message, i, d;
+              if (status === 200) {
+                if ('error' in data) {
+                  alert("There was an error fetching the ancestry of skeleton "+node.skeleton_id+":\n"+data.error);
+                } else {
+                  message = "Activated treenode with id " + node.id + " and skeleton id " + node.skeleton_id;
+                for (i = 0; i < data.length; ++i) {
+                  d = data[i];
+                  message += " <i>part_of</i> <strong>"+d.name+"</strong>:"+d.class;
+                }
+                statusBar.replaceLastHTML(message);
+                }
+              } else {
+                alert("Getting the ancestry of the skeleton "+node.skeleton_id+" failed with HTTP status code "+status);
+              }
+            });
+
           }
           atn.set(node);
           // refresh all widgets except for the object tree

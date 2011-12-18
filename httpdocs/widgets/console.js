@@ -7,6 +7,19 @@ function Console() {
   view.style.height = "35px";
   view.appendChild(document.createElement("pre"));
 
+  var coords = document.createElement("div");
+  coords.align = "right";
+  coords.style.fontFamily = "Courier; Sans-serif;";
+  coords.style.fontSize = "15px";
+  coords.style.marginTop="10px";
+  coords.style.marginRight="8px";
+  coords.appendChild(document.createTextNode(""));
+  view.appendChild(coords);
+  
+  this.printCoords = function (obj) {
+    coords.replaceChild(document.createTextNode(obj), coords.firstChild);
+  }
+
   var toStr = function (obj, ins) {
     if (typeof ins == "undefined") ins = "";
 

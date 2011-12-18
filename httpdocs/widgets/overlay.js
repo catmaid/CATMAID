@@ -1216,7 +1216,7 @@ var SkeletonAnnotations = new function()
         worldY = wc.worldTop + ((m.offsetY / stack.scale) * stack.resolution.y);
         lastX = worldX;
         lastY = worldY;
-        statusBar.replaceLast('['+worldX+', '+worldY+', '+project.coordinates.z+']');
+        statusBar.printCoords('['+worldX+', '+worldY+', '+project.coordinates.z+']');
         self.offsetXPhysical = worldX;
         self.offsetYPhysical = worldY;
       }

@@ -113,7 +113,8 @@ CREATE TABLE "overlay" (
     stack_id integer NOT NULL,
     title text NOT NULL,
     image_base text NOT NULL,
-    default_opacity integer DEFAULT 0 NOT NULL
+    default_opacity integer DEFAULT 0 NOT NULL,
+    file_extension text NOT NULL
 );
 CREATE SEQUENCE overlay_id_seq
     START WITH 1
@@ -176,7 +177,9 @@ CREATE TABLE stack (
     resolution double3d NOT NULL,
     image_base text NOT NULL,
     comment text,
-    trakem2_project boolean DEFAULT false NOT NULL
+    trakem2_project boolean DEFAULT false NOT NULL,
+    min_zoom_level integer DEFAULT (-1) NOT NULL,
+    file_extension text NOT NULL
 );
 COMMENT ON COLUMN stack.dimension IS 'pixel';
 COMMENT ON COLUMN stack.resolution IS 'nanometer per pixel';

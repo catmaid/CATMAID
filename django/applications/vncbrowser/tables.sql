@@ -179,7 +179,7 @@ CREATE TABLE stack (
     comment text,
     trakem2_project boolean DEFAULT false NOT NULL,
     min_zoom_level integer DEFAULT (-1) NOT NULL,
-    file_extension text NOT NULL
+    file_extension text DEFAULT 'jpg'::text NOT NULL
 );
 COMMENT ON COLUMN stack.dimension IS 'pixel';
 COMMENT ON COLUMN stack.resolution IS 'nanometer per pixel';

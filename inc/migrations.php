@@ -768,6 +768,11 @@ EOMIGRATION
          ALTER TABLE overlay ALTER COLUMN file_extension SET NOT NULL;"
 ),
 
+	'2011-12-20T13:42:27' => new Migration(
+		'Set file name extension to JPG by default',
+		"ALTER TABLE stack ALTER COLUMN file_extension SET DEFAULT 'jpg';"
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

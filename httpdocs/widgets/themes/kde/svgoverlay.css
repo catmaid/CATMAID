@@ -10,6 +10,18 @@ div.sliceView div.sliceSVGOverlay
  
 }
 
+div.sliceView div.webGLOverlay
+{
+    position:absolute;
+    top:0px;
+    left:0px;
+    margin:0px;
+    padding:0px;
+    /*cursor:pointer;
+  border:solid 2px #0000FF;*/
+
+}
+
 
 .tagEditor
 {

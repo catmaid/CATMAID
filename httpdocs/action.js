@@ -242,6 +242,18 @@ var editToolActions = [
 		}
 	}),
 
+    new Action({
+       helpText: "WebGL tool",
+       buttonID: 'edit_button_trace',
+       buttonName: 'trace',
+       keyShortcuts: {
+
+       },
+       run: function (e) {
+           project.setTool( new WebGLTool() );
+       }
+    }),
+
 	new Action({
 		helpText: "Tracing tool",
 		buttonID: 'edit_button_trace',

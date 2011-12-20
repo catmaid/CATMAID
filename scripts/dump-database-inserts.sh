@@ -4,7 +4,7 @@ if [ $# -ne 1 ]
 then
   echo "Usage: $0 <DATABASE-NAME>"
   exit 1
-fi  
+fi
 
 D=$(dirname $(readlink -nf $BASH_SOURCE))
 

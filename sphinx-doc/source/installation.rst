@@ -40,15 +40,15 @@ useful.  In short, you should do the following::
 
 phppgadmin is optional, but is suggested if you are not
 comfortable with interacting with PostgreSQL from a terminal.
-Update the password for your catmaid user in
-`/home/alice/catmaid/docs/createuser.sql`.  If you want the
-database to be called something other than `catmaid` you
-also change that in the lines beginning `CREATE DATABASE`
-and `\\c` in the same file.
 
-Then you should run the commands in that file as the postgres user::
+You can then create the database, some required functions and
+the database user by piping the output of the
+`scripts/createuser.sh` script to PostgreSQL.  The three
+parameters to that script, which you may wish to customize, are
+the database name, the database user name and the database
+user's password.  For example:
 
-	sudo -u postgres psql < docs/createuser.sql
+        scripts/createuser.sh | sudo -u postgres psql
 
 (On some systems you may get the the error `ERROR: language "plpgsql"
 already exists` which can be safely ignored.)

@@ -18,6 +18,7 @@ from views import skeleton_json
 from views import neuron_to_skeletons
 from views import multiple_presynaptic_terminals
 from views import goto_connector
+from views import export_wiring_diagram
 
 from catmaid_replacements import projects
 from catmaid_replacements import labels_all

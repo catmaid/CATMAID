@@ -2,7 +2,7 @@
 <html>
     
     <head>
-        <title>Wiring Diagram</title>
+        <title>Object Graph</title>
         
         <!-- JSON support for IE (needed to use JS API) -->
         <script type="text/javascript" src="./js/min/json2.min.js"></script>
@@ -48,7 +48,7 @@
                 var div_id = "cytoscapeweb";
 
                 // fetch data
-                var networ_json = synchFetch("../../dj/"+$.url().param('project_id')+"/wiringdiagram/json", null);
+                var networ_json = synchFetch("../../model/network.api/annotations.php", {pid : $.url().param('project_id')});
 
                 // initialization options
                 var options = {
@@ -70,17 +70,30 @@
                         shape: "ELLIPSE",
                         borderWidth: 1,
                         borderColor: "#a7a7a7",
-
+                        size: {
+                            defaultValue: 30,
+                            continuousMapper: { attrName: "weight", minValue: 25, maxValue: 75 }
+                        },
+                        color: {
+                            discreteMapper: {
+                                attrName: "type",
+                                entries: [
+                                    { attrValue: "neuron", value: "#85beff"},
+                                    { attrValue: "group", value: "#85be13" },
+                                    { attrValue: "skeleton", value: "#dddd00" },
+                                    { attrValue: "root", value: "#ff6b6b" },
+                                    { attrValue: "synapse", value: "#51c8ff" },
+                                    { attrValue: "presynaptic terminal", value: "#9783ff" },
+                                    { attrValue: "postsynaptic terminal", value: "#9783ff" }
+                                ]
+                            }
+                        },
                         labelHorizontalAnchor: "center",
                         labelFontSize: 12,
                         labelFontWeight: "bold"
                     },
                     edges: {
-                        //width: 3,
-                        width: {
-                            defaultValue: 1,
-                            continuousMapper: { attrName: "weight", minValue: 1, maxValue: 20 }
-                        },
+                        width: 3,
                         color: "#0B94B1",
                         labelFontSize: 10,
                         labelFontWeight: "bold"
@@ -93,11 +106,9 @@
                     
                     // show edge labels too
                     edgeLabelsVisible: true,
-
-                    nodeLabelsVisible: true,
                     
                     // let's try another layout
-                    layout: "Tree",
+                    layout: "ForceDirected",
                     
                     // set the style at initialisation
                     visualStyle: visual_style,

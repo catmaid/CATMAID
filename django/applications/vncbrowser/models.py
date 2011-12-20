@@ -387,6 +387,7 @@ class Treenode(models.Model):
     parent = models.ForeignKey('Treenode', null=True)
     radius = models.FloatField()
     confidence = models.IntegerField(default=5)
+    skeleton = models.ForeignKey(ClassInstance)
 
 class Connector(models.Model):
     class Meta:
@@ -440,6 +441,7 @@ class TreenodeConnector(models.Model):
     # Now new columns:
     treenode = models.ForeignKey(Treenode)
     connector = models.ForeignKey(Connector)
+    skeleton = models.ForeignKey(ClassInstance)
 
 class Session(models.Model):
     class Meta:

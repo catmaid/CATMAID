@@ -14,6 +14,7 @@ import re
 import sys
 from urllib import urlencode
 
+
 @catmaid_login_required
 def index(request, **kwargs):
     all_neurons, search_form = get_form_and_neurons(request,
@@ -181,6 +182,8 @@ def lines_delete(request, project_id=None, logged_in_user=None):
                                         kwargs={'neuron_id':neuron.id,
                                                 'project_id':p.id}))
 
+
+
 def get_swc_string(treenodes_qs):
     all_rows = []
     for tn in treenodes_qs:
@@ -222,6 +225,112 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, treenod
     else:
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
+
+def export_wiring_diagram(request, project_id=None):
+    # result dictionary: {connectorid: presyn_skeletonid}
+    tmp={}
+    result={}
+    # get the presynaptic connections
+    qs = TreenodeConnector.objects.filter(
+        project=project_id,
+        relation__relation_name = 'presynaptic_to'
+    )
+    for e in qs:
+        if not e.connector_id in tmp:
+            tmp[e.connector_id]=e.skeleton_id
+            result[e.skeleton_id]={}
+        else:
+            # connector with multiple presynaptic connections
+            pass
+
+    # get the postsynaptic connections
+    qs = TreenodeConnector.objects.filter(
+        project=project_id,
+        relation__relation_name = 'postsynaptic_to'
+    )
+    for e in qs:
+        if e.connector_id in tmp:
+            # an existing connector, so we add a connection
+            if e.skeleton_id in result[tmp[e.connector_id]]:
+                result[tmp[e.connector_id]][e.skeleton_id] += 1
+            else:
+                result[tmp[e.connector_id]][e.skeleton_id] = 1
+        else:
+            # connector with only postsynaptic connections
+            pass
+
+    nodes_tmp={}
+    edges=[]
+
+    for k,v in result.iteritems():
+
+        for kk,vv in v.iteritems():
+            edges.append(
+                {"id": str(k)+"_"+str(kk),
+                 "source": str(k),
+                 "target": str(kk),
+                 "weight": vv}
+            )
+
+            nodes_tmp[k]=None
+            nodes_tmp[kk]=None
+
+    nodes=[]
+    for k,v in nodes_tmp.iteritems():
+        nodes.append(
+                {
+                "id": str(k),
+                "label": "Skeleton "+str(k),
+                }
+        )
+
+    nodesDataSchema=[
+        {'name':'id','type':'string'},
+        {'name':'label','type':'string'},
+    ]
+    edgesDataSchema=[
+        {'name': 'id','type':'string'},
+        {'name': 'weight','type':'number'},
+        {'name': "directed", "type": "boolean", "defValue": True}
+    ]
+
+    data={
+        'dataSchema':{'nodes':nodesDataSchema,'edges':edgesDataSchema},
+        'data':{'nodes':nodes,'edges':edges}
+    }
+
+    json_return = json.dumps(data, sort_keys=True, indent=4)
+    return HttpResponse(json_return, mimetype='text/plain')
+
+def convert_annotations_to_networkx(project_id=None):
+
+    qs = ClassInstanceClassInstance.objects.filter(
+      relation__relation_name__in=['part_of', 'model_of'],
+      project=project_id,
+      class_instance_a__class_column__class_name__in=["group", "neuron", "skeleton"],
+      class_instance_b__class_column__class_name__in=["root", "group", "neuron", "skeleton"],
+      ).select_related("class_instance_a", "class_instance_b",
+                       "class_instance_a__class_column__class_name", "class_instance_b__class_column__class_name")
+
+    import networkx as nx
+    g=nx.DiGraph()
+
+    for e in qs:
+        if not e.class_instance_a.id in g:
+            g.add_node( e.class_instance_a.id, {"class": e.class_instance_a.class_column.class_name,
+                                                "name": e.class_instance_a.name} )
+        if not e.class_instance_b.id in g:
+            g.add_node( e.class_instance_b.id, {"class": e.class_instance_b.class_column.class_name,
+                                                "name": e.class_instance_b.name} )
+        g.add_edge( e.class_instance_b.id, e.class_instance_a.id ) # the part_of/model_of edge
+
+    # TODO: convert graph to json_graph: http://networkx.lanl.gov/reference/readwrite.json_graph.html
+    from networkx.readwrite import json_graph
+    data = json_graph.node_link_data(g)
+    json_return = json.dumps(data, sort_keys=True, indent=4)
+    return HttpResponse(json_return, mimetype='text/plain')
+
+
 def export_extended_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None, format=None):
     treenode_qs = get_treenodes_qs(project_id, skeleton_id, treenode_id)
 
@@ -248,12 +357,9 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
                 }
 
     qs_tc = TreenodeConnector.objects.filter(
-        treenode__treenodeclassinstance__class_instance__id=skeleton_id,
-        treenode__treenodeclassinstance__relation__relation_name='element_of',
-        treenode__treenodeclassinstance__class_instance__class_column__class_name='skeleton',
         project=project_id,
         relation__relation_name__endswith = 'synaptic_to',
-        treenode__in=list(vertices.keys())
+        skeleton__in=[skeleton_id]
     ).select_related('treenode', 'connector', 'relation')
 
     for tc in qs_tc:

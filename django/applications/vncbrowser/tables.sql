@@ -233,7 +233,8 @@ CREATE TABLE treenode_class_instance (
 INHERITS (relation_instance);
 CREATE TABLE treenode_connector (
     treenode_id bigint NOT NULL,
-    connector_id bigint NOT NULL
+    connector_id bigint NOT NULL,
+    skeleton_id bigint
 )
 INHERITS (relation_instance);
 CREATE TABLE "user" (
@@ -457,6 +458,8 @@ ALTER TABLE ONLY treenode_class_instance
     ADD CONSTRAINT treenode_class_instance_treenode_id_fkey FOREIGN KEY (treenode_id) REFERENCES treenode(id) ON DELETE CASCADE;
 ALTER TABLE ONLY treenode_class_instance
     ADD CONSTRAINT treenode_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+ALTER TABLE ONLY treenode_connector
+    ADD CONSTRAINT treenode_connector_skeleton_id_fkey FOREIGN KEY (skeleton_id) REFERENCES class_instance(id);
 ALTER TABLE ONLY treenode
     ADD CONSTRAINT treenode_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES treenode(id);
 ALTER TABLE ONLY treenode

@@ -96,6 +96,8 @@ while True:
     image_base = raw_input("Image base URL: ")
     comment = raw_input("Additional comments (can be HTML formatted): ")
     translation = raw_input("Translation of the stack in the world project coordinates as 3-tuple: ")
+    min_zoom_level = raw_input("Minimum zoom level [default: -1]: ")
+    file_extension = raw_input("File name extension for image tiles [default: jpg]: ")
     # trakem2_project = raw_input(": ")
 
     print("----")
@@ -105,16 +107,24 @@ while True:
     print("Image Base: {0}".format(image_base))
     print("Comment: {0}".format(comment))
     print("Translation: {0}".format(translation))
+    print("Min zoom level: {0}".format(min_zoom_level))
+    print("File extension: {0}".format(file_extension))
     print("----")
-    
+
+    if min_zoom_level is None or min_zoom_level == '':
+        min_zoom_level = str(-1)
+
+    if file_extension is None or file_extension == '':
+        file_extension = 'jpg'
+
     correct = raw_input("Is this information correct? [y]/n ")
 
     if correct in ('n', 'no', 'nop', 'nope'):
         continue
 
-    insert = 'INSERT INTO stack (title, dimension, resolution, image_base, comment) '
+    insert = 'INSERT INTO stack (title, dimension, resolution, image_base, comment, min_zoom_level, file_extension) '
     insert += 'VALUES (%s, %s, %s, %s, %s) RETURNING id'
-    c.execute(insert, (title, dimension, resolution, image_base, comment) )
+    c.execute(insert, (title, dimension, resolution, image_base, comment, min_zoom_level, file_extension) )
     stack_id = c.fetchone()[0]
 
     # update the project_stack table

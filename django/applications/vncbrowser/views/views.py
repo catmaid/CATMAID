@@ -254,7 +254,7 @@ def export_wiring_diagram(request, project_id=None):
     qs = Treenode.objects.filter(project=project_id).values('skeleton').annotate(Count('skeleton'))
     for e in qs:
         skeletons[ e['skeleton'] ]=e['skeleton__count']
-    print >> sys.stderr, 'skeletons', skeletons
+
     # get the postsynaptic connections
     qs = TreenodeConnector.objects.filter(
         project=project_id,
@@ -321,7 +321,7 @@ def export_wiring_diagram(request, project_id=None):
     }
 
     json_return = json.dumps(data, sort_keys=True, indent=4)
-    return HttpResponse(json_return, mimetype='text/plain')
+    return HttpResponse(json_return, mimetype='text/json')
 
 def convert_annotations_to_networkx(project_id=None):
 

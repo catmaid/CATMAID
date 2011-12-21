@@ -9,6 +9,7 @@ from vncbrowser.models import CELL_BODY_CHOICES, \
     Project, User, Treenode, TreenodeConnector, Connector
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
+from django.db.models import Count
 import json
 import re
 import sys
@@ -243,6 +244,12 @@ def export_wiring_diagram(request, project_id=None):
             # connector with multiple presynaptic connections
             pass
 
+    skeletons={}
+    qs = Treenode.objects.filter(project=project_id).values('skeleton').annotate(Count('skeleton'))
+    print >> sys.stderr, 'treenode count qs', qs
+    for e in qs:
+        skeletons[ e['skeleton'] ]=e['skeleton__count']
+
     # get the postsynaptic connections
     qs = TreenodeConnector.objects.filter(
         project=project_id,
@@ -250,6 +257,15 @@ def export_wiring_diagram(request, project_id=None):
     )
     for e in qs:
         if e.connector_id in tmp:
+
+            # limit the skeletons to include
+            LOWER_TREENODE_NUMBER_LIMIT=200
+            skeleton_id_from=tmp[e.connector_id]
+            skeleton_id_to=e.skeleton_id
+            if skeletons[skeleton_id_from] < LOWER_TREENODE_NUMBER_LIMIT or \
+                skeletons[skeleton_id_to] < LOWER_TREENODE_NUMBER_LIMIT:
+                continue
+
             # an existing connector, so we add a connection
             if e.skeleton_id in result[tmp[e.connector_id]]:
                 result[tmp[e.connector_id]][e.skeleton_id] += 1
@@ -265,6 +281,7 @@ def export_wiring_diagram(request, project_id=None):
     for k,v in result.iteritems():
 
         for kk,vv in v.iteritems():
+
             edges.append(
                 {"id": str(k)+"_"+str(kk),
                  "source": str(k),
@@ -281,12 +298,14 @@ def export_wiring_diagram(request, project_id=None):
                 {
                 "id": str(k),
                 "label": "Skeleton "+str(k),
+                'node_count': skeletons[k]
                 }
         )
 
     nodesDataSchema=[
         {'name':'id','type':'string'},
         {'name':'label','type':'string'},
+        {'name':'node_count','type':'number'},
     ]
     edgesDataSchema=[
         {'name': 'id','type':'string'},

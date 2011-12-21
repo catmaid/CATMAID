@@ -155,8 +155,8 @@ function TracingTool()
 	/**
 	 * unregister all stack related mouse and keyboard controls
 	 */
-	this.unregister = function()
-	{
+  this.unregister = function()
+  {
     // do it before calling the prototype destroy that sets stack to null
     if (self.prototype.stack) {
       inactivateBindings();
@@ -165,7 +165,7 @@ function TracingTool()
     // and the annotations would disappear
     //self.prototype.unregister();
     return;
-	}
+  }
 
 	/**
 	 * unregister all project related GUI control connections and event

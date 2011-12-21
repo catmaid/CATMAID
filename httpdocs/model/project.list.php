@@ -90,6 +90,7 @@ foreach ( $pprojects as $p )
 	if ( !isset( $projects[ $p[ 'pid' ] ] ) )
 	{
 		$projects[ $p[ 'pid' ] ] = array(
+				'pid'		=> $p[ 'pid' ],
 				'title'		=> $p[ 'ptitle' ],
 				'public_project'	=> $p[ 'public' ] == 't',
 				'action'	=> array(),

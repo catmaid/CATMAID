@@ -226,7 +226,7 @@ function handle_updateProjects(status, text, xml) {
       alert(e.error);
     } else {
       for (var i in e) {
-        if (project && project.id == i) {
+        if (project && project.id == e[i].pid) {
           keep_project_alive = true;
           keep_project_editable = e[i].editable;
         }

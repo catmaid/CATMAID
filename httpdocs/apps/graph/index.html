@@ -77,7 +77,7 @@
                     },
                     edges: {
                         //width: 3,
-                        width: {
+                        size: {
                             defaultValue: 1,
                             continuousMapper: { attrName: "weight", minValue: 1, maxValue: 20 }
                         },
@@ -92,12 +92,16 @@
                     network: networ_json,
                     
                     // show edge labels too
-                    edgeLabelsVisible: true,
+                    edgeLabelsVisible: false,
 
-                    nodeLabelsVisible: true,
+                    nodeLabelsVisible: false,
                     
                     // let's try another layout
-                    layout: "Tree",
+                    layout: {
+                        'name': "ForceDirected",
+                        'weightAttr': 'weight'
+
+                    },
                     
                     // set the style at initialisation
                     visualStyle: visual_style,

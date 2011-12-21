@@ -317,10 +317,10 @@ var tracingWindowActions = [
   }),
 
   new Action({
-    helpText: "Show object tree as graph",
+    helpText: "Show wiring diagram",
     buttonID: "view_objecttree_graph",
     buttonName: 'objecttree-graph',
     run: function (e) {
-      window.open("apps/graph/index.html?project_id="+project.id,"Object tree graph");
+      window.open("apps/graph/index.html?project_id="+project.id+"&lower_skeleton_count=10", "Wiring diagram");
     }
   }) ];

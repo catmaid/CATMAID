@@ -47,8 +47,11 @@
                 // id of Cytoscape Web container div
                 var div_id = "cytoscapeweb";
 
+                var skel_count = isNaN( parseInt($.url().param('lower_skeleton_count')) ) ? 10 : parseInt($.url().param('lower_skeleton_count'));
+
                 // fetch data
-                var networ_json = synchFetch("../../dj/"+$.url().param('project_id')+"/wiringdiagram/json", null);
+                var networ_json = synchFetch("../../dj/"+$.url().param('project_id')+"/wiringdiagram/json",
+                        {'lower_skeleton_count': skel_count});
 
                 // initialization options
                 var options = {

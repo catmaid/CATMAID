@@ -228,6 +228,12 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, treenod
 
 
 def export_wiring_diagram(request, project_id=None):
+
+    if request.POST.has_key('lower_skeleton_count'):
+        LOWER_TREENODE_NUMBER_LIMIT=request.POST['lower_skeleton_count']
+    else:
+        LOWER_TREENODE_NUMBER_LIMIT=10
+
     # result dictionary: {connectorid: presyn_skeletonid}
     tmp={}
     result={}
@@ -246,10 +252,9 @@ def export_wiring_diagram(request, project_id=None):
 
     skeletons={}
     qs = Treenode.objects.filter(project=project_id).values('skeleton').annotate(Count('skeleton'))
-    print >> sys.stderr, 'treenode count qs', qs
     for e in qs:
         skeletons[ e['skeleton'] ]=e['skeleton__count']
-
+    print >> sys.stderr, 'skeletons', skeletons
     # get the postsynaptic connections
     qs = TreenodeConnector.objects.filter(
         project=project_id,
@@ -259,11 +264,8 @@ def export_wiring_diagram(request, project_id=None):
         if e.connector_id in tmp:
 
             # limit the skeletons to include
-            LOWER_TREENODE_NUMBER_LIMIT=200
-            skeleton_id_from=tmp[e.connector_id]
-            skeleton_id_to=e.skeleton_id
-            if skeletons[skeleton_id_from] < LOWER_TREENODE_NUMBER_LIMIT or \
-                skeletons[skeleton_id_to] < LOWER_TREENODE_NUMBER_LIMIT:
+            if skeletons[ tmp[e.connector_id] ] < LOWER_TREENODE_NUMBER_LIMIT or \
+                skeletons[ e.skeleton_id ] < LOWER_TREENODE_NUMBER_LIMIT:
                 continue
 
             # an existing connector, so we add a connection

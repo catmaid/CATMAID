@@ -51,6 +51,7 @@ urlpatterns = patterns(
     (r'^(?P<project_id>\d+)/annotationdiagram/nx_json$', 'vncbrowser.views.convert_annotations_to_networkx'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', 'vncbrowser.views.stack_info'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/models$', 'vncbrowser.views.stack_models'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/z/(?P<z>\d+)/png$', 'vncbrowser.views.get_image'),
     )
 
 # Cropping

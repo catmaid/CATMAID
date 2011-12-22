@@ -11,6 +11,7 @@ import json
 try:
     import numpy as np
     import h5py
+    from PIL import Image
 except ImportError:
     pass
 from contextlib import closing
@@ -50,6 +51,26 @@ ConnectivityPostsynaptic = {
     'id': 3
 }
 
+
+def get_image(request, project_id=None, stack_id=None, x=None, y=None, dx=None, dy=None, z=None):
+    fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}.hdf'.format( project_id, stack_id ) )
+
+    print >> sys.stderr, 'fpath', fpath
+    print 'exists', os.path.exists(fpath)
+    with closing(h5py.File(fpath, 'r')) as hfile:
+        image_data=hfile[str(z)].value
+
+    # image = Image.fromarray(image_data[:500,:500].T)
+    # TODO: define a map from skeleton ids stored in the HDF5 to colors & back
+    w,h=1000,800
+    img = np.empty((w,h),np.uint32)
+    img.shape=h,w
+    img[0,0]=0x800000FF
+    img[:400,:400]=0xFFFF0000
+    pilImage = Image.frombuffer('RGBA',(w,h),img,'raw','RGBA',0,1)
+    response = HttpResponse(mimetype="image/png")
+    pilImage.save(response, "PNG")
+    return response
 
 def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
     # retrieve all treenodes for a given skeleton

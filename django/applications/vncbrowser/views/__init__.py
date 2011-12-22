@@ -39,6 +39,7 @@ from catmaid_replacements import node_list
 from neurohdf import skeleton_neurohdf
 from neurohdf import microcircuit_neurohdf
 from neurohdf import stack_models
+from neurohdf import get_image
 
 from cropping import crop
 from cropping import download_crop

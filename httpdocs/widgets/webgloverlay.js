@@ -65,6 +65,7 @@ var WebGL = new function()
         // make view accessible from outside for setting additional mouse handlers
         this.view = view;
 
+
         view.onmousemove = function( e ) {
             console.log("onmouse move");
             var wc;

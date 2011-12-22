@@ -18,15 +18,15 @@ function WebGLLayer( stack )
 
     this.redraw = function()
     {
-        var pixelPos = [ stack.x, stack.y, stack.z ];
-        console.log("redraw pixel pos", pixelPos);
+        //var pixelPos = [ stack.x, stack.y, stack.z ];
+        //console.log("redraw pixel pos", pixelPos);
         this.updateDimension();
         return;
     }
 
     this.resize = function( width, height )
     {
-        console.log("new siye", width, height);
+        //console.log("new siye", width, height);
         self.redraw();
         return;
     }
@@ -38,6 +38,9 @@ function WebGLLayer( stack )
         var he = Math.floor(stack.dimension.y * stack.scale);
         view.style.width = wi + "px";
         view.style.height = he + "px";
+
+        canvas.style.width = wi + "px";
+        canvas.style.height = he + "px";
 
         var wc = stack.getWorldTopLeft();
         var pl = wc.worldLeft,
@@ -68,10 +71,33 @@ function WebGLLayer( stack )
     view.style.opacity = 1.0;
     self.view = view;
 
-    var button = document.createElement("img");
-    button.src = "http://www.google.ch/images/nav_logo99.png";
+    var canvas = document.createElement("canvas")
+    canvas.id = "myCanvas"
+    canvas.style.border = "1px";
 
-    view.appendChild(button);
+    this.view.appendChild( canvas );
+
+    var context;
+
+    // Check the element is in the DOM and the browser supports canvas
+    if(canvas.getContext) {
+        // Initaliase a 2-dimensional drawing context
+        context = canvas.getContext('2d');
+    } else {
+        alert('Canvas not supported by browser!');
+    }
+
+    var img = new Image;
+    // Important to have the onload
+    // http://stackoverflow.com/questions/4773966/drawing-an-image-from-a-data-url-to-a-canvas
+    img.onload = function(){
+        console.log('onload');
+        var wi = Math.floor(stack.dimension.x * stack.scale);
+        var he = Math.floor(stack.dimension.y * stack.scale);
+        context.drawImage(img,0,0, wi, he); // Or at whatever offset you like
+    };
+    // TODO: hardcoded url
+    img.src = "http://localhost/catmaid-test/dj/3/stack/3/z/0/png";
 
     // XXX: add it here to DOM?
     stack.getView().appendChild( view );

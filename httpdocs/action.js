@@ -243,14 +243,14 @@ var editToolActions = [
 	}),
 
     new Action({
-       helpText: "WebGL tool",
-       buttonID: 'edit_button_trace',
-       buttonName: 'trace',
+       helpText: "Canvas tool",
+       buttonID: 'edit_button_canvas',
+       buttonName: 'canvas',
        keyShortcuts: {
 
        },
        run: function (e) {
-           project.setTool( new WebGLTool() );
+           project.setTool( new CanvasTool() );
        }
     }),
 

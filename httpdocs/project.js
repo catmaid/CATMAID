@@ -375,8 +375,7 @@ function Project( pid )
 	this.handleKeyPress = function( e ) {
 		var keyAction = keyCodeToAction[e.keyCode];
 		if (keyAction) {
-			keyAction.run(e);
-			return true;
+			return keyAction.run(e);
 		} else {
 			return false;
 		}
@@ -434,6 +433,14 @@ function Project( pid )
 		}
 		if (!(fromATextField || n == "textarea" || n == "area")) //!< @todo exclude all useful keyboard input elements e.g. contenteditable...
 		{
+			/* Note that there are two different
+			   conventions for return values here: the
+			   handleKeyPress() methods return true if the
+			   event has been dealt with (i.e. it should
+			   not be propagated) but the onkeydown
+			   function should only return true if the
+			   event should carry on for default
+			   processing. */
 			if (tool && tool.handleKeyPress(fakeEvent)) {
 				return false;
 			} else {

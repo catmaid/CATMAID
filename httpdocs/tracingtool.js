@@ -233,7 +233,7 @@ function TracingTool()
     },
     run: function (e) {
       self.prototype.slider_s.move(1);
-      return false;
+      return true;
     }
   }) );
 
@@ -244,7 +244,7 @@ function TracingTool()
     },
     run: function (e) {
       self.prototype.slider_s.move(-1);
-      return false;
+      return true;
     }
   }) );
 
@@ -255,7 +255,7 @@ function TracingTool()
     },
     run: function (e) {
       self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
-      return false;
+      return true;
     }
   }) );
 
@@ -266,7 +266,7 @@ function TracingTool()
     },
     run: function (e) {
       self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
-      return false;
+      return true;
     }
   }) );
 
@@ -278,7 +278,7 @@ function TracingTool()
     run: function (e) {
       self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
       self.prototype.input_x.onchange(e);
-      return false;
+      return true;
     }
   }) );
 
@@ -290,7 +290,7 @@ function TracingTool()
     run: function (e) {
       self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
       self.prototype.input_x.onchange(e);
-      return false;
+      return true;
     }
   }) );
 
@@ -302,7 +302,7 @@ function TracingTool()
     run: function (e) {
       self.prototype.input_y.value = parseInt(self.prototype.input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
       self.prototype.input_y.onchange(e);
-      return false;
+      return true;
     }
   }) );
 
@@ -314,7 +314,7 @@ function TracingTool()
     run: function (e) {
       self.prototype.input_y.value = parseInt(self.prototype.input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
       self.prototype.input_y.onchange(e);
-      return false;
+      return true;
     }
   }) );
 
@@ -327,7 +327,7 @@ function TracingTool()
     },
     run: function (e) {
       tracingLayer.svgOverlay.tracingCommand('skeleton');
-      return false;
+      return true;
     }
   } ) );
 
@@ -340,7 +340,7 @@ function TracingTool()
     },
     run: function (e) {
       tracingLayer.svgOverlay.tracingCommand('synapse');
-      return false;
+      return true;
     }
   } ) );
 
@@ -361,7 +361,7 @@ function TracingTool()
           tracingLayer.svgOverlay.pix2physY(activeNodePosition.y),
           tracingLayer.svgOverlay.pix2physX(activeNodePosition.x));
       }
-      return false;
+      return true;
     }
   } ) );
 
@@ -372,7 +372,7 @@ function TracingTool()
     },
     run: function (e) {
       tracingLayer.svgOverlay.activateNode(null);
-      return false;
+      return true;
     }
   }) );
 
@@ -400,7 +400,7 @@ function TracingTool()
           alert("There active node must be visible in order to move to its parent");
         }
       }
-      return false;
+      return true;
     }
   }) );
 
@@ -411,7 +411,7 @@ function TracingTool()
     },
     run: function (e) {
       tracingLayer.svgOverlay.tracingCommand('golastedited');
-      return false;
+      return true;
     }
   }) );
 
@@ -424,7 +424,7 @@ function TracingTool()
     },
     run: function (e) {
       tracingLayer.svgOverlay.tracingCommand('skelsplitting');
-      return false;
+      return true;
     }
   }) );
 
@@ -437,7 +437,7 @@ function TracingTool()
     },
     run: function (e) {
       tracingLayer.svgOverlay.tracingCommand('skelrerooting');
-      return false;
+      return true;
     }
   }) );
 
@@ -454,7 +454,7 @@ function TracingTool()
       } else {
         tracingLayer.svgOverlay.tracingCommand('showlabels');
       }
-      return false;
+      return true;
     }
   }) );
 
@@ -467,7 +467,7 @@ function TracingTool()
     },
     run: function (e) {
       tracingLayer.svgOverlay.tracingCommand('exportswc');
-      return false;
+      return true;
     }
   }) );
 
@@ -478,9 +478,11 @@ function TracingTool()
     },
     run: function (e) {
       if (!(e.ctrlKey || e.metaKey)) {
-	      tracingLayer.svgOverlay.tracingCommand('tagging');
+	tracingLayer.svgOverlay.tracingCommand('tagging');
+        return true;
+      } else {
+        return false;
       }
-      return true;
     }
   }) );
 
@@ -507,8 +509,10 @@ function TracingTool()
     run: function (e) {
       if (!(e.ctrlKey || e.metaKey)) {
         tracingLayer.svgOverlay.tracingCommand('selectnearestnode');
+        return true;
+      } else {
+        return false;
       }
-      return true;
     }
   }) );
 
@@ -520,7 +524,7 @@ function TracingTool()
     run: function (e) {
       self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
       tracingLayer.svgOverlay.tracingCommand('createtreenodeup');
-      return false;
+      return true;
     }
   }) );
 
@@ -532,7 +536,7 @@ function TracingTool()
     run: function (e) {
       self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
       tracingLayer.svgOverlay.tracingCommand('createtreenodedown');
-      return false;
+      return true;
     }
   }) );
 
@@ -544,8 +548,7 @@ function TracingTool()
   this.handleKeyPress = function( e ) {
     var keyAction = keyCodeToAction[e.keyCode];
     if (keyAction) {
-      keyAction.run(e);
-      return true;
+      return keyAction.run(e);
     } else {
       return false;
     }

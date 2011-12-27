@@ -562,40 +562,33 @@ var SkeletonAnnotations = new function()
             if (e.error) {
               alert(e.error);
             } else {
-              // just redraw all for now
-              self.updateNodes();
-              ObjectTree.refresh();
-              refreshAllWidgets();
+              // then link again, in the continuation
+              requestQueue.register("model/treenode.link.php", "POST", {
+                pid: project.id,
+                from_id: fromid,
+                to_id: toid
+              }, function (status, text, xml) {
+                if (status === 200) {
+                  if (text && text !== " ") {
+                    var e = $.parseJSON(text);
+                    if (e.error) {
+                      alert(e.error);
+                    } else {
+                      // just redraw all for now
+                      self.updateNodes();
+                      ObjectTree.refresh();
+                      refreshAllWidgets();
+                    }
+                  }
+                }
+                return true;
+              });
+
             }
           }
         }
       });
-      // then link again
-      requestQueue.register("model/treenode.link.php", "POST", {
-        pid: project.id,
-        from_id: fromid,
-        to_id: toid
-      }, function (status, text, xml) {
-        if (status === 200) {
-          if (text && text !== " ") {
-            var e = $.parseJSON(text);
-            if (e.error) {
-              alert(e.error);
-            } else {
-              nodes[toid].parent = nodes[fromid];
-              // update the parents children
-              nodes[fromid].children[toid] = nodes[toid];
-              nodes[toid].drawEdges();
-              nodes[fromid].drawEdges();
-              // make target active treenode
-              self.activateNode(nodes[toid]);
-              ObjectTree.requestOpenTreePath( nodes[fromid] );
-              refreshAllWidgets();
-            }
-          }
-        }
-        return true;
-      });
+
       return;
     };
 

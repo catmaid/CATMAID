@@ -837,6 +837,20 @@ EOMIGRATION
 	'2011-12-12T10:18:23' => new AddSkeletonIDsTreenodeConnectorMigration(),
 
 
+	'2011-12-27T12:51:12' => new Migration(
+		'Update containts in treenode_connector',
+		'
+ALTER TABLE ONLY treenode_connector
+    ADD CONSTRAINT treenode_connector_connector_id_fkey FOREIGN KEY (connector_id) REFERENCES connector(id) ON DELETE CASCADE;
+ALTER TABLE ONLY treenode_connector
+    ADD CONSTRAINT treenode_connector_skeleton_id_fkey FOREIGN KEY (skeleton_id) REFERENCES class_instance(id) ON DELETE CASCADE;
+ALTER TABLE ONLY treenode_connector
+    ADD CONSTRAINT treenode_connector_treenode_id_fkey FOREIGN KEY (treenode_id) REFERENCES treenode(id) ON DELETE CASCADE;
+ALTER TABLE ONLY treenode_connector
+    ADD CONSTRAINT treenode_connector_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

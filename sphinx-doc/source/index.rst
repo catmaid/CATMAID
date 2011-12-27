@@ -18,13 +18,7 @@ Documentation
 -------------
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
-   introduction
-   screenshots
-   tracing_neurons
-   othertools
-   
-   installation
-   djangoinstall
-   dbmigration
+   user
+   developer

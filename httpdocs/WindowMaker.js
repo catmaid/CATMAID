@@ -97,8 +97,8 @@ var WindowMaker = new function()
 
     var canvas = document.createElement('div');
     canvas.setAttribute("id", "viewer-3d-canvas");
-    canvas.style.width = "500px";
-    canvas.style.height = "500px";
+    canvas.style.width = "800px";
+    canvas.style.height = "600px";
     container.appendChild(canvas);
 
     var buttons = document.createElement('div');

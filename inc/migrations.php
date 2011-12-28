@@ -840,6 +840,7 @@ EOMIGRATION
 	'2011-12-27T12:51:12' => new Migration(
 		'Update containts in treenode_connector',
 		'
+ALTER TABLE treenode_connector DROP CONSTRAINT treenode_connector_skeleton_id_fkey;
 ALTER TABLE ONLY treenode_connector
     ADD CONSTRAINT treenode_connector_connector_id_fkey FOREIGN KEY (connector_id) REFERENCES connector(id) ON DELETE CASCADE;
 ALTER TABLE ONLY treenode_connector

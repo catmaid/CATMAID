@@ -157,8 +157,16 @@ var TreenodeTable = new function()
       ]
     });
 
+    // filter table
+    $.each(asInitVals, function(index, value) {
+      if(value==="Search")
+        return;
+      ns.oTable.fnFilter(value, index);
+    });
+
     $("#treenodetable thead input").keyup(function () { /* Filter on the column (the index) of this element */
       ns.oTable.fnFilter(this.value, $("thead input").index(this));
+      asInitVals[$("thead input").index(this)] = this.value;
     });
 
   /*
@@ -171,7 +179,6 @@ var TreenodeTable = new function()
     });
 
     $("#treenodetable thead input").focus(function () {
-      // console.log("focus");
       if (this.className === "search_init") {
         this.className = "";
         this.value = "";

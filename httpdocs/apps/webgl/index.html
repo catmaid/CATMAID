@@ -48,20 +48,71 @@
 
 			var windowHalfX = window.innerWidth / 2;
 			var windowHalfY = window.innerHeight / 2;
-            var scale = $.url().param('scale') ? $.url().param('scale') : 1.0;
-            var translate_x = $.url().param('translate_x') ? $.url().param('translate_x') : 0.0;
-            var translate_y = $.url().param('translate_y') ? $.url().param('translate_y') : 0.0;
-            var translate_z = $.url().param('translate_z') ? $.url().param('translate_z') : 0.0;
+            var scale; // = $.url().param('scale') ? $.url().param('scale') : 1.0;
+            var translate_y;
+            var resolution, dimension;
+            
             var project_id = $.url().param('project_id');
+            var stack_id = $.url().param('stack_id') ? $.url().param('stack_id') : 1;
             var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
             var controls;
             var clock = new THREE.Clock();
-            
+
+            // initialize global function
+            // point is in physical coordiantes
+            // return is in webgl coordinates
+            // x->x, y->y+dy, z->-z
+            var transform_coordinates = function ( point )
+            {
+                var res = [point[0],
+                        -point[1]+dimension[1]*resolution[1],
+                        -point[2]
+                        ];
+                return res;
+            }
+
             init();
             animate();
-            debugaxes2();
+            //debugaxes2();
             draw_grid();
-            create_activenode();
+            //create_activenode();
+
+            jQuery.ajax({
+                  url: "../../dj/"+project_id+"/stack/" + stack_id + "/info",
+                  
+                  type: "GET",
+                  dataType: "json",
+                  success: function (data) {
+
+                      resolution = data.resolution;
+                      dimension = data.dimension;
+
+                      var x_middle = (data.dimension[0]*data.resolution[0])/2.0 + data.translation[0],
+                          y_middle = (data.dimension[1]*data.resolution[1])/2.0 + data.translation[1],
+                          z_middle = (data.dimension[2]*data.resolution[2])/2.0 + data.translation[2];
+
+                      scale = 50./dimension[0];
+
+                      var coord = transform_coordinates([x_middle, y_middle, z_middle]);
+                      console.log("scale", scale);
+
+                      create_stackboundingbox(
+                              coord[0]*scale,
+                              coord[1]*scale,
+                              coord[2]*scale,
+                              dimension[0]*resolution[0]*scale,
+                              dimension[1]*resolution[1]*scale,
+                              dimension[2]*resolution[2]*scale
+                      );
+
+                      WebGLViewer.fetchSkeleton( $.url().param('skeleton_id') );
+
+                      WebGLViewer.createActiveNode( 5, 0, 0);
+                      WebGLViewer.updateActiveNode( 30, 0, 0);
+
+                  }
+                });
+
 
 
 			function init() {
@@ -74,12 +125,11 @@
 				//scene.fog = new THREE.FogExp2( 0x000000, 0.0007 );
 
 				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 3000 );
-                camera.position.set( -50, 25, 50 );
-				// camera.position.z = 500;
-/*
-                var ne = new THREE.Vector3(100,0,4010);
-                camera.lookAt( ne );
-*/
+                camera.position.set( -50, 10, 50 );
+                console.log(camera);
+                //camera.target.position.z = 1000;
+                // TODO: better mouse control: http://g0blin.co.uk/star/
+
                 controls = new THREE.FirstPersonControls( camera );
                 controls.movementSpeed = 70;
                 controls.lookSpeed = 0.05;
@@ -177,70 +227,48 @@
                     this.geometry[connectivity_types[1]] = new THREE.Geometry();
                     this.geometry[connectivity_types[2]] = new THREE.Geometry();
 
-                    this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 3 } );
-                    this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0x00ff00, opacity: 1.0, linewidth: 6 } )
+                    this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
+                    this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } )
                     this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x0000ff, opacity: 1.0, linewidth: 6 } )
 
                     this.original_vertices = skeleton_data.vertices;
                     this.original_connectivity = skeleton_data.connectivity;
 
-                    var boundingbox = new Object();
-                    var min_x = undefined, max_x = undefined,
-                        min_y = undefined, max_y = undefined,
-                        min_z = undefined, max_z = undefined;
-                    
                     for (var fromkey in this.original_connectivity) {
                         var to = this.original_connectivity[fromkey];
                         for (var tokey in to) {
 
                             type = connectivity_types[connectivity_types.indexOf(this.original_connectivity[fromkey][tokey]['type'])];
 
-                            from_vector = new THREE.Vector3(
-                                    this.original_vertices[fromkey]['x'],
-                                    -this.original_vertices[fromkey]['y'],
-                                    -this.original_vertices[fromkey]['z'] );
 
-                            if( min_x === undefined ) {
-                                min_x = this.original_vertices[fromkey]['x'];
-                                max_x = this.original_vertices[fromkey]['x'];
-                                min_y = this.original_vertices[fromkey]['y'];
-                                max_y = this.original_vertices[fromkey]['y'];
-                                min_z = this.original_vertices[fromkey]['z'];
-                                max_z = this.original_vertices[fromkey]['z'];
-
-                            }
-                            min_x = min_x > this.original_vertices[fromkey]['x'] ? this.original_vertices[fromkey]['x'] : min_x;
-                            max_x = max_x < this.original_vertices[fromkey]['x'] ? this.original_vertices[fromkey]['x'] : max_x;
-
-                            min_y = min_y > this.original_vertices[fromkey]['x'] ? this.original_vertices[fromkey]['x'] : min_y;
-                            max_y = max_y < this.original_vertices[fromkey]['x'] ? this.original_vertices[fromkey]['x'] : max_y;
-
-                            min_z = min_z > this.original_vertices[fromkey]['x'] ? this.original_vertices[fromkey]['x'] : min_z;
-                            max_z = max_z < this.original_vertices[fromkey]['x'] ? this.original_vertices[fromkey]['x'] : max_z;
+                            var fv=transform_coordinates([
+                                     this.original_vertices[fromkey]['x'],
+                                     this.original_vertices[fromkey]['y'],
+                                     this.original_vertices[fromkey]['z']
+                                ]);
+                            from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
 
                             // transform
                             from_vector.multiplyScalar( scale );
 
                             this.geometry[type].vertices.push( new THREE.Vertex( from_vector ) );
 
-                            to_vector = new THREE.Vector3(
-                                    this.original_vertices[tokey]['x'],
-                                    -this.original_vertices[tokey]['y'],
-                                    -this.original_vertices[tokey]['z'] );
-                            
+                            var tv=transform_coordinates([
+                                     this.original_vertices[tokey]['x'],
+                                     this.original_vertices[tokey]['y'],
+                                     this.original_vertices[tokey]['z']
+                                ]);
+                            to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
+
                             // transform
                             // to_vector.add( translate_x, translate_y, translate_z );
                             to_vector.multiplyScalar( scale );
-                            
+
                             this.geometry[type].vertices.push( new THREE.Vertex( to_vector ) );
                         }
                     }
 
-                    console.log("min/max x,y,z", min_x, max_x, min_y, max_y, min_z, max_z);
-
                     this.updateCompositeActor();
-                    this.translate( (max_x+min_x)/2.*scale, (max_y+min_y)/2.*scale, (max_z+min_z)/2.*scale );
-
 
                 }
 
@@ -265,6 +293,21 @@
                           }
                         });
                     }
+                }
+
+                this.createActiveNode = function( x, y, z)
+                {
+                    console.log("sphere", x,y,z);
+                    sphere = new THREE.SphereGeometry( 20, 32, 32, 1 );
+                    active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffaa00 } ) );
+                    active_node.scale.set( 0.05, 0.05, 0.05 );
+                    active_node.position.set( x,y,z );
+                    scene.add( active_node );
+                }
+
+                this.updateActiveNode = function( x, y, z )
+                {
+                    active_node.position.set( x, y, z );
                 }
 
                 // add skeleton to scene
@@ -319,38 +362,35 @@
 
                 }
 
-                // fetch again all current skeletons from database and regenerate geometry
-                this.updateSkeletons = function()
-                {
-
-                }
-
-                // center and scale all currently added skeletons
-                this.center_and_scale = function()
-                {
-
-                }
-
             }
 
 
             // the active node as a sphere
             function create_activenode(  )
             {
-                var material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
+                /*
+                var material = new THREE.MeshBasicMaterial( { color: 0xffff00, wireframe: true } );
                 var object = THREE.SceneUtils.createMultiMaterialObject( new THREE.SphereGeometry( 75, 20, 10 ), material );
                 // object.position.set( data['x'], data['y'], data['z'] );
-                object.position.set( 0, 0, 0 );
-                scene.add( object );
+                object.position.set( 50, 0, 0 );
+                scene.add( object );*/
 
-                var gg = new THREE.CubeGeometry( 10, 10, 10 );
+                sphere = new THREE.SphereGeometry( 20, 32, 32, 1 );
+                lightMesh = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffaa00 } ) );
+                lightMesh.scale.set( 0.05, 0.05, 0.05 );
+                lightMesh.position.set( 0, 0, 0);
+                scene.add( lightMesh );
+
+            }
+
+            function create_stackboundingbox(x, y, z, dx, dy, dz)
+            {
+                var gg = new THREE.CubeGeometry( dx, dy, dz );
                 var mm = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
 
-                /*var mesh = new THREE.Mesh( gg, mm );
-                mesh.position.set(100, 100, 0);
-                scene.add( mesh );*/
-
-
+                var mesh = new THREE.Mesh( gg, mm );
+                mesh.position.set(x, y, z);
+                scene.add( mesh );
             }
 
             function debugaxes2() {
@@ -380,8 +420,6 @@
 				grid_lines = new THREE.Line( geometry, line_material, THREE.LinePieces );
 				scene.add( grid_lines );
             }
-
-            WebGLViewer.fetchSkeleton( $.url().param('skeleton_id') );
 
 			function onDocumentMouseMove( event ) {
 				mouseX = event.clientX - windowHalfX;

@@ -477,3 +477,15 @@ def goto_connector(request, project_id=None, connector_id=None, stack_id=None, l
                   "sid0": stack_id,
                   "s0" : 0}
     return HttpResponseRedirect(settings.CATMAID_URL + "?" + urlencode(parameters))
+
+def stack_info(request, project_id=None, stack_id=None, logged_in_user=None):
+    result={
+        'project_id':1,
+        'stack_id':1,
+        'translation':(0,0,0),
+        'resolution':(5,5,9),
+        'dimension':(2048,1536,460),
+    }
+    # TODO: check if associated HDF5 exists. if so, extract the channel information
+    return HttpResponse(json.dumps(result), mimetype="text/json")
+

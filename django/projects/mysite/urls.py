@@ -37,6 +37,7 @@ urlpatterns = patterns(
     (r'^(?P<project_id>\d+)/go-to/connector/(?P<connector_id>\d+)/stack/(?P<stack_id>\d+)$', 'vncbrowser.views.goto_connector'),
     (r'^(?P<project_id>\d+)/microcircuit/neurohdf$', 'vncbrowser.views.microcircuit_neurohdf'),
     (r'^(?P<project_id>\d+)/wiringdiagram/json$', 'vncbrowser.views.export_wiring_diagram'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', 'vncbrowser.views.stack_info'),
     )
 
 if settings.DEBUG:

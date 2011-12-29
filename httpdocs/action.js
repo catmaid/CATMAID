@@ -330,7 +330,16 @@ var tracingWindowActions = [
   }),
 
   new Action({
-    helpText: "Show wiring diagram",
+    helpText: "Show 3D WebGL view",
+    buttonID: "view_3d_webgl_button",
+    buttonName: '3d-view',
+    run: function (e) {
+      WindowMaker.show('3d-webgl-view');
+    }
+  }),
+
+  new Action({
+    helpText: "Show object tree as graph",
     buttonID: "view_objecttree_graph",
     buttonName: 'objecttree-graph',
     run: function (e) {

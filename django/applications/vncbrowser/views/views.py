@@ -323,3 +323,15 @@ def neuron_to_skeletons(request, project_id=None, neuron_id=None, logged_in_user
         cici_via_a__relation__relation_name='model_of',
         cici_via_a__class_instance_b=neuron)
     return HttpResponse(json.dumps([x.id for x in qs]), mimetype="text/json")
+
+@catmaid_login_required
+def stack_info(request, project_id=None, stack_id=None, logged_in_user=None):
+    result={
+        'project_id':1,
+        'stack_id':1,
+        'translation':(0,0,0),
+        'resolution':(5,5,9),
+        'dimension':(2048,1536,460),
+    }
+    # TODO: check if associated HDF5 exists. if so, extract the channel information
+    return HttpResponse(json.dumps(result), mimetype="text/json")

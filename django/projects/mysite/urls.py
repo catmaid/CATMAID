@@ -32,6 +32,7 @@ urlpatterns = patterns(
     (r'^(?P<project_id>\d+)/stats$', 'vncbrowser.views.stats'),
     (r'^(?P<project_id>\d+)/stats-summary$', 'vncbrowser.views.stats_summary'),
     (r'^(?P<project_id>\d+)/node-list$', 'vncbrowser.views.node_list'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', 'vncbrowser.views.stack_info'),
     )
 
 if settings.DEBUG:

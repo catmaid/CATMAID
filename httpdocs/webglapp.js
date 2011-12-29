@@ -170,24 +170,6 @@ function WebGLViewer(divID) {
   // active node geometry
   var active_node;
 
-  // fetch skeleton from database
-  this.fetchSkeleton = function( skeleton_id, baseName )
-  {
-    if( skeleton_id !== undefined )
-    {
-        jQuery.ajax({
-          //url: "../../model/export.skeleton.json.php",
-          url: "dj/"+project_id+"/skeleton/" + skeleton_id + "/json",
-          type: "GET",
-          dataType: "json",
-          success: function (skeleton_data) {
-            skeleton_data['baseName'] = baseName;
-            self.addSkeleton( skeleton_id, skeleton_data );
-          }
-        });
-    }
-  }
-
   this.createActiveNode = function( x, y, z)
   {
     sphere = new THREE.SphereGeometry( 40, 32, 32, 1 );
@@ -222,7 +204,7 @@ function WebGLViewer(divID) {
   this.addSkeleton = function( skeleton_id, skeleton_data )
   {
     if( skeletons.hasOwnProperty(skeleton_id) ){
-      alert("This skeleton (ID: "+skeleton_id+") has already added been added to the viewer");
+      alert("This skeleton (ID: "+skeleton_id+") has already been added to the viewer");
       return;
     } else {
       skeleton_data['id'] = skeleton_id;
@@ -314,7 +296,19 @@ function WebGLViewer(divID) {
   };
 
   this.addFromCATMAID = function (projectID, skeletonID, neuronName) {
-    self.fetchSkeleton( parseInt(skeletonID), neuronName );
+    if( skeletonID !== undefined )
+    {
+        jQuery.ajax({
+          //url: "../../model/export.skeleton.json.php",
+          url: "dj/"+projectID+"/skeleton/" + skeletonID + "/json",
+          type: "GET",
+          dataType: "json",
+          success: function (skeleton_data) {
+            skeleton_data['baseName'] = neuronName;
+            self.addSkeleton( parseInt(skeletonID), skeleton_data );
+          }
+        });
+    }
   };
 
   this.toString = function () {

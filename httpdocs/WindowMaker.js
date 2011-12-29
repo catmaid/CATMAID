@@ -70,6 +70,55 @@ var WindowMaker = new function()
   };
 
 
+  /** Creates and returns a new 3d webgl window */
+  var create3dWebGLWindow = function()
+  {
+    var win = new CMWWindow("3D WebGL View");
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer("view_in_3d_webgl_widget");
+    content.appendChild(container);
+
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
+    add.setAttribute("id", "add_current_to_3d_webgl_view");
+    add.setAttribute("value", "Add current skeleton to 3D view");
+    add.onclick = addTo3DWebGLView; // function declared in overlay.js
+    container.appendChild(add);
+
+    var active = document.createElement('input');
+    active.setAttribute("type", "button");
+    active.setAttribute("id", "update_current_atn_3d_webgl_view");
+    active.setAttribute("value", "Update current active node position");
+    active.onclick = update3DWebGLViewATN; // function declared in overlay.js
+    container.appendChild(active);
+
+    var introduction = document.createElement('p')
+    introduction.setAttribute("id", "view3DWebGLIntroduction");
+    container.appendChild(introduction);
+
+    var list = document.createElement('ul');
+    list.setAttribute("id", "view-3d-webgl-object-list")
+    container.appendChild(list);
+
+    var canvas = document.createElement('div');
+    canvas.setAttribute("id", "viewer-3d-webgl-canvas");
+    canvas.style.width = "700px";
+    canvas.style.height = "600px";
+    canvas.style.backgroundColor = "#000000";
+    container.appendChild(canvas);
+
+    addListener(win, container);
+
+    addLogic(win);
+
+    // Fill in with a Raphael canvas, now that the window exists in the DOM:
+    createWebGLViewerFromCATMAID(canvas.getAttribute("id"));
+
+    return win;
+  }
+
   /** Creates and returns a new 3d window. */
   var create3dWindow = function()
   {
@@ -408,6 +457,7 @@ var WindowMaker = new function()
   var creators = {
     "keyboard-shortcuts": createKeyboardShortcutsWindow,
     "3d-view": create3dWindow,
+    "3d-webgl-view": create3dWebGLWindow,
     "node-table": createNodeTableWindow,
     "connector-table": createConnectorTableWindow,
     "object-tree": createObjectTreeWindow,

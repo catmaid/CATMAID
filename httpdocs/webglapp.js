@@ -64,6 +64,15 @@ function WebGLViewer(divID) {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera( 75, self.divWidth / self.divHeight, 1, 3000 );
     camera.position.set( -50, 10, 50 );
+    camera.lookAt( new THREE.Vector3() );
+    controls = new THREE.TrackballControls( camera );
+    controls.rotateSpeed = 1.0;
+    controls.zoomSpeed = 1.2;
+    controls.panSpeed = 0.8;
+    controls.noZoom = false;
+    controls.noPan = false;
+    controls.staticMoving = true;
+    controls.dynamicDampingFactor = 0.3;
     renderer = new THREE.WebGLRenderer();
     renderer.setSize( self.divWidth, self.divHeight );
     container.appendChild( renderer.domElement );
@@ -271,9 +280,11 @@ function WebGLViewer(divID) {
   }
 
   function render() {
-    camera.position.x += ( mouseX - camera.position.x ) * .05;
+    controls.update();
+    /*camera.position.x += ( mouseX - camera.position.x ) * .05;
     camera.position.y += ( -mouseY - camera.position.y ) * .05;
-    camera.lookAt( scene.position );
+    camera.lookAt( scene.position );*/
+    renderer.clear();
     renderer.render( scene, camera );
   }
 

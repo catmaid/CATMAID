@@ -5,7 +5,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
-    Project, User, Treenode, TreenodeConnector
+    Project, User, Treenode, TreenodeConnector, Stack, ProjectStack
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
 import json
@@ -324,14 +324,40 @@ def neuron_to_skeletons(request, project_id=None, neuron_id=None, logged_in_user
         cici_via_a__class_instance_b=neuron)
     return HttpResponse(json.dumps([x.id for x in qs]), mimetype="text/json")
 
+def get_stack_info(project_id=None, stack_id=None):
+    """ Returns a dictionary with relevant information for stacks
+    """
+    p = get_object_or_404(Project, pk=project_id)
+    s = get_object_or_404(Stack, pk=stack_id)
+    result={
+        'project_id':project_id,
+        'project_title':p.title,
+        'stack_id': stack_id,
+        'stack_title': s.title,
+        'stack_scale': {
+            'x': float(s.resolution.x),
+            'y': float(s.resolution.y),
+            'z': float(s.resolution.z)
+        },
+        'stack_dimension': {
+            'x': int(s.dimension.x),
+            'y': int(s.dimension.y),
+            'z': int(s.dimension.z)
+        },
+        'stack_scaled_unit': "nm",
+        'stack_comment':s.comment,
+        'stack_image_base':s.image_base,
+        #'stack_translation': {
+        #    'x': float(s.translation.x),
+        #    'y': float(s.translation.x),
+        #    'z': float(s.translation.x)
+        #}
+        # TODO: check if associated HDF5 exists. if so, extract the channel information
+    }
+    return result
+
 @catmaid_login_required
 def stack_info(request, project_id=None, stack_id=None, logged_in_user=None):
-    result={
-        'project_id':1,
-        'stack_id':1,
-        'translation':(0,0,0),
-        'resolution':(5,5,9),
-        'dimension':(2048,1536,460),
-    }
-    # TODO: check if associated HDF5 exists. if so, extract the channel information
-    return HttpResponse(json.dumps(result), mimetype="text/json")
+    result=get_stack_info(project_id, stack_id)
+
+    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")

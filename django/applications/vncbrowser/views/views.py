@@ -347,11 +347,12 @@ def get_stack_info(project_id=None, stack_id=None):
         'stack_scaled_unit': "nm",
         'stack_comment':s.comment,
         'stack_image_base':s.image_base,
-        #'stack_translation': {
-        #    'x': float(s.translation.x),
-        #    'y': float(s.translation.x),
-        #    'z': float(s.translation.x)
-        #}
+        # TODO: fix
+        'stack_translation': {
+            'x': 0.0,
+            'y': 0.0,
+            'z': 0.0
+        }
         # TODO: check if associated HDF5 exists. if so, extract the channel information
     }
     return result

@@ -11,17 +11,18 @@ function WebGLViewer(divID) {
 
   this.neurons = [];
 
-  var camera, scene, renderer, grid_lines, scale, resolution, dimension, controls;
+  var camera, scene, renderer, grid_lines, scale, resolution, dimension, controls, translation;
   var mouseX = 0, mouseY = 0;
   var project_id = project.id;
   var stack_id = project.focusedStack.id;
+
   var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
 
   /* transform coordinates from CATMAID coordinate system
      to WebGL coordinate system: x->x, y->y+dy, z->-z
     */
   var transform_coordinates = function ( point ) {
-    return [point[0],-point[1]+dimension[1]*resolution[1],-point[2] ];
+    return [point[0],-point[1]+dimension.y*resolution.y,-point[2] ];
   }
 
   init();
@@ -35,14 +36,15 @@ function WebGLViewer(divID) {
     dataType: "json",
     success: function (data) {
 
-      resolution = data.resolution;
-      dimension = data.dimension;
+      resolution = data.stack_scale;
+      dimension = data.stack_dimension;
+      translation = data.stack_translation;
 
-      var x_middle = (data.dimension[0]*data.resolution[0])/2.0 + data.translation[0],
-          y_middle = (data.dimension[1]*data.resolution[1])/2.0 + data.translation[1],
-          z_middle = (data.dimension[2]*data.resolution[2])/2.0 + data.translation[2];
+      var x_middle = (dimension.x*resolution.x)/2.0 + translation.x,
+          y_middle = (dimension.y*resolution.y)/2.0 + translation.y,
+          z_middle = (dimension.z*resolution.z)/2.0 + translation.z;
 
-      scale = 50./dimension[0];
+      scale = 50./dimension.x;
 
       var coord = transform_coordinates([x_middle, y_middle, z_middle]);
 
@@ -50,9 +52,9 @@ function WebGLViewer(divID) {
               coord[0]*scale,
               coord[1]*scale,
               coord[2]*scale,
-              dimension[0]*resolution[0]*scale,
-              dimension[1]*resolution[1]*scale,
-              dimension[2]*resolution[2]*scale
+              dimension.x*resolution.x*scale,
+              dimension.y*resolution.y*scale,
+              dimension.z*resolution.z*scale
       );
 
       self.updateActiveNode( 30, 0, 0);
@@ -63,8 +65,8 @@ function WebGLViewer(divID) {
     container = document.getElementById(self.divID);
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera( 75, self.divWidth / self.divHeight, 1, 3000 );
-    camera.position.set( -50, 10, 50 );
-    camera.lookAt( new THREE.Vector3() );
+    // TODO: lookAt does not work
+    camera.lookAt( new THREE.Vector3(0.0,0.0,400.0) );
     controls = new THREE.TrackballControls( camera );
     controls.rotateSpeed = 1.0;
     controls.zoomSpeed = 1.2;
@@ -181,7 +183,7 @@ function WebGLViewer(divID) {
 
   this.createActiveNode = function( x, y, z)
   {
-    sphere = new THREE.SphereGeometry( 40, 32, 32, 1 );
+    sphere = new THREE.SphereGeometry( 50, 32, 32, 1 );
     active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffaa00 } ) );
     active_node.scale.set( 0.05, 0.05, 0.05 );
     active_node.position.set( x,y,z );
@@ -197,15 +199,18 @@ function WebGLViewer(divID) {
 
   this.updateActiveNode = function( x, y, z )
   {
-    // TODO: does not take scale factor of stack into account
-    // FIX: update the getter Method for the coordinates
+    console.log('z', z, translation.z + ((z) / project.focusedStack.scale) * resolution.z)
     if(!active_node) {
-      this.createActiveNode( 0, 0, 0);
+      this.createActiveNode( 0, 0, 0 );
     }
+    // return translation.x + ((x) / project.focusedStack.scale) * resolution.x;
     var co = transform_coordinates( [
-      x*resolution[0],
-      y*resolution[1],
-      z*resolution[2]] );
+      translation.x + ((x) / project.focusedStack.scale) * resolution.x,
+      translation.y + ((y) / project.focusedStack.scale) * resolution.y,
+      z * resolution.z]
+      // TODO: translation.z + ((z) / project.focusedStack.scale) * resolution.z]
+    );
+
     active_node.position.set( co[0]*scale, co[1]*scale, co[2]*scale );
   }
 
@@ -239,16 +244,20 @@ function WebGLViewer(divID) {
 
   function create_stackboundingbox(x, y, z, dx, dy, dz)
   {
+    console.log('bouding box', x, y, z, dx, dy, dz);
     var gg = new THREE.CubeGeometry( dx, dy, dz );
     var mm = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
     var mesh = new THREE.Mesh( gg, mm );
     mesh.position.set(x, y, z);
     scene.add( mesh );
+    // update camera
+    camera.position.x = dx;
+    camera.position.y = dy;
   }
 
   function debugaxes() {
     var object = new THREE.Axes();
-    object.position.set( 0, 0, 0 );
+    object.position.set( -1, -1, 0 );
     object.scale.x = object.scale.y = object.scale.z = 0.1;
     scene.add( object );
   }

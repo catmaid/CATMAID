@@ -14,7 +14,11 @@ import json
 import re
 import sys
 from urllib import urlencode
-
+try:
+    import networkx as nx
+    from networkx.readwrite import json_graph
+except ImportError:
+    pass
 
 @catmaid_login_required
 def index(request, **kwargs):
@@ -227,12 +231,7 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, treenod
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
 
-def export_wiring_diagram(request, project_id=None):
-
-    if request.POST.has_key('lower_skeleton_count'):
-        LOWER_TREENODE_NUMBER_LIMIT=request.POST['lower_skeleton_count']
-    else:
-        LOWER_TREENODE_NUMBER_LIMIT=10
+def get_wiring_diagram(project_id=None, LOWER_TREENODE_NUMBER_LIMIT=0):
 
     # result dictionary: {connectorid: presyn_skeletonid}
     tmp={}
@@ -288,7 +287,7 @@ def export_wiring_diagram(request, project_id=None):
                 {"id": str(k)+"_"+str(kk),
                  "source": str(k),
                  "target": str(kk),
-                 "weight": vv}
+                 "number_of_connector": vv}
             )
 
             nodes_tmp[k]=None
@@ -304,6 +303,40 @@ def export_wiring_diagram(request, project_id=None):
                 }
         )
 
+    return { 'nodes': nodes, 'edges': edges }
+
+
+def export_wiring_diagram_nx(request, project_id=None):
+
+    if request.POST.has_key('lower_skeleton_count'):
+        LOWER_TREENODE_NUMBER_LIMIT=request.POST['lower_skeleton_count']
+    else:
+        LOWER_TREENODE_NUMBER_LIMIT=0
+
+    nodes_and_edges=get_wiring_diagram(project_id, LOWER_TREENODE_NUMBER_LIMIT)
+    g=nx.DiGraph()
+
+    for n in nodes_and_edges['nodes']:
+        g.add_node( n['id'], {'label': n['label'], 'node_count': n['node_count'] } )
+
+    for e in nodes_and_edges['edges']:
+        print e
+        g.add_edge( e['source'], e['target'], {'number_of_connector': e['number_of_connector'] } )
+
+    data = json_graph.node_link_data(g)
+    json_return = json.dumps(data, sort_keys=True, indent=4)
+    return HttpResponse(json_return, mimetype='text/json')
+
+
+def export_wiring_diagram(request, project_id=None):
+
+    if request.POST.has_key('lower_skeleton_count'):
+        LOWER_TREENODE_NUMBER_LIMIT=request.POST['lower_skeleton_count']
+    else:
+        LOWER_TREENODE_NUMBER_LIMIT=0
+
+    nodes_and_edges=get_wiring_diagram(project_id, LOWER_TREENODE_NUMBER_LIMIT)
+
     nodesDataSchema=[
         {'name':'id','type':'string'},
         {'name':'label','type':'string'},
@@ -311,19 +344,19 @@ def export_wiring_diagram(request, project_id=None):
     ]
     edgesDataSchema=[
         {'name': 'id','type':'string'},
-        {'name': 'weight','type':'number'},
+        {'name': 'number_of_connector','type':'number'},
         {'name': "directed", "type": "boolean", "defValue": True}
     ]
 
     data={
         'dataSchema':{'nodes':nodesDataSchema,'edges':edgesDataSchema},
-        'data':{'nodes':nodes,'edges':edges}
+        'data':{'nodes':nodes_and_edges['nodes'],'edges':nodes_and_edges['edges']}
     }
 
     json_return = json.dumps(data, sort_keys=True, indent=4)
     return HttpResponse(json_return, mimetype='text/json')
 
-def convert_annotations_to_networkx(project_id=None):
+def convert_annotations_to_networkx(request, project_id=None):
 
     qs = ClassInstanceClassInstance.objects.filter(
       relation__relation_name__in=['part_of', 'model_of'],
@@ -333,7 +366,6 @@ def convert_annotations_to_networkx(project_id=None):
       ).select_related("class_instance_a", "class_instance_b",
                        "class_instance_a__class_column__class_name", "class_instance_b__class_column__class_name")
 
-    import networkx as nx
     g=nx.DiGraph()
 
     for e in qs:
@@ -345,11 +377,9 @@ def convert_annotations_to_networkx(project_id=None):
                                                 "name": e.class_instance_b.name} )
         g.add_edge( e.class_instance_b.id, e.class_instance_a.id ) # the part_of/model_of edge
 
-    # TODO: convert graph to json_graph: http://networkx.lanl.gov/reference/readwrite.json_graph.html
-    from networkx.readwrite import json_graph
     data = json_graph.node_link_data(g)
     json_return = json.dumps(data, sort_keys=True, indent=4)
-    return HttpResponse(json_return, mimetype='text/plain')
+    return HttpResponse(json_return, mimetype='text/json')
 
 
 def export_extended_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None, format=None):

@@ -19,6 +19,8 @@ from views import neuron_to_skeletons
 from views import multiple_presynaptic_terminals
 from views import goto_connector
 from views import export_wiring_diagram
+from views import export_wiring_diagram_nx
+from views import convert_annotations_to_networkx
 from views import stack_info
 
 from catmaid_replacements import projects

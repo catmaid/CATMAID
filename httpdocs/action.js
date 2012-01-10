@@ -337,7 +337,7 @@ var tracingWindowActions = [
       WindowMaker.show('3d-webgl-view');
     }
   }),
-
+/*
   new Action({
     helpText: "Show object tree as graph",
     buttonID: "view_objecttree_graph",
@@ -346,4 +346,6 @@ var tracingWindowActions = [
       window.open("apps/graph/index.html?project_id="+project.id+"&lower_skeleton_count=10", "Wiring diagram");
       return true;
     }
-  }) ];
+  })
+  */
+   ];

@@ -23,14 +23,9 @@ function WebGLViewer(divID) {
     return [point[0],-point[1]+dimension.y*resolution.y,-point[2] ];
   }
 
-  // ---
-
   var resolution = project.focusedStack.resolution;
       dimension = project.focusedStack.dimension;
       translation = project.focusedStack.translation;
-
-  // ---
-
 
   var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
 
@@ -38,38 +33,6 @@ function WebGLViewer(divID) {
   animate();
   debugaxes();
   draw_grid();
-  
-  /*
-  jQuery.ajax({
-    url: "dj/"+project_id+"/stack/" + stack_id + "/info",
-    type: "GET",
-    dataType: "json",
-    success: function (data) {
-
-      resolution = data.stack_scale;
-      dimension = data.stack_dimension;
-      translation = data.stack_translation;
-
-      var x_middle = (dimension.x*resolution.x)/2.0 + translation.x,
-          y_middle = (dimension.y*resolution.y)/2.0 + translation.y,
-          z_middle = (dimension.z*resolution.z)/2.0 + translation.z;
-
-      scale = 50./dimension.x;
-
-      var coord = transform_coordinates([x_middle, y_middle, z_middle]);
-
-      create_stackboundingbox(
-              coord[0]*scale,
-              coord[1]*scale,
-              coord[2]*scale,
-              dimension.x*resolution.x*scale,
-              dimension.y*resolution.y*scale,
-              dimension.z*resolution.z*scale
-      );
-
-      self.updateActiveNode( 30, 0, 0);
-    }
-  });*/
 
   function init() {
     container = document.getElementById(self.divID);
@@ -92,7 +55,6 @@ function WebGLViewer(divID) {
     container.appendChild( renderer.domElement );
     container.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
-    // 
     var x_middle = (dimension.x*resolution.x)/2.0 + translation.x,
         y_middle = (dimension.y*resolution.y)/2.0 + translation.y,
         z_middle = (dimension.z*resolution.z)/2.0 + translation.z;
@@ -317,9 +279,6 @@ function WebGLViewer(divID) {
 
   function render() {
     controls.update();
-    /*camera.position.x += ( mouseX - camera.position.x ) * .05;
-    camera.position.y += ( -mouseY - camera.position.y ) * .05;
-    camera.lookAt( scene.position );*/
     renderer.clear();
     renderer.render( scene, camera );
   }
@@ -389,7 +348,6 @@ function createWebGLViewerFromCATMAID(divID) {
 }
 
 function update3DWebGLViewATN() {
-  // FIXME: need physical coordinates! create new backend code to retrieve
   var atn = SkeletonAnnotations.getActiveNodePosition();
 
   var divID = 'viewer-3d-webgl-canvas';

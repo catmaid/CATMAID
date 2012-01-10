@@ -320,7 +320,7 @@ var tracingWindowActions = [
   }),
 
   new Action({
-    helpText: "Show 3D view",
+    helpText: "Show 3D canvas view",
     buttonID: "view_3d_button",
     buttonName: '3d-view',
     run: function (e) {
@@ -332,16 +332,7 @@ var tracingWindowActions = [
   new Action({
     helpText: "Show 3D WebGL view",
     buttonID: "view_3d_webgl_button",
-    buttonName: '3d-view',
-    run: function (e) {
-      WindowMaker.show('3d-webgl-view');
-    }
-  }),
-
-  new Action({
-    helpText: "Show 3D WebGL view",
-    buttonID: "view_3d_webgl_button",
-    buttonName: '3d-view',
+    buttonName: '3d-view-webgl',
     run: function (e) {
       WindowMaker.show('3d-webgl-view');
     }

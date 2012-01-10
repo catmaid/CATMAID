@@ -206,16 +206,20 @@ function WebGLViewer(divID) {
   // add skeleton to scene
   this.addSkeleton = function( skeleton_id, skeleton_data )
   {
+    var deleted=false;
     if( skeletons.hasOwnProperty(skeleton_id) ){
-      alert("This skeleton (ID: "+skeleton_id+") has already been added to the viewer");
-      return;
-    } else {
-      skeleton_data['id'] = skeleton_id;
-      skeletons[skeleton_id] = new Skeleton( skeleton_data );
-      self.addToSkeletonList( skeletons[skeleton_id] );
-      skeletons[skeleton_id].addCompositeActorToScene();
-      return true;
+      // remove skeleton and refetch
+      skeletons[skeleton_id].removeActorFromScene();
+      delete skeletons[skeleton_id];
+      deleted=true;
     }
+    skeleton_data['id'] = skeleton_id;
+    skeletons[skeleton_id] = new Skeleton( skeleton_data );
+    if(!deleted) {
+      self.addToSkeletonList( skeletons[skeleton_id] );
+    }
+    skeletons[skeleton_id].addCompositeActorToScene();
+    return true;
   }
 
   // remove skeleton from scence

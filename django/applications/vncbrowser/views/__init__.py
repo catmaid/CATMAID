@@ -16,6 +16,9 @@ from views import lines_delete
 from views import skeleton_swc
 from views import skeleton_json
 from views import neuron_to_skeletons
+from views import multiple_presynaptic_terminals
+from views import goto_connector
+from views import export_wiring_diagram
 from views import stack_info
 
 from catmaid_replacements import projects
@@ -28,3 +31,6 @@ from catmaid_replacements import root_for_skeleton
 from catmaid_replacements import stats
 from catmaid_replacements import stats_summary
 from catmaid_replacements import node_list
+
+from neurohdf import skeleton_neurohdf
+from neurohdf import microcircuit_neurohdf

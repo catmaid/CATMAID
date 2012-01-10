@@ -30,6 +30,9 @@ CREATE FUNCTION on_edit() RETURNS trigger
 END;
 $$;
 SET default_with_oids = false;
+CREATE TABLE applied_migrations (
+    id character varying(32) NOT NULL
+);
 CREATE TABLE broken_slice (
     stack_id integer NOT NULL,
     index integer NOT NULL
@@ -105,6 +108,21 @@ CREATE SEQUENCE message_id_seq
     NO MINVALUE
     CACHE 1;
 ALTER SEQUENCE message_id_seq OWNED BY message.id;
+CREATE TABLE "overlay" (
+    id integer NOT NULL,
+    stack_id integer NOT NULL,
+    title text NOT NULL,
+    image_base text NOT NULL,
+    default_opacity integer DEFAULT 0 NOT NULL,
+    file_extension text NOT NULL
+);
+CREATE SEQUENCE overlay_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+ALTER SEQUENCE overlay_id_seq OWNED BY "overlay".id;
 CREATE TABLE project (
     id integer NOT NULL,
     title text NOT NULL,
@@ -159,7 +177,9 @@ CREATE TABLE stack (
     resolution double3d NOT NULL,
     image_base text NOT NULL,
     comment text,
-    trakem2_project boolean DEFAULT false NOT NULL
+    trakem2_project boolean DEFAULT false NOT NULL,
+    min_zoom_level integer DEFAULT (-1) NOT NULL,
+    file_extension text DEFAULT 'jpg'::text NOT NULL
 );
 COMMENT ON COLUMN stack.dimension IS 'pixel';
 COMMENT ON COLUMN stack.resolution IS 'nanometer per pixel';
@@ -202,7 +222,8 @@ CREATE TABLE textlabel_location (
 CREATE TABLE treenode (
     parent_id bigint,
     radius double precision DEFAULT 0 NOT NULL,
-    confidence integer DEFAULT 5 NOT NULL
+    confidence integer DEFAULT 5 NOT NULL,
+    skeleton_id bigint
 )
 INHERITS (location);
 CREATE TABLE treenode_class_instance (
@@ -212,7 +233,8 @@ CREATE TABLE treenode_class_instance (
 INHERITS (relation_instance);
 CREATE TABLE treenode_connector (
     treenode_id bigint NOT NULL,
-    connector_id bigint NOT NULL
+    connector_id bigint NOT NULL,
+    skeleton_id bigint
 )
 INHERITS (relation_instance);
 CREATE TABLE "user" (
@@ -230,11 +252,14 @@ CREATE SEQUENCE user_id_seq
 ALTER SEQUENCE user_id_seq OWNED BY "user".id;
 ALTER TABLE concept ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
 ALTER TABLE message ALTER COLUMN id SET DEFAULT nextval('message_id_seq'::regclass);
+ALTER TABLE "overlay" ALTER COLUMN id SET DEFAULT nextval('overlay_id_seq'::regclass);
 ALTER TABLE project ALTER COLUMN id SET DEFAULT nextval('project_id_seq'::regclass);
 ALTER TABLE sessions ALTER COLUMN id SET DEFAULT nextval('sessions_id_seq'::regclass);
 ALTER TABLE stack ALTER COLUMN id SET DEFAULT nextval('stack_id_seq'::regclass);
 ALTER TABLE textlabel ALTER COLUMN id SET DEFAULT nextval('textlabel_id_seq'::regclass);
 ALTER TABLE "user" ALTER COLUMN id SET DEFAULT nextval('user_id_seq'::regclass);
+ALTER TABLE ONLY applied_migrations
+    ADD CONSTRAINT applied_migrations_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY class
     ADD CONSTRAINT class_id_key UNIQUE (id);
 ALTER TABLE ONLY class_instance
@@ -269,6 +294,8 @@ ALTER TABLE ONLY location
     ADD CONSTRAINT location_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY message
     ADD CONSTRAINT message_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY "overlay"
+    ADD CONSTRAINT overlay_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY project
     ADD CONSTRAINT project_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY project_stack
@@ -306,7 +333,6 @@ ALTER TABLE ONLY "user"
 CREATE INDEX connector_x_index ON connector USING btree (((location).x));
 CREATE INDEX connector_y_index ON connector USING btree (((location).y));
 CREATE INDEX connector_z_index ON connector USING btree (((location).z));
-CREATE INDEX idx_class_instance_id ON treenode_class_instance USING btree (class_instance_id);
 CREATE INDEX location_x_index ON treenode USING btree (((location).x));
 CREATE INDEX location_y_index ON treenode USING btree (((location).y));
 CREATE INDEX location_z_index ON treenode USING btree (((location).z));
@@ -406,6 +432,8 @@ ALTER TABLE ONLY connector_class_instance
     ADD CONSTRAINT connector_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
 ALTER TABLE ONLY message
     ADD CONSTRAINT message_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+ALTER TABLE ONLY "overlay"
+    ADD CONSTRAINT overlay_stack_id_fkey FOREIGN KEY (stack_id) REFERENCES stack(id) ON DELETE CASCADE;
 ALTER TABLE ONLY project_stack
     ADD CONSTRAINT project_stack_project_id_fkey FOREIGN KEY (project_id) REFERENCES project(id);
 ALTER TABLE ONLY project_stack
@@ -430,5 +458,9 @@ ALTER TABLE ONLY treenode_class_instance
     ADD CONSTRAINT treenode_class_instance_treenode_id_fkey FOREIGN KEY (treenode_id) REFERENCES treenode(id) ON DELETE CASCADE;
 ALTER TABLE ONLY treenode_class_instance
     ADD CONSTRAINT treenode_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
+ALTER TABLE ONLY treenode_connector
+    ADD CONSTRAINT treenode_connector_skeleton_id_fkey FOREIGN KEY (skeleton_id) REFERENCES class_instance(id);
 ALTER TABLE ONLY treenode
     ADD CONSTRAINT treenode_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES treenode(id);
+ALTER TABLE ONLY treenode
+    ADD CONSTRAINT treenode_skeleton_id_fkey FOREIGN KEY (skeleton_id) REFERENCES class_instance(id);

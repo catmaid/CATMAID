@@ -11,6 +11,7 @@ div.console
 	background-color:#F0F0F0;
 	border:none;
 	/*border-top:solid 4px #000000;*/
+	overflow-x: hidden;
 }
 div.console pre
 {
@@ -19,4 +20,5 @@ div.console pre
 	font-size:9px;
 	color:#000000;
 	float: left;
+	overflow-x: hidden;
 }

@@ -147,11 +147,11 @@ function Navigator()
 		{
 			if ( w > 0 )
 			{
-				self.slider_z.move( -1 );
+				self.slider_z.move( 1 );
 			}
 			else
 			{
-				self.slider_z.move( 1 );
+				self.slider_z.move( -1 );
 			}
 		}
 		return false;
@@ -166,11 +166,11 @@ function Navigator()
 			{
 				if ( w > 0 )
 				{
-					self.slider_z.move( -1 );
+					self.slider_z.move( 1 );
 				}
 				else
 				{
-					self.slider_z.move( 1 );
+					self.slider_z.move( -1 );
 				}
 			}
 			return false;
@@ -348,7 +348,7 @@ function Navigator()
 			},
 			run: function (e) {
 				self.slider_s.move(1);
-				return false;
+				return true;
 			}
 		}),
 
@@ -359,7 +359,7 @@ function Navigator()
 			},
 			run: function (e) {
 				self.slider_s.move(-1);
-				return false;
+				return true;
 			}
 		}),
 
@@ -370,7 +370,7 @@ function Navigator()
 			},
 			run: function (e) {
 				self.slider_z.move(-(e.shiftKey ? 10 : 1));
-				return false;
+				return true;
 			}
 		}),
 
@@ -381,7 +381,7 @@ function Navigator()
 			},
 			run: function (e) {
 				self.slider_z.move((e.shiftKey ? 10 : 1));
-				return false;
+				return true;
 			}
 		}),
 		
@@ -393,7 +393,7 @@ function Navigator()
 			run: function (e) {
 				self.input_x.value = parseInt(self.input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
 				self.input_x.onchange(e);
-				return false;
+				return true;
 			}
 		}),
 
@@ -405,7 +405,7 @@ function Navigator()
 			run: function (e) {
 				self.input_x.value = parseInt(self.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
 				self.input_x.onchange(e);
-				return false;
+				return true;
 			}
 		}),
 
@@ -417,7 +417,7 @@ function Navigator()
 			run: function (e) {
 				self.input_y.value = parseInt(self.input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
 				self.input_y.onchange(e);
-				return false;
+				return true;
 			}
 		}),
 
@@ -429,7 +429,7 @@ function Navigator()
 			run: function (e) {
 				self.input_y.value = parseInt(self.input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
 				self.input_y.onchange(e);
-				return false;
+				return true;
 			}
 		})]
 
@@ -466,10 +466,11 @@ function Navigator()
 
 		self.slider_s.update(
 			self.stack.MAX_S,
-			0,
-			self.stack.MAX_S + 1,
+			self.stack.MIN_S,
+			(Math.abs(self.stack.MAX_S) + Math.abs(self.stack.MIN_S)) + 1,
 			self.stack.s,
-			self.changeScaleDelayed );
+			self.changeScaleDelayed,
+			-1 );
 		
 		if ( self.stack.slices.length < 2 )	//!< hide the self.slider_z if there is only one slice
 		{

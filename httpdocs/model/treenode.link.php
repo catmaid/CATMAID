@@ -58,6 +58,9 @@ if ( $pid )
 
     $ids = $db->update("treenode", array("skeleton_id" => $skelid_from), "skeleton_id = $skelid_to");
 
+    // also update skeleton id in treenode_connector table!
+    $ids = $db->update("treenode_connector", array("skeleton_id" => $skelid_from), "skeleton_id = $skelid_to");
+
       /*
        $tnlist = array();
        $res = $db->getTreenodeIdsForSkeleton( $pid, $skelid_to );

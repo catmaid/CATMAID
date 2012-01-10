@@ -177,6 +177,7 @@ var toolActions = [
 		},
 		run: function (e) {
 			project.setTool( new Selector() );
+			return true;
 		}
 	}),
 
@@ -189,6 +190,7 @@ var toolActions = [
 		},
 		run: function (e) {
 			project.setTool( new Navigator() );
+			return true;
 		}
 	}),
 
@@ -202,6 +204,7 @@ var toolActions = [
 		},
 		run: function (e) {
 			WindowMaker.show('keyboard-shortcuts');
+			return true;
 		}
 	})
 ];
@@ -217,6 +220,7 @@ var editToolActions = [
 		},
 		run: function (e) {
 			project.setMode( 'text' );
+			return true;
 		}
 	}),
 
@@ -229,6 +233,7 @@ var editToolActions = [
 		},
 		run: function (e) {
 			project.setMode( 'crop' );
+			return true;
 		}
 	}),
 
@@ -241,6 +246,7 @@ var editToolActions = [
 		},
 		run: function (e) {
 			project.setTool( new TracingTool() );
+			return true;
 		}
 	})
 
@@ -252,6 +258,7 @@ var editToolActions = [
 		},
 		run: function (e) {
 			project.setMode( 'profile' );
+			return true;
 		}
 	})
 */
@@ -265,6 +272,7 @@ var tracingWindowActions = [
     buttonName: 'table',
     run: function (e) {
       WindowMaker.show('node-table');
+      return true;
     }
   }),
 
@@ -274,6 +282,7 @@ var tracingWindowActions = [
     buttonName: 'table_connector',
     run: function (e) {
       WindowMaker.show( 'connector-table' );
+      return true;
     }
   }),
 
@@ -283,6 +292,20 @@ var tracingWindowActions = [
     buttonName: 'tree',
     run: function (e) {
       WindowMaker.show('object-tree');
+      return true;
+    }
+  }),
+
+  new Action({
+    helpText: "Show search window",
+    buttonID: "data_button_search",
+    buttonName: 'search',
+    keyShortcuts: {
+      '/': [ 191, 47 ]
+    },
+    run: function (e) {
+      WindowMaker.show('search');
+      return true;
     }
   }),
 
@@ -292,6 +315,7 @@ var tracingWindowActions = [
     buttonName: 'stats',
     run: function (e) {
       WindowMaker.show('statistics');
+      return true;
     }
   }),
 
@@ -301,6 +325,16 @@ var tracingWindowActions = [
     buttonName: '3d-view',
     run: function (e) {
       WindowMaker.show('3d-view');
+      return true;
+    }
+  }),
+
+  new Action({
+    helpText: "Show 3D WebGL view",
+    buttonID: "view_3d_webgl_button",
+    buttonName: '3d-view',
+    run: function (e) {
+      WindowMaker.show('3d-webgl-view');
     }
   }),
 
@@ -318,6 +352,7 @@ var tracingWindowActions = [
     buttonID: "view_objecttree_graph",
     buttonName: 'objecttree-graph',
     run: function (e) {
-      window.open("apps/graph/index.html?project_id="+project.id,"Object tree graph");
+      window.open("apps/graph/index.html?project_id="+project.id+"&lower_skeleton_count=10", "Wiring diagram");
+      return true;
     }
   }) ];

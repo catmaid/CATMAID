@@ -155,8 +155,8 @@ function TracingTool()
 	/**
 	 * unregister all stack related mouse and keyboard controls
 	 */
-	this.unregister = function()
-	{
+  this.unregister = function()
+  {
     // do it before calling the prototype destroy that sets stack to null
     if (self.prototype.stack) {
       inactivateBindings();
@@ -165,7 +165,7 @@ function TracingTool()
     // and the annotations would disappear
     //self.prototype.unregister();
     return;
-	}
+  }
 
 	/**
 	 * unregister all project related GUI control connections and event
@@ -233,7 +233,7 @@ function TracingTool()
     },
     run: function (e) {
       self.prototype.slider_s.move(1);
-      return false;
+      return true;
     }
   }) );
 
@@ -244,7 +244,7 @@ function TracingTool()
     },
     run: function (e) {
       self.prototype.slider_s.move(-1);
-      return false;
+      return true;
     }
   }) );
 
@@ -255,7 +255,7 @@ function TracingTool()
     },
     run: function (e) {
       self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
-      return false;
+      return true;
     }
   }) );
 
@@ -266,7 +266,7 @@ function TracingTool()
     },
     run: function (e) {
       self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
-      return false;
+      return true;
     }
   }) );
 
@@ -278,7 +278,7 @@ function TracingTool()
     run: function (e) {
       self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
       self.prototype.input_x.onchange(e);
-      return false;
+      return true;
     }
   }) );
 
@@ -290,7 +290,7 @@ function TracingTool()
     run: function (e) {
       self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
       self.prototype.input_x.onchange(e);
-      return false;
+      return true;
     }
   }) );
 
@@ -302,7 +302,7 @@ function TracingTool()
     run: function (e) {
       self.prototype.input_y.value = parseInt(self.prototype.input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
       self.prototype.input_y.onchange(e);
-      return false;
+      return true;
     }
   }) );
 
@@ -314,7 +314,7 @@ function TracingTool()
     run: function (e) {
       self.prototype.input_y.value = parseInt(self.prototype.input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
       self.prototype.input_y.onchange(e);
-      return false;
+      return true;
     }
   }) );
 
@@ -327,7 +327,7 @@ function TracingTool()
     },
     run: function (e) {
       tracingLayer.svgOverlay.tracingCommand('skeleton');
-      return false;
+      return true;
     }
   } ) );
 
@@ -340,7 +340,7 @@ function TracingTool()
     },
     run: function (e) {
       tracingLayer.svgOverlay.tracingCommand('synapse');
-      return false;
+      return true;
     }
   } ) );
 
@@ -361,7 +361,7 @@ function TracingTool()
           tracingLayer.svgOverlay.pix2physY(activeNodePosition.y),
           tracingLayer.svgOverlay.pix2physX(activeNodePosition.x));
       }
-      return false;
+      return true;
     }
   } ) );
 
@@ -372,7 +372,7 @@ function TracingTool()
     },
     run: function (e) {
       tracingLayer.svgOverlay.activateNode(null);
-      return false;
+      return true;
     }
   }) );
 
@@ -400,7 +400,7 @@ function TracingTool()
           alert("There active node must be visible in order to move to its parent");
         }
       }
-      return false;
+      return true;
     }
   }) );
 
@@ -411,7 +411,7 @@ function TracingTool()
     },
     run: function (e) {
       tracingLayer.svgOverlay.tracingCommand('golastedited');
-      return false;
+      return true;
     }
   }) );
 
@@ -424,7 +424,7 @@ function TracingTool()
     },
     run: function (e) {
       tracingLayer.svgOverlay.tracingCommand('skelsplitting');
-      return false;
+      return true;
     }
   }) );
 
@@ -437,7 +437,7 @@ function TracingTool()
     },
     run: function (e) {
       tracingLayer.svgOverlay.tracingCommand('skelrerooting');
-      return false;
+      return true;
     }
   }) );
 
@@ -454,7 +454,7 @@ function TracingTool()
       } else {
         tracingLayer.svgOverlay.tracingCommand('showlabels');
       }
-      return false;
+      return true;
     }
   }) );
 
@@ -467,7 +467,7 @@ function TracingTool()
     },
     run: function (e) {
       tracingLayer.svgOverlay.tracingCommand('exportswc');
-      return false;
+      return true;
     }
   }) );
 
@@ -479,6 +479,23 @@ function TracingTool()
     run: function (e) {
       if (!(e.ctrlKey || e.metaKey)) {
 	tracingLayer.svgOverlay.tracingCommand('tagging');
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Add TODO Tag (Shift: Remove) for the active node",
+    keyShortcuts: {
+      "L": [ 76 ]
+    },
+    run: function (e) {
+      if (e.ctrlKey || e.metaKey || e.shiftKey) {
+        tracingLayer.svgOverlay.tracingCommand('tagTODOremove');
+      } else {
+        tracingLayer.svgOverlay.tracingCommand('tagTODO');
       }
       return true;
     }
@@ -492,8 +509,10 @@ function TracingTool()
     run: function (e) {
       if (!(e.ctrlKey || e.metaKey)) {
         tracingLayer.svgOverlay.tracingCommand('selectnearestnode');
+        return true;
+      } else {
+        return false;
       }
-      return true;
     }
   }) );
 
@@ -505,7 +524,7 @@ function TracingTool()
     run: function (e) {
       self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
       tracingLayer.svgOverlay.tracingCommand('createtreenodeup');
-      return false;
+      return true;
     }
   }) );
 
@@ -517,7 +536,7 @@ function TracingTool()
     run: function (e) {
       self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
       tracingLayer.svgOverlay.tracingCommand('createtreenodedown');
-      return false;
+      return true;
     }
   }) );
 
@@ -529,8 +548,7 @@ function TracingTool()
   this.handleKeyPress = function( e ) {
     var keyAction = keyCodeToAction[e.keyCode];
     if (keyAction) {
-      keyAction.run(e);
-      return true;
+      return keyAction.run(e);
     } else {
       return false;
     }
@@ -552,5 +570,85 @@ function TracingTool()
   {
     self.prototype.redraw();
   };
+
+}
+
+TracingTool.goToNearestInNeuron = function(type, objectID) {
+  parameters = {
+    pid: project.id,
+    x: project.x,
+    y: project.y,
+    z: project.z,
+  };
+  parameters[type + '_id'] = objectID;
+  requestQueue.register("model/node.nearest.php", "GET",
+                        parameters, function (status, text) {
+    var data;
+    if (status !== 200) {
+      alert("Finding the nearest node failed with HTTP status code: "+status);
+    } else {
+      data = $.parseJSON(text);
+      if (data.error) {
+        alert("An error was returned when trying to fetch the nearest node: "+data.error);
+      } else {
+        project.moveTo(data.z, data.y, data.x);
+        window.setTimeout("SkeletonAnnotations.staticSelectNode( " + data.treenode_id + ", " + data.skeleton_id + " )", 1000);
+      }
+    }
+  });
+};
+
+TracingTool.search = function()
+{
+  var setSearchingMessage = function(message) {
+    $('#search-results').empty();
+    $('#search-results').append($('<i/>').text(message));
+  };
+
+  setSearchingMessage('Search in progress...');
+  requestQueue.register("model/search.php", "GET", {
+    pid: project.id,
+    substring: $('#search-box').val()
+  }, function (status, text) {
+    var i, table, tbody, row, id, name, class_name, actionLink, data, neuronID;
+    if (status !== 200) {
+      setSearchingMessage('Search failed with HTTP status'+status);
+    } else {
+      data = $.parseJSON(text);
+      if (data.error) {
+        setSearchingMessage('Search failed with error: '+data.error);
+      } else {
+        $('#search-results').empty();
+        $('#search-results').append($('<i/>').data('Found '+data.length+' results:'));
+        table = $('<table/>');
+        $('#search-results').append(table);
+        tbody = $('<tbody/>');
+        tbody.append('<tr><th>ID</th><th>Name</th><th>Class</th><th>Action</th></tr>');
+        table.append(tbody);
+        for (i = 0; i < data.length; ++i) {
+          row = $('<tr/>');
+          row.append($('<td/>').text(data[i].id));
+          row.append($('<td/>').text(data[i].name));
+          row.append($('<td/>').text(data[i].class_name));
+          if (data[i].class_name === 'neuron') {
+            actionLink = $('<a/>');
+            actionLink.attr({'id': ''+data[i].id});
+            actionLink.attr({'href':''});
+            actionLink.click(function() {
+              TracingTool.goToNearestInNeuron('neuron', parseInt($(this).attr('id')));
+              return false;
+            });
+            actionLink.text("Go to nearest node");
+            row.append($('<td/>').append(actionLink));
+          } else {
+            row.append($('<td/>').text('IMPLEMENT ME'));
+          }
+          tbody.append(row);
+        }
+      }
+    }
+    return true;
+  });
+
 
 }

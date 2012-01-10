@@ -104,28 +104,18 @@ try {
   }
   else if ( $op == 'remove_node')
   {
-    // check if the object belongs to you
-    $isuser = $db->getResult('SELECT "ci"."id" FROM "class_instance" AS "ci"
-                              WHERE "ci"."id" = '.$id.'
-                              AND "ci"."user_id" = '.$uid);
-    
-    if (false === $isuser) {
-      emitErrorAndExit($db, 'Failed to select from instance table.');
-    }
-    	
-    if( !empty($isuser) )
-    {
+
       // check if node is a skeleton. if so, we have to remove its treenodes as well!
       if ( $rel ) {
         if ( $rel == "skeleton" )
         {
           remove_skeleton($db, $pid, $id);
           $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
-          
+
           if (false === $ids) {
             emitErrorAndExit($db, 'Failed to delete skeleton from instance able.');
           }
-          
+
           // finish("Removed skeleton successfully.");
           finish( array('status' => 1, 'message' => "Removed skeleton successfully.") );
         }
@@ -134,14 +124,14 @@ try {
           // retrieve skeleton ids
           $model_of_id = $db->getRelationId( $pid, "model_of" );
           $res = $db->getResult('SELECT "cici"."class_instance_a" AS "skeleton_id"
-			    FROM "class_instance_class_instance" AS "cici"
-			    WHERE "cici"."class_instance_b" = '.$id.' AND "cici"."project_id" = '.$pid.'
-			    AND "cici"."relation_id" = '.$model_of_id);
-			    
-	      foreach($res as $key => $val) {
-	            remove_skeleton($db, $pid, $val['skeleton_id']);
-	            $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$val['skeleton_id']);
-	      }
+                FROM "class_instance_class_instance" AS "cici"
+                WHERE "cici"."class_instance_b" = '.$id.' AND "cici"."project_id" = '.$pid.'
+                AND "cici"."relation_id" = '.$model_of_id);
+
+          foreach($res as $key => $val) {
+                remove_skeleton($db, $pid, $val['skeleton_id']);
+                $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$val['skeleton_id']);
+          }
           $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
 
           if (false === $ids) {
@@ -149,25 +139,20 @@ try {
           }
 
           finish( array('status' => 1, 'message' => "Removed neuron successfully.") );
-	        
+
         }
         else
         {
           $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$id);
-          
+
           if (false === $ids) {
             emitErrorAndExit($db, 'Failed to delete node from instance table.');
           }
-          
-          finish("Removed node successfully.");						
+
+          finish( array('status' => 1, 'message' => "Removed node successfully.") );
         }
       }
-      
-    }
-    else
-    {
-      emitErrorAndExit($db, "You are not the creator of the object, thus you can not remove it.");
-    }
+
   }
   else if ( $op == 'create_node')
   {

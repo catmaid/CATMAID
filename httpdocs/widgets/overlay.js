@@ -224,6 +224,28 @@ var SkeletonAnnotations = new function()
           if (atn.skeleton_id !== node.skeleton_id) {
             // if we switched the skeleton, we need to reopen the object tree
             openSkeletonNodeInObjectTree(node);
+            // also update the status with the ancestry of that skeleton:
+            requestQueue.register("model/skeleton.ancestry.php", "POST", {
+              pid: project.id,
+              skeleton_id: node.skeleton_id
+            }, function (status, text) {
+              var data = $.parseJSON(text), message, i, d;
+              if (status === 200) {
+                if ('error' in data) {
+                  alert("There was an error fetching the ancestry of skeleton "+node.skeleton_id+":\n"+data.error);
+                } else {
+                  message = "Activated treenode with id " + node.id + " and skeleton id " + node.skeleton_id;
+                for (i = 0; i < data.length; ++i) {
+                  d = data[i];
+                  message += " <i>part_of</i> [<strong>"+d.name+"</strong>]";
+                }
+                statusBar.replaceLastHTML(message);
+                }
+              } else {
+                alert("Getting the ancestry of the skeleton "+node.skeleton_id+" failed with HTTP status code "+status);
+              }
+            });
+
           }
           atn.set(node);
           // refresh all widgets except for the object tree
@@ -339,6 +361,27 @@ var SkeletonAnnotations = new function()
         tagbox.remove();
         tagbox = null;
       }
+    }
+
+    this.tagATNwithTODO = function( label ) {
+      requestQueue.register("model/label.update.php", "POST", {
+        pid: project.id,
+        nid: atn.id,
+        ntype: atn.type,
+        tags: label
+      }, function (status, text, xml) {
+        if (status === 200) {
+          if (text && text !== " ") {
+            var e = $.parseJSON(text);
+            if (e.error) {
+              alert(e.error);
+            } else {
+              self.updateNodes();
+            }
+          }
+        }
+      });
+
     }
 
     this.tagATN = function () {
@@ -519,40 +562,33 @@ var SkeletonAnnotations = new function()
             if (e.error) {
               alert(e.error);
             } else {
-              // just redraw all for now
-              self.updateNodes();
-              ObjectTree.refresh();
-              refreshAllWidgets();
+              // then link again, in the continuation
+              requestQueue.register("model/treenode.link.php", "POST", {
+                pid: project.id,
+                from_id: fromid,
+                to_id: toid
+              }, function (status, text, xml) {
+                if (status === 200) {
+                  if (text && text !== " ") {
+                    var e = $.parseJSON(text);
+                    if (e.error) {
+                      alert(e.error);
+                    } else {
+                      // just redraw all for now
+                      self.updateNodes();
+                      ObjectTree.refresh();
+                      refreshAllWidgets();
+                    }
+                  }
+                }
+                return true;
+              });
+
             }
           }
         }
       });
-      // then link again
-      requestQueue.register("model/treenode.link.php", "POST", {
-        pid: project.id,
-        from_id: fromid,
-        to_id: toid
-      }, function (status, text, xml) {
-        if (status === 200) {
-          if (text && text !== " ") {
-            var e = $.parseJSON(text);
-            if (e.error) {
-              alert(e.error);
-            } else {
-              nodes[toid].parent = nodes[fromid];
-              // update the parents children
-              nodes[fromid].children[toid] = nodes[toid];
-              nodes[toid].drawEdges();
-              nodes[fromid].drawEdges();
-              // make target active treenode
-              self.activateNode(nodes[toid]);
-              ObjectTree.requestOpenTreePath( nodes[fromid] );
-              refreshAllWidgets();
-            }
-          }
-        }
-        return true;
-      });
+
       return;
     };
 
@@ -1173,7 +1209,7 @@ var SkeletonAnnotations = new function()
         worldY = wc.worldTop + ((m.offsetY / stack.scale) * stack.resolution.y);
         lastX = worldX;
         lastY = worldY;
-        statusBar.replaceLast('['+worldX+', '+worldY+', '+project.coordinates.z+']');
+        statusBar.printCoords('['+worldX+', '+worldY+', '+project.coordinates.z+']');
         self.offsetXPhysical = worldX;
         self.offsetYPhysical = worldY;
       }
@@ -1414,6 +1450,20 @@ var SkeletonAnnotations = new function()
           self.tagATN();
         } else {
           alert('Need to activate a treenode or connector before tagging!');
+        }
+        break;
+      case "tagTODO":
+        if (atn != null) {
+          self.tagATNwithTODO( 'TODO' );
+        } else {
+          alert('Need to activate a treenode or connector before tagging with TODO!');
+        }
+        break;
+      case "tagTODOremove":
+        if (atn != null) {
+          self.tagATNwithTODO( '' );
+        } else {
+          alert('Need to activate a treenode or connector before removing TODO tag!');
         }
         break;
       case "selectnearestnode":

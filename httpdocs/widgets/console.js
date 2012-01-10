@@ -7,6 +7,19 @@ function Console() {
   view.style.height = "35px";
   view.appendChild(document.createElement("pre"));
 
+  var coords = document.createElement("div");
+  coords.align = "right";
+  coords.style.fontFamily = "Courier; Sans-serif;";
+  coords.style.fontSize = "15px";
+  coords.style.marginTop="10px";
+  coords.style.marginRight="8px";
+  coords.appendChild(document.createTextNode(""));
+  view.appendChild(coords);
+  
+  this.printCoords = function (obj) {
+    coords.replaceChild(document.createTextNode(obj), coords.firstChild);
+  }
+
   var toStr = function (obj, ins) {
     if (typeof ins == "undefined") ins = "";
 
@@ -54,11 +67,18 @@ function Console() {
 
   this.replaceLast = function (obj) {
     var sp = document.createElement("pre");
-    if (typeof obj == "string") sp.appendChild(document.createTextNode(obj));
+    if (typeof obj == "string")
+      sp.appendChild(document.createTextNode(obj));
     else
-    sp.appendChild(document.createTextNode(toStr(obj)));
+      sp.appendChild(document.createTextNode(toStr(obj)));
     view.replaceChild(sp, view.firstChild);
     return;
+  }
+
+  this.replaceLastHTML = function (html) {
+    var e = document.createElement("pre");
+    e.innerHTML = html;
+    view.replaceChild(e, view.firstChild);
   }
 
   this.getView = function () {

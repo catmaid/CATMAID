@@ -107,7 +107,7 @@ class RelationQueryTests(TestCase):
     def test_find_all_neurons(self):
         all_neurons = ClassInstance.objects.filter(class_column__class_name='neuron',
                                                    project=self.test_project_id)
-        self.assertEqual(all_neurons.count(), 5)
+        self.assertEqual(all_neurons.count(), 8)
 
     def test_find_downstream_neurons(self):
         upstream = ClassInstance.objects.get(name='branched neuron')
@@ -448,8 +448,8 @@ class ViewPageTests(TestCase):
         for t in values_and_users:
             if t[0] == 6:
                 self.assertEqual(t[1], 'test (6)')
-            elif t[0] == 71:
-                self.assertEqual(t[1], 'gerhard (71)')
+            elif t[0] == 78:
+                self.assertEqual(t[1], 'gerhard (78)')
             else:
                 raise Exception, "Unexpected value in returned stats: "+str(t)
 
@@ -458,12 +458,12 @@ class ViewPageTests(TestCase):
         response = self.client.get('/%d/stats-summary' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
         expected_result = {u"proj_users" : 2,
-                           u"proj_neurons": 5,
-                           u"proj_synapses": 3,
-                           u"proj_treenodes": 77,
-                           u"proj_skeletons" : 5,
-                           u"proj_presyn" : 3,
-                           u"proj_postsyn" : 3,
+                           u"proj_neurons": 8,
+                           u"proj_synapses": 4,
+                           u"proj_treenodes": 84,
+                           u"proj_skeletons" : 7,
+                           u"proj_presyn" : 5,
+                           u"proj_postsyn" : 4,
                            u"proj_textlabels": 0,
                            u"proj_tags" : 4}
         parsed_response = json.loads(response.content)
@@ -536,6 +536,11 @@ class ViewPageTests(TestCase):
         self.assertTrue(node_356_found)
         self.assertTrue(node_367_found)
         self.assertTrue(node_393_found)
+
+    def test_multiple_treenodes(self):
+        self.fake_authentication()
+        response = self.client.get('/%d/multiple-presynaptic-terminals' % (self.test_project_id,))
+        self.assertEqual(response.status_code, 200)
 
 class TreenodeTests(TestCase):
 

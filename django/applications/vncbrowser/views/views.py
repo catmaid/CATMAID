@@ -1,3 +1,4 @@
+from django.db import models
 from django.conf import settings
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.core.urlresolvers import reverse
@@ -5,12 +6,15 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
-    Project, User, Treenode, TreenodeConnector, Stack, ProjectStack
+    Project, User, Treenode, TreenodeConnector, Connector, Stack, ProjectStack
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
+from django.db.models import Count
 import json
 import re
 import sys
+from urllib import urlencode
+
 
 @catmaid_login_required
 def index(request, **kwargs):
@@ -179,6 +183,8 @@ def lines_delete(request, project_id=None, logged_in_user=None):
                                         kwargs={'neuron_id':neuron.id,
                                                 'project_id':p.id}))
 
+
+
 def get_swc_string(treenodes_qs):
     all_rows = []
     for tn in treenodes_qs:
@@ -220,6 +226,132 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, treenod
     else:
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
+
+def export_wiring_diagram(request, project_id=None):
+
+    if request.POST.has_key('lower_skeleton_count'):
+        LOWER_TREENODE_NUMBER_LIMIT=request.POST['lower_skeleton_count']
+    else:
+        LOWER_TREENODE_NUMBER_LIMIT=10
+
+    # result dictionary: {connectorid: presyn_skeletonid}
+    tmp={}
+    result={}
+    # get the presynaptic connections
+    qs = TreenodeConnector.objects.filter(
+        project=project_id,
+        relation__relation_name = 'presynaptic_to'
+    )
+    for e in qs:
+        if not e.connector_id in tmp:
+            tmp[e.connector_id]=e.skeleton_id
+            result[e.skeleton_id]={}
+        else:
+            # connector with multiple presynaptic connections
+            pass
+
+    skeletons={}
+    qs = Treenode.objects.filter(project=project_id).values('skeleton').annotate(Count('skeleton'))
+    for e in qs:
+        skeletons[ e['skeleton'] ]=e['skeleton__count']
+
+    # get the postsynaptic connections
+    qs = TreenodeConnector.objects.filter(
+        project=project_id,
+        relation__relation_name = 'postsynaptic_to'
+    )
+    for e in qs:
+        if e.connector_id in tmp:
+
+            # limit the skeletons to include
+            if skeletons[ tmp[e.connector_id] ] < LOWER_TREENODE_NUMBER_LIMIT or \
+                skeletons[ e.skeleton_id ] < LOWER_TREENODE_NUMBER_LIMIT:
+                continue
+
+            # an existing connector, so we add a connection
+            if e.skeleton_id in result[tmp[e.connector_id]]:
+                result[tmp[e.connector_id]][e.skeleton_id] += 1
+            else:
+                result[tmp[e.connector_id]][e.skeleton_id] = 1
+        else:
+            # connector with only postsynaptic connections
+            pass
+
+    nodes_tmp={}
+    edges=[]
+
+    for k,v in result.iteritems():
+
+        for kk,vv in v.iteritems():
+
+            edges.append(
+                {"id": str(k)+"_"+str(kk),
+                 "source": str(k),
+                 "target": str(kk),
+                 "weight": vv}
+            )
+
+            nodes_tmp[k]=None
+            nodes_tmp[kk]=None
+
+    nodes=[]
+    for k,v in nodes_tmp.iteritems():
+        nodes.append(
+                {
+                "id": str(k),
+                "label": "Skeleton "+str(k),
+                'node_count': skeletons[k]
+                }
+        )
+
+    nodesDataSchema=[
+        {'name':'id','type':'string'},
+        {'name':'label','type':'string'},
+        {'name':'node_count','type':'number'},
+    ]
+    edgesDataSchema=[
+        {'name': 'id','type':'string'},
+        {'name': 'weight','type':'number'},
+        {'name': "directed", "type": "boolean", "defValue": True}
+    ]
+
+    data={
+        'dataSchema':{'nodes':nodesDataSchema,'edges':edgesDataSchema},
+        'data':{'nodes':nodes,'edges':edges}
+    }
+
+    json_return = json.dumps(data, sort_keys=True, indent=4)
+    return HttpResponse(json_return, mimetype='text/json')
+
+def convert_annotations_to_networkx(project_id=None):
+
+    qs = ClassInstanceClassInstance.objects.filter(
+      relation__relation_name__in=['part_of', 'model_of'],
+      project=project_id,
+      class_instance_a__class_column__class_name__in=["group", "neuron", "skeleton"],
+      class_instance_b__class_column__class_name__in=["root", "group", "neuron", "skeleton"],
+      ).select_related("class_instance_a", "class_instance_b",
+                       "class_instance_a__class_column__class_name", "class_instance_b__class_column__class_name")
+
+    import networkx as nx
+    g=nx.DiGraph()
+
+    for e in qs:
+        if not e.class_instance_a.id in g:
+            g.add_node( e.class_instance_a.id, {"class": e.class_instance_a.class_column.class_name,
+                                                "name": e.class_instance_a.name} )
+        if not e.class_instance_b.id in g:
+            g.add_node( e.class_instance_b.id, {"class": e.class_instance_b.class_column.class_name,
+                                                "name": e.class_instance_b.name} )
+        g.add_edge( e.class_instance_b.id, e.class_instance_a.id ) # the part_of/model_of edge
+
+    # TODO: convert graph to json_graph: http://networkx.lanl.gov/reference/readwrite.json_graph.html
+    from networkx.readwrite import json_graph
+    data = json_graph.node_link_data(g)
+    json_return = json.dumps(data, sort_keys=True, indent=4)
+    return HttpResponse(json_return, mimetype='text/plain')
+
+
 def export_extended_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None, format=None):
     treenode_qs = get_treenodes_qs(project_id, skeleton_id, treenode_id)
 
@@ -246,12 +378,9 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
                 }
 
     qs_tc = TreenodeConnector.objects.filter(
-        treenode__treenodeclassinstance__class_instance__id=skeleton_id,
-        treenode__treenodeclassinstance__relation__relation_name='element_of',
-        treenode__treenodeclassinstance__class_instance__class_column__class_name='skeleton',
         project=project_id,
         relation__relation_name__endswith = 'synaptic_to',
-        treenode__in=list(vertices.keys())
+        skeleton__in=[skeleton_id]
     ).select_related('treenode', 'connector', 'relation')
 
     #print >> sys.stderr, 'vertices, connectivity', vertices, connectivity
@@ -324,6 +453,33 @@ def neuron_to_skeletons(request, project_id=None, neuron_id=None, logged_in_user
         cici_via_a__class_instance_b=neuron)
     return HttpResponse(json.dumps([x.id for x in qs]), mimetype="text/json")
 
+<<<<<<< HEAD
+=======
+@catmaid_login_required
+def multiple_presynaptic_terminals(request, project_id=None, logged_in_user=None):
+    p = get_object_or_404(Project, pk=project_id)
+
+    tcs = TreenodeConnector.objects.filter(project__id=project_id, relation__relation_name='presynaptic_to').values('connector').annotate(number=models.Count('connector')).filter(number__gt=1)
+    return my_render_to_response(request,
+                                 'vncbrowser/multiple_presynaptic_terminals.html',
+                                 {'project_id': p.id,
+                                  'catmaid_url': settings.CATMAID_URL,
+                                  'user': logged_in_user,
+                                  'stacks': p.stacks.all(),
+                                  'connector_counts': tcs})
+
+@catmaid_login_required
+def goto_connector(request, project_id=None, connector_id=None, stack_id=None, logged_in_user=None):
+    c = get_object_or_404(Connector, pk=connector_id)
+    parameters = {"pid": project_id,
+                  "zp": c.location.z,
+                  "yp": c.location.y,
+                  "xp": c.location.x,
+                  "tool": "tracingtool",
+                  "sid0": stack_id,
+                  "s0" : 0}
+    return HttpResponseRedirect(settings.CATMAID_URL + "?" + urlencode(parameters))
+
 def get_stack_info(project_id=None, stack_id=None):
     """ Returns a dictionary with relevant information for stacks
     """
@@ -360,5 +516,4 @@ def get_stack_info(project_id=None, stack_id=None):
 @catmaid_login_required
 def stack_info(request, project_id=None, stack_id=None, logged_in_user=None):
     result=get_stack_info(project_id, stack_id)
-
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")

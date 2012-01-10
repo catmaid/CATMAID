@@ -226,7 +226,7 @@ function handle_updateProjects(status, text, xml) {
       alert(e.error);
     } else {
       for (var i in e) {
-        if (project && project.id == i) {
+        if (project && project.id == e[i].pid) {
           keep_project_alive = true;
           keep_project_editable = e[i].editable;
         }
@@ -328,7 +328,9 @@ function handle_openProjectStack( status, text, xml )
 					e.resolution,
 					e.translation,		//!< @todo replace by an affine transform
 					e.broken_slices,
-					e.trakem2_project );
+					e.trakem2_project,
+					e.min_zoom_level,
+					-2 );
 			
 			document.getElementById( "toolbox_project" ).style.display = "block";
 			
@@ -336,7 +338,8 @@ function handle_openProjectStack( status, text, xml )
 					stack,
 					e.image_base,
 					e.tile_width,
-					e.tile_height );
+					e.tile_height,
+					e.file_extension);
 
 			stack.addLayer( "TileLayer", tilelayer );
 
@@ -345,7 +348,8 @@ function handle_openProjectStack( status, text, xml )
 								stack,
 								value.image_base,
 								e.tile_width,
-								e.tile_height );
+								e.tile_height,
+								e.file_extension);
 				// set default opacity internally
 				tilelayer2.setOpacity( value.default_opacity );
 				stack.addLayer( value.title, tilelayer2 );

@@ -1,1 +1,0 @@
-Kein Server angegeben!

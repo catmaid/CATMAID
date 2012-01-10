@@ -179,6 +179,10 @@ try {
     $ids = $db->update("class_instance_class_instance", array("class_instance_b" => $newSkeletonID) ,
     ' "class_instance_a" IN ('.$comma_seperated_newskeleton_terminals.') AND "relation_id" = '.$partof);
 
+    // also update treenode_connector table for selected skeletons
+    $ids = $db->update("treenode_connector", array("skeleton_id" => $newSkeletonID),
+    ' "treenode_id" IN ('.$comma_seperated_newskeleton_treenodes.')');
+
 	if (! $db->commit() ) {
 		emitErrorAndExit( $db, 'Failed to commit split!' );
 	}

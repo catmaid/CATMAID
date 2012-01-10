@@ -43,6 +43,7 @@ output_filename = os.path.join(destination_directory,
 # You must specify your password in ~/.pgpass, as described here:
 #   http://www.postgresql.org/docs/current/static/libpq-pgpass.html
 dump_command = ['pg_dump',
+                '--clean',
                 '-U',
                 db_username,
                 '--no-password',

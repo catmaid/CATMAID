@@ -34,7 +34,8 @@ function TileLayer(
 		stack,						//!< reference to the parent stack
 		baseURL,					//!< base URL for image tiles
 		tileWidth,
-		tileHeight
+		tileHeight,
+		fileExtension
 		)
 {
 	/**
@@ -71,16 +72,32 @@ function TileLayer(
 		var pixelPos = [ stack.x, stack.y, stack.z ];
 		var tileBaseName = getTileBaseName( pixelPos );
 
-		var fr = Math.floor( stack.yc / tileHeight );
-		var fc = Math.floor( stack.xc / tileWidth );
+		var zoom = stack.s;
+		var mag = 1.0;
+		var artificialZoom = false;
+		/* If the zoom is negative we zoom in digitally. For this
+		 * we take the zero zoom level and adjust the tile properties.
+		 * This way we let the browser do the zooming work.
+		 */
+		if (zoom < 0) {
+			artificialZoom = true;
+			mag = Math.pow(2, -zoom);
+			zoom = 0;
+		}
+
+		effectiveTileWidth = tileWidth * mag;
+		effectiveTileHeight = tileHeight * mag;
+
+		var fr = Math.floor( stack.yc / effectiveTileHeight );
+		var fc = Math.floor( stack.xc / effectiveTileWidth );
 		
 		var xd = 0;
 		var yd = 0;
 		
 		if ( stack.z == stack.old_z && stack.s == stack.old_s )
 		{
-			var old_fr = Math.floor( stack.old_yc / tileHeight );
-			var old_fc = Math.floor( stack.old_xc / tileWidth );
+			var old_fr = Math.floor( stack.old_yc / effectiveTileHeight );
+			var old_fc = Math.floor( stack.old_xc / effectiveTileWidth );
 			
 			xd = fc - old_fc;
 			yd = fr - old_fr;
@@ -146,23 +163,31 @@ function TileLayer(
 			}
 		}
 		
-		if ( stack.s != stack.old_s )
+		if ( stack.s != stack.old_s)
 		{
-			LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
-			LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );	
+			if (artificialZoom)
+			{
+				LAST_XT = Math.floor( ( stack.dimension.x - 1 ) / tileWidth );
+				LAST_YT = Math.floor( ( stack.dimension.y - 1 ) / tileHeight );
+			}
+			else
+			{
+				LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
+				LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
+			}
 		}
 		
 		var top;
 		var left;
 		
 		if ( stack.yc >= 0 )
-			top  = -( stack.yc % tileHeight );
+			top  = -( stack.yc % effectiveTileHeight );
 		else
-			top  = -( ( stack.yc + 1 ) % tileHeight ) - tileHeight + 1;
+			top  = -( ( stack.yc + 1 ) % effectiveTileHeight ) - effectiveTileHeight + 1;
 		if ( stack.xc >= 0 )
-			left = -( stack.xc % tileWidth );
+			left = -( stack.xc % effectiveTileWidth );
 		else
-			left = -( ( stack.xc + 1 ) % tileWidth ) - tileWidth + 1;
+			left = -( ( stack.xc + 1 ) % effectiveTileWidth ) - effectiveTileWidth + 1;
 		
 		var t = top;
 		var l = left;
@@ -190,23 +215,33 @@ function TileLayer(
 				{
 					// TODO: use this for the new tile naming scheme:
 					// tiles[ i ][ j ].alt = tileBaseName + stack.s + "/" + ( fr + i ) + "/" + ( fc + j );
-					tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + stack.s;
-					tiles[ i ][ j ].src = baseURL + tiles[ i ][ j ].alt + ".jpg";
+					tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
+					tiles[ i ][ j ].src = self.getTileURL( tiles[ i ][ j ].alt );
 				}
 				tiles[ i ][ j ].style.top = t + "px";
 				tiles[ i ][ j ].style.left = l + "px";
 				tiles[ i ][ j ].style.visibility = "visible";
-				
-				l += tileWidth;
+
+				tiles[ i ][ j ].style.width = effectiveTileWidth + "px";
+				tiles[ i ][ j ].style.height = effectiveTileHeight + "px";
+
+				l += effectiveTileWidth;
 				
 				//alert( l + ", " + t );
 				
 			}
 			l = left;
-			t += tileHeight;
+			t += effectiveTileHeight;
 		}
 		
 		return 2;
+	}
+
+	/**
+	 * Creates the URL for a tile.
+	 */
+	this.getTileURL = function(tileId) {
+		return baseURL + tileId + "." + fileExtension;
 	}
 	
 	this.resize = function( width, height )
@@ -256,7 +291,7 @@ function TileLayer(
 	{
 		this.redraw = function()
 		{
-			img.src = baseURL + stack.z + "/small.jpg";
+			img.src = baseURL + stack.z + "/small." + fileExtension;
 			return;
 		}
 		
@@ -270,7 +305,7 @@ function TileLayer(
 		
 		var img = document.createElement( "img" );
 		img.className = "smallMapMap";
-		img.src = "map/small.jpg";
+		img.src = "map/small." + fileExtension;
 		
 		stack.overview.getView().appendChild( img );
 		stack.overview.addLayer( "tilelayer", this );

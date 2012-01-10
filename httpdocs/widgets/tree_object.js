@@ -20,12 +20,20 @@ var ObjectTree = new function()
         "ajax": {
           "url": "model/tree.object.list.php",
           "data": function (n) {
+            var expandRequest, parentName, parameters;
             // depending on which type of node it is, display those
             // the result is fed to the AJAX request `data` option
-            return {
+            parameters = {
               "pid": pid,
               "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
             };
+            if (ObjectTree.currentExpandRequest) {
+              parameters['expandtarget'] = ObjectTree.currentExpandRequest.join(',');
+            }
+            if (n[0]) {
+              parameters['parentname'] = n[0].innerText;
+            }
+            return parameters;
           },
           "success": function (e) {
             if (e.error) {
@@ -151,6 +159,15 @@ var ObjectTree = new function()
             };
           } else if (type_of_node === "neuron") {
             menu = {
+              "select_nearest": {
+                "separator_before": false,
+                "separator_after": false,
+                "label": "Select nearest node",
+                "action": function (obj) {
+                  var neuronid = obj.attr("id").replace("node_", "");
+                  TracingTool.goToNearestInNeuron('neuron', neuronid);
+                }
+              },
   /*
             "create_skeleton" : {
               "separator_before"	: false,
@@ -231,6 +248,15 @@ var ObjectTree = new function()
                     }
                   });
 
+                }
+              },
+              "select_nearest": {
+                "separator_before": false,
+                "separator_after": false,
+                "label": "Select nearest node",
+                "action": function (obj) {
+                  var skelid = obj.attr("id").replace("node_", "");
+                  TracingTool.goToNearestInNeuron('skeleton', skelid);
                 }
               },
               "show": {
@@ -606,9 +632,17 @@ var ObjectTree = new function()
    * and walks the array opening each child node as requested.
    */
   var openTreePath = function(treeOb, path) {
-    if (path.length < 1) return;
+    if (path.length < 1) {
+      ObjectTree.currentExpandRequest = null;
+      return;
+    }
     // Invoke the open_node method on the jstree instance of the treeOb DOM element:
-    treeOb.jstree("open_node", $("#node_" + path[0]), function() { openTreePath(treeOb, path.slice(1)) }, false );
+    treeOb.jstree("open_node",
+                  $("#node_" + path[0]),
+                  function() {
+                    openTreePath(treeOb, path.slice(1))
+                  },
+                  false );
     if (1 == path.length) {
       // Set the skeleton node (the last id) as selected:
       treeOb.jstree("deselect_all");
@@ -633,6 +667,7 @@ var ObjectTree = new function()
                  if (r['error']) {
                    alert("ERROR: " + r['error']);
                  } else {
+                   ObjectTree.currentExpandRequest = r;
                    var treeOb = $('#tree_object');
                    openTreePath(treeOb, r);
                  }

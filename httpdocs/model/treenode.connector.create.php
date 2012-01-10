@@ -252,7 +252,8 @@ try {
     'project_id' => $pid,
     'relation_id' => $ilr_id,
     'treenode_id' => $input_id,
-    'connector_id' => $location_instance_id
+    'connector_id' => $location_instance_id,
+    'skeleton_id' => $skeleton_id
     );
   $q = $db->insertInto('treenode_connector', $data );
 

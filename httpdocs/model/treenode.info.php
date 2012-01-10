@@ -18,7 +18,7 @@ $tnid = isset( $_REQUEST[ 'tnid' ] ) ? intval( $_REQUEST[ 'tnid' ] ) : -1;
 # Check preconditions:
 
 # 1. There must be a treenode id
-if ( ! $tnid ) {
+if ( $tnid < 0 ) {
 	echo json_encode( array( 'error' => 'A treenode id has not been provided!' ) );
 	return;
 }

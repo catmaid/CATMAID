@@ -230,18 +230,14 @@ function WebGLViewer(divID) {
 
   this.updateActiveNode = function( x, y, z )
   {
-    console.log('z', z, translation.z + ((z) / project.focusedStack.scale) * resolution.z)
     if(!active_node) {
       this.createActiveNode( 0, 0, 0 );
     }
-    // return translation.x + ((x) / project.focusedStack.scale) * resolution.x;
     var co = transform_coordinates( [
       translation.x + ((x) / project.focusedStack.scale) * resolution.x,
       translation.y + ((y) / project.focusedStack.scale) * resolution.y,
-      z * resolution.z]
-      // TODO: translation.z + ((z) / project.focusedStack.scale) * resolution.z]
+      translation.z + z * resolution.z]
     );
-
     active_node.position.set( co[0]*scale, co[1]*scale, co[2]*scale );
   }
 

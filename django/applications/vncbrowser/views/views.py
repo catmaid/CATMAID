@@ -6,11 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
-<<<<<<< HEAD
-    Project, User, Treenode, TreenodeConnector, Connector
-=======
-    Project, User, Treenode, TreenodeConnector, Stack, ProjectStack
->>>>>>> Django: Extend stack info return
+    Project, User, Treenode, TreenodeConnector, Connector, Stack, ProjectStack
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
 from django.db.models import Count

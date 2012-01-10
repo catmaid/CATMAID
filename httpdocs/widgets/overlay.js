@@ -1491,6 +1491,19 @@ var SkeletonAnnotations = new function()
           alert('Need to activate a treenode or connector before showing them!');
         }
         break;
+      case "createtreenode":
+        // take into account current local offset coordinates and scale
+        var pos_x = self.phys2pixX(self.offsetXPhysical);
+        var pos_y = self.phys2pixY(self.offsetYPhysical);
+        // at this point of the execution
+        // project.coordinates.z is not on the new z index, thus simulate it here
+        var pos_z = self.phys2pixZ(project.coordinates.z);
+        var phys_z = self.pix2physZ(pos_z);
+        // get physical coordinates for node position creation
+        var phys_x = self.pix2physX(pos_x);
+        var phys_y = self.pix2physY(pos_y);
+        createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+        break;
       case "createtreenodedown":
         // take into account current local offset coordinates and scale
         var pos_x = self.phys2pixX(self.offsetXPhysical);

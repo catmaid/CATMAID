@@ -522,8 +522,8 @@ function TracingTool()
       'N': [ 78 ]
     },
     run: function (e) {
+      tracingLayer.svgOverlay.tracingCommand('createtreenode');
       self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
-      tracingLayer.svgOverlay.tracingCommand('createtreenodeup');
       return true;
     }
   }) );
@@ -534,8 +534,8 @@ function TracingTool()
       'M': [ 77 ]
     },
     run: function (e) {
+      tracingLayer.svgOverlay.tracingCommand('createtreenode');
       self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
-      tracingLayer.svgOverlay.tracingCommand('createtreenodedown');
       return true;
     }
   }) );

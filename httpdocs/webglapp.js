@@ -11,12 +11,10 @@ function WebGLViewer(divID) {
 
   this.neurons = [];
 
-  var camera, scene, renderer, grid_lines, scale, resolution, dimension, controls, translation;
+  var camera, scene, renderer, grid_lines, scale, controls;
   var mouseX = 0, mouseY = 0;
   var project_id = project.id;
   var stack_id = project.focusedStack.id;
-
-  var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
 
   /* transform coordinates from CATMAID coordinate system
      to WebGL coordinate system: x->x, y->y+dy, z->-z
@@ -25,11 +23,23 @@ function WebGLViewer(divID) {
     return [point[0],-point[1]+dimension.y*resolution.y,-point[2] ];
   }
 
+  // ---
+
+  var resolution = project.focusedStack.resolution;
+      dimension = project.focusedStack.dimension;
+      translation = project.focusedStack.translation;
+
+  // ---
+
+
+  var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
+
   init();
   animate();
   debugaxes();
   draw_grid();
-
+  
+  /*
   jQuery.ajax({
     url: "dj/"+project_id+"/stack/" + stack_id + "/info",
     type: "GET",
@@ -59,7 +69,7 @@ function WebGLViewer(divID) {
 
       self.updateActiveNode( 30, 0, 0);
     }
-  });
+  });*/
 
   function init() {
     container = document.getElementById(self.divID);
@@ -75,10 +85,31 @@ function WebGLViewer(divID) {
     controls.noPan = false;
     controls.staticMoving = true;
     controls.dynamicDampingFactor = 0.3;
+    
     renderer = new THREE.WebGLRenderer();
+    //renderer = new THREE.CanvasRenderer();
     renderer.setSize( self.divWidth, self.divHeight );
     container.appendChild( renderer.domElement );
     container.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+    // 
+    var x_middle = (dimension.x*resolution.x)/2.0 + translation.x,
+        y_middle = (dimension.y*resolution.y)/2.0 + translation.y,
+        z_middle = (dimension.z*resolution.z)/2.0 + translation.z;
+
+    scale = 50./dimension.x;
+
+    var coord = transform_coordinates([x_middle, y_middle, z_middle]);
+
+    create_stackboundingbox(
+            coord[0]*scale,
+            coord[1]*scale,
+            coord[2]*scale,
+            dimension.x*resolution.x*scale,
+            dimension.y*resolution.y*scale,
+            dimension.z*resolution.z*scale
+    );
+
   }
 
   var Skeleton = function( skeleton_data )

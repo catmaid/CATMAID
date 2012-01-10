@@ -73,6 +73,12 @@ var WindowMaker = new function()
   /** Creates and returns a new 3d webgl window */
   var create3dWebGLWindow = function()
   {
+
+    if ( !Detector.webgl ) {
+      alert('Your browser does not seem to support WebGL.');
+      return;
+    }
+
     var win = new CMWWindow("3D WebGL View");
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";

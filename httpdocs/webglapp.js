@@ -367,6 +367,15 @@ function update3DWebGLViewATN() {
   
 }
 
+function addSkeletonTo3DWebGLView(project_id, skeleton_id, skeleton_name) {
+  var e = new Object();
+  e['project_id'] = project_id;
+  e['skeleton_id'] = skeleton_id;
+  e['skeleton_name'] = skeleton_name;
+  e['neuron_name'] = ""; // TODO: neuron_name;
+  addNeuronFromCATMAID('viewer-3d-webgl-canvas', e);
+}
+
 function addTo3DWebGLView() {
   var atn_id = SkeletonAnnotations.getActiveNodeId();
   if (!atn_id) {

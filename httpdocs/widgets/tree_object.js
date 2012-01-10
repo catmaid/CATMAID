@@ -298,7 +298,8 @@ var ObjectTree = new function()
                     "label": "In WebGL Viewer",
                     "action": function (obj) {
                       WindowMaker.show("3d-webgl-view");
-                      // TODO: directly add skeleton to app
+                      var skelid = obj.attr("id").replace("node_", "");
+                      addSkeletonTo3DWebGLView( project.id, skelid, this.get_text(obj) );
                     }
                   }
                 }

@@ -38,8 +38,6 @@ function WebGLViewer(divID) {
     container = document.getElementById(self.divID);
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera( 75, self.divWidth / self.divHeight, 1, 3000 );
-    // TODO: lookAt does not work
-    camera.lookAt( new THREE.Vector3(0.0,0.0,400.0) );
     controls = new THREE.TrackballControls( camera );
     controls.rotateSpeed = 1.0;
     controls.zoomSpeed = 1.2;
@@ -75,6 +73,8 @@ function WebGLViewer(divID) {
             dimension.y*resolution.y*scale,
             dimension.z*resolution.z*scale
     );
+
+    controls.target = new THREE.Vector3(coord[0]*scale,coord[1]*scale,coord[2]*scale);
 
   }
 
@@ -178,10 +178,20 @@ function WebGLViewer(divID) {
   // active node geometry
   var active_node;
 
+  this.fullscreenWebGL = function()
+  {
+    var divID = 'viewer-3d-webgl-canvas';
+    if( THREEx.FullScreen.activated() ){
+        THREEx.FullScreen.cancel();
+    } else {
+        THREEx.FullScreen.request(document.getElementById(divID));
+    };
+  }
+
   this.createActiveNode = function( x, y, z)
   {
-    sphere = new THREE.SphereGeometry( 50, 32, 32, 1 );
-    active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffaa00 } ) );
+    sphere = new THREE.SphereGeometry( 30, 32, 32, 1 );
+    active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x00ff00 } ) );
     active_node.scale.set( 0.05, 0.05, 0.05 );
     active_node.position.set( x,y,z );
     scene.add( active_node );
@@ -248,8 +258,9 @@ function WebGLViewer(divID) {
     mesh.position.set(x, y, z);
     scene.add( mesh );
     // update camera
-    camera.position.x = dx;
-    camera.position.y = dy;
+    camera.position.x = x;
+    camera.position.y = y;
+    camera.position.z = 200;
   }
 
   function debugaxes() {

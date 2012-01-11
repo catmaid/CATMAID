@@ -48,10 +48,14 @@ function WebGLViewer(divID) {
     controls.noPan = false;
     controls.staticMoving = true;
     controls.dynamicDampingFactor = 0.3;
-    
+
     renderer = new THREE.WebGLRenderer();
     //renderer = new THREE.CanvasRenderer();
     renderer.setSize( self.divWidth, self.divHeight );
+
+    // Follow size
+    // THREEx.WindowResize(renderer, camera);
+
     container.appendChild( renderer.domElement );
     container.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
@@ -378,6 +382,12 @@ function addSkeletonTo3DWebGLView(project_id, skeleton_id, skeleton_name) {
   e['skeleton_name'] = skeleton_name;
   e['neuron_name'] = ""; // TODO: neuron_name;
   addNeuronFromCATMAID('viewer-3d-webgl-canvas', e);
+}
+
+function fullscreenWebGL() {
+  var divID = 'viewer-3d-webgl-canvas';
+  var divID_jQuery = '#' + divID;
+  $(divID_jQuery).data('viewer').fullscreenWebGL();
 }
 
 function addTo3DWebGLView() {

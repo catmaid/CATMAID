@@ -90,15 +90,22 @@ var WindowMaker = new function()
     add.setAttribute("type", "button");
     add.setAttribute("id", "add_current_to_3d_webgl_view");
     add.setAttribute("value", "Add current skeleton to 3D view");
-    add.onclick = addTo3DWebGLView; // function declared in overlay.js
+    add.onclick = addTo3DWebGLView; // function declared in webglapp.js
     container.appendChild(add);
 
     var active = document.createElement('input');
     active.setAttribute("type", "button");
     active.setAttribute("id", "update_current_atn_3d_webgl_view");
     active.setAttribute("value", "Update current active node position");
-    active.onclick = update3DWebGLViewATN; // function declared in overlay.js
+    active.onclick = update3DWebGLViewATN; // function declared in webglapp.js
     container.appendChild(active);
+
+    var fulls = document.createElement('input');
+    fulls.setAttribute("type", "button");
+    fulls.setAttribute("id", "fullscreen_webgl_view");
+    fulls.setAttribute("value", "Fullscreen");
+    fulls.onclick = fullscreenWebGL; // function declared in webglapp.js
+    container.appendChild(fulls);
 
     var introduction = document.createElement('p')
     introduction.setAttribute("id", "view3DWebGLIntroduction");

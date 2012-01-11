@@ -382,7 +382,7 @@ var ObjectTree = new function()
             },
             "valid_children": ["group"],
             "start_drag": false,
-            "select_node": false,
+            //"select_node": false,
             "delete_node": false,
             "remove": false
           },
@@ -392,7 +392,7 @@ var ObjectTree = new function()
             },
             "valid_children": ["group", "neuron"],
             "start_drag": true,
-            "select_node": false
+            //"select_node": false
           },
           "neuron": {
             "icon": {
@@ -479,6 +479,7 @@ var ObjectTree = new function()
     });
 
     $(object_tree_id).bind("select_node.jstree", function (event, data) {
+      data.inst.toggle_node(data.rslt.obj);
       var key;
       id = data.rslt.obj.attr("id").replace("node_", "");
       type = data.rslt.obj.attr("rel");
@@ -502,6 +503,7 @@ var ObjectTree = new function()
       } else if (type === "skeleton") {
         project.selectedObjects.selectedskeleton = id;
       }
+
 
 
     });

@@ -94,6 +94,12 @@ function WebGLViewer(divID) {
       }
     }
 
+    this.changeColor = function( value )
+    {
+      console.log("setter value", value, parseInt(value));
+      this.actor[connectivity_types[0]].material.color.setHex( value );
+    }
+
     this.updateCompositeActor = function()
     {
       for ( var i=0; i<connectivity_types.length; ++i ) {
@@ -235,6 +241,18 @@ function WebGLViewer(divID) {
     return true;
   }
 
+  this.changeSkeletonColor = function( skeleton_id, value )
+  {
+    if( !skeletons.hasOwnProperty(skeleton_id) ){
+        alert("Skeleton "+skeleton_id+" does not exist. Cannot change color it!");
+        return;
+    } else {
+        skeletons[skeleton_id].changeColor( value );
+        return true;
+    }
+
+  }
+
   // remove skeleton from scence
   this.removeSkeleton = function( skeleton_id )
   {
@@ -316,6 +334,19 @@ function WebGLViewer(divID) {
       newElement.remove();
     });
     newElement.append(linkElement);
+
+    colorElement = $('<input/>');
+    colorElement.attr('type', 'text');
+    colorElement.attr('id', 'skeleton_'+skeleton.id );
+    colorElement.attr('value', '#ffff000' );
+    colorElement.keyup(function (e) {
+      // TODO: fix
+      console.log("color", e, this, this.value );
+      // if enter
+      self.changeSkeletonColor( skeleton.id, this.value );
+    });
+    newElement.append(colorElement);
+    
     $('#view-3d-webgl-object-list').append(newElement);
   };
 

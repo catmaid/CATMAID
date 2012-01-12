@@ -220,6 +220,19 @@ var ObjectTree = new function()
             };
           } else if (type_of_node === "skeleton") {
             menu = {
+              "show_webglviewer": {
+                "separator_before": false,
+                "separator_after": false,
+                "label": "3D Viewer",
+                "action": function (obj) {
+                  console.log()
+                  var myparent = $.jstree._focused()._get_parent(obj);
+
+                  WindowMaker.show("3d-webgl-view");
+                  var skelid = obj.attr("id").replace("node_", "");
+                  addSkeletonTo3DWebGLView( project.id, skelid, this.get_text(obj), this.get_text(myparent) );
+                }
+              },
               "goto_parent": {
                 "separator_before": false,
                 "separator_after": false,
@@ -290,16 +303,6 @@ var ObjectTree = new function()
                       WindowMaker.show("connector-table");
                       // datatables grabs automatically the selected skeleton
                       ConnectorTable.connectorTable.fnDraw();
-                    }
-                  },
-                  "show_webglviewer": {
-                    "separator_before": false,
-                    "separator_after": false,
-                    "label": "In WebGL Viewer",
-                    "action": function (obj) {
-                      WindowMaker.show("3d-webgl-view");
-                      var skelid = obj.attr("id").replace("node_", "");
-                      addSkeletonTo3DWebGLView( project.id, skelid, this.get_text(obj) );
                     }
                   }
                 }

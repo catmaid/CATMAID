@@ -36,14 +36,14 @@ $maxrows = 3000;
 
 // Utility data and associated function below
 $columnToFieldArray = array( "tid",
+                     "type",
+                     "labels",
+                     "confidence",
 					 "x",
 					 "y",
 					 "z",
-					 "type",
-					 "confidence",
 					 "radius",
 					 "username",
-					 "labels",
 					 "last_modified" );
 
 function fnColumnToField( $i )
@@ -259,9 +259,6 @@ try {
 
 		$sRow .= "[";
 		$sRow .= '"'.addslashes($val["tid"]).'",';
-		$sRow .= '"'.addslashes(sprintf("%.2f",$val["x"])).'",';
-		$sRow .= '"'.addslashes(sprintf("%.2f",$val["y"])).'",';
-		$sRow .= '"'.addslashes(sprintf("%.2f",$val["z"])).'",';
 
 		// find node type
 		// R : root
@@ -299,12 +296,9 @@ try {
 				$sRow .= '"L",';
 				$val["nodetype"] = "L";
 			}
-		}					
-		$sRow .= '"'.addslashes($val["confidence"]).'",';
-		$sRow .= '"'.addslashes($val["radius"]).'",';
-		$sRow .= '"'.addslashes($val["username"]).'",';
+		}
+
 		// use tags
-		
 		if( array_key_exists($val['tid'], $tlabel2) )
 		{
 			$out = implode(', ', $tlabel2[$val['tid']]);
@@ -315,7 +309,18 @@ try {
 		}
 		$vallabel = $out;
 		$sRow .= '"'.addslashes($out).'",';
-			
+
+
+		$sRow .= '"'.addslashes($val["confidence"]).'",';
+
+		$sRow .= '"'.addslashes(sprintf("%.2f",$val["x"])).'",';
+		$sRow .= '"'.addslashes(sprintf("%.2f",$val["y"])).'",';
+		$sRow .= '"'.addslashes(sprintf("%.2f",$val["z"])).'",';
+
+
+		$sRow .= '"'.addslashes($val["radius"]).'",';
+		$sRow .= '"'.addslashes($val["username"]).'",';
+
 
 		// last modified
 		$sRow .= '"'.addslashes($val["last_modified"]).'"';

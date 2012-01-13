@@ -93,10 +93,10 @@ var TreenodeTable = new function()
       },
       "fnRowCallback": function (nRow, aData, iDisplayIndex) {
 
-        if (aData[4] === "R") {
+        if (aData[1] === "R") {
           $(nRow).addClass('root_node');
         }
-        if (aData[4] === "L") {
+        if (aData[1] === "L") {
           $(nRow).addClass('leaf_node');
         }
 
@@ -120,6 +120,22 @@ var TreenodeTable = new function()
       }, // id
       {
         "sClass": "center",
+        "bSearchable": true,
+        "bSortable": false,
+        "sWidth": "50px"
+      }, // type
+      {
+        "bSearchable": true,
+        "bSortable": false,
+        "sWidth": "150px"
+      }, // labels
+      {
+        "sClass": "center",
+        "bSearchable": false,
+        "sWidth": "50px"
+      }, // confidence
+      {
+        "sClass": "center",
         "bSearchable": false
       }, // x
       {
@@ -132,24 +148,11 @@ var TreenodeTable = new function()
       }, // z
       {
         "sClass": "center",
-        "bSearchable": true,
-        "bSortable": false
-      }, // type
-      {
-        "sClass": "center",
-        "bSearchable": false
-      }, // confidence
-      {
-        "sClass": "center",
         "bSearchable": false
       }, // radius
       {
         "bSearchable": false
       }, // username
-      {
-        "bSearchable": true,
-        "bSortable": false
-      }, // labels
       {
         "bSearchable": false,
         "bSortable": true
@@ -196,9 +199,9 @@ var TreenodeTable = new function()
 
       var aData = ns.oTable.fnGetData(this);
       // retrieve coordinates and moveTo
-      var x = parseFloat(aData[1]);
-      var y = parseFloat(aData[2]);
-      var z = parseFloat(aData[3]);
+      var x = parseFloat(aData[4]);
+      var y = parseFloat(aData[5]);
+      var z = parseFloat(aData[6]);
       project.moveTo(z, y, x);
 
       // activate the node with a delay

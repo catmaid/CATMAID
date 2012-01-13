@@ -172,9 +172,6 @@ var toolActions = [
 		helpText: "Switch to the selector tool",
 		buttonID: 'edit_button_select',
 		buttonName: "select",
-		keyShortcuts: {
-			'2': [ 50 ]
-		},
 		run: function (e) {
 			project.setTool( new Selector() );
 			return true;
@@ -185,9 +182,6 @@ var toolActions = [
 		helpText: "Switch to the move tool",
 		buttonID: 'edit_button_move',
 		buttonName: "move",
-		keyShortcuts: {
-			'3': [ 51 ]
-		},
 		run: function (e) {
 			project.setTool( new Navigator() );
 			return true;

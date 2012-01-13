@@ -65,16 +65,17 @@ var SkeletonElements = new function()
     y, // y coordinates
     z, // z coordinates
     zdiff, // the different from the current slices
+    confidence,
     skeleton_id,
     is_root_node) // the id of the skeleton this node is an element of
   {
     var node;
     if (nextNodeIndex < nodePool.length) {
       node = nodePool[nextNodeIndex];
-      reuseNode(node, id, parent, r, x, y, z, zdiff, skeleton_id, is_root_node);
+      reuseNode(node, id, parent, r, x, y, z, zdiff, confidence, skeleton_id, is_root_node);
       if (is_root_node && node.line) node.line.hide();
     } else {
-      node = new this.Node(id, paper, parent, r, x, y, z, zdiff, skeleton_id, is_root_node);
+      node = new this.Node(id, paper, parent, r, x, y, z, zdiff, confidence, skeleton_id, is_root_node);
       nodePool.push(node);
       if (node.line) node.line.toBack();
     }
@@ -92,6 +93,7 @@ var SkeletonElements = new function()
     y, // y coordinates
     z, // z coordinates
     zdiff, // the different from the current slices
+    confidence,
     skeleton_id,
     is_root_node) // the id of the skeleton this node is an element of
   {
@@ -106,6 +108,7 @@ var SkeletonElements = new function()
     this.y = y;
     this.z = z;
     this.zdiff = zdiff;
+    this.confidence = confidence;
     this.skeleton_id = skeleton_id;
     this.isroot = is_root_node;
     this.fillcolor = inactive_skeleton_color;
@@ -148,7 +151,7 @@ var SkeletonElements = new function()
   };
 
   /** Takes an existing Node and sets all the proper members as given, and resets the children and connectors. */
-  var reuseNode = function(node, id, parent, r, x, y, z, zdiff, skeleton_id, isroot)
+  var reuseNode = function(node, id, parent, r, x, y, z, zdiff, confidence, skeleton_id, isroot)
   {
     node.id = id;
     node.parent = parent;
@@ -159,6 +162,7 @@ var SkeletonElements = new function()
     node.y = y;
     node.z = z;
     node.zdiff = zdiff;
+    node.confidence = confidence;
     node.skeleton_id = skeleton_id;
     node.isroot = isroot;
 
@@ -226,17 +230,38 @@ var SkeletonElements = new function()
    */
   var drawLineToParent = function (node) {
     var parent = node.parent;
-    if (parent && node.line) {
-      node.line.attr({
-        path: [
-          ["M", node.x, node.y],
-          ["L", parent.x, parent.y]
-        ],
-        stroke: node.colorFromZDiff(parent.zdiff, parent.skeleton_id),
-        "stroke-width": 2
-      });
-      // May be hidden if the node was reused
-      if ("none" === node.line.node.style.display) { node.line.show(); }
+    var newConfidenceX, newConfidenceY;
+    if (parent) {
+      if (node.line) {
+        node.line.attr({
+          path: [
+            ["M", node.x, node.y],
+            ["L", parent.x, parent.y]
+          ],
+          stroke: node.colorFromZDiff(parent.zdiff, parent.skeleton_id),
+          "stroke-width": 2
+        });
+        // May be hidden if the node was reused
+        if ("none" === node.line.node.style.display) { node.line.show(); }
+      }
+      if (true) { // change to: "if confidence < 5"
+        newConfidenceX = (node.x + parent.x) / 2;
+        newConfidenceY = (node.y + parent.y) / 2
+        if (node.number_text) {
+          console.log("trying to change node confidence...");
+          node.number_text.attr({x: newConfidenceX,
+                                 y: newConfidenceY,
+                                 text: "bye: "+node.confidence});
+        } else {
+          node.number_text = node.paper.text(newConfidenceX,
+                                             newConfidenceY,
+                                             "hello: "+node.confidence);
+        }
+      } else {
+        if (node.number_text) {
+          node.number_text.remove();
+        }
+      }
     }
   };
 
@@ -615,14 +640,15 @@ var SkeletonElements = new function()
     x, // the x coordinate in pixel coordinates
     y, // y coordinates
     z, // z coordinates
-    zdiff) // the different from the current slices
+    zdiff, // the different from the current slices
+    confidence)
   {
     var connector;
     if (nextConnectorIndex < connectorPool.length) {
       connector = connectorPool[nextConnectorIndex];
-      reuseConnectorNode(connector, id, r, x, y, z, zdiff);
+      reuseConnectorNode(connector, id, r, x, y, z, zdiff, confidence);
     } else {
-      connector = new this.ConnectorNode(id, paper, r, x, y, z, zdiff);
+      connector = new this.ConnectorNode(id, paper, r, x, y, z, zdiff, confidence);
       connectorPool.push(connector);
     }
     nextConnectorIndex += 1;
@@ -639,7 +665,8 @@ var SkeletonElements = new function()
     x, // the x coordinate in pixel coordinates
     y, // y coordinates
     z, // z coordinates
-    zdiff) // the different from the current slices
+    zdiff, // the different from the current slices
+    confidence)
   {
     this.id = id;
     this.type = TYPE_CONNECTORNODE; // TODO update this name!
@@ -648,6 +675,7 @@ var SkeletonElements = new function()
     this.y = y;
     this.z = z;
     this.zdiff = zdiff;
+    this.confidence = confidence;
     this.paper = paper;
     this.pregroup = {}; // set of presynaptic treenodes
     this.postgroup = {}; // set of postsynaptic treenodes
@@ -678,7 +706,7 @@ var SkeletonElements = new function()
    * @param z
    * @param zdiff
    */
-  var reuseConnectorNode = function(c, id, r, x, y, z, zdiff)
+  var reuseConnectorNode = function(c, id, r, x, y, z, zdiff, confidence)
   {
     c.id = id;
     c.r = r;
@@ -686,6 +714,7 @@ var SkeletonElements = new function()
     c.y = y;
     c.z = z;
     c.zdiff = zdiff;
+    c.confidence = confidence;
     c.pregroup = {};
     c.postgroup = {};
 

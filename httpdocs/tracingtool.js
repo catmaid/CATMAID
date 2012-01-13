@@ -419,9 +419,6 @@ function TracingTool()
     helpText: "Split this skeleton at the active node",
     buttonName: "skelsplitting",
     buttonID: 'trace_button_skelsplitting',
-    keyShortcuts: {
-      "5": [ 53 ]
-    },
     run: function (e) {
       tracingLayer.svgOverlay.tracingCommand('skelsplitting');
       return true;
@@ -539,6 +536,63 @@ function TracingTool()
       return true;
     }
   }) );
+
+
+  this.addAction( new Action({
+    helpText: "Set confidence in node link to 1",
+    keyShortcuts: {
+      '1': [ 49 ]
+    },
+    run: function (e) {
+      tracingLayer.svgOverlay.setConfidence(1);
+      return true;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Set confidence in node link to 2",
+    keyShortcuts: {
+      '2': [ 50 ]
+    },
+    run: function (e) {
+      tracingLayer.svgOverlay.setConfidence(2);
+      return true;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Set confidence in node link to 3",
+    keyShortcuts: {
+      '3': [ 51 ]
+    },
+    run: function (e) {
+      tracingLayer.svgOverlay.setConfidence(3);
+      return true;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Set confidence in node link to 4",
+    keyShortcuts: {
+      '4': [ 52 ]
+    },
+    run: function (e) {
+      tracingLayer.svgOverlay.setConfidence(4);
+      return true;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Set confidence in node link to 5",
+    keyShortcuts: {
+      '5': [ 53 ]
+    },
+    run: function (e) {
+      tracingLayer.svgOverlay.setConfidence(5);
+      return true;
+    }
+  }) );
+
 
   var keyCodeToAction = getKeyCodeToActionMap(actions);
 

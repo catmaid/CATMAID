@@ -967,12 +967,12 @@ var SkeletonAnnotations = new function()
         if (jso[i].type === "treenode")
         {
           isRootNode = isNaN(parseInt(jso[i].parentid));
-          nn = SkeletonElements.newNode(id, self.paper, null, rad, pos_x, pos_y, pos_z, zdiff, parseInt(jso[i].skeleton_id), isRootNode);
+          nn = SkeletonElements.newNode(id, self.paper, null, rad, pos_x, pos_y, pos_z, zdiff, jso[i].confidence, parseInt(jso[i].skeleton_id), isRootNode);
           nrtn++;
         }
         else
         {
-          nn = SkeletonElements.newConnectorNode(id, self.paper, rad, pos_x, pos_y, pos_z, zdiff);
+          nn = SkeletonElements.newConnectorNode(id, self.paper, rad, pos_x, pos_y, pos_z, zdiff, jso[i].confidence);
           nrcn++;
         }
 
@@ -1372,6 +1372,10 @@ var SkeletonAnnotations = new function()
 
     var getMode = function (e) {
       return currentmode;
+    };
+
+    this.setConfidence = function(newConfidence) {
+      alert("confidence is: "+newConfidence);
     };
 
     // Commands for the sub-buttons of the tracing tool

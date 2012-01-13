@@ -193,6 +193,7 @@ try {
         (connector.location).x AS x,
         (connector.location).y AS y,
         (connector.location).z AS z,
+        connector.confidence AS confidence,
         connector.user_id AS user_id,
         ((connector.location).z - $z) AS z_diff,
         treenode_connector.relation_id AS treenode_relation_id,

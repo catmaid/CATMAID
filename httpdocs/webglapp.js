@@ -38,7 +38,7 @@ function WebGLViewer(divID) {
     container = document.getElementById(self.divID);
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera( 75, self.divWidth / self.divHeight, 1, 3000 );
-    controls = new THREE.TrackballControls( camera );
+    controls = new THREE.TrackballControls( camera, container );
     controls.rotateSpeed = 1.0;
     controls.zoomSpeed = 1.2;
     controls.panSpeed = 0.8;
@@ -54,8 +54,7 @@ function WebGLViewer(divID) {
     // Follow size
     // THREEx.WindowResize(renderer, camera);
 
-    container.appendChild( renderer.domElement );
-    container.addEventListener( 'mousemove', onDocumentMouseMove, false );
+    container.appendChild( renderer.domElement )
 
     var x_middle = (dimension.x*resolution.x)/2.0 + translation.x,
         y_middle = (dimension.y*resolution.y)/2.0 + translation.y,
@@ -251,7 +250,7 @@ function WebGLViewer(divID) {
 
   function create_stackboundingbox(x, y, z, dx, dy, dz)
   {
-    console.log('bouding box', x, y, z, dx, dy, dz);
+    // console.log('bouding box', x, y, z, dx, dy, dz);
     var gg = new THREE.CubeGeometry( dx, dy, dz );
     var mm = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
     var mesh = new THREE.Mesh( gg, mm );
@@ -290,11 +289,11 @@ function WebGLViewer(divID) {
     requestAnimationFrame( animate );
     render();
   }
-
+/*
   function onDocumentMouseMove(event) {
     mouseX = ( event.clientX - self.divWidth );
     mouseY = ( event.clientY - self.divHeight );
-  }
+  }*/
 
   function render() {
     controls.update();
@@ -386,12 +385,12 @@ function update3DWebGLViewATN() {
   
 }
 
-function addSkeletonTo3DWebGLView(project_id, skeleton_id, skeleton_name) {
+function addSkeletonTo3DWebGLView(project_id, skeleton_id, skeleton_name, neuron_name) {
   var e = new Object();
   e['project_id'] = project_id;
   e['skeleton_id'] = skeleton_id;
   e['skeleton_name'] = skeleton_name;
-  e['neuron_name'] = ""; // TODO: neuron_name;
+  e['neuron_name'] = neuron_name;
   addNeuronFromCATMAID('viewer-3d-webgl-canvas', e);
 }
 

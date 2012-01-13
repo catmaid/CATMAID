@@ -48,7 +48,7 @@ parameters to that script, which you may wish to customize, are
 the database name, the database user name and the database
 user's password.  For example:
 
-        scripts/createuser.sh | sudo -u postgres psql
+        scripts/createuser.sh catmaid catmaid_user p4ssw0rd | sudo -u postgres psql
 
 (On some systems you may get the the error `ERROR: language "plpgsql"
 already exists` which can be safely ignored.)

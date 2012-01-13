@@ -254,7 +254,7 @@ function handle_updateProjects(status, text, xml) {
         if (e[i].catalogue) {
           var catalogueElement = document.createElement('dd');
           var catalogueElementLink = document.createElement('a');
-          catalogueElementLink.href = 'dj/' + i
+          catalogueElementLink.href = 'dj/' + e[i].pid;
           catalogueElementLink.appendChild(document.createTextNode('Browse the Neuron Catalogue'));
           catalogueElement.appendChild(catalogueElementLink);
           pp.appendChild(catalogueElement);

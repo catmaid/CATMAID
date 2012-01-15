@@ -9,6 +9,7 @@ that.
 from django.db.backends.postgresql_psycopg2.base import DatabaseWrapper as PG2DatabaseWrapper
 from django.db.backends.postgresql_psycopg2.base import DatabaseError as PG2DatabaseError
 from django.db.backends.postgresql_psycopg2.base import DatabaseOperations as PG2DatabaseOperations
+
 import re
 import sys
 

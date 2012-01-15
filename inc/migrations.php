@@ -852,6 +852,11 @@ ALTER TABLE ONLY treenode_connector
 '
 ),
 
+	'2012-01-15T14:45:48' => new Migration(
+		'Add a confidence measure to treenode_connector',
+		'ALTER TABLE ONLY treenode_connector
+			ADD COLUMN confidence integer NOT NULL DEFAULT 5'),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

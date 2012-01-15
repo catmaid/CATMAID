@@ -230,36 +230,51 @@ var SkeletonElements = new function()
    */
   var drawLineToParent = function (node) {
     var parent = node.parent;
-    var newConfidenceX, newConfidenceY;
+    var newConfidenceX, newConfidenceY, xdiff, ydiff, length, numberOffset;
+    var lineColor;
+    var confidenceFontSize = '20px';
     if (parent) {
+      lineColor = node.colorFromZDiff(parent.zdiff, parent.skeleton_id);
       if (node.line) {
         node.line.attr({
           path: [
             ["M", node.x, node.y],
             ["L", parent.x, parent.y]
           ],
-          stroke: node.colorFromZDiff(parent.zdiff, parent.skeleton_id),
+          stroke: lineColor,
           "stroke-width": 2
         });
         // May be hidden if the node was reused
         if ("none" === node.line.node.style.display) { node.line.show(); }
       }
-      if (true) { // change to: "if confidence < 5"
-        newConfidenceX = (node.x + parent.x) / 2;
-        newConfidenceY = (node.y + parent.y) / 2
+      if (node.confidence < 5) {
+        numberOffset = 12;
+        xdiff = parent.x - node.x;
+        ydiff = parent.y - node.y;
+        length = Math.sqrt(xdiff*xdiff + ydiff*ydiff);
+        nx = -ydiff / length;
+        ny = xdiff / length;
+        newConfidenceX = (node.x + parent.x) / 2 + nx * numberOffset;
+        newConfidenceY = (node.y + parent.y) / 2 + ny * numberOffset;
         if (node.number_text) {
-          console.log("trying to change node confidence...");
           node.number_text.attr({x: newConfidenceX,
                                  y: newConfidenceY,
-                                 text: "bye: "+node.confidence});
+                                 'font-size': confidenceFontSize,
+                                 stroke: 'black',
+                                 fill: lineColor,
+                                 text: ""+node.confidence});
         } else {
           node.number_text = node.paper.text(newConfidenceX,
                                              newConfidenceY,
-                                             "hello: "+node.confidence);
+                                             ""+node.confidence);
+          node.number_text.attr({'font-size': confidenceFontSize,
+                                 stroke: 'black',
+                                 fill: lineColor});
         }
       } else {
         if (node.number_text) {
           node.number_text.remove();
+          node.number_text = null;
         }
       }
     }

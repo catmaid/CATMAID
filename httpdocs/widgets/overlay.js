@@ -1374,8 +1374,29 @@ var SkeletonAnnotations = new function()
       return currentmode;
     };
 
-    this.setConfidence = function(newConfidence) {
-      alert("confidence is: "+newConfidence);
+    this.setConfidence = function(newConfidence, toConnector) {
+      var atn = self.getActiveNode();
+      if (atn !== null) {
+        if (atn.parent !== null || toConnector) {
+          requestQueue.register("model/confidence.update.php", "POST", {
+            pid: project.id,
+            toconnector: toConnector,
+            tnid: atn.id,
+            confidence: newConfidence
+          }, function (status, text, xml) {
+            var e;
+            if (status === 200) {
+              if (text && text !== " ") {
+                e = $.parseJSON(text);
+                if (e.error) {
+                  alert(e.error);
+                }
+                self.updateNodes();
+              }
+            }
+          });
+        }
+      }
     };
 
     // Commands for the sub-buttons of the tracing tool

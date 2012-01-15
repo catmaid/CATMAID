@@ -544,7 +544,7 @@ function TracingTool()
       '1': [ 49 ]
     },
     run: function (e) {
-      tracingLayer.svgOverlay.setConfidence(1);
+      tracingLayer.svgOverlay.setConfidence(1, e.shiftKey);
       return true;
     }
   }) );
@@ -555,7 +555,7 @@ function TracingTool()
       '2': [ 50 ]
     },
     run: function (e) {
-      tracingLayer.svgOverlay.setConfidence(2);
+      tracingLayer.svgOverlay.setConfidence(2, e.shiftKey);
       return true;
     }
   }) );
@@ -566,7 +566,7 @@ function TracingTool()
       '3': [ 51 ]
     },
     run: function (e) {
-      tracingLayer.svgOverlay.setConfidence(3);
+      tracingLayer.svgOverlay.setConfidence(3, e.shiftKey);
       return true;
     }
   }) );
@@ -577,7 +577,7 @@ function TracingTool()
       '4': [ 52 ]
     },
     run: function (e) {
-      tracingLayer.svgOverlay.setConfidence(4);
+      tracingLayer.svgOverlay.setConfidence(4, e.shiftKey);
       return true;
     }
   }) );
@@ -588,7 +588,7 @@ function TracingTool()
       '5': [ 53 ]
     },
     run: function (e) {
-      tracingLayer.svgOverlay.setConfidence(5);
+      tracingLayer.svgOverlay.setConfidence(5, e.shiftKey);
       return true;
     }
   }) );

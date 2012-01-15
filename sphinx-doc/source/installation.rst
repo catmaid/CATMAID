@@ -15,7 +15,7 @@ You can install these main dependencies with::
 To use the Python-based helper scripts, you should also install
 the following packages::
 
-    sudo apt-get install python-psycopg2 python-yaml
+    sudo apt-get install python-psycopg2 python-yaml python-tz
 
 Installation on Ubuntu 10.10
 ----------------------------

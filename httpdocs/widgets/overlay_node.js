@@ -899,10 +899,21 @@ var SkeletonElements = new function()
         "fill": strocol,
         "stroke": strocol
       });
+      var confidenceText = null;
+      if (confidence < 5) {
+        confidenceText = updateConfidenceText(
+          x1, y1, x2, y2,
+          strocol,
+          confidence,
+          paper);
+      }
       // The 'this' refers to the new ArrowLine
       this.remove = function () {
         arrowPath.remove();
         linePath.remove();
+        if (confidenceText) {
+          confidenceText.remove();
+        }
       };
     };
 

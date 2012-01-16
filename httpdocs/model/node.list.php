@@ -44,23 +44,29 @@ synaptic relationships, finally a connector with some of both:
     },
     {
         "id": "284",
+        "confidence": "5",
         "post": [
             {
-                "tnid": "293"
+                "tnid": "293",
+                "confidence": "4"
             },
             {
-                "tnid": "303"
+                "tnid": "303",
+                "confidence": "5"
             },
             {
-                "tnid": "313"
+                "tnid": "313",
+                "confidence": "3"
             }
         ],
         "pre": [
             {
-                "tnid": "280"
+                "tnid": "280",
+                "confidence": "5"
             },
             {
-                "tnid": "370"
+                "tnid": "370",
+                "confidence": "5"
             }
         ],
         "type": "connector",
@@ -197,7 +203,8 @@ try {
         connector.user_id AS user_id,
         ((connector.location).z - $z) AS z_diff,
         treenode_connector.relation_id AS treenode_relation_id,
-        treenode_connector.treenode_id AS tnid
+        treenode_connector.treenode_id AS tnid,
+        treenode_connector.confidence AS tc_confidence
      FROM connector LEFT OUTER JOIN treenode_connector
              ON treenode_connector.connector_id = connector.id
         WHERE connector.project_id = $pid AND
@@ -224,14 +231,17 @@ try {
       if (isset($val['tnid'])) {
           $tnid = $val['tnid'];
           $relationship = ($val['treenode_relation_id'] === $relations['presynaptic_to']) ? "pre" : "post";
+          $tc_confidence = $val['tc_confidence'];
       } else {
           // The connector wasn't connected to any treenodes
           $tnid = NULL;
           $relationship = NULL;
+          $tc_confidence = NULL;
       }
       // Now we've saved those values, remove them from the top level:
       unset($val['tnid']);
       unset($val['treenode_relation_id']);
+      unset($val['tc_confidence']);
 
       // Should we push a new item onto the $treenodes
       // array or just reuse the existing one?
@@ -252,7 +262,7 @@ try {
               if (!isset($val[$relationship])) {
                   $val[$relationship] = array();
               }
-              array_push($val[$relationship],array('tnid' => $tnid));
+              array_push($val[$relationship],array('tnid' => $tnid, 'confidence' => $tc_confidence));
           }
 
           if ($reuse) {

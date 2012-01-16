@@ -820,6 +820,8 @@ var SkeletonElements = new function()
   var connectorDrawEdges = function()
   {
     var i,
+        tnid,
+        confidence,
         preLines = this.preLines,
         postLines = this.postLines,
         pregroup = this.pregroup,
@@ -830,13 +832,17 @@ var SkeletonElements = new function()
     // re-create
     for (i in pregroup) {
       if (pregroup.hasOwnProperty(i)) {
-        preLines[pregroup[i].id] = connectorCreateLine(this, pregroup[i].id, true);
+        tnid = pregroup[i].treenode.id;
+        confidence = pregroup[i].confidence;
+        preLines[tnid] = connectorCreateLine(this, tnid, confidence, true);
       }
     }
 
     for (i in postgroup) {
       if (postgroup.hasOwnProperty(i)) {
-        postLines[postgroup[i].id] = connectorCreateLine(this, postgroup[i].id, false);
+        tnid = postgroup[i].treenode.id;
+        confidence = postgroup[i].confidence;
+        postLines[tnid] = connectorCreateLine(this, tnid, confidence, false);
       }
     }
   };
@@ -846,7 +852,7 @@ var SkeletonElements = new function()
   var connectorCreateLine = function()
   {
     /** Constructor method for ArrowLine. */
-    var ArrowLine = function (paper, x1, y1, x2, y2, size, strowi, strocol) {
+    var ArrowLine = function (paper, x1, y1, x2, y2, confidence, size, strowi, strocol) {
       // Compute position for arrowhead pointer
       var rloc = 9;
       var xdiff = (x2 - x1);
@@ -877,11 +883,11 @@ var SkeletonElements = new function()
     };
 
     // Return the actual connectorCreateLine function
-    return function(self, to_id, pre) {
+    return function(self, to_id, confidence, pre) {
       if (pre) {
-        return new ArrowLine(self.paper, self.pregroup[to_id].x, self.pregroup[to_id].y, self.x, self.y, 5, 2, "rgb(126, 57, 112)");
+        return new ArrowLine(self.paper, self.pregroup[to_id].treenode.x, self.pregroup[to_id].treenode.y, self.x, self.y, confidence, 5, 2, "rgb(126, 57, 112)");
       } else {
-        return new ArrowLine(self.paper, self.x, self.y, self.postgroup[to_id].x, self.postgroup[to_id].y, 5, 2, "rgb(67, 67, 128)");
+        return new ArrowLine(self.paper, self.x, self.y, self.postgroup[to_id].treenode.x, self.postgroup[to_id].treenode.y, confidence, 5, 2, "rgb(67, 67, 128)");
       };
     }
   }();

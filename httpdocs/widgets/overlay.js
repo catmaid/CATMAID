@@ -694,7 +694,8 @@ var SkeletonAnnotations = new function()
                 // presynaptic case, we create a new connector node and use the retrieved id
                 var nn = SkeletonElements.newConnectorNode(locid_retrieved, self.paper, 8, pos_x, pos_y, pos_z, 0);
                 // store the currently activated treenode into the pregroup of the connector
-                nn.pregroup[id] = nodes[id];
+                nn.pregroup[id] = {'treenode': nodes[id],
+                                   'confidence': 5};
                 nodes[locid_retrieved] = nn;
                 nn.draw();
                 // update the reference to the connector from the treenode
@@ -708,7 +709,8 @@ var SkeletonAnnotations = new function()
                 if (locid_retrieved in nodes) {
                   // postsynaptic case, no requirement to create new connector
                   // but we need to update the postgroup with corresponding original treenod
-                  nodes[locid_retrieved].postgroup[id] = nodes[id];
+                  nodes[locid_retrieved].postgroup[id] = {'treenode': nodes[id],
+                                                          'confidence': 5};
                   // do not activate anything but redraw
                   nodes[locid_retrieved].draw();
                   // update the reference to the connector from the treenode
@@ -1020,10 +1022,12 @@ var SkeletonAnnotations = new function()
               for (j = 0; j < jso[i].pre.length; j++ ) {
                 // check if presynaptic treenode exist in nodes
                 var preloctnid = parseInt(jso[i].pre[j].tnid);
+                var confidence = parseInt(jso[i].pre[j].confidence);
                 if (preloctnid in nodes)
                 {
                   // link it to pregroup, to connect it to the connector
-                  nodes[nid].pregroup[preloctnid] = nodes[preloctnid];
+                  nodes[nid].pregroup[preloctnid] = {'treenode': nodes[preloctnid],
+                                                     'confidence': confidence};
                   // add to pregroup of treenode
                   nodes[preloctnid].connectors[nid] = nodes[nid];
                 }
@@ -1034,10 +1038,12 @@ var SkeletonAnnotations = new function()
               for (j = 0; j < jso[i].post.length; j++ ) {
                 // check if postsynaptic treenode exist in nodes
                 var postloctnid = parseInt(jso[i].post[j].tnid);
+                var confidence = parseInt(jso[i].post[j].confidence);
                 if (postloctnid in nodes)
                 {
                   // link it to postgroup, to connect it to the connector
-                  nodes[nid].postgroup[postloctnid] = nodes[postloctnid];
+                  nodes[nid].postgroup[postloctnid] = {'treenode': nodes[postloctnid],
+                                                       'confidence': confidence};
                   // add to postgroup of treenode
                   nodes[postloctnid].connectors[nid] = nodes[nid];
                 }

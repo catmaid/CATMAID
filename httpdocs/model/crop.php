@@ -23,7 +23,10 @@ $right = isset( $_REQUEST[ 'right' ] ) ? floatval( $_REQUEST[ 'right' ] ) : 0;
 $bottom = isset( $_REQUEST[ 'bottom' ] ) ? floatval( $_REQUEST[ 'bottom' ] ) : 0;
 $back = isset( $_REQUEST[ 'back' ] ) ? floatval( $_REQUEST[ 'back' ] ) : 0;
 $scale = isset( $_REQUEST[ 'scale' ] ) ? floatval( $_REQUEST[ 'scale' ] ) : 1;
+// reregister info is used in the database and is therefore a string representation of a boolean
 $reregister = ( isset( $_REQUEST[ 'reregister' ] ) && $_REQUEST[ 'reregister' ] == 1 ) ? 'true' : 'false';
+// trackem2 info is used in PHP and is therefore a real PHP boolean
+$is_trackem2_stack = ( isset( $_REQUEST[ 'istrackem' ] ) && $_REQUEST[ 'istrackem' ] == 1 ) ? true : false;
 
 if ( $pid )
 {
@@ -63,58 +66,81 @@ if ( $pid )
 			$z2 = ( $back - $stack[ 't.z' ] ) / $stack[ 'r.z' ];
 					
 			$stack_name = uniqid( 'crop' ).'.tif';
-			
-			// TrakEM2_.jar is included from jars instead of plugins because it is a non-tracked experimental thing
-			$cmd =
-//					'Xvfb :15 &; '.
-					'DISPLAY=:15 java -Xmx768m -classpath '.
-					JAVA_APP_DIR.':'.
-					JAVA_APP_DIR.'ij.jar:'.
-					JAVA_APP_DIR.'plugins/VIB_.jar:'.
-					JAVA_APP_DIR.'jars/Jama-1.0.2.jar:'.
-					JAVA_APP_DIR.'jars/edu_mines_jtk.jar:'.
-					JAVA_APP_DIR.'jars/postgresql-8.2-506.jdbc3.jar:'.
-					JAVA_APP_DIR.'jars/jzlib-1.0.7.jar:'.
-					JAVA_APP_DIR.'jars/TrakEM2_.jar Microcube_Maker '.
-					$stack[ 'image_base' ].'project.xml '.
-					$x1.' '.$y1.' '.$z1.' '.
-					$x2.' '.$y2.' '.$z2.' '.
-					$scale.' '.$reregister.' '.
-			//		TMP_DIR.$stack_name.' 2>&1';
-					TMP_DIR.$stack_name.' 2>&1 >> '.TMP_DIR.$stack_name.'.log';
-			
-			//echo makeJSON( array( 'error' => $cmd ) );
-			//$out =  shell_exec( $cmd );
-			//$out =  shell_exec( 'which java' );
-			//echo makeJSON( array( 'error' => $out ) );
-			
-			$url = 'http://'.$_SERVER[ 'SERVER_NAME' ].preg_replace( '/\/[^\/]*$/', '/', $_SERVER[ 'PHP_SELF' ] );
 
-			//echo makeJSON( array( 'error' => $url ) );
-			//exit;
+			if ( $is_trackem2_stack )
+			{
+				// TrakEM2_.jar is included from jars instead of plugins because it is a non-tracked experimental thing
+				$cmd =
+	//					'Xvfb :15 &; '.
+						'DISPLAY=:15 java -Xmx768m -classpath '.
+						JAVA_APP_DIR.':'.
+						JAVA_APP_DIR.'ij.jar:'.
+						JAVA_APP_DIR.'plugins/VIB_.jar:'.
+						JAVA_APP_DIR.'jars/Jama-1.0.2.jar:'.
+						JAVA_APP_DIR.'jars/edu_mines_jtk.jar:'.
+						JAVA_APP_DIR.'jars/postgresql-8.2-506.jdbc3.jar:'.
+						JAVA_APP_DIR.'jars/jzlib-1.0.7.jar:'.
+						JAVA_APP_DIR.'jars/TrakEM2_.jar Microcube_Maker '.
+						$stack[ 'image_base' ].'project.xml '.
+						$x1.' '.$y1.' '.$z1.' '.
+						$x2.' '.$y2.' '.$z2.' '.
+						$scale.' '.$reregister.' '.
+				//		TMP_DIR.$stack_name.' 2>&1';
+						TMP_DIR.$stack_name.' 2>&1 >> '.TMP_DIR.$stack_name.'.log';
 
-			//ob_end_clean();
-			header( 'Connection: close' );
-			ignore_user_abort( true );
-			ob_start();
-			
-			echo makeJSON( '' );
-			
-			header( 'Content-Length: '.ob_get_length() );
-			ob_end_flush();
-			flush();
-			
-			shell_exec( $cmd );
-			
-					
-			$db->insertInto(
-				'message',
-				array(
-					'user_id' => $uid,
-					'title' => 'Microstack finished',
-					'text' => 'The requested microstack ( '.$left.', '.$top.', '.$front.' ) -> ( '.$right.', '.$bottom.', '.$back.' ) is finished.  You can download it from this location: '.$url.'crop.download.php?file='.$stack_name,
-//					'text' => $out,
-					'action' => $url.'crop.download.php?file='.$stack_name ) );
+				//echo makeJSON( array( 'error' => $cmd ) );
+				//$out =  shell_exec( $cmd );
+				//$out =  shell_exec( 'which java' );
+				//echo makeJSON( array( 'error' => $out ) );
+
+				$url = 'http://'.$_SERVER[ 'SERVER_NAME' ].preg_replace( '/\/[^\/]*$/', '/', $_SERVER[ 'PHP_SELF' ] );
+
+				//echo makeJSON( array( 'error' => $url ) );
+				//exit;
+
+				//ob_end_clean();
+				header( 'Connection: close' );
+				ignore_user_abort( true );
+				ob_start();
+
+				echo makeJSON( '' );
+
+				header( 'Content-Length: '.ob_get_length() );
+				ob_end_flush();
+				flush();
+
+				shell_exec( $cmd );
+
+				$db->insertInto(
+					'message',
+					array(
+						'user_id' => $uid,
+						'title' => 'Microstack finished',
+						'text' => 'The requested microstack ( '.$left.', '.$top.', '.$front.' ) -> ( '.$right.', '.$bottom.', '.$back.' ) is finished. You can download it from this location: '.$url.'crop.download.php?file='.$stack_name,
+	//					'text' => $out,
+						'action' => $url.'crop.download.php?file='.$stack_name ) );
+			}
+			else
+			{
+				header( 'Connection: close' );
+				ignore_user_abort( true );
+				ob_start();
+
+				echo makeJSON( '' );
+
+				header( 'Content-Length: '.ob_get_length() );
+				ob_end_flush();
+				flush();
+
+				$db->insertInto(
+					'message',
+					array(
+						'user_id' => $uid,
+						'title' => 'Microstack could not be generated',
+						'text' => 'The requested microstack ( '.$left.', '.$top.', '.$front.' ) -> ( '.$right.', '.$bottom.', '.$back.' ) is not based on a TrackEM2 stack. Such stacks can not be processed yet.',
+	//					'text' => $out,
+						'action' => '' ) );
+			}
 		}
 		else
 			echo makeJSON( array( 'error' => 'You do not have the permission to crop from this stack.' ) );

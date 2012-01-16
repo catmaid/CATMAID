@@ -225,14 +225,47 @@ var SkeletonElements = new function()
     }
   };
 
+  var updateConfidenceText = function (x, y,
+                                       parentx, parenty,
+                                       fillColor,
+                                       confidence,
+                                       paper,
+                                       existing) {
+    var result,
+    numberOffset = 12,
+    confidenceFontSize = '20px',
+    xdiff = parentx - x,
+    ydiff = parenty - y,
+    length = Math.sqrt(xdiff*xdiff + ydiff*ydiff),
+    nx = -ydiff / length,
+    ny = xdiff / length,
+    newConfidenceX = (x + parentx) / 2 + nx * numberOffset,
+    newConfidenceY = (y + parenty) / 2 + ny * numberOffset;
+
+    if (typeof existing == "undefined") {
+      result = paper.text(newConfidenceX,
+                          newConfidenceY,
+                          ""+confidence);
+    } else {
+      result = existing;
+    }
+
+    result.attr({x: newConfidenceX,
+                 y: newConfidenceY,
+                 'font-size': confidenceFontSize,
+                 stroke: 'black',
+                 fill: fillColor,
+                 text: ""+confidence});
+
+    return result;
+  }
+
   /** Updates the coordinates of the raphael path
    * that represents the line from the node to the parent.
    */
   var drawLineToParent = function (node) {
     var parent = node.parent;
-    var newConfidenceX, newConfidenceY, xdiff, ydiff, length, numberOffset;
     var lineColor;
-    var confidenceFontSize = '20px';
     if (parent) {
       lineColor = node.colorFromZDiff(parent.zdiff, parent.skeleton_id);
       if (node.line) {
@@ -248,28 +281,19 @@ var SkeletonElements = new function()
         if ("none" === node.line.node.style.display) { node.line.show(); }
       }
       if (node.confidence < 5) {
-        numberOffset = 12;
-        xdiff = parent.x - node.x;
-        ydiff = parent.y - node.y;
-        length = Math.sqrt(xdiff*xdiff + ydiff*ydiff);
-        nx = -ydiff / length;
-        ny = xdiff / length;
-        newConfidenceX = (node.x + parent.x) / 2 + nx * numberOffset;
-        newConfidenceY = (node.y + parent.y) / 2 + ny * numberOffset;
         if (node.number_text) {
-          node.number_text.attr({x: newConfidenceX,
-                                 y: newConfidenceY,
-                                 'font-size': confidenceFontSize,
-                                 stroke: 'black',
-                                 fill: lineColor,
-                                 text: ""+node.confidence});
+          updateConfidenceText(
+            node.x, node.y, parent.x, parent.y,
+            lineColor,
+            node.confidence,
+            node.paper,
+            node.number_text);
         } else {
-          node.number_text = node.paper.text(newConfidenceX,
-                                             newConfidenceY,
-                                             ""+node.confidence);
-          node.number_text.attr({'font-size': confidenceFontSize,
-                                 stroke: 'black',
-                                 fill: lineColor});
+          node.number_text = updateConfidenceText(
+            node.x, node.y, parent.x, parent.y,
+            lineColor,
+            node.confidence,
+            node.paper);
         }
       } else {
         if (node.number_text) {

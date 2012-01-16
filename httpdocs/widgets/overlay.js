@@ -1012,6 +1012,7 @@ var SkeletonAnnotations = new function()
           }
           else if (jso[i].type === "connector")
           {
+            // FIXME: ripe for some DRY refactoring
             //console.log("connectors retrieved, check pre and post", jso)
             // update pregroup and postgroup
             // loop over pregroup

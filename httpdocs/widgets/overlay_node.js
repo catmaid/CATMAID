@@ -254,6 +254,7 @@ var SkeletonElements = new function()
                  y: newConfidenceY,
                  'font-size': confidenceFontSize,
                  stroke: 'black',
+                 'stroke-width': 0.25,
                  fill: fillColor,
                  text: ""+confidence});
 

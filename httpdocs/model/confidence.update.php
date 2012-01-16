@@ -63,7 +63,7 @@ try {
 		// presend, change the confidence of the corresponding
 		// treenode_connector.
 
-		$result = $db->update("treeenode_connector",
+		$result = $db->update("treenode_connector",
 				      array("confidence" => $confidence),
 				      "treenode_id = $tnid");
 

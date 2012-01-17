@@ -166,11 +166,20 @@ function Navigator()
 			{
 				if ( w > 0 )
 				{
-					self.slider_z.move( 1 );
+          if( e.shiftKey ) {
+            self.slider_z.move( 10 );
+          } else {
+            self.slider_z.move( 1 );
+          }
 				}
 				else
 				{
-					self.slider_z.move( -1 );
+          if( e.shiftKey ) {
+            self.slider_z.move( -10 );
+          } else {
+            self.slider_z.move( -1 );
+          }
+
 				}
 			}
 			return false;

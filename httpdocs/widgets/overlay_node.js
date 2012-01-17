@@ -521,7 +521,7 @@ var SkeletonElements = new function()
           var atnType = SkeletonAnnotations.getActiveNodeType();
           // connected activated treenode or connectornode
           // to existing treenode or connectornode
-          console.log("from source #" + atnID + " to target #" + node.id);
+          // console.log("from source #" + atnID + " to target #" + node.id);
           if (atnType === TYPE_CONNECTORNODE) {
             paper.catmaidSVGOverlay.createLink(atnID, node.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
             // TODO check for error

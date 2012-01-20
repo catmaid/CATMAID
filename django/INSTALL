@@ -20,6 +20,13 @@ at the right versions:
 
    pip install -r pip-frozen
 
+A note on the pgmagick module: this is a wrapper for GraphicMagick (GM).
+GM uses so called delegates to support a different formats. Depending of
+the presence of such a delegate a file format is supported or not. The
+cropping tool uses GM through pgmagick and expects the libtiff delegate
+to be present. So make sure your GM installation supports tiff (check
+e.g. with the help of "gm convert -list format").
+
 If you want to be able to run the unit tests, you will need to allow
 the catmaid database user (catmaid_user by default) to create new
 databases.  You can do that with:

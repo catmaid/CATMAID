@@ -23,6 +23,11 @@ TEMPLATE_DIRS = (
     '/home/mark/catmaid-local-instance/django/templates'
 )
 
+# Define a temporary folder. This is e.g. used to store cropped
+# microstacks for two weeks. Make sure that the folder is writable
+# by the user running the web server.
+TMP_DIR = '/home/tom/catmaid/tmp'
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
@@ -46,6 +51,10 @@ STATICFILES_LOCAL = '/home/mark/catmaid-local-instance/django/static/'
 # Local path to store HDF5 files
 # File name convention: {projectid}_{stackid}.hdf
 HDF5_STORAGE_PATH = '/home/stephan/dev/CATMAID/django/hdf5/'
+
+# Define the URL of your CATMAIDs Django instance as it should appear in
+# front of all Django related URLs.
+CATMAID_DJANGO_URL = 'http://your.domain.to/catmaid/dj/'
 
 PROJECT_ROOT = os.path.realpath(os.path.join(
         os.path.dirname(__file__), '..', '..'))

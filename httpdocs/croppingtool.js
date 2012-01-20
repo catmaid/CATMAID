@@ -489,28 +489,17 @@ function CroppingTool()
 		var numSections = Math.max( self.slider_crop_top_z.val, self.slider_crop_bottom_z.val ) - Math.min( self.slider_crop_top_z.val, self.slider_crop_bottom_z.val ) + 1;
 		var pixelWidth = Math.round( ( Math.max( cb.left, cb.right ) - Math.min( cb.left, cb.right ) ) / stack.resolution.x * scale );
 		var pixelHeight = Math.round( ( Math.max( cb.top, cb.bottom ) - Math.min( cb.top, cb.bottom ) ) / stack.resolution.y * scale );
+		var z_min = self.slider_crop_top_z.val * stack.resolution.z + stack.translation.z;
+		var z_max = self.slider_crop_bottom_z.val * stack.resolution.z + stack.translation.z;
+		var zoom_level = self.slider_crop_s.val;
 		var str = "The generated stack will have " + numSections + " sections.\n";
 		str += "Each section will have a size of " + pixelWidth + "x" + pixelHeight + "px.\n";
 		str += "Do you really want to crop this microstack?";
 
 		if ( !window.confirm( str ) ) return false;
-		requestQueue.register(
-		'model/crop.php',
-		'POST',
-		{
-			pid : project.id,
-			sid : stack.id,
-			left : cb.left,
-			top : cb.top,
-			front : self.slider_crop_top_z.val * stack.resolution.z + stack.translation.z,
-			right : cb.right,
-			bottom : cb.bottom,
-			back : self.slider_crop_bottom_z.val * stack.resolution.z + stack.translation.z,
-			scale : scale,
-			reregister : ( document.getElementById( "crop_reregister" ).checked ? 1 : 0 ),
-			istrackem : stack.is_trackem2_stack
-		},
-		handle_crop );
+
+		var url = django_url + project.id + '/stack/' + stack.id + '/crop/' + cb.left + "," + cb.right + "/" + cb.top + "," + cb.bottom + "/" + z_min + "," + z_max + '/' + zoom_level + '/';
+		requestQueue.register(url, 'GET', {}, handle_crop );
 		return false;
 	}
 

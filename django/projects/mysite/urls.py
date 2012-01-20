@@ -5,6 +5,9 @@ from django.conf import settings
 # from django.contrib import admin
 # admin.autodiscover()
 
+# A regular expression matiching floating point and integer numbers
+num = r'[-+]?[0-9]*\.?[0-9]+'
+
 urlpatterns = patterns(
     '',
     (r'^(?P<project_id>\d+)$', 'vncbrowser.views.index'),
@@ -41,6 +44,12 @@ urlpatterns = patterns(
     (r'^(?P<project_id>\d+)/annotationdiagram/nx_json$', 'vncbrowser.views.convert_annotations_to_networkx'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', 'vncbrowser.views.stack_info'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/models$', 'vncbrowser.views.stack_models'),
+    )
+
+# Cropping
+urlpatterns += patterns('',
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/crop/(?P<x_min>%s),(?P<x_max>%s)/(?P<y_min>%s),(?P<y_max>%s)/(?P<z_min>%s),(?P<z_max>%s)/(?P<zoom_level>\d+)/$' % (num, num, num, num, num, num), 'vncbrowser.views.crop' ),
+    (r'^crop/download/(?P<file_path>.*)/$', 'vncbrowser.views.download_crop' )
     )
 
 if settings.DEBUG:

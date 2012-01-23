@@ -21,6 +21,12 @@ function CroppingTool()
 
 	if ( !ui ) ui = new UI();
 
+	// inputs for x, y, width and height of the crop box
+	this.box_crop_x = document.getElementById( "box_crop_x" );
+	this.box_crop_y = document.getElementById( "box_crop_y" );
+	this.box_crop_w = document.getElementById( "box_crop_w" );
+	this.box_crop_h = document.getElementById( "box_crop_h" );
+
 	this.slider_crop_top_z = new Slider(
 			SLIDER_HORIZONTAL,
 			true,
@@ -82,28 +88,84 @@ function CroppingTool()
 	mouseCatcher.className = "sliceMouseCatcher";
 	mouseCatcher.style.cursor = "default";
 
-	this.updateCropBox = function()
+	this.toPx = function( world_coord, resolution )
+	{
+		return world_coord / resolution * self.stack.scale;
+	}
+
+	this.toWorld = function( px_coord, resolution )
+	{
+		return px_coord / self.stack.scale * resolution;
+	}
+
+	this.getScreenLeft = function()
 	{
 		var stack = self.stack;
+		return ( ( stack.x - stack.viewWidth / stack.scale / 2 ) + stack.translation.x ) * stack.resolution.x;
+	}
+
+	this.getScreenTop = function()
+	{
+		var stack = self.stack;
+		return ( ( stack.y - stack.viewHeight / stack.scale / 2 ) + stack.translation.y ) * stack.resolution.y;
+	}
+
+	// Gets the bounding box of the current crop box in world
+	// and pixel coordinates.
+	this.getCropBoxBoundingBox = function()
+	{
 		var t = Math.min( self.cropBox.top, self.cropBox.bottom );
 		var b = Math.max( self.cropBox.top, self.cropBox.bottom );
 		var l = Math.min( self.cropBox.left, self.cropBox.right );
 		var r = Math.max( self.cropBox.left, self.cropBox.right );
+		var width = r - l;
+		var height = b - t;
 		//! left-most border of the view in physical project coordinates
-		var screen_left = ( ( stack.x - stack.viewWidth / stack.scale / 2 ) + stack.translation.x ) * stack.resolution.x;
-		var screen_top = ( ( stack.y - stack.viewHeight / stack.scale / 2 ) + stack.translation.y ) * stack.resolution.y;
+		var screen_left = self.getScreenLeft();
+		var screen_top = self.getScreenTop();
 
-		var rx = stack.resolution.x / stack.scale;
-		var ry = stack.resolution.y / stack.scale;
+		var rx = self.stack.resolution.x / self.stack.scale;
+		var ry = self.stack.resolution.y / self.stack.scale;
 
-		self.cropBox.view.style.left = Math.floor( ( l - screen_left ) / rx ) + "px";
-		self.cropBox.view.style.top = Math.floor( ( t - screen_top ) / ry ) + "px";
-		self.cropBox.view.style.width = Math.floor( ( r - l ) / rx ) + "px";
-		self.cropBox.view.style.height = Math.floor( ( b - t ) / ry ) + "px";
+		var left_px = Math.floor( ( l - screen_left ) / rx );
+		var top_px = Math.floor( ( t - screen_top ) / ry );
+		var width_px = Math.floor( ( r - l ) / rx );
+		var height_px = Math.floor( ( b - t ) / ry );
+		var right_px = left_px + width_px;
+		var bottom_px = top_px + height_px;
 
-		statusBar.replaceLast( l.toFixed( 3 ) + ", " + t.toFixed( 3 ) + " -> " + r.toFixed( 3 ) + "," + b.toFixed( 3 ) );
+		return { left_world : l, top_world : t, right_world : r, bottom_world : b, width_world : width, height_world : height,
+				 left_px : left_px, top_px : top_px, right_px : right_px, bottom_px : bottom_px, width_px : width_px, height_px : height_px }
+	}
 
-		self.cropBox.text.replaceChild( document.createTextNode( ( r - l ).toFixed( 3 ) + " x " + ( b - t ).toFixed( 3 ) ), self.cropBox.text.firstChild );
+	// Updates the actual crop box.
+	this.updateCropBox = function()
+	{
+		var cropBoxBB = self.getCropBoxBoundingBox();
+
+		self.cropBox.view.style.left = cropBoxBB.left_px + "px";
+		self.cropBox.view.style.top = cropBoxBB.top_px + "px";
+		self.cropBox.view.style.width = cropBoxBB.width_px	+ "px";
+		self.cropBox.view.style.height = cropBoxBB.height_px  + "px";
+
+		statusBar.replaceLast( cropBoxBB.left_world.toFixed( 3 ) + ", " + cropBoxBB.top_world.toFixed( 3 ) + " -> " + cropBoxBB.right_world.toFixed( 3 ) + "," + cropBoxBB.bottom_world.toFixed( 3 ) );
+
+		self.cropBox.text.replaceChild( document.createTextNode( cropBoxBB.width_world.toFixed( 3 ) + " x " + cropBoxBB.height_world.toFixed( 3 ) ), self.cropBox.text.firstChild );
+
+		return;
+	}
+
+	// Updates UI elements like the the crop box input boxes.
+	this.updateControls = function()
+	{
+		if ( self.cropBox )
+		{
+			var cropBoxBB = self.getCropBoxBoundingBox();
+			self.box_crop_x.value = cropBoxBB.left_px;
+			self.box_crop_y.value = cropBoxBB.top_px;
+			self.box_crop_w.value = cropBoxBB.width_px;
+			self.box_crop_h.value = cropBoxBB.height_px;
+		}
 
 		return;
 	}
@@ -120,6 +182,7 @@ function CroppingTool()
 		// update crop box if available
 		if ( self.cropBox )
 			self.updateCropBox();
+		self.updateControls();
 	}
 
 	var onmousedown = function( e )
@@ -151,6 +214,10 @@ function CroppingTool()
 			self.cropBox.view.className = "cropBox";
 			self.cropBox.text = document.createElement( "p" );
 			self.cropBox.text.appendChild( document.createTextNode( "0 x 0" ) );
+			self.cropBox.xdist = 0;
+			self.cropBox.ydist = 0;
+			self.cropBox.xorigin = self.cropBox.left;
+			self.cropBox.yorigin = self.cropBox.top;
 
 			self.cropBox.view.appendChild( self.cropBox.text );
 			view.appendChild( self.cropBox.view );
@@ -187,10 +254,37 @@ function CroppingTool()
 		{
 			if ( self.cropBox )
 			{
-				self.cropBox.right += ui.diffX / self.stack.scale * self.stack.resolution.x;
-				self.cropBox.bottom += ui.diffY / self.stack.scale * self.stack.resolution.y;
+				// adjust left and rigt component
+				self.cropBox.xdist += ui.diffX;
+				var xdist_world = self.toWorld( self.cropBox.xdist, self.stack.resolution.x );
+				if (self.cropBox.xdist > 0)
+				{
+					self.cropBox.left = self.cropBox.xorigin;
+					self.cropBox.right = self.cropBox.xorigin + xdist_world;
+				}
+				else
+				{
+					self.cropBox.left = self.cropBox.xorigin + xdist_world;
+					self.cropBox.right = self.cropBox.xorigin;
+				}
+
+				// adjust top and bottom component
+				self.cropBox.ydist += ui.diffY;
+				var ydist_world = self.toWorld( self.cropBox.ydist, self.stack.resolution.y );
+				if (self.cropBox.ydist > 0)
+				{
+					self.cropBox.top = self.cropBox.yorigin;
+					self.cropBox.bottom = self.cropBox.yorigin + ydist_world;
+				}
+				else
+				{
+					self.cropBox.top = self.cropBox.yorigin + ydist_world;
+					self.cropBox.bottom = self.cropBox.yorigin;
+				}
+
 				self.updateCropBox();
 			}
+			self.updateControls();
 		}
 	};
 
@@ -199,6 +293,7 @@ function CroppingTool()
 		ui.releaseEvents();
 		ui.removeEvent( "onmousemove", onmousemove.crop );
 		ui.removeEvent( "onmouseup", onmouseup );
+		self.updateControls();
 	}
 
 	var onmousewheel = function( e )
@@ -296,6 +391,91 @@ function CroppingTool()
 
 	//--------------------------------------------------------------------------
 
+	var changeCropBoxXByInput = function( e )
+	{
+		var val = parseInt( this.value );
+		if ( isNaN( val ) )
+		{
+			this.value = self.toPx( self.cropBox.left, self.stack.resolution.x );
+		}
+		else
+		{
+			var screen_left = self.getScreenLeft();
+			var width_world = self.cropBox.right - self.cropBox.left;
+			self.cropBox.left = self.toWorld( val, self.stack.resolution.x ) + screen_left;
+			self.cropBox.right = self.cropBox.left + width_world;
+			self.updateCropBox();
+			self.updateControls();
+		}
+		return;
+	}
+
+	var changeCropBoxYByInput = function( e )
+	{
+		var val = parseInt( this.value );
+		if ( isNaN( val ) )
+		{
+			this.value = self.toPx( self.cropBox.left, self.stack.resolution.y );
+		}
+		else
+		{
+			var screen_top = self.getScreenTop();
+			var height_world = self.cropBox.bottom - self.cropBox.top;
+			self.cropBox.top = self.toWorld( val, self.stack.resolution.y ) + screen_top;
+			self.cropBox.bottom = self.cropBox.top + height_world;
+			self.updateCropBox();
+			self.updateControls();
+		}
+		return;
+	}
+
+	var changeCropBoxWByInput = function( e )
+	{
+		var val = parseInt( this.value );
+		if ( isNaN( val ) )
+		{
+			var width_world = self.cropBox.right - self.cropBox.left;
+			this.value = self.toPx( width_world, self.stack.resolution.x );
+		}
+		else
+		{
+			var width_world = self.toWorld( val, self.stack.resolution.x );
+			self.cropBox.right = self.cropBox.left + width_world;
+			self.updateCropBox();
+			self.updateControls();
+		}
+		return;
+	}
+
+	var changeCropBoxHByInput = function( e )
+	{
+		var val = parseInt( this.value );
+		if ( isNaN( val ) )
+		{
+			var height_world = self.cropBox.bottom - self.cropBox.top;
+			this.value = self.toPx( height_world, self.stack.resolution.y );
+		}
+		else
+		{
+			var height_world = self.toWorld( val, self.stack.resolution.y );
+			self.cropBox.bottom = self.cropBox.top + height_world;
+			self.updateCropBox();
+			self.updateControls();
+		}
+		return;
+	}
+
+	var cropBoxMouseWheel = function( e )
+	{
+		var w = ui.getMouseWheel( e );
+		if ( w )
+		{
+			this.value = parseInt( this.value ) - w;
+			this.onchange();
+		}
+		return false
+	}
+
 	/**
 	 * crop a microstack by initiating a server backend
 	 * @todo which has to be built
@@ -357,6 +537,41 @@ function CroppingTool()
 		return;
 	}
 
+	// Adds a mouse wheel listener to a component.
+	this.addMousewheelListener = function( component, handler )
+	{
+		try
+		{
+			component.addEventListener( "DOMMouseScroll", handler, false );
+		}
+		catch ( error )
+		{
+			try
+			{
+				component.onmousewheel = handler;
+			}
+			catch ( error ) {}
+		}
+
+	}
+
+	// Removes a mouse wheel listener from a component.
+	this.removeMousewheelListener = function( component, handler )
+	{
+		try
+		{
+			component.removeEventListener( "DOMMouseScroll", handler, false );
+		}
+		catch ( error )
+		{
+			try
+			{
+				component.onmousewheel = null;
+			}
+			catch ( error ) {}
+		}
+	}
+
 	/**
 	 * install this tool in a stack.
 	 * register all GUI control elements and event handlers
@@ -395,6 +610,15 @@ function CroppingTool()
 
 		self.stack.getView().appendChild( mouseCatcher );
 
+		self.box_crop_x.onchange = changeCropBoxXByInput;
+		self.addMousewheelListener( self.box_crop_x, cropBoxMouseWheel );
+		self.box_crop_y.onchange = changeCropBoxYByInput;
+		self.addMousewheelListener( self.box_crop_y, cropBoxMouseWheel );
+		self.box_crop_w.onchange = changeCropBoxWByInput;
+		self.addMousewheelListener( self.box_crop_w, cropBoxMouseWheel );
+		self.box_crop_h.onchange = changeCropBoxHByInput;
+		self.addMousewheelListener( self.box_crop_h, cropBoxMouseWheel );
+
 		// initialize top and bottom z-index slider
 		if ( self.stack.slices.length < 2 )	//!< hide the self.slider_z if there is only one slice
 		{
@@ -432,6 +656,8 @@ function CroppingTool()
 		// initialize crop button
 		self.button_crop_apply.onclick = crop;
 
+		self.updateControls();
+
 		return;
 	}
 
@@ -463,6 +689,15 @@ function CroppingTool()
 			delete self.cropBox;
 			self.cropBox = false;
 		}
+
+		self.box_crop_x.onchange = null;
+		self.removeMousewheelListener( self.box_crop_x, cropBoxMouseWheel );
+		self.box_crop_y.onchange = null;
+		self.removeMousewheelListener( self.box_crop_y, cropBoxMouseWheel );
+		self.box_crop_w.onchange = null;
+		self.removeMousewheelListener( self.box_crop_w, cropBoxMouseWheel );
+		self.box_crop_h.onchange = null;
+		self.removeMousewheelListener( self.box_crop_h, cropBoxMouseWheel );
 
 		self.slider_crop_top_z.update(
 			0,

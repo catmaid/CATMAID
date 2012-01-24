@@ -647,8 +647,8 @@ function CroppingTool()
 		// initialize zoom-level slider
 		self.slider_crop_s.update(
 			self.stack.MAX_S,
-			self.stack.MIN_S,
-			(Math.abs(self.stack.MAX_S) + Math.abs(self.stack.MIN_S)) + 1,
+			0,
+			(Math.abs(self.stack.MAX_S) + 1),
 			self.stack.s,
 			function( val ){ statusBar.replaceLast( "crop s: " + val ); },
 			-1 );

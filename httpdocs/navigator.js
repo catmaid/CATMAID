@@ -519,7 +519,7 @@ function Navigator()
 		{
 			try
 			{
-				self.input_x.onmousewheel = YXMouseWheel;
+				self.input_y.onmousewheel = YXMouseWheel;
 			}
 			catch ( error ) {}
 		}
@@ -589,7 +589,7 @@ function Navigator()
 		{
 			try
 			{
-				self.input_x.onmousewheel = null;
+				self.input_y.onmousewheel = null;
 			}
 			catch ( error ) {}
 		}

@@ -503,7 +503,8 @@ var SkeletonElements = new function()
     var mc_click = function(e) {
       var node = this.catmaidNode,
         paper = this.paper,
-        wasActiveNode = false;
+        wasActiveNode = false,
+        toActivate;
       if (e.shiftKey) {
         var atnID = SkeletonAnnotations.getActiveNodeId();
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
@@ -527,7 +528,12 @@ var SkeletonElements = new function()
             // TODO check for error
             statusBar.replaceLast("Joined node #" + atnID + " to connector #" + node.id);
           } else if (atnType === TYPE_NODE) {
-            paper.catmaidSVGOverlay.createTreenodeLink(atnID, node.id);
+            toActivate = node.id;
+            paper.catmaidSVGOverlay.createTreenodeLink(atnID,
+                                                       node.id,
+                                                       function () {
+                                                         paper.catmaidSVGOverlay.selectNode(toActivate);
+                                                       });
             // TODO check for error
             statusBar.replaceLast("Joined node #" + atnID + " to node #" + node.id);
           }

@@ -548,7 +548,7 @@ var SkeletonAnnotations = new function()
     };
 
     // Used to join two skeleton together
-    this.createTreenodeLink = function (fromid, toid) {
+    this.createTreenodeLink = function (fromid, toid, callback) {
       // TODO: rerooting operation should be called on the backend
       // first make sure to reroot target
       requestQueue.register("model/treenode.reroot.php", "POST", {
@@ -575,9 +575,13 @@ var SkeletonAnnotations = new function()
                       alert(e.error);
                     } else {
                       // just redraw all for now
-                      self.updateNodes();
-                      ObjectTree.refresh();
-                      refreshAllWidgets();
+                      self.updateNodes(function () {
+                        ObjectTree.refresh();
+                        refreshAllWidgets();
+                        if (typeof callback !== "undefined") {
+                          callback();
+                        }
+                      });
                     }
                   }
                 }
@@ -1289,7 +1293,7 @@ var SkeletonAnnotations = new function()
      * update treeline nodes by querying them from the server
      * with a bounding volume dependant on the current view
      */
-    this.updateNodes = function ()
+    this.updateNodes = function (callback)
     {
   /*
       console.log("In updateTreelinenodes");
@@ -1332,7 +1336,9 @@ var SkeletonAnnotations = new function()
         width: (stack.viewWidth / stack.scale) * stack.resolution.x,
         height: (stack.viewHeight / stack.scale) * stack.resolution.y,
         zres: stack.resolution.z
-      }, handle_updateNodes);
+      }, function (status, text, xml) {
+        handle_updateNodes(status, text, xml, callback);
+      });
       
       old_x = stack.x;
       old_y = stack.y;
@@ -1343,7 +1349,7 @@ var SkeletonAnnotations = new function()
      * handle an update-treelinenodes-request answer
      *
      */
-    var handle_updateNodes = function (status, text, xml) {
+    var handle_updateNodes = function (status, text, xml, callback) {
       if (status == 200) {
         //console.log("update noded text", $.parseJSON(text));
         var e = eval("(" + text + ")");
@@ -1355,6 +1361,9 @@ var SkeletonAnnotations = new function()
           // XXX: how much time does calling the function like this take?
           self.refreshNodes(jso);
         }
+      }
+      if (typeof callback !== "undefined") {
+        callback();
       }
       return;
     }

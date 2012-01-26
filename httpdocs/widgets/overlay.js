@@ -626,7 +626,7 @@ var SkeletonAnnotations = new function()
       return;
     };
 
-    var createSingleConnector = function (phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval) {
+    var createSingleConnector = function (phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, completionCallback) {
       // create a single connector with a synapse instance that is
       // not linked to any treenode
       requestQueue.register("model/connector.create.php", "POST", {
@@ -650,6 +650,9 @@ var SkeletonAnnotations = new function()
               nodes[jso.connector_id] = nn;
               nn.draw();
               self.activateNode(nn);
+              if (typeof completionCallback !== "undefined") {
+                completionCallback(jso.connector_id);
+              }
             }
           } // endif
         } // end if
@@ -1129,6 +1132,8 @@ var SkeletonAnnotations = new function()
       var phys_y = pix2physY(pos_y);
       var phys_z = project.coordinates.z;
 
+      var targetTreenodeID;
+
       // e.metaKey should correspond to the command key on Mac OS
       if (e.ctrlKey || e.metaKey) {
         // ctrl-click deselects the current active node
@@ -1151,14 +1156,19 @@ var SkeletonAnnotations = new function()
           }
         } else {
           if ("treenode" === atn.type) {
-            // here we could create new connector presynaptic to the activated treenode
-            // remove the automatic synapse creation for now
-            // the user has to change into the synapsedropping mode and add the
-            // connector, then active the original treenode again, and shift-click
-            // on the target connector to link them presynaptically
-            statusBar.replaceLast("created connector presynaptic to treenode with id " + atn.id);
-            createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
-            e.stopPropagation();
+            if (e.shiftKey && e.altKey) {
+              statusBar.replaceLast("created connector, with postynaptic treenode id " + atn.id);
+              targetTreenodeID = atn.id;
+              createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
+                                    function (connectorID) {
+                                      createConnector(connectorID, targetTreenodeID, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
+                                    });
+              e.stopPropagation();
+            } else if (e.altKey) {
+              statusBar.replaceLast("created connector, with presynaptic treenode id " + atn.id);
+              createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
+              e.stopPropagation();
+            }
             return true;
           } else if ("connector" === atn.type) {
             // create new treenode (and skeleton) postsynaptic to activated connector

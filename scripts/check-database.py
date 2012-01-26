@@ -65,8 +65,6 @@ for tid, skid, tcid, cid, tc_skid in c.fetchall():
     context = "[treenode %d <-> connector %d]" % (tid, cid)
     print context, "The treenode is an element_of skeleton %d, but the skeleton_id column of treenode_connector is set to %d" % (skid, tc_skid)
 
-sys.exit(0)
-
 # ------------------------------------------------------------------------
 
 # Go through each skeleton - check that it has only one node

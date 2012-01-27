@@ -99,3 +99,25 @@ file and set up the appropriate aliases.  An example is given here:
             Allow from all
 
     </Directory> 
+
+## Celery
+
+Some tasks of CATMAID (e.g. cropping) are done in the background. These are
+managed by Celery. This framework can use different methods to get messages
+from the Django client to the server which schedules and executes the tasks.
+By default a simple Python module that uses the Django data base is used.
+Alternatively one may use message brokers like RabbitMQ. This can be adjusted
+in the settings.py file. To initialize Celery, call the syncdb sub-command of
+your manage.py (from within the virtualenv):
+
+    python manage.py syncdb
+
+You should then be able to run the Celery daemon (also from within the
+virtualenv):
+
+    python manage.py celeryd -l info
+
+The celery daemon should be integrated in your system to be started
+automatically. Make sure that this daemon process has the permissions to
+write to the temporary directory (TMP_DIR).
+

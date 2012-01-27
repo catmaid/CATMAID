@@ -547,6 +547,12 @@ var ObjectTree = new function()
 
     $(object_tree_id).bind("remove.jstree", function (e, data) {
       var treebefore = data.rlbk;
+      var friendly_name = data.rslt.obj.text().replace(/(^\s+|\s+$)/g, '');
+      if (!confirm("Are you sure you want to remove '" + friendly_name + "' and anything it contains?")) {
+        $.jstree.rollback(treebefore);
+        return false;
+      }
+
           type = data.rslt.obj.attr("rel");
 
       $.post("model/instance.operation.php", {

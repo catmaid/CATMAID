@@ -5,6 +5,8 @@ django/projects/mysite/settings_apache.py
 django/projects/mysite/django.wsgi
 django/projects/mysite/settings.py
 /django/static/neurohdf
+/django/env
+/django/build
 /inc/setup.inc.php
 /logs/
 /temp/

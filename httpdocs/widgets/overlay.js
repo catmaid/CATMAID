@@ -548,7 +548,7 @@ var SkeletonAnnotations = new function()
     };
 
     // Used to join two skeleton together
-    this.createTreenodeLink = function (fromid, toid) {
+    this.createTreenodeLink = function (fromid, toid, callback) {
       // TODO: rerooting operation should be called on the backend
       // first make sure to reroot target
       requestQueue.register("model/treenode.reroot.php", "POST", {
@@ -575,9 +575,13 @@ var SkeletonAnnotations = new function()
                       alert(e.error);
                     } else {
                       // just redraw all for now
-                      self.updateNodes();
-                      ObjectTree.refresh();
-                      refreshAllWidgets();
+                      self.updateNodes(function () {
+                        ObjectTree.refresh();
+                        refreshAllWidgets();
+                        if (typeof callback !== "undefined") {
+                          callback();
+                        }
+                      });
                     }
                   }
                 }
@@ -622,7 +626,7 @@ var SkeletonAnnotations = new function()
       return;
     };
 
-    var createSingleConnector = function (phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval) {
+    var createSingleConnector = function (phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, completionCallback) {
       // create a single connector with a synapse instance that is
       // not linked to any treenode
       requestQueue.register("model/connector.create.php", "POST", {
@@ -646,6 +650,9 @@ var SkeletonAnnotations = new function()
               nodes[jso.connector_id] = nn;
               nn.draw();
               self.activateNode(nn);
+              if (typeof completionCallback !== "undefined") {
+                completionCallback(jso.connector_id);
+              }
             }
           } // endif
         } // end if
@@ -1125,6 +1132,8 @@ var SkeletonAnnotations = new function()
       var phys_y = pix2physY(pos_y);
       var phys_z = project.coordinates.z;
 
+      var targetTreenodeID;
+
       // e.metaKey should correspond to the command key on Mac OS
       if (e.ctrlKey || e.metaKey) {
         // ctrl-click deselects the current active node
@@ -1147,14 +1156,19 @@ var SkeletonAnnotations = new function()
           }
         } else {
           if ("treenode" === atn.type) {
-            // here we could create new connector presynaptic to the activated treenode
-            // remove the automatic synapse creation for now
-            // the user has to change into the synapsedropping mode and add the
-            // connector, then active the original treenode again, and shift-click
-            // on the target connector to link them presynaptically
-            statusBar.replaceLast("created connector presynaptic to treenode with id " + atn.id);
-            createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
-            e.stopPropagation();
+            if (e.shiftKey && e.altKey) {
+              statusBar.replaceLast("created connector, with postynaptic treenode id " + atn.id);
+              targetTreenodeID = atn.id;
+              createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
+                                    function (connectorID) {
+                                      createConnector(connectorID, targetTreenodeID, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
+                                    });
+              e.stopPropagation();
+            } else if (e.altKey) {
+              statusBar.replaceLast("created connector, with presynaptic treenode id " + atn.id);
+              createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
+              e.stopPropagation();
+            }
             return true;
           } else if ("connector" === atn.type) {
             // create new treenode (and skeleton) postsynaptic to activated connector
@@ -1289,7 +1303,7 @@ var SkeletonAnnotations = new function()
      * update treeline nodes by querying them from the server
      * with a bounding volume dependant on the current view
      */
-    this.updateNodes = function ()
+    this.updateNodes = function (callback)
     {
   /*
       console.log("In updateTreelinenodes");
@@ -1332,7 +1346,9 @@ var SkeletonAnnotations = new function()
         width: (stack.viewWidth / stack.scale) * stack.resolution.x,
         height: (stack.viewHeight / stack.scale) * stack.resolution.y,
         zres: stack.resolution.z
-      }, handle_updateNodes);
+      }, function (status, text, xml) {
+        handle_updateNodes(status, text, xml, callback);
+      });
       
       old_x = stack.x;
       old_y = stack.y;
@@ -1343,7 +1359,7 @@ var SkeletonAnnotations = new function()
      * handle an update-treelinenodes-request answer
      *
      */
-    var handle_updateNodes = function (status, text, xml) {
+    var handle_updateNodes = function (status, text, xml, callback) {
       if (status == 200) {
         //console.log("update noded text", $.parseJSON(text));
         var e = eval("(" + text + ")");
@@ -1355,6 +1371,9 @@ var SkeletonAnnotations = new function()
           // XXX: how much time does calling the function like this take?
           self.refreshNodes(jso);
         }
+      }
+      if (typeof callback !== "undefined") {
+        callback();
       }
       return;
     }

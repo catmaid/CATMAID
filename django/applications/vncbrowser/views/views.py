@@ -320,7 +320,6 @@ def export_wiring_diagram_nx(request, project_id=None):
         g.add_node( n['id'], {'label': n['label'], 'node_count': n['node_count'] } )
 
     for e in nodes_and_edges['edges']:
-        print e
         g.add_edge( e['source'], e['target'], {'number_of_connector': e['number_of_connector'] } )
 
     data = json_graph.node_link_data(g)

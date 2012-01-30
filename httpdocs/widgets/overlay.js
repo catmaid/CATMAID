@@ -1164,7 +1164,7 @@ var SkeletonAnnotations = new function()
                                       createConnector(connectorID, targetTreenodeID, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
                                     });
               e.stopPropagation();
-            } else if (e.altKey) {
+            } else if (e.shiftKey) {
               statusBar.replaceLast("created connector, with presynaptic treenode id " + atn.id);
               createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
               e.stopPropagation();

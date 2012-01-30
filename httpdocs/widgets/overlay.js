@@ -1340,7 +1340,7 @@ var SkeletonAnnotations = new function()
       
       //TODO add the padding to the range
 
-      requestQueue.register('model/node.list.php', 'POST', {
+      requestQueue.replace('model/node.list.php', 'POST', {
         pid: stack.getProject().id,
         sid: stack.getId(),
         z: stack.z * stack.resolution.z + stack.translation.z,
@@ -1351,7 +1351,8 @@ var SkeletonAnnotations = new function()
         zres: stack.resolution.z
       }, function (status, text, xml) {
         handle_updateNodes(status, text, xml, callback);
-      });
+      },
+      'nodes_for_overlay_request');
       
       old_x = stack.x;
       old_y = stack.y;

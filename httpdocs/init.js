@@ -31,9 +31,11 @@ var ui;
 var requestQueue;
 var project;
 var project_view;
+var projects_available;
 
 var project_menu;
 var project_menu_open;
+var project_menu_current;
 
 var message_menu;
 
@@ -225,6 +227,12 @@ function handle_updateProjects(status, text, xml) {
       project_menu_open.update();
       alert(e.error);
     } else {
+      // maintain a list of projects/sessions available
+      if (projects_available)
+      {
+        delete projects_available;
+      }
+      projects_available = new Array();
       for (var i in e) {
         if (project && project.id == e[i].pid) {
           keep_project_alive = true;
@@ -237,17 +245,23 @@ function handle_updateProjects(status, text, xml) {
         document.getElementById("projects_h").style.display = "block";
         pp.appendChild(dt);
 
+        projects_available[ e[i].pid ] = new Array();
         for (var j in e[i].action) {
+          var sid_title = e[i].action[j].title;
+          var sid_action = e[i].action[j].action;
+          var sid_note = e[i].action[j].comment;
+          projects_available[e[i].pid][j] =
+            { title : sid_title, action : sid_action, note : sid_note };
           var dd = document.createElement("dd");
           var a = document.createElement("a");
           var ddc = document.createElement("dd");
-          a.href = e[i].action[j].action;
-          a.appendChild(document.createTextNode(e[i].action[j].title));
+          a.href = sid_action;
+          a.appendChild(document.createTextNode(sid_title));
           dd.appendChild(a);
           pp.appendChild(dd);
-          if (e[i].action[j].comment) {
+          if (sid_note) {
             var ddc = document.createElement("dd");
-            ddc.innerHTML = e[i].action[j].comment;
+            ddc.innerHTML = sid_note;
             pp.appendChild(ddc);
           }
         }
@@ -386,6 +400,28 @@ function handle_openProjectStack( status, text, xml )
 						}
 					}
 				}
+			}
+
+			/* Update the projects "current project" menu. If there is more
+			than one stack linked to the current project, a submenu for easy
+			access is generated. */
+			project_menu_current.update();
+			var stacks = projects_available[project.id];
+			if (stacks.length > 1)
+			{
+				var current_menu_content = new Array();
+				for (var s in stacks)
+				{
+					current_menu_content[ s ] =
+						{
+							id : s,
+							title : stacks[s].title,
+							note : stacks[s].note,
+							action : stacks[s].action
+						}
+				}
+				project_menu_current.update( current_menu_content );
+				document.getElementById( "project_menu_current" ).style.display = "block";
 			}
 		}
 	}
@@ -741,6 +777,13 @@ var realInit = function()
 				id : "project_menu_open",
 				action : {},
 				note : ""
+			},
+			2 :
+			{
+				title : "Current",
+				id : "project_menu_current",
+				action : {},
+				note : ""
 			}
 		}
 	);
@@ -749,7 +792,9 @@ var realInit = function()
 	project_menu_open = project_menu.getPulldown( "Open" );
 	document.getElementById( "project_menu_new" ).style.display = "none";
 	//project_menu_open.appendChild( project_menu_open.getView() );
-	
+	project_menu_current = project_menu.getPulldown( "Current" );
+	document.getElementById( "project_menu_current" ).style.display = "none";
+
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
 

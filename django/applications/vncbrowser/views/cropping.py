@@ -8,7 +8,7 @@ import json
 
 try:
     import numpy as np
-    from pgmagick import Blob, Image, ImageList, Geometry, Color, CompositeOperator as co
+    from pgmagick import Blob, Image, ImageList, Geometry, Color, CompositeOperator as co, ResolutionType
     import urllib2 as urllib
     import string
     import random
@@ -126,6 +126,60 @@ def get_tile_path(job, tile_coords):
     path += str(tile_coords[1]) + "_" + str(tile_coords[0]) + "_" + str(job.zoom_level) + "." + job.stack.file_extension
     return path
 
+def addMetaData( path, job, result ):
+    """ Use this method to add meta data to the image. Due to a bug in
+    exiv2, its python wrapper pyexiv2 is of no use to us. This bug
+    (http://dev.exiv2.org/issues/762) hinders us to work on multi-page
+    TIFF files. Instead, we use a seperate tool called exiftool to write
+    meta data. Currently, there semms no better solution than this. If the
+    tool is not found, no meta data is produced and no error is raised.
+    """
+    # Add resolution information in pixel per nanometer. The stack info
+    # available is nm/px and refers to a zoom-level of zero.
+    res_x_scaled = job.stack.resolution.x * 2**job.zoom_level
+    res_y_scaled = job.stack.resolution.y * 2**job.zoom_level
+    res_x_nm_px = 1.0 / res_x_scaled
+    res_y_nm_px = 1.0 / res_y_scaled
+    res_args = "-EXIF:XResolution={0} -EXIF:YResolution={1} -EXIF:ResolutionUnit=None".format( str(res_x_nm_px), str(res_y_nm_px) )
+
+    # ImageJ specific meta data to allow easy embedding of units and
+    # display options.
+    n_images = len( result )
+    ij_version= "1.45p"
+    unit = "nm"
+    newline = "\n"
+
+    # sample with (the actual is a line break instead of a .):
+    # ImageJ=1.45p.images={0}.channels=1.slices=2.hyperstack=true.mode=color.unit=micron.finterval=1.spacing=1.5.loop=false.min=0.0.max=4095.0.
+    ij_data = "ImageJ={1}{0}unit={2}{0}".format( newline, ij_version, unit)
+    if n_images > 1:
+        n_channels = 1
+        if n_images % n_channels != 0:
+            raise ValueError( "Meta data creation: the number of images modulo the channel count is not zero" )
+        n_slices = n_images / n_channels
+        ij_data += "images={1}{0}channels={2}{0}slices={3}{0}hyperstack=true{0}mode=color{0}".format( newline, str(n_images), str(n_channels), str(n_slices) )
+    ij_args = "-EXIF:ImageDescription=\"{0}\"".format( ij_data )
+
+    # Information about the software used
+    sw_args = "-EXIF:Software=\"Created with CATMAID and GraphicsMagic, processed with exiftool.\""
+    # Build up the final tag changing arguments for each slice
+    tag_args = "{0} {1} {2}".format( res_args, ij_args, sw_args )
+    per_slice_tag_args = []
+    for i in range(0, n_images):
+        # the string EXIF gets replaced for every image with IFD<N>
+        slice_args = tag_args.replace( "EXIF", "IFD" + str(i) )
+        per_slice_tag_args.append( slice_args  )
+    final_tag_args = " ".join( per_slice_tag_args )
+    # Create the final call and execute
+    call = "exiftool -overwrite_original {0} {1}".format( final_tag_args, path )
+    os.system( call )
+
+    # Resave the image with GraphicsMagick, otherwise ImageJ won't read the
+    # images directly.
+    images = ImageList()
+    images.readImages( path )
+    images.writeImages( path )
+
 def extract_substack( job ):
     """ Extracts a sub-stack as specified in the passed job. A list of
     pgmagick images is returned -- one for each slice, starting on top.
@@ -230,6 +284,8 @@ def process_crop_job(job):
         # Only produce an image if parts of stacks are within the output
         if len( cropped_stack ) > 0:
             outputImage.writeImages( output_path )
+            # Add some meta data to the image
+            addMetaData( output_path, job, cropped_stack )
         else:
             no_error_occured = False
             error_message = "A region outside the stack has been selected. Therefore, no image was produced."

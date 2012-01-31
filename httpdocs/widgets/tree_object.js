@@ -482,7 +482,7 @@ var ObjectTree = new function()
     });
 
     $(object_tree_id).bind("select_node.jstree", function (event, data) {
-      data.inst.toggle_node(data.rslt.obj);
+      // data.inst.toggle_node(data.rslt.obj);
       var key;
       id = data.rslt.obj.attr("id").replace("node_", "");
       type = data.rslt.obj.attr("rel");

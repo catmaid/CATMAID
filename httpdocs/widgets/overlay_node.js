@@ -552,7 +552,10 @@ var SkeletonElements = new function()
     };
 
     /** Here 'this' is mc, and treenode is the Node instance. */
-    var mc_move = function(dx, dy) {
+    var mc_move = function(dx, dy, x, y, e) {
+      if(e.which === 2) {
+        return;
+      }
       var node = this.catmaidNode,
         mc = this,
         c = this.prev;
@@ -574,7 +577,10 @@ var SkeletonElements = new function()
     };
 
     /** Here 'this' is mc. */
-    var mc_up = function() {
+    var mc_up = function(e) {
+      if(e.which === 2) {
+        return;
+      }
       var c = this.prev;
       c.attr({
         opacity: 1
@@ -582,7 +588,10 @@ var SkeletonElements = new function()
     };
 
     /** Here 'this' is mc, and treenode is the Node instance. */
-    var mc_start = function() {
+    var mc_start = function(x, y, e) {
+      if(e.which === 2) {
+        return;
+      }
       var node = this.catmaidNode,
         c = this.prev;
       ox = node.x;

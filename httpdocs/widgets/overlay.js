@@ -30,7 +30,14 @@ var SkeletonAnnotations = new function()
         }
       }
     }
-    statusBar.replaceLast("Could not find node #" + nodeID + " for skeleton #" + skeletonID);
+    $('#growl-alert').growlAlert({
+      autoShow: true,
+      content: "Could not find node #" + nodeID + " for skeleton #" + skeletonID + " in current active stack.",
+      title: 'Warning',
+      position: 'top-right',
+      delayTime: 3500,
+      onComplete: function() { g.remove(); }
+    });
   };
 
   /** Deactivates any active node and updates all nodes for all open SVGOverlays. */

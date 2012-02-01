@@ -148,9 +148,16 @@ function CroppingTool()
 		self.cropBox.view.style.width = cropBoxBB.width_px	+ "px";
 		self.cropBox.view.style.height = cropBoxBB.height_px  + "px";
 
+		var world_unit = "nm";
+		var current_scale = self.stack.scale;
+		var output_scale = 1 / Math.pow( 2, self.slider_crop_s.val );
+		var output_width_px = ( cropBoxBB.width_px / current_scale) * output_scale;
+		var output_height_px = ( cropBoxBB.height_px / current_scale) * output_scale;
+
 		statusBar.replaceLast( cropBoxBB.left_world.toFixed( 3 ) + ", " + cropBoxBB.top_world.toFixed( 3 ) + " -> " + cropBoxBB.right_world.toFixed( 3 ) + "," + cropBoxBB.bottom_world.toFixed( 3 ) );
 
-		self.cropBox.text.replaceChild( document.createTextNode( cropBoxBB.width_world.toFixed( 3 ) + " x " + cropBoxBB.height_world.toFixed( 3 ) ), self.cropBox.text.firstChild );
+		self.cropBox.textWorld.replaceChild( document.createTextNode( cropBoxBB.width_world.toFixed( 3 ) + " x " + cropBoxBB.height_world.toFixed( 3 ) + " " + world_unit ), self.cropBox.textWorld.firstChild );
+		self.cropBox.textScreen.replaceChild( document.createTextNode( output_width_px.toFixed( 0 ) + " x " + output_height_px.toFixed( 0 ) + " px" ), self.cropBox.textScreen.firstChild );
 
 		return;
 	}
@@ -212,14 +219,19 @@ function CroppingTool()
 			self.cropBox.bottom = self.cropBox.top;
 			self.cropBox.view = document.createElement( "div" );
 			self.cropBox.view.className = "cropBox";
-			self.cropBox.text = document.createElement( "p" );
-			self.cropBox.text.appendChild( document.createTextNode( "0 x 0" ) );
+			self.cropBox.textWorld = document.createElement( "p" );
+			self.cropBox.textWorld.className = "world";
+			self.cropBox.textWorld.appendChild( document.createTextNode( "0 x 0" ) );
+			self.cropBox.textScreen = document.createElement( "p" );
+			self.cropBox.textScreen.className = "screen";
+			self.cropBox.textScreen.appendChild( document.createTextNode( "0 x 0" ) );
 			self.cropBox.xdist = 0;
 			self.cropBox.ydist = 0;
 			self.cropBox.xorigin = self.cropBox.left;
 			self.cropBox.yorigin = self.cropBox.top;
 
-			self.cropBox.view.appendChild( self.cropBox.text );
+			self.cropBox.view.appendChild( self.cropBox.textWorld );
+			self.cropBox.view.appendChild( self.cropBox.textScreen );
 			view.appendChild( self.cropBox.view );
 
 			ui.registerEvent( "onmousemove", onmousemove.crop );
@@ -363,7 +375,10 @@ function CroppingTool()
 
 	this.changeScale = function( val )
 	{
-		self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, val );
+		//self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, val );
+		if ( self.cropBox )
+			self.updateCropBox();
+		statusBar.replaceLast( "crop s: " + val );
 		return;
 	}
 
@@ -639,8 +654,8 @@ function CroppingTool()
 			0,
 			(Math.abs(self.stack.MAX_S) + 1),
 			self.stack.s,
-			function( val ){ statusBar.replaceLast( "crop s: " + val ); },
-			-1 );
+			self.changeScale,
+			-1);
 
 		// initialize crop button
 		self.button_crop_apply.onclick = crop;

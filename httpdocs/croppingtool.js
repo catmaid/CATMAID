@@ -19,6 +19,10 @@ function CroppingTool() {
 	var self = this;
 	this.toolname = "croppingtool";
 
+	// Output unit and factor in wrt. nm
+	this.output_unit = unescape( "%u03BCm" )
+	this.output_unit_factor = 0.001;
+
 	if ( !ui ) ui = new UI();
 
 	// inputs for x, y, width and height of the crop box

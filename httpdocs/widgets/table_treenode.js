@@ -11,6 +11,7 @@ var TreenodeTable = new function()
   var ns = this; // reference to the namespace
   ns.oTable = null;
   var asInitVals = [];
+  var skelid;
 
   this.init = function (pid)
   {
@@ -34,7 +35,7 @@ var TreenodeTable = new function()
           }
         }
 
-        var skelid = SkeletonAnnotations.getActiveSkeletonId();
+        skelid = SkeletonAnnotations.getActiveSkeletonId();
         if (skelid !== null) {
           // give priority to showing treenodes
           aoData.push({
@@ -210,7 +211,7 @@ var TreenodeTable = new function()
 
       // activate the node with a delay
       var id = parseInt(aData[0], 10);
-      window.setTimeout("SkeletonAnnotations.staticSelectNode(" + id + ")", 1000);
+      window.setTimeout("SkeletonAnnotations.staticSelectNode(" + id + "," + skelid + ")", 1000);
 
     });
   };

@@ -1,3 +1,4 @@
+/* -*- mode: espresso; espresso-indent-level: 8; indent-tabs-mode: t -*- */
 /**
  * tilelayer.js
  *
@@ -67,7 +68,7 @@ function TileLayer(
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */
-	this.redraw = function()
+	this.redraw = function(completionCallback)
 	{
 		var pixelPos = [ stack.x, stack.y, stack.z ];
 		var tileBaseName = getTileBaseName( pixelPos );
@@ -233,7 +234,11 @@ function TileLayer(
 			l = left;
 			t += effectiveTileHeight;
 		}
-		
+
+		if (typeof completionCallback !== "undefined") {
+			completionCallback();
+		}
+
 		return 2;
 	}
 

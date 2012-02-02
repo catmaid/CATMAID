@@ -1093,7 +1093,7 @@ var SkeletonAnnotations = new function()
     // Initialize to the value of stack.scale at instantiation of SVGOverlay
     var old_scale = stack.scale;
 
-    this.redraw = function( stack ) {
+    this.redraw = function( stack, completionCallback ) {
       var wc = stack.getWorldTopLeft();
       var pl = wc.worldLeft,
           pt = wc.worldTop,
@@ -1112,15 +1112,18 @@ var SkeletonAnnotations = new function()
           doNotUpdate = dy < sPAD && dy > -sPAD;
         }
       }
-      
+
       if ( !doNotUpdate )
         self.updateNodes();
-      
+
       self.view.style.left = Math.floor((-pl / stack.resolution.x) * new_scale) + "px";
       self.view.style.top = Math.floor((-pt / stack.resolution.y) * new_scale) + "px";
 
       self.updatePaperDimensions(stack);
-    }
+      if (typeof completionCallback !== "undefined") {
+        completionCallback();
+      }
+    };
 
     // TODO This doc below is obsolete
     // This isn't called "onclick" to avoid confusion - click events
@@ -1318,56 +1321,32 @@ var SkeletonAnnotations = new function()
       if (!activeSkeleton) {
         activeSkeleton = 0;
       }
-  /*
-      console.log("In updateTreelinenodes");
-      console.log("scale is: "+scale);
-      console.log("X_TILE_SIZE is: "+X_TILE_SIZE);
-      console.log("Y_TILE_SIZE is: "+Y_TILE_SIZE);
-      console.log("tl_width is: "+tl_width);
-      console.log("tl_height is: "+tl_height);
-      console.log("x is: "+x);
-      console.log("y is: "+y);
-      console.log("resolution.x is: "+resolution.x);
-      console.log("resolution.y is: "+resolution.y);
-      console.log("translation.x is: "+translation.x);
-      console.log("translation.y is: "+translation.y);
-      console.log('-----computed');
-      console.log('z', z * resolution.z + translation.z);
-      console.log('top', ( y - tl_height / 2 ) * resolution.y + translation.y);
-      console.log('left', ( x - tl_width / 2 ) * resolution.x + translation.x);
-      console.log('width', tl_width * resolution.x);
-      console.log('height', tl_height * resolution.y);
-        */
 
-      // FIXME: check if we need to wait for the result of this, which
-      // can now be done with completedCallback...
-      // first synchronize with database
-      self.updateNodeCoordinatesinDB();
-
-      // stack.viewWidth and .viewHeight are in screen pixels
-      // so they must be scaled and then transformed to nanometers
-      // and stack.x, .y are in absolute pixels, so they also must be brought to nanometers
+      self.updateNodeCoordinatesinDB(function () {
+        // stack.viewWidth and .viewHeight are in screen pixels
+        // so they must be scaled and then transformed to nanometers
+        // and stack.x, .y are in absolute pixels, so they also must be brought to nanometers
       
-      //TODO add the padding to the range
+        //TODO add the padding to the range
 
-      requestQueue.replace('model/node.list.php', 'POST', {
-        pid: stack.getProject().id,
-        sid: stack.getId(),
-        z: stack.z * stack.resolution.z + stack.translation.z,
-        top: (stack.y - (stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y,
-        left: (stack.x - (stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x,
-        width: (stack.viewWidth / stack.scale) * stack.resolution.x,
-        height: (stack.viewHeight / stack.scale) * stack.resolution.y,
-        zres: stack.resolution.z,
-        as: activeSkeleton
-      }, function (status, text, xml) {
-        handle_updateNodes(status, text, xml, callback);
-      },
-      'nodes_for_overlay_request');
+        requestQueue.replace('model/node.list.php', 'POST', {
+          pid: stack.getProject().id,
+          sid: stack.getId(),
+          z: stack.z * stack.resolution.z + stack.translation.z,
+          top: (stack.y - (stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y,
+          left: (stack.x - (stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x,
+          width: (stack.viewWidth / stack.scale) * stack.resolution.x,
+          height: (stack.viewHeight / stack.scale) * stack.resolution.y,
+          zres: stack.resolution.z,
+          as: activeSkeleton
+        }, function (status, text, xml) {
+          handle_updateNodes(status, text, xml, callback);
+        },
+        'nodes_for_overlay_request');
       
-      old_x = stack.x;
-      old_y = stack.y;
-      return;
+        old_x = stack.x;
+        old_y = stack.y;
+      });
     };
 
         /**
@@ -1380,11 +1359,14 @@ var SkeletonAnnotations = new function()
         var e = eval("(" + text + ")");
         //var e = $.parseJSON(text);
         if (e.error) {
-          alert(e.error);
+          if (e.error !== "REPLACED") {
+            alert(e.error);
+          }
         } else {
           var jso = $.parseJSON(text);
           // XXX: how much time does calling the function like this take?
           self.refreshNodes(jso);
+          self.redraw(stack);
         }
       }
       if (typeof callback !== "undefined") {

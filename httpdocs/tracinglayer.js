@@ -15,8 +15,8 @@ function TracingLayer( stack )
   }
 
 
-  this.beforeMove = function () {
-    this.svgOverlay.updateNodeCoordinatesinDB();
+  this.beforeMove = function (completionCallback) {
+    this.svgOverlay.updateNodeCoordinatesinDB(completionCallback);
   }
 
   this.setOpacity = function ( val )
@@ -25,7 +25,7 @@ function TracingLayer( stack )
   };
 
   /** */
-	this.redraw = function()
+	this.redraw = function( completionCallback )
 	{
     // should never update from database - is called frequently
     // on dragging
@@ -33,7 +33,7 @@ function TracingLayer( stack )
     // TODO: only move the nodes in the Raphael paper
     // will only update them when releasing the mouse when navigating.
 
-    self.svgOverlay.redraw( stack );
+	    self.svgOverlay.redraw( stack, completionCallback );
     return;
   };
 /*

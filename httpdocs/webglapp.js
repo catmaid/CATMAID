@@ -56,10 +56,10 @@ function WebGLViewer(divID) {
 
     renderer = new THREE.WebGLRenderer();
     //renderer = new THREE.CanvasRenderer();
-    renderer.setSize( self.divWidth, self.divHeight );
+    //renderer.setSize( self.divWidth, self.divHeight );
 
     // Follow size
-    // THREEx.WindowResize(renderer, camera);
+    // THREEx.WindowResize.bind(renderer, camera);
 
     container.appendChild( renderer.domElement )
 
@@ -303,7 +303,7 @@ function WebGLViewer(divID) {
   }
 
   function debugaxes() {
-    var object = new THREE.Axes();
+    var object = new THREE.AxisHelper();
     object.position.set( -1, -1, 0 );
     object.scale.x = object.scale.y = object.scale.z = 0.1;
     scene.add( object );

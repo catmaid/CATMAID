@@ -107,6 +107,13 @@ var WindowMaker = new function()
     fulls.onclick = fullscreenWebGL; // function declared in webglapp.js
     container.appendChild(fulls);
 
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
+    rand.setAttribute("id", "randomize_skeleton_color");
+    rand.setAttribute("value", "Randomize color");
+    rand.onclick = randomizeWebGLColor; // function declared in webglapp.js
+    container.appendChild(rand);
+
     var introduction = document.createElement('p')
     introduction.setAttribute("id", "view3DWebGLIntroduction");
     container.appendChild(introduction);

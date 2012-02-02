@@ -11,6 +11,13 @@ var ObjectTree = new function()
       $("#tree_object").jstree("refresh", -1);
     });
 
+    $("#tree_object").bind("reload_nodes.jstree",
+                           function (event, data) {
+                             if (ObjectTree.currentExpandRequest) {
+                               openTreePath($('#tree_object'), ObjectTree.currentExpandRequest);
+                             }
+                           });
+
     $(object_tree_id).jstree({
       "core": {
         "html_titles": false
@@ -644,13 +651,30 @@ var ObjectTree = new function()
    * and walks the array opening each child node as requested.
    */
   var openTreePath = function(treeOb, path) {
+    var subNodeSelector;
     if (path.length < 1) {
       ObjectTree.currentExpandRequest = null;
+      ObjectTree.afterRefresh = false;
+      return;
+    }
+    subNodeSelector = "#node_" + path[0];
+    /* If the node doesn't exist, refresh the whole tree in case it is
+       one of the special nodes in "Isolated synaptic terminals" that
+       is only fetch on selection of that node.  However, careful not
+       to loop in the case that this node can't be found even after
+       the refresh: */
+    if ($(subNodeSelector).length === 0) {
+      if (!ObjectTree.afterRefresh) {
+        ObjectTree.afterRefresh = true;
+        treeOb.jstree("refresh", -1);
+        // The handler for reload_nodes.jstree will then recall
+        // openTreePath, so just return in either case.
+      }
       return;
     }
     // Invoke the open_node method on the jstree instance of the treeOb DOM element:
     treeOb.jstree("open_node",
-                  $("#node_" + path[0]),
+                  $(subNodeSelector),
                   function() {
                     openTreePath(treeOb, path.slice(1))
                   },
@@ -658,7 +682,7 @@ var ObjectTree = new function()
     if (1 == path.length) {
       // Set the skeleton node (the last id) as selected:
       treeOb.jstree("deselect_all");
-      treeOb.jstree("select_node", $('#node_' + path[0]));
+      treeOb.jstree("select_node", $(subNodeSelector));
     }
   };
 

@@ -631,7 +631,7 @@ TracingTool.goToNearestInNeuron = function(type, objectID) {
     x: project.x,
     y: project.y,
     z: project.z,
-  };
+  }, nodeIDToSelect, skeletonIDToSelect;
   parameters[type + '_id'] = objectID;
   requestQueue.register("model/node.nearest.php", "GET",
                         parameters, function (status, text) {
@@ -643,8 +643,13 @@ TracingTool.goToNearestInNeuron = function(type, objectID) {
       if (data.error) {
         alert("An error was returned when trying to fetch the nearest node: "+data.error);
       } else {
-        project.moveTo(data.z, data.y, data.x);
-        window.setTimeout("SkeletonAnnotations.staticSelectNode( " + data.treenode_id + ", " + data.skeleton_id + " )", 1000);
+        nodeIDToSelect = data.treenode_id;
+        skeletonIDToSelect = data.skeleton_id;
+        project.moveTo(data.z, data.y, data.x,
+                       undefined,
+                       function () {
+                         SkeletonAnnotations.staticSelectNode(nodeIDToSelect, skeletonIDToSelect);
+                       });
       }
     }
   });

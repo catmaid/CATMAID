@@ -251,18 +251,20 @@ var ObjectTree = new function()
                     pid: project.id,
                     skeletonid: skelid
                   }, function (status, text, xml) {
+                    var nodeID, skeletonID;
                     if (status === 200) {
                       if (text && text !== " ") {
                         var e = $.parseJSON(text);
                         if (e.error) {
                           alert(e.error);
                         } else {
+                          nodeID = e.root_id;
+                          skeletonID = skelid;
                           // go to node
-                          project.moveTo(e.z, e.y, e.x);
-
-                          // activate the node with a delay
-                          window.setTimeout("SkeletonAnnotations.staticSelectNode( " + e.root_id + "," + skelid + ")", 1000);
-
+                          project.moveTo(e.z, e.y, e.x, undefined,
+                                         function () {
+                                           SkeletonAnnotations.staticSelectNode(nodeID, skeletonID);
+                                         });
                         }
                       }
                     }

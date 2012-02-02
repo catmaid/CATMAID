@@ -207,12 +207,11 @@ var TreenodeTable = new function()
       var x = parseFloat(aData[4]);
       var y = parseFloat(aData[5]);
       var z = parseFloat(aData[6]);
-      project.moveTo(z, y, x);
-
-      // activate the node with a delay
       var id = parseInt(aData[0], 10);
-      window.setTimeout("SkeletonAnnotations.staticSelectNode(" + id + "," + skelid + ")", 1000);
-
+      project.moveTo(z, y, x, undefined,
+                     function () {
+                       SkeletonAnnotations.staticSelectNode(id);
+                     });
     });
   };
 }

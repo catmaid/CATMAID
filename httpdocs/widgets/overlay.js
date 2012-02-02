@@ -1482,6 +1482,7 @@ var SkeletonAnnotations = new function()
 
     // Commands for the sub-buttons of the tracing tool
     this.tracingCommand = function (m) {
+      var nodeIDToActivate;
       switch (m) {
       case "skeleton":
         self.set_tracing_mode("skeletontracing");
@@ -1496,10 +1497,11 @@ var SkeletonAnnotations = new function()
             stack.getProject().moveTo(
               self.pix2physZ(parentNode.z),
               self.pix2physY(parentNode.y),
-              self.pix2physX(parentNode.x));
-            window.setTimeout("SkeletonAnnotations.staticSelectNode( " + atn.parent_id + ", " + atn.skeleton_id + " )", 1000);
-          } else {
-            alert("This is the root node.");
+              self.pix2physX(parentNode.x),
+              undefined,
+              function () {
+                SkeletonAnnotations.staticSelectNode(nodeIDToActivate);
+              });
           }
         } else {
           alert('There must be a currently active node in order to move to its parent.');

@@ -16,6 +16,13 @@ function WebGLViewer(divID) {
   var project_id = project.id;
   var stack_id = project.focusedStack.id;
 
+  var randomColors = [];
+  randomColors[0] = [255, 255, 0]; // yellow
+  randomColors[1] = [255, 0, 255]; // magenta
+  randomColors[2] = [0, 255, 255]; // cyan
+  randomColors[3] = [255, 255, 255]; // white
+  randomColors[4] = [255, 128, 0]; // orange
+
   /* transform coordinates from CATMAID coordinate system
      to WebGL coordinate system: x->x, y->y+dy, z->-z
     */
@@ -96,8 +103,7 @@ function WebGLViewer(divID) {
 
     this.changeColor = function( value )
     {
-      console.log("setter value", value, parseInt(value));
-      this.actor[connectivity_types[0]].material.color.setHex( value );
+      this.actor[connectivity_types[0]].material.color.setRGB( value[0]/255., value[1]/255., value[2]/255. );
     }
 
     this.updateCompositeActor = function()
@@ -222,6 +228,22 @@ function WebGLViewer(divID) {
     active_node.position.set( co[0]*scale, co[1]*scale, co[2]*scale );
   }
 
+  this.randomizeColors = function()
+  {
+    var i = 0;
+    for( var skeleton_id in skeletons)
+		{
+      if( i < randomColors.length ) {
+        skeletons[skeleton_id].changeColor( randomColors[i] );
+      } else {
+        skeletons[skeleton_id].changeColor( [parseInt( Math.random() * 255 ),
+          parseInt( Math.random() * 255 ),
+          parseInt( Math.random() * 255 ) ] );
+      }
+      i=i+1;
+    }
+  }
+
   // add skeleton to scene
   this.addSkeleton = function( skeleton_id, skeleton_data )
   {
@@ -334,20 +356,31 @@ function WebGLViewer(divID) {
       newElement.remove();
     });
     newElement.append(linkElement);
-
-    colorElement = $('<input/>');
-    colorElement.attr('type', 'text');
-    colorElement.attr('id', 'skeleton_'+skeleton.id );
-    colorElement.attr('value', '#ffff000' );
-    colorElement.keyup(function (e) {
-      // TODO: fix
-      console.log("color", e, this, this.value );
-      // if enter
-      self.changeSkeletonColor( skeleton.id, this.value );
+  
+    $('#view-3d-webgl-object-list').append(newElement);
+    
+    colorElement = $('<a/>');
+    colorElement.attr('href', '#');
+    colorElement.text("(change color)");
+    colorElement.click(function (e) {
+      $('#color-wheel-' + skeleton.id).toggle();
     });
     newElement.append(colorElement);
-    
-    $('#view-3d-webgl-object-list').append(newElement);
+
+    var colorWheel = $('<div id="color-wheel-' +
+      skeleton.id + '"><div class="colorwheel'+
+      skeleton.id + '"></div></div>');
+    newElement.append(colorWheel);
+    $('#color-wheel-' + skeleton.id).hide();
+
+    var cw = Raphael.colorwheel($("#color-wheel-"+skeleton.id+" .colorwheel"+skeleton.id)[0],150);
+		cw.color("#FF9900");
+    cw.onchange(function(color)
+    {
+      var colors = [parseInt(color.r), parseInt(color.g), parseInt(color.b)]
+      self.changeSkeletonColor( skeleton.id, colors );
+    })
+
   };
 
   this.addFromCATMAID = function (projectID, skeletonID, neuronName) {
@@ -429,6 +462,13 @@ function fullscreenWebGL() {
   var divID = 'viewer-3d-webgl-canvas';
   var divID_jQuery = '#' + divID;
   $(divID_jQuery).data('viewer').fullscreenWebGL();
+}
+
+function randomizeWebGLColor() {
+  var divID = 'viewer-3d-webgl-canvas';
+  var divID_jQuery = '#' + divID;
+  $(divID_jQuery).data('viewer').randomizeColors();
+
 }
 
 function addTo3DWebGLView() {

@@ -56,7 +56,7 @@ function WebGLViewer(divID) {
 
     renderer = new THREE.WebGLRenderer();
     //renderer = new THREE.CanvasRenderer();
-    //renderer.setSize( self.divWidth, self.divHeight );
+    renderer.setSize( self.divWidth, self.divHeight );
 
     // Follow size
     // THREEx.WindowResize.bind(renderer, camera);

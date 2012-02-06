@@ -78,9 +78,13 @@ function login_oninputreturn(e) {
 
 function login(
 		account,		//!< string account
-		password		//!< string password
+		password,		//!< string password
+		completionCallback	//!< function callback
 )
 {
+	var loginCompletion = function ( status, text, xml ) {
+		handle_login( status, text, xml, completionCallback );
+	}
 	if ( msg_timeout ) window.clearTimeout( msg_timeout );
 	
 	ui.catchEvents( "wait" );
@@ -89,13 +93,13 @@ function login(
 			'model/login.php',
 			'POST',
 			{ name : account, pwd : password },
-			handle_login );
+			loginCompletion );
 	else
 		requestQueue.register(
 			'model/login.php',
 			'GET',
 			undefined,
-			handle_login );
+			loginCompletion );
 	return;
 }
 
@@ -108,7 +112,7 @@ function login(
  * free the window
  */
 
-function handle_login(status, text, xml) {
+function handle_login(status, text, xml, completionCallback) {
   if (status == 200 && text) {
     // console.log(text);
     var e = eval("(" + text + ")");
@@ -132,11 +136,14 @@ function handle_login(status, text, xml) {
     } else if (e.error) {
       alert(e.error);
     }
-    updateProjects();
+    updateProjects(completionCallback);
   } else if (status != 200) {
     // Of course, lots of non-200 errors are fine - just report
     // all for the moment, however:
     alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+    if ( typeof completionCallback !== "undefined" ) {
+      completionCallback();
+    }
   }
   return;
 }
@@ -187,7 +194,7 @@ function handle_logout()
  * the answer depends on the session, which wa sinstantiated by setting a cookie
  */
 
-function updateProjects() {
+function updateProjects(completionCallback) {
   //ui.catchEvents( "wait" );
   project_menu_open.update(null);
 
@@ -202,7 +209,15 @@ function updateProjects() {
   w.appendChild(document.createTextNode("loading ..."));
   pp.appendChild(w);
 
-  requestQueue.register('model/project.list.php', 'GET', undefined, handle_updateProjects);
+  requestQueue.register('model/project.list.php',
+                        'GET',
+                        undefined,
+                        function (status, text, xml) {
+				handle_updateProjects(status, text, xml);
+                                if (typeof completionCallback !== "undefined") {
+                                  completionCallback();
+                                }
+			});
   return;
 }
 
@@ -798,20 +813,21 @@ var realInit = function()
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
 
-	
-	//! auto login by url (unsafe as can be but convenient)
-	if ( account && password )
-		login( account, password );
-	else
-		login();
-	
-	if ( pid && sids.length > 0 )
-	{
-		for ( var i = 0; i < sids.length; ++i )
+	var openStackFunction = function () {
+		if ( pid && sids.length > 0 )
 		{
-			openProjectStack( pid, sids[ i ] )
+			for ( var i = 0; i < sids.length; ++i )
+			{
+				openProjectStack( pid, sids[ i ] )
+			}
 		}
 	}
+
+	//! auto login by url (unsafe as can be but convenient)
+	if ( account && password )
+		login( account, password, openStackFunction );
+	else
+		login( undefined, undefined, openStackFunction );
 	
 	// the text-label toolbar
 	

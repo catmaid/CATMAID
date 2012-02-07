@@ -857,6 +857,18 @@ ALTER TABLE ONLY treenode_connector
 		'ALTER TABLE ONLY treenode_connector
 			ADD COLUMN confidence integer NOT NULL DEFAULT 5'),
 
+	'2012-02-07T15:50:32' => new Migration(
+		'Fix missing ON delete cascade',
+		'
+ALTER TABLE connector_class_instance DROP CONSTRAINT connector_class_instance_class_instance_id_fkey;
+ALTER TABLE ONLY connector_class_instance
+    ADD CONSTRAINT connector_class_instance_class_instance_id_fkey FOREIGN KEY (class_instance_id) REFERENCES class_instance(id) ON DELETE CASCADE;
+ALTER TABLE treenode DROP CONSTRAINT treenode_skeleton_id_fkey;
+ALTER TABLE ONLY treenode
+    ADD CONSTRAINT treenode_skeleton_id_fkey FOREIGN KEY (skeleton_id) REFERENCES class_instance(id) ON DELETE CASCADE;
+'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

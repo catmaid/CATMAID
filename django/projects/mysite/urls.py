@@ -7,6 +7,8 @@ from django.conf import settings
 
 # A regular expression matiching floating point and integer numbers
 num = r'[-+]?[0-9]*\.?[0-9]+'
+# A regular expression matching lists of integers with comma as delimiter
+intlist = r'[0-9]+(,[0-9]+)*'
 
 urlpatterns = patterns(
     '',
@@ -48,7 +50,7 @@ urlpatterns = patterns(
 
 # Cropping
 urlpatterns += patterns('',
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/crop/(?P<x_min>%s),(?P<x_max>%s)/(?P<y_min>%s),(?P<y_max>%s)/(?P<z_min>%s),(?P<z_max>%s)/(?P<zoom_level>\d+)/$' % (num, num, num, num, num, num), 'vncbrowser.views.crop' ),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_ids>%s)/crop/(?P<x_min>%s),(?P<x_max>%s)/(?P<y_min>%s),(?P<y_max>%s)/(?P<z_min>%s),(?P<z_max>%s)/(?P<zoom_level>\d+)/$' % (intlist, num, num, num, num, num, num), 'vncbrowser.views.crop' ),
     (r'^crop/download/(?P<file_path>.*)/$', 'vncbrowser.views.download_crop' )
     )
 

@@ -28,14 +28,23 @@ file_extension = "tiff"
 
 class CropJob:
     """ A small container class to keep information about the cropping
-    job to be done.
+    job to be done. Stack ids can be passed as single integer, a list of
+    integers.
     """
-    def __init__(self, user, project_id, stack_id, x_min, x_max, y_min, y_max, z_min, z_max, zoom_level):
+    def __init__(self, user, project_id, stack_ids, x_min, x_max, y_min, y_max, z_min, z_max, zoom_level):
         self.user = user
-        self.project_id = project_id
-        self.stack_id = stack_id
+        self.project_id = int(project_id)
         self.project = get_object_or_404(Project, pk=project_id)
-        self.stack = get_object_or_404(Stack, pk=stack_id)
+        # Allow a single ID and a list
+        if isinstance(stack_ids, int):
+            self.stack_ids = [stack_ids]
+        else:
+            self.stack_ids = stack_ids
+        self.stacks = []
+        for sid in self.stack_ids:
+            self.stacks.append( get_object_or_404(Stack, pk=sid) )
+        # The referce stack is used to obtain e.g. resolution information
+        self.ref_stack = self.stacks[0]
         self.x_min = float(x_min)
         self.x_max = float(x_max)
         self.y_min = float(y_min)
@@ -87,9 +96,9 @@ def to_x_index( x, job, enforce_bounds=True ):
     """
     # TODO: use correct stack_translation
     translation = 0.0
-    zero_zoom = (x - translation) / job.stack.resolution.x
+    zero_zoom = (x - translation) / job.ref_stack.resolution.x
     if enforce_bounds:
-        zero_zoom = min(max(zero_zoom, 0.0), job.stack.dimension.x - 1.0)
+        zero_zoom = min(max(zero_zoom, 0.0), job.ref_stack.dimension.x - 1.0)
     return int( zero_zoom / (2**job.zoom_level) + 0.5 )
 
 def to_y_index( y, job, enforce_bounds=True ):
@@ -98,9 +107,9 @@ def to_y_index( y, job, enforce_bounds=True ):
     """
     # TODO: use correct stack_translation
     translation = 0.0
-    zero_zoom = (y - translation) / job.stack.resolution.y
+    zero_zoom = (y - translation) / job.ref_stack.resolution.y
     if enforce_bounds:
-        zero_zoom = min(max(zero_zoom, 0.0), job.stack.dimension.y - 1.0)
+        zero_zoom = min(max(zero_zoom, 0.0), job.ref_stack.dimension.y - 1.0)
     return int( zero_zoom / (2**job.zoom_level) + 0.5 )
 
 def to_z_index( z, job, enforce_bounds=True ):
@@ -109,21 +118,21 @@ def to_z_index( z, job, enforce_bounds=True ):
     """
     # TODO: use correct stack_translation
     translation = 0.0
-    section = (z - translation) / job.stack.resolution.z + 0.5
+    section = (z - translation) / job.ref_stack.resolution.z + 0.5
     if enforce_bounds:
-        section = min(max(section, 0.0), job.stack.dimension.z - 1.0)
+        section = min(max(section, 0.0), job.ref_stack.dimension.z - 1.0)
     return int( section )
 
-def get_tile_path(job, tile_coords):
+def get_tile_path(job, stack, tile_coords):
     """ Creates the full path to the tile at the specified coordinate index.
     """
-    path = job.stack.image_base
+    path = stack.image_base
     n_coords = len(tile_coords)
     for c in range( 2, n_coords ):
         # the path is build beginning with the last component
         coord = tile_coords[n_coords - c + 1]
         path += str(coord) + "/"
-    path += str(tile_coords[1]) + "_" + str(tile_coords[0]) + "_" + str(job.zoom_level) + "." + job.stack.file_extension
+    path += str(tile_coords[1]) + "_" + str(tile_coords[0]) + "_" + str(job.zoom_level) + "." + stack.file_extension
     return path
 
 def addMetaData( path, job, result ):
@@ -153,7 +162,7 @@ def addMetaData( path, job, result ):
     # ImageJ=1.45p.images={0}.channels=1.slices=2.hyperstack=true.mode=color.unit=micron.finterval=1.spacing=1.5.loop=false.min=0.0.max=4095.0.
     ij_data = "ImageJ={1}{0}unit={2}{0}".format( newline, ij_version, unit)
     if n_images > 1:
-        n_channels = 1
+        n_channels = len(job.stacks)
         if n_images % n_channels != 0:
             raise ValueError( "Meta data creation: the number of images modulo the channel count is not zero" )
         n_slices = n_images / n_channels
@@ -208,57 +217,61 @@ def extract_substack( job ):
     # The images are generated per slice, so most of the following
     # calculations refer to 2d images.
 
-    # Iterate over all slices
+    # Each stack to export is treated as a seperate channel. The order
+    # of the exported dimensions is XYCZ. This means all the channels of
+    # one slice are exported, then the next slice follows, etc.
     cropped_stack = []
+    # Iterate over all slices
     for z in range( px_z_min, px_z_max + 1):
-        # Get indices for bounding tiles (0 indexed)
-        tile_x_min = int(px_x_min / tile_size)
-        tile_x_max = int(px_x_max / tile_size)
-        tile_y_min = int(px_y_min / tile_size)
-        tile_y_max = int(px_y_max / tile_size)
-        # Get the number of needed tiles for each direction
-        num_x_tiles = tile_x_max - tile_x_min + 1
-        num_y_tiles = tile_y_max - tile_y_min + 1
-        # Associate image parts with all tiles
-        image_parts = []
-        x_dst = px_x_offset
-        for nx, x in enumerate( range(tile_x_min, tile_x_max + 1) ):
-            # The min x,y for the image part in the current tile are 0
-            # for all tiles except the first one.
-            cur_px_x_min = 0 if nx > 0 else px_x_min - x * tile_size
-            # The max x,y for the image part of current tile are the tile
-            # size minus one except for the last one.
-            cur_px_x_max = tile_size - 1 if nx < (num_x_tiles - 1) else px_x_max - x * tile_size
-            # Reset y destination component
-            y_dst = px_y_offset
-            for ny, y in enumerate( range(tile_y_min, tile_y_max + 1) ):
-                cur_px_y_min = 0 if ny > 0 else px_y_min - y * tile_size
-                cur_px_y_max = tile_size - 1 if ny < (num_y_tiles - 1) else px_y_max - y * tile_size
-                # Create an image part definition
-                path = get_tile_path(job, [x, y, z])
-                try:
-                    part = ImagePart(path, cur_px_x_min, cur_px_x_max, cur_px_y_min, cur_px_y_max, x_dst, y_dst)
-                    image_parts.append( part )
-                except:
-                    # ignore failed slices
-                    pass
-                # Update y component of destination postition
-                y_dst += cur_px_y_max - cur_px_y_min
-            # Update x component of destination postition
-            x_dst += cur_px_x_max - cur_px_x_min
+        for stack in job.stacks:
+            # Get indices for bounding tiles (0 indexed)
+            tile_x_min = int(px_x_min / tile_size)
+            tile_x_max = int(px_x_max / tile_size)
+            tile_y_min = int(px_y_min / tile_size)
+            tile_y_max = int(px_y_max / tile_size)
+            # Get the number of needed tiles for each direction
+            num_x_tiles = tile_x_max - tile_x_min + 1
+            num_y_tiles = tile_y_max - tile_y_min + 1
+            # Associate image parts with all tiles
+            image_parts = []
+            x_dst = px_x_offset
+            for nx, x in enumerate( range(tile_x_min, tile_x_max + 1) ):
+                # The min x,y for the image part in the current tile are 0
+                # for all tiles except the first one.
+                cur_px_x_min = 0 if nx > 0 else px_x_min - x * tile_size
+                # The max x,y for the image part of current tile are the tile
+                # size minus one except for the last one.
+                cur_px_x_max = tile_size - 1 if nx < (num_x_tiles - 1) else px_x_max - x * tile_size
+                # Reset y destination component
+                y_dst = px_y_offset
+                for ny, y in enumerate( range(tile_y_min, tile_y_max + 1) ):
+                    cur_px_y_min = 0 if ny > 0 else px_y_min - y * tile_size
+                    cur_px_y_max = tile_size - 1 if ny < (num_y_tiles - 1) else px_y_max - y * tile_size
+                    # Create an image part definition
+                    path = get_tile_path(job, stack, [x, y, z])
+                    try:
+                        part = ImagePart(path, cur_px_x_min, cur_px_x_max, cur_px_y_min, cur_px_y_max, x_dst, y_dst)
+                        image_parts.append( part )
+                    except:
+                        # ignore failed slices
+                        pass
+                    # Update y component of destination postition
+                    y_dst += cur_px_y_max - cur_px_y_min
+                # Update x component of destination postition
+                x_dst += cur_px_x_max - cur_px_x_min
 
-        # Create a result image slice, painted black
-        cropped_slice = Image( Geometry( width, height ), Color("black") )
-        # write out the image parts
-        for ip in image_parts:
-            # Get (correcly cropped) image
-            image = ip.get_image()
-            # Draw the image onto result image
-            cropped_slice.composite( image, ip.x_dst, ip.y_dst, co.OverCompositeOp )
-            # Delete tile image - it's not needed anymore
-            del image
-        # Add the imag to the cropped stack
-        cropped_stack.append( cropped_slice )
+            # Create a result image slice, painted black
+            cropped_slice = Image( Geometry( width, height ), Color("black") )
+            # write out the image parts
+            for ip in image_parts:
+                # Get (correcly cropped) image
+                image = ip.get_image()
+                # Draw the image onto result image
+                cropped_slice.composite( image, ip.x_dst, ip.y_dst, co.OverCompositeOp )
+                # Delete tile image - it's not needed anymore
+                del image
+            # Add the imag to the cropped stack
+            cropped_stack.append( cropped_slice )
 
     return cropped_stack
 
@@ -351,7 +364,7 @@ def sanity_check( job ):
     return errors
 
 @catmaid_login_required
-def crop(request, project_id=None, stack_id=None, x_min=None, x_max=None, y_min=None, y_max=None, z_min=None, z_max=None, zoom_level=None, logged_in_user=None):
+def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min=None, y_max=None, z_min=None, z_max=None, zoom_level=None, logged_in_user=None):
     """ Crops out the specified region of the stack. The region is expected to
     be given in terms of real world units (e.g. nm).
     """
@@ -362,8 +375,12 @@ def crop(request, project_id=None, stack_id=None, x_min=None, x_max=None, y_min=
         err_response['Connection'] = 'close'
         return err_response
 
+    # Make a list out of the stack ids
+    string_list = stack_ids.split(",")
+    stack_ids = [int( x ) for x in string_list]
+
     # Crate a new cropping job
-    job = CropJob(logged_in_user, project_id, stack_id, x_min, x_max, y_min, y_max, z_min, z_max, zoom_level)
+    job = CropJob(logged_in_user, project_id, stack_ids, x_min, x_max, y_min, y_max, z_min, z_max, zoom_level)
 
     # Parameter check
     errors = sanity_check( job )

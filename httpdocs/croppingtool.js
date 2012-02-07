@@ -81,6 +81,10 @@ function CroppingTool()
 			self.slider_crop_s.getInputView(),
 			slider_crop_s_view.nextSibling );
 
+	//! stacks menu
+	this.stacks_menu = new Menu();
+	this.stacks_to_crop = null;
+
 	this.button_crop_apply = document.getElementById( "button_crop_apply" );
 
 	//! mouse catcher
@@ -175,6 +179,60 @@ function CroppingTool()
 		}
 
 		return;
+	}
+
+	/**
+	 * This methods gets the related stacks of the current one and creates a
+	 * menu if there is more than one stack in total. The menu is meant to
+	 * select thes stacks that get cropped to the output file.
+	 */
+	this.updateStacksMenu = function()
+	{
+		// only create and show the menu when there is more than one stack
+		if (self.stacks_to_crop.length > 1)
+		{
+			var current_menu_content = new Array();
+			for (var s in self.stacks_to_crop)
+			{
+				var stack = self.stacks_to_crop[ s ];
+				var stack_title = stack.data.title;
+				if ( stack.marked )
+				{
+					// mark a stack to crop with a check
+					var check_sym = unescape( "%u2714" );
+					stack_title = check_sym + " " + stack_title;
+				}
+				else
+				{
+					// Two EN-Spaces are used to fill the space where
+					// the check could reside.
+					var space_sym = unescape( "%u2002" );
+					stack_title = space_sym + space_sym + stack_title;
+				}
+				current_menu_content[ s ] =
+					{
+						id : s,
+						title : stack_title,
+						note : "", // alternative: stack.note
+						action : (function(curr_stack) { return function()
+							{
+								// Toggle the check state. To do this, two
+								// closures had to be used.
+								curr_stack.marked = ! curr_stack.marked;
+								self.updateStacksMenu();
+							}
+						})(stack)
+					}
+			}
+			self.stacks_menu.update( current_menu_content );
+			document.getElementById( "crop_stacks_menu_box" ).style.display = "block";
+		}
+		else
+		{
+			self.stacks_menu.update();
+			document.getElementById( "crop_stacks_menu_box" ).style.display = "none";
+		}
+		document.getElementById( "crop_stacks_menu" ).appendChild( self.stacks_menu.getView() );
 	}
 
 	this.resize = function( width, height )
@@ -497,6 +555,20 @@ function CroppingTool()
 	 */
 	var crop = function()
 	{
+		var stacks = "";
+		var nStacks = 0;
+		for (var s in self.stacks_to_crop)
+		{
+			var stack = self.stacks_to_crop[ s ];
+			if ( stack.marked )
+			{
+				if ( nStacks > 0 )
+					stacks += ","
+				stacks += s.toString()
+				nStacks++;
+			}
+		}
+
 		var zoom_level = self.slider_crop_s.val;
 		var scale = 1 / Math.pow( 2, zoom_level );
 		var stack = self.stack;
@@ -507,13 +579,14 @@ function CroppingTool()
 		var z_min = self.slider_crop_top_z.val * stack.resolution.z + stack.translation.z;
 		var z_max = self.slider_crop_bottom_z.val * stack.resolution.z + stack.translation.z;
 		var zoom_level = self.slider_crop_s.val;
-		var str = "The generated stack will have " + numSections + " sections.\n";
+
+		var str = "The generated stack will have " + nStacks + " channel(s) with " + numSections + " section(s) each.\n";
 		str += "Each section will have a size of " + pixelWidth + "x" + pixelHeight + "px.\n";
 		str += "Do you really want to crop this microstack?";
 
 		if ( !window.confirm( str ) ) return false;
 
-		var url = django_url + project.id + '/stack/' + stack.id + '/crop/' + cb.left + "," + cb.right + "/" + cb.top + "," + cb.bottom + "/" + z_min + "," + z_max + '/' + zoom_level + '/';
+		var url = django_url + project.id + '/stack/' + stacks + '/crop/' + cb.left + "," + cb.right + "/" + cb.top + "," + cb.bottom + "/" + z_min + "," + z_max + '/' + zoom_level + '/';
 		requestQueue.register(url, 'GET', {}, handle_crop );
 		return false;
 	}
@@ -660,6 +733,23 @@ function CroppingTool()
 		// initialize crop button
 		self.button_crop_apply.onclick = crop;
 
+		// initialize the stacks we offer to crop
+		var project = self.stack.getProject();
+		var stacks = projects_available[project.id];
+		self.stacks_to_crop = new Array();
+		for ( var s in stacks )
+		{
+			// By default, mark only the current stack to be cropped
+			self.stacks_to_crop[ s ] =
+				{
+					data : stacks[ s ],
+					marked : ( s == self.stack.getId() )
+				};
+		}
+
+		// initialize the stacks menu
+		self.updateStacksMenu();
+
 		self.updateControls();
 
 		return;
@@ -723,6 +813,8 @@ function CroppingTool()
 			undefined,
 			0,
 			null );
+
+		self.stacks_menu.update();
 
 		self.stack = null;
 		self.button_crop_apply.onclick = null;

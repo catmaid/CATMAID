@@ -1058,6 +1058,14 @@ ALTER TABLE broken_slice ADD PRIMARY KEY (id);
 "
   ),
 
+	'2012-04-10T10:15:16' => new Migration(
+		'Add a metadata field for the stacks',
+		"ALTER TABLE stack ADD COLUMN metadata text;
+		 UPDATE stack SET metadata = '';
+		 ALTER TABLE stack ALTER COLUMN metadata SET DEFAULT '';
+		 ALTER TABLE stack ALTER COLUMN metadata SET NOT NULL;"
+),
+
 
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates

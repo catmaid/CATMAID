@@ -123,6 +123,9 @@
 				<div class="box" id="toolbox_edit" style="display:none"></div>
 				<div class="box" id="toolbox_data" style="display:none"></div>
 
+				<div id="spinner_box" class="box_right" style="width:20px; height: 20px; position:relative">
+				    <div id="spinner"><img src="widgets/themes/kde/wait_bgtransgrey.gif" alt="spinner" /></div>
+				</div>
 				<div id="logout_box" class="box_right" style="display:none"><p><a id="logout" name="logout" title="Logout" onclick="logout();" href="#">Logout</a></p></div>
 				<div id="login_box" class="box_right" style="display:none"><p>account&nbsp;</p><p><input type="text" id="account" name="account" size="8" /></p><p>&nbsp;&nbsp;password&nbsp;</p><p><input type="password" id="password" name="password" size="8" /></p><p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p></div>
 				<div id="session_box" class="box_right" style="display:none"><p>You are <span id="session_longname">&nbsp;</span>.</p></div>
@@ -130,7 +133,6 @@
 					<a href="#" class="button_active" id="show_button_text" onclick="project.toggleShow( 'text' );"><img src="widgets/themes/kde/show_text.gif" alt="show textlabels" title="show textlabels" /></a>
 					<!--<a href="#" class="button_active" id="show_button_trace" onclick="project.toggleShow( 'trace' );"><img src="widgets/themes/kde/show_trace.gif" alt="show traces" title="show traces" /></a>//-->
 				</div>
-                <div id="spinner"><img src="widgets/themes/kde/wait_bgtransgrey.gif" alt="spinner" /></div>
 				<div class="toolbar_fill"></div>
 			</div>
 			<!--

@@ -531,6 +531,7 @@ var ObjectTree = new function()
 
       $.ajax({
         async: false,
+        cache: false,
         type: 'POST',
         url: "model/instance.operation.php",
         data: data,
@@ -624,6 +625,7 @@ var ObjectTree = new function()
       // a valid move), thus we only have to change the parent
       $.ajax({
         async: false,
+        cache: false,
         type: 'POST',
         url: "model/instance.operation.php",
         data: {
@@ -694,6 +696,7 @@ var ObjectTree = new function()
     // Else, highlight it:
     $.ajax({
       async: true,
+      cache: false,
       type: 'POST',
       url: "model/tree.object.expand.php",
       data: { "skeleton_id" : treenode.skeleton_id,

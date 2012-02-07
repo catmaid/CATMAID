@@ -58,6 +58,7 @@ var ConnectorTable = new function()
           });
           $.ajax({
             "dataType": 'json',
+            "cache": false,
             "type": "POST",
             "url": sSource,
             "data": aoData,

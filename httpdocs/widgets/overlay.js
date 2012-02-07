@@ -328,6 +328,7 @@ var SkeletonAnnotations = new function()
       }
       jQuery.ajax({
         url: "model/label.node.list.all.php",
+        cache: false,
         type: "POST",
         data: {
           nods: JSON.stringify(nods),

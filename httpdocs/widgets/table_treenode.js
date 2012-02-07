@@ -65,6 +65,7 @@ var TreenodeTable = new function()
         $.ajax({
           "dataType": 'json',
           "type": "POST",
+          "cache": false,
           "url": sSource,
           "data": aoData,
           "success": fnCallback

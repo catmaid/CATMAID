@@ -40,6 +40,7 @@ function WebGLViewer(divID) {
   animate();
   debugaxes();
   draw_grid();
+  drawmesh();
 
   function init() {
     container = document.getElementById(self.divID);
@@ -300,6 +301,38 @@ function WebGLViewer(divID) {
     camera.position.x = x;
     camera.position.y = y;
     camera.position.z = 200;
+  }
+
+  function drawmesh() {
+
+      scene.add( new THREE.AmbientLight( 0x00020 ) );
+
+      var light = new THREE.PointLight(0xFF0000);
+      light.position = {x:5, y:25, z:10};
+      scene.addObject( light );
+
+      var light1 = new THREE.PointLight( 0xff0040, 1, 50 );
+      scene.add( light1 );
+
+
+      var geom = new THREE.Geometry();
+
+      var v1 = new THREE.Vector3(0,0,0);
+      var v2 = new THREE.Vector3(0,50,0);
+      var v3 = new THREE.Vector3(0,50,50);
+
+      geom.vertices.push(new THREE.Vertex(v1));
+      geom.vertices.push(new THREE.Vertex(v2));
+      geom.vertices.push(new THREE.Vertex(v3));
+
+      geom.faces.push( new THREE.Face3( 0, 1, 2 ) );
+
+      var object = new THREE.Mesh( geom, new THREE.MeshNormalMaterial( {
+          color: 0xFF00FF,
+          blending: THREE.AdditiveBlending,
+          transparent: true,
+          wireframe:false, }) );
+      scene.addObject(object);
   }
 
   function debugaxes() {

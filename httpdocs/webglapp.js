@@ -11,7 +11,7 @@ function WebGLViewer(divID) {
 
   this.neurons = [];
 
-  var camera, scene, renderer, grid_lines, scale, controls;
+  var camera, scene, renderer, grid_lines, scale, controls, light;
   var mouseX = 0, mouseY = 0;
   var project_id = project.id;
   var stack_id = project.focusedStack.id;
@@ -55,7 +55,29 @@ function WebGLViewer(divID) {
     controls.staticMoving = true;
     controls.dynamicDampingFactor = 0.3;
 
-    renderer = new THREE.WebGLRenderer();
+
+    var ambient = new THREE.AmbientLight( 0x101010 );
+    scene.add( ambient );
+
+    directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
+    directionalLight.position.set( 1, 1, 2 ).normalize();
+    scene.add( directionalLight );
+
+    pointLight = new THREE.PointLight( 0xffaa00 );
+    pointLight.position.set( 0, 0, 0 );
+    scene.add( pointLight );
+/*  
+    // light representation
+
+    sphere = new THREE.SphereGeometry( 100, 16, 8, 1 );
+    lightMesh = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffaa00 } ) );
+    lightMesh.scale.set( 0.05, 0.05, 0.05 );
+    lightMesh.position = pointLight.position;
+    scene.add( lightMesh );
+
+*/
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
     //renderer = new THREE.CanvasRenderer();
     renderer.setSize( self.divWidth, self.divHeight );
 
@@ -303,8 +325,30 @@ function WebGLViewer(divID) {
     camera.position.z = 200;
   }
 
-  function drawmesh() {
+	function addMesh( geometry, scale, x, y, z, rx, ry, rz, material ) {
 
+				mesh = new THREE.Mesh( geometry, material );
+
+				mesh.scale.set( scale, scale, scale );
+				mesh.position.set( x, y, z );
+				mesh.rotation.set( rx, ry, rz );
+
+				scene.add( mesh );
+
+			}
+
+function createScene( geometry, start ) {
+
+				//addMesh( geometry, 10, 200, 0, 0,  0,0,0, new THREE.MeshPhongMaterial( { ambient: 0x030303, color: 0x030303, specular: 0x990000, shininess: 30 } ) );
+				addMesh( geometry, 10, 300, 0, 0,  0,0,0, new THREE.MeshFaceMaterial( ) );
+				//addMesh( geometry, 10, 400, 0, 0, 0,0,0, new THREE.MeshPhongMaterial( { ambient: 0x030303, color: 0x111111, specular: 0xffaa00, shininess: 10 } ) );
+				//addMesh( geometry, 10, 600, 0, 0, 0,0,0, new THREE.MeshPhongMaterial( { ambient: 0x030303, color: 0x555555, specular: 0x666666, shininess: 10 } ) );
+
+			}
+
+
+  function drawmesh() {
+/*
       scene.add( new THREE.AmbientLight( 0x00020 ) );
 
       var light = new THREE.PointLight(0xFF0000);
@@ -314,24 +358,69 @@ function WebGLViewer(divID) {
       var light1 = new THREE.PointLight( 0xff0040, 1, 50 );
       scene.add( light1 );
 
+*/
+/*
+// set up the sphere vars
+var radius = 50, segments = 16, rings = 16;
+var sphereMaterial = new THREE.MeshLambertMaterial(
+{
+    color: 0xCC0000
+});
+// create a new mesh with sphere geometry -
+// we will cover the sphereMaterial next!
+var sphere = new THREE.Mesh(
+   new THREE.SphereGeometry(radius,
+   segments,
+   rings),
+
+   sphereMaterial);
+
+// add the sphere to the scene
+scene.add(sphere);
+*/
+/*
+    var g = new THREE.CubeGeometry( 200, 200, 200 );
+    var m = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
+
+    mesh = new THREE.Mesh( g, m );
+    scene.add( mesh );
+
+*/
+      var loader = new THREE.JSONLoader( true );
+
+      var s = Date.now(),
+					callback = function( geometry ) { createScene( geometry, s ) };
+      loader.load( 'cubecolors.js', callback );
 
       var geom = new THREE.Geometry();
 
       var v1 = new THREE.Vector3(0,0,0);
-      var v2 = new THREE.Vector3(0,50,0);
-      var v3 = new THREE.Vector3(0,50,50);
+      var v2 = new THREE.Vector3(0,200,0);
+      var v3 = new THREE.Vector3(0,200,200);
 
       geom.vertices.push(new THREE.Vertex(v1));
       geom.vertices.push(new THREE.Vertex(v2));
       geom.vertices.push(new THREE.Vertex(v3));
 
-      geom.faces.push( new THREE.Face3( 0, 1, 2 ) );
+    var fa = new THREE.Face3( 2,1,0);
+    var normal = new THREE.Vector3(1,0,0);
+    //fa.normal( normal );
+    //fa.vertexNormals.push( normal.clone(), normal.clone(), normal.clone(), normal.clone() );
+      geom.faces.push( fa );
 
-      var object = new THREE.Mesh( geom, new THREE.MeshNormalMaterial( {
-          color: 0xFF00FF,
-          blending: THREE.AdditiveBlending,
-          transparent: true,
-          wireframe:false, }) );
+      var c1 = new THREE.Vector3(255,0,0);
+      var c2 = new THREE.Vector3(0,255,0);
+      var c3 = new THREE.Vector3(0,0,255);
+
+    geom.colors.push(new THREE.Vertex(c1));
+    geom.colors.push(new THREE.Vertex(c2));
+    geom.colors.push(new THREE.Vertex(c3));
+
+    //var object = new THREE.Mesh( geom, new THREE.MeshLambertMaterial( { color: 0xff0000, opacity: 0.9, shading: THREE.FlatShading, wireframe: false, wireframeLinewidth: 2, transparent: false } ) );
+    var object = new THREE.Mesh( geom, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity: 0.2, transparent: true } ) );
+    object.doubleSided = true;
+    
+    console.log(geom, object);
       scene.addObject(object);
   }
 

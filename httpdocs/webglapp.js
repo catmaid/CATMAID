@@ -11,7 +11,7 @@ function WebGLViewer(divID) {
 
   this.neurons = [];
 
-  var camera, scene, renderer, grid_lines, scale, controls;
+  var camera, scene, renderer, grid_lines, scale, controls, light;
   var mouseX = 0, mouseY = 0;
   var project_id = project.id;
   var stack_id = project.focusedStack.id;
@@ -40,6 +40,7 @@ function WebGLViewer(divID) {
   animate();
   debugaxes();
   draw_grid();
+  drawmesh();
 
   function init() {
     container = document.getElementById(self.divID);
@@ -54,7 +55,29 @@ function WebGLViewer(divID) {
     controls.staticMoving = true;
     controls.dynamicDampingFactor = 0.3;
 
-    renderer = new THREE.WebGLRenderer();
+
+    var ambient = new THREE.AmbientLight( 0x101010 );
+    scene.add( ambient );
+
+    directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
+    directionalLight.position.set( 1, 1, 2 ).normalize();
+    scene.add( directionalLight );
+
+    pointLight = new THREE.PointLight( 0xffaa00 );
+    pointLight.position.set( 0, 0, 0 );
+    scene.add( pointLight );
+/*  
+    // light representation
+
+    sphere = new THREE.SphereGeometry( 100, 16, 8, 1 );
+    lightMesh = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffaa00 } ) );
+    lightMesh.scale.set( 0.05, 0.05, 0.05 );
+    lightMesh.position = pointLight.position;
+    scene.add( lightMesh );
+
+*/
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
     //renderer = new THREE.CanvasRenderer();
     renderer.setSize( self.divWidth, self.divHeight );
 
@@ -290,7 +313,7 @@ function WebGLViewer(divID) {
 
   function create_stackboundingbox(x, y, z, dx, dy, dz)
   {
-    // console.log('bouding box', x, y, z, dx, dy, dz);
+    //console.log('bouding box', x, y, z, dx, dy, dz);
     var gg = new THREE.CubeGeometry( dx, dy, dz );
     var mm = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
     var mesh = new THREE.Mesh( gg, mm );
@@ -300,6 +323,48 @@ function WebGLViewer(divID) {
     camera.position.x = x;
     camera.position.y = y;
     camera.position.z = 200;
+  }
+
+	function addMesh( geometry, scale, x, y, z, rx, ry, rz, material ) {
+    mesh = new THREE.Mesh( geometry, material );
+    mesh.scale.set( scale, scale, scale );
+    mesh.position.set( x, y, z );
+    mesh.rotation.set( rx, ry, rz );
+    mesh.doubleSided = true;
+    scene.add( mesh );
+	}
+
+  function createScene( geometry, start ) {
+    //addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshPhongMaterial( { ambient: 0x030303, color: 0x030303, specular: 0x990000, shininess: 30 } ) );
+    addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.2, transparent:true } ) );
+	}
+
+  function drawmesh() {
+    var loader = new THREE.JSONLoader( true );
+    var s = Date.now(),
+        callback = function( geometry ) { createScene( geometry, s ) };
+    jQuery.ajax({
+        //url: "../../model/export.skeleton.json.php",
+        url: "dj/"+project_id+"/stack/"+stack_id+"/models",
+        type: "GET",
+        dataType: "json",
+        success: function (models) {
+          console.log('models', models);
+          // loop over objects
+          for( var obj in models) {
+            var vert = models[obj].vertices;
+            var vert2 = [];
+            for ( var i = 0; i < vert.length; i+=3 ) {
+              var fv = transform_coordinates([vert[i],vert[i+1],vert[i+2]]);
+              vert2.push( fv[0] );
+              vert2.push( fv[1] );
+              vert2.push( fv[2] );
+            }
+            models[obj].vertices = vert2,
+            loader.createModel( models[obj], callback );
+          }
+        }
+      });
   }
 
   function debugaxes() {

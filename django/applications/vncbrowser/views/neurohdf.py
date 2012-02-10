@@ -244,3 +244,36 @@ def skeleton_neurohdf(request, project_id=None, skeleton_id=None, logged_in_user
         'url': neurohdf_url
     }
     return HttpResponse(json.dumps(result), mimetype="text/json")
+
+@catmaid_login_required
+def stack_models(request, project_id=None, stack_id=None, logged_in_user=None):
+    """ Retrieve Mesh models for a stack
+    """
+    d={}
+    filename=os.path.join(settings.HDF5_STORAGE_PATH, '%s_%s.hdf' %(project_id, stack_id) )
+    with closing(h5py.File(filename, 'r')) as hfile:
+        meshnames=hfile['meshes'].keys()
+        for name in meshnames:
+            vertlist=hfile['meshes'][name]['vertices'].value.tolist()
+            facelist= hfile['meshes'][name]['faces'].value.tolist()
+            d[str(name)] = {
+                 'metadata': {
+                      'colors': 0,
+                      'faces': 2,
+                      'formatVersion': 3,
+                      'generatedBy': 'NeuroHDF',
+                      'materials': 0,
+                      'morphTargets': 0,
+                      'normals': 0,
+                      'uvs': 0,
+                      'vertices': 4},
+                 'morphTargets': [],
+                 'normals': [],
+                 'scale': 1.0,
+                 'uvs': [[]],
+                 'vertices': vertlist,
+                 'faces': facelist,
+                 'materials': [],
+                 'colors': []
+                }
+    return HttpResponse(json.dumps(d), mimetype="text/json")

@@ -43,6 +43,10 @@ CATMAID_URL = '/catmaid/'
 STATICFILES_URL = '/catmaid/dj-static/'
 STATICFILES_LOCAL = '/home/mark/catmaid-local-instance/django/static/'
 
+# Local path to store HDF5 files
+# File name convention: {projectid}_{stackid}.hdf
+HDF5_STORAGE_PATH = '/home/stephan/dev/CATMAID/django/hdf5/'
+
 PROJECT_ROOT = os.path.realpath(os.path.join(
         os.path.dirname(__file__), '..', '..'))
 for subdirectory in ('projects', 'applications', 'lib'):

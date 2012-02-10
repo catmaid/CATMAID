@@ -1,3 +1,4 @@
+django/hdf5
 django/projects/mysite/.coverage
 django/projects/mysite/htmlcov/
 sphinx-doc/build

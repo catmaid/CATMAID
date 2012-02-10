@@ -313,7 +313,7 @@ function WebGLViewer(divID) {
 
   function create_stackboundingbox(x, y, z, dx, dy, dz)
   {
-    // console.log('bouding box', x, y, z, dx, dy, dz);
+    //console.log('bouding box', x, y, z, dx, dy, dz);
     var gg = new THREE.CubeGeometry( dx, dy, dz );
     var mm = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
     var mesh = new THREE.Mesh( gg, mm );
@@ -326,102 +326,45 @@ function WebGLViewer(divID) {
   }
 
 	function addMesh( geometry, scale, x, y, z, rx, ry, rz, material ) {
+    mesh = new THREE.Mesh( geometry, material );
+    mesh.scale.set( scale, scale, scale );
+    mesh.position.set( x, y, z );
+    mesh.rotation.set( rx, ry, rz );
+    mesh.doubleSided = true;
+    scene.add( mesh );
+	}
 
-				mesh = new THREE.Mesh( geometry, material );
-
-				mesh.scale.set( scale, scale, scale );
-				mesh.position.set( x, y, z );
-				mesh.rotation.set( rx, ry, rz );
-
-				scene.add( mesh );
-
-			}
-
-function createScene( geometry, start ) {
-
-				//addMesh( geometry, 10, 200, 0, 0,  0,0,0, new THREE.MeshPhongMaterial( { ambient: 0x030303, color: 0x030303, specular: 0x990000, shininess: 30 } ) );
-				addMesh( geometry, 10, 300, 0, 0,  0,0,0, new THREE.MeshFaceMaterial( ) );
-				//addMesh( geometry, 10, 400, 0, 0, 0,0,0, new THREE.MeshPhongMaterial( { ambient: 0x030303, color: 0x111111, specular: 0xffaa00, shininess: 10 } ) );
-				//addMesh( geometry, 10, 600, 0, 0, 0,0,0, new THREE.MeshPhongMaterial( { ambient: 0x030303, color: 0x555555, specular: 0x666666, shininess: 10 } ) );
-
-			}
-
+  function createScene( geometry, start ) {
+    //addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshPhongMaterial( { ambient: 0x030303, color: 0x030303, specular: 0x990000, shininess: 30 } ) );
+    addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.2, transparent:true } ) );
+	}
 
   function drawmesh() {
-/*
-      scene.add( new THREE.AmbientLight( 0x00020 ) );
-
-      var light = new THREE.PointLight(0xFF0000);
-      light.position = {x:5, y:25, z:10};
-      scene.addObject( light );
-
-      var light1 = new THREE.PointLight( 0xff0040, 1, 50 );
-      scene.add( light1 );
-
-*/
-/*
-// set up the sphere vars
-var radius = 50, segments = 16, rings = 16;
-var sphereMaterial = new THREE.MeshLambertMaterial(
-{
-    color: 0xCC0000
-});
-// create a new mesh with sphere geometry -
-// we will cover the sphereMaterial next!
-var sphere = new THREE.Mesh(
-   new THREE.SphereGeometry(radius,
-   segments,
-   rings),
-
-   sphereMaterial);
-
-// add the sphere to the scene
-scene.add(sphere);
-*/
-/*
-    var g = new THREE.CubeGeometry( 200, 200, 200 );
-    var m = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
-
-    mesh = new THREE.Mesh( g, m );
-    scene.add( mesh );
-
-*/
-      var loader = new THREE.JSONLoader( true );
-
-      var s = Date.now(),
-					callback = function( geometry ) { createScene( geometry, s ) };
-      loader.load( 'cubecolors.js', callback );
-
-      var geom = new THREE.Geometry();
-
-      var v1 = new THREE.Vector3(0,0,0);
-      var v2 = new THREE.Vector3(0,200,0);
-      var v3 = new THREE.Vector3(0,200,200);
-
-      geom.vertices.push(new THREE.Vertex(v1));
-      geom.vertices.push(new THREE.Vertex(v2));
-      geom.vertices.push(new THREE.Vertex(v3));
-
-    var fa = new THREE.Face3( 2,1,0);
-    var normal = new THREE.Vector3(1,0,0);
-    //fa.normal( normal );
-    //fa.vertexNormals.push( normal.clone(), normal.clone(), normal.clone(), normal.clone() );
-      geom.faces.push( fa );
-
-      var c1 = new THREE.Vector3(255,0,0);
-      var c2 = new THREE.Vector3(0,255,0);
-      var c3 = new THREE.Vector3(0,0,255);
-
-    geom.colors.push(new THREE.Vertex(c1));
-    geom.colors.push(new THREE.Vertex(c2));
-    geom.colors.push(new THREE.Vertex(c3));
-
-    //var object = new THREE.Mesh( geom, new THREE.MeshLambertMaterial( { color: 0xff0000, opacity: 0.9, shading: THREE.FlatShading, wireframe: false, wireframeLinewidth: 2, transparent: false } ) );
-    var object = new THREE.Mesh( geom, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity: 0.2, transparent: true } ) );
-    object.doubleSided = true;
-    
-    console.log(geom, object);
-      scene.addObject(object);
+    var loader = new THREE.JSONLoader( true );
+    var s = Date.now(),
+        callback = function( geometry ) { createScene( geometry, s ) };
+    jQuery.ajax({
+        //url: "../../model/export.skeleton.json.php",
+        url: "dj/"+project_id+"/stack/"+stack_id+"/models",
+        type: "GET",
+        dataType: "json",
+        success: function (models) {
+          console.log('models', models);
+          // loop over objects
+          for( var obj in models) {
+            var vert = models[obj].vertices;
+            var vert2 = [];
+            for ( var i = 0; i < vert.length; i+=3 ) {
+              var fv = transform_coordinates([vert[i],vert[i+1],vert[i+2]]);
+              vert2.push( fv[0] );
+              vert2.push( fv[1] );
+              vert2.push( fv[2] );
+            }
+            models[obj].vertices = vert2,
+            loader.createModel( models[obj], callback );
+          }
+        }
+      });
   }
 
   function debugaxes() {

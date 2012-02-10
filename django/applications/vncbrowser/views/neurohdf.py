@@ -249,12 +249,14 @@ def skeleton_neurohdf(request, project_id=None, skeleton_id=None, logged_in_user
 def stack_models(request, project_id=None, stack_id=None, logged_in_user=None):
     """ Retrieve Mesh models for a stack
     """
-    result={}
+    d={}
     filename=os.path.join(settings.HDF5_STORAGE_PATH, '%s_%s.hdf' %(project_id, stack_id) )
     with closing(h5py.File(filename, 'r')) as hfile:
         meshnames=hfile['meshes'].keys()
         for name in meshnames:
-            result[name] = {
+            vertlist=hfile['meshes'][name]['vertices'].value.tolist()
+            facelist= hfile['meshes'][name]['faces'].value.tolist()
+            d[str(name)] = {
                  'metadata': {
                       'colors': 0,
                       'faces': 2,
@@ -269,9 +271,9 @@ def stack_models(request, project_id=None, stack_id=None, logged_in_user=None):
                  'normals': [],
                  'scale': 1.0,
                  'uvs': [[]],
-                 'vertices': list(hfile['meshes'][name]['vertices'].value),
-                 'faces': list(hfile['meshes'][name]['faces'].value),
+                 'vertices': vertlist,
+                 'faces': facelist,
                  'materials': [],
                  'colors': []
                 }
-    return HttpResponse(json.dumps(result), mimetype="text/json")
+    return HttpResponse(json.dumps(d), mimetype="text/json")

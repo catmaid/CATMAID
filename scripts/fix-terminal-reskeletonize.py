@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # If you have a terminal that is not part_of any skeleton, this script
 # will try to find the right skeleton via its treenode and update with

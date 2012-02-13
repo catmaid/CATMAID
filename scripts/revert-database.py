@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # This is a small helper script revert a CATMAID
 # database from to a recent backup.

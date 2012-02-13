@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # This script checks your database for some common
 # inconsistencies or errors that may have arisen from

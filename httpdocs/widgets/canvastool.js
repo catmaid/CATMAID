@@ -57,17 +57,21 @@ function CanvasTool()
         };
         controls.appendChild( button );
 
-        /*
-         * Brush properties
-         */
-
         var brush = document.createElement("div");
         var html = '<button id="drawing-mode">Enter drawing mode</button>' +
-            '<div style="display:none;" id="drawing-mode-options">' +
-            'Width: <input value="10" id="drawing-line-width" size="2">' +
-            'Color: <input type="color" value="rgb(0,0,0)" id="drawing-color" size="15"></div>';
+            '<div style="display:none;" id="drawing-mode-options">';
         brush.innerHTML = html;
         controls.appendChild( brush );
+
+        // color wheel
+        var chweel = document.createElement("div");
+        chweel.id = "color-wheel-canvas";
+        controls.appendChild( chweel );
+
+        // slider for brush size
+        var widthSlider = document.createElement("div");
+        widthSlider.id = "width-slider-canvas";
+        controls.appendChild( widthSlider );
 
         // ******************
         stack.getView().appendChild( controls );
@@ -92,19 +96,24 @@ function CanvasTool()
             }
         };
 
-        drawingColorEl.onchange = function() {
-            canvasLayer.canvas.freeDrawingColor = drawingColorEl.value;
-        };
-        drawingLineWidthEl.onchange = function() {
-            canvasLayer.canvas.freeDrawingLineWidth = parseInt(drawingLineWidthEl.value, 10) || 1; // disallow 0, NaN, etc.
-        };
+        var cw = Raphael.colorwheel($("#color-wheel-canvas")[0],150);
+        cw.color("#000000");
+        cw.onchange(function(color)
+        {
+          canvasLayer.canvas.freeDrawingColor = 'rgb('+parseInt(color.r)+','+parseInt(color.g)+','+parseInt(color.b)+')';
+        });
 
-        canvasLayer.canvas.freeDrawingColor = drawingColorEl.value;
-        canvasLayer.canvas.freeDrawingLineWidth = parseInt(drawingLineWidthEl.value, 10) || 1;
-
-        // **************
-
-
+        // append jquery elements
+        var widthslider = $("#width-slider-canvas").slider({
+                  value: 11,
+                  min: 1,
+                  max: 20,
+                  step: 2,
+                  slide: function(event, ui) {
+                    canvasLayer.canvas.freeDrawingLineWidth = ui.value;
+                  }
+          });
+        canvasLayer.canvas.freeDrawingLineWidth = 11;
 
     };
 

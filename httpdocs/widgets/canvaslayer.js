@@ -126,7 +126,8 @@ function CanvasLayer( stack )
 */
     // add red rectangle
 
-    var canvas = new fabric.Canvas( 'myCanvas' , {'interactive':true} );
+    var canvas = new fabric.Canvas( 'myCanvas' , {'interactive':true, CURSOR:'crosshair'} );
+    // CURSOR: "url(widgets/themes/kde/svg-circle.cur) 15 15, crosshair"
 
     var wi = Math.floor(stack.dimension.x * stack.scale);
     var he = Math.floor(stack.dimension.y * stack.scale);

@@ -869,6 +869,14 @@ ALTER TABLE ONLY treenode
 '
 ),
 
+	'2012-02-14T08:46:38' => new Migration(
+		'Tile size as stack table field',
+		'
+ALTER TABLE stack ADD COLUMN tile_width integer NOT NULL DEFAULT 256;
+ALTER TABLE stack ADD COLUMN tile_height integer NOT NULL DEFAULT 256;
+'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

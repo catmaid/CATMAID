@@ -27,7 +27,7 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    '/home/mark/neuron-catalogue/templates'
+    '/home/mark/catmaid/django/templates'
 )
 
 DEBUG = True
@@ -48,7 +48,7 @@ SITE_ID = 1
 
 CATMAID_URL = '/'
 STATICFILES_URL = '/static/'
-STATICFILES_LOCAL = '/home/mark/neuron-catalogue/static/'
+STATICFILES_LOCAL = '/home/mark/catmaid/django/static/'
 
 # Local path to store HDF5 files
 # File name convention: {projectid}_{stackid}.hdf

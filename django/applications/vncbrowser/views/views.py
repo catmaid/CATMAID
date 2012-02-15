@@ -17,11 +17,16 @@ from django.db.models import Count
 import json
 import re
 import sys
+
 from urllib import urlencode
 from datetime import datetime
+import httplib, urllib
+import cStringIO
+
 try:
     import networkx as nx
     from networkx.readwrite import json_graph
+    import Image
 except ImportError:
     pass
 
@@ -623,7 +628,7 @@ def goto_connector(request, project_id=None, connector_id=None, stack_id=None, l
                   "tool": "tracingtool",
                   "sid0": stack_id,
                   "s0" : 0}
-    return HttpResponseRedirect(settings.CATMAID_URL + "?" + urlencode(parameters))
+    return HttpResponseRedirect(settings.CATMAID_URL + "?" + urllib.urlencode(parameters))
 
 def get_stack_info(project_id=None, stack_id=None):
     """ Returns a dictionary with relevant information for stacks
@@ -662,3 +667,20 @@ def get_stack_info(project_id=None, stack_id=None):
 def stack_info(request, project_id=None, stack_id=None, logged_in_user=None):
     result=get_stack_info(project_id, stack_id)
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")
+
+def get_tile(request, project_id=None, stack_id=None):
+    params = urllib.urlencode(request.GET)
+    headers = {"Content-type": "application/x-www-form-urlencoded",
+                "Referer": "http://127.0.0.1"}
+    # TODO: Replace hard-coded URL to TileServer URL specified in settings.py
+    conn = httplib.HTTPConnection("127.0.0.1:8888")
+    conn.request("GET", "/", params, headers)
+    response = conn.getresponse()
+    image = Image.open(cStringIO.StringIO(response.read()))
+    if response.status == 200:
+        # serialize to HTTP response
+        newresponse = HttpResponse(mimetype="image/png")
+        image.save(newresponse, "PNG")
+        return newresponse
+    else:
+        return HttpResponse("Error in TileServer response.", mimetype="plain/text")

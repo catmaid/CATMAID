@@ -402,7 +402,8 @@ function handle_openProjectStack( status, text, xml )
 					e.image_base,
 					e.tile_width,
 					e.tile_height,
-					e.file_extension);
+					e.file_extension,
+          e.tile_source_type);
 
 			stack.addLayer( "TileLayer", tilelayer );
 
@@ -412,7 +413,8 @@ function handle_openProjectStack( status, text, xml )
 								value.image_base,
 								e.tile_width,
 								e.tile_height,
-								e.file_extension);
+								e.file_extension,
+                e.tile_source_type);
 				// set default opacity internally
 				tilelayer2.setOpacity( value.default_opacity );
 				stack.addLayer( value.title, tilelayer2 );

@@ -959,6 +959,17 @@ ALTER TABLE stack ADD COLUMN tile_height integer NOT NULL DEFAULT 256;
 '
 ),
 
+  '2012-02-14T14:32:05' => new Migration(
+    'Data source type specification.',
+    '
+ALTER TABLE stack DROP COLUMN IF EXISTS tile_source_type;
+ALTER TABLE overlay DROP COLUMN IF EXISTS tile_source_type;
+ALTER TABLE stack ADD COLUMN tile_source_type integer NOT NULL DEFAULT 1;
+ALTER TABLE overlay ADD COLUMN tile_source_type integer NOT NULL DEFAULT 1;
+'
+  ),
+
+
     // Make the default of these permissions restrictive (i.e. can't
     // do anything) for the future but set them both to TRUE for
     // existing entries, since the previous behaviour was to allow

@@ -129,6 +129,34 @@ function Stack(
       scale : self.scale
     }
   }
+
+  /*
+   * Get the top and left coordinates in pixel coordinates of
+   * stack's window
+   */
+  this.getWorldTopLeftPixel = function()
+  {
+    return {
+      worldTop : ( ( self.y - self.viewHeight / self.scale / 2 ) ),
+      worldLeft : ( ( self.x - self.viewWidth / self.scale / 2 ) ),
+      scale : self.scale
+    }
+  }
+
+  /*
+   * Get stacks width and height
+   */
+  this.getWidthAndHeight = function()
+  {
+		var width = self.viewWidth;
+		var height = self.viewHeight;
+		var l =
+		{
+			width : width,
+		  height : height
+		};
+		return l;
+  }
   
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
@@ -148,6 +176,7 @@ function Stack(
 		self.yc = Math.floor( self.y * self.scale - ( self.viewHeight / 2 ) );
 		self.xc = Math.floor( self.x * self.scale - ( self.viewWidth / 2 ) );
 
+
 		// Semaphore pattern from: http://stackoverflow.com/a/3709809/223092
 		for ( var key in layers ) {
 			if (layers.hasOwnProperty(key)) {
@@ -165,6 +194,7 @@ function Stack(
 				completionCallback();
 			}
 		}
+
 
 		/**
 		 * This question is completely useless but without asking it, Firefox on

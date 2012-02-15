@@ -25,6 +25,8 @@ from views import convert_annotations_to_networkx
 from views import stack_info
 from views import update_location_reviewer
 
+from views import get_tile
+
 from catmaid_replacements import projects
 from catmaid_replacements import labels_all
 from catmaid_replacements import labels_for_node

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # This script renames the directories in a CATMAID stack's image root
 # to take into account missing layers corresponding to particular

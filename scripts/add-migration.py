@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # This script should add a template migration to the migrations.php
 # file.  If you provide a git commit ID it uses the commit date from

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # This is a small helper script to add the required database entries
 # to enable tracing of a particular project with treelines,

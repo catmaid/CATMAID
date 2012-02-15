@@ -871,9 +871,11 @@ var SkeletonAnnotations = new function()
             e = $.parseJSON(text);
             if (e.error) {
               alert(e.error);
-              completedCallback(-1);
+              if (typeof completedCallback !== "undefined") {
+                completedCallback(-1);
+              }
             } else {
-              if (completedCallback) {
+              if (typeof completedCallback !== "undefined") {
                 completedCallback(e.updated);
               }
             }

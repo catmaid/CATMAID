@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # If you have a skeleton that has multiple root nodes,
 # this script will attempt to fix that.

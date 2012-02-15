@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # This is a small helper script to create a project, its stacks
 # and add the required database entries to enable tracing of a

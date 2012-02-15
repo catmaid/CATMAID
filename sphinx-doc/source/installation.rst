@@ -6,7 +6,7 @@ Prerequisites
 
 1. PostgreSQL > 8.2
 2. Apache2 Webserver
-3. PHP 5
+3. PHP >= 5.2
 
 You can install these main dependencies with::
 

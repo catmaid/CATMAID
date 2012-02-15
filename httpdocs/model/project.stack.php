@@ -51,7 +51,9 @@ try {
         "stack"."image_base" AS "image_base",
         "stack"."trakem2_project" AS "trakem2_project",
         "stack"."min_zoom_level" AS "min_zoom_level",
-        "stack"."file_extension" AS "file_extension"
+        "stack"."file_extension" AS "file_extension",
+        "stack"."tile_width" AS "tile_width",
+        "stack"."tile_height" AS "tile_height"
         
       FROM "project" LEFT JOIN "project_user"
           ON "project"."id" = "project_user"."project_id" INNER JOIN "project_stack"
@@ -108,8 +110,8 @@ try {
     $project_stack[ 'translation' ] = double3dXYZ( $project_stack[ 'translation' ] );
     $project_stack[ 'resolution' ] = double3dXYZ( $project_stack[ 'resolution' ] );
     $project_stack[ 'dimension' ] = integer3dXYZ( $project_stack[ 'dimension' ] );
-	$project_stack[ 'tile_width' ] = 256;
-	$project_stack[ 'tile_height' ] = 256;    
+	$project_stack[ 'tile_width' ] = $project_stack[ 'tile_width' ];
+	$project_stack[ 'tile_height' ] = $project_stack[ 'tile_height' ];
 	$project_stack[ 'broken_slices' ] = $bs;
     $project_stack[ 'trakem2_project' ] = $project_stack[ 'trakem2_project' ] == 't';
     $project_stack[ 'overlay' ] = $overlays;

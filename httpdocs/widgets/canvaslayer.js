@@ -3,6 +3,9 @@
  */
 function CanvasLayer( stack )
 {
+    // define the x,y location and width and height of the
+    // current field of view of the canvas in bitmap pixel
+    var xindex, yindex, width, height;
 
     this.setOpacity = function( val )
     {
@@ -19,36 +22,104 @@ function CanvasLayer( stack )
     {
         //var pixelPos = [ stack.x, stack.y, stack.z ];
         //console.log("redraw pixel pos", pixelPos);
-        this.updateDimension();
         return;
     }
 
     this.resize = function( width, height )
     {
-        //console.log("new siye", width, height);
+        this.setFieldOfView();
         self.redraw();
         return;
     }
 
-    this.updateDimension = function()
+    this.setFieldOfView = function()
     {
-        // console.log("update dimension");
-        var wi = Math.floor(stack.dimension.x * stack.scale);
-        var he = Math.floor(stack.dimension.y * stack.scale);
-        view.style.width = wi + "px";
-        view.style.height = he + "px";
+        var fv = stack.getFieldOfViewInPixel(),
+            canvasleft, canvastop, leftbar, topbar;
 
-        canvashtml.style.width = wi + "px";
-        canvashtml.style.height = he + "px";
+        if( fv.worldLeftC < 0 ) {
+            // left black bar exists
+            xindex = 0;
+            canvasleft = Math.abs( fv.worldLeftC );
+            leftbar = true;
+        } else {
+            // no left black bar exists
+            xindex = Math.floor( fv.worldLeft );
+            canvasleft = 0;
+            leftbar = false;
+        }
 
-        var wc = stack.getWorldTopLeft();
-        var pl = wc.worldLeft,
-            pt = wc.worldTop,
-            new_scale = wc.scale;
+        if( fv.worldTopC < 0 ) {
+            yindex = 0;
+            canvastop = Math.abs( fv.worldTopC );
+            topbar = true;
+        } else {
+            yindex = Math.floor( fv.worldTop );
+            canvastop = 0;
+            topbar = false;
+        }
 
-        self.view.style.left = Math.floor((-pl / stack.resolution.x) * new_scale) + "px";
-        self.view.style.top = Math.floor((-pt / stack.resolution.y) * new_scale) + "px";
+        if( !leftbar ) {
+            // no left bar exists, we need to check whether the stack
+            // width in the current scale is smaller than the currently
+            // displayed div width
+            if( (fv.stackScaledWidth - Math.abs(fv.worldLeftC) ) < fv.stackDivWidth ) {
+                // right black bar exists
+                width = fv.stackScaledWidth - Math.abs(fv.worldLeftC) ;
+            } else {
+                // no right bar exists
+                width = fv.stackDivWidth;
+            }
+        } else {
+            // left bar exists
+            if( (fv.stackScaledWidth + Math.abs(fv.worldLeftC) ) < fv.stackDivWidth ) {
+                // right bar exists
+                width = fv.stackScaledWidth;
+            } else {
+                // no right bar exits
+                width = fv.stackDivWidth - Math.abs(fv.worldLeftC) ;
+            }
+        }
 
+        if( !topbar ) {
+            if( (fv.stackScaledHeight - Math.abs(fv.worldTopC) ) < fv.stackDivHeight ) {
+                // bottom black bar exists
+                height = fv.stackScaledHeight - Math.abs(fv.worldTopC) ;
+            } else {
+                // no bottom bar exists
+                height = fv.stackDivHeight;
+            }
+        } else {
+            if( (fv.stackScaledHeight + Math.abs(fv.worldTopC) ) < fv.stackDivHeight ) {
+                // bottom bar exists
+                height = fv.stackScaledHeight;
+            } else {
+                // no botttom bar exits
+                height = fv.stackDivHeight - Math.abs(fv.worldTopC) ;
+            }
+        }
+
+        self.updateCanvasLeftTop( canvasleft, canvastop );
+        self.updateCanvasWidthHeight( width, height );
+        // console.log('index: x, y, width, height', xindex, yindex, width, height )
+    }
+
+    this.updateCanvasWidthHeight = function( width, height )
+    {
+        view.style.width = width + "px";
+        view.style.height = height + "px";
+
+        canvashtml.style.width = width + "px";
+        canvashtml.style.height = height + "px";
+
+        canvas.setWidth( width );
+        canvas.setHeight( height );
+    }
+
+    this.updateCanvasLeftTop = function( left, top )
+    {
+        self.view.style.left = left + "px";
+        self.view.style.top = top + "px";
     }
 
     this.show = function () {
@@ -66,79 +137,29 @@ function CanvasLayer( stack )
     var view = document.createElement("div");
     view.className = "canvasOverlay";
     view.id = "canvasOverlayId";
-    view.style.zIndex = 6;
+    view.style.zIndex = 5;
     view.style.opacity = 1.0;
+    // view.style.border = "solid red 1px";
+    //view.style.position = 'absolute';
     self.view = view;
 
     // XXX: add it here to DOM?
     stack.getView().appendChild( view );
 
-
-/*
-    view.onmousemove = function( e ) {
-        console.log("onmouse move");
-        var wc;
-        var worldX, worldY;
-        var stackX, stackY;
-        m = ui.getMouse(e, stack.getView(), true);
-        if (m) {
-            wc = stack.getWorldTopLeft();
-            worldX = wc.worldLeft + ((m.offsetX / stack.scale) * stack.resolution.x);
-            worldY = wc.worldTop + ((m.offsetY / stack.scale) * stack.resolution.y);
-            lastX = worldX;
-            lastY = worldY;
-            statusBar.replaceLast('['+worldX+', '+worldY+', '+project.coordinates.z+']');
-            self.offsetXPhysical = worldX;
-            self.offsetYPhysical = worldY;
-        }
-    }
-*/
     var canvashtml = document.createElement("canvas")
     canvashtml.id = "myCanvas"
-    canvashtml.style.border = "1px";
-    this.view.appendChild( canvashtml );
-    self.updateDimension();
+    canvashtml.style.border = "0px";
+    self.view.appendChild( canvashtml );
 
-
-
-/*
-    var context;
-
-    // Check the element is in the DOM and the browser supports canvas
-    if(canvashtml.getContext) {
-        // Initaliase a 2-dimensional drawing context
-        context = canvashtml.getContext('2d');
-    } else {
-        alert('Canvas not supported by browser!');
-    }
-
-    var img = new Image;
-    // Important to have the onload
-    // http://stackoverflow.com/questions/4773966/drawing-an-image-from-a-data-url-to-a-canvas
-    img.onload = function(){
-        console.log('onload');
-        var wi = Math.floor(stack.dimension.x * stack.scale);
-        var he = Math.floor(stack.dimension.y * stack.scale);
-        context.drawImage(img,0,0, wi, he); // Or at whatever offset you like
-    };
-    // TODO: hardcoded url
-    // img.src = "http://localhost/catmaid-test/dj/3/stack/3/z/0/png";
-*/
-    // add red rectangle
-
-    var canvas = new fabric.Canvas( 'myCanvas' , {'interactive':true, CURSOR:'crosshair'} );
     // CURSOR: "url(widgets/themes/kde/svg-circle.cur) 15 15, crosshair"
+    var canvas = new fabric.Canvas( 'myCanvas' , {'interactive':true, CURSOR:'crosshair'} );
 
-    var wi = Math.floor(stack.dimension.x * stack.scale);
-    var he = Math.floor(stack.dimension.y * stack.scale);
-    canvas.setWidth( wi );
-    canvas.setHeight( he );
+    self.setFieldOfView();
 
     canvas.add(
         new fabric.Rect({ top: 50, left: 50, width: 50, height: 50, fill: '#f55' })
     );
     self.canvas = canvas;
-
 
     var rect = new fabric.Rect({
         top: 100,
@@ -149,43 +170,9 @@ function CanvasLayer( stack )
     });
     canvas.add(rect);
 
-    this.destroy = function()
-    {
-        console.log("destroy canvas layer");
-    };
-
-    /*
-    this.webglOverlay = new WebGL.WebGLOverlay( stack );
-
-    this.resize = function ( width, height )
-    {
-        //console.log("resize (redraw) webgllayer");
-        self.webglOverlay.redraw( stack );
-        return;
-    }
-
-    this.setOpacity = function ( val )
-    {
-        self.webglOverlay.view.style.opacity = val+"";
-    };
-
-    this.redraw = function()
-    {
-        // console.log("redraw webgllayer");
-        self.webglOverlay.redraw( stack );
-        return;
-    };
-
     this.unregister = function()
     {
-        console.log("unregister webgllayer");
+        stack.getView().removeChild( view );
     };
-
-    this.destroy = function()
-    {
-        console.log("destroy webgl layer");
-    };
-
-*/
 
 }

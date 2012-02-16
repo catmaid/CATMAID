@@ -22,10 +22,9 @@ function CanvasTool()
         self.prototype.resize( width, height );
         return;
     };
-
-
+  
     var createControlBox = function() {
-        console.log('stack', stack)
+
         controls = document.createElement("div");
         controls.className = "canvasControls";
         controls.id = "canvasControlsId";
@@ -36,17 +35,40 @@ function CanvasTool()
         // more: http://kangax.github.com/fabric.js/kitchensink/
 
         var button_rasterize = document.createElement("button");
-        button_rasterize.appendChild( document.createTextNode('Rasterize canvas!') );
+        button_rasterize.appendChild( document.createTextNode('Send labels!') );
         button_rasterize.onclick = function() {
             console.log('button click')
             if (!fabric.Canvas.supports('toDataURL')) {
                 alert('This browser doesn\'t provide means to serialize canvas to an image');
             }
             else {
+                console.log('rasterize');
                 window.open(canvasLayer.canvas.toDataURL('png'));
+                // POST request to local CAATMAID server
+                var data=canvasLayer.canvas.toDataURL('png');
+                var output=data.replace(/^data:image\/(png|jpg);base64,/, "");
+
+                 jQuery.ajax({
+                    url: "http://localhost:8080/foo/",
+                    type: "POST",
+                    dataType: "json",
+                    data: {
+                      'data':output
+                    },
+                    success: function (data) {
+                      console.log('return', data);
+                    }
+                  });
+              // yields error:XMLHttpRequest cannot load http://localhost:8080/. Origin http://localhost is not allowed by Access-Control-Allow-Origin.
+              // http://www.mmt.inf.tu-dresden.de/forum/posts/list/246.page
+              // "Same Origin Policy"
+              // http://abhirama.wordpress.com/2008/11/03/apache-mod_proxy-in-ubuntu/
+
             }
         };
         controls.appendChild( button_rasterize );
+
+        
 
         var button = document.createElement("button");
         button.appendChild( document.createTextNode('Clear canvas') );
@@ -125,24 +147,15 @@ function CanvasTool()
     {
         stack = parentStack;
         canvasLayer = new CanvasLayer( parentStack );
-        //this.prototype.mouseCatcher = tracingLayer.svgOverlay.getView();
 
         self.prototype.setMouseCatcher( canvasLayer.view );
+        // TODO: Layer is added to the parent stack, but the view
+        // is not inserted in the DOM - this has to be done manually
+        // in the canvaslayer.js. Is this by design?
         parentStack.addLayer( "CanvasLayer", canvasLayer );
-
-        // TODO: no zooming or coordinates, but want customized
-        // changing of sections
-        // self.prototype.register( parentStack, "edit_button_trace" );
 
         // view is the mouseCatcher now
         var view = canvasLayer.view;
-
-        /*
-        var proto_onmousedown = view.onmousedown;
-        view.onmousedown = function( e ) {
-            console.log("onmouse down", ui.getMouseButton( e ) );
-            return;
-        };*/
 
         var proto_changeSlice = self.prototype.changeSlice;
         self.prototype.changeSlice =
@@ -189,12 +202,13 @@ function CanvasTool()
      */
     this.destroy = function()
     {
-        console.log("destroy canvas");
-        self.prototype.stack.removeLayer( "CanvasLayer" );
 
-        // TODO: $( "#canvasControlsId" ).remove();
+        // remove the canvasLayer with the official API
+        stack.removeLayer( "CanvasLayer" );
 
-        canvasLayer.destroy();
+        // canvas tool responsability to remove the controls
+        stack.getView().removeChild( controls );
+
         return;
     };
 
@@ -215,6 +229,7 @@ function CanvasTool()
                 '+': [ 43, 107, 61, 187 ]
             },
             run: function (e) {
+                console.log('+');
                 //self.prototype.slider_s.move(1);
                 return false;
             }

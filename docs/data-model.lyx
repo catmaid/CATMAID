@@ -1,21 +1,29 @@
-#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
-\lyxformat 345
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
 \begin_document
 \begin_header
 \textclass article
 \use_default_options true
+\maintain_unincluded_children false
 \language english
+\language_package default
 \inputencoding auto
+\fontencoding global
 \font_roman palatino
 \font_sans helvet
 \font_typewriter courier
 \font_default_family default
+\use_non_tex_fonts false
 \font_sc false
 \font_osf false
 \font_sf_scale 100
 \font_tt_scale 100
 
 \graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
 \paperfontsize default
 \spacing onehalf
 \use_hyperref true
@@ -33,9 +41,18 @@
 \use_geometry true
 \use_amsmath 1
 \use_esint 1
+\use_mhchem 1
+\use_mathdots 1
 \cite_engine basic
 \use_bibtopic false
+\use_indices false
 \paperorientation portrait
+\suppress_date false
+\use_refstyle 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
 \leftmargin 2cm
 \topmargin 2cm
 \rightmargin 2cm
@@ -50,8 +67,9 @@
 \paperpagestyle default
 \tracking_changes false
 \output_changes false
-\author "" 
-\author "" 
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
 \end_header
 
 \begin_body
@@ -157,7 +175,7 @@ The current set of relationships which are allowed between these entities
 \begin_layout Standard
 \begin_inset Tabular
 <lyxtabular version="3" rows="10" columns="3">
-<features>
+<features tabularvalignment="middle">
 <column alignment="center" valignment="top" width="0">
 <column alignment="center" valignment="top" width="0">
 <column alignment="center" valignment="top" width="0">
@@ -771,7 +789,7 @@ relation
 \begin_layout Standard
 \begin_inset Tabular
 <lyxtabular version="3" rows="8" columns="2">
-<features>
+<features tabularvalignment="middle">
 <column alignment="center" valignment="top" width="0">
 <column alignment="center" valignment="top" width="0">
 <row>
@@ -1017,7 +1035,7 @@ class
 \begin_layout Standard
 \begin_inset Tabular
 <lyxtabular version="3" rows="10" columns="2">
-<features>
+<features tabularvalignment="middle">
 <column alignment="center" valignment="top" width="0">
 <column alignment="center" valignment="top" width="0">
 <row>
@@ -1261,7 +1279,7 @@ class_instance_class_instance
 \begin_layout Standard
 \begin_inset Tabular
 <lyxtabular version="3" rows="1" columns="3">
-<features>
+<features tabularvalignment="middle">
 <column alignment="center" valignment="top" width="0">
 <column alignment="center" valignment="top" width="0">
 <column alignment="center" valignment="top" width="0">
@@ -1383,7 +1401,7 @@ treenode_class_instance
 \begin_layout Standard
 \begin_inset Tabular
 <lyxtabular version="3" rows="7" columns="3">
-<features>
+<features tabularvalignment="middle">
 <column alignment="center" valignment="top" width="0">
 <column alignment="center" valignment="top" width="0">
 <column alignment="center" valignment="top" width="0">
@@ -1648,7 +1666,7 @@ connector_class_instance
 \begin_layout Standard
 \begin_inset Tabular
 <lyxtabular version="3" rows="5" columns="3">
-<features>
+<features tabularvalignment="middle">
 <column alignment="center" valignment="top" width="0">
 <column alignment="center" valignment="top" width="0">
 <column alignment="center" valignment="top" width="0">
@@ -1827,6 +1845,34 @@ target "http://www.ini.uzh.ch/~acardona/trakem2.html"
 \end_inset
 
 's XML-based format in order to import data.
+\end_layout
+
+\begin_layout Subsection*
+Hidden data model assumptions
+\end_layout
+
+\begin_layout Itemize
+There shall be no skeleton without treenodes.
+\begin_inset Newline newline
+\end_inset
+
+the skeleton_id in the treenode or treenode_connector table should never
+ be NULL.
+\begin_inset Newline newline
+\end_inset
+
+scripts/find-skeletons-with-no-treenodes.py project_id displays them - we
+ need to figure out after what operation they occur.
+\end_layout
+
+\begin_layout Itemize
+It's assumed at the moment that instantiations of relations with a particular
+ project ID only join two concepts with the same project IDs.
+\begin_inset Newline newline
+\end_inset
+
+Lots of queries implicitly assume that, so that they don't have to check
+ the project_id on every joined table.
 \end_layout
 
 \end_body

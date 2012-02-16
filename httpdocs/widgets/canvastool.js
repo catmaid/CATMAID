@@ -42,28 +42,27 @@ function CanvasTool()
                 alert('This browser doesn\'t provide means to serialize canvas to an image');
             }
             else {
-                console.log('rasterize');
-                window.open(canvasLayer.canvas.toDataURL('png'));
-                // POST request to local CAATMAID server
-                var data=canvasLayer.canvas.toDataURL('png');
-                var output=data.replace(/^data:image\/(png|jpg);base64,/, "");
-
-                 jQuery.ajax({
-                    url: "http://localhost:8080/foo/",
+                //window.open(canvasLayer.canvas.toDataURL('png'));
+                //return;
+                // POST request to server
+                var data=canvasLayer.canvas.toDataURL('png'),
+                    output=data.replace(/^data:image\/(png|jpg);base64,/, ""),
+                    fieldofview=canvasLayer.getFieldOfViewParameters(),
+                    senddata = {};
+                senddata['image'] = output;
+                senddata['x'] = fieldofview.x;
+                senddata['y'] = fieldofview.y;
+                senddata['width'] = fieldofview.width;
+                senddata['height'] = fieldofview.height;
+                jQuery.ajax({
+                    url: "dj/" + project.id + "/stack/" + stack.id + "/push_image",
                     type: "POST",
                     dataType: "json",
-                    data: {
-                      'data':output
-                    },
+                    data: senddata,
                     success: function (data) {
                       console.log('return', data);
                     }
                   });
-              // yields error:XMLHttpRequest cannot load http://localhost:8080/. Origin http://localhost is not allowed by Access-Control-Allow-Origin.
-              // http://www.mmt.inf.tu-dresden.de/forum/posts/list/246.page
-              // "Same Origin Policy"
-              // http://abhirama.wordpress.com/2008/11/03/apache-mod_proxy-in-ubuntu/
-
             }
         };
         controls.appendChild( button_rasterize );

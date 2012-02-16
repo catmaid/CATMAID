@@ -32,6 +32,17 @@ function CanvasLayer( stack )
         return;
     }
 
+    this.getFieldOfViewParameters = function()
+    {
+        var l = {
+            x: xindex,
+            y: yindex,
+            width: width,
+            height: height
+        };
+        return l;
+    }
+
     this.setFieldOfView = function()
     {
         var fv = stack.getFieldOfViewInPixel(),

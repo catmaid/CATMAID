@@ -311,26 +311,7 @@ var tracingWindowActions = [
       WindowMaker.show('statistics');
       return true;
     }
-  }),
-
-  new Action({
-    helpText: "Show 3D canvas view",
-    buttonID: "view_3d_button",
-    buttonName: '3d-view',
-    run: function (e) {
-      WindowMaker.show('3d-view');
-      return true;
-    }
-  }),
-
-  new Action({
-    helpText: "Show 3D WebGL view",
-    buttonID: "view_3d_webgl_button",
-    buttonName: '3d-view-webgl',
-    run: function (e) {
-      WindowMaker.show('3d-webgl-view');
-    }
-  }),
+  })
 /*
   new Action({
     helpText: "Show object tree as graph",
@@ -343,3 +324,24 @@ var tracingWindowActions = [
   })
   */
    ];
+
+if ( !Detector.webgl ) {
+  tracingWindowActions[tracingWindowActions.length] = new Action({
+    helpText: "Show 3D canvas view",
+    buttonID: "view_3d_button",
+    buttonName: '3d-view',
+    run: function (e) {
+      WindowMaker.show('3d-view');
+      return true;
+    }
+  });
+} else {
+  tracingWindowActions[tracingWindowActions.length] = new Action({
+    helpText: "Show 3D WebGL view",
+    buttonID: "view_3d_webgl_button",
+    buttonName: '3d-view-webgl',
+    run: function (e) {
+      WindowMaker.show('3d-webgl-view');
+    }
+  });
+}

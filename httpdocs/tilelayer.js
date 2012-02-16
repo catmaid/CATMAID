@@ -221,11 +221,11 @@ function TileLayer(
           if( tileSourceType === 1 ) {
             console.log('source type 1')
             tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
-            tiles[ i ][ j ].src = self.getTileURLRequest( c * tileWidth, r * tileHeight, tileWidth, tileHeight, stack.scale, stack.z );
+            tiles[ i ][ j ].src = self.getTileURL( tiles[ i ][ j ].alt );
           } else if ( tileSourceType === 2 ) {
             console.log('source type 2')
             tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
-            tiles[ i ][ j ].src = self.getTileURL( tiles[ i ][ j ].alt );
+            tiles[ i ][ j ].src = self.getTileURLRequest( c * tileWidth, r * tileHeight, tileWidth, tileHeight, stack.scale, stack.z );
           }
 
 				}

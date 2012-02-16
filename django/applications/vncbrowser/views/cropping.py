@@ -57,6 +57,9 @@ class ImagePart:
         self.y_dst = y_dst
         self.width = x_max_src - x_min_src
         self.height = y_max_src - y_min_src
+        # Complain if the width or the height is zero
+        if self.width == 0 or self.height == 0:
+            raise ValueError( "An image part must have an area, hence no extent should be zero!" )
 
     def get_image( self ):
         # Open the image
@@ -178,8 +181,12 @@ def extract_substack( job ):
                 cur_px_y_max = tile_size - 1 if ny < (num_y_tiles - 1) else px_y_max - y * tile_size
                 # Create an image part definition
                 path = get_tile_path(job, [x, y, z])
-                part = ImagePart(path, cur_px_x_min, cur_px_x_max, cur_px_y_min, cur_px_y_max, x_dst, y_dst)
-                image_parts.append( part )
+                try:
+                    part = ImagePart(path, cur_px_x_min, cur_px_x_max, cur_px_y_min, cur_px_y_max, x_dst, y_dst)
+                    image_parts.append( part )
+                except:
+                    # ignore failed slices
+                    pass
                 # Update y component of destination postition
                 y_dst += cur_px_y_max - cur_px_y_min
             # Update x component of destination postition

@@ -53,6 +53,7 @@ urlpatterns = patterns(
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/models$', 'vncbrowser.views.stack_models'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/z/(?P<z>\d+)/png$', 'vncbrowser.views.get_image'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tile$', 'vncbrowser.views.get_tile'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/push_image$', 'vncbrowser.views.push_image'),
     )
 
 # Cropping

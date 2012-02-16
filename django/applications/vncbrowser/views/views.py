@@ -684,3 +684,18 @@ def get_tile(request, project_id=None, stack_id=None):
         return newresponse
     else:
         return HttpResponse("Error in TileServer response.", mimetype="plain/text")
+
+def push_image(request, project_id=None, stack_id=None):
+    """ Push image to server with proper stack field-of-view """
+    params = urllib.urlencode(request.POST)
+    headers = {"Content-type": "application/x-www-form-urlencoded",
+                "Referer": "http://127.0.0.1"}
+    # TODO: Replace hard-coded URL to TileServer URL specified in settings.py
+    conn = httplib.HTTPConnection("127.0.0.1:8888")
+    conn.request("POST", "/labelupload", params, headers)
+    response = conn.getresponse()
+    if response.status == 200:
+        return HttpResponse("Image pushed to server.", mimetype="plain/text")
+    else:
+        return HttpResponse("Error in TileServer response.", mimetype="plain/text")
+

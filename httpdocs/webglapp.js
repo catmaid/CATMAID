@@ -215,11 +215,21 @@ function WebGLViewer(divID) {
   this.fullscreenWebGL = function()
   {
     var divID = 'viewer-3d-webgl-canvas';
+    var divID_jQuery = '#' + divID;
     if( THREEx.FullScreen.activated() ){
+        console.log($(divID_jQuery).width());
+        $(divID_jQuery).width(800);
+        $(divID_jQuery).height(700);
+        renderer.setSize( 800, 700 );
         THREEx.FullScreen.cancel();
+
     } else {
+        $(divID_jQuery).width(window.innerWidth);
+        $(divID_jQuery).height(window.innerHeight);
+        renderer.setSize( window.innerWidth, window.innerHeight );
         THREEx.FullScreen.request(document.getElementById(divID));
     };
+
   }
 
   this.createActiveNode = function( x, y, z)

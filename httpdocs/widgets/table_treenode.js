@@ -165,21 +165,19 @@ var TreenodeTable = new function()
     $.each(asInitVals, function(index, value) {
       if(value==="Search")
         return;
-      ns.oTable.fnFilter(value, index);
+      if(value) {
+        ns.oTable.fnFilter(value, index);
+      }
     });
 
     $("#treenodetable thead input").keyup(function () { /* Filter on the column (the index) of this element */
-      ns.oTable.fnFilter(this.value, $("thead input").index(this));
-      asInitVals[$("thead input").index(this)] = this.value;
+      var i = $("thead input").index(this) + 2;
+      ns.oTable.fnFilter(this.value, i);
+      asInitVals[i] = this.value;
     });
 
-  /*
-   * Support functions to provide a little bit of 'user friendlyness' to the textboxes in
-   * the footer
-   */
-
     $("#treenodetable thead input").each(function (i) {
-      asInitVals[i] = this.value;
+      asInitVals[i+2] = this.value;
     });
 
     $("#treenodetable thead input").focus(function () {
@@ -189,11 +187,16 @@ var TreenodeTable = new function()
       }
     });
 
-    $("#treenodetable thead input").blur(function (i) {
+    $("#treenodetable thead input").blur(function (event) {
       if (this.value === "") {
         this.className = "search_init";
-        this.value = asInitVals[$("thead input").index(this)];
+        this.value = asInitVals[$("thead input").index(this)+2];
       }
+    });
+
+    $('select#search_type').change( function() {
+      ns.oTable.fnFilter( $(this).val(), 1 );
+      asInitVals[1] = $(this).val();
     });
 
     $("#treenodetable tbody tr").live('dblclick', function () {

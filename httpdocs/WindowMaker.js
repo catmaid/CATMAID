@@ -221,8 +221,14 @@ var WindowMaker = new function()
         '<thead>' +
           '<tr>' +
             '<th>id</th>' +
-            '<th>type<input type="text" name="search_type" value="Search" class="search_init" /></th>' +
-            '<th>tags<input type="text" name="search_labels" value="Search" class="search_init" /></th>' +
+            '<th>type' +
+        '' +
+        '<select name="search_type" id="search_type" class="search_init">' +
+        '<option value="">None</option><option value="R">Root</option><option value="L">Leaf</option>' +
+        '<option value="B">Branch</option><option value="S">Slab</option></select>' +
+        '</th>' +
+        // <input type="text" name="search_type" value="Search" class="search_init" />
+            '<th>tags<input type="text" name="search_labels" id="search_labels" value="Search" class="search_init" /></th>' +
             '<th>confidence</th>' +
             '<th>x</th>' +
             '<th>y</th>' +

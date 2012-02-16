@@ -49,11 +49,7 @@ $columnToFieldArray = array( "tid",
 function fnColumnToField( $i )
 {
 	global $columnToFieldArray;
-	// FIXME: perhaps should just be an error?
-	if ( $i < 0 || $i >= count($columnToFieldArray) )
-		return "tid";
-	else
-		return $columnToFieldArray[$i];
+	return $columnToFieldArray[$i];
 }
 
 
@@ -330,23 +326,21 @@ try {
 		$skip = False;
 		// if search by node type is set, only add this row
 		// if it corresponds to the nodes we want to display
-		// 0 -> node type
-		// 1 -> label			
-		if ( $_REQUEST['sSearch_0'] != "" )
+		// 1 -> node type
+		// 2 -> label			
+		if ( $_REQUEST['sSearch_1'] != "" )
 		{
-			if( strtoupper($_REQUEST['sSearch_0']) != $val["nodetype"])
+			if( strtoupper($_REQUEST['sSearch_1']) != $val["nodetype"])
 			{
 				$skip = True;
 			}
 		}
 
-		if ( $_REQUEST['sSearch_1'] != "" )
+		if ( $_REQUEST['sSearch_2'] != "" )
 		{
-			$pos = strpos(strtoupper($vallabel), strtoupper($_REQUEST['sSearch_1']));
+			$pos = strpos(strtoupper($vallabel), strtoupper($_REQUEST['sSearch_2']));
 
-			if ( $pos !== false ) {
-				$skip = False;
-			} else {
+			if ( $pos === false ) {
 				$skip = True;
 			};
 

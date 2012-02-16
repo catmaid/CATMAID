@@ -674,9 +674,13 @@ def get_tile(request, project_id=None, stack_id=None):
                 "Referer": "http://127.0.0.1"}
     # TODO: Replace hard-coded URL to TileServer URL specified in settings.py
     conn = httplib.HTTPConnection("127.0.0.1:8888")
-    conn.request("GET", "/", params, headers)
+    # Setting the parameters as body (3rd argument) is not parsed by Tornado webserver
+    # We need to attach them to the request URL
+    conn.request("GET", "/?"+ params, '', headers)
     response = conn.getresponse()
-    image = Image.open(cStringIO.StringIO(response.read()))
+    read_response = response.read()
+    print >> sys.stderr, read_response, params
+    image = Image.open(cStringIO.StringIO(read_response))
     if response.status == 200:
         # serialize to HTTP response
         newresponse = HttpResponse(mimetype="image/png")
@@ -692,7 +696,7 @@ def push_image(request, project_id=None, stack_id=None):
                 "Referer": "http://127.0.0.1"}
     # TODO: Replace hard-coded URL to TileServer URL specified in settings.py
     conn = httplib.HTTPConnection("127.0.0.1:8888")
-    conn.request("POST", "/labelupload", params, headers)
+    conn.request("POST", "/labelupload/?"+params, '', headers)
     response = conn.getresponse()
     if response.status == 200:
         return HttpResponse("Image pushed to server.", mimetype="plain/text")

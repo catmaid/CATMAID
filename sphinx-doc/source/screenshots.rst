@@ -16,6 +16,12 @@ The Skeleton Node and Connector Table
 .. figure:: _static/screenshots/tables.png
 
 
+WebGL Neuronal Morphology Viewer
+
+.. figure:: _static/screenshots/webgl.png
+   :alt: WebGL Viewer
+   
+
 ..  .. figure:: _static/screenshots/stats.png
     The Statistics Widget
    .. figure:: _static/screenshots/ui.png

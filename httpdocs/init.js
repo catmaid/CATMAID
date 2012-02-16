@@ -32,6 +32,7 @@ var requestQueue;
 var project;
 var project_view;
 var projects_available;
+var projects_available_ready = false;
 
 var project_menu;
 var project_menu_open;
@@ -243,6 +244,7 @@ function handle_updateProjects(status, text, xml) {
       alert(e.error);
     } else {
       // maintain a list of projects/sessions available
+      projects_available_ready = false;
       if (projects_available)
       {
         delete projects_available;
@@ -289,6 +291,7 @@ function handle_updateProjects(status, text, xml) {
           pp.appendChild(catalogueElement);
         }
       }
+      projects_available_ready = true;
       project_menu_open.update(e)
     }
     if (project) {
@@ -813,21 +816,32 @@ var realInit = function()
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
 
-	var openStackFunction = function () {
-		if ( pid && sids.length > 0 )
-		{
-			for ( var i = 0; i < sids.length; ++i )
-			{
-				openProjectStack( pid, sids[ i ] )
-			}
-		}
-	}
-
 	//! auto login by url (unsafe as can be but convenient)
 	if ( account && password )
-		login( account, password, openStackFunction );
+		login( account, password );
 	else
-		login( undefined, undefined, openStackFunction );
+		login();
+
+	if ( pid && sids.length > 0 )
+	{
+		// Make sure that the client-side project list is ready before
+		// we load the stacks.
+		var wait_for_projects = function()
+		{
+			if ( projects_available_ready )
+			{
+				for ( var i = 0; i < sids.length; ++i )
+				{
+					openProjectStack( pid, sids[ i ] )
+				}
+			}
+			else
+			{
+				setTimeout(wait_for_projects, 10);
+			}
+		};
+		wait_for_projects();
+	}
 	
 	// the text-label toolbar
 	

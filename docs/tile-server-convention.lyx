@@ -321,15 +321,27 @@ z z location in what volumina calls physical coordinates, i.e.
 \end_layout
 
 \begin_layout Description
-dx the tile width, should match the metadata tile_width
+width the tile width, should match the metadata tile_width
 \end_layout
 
 \begin_layout Description
-dy the tile height, should match the metadata tile_height
+height the tile height, should match the metadata tile_height
 \end_layout
 
 \begin_layout Description
 scale a float scale factor, defined as 1/2**zoomlevel
+\end_layout
+
+\begin_layout Description
+row e.g.
+ set to 'y' to mean that the row axis (from top-left to bottom-left) uses
+ the third axis of the dataset
+\end_layout
+
+\begin_layout Description
+col e.g.
+ set to 'x' to mean that the column axis (from top-left to top-right) uses
+ the forth axis of the dataset
 \end_layout
 
 \begin_layout Section
@@ -380,7 +392,7 @@ row e.g.
 \end_layout
 
 \begin_layout Description
-column e.g.
+col e.g.
  set to 'x' to mean that the column axis (from top-left to top-right) uses
  the forth axis of the dataset
 \end_layout

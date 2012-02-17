@@ -257,8 +257,10 @@ function TileLayer(
     return baseURL + "?" + $.param({
         x: x,
         y: y,
-        dx : tileWidth,
-        dy : tileHeight,
+        width : tileWidth,
+        height : tileHeight,
+        row : 'y',
+        col : 'x',
         scale : scale, // defined as 1/2**zoomlevel
         z : z});
     }

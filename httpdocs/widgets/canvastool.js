@@ -49,11 +49,17 @@ function CanvasTool()
                     output=data.replace(/^data:image\/(png|jpg);base64,/, ""),
                     fieldofview=canvasLayer.getFieldOfViewParameters(),
                     senddata = {};
-                senddata['image'] = output;
+
                 senddata['x'] = fieldofview.x;
                 senddata['y'] = fieldofview.y;
+                senddata['z'] = fieldofview.y; // TODO
+                senddata['row'] = 'y';
+                senddata['col'] = 'x';
                 senddata['width'] = fieldofview.width;
                 senddata['height'] = fieldofview.height;
+                senddata['image'] = output;
+
+                // z, t
                 jQuery.ajax({
                     url: "dj/" + project.id + "/stack/" + stack.id + "/push_image",
                     type: "POST",
@@ -67,7 +73,6 @@ function CanvasTool()
         };
         controls.appendChild( button_rasterize );
 
-        
 
         var button = document.createElement("button");
         button.appendChild( document.createTextNode('Clear canvas') );
@@ -79,30 +84,40 @@ function CanvasTool()
         controls.appendChild( button );
 
         var brush = document.createElement("div");
-        var html = '<button id="drawing-mode">Enter drawing mode</button>' +
-            '<div style="display:none;" id="drawing-mode-options">';
+        var html = '<div style="display:none;" id="drawing-mode-options">';
+        // '<button id="drawing-mode">Cancel drawing mode</button>' +
         brush.innerHTML = html;
         controls.appendChild( brush );
 
         // color wheel
-        var chweel = document.createElement("div");
-        chweel.id = "color-wheel-canvas";
-        controls.appendChild( chweel );
+        //var chweel = document.createElement("div");
+        //chweel.id = "color-wheel-canvas";
+        //controls.appendChild( chweel );
 
         // slider for brush size
         var widthSlider = document.createElement("div");
         widthSlider.id = "width-slider-canvas";
         controls.appendChild( widthSlider );
 
+        var widthSliderField = document.createElement("input");
+        widthSliderField.id = "width-slider-field";
+        widthSliderField.size = "3";
+        controls.appendChild( widthSliderField );
+
+        var labelList = document.createElement("ul");
+        labelList.id = "labellist-canvas";
+        controls.appendChild( labelList );
+
         // ******************
         stack.getView().appendChild( controls );
         // ******************
 
-        var drawingModeEl = document.getElementById('drawing-mode'),
-            drawingOptionsEl = document.getElementById('drawing-mode-options'),
+        var drawingOptionsEl = document.getElementById('drawing-mode-options'),
             drawingColorEl = document.getElementById('drawing-color'),
             drawingLineWidthEl = document.getElementById('drawing-line-width');
 
+        /*
+        var drawingModeEl = document.getElementById('drawing-mode');
         drawingModeEl.onclick = function() {
             canvasLayer.canvas.isDrawingMode = !canvasLayer.canvas.isDrawingMode;
             if (canvasLayer.canvas.isDrawingMode) {
@@ -115,14 +130,16 @@ function CanvasTool()
                 drawingModeEl.className = '';
                 drawingOptionsEl.style.display = 'none';
             }
-        };
+        };*/
 
+        /*
         var cw = Raphael.colorwheel($("#color-wheel-canvas")[0],150);
         cw.color("#000000");
         cw.onchange(function(color)
         {
           canvasLayer.canvas.freeDrawingColor = 'rgb('+parseInt(color.r)+','+parseInt(color.g)+','+parseInt(color.b)+')';
         });
+        */
 
         // append jquery elements
         var widthslider = $("#width-slider-canvas").slider({
@@ -132,9 +149,15 @@ function CanvasTool()
                   step: 2,
                   slide: function(event, ui) {
                     canvasLayer.canvas.freeDrawingLineWidth = ui.value;
+                    widthSliderField.value = "" + ui.value;
                   }
           });
         canvasLayer.canvas.freeDrawingLineWidth = 11;
+        widthSliderField.value = "11";
+
+        // labels
+        createLabels( );
+        setColor( 'rgba(255,0,0,1.0)' );
 
     };
 
@@ -248,6 +271,59 @@ function CanvasTool()
             return true;
         } else {
             return false;
+        }
+    };
+
+    this.labels = [
+
+        {
+            "name": "cell membrane",
+            "color": 'rgb(255,0,0)',
+            "id": 1
+        },
+        {
+            "name": "cell interior",
+            "color": 'rgb(0,255,0)',
+            "id": 2
+        },
+        {
+            "name": "mitochondria",
+            "color": 'rgb(0,0,255)',
+            "id": 3
+        },
+        {
+            "name": "eraser",
+            "color": 'rgba(255,255,255,1.0)',
+            "id": 4
+        }
+
+    ];
+
+    var setColor = function( color ) {
+        canvasLayer.canvas.freeDrawingColor = color;
+    };
+
+    this.addLabelToDiv = function( label ) {
+        var labellistdiv = $("#labellist-canvas");
+        var newElement = $('<li/>');
+        newElement.attr('id', 'label-object-' + label["name"]);
+        newElement.text( label["id"] + ": " + label["name"] );
+        linkElement = $('<a/>');
+        linkElement.attr('href', '#');
+        linkElement.text("select");
+        linkElement.click(function (e) {
+            setColor( label["color"] );
+        });
+        newElement.append(linkElement);
+        newElement.css('color', "#FFFFFF");
+        labellistdiv.append(newElement);
+
+    }
+
+    /* Create a set of labels */
+    var createLabels = function( ) {
+        for( j = 0; j < self.labels.length; ++j ) {
+            self.addLabelToDiv( self.labels[j] );
         }
     };
 

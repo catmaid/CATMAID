@@ -164,13 +164,14 @@ function CanvasLayer( stack )
 
     // CURSOR: "url(widgets/themes/kde/svg-circle.cur) 15 15, crosshair"
     var canvas = new fabric.Canvas( 'myCanvas' , {'interactive':true, CURSOR:'crosshair'} );
-
+    canvas.isDrawingMode = true;
+    self.canvas = canvas;
     self.setFieldOfView();
 
-    canvas.add(
+/*    canvas.add(
         new fabric.Rect({ top: 50, left: 50, width: 50, height: 50, fill: '#f55' })
     );
-    self.canvas = canvas;
+
 
     var rect = new fabric.Rect({
         top: 100,
@@ -180,7 +181,8 @@ function CanvasLayer( stack )
         fill: 'red'
     });
     canvas.add(rect);
-
+*/
+    
     this.unregister = function()
     {
         stack.getView().removeChild( view );

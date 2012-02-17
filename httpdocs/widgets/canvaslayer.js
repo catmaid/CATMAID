@@ -27,7 +27,8 @@ function CanvasLayer( stack )
 
     this.resize = function( width, height )
     {
-        this.setFieldOfView();
+        // TODO: Resize is called too much
+        //this.setFieldOfView();
         self.redraw();
         return;
     }
@@ -150,7 +151,7 @@ function CanvasLayer( stack )
     view.id = "canvasOverlayId";
     view.style.zIndex = 5;
     view.style.opacity = 1.0;
-    // view.style.border = "solid red 1px";
+    //view.style.border = "solid red 1px";
     //view.style.position = 'absolute';
     self.view = view;
 

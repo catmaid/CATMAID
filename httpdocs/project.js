@@ -259,7 +259,7 @@ function Project( pid, ptitle )
 		editable = bool;
 		if (editable) {
 			document.getElementById("toolbox_edit").style.display = "block";
-			document.getElementById("toolbox_data").style.display = "block";
+			//document.getElementById("toolbox_data").style.display = "block";
 		}
 		else 
 		{

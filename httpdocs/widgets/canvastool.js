@@ -257,6 +257,28 @@ function CanvasTool()
             }
         }),
 
+		new Action({
+			helpText: "Move up 1 slice in z (or 10 with Shift held)",
+			keyShortcuts: {
+				',': [ 44, 188 ]
+			},
+			run: function (e) {
+                console.log('one up')
+				return true;
+			}
+		}),
+
+		new Action({
+			helpText: "Move down 1 slice in z (or 10 with Shift held)",
+			keyShortcuts: {
+				'.': [ 46, 190 ]
+			},
+			run: function (e) {
+                console.log('one down')
+				return true;
+			}
+		}),
+
     ];
 
     var keyCodeToAction = getKeyCodeToActionMap(actions);
@@ -275,7 +297,11 @@ function CanvasTool()
     };
 
     this.labels = [
-
+        {
+            "name": "eraser",
+            "color": 'rgba(255,255,255,1.0)',
+            "id": 0
+        },
         {
             "name": "cell membrane",
             "color": 'rgb(255,0,0)',
@@ -290,11 +316,6 @@ function CanvasTool()
             "name": "mitochondria",
             "color": 'rgb(0,0,255)',
             "id": 3
-        },
-        {
-            "name": "eraser",
-            "color": 'rgba(255,255,255,1.0)',
-            "id": 4
         }
 
     ];

@@ -965,7 +965,6 @@ ALTER TABLE stack ADD COLUMN tile_height integer NOT NULL DEFAULT 256;
 ALTER TABLE stack DROP COLUMN IF EXISTS tile_source_type;
 ALTER TABLE overlay DROP COLUMN IF EXISTS tile_source_type;
 ALTER TABLE stack ADD COLUMN tile_source_type integer NOT NULL DEFAULT 1;
-ALTER TABLE overlay ADD COLUMN tile_source_type integer NOT NULL DEFAULT 1;
 '
   ),
 

@@ -631,36 +631,62 @@ def goto_connector(request, project_id=None, connector_id=None, stack_id=None, l
     return HttpResponseRedirect(settings.CATMAID_URL + "?" + urllib.urlencode(parameters))
 
 def get_stack_info(project_id=None, stack_id=None):
-    """ Returns a dictionary with relevant information for stacks
+    """ Returns a dictionary with relevant information for stacks.
+    Depending on the tile_source_type, get information from database
+    or from tile server directly
     """
+    # TODO: this should completely map project.stack.php
+    
     p = get_object_or_404(Project, pk=project_id)
     s = get_object_or_404(Stack, pk=stack_id)
-    result={
-        'project_id':project_id,
-        'project_title':p.title,
-        'stack_id': stack_id,
-        'stack_title': s.title,
-        'stack_scale': {
-            'x': float(s.resolution.x),
-            'y': float(s.resolution.y),
-            'z': float(s.resolution.z)
-        },
-        'stack_dimension': {
-            'x': int(s.dimension.x),
-            'y': int(s.dimension.y),
-            'z': int(s.dimension.z)
-        },
-        'stack_scaled_unit': "nm",
-        'stack_comment':s.comment,
-        'stack_image_base':s.image_base,
-        # TODO: fix
-        'stack_translation': {
-            'x': 0.0,
-            'y': 0.0,
-            'z': 0.0
+
+    if int(s.tile_source_type) == 2:
+        # request appropriate stack metadata from tile source
+        url=s.image_base.rstrip('/').lstrip('http://')
+        # Important: Do not use localhost, but 127.0.0.1 instead
+        # to prevent an namespace lookup error (gaierror)
+        # Important2: Do not put http:// in front!
+        conn = httplib.HTTPConnection(url)
+        conn.request('GET', '/metadata')
+        response = conn.getresponse()
+        # read JSON response according to metadata convention
+        # Tornado reponse is escaped JSON string
+        read_response = response.read()
+        # convert it back to dictionary str->dict
+        return json.loads(read_response)
+    else:
+        result={
+            'sid': int(s.id),
+            'pid': int(p.id),
+            'ptitle': p.title,
+            'stitle': s.title,
+            'image_base': s.image_base,
+            'min_zoom_level': int(s.min_zoom_level),
+            'file_extension': s.file_extension,
+            'editable': 1, # TODO: needs fix
+            'translation': {
+                'x': 0.0,
+                'y': 0.0,
+                'z': 0.0
+            }, # TODO: use project_stack
+            'resolution': {
+                'x': float(s.resolution.x),
+                'y': float(s.resolution.y),
+                'z': float(s.resolution.z)
+            },
+            'dimension': {
+                'x': int(s.dimension.x),
+                'y': int(s.dimension.y),
+                'z': int(s.dimension.z)
+            },
+            'tile_height': int(s.tile_height),
+            'tile_width': int(s.tile_width),
+            'tile_source_type': int(s.tile_source_type),
+            'broken_slices': '',
+            'trakem2_project': int(s.trakem2_project),
+            'overlay': ''
         }
-        # TODO: check if associated HDF5 exists. if so, extract the channel information
-    }
+
     return result
 
 @catmaid_login_required

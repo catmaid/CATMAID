@@ -36,7 +36,9 @@ function Stack(
 		skip_planes,				//!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
 		trakem2_project,			//!< {boolean} that states if a TrakEM2 project is available for this stack
 		num_zoom_levels,			//!< {int} that defines the number of available non-artificial zoom levels
-		max_zoom_level				//!< {int} that defines the maximum available zoom level
+		max_zoom_level,				//!< {int} that defines the maximum available zoom level
+		tile_source_type,			//!< {int} that defines the tile source type
+		labelupload_url 	        //!< {String} that defines the label upload URL for labels (for tile_source_type==2)
 )
 {
 	var n = dimension.length;
@@ -400,6 +402,9 @@ function Stack(
 	self.resolution = resolution;
 	self.translation = translation;
 	self.dimension = dimension;
+
+	self.tile_source_type = tile_source_type;
+	self.labelupload_url = labelupload_url;
 	
 	var tool = null;
 	var layers = {};

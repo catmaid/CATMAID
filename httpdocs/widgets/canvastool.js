@@ -59,16 +59,20 @@ function CanvasTool()
                 senddata['height'] = fieldofview.height;
                 senddata['image'] = output;
 
-                // z, t
-                jQuery.ajax({
-                    url: "dj/" + project.id + "/stack/" + stack.id + "/push_image",
-                    type: "POST",
-                    dataType: "json",
-                    data: senddata,
-                    success: function (data) {
-                      console.log('return', data);
-                    }
-                  });
+                if( stack.labelupload_url !== '' ) {
+                    // z, t
+                    jQuery.ajax({
+                        url: stack.labelupload_url, // "dj/" + project.id + "/stack/" + stack.id + "/push_image", // stack.labelUploadURL
+                        type: "POST",
+                        dataType: "json",
+                        data: senddata,
+                        success: function (data) {
+                          console.log('return', data);
+                        }
+                      });
+                } else {
+                    alert('For this stack is no label upload URL for POST requests defined');
+                }
             }
         };
         controls.appendChild( button_rasterize );

@@ -245,7 +245,9 @@ var SkeletonAnnotations = new function()
                 alert("Getting the ancestry of the skeleton "+node.skeleton_id+" failed with HTTP status code "+status);
               }
             });
-
+            // And fetch new nodes from the database, since we now
+            // fetch all the nodes in the active skeleton
+            self.updateNodes();
           }
           atn.set(node);
           // refresh all widgets except for the object tree
@@ -1308,6 +1310,10 @@ var SkeletonAnnotations = new function()
      */
     this.updateNodes = function (callback)
     {
+      var activeSkeleton = SkeletonAnnotations.getActiveSkeletonId();
+      if (!activeSkeleton) {
+        activeSkeleton = 0;
+      }
   /*
       console.log("In updateTreelinenodes");
       console.log("scale is: "+scale);
@@ -1348,7 +1354,8 @@ var SkeletonAnnotations = new function()
         left: (stack.x - (stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x,
         width: (stack.viewWidth / stack.scale) * stack.resolution.x,
         height: (stack.viewHeight / stack.scale) * stack.resolution.y,
-        zres: stack.resolution.z
+        zres: stack.resolution.z,
+        as: activeSkeleton
       }, function (status, text, xml) {
         handle_updateNodes(status, text, xml, callback);
       },

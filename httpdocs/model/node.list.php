@@ -116,6 +116,7 @@ $left = isset( $_REQUEST[ 'left' ] ) ? floatval( $_REQUEST[ 'left' ] ) : 0;
 $width = isset( $_REQUEST[ 'width' ] ) ? floatval( $_REQUEST[ 'width' ] ) : 0;
 $height = isset( $_REQUEST[ 'height' ] ) ? floatval( $_REQUEST[ 'height' ] ) : 0;
 $zres = isset( $_REQUEST[ 'zres' ] ) ? floatval( $_REQUEST[ 'zres' ] ) : 0;
+$active_skeleton_id = isset( $_REQUEST[ 'as' ] ) ? intval( $_REQUEST[ 'as' ] ) : 0;
 
 // the scale factor to volume bound the query in z-direction based on the z-resolution
 $zbound = 1.0;
@@ -158,6 +159,12 @@ if (! $db->begin() ) {
 
 try {
 
+  if ($active_skeleton_id) {
+    $skeleton_condition = "(skeleton_id = $active_skeleton_id)";
+  } else {
+	  $skeleton_condition = 'FALSE';
+  }
+
   $treenodes = $db->getResult(
     "SELECT treenode.id AS id,
          treenode.parent_id AS parentid,
@@ -170,13 +177,15 @@ try {
          ((treenode.location).z - $z) AS z_diff,
          skeleton_id
      FROM treenode
-     WHERE treenode.project_id = $pid
-      AND (treenode.location).x >= $left
-      AND (treenode.location).x <= ($left + $width)
-      AND (treenode.location).y >= $top
-      AND (treenode.location).y <= ($top + $height)
-      AND (treenode.location).z >= ($z - $zbound * $zres)
-      AND (treenode.location).z <= ($z + $zbound * $zres)
+     WHERE
+      $skeleton_condition
+      OR (treenode.project_id = $pid
+          AND (treenode.location).x >= $left
+          AND (treenode.location).x <= ($left + $width)
+          AND (treenode.location).y >= $top
+          AND (treenode.location).y <= ($top + $height)
+          AND (treenode.location).z >= ($z - $zbound * $zres)
+          AND (treenode.location).z <= ($z + $zbound * $zres))
       ORDER BY parentid DESC, id, z_diff
       LIMIT $limit"
   );

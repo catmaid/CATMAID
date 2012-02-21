@@ -9,7 +9,7 @@ function CanvasLayer( stack )
 
     this.setOpacity = function( val )
     {
-        self.view.style.opacity = val+"";
+        self.view.style.opacity = val;
         opacity = val;
     }
 
@@ -144,13 +144,13 @@ function CanvasLayer( stack )
     var self = this;
 
     // internal opacity variable
-    var opacity = 100;
+    var opacity = 50;
 
     var view = document.createElement("div");
     view.className = "canvasOverlay";
     view.id = "canvasOverlayId";
     view.style.zIndex = 5;
-    view.style.opacity = 1.0;
+    view.style.opacity = 0.5;
     //view.style.border = "solid red 1px";
     //view.style.position = 'absolute';
     self.view = view;

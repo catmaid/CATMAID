@@ -695,6 +695,7 @@ function TracingTool()
         }
     }) );
 
+
   var keyCodeToAction = getKeyCodeToActionMap(actions);
 
   /** This function should return true if there was any action

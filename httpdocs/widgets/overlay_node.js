@@ -73,11 +73,9 @@ var SkeletonElements = new function()
     if (nextNodeIndex < nodePool.length) {
       node = nodePool[nextNodeIndex];
       reuseNode(node, id, parent, r, x, y, z, zdiff, confidence, skeleton_id, is_root_node);
-      if (is_root_node && node.line) node.line.hide();
     } else {
       node = new this.Node(id, paper, parent, r, x, y, z, zdiff, confidence, skeleton_id, is_root_node);
       nodePool.push(node);
-      if (node.line) node.line.toBack();
     }
     nextNodeIndex += 1;
     return node;
@@ -116,6 +114,7 @@ var SkeletonElements = new function()
     this.c = null; // The Raphael circle for drawing
     this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
     this.line = paper.path(); // The Raphael line element that represents an edge between nodes
+    this.line.toBack();
 
     // The member functions:
     this.setXY = setXY;
@@ -178,6 +177,8 @@ var SkeletonElements = new function()
         node.mc.attr(newCoords);
       }
     }
+    if (node.isroot && node.line)
+      node.line.hide();
   };
 
   /** Trigger the redrawing of the lines with parent, children and connectors.

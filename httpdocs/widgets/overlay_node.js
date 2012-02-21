@@ -181,8 +181,13 @@ var SkeletonElements = new function()
         node.mc.attr(newCoords);
       }
     }
-    if (node.isroot && node.line)
+    if (node.line) {
       node.line.hide();
+    }
+    if (node.number_text) {
+      node.number_text.remove();
+      node.number_text = null;
+    }
   };
 
   /** Trigger the redrawing of the lines with parent, children and connectors.

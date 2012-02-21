@@ -148,6 +148,10 @@ var SkeletonElements = new function()
     if (node.line) {
       node.line.hide();
     }
+    if (node.number_text) {
+      node.number_text.remove();
+      node.number_text = null;
+    }
   };
 
   /** Takes an existing Node and sets all the proper members as given, and resets the children and connectors. */

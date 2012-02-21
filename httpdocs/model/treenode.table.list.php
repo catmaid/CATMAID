@@ -254,7 +254,7 @@ try {
 		$sRow = "";
 
 		$sRow .= "[";
-		$sRow .= '"'.addslashes($val["tid"]).'",';
+		$sRow .= json_encode($val["tid"]).',';
 
 		// find node type
 		// R : root
@@ -304,22 +304,21 @@ try {
 			$out = '';
 		}
 		$vallabel = $out;
-		$sRow .= '"'.addslashes($out).'",';
+		$sRow .= json_encode($out).',';
+
+		$sRow .= json_encode($val["confidence"]).',';
+
+		$sRow .= json_encode(sprintf("%.2f",$val["x"])).',';
+		$sRow .= json_encode(sprintf("%.2f",$val["y"])).',';
+		$sRow .= json_encode(sprintf("%.2f",$val["z"])).',';
 
 
-		$sRow .= '"'.addslashes($val["confidence"]).'",';
-
-		$sRow .= '"'.addslashes(sprintf("%.2f",$val["x"])).'",';
-		$sRow .= '"'.addslashes(sprintf("%.2f",$val["y"])).'",';
-		$sRow .= '"'.addslashes(sprintf("%.2f",$val["z"])).'",';
-
-
-		$sRow .= '"'.addslashes($val["radius"]).'",';
-		$sRow .= '"'.addslashes($val["username"]).'",';
+		$sRow .= json_encode($val["radius"]).',';
+		$sRow .= json_encode($val["username"]).',';
 
 
 		// last modified
-		$sRow .= '"'.addslashes($val["last_modified"]).'"';
+		$sRow .= json_encode($val["last_modified"]);
 		
 		$sRow .= "]";
 		

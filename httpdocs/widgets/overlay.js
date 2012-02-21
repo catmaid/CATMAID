@@ -1440,6 +1440,65 @@ var SkeletonAnnotations = new function()
       }
     };
 
+    this.goToAdjacentBranchOrEndNode = function(next) {
+      var foundNode, originalActiveNode, current, numberOfChildren, id;
+      if (null !== atn.id) {
+        foundNode = false;
+        originalActiveNode = nodes[atn.id];
+        current = originalActiveNode;
+        while (true) {
+          if ((!next) && (null === current.parent)) {
+            if (originalActiveNode === current) {
+              alert("You are already at the root node");
+            } else {
+              // Then we reached the root node:
+              foundNode = true;
+            }
+            break;
+          }
+          numberOfChildren = countProperties(current.children);
+          if (next && (numberOfChildren === 0)) {
+            if (originalActiveNode === current) {
+              alert("You are already at an end node");
+            } else {
+              // Then we reached an end node:
+              foundNode = true;
+            }
+            break;
+          }
+          if (next) {
+            if (numberOfChildren > 1) {
+              alert("There are multiple possible next branch / end nodes");
+              break;
+            }
+            // Otherwise there must be just one child node:
+            for( id in current.children ) {
+              if (current.children.hasOwnProperty(id)) {
+                current = current.children[id];
+                break;
+              }
+            }
+          } else {
+            // Going to the previous node is easier:
+            current = current.parent;
+          }
+          if (countProperties(current.children) > 1) {
+            foundNode = true;
+            break;
+          }
+        }
+        if (foundNode) {
+          project.moveTo(
+            self.pix2physZ(current.z),
+            self.pix2physY(current.y),
+            self.pix2physX(current.x));
+          window.setTimeout("SkeletonAnnotations.staticSelectNode( " + current.id + ", " + atn.skeleton_id + " )", 1000);
+        }
+      } else {
+        alert("No active node selected; can't find previous branch point");
+      }
+    }
+
     // Commands for the sub-buttons of the tracing tool
     this.tracingCommand = function (m) {
       switch (m) {
@@ -1499,6 +1558,12 @@ var SkeletonAnnotations = new function()
           });
 
         });
+        break;
+      case "gonextbranch":
+        self.goToAdjacentBranchOrEndNode(true);
+        break;
+      case "goprevbranch":
+        self.goToAdjacentBranchOrEndNode(false);
         break;
       case "skelsplitting":
         if (atn !== null) {

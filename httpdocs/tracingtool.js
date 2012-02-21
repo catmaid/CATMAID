@@ -366,6 +366,29 @@ function TracingTool()
   } ) );
 
   this.addAction( new Action({
+    helpText: "Go to next branch or end point",
+    keyShortcuts: {
+      "V": [ 86 ]
+    },
+    run: function (e) {
+      tracingLayer.svgOverlay.tracingCommand('gonextbranch');
+      return true;
+    }
+  } ) );
+
+  this.addAction( new Action({
+    helpText: "Go to previous branch or end point",
+    keyShortcuts: {
+      "B": [ 66 ]
+    },
+    run: function (e) {
+      tracingLayer.svgOverlay.tracingCommand('goprevbranch');
+      return true;
+    }
+  } ) );
+
+
+  this.addAction( new Action({
     helpText: "Deselect the active node",
     keyShortcuts:  {
       "D": [ 68 ]

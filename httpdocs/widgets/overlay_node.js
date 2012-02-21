@@ -108,6 +108,7 @@ var SkeletonElements = new function()
     this.y = y;
     this.z = z;
     this.zdiff = zdiff;
+    this.display = Math.abs(zdiff) < 1.1;
     this.confidence = confidence;
     this.skeleton_id = skeleton_id;
     this.isroot = is_root_node;
@@ -162,6 +163,7 @@ var SkeletonElements = new function()
     node.y = y;
     node.z = z;
     node.zdiff = zdiff;
+    node.display = Math.abs(zdiff) < 1.1;
     node.confidence = confidence;
     node.skeleton_id = skeleton_id;
     node.isroot = isroot;
@@ -267,6 +269,9 @@ var SkeletonElements = new function()
   var drawLineToParent = function (node) {
     var parent = node.parent;
     var lineColor;
+    if (!(node.display || (parent && node.parent.display))) {
+      return;
+    }
     if (parent) {
       lineColor = node.colorFromZDiff(parent.zdiff, parent.skeleton_id);
       if (node.line) {

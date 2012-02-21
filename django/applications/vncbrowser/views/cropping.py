@@ -29,9 +29,10 @@ file_extension = "tiff"
 class CropJob:
     """ A small container class to keep information about the cropping
     job to be done. Stack ids can be passed as single integer, a list of
-    integers.
+    integers. If no output_path is given, a random one (based on the
+    settings) is generated.
     """
-    def __init__(self, user, project_id, stack_ids, x_min, x_max, y_min, y_max, z_min, z_max, zoom_level):
+    def __init__(self, user, project_id, stack_ids, x_min, x_max, y_min, y_max, z_min, z_max, zoom_level, output_path=None):
         self.user = user
         self.project_id = int(project_id)
         self.project = get_object_or_404(Project, pk=project_id)
@@ -52,6 +53,11 @@ class CropJob:
         self.z_min = float(z_min)
         self.z_max = float(z_max)
         self.zoom_level = int(zoom_level)
+        # Create an output path if not already present
+        if output_path is None:
+            file_name = file_prefix + id_generator() + "." + file_extension
+            output_path = os.path.join(settings.TMP_DIR, file_name)
+        self.output_path = output_path
 
 class ImagePart:
     """ A part of a 2D image where height and width are not necessarily
@@ -145,8 +151,8 @@ def addMetaData( path, job, result ):
     """
     # Add resolution information in pixel per nanometer. The stack info
     # available is nm/px and refers to a zoom-level of zero.
-    res_x_scaled = job.stack.resolution.x * 2**job.zoom_level
-    res_y_scaled = job.stack.resolution.y * 2**job.zoom_level
+    res_x_scaled = job.ref_stack.resolution.x * 2**job.zoom_level
+    res_y_scaled = job.ref_stack.resolution.y * 2**job.zoom_level
     res_x_nm_px = 1.0 / res_x_scaled
     res_y_nm_px = 1.0 / res_y_scaled
     res_args = "-EXIF:XResolution={0} -EXIF:YResolution={1} -EXIF:ResolutionUnit=None".format( str(res_x_nm_px), str(res_y_nm_px) )
@@ -280,8 +286,6 @@ def process_crop_job(job):
     """ This method does the actual cropping. It controls the data extraction
     and the creation of the sub-stack. It can be executed as Celery task.
     """
-    file_name = file_prefix + id_generator() + "." + file_extension
-    output_path = os.path.join(settings.TMP_DIR, file_name)
     try:
         # Create the sub-stack
         cropped_stack = extract_substack( job )
@@ -296,9 +300,9 @@ def process_crop_job(job):
         error_message = ""
         # Only produce an image if parts of stacks are within the output
         if len( cropped_stack ) > 0:
-            outputImage.writeImages( output_path )
+            outputImage.writeImages( job.output_path )
             # Add some meta data to the image
-            addMetaData( output_path, job, cropped_stack )
+            addMetaData( job.output_path, job, cropped_stack )
         else:
             no_error_occured = False
             error_message = "A region outside the stack has been selected. Therefore, no image was produced."
@@ -306,8 +310,8 @@ def process_crop_job(job):
         no_error_occured = False
         error_message = str(e)
         # Delete the file if parts of it have been written already
-        if os.path.exists( output_path ):
-            os.remove( output_path )
+        if os.path.exists( job.output_path ):
+            os.remove( job.output_path )
 
     # Create a notification message
     bb_text = "( " + str(job.x_min) + ", " + str(job.y_min) + ", " + str(job.z_min) + " ) -> ( " + str(job.x_max) + ", " + str(job.y_max) + ", " + str(job.z_max) + " )"
@@ -316,6 +320,7 @@ def process_crop_job(job):
     msg.user = User.objects.get(pk=int(job.user.id))
     msg.read = False
     if no_error_occured:
+        file_name = os.path.basename( job.output_path )
         url = os.path.join( settings.CATMAID_DJANGO_URL, "crop/download/" + file_name + "/")
         msg.title = "Microstack finished"
         msg.text = "The requested microstack " + bb_text + " is finished. You can download it from this location: <a href='" + url + "'>" + url + "</a>"

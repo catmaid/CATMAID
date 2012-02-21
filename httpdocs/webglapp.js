@@ -214,20 +214,23 @@ function WebGLViewer(divID) {
 
   this.fullscreenWebGL = function()
   {
-    var divID = 'viewer-3d-webgl-canvas';
-    var divID_jQuery = '#' + divID;
+    var divID = 'view_in_3d_webgl_widget'; //'viewer-3d-webgl-canvas';
     if( THREEx.FullScreen.activated() ){
-        console.log($(divID_jQuery).width());
-        $(divID_jQuery).width(800);
-        $(divID_jQuery).height(700);
-        renderer.setSize( 800, 700 );
+        var w = 700, h = 600;
+        $('#viewer-3d-webgl-canvas').width(w);
+        $('#viewer-3d-webgl-canvas').height(h);
+        $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
+        renderer.setSize( w, h );
         THREEx.FullScreen.cancel();
 
     } else {
-        $(divID_jQuery).width(window.innerWidth);
-        $(divID_jQuery).height(window.innerHeight);
-        renderer.setSize( window.innerWidth, window.innerHeight );
         THREEx.FullScreen.request(document.getElementById(divID));
+        var w = 1050, h = 900;
+        //var w = window.innerWidth, h = window.innerHeight - 200;
+        $('#viewer-3d-webgl-canvas').width(w);
+        $('#viewer-3d-webgl-canvas').height(h);
+        $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
+        renderer.setSize( w, h );
     };
 
   }

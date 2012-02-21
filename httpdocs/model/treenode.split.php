@@ -163,25 +163,28 @@ try {
 	};
 
     // also need to update the pre/postsynaptic terminal part_of relationship for the new skeleton
-    $comma_seperated_newskeleton_treenodes = implode(", ", array_keys($newskeleton_treenodes));
+    $comma_separated_newskeleton_treenodes = implode(", ", array_keys($newskeleton_treenodes));
     // retrieve all terminals
     $newskeleton_terminals = $db->getResult(
     "SELECT class_instance_id
     FROM treenode_class_instance
-    WHERE treenode_class_instance.treenode_id IN ($comma_seperated_newskeleton_treenodes) AND treenode_class_instance.relation_id = $modof_id");
+    WHERE treenode_class_instance.treenode_id IN ($comma_separated_newskeleton_treenodes) AND treenode_class_instance.relation_id = $modof_id");
 
-    $newskeleton_terminals_ids = array();
-    foreach($newskeleton_terminals as $row) {
-          $newskeleton_terminals_ids[$row['class_instance_id']] = TRUE;
-      }
-    $comma_seperated_newskeleton_terminals = implode(", ", array_keys($newskeleton_terminals_ids));
+    // if terminal are found, update their part_of skeleton_id relation
+    if (count($newskeleton_terminals) > 0) {
+        $newskeleton_terminals_ids = array();
+        foreach($newskeleton_terminals as $row) {
+              $newskeleton_terminals_ids[$row['class_instance_id']] = TRUE;
+          }
+        $comma_separated_newskeleton_terminals = implode(", ", array_keys($newskeleton_terminals_ids));
 
-    $ids = $db->update("class_instance_class_instance", array("class_instance_b" => $newSkeletonID) ,
-    ' "class_instance_a" IN ('.$comma_seperated_newskeleton_terminals.') AND "relation_id" = '.$partof);
-
+        $ids = $db->update("class_instance_class_instance", array("class_instance_b" => $newSkeletonID) ,
+        ' "class_instance_a" IN ('.$comma_separated_newskeleton_terminals.') AND "relation_id" = '.$partof);
+    }
+    
     // also update treenode_connector table for selected skeletons
     $ids = $db->update("treenode_connector", array("skeleton_id" => $newSkeletonID),
-    ' "treenode_id" IN ('.$comma_seperated_newskeleton_treenodes.')');
+    ' "treenode_id" IN ('.$comma_separated_newskeleton_treenodes.')');
 
 	if (! $db->commit() ) {
 		emitErrorAndExit( $db, 'Failed to commit split!' );

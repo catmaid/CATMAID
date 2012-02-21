@@ -48,3 +48,5 @@ from cropping import crop
 from cropping import download_crop
 
 from skeleton import split_skeleton
+
+from thumbnail import make_thumbnail

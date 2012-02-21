@@ -74,6 +74,10 @@ function countProperties(obj) {
   return count;
 }
 
+// URL of the CATMAID instance relative to the host. It is
+// expected to end with a slash.
+var catmaid_url = "catmaid/"
+
 // url of the django instance relative to the CATMAID URL
 // (if any, needed e.g. by cropping tool). It is expected
 // to end with a slash.

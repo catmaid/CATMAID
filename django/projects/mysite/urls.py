@@ -99,6 +99,12 @@ urlpatterns += patterns('',
     (r'^(?P<project_id>\d+)/treenode/info$', 'vncbrowser.views.treenode.treenode_info')
     )
 
+# Thumbnailing
+urlpatterns += patterns('',
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/thumbnail/(?P<x_min>%s),(?P<x_max>%s)/(?P<y_min>%s),(?P<y_max>%s)/(?P<z_min>%s),(?P<z_max>%s)/(?P<zoom_level>\d+)/(?P<tissue>.*)/(?P<metadata>.*)/$' % (num, num, num, num, num, num), 'vncbrowser.views.make_thumbnail' )
+    )
+
+
 if settings.DEBUG:
     urlpatterns += patterns('',
                             (r'^static/(?P<path>.*)$',

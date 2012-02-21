@@ -52,7 +52,7 @@ var SkeletonAnnotations = new function()
     x: null,
     y: null,
     z: null,
-    parent: null,
+    parent_id: null,
     set: function(node) {
       if (node) {
         atn.id = node.id;
@@ -61,7 +61,11 @@ var SkeletonAnnotations = new function()
         atn.x = node.x;
         atn.y = node.y;
         atn.z = node.z;
-        atn.parent = node.parent;
+        if (node.parent) {
+          atn.parent_id = node.parent.id;
+        } else {
+          atn.parent_id = null;
+        }
       } else {
         for (var prop in atn) {
           if ( prop === 'set' ) {
@@ -1447,26 +1451,29 @@ var SkeletonAnnotations = new function()
         break;
       case "goparent":
         if (null !== atn.id) {
-          if (null !== atn.parent) {
+          if (null !== atn.parent_id) {
+            var parentNode = nodes[atn.parent_id];
             stack.getProject().moveTo(
-              self.pix2physZ(atn.parent.z),
-              self.pix2physY(atn.parent.y),
-              self.pix2physX(atn.parent.x));
-            window.setTimeout("SkeletonAnnotations.staticSelectNode( " + atn.parent.id + " )", 1000);
+              self.pix2physZ(parentNode.z),
+              self.pix2physY(parentNode.y),
+              self.pix2physX(parentNode.x));
+            window.setTimeout("SkeletonAnnotations.staticSelectNode( " + atn.parent_id + ", " + atn.skeleton_id + " )", 1000);
+          } else {
+            alert("This is the root node.");
           }
         } else {
-          alert("No active node selected.");
+          alert('There must be a currently active node in order to move to its parent.');
         }
         break;
-      // FIXME: no longer used - probably should move button action's code here
       case "goactive":
-        if (atn !== null) {
-          stack.getProject().moveTo(
-            self.pix2physZ(atn.z),
-            self.pix2physY(atn.y),
-            self.pix2physX(atn.x));
-        } else {
+        var activeNodePosition = SkeletonAnnotations.getActiveNodePosition();
+        if (activeNodePosition === null) {
           alert("No active node to go to!");
+        } else {
+          project.moveTo(
+            tracingLayer.svgOverlay.pix2physZ(activeNodePosition.z),
+            tracingLayer.svgOverlay.pix2physY(activeNodePosition.y),
+            tracingLayer.svgOverlay.pix2physX(activeNodePosition.x));
         }
         break;
       case "golastedited":

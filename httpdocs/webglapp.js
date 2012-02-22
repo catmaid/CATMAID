@@ -142,6 +142,9 @@ function WebGLViewer(divID) {
       for ( var i=0; i<connectivity_types.length; ++i ) {
         scene.removeObject( this.actor[connectivity_types[i]] );
       }
+      for ( var k in this.labelSphere ) {
+          scene.removeObject( this.labelSphere[k] );
+      }
     }
 
     this.addCompositeActorToScene = function()

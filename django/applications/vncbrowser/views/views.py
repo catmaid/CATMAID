@@ -6,7 +6,8 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
-    Project, User, Treenode, TreenodeConnector, Connector, Stack, ProjectStack
+    Project, User, Treenode, TreenodeConnector, Connector, Stack, ProjectStack, \
+    TreenodeClassInstance
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
 from django.db.models import Count
@@ -218,10 +219,15 @@ def get_treenodes_qs(project_id=None, skeleton_id=None, treenode_id=None):
         treenodeclassinstance__relation__relation_name='element_of',
         treenodeclassinstance__class_instance__class_column__class_name='skeleton',
         project=project_id).order_by('id')
-    return treenode_qs
+    labels_qs = TreenodeClassInstance.objects.filter(relation__relation_name='labeled_as',
+        treenode__treenodeclassinstance__class_instance__id=skeleton_id,
+        treenode__treenodeclassinstance__relation__relation_name='element_of').select_related('treenode', 'class_instance')
+    # TODO: ask mark about getting the tags from synapses
+    # TreenodeConnector.objects.filter(skeleton__id=skeleton_id, connector__connectorclassinstance__relation__relation_name='labeled_as').select_related('connector__connectorclassinstance__class_instance__name')
+    return treenode_qs, labels_qs
 
 def export_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None, format=None):
-    treenode_qs = get_treenodes_qs(project_id, skeleton_id, treenode_id)
+    treenode_qs, labels_qs = get_treenodes_qs(project_id, skeleton_id, treenode_id)
 
     if format == 'swc':
         return HttpResponse(get_swc_string(treenode_qs), mimetype='text/plain')
@@ -384,17 +390,34 @@ def convert_annotations_to_networkx(request, project_id=None):
 
 
 def export_extended_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None, format=None):
-    treenode_qs = get_treenodes_qs(project_id, skeleton_id, treenode_id)
+    treenode_qs, labels_as = get_treenodes_qs(project_id, skeleton_id, treenode_id)
+
+    labels={}
+    for tn in labels_as:
+        lab = str(tn.class_instance.name).lower()
+        if tn.treenode_id in labels:
+            labels[tn.treenode_id].append( lab )
+        else:
+            labels[tn.treenode_id] = [ lab ]
+        # whenever the word uncertain is in the tag, add it
+        # here. this is used in the 3d webgl viewer
+        if 'uncertain' in lab:
+            labels[tn.treenode_id].append( 'uncertain' )
 
     # represent the skeleton as JSON
     vertices={}; connectivity={}
     for tn in treenode_qs:
+        if tn.id in labels:
+            lab = labels[tn.id]
+        else:
+            lab = []
         vertices[tn.id] = {
             'x': tn.location.x,
             'y': tn.location.y,
             'z': tn.location.z,
             'radius': max(tn.radius, 0),
-            'type': 'skeleton'
+            'type': 'skeleton',
+            'labels' : lab
         }
         if not tn.parent_id is None:
             if connectivity.has_key(tn.id):
@@ -419,7 +442,17 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
     for tc in qs_tc:
         #print >> sys.stderr, 'vertex, connector', tc.treenode_id, tc.connector_id
         #print >> sys.stderr, 'relation name', tc.relation.relation_name
-        
+
+        if tc.treenode_id in labels:
+            lab1 = labels[tc.treenode_id]
+        else:
+            lab1 = []
+        if tc.connector_id in labels:
+            lab2 = labels[tc.connector_id]
+        else:
+            lab2 = []
+
+
         if not vertices.has_key(tc.treenode_id):
             print >> sys.stderr, 'vertices was not yet in result set. this should never happen.'
             print >> sys.stderr, 'in export_extended_skeleton_response()'
@@ -427,7 +460,8 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
                 'x': tc.treenode.location.x,
                 'y': tc.treenode.location.y,
                 'z': tc.treenode.location.z,
-                'type': 'skeleton'
+                'type': 'skeleton',
+                'labels': lab1
             }
 
         if not vertices.has_key(tc.connector_id):
@@ -435,7 +469,8 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
                 'x': tc.connector.location.x,
                 'y': tc.connector.location.y,
                 'z': tc.connector.location.z,
-                'type': 'connector'
+                'type': 'connector',
+                'labels': lab2
             }
 
         # if it a single node without connection to anything else,

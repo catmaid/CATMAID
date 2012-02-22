@@ -170,6 +170,9 @@ function WebGLViewer(divID) {
     this.id = skeleton_data.id;
     this.baseName = skeleton_data.baseName;
 
+    this.labelSphere = new Object();
+    var labelspheregeometry = new THREE.SphereGeometry( 30, 32, 32, 1 );
+
     for (var fromkey in this.original_connectivity) {
       var to = this.original_connectivity[fromkey];
       for (var tokey in to) {
@@ -199,6 +202,34 @@ function WebGLViewer(divID) {
         to_vector.multiplyScalar( scale );
 
         this.geometry[type].vertices.push( new THREE.Vertex( to_vector ) );
+
+        // if either from or to have a relevant label, and they are not yet
+        // created, create one
+        if( ($.inArray( "uncertain", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
+            this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff8000 } ) );
+            this.labelSphere[fromkey].scale.set( scale, scale, scale );
+            this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
+            scene.add( this.labelSphere[fromkey] );
+        }
+        if( ($.inArray( "uncertain", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
+            this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff8000 } ) );
+            this.labelSphere[tokey].scale.set( scale, scale, scale );
+            this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
+            scene.add( this.labelSphere[tokey] );
+        }
+        if( ($.inArray( "todo", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
+            this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff0000 } ) );
+            this.labelSphere[fromkey].scale.set( scale, scale, scale );
+            this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
+            scene.add( this.labelSphere[fromkey] );
+        }
+        if( ($.inArray( "todo", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
+            this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff0000 } ) );
+            this.labelSphere[tokey].scale.set( scale, scale, scale );
+            this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
+            scene.add( this.labelSphere[tokey] );
+        }
+          
       }
     }
 

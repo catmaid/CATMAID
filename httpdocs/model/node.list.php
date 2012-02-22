@@ -159,11 +159,8 @@ if (! $db->begin() ) {
 
 try {
 
-  if ($active_skeleton_id) {
-    $skeleton_condition = "(skeleton_id = $active_skeleton_id)";
-  } else {
-	  $skeleton_condition = 'FALSE';
-  }
+    // First, query all treenodes that are within the defined cuboid
+    // region, but limit the number of these:
 
   $treenodes = $db->getResult(
     "SELECT treenode.id AS id,
@@ -175,29 +172,61 @@ try {
          treenode.user_id AS user_id,
          treenode.radius AS radius,
          ((treenode.location).z - $z) AS z_diff,
-         skeleton_id
+         skeleton_id,
+         'treenode' AS type
      FROM treenode
      WHERE
-      $skeleton_condition
-      OR (treenode.project_id = $pid
+          treenode.project_id = $pid
           AND (treenode.location).x >= $left
           AND (treenode.location).x <= ($left + $width)
           AND (treenode.location).y >= $top
           AND (treenode.location).y <= ($top + $height)
           AND (treenode.location).z >= ($z - $zbound * $zres)
-          AND (treenode.location).z <= ($z + $zbound * $zres))
-      ORDER BY parentid DESC, id, z_diff
+          AND (treenode.location).z <= ($z + $zbound * $zres)
       LIMIT $limit"
-  );
+      );
 
   if (false === $treenodes) {
     emitErrorAndExit($db, 'Failed to query treenodes.');
   }
 
   // loop over and add type
-  while ( list( $key, $val) = each( $treenodes ) )
-  {
-    $treenodes[$key]['type'] = "treenode";
+  $found_treenodes = array();
+  foreach ( $treenodes as $value ) {
+      $found_treenodes[$value['id']] = TRUE;
+  }
+
+  // Now, if an ID for the active skeleton was supplied, make sure
+  // that all treenodes for that skeleton are added:
+
+  if ($active_skeleton_id) {
+
+    $extra_treenodes = $db->getResult(
+    "SELECT treenode.id AS id,
+         treenode.parent_id AS parentid,
+         (treenode.location).x AS x,
+         (treenode.location).y AS y,
+         (treenode.location).z AS z,
+         treenode.confidence AS confidence,
+         treenode.user_id AS user_id,
+         treenode.radius AS radius,
+         ((treenode.location).z - $z) AS z_diff,
+         skeleton_id,
+         'treenode' AS type
+     FROM treenode
+     WHERE
+      skeleton_id = $active_skeleton_id"
+    );
+
+    if (false === $extra_treenodes) {
+      emitErrorAndExit($db, 'Failed to query treenodes.');
+    }
+
+    foreach ( $extra_treenodes as $value ) {
+      if (!array_key_exists($value['id'], $found_treenodes)) {
+        $treenodes[] = $value;
+      }
+    }
   }
 
   // retrieve connectors that are synapses - do a LEFT OUTER JOIN with
@@ -213,7 +242,8 @@ try {
         ((connector.location).z - $z) AS z_diff,
         treenode_connector.relation_id AS treenode_relation_id,
         treenode_connector.treenode_id AS tnid,
-        treenode_connector.confidence AS tc_confidence
+        treenode_connector.confidence AS tc_confidence,
+        'connector' AS type
      FROM connector LEFT OUTER JOIN treenode_connector
              ON treenode_connector.connector_id = connector.id
         WHERE connector.project_id = $pid AND
@@ -234,7 +264,6 @@ try {
   $pushed_treenodes = count($treenodes);
   while ( list( $key, $val) = each( $connectors ) )
   {
-      $val['type'] = "connector";
       $connector_id = $val['id'];
 
       if (isset($val['tnid'])) {

@@ -58,6 +58,7 @@ function CanvasTool()
                 senddata['width'] = fieldofview.width;
                 senddata['height'] = fieldofview.height;
                 senddata['image'] = output;
+                senddata['metadata'] = self.labels;
 
                 if( stack.labelupload_url !== '' ) {
                     // z, t

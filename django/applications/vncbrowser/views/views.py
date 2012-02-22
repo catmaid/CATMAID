@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 from vncbrowser.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
     Project, User, Treenode, TreenodeConnector, Connector, Stack, ProjectStack, \
-    TreenodeClassInstance
+    TreenodeClassInstance, ConnectorClassInstance
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
 from django.db.models import Count
@@ -222,12 +222,13 @@ def get_treenodes_qs(project_id=None, skeleton_id=None, treenode_id=None):
     labels_qs = TreenodeClassInstance.objects.filter(relation__relation_name='labeled_as',
         treenode__treenodeclassinstance__class_instance__id=skeleton_id,
         treenode__treenodeclassinstance__relation__relation_name='element_of').select_related('treenode', 'class_instance')
-    # TODO: ask mark about getting the tags from synapses
-    # TreenodeConnector.objects.filter(skeleton__id=skeleton_id, connector__connectorclassinstance__relation__relation_name='labeled_as').select_related('connector__connectorclassinstance__class_instance__name')
-    return treenode_qs, labels_qs
+    labelconnector_qs = ConnectorClassInstance.objects.filter(relation__relation_name='labeled_as',
+            connector__treenodeconnector__treenode__treenodeclassinstance__class_instance__id=skeleton_id,
+            connector__treenodeconnector__treenode__treenodeclassinstance__relation__relation_name='element_of').select_related('connector', 'class_instance')
+    return treenode_qs, labels_qs, labelconnector_qs
 
 def export_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None, format=None):
-    treenode_qs, labels_qs = get_treenodes_qs(project_id, skeleton_id, treenode_id)
+    treenode_qs, labels_qs, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id, treenode_id)
 
     if format == 'swc':
         return HttpResponse(get_swc_string(treenode_qs), mimetype='text/plain')
@@ -390,7 +391,7 @@ def convert_annotations_to_networkx(request, project_id=None):
 
 
 def export_extended_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None, format=None):
-    treenode_qs, labels_as = get_treenodes_qs(project_id, skeleton_id, treenode_id)
+    treenode_qs, labels_as, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id, treenode_id)
 
     labels={}
     for tn in labels_as:
@@ -401,8 +402,18 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
             labels[tn.treenode_id] = [ lab ]
         # whenever the word uncertain is in the tag, add it
         # here. this is used in the 3d webgl viewer
-        if 'uncertain' in lab:
+        if 'uncertain' in lab or tn.treenode.confidence < 5:
             labels[tn.treenode_id].append( 'uncertain' )
+    for cn in labelconnector_qs:
+        lab = str(cn.class_instance.name).lower()
+        if cn.connector_id in labels:
+            labels[cn.connector_id].append( lab )
+        else:
+            labels[cn.connector_id] = [ lab ]
+        # whenever the word uncertain is in the tag, add it
+        # here. this is used in the 3d webgl viewer
+        if 'uncertain' in lab:
+            labels[cn.connector_id].append( 'uncertain' )
 
     # represent the skeleton as JSON
     vertices={}; connectivity={}
@@ -451,7 +462,6 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
             lab2 = labels[tc.connector_id]
         else:
             lab2 = []
-
 
         if not vertices.has_key(tc.treenode_id):
             print >> sys.stderr, 'vertices was not yet in result set. this should never happen.'

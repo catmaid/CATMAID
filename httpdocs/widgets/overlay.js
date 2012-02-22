@@ -30,6 +30,7 @@ var SkeletonAnnotations = new function()
         }
       }
     }
+    // console.trace();
     statusBar.replaceLast("Could not find node #" + nodeID + " for skeleton #" + skeletonID);
   };
 

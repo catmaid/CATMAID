@@ -101,6 +101,7 @@ var SkeletonElements = new function()
     this.paper = paper;
     this.parent = parent;
     this.children = {};
+    this.numberOfChildren = 0;
     this.connectors = {};
     this.r = r < 0 ? 3 : r;
     this.x = x;
@@ -126,9 +127,18 @@ var SkeletonElements = new function()
     this.colorFromZDiff = nodeColorFromZDiff;
     this.createCircle = createCircle;
 
+    this.addChildNode = function(childNode) {
+      if (!this.children.hasOwnProperty(childNode.id)) {
+        ++ this.numberOfChildren;
+      }
+      // Still set new node object in any case, since
+      // node objects can be reused for different IDs
+      this.children[childNode.id] = childNode;
+    }
+
     // Init block
     // 1. Add this node to the parent's children if it exists
-    if (parent) parent.children[id] = this;
+    if (parent) parent.addChildNode(this);
   };
 
   /** Before reusing a node, clear all the member variables that
@@ -140,6 +150,7 @@ var SkeletonElements = new function()
     node.id = DISABLED;
     node.parent = null;
     node.children = {};
+    node.numberOfChildren = 0;
     node.connectors = {};
     if (node.c) {
       node.c.hide();
@@ -160,6 +171,7 @@ var SkeletonElements = new function()
     node.id = id;
     node.parent = parent;
     node.children = {};
+    node.numberOfChildren = 0;
     node.connectors = {};
     node.r = r < 0 ? 3 : r;
     node.x = x;
@@ -375,7 +387,7 @@ var SkeletonElements = new function()
     } else if (this.isroot) {
       // The root node should be colored red unless it's active:
       this.fillcolor = root_node_color;
-    } else if ((this.type !== TYPE_CONNECTORNODE) && (0 === countProperties(this.children))) {
+    } else if ((this.type !== TYPE_CONNECTORNODE) && (this.numberOfChildren === 0)) {
       this.fillcolor = leaf_node_color;
     } else {
       // If none of the above applies, just colour according to the z difference.

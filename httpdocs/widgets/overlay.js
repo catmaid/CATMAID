@@ -1025,7 +1025,7 @@ var SkeletonAnnotations = new function()
               // if parent exists, update the references
               nn.parent = pn;
               // update the parents children
-              pn.children[nid] = nn;
+              pn.addChildNode(nn);
             }
           }
           else if (jso[i].type === "connector")
@@ -1441,7 +1441,7 @@ var SkeletonAnnotations = new function()
     };
 
     this.goToAdjacentBranchOrEndNode = function(next) {
-      var foundNode, originalActiveNode, current, numberOfChildren, id;
+      var foundNode, originalActiveNode, current, id;
       if (null !== atn.id) {
         foundNode = false;
         originalActiveNode = nodes[atn.id];
@@ -1456,8 +1456,7 @@ var SkeletonAnnotations = new function()
             }
             break;
           }
-          numberOfChildren = countProperties(current.children);
-          if (next && (numberOfChildren === 0)) {
+          if (next && (current.numberOfChildren === 0)) {
             if (originalActiveNode === current) {
               alert("You are already at an end node");
             } else {
@@ -1467,7 +1466,7 @@ var SkeletonAnnotations = new function()
             break;
           }
           if (next) {
-            if (numberOfChildren > 1) {
+            if (current.numberOfChildren > 1) {
               alert("There are multiple possible next branch / end nodes");
               break;
             }
@@ -1482,7 +1481,7 @@ var SkeletonAnnotations = new function()
             // Going to the previous node is easier:
             current = current.parent;
           }
-          if (countProperties(current.children) > 1) {
+          if (current.numberOfChildren > 1) {
             foundNode = true;
             break;
           }

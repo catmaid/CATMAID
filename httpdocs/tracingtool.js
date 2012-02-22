@@ -107,7 +107,9 @@ function TracingTool()
 	 * register all GUI control elements and event handlers
 	 */
 	this.register = function( parentStack )
-	{
+  {
+    console.log("tool: register called for tracingtool");
+
     setupSubTools();
 
     if (tracingLayer && stack) {
@@ -152,6 +154,7 @@ function TracingTool()
 	 */
   this.unregister = function()
   {
+    console.log("tool: unregister called for tracingtool");
     // do it before calling the prototype destroy that sets stack to null
     if (self.prototype.stack) {
       inactivateBindings();
@@ -168,6 +171,7 @@ function TracingTool()
 	 */
 	this.destroy = function()
 	{
+          console.log("tool: destroy called for tracingtool");
     // Synchronize data with database
     tracingLayer.svgOverlay.updateNodeCoordinatesinDB();
 

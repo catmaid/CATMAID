@@ -121,7 +121,6 @@ var SkeletonElements = new function()
     this.setXY = setXY;
     this.drawEdges = nodeDrawEdges;
     this.draw = draw;
-    this.deleteall = nodeDeleteAll;
     this.deletenode = nodeDelete;
     this.setColor = setColor;
     this.colorFromZDiff = nodeColorFromZDiff;
@@ -328,45 +327,6 @@ var SkeletonElements = new function()
   var draw = function() {
     this.createCircle();
     this.drawEdges();
-  };
-
-  /** Delete all objects relevant to the node
-  * such as raphael DOM elements and node references
-  * javascript's garbage collection should do the rest.
-   * Here 'this' refers to the node.
-   * TODO this function is never used? */
-  var nodeDeleteAll = function()
-  {
-    // Test if there is any child of type ConnectorNode
-    // If so, it is not allowed to remove the treenode
-    var i,
-        children = this.children,
-        parent = this.parent;
-    // Remove the parent of all the children
-    for (i in children) {
-      if (children.hasOwnProperty(i)) {
-        children[i].line.remove();
-        children[i].parent = null;
-      }
-    }
-    // Remove the raphael svg elements from the DOM
-    if (this.c) {
-      this.c.remove();
-      this.mc.remove();
-    }
-    if (parent !== null) {
-      this.line.remove();
-      var pc = parent.children;
-      // remove this node from parent's children list
-      for (i in pc) {
-        if (pc.hasOwnProperty(i)) {
-          if (pc[i].id === id) {
-            // FIXME: use splice(1,1) instead
-            delete pc[i];
-          }
-        }
-      }
-    }
   };
 
   /** Delete the node from the database and removes it from
@@ -692,7 +652,7 @@ var SkeletonElements = new function()
   // TODO must reuse nodes instead of creating them new, to avoid DOM insertions.
   // -- well, it can: just leave as members of each the functions that are really different.
 
-  // Identical functions: setXY, setColor, createCircle, deleteAll, deletenode (but for the php URL), some of the sub-functions of createEventHandlers
+  // Identical functions: setXY, setColor, createCircle, deletenode (but for the php URL), some of the sub-functions of createEventHandlers
 
   // Also, there shouldn't be a "needsync" flag. Instead, push the node to an array named "needSyncWithDB". Will avoid looping.
 
@@ -700,9 +660,6 @@ var SkeletonElements = new function()
   // and that can be reused.
   // Regarding children and connectors: any reason not to make them plain arrays? Given that they are always small,
   // using a filter to find a node with a specific id would be enough.
-
-  // WARNING deleteall is never used!
-
 
   /** Surrogate cosntructor for ConnectorNode.
    * See "newNode" for explanations. */

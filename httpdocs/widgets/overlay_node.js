@@ -12,6 +12,7 @@ var SkeletonElements = new function()
   var inactive_skeleton_color_above = "rgb(0,0,255)";
   var inactive_skeleton_color_below = "rgb(255,0,0)";
   var root_node_color = "rgb(255, 0, 0)";
+  var leaf_node_color = "rgb(128, 0, 0)";
 
   var TYPE_NODE = "treenode";
   var TYPE_CONNECTORNODE = "connector";
@@ -414,6 +415,8 @@ var SkeletonElements = new function()
     } else if (this.isroot) {
       // The root node should be colored red unless it's active:
       this.fillcolor = root_node_color;
+    } else if ((this.type !== TYPE_CONNECTORNODE) && (0 === countProperties(this.children))) {
+      this.fillcolor = leaf_node_color;
     } else {
       // If none of the above applies, just colour according to the z difference.
       this.fillcolor = this.colorFromZDiff(this.zdiff, this.skeleton_id);

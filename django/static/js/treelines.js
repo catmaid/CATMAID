@@ -465,7 +465,7 @@ function NeuronView( basename, swcURL, color, viewer ) {
                             break;
                     done[e.id] = true;
                 }
-                var path = "M " + points[0].nx + " " + points[1].ny + " ";
+                var path = "M " + points[0].nx + " " + points[0].ny + " ";
                 var firstTime = true;
                 for( var j = 1; j < points.length; ++j ) {
                     p = points[j];

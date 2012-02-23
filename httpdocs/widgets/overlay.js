@@ -1535,18 +1535,24 @@ var SkeletonAnnotations = new function()
             pid: project.id,
             tnid: atn.id
           }, function (status, text, xml) {
+            var nodeToActivate;
             if (status === 200) {
               if (text && text != " ") {
                 var e = eval("(" + text + ")");
                 if (e.error) {
                   alert(e.error);
                 } else {
-                  stack.getProject().moveTo(e.z, e.y, e.x);
+                  nodeToActivate = e.id;
+                  stack.getProject().moveTo(
+                    e.z, e.y, e.x,
+                    undefined,
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(nodeToActivate);
+                    });
                 }
               }
             }
           });
-
         });
         break;
       case "gonextbranch":

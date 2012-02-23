@@ -34,6 +34,7 @@ var SkeletonAnnotations = new function()
   };
 
   /** Deactivates any active node and updates all nodes for all open SVGOverlays. */
+  // FIXME: apparently unused...
   this.staticRefresh = function() {
     var s;
     for (s in SVGOverlays) {

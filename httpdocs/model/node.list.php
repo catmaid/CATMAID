@@ -225,6 +225,7 @@ try {
     foreach ( $extra_treenodes as $value ) {
       if (!array_key_exists($value['id'], $found_treenodes)) {
         $treenodes[] = $value;
+        $found_treenodes[$value['id']] = TRUE;
       }
     }
   }
@@ -258,6 +259,48 @@ try {
 
   if (false === $connectors) {
     emitErrorAndExit($db, 'Failed to query connector locations.');
+  }
+
+  // Check for any treenodes that those connectors are linked to that
+  // weren't either in the active skeleton or in the bounding box.
+  // This is so that we can draw arrows from any displayed connector
+  // to all of its connected treenodes, even if one is several slices
+  // below.
+  {
+      $missing_treenodes = array();
+      foreach ($connectors as $connector) {
+          if (!array_key_exists($connector['tnid'], $found_treenodes)) {
+              $missing_treenodes[] = $connector['tnid'];
+          }
+      }
+      reset($connectors);
+      if (count($missing_treenodes) > 0) {
+          $comma_separated_treenode_ids = implode(',', $missing_treenodes);
+          $extra_treenodes = $db->getResult(
+    "SELECT treenode.id AS id,
+         treenode.parent_id AS parentid,
+         (treenode.location).x AS x,
+         (treenode.location).y AS y,
+         (treenode.location).z AS z,
+         treenode.confidence AS confidence,
+         treenode.user_id AS user_id,
+         treenode.radius AS radius,
+         ((treenode.location).z - $z) AS z_diff,
+         skeleton_id,
+         'treenode' AS type
+     FROM treenode
+     WHERE
+      id IN ($comma_separated_treenode_ids)"
+    );
+
+          if (false === $extra_treenodes) {
+              emitErrorAndExit($db, 'Failed to query treenodes.');
+          }
+
+          foreach ( $extra_treenodes as $value ) {
+              $treenodes[] = $value;
+          }
+      }
   }
 
   $already_seen_connectors = array();

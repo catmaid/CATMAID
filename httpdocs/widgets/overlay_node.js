@@ -356,7 +356,6 @@ var SkeletonElements = new function()
       } else {
         // activate parent node when deleted
         if (wasActiveNode) {
-          // TODO fetch parent id from the database and activate it
           if (node.parent) {
             node.paper.catmaidSVGOverlay.selectNode(node.parent.id);
           } else {

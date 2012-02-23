@@ -165,6 +165,10 @@ var SkeletonAnnotations = new function()
     /* padding beyond screen borders for fetching data and updating nodes */
     var PAD = 256;
     
+    /* old_x and old_y record the x and y position of the stack the
+       last time that an updateNodes request was made.  When panning
+       the stack, these are used to tell whether the user has panned
+       far enough to merit issuing another updateNodes. */
     var old_x = stack.x;
     var old_y = stack.y;
     

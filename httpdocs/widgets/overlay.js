@@ -1489,7 +1489,7 @@ var SkeletonAnnotations = new function()
 
     // Commands for the sub-buttons of the tracing tool
     this.tracingCommand = function (m) {
-      var nodeIDToActivate;
+      var nodeToActivate, skeletonToActivate;
       switch (m) {
       case "skeleton":
         self.set_tracing_mode("skeletontracing");
@@ -1500,15 +1500,19 @@ var SkeletonAnnotations = new function()
       case "goparent":
         if (null !== atn.id) {
           if (null !== atn.parent_id) {
-            var parentNode = nodes[atn.parent_id];
+            nodeToActivate = atn.parent_id;
+            skeletonToActivate = atn.skeleton_id;
+            var parentNode = nodes[nodeToActivate];
             stack.getProject().moveTo(
               self.pix2physZ(parentNode.z),
               self.pix2physY(parentNode.y),
               self.pix2physX(parentNode.x),
               undefined,
               function () {
-                SkeletonAnnotations.staticSelectNode(nodeIDToActivate);
+                SkeletonAnnotations.staticSelectNode(nodeToActivate, skeletonToActivate);
               });
+          } else {
+            alert("This is the root node - can't move to its parent");
           }
         } else {
           alert('There must be a currently active node in order to move to its parent.');

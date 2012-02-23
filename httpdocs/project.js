@@ -259,7 +259,35 @@ function Project( pid )
 		
 		return;
 	}
-	
+
+	this.moveToInStacks = function(
+		zp,
+		yp,
+		xp,
+		sp,
+		stacks,
+		completionCallback)
+	{
+		var stackToMove;
+		if (stacks.length === 0) {
+			// FIXME: do we need a callback for tool.redraw as well?
+			if ( tool && tool.redraw )
+				tool.redraw();
+			if (typeof completionCallback !== "undefined") {
+				completionCallback();
+			}
+		} else {
+			stackToMove = stacks.shift();
+			stackToMove.moveTo( zp,
+					    yp,
+					    xp,
+					    sp,
+					    function () {
+						    self.moveToInStacks( zp, yp, xp, sp, stacks, completionCallback );
+					    });
+		}
+	}
+
 	/**
 	 * move all stacks to the physical coordinates
 	 */
@@ -267,19 +295,21 @@ function Project( pid )
 		zp,
 		yp,
 		xp,
-		sp )
+		sp,
+		completionCallback)
 	{
+		var stacksToMove = [];
 		self.coordinates.x = xp;
 		self.coordinates.y = yp;
 		self.coordinates.z = zp;
+
 		
 		for ( var i = 0; i < stacks.length; ++i )
 		{
-			stacks[ i ].moveTo( zp, yp, xp, sp );
+			stacksToMove.push( stacks[ i ] );
 		}
-		if ( tool && tool.redraw )
-			tool.redraw();
-		return;
+
+		self.moveToInStacks( zp, yp, xp, sp, stacksToMove, completionCallback );
 	}
 
     this.updateTool = function()

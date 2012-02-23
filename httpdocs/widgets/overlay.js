@@ -34,6 +34,7 @@ var SkeletonAnnotations = new function()
   };
 
   /** Deactivates any active node and updates all nodes for all open SVGOverlays. */
+  // FIXME: apparently unused...
   this.staticRefresh = function() {
     var s;
     for (s in SVGOverlays) {
@@ -52,7 +53,7 @@ var SkeletonAnnotations = new function()
     x: null,
     y: null,
     z: null,
-    parent: null,
+    parent_id: null,
     set: function(node) {
       if (node) {
         atn.id = node.id;
@@ -61,7 +62,11 @@ var SkeletonAnnotations = new function()
         atn.x = node.x;
         atn.y = node.y;
         atn.z = node.z;
-        atn.parent = node.parent;
+        if (node.parent) {
+          atn.parent_id = node.parent.id;
+        } else {
+          atn.parent_id = null;
+        }
       } else {
         for (var prop in atn) {
           if ( prop === 'set' ) {
@@ -160,6 +165,10 @@ var SkeletonAnnotations = new function()
     /* padding beyond screen borders for fetching data and updating nodes */
     var PAD = 256;
     
+    /* old_x and old_y record the x and y position of the stack the
+       last time that an updateNodes request was made.  When panning
+       the stack, these are used to tell whether the user has panned
+       far enough to merit issuing another updateNodes. */
     var old_x = stack.x;
     var old_y = stack.y;
     
@@ -245,7 +254,9 @@ var SkeletonAnnotations = new function()
                 alert("Getting the ancestry of the skeleton "+node.skeleton_id+" failed with HTTP status code "+status);
               }
             });
-
+            // And fetch new nodes from the database, since we now
+            // fetch all the nodes in the active skeleton
+            self.updateNodes();
           }
           atn.set(node);
           // refresh all widgets except for the object tree
@@ -1019,7 +1030,7 @@ var SkeletonAnnotations = new function()
               // if parent exists, update the references
               nn.parent = pn;
               // update the parents children
-              pn.children[nid] = nn;
+              pn.addChildNode(nn);
             }
           }
           else if (jso[i].type === "connector")
@@ -1087,7 +1098,7 @@ var SkeletonAnnotations = new function()
     // Initialize to the value of stack.scale at instantiation of SVGOverlay
     var old_scale = stack.scale;
 
-    this.redraw = function( stack ) {
+    this.redraw = function( stack, completionCallback ) {
       var wc = stack.getWorldTopLeft();
       var pl = wc.worldLeft,
           pt = wc.worldTop,
@@ -1106,15 +1117,18 @@ var SkeletonAnnotations = new function()
           doNotUpdate = dy < sPAD && dy > -sPAD;
         }
       }
-      
+
       if ( !doNotUpdate )
         self.updateNodes();
-      
+
       self.view.style.left = Math.floor((-pl / stack.resolution.x) * new_scale) + "px";
       self.view.style.top = Math.floor((-pt / stack.resolution.y) * new_scale) + "px";
 
       self.updatePaperDimensions(stack);
-    }
+      if (typeof completionCallback !== "undefined") {
+        completionCallback();
+      }
+    };
 
     // TODO This doc below is obsolete
     // This isn't called "onclick" to avoid confusion - click events
@@ -1308,55 +1322,36 @@ var SkeletonAnnotations = new function()
      */
     this.updateNodes = function (callback)
     {
-  /*
-      console.log("In updateTreelinenodes");
-      console.log("scale is: "+scale);
-      console.log("X_TILE_SIZE is: "+X_TILE_SIZE);
-      console.log("Y_TILE_SIZE is: "+Y_TILE_SIZE);
-      console.log("tl_width is: "+tl_width);
-      console.log("tl_height is: "+tl_height);
-      console.log("x is: "+x);
-      console.log("y is: "+y);
-      console.log("resolution.x is: "+resolution.x);
-      console.log("resolution.y is: "+resolution.y);
-      console.log("translation.x is: "+translation.x);
-      console.log("translation.y is: "+translation.y);
-      console.log('-----computed');
-      console.log('z', z * resolution.z + translation.z);
-      console.log('top', ( y - tl_height / 2 ) * resolution.y + translation.y);
-      console.log('left', ( x - tl_width / 2 ) * resolution.x + translation.x);
-      console.log('width', tl_width * resolution.x);
-      console.log('height', tl_height * resolution.y);
-        */
+      var activeSkeleton = SkeletonAnnotations.getActiveSkeletonId();
+      if (!activeSkeleton) {
+        activeSkeleton = 0;
+      }
 
-      // FIXME: check if we need to wait for the result of this, which
-      // can now be done with completedCallback...
-      // first synchronize with database
-      self.updateNodeCoordinatesinDB();
-
-      // stack.viewWidth and .viewHeight are in screen pixels
-      // so they must be scaled and then transformed to nanometers
-      // and stack.x, .y are in absolute pixels, so they also must be brought to nanometers
+      self.updateNodeCoordinatesinDB(function () {
+        // stack.viewWidth and .viewHeight are in screen pixels
+        // so they must be scaled and then transformed to nanometers
+        // and stack.x, .y are in absolute pixels, so they also must be brought to nanometers
       
-      //TODO add the padding to the range
+        //TODO add the padding to the range
 
-      requestQueue.replace('model/node.list.php', 'POST', {
-        pid: stack.getProject().id,
-        sid: stack.getId(),
-        z: stack.z * stack.resolution.z + stack.translation.z,
-        top: (stack.y - (stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y,
-        left: (stack.x - (stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x,
-        width: (stack.viewWidth / stack.scale) * stack.resolution.x,
-        height: (stack.viewHeight / stack.scale) * stack.resolution.y,
-        zres: stack.resolution.z
-      }, function (status, text, xml) {
-        handle_updateNodes(status, text, xml, callback);
-      },
-      'nodes_for_overlay_request');
+        requestQueue.replace('model/node.list.php', 'POST', {
+          pid: stack.getProject().id,
+          sid: stack.getId(),
+          z: stack.z * stack.resolution.z + stack.translation.z,
+          top: (stack.y - (stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y,
+          left: (stack.x - (stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x,
+          width: (stack.viewWidth / stack.scale) * stack.resolution.x,
+          height: (stack.viewHeight / stack.scale) * stack.resolution.y,
+          zres: stack.resolution.z,
+          as: activeSkeleton
+        }, function (status, text, xml) {
+          handle_updateNodes(status, text, xml, callback);
+        },
+        'nodes_for_overlay_request');
       
-      old_x = stack.x;
-      old_y = stack.y;
-      return;
+        old_x = stack.x;
+        old_y = stack.y;
+      });
     };
 
         /**
@@ -1369,11 +1364,14 @@ var SkeletonAnnotations = new function()
         var e = eval("(" + text + ")");
         //var e = $.parseJSON(text);
         if (e.error) {
-          alert(e.error);
+          if (e.error !== "REPLACED") {
+            alert(e.error);
+          }
         } else {
           var jso = $.parseJSON(text);
           // XXX: how much time does calling the function like this take?
           self.refreshNodes(jso);
+          self.redraw(stack);
         }
       }
       if (typeof callback !== "undefined") {
@@ -1429,8 +1427,73 @@ var SkeletonAnnotations = new function()
       }
     };
 
+    this.goToAdjacentBranchOrEndNode = function(next) {
+      var foundNode, originalActiveNode, current, id;
+      var nodeToActivate, skeletonToActivate;
+      if (null !== atn.id) {
+        foundNode = false;
+        originalActiveNode = nodes[atn.id];
+        current = originalActiveNode;
+        while (true) {
+          if ((!next) && (null === current.parent)) {
+            if (originalActiveNode === current) {
+              alert("You are already at the root node");
+            } else {
+              // Then we reached the root node:
+              foundNode = true;
+            }
+            break;
+          }
+          if (next && (current.numberOfChildren === 0)) {
+            if (originalActiveNode === current) {
+              alert("You are already at an end node");
+            } else {
+              // Then we reached an end node:
+              foundNode = true;
+            }
+            break;
+          }
+          if (next) {
+            if (current.numberOfChildren > 1) {
+              alert("There are multiple possible next branch / end nodes");
+              break;
+            }
+            // Otherwise there must be just one child node:
+            for( id in current.children ) {
+              if (current.children.hasOwnProperty(id)) {
+                current = current.children[id];
+                break;
+              }
+            }
+          } else {
+            // Going to the previous node is easier:
+            current = current.parent;
+          }
+          if (current.numberOfChildren > 1) {
+            foundNode = true;
+            break;
+          }
+        }
+        if (foundNode) {
+          nodeToActivate = current.id;
+          skeletonToActivate = atn.skeleton_id;
+          project.moveTo(
+            self.pix2physZ(current.z),
+            self.pix2physY(current.y),
+            self.pix2physX(current.x),
+            undefined,
+            function () {
+              SkeletonAnnotations.staticSelectNode(nodeToActivate, skeletonToActivate);
+            });
+        }
+      } else {
+        alert("No active node selected; can't find previous branch point");
+      }
+    }
+
     // Commands for the sub-buttons of the tracing tool
     this.tracingCommand = function (m) {
+      var nodeToActivate, skeletonToActivate;
       switch (m) {
       case "skeleton":
         self.set_tracing_mode("skeletontracing");
@@ -1440,26 +1503,34 @@ var SkeletonAnnotations = new function()
         break;
       case "goparent":
         if (null !== atn.id) {
-          if (null !== atn.parent) {
+          if (null !== atn.parent_id) {
+            nodeToActivate = atn.parent_id;
+            skeletonToActivate = atn.skeleton_id;
+            var parentNode = nodes[nodeToActivate];
             stack.getProject().moveTo(
-              self.pix2physZ(atn.parent.z),
-              self.pix2physY(atn.parent.y),
-              self.pix2physX(atn.parent.x));
-            window.setTimeout("SkeletonAnnotations.staticSelectNode( " + atn.parent.id + " )", 1000);
+              self.pix2physZ(parentNode.z),
+              self.pix2physY(parentNode.y),
+              self.pix2physX(parentNode.x),
+              undefined,
+              function () {
+                SkeletonAnnotations.staticSelectNode(nodeToActivate, skeletonToActivate);
+              });
+          } else {
+            alert("This is the root node - can't move to its parent");
           }
         } else {
-          alert("No active node selected.");
+          alert('There must be a currently active node in order to move to its parent.');
         }
         break;
-      // FIXME: no longer used - probably should move button action's code here
       case "goactive":
-        if (atn !== null) {
-          stack.getProject().moveTo(
-            self.pix2physZ(atn.z),
-            self.pix2physY(atn.y),
-            self.pix2physX(atn.x));
-        } else {
+        var activeNodePosition = SkeletonAnnotations.getActiveNodePosition();
+        if (activeNodePosition === null) {
           alert("No active node to go to!");
+        } else {
+          project.moveTo(
+            tracingLayer.svgOverlay.pix2physZ(activeNodePosition.z),
+            tracingLayer.svgOverlay.pix2physY(activeNodePosition.y),
+            tracingLayer.svgOverlay.pix2physX(activeNodePosition.x));
         }
         break;
       case "golastedited":
@@ -1472,19 +1543,31 @@ var SkeletonAnnotations = new function()
             pid: project.id,
             tnid: atn.id
           }, function (status, text, xml) {
+            var nodeToActivate;
             if (status === 200) {
               if (text && text != " ") {
                 var e = eval("(" + text + ")");
                 if (e.error) {
                   alert(e.error);
                 } else {
-                  stack.getProject().moveTo(e.z, e.y, e.x);
+                  nodeToActivate = e.id;
+                  stack.getProject().moveTo(
+                    e.z, e.y, e.x,
+                    undefined,
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(nodeToActivate);
+                    });
                 }
               }
             }
           });
-
         });
+        break;
+      case "gonextbranch":
+        self.goToAdjacentBranchOrEndNode(true);
+        break;
+      case "goprevbranch":
+        self.goToAdjacentBranchOrEndNode(false);
         break;
       case "skelsplitting":
         if (atn !== null) {

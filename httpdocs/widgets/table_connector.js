@@ -153,7 +153,6 @@ var ConnectorTable = new function()
       var x = parseFloat(aData[2]);
       var y = parseFloat(aData[3]);
       var z = parseFloat(aData[4]);
-      project.moveTo(z, y, x);
 
       // If there is a partner treenode, activate that - otherwise
       // activate the connector itself:
@@ -161,10 +160,11 @@ var ConnectorTable = new function()
         idToActivate = parseInt(aData[8], 10);
       else
         idToActivate = parseInt(aData[0], 10);
-      // activate the node with a delay
-      // FIXME: this should be done with a callback
-      window.setTimeout("SkeletonAnnotations.staticSelectNode(" + idToActivate + ")", 1000);
 
+      project.moveTo(z, y, x, undefined,
+                     function () {
+                       SkeletonAnnotations.staticSelectNode(idToActivate);
+                     });
     });
 
     $('#connector_relation_type').change(function() {

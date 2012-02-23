@@ -207,12 +207,16 @@ var requestQueue = function()
         id		//!< string  id
     )
     {
+      var removedRequest;
       for ( var i = 1; i < queue.length; ++i )
       {
         if ( queue[ i ].id == id )
         {
-          queue.splice( i, 1 );
-          statusBar.replaceLast( "replacing request ", + r );				
+          removedRequest = queue.splice( i, 1 );
+          statusBar.replaceLast( "replacing request ", + r );
+          // Send an distinguishable error reponse with the
+          // callback:
+          c(200, JSON.stringify({'error': 'REPLACED'}), null);
         }
       }
       this.register( r, m, d, c, id );
@@ -222,4 +226,3 @@ var requestQueue = function()
   };
 
 }();
-

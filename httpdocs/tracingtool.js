@@ -352,18 +352,33 @@ function TracingTool()
       "A": [ 65 ]
     },
     run: function (e) {
-      var activeNodePosition = SkeletonAnnotations.getActiveNodePosition();
-      if (activeNodePosition === null) {
-        alert("No active node to go to!");
-      } else {
-        project.moveTo(
-          tracingLayer.svgOverlay.pix2physZ(activeNodePosition.z),
-          tracingLayer.svgOverlay.pix2physY(activeNodePosition.y),
-          tracingLayer.svgOverlay.pix2physX(activeNodePosition.x));
-      }
+      tracingLayer.svgOverlay.tracingCommand('goactive');
       return true;
     }
   } ) );
+
+  this.addAction( new Action({
+    helpText: "Go to next branch or end point",
+    keyShortcuts: {
+      "V": [ 86 ]
+    },
+    run: function (e) {
+      tracingLayer.svgOverlay.tracingCommand('gonextbranch');
+      return true;
+    }
+  } ) );
+
+  this.addAction( new Action({
+    helpText: "Go to previous branch or end point",
+    keyShortcuts: {
+      "B": [ 66 ]
+    },
+    run: function (e) {
+      tracingLayer.svgOverlay.tracingCommand('goprevbranch');
+      return true;
+    }
+  } ) );
+
 
   this.addAction( new Action({
     helpText: "Deselect the active node",
@@ -377,29 +392,12 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Go to the parent of the active node (?)",
+    helpText: "Go to the parent of the active node",
     keyShortcuts: {
       "P": [ 80 ]
     },
     run: function (e) {
-      var atn = tracingLayer.svgOverlay.getActiveNode();
-      if (atn !== null) {
-        if (atn.parent !== null) {
-          project.moveTo(
-            tracingLayer.svgOverlay.pix2physZ(atn.parent.z),
-            tracingLayer.svgOverlay.pix2physY(atn.parent.y),
-            tracingLayer.svgOverlay.pix2physX(atn.parent.x));
-          tracingLayer.svgOverlay.selectNode(atn.parent.id);
-        } else {
-          alert("This is the root node.");
-        }
-      } else {
-        if (SkeletonAnnotations.getActiveNodeId() === null) {
-          alert('There must be a currently active node in order to move to its parent.');
-        } else {
-          alert("There active node must be visible in order to move to its parent");
-        }
-      }
+      tracingLayer.svgOverlay.tracingCommand('goparent');
       return true;
     }
   }) );
@@ -628,12 +626,12 @@ function TracingTool()
 }
 
 TracingTool.goToNearestInNeuron = function(type, objectID) {
-  parameters = {
+  var parameters = {
     pid: project.id,
     x: project.x,
     y: project.y,
     z: project.z,
-  };
+  }, nodeIDToSelect, skeletonIDToSelect;
   parameters[type + '_id'] = objectID;
   requestQueue.register("model/node.nearest.php", "GET",
                         parameters, function (status, text) {
@@ -645,8 +643,13 @@ TracingTool.goToNearestInNeuron = function(type, objectID) {
       if (data.error) {
         alert("An error was returned when trying to fetch the nearest node: "+data.error);
       } else {
-        project.moveTo(data.z, data.y, data.x);
-        window.setTimeout("SkeletonAnnotations.staticSelectNode( " + data.treenode_id + ", " + data.skeleton_id + " )", 1000);
+        nodeIDToSelect = data.treenode_id;
+        skeletonIDToSelect = data.skeleton_id;
+        project.moveTo(data.z, data.y, data.x,
+                       undefined,
+                       function () {
+                         SkeletonAnnotations.staticSelectNode(nodeIDToSelect, skeletonIDToSelect);
+                       });
       }
     }
   });

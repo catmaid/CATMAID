@@ -1,3 +1,4 @@
+/* -*- mode: espresso; espresso-indent-level: 8; indent-tabs-mode: t -*- */
 /**
  * stack.js
  *
@@ -71,20 +72,14 @@ function Stack(
 	/**
 	 * update all state informations and the screen content
 	 */
-	var update = function( now )
+	var update = function( completionCallback )
 	{
 		self.overview.redraw();
 		updateScaleBar();
 		
 		//statusBar.replaceLast( "[" + ( Math.round( x * 10000 * resolution.x ) / 10000 ) + ", " + ( Math.round( y * 10000 * resolution.y ) / 10000 ) + "]" );
 		
-		if ( !transition.queued( redraw ) )
-		{
-			if ( now )
-				transition.register( redraw );
-			else
-				redraw();
-		}
+		redraw(completionCallback);
 		
 		return
 	}
@@ -135,34 +130,51 @@ function Stack(
     }
   }
   
+	var redrawLayers = function( layersToRedraw, completionCallback ) {
+		var layerToRedraw;
+		if ( layersToRedraw.length === 0 ) {
+			//----------------------------------------------------------------------
+			/**
+			 * This question is completely useless but without asking it, Firefox on
+			 * Linux systems will not redraw the screen properly.  Took me ... to
+			 * find this out.
+			 */
+			var a = view.offsetWidth;
+			//----------------------------------------------------------------------
+
+			self.old_z = self.z;
+			self.old_y = self.y;
+			self.old_x = self.x;
+			self.old_s = self.s;
+			self.old_scale = self.scale;
+			self.old_yc = self.yc;
+			self.old_xc = self.xc;
+			if (typeof completionCallback !== "undefined") {
+				completionCallback();
+			}
+		} else {
+			layerToRedraw = layersToRedraw.shift();
+			layerToRedraw.redraw(function () {
+				redrawLayers( layersToRedraw, completionCallback );
+			});
+		}
+	}
+
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */
-	var redraw = function()
+	var redraw = function(completionCallback)
 	{
+		var layersToRedraw = [];
+
 		self.yc = Math.floor( self.y * self.scale - ( self.viewHeight / 2 ) );
 		self.xc = Math.floor( self.x * self.scale - ( self.viewWidth / 2 ) );
 
 		for ( var key in layers )
-			layers[ key ].redraw();
-			
-		//----------------------------------------------------------------------
-		/**
-		 * This question is completely useless but without asking it, Firefox on
-		 * Linux systems will not redraw the screen properly.  Took me ... to
-		 * find this out.
-		 */
-		var a = view.offsetWidth;
-		//----------------------------------------------------------------------
-			
-		self.old_z = self.z;
-		self.old_y = self.y;
-		self.old_x = self.x;
-		self.old_s = self.s;
-		self.old_scale = self.scale;
-		self.old_yc = self.yc;
-		self.old_xc = self.xc
-		
+			layersToRedraw.push( layers[ key ] );
+
+		redrawLayers( layersToRedraw, completionCallback );
+
 		return 2;
 	}
 	
@@ -182,45 +194,61 @@ function Stack(
         return layers;
     }
 
-	
+	this.moveToAfterBeforeMoves = function( zp, yp, xp, sp, completionCallback, layersWithBeforeMove )
+	{
+		var layerWithBeforeMove;
+
+		if (layersWithBeforeMove.length == 0) {
+			// Then carry on to the actual move:
+
+			if ( typeof sp == "number" )
+			{
+				self.s = Math.max( self.MIN_S, Math.min( self.MAX_S, Math.round( sp ) ) );
+				self.scale = 1 / Math.pow( 2, self.s );
+			}
+
+			self.x = Math.max( 0, Math.min( MAX_X, Math.round( ( xp - translation.x ) / resolution.x ) ) );
+			self.y = Math.max( 0, Math.min( MAX_Y, Math.round( ( yp - translation.y ) / resolution.y ) ) );
+
+			var z1;
+			var z2;
+			z1 = z2 = Math.round( ( zp - translation.z ) / resolution.z );
+			while ( skip_planes[ z1 ] && skip_planes[ z2 ] )
+			{
+				z1 = Math.max( 0, z1 - 1 );
+				z2 = Math.min( MAX_Z, z2 + 1 );
+			}
+			if ( !skip_planes[ z1 ] ) self.z = z1;
+			else self.z = z2;
+			self.z = Math.max( 0, Math.min( MAX_Z, self.z ) );
+
+			update(completionCallback);
+
+		} else {
+			// Otherwise do the next layer's beforeMove():
+			layerWithBeforeMove = layersWithBeforeMove.shift();
+			l.beforeMove(function () {
+				self.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
+			});
+		}
+	}
+
 	/**
 	 * move to project-coordinates
 	 */
-	this.moveTo = function( zp, yp, xp, sp )
+	this.moveTo = function( zp, yp, xp, sp, completionCallback )
 	{
+		var layersWithBeforeMove = [];
 		for ( var key in layers ) {
 			if (layers.hasOwnProperty(key)) {
 				l = layers[key];
 				if (l.beforeMove) {
-					l.beforeMove();
+					layersWithBeforeMove.push(l);
 				}
 			}
 		}
 
-		if ( typeof sp == "number" )
-		{
-			self.s = Math.max( self.MIN_S, Math.min( self.MAX_S, Math.round( sp ) ) );
-			self.scale = 1 / Math.pow( 2, self.s );
-		}
-		
-		self.x = Math.max( 0, Math.min( MAX_X, Math.round( ( xp - translation.x ) / resolution.x ) ) );
-		self.y = Math.max( 0, Math.min( MAX_Y, Math.round( ( yp - translation.y ) / resolution.y ) ) );
-		
-		var z1;
-		var z2;
-		z1 = z2 = Math.round( ( zp - translation.z ) / resolution.z );
-		while ( skip_planes[ z1 ] && skip_planes[ z2 ] )
-		{
-			z1 = Math.max( 0, z1 - 1 );
-			z2 = Math.min( MAX_Z, z2 + 1 );
-		}
-		if ( !skip_planes[ z1 ] ) self.z = z1;
-		else self.z = z2;
-		self.z = Math.max( 0, Math.min( MAX_Z, self.z ) );
-		
-		update();
-		
-		return;
+		self.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
 	}
 	
 	/**
@@ -374,8 +402,6 @@ function Stack(
 	}
 	
 	//-------------------------------------------------------------------------
-	
-	var transition = new Transition();
 	
 	// extract the borders of the viewer window from CSS rules
 	var viewTop    = parseInt( getPropertyFromCssRules( 3, 0, "top" ) );

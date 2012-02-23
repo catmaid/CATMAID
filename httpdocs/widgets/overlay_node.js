@@ -12,6 +12,7 @@ var SkeletonElements = new function()
   var inactive_skeleton_color_above = "rgb(0,0,255)";
   var inactive_skeleton_color_below = "rgb(255,0,0)";
   var root_node_color = "rgb(255, 0, 0)";
+  var leaf_node_color = "rgb(128, 0, 0)";
 
   var TYPE_NODE = "treenode";
   var TYPE_CONNECTORNODE = "connector";
@@ -73,11 +74,9 @@ var SkeletonElements = new function()
     if (nextNodeIndex < nodePool.length) {
       node = nodePool[nextNodeIndex];
       reuseNode(node, id, parent, r, x, y, z, zdiff, confidence, skeleton_id, is_root_node);
-      if (is_root_node && node.line) node.line.hide();
     } else {
       node = new this.Node(id, paper, parent, r, x, y, z, zdiff, confidence, skeleton_id, is_root_node);
       nodePool.push(node);
-      if (node.line) node.line.toBack();
     }
     nextNodeIndex += 1;
     return node;
@@ -102,12 +101,14 @@ var SkeletonElements = new function()
     this.paper = paper;
     this.parent = parent;
     this.children = {};
+    this.numberOfChildren = 0;
     this.connectors = {};
     this.r = r < 0 ? 3 : r;
     this.x = x;
     this.y = y;
     this.z = z;
     this.zdiff = zdiff;
+    this.display = Math.abs(zdiff) < 1.1;
     this.confidence = confidence;
     this.skeleton_id = skeleton_id;
     this.isroot = is_root_node;
@@ -115,20 +116,29 @@ var SkeletonElements = new function()
     this.c = null; // The Raphael circle for drawing
     this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
     this.line = paper.path(); // The Raphael line element that represents an edge between nodes
+    this.line.toBack();
 
     // The member functions:
     this.setXY = setXY;
     this.drawEdges = nodeDrawEdges;
     this.draw = draw;
-    this.deleteall = nodeDeleteAll;
     this.deletenode = nodeDelete;
     this.setColor = setColor;
     this.colorFromZDiff = nodeColorFromZDiff;
     this.createCircle = createCircle;
 
+    this.addChildNode = function(childNode) {
+      if (!this.children.hasOwnProperty(childNode.id)) {
+        ++ this.numberOfChildren;
+      }
+      // Still set new node object in any case, since
+      // node objects can be reused for different IDs
+      this.children[childNode.id] = childNode;
+    }
+
     // Init block
     // 1. Add this node to the parent's children if it exists
-    if (parent) parent.children[id] = this;
+    if (parent) parent.addChildNode(this);
   };
 
   /** Before reusing a node, clear all the member variables that
@@ -140,6 +150,7 @@ var SkeletonElements = new function()
     node.id = DISABLED;
     node.parent = null;
     node.children = {};
+    node.numberOfChildren = 0;
     node.connectors = {};
     if (node.c) {
       node.c.hide();
@@ -147,6 +158,10 @@ var SkeletonElements = new function()
     }
     if (node.line) {
       node.line.hide();
+    }
+    if (node.number_text) {
+      node.number_text.remove();
+      node.number_text = null;
     }
   };
 
@@ -156,12 +171,14 @@ var SkeletonElements = new function()
     node.id = id;
     node.parent = parent;
     node.children = {};
+    node.numberOfChildren = 0;
     node.connectors = {};
     node.r = r < 0 ? 3 : r;
     node.x = x;
     node.y = y;
     node.z = z;
     node.zdiff = zdiff;
+    node.display = Math.abs(zdiff) < 1.1;
     node.confidence = confidence;
     node.skeleton_id = skeleton_id;
     node.isroot = isroot;
@@ -175,6 +192,13 @@ var SkeletonElements = new function()
         node.c.attr(newCoords);
         node.mc.attr(newCoords);
       }
+    }
+    if (node.line) {
+      node.line.hide();
+    }
+    if (node.number_text) {
+      node.number_text.remove();
+      node.number_text = null;
     }
   };
 
@@ -267,6 +291,9 @@ var SkeletonElements = new function()
   var drawLineToParent = function (node) {
     var parent = node.parent;
     var lineColor;
+    if (!(node.display || (parent && node.parent.display))) {
+      return;
+    }
     if (parent) {
       lineColor = node.colorFromZDiff(parent.zdiff, parent.skeleton_id);
       if (node.line) {
@@ -312,45 +339,6 @@ var SkeletonElements = new function()
   var draw = function() {
     this.createCircle();
     this.drawEdges();
-  };
-
-  /** Delete all objects relevant to the node
-  * such as raphael DOM elements and node references
-  * javascript's garbage collection should do the rest.
-   * Here 'this' refers to the node.
-   * TODO this function is never used? */
-  var nodeDeleteAll = function()
-  {
-    // Test if there is any child of type ConnectorNode
-    // If so, it is not allowed to remove the treenode
-    var i,
-        children = this.children,
-        parent = this.parent;
-    // Remove the parent of all the children
-    for (i in children) {
-      if (children.hasOwnProperty(i)) {
-        children[i].line.remove();
-        children[i].parent = null;
-      }
-    }
-    // Remove the raphael svg elements from the DOM
-    if (this.c) {
-      this.c.remove();
-      this.mc.remove();
-    }
-    if (parent !== null) {
-      this.line.remove();
-      var pc = parent.children;
-      // remove this node from parent's children list
-      for (i in pc) {
-        if (pc.hasOwnProperty(i)) {
-          if (pc[i].id === id) {
-            // FIXME: use splice(1,1) instead
-            delete pc[i];
-          }
-        }
-      }
-    }
   };
 
   /** Delete the node from the database and removes it from
@@ -399,6 +387,8 @@ var SkeletonElements = new function()
     } else if (this.isroot) {
       // The root node should be colored red unless it's active:
       this.fillcolor = root_node_color;
+    } else if ((this.type !== TYPE_CONNECTORNODE) && (this.numberOfChildren === 0)) {
+      this.fillcolor = leaf_node_color;
     } else {
       // If none of the above applies, just colour according to the z difference.
       this.fillcolor = this.colorFromZDiff(this.zdiff, this.skeleton_id);
@@ -674,7 +664,7 @@ var SkeletonElements = new function()
   // TODO must reuse nodes instead of creating them new, to avoid DOM insertions.
   // -- well, it can: just leave as members of each the functions that are really different.
 
-  // Identical functions: setXY, setColor, createCircle, deleteAll, deletenode (but for the php URL), some of the sub-functions of createEventHandlers
+  // Identical functions: setXY, setColor, createCircle, deletenode (but for the php URL), some of the sub-functions of createEventHandlers
 
   // Also, there shouldn't be a "needsync" flag. Instead, push the node to an array named "needSyncWithDB". Will avoid looping.
 
@@ -682,9 +672,6 @@ var SkeletonElements = new function()
   // and that can be reused.
   // Regarding children and connectors: any reason not to make them plain arrays? Given that they are always small,
   // using a filter to find a node with a specific id would be enough.
-
-  // WARNING deleteall is never used!
-
 
   /** Surrogate cosntructor for ConnectorNode.
    * See "newNode" for explanations. */

@@ -13,24 +13,28 @@ $pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
 $tnid = isset( $_REQUEST[ 'tnid' ] ) ? intval( $_REQUEST[ 'tnid' ] ) : -1;
+$skid = isset( $_REQUEST[ 'skid' ] ) ? intval( $_REQUEST[ 'skid' ] ) : -1;
 
 if ( $pid )
 {
 	if ( $uid )
 	{
-        $query = "SELECT tn.id AS id, ".
-            "            (tn.location).x as x, (tn.location).y as y, (tn.location).z AS z, ".
-            "             greatest(tn.creation_time, tn.edition_time) AS most_recent ".
-            "FROM treenode_class_instance tcn, relation r, treenode_class_instance tcn2, treenode tn ".
-            "WHERE ".
-            "  tcn.treenode_id = $tnid AND ".
-            "  tcn.project_id = $pid AND ".
-            "  r.relation_name = 'element_of' AND ".
-            "  tcn.relation_id = r.id AND ".
-            "  tcn.class_instance_id = tcn2.class_instance_id AND ".
-            "  tn.id = tcn2.treenode_id ".
-            "ORDER BY most_recent DESC ".
-            "LIMIT 1";
+        $query = "
+    SELECT
+        tn.id AS id,
+        tn.skeleton_id AS skeleton_id,
+        (tn.location).x as x,
+        (tn.location).y as y,
+        (tn.location).z AS z,
+        greatest(tn.creation_time, tn.edition_time) AS most_recent
+   FROM
+        treenode tn
+   WHERE
+        tn.project_id = $pid AND
+        tn.skeleton_id = $skid AND
+        tn.user_id = $uid
+   ORDER BY most_recent DESC
+   LIMIT 1";
 
 		$result = $db->getResult($query);
 		if ($result) {

@@ -1541,9 +1541,10 @@ var SkeletonAnnotations = new function()
         self.updateNodeCoordinatesinDB(function () {
           requestQueue.register("model/last.edited.or.added.php", "POST", {
             pid: project.id,
-            tnid: atn.id
+            tnid: atn.id,
+            skid: atn.skeleton_id
           }, function (status, text, xml) {
-            var nodeToActivate;
+            var nodeToActivate, skeletonToActivate;
             if (status === 200) {
               if (text && text != " ") {
                 var e = eval("(" + text + ")");
@@ -1551,11 +1552,12 @@ var SkeletonAnnotations = new function()
                   alert(e.error);
                 } else {
                   nodeToActivate = e.id;
+                  skeletonToActivate = e.skeleton_id;
                   stack.getProject().moveTo(
                     e.z, e.y, e.x,
                     undefined,
                     function() {
-                      SkeletonAnnotations.staticSelectNode(nodeToActivate);
+                      SkeletonAnnotations.staticSelectNode(nodeToActivate, skeletonToActivate);
                     });
                 }
               }

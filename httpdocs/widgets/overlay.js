@@ -1425,6 +1425,7 @@ var SkeletonAnnotations = new function()
 
     this.goToAdjacentBranchOrEndNode = function(next) {
       var foundNode, originalActiveNode, current, id;
+      var nodeToActivate, skeletonToActivate;
       if (null !== atn.id) {
         foundNode = false;
         originalActiveNode = nodes[atn.id];
@@ -1470,11 +1471,16 @@ var SkeletonAnnotations = new function()
           }
         }
         if (foundNode) {
+          nodeToActivate = current.id;
+          skeletonToActivate = atn.skeleton_id;
           project.moveTo(
             self.pix2physZ(current.z),
             self.pix2physY(current.y),
-            self.pix2physX(current.x));
-          window.setTimeout("SkeletonAnnotations.staticSelectNode( " + current.id + ", " + atn.skeleton_id + " )", 1000);
+            self.pix2physX(current.x),
+            undefined,
+            function () {
+              SkeletonAnnotations.staticSelectNode(nodeToActivate, skeletonToActivate);
+            });
         }
       } else {
         alert("No active node selected; can't find previous branch point");

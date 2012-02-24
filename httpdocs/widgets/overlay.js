@@ -388,6 +388,25 @@ var SkeletonAnnotations = new function()
             if (e.error) {
               alert(e.error);
             } else {
+            if( label === 'TODO' ) {
+                $('#growl-alert').growlAlert({
+                  autoShow: true,
+                  content: 'Tag TODO added.',
+                  title: 'Information',
+                  position: 'top-right',
+                  delayTime: 2000,
+                  onComplete: function() { g.remove(); }
+                });
+            } else if( label === '' ) {
+                $('#growl-alert').growlAlert({
+                  autoShow: true,
+                  content: 'Tags removed.',
+                  title: 'Information',
+                  position: 'top-right',
+                  delayTime: 2000,
+                  onComplete: function() { g.remove(); }
+                });
+            }
               self.updateNodes();
             }
           }
@@ -436,7 +455,14 @@ var SkeletonAnnotations = new function()
           if($("#Tags" + atn.id).val()==="") {
             updateTags();
             removeTagbox();
-            self.showLabels();
+            $('#growl-alert').growlAlert({
+              autoShow: true,
+              content: 'Tags saved!',
+              title: 'Information',
+              position: 'top-right',
+              delayTime: 2000,
+              onComplete: function() { g.remove(); }
+            });
             self.updateNodes();
           }
         }

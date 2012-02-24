@@ -269,7 +269,7 @@ try {
   {
       $missing_treenodes = array();
       foreach ($connectors as $connector) {
-          if (!array_key_exists($connector['tnid'], $found_treenodes)) {
+          if (null != $connector['tnid'] && !array_key_exists($connector['tnid'], $found_treenodes)) {
               $missing_treenodes[] = $connector['tnid'];
           }
       }

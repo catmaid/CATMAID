@@ -67,6 +67,15 @@ if(!$skeletonClassID) { echo json_encode( array( 'error' => 'Cannot find "skelet
 // delete the model of, assume only one
 //$ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$ci_id[0]['class_instance_id']);
 
+// do not split at root node
+$res = $db->getResult('SELECT * FROM
+          "treenode"
+         WHERE
+          "treenode"."id" = '.$tnid);
+if (count($res) > 0 && $res[0]['parent_id'] == null ) {
+	echo json_encode( array( 'error' => 'Cannot split skeleton at root node!' ) );
+	return;
+}
 
 
 // Start transaction

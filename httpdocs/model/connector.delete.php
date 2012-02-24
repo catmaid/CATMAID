@@ -68,13 +68,6 @@ try {
     return;
   }
    
-  // check if the object belongs to you (XXX: or if you are admin)
-  $isuser = $db->getResult('SELECT "ci"."id" FROM "class_instance" AS "ci"
-                            WHERE "ci"."id" = '.$classin_id.' AND "ci"."user_id" = '.$uid);
-
-
-  if( !empty($isuser) )
-  {
     // XXX: correct deletion of associated terminals
     $presyn_id = $db->getRelationId( $pid, "presynaptic_to" );
     if(!$presyn_id) { echo makeJSON( array( 'error' => 'Can not find "presynaptic_to" relation for this project' ) ); return; }
@@ -84,34 +77,34 @@ try {
     // retrieve and delete pre and post terminal
     $conin = $db->getResult('SELECT "cici"."class_instance_a" AS "id" FROM "class_instance_class_instance" AS "cici"
      WHERE ("cici"."relation_id" = '.$presyn_id.' OR "cici"."relation_id" = '.$postsyn_id.')
-     AND "cici"."class_instance_b" = '.$classin_id.' AND 
+     AND "cici"."class_instance_b" = '.$classin_id.' AND
      "cici"."project_id" = '.$pid);
-    
+
     if (false === $conin) {
       emitErrorAndExit($db, 'Failed to select pre and post terminals.');
     }
-    
+
     // delete connector
     $ids = $db->deleteFrom("connector", ' "connector"."id" = '.$cid);
-    
+
     if (false === $ids) {
       emitErrorAndExit($db, 'Failed to delete connector #'.$cid);
     }
 
     // delete connector from geometry domain
     $ids = $db->deleteFrom("treenode_connector", ' "connector_id" = '.$cid);
-    
+
     if (false === $ids) {
       emitErrorAndExit($db, 'Failed to delete connector #'.$cid.' from geometry domain');
     }
-    
-    // delete class_instance      
+
+    // delete class_instance
     $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$classin_id);
-    
+
     if (false === $ids) {
       emitErrorAndExit($db, 'Failed to delete connector #'.$cid.' class instance');
     }
-    
+
     // delete class_instance
     if(!empty($conin)) {
       foreach($conin as $key => $tn) {
@@ -121,7 +114,7 @@ try {
          }
       }
     }
-    
+
     // delete label relationships without deleting the class_instance labels
     $ids = $db->deleteFrom("treenode_class_instance", ' "treenode_class_instance"."treenode_id" = '.$classin_id.' AND
     "treenode_class_instance"."relation_id" = '.$lab_id);
@@ -129,11 +122,7 @@ try {
     if (false === $ids) {
       emitErrorAndExit($db, 'Failed to delete label relationships with connector.');
     }
-        
-  } else {
-    echo makeJSON( array( 'error' => 'Can not delete. You are not the owner of the class_instance "'.$classin_id.'" for this project' ) );
-    return;
-  }
+
 
   if (! $db->commit() ) {
     emitErrorAndExit( $db, 'Failed to commit!' );

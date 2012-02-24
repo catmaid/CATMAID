@@ -460,7 +460,7 @@ function handle_openProjectStack( status, text, xml )
 			//! look if the project is already opened, otherwise open a new one
 			if ( !( project && project.id == e.pid ) )
 			{
-				project = new Project( e.pid );
+				project = new Project( e.pid, e.ptitle );
 				project_view = project.getView();
 				project.register();
 			}

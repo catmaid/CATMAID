@@ -444,7 +444,7 @@ function Stack(
 	var viewLeft   = parseInt( getPropertyFromCssRules( 3, 0, "left" ) );
 	var viewRight  = parseInt( getPropertyFromCssRules( 3, 0, "right" ) );
 	
-	var stackWindow = new CMWWindow( title );
+	var stackWindow = new CMWWindow( title + " | " + project.getTitle() );
 	var view = stackWindow.getFrame();
 
 	var viewWidth = stackWindow.getFrame().offsetWidth;

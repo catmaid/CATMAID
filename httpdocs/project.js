@@ -19,7 +19,7 @@
  * - is related to one ore more stacks of statically aligned layers
  *   ( all stacks of a project are related by translation using physical dimensions )
  */
-function Project( pid )
+function Project( pid, ptitle )
 {
 	this.getView = function()
 	{
@@ -445,9 +445,15 @@ function Project( pid )
 	 */
 	this.getId = function(){ return pid; }
 	
+	/**
+	 * Get project title.
+	 */
+	this.getTitle = function(){ return self.title; }
+
 	// initialise
 	var self = this;
 	this.id = pid;
+	this.title = ptitle
 	if ( typeof ui == "undefined" ) ui = new UI();
 	if ( typeof requestQueue == "undefined" ) requestQueue = new RequestQueue();
 	

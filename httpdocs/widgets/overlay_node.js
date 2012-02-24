@@ -364,7 +364,8 @@ var SkeletonElements = new function()
         }
         // Redraw everything for now
         node.paper.catmaidSVGOverlay.updateNodes();
-
+        // refresh object tree, in case a root node was deleted and thus its skeleton
+        ObjectTree.refresh();
 
         // TODO something is wrong, in that upon deleting a node updateNodes() is called like 10 times in a row.
         // TODO   but cannot reproduce it always.

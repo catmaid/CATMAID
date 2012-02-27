@@ -435,7 +435,7 @@ var SkeletonAnnotations = new function()
       "Tag: <input id='Tags" + atn.id + "' name='Tags' type='text' value='' /><div style='color:#949494'>(Save&Close: Enter)</div>" );
       e.css('background-color', 'white');
       e.css('position', 'absolute');
-      e.appendTo("#sliceSVGOverlayId");
+      e.appendTo("#"+view.id);
 
       tagbox = e;
 
@@ -1255,7 +1255,7 @@ var SkeletonAnnotations = new function()
 
     var view = document.createElement("div");
     view.className = "sliceSVGOverlay";
-    view.id = "sliceSVGOverlayId";
+    view.id = "sliceSVGOverlayId"+stack.getId();
     view.style.zIndex = 5;
     // Custom cursor for tracing
     view.style.cursor ="url(widgets/themes/kde/svg-circle.cur) 15 15, crosshair";

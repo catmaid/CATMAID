@@ -29,6 +29,8 @@ if ( ! $uid ) {
 	return;
 }
 
+checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
+
 $x = isset( $_REQUEST[ 'x' ] ) ? floatval( $_REQUEST[ 'x' ] ) : 0;
 $y = isset( $_REQUEST[ 'y' ] ) ? floatval( $_REQUEST[ 'y' ] ) : 0;
 $z = isset( $_REQUEST[ 'z' ] ) ? floatval( $_REQUEST[ 'z' ] ) : 0;

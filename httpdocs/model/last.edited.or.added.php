@@ -5,6 +5,7 @@ include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
 include_once( 'json.inc.php' );
+include_once( 'utils.php' );
 
 $db =& getDB();
 $ses =& getSession();
@@ -19,6 +20,8 @@ if ( $pid )
 {
 	if ( $uid )
 	{
+		checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
+
         $query = "
     SELECT
         tn.id AS id,

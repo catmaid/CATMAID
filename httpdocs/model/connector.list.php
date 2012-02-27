@@ -25,6 +25,8 @@ if ( ! $uid ) {
     return;
 }
 
+checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
+
 // relation type
 // use, 0 for presynaptic_to, 1 for postsynaptic_to
 $relation_type = isset( $_REQUEST[ 'relation_type' ] ) ? intval( $_REQUEST[ 'relation_type' ] ) : 0;

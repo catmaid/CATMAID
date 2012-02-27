@@ -27,6 +27,8 @@ if ( ! $uid ) {
 	return;
 }
 
+# 3. The user must be allowed to view annotations:
+checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
 
 // retrieve treenode id, when set retrieve skeleton id
 $atnid = isset( $_REQUEST[ 'atnid' ] ) ? intval( $_REQUEST[ 'atnid' ] ) : 0;

@@ -5,6 +5,7 @@ include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
 include_once( 'json.inc.php' );
+include_once( 'utils.php' );
 
 $db =& getDB();
 $ses =& getSession();
@@ -17,6 +18,8 @@ if ( $pid )
 {
 	if ( $uid )
 	{
+
+		checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
 
 		$users_treenodes = $db->getResult('SELECT "us"."name", COUNT("tn"."id") AS "cnt" FROM "treenode" AS "tn",
 		    "user" AS "us" WHERE "us"."id" = "tn"."user_id" AND "tn"."project_id" = '.$pid.' GROUP BY "us"."name" ORDER BY "cnt" ');

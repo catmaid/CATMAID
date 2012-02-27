@@ -46,7 +46,7 @@ if ( ! $uid ) {
     return;
 }
 
-canEditOrExit($db, $uid, $pid);
+checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED | $EDIT_ANY_ALLOWED);
 
 // retrieve class ids
 $it_id = $db->getClassId( $pid, $input_type );

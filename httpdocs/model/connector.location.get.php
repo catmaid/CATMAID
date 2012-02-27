@@ -5,6 +5,7 @@ include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
 include_once( 'json.inc.php' );
+include_once( 'utils.php' );
 
 $db =& getDB();
 $ses =& getSession();
@@ -18,6 +19,9 @@ if ( $pid )
 {
 	if ( $uid )
 	{
+
+    checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
+
 
     $eof_id = $db->getRelationId( $pid, 'model_of' );
     if(!$eof_id) { echo makeJSON( array( 'error' => 'Can not find "model_of" relation for this project' ) ); return; }

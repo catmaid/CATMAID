@@ -42,7 +42,7 @@ if ( ! $uid ) {
 }
 
 # 3. User has permissions?
-canEditOrExit( $db, $uid, $pid );
+checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED | $EDIT_ANY_ALLOWED);
 
 
 // Start transaction

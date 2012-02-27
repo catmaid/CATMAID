@@ -1,5 +1,9 @@
 <?php
 
+/* Any logged in user can see the complete list of IDs, usernames and
+   long names. */
+
+/* FIXME: Why is this here? */
 sleep( 2 );
 
 include_once( 'errors.inc.php' );

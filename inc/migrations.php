@@ -877,6 +877,21 @@ ALTER TABLE stack ADD COLUMN tile_height integer NOT NULL DEFAULT 256;
 '
 ),
 
+    // Make the default of these permissions restrictive (i.e. can't
+    // do anything) for the future but set them both to TRUE for
+    // existing entries, since the previous behaviour was to allow
+    // viewing and editing for all users in this table.
+
+	'2012-02-27T13:10:42' => new Migration(
+		'Add can_edit_any and can_view_any permissions to the project_user table',
+		'
+ALTER TABLE project_user ADD COLUMN can_edit_any boolean DEFAULT FALSE;
+ALTER TABLE project_user ADD COLUMN can_view_any boolean DEFAULT FALSE;
+UPDATE project_user SET can_edit_any = TRUE;
+UPDATE project_user SET can_view_any = TRUE;
+'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

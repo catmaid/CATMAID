@@ -40,6 +40,9 @@ if ( ! $uid ) {
 	return;
 }
 
+# 3. The user must be allowed to view annotations:
+checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
+
 $classes = $db->getMap( $pid, 'class' );
 if (!$classes) {
     echo makeJSON( array( 'error' => "Could not find classes for project $pid" ) );

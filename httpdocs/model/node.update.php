@@ -57,7 +57,7 @@ try {
     if (-1 === $first_pid) {
       $first_pid = $pid;
       // CHECK permissions
-      canEditOrExit( $db, $uid, $pid );
+      checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED | $EDIT_ANY_ALLOWED);
     } else if ($pid !== $first_pid) {
       echo emitErrorAndExit($db, 'Can only edit treenodes belonging to the same project!');
     }

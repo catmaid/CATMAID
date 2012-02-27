@@ -37,6 +37,9 @@ if ( ! $uid ) {
 	return;
 }
 
+# 4. The user must be allowed to view annotations:
+checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
+
 # Preconditions passed!
 
 # Treenode is element_of class_instance (skeleton), which is model_of (neuron) which is part_of class_instance (?), recursively, until reaching class_instance ('root').

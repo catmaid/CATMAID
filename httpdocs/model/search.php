@@ -29,6 +29,8 @@ if ( ! $uid ) {
 	return;
 }
 
+checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
+
 $search_string = isset( $_REQUEST['substring'] ) ? $_REQUEST['substring'] : "";
 $escaped_search_string = pg_escape_string($search_string);
 

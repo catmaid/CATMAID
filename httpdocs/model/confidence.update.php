@@ -42,7 +42,7 @@ if ( ! $uid ) {
 }
 
 # 3. Permissions?
-canEditOrExit($db, $uid, $pid);
+checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED | $EDIT_ANY_ALLOWED);
 
 # Is the confidence a valid value?
 if ($confidence < 1 || $confidence > 5) {

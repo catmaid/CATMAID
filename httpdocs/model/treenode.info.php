@@ -5,6 +5,7 @@ include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
 include_once( 'json.inc.php' );
+include_once( 'utils.php' );
 
 $db =& getDB();
 $ses =& getSession();
@@ -34,6 +35,9 @@ if ( ! $uid ) {
   echo json_encode( array( 'error' => 'You are not logged in.' ) );
 	return;
 }
+
+# 4. The user must be allowed to view annotations:
+checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
 
 // Single query: no need for an explicit transaction
 

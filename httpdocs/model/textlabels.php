@@ -5,6 +5,7 @@ include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
 include_once( 'json.inc.php' );
+include_once( 'utils.php' );
 
 $db =& getDB();
 $ses =& getSession();
@@ -21,6 +22,8 @@ $height = isset( $_REQUEST[ 'height' ] ) ? floatval( $_REQUEST[ 'height' ] ) : 0
 $scale = isset( $_REQUEST[ 'scale' ] ) ? floatval( $_REQUEST[ 'scale' ] ) : 1;
 $resolution = isset( $_REQUEST[ 'resolution' ] ) ? floatval( $_REQUEST[ 'resolution' ] ) : 1;
 
+# The user must be allowed to view annotations:
+checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
 
 $textlabels = $db->getResult(
 	'SELECT	DISTINCT ON ( "tid" ) "textlabel"."id" AS "tid",

@@ -1165,6 +1165,11 @@ var SkeletonAnnotations = new function()
     this.whenclicked = function (e) {
       var m = ui.getMouse(e, self.view);
 
+      if (!mayEdit())
+        return;
+
+      console.log("hello...");
+
       // take into account current local offset coordinates and scale
       var pos_x = m.offsetX;
       var pos_y = m.offsetY;

@@ -347,6 +347,8 @@ function TracingTool()
       "Y": [ 89 ]
     },
     run: function (e) {
+      if (!mayEdit())
+        return false;
       tracingLayer.svgOverlay.tracingCommand('synapse');
       return true;
     }
@@ -360,6 +362,8 @@ function TracingTool()
       "A": [ 65 ]
     },
     run: function (e) {
+      if (!mayView())
+        return false;
       tracingLayer.svgOverlay.tracingCommand('goactive');
       return true;
     }
@@ -371,6 +375,8 @@ function TracingTool()
       "V": [ 86 ]
     },
     run: function (e) {
+      if (!mayView())
+        return false;
       tracingLayer.svgOverlay.tracingCommand('gonextbranch');
       return true;
     }
@@ -382,6 +388,8 @@ function TracingTool()
       "B": [ 66 ]
     },
     run: function (e) {
+      if (!mayView())
+        return false;
       tracingLayer.svgOverlay.tracingCommand('goprevbranch');
       return true;
     }
@@ -394,6 +402,8 @@ function TracingTool()
       "D": [ 68 ]
     },
     run: function (e) {
+      if (!mayView())
+        return false;
       tracingLayer.svgOverlay.activateNode(null);
       return true;
     }
@@ -405,6 +415,8 @@ function TracingTool()
       "P": [ 80 ]
     },
     run: function (e) {
+      if (!mayView())
+        return false;
       tracingLayer.svgOverlay.tracingCommand('goparent');
       return true;
     }
@@ -416,6 +428,8 @@ function TracingTool()
       "E": [ 69 ]
     },
     run: function (e) {
+      if (!mayView())
+        return false;
       tracingLayer.svgOverlay.tracingCommand('golastedited');
       return true;
     }
@@ -426,6 +440,8 @@ function TracingTool()
     buttonName: "skelsplitting",
     buttonID: 'trace_button_skelsplitting',
     run: function (e) {
+      if (!mayEdit())
+        return false;
       tracingLayer.svgOverlay.tracingCommand('skelsplitting');
       return true;
     }
@@ -439,6 +455,8 @@ function TracingTool()
       "6": [ 54 ]
     },
     run: function (e) {
+      if (!mayEdit())
+        return false;
       tracingLayer.svgOverlay.tracingCommand('skelrerooting');
       return true;
     }
@@ -452,6 +470,8 @@ function TracingTool()
       "7": [ 55 ]
     },
     run: function (e) {
+      if (!mayView())
+        return false;
       if(tracingLayer.svgOverlay.getLabelStatus()) {
         tracingLayer.svgOverlay.tracingCommand('hidelabels');
       } else {
@@ -469,6 +489,8 @@ function TracingTool()
       "S": [ 83 ]
     },
     run: function (e) {
+      if (!mayView())
+        return false;
       tracingLayer.svgOverlay.tracingCommand('exportswc');
       return true;
     }
@@ -480,6 +502,8 @@ function TracingTool()
       "T": [ 84 ]
     },
     run: function (e) {
+      if (!mayEdit())
+        return false;
       if (!(e.ctrlKey || e.metaKey)) {
 	tracingLayer.svgOverlay.tracingCommand('tagging');
         return true;
@@ -495,6 +519,8 @@ function TracingTool()
       "L": [ 76 ]
     },
     run: function (e) {
+      if (!mayEdit())
+        return false;
       if (e.ctrlKey || e.metaKey || e.shiftKey) {
         tracingLayer.svgOverlay.tracingCommand('tagTODOremove');
       } else {
@@ -510,6 +536,8 @@ function TracingTool()
       "G": [ 71 ]
     },
     run: function (e) {
+      if (!mayView())
+        return false;
       if (!(e.ctrlKey || e.metaKey)) {
         tracingLayer.svgOverlay.tracingCommand('selectnearestnode');
         return true;
@@ -525,6 +553,8 @@ function TracingTool()
       'N': [ 78 ]
     },
     run: function (e) {
+      if (!mayEdit())
+        return false;
       tracingLayer.svgOverlay.tracingCommand('createtreenode');
       self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
       return true;
@@ -537,6 +567,8 @@ function TracingTool()
       'M': [ 77 ]
     },
     run: function (e) {
+      if (!mayEdit())
+        return false;
       tracingLayer.svgOverlay.tracingCommand('createtreenode');
       self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
       return true;
@@ -550,6 +582,8 @@ function TracingTool()
       '1': [ 49 ]
     },
     run: function (e) {
+      if (!mayEdit())
+        return false;
       tracingLayer.svgOverlay.setConfidence(1, e.altKey);
       return true;
     }
@@ -561,6 +595,8 @@ function TracingTool()
       '2': [ 50 ]
     },
     run: function (e) {
+      if (!mayEdit())
+        return false;
       tracingLayer.svgOverlay.setConfidence(2, e.altKey);
       return true;
     }
@@ -572,6 +608,8 @@ function TracingTool()
       '3': [ 51 ]
     },
     run: function (e) {
+      if (!mayEdit())
+        return false;
       tracingLayer.svgOverlay.setConfidence(3, e.altKey);
       return true;
     }
@@ -583,6 +621,8 @@ function TracingTool()
       '4': [ 52 ]
     },
     run: function (e) {
+      if (!mayEdit())
+        return false;
       tracingLayer.svgOverlay.setConfidence(4, e.altKey);
       return true;
     }
@@ -594,6 +634,8 @@ function TracingTool()
       '5': [ 53 ]
     },
     run: function (e) {
+      if (!mayEdit())
+        return false;
       tracingLayer.svgOverlay.setConfidence(5, e.altKey);
       return true;
     }

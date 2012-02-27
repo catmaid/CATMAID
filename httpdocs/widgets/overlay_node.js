@@ -543,6 +543,8 @@ var SkeletonElements = new function()
 
     /** Here 'this' is mc, and treenode is the Node instance. */
     var mc_move = function(dx, dy, x, y, e) {
+      if(!mayEdit())
+        return;
       if(e.which === 2) {
         return;
       }

@@ -55,6 +55,18 @@ var messageWindow = null;
 
 var rootWindow;
 
+var user_permissions = null;
+function checkPermission(p) {
+  return user_permissions && user_permissions[project.getId()][p];
+}
+function mayEdit() {
+  return checkPermission('can_edit_any');
+}
+
+function mayView() {
+  return checkPermission('can_view_any');
+}
+
 // From: http://stackoverflow.com/q/956719/223092
 function countProperties(obj) {
   var count = 0;
@@ -155,9 +167,19 @@ function handle_login(status, text, xml, completionCallback) {
       completionCallback();
     }
   }
+
+  // Whatever happened, get details of which projects this user (or no
+  // user) is allowed to edit:
+  $.get('model/user-project-permissions.php', function (data) {
+    if (data.error) {
+      alert(data.error);
+    } else {
+      user_permissions = data;
+    }
+  }, 'json');
+
   return;
 }
-
 
 /**
  * queue a logout-request

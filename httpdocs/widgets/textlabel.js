@@ -15,6 +15,225 @@
 /**
  */
 
+
+
+
+function TextlabelTool()
+{
+  this.prototype = new Navigator();
+
+  var self = this;
+  var textlabelLayer = null;
+  var stack = null;
+  var bindings = {};
+  this.toolname = "textlabeltool";
+
+  this.resize = function( width, height )
+  {
+    self.prototype.resize( width, height );
+    return;
+  };
+
+  var setupSubTools = function()
+  {
+    var box;
+    if ( self.prototype.stack == null ) {
+      box = createButtonsFromActions(
+        actions,
+        "textlabelbuttons",
+        "textlabel_");
+      $( "#toolbar_nav" ).prepend( box );
+    }
+  };
+
+  var createTextlabelLayer = function( parentStack )
+  {
+    stack = parentStack;
+    textlabelLayer = new TextlabelLayer( parentStack );
+    //this.prototype.mouseCatcher = tracingLayer.svgOverlay.getView();
+    // TODO: we do not have a single layer for the textlabels
+    // self.prototype.setMouseCatcher( textlabelLayer.view );
+
+    parentStack.addLayer( "TextlabelLayer", textlabelLayer );
+
+    // Call register AFTER changing the mouseCatcher
+    self.prototype.register( parentStack, "edit_button_move" );
+    console.log('after proto register', self.prototype, self.prototype.mouseCatcher);
+    // view is the mouseCatcher now
+    // var view = tracingLayer.svgOverlay.view;
+
+    var proto_onmousedown = self.prototype.mouseCatcher.onmousedown;
+    self.prototype.mouseCatcher.onmousedown = function( e ) {
+      switch ( ui.getMouseButton( e ) )
+      {
+        case 1:
+          // tracingLayer.svgOverlay.whenclicked( e );
+          console.log('case 1');
+          
+          break;
+        case 2:
+          proto_onmousedown( e );
+          console.log('case 2');
+          /*ui.registerEvent( "onmousemove", updateStatusBar );
+          ui.registerEvent( "onmouseup",
+            function onmouseup (e) {
+              ui.releaseEvents();
+              ui.removeEvent( "onmousemove", updateStatusBar );
+              ui.removeEvent( "onmouseup", onmouseup );
+              // Recreate nodes by feching them from the database for the new field of view
+              tracingLayer.svgOverlay.updateNodes();
+            });
+          */
+          break;
+        default:
+          console.log('case default');
+          proto_onmousedown( e );
+          break;
+      }
+      return;
+    };
+
+    var proto_changeSlice = self.prototype.changeSlice;
+    self.prototype.changeSlice =
+      function( val ) {
+        proto_changeSlice( val );
+      };
+  };
+
+	/**
+	 * install this tool in a stack.
+	 * register all GUI control elements and event handlers
+	 */
+	this.register = function( parentStack )
+	{
+    setupSubTools();
+
+    if (textlabelLayer && stack) {
+      if (stack !== parentStack) {
+        // If the tracing layer exists and it belongs to a different stack, replace it
+        stack.removeLayer( textlabelLayer );
+        createTextlabelLayer( parentStack );
+      } else {
+        reactivateBindings();
+      }
+    } else {
+      createTextlabelLayer( parentStack );
+    }
+
+    return;
+  };
+
+  /** Inactivate only onmousedown, given that the others are injected when onmousedown is called.
+   * Leave alone onmousewheel: it is different in every browser, and it cannot do any harm to have it active. */
+  var inactivateBindings = function() {
+    var c = self.prototype.mouseCatcher;
+    ['onmousedown'].map(
+      function ( fn ) {
+        if (c[fn]) {
+          bindings[fn] = c[fn];
+          delete c[fn];
+        }
+      });
+  };
+
+  var reactivateBindings = function() {
+    var c = self.prototype.mouseCatcher;
+    for (var b in bindings) {
+      if (bindings.hasOwnProperty(b)) {
+        c[b.name] = b;
+      }
+    }
+  };
+
+	/**
+	 * unregister all stack related mouse and keyboard controls
+	 */
+  this.unregister = function()
+  {
+    // do it before calling the prototype destroy that sets stack to null
+    if (self.prototype.stack) {
+      inactivateBindings();
+    }
+    // Do NOT unregister: would remove the mouseCatcher layer
+    // and the annotations would disappear
+    //self.prototype.unregister();
+    return;
+  }
+
+	/**
+	 * unregister all project related GUI control connections and event
+	 * handlers, toggle off tool activity signals (like buttons)
+	 */
+	this.destroy = function()
+	{
+
+    // the prototype destroy calls the prototype's unregister, not self.unregister
+    // do it before calling the prototype destroy that sets stack to null
+    self.prototype.stack.removeLayer( "TextlabelLayer" );
+    self.prototype.destroy( "edit_button_move" );
+    // TODO: remove everything properly
+    // $( "#tracingbuttons" ).remove();
+    // textlabelLayer.svgOverlay.destroy();
+    //
+    for (var b in bindings) {
+      if (bindings.hasOwnProperty(b)) {
+        delete bindings[b];
+      }
+    }
+    return;
+	};
+
+  var actions = [];
+
+  this.addAction = function ( action ) {
+    actions.push( action );
+  };
+
+  this.getActions = function () {
+    return actions;
+  };
+
+  var arrowKeyCodes = {
+    left: 37,
+    up: 38,
+    right: 39,
+    down: 40
+  };
+
+/*TODO: complete actions
+  this.addAction( new Action({
+    helpText: "Zoom in",
+    keyShortcuts: {
+      '+': [ 43, 107, 61, 187 ]
+    },
+    run: function (e) {
+      self.prototype.slider_s.move(1);
+      return true;
+    }
+  }) );
+*/
+
+  var keyCodeToAction = getKeyCodeToActionMap(actions);
+
+  /** This function should return true if there was any action
+      linked to the key code, or false otherwise. */
+
+  this.handleKeyPress = function( e ) {
+    var keyAction = keyCodeToAction[e.keyCode];
+    if (keyAction) {
+      return keyAction.run(e);
+    } else {
+      return false;
+    }
+  };
+
+  this.redraw = function()
+  {
+    self.prototype.redraw();
+  };
+
+}
+
 /**
  * a textlabel-box
  */
@@ -233,7 +452,7 @@ Textlabel = function(
 	var apply = function( e )
 	{
 		icon_apply.style.display = "block";
-		RequestQueue.replace(
+		requestQueue.replace(
 			"model/textlabel.update.php",
 			"POST",
 			{
@@ -281,7 +500,7 @@ Textlabel = function(
 	{
 		icon_apply.style.display = "block";
 		
-		RequestQueue.register(
+		requestQueue.register(
 			'model/textlabel.delete.php',
 			'POST',
 			{
@@ -599,7 +818,19 @@ TextlabelLayer = function(
 	var stack = stack;
 	var textlabels = new Array();
 	var stackWindow = stack.getWindow();
-	
+
+  this.resize = function ( width, height )
+  {
+    // TODO: textlabel layer resize does nothing
+    return;
+  }
+
+  this.redraw = function( completionCallback )
+  {
+      // TODO: does nothing
+      return;
+  }
+
 	/**
 	 * update textlabels in a given box of interest by querying it from the server
 	 */

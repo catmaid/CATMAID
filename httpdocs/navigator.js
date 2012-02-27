@@ -457,6 +457,7 @@ function Navigator()
 	 */
 	this.register = function( parentStack, buttonName )
 	{
+        console.log('register in navigator')
 		document.getElementById( typeof buttonName == "undefined" ? "edit_button_move" : buttonName ).className = "button_active";
 		document.getElementById( "toolbar_nav" ).style.display = "block";
 		

@@ -26,6 +26,7 @@ function TracingTool()
   var bindings = {};
   this.toolname = "tracingtool";
 
+
 	this.resize = function( width, height )
 	{
     self.prototype.resize( width, height );

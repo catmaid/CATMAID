@@ -43,6 +43,8 @@ if ( ! $uid ) {
 	return;
 }
 
+# 3. Permissions?
+canEditOrExit($db, $uid, $pid);
 
 // Start transaction
 if (! $db->begin() ) {

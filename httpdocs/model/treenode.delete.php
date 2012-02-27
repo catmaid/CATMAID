@@ -36,7 +36,7 @@ if ( ! $uid ) {
 }
 
 # 4. The user must have permissions to edit this tree
-# TODO -- currently all users can edit everything
+canEditOrExit($db, $uid, $pid);
 
 $modof_id = $db->getRelationId( $pid, 'model_of' );
 if(!$modof_id) { echo json_encode( array( 'error' => 'Can not find "model_of" relation for this project' ) ); return; }

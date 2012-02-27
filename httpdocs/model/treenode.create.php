@@ -28,9 +28,7 @@ if ( ! $uid ) {
 }
 
 # 3. The user must have permissions to edit this tree
-# TODO -- currently all users can edit everything
-
-
+canEditOrExit($db, $uid, $pid);
 
 // Add a new treenode to the database
 // ----------------------------------

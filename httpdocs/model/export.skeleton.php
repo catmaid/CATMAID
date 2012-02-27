@@ -29,9 +29,6 @@ if ( ! $uid ) {
   return;
 }
 
-# 3. Permissions?
-canEditOrExit($db, $uid, $pid);
-
 // Start transaction
 if (! $db->begin() ) {
   echo json_encode( array( 'error' => 'Could not start transaction.' ) );

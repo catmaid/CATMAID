@@ -46,6 +46,8 @@ if ( ! $uid ) {
     return;
 }
 
+canEditOrExit($db, $uid, $pid);
+
 // retrieve class ids
 $it_id = $db->getClassId( $pid, $input_type );
 if(!$it_id) {

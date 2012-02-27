@@ -20,6 +20,8 @@ if ( $pid )
 {
   if ( $uid )
   {
+    canEditOrExit($db, $uid, $pid);
+
     $eleof = $db->getRelationId( $pid, "element_of" );
     if(!$eleof) { echo makeJSON( array( 'error' => 'Can not find "element_of" relation for this project' ) ); return; }
 

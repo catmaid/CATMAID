@@ -26,7 +26,10 @@ if ( ! $uid ) {
 	return;
 }
 
-# 3. There must be some other data
+# 3. Permissions?
+canEditOrExit($db, $uid, $pid);
+
+# 4. There must be some other data
 $type = isset( $_REQUEST[ 'type' ] ) ? $_REQUEST[ 'type' ]  : "none";
 $tnid = isset( $_REQUEST[ 'id' ] ) ? intval( $_REQUEST[ 'id' ] ) : 0;
 $value = isset( $_REQUEST[ 'value' ] ) ? intval( $_REQUEST[ 'value' ] ) : 0;

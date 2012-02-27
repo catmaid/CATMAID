@@ -36,8 +36,7 @@ if ( ! $uid ) {
 }
 
 # 4. The user must have permissions to edit this tree
-# TODO -- currently all users can edit everything
-
+canEditOrExit($db, $uid, $pid);
 
 // Start transaction
 if (! $db->begin() ) {

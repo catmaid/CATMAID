@@ -37,10 +37,6 @@ if ( ! $uid ) {
 	return;
 }
 
-# 4. The user must have permissions to edit this tree
-# TODO -- currently all users can edit everything
-
-
 # Preconditions passed!
 
 # Treenode is element_of class_instance (skeleton), which is model_of (neuron) which is part_of class_instance (?), recursively, until reaching class_instance ('root').

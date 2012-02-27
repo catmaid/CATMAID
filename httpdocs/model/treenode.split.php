@@ -37,8 +37,7 @@ if ( ! $uid ) {
 }
 
 # 4. The user must have permissions to edit this tree
-# TODO -- currently all users can edit everything
-
+canEditOrExit($db, $uid, $pid);
 
 # Preconditions passed!
 # Proceed to split the given node from its parent,

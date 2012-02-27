@@ -1,5 +1,4 @@
 <?php
-// return all labels in the project
 
 include_once( 'errors.inc.php' );
 include_once( 'db.pg.class.php' );

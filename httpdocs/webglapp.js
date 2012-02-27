@@ -11,7 +11,7 @@ function WebGLViewer(divID) {
 
   this.neurons = [];
 
-  var camera, scene, renderer, grid_lines, scale, controls, light;
+  var camera, scene, renderer, grid_lines, scale, controls, light, zplane;
   var mouseX = 0, mouseY = 0;
   var project_id = project.id;
   var stack_id = project.focusedStack.id;
@@ -372,7 +372,7 @@ function WebGLViewer(divID) {
     camera.position.z = 200;
   }
 
-	function addMesh( geometry, scale, x, y, z, rx, ry, rz, material ) {
+  function addMesh( geometry, scale, x, y, z, rx, ry, rz, material ) {
     mesh = new THREE.Mesh( geometry, material );
     mesh.scale.set( scale, scale, scale );
     mesh.position.set( x, y, z );
@@ -412,6 +412,40 @@ function WebGLViewer(divID) {
           }
         }
       });
+  }
+
+
+  this.updateZPlane = function(zval) {
+    // if disabled, deselect
+    if( zval === -1 ) {
+        scene.remove( zplane );
+        zplane = null;
+        return;
+    }
+    var newval;
+    if( isNaN(zval) ) {
+        zval = project.focusedStack.z;
+    }
+    newval = (-zval * resolution.z + translation.z) * scale;
+
+    if( !zplane ) {
+        var geometry = new THREE.Geometry();
+        var xwidth = dimension.x*resolution.x*scale,
+            ywidth = dimension.y*resolution.y*scale;
+        geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( 0,0,0 ) ) );
+        geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( xwidth,0,0 ) ) );
+        geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( 0,ywidth,0 ) ) );
+        geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( xwidth,ywidth,0 ) ) );
+        geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
+        var material = new THREE.MeshBasicMaterial( { color: 0x90e4ff, opacity:0.2, transparent:true } );
+        zplane = new THREE.Mesh( geometry, material );
+        zplane.doubleSided = true;
+        zplane.position.z = newval;
+        scene.add( zplane );
+        return;
+    }
+    zplane.position.z = newval;
+
   }
 
   function debugaxes() {
@@ -539,6 +573,21 @@ function createWebGLViewerFromCATMAID(divID) {
   if (!$(divID_jQuery).data('viewer')) {
     $(divID_jQuery).data('viewer', new WebGLViewer(divID));
   }
+}
+
+function updateZPlane(zindex) {
+
+  var divID = 'viewer-3d-webgl-canvas';
+  var divID_jQuery = '#' + divID;
+
+  if( $('#enable_z_plane').attr('checked') != undefined ) {
+      $(divID_jQuery).data('viewer').updateZPlane(zindex);
+  } else {
+      $(divID_jQuery).data('viewer').updateZPlane(-1);
+  }
+
+
+
 }
 
 function update3DWebGLViewATN() {

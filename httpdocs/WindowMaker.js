@@ -114,6 +114,15 @@ var WindowMaker = new function()
     rand.onclick = randomizeWebGLColor; // function declared in webglapp.js
     container.appendChild(rand);
 
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "enable_z_plane");
+    rand.setAttribute("value", "Enable z-plane");
+    rand.onclick = updateZPlane; // function declared in webglapp.js
+    container.appendChild(rand);
+    var rand = document.createTextNode('Enable z-plane');
+    container.appendChild(rand);
+
     var introduction = document.createElement('p')
     introduction.setAttribute("id", "view3DWebGLIntroduction");
     container.appendChild(introduction);

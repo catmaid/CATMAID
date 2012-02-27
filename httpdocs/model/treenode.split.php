@@ -152,24 +152,36 @@ try {
 	$children = $db->getAllTreenodeChildrenRecursively( $pid, $tnid );
 	$newskeleton_treenodes = array();
 
-	foreach($children as $key => $childTreenode) {
+    foreach($children as $key => $childTreenode) {
+        $newskeleton_treenodes[$childTreenode['id']] = TRUE;
+    }
+    reset($children);
+
+    if (count($children) > 0) {
+
+        $comma_separated_children = implode(", ", array_keys($newskeleton_treenodes));
+
 		// Update the element_of to the newly created skeleton
 		// and the new root treenode
-		$ids = $db->getResult('UPDATE "treenode_class_instance" SET "class_instance_id" = '.$newSkeletonID.'
-													 WHERE "treenode_class_instance"."treenode_id" = '.$childTreenode['id'].'
-																 AND "treenode_class_instance"."relation_id" = '.$eleof_id);
+        $result = $db->getResult("
+    UPDATE treenode_class_instance
+    SET class_instance_id = $newSkeletonID
+    WHERE treenode_class_instance.treenode_id IN ($comma_separated_children)
+      AND treenode_class_instance.relation_id = $eleof_id");
 
-        $newskeleton_treenodes[$childTreenode['id']] = TRUE;
-
-		if ( false === $ids ) {
-			emitErrorAndExit($db, 'Failed to update the skeleton id of the splitted nodes.');
+		if (FALSE === $result) {
+			emitErrorAndExit($db, 'Failed to update the skeleton id of the split-off nodes.');
 		}
 
-        $ids = $db->getResult("UPDATE treenode SET skeleton_id = $newSkeletonID WHERE id = {$childTreenode['id']}");
-        if (FALSE === $ids) {
+        $result = $db->getResult("
+     UPDATE treenode
+     SET skeleton_id = $newSkeletonID
+     WHERE id IN ($comma_separated_children)");
+
+        if (FALSE === $result) {
             emitErrorAndExit($db, "Failed to update the skeleton_id column of one of the split-off nodes");
         }
-	};
+    }
 
     // also need to update the pre/postsynaptic terminal part_of relationship for the new skeleton
     $comma_separated_newskeleton_treenodes = implode(", ", array_keys($newskeleton_treenodes));

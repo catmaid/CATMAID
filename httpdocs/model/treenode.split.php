@@ -186,10 +186,11 @@ try {
     // also need to update the pre/postsynaptic terminal part_of relationship for the new skeleton
     $comma_separated_newskeleton_treenodes = implode(", ", array_keys($newskeleton_treenodes));
     // retrieve all terminals
-    $newskeleton_terminals = $db->getResult(
-    "SELECT class_instance_id
+    $newskeleton_terminals = $db->getResult("
+    SELECT class_instance_id
     FROM treenode_class_instance
-    WHERE treenode_class_instance.treenode_id IN ($comma_separated_newskeleton_treenodes) AND treenode_class_instance.relation_id = $modof_id");
+    WHERE treenode_class_instance.treenode_id IN ($comma_separated_newskeleton_treenodes)
+      AND treenode_class_instance.relation_id = $modof_id");
 
     // if terminal are found, update their part_of skeleton_id relation
     if (count($newskeleton_terminals) > 0) {

@@ -174,7 +174,7 @@ function WebGLViewer(divID) {
     this.baseName = skeleton_data.baseName;
 
     this.labelSphere = new Object();
-    var labelspheregeometry = new THREE.SphereGeometry( 30, 32, 32, 1 );
+    var labelspheregeometry = new THREE.SphereGeometry( 130 * scale, 32, 32, 1 );
 
     for (var fromkey in this.original_connectivity) {
       var to = this.original_connectivity[fromkey];
@@ -209,26 +209,22 @@ function WebGLViewer(divID) {
         // if either from or to have a relevant label, and they are not yet
         // created, create one
         if( ($.inArray( "uncertain", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
-            this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff8000 } ) );
-            this.labelSphere[fromkey].scale.set( scale, scale, scale );
+            this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff8000, opacity:0.6, transparent:true  } ) );
             this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
             scene.add( this.labelSphere[fromkey] );
         }
         if( ($.inArray( "uncertain", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
-            this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff8000 } ) );
-            this.labelSphere[tokey].scale.set( scale, scale, scale );
+            this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff8000, opacity:0.6, transparent:true  } ) );
             this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
             scene.add( this.labelSphere[tokey] );
         }
         if( ($.inArray( "todo", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
-            this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff0000 } ) );
-            this.labelSphere[fromkey].scale.set( scale, scale, scale );
+            this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:true  } ) );
             this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
             scene.add( this.labelSphere[fromkey] );
         }
         if( ($.inArray( "todo", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
-            this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff0000 } ) );
-            this.labelSphere[tokey].scale.set( scale, scale, scale );
+            this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:true  } ) );
             this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
             scene.add( this.labelSphere[tokey] );
         }
@@ -271,9 +267,9 @@ function WebGLViewer(divID) {
 
   this.createActiveNode = function( x, y, z)
   {
-    sphere = new THREE.SphereGeometry( 30, 32, 32, 1 );
-    active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x00ff00 } ) );
-    active_node.scale.set( 0.05, 0.05, 0.05 );
+    sphere = new THREE.SphereGeometry( 130 * scale, 32, 32, 1 );
+    active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.6, transparent:true } ) );
+    // active_node.scale.set( 0.05, 0.05, 0.05 );
     active_node.position.set( x,y,z );
     scene.add( active_node );
   }

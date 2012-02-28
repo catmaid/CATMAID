@@ -116,3 +116,16 @@ function uniqueId() {
   if (!UNIQUE_ID) UNIQUE_ID = Math.floor(1073741824 * Math.random());
   return ++UNIQUE_ID;
 }
+
+/**
+ * Simplify more robust prototype inheritance. From:
+ * http://michaux.ca/articles/class-based-inheritance-in-javascript
+ */
+function extend(subclass, superclass) {
+   function Dummy() {}
+   Dummy.prototype = superclass.prototype;
+   subclass.prototype = new Dummy();
+   subclass.prototype.constructor = subclass;
+   subclass.superclass = superclass;
+   subclass.superproto = superclass.prototype;
+}

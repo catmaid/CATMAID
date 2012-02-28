@@ -267,3 +267,12 @@ var Base64 = {
   }
 }
 
+/**
+ * Get first key of array
+ */
+function getFirstKey( o )
+{
+    for (e in o )
+        return e;
+}
+

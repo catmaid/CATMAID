@@ -228,6 +228,18 @@ function WebGLViewer(divID) {
             this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
             scene.add( this.labelSphere[tokey] );
         }
+        if( ($.inArray( "soma", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
+            this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0x0000ff } ) );
+            this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
+            this.labelSphere[fromkey].scale.set( 2, 2, 2 );
+            scene.add( this.labelSphere[fromkey] );
+        }
+        if( ($.inArray( "soma", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
+            this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0x0000ff  } ) );
+            this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
+            this.labelSphere[tokey].scale.set( 2, 2, 2 );
+            scene.add( this.labelSphere[tokey] );
+        }
           
       }
     }

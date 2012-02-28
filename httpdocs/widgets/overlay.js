@@ -1143,6 +1143,13 @@ var SkeletonAnnotations = new function()
           pt = wc.worldTop,
           new_scale = wc.scale;
       
+      // FIXME: this should also check for the size of the containing
+      // div having changed.  You can see this problem if you have
+      // another window open beside one with the tracing overlay -
+      // when you close the window, the tracing overlay window is
+      // enlarged but will have extra nodes fetched for the exposed
+      // area.
+
       var doNotUpdate = stack.old_z == stack.z && stack.old_s == stack.s;
       if ( doNotUpdate )
       {

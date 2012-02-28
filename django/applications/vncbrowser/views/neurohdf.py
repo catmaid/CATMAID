@@ -251,6 +251,8 @@ def stack_models(request, project_id=None, stack_id=None, logged_in_user=None):
     """
     d={}
     filename=os.path.join(settings.HDF5_STORAGE_PATH, '%s_%s.hdf' %(project_id, stack_id) )
+    if not os.path.exists(filename):
+        return HttpResponse(json.dumps(d), mimetype="text/json")
     with closing(h5py.File(filename, 'r')) as hfile:
         meshnames=hfile['meshes'].keys()
         for name in meshnames:

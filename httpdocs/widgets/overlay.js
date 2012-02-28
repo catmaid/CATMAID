@@ -1189,6 +1189,9 @@ var SkeletonAnnotations = new function()
           statusBar.replaceLast("Deactivated node #" + atn.id);
         }
         self.activateNode(null);
+        // also deselect neuron and skeleton in object tree
+        project.selectedObjects.selectedneuron = null;
+        project.selectedObjects.selectedskeleton = null;
       } else if (e.shiftKey) {
         if (null === atn.id) {
           if (getMode() === "skeletontracing") {

@@ -602,10 +602,6 @@ var SkeletonElements = new function()
     };
 
     var mc_mousedown = function(e) {
-      if (this.paper.catmaidSVGOverlay.ensureFocused()) {
-        e.stopPropagation();
-        return;
-      }
       e.stopPropagation();
     };
 

@@ -404,7 +404,6 @@ function WebGLViewer(divID) {
         type: "GET",
         dataType: "json",
         success: function (models) {
-          console.log('models', models);
           // loop over objects
           for( var obj in models) {
             var vert = models[obj].vertices;

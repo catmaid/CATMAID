@@ -1137,6 +1137,14 @@ var SkeletonAnnotations = new function()
     // Initialize to the value of stack.scale at instantiation of SVGOverlay
     var old_scale = stack.scale;
 
+
+    /* When we pass a completedCallback to redraw, it's essentially
+       always because we want to know that, if any fetching of nodes
+       was required for the redraw, those nodes have now been fetched.
+       So, if we *do* need to call updateNodes, we should pass it the
+       completionCallback.  Otherwise, just fire the
+       completionCallback at the end of this method. */
+
     this.redraw = function( stack, completionCallback ) {
       var wc = stack.getWorldTopLeft();
       var pl = wc.worldLeft,
@@ -1164,15 +1172,18 @@ var SkeletonAnnotations = new function()
         }
       }
 
-      if ( !doNotUpdate )
-        self.updateNodes();
+      if ( !doNotUpdate ) {
+        self.updateNodes(completionCallback);
+      }
 
       self.view.style.left = Math.floor((-pl / stack.resolution.x) * new_scale) + "px";
       self.view.style.top = Math.floor((-pt / stack.resolution.y) * new_scale) + "px";
 
       self.updatePaperDimensions(stack);
-      if (typeof completionCallback !== "undefined") {
-        completionCallback();
+      if (doNotUpdate) {
+        if (typeof completionCallback !== "undefined") {
+          completionCallback();
+        }
       }
     };
 

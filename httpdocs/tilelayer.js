@@ -238,8 +238,8 @@ function TileLayer(
 					// tiles[ i ][ j ].alt = tileBaseName + stack.s + "/" + ( fr + i ) + "/" + ( fc + j );
 					if( tileSourceType === 1 ) {
 					    tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
-					    tiles[ i ][ j ].src = self.getTileURL( tiles[ i ][ j ].alt );
-          } else if ( tileSourceType === 2 ) {
+					    tiles[ i ][ j ].src = self.getTileURL( tileBaseName, stack.z, c, r, zoom );
+                    } else if ( tileSourceType === 2 ) {
 					    tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
 					    tiles[ i ][ j ].src = self.getTileURLRequest( c * tileWidth, r * tileHeight, tileWidth, tileHeight, stack.scale, stack.z );
           } else if ( tileSourceType === 3 ) {
@@ -317,8 +317,9 @@ function TileLayer(
 	/**
 	 * Creates the URL for a tile.
 	 */
-	this.getTileURL = function(tileId) {
-		return baseURL + tileId + "." + fileExtension;
+	this.getTileURL = function( tileBaseName, slice, x_tile, y_tile, zoom_level )
+	{
+		return baseURL + tileBaseName + y_tile + "_" + x_tile + "_" + zoom_level + "." + fileExtension;
 	}
 	
 	this.resize = function( width, height )

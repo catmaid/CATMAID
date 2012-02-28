@@ -22,6 +22,21 @@ function ProcTileLayer(
     // call super constructor
     TileLayer.call(this, stack, baseURL, tileWidth, tileHeight, fileExtension, tileSourceType);
 
+    // override URL creation function - PHP version
+    this.getTileURL_PHP = function(tileId)
+    {
+        url = "model/imageproc.php?url=" + this.baseURL + tileId
+                    + "." + fileExtension
+                    + "&type=" + fileExtension
+                    + "&p=" + project.id
+                    + "&stacks=" + stack.getId()
+                    + "&slice=" + slice
+                    + "&x=" + x_tile + "&y=" + y_tile
+                    + "&zl=" + zoom_level
+                    + "&its=" + intensity;
+        return url;
+    };
+
     // override URL creation function - Python version
     this.getTileURL = function( tileBaseName, slice, x_tile, y_tile, zoom_level )
     {

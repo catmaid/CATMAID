@@ -160,6 +160,19 @@ var SkeletonAnnotations = new function()
       return show_labels;
     }
 
+    /** This returns true if focus had to be switched; typically if
+        the focus had to be switched, you should return from any event
+        handling, otherwise all kinds of surprising bugs happen...  */
+    this.ensureFocused = function() {
+      var window = stack.getWindow();
+      if (window.hasFocus()) {
+        return false;
+      } else {
+        window.focus();
+        return true;
+      }
+    }
+
     var lastX = null, lastY = null;
     
     /* padding beyond screen borders for fetching data and updating nodes */
@@ -1163,6 +1176,10 @@ var SkeletonAnnotations = new function()
     // called from mousedown (or mouseup if we ever need to make
     // click-and-drag work with the left hand button too...)
     this.whenclicked = function (e) {
+      if (this.ensureFocused()) {
+        e.stopPropagation();
+        return;
+      }
       var m = ui.getMouse(e, self.view);
 
       if (!mayEdit())

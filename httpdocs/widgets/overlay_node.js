@@ -474,6 +474,10 @@ var SkeletonElements = new function()
 
     /** Here 'this' is mc. */
     var mc_dblclick = function(e) {
+      if (this.paper.catmaidSVGOverlay.ensureFocused()) {
+        e.stopPropagation();
+        return;
+      }
       // TODO these sliders don't exist anymore
       if (e.altKey) {
         // zoom in
@@ -495,6 +499,10 @@ var SkeletonElements = new function()
         paper = this.paper,
         wasActiveNode = false,
         toActivate;
+      if (this.paper.catmaidSVGOverlay.ensureFocused()) {
+        e.stopPropagation();
+        return;
+      }
       if (e.shiftKey) {
         var atnID = SkeletonAnnotations.getActiveNodeId();
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
@@ -594,6 +602,10 @@ var SkeletonElements = new function()
     };
 
     var mc_mousedown = function(e) {
+      if (this.paper.catmaidSVGOverlay.ensureFocused()) {
+        e.stopPropagation();
+        return;
+      }
       e.stopPropagation();
     };
 
@@ -602,6 +614,10 @@ var SkeletonElements = new function()
           connectornode = this.catmaidNode,
           paper = this.paper,
           wasActiveNode = false;
+      if (this.paper.catmaidSVGOverlay.ensureFocused()) {
+        e.stopPropagation();
+        return;
+      }
       // return some log information when clicked on the node
       // this usually refers here to the mc object
       if (e.shiftKey) {

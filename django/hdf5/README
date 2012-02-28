@@ -1,0 +1,6 @@
+Put here your project/stack associated HDF5 file that can
+contain 3D surface models for the WebGL viewer.
+
+Filename convention: projectID_stackID.hdf
+
+See scripts/create_neurohdf.py for HDF5 file creation.

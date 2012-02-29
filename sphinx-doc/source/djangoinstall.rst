@@ -1,14 +1,16 @@
 Installation of the DJANGO backend
 ==================================
 
-The Django backend is required to use the neuron catalogue.
+The Django backend is required to use the neuron catalogue and the
+cropping tool.
 
 Make sure that you have the following packages installed::
 
   sudo apt-get install python-virtualenv libpq-dev python-dev \
-    libxml2-dev libxslt1-dev
+    libxml2-dev libxslt1-dev libjpeg-dev libtiff-dev
 
-  sudo apt-get build-dep python-numpy python-h5py
+  sudo apt-get build-dep python-numpy python-h5py libgraphicsmagick++1-dev \
+    libimage-exiftool-perl
 
 You first need to create a Python virtualenv.  In this directory, run::
 
@@ -35,6 +37,18 @@ Here is the list of packages and version required::
    psycopg2==2.4.1
    sqlparse==0.1.3
    wsgiref==0.1.2
+   pgmagick==0.5.1
+   celery==2.4.6
+   django-celery==2.4.2
+   kombu==2.0.0
+   django-kombu==0.9.4
+
+*A note on the pgmagick module:* this is a wrapper for GraphicMagick (GM).
+GM uses so-called delegates to support different file formats. Depending
+of the presence of such a delegate a file format is supported or not. The
+cropping tool uses GM through pgmagick and expects the libtiff and the
+libjpeg delegates to be present. So make sure your GM installation
+supports tiff (check e.g. with the help of "gm convert -list format").
 
 If you want to be able to run the unit tests, you will need to allow
 the catmaid database user (catmaid_user by default) to create new
@@ -62,6 +76,13 @@ following ways::
 
   * Change the STATICFILES_URL and STATICFILES_LOCAL variables to
     point to the right locations.
+
+  * Change the absolute path in TMP_DIR to reflect space for
+    temporary files (e.g. cropped stacks).  Make sure the web-server
+    can read and write this folder.
+
+  * Define CATMAID_DJANGO_URL te be the URL to your Django installation
+    as seen from the outside.
 
 Try running the server locally, with::
 

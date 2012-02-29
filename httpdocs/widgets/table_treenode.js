@@ -3,7 +3,9 @@
 
 
 function updateTreenodeTable() {
-  TreenodeTable.init( project.getId() );
+  //TreenodeTable.init( project.getId() );
+  TreenodeTable.oTable.fnClearTable( 0 );
+  TreenodeTable.oTable.fnDraw();
 }
 
 var TreenodeTable = new function()
@@ -93,7 +95,7 @@ var TreenodeTable = new function()
           "height": "14px"
         });
       },
-      "fnRowCallback": function (nRow, aData, iDisplayIndex) {
+/*      "fnRowCallback": function (nRow, aData, iDisplayIndex) {
 
         if (aData[1] === "R") {
           $(nRow).addClass('root_node');
@@ -113,7 +115,7 @@ var TreenodeTable = new function()
           }
         }
         return nRow;
-      },
+      },*/
       "aoColumns": [{
         "sClass": "center",
         "bSearchable": false,
@@ -173,8 +175,8 @@ var TreenodeTable = new function()
 
     $("#treenodetable thead input").keyup(function () { /* Filter on the column (the index) of this element */
       var i = $("thead input").index(this) + 2;
-      ns.oTable.fnFilter(this.value, i);
       asInitVals[i] = this.value;
+      ns.oTable.fnFilter(this.value, i);
     });
 
     $("#treenodetable thead input").each(function (i) {

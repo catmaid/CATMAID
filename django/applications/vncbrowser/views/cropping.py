@@ -4,6 +4,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import Project, Stack, Message, User
 from vncbrowser.views import catmaid_login_required
+from vncbrowser.views.common import json_error_response
 import json
 
 try:

@@ -1438,7 +1438,7 @@ var SkeletonAnnotations = new function()
           var jso = $.parseJSON(text);
           // XXX: how much time does calling the function like this take?
           self.refreshNodes(jso);
-          self.redraw(stack);
+          stack.redraw();
         }
       }
       if (typeof callback !== "undefined") {

@@ -79,7 +79,7 @@ function Stack(
 		
 		//statusBar.replaceLast( "[" + ( Math.round( x * 10000 * resolution.x ) / 10000 ) + ", " + ( Math.round( y * 10000 * resolution.y ) / 10000 ) + "]" );
 		
-		redraw(completionCallback);
+		self.redraw(completionCallback);
 		
 		return
 	}
@@ -163,7 +163,7 @@ function Stack(
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */
-	var redraw = function(completionCallback)
+	this.redraw = function(completionCallback)
 	{
 		var layersToRedraw = [];
 
@@ -426,7 +426,7 @@ function Stack(
 				break;
 			case CMWWindow.RESIZE:
 				resize();
-				redraw();
+				self.redraw();
 				break;
 			case CMWWindow.FOCUS:
 				self.overview.getView().style.zIndex = "6";

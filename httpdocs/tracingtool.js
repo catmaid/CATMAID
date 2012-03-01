@@ -485,13 +485,23 @@ function TracingTool()
     helpText: "Export to SWC",
     buttonName: "exportswc",
     buttonID: 'trace_button_exportswc',
+    run: function (e) {
+      if (!mayView())
+        return false;
+      tracingLayer.svgOverlay.tracingCommand('exportswc');
+      return true;
+    }
+  }) );
+
+  this.addAction( new Action({
+    helpText: "Switch between a terminal and its connector",
     keyShortcuts: {
       "S": [ 83 ]
     },
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('exportswc');
+      tracingLayer.svgOverlay.tracingCommand('switchterminalconnector');
       return true;
     }
   }) );

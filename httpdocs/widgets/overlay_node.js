@@ -108,7 +108,7 @@ var SkeletonElements = new function()
     this.y = y;
     this.z = z;
     this.zdiff = zdiff;
-    this.display = Math.abs(zdiff) < 1.1;
+    this.shouldDisplay = displayTreenode;
     this.confidence = confidence;
     this.skeleton_id = skeleton_id;
     this.isroot = is_root_node;
@@ -178,7 +178,7 @@ var SkeletonElements = new function()
     node.y = y;
     node.z = z;
     node.zdiff = zdiff;
-    node.display = Math.abs(zdiff) < 1.1;
+    node.shouldDisplay = displayTreenode;
     node.confidence = confidence;
     node.skeleton_id = skeleton_id;
     node.isroot = isroot;
@@ -208,12 +208,15 @@ var SkeletonElements = new function()
   var nodeDrawEdges = function(toChildren) {
     var ID,
         children = this.children,
-        connectors = this.connectors;
-    
+        connectors = this.connectors,
+        child;
+
     if (toChildren) {
       for (ID in children) {
         if (children.hasOwnProperty(ID)) {
-          drawLineToParent(children[ID]);
+          child = children[ID];
+          if (displayBetweenNodes(this, child))
+            drawLineToParent(children[ID]);
         }
       }
     }
@@ -223,7 +226,7 @@ var SkeletonElements = new function()
         connectors[ID].drawEdges();
       }
     }
-    if (this.parent !== null) {
+    if (displayBetweenNodes(this, this.parent)) {
       drawLineToParent(this);
     }
   };
@@ -291,7 +294,7 @@ var SkeletonElements = new function()
   var drawLineToParent = function (node) {
     var parent = node.parent;
     var lineColor;
-    if (!(node.display || (parent && node.parent.display))) {
+    if (!displayBetweenNodes(node, parent)) {
       return;
     }
     if (parent) {
@@ -417,12 +420,27 @@ var SkeletonElements = new function()
     return inactive_skeleton_color
   };
 
+  var displayTreenode = function () {
+    return Math.abs(this.zdiff) < 0.5;
+  };
+
+  var displayConnector = function() {
+    /* Change the constant to 1.5 if you want to see the connector
+       (differently coloured) in the next and previous slices too. */
+    return Math.abs(this.zdiff) < 0.5
+  };
+
+  var displayBetweenNodes = function(node_a, node_b) {
+    return (node_a && node_a.shouldDisplay()) ||
+      (node_b && node_b.shouldDisplay());
+  }
+
   /** Create the Raphael circle elements if and only if the zdiff is zero, that is, if the node lays on the current section.
    * Here 'this' refers to the node.
    * */
   var createCircle = function()
   {
-    if (0 === this.zdiff) {
+    if (this.shouldDisplay()) {
       var paper = this.paper;
       // c and mc may already exist if the node is being reused
       if (this.c && this.mc) {
@@ -731,6 +749,7 @@ var SkeletonElements = new function()
     this.y = y;
     this.z = z;
     this.zdiff = zdiff;
+    this.shouldDisplay = displayConnector;
     this.confidence = confidence;
     this.paper = paper;
     this.pregroup = {}; // set of presynaptic treenodes
@@ -770,14 +789,20 @@ var SkeletonElements = new function()
     c.y = y;
     c.z = z;
     c.zdiff = zdiff;
+    c.shouldDisplay = displayConnector;
     c.confidence = confidence;
     c.pregroup = {};
     c.postgroup = {};
 
     if (c.c) {
-      var newCoords = {cx: x, cy: y};
-      c.c.attr(newCoords);
-      c.mc.attr(newCoords);
+      if (c.shouldDisplay()) {
+        var newCoords = {cx: x, cy: y};
+        c.c.attr(newCoords);
+        c.mc.attr(newCoords);
+      } else {
+        c.c.hide();
+        c.mc.hide();
+      }
     }
 
     // preLines and postLines are always removed and then recreated when calling drawEdges
@@ -862,6 +887,7 @@ var SkeletonElements = new function()
   {
     var i,
         tnid,
+        treenode,
         confidence,
         preLines = this.preLines,
         postLines = this.postLines,
@@ -873,17 +899,21 @@ var SkeletonElements = new function()
     // re-create
     for (i in pregroup) {
       if (pregroup.hasOwnProperty(i)) {
-        tnid = pregroup[i].treenode.id;
+        treenode = pregroup[i].treenode
+        tnid = treenode.id;
         confidence = pregroup[i].confidence;
-        preLines[tnid] = connectorCreateLine(this, tnid, confidence, true);
+        if (displayBetweenNodes(this, treenode))
+          preLines[tnid] = connectorCreateLine(this, tnid, confidence, true);
       }
     }
 
     for (i in postgroup) {
       if (postgroup.hasOwnProperty(i)) {
-        tnid = postgroup[i].treenode.id;
+        treenode = postgroup[i].treenode;
+        tnid = treenode.id;
         confidence = postgroup[i].confidence;
-        postLines[tnid] = connectorCreateLine(this, tnid, confidence, false);
+        if (displayBetweenNodes(this, treenode))
+          postLines[tnid] = connectorCreateLine(this, tnid, confidence, false);
       }
     }
   };

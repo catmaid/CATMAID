@@ -231,6 +231,8 @@ try {
     }
   }
 
+  $zbound = 4.1;
+
   // retrieve connectors that are synapses - do a LEFT OUTER JOIN with
   // the treenode_connector table, so that we get entries even if the
   // connector is not connected to any treenodes

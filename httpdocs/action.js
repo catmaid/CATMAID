@@ -200,7 +200,18 @@ var toolActions = [
 			WindowMaker.show('keyboard-shortcuts');
 			return true;
 		}
-	})
+	}),
+
+  new Action({
+    helpText: "Disclaimer",
+    buttonID: "disclaimer_button",
+    buttonName: 'disclaimer',
+    run: function (e) {
+      WindowMaker.show('disclaimer');
+      return true;
+    }
+  })
+
 ];
 
 var editToolActions = [
@@ -312,6 +323,8 @@ var tracingWindowActions = [
       return true;
     }
   })
+
+
 /*
   new Action({
     helpText: "Show object tree as graph",

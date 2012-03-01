@@ -12,7 +12,7 @@ if (!window.console) {
   window.console.log = function() {}
 }
 
-var global_bottom = 64;
+var global_bottom = 34;
 var statusBar; //!< global statusBar
 var slider_trace_z;
 var slider_trace_s;
@@ -899,8 +899,8 @@ var realInit = function()
 
   // change global bottom bar height, hide the copyright notice
   // and move the statusBar
-  window.setTimeout( "global_bottom = 35; $('#imprint').hide(2000); statusBar.setBottom(); window.onresize();", 2000 );
-  
+  statusBar.setBottom();
+
 	window.onresize();
 
 	$('#growl-alert').growlAlert({

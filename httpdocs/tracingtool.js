@@ -103,7 +103,6 @@ function TracingTool()
     self.prototype.changeSlice =
       function( val ) {
         proto_changeSlice( val );
-        tracingLayer.svgOverlay.updateNodes();
         // if 3d viewer window visible, change its z slice
         if( $( "#view_in_3d_webgl_widget").length ) {
             if( $('#enable_z_plane').attr('checked') != undefined ) {

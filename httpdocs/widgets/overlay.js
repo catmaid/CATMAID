@@ -33,18 +33,6 @@ var SkeletonAnnotations = new function()
     statusBar.replaceLast("Could not find node #" + nodeID + " for skeleton #" + skeletonID);
   };
 
-  /** Deactivates any active node and updates all nodes for all open SVGOverlays. */
-  // FIXME: apparently unused...
-  this.staticRefresh = function() {
-    var s;
-    for (s in SVGOverlays) {
-      if (SVGOverlays.hasOwnProperty(s)) {
-        s.selectNode(null);
-        s.updateNodes();
-      }
-    }
-  };
-
   // Data of the active Treenode or ConnectorNode
   var atn = {
     id: null,

@@ -1529,20 +1529,35 @@ var SkeletonAnnotations = new function()
           }
         }
         if (foundNode) {
-          nodeToActivate = current.id;
-          skeletonToActivate = atn.skeleton_id;
-          project.moveTo(
-            self.pix2physZ(current.z),
-            self.pix2physY(current.y),
-            self.pix2physX(current.x),
-            undefined,
-            function () {
-              SkeletonAnnotations.staticSelectNode(nodeToActivate, skeletonToActivate);
-            });
+          self.moveToAndSelectNode(current);
         }
       } else {
         alert("No active node selected; can't find previous branch point");
       }
+    }
+
+    this.moveToAndSelectNode = function (node) {
+      var nodeIDToActivate, skeletonIDToActivate, afterMove;
+      nodeIDToActivate = node.id;
+      if (node.type === "connector") {
+        afterMove = function() {
+          SkeletonAnnotations.staticSelectNode(nodeIDToActivate);
+        }
+      } else if (node.type === "treenode") {
+        skeletonIDToActivate = node.skeleton_id;
+        afterMove = function() {
+          SkeletonAnnotations.staticSelectNode(nodeIDToActivate, skeletonIDToActivate);
+        }
+      } else {
+        alert("BUG: unknown node type '"+node.type+"'");
+        return;
+      }
+      stack.getProject().moveTo(
+        self.pix2physZ(node.z),
+        self.pix2physY(node.y),
+        self.pix2physX(node.x),
+        undefined,
+        afterMove);
     }
 
     // Commands for the sub-buttons of the tracing tool
@@ -1559,18 +1574,7 @@ var SkeletonAnnotations = new function()
       case "goparent":
         if (null !== atn.id) {
           if (null !== atn.parent_id) {
-            nodeToActivate = atn.parent_id;
-            skeletonToActivate = atn.skeleton_id;
-            // FIXME: refactor out a moveToAndSelectNode function
-            var parentNode = nodes[nodeToActivate];
-            stack.getProject().moveTo(
-              self.pix2physZ(parentNode.z),
-              self.pix2physY(parentNode.y),
-              self.pix2physX(parentNode.x),
-              undefined,
-              function () {
-                SkeletonAnnotations.staticSelectNode(nodeToActivate, skeletonToActivate);
-              });
+            self.moveToAndSelectNode(nodes[atn.parent_id]);
           } else {
             alert("This is the root node - can't move to its parent");
           }
@@ -1608,15 +1612,7 @@ var SkeletonAnnotations = new function()
                 connector = node;
                 if (connector.id === switchingConnectorID) {
                   // Then move back to the terminal:
-                  treenode = nodes[switchingTreenodeID];
-                  stack.getProject().moveTo(
-                        self.pix2physZ(treenode.z),
-                        self.pix2physY(treenode.y),
-                        self.pix2physX(treenode.x),
-                        undefined,
-                        function () {
-                          SkeletonAnnotations.staticSelectNode(switchingTreenodeID, switchingTreenodeSkeletonID);
-                        });
+                  self.moveToAndSelectNode(nodes[switchingTreenodeID]);
                 } else {
                   alert("Don't know which terminal to switch to");
                   switchingTreenodeID = null;
@@ -1636,18 +1632,10 @@ var SkeletonAnnotations = new function()
                   for (connectorID in node.connectors) {
                     if (node.connectors.hasOwnProperty(connectorID)) {
                       connectorID = parseInt(connectorID);
-                      connector = node.connectors[connectorID];
                       switchingTreenodeSkeletonID = node.skeleton_id;
                       switchingTreenodeID = node.id;
                       switchingConnectorID = connectorID;
-                      stack.getProject().moveTo(
-                        self.pix2physZ(connector.z),
-                        self.pix2physY(connector.y),
-                        self.pix2physX(connector.x),
-                        undefined,
-                        function () {
-                          SkeletonAnnotations.staticSelectNode(connectorID);
-                        });
+                      self.moveToAndSelectNode(node.connectors[connectorID]);
                       break;
                     }
                   }
@@ -1678,14 +1666,13 @@ var SkeletonAnnotations = new function()
                 if (e.error) {
                   alert(e.error);
                 } else {
-                  nodeToActivate = e.id;
-                  skeletonToActivate = e.skeleton_id;
-                  stack.getProject().moveTo(
-                    e.z, e.y, e.x,
-                    undefined,
-                    function() {
-                      SkeletonAnnotations.staticSelectNode(nodeToActivate, skeletonToActivate);
-                    });
+                  /* The returned JSON is similar to other node
+                     objects, but actually the coordinates are world
+                     coordinates: */
+                  e.x = self.phys2pixX(e.x);
+                  e.y = self.phys2pixY(e.y);
+                  e.z = self.phys2pixZ(e.z);
+                  self.moveToAndSelectNode(e);
                 }
               }
             }

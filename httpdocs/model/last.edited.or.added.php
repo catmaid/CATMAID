@@ -29,7 +29,8 @@ if ( $pid )
         (tn.location).x as x,
         (tn.location).y as y,
         (tn.location).z AS z,
-        greatest(tn.creation_time, tn.edition_time) AS most_recent
+        greatest(tn.creation_time, tn.edition_time) AS most_recent,
+        'treenode' as type
    FROM
         treenode tn
    WHERE

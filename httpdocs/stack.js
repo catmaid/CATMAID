@@ -130,50 +130,56 @@ function Stack(
     }
   }
   
-	var redrawLayers = function( layersToRedraw, completionCallback ) {
-		var layerToRedraw;
-		if ( layersToRedraw.length === 0 ) {
-			//----------------------------------------------------------------------
-			/**
-			 * This question is completely useless but without asking it, Firefox on
-			 * Linux systems will not redraw the screen properly.  Took me ... to
-			 * find this out.
-			 */
-			var a = view.offsetWidth;
-			//----------------------------------------------------------------------
-
-			self.old_z = self.z;
-			self.old_y = self.y;
-			self.old_x = self.x;
-			self.old_s = self.s;
-			self.old_scale = self.scale;
-			self.old_yc = self.yc;
-			self.old_xc = self.xc;
-			if (typeof completionCallback !== "undefined") {
-				completionCallback();
-			}
-		} else {
-			layerToRedraw = layersToRedraw.shift();
-			layerToRedraw.redraw(function () {
-				redrawLayers( layersToRedraw, completionCallback );
-			});
-		}
-	}
-
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */
 	this.redraw = function(completionCallback)
 	{
-		var layersToRedraw = [];
+		var allQueued = false, semaphore = 0, layer,
+                onAnyCompletion = function () {
+			-- semaphore;
+			if (allQueued && semaphore === 0) {
+				if (typeof completionCallback !== "undefined") {
+					completionCallback();
+				}
+			}
+		}
 
 		self.yc = Math.floor( self.y * self.scale - ( self.viewHeight / 2 ) );
 		self.xc = Math.floor( self.x * self.scale - ( self.viewWidth / 2 ) );
 
-		for ( var key in layers )
-			layersToRedraw.push( layers[ key ] );
+		// Semaphore pattern from: http://stackoverflow.com/a/3709809/223092
+		for ( var key in layers ) {
+			if (layers.hasOwnProperty(key)) {
+				layer = layers[key];
+				++ semaphore;
+				layer.redraw(onAnyCompletion);
+			}
+		}
 
-		redrawLayers( layersToRedraw, completionCallback );
+		allQueued = true;
+		/* Also check at the end, in case none of these
+		   redraws invovled an AJAX call: */
+		if (semaphore === 0) {
+			if (typeof completionCallback !== "undefined") {
+				completionCallback();
+			}
+		}
+
+		/**
+		 * This question is completely useless but without asking it, Firefox on
+		 * Linux systems will not redraw the screen properly.  Took me ... to
+		 * find this out.
+		 */
+		var a = view.offsetWidth;
+
+		self.old_z = self.z;
+		self.old_y = self.y;
+		self.old_x = self.x;
+		self.old_s = self.s;
+		self.old_scale = self.scale;
+		self.old_yc = self.yc;
+		self.old_xc = self.xc;
 
 		return 2;
 	}

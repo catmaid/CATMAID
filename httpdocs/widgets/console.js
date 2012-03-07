@@ -7,8 +7,21 @@ function Console() {
   view.style.height = "35px";
   view.appendChild(document.createElement("pre"));
 
+  var nname = document.createElement("div");
+  nname.id = "neuronname";
+  nname.style.position = 'absolute';
+  nname.style.right = '450px';
+  nname.style.fontFamily = "Courier; Sans-serif;";
+  nname.style.fontSize = "15px";
+  nname.style.marginTop="10px";
+  nname.style.marginRight="50px";
+  nname.appendChild(document.createTextNode(""));
+  view.appendChild(nname);
+
   var coords = document.createElement("div");
-  coords.align = "right";
+  coords.id = "coordinates";
+  coords.style.position = 'absolute';
+  coords.style.right = '5px';
   coords.style.fontFamily = "Courier; Sans-serif;";
   coords.style.fontSize = "15px";
   coords.style.marginTop="10px";
@@ -18,6 +31,10 @@ function Console() {
   
   this.printCoords = function (obj) {
     coords.replaceChild(document.createTextNode(obj), coords.firstChild);
+  }
+
+  this.printNeuronname = function (obj) {
+    nname.replaceChild(document.createTextNode(obj), nname.firstChild);
   }
 
   var toStr = function (obj, ins) {

@@ -254,6 +254,7 @@ var SkeletonAnnotations = new function()
                   message += " <i>part_of</i> [<strong>"+d.name+"</strong>]";
                 }
                 statusBar.replaceLastHTML(message);
+                statusBar.printNeuronname('Selected neuron: '+data[0].name);
                 }
               } else {
                 alert("Getting the ancestry of the skeleton "+node.skeleton_id+" failed with HTTP status code "+status);
@@ -1208,6 +1209,9 @@ var SkeletonAnnotations = new function()
         if (null !== atn.id) {
           statusBar.replaceLast("Deactivated node #" + atn.id);
         }
+        // TODO: deactivation should be encapsulated in a seperate method,
+        // like it is partially in tradcingtool's deselectActiveNode
+        statusBar.printNeuronname("");
         self.activateNode(null);
       } else if (e.shiftKey) {
         if (null === atn.id) {

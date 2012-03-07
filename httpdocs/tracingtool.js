@@ -716,6 +716,10 @@ TracingTool.goToNearestInNeuron = function(type, objectID) {
 
 TracingTool.search = function()
 {
+  if( $('#search-box').val() === '' ) {
+    return;
+  }
+
   var setSearchingMessage = function(message) {
     $('#search-results').empty();
     $('#search-results').append($('<i/>').text(message));

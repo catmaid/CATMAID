@@ -281,15 +281,38 @@ var WindowMaker = new function()
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
+    add.setAttribute("id", "update_connectortable_current_skeleton");
+    add.setAttribute("value", "Update table for current skeleton");
+    add.onclick = updateConnectorTable; // function declared in table_connector.js
+    content.appendChild(add);
+
+    var sync = document.createElement('select');
+    sync.setAttribute("id", "connector_relation_type");
+    var objOption = document.createElement("option");
+    objOption.innerHTML = "Incoming connectors";
+    objOption.value = "0";
+    sync.appendChild(objOption);
+    var objOption2 = document.createElement("option");
+    objOption2.innerHTML = "Outgoing connectors";
+    objOption2.value = "1";
+    objOption2.selected = "selected";
+    sync.appendChild(objOption2);
+    content.appendChild(sync);
+
+    var rand = document.createTextNode('Synchronize');
+    content.appendChild(rand);
+    var sync = document.createElement('input');
+    sync.setAttribute("type", "checkbox");
+    sync.setAttribute("id", "synchronize_connectortable");
+    sync.setAttribute("label", "Synchronize");
+    content.appendChild(sync);
+
     var container = createContainer("connectortable_widget");
     content.appendChild(container);
 
     container.innerHTML =
-      '<select id="connector_relation_type">' +
-        '<option value="0">Incoming connectors</option>' +
-        '<option value="1" selected="yes">Outgoing connectors</option>' +
-      '</select>' +
-      '&nbsp; Synchronize <input type="checkbox" id="synchronize_connectortable" />' +
       '<table cellpadding="0" cellspacing="0" border="0" class="display" id="connectortable">' +
         '<thead>' +
           '<tr>' +

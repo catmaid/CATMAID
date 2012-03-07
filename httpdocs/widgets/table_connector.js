@@ -1,6 +1,11 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
+function updateConnectorTable() {
+  ConnectorTable.connectorTable.fnClearTable( 0 );
+  ConnectorTable.connectorTable.fnDraw();
+}
+
 var ConnectorTable = new function()
 {
   /** Pointer to the existing instance of table. */
@@ -15,7 +20,7 @@ var ConnectorTable = new function()
 
   this.init = function (pid) {
     var tableid = '#connectortable';
-    var skeletonID = SkeletonAnnotations.getActiveSkeletonId();
+    var skeletonID;
 
     self.connectorTable = $(tableid).dataTable(
       {
@@ -29,7 +34,7 @@ var ConnectorTable = new function()
         "iDisplayLength": possibleLengths[0],
         "sAjaxSource": 'model/connector.list.php',
         "fnServerData": function (sSource, aoData, fnCallback) {
-
+          skeletonID = SkeletonAnnotations.getActiveSkeletonId();
           if (!skeletonID) {
             $('#growl-alert').growlAlert({
               autoShow: true,

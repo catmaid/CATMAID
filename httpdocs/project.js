@@ -84,7 +84,15 @@ function Project( pid, ptitle )
 		}
 		return false;
 	}
-	
+
+	/**
+	 * get all the currently opened stacks
+	 */
+	this.getStacks = function()
+	{
+		return stacks;
+	}
+
 	/**
 	 * remove a stack from the list
 	 */

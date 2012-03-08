@@ -17,11 +17,6 @@ var statusBar; //!< global statusBar
 var slider_trace_z;
 var slider_trace_s;
 var a_url; //!< URL to this page
-var slider_crop_top_z;
-var slider_crop_bottom_z;
-var slider_crop_s;
-
-var button_crop_apply;
 
 var input_fontsize; //!< fontsize input
 var input_fontcolourred; //!< fontcolour red input
@@ -76,6 +71,11 @@ function countProperties(obj) {
   }
   return count;
 }
+
+// url of the django instance relative to the CATMAID URL
+// (if any, needed e.g. by cropping tool). It is expected
+// to end with a slash.
+var django_url = "dj/"
 
 /**
  * queue a login-request on pressing return
@@ -392,7 +392,7 @@ function handle_openProjectStack( status, text, xml )
 					e.translation,		//!< @todo replace by an affine transform
 					e.broken_slices,
 					e.trakem2_project,
-					e.min_zoom_level,
+					e.num_zoom_levels,
 					-2 );
 			
 			document.getElementById( "toolbox_project" ).style.display = "block";
@@ -720,64 +720,6 @@ var realInit = function()
 		this.href = project.createURL();
 		return true;
 	}
-	
-	button_crop_apply = document.getElementById( "button_crop_apply" );
-	
-	
-	
-	slider_crop_top_z = new Slider(
-			SLIDER_HORIZONTAL,
-			true,
-			1,
-			1,
-			1,
-			1,
-			function( val ){ statusBar.replaceLast( "crop top z: " + val ); return; } );
-	
-	slider_crop_bottom_z = new Slider(
-			SLIDER_HORIZONTAL,
-			true,
-			1,
-			1,
-			1,
-			1,
-			function( val ){ statusBar.replaceLast( "crop bottom z: " + val ); return; } );
-
-	slider_crop_s = new Slider(
-			SLIDER_HORIZONTAL,
-			true,
-			5,
-			0,
-			6,
-			5,
-			function( val ){ statusBar.replaceLast( "crop s: " + val ); } );
-	
-	var slider_crop_top_z_view = slider_crop_top_z.getView();
-	slider_crop_top_z_view.id = "slider_crop_top_z";
-	document.getElementById( "slider_crop_top_z" ).parentNode.replaceChild(
-			slider_crop_top_z_view,
-			document.getElementById( "slider_crop_top_z" ) );
-	document.getElementById( "slider_crop_top_z" ).parentNode.replaceChild(
-			slider_crop_top_z.getInputView(),
-			slider_crop_top_z_view.nextSibling );
-	
-	var slider_crop_bottom_z_view = slider_crop_bottom_z.getView();
-	slider_crop_bottom_z_view.id = "slider_crop_bottom_z";
-	document.getElementById( "slider_crop_bottom_z" ).parentNode.replaceChild(
-			slider_crop_bottom_z_view,
-			document.getElementById( "slider_crop_bottom_z" ) );
-	document.getElementById( "slider_crop_bottom_z" ).parentNode.replaceChild(
-			slider_crop_bottom_z.getInputView(),
-			slider_crop_bottom_z_view.nextSibling );
-
-	var slider_crop_s_view = slider_crop_s.getView();
-	slider_crop_s_view.id = "slider_crop_s";
-	document.getElementById( "slider_crop_s" ).parentNode.replaceChild(
-			slider_crop_s_view,
-			document.getElementById( "slider_crop_s" ) );
-	document.getElementById( "slider_crop_s" ).parentNode.replaceChild(
-			slider_crop_s.getInputView(),
-			slider_crop_s_view.nextSibling );
 	
 	document.getElementById( "login_box" ).style.display = "block";
 	document.getElementById( "logout_box" ).style.display = "none";

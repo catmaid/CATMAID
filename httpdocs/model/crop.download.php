@@ -27,12 +27,11 @@ if ( $file && $file_handle = @fopen( TMP_DIR.$file, 'r' ) )
 	header( 'Content-Type: image/tiff' );
 	header( 'Content-Disposition: attachment; filename="'.$file.'"' );
 	fpassthru( $file_handle );
-	
 }
 else
 {
 	sleep( 2 );
 	echo 'File doesn\'t exist.';
 }
-	
+
 ?>

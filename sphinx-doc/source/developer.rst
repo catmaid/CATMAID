@@ -8,3 +8,4 @@ Developer Documentation
    djangoinstall
    dbmigration
    djangounittest
+   celeryinstall

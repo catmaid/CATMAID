@@ -117,6 +117,8 @@ class Stack(models.Model):
     image_base = models.TextField()
     comment = models.TextField(null=True)
     trakem2_project = models.BooleanField()
+    num_zoom_levels = models.IntegerField()
+    file_extension = models.TextField()
 
 class ProjectStack(models.Model):
     class Meta:

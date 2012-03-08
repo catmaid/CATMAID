@@ -5,7 +5,7 @@ Make sure that you have the following packages installed:
   sudo apt-get install python-virtualenv libpq-dev python-dev \
     libxml2-dev libxslt1-dev
 
-  sudo apt-get build-dep python-numpy python-h5py
+  sudo apt-get build-dep python-numpy python-h5py libimage-exiftool-perl
 
 You first need to create a Python virtualenv.  In this directory, run:
 
@@ -19,6 +19,13 @@ Then run:
 at the right versions:
 
    pip install -r pip-frozen
+
+A note on the pgmagick module: this is a wrapper for GraphicMagick (GM).
+GM uses so called delegates to support a different formats. Depending of
+the presence of such a delegate a file format is supported or not. The
+cropping tool uses GM through pgmagick and expects the libtiff delegate
+to be present. So make sure your GM installation supports tiff (check
+e.g. with the help of "gm convert -list format").
 
 If you want to be able to run the unit tests, you will need to allow
 the catmaid database user (catmaid_user by default) to create new
@@ -92,3 +99,25 @@ file and set up the appropriate aliases.  An example is given here:
             Allow from all
 
     </Directory> 
+
+## Celery
+
+Some tasks of CATMAID (e.g. cropping) are done in the background. These are
+managed by Celery. This framework can use different methods to get messages
+from the Django client to the server which schedules and executes the tasks.
+By default a simple Python module that uses the Django data base is used.
+Alternatively one may use message brokers like RabbitMQ. This can be adjusted
+in the settings.py file. To initialize Celery, call the syncdb sub-command of
+your manage.py (from within the virtualenv):
+
+    python manage.py syncdb
+
+You should then be able to run the Celery daemon (also from within the
+virtualenv):
+
+    python manage.py celeryd -l info
+
+The celery daemon should be integrated in your system to be started
+automatically. Make sure that this daemon process has the permissions to
+write to the temporary directory (TMP_DIR).
+

@@ -60,6 +60,8 @@
 		<script type="text/javascript" src="tilelayer.js"></script>
 		<script type="text/javascript" src="navigator.js"></script>
 		<script type="text/javascript" src="selector.js"></script>
+		<script type="text/javascript" src="boxselectiontool.js"></script>
+		<script type="text/javascript" src="croppingtool.js"></script>
 		<script type="text/javascript" src="tracingtool.js"></script>
 		<script type="text/javascript" src="tracinglayer.js"></script>
 		<!--[if gte IE 5]>
@@ -173,10 +175,17 @@
 			*******************************************************************
 			-->
 			<div id="toolbar_crop" class="toolbar" style="display:none">
+				<div class="box"><p>x&nbsp;</p><p><input type="text" id="box_crop_x" name="box_crop_x" size="5" /><img src="widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_crop_xmap" /></p></div>
+				<div class="box"><p>y&nbsp;</p><p><input type="text" id="box_crop_y" name="box_crop_y" size="5" /><img src="widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_crop_ymap" /></p></div>
+				<div class="box"><p>w&nbsp;</p><p><input type="text" id="box_crop_w" name="box_crop_w" size="5" /><img src="widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_crop_wmap" /></p></div>
+				<div class="box"><p>h&nbsp;</p><p><input type="text" id="box_crop_h" name="box_crop_h" size="5" /><img src="widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_crop_hmap" /></p></div>
 				<div class="box" id="crop_top_z_index_box"><p>top z-index&nbsp;&nbsp;</p><div id="slider_crop_top_z"></div><p>&nbsp;&nbsp;</p></div>
 				<div class="box" id="crop_bottom_z_index_box"><p>bottom z-index&nbsp;&nbsp;</p><div id="slider_crop_bottom_z"></div><p>&nbsp;&nbsp;</p></div>
 				<div class="box" id="crop_zoom_level_box"><p>zoom-level&nbsp;&nbsp;</p><div id="slider_crop_s"></div><p>&nbsp;&nbsp;</p></div>
-				<div class="box"><p>re-register&nbsp;</p><p><input type="checkbox" id="crop_reregister" name="crop_reregister" disabled="disabled" /></p></div>
+				<div id="crop_stacks_menu_box" class="box">
+					<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p><a>Stacks</a></p>
+						<div class="pulldown" id="crop_stacks_menu"></div></div>
+				</div>
 				<div class="box_right"><a href="#" class="button" id="button_crop_apply" onclick="return false;"><img src="widgets/themes/kde/apply.gif" alt="apply" title="apply" /></a></div>
 				<div class="toolbar_fill"></div>
 			</div>
@@ -255,6 +264,10 @@
 			-->
 			<map id="xmap" name="xmap"><area shape="rect" coords="0,0,13,9" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) + 1; x.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) - 1; x.onchange();" alt="-" /></map>
 			<map id="ymap" name="ymap"><area shape="rect" coords="0,0,13,9" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) + 1; y.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) - 1; y.onchange();" alt="-" /></map>
+			<map id="box_crop_xmap" name="box_crop_xmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_crop_x = document.getElementById( 'box_crop_x' ); box_crop_x.value = parseInt( box_crop_x.value ) + 1; box_crop_x.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_crop_x = document.getElementById( 'box_crop_x' ); box_crop_x.value = parseInt( box_crop_x.value ) - 1; box_crop_x.onchange();" alt="-" /></map>
+			<map id="box_crop_ymap" name="box_crop_ymap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_crop_y = document.getElementById( 'box_crop_y' ); box_crop_y.value = parseInt( box_crop_y.value ) + 1; box_crop_y.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_crop_y = document.getElementById( 'box_crop_y' ); box_crop_y.value = parseInt( box_crop_y.value ) - 1; box_crop_y.onchange();" alt="-" /></map>
+			<map id="box_crop_wmap" name="box_crop_wmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_crop_w = document.getElementById( 'box_crop_w' ); box_crop_w.value = parseInt( box_crop_w.value ) + 1; box_crop_w.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_crop_w = document.getElementById( 'box_crop_w' ); box_crop_w.value = parseInt( box_crop_w.value ) - 1; box_crop_w.onchange();" alt="-" /></map>
+			<map id="box_crop_hmap" name="box_crop_hmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_crop_h = document.getElementById( 'box_crop_h' ); box_crop_h.value = parseInt( box_crop_h.value ) + 1; box_crop_h.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_crop_h = document.getElementById( 'box_crop_h' ); box_crop_h.value = parseInt( box_crop_h.value ) - 1; box_crop_h.onchange();" alt="-" /></map>
 			<!--
 			***********************************************************************
 			-->

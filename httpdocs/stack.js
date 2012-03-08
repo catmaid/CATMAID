@@ -35,7 +35,7 @@ function Stack(
 		translation,				//!< @todo replace by an affine transform
 		skip_planes,				//!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
 		trakem2_project,			//!< {boolean} that states if a TrakEM2 project is available for this stack
-		min_zoom_level,				//!< {int} that defines the minimum available zoom level
+		num_zoom_levels,			//!< {int} that defines the number of available non-artificial zoom levels
 		max_zoom_level				//!< {int} that defines the maximum available zoom level
 )
 {
@@ -382,14 +382,14 @@ function Stack(
 	self.MAX_Z = MAX_Z;
 
 	//! estimate the zoom levels
-	if ( min_zoom_level < 0 ) {
+	if ( num_zoom_levels < 0 ) {
 		self.MAX_S = 0;
 		var min_max = Math.min( MAX_X, MAX_Y );
 		var min_size = 256;
 		while ( min_max / Math.pow( 2, self.MAX_S ) / min_size > 4 )
 			++self.MAX_S;
 	} else {
-		self.MAX_S = min_zoom_level;
+		self.MAX_S = num_zoom_levels;
 	}
 	self.MIN_S = max_zoom_level;
 	

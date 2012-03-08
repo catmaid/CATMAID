@@ -362,7 +362,7 @@ def sanity_check( job ):
         errors.append( "z_min must no be larger than z_max" )
     # If the number of zoom levels is defined explicitely,
     # check if the requested level is not larger than that.
-    allowed_zoom_level = job.ref_stack.min_zoom_level
+    allowed_zoom_level = job.ref_stack.num_zoom_levels
     if allowed_zoom_level >= 0 and job.zoom_level > allowed_zoom_level:
         errors.append( "zoom_level must not be larger than what stacks allows (" + str(allowed_zoom_level) + ")" )
     if job.zoom_level < 0:

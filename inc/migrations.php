@@ -892,6 +892,11 @@ UPDATE project_user SET can_view_any = TRUE;
 '
 ),
 
+    '2012-03-08T10:00:16' => new Migration(
+        'Rename min_zoom_level field to num_zoom_levels in stacks table',
+		'ALTER TABLE stack RENAME COLUMN min_zoom_level TO num_zoom_levels;'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

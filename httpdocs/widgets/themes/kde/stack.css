@@ -252,7 +252,8 @@ div.sliceView div.cropBox
 	z-index:3;
 }
 
-div.sliceView div.cropBox p
+div.sliceView div.cropBox p.world,
+div.sliceView div.cropBox p.screen
 {
 	position:absolute;
 	right:-1px;
@@ -262,4 +263,9 @@ div.sliceView div.cropBox p
 	background:#0000FF;
 	color:#FFFFFF;
 	white-space:nowrap;
+}
+
+div.sliceView div.cropBox p.screen
+{
+	bottom:-47px;
 }

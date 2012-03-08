@@ -50,7 +50,7 @@ try {
         "stack"."resolution" AS "resolution",
         "stack"."image_base" AS "image_base",
         "stack"."trakem2_project" AS "trakem2_project",
-        "stack"."min_zoom_level" AS "min_zoom_level",
+        "stack"."num_zoom_levels" AS "num_zoom_levels",
         "stack"."file_extension" AS "file_extension",
         "stack"."tile_width" AS "tile_width",
         "stack"."tile_height" AS "tile_height"

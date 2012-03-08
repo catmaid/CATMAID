@@ -7,4 +7,5 @@ User Documentation
    introduction
    screenshots
    tracing_neurons
+   tools
    othertools

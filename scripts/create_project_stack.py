@@ -96,7 +96,7 @@ while True:
     image_base = raw_input("Image base URL: ")
     comment = raw_input("Additional comments (can be HTML formatted): ")
     translation = raw_input("Translation of the stack in the world project coordinates as 3-tuple: ")
-    min_zoom_level = raw_input("Minimum zoom level [default: -1]: ")
+    num_zoom_levels = raw_input("Number of zoom levels [default: -1 for heuristic]: ")
     file_extension = raw_input("File name extension for image tiles [default: jpg]: ")
     # trakem2_project = raw_input(": ")
 
@@ -107,12 +107,12 @@ while True:
     print("Image Base: {0}".format(image_base))
     print("Comment: {0}".format(comment))
     print("Translation: {0}".format(translation))
-    print("Min zoom level: {0}".format(min_zoom_level))
+    print("Num zoom levels: {0}".format(num_zoom_levels))
     print("File extension: {0}".format(file_extension))
     print("----")
 
-    if min_zoom_level is None or min_zoom_level == '':
-        min_zoom_level = str(-1)
+    if num_zoom_levels is None or num_zoom_levels == '':
+        num_zoom_levels = str(-1)
 
     if file_extension is None or file_extension == '':
         file_extension = 'jpg'
@@ -122,9 +122,9 @@ while True:
     if correct in ('n', 'no', 'nop', 'nope'):
         continue
 
-    insert = 'INSERT INTO stack (title, dimension, resolution, image_base, comment, min_zoom_level, file_extension) '
+    insert = 'INSERT INTO stack (title, dimension, resolution, image_base, comment, num_zoom_levels, file_extension) '
     insert += 'VALUES (%s, %s, %s, %s, %s) RETURNING id'
-    c.execute(insert, (title, dimension, resolution, image_base, comment, min_zoom_level, file_extension) )
+    c.execute(insert, (title, dimension, resolution, image_base, comment, num_zoom_levels, file_extension) )
     stack_id = c.fetchone()[0]
 
     # update the project_stack table

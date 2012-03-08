@@ -178,7 +178,7 @@ CREATE TABLE stack (
     image_base text NOT NULL,
     comment text,
     trakem2_project boolean DEFAULT false NOT NULL,
-    min_zoom_level integer DEFAULT (-1) NOT NULL,
+    num_zoom_levels integer DEFAULT (-1) NOT NULL,
     file_extension text DEFAULT 'jpg'::text NOT NULL
 );
 COMMENT ON COLUMN stack.dimension IS 'pixel';

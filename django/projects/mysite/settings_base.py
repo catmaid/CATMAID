@@ -46,6 +46,7 @@ INSTALLED_APPS = (
     'vncbrowser',
     'django.contrib.admin',
     'devserver',
+    'djcelery'
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = ('mysite.context_processors.staticfiles',

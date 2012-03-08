@@ -237,7 +237,7 @@ var editToolActions = [
 			'C': [ 67 ]
 		},
 		run: function (e) {
-			project.setMode( 'crop' );
+			project.setTool( new CroppingTool() );
 			return true;
 		}
 	}),

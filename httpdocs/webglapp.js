@@ -444,7 +444,7 @@ function WebGLViewer(divID) {
         geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( 0,ywidth,0 ) ) );
         geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( xwidth,ywidth,0 ) ) );
         geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
-        var material = new THREE.MeshBasicMaterial( { color: 0x90e4ff } );
+        var material = new THREE.MeshBasicMaterial( { color: 0x151349 } );
         zplane = new THREE.Mesh( geometry, material );
         zplane.doubleSided = true;
         zplane.position.z = newval;

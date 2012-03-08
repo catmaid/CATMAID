@@ -144,7 +144,7 @@ the server. However, like said before, this won't survive a server reboot.
 Depending on your operating system manages the boot process, you can use
 the ``init`` scripts provided in the Celery source. A detailed description
 can be found in the
-`Celery documentation <http://ask.github.com/celery/cookbook/daemonizing.html>`.
+`Celery documentation <http://ask.github.com/celery/cookbook/daemonizing.html>`_.
 In short, you need to to do the following: First, get the following file::
 
   https://github.com/ask/celery/blob/master/contrib/generic-init.d/celeryd

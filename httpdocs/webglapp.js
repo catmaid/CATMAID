@@ -107,6 +107,56 @@ function WebGLViewer(divID) {
 
   }
 
+  var getBBDimension = function()
+  {
+    return new THREE.Vector3(
+      dimension.x*resolution.x*scale,
+      dimension.y*resolution.y*scale,
+      dimension.z*resolution.z*scale);
+  }
+
+  var getBBCenterTarget = function()
+  {
+    var x_middle = (dimension.x*resolution.x)/2.0 + translation.x,
+        y_middle = (dimension.y*resolution.y)/2.0 + translation.y,
+        z_middle = (dimension.z*resolution.z)/2.0 + translation.z,
+        coord = transform_coordinates([x_middle, y_middle, z_middle]);
+    return new THREE.Vector3(coord[0]*scale,coord[1]*scale,coord[2]*scale);
+  }
+
+  this.XYView = function()
+  {
+    var pos = getBBCenterTarget(),
+      dim = getBBDimension();
+    controls.target = pos;
+    camera.position.x = pos.x;
+    camera.position.y = pos.y;
+    camera.position.z = (dim.z/2)+100;
+    camera.up.set(0, 1, 0);
+  }
+
+  this.XZView = function()
+  {
+    var pos = getBBCenterTarget(),
+      dim = getBBDimension();
+    controls.target = pos;
+    camera.position.x = pos.x;
+    camera.position.y = (dim.y/2)+150;
+    camera.position.z = pos.z;
+    camera.up.set(0, 0, -1);
+  }
+
+  this.YZView = function()
+  {
+    var pos = getBBCenterTarget(),
+      dim = getBBDimension();
+    controls.target = pos;
+    camera.position.x = (dim.x/2)+150;
+    camera.position.y = pos.y;
+    camera.position.z = pos.z;
+    camera.up.set(0, 1, 0);
+  }
+
   var Skeleton = function( skeleton_data )
   {
     this.translate = function( dx, dy, dz )
@@ -377,7 +427,7 @@ function WebGLViewer(divID) {
     // update camera
     camera.position.x = x;
     camera.position.y = y;
-    camera.position.z = 200;
+    camera.position.z = (dz/2)+100;
   }
 
   function addMesh( geometry, scale, x, y, z, rx, ry, rz, material ) {
@@ -636,7 +686,24 @@ function randomizeWebGLColor() {
   var divID = 'viewer-3d-webgl-canvas';
   var divID_jQuery = '#' + divID;
   $(divID_jQuery).data('viewer').randomizeColors();
+}
 
+function XYView() {
+  var divID = 'viewer-3d-webgl-canvas';
+  var divID_jQuery = '#' + divID;
+  $(divID_jQuery).data('viewer').XYView();
+}
+
+function XZView() {
+  var divID = 'viewer-3d-webgl-canvas';
+  var divID_jQuery = '#' + divID;
+  $(divID_jQuery).data('viewer').XZView();
+}
+
+function YZView() {
+  var divID = 'viewer-3d-webgl-canvas';
+  var divID_jQuery = '#' + divID;
+  $(divID_jQuery).data('viewer').YZView();
 }
 
 function addTo3DWebGLView() {

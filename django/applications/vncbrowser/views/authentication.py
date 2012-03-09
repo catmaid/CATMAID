@@ -50,11 +50,10 @@ def valid_catmaid_login(request):
     if 'PHPSESSID' not in request.COOKIES:
         return None
     phpsessid = request.COOKIES['PHPSESSID']
-    try:
-        s = Session.objects.get(session_id=phpsessid)
-    except Session.DoesNotExist:
+    sessions = Session.objects.filter(session_id=phpsessid).order_by('-last_accessed')
+    if len(sessions) == 0:
         return None
-    parsed_session_data = parse_php_session_data(s.data)
+    parsed_session_data = parse_php_session_data(sessions[0].data)
     if 'id' not in parsed_session_data:
         return None
     user_id = parsed_session_data['id']

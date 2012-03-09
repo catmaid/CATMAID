@@ -25,19 +25,36 @@ function DBThumbnailTool()
     var makeThumbnail = function()
     {
         var stack = self.stack;
+		var project = stack.getProject();
+        // the project URL refers also to the tool, make sure we got the navigator in there
+        var projURL = project.createURL();
+        projURL = projURL.replace( "tool=dbthumbnailtool", "tool=navigator" );
+        // create a list of all stacks and their URL in the project
+		var stacks = projects_available[project.id];
+		var stack_ids = "";
+        var stack_metadata = "";
+		var nStacks = 0;
+		for ( var s in stacks )
+		{
+		    if ( nStacks > 0 )
+            {
+				stack_ids += ","
+				stack_metadata += ","
+            }
+			stack_ids += s.toString()
+            stack_metadata += projURL.replace( "sid0=" + stack.getId(), "sid0=" + s );
+			nStacks++;
+		}
 		var cb = self.cropBox;
 		var zoom_level = stack.s;
 		var z = stack.z * stack.resolution.z + stack.translation.z;
         var tissue = self.selected_tissue.folder;
-        // the project URL refers also to the tool, make sure we got the navigator in there
-        var projURL = project.createURL();
-        projURL = projURL.replace( "tool=dbthumbnailtool", "tool=navigator" );
         // also, the hostname needs to be prepended
         projURL = "http://" + document.location.hostname + "/" + catmaid_url + projURL;
         // the meta data needs base64 encoding to be part of the URL
-        var metadata = Base64.encode( projURL );
+        var metadata = Base64.encode( stack_metadata );
 
-		var url = django_url + project.id + '/stack/' + stack.getId() + '/thumbnail/' + cb.left + "," + cb.right + "/" + cb.top + "," + cb.bottom + "/" + z + "," + z + '/' + zoom_level + '/' + tissue + '/' + metadata + '/';
+		var url = django_url + project.id + '/stack/' + stack_ids + '/thumbnail/' + cb.left + "," + cb.right + "/" + cb.top + "," + cb.bottom + "/" + z + "," + z + '/' + zoom_level + '/' + tissue + '/' + metadata + '/';
 
 		requestQueue.register(url, 'GET', {}, handle_thumbnailing );
 		return false;

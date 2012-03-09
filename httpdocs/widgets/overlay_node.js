@@ -957,7 +957,7 @@ var SkeletonElements = new function()
                 var e = $.parseJSON(text);
                 if (e.error) {
                   alert(e.error);
-                } else {
+                } else {  
                   paper.catmaidSVGOverlay.updateNodes();
                   return true;
                 }

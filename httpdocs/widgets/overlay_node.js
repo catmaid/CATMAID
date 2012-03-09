@@ -923,7 +923,7 @@ var SkeletonElements = new function()
   var connectorCreateLine = function()
   {
     /** Constructor method for ArrowLine. */
-    var ArrowLine = function (paper, x1, y1, x2, y2, confidence, size, strowi, strocol) {
+    var ArrowLine = function (paper, x1, y1, x2, y2, confidence, size, strowi, strocol, fromid, toid) {
       // Compute position for arrowhead pointer
       var rloc = 9;
       var xdiff = (x2 - x1);
@@ -937,11 +937,36 @@ var SkeletonElements = new function()
       var angle = Math.atan2(x1 - x2, y2 - y1);
       angle = (angle / (2 * Math.PI)) * 360;
       var linePath = paper.path("M" + x1new + " " + y1new + " L" + x2new + " " + y2new);
+
       var arrowPath = paper.path("M" + x2new + " " + y2new + " L" + (x2new - size) + " " + (y2new - size) + " L" + (x2new - size) + " " + (y2new + size) + " L" + x2new + " " + y2new).attr("fill", "black").rotate((90 + angle), x2new, y2new);
+
       linePath.attr({
         "stroke-width": strowi,
         "stroke": strocol
       });
+      var arrow_mousedown = function(e) {
+        requestQueue.register("model/link.delete.php", "POST", {
+          pid: project.id,
+          cid: fromid,
+          tid: toid
+        }, function (status, text, xml) {
+          if (status !== 200) {
+            alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+          } else {
+              if (text && text !== " ") {
+                var e = $.parseJSON(text);
+                if (e.error) {
+                  alert(e.error);
+                } else {
+                  paper.catmaidSVGOverlay.updateNodes();
+                  return true;
+                }
+              }
+          }
+        });
+
+      };
+      arrowPath.mousedown( arrow_mousedown );
       arrowPath.attr({
         "fill": strocol,
         "stroke": strocol
@@ -967,9 +992,9 @@ var SkeletonElements = new function()
     // Return the actual connectorCreateLine function
     return function(self, to_id, confidence, pre) {
       if (pre) {
-        return new ArrowLine(self.paper, self.pregroup[to_id].treenode.x, self.pregroup[to_id].treenode.y, self.x, self.y, confidence, 5, 2, "rgb(126, 57, 112)");
+        return new ArrowLine(self.paper, self.pregroup[to_id].treenode.x, self.pregroup[to_id].treenode.y, self.x, self.y, confidence, 5, 2, "rgb(126, 57, 112)", self.id, to_id);
       } else {
-        return new ArrowLine(self.paper, self.x, self.y, self.postgroup[to_id].treenode.x, self.postgroup[to_id].treenode.y, confidence, 5, 2, "rgb(67, 67, 128)");
+        return new ArrowLine(self.paper, self.x, self.y, self.postgroup[to_id].treenode.x, self.postgroup[to_id].treenode.y, confidence, 5, 2, "rgb(67, 67, 128)", self.id, to_id);
       };
     }
   }();

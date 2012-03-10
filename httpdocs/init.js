@@ -328,7 +328,7 @@ function handle_updateProjects(status, text, xml) {
     if (project) {
       if (keep_project_alive) project.setEditable(keep_project_editable);
       else {
-        project.unregister();
+        project.destroy();
         delete project;
       }
     }
@@ -345,7 +345,7 @@ function openProjectStack( pid, sid )
 {
 	if ( project && project.id != pid )
 	{
-		project.unregister();
+		project.destroy();
 	}
 	ui.catchEvents( "wait" );
 	requestQueue.register(
@@ -754,7 +754,7 @@ var realInit = function()
 				id : "project_menu_new",
 				action : function()
 				{
-					if ( project ) project.unregister();
+					if ( project ) project.destroy();
 					document.getElementById( "project list" ).style.display = "none";
 					document.getElementById( "new_project_dialog" ).style.display = "block";
 					updateUsers();

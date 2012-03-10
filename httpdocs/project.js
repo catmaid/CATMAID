@@ -210,9 +210,9 @@ function Project( pid )
 	 *
 	 * @todo: should not the stack handle the navigation toolbar?
 	 */
-	this.unregister = function()
+	this.destroy = function()
 	{
-		if ( tool ) tool.unregister();
+		if ( tool ) tool.destroy();
 		
 		//! close all windows
 		//rootWindow.closeAllChildren();

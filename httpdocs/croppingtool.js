@@ -669,9 +669,6 @@ function CroppingTool() {
 		if ( self.stack && self.mouseCatcher.parentNode == self.stack.getView() )
 			self.stack.getView().removeChild( self.mouseCatcher );
 
-		document.getElementById( "edit_button_crop" ).className = "button";
-		document.getElementById( "toolbar_crop" ).style.display = "none";
-
 		return;
 	}
 
@@ -685,6 +682,9 @@ function CroppingTool() {
 		CroppingTool.superproto.destroy.call( this );
 
 		self.unregister();
+
+		document.getElementById( "edit_button_crop" ).className = "button";
+		document.getElementById( "toolbar_crop" ).style.display = "none";
 
 		self.box_crop_x.onchange = null;
 		self.removeMousewheelListener( self.box_crop_x, cropBoxMouseWheel );

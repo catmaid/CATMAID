@@ -96,7 +96,7 @@ function Project( pid )
 			{
 				stacks.splice( i, 1 );
 				if ( stacks.length == 0 )
-					self.unregister();
+					self.destroy();
 				else
 					stacks[ ( i + 1 ) % stacks.length ].getWindow().focus();
 			}

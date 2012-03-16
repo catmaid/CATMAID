@@ -62,9 +62,13 @@ function Project( pid )
 		
 		self.setFocusedStack( stack );
 		
-		if ( !tool )
-			tool = new Navigator();
-		self.setTool( tool );
+		// only set the tool for the first stack
+		if ( stacks.length == 1 )
+		{
+			if ( !tool )
+				tool = new Navigator();
+			self.setTool( tool );
+		}
 		
 		return;
 	}

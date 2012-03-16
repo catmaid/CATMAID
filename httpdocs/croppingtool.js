@@ -687,9 +687,6 @@ function CroppingTool() {
 	 */
 	this.destroy = function()
 	{
-		// call destroy of super class
-		CroppingTool.superproto.destroy.call( self );
-
 		self.unregister();
 
 		document.getElementById( "edit_button_crop" ).className = "button";
@@ -727,8 +724,10 @@ function CroppingTool() {
 
 		self.stacks_menu.update();
 
-		self.stack = null;
 		self.button_crop_apply.onclick = null;
+
+		// call destroy of super class
+		CroppingTool.superproto.destroy.call( self );
 
 		return;
 	}

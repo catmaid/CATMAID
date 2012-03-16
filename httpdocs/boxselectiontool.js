@@ -19,6 +19,11 @@ function BoxSelectionTool()
     // Output unit and factor wrt. nm
     this.output_unit = unescape( "nm" )
     this.output_unit_factor = 1.0;
+
+    this.getCropBox = function()
+    {
+        return this.cropBox;
+    }
 }
 
 BoxSelectionTool.prototype.toPx = function( world_coord, resolution )

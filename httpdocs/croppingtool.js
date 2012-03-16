@@ -184,7 +184,7 @@ function CroppingTool() {
 	this.redraw = function()
 	{
 		// call register of super class
-		CroppingTool.superproto.redraw.call( this );
+		CroppingTool.superproto.redraw.call( self );
 		self.updateControls();
 	}
 
@@ -560,9 +560,8 @@ function CroppingTool() {
 	 */
 	this.register = function( parentStack )
 	{
-		// call register of super class
-		CroppingTool.superproto.register.call( this, parentStack );
-		self.stack = parentStack;
+		// call register of super class (updates also stack member)
+		CroppingTool.superproto.register.call( self, parentStack );
 
 		// initialize the stacks we offer to crop
 		var project = self.stack.getProject();
@@ -679,7 +678,7 @@ function CroppingTool() {
 	this.destroy = function()
 	{
 		// call destroy of super class
-		CroppingTool.superproto.destroy.call( this );
+		CroppingTool.superproto.destroy.call( self );
 
 		self.unregister();
 

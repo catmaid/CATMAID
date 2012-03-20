@@ -239,7 +239,8 @@ div.stackInfo_selected p.stackClose
 	float:right;
 }
 
-div.sliceView div.cropBox
+div.sliceView div.cropBox,
+div.sliceView div.cropBoxNonActive
 {
 	position:absolute;
 	top:0px;
@@ -250,6 +251,11 @@ div.sliceView div.cropBox
 	background:url(blue20.png);
 	overflow:visible;
 	z-index:3;
+}
+
+div.sliceView div.cropBoxNonActive
+{
+	opacity:.5;
 }
 
 div.sliceView div.cropBox p.world,
@@ -263,6 +269,12 @@ div.sliceView div.cropBox p.screen
 	background:#0000FF;
 	color:#FFFFFF;
 	white-space:nowrap;
+}
+
+div.sliceView div.cropBoxNonActive p.world,
+div.sliceView div.cropBoxNonActive p.screen
+{
+    visibility: hidden;
 }
 
 div.sliceView div.cropBox p.screen

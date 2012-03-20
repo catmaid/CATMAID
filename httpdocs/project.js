@@ -62,9 +62,13 @@ function Project( pid )
 		
 		self.setFocusedStack( stack );
 		
-		if ( !tool )
-			tool = new Navigator();
-		self.setTool( tool );
+		// only set the tool for the first stack
+		if ( stacks.length == 1 )
+		{
+			if ( !tool )
+				tool = new Navigator();
+			self.setTool( tool );
+		}
 		
 		return;
 	}
@@ -92,7 +96,7 @@ function Project( pid )
 			{
 				stacks.splice( i, 1 );
 				if ( stacks.length == 0 )
-					self.unregister();
+					self.destroy();
 				else
 					stacks[ ( i + 1 ) % stacks.length ].getWindow().focus();
 			}

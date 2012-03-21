@@ -7,7 +7,8 @@ cropping tool.
 Make sure that you have the following packages installed::
 
   sudo apt-get install python-virtualenv libpq-dev python-dev \
-    libxml2-dev libxslt1-dev libjpeg-dev libtiff-dev
+    libxml2-dev libxslt1-dev libjpeg-dev libtiff-dev libgraphicsmagick++3 \
+    libgraphicsmagick++1-dev libboost-python1.42.0 
 
   sudo apt-get build-dep python-numpy python-h5py libgraphicsmagick++1-dev \
     libimage-exiftool-perl

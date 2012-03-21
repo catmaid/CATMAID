@@ -52,8 +52,11 @@ LANGUAGE_CODE = 'en-gb'
 
 SITE_ID = 1
 
+# Settings relative to the Apache subfolder
 CATMAID_URL = '/'
 STATICFILES_URL = '/static/'
+
+# Absolute path to the static files
 STATICFILES_LOCAL = '/home/mark/catmaid/django/static/'
 
 # Local path to store HDF5 files

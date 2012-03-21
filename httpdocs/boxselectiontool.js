@@ -14,11 +14,17 @@ function BoxSelectionTool()
 {
     this.stack = null;
     this.cropBox = false;
+    this.cropBoxCache = {};
     this.zoomlevel = null;
 
     // Output unit and factor wrt. nm
     this.output_unit = unescape( "nm" )
     this.output_unit_factor = 1.0;
+
+    this.getCropBox = function()
+    {
+        return this.cropBox;
+    }
 }
 
 BoxSelectionTool.prototype.toPx = function( world_coord, resolution )
@@ -89,24 +95,31 @@ BoxSelectionTool.prototype.updateCropBox = function()
 {
     var cropBoxBB = this.getCropBoxBoundingBox();
 
-    this.cropBox.view.style.left = cropBoxBB.left_px + "px";
-    this.cropBox.view.style.top = cropBoxBB.top_px + "px";
-    this.cropBox.view.style.width = cropBoxBB.width_px  + "px";
-    this.cropBox.view.style.height = cropBoxBB.height_px  + "px";
+    // update all cached cropping boxes
+    for ( var s in this.cropBoxCache )
+    {
+        var cb = this.cropBoxCache[ s ];
 
-    var world_unit = this.output_unit;
-    var current_scale = this.stack.scale;
-    var output_scale = 1 / Math.pow( 2, this.zoomlevel );
-    var output_width_px = ( cropBoxBB.width_px / current_scale) * output_scale;
-    var output_height_px = ( cropBoxBB.height_px / current_scale) * output_scale;
-    var output_width_world = this.convertWorld( cropBoxBB.width_world );
-    var output_height_world = this.convertWorld( cropBoxBB.height_world );
+        cb.view.style.visibility = "visible";
+        cb.view.style.left = cropBoxBB.left_px + "px";
+        cb.view.style.top = cropBoxBB.top_px + "px";
+        cb.view.style.width = cropBoxBB.width_px  + "px";
+        cb.view.style.height = cropBoxBB.height_px  + "px";
+
+        var world_unit = this.output_unit;
+        var current_scale = this.stack.scale;
+        var output_scale = 1 / Math.pow( 2, this.zoomlevel );
+        var output_width_px = ( cropBoxBB.width_px / current_scale) * output_scale;
+        var output_height_px = ( cropBoxBB.height_px / current_scale) * output_scale;
+        var output_width_world = this.convertWorld( cropBoxBB.width_world );
+        var output_height_world = this.convertWorld( cropBoxBB.height_world );
+
+        cb.textWorld.replaceChild( document.createTextNode( output_width_world.toFixed( 3 ) + " x " + output_height_world.toFixed( 3 ) + " " + world_unit ), cb.textWorld.firstChild );
+        cb.textScreen.replaceChild( document.createTextNode( output_width_px.toFixed( 0 ) + " x " + output_height_px.toFixed( 0 ) + " px" ), cb.textScreen.firstChild );
+    }
 
     statusBar.replaceLast( this.convertWorld( cropBoxBB.left_world).toFixed( 3 ) + ", " + this.convertWorld( cropBoxBB.top_world ).toFixed( 3 ) +
         " -> " + this.convertWorld( cropBoxBB.right_world ).toFixed( 3 ) + "," + this.convertWorld( cropBoxBB.bottom_world ).toFixed( 3 ) );
-
-    this.cropBox.textWorld.replaceChild( document.createTextNode( output_width_world.toFixed( 3 ) + " x " + output_height_world.toFixed( 3 ) + " " + world_unit ), this.cropBox.textWorld.firstChild );
-    this.cropBox.textScreen.replaceChild( document.createTextNode( output_width_px.toFixed( 0 ) + " x " + output_height_px.toFixed( 0 ) + " px" ), this.cropBox.textScreen.firstChild );
 
     return;
 }
@@ -122,6 +135,30 @@ BoxSelectionTool.prototype.redraw = function()
 }
 
 /**
+ * Creates a new cropping box and attaches it to the stack.
+ */
+BoxSelectionTool.prototype.initCropBox = function( stack )
+{
+    var view = stack.getView();
+    var cb = {}
+    cb.view = document.createElement( "div" );
+    cb.view.className = "cropBox";
+    cb.view.style.visibility = "hidden";
+    cb.textWorld = document.createElement( "p" );
+    cb.textWorld.className = "world";
+    cb.textWorld.appendChild( document.createTextNode( "0 x 0" ) );
+    cb.textScreen = document.createElement( "p" );
+    cb.textScreen.className = "screen";
+    cb.textScreen.appendChild( document.createTextNode( "0 x 0" ) );
+    cb.view.appendChild( cb.textWorld );
+    cb.view.appendChild( cb.textScreen );
+    view.appendChild( cb.view );
+    cb.stack = stack;
+
+    return cb;
+}
+
+/**
  * Creates a new crop box and attaches it to the view. Any existing
  * crop box gets removed first.
  */
@@ -132,34 +169,27 @@ BoxSelectionTool.prototype.createCropBox = function( screenX, screenY, screenWid
 
     stack = this.stack;
     view = stack.getView();
-    if ( this.cropBox )
+    if ( this.cropBox && this.cropBox.view.parentNode == view )
     {
         view.removeChild( this.cropBox.view );
         delete this.cropBox;
         this.cropBox = false;
     }
-    this.cropBox = {
-        left : (stack.x + ( screenX  - stack.viewWidth / 2 ) / stack.scale ) * stack.resolution.x + stack.translation.x,
-        top : (stack.y + ( screenY - stack.viewHeight / 2 ) / stack.scale ) * stack.resolution.y + stack.translation.y
-    };
+    this.cropBox = this.initCropBox( stack );
+    this.cropBox.left = (stack.x + ( screenX  - stack.viewWidth / 2 ) / stack.scale ) * stack.resolution.x + stack.translation.x;
+    this.cropBox.top = (stack.y + ( screenY - stack.viewHeight / 2 ) / stack.scale ) * stack.resolution.y + stack.translation.y;
     this.cropBox.right = this.cropBox.left + this.toWorld( screenWidth, stack.resolution.x );
     this.cropBox.bottom = this.cropBox.top + this.toWorld( screenHeight, stack.resolution.y );
-    this.cropBox.view = document.createElement( "div" );
-    this.cropBox.view.className = "cropBox";
-    this.cropBox.textWorld = document.createElement( "p" );
-    this.cropBox.textWorld.className = "world";
-    this.cropBox.textWorld.appendChild( document.createTextNode( "0 x 0" ) );
-    this.cropBox.textScreen = document.createElement( "p" );
-    this.cropBox.textScreen.className = "screen";
-    this.cropBox.textScreen.appendChild( document.createTextNode( "0 x 0" ) );
     this.cropBox.xdist = 0;
     this.cropBox.ydist = 0;
     this.cropBox.xorigin = this.cropBox.left;
     this.cropBox.yorigin = this.cropBox.top;
 
-    this.cropBox.view.appendChild( this.cropBox.textWorld );
-    this.cropBox.view.appendChild( this.cropBox.textScreen );
-    view.appendChild( this.cropBox.view );
+    // update the cache
+    this.cropBoxCache[ stack.getId() ] = this.cropBox;
+
+    // update other (passive) crop boxes
+    this.updateCropBox();
 }
 
 /**
@@ -168,12 +198,15 @@ BoxSelectionTool.prototype.createCropBox = function( screenX, screenY, screenWid
  */
 BoxSelectionTool.prototype.destroy = function()
 {
-    if ( this.cropBox )
+    // clear cache
+    for ( var s in this.cropBoxCache )
     {
-        this.stack.getView().removeChild( this.cropBox.view );
-        delete this.cropBox;
-        this.cropBox = false;
+        var cb = this.cropBoxCache[ s ];
+        cb.stack.getView().removeChild( cb.view );
+        delete this.cropBoxCache[ s ];
     }
+    this.cropBoxCache = {};
+    this.cropBox = false;
 
     this.stack = null;
 
@@ -186,11 +219,41 @@ BoxSelectionTool.prototype.destroy = function()
 */
 BoxSelectionTool.prototype.register = function( parentStack )
 {
-    /* It could happen that register is called on a different stack than
-    the one the tool is currently installed for. In that case we need
-    to destroy the previous link to a stack. */
-    if ( this.stack )
-        this.destroy();
+    // make sure the tool knows all (and only) open projecs
+    var project = parentStack.getProject();
+    var stacks = projects_available[ project.id ];
+    for (var s in stacks)
+    {
+        var opened_stack = project.getStack( s );
+        if ( s in this.cropBoxCache )
+        {
+            // remove the entry if the project isn't opened
+            if ( !opened_stack )
+                delete this.cropBoxCache[ s ];
+        }
+        else
+        {
+            // make sure it has got a cropping box container in the cache
+            if ( opened_stack )
+                this.cropBoxCache[ s ] = this.initCropBox( opened_stack );
+        }
+    }
+
+    // bring a cached version back to life and
+    // deactivate other available cropping boxes
+    for ( var s in this.cropBoxCache )
+    {
+        var cb = this.cropBoxCache[ s ];
+        if (cb.stack == parentStack)
+        {
+            this.cropBox = cb;
+            this.cropBox.view.className = "cropBox";
+        }
+        else
+        {
+            cb.view.className = "cropBoxNonActive";
+        }
+    }
 
     this.stack = parentStack;
     this.zoomlevel = this.stack.s;

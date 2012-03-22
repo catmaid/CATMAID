@@ -96,6 +96,9 @@ try {
 		emitErrorAndExit($db, 'Failed to set treenode '.$tnid.' as root');
 	}
 
+    $location = getLocationAsString( $db, $pid, $tnid );
+    insertIntoLog( $db, $uid, $pid, "reroot_skeleton", $location , "Rerooted skeleton for treenode with ID $tnid" );
+
 	if (! $db->commit() ) {
 		emitErrorAndExit( $db, 'Failed to commit split!' );
 	}

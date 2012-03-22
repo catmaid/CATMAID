@@ -120,6 +120,8 @@ try {
     if (false === $ids) {
       emitErrorAndExit($db, 'Failed to update class instance.');
     }
+    $classname = isset( $_REQUEST[ 'classname' ] ) ? $_REQUEST[ 'classname' ] : 0;
+    insertIntoLog( $db, $uid, $pid, "rename_$classname", null , "Renamed $classname with ID $id to $name" );
     finish( array( 'class_instance_id' => $ids) );
   }
   else if ( $op == 'remove_node')
@@ -135,6 +137,8 @@ try {
           if (false === $ids) {
             emitErrorAndExit($db, 'Failed to delete skeleton from instance able.');
           }
+
+          insertIntoLog( $db, $uid, $pid, "remove_skeleton", null , "Removed skeleton with ID $id and name $name" );
 
           // finish("Removed skeleton successfully.");
           finish( array('status' => 1, 'message' => "Removed skeleton successfully.") );
@@ -157,6 +161,8 @@ try {
           if (false === $ids) {
             emitErrorAndExit($db, 'Failed to delete node from instance table.');
           }
+
+          insertIntoLog( $db, $uid, $pid, "remove_neuron", null , "Removed neuron with ID $id and name $name" );
 
           finish( array('status' => 1, 'message' => "Removed neuron successfully.") );
 
@@ -206,6 +212,8 @@ try {
     if (false === $cid) {
       emitErrorAndExit($db, 'Failed to insert instance of class.');
     }
+
+    insertIntoLog( $db, $uid, $pid, "create_$classname", null , "Created $classname with ID $cid" );
     
     // find correct root element
     if($parentid)
@@ -271,7 +279,11 @@ try {
       OR relation_id = '.$partof_id.')
       AND class_instance_a = '.$src;
       $q = $db->update( "class_instance_class_instance", $up, $upw);
-      
+
+      $classname = isset( $_REQUEST[ 'classname' ] ) ? $_REQUEST[ 'classname' ] : 0;
+      $targetname = isset( $_REQUEST[ 'targetname' ] ) ? $_REQUEST[ 'targetname' ] : 0;
+      insertIntoLog( $db, $uid, $pid, "move_$classname", null , "Moved $classname with ID $src to $targetname with ID $ref" );
+
       if (false === $q) {
         emitErrorAndExit($db, 'Failed to update relation.');
       }

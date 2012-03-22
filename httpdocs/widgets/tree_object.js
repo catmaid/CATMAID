@@ -551,6 +551,7 @@ var ObjectTree = new function()
         "operation": "rename_node",
         "id": data.rslt.obj.attr("id").replace("node_", ""),
         "title": data.rslt.new_name,
+        "classname": data.rslt.obj.attr("rel"),
         "pid": pid
       }, null);
     });
@@ -634,6 +635,8 @@ var ObjectTree = new function()
           "operation": "move_node",
           "src": src.attr("id").replace("node_", ""),
           "ref": ref.attr("id").replace("node_", ""),
+          "classname": src.attr("rel"),
+          "targetname": ref[0].innerText, // TODO: how to get the proper name ?
           "pid": pid
         },
         success: function (r, status) {

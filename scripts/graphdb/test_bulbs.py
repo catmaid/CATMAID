@@ -4,6 +4,13 @@ from bulbs.property import Property, String, Integer, Float, DateTime
 from bulbs.utils import current_datetime
 # TODO: check latest gist's 
 
+# Requirements (installable with pip)
+# pytz ujson six
+# You need: sudo apt-get install python-dev
+
+# Reason for GraphDB over relational databases
+# 
+
 ####
 # Nodes
 ####
@@ -113,10 +120,10 @@ edg = list(neur.outE('has_treenode'))[0]
 print 'edge label', edg._label, edg.map()
 
 #g.vertices.delete(neuron1.eid)
-"""
+
 import sys
 sys.exit(1)
-"""
+
 """
 print neuron1.eid
 neuronid = 1000

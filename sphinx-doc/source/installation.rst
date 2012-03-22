@@ -46,7 +46,7 @@ the database user by piping the output of the
 `scripts/createuser.sh` script to PostgreSQL.  The three
 parameters to that script, which you may wish to customize, are
 the database name, the database user name and the database
-user's password.  For example:
+user's password.  For example::
 
         scripts/createuser.sh catmaid catmaid_user p4ssw0rd | sudo -u postgres psql
 
@@ -59,7 +59,7 @@ Check if you can login - the database should still be empty, however::
 
 Make sure that the catmaid database is accessible using MD5
 hashed passwords - you have to add this line as the *first* rule
-in `/etc/postgresql/8.4/main/pg_hba.conf`::
+in `/etc/postgresql/XversionX/main/pg_hba.conf`::
 
     local catmaid catmaid_user md5
 
@@ -68,7 +68,7 @@ them in that rule as well.)
 
 After the above please restart the database::
 
-    sudo /etc/init.d/postgresql-8.4 restart
+    sudo /etc/init.d/postgresql restart
 
 Update the catmaid database configuration in:
 `inc/setup.inc.php.template` and rename the file to
@@ -79,17 +79,55 @@ Update the catmaid database configuration in:
 
 There are two possibilities here - setting up CATMAID on its own
 virtual host, or setting it up as a subdirectory of an existing
-host:
+host. The advice `here <http://wiki.ubuntuusers.de/Apache/Virtual_Hosts>`_
+may be of use. We suggest to use the subdirectory approach:
 
-2.1 Named Virtual Hosts approach:
+2.1 As a directory of an existing virtual host
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We assume that you cloned the CATMAID source code to
+`/home/alice/CATMAID/`. Then, the configuration as a directory 
+in `/etc/apache2/sites-enabled/000-default` ::
+
+     <VirtualHost *:80>
+             ServerAdmin webmaster@localhost
+
+             DocumentRoot /var/www
+             <Directory />
+                     Options FollowSymLinks
+                     AllowOverride None
+             </Directory>
+             ...
+             ...
+
+             # Add CATMAID configuration here:
+             Alias /catmaid/ /home/alice/CATMAID/httpdocs/
+             <Directory /home/alice/CATMAID/httpdocs/>
+
+                     php_admin_value register_globals off
+                     php_admin_value include_path ".:/home/alice/CATMAID/inc"
+                     php_admin_value session.use_only_cookies 1
+                     php_admin_value error_reporting 2047
+                     php_admin_value display_errors true
+
+                     Options FollowSymLinks
+                     AllowOverride AuthConfig Limit FileInfo
+                     Order allow,deny
+                     Allow from all
+             </Directory>
+
+     </VirtualHost>
+
+You should then restart Apache::
+
+     sudo /etc/init.d/apache2 restart
+
+2.2 Named Virtual Hosts approach:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-(The advice ` here <http://wiki.ubuntuusers.de/Apache/Virtual_Hosts>`_ may
-be of use.)
 
 Your clone of the CATMAID source code should be *outside* any
 web-accessible directory.  For example, let's say that you have
-the source code in `/home/alice/catmaid/`
+the source code in `/home/alice/CATMAID/`
 
 Create a directory for the log files, for example with::
 
@@ -100,15 +138,15 @@ Create in /etc/apache2/sites-available a file called "catmaid"::
      <VirtualHost *:80>
          ServerName catmaid
 
-         DocumentRoot "/home/alice/catmaid/httpdocs/"
+         DocumentRoot "/home/alice/CATMAID/httpdocs/"
 
          php_admin_value register_globals off
-         php_admin_value include_path ".:/home/alice/catmaid/inc"
+         php_admin_value include_path ".:/home/alice/CATMAID/inc"
          php_admin_value session.use_only_cookies 1
          php_admin_value error_reporting 2047
          php_admin_value display_errors true
 
-         <Directory /home/alice/catmaid/httpdocs/>
+         <Directory /home/alice/CATMAID/httpdocs/>
 
              Options FollowSymLinks
              AllowOverride AuthConfig Limit FileInfo
@@ -129,49 +167,11 @@ Then make apache aware of the virtual host::
 
 ... then restart apache::
 
-     /etc/init.d/apache2 restart
+     sudo /etc/init.d/apache2 restart
 
 ... and finally add this entry to "/etc/hosts"::
 
      127.0.0.1    catmaid
-
-2.2 As a directory of an existing virtual host
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A similar configuration as a directory::
-
-     <VirtualHost *:80>
-             ServerAdmin webmaster@localhost
-
-             DocumentRoot /var/www
-             <Directory />
-                     Options FollowSymLinks
-                     AllowOverride None
-             </Directory>
-             ...
-             ...
-
-             # Add CATMAID configuration here:
-
-             Alias /catmaid/ /home/mark/catmaid-local-instance/httpdocs/
-             <Directory /home/mark/catmaid-local-instance/httpdocs/>
-
-                     php_admin_value register_globals off
-                     php_admin_value include_path ".:/home/mark/catmaid-local-instance/inc"
-                     php_admin_value session.use_only_cookies 1
-                     php_admin_value error_reporting 2047
-                     php_admin_value display_errors true
-
-                     Options FollowSymLinks
-                     AllowOverride AuthConfig Limit FileInfo
-                     Order allow,deny
-                     Allow from all
-             </Directory>
-
-     </VirtualHost>
-
-You should then restart Apache::
-
-     /etc/init.d/apache2 restart
 
 3. Now try it out!
 ##################

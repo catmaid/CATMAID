@@ -14,7 +14,7 @@ sys.path.append('/home/mark/catmaid-local-instance/django/projects/')
 # taken from:
 #   http://code.google.com/p/modwsgi/wiki/VirtualEnvironments
 
-ALLDIRS = ['/home/mark/catmaid-local-instance/django/env/lib/python2.6/site-packages']
+ALLDIRS = ['/home/mark/catmaid-local-instance/django/env/lib/pythonXXX/site-packages']
 
 import sys 
 import site 

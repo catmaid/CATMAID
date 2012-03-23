@@ -310,7 +310,7 @@ function TileLayer(
 		
 		var img = document.createElement( "img" );
 		img.className = "smallMapMap";
-		img.src = "map/small." + fileExtension;
+		img.src = baseURL + stack.z + "/small." + fileExtension;
 		
 		stack.overview.getView().appendChild( img );
 		stack.overview.addLayer( "tilelayer", this );

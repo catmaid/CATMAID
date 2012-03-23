@@ -89,7 +89,10 @@ if ( $pid )
     // update the parent of to_id treenode
     $ids = $db->update("treenode", array("parent_id" => $from_id) ,' "treenode"."id" = '.$to_id);
 
-      echo json_encode( array('message' => 'success', 'fromid' => $from_id, 'toid' => $to_id) );  
+    $location = getLocationAsString( $db, $pid, $from_id );
+    insertIntoLog( $db, $uid, $pid, "join_skeleton", $location , "Joined skeleton with ID $skelid_from to skeleton with ID $skelid_to" );
+
+    echo json_encode( array('message' => 'success', 'fromid' => $from_id, 'toid' => $to_id) );
           
   }
   else

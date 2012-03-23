@@ -211,6 +211,10 @@ try {
 		emitErrorAndExit( $db, 'Failed to commit split!' );
 	}
 
+    $location = getLocationAsString( $db, $pid, $tnid );
+    $neuron_name = getClassInstanceName( $db, $pid, $neu_id );
+    insertIntoLog( $db, $uid, $pid, "split_skeleton", $location, "Split skeleton with ID $sk_id (neuron: $neuron_name)" );
+
 	echo json_encode( array( 'message' => 'success' ) );
 
 } catch (Exception $e) {

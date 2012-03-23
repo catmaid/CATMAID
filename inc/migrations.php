@@ -897,6 +897,21 @@ UPDATE project_user SET can_view_any = TRUE;
 		'ALTER TABLE stack RENAME COLUMN min_zoom_level TO num_zoom_levels;'
 ),
 
+	'2012-03-22T20:16:56' => new Migration(
+		'Add log table',
+		'
+CREATE TABLE log (
+    operation_type character varying(255) NOT NULL,
+    location double3d,
+    freetext text
+    )
+INHERITS (concept);
+ALTER TABLE ONLY log
+    ADD CONSTRAINT log_pkey PRIMARY KEY (id);
+
+'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

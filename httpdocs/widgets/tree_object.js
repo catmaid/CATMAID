@@ -636,7 +636,7 @@ var ObjectTree = new function()
           "src": src.attr("id").replace("node_", ""),
           "ref": ref.attr("id").replace("node_", ""),
           "classname": src.attr("rel"),
-          "targetname": ref[0].innerText, // TODO: how to get the proper name ?
+          "targetname": data.rslt.r.text(),
           "pid": pid
         },
         success: function (r, status) {

@@ -373,6 +373,87 @@ var WindowMaker = new function()
     return win;
   };
 
+
+    var createLogTableWindow = function()
+    {
+        var win = new CMWWindow("Log");
+        var content = win.getFrame();
+        content.style.backgroundColor = "#ffffff";
+
+        var add = document.createElement('input');
+        add.setAttribute("type", "button");
+        add.setAttribute("id", "update_logtable");
+        add.setAttribute("value", "Update table");
+        add.onclick = updateLogTable; // function declared in table_log.js
+        content.appendChild(add);
+
+        /* users */
+        var sync = document.createElement('select');
+        sync.setAttribute("id", "logtable_username");
+        var option = document.createElement("option");
+        option.text = "All";
+        option.value = -1;
+        sync.appendChild(option);
+        content.appendChild(sync);
+
+        requestQueue.register('model/user.list.php', 'GET', undefined,
+            function (status, data, text) {
+                var e = $.parseJSON(data);
+                if (status !== 200) {
+                    alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+                } else {
+                    var new_users = document.getElementById("logtable_username");
+                    /*while (new_users.length > 0)
+                        new_users.remove(0);*/
+
+                    for (var i in e) {
+                        var option = document.createElement("option");
+                        option.text = e[i].name + " (" + e[i].longname + ")";
+                        option.value = e[i].id;
+                        new_users.appendChild(option);
+                    }
+                    new_users.size = e.length;
+                }
+        });
+
+        var container = createContainer("logtable_widget");
+        content.appendChild(container);
+
+        container.innerHTML =
+            '<table cellpadding="0" cellspacing="0" border="0" class="display" id="logtable">' +
+                '<thead>' +
+                '<tr>' +
+                    '<th>user</th>' +
+                    '<th>operation</th>' +
+                    '<th>timestamp</th>' +
+                    '<th>x</th>' +
+                    '<th>y</th>' +
+                    '<th>z</th>' +
+                    '<th>freetext</th>' +
+                '</tr>' +
+                '</thead>' +
+                '<tfoot>' +
+                '<tr>' +
+                    '<th>user</th>' +
+                    '<th>operation</th>' +
+                    '<th>timestamp</th>' +
+                    '<th>x</th>' +
+                    '<th>y</th>' +
+                    '<th>z</th>' +
+                    '<th>freetext</th>' +
+                '</tr>' +
+                '</tfoot>' +
+            '</table>';
+
+        addListener(win, container);
+
+        addLogic(win);
+
+        LogTable.init( project.getId() );
+
+        return win;
+    };
+
   var getHelpForActions = function(actions)
   {
     var action, keys, i, k, result = '';
@@ -610,6 +691,7 @@ var WindowMaker = new function()
     "3d-webgl-view": create3dWebGLWindow,
     "node-table": createNodeTableWindow,
     "connector-table": createConnectorTableWindow,
+    "log-table": createLogTableWindow,
     "object-tree": createObjectTreeWindow,
     "statistics": createStatisticsWindow,
     "disclaimer": createDisclaimerWindow

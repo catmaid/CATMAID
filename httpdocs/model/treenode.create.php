@@ -394,7 +394,9 @@ try {
 			if (false === $q) {
 				emitErrorAndExit($db, 'Failed to insert instance of treenode.');
 			}
-	
+
+			insertIntoLog( $db, $uid, $pid, "create_neuron", '('.$x.','.$y.','.$z.')' , "Create neuron $neuid and skeleton $skelid" );
+
 			$json = array( 'treenode_id' => $tnid,
 							'skeleton_id' => $skelid,
 						 	'neuron_id' => $neuid,

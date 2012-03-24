@@ -40,4 +40,3 @@ from neurohdf import stack_models
 
 from cropping import crop
 from cropping import download_crop
-

@@ -81,14 +81,14 @@ var TreenodeTable = new function()
       ],
       "bJQueryUI": true,
       "fnDrawCallback": function () {
-        $('td:eq(5)', ns.oTable.fnGetNodes()).editable('model/treenode.table.update.php', {
+        $('td:eq(6)', ns.oTable.fnGetNodes()).editable('model/treenode.table.update.php', {
           "callback": function (sValue, y) {},
           "submitdata": function (value, settings) {
             var aPos = ns.oTable.fnGetPosition(this);
             var aData = ns.oTable.fnGetData(aPos[0]);
             return {
               "id": aData[0],
-              "type": "confidence",
+              "type": "radius",
               "pid": project.id
             };
           },

@@ -36,7 +36,7 @@ $tnid = isset( $_REQUEST[ 'id' ] ) ? intval( $_REQUEST[ 'id' ] ) : 0;
 $value = isset( $_REQUEST[ 'value' ] ) ? intval( $_REQUEST[ 'value' ] ) : 0;
 
 if (! $type || ! $tnid || ! $value ) {
-	echo json_encode( array( 'error' => 'Need type, treenode id and value.' );
+	echo json_encode( array( 'error' => 'Need type, treenode id and value.' ) );
 	return;
 }
 
@@ -57,6 +57,21 @@ if ($type == "confidence")
 	}
 	// return value:
 	echo $value;
+} else if ($type == "radius")
+{
+$q = $db->update(
+    'treenode',
+    array(
+        'radius' => $value,
+        'user_id' => $uid), // update the user who changed the confidence
+    '"project_id" = '.$pid.' AND "id" = '.$tnid ); // ONLY for the specific project and treenode ID.
+
+if (false === $q) {
+    echo json_encode( array ( 'error' => 'Could not update confidence for treenode '.$tnid ) );
+    return;
+}
+// return value:
+echo $value;
 }
 
 ?>

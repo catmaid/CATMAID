@@ -19,3 +19,4 @@ Other Credits
 -------------
 - Judith Moosburner: Design of the Iconset for Object Tree
 - Magnifying glass icon - famfamfam.com
+- `JetBrains <http://www.jetbrains.com/>`_ - Open Source IDE licenses

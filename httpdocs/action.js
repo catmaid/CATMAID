@@ -301,6 +301,16 @@ var tracingWindowActions = [
         }
     }),
 
+    new Action({
+        helpText: "Review system",
+        buttonID: "data_button_review",
+        buttonName: 'table_review',
+        run: function (e) {
+            WindowMaker.show('review-system');
+            return true;
+        }
+    }),
+
   new Action({
     helpText: "Show object tree",
     buttonID: "data_button_tree",
@@ -332,17 +342,8 @@ var tracingWindowActions = [
       WindowMaker.show('statistics');
       return true;
     }
-  }),
+  })
 
-    new Action({
-        helpText: "Review system",
-        buttonID: "data_button_review",
-        buttonName: 'stats',
-        run: function (e) {
-            WindowMaker.show('review-system');
-            return true;
-        }
-    })
 /*
   new Action({
     helpText: "Show object tree as graph",

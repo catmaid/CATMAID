@@ -195,14 +195,15 @@ try {
 				("treenode"."location")."y" AS "y",
 				("treenode"."location")."z" AS "z",
 				"user"."name" AS "username",
+                "treenode"."reviewer_id" AS "last_reviewer",
 				( "treenode"."user_id" = '.$uid.' ) AS "can_edit",
 				to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
 				
 			FROM "treenode", "user", "treenode_class_instance" AS "tci"
 				
 			WHERE "treenode"."project_id" = '.$pid.' AND
-					"treenode"."user_id" = "user"."id"
-					AND "treenode"."id" = "tci"."treenode_id"
+					"treenode"."user_id" = "user"."id" AND
+					"treenode"."id" = "tci"."treenode_id"
 					'.$skelcon.'
 					'.$sOrder.'
 					'.$sLimit.'
@@ -317,10 +318,8 @@ try {
 
 		$sRow .= json_encode($val["radius"]).',';
 		$sRow .= json_encode($val["username"]).',';
-
-
-		// last modified
-		$sRow .= json_encode($val["last_modified"]);
+		$sRow .= json_encode($val["last_modified"]).',';
+		$sRow .= json_encode($val["last_reviewer"]);
 		
 		$sRow .= "]";
 		
@@ -370,4 +369,3 @@ try {
 
 
 ?>
-

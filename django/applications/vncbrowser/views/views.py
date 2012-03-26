@@ -619,7 +619,8 @@ def update_location_reviewer(request, project_id=None, node_id=None, logged_in_u
         pk=node_id,
         project=p)
     if loc.user_id == logged_in_user.id:
-        return HttpResponse(json.dumps({'error': 'Node creator and reviewer need to be different!'}), mimetype='text/json')
+        return HttpResponse(json.dumps({'error': 'Node creator (%s) and reviewer need to be different!'%
+                                                 (str(loc.user.name))}), mimetype='text/json')
     loc.reviewer_id=logged_in_user.id
     loc.review_time=datetime.now()
     loc.save()

@@ -160,7 +160,11 @@ var TreenodeTable = new function()
       {
         "bSearchable": false,
         "bSortable": true
-      } // last modified
+      }, // last modified
+      {
+          "bSearchable": false,
+          "bSortable": true
+      } // reviewer
       ]
     });
 

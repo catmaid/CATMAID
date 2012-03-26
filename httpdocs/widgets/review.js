@@ -94,14 +94,23 @@ var ReviewSystem = new function()
         if( $('#review_segment_table').length > 0 )
             $('#review_segment_table').remove();
         table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('width', '420').attr('id', 'review_segment_table');
+        // create header
+        thead = $('<thead />');
+        table.append( thead );
+        row = $('<tr />')
+        row.append( $('<td />').text("SegmentID") );
+        row.append( $('<td />').text( "Start-End") );
+        row.append( $('<td />').text("Status") );
+        row.append( $('<td />').text("# nodes") );
+        thead.append( row );
         tbody = $('<tbody />');
         table.append( tbody );
         // create a row
         for(var e in skeleton_data ) {
-            row = $('<tr />')
+            row = $('<tr />');
             row.append( $('<td />').text( skeleton_data[e]['id'] ) );
             row.append( $('<td />').text( skeleton_data[e]['type'] ) );
-            row.append( $('<td />').text( skeleton_data[e]['status'] ) );
+            row.append( $('<td />').text( skeleton_data[e]['status']+'%' ) );
             row.append( $('<td />').text( skeleton_data[e]['nr_nodes'] ) );
             if( parseInt( skeleton_data[e]['status']) !== 100 ) {
                 butt = $('<button />').text( "Review" );

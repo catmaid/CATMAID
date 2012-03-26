@@ -266,6 +266,7 @@ var WindowMaker = new function()
             '<th>radius</th>' +
             '<th>username</th>' +
             '<th>last modified</th>' +
+            '<th>last reviewed</th>' +
           '</tr>' +
         '</thead>' +
         '<tfoot>' +
@@ -280,6 +281,7 @@ var WindowMaker = new function()
             '<th>radius</th>' +
             '<th>username</th>' +
             '<th>last modified</th>' +
+            '<th>last reviewed</th>' +
           '</tr>' +
         '</tfoot>' +
         '<tbody>' +

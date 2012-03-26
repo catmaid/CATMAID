@@ -25,6 +25,8 @@ urlpatterns = patterns(
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'vncbrowser.views.skeleton_swc'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', 'vncbrowser.views.skeleton_json'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neurohdf$', 'vncbrowser.views.skeleton_neurohdf'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review$', 'vncbrowser.views.export_review_skeleton'),
+
     (r'^(?P<project_id>\d+)/skeleton-for-treenode/(?P<treenode_id>\d+)/swc$', 'vncbrowser.views.skeleton_swc'),
     (r'^(?P<project_id>\d+)/neuron-to-skeletons/(?P<neuron_id>\d+)$', 'vncbrowser.views.neuron_to_skeletons'),
     (r'^login$', 'vncbrowser.views.login'),
@@ -33,6 +35,9 @@ urlpatterns = patterns(
     (r'^(?P<project_id>\d+)/labels-for-nodes$', 'vncbrowser.views.labels_for_nodes'),
     (r'^(?P<project_id>\d+)/labels-for-node/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'vncbrowser.views.labels_for_node'),
     (r'^(?P<project_id>\d+)/label-update/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'vncbrowser.views.label_update'),
+
+    (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', 'vncbrowser.views.update_location_reviewer'),
+
     (r'^user-list$', 'vncbrowser.views.user_list'),
     (r'^(?P<project_id>\d+)/root-for-skeleton/(?P<skeleton_id>\d+)$', 'vncbrowser.views.root_for_skeleton'),
     (r'^(?P<project_id>\d+)/stats$', 'vncbrowser.views.stats'),

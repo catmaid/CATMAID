@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 from vncbrowser.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
     Project, User, Treenode, TreenodeConnector, Connector, Stack, ProjectStack, \
-    TreenodeClassInstance, ConnectorClassInstance
+    TreenodeClassInstance, ConnectorClassInstance, Location
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
 from django.db.models import Count
@@ -15,6 +15,7 @@ import json
 import re
 import sys
 from urllib import urlencode
+from datetime import datetime
 try:
     import networkx as nx
     from networkx.readwrite import json_graph
@@ -390,8 +391,118 @@ def convert_annotations_to_networkx(request, project_id=None):
     return HttpResponse(json_return, mimetype='text/json')
 
 
-def export_extended_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None, format=None):
-    treenode_qs, labels_as, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id, treenode_id)
+def export_extended_skeleton_response(request, project_id=None, skeleton_id=None, logged_in_user=None, format=None):
+
+    data=generate_extended_skeleton_data( project_id, skeleton_id )
+
+    if format == 'json':
+        json_return = json.dumps(data, sort_keys=True, indent=4)
+        return HttpResponse(json_return, mimetype='text/json')
+    else:
+        raise Exception, "Unknown format ('%s') in export_extended_skeleton_response" % (format,)
+
+def export_review_skeleton(request, project_id=None, skeleton_id=None, logged_in_user=None, format=None):
+    data=generate_extended_skeleton_data( project_id, skeleton_id )
+    g=nx.DiGraph()
+
+    for id, d in data['vertices'].items():
+        g.add_node( id, d )
+
+    for from_id, to_data in data['connectivity'].items():
+        for to_id, d in to_data.items():
+            if d['type'] in ['postsynaptic_to', 'presynaptic_to']:
+                g.add_edge( from_id, to_id, d )
+            else:
+                g.add_edge( to_id, from_id, d )
+
+    root_id = -1
+    segments = []
+    # Find root node
+    for k,v in g.nodes_iter(data=True):
+        if len(g[k]) > 1:
+            v['node_type'] = 'branch'
+        else:
+            v['node_type'] = 'slab'
+        if len(g[k]) == 0:
+            v['node_type'] = 'leaf'
+            if v['type'] == 'connector':
+                v['node_type'] = 'connector'
+
+
+        if len(g.predecessors(k)) == 0: v['node_type'] = 'root'
+    for k,v in g.nodes_iter(data=True):
+        if v['node_type'] == 'root':
+            root_id = k
+
+    def parent_dict( n ):
+        pre = g.predecessors( n )
+        print 'parentdict', pre, n
+        if len(pre) == 1:
+            return pre[0], g.node[pre[0]]
+        else:
+            raise Exception('Node %s has more than one parent or none' % str(n))
+
+    def extend_dict( id, dictionary ):
+        dictionary['id'] = id
+        return dictionary
+
+    def leaf_segment( k ):
+        seg = []
+        seg.append( extend_dict(k,g.node[k]) )
+        k_old = k
+        k,d = parent_dict( k )
+        g.remove_node( k_old )
+        while not d['node_type'] in ['branch', 'root']:
+            seg.append( extend_dict(k,g.node[k]) )
+            k_old = k
+            k,d = parent_dict( k )
+            g.remove_node( k_old )
+            # add last (either branch or root)
+        seg.append( extend_dict(k,g.node[k]) )
+        # segment statistics
+        nr=len(seg)
+        notrevi=len([ele for ele in seg if ele['reviewer_id'] == -1])
+        segdict = {
+            'id': len(segments),
+            'sequence': seg,
+            'status': '%.2f' %( 100.*(nr-notrevi)/nr) ,
+            'type': seg[0]['node_type'] + '-' + seg[-1]['node_type'],
+            'nr_nodes': nr
+        }
+        segments.append( segdict )
+        return k
+
+    def find_leafs( g ):
+        leaf_ids = []
+        for k,v in g.nodes_iter(data=True):
+            if v['node_type'] in ['leaf', 'connector']:
+                leaf_ids.append( k )
+        sorted(leaf_ids)
+        return leaf_ids
+
+    leaf_ids = find_leafs( g )
+    branch_queue = []
+    for lid in leaf_ids:
+        branch_id = leaf_segment( lid )
+        if not branch_id in branch_queue:
+            branch_queue.append( branch_id )
+    sorted(branch_queue)
+
+    # iterate over the branch queue until only root node left
+    while len(branch_queue) > 0:
+        start_node_id = branch_queue.pop()
+        top_id = leaf_segment( start_node_id )
+        if top_id == root_id:
+            break
+        if not top_id in branch_queue:
+            branch_queue.insert(0, top_id)
+    json_return = json.dumps(segments, sort_keys=True, indent=4)
+    return HttpResponse(json_return, mimetype='text/json')
+
+
+def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
+
+    treenode_qs, labels_as, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id)
 
     labels={}
     for tn in labels_as:
@@ -428,7 +539,11 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
             'z': tn.location.z,
             'radius': max(tn.radius, 0),
             'type': 'skeleton',
-            'labels' : lab
+            'labels': lab,
+            'reviewer_id': tn.reviewer_id,
+            # 'review_time': tn.review_time
+            # To submit the review time, we would need to encode the datetime as string
+            # http://stackoverflow.com/questions/455580/json-datetime-between-python-and-javascript
         }
         if not tn.parent_id is None:
             if connectivity.has_key(tn.id):
@@ -464,15 +579,7 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
             lab2 = []
 
         if not vertices.has_key(tc.treenode_id):
-            print >> sys.stderr, 'vertices was not yet in result set. this should never happen.'
-            print >> sys.stderr, 'in export_extended_skeleton_response()'
-            vertices[tc.treenode_id] = {
-                'x': tc.treenode.location.x,
-                'y': tc.treenode.location.y,
-                'z': tc.treenode.location.z,
-                'type': 'skeleton',
-                'labels': lab1
-            }
+            raise Exception('Vertex was not in the result set. This should never happen.')
 
         if not vertices.has_key(tc.connector_id):
             vertices[tc.connector_id] = {
@@ -480,7 +587,9 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
                 'y': tc.connector.location.y,
                 'z': tc.connector.location.z,
                 'type': 'connector',
-                'labels': lab2
+                'labels': lab2,
+                'reviewer_id': tc.connector.reviewer_id
+                #'review_time': tn.review_time
             }
 
         # if it a single node without connection to anything else,
@@ -489,22 +598,33 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
             connectivity[tc.treenode_id] = {}
 
         if connectivity[tc.treenode_id].has_key(tc.connector_id):
-            print >> sys.stderr, 'only for postsynaptic to the same skeleton multiple times'
-            print >> sys.stderr, 'for connector', tc.connector_id
+            # print >> sys.stderr, 'only for postsynaptic to the same skeleton multiple times'
+            # print >> sys.stderr, 'for connector', tc.connector_id
             connectivity[tc.treenode_id][tc.connector_id] = {
                 'type': tc.relation.relation_name
             }
         else:
-            print >> sys.stderr, 'does not have key', tc.connector_id, connectivity[tc.treenode_id]
+            # print >> sys.stderr, 'does not have key', tc.connector_id, connectivity[tc.treenode_id]
             connectivity[tc.treenode_id][tc.connector_id] = {
                 'type': tc.relation.relation_name
             }
 
-    if format == 'json':
-        json_return = json.dumps({'vertices':vertices,'connectivity':connectivity}, sort_keys=True, indent=4)
-        return HttpResponse(json_return, mimetype='text/json')
-    else:
-        raise Exception, "Unknown format ('%s') in export_extended_skeleton_response" % (format,)
+    return {'vertices':vertices,'connectivity':connectivity}
+
+@catmaid_login_required
+def update_location_reviewer(request, project_id=None, node_id=None, logged_in_user=None):
+    """ Updates the reviewer id and review time of a node """
+    p = get_object_or_404(Project, pk=project_id)
+    loc = Location.objects.get(
+        pk=node_id,
+        project=p)
+    if loc.user_id == logged_in_user.id:
+        return HttpResponse(json.dumps({'error': 'Node creator and reviewer need to be different!'}), mimetype='text/json')
+    loc.reviewer_id=logged_in_user.id
+    loc.review_time=datetime.now()
+    loc.save()
+    return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+
 
 @catmaid_login_required
 def skeleton_swc(*args, **kwargs):

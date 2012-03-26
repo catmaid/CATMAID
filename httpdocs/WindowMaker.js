@@ -454,6 +454,38 @@ var WindowMaker = new function()
         return win;
     };
 
+    var createReviewWindow = function()
+    {
+        var win = new CMWWindow("Review System");
+        var content = win.getFrame();
+        content.style.backgroundColor = "#ffffff";
+
+        var add = document.createElement('input');
+        add.setAttribute("type", "button");
+        add.setAttribute("id", "start_review_skeleton");
+        add.setAttribute("value", "Start skeleton to review");
+        add.onclick = ReviewSystem.getSkeletonToReview; // function declared in review.js
+        content.appendChild(add);
+
+        var add = document.createElement('input');
+        add.setAttribute("type", "button");
+        add.setAttribute("id", "end_review_skeleton");
+        add.setAttribute("value", "End review");
+        add.onclick = ReviewSystem.resetReview; // function declared in review.js
+        content.appendChild(add);
+
+        var container = createContainer( "project_review_widget" );
+        content.appendChild( container );
+
+        addListener(win, container);
+
+        addLogic(win);
+
+        ReviewSystem.init( project.getId() );
+
+        return win;
+    };
+
   var getHelpForActions = function(actions)
   {
     var action, keys, i, k, result = '';
@@ -694,7 +726,8 @@ var WindowMaker = new function()
     "log-table": createLogTableWindow,
     "object-tree": createObjectTreeWindow,
     "statistics": createStatisticsWindow,
-    "disclaimer": createDisclaimerWindow
+    "disclaimer": createDisclaimerWindow,
+    "review-system": createReviewWindow
   };
 
   /** If the window for the given name is already showing, just focus it.

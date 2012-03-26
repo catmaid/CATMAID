@@ -180,15 +180,19 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
 
 def get_temporary_neurohdf_filename_and_url():
     fname = ''.join([choice('abcdefghijklmnopqrstuvwxyz0123456789(-_=+)') for i in range(50)])
-    if not os.path.exists(os.path.join(settings.STATICFILES_LOCAL, 'neurohdf')):
-        os.mkdir(os.path.join(settings.STATICFILES_LOCAL, 'neurohdf'))
-    filepath = os.path.join('neurohdf', '%s.h5' % fname)
-    return os.path.join(settings.STATICFILES_LOCAL, filepath), os.path.join(settings.STATICFILES_URL, filepath)
+    hdf_path = os.path.join(settings.STATICFILES_LOCAL, settings.STATICFILES_HDF5_SUBDIRECTORY)
+    if not os.path.exists( hdf_path ):
+        raise Exception('Need to configure writable path STATICFILES_HDF5_LOCAL in settings_apache.py')
+    filename = os.path.join('%s.h5' % fname)
+    return os.path.join(hdf_path, filename), os.path.join(settings.STATICFILES_URL,
+        settings.STATICFILES_HDF5_SUBDIRECTORY, filename)
 
 def create_neurohdf_file(filename, data):
 
     with closing(h5py.File(filename, 'w')) as hfile:
+        hfile.attrs['neurohdf_version'] = '0.1'
         mcgroup = hfile.create_group("Microcircuit")
+        mcgroup.attrs['node_type'] = 'irregular_dataset'
         vert = mcgroup.create_group("vertices")
         conn = mcgroup.create_group("connectivity")
 
@@ -237,7 +241,7 @@ def skeleton_neurohdf(request, project_id=None, skeleton_id=None, logged_in_user
     neurohdf_filename,neurohdf_url=get_temporary_neurohdf_filename_and_url()
     create_neurohdf_file(neurohdf_filename, data)
 
-    print >> sys.stderr, neurohdf_filename,neurohdf_url
+    # print >> sys.stderr, neurohdf_filename,neurohdf_url
     result = {
         'format': 'NeuroHDF',
         'format_version': 1.0,

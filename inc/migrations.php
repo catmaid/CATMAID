@@ -912,6 +912,14 @@ ALTER TABLE ONLY log
 '
 ),
 
+	'2012-03-25 T01:26:02' => new Migration(
+		'Reviewer columns in location, thus treenode and connector, table',
+		'
+ALTER TABLE location ADD COLUMN reviewer_id integer NOT NULL DEFAULT -1;
+ALTER TABLE location ADD COLUMN review_time timestamp with time zone DEFAULT NULL;
+'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

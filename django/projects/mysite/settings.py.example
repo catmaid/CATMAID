@@ -56,8 +56,10 @@ SITE_ID = 1
 CATMAID_URL = '/'
 STATICFILES_URL = '/static/'
 
-# Absolute path to the static files
-STATICFILES_LOCAL = '/home/mark/catmaid/django/static/'
+STATICFILES_LOCAL = '/home/stephan/dev/CATMAID/django/static/'
+# Static path to store generated NeuroHDF files (needs to be writable)
+# as subdirectory of STATICFILES_LOCAL
+STATICFILES_HDF5_SUBDIRECTORY = 'neurohdf'
 
 # Local path to store HDF5 files
 # File name convention: {projectid}_{stackid}.hdf

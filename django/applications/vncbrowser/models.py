@@ -376,6 +376,8 @@ class Location(models.Model):
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
     location = Double3DField()
+    reviewer_id = models.IntegerField(default=-1)
+    review_time = models.DateTimeField()
 
 class Treenode(models.Model):
     class Meta:
@@ -390,6 +392,9 @@ class Treenode(models.Model):
     radius = models.FloatField()
     confidence = models.IntegerField(default=5)
     skeleton = models.ForeignKey(ClassInstance)
+    reviewer_id = models.IntegerField(default=-1)
+    review_time = models.DateTimeField()
+
 
 class Connector(models.Model):
     class Meta:
@@ -401,6 +406,9 @@ class Connector(models.Model):
     project = models.ForeignKey(Project)
     location = Double3DField()
     confidence = models.IntegerField(default=5)
+    reviewer_id = models.IntegerField(default=-1)
+    review_time = models.DateTimeField()
+
 
 class TreenodeClassInstance(models.Model):
     class Meta:

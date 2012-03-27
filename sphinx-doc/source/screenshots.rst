@@ -20,6 +20,12 @@ WebGL Neuronal Morphology Viewer
 
 .. figure:: _static/screenshots/webgl.png
    :alt: WebGL Viewer
+
+
+Neuron Catalog
+
+.. figure:: _static/screenshots/neuron_catalog.png
+   :alt: Neuron Catalog
    
 
 ..  .. figure:: _static/screenshots/stats.png

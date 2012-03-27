@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #
 # This is a helper script to ensure an image has the correct tile size.
 # It uses pgmagick[1] to read and (if needed) correct the image. To use

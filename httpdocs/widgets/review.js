@@ -133,6 +133,8 @@ var ReviewSystem = new function()
             tbody.append( row );
         }
         $("#project_review_widget").append( table );
+        $("#project_review_widget").append( $('<br />') );
+        $("#project_review_widget").append( $('<br />') );
     }
 
     this.getSkeletonToReview = function() {

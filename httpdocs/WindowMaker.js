@@ -465,7 +465,7 @@ var WindowMaker = new function()
         var add = document.createElement('input');
         add.setAttribute("type", "button");
         add.setAttribute("id", "start_review_skeleton");
-        add.setAttribute("value", "Start skeleton to review");
+        add.setAttribute("value", "Start to review skeleton");
         add.onclick = ReviewSystem.getSkeletonToReview; // function declared in review.js
         content.appendChild(add);
 
@@ -474,6 +474,10 @@ var WindowMaker = new function()
         add.setAttribute("id", "end_review_skeleton");
         add.setAttribute("value", "End review");
         add.onclick = ReviewSystem.resetReview; // function declared in review.js
+        content.appendChild(add);
+
+        var add = document.createElement('div');
+        add.setAttribute("id", "reviewing_skeleton");
         content.appendChild(add);
 
         var container = createContainer( "project_review_widget" );

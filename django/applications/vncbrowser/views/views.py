@@ -415,6 +415,63 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, logged_in
             else:
                 g.add_edge( to_id, from_id, d )
 
+    segments=[]
+    for n in g.nodes(): g.node[n]['node_type']='slab'
+    branchnodes=[k for k,v in g.degree().items() if v>2]
+    branchnode_neighbors = {}
+    for bid in branchnodes:
+        branchnode_neighbors[bid] = g.neighbors(bid) + g.predecessors(bid)
+    endnodes=[k for k,v in g.degree().items() if v==1]
+    for n in endnodes: g.node[n]['node_type']='end'
+    a=g.copy()
+    a.remove_nodes_from( branchnodes )
+    subg=nx.weakly_connected_component_subgraphs(a)
+    for sg in subg:
+        for k,v in sg.nodes(data=True):
+            for bid, branch_neighbors in branchnode_neighbors.items():
+                if k in branch_neighbors:
+                    extended_dictionary=g.node[bid]
+                    extended_dictionary['node_type']='branch'
+                    sg.add_node(bid,extended_dictionary)
+    # extract segments
+    for sg in subg:
+        nodeslist=sorted(sg.nodes(data=True))
+        nodeslist.reverse()
+        seg=[]
+        start_and_end=[]
+        for k,v in nodeslist:
+            v['id']=k
+            if v['node_type'] != 'slab':
+                start_and_end.append( v['node_type'] )
+            seg.append( v )
+        nr=len(seg)
+        notrevi=len([ele for ele in seg if ele['reviewer_id'] == -1])
+        segdict = {
+            'id': len(segments),
+            'sequence': seg,
+            'status': '%.2f' %( 100.*(nr-notrevi)/nr) ,
+            'type': '-'.join(start_and_end),
+            'nr_nodes': nr
+        }
+        segments.append( segdict )
+
+    json_return = json.dumps(segments, sort_keys=True, indent=4)
+    return HttpResponse(json_return, mimetype='text/json')
+
+def export_review_skeleton2(request, project_id=None, skeleton_id=None, logged_in_user=None, format=None):
+    data=generate_extended_skeleton_data( project_id, skeleton_id )
+    g=nx.DiGraph()
+
+    for id, d in data['vertices'].items():
+        g.add_node( id, d )
+
+    for from_id, to_data in data['connectivity'].items():
+        for to_id, d in to_data.items():
+            if d['type'] in ['postsynaptic_to', 'presynaptic_to']:
+                g.add_edge( from_id, to_id, d )
+            else:
+                g.add_edge( to_id, from_id, d )
+
     root_id = -1
     segments = []
     # Find root node
@@ -618,9 +675,6 @@ def update_location_reviewer(request, project_id=None, node_id=None, logged_in_u
     loc = Location.objects.get(
         pk=node_id,
         project=p)
-    if loc.user_id == logged_in_user.id:
-        return HttpResponse(json.dumps({'error': 'Node creator (%s) and reviewer need to be different!'%
-                                                 (str(loc.user.name))}), mimetype='text/json')
     loc.reviewer_id=logged_in_user.id
     loc.review_time=datetime.now()
     loc.save()

@@ -30,6 +30,7 @@ var ReviewSystem = new function()
         self.current_segment_index = 0;
         if( $('#review_segment_table').length > 0 )
             $('#review_segment_table').remove();
+            $('#reviewing_skeleton').text( '' );
     }
 
     this.initReviewSegment = function( id ) {
@@ -91,8 +92,11 @@ var ReviewSystem = new function()
     this.createReviewSkeletonTable = function( skeleton_data ) {
         self.skeleton_segments = skeleton_data;
         var butt, table, tbody, row;
-        if( $('#review_segment_table').length > 0 )
+        if( $('#review_segment_table').length > 0 ) {
             $('#review_segment_table').remove();
+            $('#reviewing_skeleton').text( '' );
+        }
+        $('#reviewing_skeleton').text( 'Skeleton ID under review: ' + skeletonID );
         table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('width', '420').attr('id', 'review_segment_table');
         // create header
         thead = $('<thead />');
@@ -110,16 +114,22 @@ var ReviewSystem = new function()
             row = $('<tr />');
             row.append( $('<td />').text( skeleton_data[e]['id'] ) );
             row.append( $('<td />').text( skeleton_data[e]['type'] ) );
-            row.append( $('<td />').text( skeleton_data[e]['status']+'%' ) );
+            var status = $('<td />').text( skeleton_data[e]['status']+'%' );
+            row.append( status );
             row.append( $('<td />').text( skeleton_data[e]['nr_nodes'] ) );
-            if( parseInt( skeleton_data[e]['status']) !== 100 ) {
-                butt = $('<button />').text( "Review" );
-                butt.attr( 'id', 'reviewbutton_'+skeleton_data[e]['id'] );
-                butt.click( function() {
-                    self.initReviewSegment( this.id.replace("reviewbutton_", "") );
-                });
-                row.append( butt );
+            if( parseInt( skeleton_data[e]['status']) === 0 ) {
+                status.css('background-color', '#ff8c8c');
+            } else if( parseInt( skeleton_data[e]['status']) === 100 ) {
+                status.css('background-color', '#6fff5c');
+            } else {
+                status.css('background-color', '#ffc71d');
             }
+            butt = $('<button />').text( "Review" );
+            butt.attr( 'id', 'reviewbutton_'+skeleton_data[e]['id'] );
+            butt.click( function() {
+                self.initReviewSegment( this.id.replace("reviewbutton_", "") );
+            });
+            row.append( butt );
             tbody.append( row );
         }
         $("#project_review_widget").append( table );

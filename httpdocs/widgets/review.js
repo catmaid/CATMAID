@@ -1,20 +1,15 @@
 /* -*- mode: espresso; espresso-indent-level: 4; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=4 shiftwidth=4 tabstop=4 expandtab: */
 
-
-var ReviewSystem = new function()
+function ReviewSystem(divID)
 {
-
-    var projectID, skeletonID;
-    self = this;
+    var projectID = project.id, skeletonID;
+    var self = this;
+    this.divID = divID;
+    this.divID_jQuery = '#' + divID;
     self.skeleton_segments = null;
     self.current_segment = null;
     self.current_segment_index = 0;
-
-    this.init = function( pid )
-    {
-        projectID = pid;
-    }
 
     this.validSegment = function() {
         if(self.current_segment !== null) {
@@ -94,7 +89,6 @@ var ReviewSystem = new function()
         var butt, table, tbody, row;
         if( $('#review_segment_table').length > 0 ) {
             $('#review_segment_table').remove();
-            $('#reviewing_skeleton').text( '' );
         }
         $('#reviewing_skeleton').text( 'Skeleton ID under review: ' + skeletonID );
         table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('width', '420').attr('id', 'review_segment_table');
@@ -132,26 +126,15 @@ var ReviewSystem = new function()
             row.append( butt );
             tbody.append( row );
         }
+        // empty row
+        row = $('<tr />');
+        tbody.append( row );
         $("#project_review_widget").append( table );
-        $("#project_review_widget").append( $('<br />') );
-        $("#project_review_widget").append( $('<br />') );
     }
 
-    this.getSkeletonToReview = function() {
-        skeletonID = SkeletonAnnotations.getActiveSkeletonId();
-        if (!skeletonID) {
-            $('#growl-alert').growlAlert({
-                autoShow: true,
-                content: 'You need to activate a skeleton to review.',
-                title: 'BEWARE',
-                position: 'top-right',
-                delayTime: 2500,
-                onComplete: function() {
-                    g.remove();
-                }
-            });
-            return;
-        }
+    this.getSkeletonToReview = function( skeleton_id ) {
+        if( skeleton_id )
+            skeletonID = skeleton_id;
         jQuery.ajax({
             url: "dj/"+projectID+"/skeleton/" + skeletonID + "/review",
             type: "GET",
@@ -164,9 +147,58 @@ var ReviewSystem = new function()
                 }
             }
         });
-
     }
+}
 
 
+function moveNodeInSegmentBackward() {
+    var divID = 'project_review_widget';
+    var divID_jQuery = '#' + divID;
+    return $(divID_jQuery).data('review').moveNodeInSegmentBackward();
+}
 
+function moveNodeInSegmentForward() {
+    var divID = 'project_review_widget';
+    var divID_jQuery = '#' + divID;
+    return $(divID_jQuery).data('review').moveNodeInSegmentForward();
+}
+
+function validReviewSegment() {
+    var divID = 'project_review_widget';
+    var divID_jQuery = '#' + divID;
+    return $(divID_jQuery).data('review').validSegment();
+}
+
+function endReviewSkeleton() {
+    var divID = 'project_review_widget';
+    var divID_jQuery = '#' + divID;
+    $(divID_jQuery).data('review').resetReview();
+}
+
+function startReviewSkeleton() {
+    var divID = 'project_review_widget';
+    var divID_jQuery = '#' + divID;
+
+    var skeletonID = SkeletonAnnotations.getActiveSkeletonId();
+    if (!skeletonID) {
+        $('#growl-alert').growlAlert({
+            autoShow: true,
+            content: 'You need to activate a skeleton to review.',
+            title: 'BEWARE',
+            position: 'top-right',
+            delayTime: 2500,
+            onComplete: function() {
+                g.remove();
+            }
+        });
+        return;
+    }
+    $(divID_jQuery).data('review').getSkeletonToReview( skeletonID );
+}
+
+function createReviewSystem(divID) {
+    var divID_jQuery = '#' + divID;
+    if (!$(divID_jQuery).data('review')) {
+        $(divID_jQuery).data('review', new ReviewSystem(divID));
+    }
 }

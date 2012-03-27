@@ -1,7 +1,7 @@
 
 function WebGLViewer(divID) {
 
-  self = this;
+  var self = this;
 
   this.divID = divID;
   this.divID_jQuery = '#' + divID;
@@ -74,7 +74,6 @@ function WebGLViewer(divID) {
     lightMesh.scale.set( 0.05, 0.05, 0.05 );
     lightMesh.position = pointLight.position;
     scene.add( lightMesh );
-
 */
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -617,7 +616,7 @@ function addNeuronFromCATMAID(divID, info) {
   var divID_jQuery = '#' + divID;
 
   if (!$(divID_jQuery).data('viewer')) {
-    $(divID_jQuery).data('viewer', new WebGLViewer(divID));
+    $(divID_jQuery).data('viewer', new updateZPlane(divID));
   }
 
   $(divID_jQuery).data('viewer').addFromCATMAID(info.project_id, info.skeleton_id, nameFromCATMAIDInfo(info));

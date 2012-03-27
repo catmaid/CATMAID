@@ -658,8 +658,8 @@ function TracingTool()
         run: function (e) {
             if (!mayEdit())
                 return false;
-            if (ReviewSystem.validSegment())
-                ReviewSystem.moveNodeInSegmentBackward();
+            if (validReviewSegment())
+                moveNodeInSegmentBackward();
             return true;
         }
     }) );
@@ -672,8 +672,8 @@ function TracingTool()
         run: function (e) {
             if (!mayEdit())
                 return false;
-            if (ReviewSystem.validSegment())
-                ReviewSystem.moveNodeInSegmentForward();
+            if (validReviewSegment())
+                moveNodeInSegmentForward();
             return true;
         }
     }) );

@@ -407,7 +407,6 @@ var WindowMaker = new function()
                     var new_users = document.getElementById("logtable_username");
                     /*while (new_users.length > 0)
                         new_users.remove(0);*/
-
                     for (var i in e) {
                         var option = document.createElement("option");
                         option.text = e[i].name + " (" + e[i].longname + ")";
@@ -466,14 +465,14 @@ var WindowMaker = new function()
         add.setAttribute("type", "button");
         add.setAttribute("id", "start_review_skeleton");
         add.setAttribute("value", "Start to review skeleton");
-        add.onclick = ReviewSystem.getSkeletonToReview; // function declared in review.js
+        add.onclick = startReviewSkeleton; // function declared in review.js
         content.appendChild(add);
 
         var add = document.createElement('input');
         add.setAttribute("type", "button");
         add.setAttribute("id", "end_review_skeleton");
         add.setAttribute("value", "End review");
-        add.onclick = ReviewSystem.resetReview; // function declared in review.js
+        add.onclick = endReviewSkeleton; // function declared in review.js
         content.appendChild(add);
 
         var add = document.createElement('div');
@@ -487,7 +486,7 @@ var WindowMaker = new function()
 
         addLogic(win);
 
-        ReviewSystem.init( project.getId() );
+        createReviewSystem( 'project_review_widget' );
 
         return win;
     };

@@ -232,7 +232,6 @@ var ObjectTree = new function()
                 "separator_after": false,
                 "label": "3D Viewer",
                 "action": function (obj) {
-                  console.log()
                   var myparent = $.jstree._focused()._get_parent(obj);
 
                   WindowMaker.show("3d-webgl-view");
@@ -558,7 +557,7 @@ var ObjectTree = new function()
 
     $(object_tree_id).bind("remove.jstree", function (e, data) {
       var treebefore = data.rlbk;
-      var friendly_name = data.rslt.obj.text().replace(/(^\s+|\s+$)/g, '');
+      var friendly_name = data.rslt.obj.context.text; // data.rslt.obj.text().replace(/(^\s+|\s+$)/g, '');
       if (!confirm("Are you sure you want to remove '" + friendly_name + "' and anything it contains?")) {
         $.jstree.rollback(treebefore);
         return false;
@@ -602,7 +601,7 @@ var ObjectTree = new function()
                         project.updateTool();
                         $('#growl-alert').growlAlert({
                           autoShow: true,
-                          content: 'Object tree element' + data.rslt.obj.text() + ' removed.',
+                          content: 'Object tree element' + data.rslt.obj.context.text + ' removed.',
                           title: 'SUCCESS',
                           position: 'top-right',
                           delayTime: 2500,
@@ -636,7 +635,7 @@ var ObjectTree = new function()
           "src": src.attr("id").replace("node_", ""),
           "ref": ref.attr("id").replace("node_", ""),
           "classname": src.attr("rel"),
-          "targetname": data.rslt.r.text(),
+          "targetname": ref.context.text,
           "pid": pid
         },
         success: function (r, status) {

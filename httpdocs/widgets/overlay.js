@@ -381,7 +381,7 @@ var SkeletonAnnotations = new function()
       }
     }
 
-    this.tagATNwithTODO = function( label ) {
+    this.tagATNwithLabel = function( label ) {
       requestQueue.register("model/label.update.php", "POST", {
         pid: project.id,
         nid: atn.id,
@@ -394,16 +394,7 @@ var SkeletonAnnotations = new function()
             if (e.error) {
               alert(e.error);
             } else {
-            if( label === 'TODO' ) {
-                $('#growl-alert').growlAlert({
-                  autoShow: true,
-                  content: 'Tag TODO added.',
-                  title: 'Information',
-                  position: 'top-right',
-                  delayTime: 2000,
-                  onComplete: function() { g.remove(); }
-                });
-            } else if( label === '' ) {
+            if( label === '' ) {
                 $('#growl-alert').growlAlert({
                   autoShow: true,
                   content: 'Tags removed.',
@@ -411,6 +402,15 @@ var SkeletonAnnotations = new function()
                   position: 'top-right',
                   delayTime: 2000,
                   onComplete: function() { g.remove(); }
+                });
+            } else {
+                $('#growl-alert').growlAlert({
+                    autoShow: true,
+                    content: 'Tag ' + label + ' added.',
+                    title: 'Information',
+                    position: 'top-right',
+                    delayTime: 2000,
+                    onComplete: function() { g.remove(); }
                 });
             }
               self.updateNodes();
@@ -1707,16 +1707,30 @@ var SkeletonAnnotations = new function()
           alert('Need to activate a treenode or connector before tagging!');
         }
         break;
+      case "tagENDS":
+          if (atn != null) {
+              self.tagATNwithLabel( 'ends' );
+          } else {
+              alert('Need to activate a treenode or connector before tagging with ends!');
+          }
+          break;
+      case "tagENDSremove":
+          if (atn != null) {
+              self.tagATNwithLabel( '' );
+          } else {
+              alert('Need to activate a treenode or connector before removing ends tag!');
+          }
+          break;
       case "tagTODO":
         if (atn != null) {
-          self.tagATNwithTODO( 'TODO' );
+          self.tagATNwithLabel( 'TODO' );
         } else {
           alert('Need to activate a treenode or connector before tagging with TODO!');
         }
         break;
       case "tagTODOremove":
         if (atn != null) {
-          self.tagATNwithTODO( '' );
+          self.tagATNwithLabel( '' );
         } else {
           alert('Need to activate a treenode or connector before removing TODO tag!');
         }

@@ -325,17 +325,34 @@ function TracingTool()
     }
   }) );
 
+    this.addAction( new Action({
+        helpText: "Switch to skeleton tracing mode",
+        buttonName: "skeleton",
+        buttonID: 'trace_button_skeleton',
+        keyShortcuts: {
+            ";": [ 186 ]
+        },
+        run: function (e) {
+            tracingLayer.svgOverlay.tracingCommand('skeleton');
+            return true;
+        }
+    } ) );
+
   this.addAction( new Action({
-    helpText: "Switch to skeleton tracing mode",
-    buttonName: "skeleton",
-    buttonID: 'trace_button_skeleton',
+    helpText: "Add ends Tag (Shift: Remove) for the active node",
     keyShortcuts: {
       "K": [ 75 ]
     },
-    run: function (e) {
-      tracingLayer.svgOverlay.tracingCommand('skeleton');
-      return true;
-    }
+      run: function (e) {
+          if (!mayEdit())
+              return false;
+          if (e.ctrlKey || e.metaKey || e.shiftKey) {
+              tracingLayer.svgOverlay.tracingCommand('tagENDSremove');
+          } else {
+              tracingLayer.svgOverlay.tracingCommand('tagENDS');
+          }
+          return true;
+      }
   } ) );
 
   this.addAction( new Action({

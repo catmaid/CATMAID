@@ -406,12 +406,13 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, logged_in
     g=nx.DiGraph()
 
     for id, d in data['vertices'].items():
-        g.add_node( id, d )
+        if d['type'] == 'skeleton':
+            g.add_node( id, d )
 
     for from_id, to_data in data['connectivity'].items():
         for to_id, d in to_data.items():
             if d['type'] in ['postsynaptic_to', 'presynaptic_to']:
-                g.add_edge( from_id, to_id, d )
+                continue
             else:
                 g.add_edge( to_id, from_id, d )
 
@@ -457,105 +458,6 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, logged_in
 
     json_return = json.dumps(segments, sort_keys=True, indent=4)
     return HttpResponse(json_return, mimetype='text/json')
-
-def export_review_skeleton2(request, project_id=None, skeleton_id=None, logged_in_user=None, format=None):
-    data=generate_extended_skeleton_data( project_id, skeleton_id )
-    g=nx.DiGraph()
-
-    for id, d in data['vertices'].items():
-        g.add_node( id, d )
-
-    for from_id, to_data in data['connectivity'].items():
-        for to_id, d in to_data.items():
-            if d['type'] in ['postsynaptic_to', 'presynaptic_to']:
-                g.add_edge( from_id, to_id, d )
-            else:
-                g.add_edge( to_id, from_id, d )
-
-    root_id = -1
-    segments = []
-    # Find root node
-    for k,v in g.nodes_iter(data=True):
-        if len(g[k]) > 1:
-            v['node_type'] = 'branch'
-        else:
-            v['node_type'] = 'slab'
-        if len(g[k]) == 0:
-            v['node_type'] = 'leaf'
-            if v['type'] == 'connector':
-                v['node_type'] = 'connector'
-
-
-        if len(g.predecessors(k)) == 0: v['node_type'] = 'root'
-    for k,v in g.nodes_iter(data=True):
-        if v['node_type'] == 'root':
-            root_id = k
-
-    def parent_dict( n ):
-        pre = g.predecessors( n )
-        print 'parentdict', pre, n
-        if len(pre) == 1:
-            return pre[0], g.node[pre[0]]
-        else:
-            raise Exception('Node %s has more than one parent or none' % str(n))
-
-    def extend_dict( id, dictionary ):
-        dictionary['id'] = id
-        return dictionary
-
-    def leaf_segment( k ):
-        seg = []
-        seg.append( extend_dict(k,g.node[k]) )
-        k_old = k
-        k,d = parent_dict( k )
-        g.remove_node( k_old )
-        while not d['node_type'] in ['branch', 'root']:
-            seg.append( extend_dict(k,g.node[k]) )
-            k_old = k
-            k,d = parent_dict( k )
-            g.remove_node( k_old )
-            # add last (either branch or root)
-        seg.append( extend_dict(k,g.node[k]) )
-        # segment statistics
-        nr=len(seg)
-        notrevi=len([ele for ele in seg if ele['reviewer_id'] == -1])
-        segdict = {
-            'id': len(segments),
-            'sequence': seg,
-            'status': '%.2f' %( 100.*(nr-notrevi)/nr) ,
-            'type': seg[0]['node_type'] + '-' + seg[-1]['node_type'],
-            'nr_nodes': nr
-        }
-        segments.append( segdict )
-        return k
-
-    def find_leafs( g ):
-        leaf_ids = []
-        for k,v in g.nodes_iter(data=True):
-            if v['node_type'] in ['leaf', 'connector']:
-                leaf_ids.append( k )
-        sorted(leaf_ids)
-        return leaf_ids
-
-    leaf_ids = find_leafs( g )
-    branch_queue = []
-    for lid in leaf_ids:
-        branch_id = leaf_segment( lid )
-        if not branch_id in branch_queue:
-            branch_queue.append( branch_id )
-    sorted(branch_queue)
-
-    # iterate over the branch queue until only root node left
-    while len(branch_queue) > 0:
-        start_node_id = branch_queue.pop()
-        top_id = leaf_segment( start_node_id )
-        if top_id == root_id:
-            break
-        if not top_id in branch_queue:
-            branch_queue.insert(0, top_id)
-    json_return = json.dumps(segments, sort_keys=True, indent=4)
-    return HttpResponse(json_return, mimetype='text/json')
-
 
 def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
 

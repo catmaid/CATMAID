@@ -653,13 +653,13 @@ function TracingTool()
     this.addAction( new Action({
         helpText: "Move to previous node in segment for review",
         keyShortcuts: {
-            'W': [ 81 ]
+            'Q': [ 81 ]
         },
         run: function (e) {
             if (!mayEdit())
                 return false;
-            if (validReviewSegment())
-                moveNodeInSegmentBackward();
+            if (ReviewSystem.validSegment())
+                ReviewSystem.moveNodeInSegmentBackward();
             return true;
         }
     }) );
@@ -672,8 +672,8 @@ function TracingTool()
         run: function (e) {
             if (!mayEdit())
                 return false;
-            if (validReviewSegment())
-                moveNodeInSegmentForward();
+            if (ReviewSystem.validSegment())
+                ReviewSystem.moveNodeInSegmentForward();
             return true;
         }
     }) );

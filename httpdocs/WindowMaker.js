@@ -465,14 +465,14 @@ var WindowMaker = new function()
         add.setAttribute("type", "button");
         add.setAttribute("id", "start_review_skeleton");
         add.setAttribute("value", "Start to review skeleton");
-        add.onclick = startReviewSkeleton; // function declared in review.js
+        add.onclick = ReviewSystem.startSkeletonToReview;
         content.appendChild(add);
 
         var add = document.createElement('input');
         add.setAttribute("type", "button");
         add.setAttribute("id", "end_review_skeleton");
         add.setAttribute("value", "End review");
-        add.onclick = endReviewSkeleton; // function declared in review.js
+        add.onclick = ReviewSystem.resetReview;
         content.appendChild(add);
 
         var add = document.createElement('div');
@@ -486,7 +486,7 @@ var WindowMaker = new function()
 
         addLogic(win);
 
-        createReviewSystem( 'project_review_widget' );
+        ReviewSystem.init();
 
         return win;
     };

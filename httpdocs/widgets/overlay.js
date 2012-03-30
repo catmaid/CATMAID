@@ -1581,8 +1581,8 @@ var SkeletonAnnotations = new function()
         }
         break;
       case "golastedited":
-        if (atn === null) {
-          alert("There was no active node.  One is required to find the\n" + "last edited node in the same skeleton.");
+        if (atn.id === null) {
+          alert("Need an active skeleton to go to last edited node.");
           break;
         }
         self.updateNodeCoordinatesinDB(function () {
@@ -1618,49 +1618,49 @@ var SkeletonAnnotations = new function()
         self.goToAdjacentBranchOrEndNode(false);
         break;
       case "skelsplitting":
-        if (atn !== null) {
+        if (atn.id !== null) {
           self.splitSkeleton();
         } else {
           alert('Need to activate a treenode before splitting!');
         }
         break;
       case "skelrerooting":
-        if (atn !== null) {
+        if (atn.id !== null) {
           self.rerootSkeleton();
         } else {
           alert('Need to activate a treenode before rerooting!');
         }
         break;
       case "tagging":
-        if (atn != null) {
+        if (atn.id !== null) {
           self.tagATN();
         } else {
           alert('Need to activate a treenode or connector before tagging!');
         }
         break;
       case "tagENDS":
-          if (atn != null) {
+          if (atn.id !== null) {
               self.tagATNwithLabel( 'ends' );
           } else {
               alert('Need to activate a treenode or connector before tagging with ends!');
           }
           break;
       case "tagENDSremove":
-          if (atn != null) {
+          if (atn.id !== null) {
               self.tagATNwithLabel( '' );
           } else {
               alert('Need to activate a treenode or connector before removing ends tag!');
           }
           break;
       case "tagTODO":
-        if (atn != null) {
+        if (atn.id !== null) {
           self.tagATNwithLabel( 'TODO' );
         } else {
           alert('Need to activate a treenode or connector before tagging with TODO!');
         }
         break;
       case "tagTODOremove":
-        if (atn != null) {
+        if (atn.id !== null) {
           self.tagATNwithLabel( '' );
         } else {
           alert('Need to activate a treenode or connector before removing TODO tag!');
@@ -1678,14 +1678,14 @@ var SkeletonAnnotations = new function()
         self.showLabels();
         break;
       case "exportswc":
-        if (atn != null) {
+        if (atn.id !== null) {
           SkeletonAnnotations.exportSWC();
         } else {
           alert('Need to activate a treenode before exporting to SWC!');
         }
         break;
       case "3dview":
-        if (atn != null) {
+        if (atn.id !== null) {
           addTo3DView();
         } else {
           alert('Need to activate a treenode or connector before showing them!');

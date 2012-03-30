@@ -189,7 +189,7 @@ error to tell you that no projects are found.  If you want to
 create some example projects and stacks for testing, you should
 run::
 
-     scripts/insert-example-projects.py
+     scripts/database/insert-example-projects.py
 
 To create a login, you should use the `scripts/create-user.py`
 script, such as with::

@@ -640,19 +640,12 @@ var SkeletonAnnotations = new function()
       return;
     };
 
-    this.createLink = function (fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype) {
-
+    this.createLink = function (fromid, toid, link_type) {
       requestQueue.register("model/link.create.php", "POST", {
         pid: project.id,
         from_id: fromid,
-        from_relation: 'model_of',
-        from_type: from_type,
-        from_nodetype: from_nodetype,
         link_type: link_type,
-        to_id: toid,
-        to_type: to_type,
-        to_nodetype: to_nodetype,
-        to_relation: 'model_of'
+        to_id: toid
       }, function (status, text, xml) {
         if (status === 200) {
           if (text && text !== " ") {
@@ -675,8 +668,6 @@ var SkeletonAnnotations = new function()
       // not linked to any treenode
       requestQueue.register("model/connector.create.php", "POST", {
         pid: project.id,
-        class_instance_type: 'synapse',
-        class_instance_relation: 'model_of',
         confidence: confval,
         x: phys_x,
         y: phys_y,
@@ -703,77 +694,17 @@ var SkeletonAnnotations = new function()
       }); // endfunction
     };
 
-    // Create a new connector. We also use this function to join connector and treenode (postsynaptic case)
-    // when the locidval is not null, but the id of the connector
-    var createConnector = function (locidval, id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z) {
-      var ip_type, iplre, locid;
-      // id is treenode id
+    var createConnector = function (locidval, treenode_id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z) {
       if (locidval === null) {
-        // we have the presynaptic case where the connector has to be created
-        ip_type = 'presynaptic terminal';
-        iplre = 'presynaptic_to';
-        locid = 0;
-      } else {
-        // we have the postsynaptic case where the connector and treenode is already existing
-        ip_type = 'postsynaptic terminal';
-        iplre = 'postsynaptic_to';
-        locid = locidval;
-      }
-
-      requestQueue.register("model/treenode.connector.create.php", "POST", {
-        pid: project.id,
-        input_id: id,
-        input_relation: 'model_of',
-        input_type: ip_type,
-        input_location_relation: iplre,
-        x: phys_x,
-        y: phys_y,
-        z: phys_z,
-        location_id: locid,
-        location_type: 'synapse',
-        location_relation: 'model_of'
-      }, function (status, text, xml) {
-        if (status === 200) {
-          if (text && text !== " ") {
-            var jso = $.parseJSON(text);
-            if (jso.error) {
-              alert(jso.error);
-            } else {
-              var locid_retrieved = jso.location_id;
-
-              if (locidval === null) {
-                // presynaptic case, we create a new connector node and use the retrieved id
-                var nn = SkeletonElements.newConnectorNode(locid_retrieved, self.paper, 8, pos_x, pos_y, pos_z, 0, 5 /* confidence */);
-                // store the currently activated treenode into the pregroup of the connector
-                nn.pregroup[id] = {'treenode': nodes[id],
-                                   'confidence': 5};
-                nodes[locid_retrieved] = nn;
-                nn.draw();
-                // update the reference to the connector from the treenode
-                nodes[id].connectors[locid_retrieved] = nn;
-                // activate the newly created connector
-                self.activateNode(nn);
-
-              } else {
-                // If the connector is still being displayed, update its postgroup
-                // and redraw:
-                if (locid_retrieved in nodes) {
-                  // postsynaptic case, no requirement to create new connector
-                  // but we need to update the postgroup with corresponding original treenod
-                  nodes[locid_retrieved].postgroup[id] = {'treenode': nodes[id],
-                                                          'confidence': 5};
-                  // do not activate anything but redraw
-                  nodes[locid_retrieved].draw();
-                  // update the reference to the connector from the treenode
-                  nodes[id].connectors[locid_retrieved] = nodes[locid_retrieved];
-                }
-              }
-
+        // need to create the target connector first
+        createSingleConnector( phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
+            function (connectorID) {
+                self.createLink(treenode_id, connectorID, 'presynaptic_to');
             }
-          }
-        }
-        return true;
-      });
+        );
+      } else {
+        self.createLink(treenode_id, locidval, 'postsynaptic_to');
+      }
       return;
     };
 

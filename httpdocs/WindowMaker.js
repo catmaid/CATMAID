@@ -679,24 +679,12 @@ var WindowMaker = new function()
             '<td id="proj_neurons"></td>' +
           '</tr>' +
           '<tr>' +
-            '<td >#synapses</td>' +
-            '<td id="proj_synapses"></td>' +
-          '</tr>' +
-          '<tr>' +
             '<td >#treenodes</td>' +
             '<td id="proj_treenodes"></td>' +
           '</tr>' +
           '<tr>' +
             '<td >#skeletons</td>' +
             '<td id="proj_skeletons"></td>' +
-          '</tr>' +
-          '<tr>' +
-            '<td >#presynaptic contacts</td>' +
-            '<td id="proj_presyn"></td>' +
-          '</tr>' +
-          '<tr>' +
-            '<td >#postsynaptic contacts</td>' +
-            '<td id="proj_postsyn"></td>' +
           '</tr>' +
           '<tr>' +
             '<td >#textlabels</td>' +

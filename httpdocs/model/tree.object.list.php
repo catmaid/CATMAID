@@ -223,10 +223,6 @@ $sOutput = '[';
 $i = 0;
 foreach($res as $key => $ele) {
 
-  if( $ele['class_name'] == "presynaptic terminal" OR $ele['class_name'] == 'postsynaptic terminal' ) {
-    continue;
-  }
-
   if( $ele['class_name'] == "skeleton" ) {
     $add = ' ('.$ele['username'].')';
   } else {

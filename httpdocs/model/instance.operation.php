@@ -51,7 +51,22 @@ if (! $db->begin() ) {
 
 // remove skeleton, i.e. treenodes and corresponding relations 
 function remove_skeleton($db, $pid, $skelid) {
-	
+
+  $res = $db->getResult("DELETE FROM treenode WHERE skeleton_id = $skelid AND project_id = $pid");
+
+  if (false === $res) {
+    emitErrorAndExit($db, 'Failed to delete in treenode for skeleton #'.$skid);
+  }
+
+  $res = $db->getResult("DELETE FROM treenode_connector WHERE skeleton_id = $skelid AND project_id = $pid");
+
+  if (false === $res) {
+    emitErrorAndExit($db, 'Failed to delete in treenode_connector for skeleton #'.$skid);
+  }
+
+  // delete all from treenode and treenode_connector
+/*
+  // XXX: fixme...
 	$lablid = $db->getRelationId( $pid, "labeled_as" );
 	$preid = $db->getRelationId( $pid, "presynaptic_to" );
 	$postid = $db->getRelationId( $pid, "postsynaptic_to" );
@@ -97,8 +112,10 @@ function remove_skeleton($db, $pid, $skelid) {
 	// connected treenodes to the skeleton with the element_of relationship using cascade deletion (does it XXX?)
 	$res = $db->getResult("DELETE FROM treenode WHERE skeleton_id = $skelid AND project_id = $pid");
 
+  // FIXME: also delete from treenode_connector !
+*/
   if (false === $res) {
-    emitErrorAndExit($db, 'Failed to delete treenodes fro skeleton #'.$skid);
+    emitErrorAndExit($db, 'Failed to delete treenodes for skeleton #'.$skid);
   }
 }
 

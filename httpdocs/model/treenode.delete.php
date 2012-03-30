@@ -102,9 +102,23 @@ try {
     }
 
     if (count($treenodes) > 0) {
-        emitErrorAndExit($db, "You can't delete the root node when it has children.  Please re-root the skeleton.");
+        emitErrorAndExit($db, "You can't delete the root node when it has children.");
     }
 
+    // TODO: the commented out code seems to be unnecessary, as the treenode has no children
+    // we only need to remove itself, and its associated skeleton and neuron
+
+    // remove original skeleton
+    $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$sk_id);
+
+    // FIXME: do not remove neuron without checking if it has other skeletons!
+    // $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$neu_id);
+
+    // remove treenode
+    $ids = $db->deleteFrom("treenode", ' "treenode"."id" = '.$tnid);
+
+
+/*
     foreach($treenodes as $key => $tn) {
       
       // update all the children to become root
@@ -151,6 +165,7 @@ try {
       }
 
       // update the element_of relationship for each of the treenode children recursively
+      // WARNING: this is expensive for big skeleton and needs replacement
       $allchi = $db->getAllTreenodeChildrenRecursively( $pid, $tn['tnid'] );
       
       if (false === $allchi) {
@@ -194,7 +209,9 @@ try {
     // remove original skeleton
     $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$sk_id);
 
-    echo json_encode("Removed treenode successfully.");
+*/
+
+    echo json_encode(array('success' => "Removed treenode successfully."));
 
   } else {
     // treenode is not root
@@ -218,32 +235,9 @@ try {
         emitErrorAndExit($db, 'Could not update parent id of children nodes.');
       }
     }
-  
-    // Before deleting the treenode
-    // make sure that we delete all anotations (model_of) of the treenode
-    // from the class_instance table.
-    // Remove model_of, e.g. pre- or postsynaptic terminals
-    // Remove model_of, includes deleting the class_instances
-    $treein = $db->getResult('SELECT "tci"."class_instance_id" AS "id" FROM "treenode_class_instance" AS "tci"
-                              WHERE "tci"."relation_id" = '.$modof_id.'
-                              AND "tci"."treenode_id" = '.$tnid.'
-                              AND "tci"."project_id" = '.$pid);
-  
-    if (false === $treein) {
-      emitErrorAndExit($db, 'Could not select class instances.');
-    }
-  
-    // delete class_instance
-    if(!empty($treein)) {
-      foreach($treein as $key => $tn) {
-        $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$tn['id']);
-        if (false === $ids) {
-          emitErrorAndExit($db, 'Could not delete class instances.');
-        }
-      }
-    }
-  
-    // Finally delete the treenode to be consistent with the foreign key constraint
+
+    // Finally delete the treenode and with ON DELETE CASCADE
+    // remove associated class_instances from treenode_class_instance (e.g. labels)
     // with on cascade delete, this will delete all its labels
     $ids = $db->deleteFrom("treenode", ' "treenode"."id" = '.$tnid);
     
@@ -251,7 +245,7 @@ try {
       emitErrorAndExit($db, 'Could not delete treenode #'.$tnid);
     }
   
-    echo json_encode("Removed treenode successfully.");
+    echo json_encode(array('message' => "Removed treenode successfully."));
 
   }
 

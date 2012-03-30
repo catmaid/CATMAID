@@ -15,7 +15,7 @@ import tempfile
 import shutil
 
 top_level = os.path.join(os.path.dirname(sys.path[0]))
-migrations_filename = os.path.join(top_level,'inc','migrations.php')
+migrations_filename = os.path.join(top_level,'..','inc','migrations.php')
 
 def usage():
     print("Usage: {0} DESCRIPTION [GIT-COMMIT]".format(sys.argv[0]))

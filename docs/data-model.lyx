@@ -114,6 +114,21 @@ target "http://fly.mpi-cbg.de/~saalfeld/catmaid/"
  changes.
 \end_layout
 
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+We removed the presynaptic_to and postsynapict_to relation and associated
+ instances from the annotation domain.
+ This is not yet reflected in this document.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
 \begin_layout Subsection*
 Current Entities and Relationships
 \end_layout

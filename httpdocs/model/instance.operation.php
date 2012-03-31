@@ -64,56 +64,6 @@ function remove_skeleton($db, $pid, $skelid) {
     emitErrorAndExit($db, 'Failed to delete in treenode_connector for skeleton #'.$skid);
   }
 
-  // delete all from treenode and treenode_connector
-/*
-  // XXX: fixme...
-	$lablid = $db->getRelationId( $pid, "labeled_as" );
-	$preid = $db->getRelationId( $pid, "presynaptic_to" );
-	$postid = $db->getRelationId( $pid, "postsynaptic_to" );
-
-	// delete all terminals of treenodes
-    $model_of_id = $db->getRelationId( $pid, "model_of" );
-    $res = $db->getResult('SELECT * FROM
-			  "treenode_class_instance" AS "tci"
-			 WHERE
-			  "tci"."treenode_id" IN (
-			    SELECT "tn"."id"
-			    FROM "treenode" AS "tn"
-			    INNER JOIN "treenode_class_instance" AS "tci2"
-			    ON "tci2"."treenode_id" = "tn"."id"
-			    WHERE "tci2"."class_instance_id" = '.$skelid.' AND "tci2"."project_id" = '.$pid.'
-			  ) AND "tci"."relation_id" = '.$model_of_id);
-    if (count($res) > 0) {
-        // remove all the terminals
-        foreach($res as $key => $val) {
-            $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$val['class_instance_id']);
-        }
-    }
-    // -----------
-
-	// labeled_as, presynaptic_to, postsynaptic_to, element_of
-	$relarr = array( $lablid, $preid, $postid );
-	foreach( $relarr as $val ) {
-		$res = $db->getResult('DELETE FROM 
-			  "treenode_class_instance" AS "tci"
-			 WHERE 
-			  "tci"."treenode_id" IN (
-			    SELECT "tn"."id"
-			    FROM "treenode" AS "tn"
-			    INNER JOIN "treenode_class_instance" AS "tci2"
-			    ON "tci2"."treenode_id" = "tn"."id" 
-			    WHERE "tci2"."class_instance_id" = '.$skelid.' AND "tci2"."project_id" = '.$pid.'
-			  ) AND "tci"."relation_id" = '.$val);
-    if (false === $res) {
-      emitErrorAndExit($db, 'Failed to delete treenode instances for skeleton #'.$skid);
-    }
-	}
-	// remove treenodes from treenode table, should remove the remaining
-	// connected treenodes to the skeleton with the element_of relationship using cascade deletion (does it XXX?)
-	$res = $db->getResult("DELETE FROM treenode WHERE skeleton_id = $skelid AND project_id = $pid");
-
-  // FIXME: also delete from treenode_connector !
-*/
   if (false === $res) {
     emitErrorAndExit($db, 'Failed to delete treenodes for skeleton #'.$skid);
   }

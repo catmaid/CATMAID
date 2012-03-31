@@ -282,30 +282,31 @@ try {
   {
     if ( $src && $ref )
     {
-      $presyn_id = $db->getRelationId( $pid, "presynaptic_to" );
-      $postsyn_id = $db->getRelationId( $pid, "postsynaptic_to" );
-      $modid = $db->getRelationId( $pid, "model_of" );
-      $partof_id = $db->getRelationId( $pid, "part_of" );
-      
-      // only update for updateable relations of the object tree
-      $up = array('class_instance_b' => $ref);
-      $upw = 'project_id = '.$pid.'
-      AND (relation_id = '.$presyn_id.'
-      OR relation_id = '.$postsyn_id.'
-      OR relation_id = '.$modid.'
-      OR relation_id = '.$partof_id.')
-      AND class_instance_a = '.$src;
-      $q = $db->update( "class_instance_class_instance", $up, $upw);
-
       $classname = isset( $_REQUEST[ 'classname' ] ) ? $_REQUEST[ 'classname' ] : 0;
       $targetname = isset( $_REQUEST[ 'targetname' ] ) ? $_REQUEST[ 'targetname' ] : 0;
+      if( $classname === 'skeleton' ) {
+        // special case for model_of relationship
+        $modid = $db->getRelationId( $pid, "model_of" );
+        $up = array('class_instance_b' => $ref);
+        $upw = 'project_id = '.$pid.' AND relation_id = '.$modid.' AND class_instance_a = '.$src;
+        $q = $db->update( "class_instance_class_instance", $up, $upw);
+        if (false === $q) {
+          emitErrorAndExit($db, 'Failed to update model_of relation.');
+        }
+      } else {
+        // otherwise update the part_of relationships
+        $partof_id = $db->getRelationId( $pid, "part_of" );
+        $up = array('class_instance_b' => $ref);
+        $upw = 'project_id = '.$pid.' AND relation_id = '.$partof_id.' AND class_instance_a = '.$src;
+        $q = $db->update( "class_instance_class_instance", $up, $upw);
+        if (false === $q) {
+          emitErrorAndExit($db, 'Failed to update part_of relation.');
+        }
+      }
+
       insertIntoLog( $db, $uid, $pid, "move_$classname", null , "Moved $classname with ID $src to $targetname with ID $ref" );
 
-      if (false === $q) {
-        emitErrorAndExit($db, 'Failed to update relation.');
-      }
-      
-      finish( array( 'status' => 1) );
+      finish( array( 'message' => 'Success.') );
     }
   }
   else if ( $op == 'has_relations' )

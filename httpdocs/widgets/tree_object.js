@@ -331,7 +331,25 @@ var ObjectTree = new function()
                 "action": function (obj) {
                   this.remove(obj);
                 }
-              }
+              },
+                "cut": {
+                    "separator_before": true,
+                    "icon": false,
+                    "separator_after": false,
+                    "label": "Cut",
+                    "action": function (obj) {
+                        this.cut(obj);
+                    }
+                },
+                "paste": {
+                    "separator_before": false,
+                    "icon": false,
+                    "separator_after": false,
+                    "label": "Paste",
+                    "action": function (obj) {
+                        this.paste(obj);
+                    }
+                }
             };
           }
           return menu;
@@ -640,8 +658,9 @@ var ObjectTree = new function()
         },
         success: function (r, status) {
           r = $.parseJSON(r);
-          if(!r['status']) {
+          if(r.error) {
             $.jstree.rollback(data.rlbk);
+            alert("ERROR: " + r['error']);
           }
           else {
             $("#tree_object").jstree("refresh", -1);

@@ -55,6 +55,7 @@ var LogTable = new function()
                     possibleLengthsLabels
                 ],
                 "bJQueryUI": true,
+                "aaSorting": [[ 2, "desc" ]],
                 "aoColumns": [
                     { // user
                         "bSearchable": false,

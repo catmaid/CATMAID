@@ -32,7 +32,7 @@ checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
 $user_id = isset( $_REQUEST[ 'user_id' ] ) ? intval( $_REQUEST[ 'user_id' ] ) : 0;
 $maxrows = 200;
 
-$columnToFieldArray = array( "user_id", "operation", "timestamp", "x", "y", "z", "freetext");
+$columnToFieldArray = array( "user_id", "operation", "creation_time", "x", "y", "z", "freetext");
 
 function fnColumnToField( $i ) {
     global $columnToFieldArray;

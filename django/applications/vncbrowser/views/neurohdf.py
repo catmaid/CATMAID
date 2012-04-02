@@ -18,19 +18,19 @@ import sys
 
 # This file defines constants used to correctly define the metadata for NeuroHDF microcircuit data
 
-VerticesTypeSkeletonNode = {
-    'name': 'skeleton',
-    'id': 1
-}
-
 VerticesTypeSkeletonRootNode = {
     'name': 'skeleton root',
     'id': 1
 }
 
+VerticesTypeSkeletonNode = {
+    'name': 'skeleton',
+    'id': 2
+}
+
 VerticesTypeConnectorNode = {
     'name': 'connector',
-    'id': 1
+    'id': 3
 }
 
 ConnectivityNeurite = {
@@ -198,22 +198,29 @@ def create_neurohdf_file(filename, data):
 
         vert.create_dataset("id", data=data['vert']['id'])
         vert.create_dataset("location", data=data['vert']['location'])
-        vert.create_dataset("type", data=data['vert']['type'])
+        verttype=vert.create_dataset("type", data=data['vert']['type'])
+        verttype.attrs['value'] = np.array([
+            [VerticesTypeSkeletonRootNode['id'], VerticesTypeSkeletonRootNode['name']],
+            [VerticesTypeSkeletonNode['id'], VerticesTypeSkeletonNode['name']],
+            [VerticesTypeConnectorNode['id'], VerticesTypeConnectorNode['name']]
+        ])
+
         vert.create_dataset("confidence", data=data['vert']['confidence'])
         vert.create_dataset("userid", data=data['vert']['userid'])
         vert.create_dataset("radius", data=data['vert']['radius'])
 
         conn.create_dataset("id", data=data['conn']['id'])
         if data['conn'].has_key('type'):
-            conn.create_dataset("type", data=data['conn']['type'])
+            conntype=conn.create_dataset("type", data=data['conn']['type'])
+            conntype.attrs['value'] = np.array([
+                [ConnectivityNeurite['id'], ConnectivityNeurite['name']],
+                [ConnectivityPresynaptic['id'], ConnectivityPresynaptic['name']],
+                [ConnectivityPostsynaptic['id'], ConnectivityPostsynaptic['name']]
+            ])
+
         if data['conn'].has_key('skeletonid'):
             conn.create_dataset("skeletonid", data=data['conn']['skeletonid'])
 
-        # TODO: add metadata fields!
-        # connproperties["type"].attrs["content_value_1_name"] = "presynaptic"
-        # content_type = "categorial
-        # content_value = [0, 1, 2, 3]
-        # content_name = ["blab", "blubb", ...]
 
 @catmaid_login_required
 def microcircuit_neurohdf(request, project_id=None, logged_in_user=None):

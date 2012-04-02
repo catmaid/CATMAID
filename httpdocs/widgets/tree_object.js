@@ -605,6 +605,7 @@ var ObjectTree = new function()
                   project.deselectActiveNode();
               }
 
+              $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Removing object tree node. Just a moment...</h2>' });
               // Remove group, neuron, skeleton
               $.post("model/instance.operation.php", {
                     "operation": "remove_node",
@@ -613,6 +614,7 @@ var ObjectTree = new function()
                     "pid": pid,
                     "rel": data.rslt.obj.attr("rel")
                   }, function (r) {
+                    $.unblockUI();
                     r = $.parseJSON(r);
                     if(r['status']) {
                         $("#tree_object").jstree("refresh", -1);

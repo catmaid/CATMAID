@@ -569,25 +569,28 @@ var SkeletonAnnotations = new function()
 
     this.splitSkeleton = function () {
       if (confirm("Do you really want to to split the skeleton?")) {
+        $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Splitting skeleton. Just a moment...</h2>' });
         requestQueue.register("model/treenode.split.php", "POST", {
-          pid: project.id,
-          tnid: atn.id
-        }, function (status, text, xml) {
-          if (status === 200) {
-            if (text && text !== " ") {
-              var e = $.parseJSON(text);
-              if (e.error) {
-                alert(e.error);
-              } else {
-                // just redraw all for now
-                self.updateNodes();
-                ObjectTree.refresh();
-                refreshAllWidgets();
-                self.selectNode(atn.id);
+            pid: project.id,
+            tnid: atn.id
+          }, function (status, text, xml) {
+            $.unblockUI();
+            if (status === 200) {
+              if (text && text !== " ") {
+                var e = $.parseJSON(text);
+                if (e.error) {
+                  alert(e.error);
+                } else {
+                  // just redraw all for now
+                  self.updateNodes();
+                  ObjectTree.refresh();
+                  refreshAllWidgets();
+                  self.selectNode(atn.id);
+                }
               }
             }
-          }
-        });
+          });
+
       }
     };
 

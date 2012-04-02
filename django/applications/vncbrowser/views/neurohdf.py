@@ -184,8 +184,9 @@ def get_temporary_neurohdf_filename_and_url():
     if not os.path.exists( hdf_path ):
         raise Exception('Need to configure writable path STATICFILES_HDF5_LOCAL in settings_apache.py')
     filename = os.path.join('%s.h5' % fname)
-    return os.path.join(hdf_path, filename), os.path.join(settings.STATICFILES_URL,
-        settings.STATICFILES_HDF5_SUBDIRECTORY, filename)
+    host = settings.CATMAID_DJANGO_URL.lstrip('http://').split('/')[0]
+    return os.path.join(hdf_path, filename), "http://{0}{1}".format( host, os.path.join(settings.STATICFILES_URL,
+        settings.STATICFILES_HDF5_SUBDIRECTORY, filename) )
 
 def create_neurohdf_file(filename, data):
 
@@ -229,11 +230,9 @@ def microcircuit_neurohdf(request, project_id=None, logged_in_user=None):
     data=get_skeleton_as_dataarray(project_id)
     neurohdf_filename,neurohdf_url=get_temporary_neurohdf_filename_and_url()
     create_neurohdf_file(neurohdf_filename, data)
-
-    print >> sys.stderr, neurohdf_filename,neurohdf_url
     result = {
         'format': 'NeuroHDF',
-        'format_version': 1.0,
+        'format_version': 0.1,
         'url': neurohdf_url
     }
     return HttpResponse(json.dumps(result), mimetype="text/plain")
@@ -247,11 +246,9 @@ def skeleton_neurohdf(request, project_id=None, skeleton_id=None, logged_in_user
     data=get_skeleton_as_dataarray(project_id, skeleton_id)
     neurohdf_filename,neurohdf_url=get_temporary_neurohdf_filename_and_url()
     create_neurohdf_file(neurohdf_filename, data)
-
-    # print >> sys.stderr, neurohdf_filename,neurohdf_url
     result = {
         'format': 'NeuroHDF',
-        'format_version': 1.0,
+        'format_version': 0.1,
         'url': neurohdf_url
     }
     return HttpResponse(json.dumps(result), mimetype="text/json")

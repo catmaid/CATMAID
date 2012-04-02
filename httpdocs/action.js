@@ -194,7 +194,7 @@ var toolActions = [
 		buttonName: "help",
 		keyShortcuts: {
 			'?': [ 63 ],
-			'H': [ 72 ]
+			'F1': [ 112 ]
 		},
 		run: function (e) {
 			WindowMaker.show('keyboard-shortcuts');

@@ -134,8 +134,6 @@ c.execute("""SELECT t.id, tci.class_instance_id
 for treenode_id, skeleton_id in c.fetchall():
     if not skeleton_id:
         print "The treenode %d was not an element_of any skeleton" % (treenode_id,)
-        if treenode_id in treenode_to_skeleton_via_annotation:
-            print "However, via a terminal, it should be part of skeleton %d" % (treenode_to_skeleton_via_annotation[treenode_id],)
 
 c.close()
 db_connection.close()

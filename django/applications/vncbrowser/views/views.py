@@ -90,8 +90,8 @@ def view(request, project_id=None, neuron_id=None, neuron_name=None, logged_in_u
     outgoing = n.all_neurons_downstream(project_id, skeletons)
     incoming = n.all_neurons_upstream(project_id, skeletons)
 
-    outgoing = [x for x in outgoing if not re.match('orphaned (pre|post)$', x['name'])]
-    incoming = [x for x in incoming if not re.match('orphaned (pre|post)$', x['name'])]
+    outgoing = [x for x in outgoing if not x['name'].startswith('orphaned ')]
+    incoming = [x for x in incoming if not x['name'].startswith('orphaned ')]
 
     return my_render_to_response(request,
                                  'vncbrowser/view.html',

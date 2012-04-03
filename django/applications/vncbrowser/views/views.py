@@ -81,17 +81,17 @@ def view(request, project_id=None, neuron_id=None, neuron_name=None, logged_in_u
         cici_via_a__class_instance_b=n,
         cici_via_a__relation__relation_name='expresses_in').all()
 
-    outgoing = n.all_neurons_downstream(project_id)
-    incoming = n.all_neurons_upstream(project_id)
-
-    outgoing = [x for x in outgoing if not re.match('orphaned (pre|post)$', x['name'])]
-    incoming = [x for x in incoming if not re.match('orphaned (pre|post)$', x['name'])]
-
     skeletons = ClassInstance.objects.filter(
         project=p,
         cici_via_a__relation__relation_name='model_of',
         class_column__class_name='skeleton',
         cici_via_a__class_instance_b=n)
+
+    outgoing = n.all_neurons_downstream(project_id, skeletons)
+    incoming = n.all_neurons_upstream(project_id, skeletons)
+
+    outgoing = [x for x in outgoing if not re.match('orphaned (pre|post)$', x['name'])]
+    incoming = [x for x in incoming if not re.match('orphaned (pre|post)$', x['name'])]
 
     return my_render_to_response(request,
                                  'vncbrowser/view.html',

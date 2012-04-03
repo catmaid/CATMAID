@@ -26,10 +26,7 @@ classes_required = [ "skeleton",
                      "neuron",
                      "group",
                      "label",
-                     "root",
-                     "synapse",
-                     "presynaptic terminal",
-                     "postsynaptic terminal" ]
+                     "root" ]
 
 class_dictionary = {}
 

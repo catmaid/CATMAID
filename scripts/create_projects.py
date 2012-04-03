@@ -191,14 +191,14 @@ if projects_okay in ('n', 'no', 'nop', 'nope'):
 	print "Aborting on user request."
 	sys.exit(1)
 
-# Check if all other projects/stacks should be deleted first from the DB
-clear_db = raw_input("Should *all* previous projects and stacks be removed first from the DB? y/[n]: ")
-if clear_db in ('y', 'yes', 'yo', 'ja', 'jo'):
-	print "\tWill remove all previous projects and stacks from the DB."
-	clear_db = True
-else:
-	print "\tWill _not_ emove all previous projects and stacks from the DB."
-	clear_db = False
+## Check if all other projects/stacks should be deleted first from the DB
+#clear_db = raw_input("Should *all* previous projects and stacks be removed first from the DB? y/[n]: ")
+#if clear_db in ('y', 'yes', 'yo', 'ja', 'jo'):
+#	print "\tWill remove all previous projects and stacks from the DB."
+#	clear_db = True
+#else:
+#	print "\tWill _not_ emove all previous projects and stacks from the DB."
+#	clear_db = False
 
 # Check if the projects should be public
 projects_public = raw_input("Should these projects be public? [y]/n: ")
@@ -236,19 +236,19 @@ while not linked_users:
 				linked_users[u] = row[0]
 
 # Clear DB if requested
-if clear_db:
-	clear = "DELETE FROM project_user"
-	c.execute( clear )
-	print 'deleted project_user table'
-	clear = "DELETE FROM project_stack"
-	c.execute( clear )
-	print 'deleted project_stack table'
-	clear = "DELETE FROM project"
-	c.execute( clear )
-	print 'deleted project table'
-	clear = "DELETE FROM stack"
-	c.execute( clear )
-	print 'deleted stack table'
+#if clear_db:
+#	clear = "DELETE FROM project_user"
+#	c.execute( clear )
+#	print 'deleted project_user table'
+#	clear = "DELETE FROM project_stack"
+#	c.execute( clear )
+#	print 'deleted project_stack table'
+#	clear = "DELETE FROM project"
+#	c.execute( clear )
+#	print 'deleted project table'
+#	clear = "DELETE FROM stack"
+#	c.execute( clear )
+#	print 'deleted stack table'
 
 # Add all projects and stacks
 for p in projects:

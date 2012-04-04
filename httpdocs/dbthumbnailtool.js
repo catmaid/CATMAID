@@ -21,6 +21,8 @@ function DBThumbnailTool()
     this.toolname = "dbthumbnailtool";
     this.fixed_width = 700;
     this.fixed_height = 700;
+    // state save variable
+    this.state = {};
 
     var makeThumbnail = function()
     {
@@ -235,6 +237,11 @@ function DBThumbnailTool()
             return false;
         }
     };
+
+    this.getCacheEntryName = function( stack )
+    {
+        return 'stack' + stack.getId();
+    };
     
     this.register = function( parentStack )
     {
@@ -249,9 +256,26 @@ function DBThumbnailTool()
 
         self.stack.getView().appendChild( self.mouseCatcher );
 
-        initModeMenu();
-        initTissueMenu();
-        initMarkerMenus();
+        // restore state if available
+        cacheEntryName = self.getCacheEntryName( self.stack );
+        if (cacheEntryName in self.state)
+        {
+            cacheEntry = self.state[ cacheEntryName ];
+            self.selected_mode = cacheEntry.mode;
+            self.selected_tissue = cacheEntry.tissue;
+            self.selected_marker_char = cacheEntry.marker_char;
+            self.selected_marker_color = cacheEntry.marker_color;
+            self.selected_marker_size = cacheEntry.marker_size;
+            self.updateSelectedMode();
+            self.updateSelectedTissue();
+            self.updateSelectedMarker();
+        }
+        else
+        {
+            initModeMenu();
+            initTissueMenu();
+            initMarkerMenus();
+        }
 
         // initialize apply button
         self.button_thumbnail_apply.onclick = makeThumbnail;
@@ -265,12 +289,27 @@ function DBThumbnailTool()
         document.getElementById( "edit_button_thumbnail" ).className = "button";
         document.getElementById( "toolbar_thumbnail" ).style.display = "none";
 
+        // save state
+        self.state[ self.getCacheEntryName( self.stack) ] = {
+            mode : self.selected_mode,
+            tissue : self.selected_tissue,
+            marker_char : self.selected_marker_char,
+            marker_color : self.selected_marker_color,
+            marker_size : self.selected_marker_size
+        };
+
         return;
     };
 
     this.destroy = function()
     {
 		self.unregister();
+
+        // destroy saved states
+        for ( var s in self.state )
+        {
+            delete self.state[ s ];
+        }
 
         // remove all the created markers
         for ( var m in self.markers )

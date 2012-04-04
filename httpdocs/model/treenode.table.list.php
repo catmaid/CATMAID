@@ -117,7 +117,7 @@ try {
 	if ( $iDisplayLength > 0 )
 		$sLimit .= ' LIMIT '.$iDisplayLength;
 	else
-		$sLimit .= ''.$maxrows;
+		$sLimit .= '';
 
 	if ( $iDisplayStart > 0 )
 		$sLimit .= ' OFFSET '.$iDisplayStart;

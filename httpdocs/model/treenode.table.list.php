@@ -32,9 +32,6 @@ checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
 
 // retrieve treenode id, when set retrieve skeleton id
 $atnid = isset( $_REQUEST[ 'atnid' ] ) ? intval( $_REQUEST[ 'atnid' ] ) : 0;
-// maximum number of rows to display
-$maxrows = 3000;
-
 
 // Utility data and associated function below
 $columnToFieldArray = array( "tid",
@@ -120,12 +117,10 @@ try {
 	if ( $iDisplayLength > 0 )
 		$sLimit .= ' LIMIT '.$iDisplayLength;
 	else
-		$sLimit .= ' LIMIT '.$maxrows;
-		
+		$sLimit .= ''.$maxrows;
+
 	if ( $iDisplayStart > 0 )
 		$sLimit .= ' OFFSET '.$iDisplayStart;
-
-
 
 	/* Ordering */
 	if ( isset( $_REQUEST['iSortCol_0'] ) )
@@ -141,10 +136,7 @@ try {
 		$sOrder = substr_replace( $sOrder, "", -2 );
 	}
 
-
-
 	// label logic
-
 	// get id for relation 'labeled_as'      
 			$tlabelrel_res = $db->getResult('SELECT "relation"."id" FROM "relation"
 			WHERE "relation"."project_id" = '.$pid.' AND

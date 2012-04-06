@@ -143,6 +143,9 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
 
     treenode_connector_connectivity=[]; treenode_connector_connectivity_type=[]
     cn_type=[]; cn_xyz=[]; cn_id=[]; cn_confidence=[]; cn_userid=[]; cn_radius=[]; cn_skeletonid=[]
+    cn_skeletonid_connector=[] # because skeletons with a single treenode might have no connectivity
+    # (no parent and no synaptic connection), but we still want to recover their skeleton id, we need
+    # to store the skeletonid as a property on the vertices too, with default value 0 for connectors
     found_synapse=False
     for tc in qs_tc:
         if tc.relation.relation_name == 'presynaptic_to':
@@ -161,6 +164,7 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
         cn_confidence.append( tc.connector.confidence )
         cn_userid.append( tc.connector.user_id )
         cn_radius.append( 0 ) # default because no radius for connector
+        cn_skeletonid_connector.append( 0 ) # default skeleton id for connector
         cn_type.append( VerticesTypeConnectorNode['id'] )
         cn_skeletonid.append( tc.skeleton_id )
 
@@ -173,7 +177,8 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
             'type': np.hstack((treenode_type, np.array(cn_type, dtype=np.uint32).ravel() )),
             'confidence': np.hstack((treenode_confidence, np.array(cn_confidence, dtype=np.uint32).ravel() )),
             'userid': np.hstack((treenode_userid, np.array(cn_userid, dtype=np.uint32).ravel() )),
-            'radius': np.hstack((treenode_radius, np.array(cn_radius, dtype=np.int32).ravel() ))
+            'radius': np.hstack((treenode_radius, np.array(cn_radius, dtype=np.int32).ravel() )),
+            'skeletonid': np.hstack((treenode_skeletonid, np.array(cn_skeletonid_connector, dtype=np.int32).ravel() ))
         }
        # print np.array(cn_skeletonid, dtype=np.uint32)
         data['conn'] = {
@@ -191,7 +196,8 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
             'type': treenode_type,
             'confidence': treenode_confidence,
             'userid': treenode_userid,
-            'radius': treenode_radius
+            'radius': treenode_radius,
+            'skeletonid': treenode_skeletonid
         }
         data['conn'] = {
             'id': treenode_connectivity,
@@ -258,6 +264,7 @@ def create_neurohdf_file(filename, data):
         vert.create_dataset("confidence", data=data['vert']['confidence'])
         vert.create_dataset("userid", data=data['vert']['userid'])
         vert.create_dataset("radius", data=data['vert']['radius'])
+        vert.create_dataset("skeletonid", data=data['vert']['skeletonid'])
 
         conn.create_dataset("id", data=data['conn']['id'])
         if data['conn'].has_key('type'):

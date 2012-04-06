@@ -349,11 +349,11 @@ function openProjectStack( pid, sid )
 	}
 	ui.catchEvents( "wait" );
 	requestQueue.register(
-		// was 'model/project.stack.php', // TODO: remove if complete portig of project.stack.php done
+		//'model/project.stack.php', // TODO: remove if complete portig of project.stack.php done
 		'dj/' + pid + '/stack/' + sid + '/info',
 		'POST',
-		// was { pid : pid, sid : sid },
-		{},
+		// { pid : pid, sid : sid },
+        {},
 		handle_openProjectStack );
 	return;
 }

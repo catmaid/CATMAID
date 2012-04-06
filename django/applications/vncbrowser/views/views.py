@@ -7,7 +7,8 @@ from django.shortcuts import get_object_or_404
 from vncbrowser.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
     Project, User, Treenode, TreenodeConnector, Connector, Stack, ProjectStack, \
-    TreenodeClassInstance, ConnectorClassInstance, Location
+    TreenodeClassInstance, ConnectorClassInstance, Location, ProjectUser, Overlay, \
+    BrokenSlice
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
 
@@ -630,16 +631,20 @@ def goto_connector(request, project_id=None, connector_id=None, stack_id=None, l
                   "s0" : 0}
     return HttpResponseRedirect(settings.CATMAID_URL + "?" + urllib.urlencode(parameters))
 
-def get_stack_info(project_id=None, stack_id=None):
+def get_stack_info(project_id=None, stack_id=None, user=None):
     """ Returns a dictionary with relevant information for stacks.
     Depending on the tile_source_type, get information from database
     or from tile server directly
     """
-    # TODO: this should completely map project.stack.php
-    
     p = get_object_or_404(Project, pk=project_id)
     s = get_object_or_404(Stack, pk=stack_id)
+    ps_all = ProjectStack.objects.filter(project=project_id, stack=stack_id)
+    if len(ps_all) != 1:
+        return {'error': 'Multiple project - stack associations, but should only be one.'}
+    ps=ps_all[0]
+    pu = ProjectUser.objects.filter(project=project_id, user=user.id).count()
 
+    # https://github.com/acardona/CATMAID/wiki/Convention-for-Stack-Image-Sources
     if int(s.tile_source_type) == 2:
         # request appropriate stack metadata from tile source
         url=s.image_base.rstrip('/').lstrip('http://')
@@ -655,20 +660,33 @@ def get_stack_info(project_id=None, stack_id=None):
         # convert it back to dictionary str->dict
         return json.loads(read_response)
     else:
+        broken_slices_qs = BrokenSlice.objects.filter(stack=stack_id)
+        broken_slices = {}
+        for ele in broken_slices_qs:
+            broken_slices[ele.index] = 1
+        overlays = []
+        overlays_qs = Overlay.objects.filter(stack=stack_id)
+        for ele in overlays_qs:
+            overlays.append( {
+                'id': ele.id,
+                'title': ele.title,
+                'image_base': ele.image_base,
+                'default_opacity': ele.default_opacity,
+            } )
         result={
             'sid': int(s.id),
             'pid': int(p.id),
             'ptitle': p.title,
             'stitle': s.title,
             'image_base': s.image_base,
-            'min_zoom_level': int(s.min_zoom_level),
+            'num_zoom_levels': int(s.num_zoom_levels),
             'file_extension': s.file_extension,
-            'editable': 1, # TODO: needs fix
+            'editable': int(pu>0),
             'translation': {
-                'x': 0.0,
-                'y': 0.0,
-                'z': 0.0
-            }, # TODO: use project_stack
+                'x': ps.translation.x,
+                'y': ps.translation.y,
+                'z': ps.translation.z
+            },
             'resolution': {
                 'x': float(s.resolution.x),
                 'y': float(s.resolution.y),
@@ -682,16 +700,16 @@ def get_stack_info(project_id=None, stack_id=None):
             'tile_height': int(s.tile_height),
             'tile_width': int(s.tile_width),
             'tile_source_type': int(s.tile_source_type),
-            'broken_slices': '',
+            'broken_slices': broken_slices,
             'trakem2_project': int(s.trakem2_project),
-            'overlay': ''
+            'overlay': overlays
         }
 
     return result
 
 @catmaid_login_required
 def stack_info(request, project_id=None, stack_id=None, logged_in_user=None):
-    result=get_stack_info(project_id, stack_id)
+    result=get_stack_info(project_id, stack_id, logged_in_user)
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")
 
 def get_tile(request, project_id=None, stack_id=None):

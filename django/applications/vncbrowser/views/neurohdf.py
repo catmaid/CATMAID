@@ -5,6 +5,8 @@ from vncbrowser.models import CELL_BODY_CHOICES, \
     Project, User, Treenode, TreenodeConnector, Connector
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
+from vncbrowser.views.export import get_annotation_graph
+
 import json
 try:
     import numpy as np
@@ -176,6 +178,26 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
             'skeletonid': treenode_connectivity_skeletonid
         }
         # no connprop type
+
+    # add metadata field with mapping from skeleton id to names of the hierarchy
+    g = get_annotation_graph( project_id )
+    skeletonmap={}
+    if skeleton_id is None:
+        allskeletonids = [nid for nid,di in g.nodes_iter(data=True) if di['class']=='skeleton']
+    else:
+        allskeletonids = [skeleton_id]
+    rid = [nid for nid,di in g.nodes_iter(data=True) if di['class']=='root']
+    maxiter = 10
+    for id in allskeletonids:
+        outstr = ''
+        iterat = 0
+        currid = [id]
+        while currid[0] != rid[0] and iterat < maxiter:
+            currid = g.predecessors(currid[0])
+            outstr = g.node[currid[0]]['name']+';'+outstr
+            iterat+=1
+        skeletonmap[id] = outstr.rstrip(';')
+    data['meta'] = skeletonmap
     return data
 
 def get_temporary_neurohdf_filename_and_url():
@@ -222,6 +244,18 @@ def create_neurohdf_file(filename, data):
         if data['conn'].has_key('skeletonid'):
             conn.create_dataset("skeletonid", data=data['conn']['skeletonid'])
 
+        if data.has_key('meta'):
+            metadata=mcgroup.create_group('metadata')
+            # create recarray with two columns, skeletonid and string
+
+            my_dtype = np.dtype([('skeletonid', 'l'), ('name', h5py.new_vlen(str))])
+            data['meta']
+            arr=np.recarray( len(data['meta']), dtype=my_dtype )
+            for i,kv in enumerate(data['meta'].items()):
+                arr[i][0] = kv[0]
+                arr[i][1] = kv[1]
+
+            metadata.create_dataset('skeleton_name', data=arr )
 
 @catmaid_login_required
 def microcircuit_neurohdf(request, project_id=None, logged_in_user=None):

@@ -228,8 +228,11 @@ class ClassInstance(models.Model):
                         'skeleton_id': skeleton_id,
                         'name': '{0} / skeleton {1}'.format(neuronOfSkeleton[skeleton_id]['neuroname'], skeleton_id) }
 
-        # convert dict to list renderable in view
-        return connected_skeletons_dict.values()
+        # sort by count
+        from operator import itemgetter
+        connected_skeletons = connected_skeletons_dict.values()
+        result = reversed(sorted(connected_skeletons, key=itemgetter('id__count')))
+        return result
 
     def all_neurons_upstream(self, project_id, skeletons):
         return self.get_connected_neurons(

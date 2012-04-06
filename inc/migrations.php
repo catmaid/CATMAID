@@ -1014,6 +1014,7 @@ ALTER TABLE location ADD COLUMN review_time timestamp with time zone DEFAULT NUL
 
   '2012-03-30T15:56:17' => new SimplifyAnnotationDomain(),
 
+// Help: http://blog.enricostahn.com/2010/06/11/postgresql-add-primary-key-to-an-existing-table.html
 	'2012-04-06T16:06:41' => new Migration(
   'Add primary id column to project_stack preparation',
   '
@@ -1023,7 +1024,6 @@ CREATE SEQUENCE "project_stack_id_seq";
 '
 ),
 
-// Help: http://blog.enricostahn.com/2010/06/11/postgresql-add-primary-key-to-an-existing-table.html
 	'2012-04-06T16:07:41' => new Migration(
 		'Add primary id column to project_stack',
 		"
@@ -1036,6 +1036,28 @@ ALTER TABLE project_stack DROP CONSTRAINT project_stack_id_key RESTRICT;
 ALTER TABLE project_stack ADD PRIMARY KEY (id);
 "
 ),
+
+  '2012-04-06T18:06:41' => new Migration(
+    'Add primary id column to broken_slice preparation',
+    '
+ALTER TABLE broken_slice ADD COLUMN id INTEGER;
+CREATE SEQUENCE "broken_slice_id_seq";
+'
+  ),
+
+  '2012-04-06T18:07:41' => new Migration(
+    'Add primary id column to broken_slice',
+    "
+UPDATE broken_slice SET id = nextval('broken_slice_id_seq');
+ALTER TABLE broken_slice
+  ALTER COLUMN id SET DEFAULT nextval('broken_slice_id_seq');
+ALTER TABLE broken_slice ALTER COLUMN id SET NOT NULL;
+ALTER TABLE broken_slice ADD UNIQUE (id);
+ALTER TABLE broken_slice DROP CONSTRAINT broken_slice_id_key RESTRICT;
+ALTER TABLE broken_slice ADD PRIMARY KEY (id);
+"
+  ),
+
 
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates

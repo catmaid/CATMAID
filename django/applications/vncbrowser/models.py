@@ -129,13 +129,14 @@ class ProjectStack(models.Model):
         managed = False
     project = models.ForeignKey(Project)
     stack = models.ForeignKey(Stack)
+    translation = Double3DField()
 
 class Overlay(models.Model):
     class Meta:
-        db_table = "stack"
+        db_table = "overlay"
         managed = False
     title = models.TextField()
-    stack_id = models.ForeignKey(Stack)
+    stack = models.ForeignKey(Stack)
     image_base = models.TextField()
     default_opacity = models.IntegerField()
     file_extension = models.TextField(null=True)

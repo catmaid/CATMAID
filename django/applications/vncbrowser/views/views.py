@@ -414,6 +414,8 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, logged_in
                     extended_dictionary=g.node[bid]
                     extended_dictionary['node_type']='branch'
                     sg.add_node(bid,extended_dictionary)
+                    # and add edge!
+                    sg.add_edge(k, bid)
     # extract segments from the subgraphs
     for sug in subg:
         # do not use sorted, but shortest path from source to target
@@ -426,12 +428,13 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, logged_in
         elif nx.has_path(sg, source=terminals[1],target=terminals[0]):
             ordered_nodelist = nx.shortest_path(sg,source=terminals[1],target=terminals[0])
         else:
-            json_return = json.dumps({'error': 'Cannot find path {0} to {1}'.format(terminals[0], terminals[1])}, sort_keys=True, indent=4)
+            json_return = json.dumps({'error': 'Cannot find path {0} to {1} {2} {3}'.format(terminals[0],
+                terminals[1], str(sg.node[terminals[0]]), str(sg.node[terminals[1]])  )}, sort_keys=True, indent=4)
             return HttpResponse(json_return, mimetype='text/json')
-
         seg=[]
         start_and_end=[]
-        for k,v in ordered_nodelist:
+        for k in ordered_nodelist:
+            v = sg.node[k]
             v['id']=k
             if v['node_type'] != 'slab':
                 start_and_end.append( v['node_type'] )

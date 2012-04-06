@@ -1014,6 +1014,29 @@ ALTER TABLE location ADD COLUMN review_time timestamp with time zone DEFAULT NUL
 
   '2012-03-30T15:56:17' => new SimplifyAnnotationDomain(),
 
+	'2012-04-06T16:06:41' => new Migration(
+  'Add primary id column to project_stack preparation',
+  '
+ALTER TABLE project_stack DROP CONSTRAINT "project_stack_pkey";
+ALTER TABLE project_stack ADD COLUMN id INTEGER;
+CREATE SEQUENCE "project_stack_id_seq";
+'
+),
+
+// Help: http://blog.enricostahn.com/2010/06/11/postgresql-add-primary-key-to-an-existing-table.html
+	'2012-04-06T16:07:41' => new Migration(
+		'Add primary id column to project_stack',
+		"
+UPDATE project_stack SET id = nextval('project_stack_id_seq');
+ALTER TABLE project_stack
+  ALTER COLUMN id SET DEFAULT nextval('project_stack_id_seq');
+ALTER TABLE project_stack ALTER COLUMN id SET NOT NULL;
+ALTER TABLE project_stack ADD UNIQUE (id);
+ALTER TABLE project_stack DROP CONSTRAINT project_stack_id_key RESTRICT;
+ALTER TABLE project_stack ADD PRIMARY KEY (id);
+"
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

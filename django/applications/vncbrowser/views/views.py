@@ -421,7 +421,14 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, logged_in
         # retrieve end and/or branch nodes
         terminals=[id for id,d in sg.nodes(data=True) if d['node_type'] in ['branch', 'end']]
         assert(len(terminals)==2)
-        ordered_nodelist = nx.shortest_path(sg,source=terminals[0],target=terminals[1])
+        if nx.has_path(sg, source=terminals[0],target=terminals[1] ):
+            ordered_nodelist = nx.shortest_path(sg,source=terminals[0],target=terminals[1])
+        elif nx.has_path(sg, source=terminals[1],target=terminals[0]):
+            ordered_nodelist = nx.shortest_path(sg,source=terminals[1],target=terminals[0])
+        else:
+            json_return = json.dumps({'error': 'Cannot find path {0} to {1}'.format(terminals[0], terminals[1])}, sort_keys=True, indent=4)
+            return HttpResponse(json_return, mimetype='text/json')
+
         seg=[]
         start_and_end=[]
         for k,v in ordered_nodelist:

@@ -41,12 +41,12 @@ ConnectivityNeurite = {
 }
 
 ConnectivityPresynaptic = {
-    'name': 'presynaptic',
+    'name': 'presynaptic_to',
     'id': 2
 }
 
 ConnectivityPostsynaptic = {
-    'name': 'postsynaptic',
+    'name': 'postsynaptic_to',
     'id': 3
 }
 
@@ -194,9 +194,9 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
         currid = [id]
         while currid[0] != rid[0] and iterat < maxiter:
             currid = g.predecessors(currid[0])
-            outstr = g.node[currid[0]]['name']+';'+outstr
+            outstr = g.node[currid[0]]['name']+'|'+outstr
             iterat+=1
-        skeletonmap[id] = outstr.rstrip(';')
+        skeletonmap[id] = outstr.rstrip('|')
     data['meta'] = skeletonmap
     return data
 
@@ -222,11 +222,17 @@ def create_neurohdf_file(filename, data):
         vert.create_dataset("id", data=data['vert']['id'])
         vert.create_dataset("location", data=data['vert']['location'])
         verttype=vert.create_dataset("type", data=data['vert']['type'])
-        verttype.attrs['value'] = np.array([
-            [VerticesTypeSkeletonRootNode['id'], VerticesTypeSkeletonRootNode['name']],
-            [VerticesTypeSkeletonNode['id'], VerticesTypeSkeletonNode['name']],
-            [VerticesTypeConnectorNode['id'], VerticesTypeConnectorNode['name']]
-        ])
+        # create rec array with two columns, value and name
+        my_dtype = np.dtype([('value', 'l'), ('name', h5py.new_vlen(str))])
+        helpdict={VerticesTypeSkeletonRootNode['id']: VerticesTypeSkeletonRootNode['name'],
+                  VerticesTypeSkeletonNode['id']: VerticesTypeSkeletonNode['name'],
+                  VerticesTypeConnectorNode['id']: VerticesTypeConnectorNode['name']
+        }
+        arr=np.recarray( len(helpdict), dtype=my_dtype )
+        for i,kv in enumerate(helpdict.items()):
+            arr[i][0] = kv[0]
+            arr[i][1] = kv[1]
+        verttype.attrs['value_name']=arr
 
         vert.create_dataset("confidence", data=data['vert']['confidence'])
         vert.create_dataset("userid", data=data['vert']['userid'])
@@ -247,9 +253,7 @@ def create_neurohdf_file(filename, data):
         if data.has_key('meta'):
             metadata=mcgroup.create_group('metadata')
             # create recarray with two columns, skeletonid and string
-
             my_dtype = np.dtype([('skeletonid', 'l'), ('name', h5py.new_vlen(str))])
-            data['meta']
             arr=np.recarray( len(data['meta']), dtype=my_dtype )
             for i,kv in enumerate(data['meta'].items()):
                 arr[i][0] = kv[0]

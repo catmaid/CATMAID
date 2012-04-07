@@ -269,11 +269,15 @@ def create_neurohdf_file(filename, data):
         conn.create_dataset("id", data=data['conn']['id'])
         if data['conn'].has_key('type'):
             conntype=conn.create_dataset("type", data=data['conn']['type'])
-            conntype.attrs['value'] = np.array([
-                [ConnectivityNeurite['id'], ConnectivityNeurite['name']],
-                [ConnectivityPresynaptic['id'], ConnectivityPresynaptic['name']],
-                [ConnectivityPostsynaptic['id'], ConnectivityPostsynaptic['name']]
-            ])
+            helpdict={ConnectivityNeurite['id']: ConnectivityNeurite['name'],
+                      ConnectivityPresynaptic['id']: ConnectivityPresynaptic['name'],
+                      ConnectivityPostsynaptic['id']: ConnectivityPostsynaptic['name']
+            }
+            arr=np.recarray( len(helpdict), dtype=my_dtype )
+            for i,kv in enumerate(helpdict.items()):
+                arr[i][0] = kv[0]
+                arr[i][1] = kv[1]
+            conntype.attrs['value_name']=arr
 
         if data['conn'].has_key('skeletonid'):
             conn.create_dataset("skeletonid", data=data['conn']['skeletonid'])

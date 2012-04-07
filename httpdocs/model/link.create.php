@@ -55,6 +55,23 @@ try {
     emitErrorAndExit($db, 'Found not 1 but '.count($q).' rows for treenode with ID #'.$from_id);
   }
 
+  // if connector already has a presynaptic_to link, return error (enforce only one presynaptic link)
+  if($link_type === 'presynaptic_to') {
+    $q = $db->getResult(
+      'SELECT treenode_connector.treenode_id
+        FROM treenode_connector WHERE treenode_connector.project_id = '.$pid.'
+        AND treenode_connector.connector_id = '.$to_id.'
+        AND treenode_connector.relation_id = '.$link_type_ID);
+
+    if (false === $q) {
+      emitErrorAndExit($db, 'Failed to retrieve treenode of of connector #'.$to_id);
+    }
+
+    if (1 == count($q)) {
+      emitErrorAndExit($db, 'Connector '.$to_id.' already has one presynaptic connection.');
+    }
+  }
+
   // update the treenode_connector table to reflect
   $data = array(
       'user_id' => $uid,

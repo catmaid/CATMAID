@@ -570,7 +570,13 @@ var ObjectTree = new function()
         "title": data.rslt.new_name,
         "classname": data.rslt.obj.attr("rel"),
         "pid": pid
-      }, null);
+      }, function (r) {
+          r = $.parseJSON(r);
+          if(r['error']) {
+              alert(r['error']);
+              $.jstree.rollback(data.rlbk);
+          }
+      });
     });
 
     $(object_tree_id).bind("remove.jstree", function (e, data) {

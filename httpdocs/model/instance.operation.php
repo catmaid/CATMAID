@@ -83,6 +83,11 @@ try {
 
   if ( $op == 'rename_node')
   {
+    // do not allow ';' in name because it is used as string separator in NeuroHDF export
+    if (strstr($name, ';')) {
+      emitErrorAndExit($db, 'Name should not contain semicolon!');
+    }
+
     $ids = $db->update("class_instance", array("name" => $name) ,' "class_instance"."id" = '.$id);
     if (false === $ids) {
       emitErrorAndExit($db, 'Failed to update class instance.');

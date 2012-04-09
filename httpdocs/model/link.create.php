@@ -43,16 +43,16 @@ try {
   $link_type_ID = $db->getRelationId( $pid, $link_type);
   if(!$link_type_ID)  { echo makeJSON( array( 'error' => 'Can not find "'.$link_type.'" relation for this project' ) ); return; }
 
-  $q = $db->getResult(
+  $qskel = $db->getResult(
         'SELECT treenode.skeleton_id AS skeleton_id
         FROM treenode WHERE treenode.project_id = '.$pid.' AND treenode.id = '.$from_id);
 
-  if (false === $q) {
+  if (false === $qskel) {
     emitErrorAndExit($db, 'Failed to retrieve skeleton id of treenode #'.$from_id);
   }
 
-  if (1 != count($q)) {
-    emitErrorAndExit($db, 'Found not 1 but '.count($q).' rows for treenode with ID #'.$from_id);
+  if (1 != count($qskel)) {
+    emitErrorAndExit($db, 'Found not 1 but '.count($qskel).' rows for treenode with ID #'.$from_id);
   }
 
   // if connector already has a presynaptic_to link, return error (enforce only one presynaptic link)
@@ -79,7 +79,7 @@ try {
       'relation_id' => $link_type_ID,
       'treenode_id' => $from_id,
       'connector_id' => $to_id,
-      'skeleton_id' => $q[0]['skeleton_id']
+      'skeleton_id' => $qskel[0]['skeleton_id']
   );
   $q = $db->insertInto('treenode_connector', $data );
     if (false === $q) {

@@ -54,7 +54,8 @@ try {
         "stack"."file_extension" AS "file_extension",
         "stack"."tile_width" AS "tile_width",
         "stack"."tile_height" AS "tile_height",
-        "stack"."tile_source_type" AS "tile_source_type"
+        "stack"."tile_source_type" AS "tile_source_type",
+        "stack"."metadata" AS "metadata"
         
       FROM "project" LEFT JOIN "project_user"
           ON "project"."id" = "project_user"."project_id" INNER JOIN "project_stack"

@@ -403,7 +403,8 @@ function handle_openProjectStack( status, text, xml )
 					e.num_zoom_levels,
                     -2,
                     e.tile_source_type,
-                    labelupload); // TODO: if there is any
+                    labelupload, // TODO: if there is any
+                    e.metadata);
 
 			document.getElementById( "toolbox_project" ).style.display = "block";
 			

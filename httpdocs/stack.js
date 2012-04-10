@@ -38,7 +38,8 @@ function Stack(
 		num_zoom_levels,			//!< {int} that defines the number of available non-artificial zoom levels
 		max_zoom_level,				//!< {int} that defines the maximum available zoom level
 		tile_source_type,			//!< {int} that defines the tile source type
-		labelupload_url 	        //!< {String} that defines the label upload URL for labels (for tile_source_type==2)
+		labelupload_url,			//!< {String} that defines the label upload URL for labels (for tile_source_type==2)
+		metadata					//!< {String} of arbitrary meta data
 )
 {
 	var n = dimension.length;
@@ -492,7 +493,17 @@ function Stack(
 	scaleBar.firstChild.appendChild( document.createElement( "span" ) );
 	scaleBar.firstChild.firstChild.appendChild( document.createTextNode( "test" ) );
 	view.appendChild( scaleBar );
-	
+
+	self.metadata = metadata;
+	if ( metadata.length > 0 ) {
+		var metadataDisplay = document.createElement( "div" );
+		metadataDisplay.className = "metadata";
+		metadataDisplay.appendChild( document.createElement( "p" ) );
+		metadataDisplay.firstChild.appendChild( document.createElement( "span" ) );
+		metadataDisplay.firstChild.firstChild.appendChild( document.createTextNode( metadata ) );
+		view.appendChild( metadataDisplay );
+	}
+
 	// take care, that all values are within a proper range
     // Declare the x,y,z,s as coordinates in pixels
 	self.z = 0;

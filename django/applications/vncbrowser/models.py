@@ -122,6 +122,7 @@ class Stack(models.Model):
     tile_width = models.IntegerField()
     tile_height = models.IntegerField()
     tile_source_type = models.IntegerField()
+    metadata = models.TextField()
 
 class ProjectStack(models.Model):
     class Meta:

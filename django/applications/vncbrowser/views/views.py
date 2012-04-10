@@ -700,6 +700,7 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
             'tile_height': int(s.tile_height),
             'tile_width': int(s.tile_width),
             'tile_source_type': int(s.tile_source_type),
+            'metadata' : s.metadata,
             'broken_slices': broken_slices,
             'trakem2_project': int(s.trakem2_project),
             'overlay': overlays

@@ -365,3 +365,16 @@ div.sliceView div.cropBox p.screen
 {
 	bottom:-47px;
 }
+
+p.marker
+{
+   margin: 0px 0px 0px 0px;
+}
+
+p.selectedMarker
+{
+   border-width: 1px;
+   border-color: orange;
+   border-style: solid;
+   margin: 0px 0px -1px -1px;
+}

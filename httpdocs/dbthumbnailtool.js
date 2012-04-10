@@ -23,6 +23,8 @@ function DBThumbnailTool()
     this.fixed_height = 700;
     // state save variable
     this.state = {};
+    // currently selected marker
+    this.selectd_marker = null;
 
     var makeThumbnail = function()
     {
@@ -59,12 +61,17 @@ function DBThumbnailTool()
         var nMarkers = 0;
         for ( var m in self.markers )
         {
+            var mrk = self.markers[ m ];
+            // since we allow "holes" in the array, we must expect undefined values
+            if (mrk === undefined)
+                continue;
+
             if ( nMarkers > 0 )
             {
                 marker_data += ",";
             }
-            var mrk = self.markers[ m ];
             var data = mrk.pos_x_world + "," + mrk.pos_y_world + "," + mrk.symbol + "," + mrk.color + "," + mrk.size;
+
             marker_data += Base64.encode( data );
             nMarkers++;
         }
@@ -119,12 +126,6 @@ function DBThumbnailTool()
             document.getElementById( "thumbnail_tissue_box" ).style.display = "none";
             document.getElementById( "thumbnail_marker_box" ).style.display = "block";
         }
-        else if ( self.selected_mode.type == "modify_markers" )
-        {
-            self.mouseCatcher.onmousedown = onmousedown.modmarker;
-            document.getElementById( "thumbnail_tissue_box" ).style.display = "none";
-            document.getElementById( "thumbnail_marker_box" ).style.display = "block";
-        }
     }
 
     this.updateSelectedTissue = function()
@@ -164,41 +165,47 @@ function DBThumbnailTool()
         return;
     };
 
+    this.to_world_x = function( val )
+    {
+        var stack = self.stack;
+        var dist_center_x = val - stack.viewWidth / 2;
+        return stack.translation.x + ( stack.x + dist_center_x / stack.scale ) * stack.resolution.x;
+    }
+
+    this.to_world_y = function( val )
+    {
+        var stack = self.stack;
+        var dist_center_y = val - stack.viewHeight / 2;
+        return stack.translation.y + ( stack.y + dist_center_y / stack.scale ) * stack.resolution.y;
+    }
+
     this.addMarker = function( x, y)
     {
         // expect screen positions
-        var stack = self.stack;
-        var dist_center_x = x - stack.viewWidth / 2;
-        var dist_center_y = y - stack.viewHeight / 2;
-        var pos_x = stack.translation.x + ( stack.x + dist_center_x / stack.scale ) * stack.resolution.x;
-        var pos_y = stack.translation.y + ( stack.y + dist_center_y / stack.scale ) * stack.resolution.y;
+        var pos_x = self.to_world_x( x );
+        var pos_y = self.to_world_y( y );
         
         // create new view/div for the marker
         var marker_view = document.createElement( "div" );
         marker_view.id = "marker" + self.markers.length;
         marker_view.style.width = "auto";
         marker_view.style.height = "auto";
-        marker_view.style.left = x + "px";
-        marker_view.style.top = y + "px";
         marker_view.style.position = "absolute";
         marker_view.style.zIndex = 7;
         marker_view.style.cursor = "move";
-        marker_view.onclick = onmousedown.selectmarker;
 
-        var marker_text = document.createElement( "span" );
-        marker_text.style.color = "#" + self.selected_marker_color.color;
-        marker_text.style.fontSize = self.selected_marker_size.size + "px";
-        marker_text.style.bottom = "0px";
-        marker_text.style.position = "absolute";
-        marker_view.style.zIndex = 6;
-        marker_text.appendChild( document.createTextNode( self.selected_marker_char.symbol ) );
+        var marker_text = document.createElement( "p" );
         marker_text.onclick = onmousedown.selectmarker;
+        marker_text.idx = self.markers.length;
+        marker_text.style.bottom = "0px";
+        marker_text.style.padding = "0px 0px 0px 0px";
+        marker_text.style.position = "absolute";
+        marker_text.className= "marker";
 
         marker_view.appendChild( marker_text );
 
-        self.stack.getView().appendChild( marker_view );
         // remember the new marker
-        self.markers[ self.markers.length ] =
+        var new_marker =
             { view : marker_view,
               pos_x_screen : x,
               pos_y_screen : y,
@@ -207,6 +214,57 @@ function DBThumbnailTool()
               symbol : self.selected_marker_char.symbol,
               color : self.selected_marker_color.color,
               size : self.selected_marker_size.size };
+        self.markers[ self.markers.length ] = new_marker;
+        // update the view
+        self.updateMarkerView( new_marker );
+        self.stack.getView().appendChild( marker_view );
+        // center the marker at the mouse cursor
+        var centered_x = x - marker_text.offsetWidth / 2;
+        var centered_y = y + marker_text.offsetHeight / 2;
+        new_marker.pos_x_screen = centered_x;
+        new_marker.pos_y_screen = centered_y;
+        new_marker.pos_x_world = self.to_world_x( centered_x );
+        new_marker.pos_y_world = self.to_world_y( centered_y );
+        // update the view
+        self.updateMarkerView( new_marker );
+    }
+
+    /**
+     * Updates a marker's view.
+     */
+    this.updateMarkerView = function( marker )
+    {
+        marker.view.style.left = marker.pos_x_screen + "px";
+        marker.view.style.top = marker.pos_y_screen + "px";
+
+        var marker_text = marker.view.firstChild;
+        marker_text.style.color = "#" + marker.color;
+        marker_text.style.fontSize = marker.size + "px";
+        marker_text.style.lineHeight = marker.size + "px";
+        // remove any existing text node
+        if (marker_text.firstChild)
+        {
+            marker_text.removeChild( marker_text.firstChild );
+        }
+        marker_text.appendChild( document.createTextNode( marker.symbol ) );
+    }
+
+    this.removeMarker = function( marker )
+    {
+        if ( self.stack && marker.view.parentNode == self.stack.getView() )
+        {
+            // remove from view
+            self.stack.getView().removeChild( marker.view );
+            // remove from marker array
+            var idx = self.markers.indexOf( self.selected_marker );
+            if (idx != -1)
+            {
+                // this leaves intentionally a "hole" in the array
+                delete self.markers[ idx ];
+                return true;
+            }
+        }
+        return false;
     }
 
     var onmousedown =
@@ -226,13 +284,16 @@ function DBThumbnailTool()
 
             self.redraw();
         },
-        modmarker : function( e )
-        {
-            self.redraw();
-        },
         selectmarker : function( e )
         {
-            console.log("Select");
+            // if there is a selected marker, deselect it
+            if (self.selected_marker != null)
+            {
+                self.selected_marker.view.firstChild.className = "marker";
+            }
+            self.selected_marker = self.markers[ this.idx ];
+            this.className = "selectedMarker";
+            // create
             self.redraw();
             return false;
         }
@@ -256,7 +317,7 @@ function DBThumbnailTool()
 
         self.stack.getView().appendChild( self.mouseCatcher );
 
-        // restore state if available
+        // restore state if avilable
         cacheEntryName = self.getCacheEntryName( self.stack );
         if (cacheEntryName in self.state)
         {
@@ -290,13 +351,16 @@ function DBThumbnailTool()
         document.getElementById( "toolbar_thumbnail" ).style.display = "none";
 
         // save state
-        self.state[ self.getCacheEntryName( self.stack) ] = {
-            mode : self.selected_mode,
-            tissue : self.selected_tissue,
-            marker_char : self.selected_marker_char,
-            marker_color : self.selected_marker_color,
-            marker_size : self.selected_marker_size
-        };
+        if ( self.stack != null )
+        {
+            self.state[ self.getCacheEntryName( self.stack) ] = {
+                mode : self.selected_mode,
+                tissue : self.selected_tissue,
+                marker_char : self.selected_marker_char,
+                marker_color : self.selected_marker_color,
+                marker_size : self.selected_marker_size
+            };
+        }
 
         return;
     };
@@ -336,8 +400,7 @@ function DBThumbnailTool()
     {
         var modes = new Array(
             { name : "Create thumbnail", type : "create_thumbnail" } ,
-            { name : "Add markers", type : "set_markers" },
-            { name : "Modify markers", type : "modify_markers" } );
+            { name : "Add markers", type : "set_markers" } );
         // take tha first mode as default
         self.selected_mode = modes[0];
         self.updateSelectedMode();
@@ -515,6 +578,134 @@ function DBThumbnailTool()
         document.getElementById( "thumbnail_marker_size_menu" ).appendChild( self.marker_size_menu.getView() );
         self.updateSelectedMarker();
         document.getElementById( "thumbnail_marker_box" ).style.display = "none";
+    }
+
+    this.getActions = function() {
+        return actions;
+    }
+
+    var arrowKeyCodes = {
+        left: 37,
+        up: 38,
+        right: 39,
+        down: 40
+    };
+
+    var actions = [
+
+        new Action({
+            helpText: "Delete marker",
+            keyShortcuts: {
+                'Del': [ 46 ]
+            },
+            run: function (e) {
+                if (self.selected_marker != null)
+                {
+                    self.removeMarker( self.selected_marker );
+                    self.selected_marker = null;
+                    self.redraw();
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }),
+
+        new Action({
+            helpText: "Move marker left",
+            keyShortcuts: {
+                "\u2190": [ arrowKeyCodes.left ]
+            },
+            run: function (e) {
+                if (self.selected_marker != null)
+                {
+                    // move one pixel to the left
+                    var old_pos = self.selected_marker.pos_x_screen;
+                    var new_pos = old_pos - 1;
+                    self.selected_marker.pos_x_screen = new_pos;
+                    self.selected_marker.pos_x_world = self.to_world_x( new_pos );
+                    self.updateMarkerView( self.selected_marker );
+                    self.redraw();
+                    return true;
+                }
+            }
+        }),
+
+        new Action({
+            helpText: "Move marker right",
+            keyShortcuts: {
+                "\u2192": [ arrowKeyCodes.right ]
+            },
+            run: function (e) {
+                if (self.selected_marker != null)
+                {
+                    // move one pixel to the right
+                    var old_pos = self.selected_marker.pos_x_screen;
+                    var new_pos = old_pos + 1;
+                    self.selected_marker.pos_x_screen = new_pos;
+                    self.selected_marker.pos_x_world = self.to_world_x( new_pos );
+                    self.updateMarkerView( self.selected_marker );
+                    self.redraw();
+                    return true;
+                }
+            }
+        }),
+
+        new Action({
+            helpText: "Move marker up",
+            keyShortcuts: {
+                "\u2191": [ arrowKeyCodes.up ]
+            },
+            run: function (e) {
+                if (self.selected_marker != null)
+                {
+                    // move one pixel up
+                    var old_pos = self.selected_marker.pos_y_screen;
+                    var new_pos = old_pos - 1;
+                    self.selected_marker.pos_y_screen = new_pos;
+                    self.selected_marker.pos_y_world = self.to_world_y( new_pos );
+                    self.updateMarkerView( self.selected_marker );
+                    self.redraw();
+                    return true;
+                }
+            }
+        }),
+
+        new Action({
+            helpText: "Move marker down",
+            keyShortcuts: {
+                "\u2193": [ arrowKeyCodes.down ]
+            },
+            run: function (e) {
+                if (self.selected_marker != null)
+                {
+                    // move one pixel down
+                    var old_pos = self.selected_marker.pos_y_screen;
+                    var new_pos = old_pos + 1;
+                    self.selected_marker.pos_y_screen = new_pos;
+                    self.selected_marker.pos_y_world = self.to_world_y( new_pos );
+                    self.updateMarkerView( self.selected_marker );
+                    self.redraw();
+                    return true;
+                }
+            }
+        })
+    ]
+
+    var keyCodeToAction = getKeyCodeToActionMap(actions);
+
+    /** This function should return true if there was any action
+        linked to the key code, or false otherwise. */
+    this.handleKeyPress = function( e ) {
+        var keyAction = keyCodeToAction[e.keyCode];
+        if (keyAction) {
+            keyAction.run(e);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     // init

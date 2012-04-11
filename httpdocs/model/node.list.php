@@ -122,7 +122,7 @@ $active_skeleton_id = isset( $_REQUEST[ 'as' ] ) ? intval( $_REQUEST[ 'as' ] ) :
 // the scale factor to volume bound the query in z-direction based on the z-resolution
 $zbound = 1.0;
 // limit number of retrieved treenodes
-$limit = 400;
+$limit = 4000;
 
 $classes = $db->getMap( $pid, 'class' );
 if (!$classes) {

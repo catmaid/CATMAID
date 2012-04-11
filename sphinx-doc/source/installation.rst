@@ -4,7 +4,7 @@ Basic Installation Instructions
 Prerequisites
 -------------
 
-1. PostgreSQL > 8.2
+1. PostgreSQL >= 9.0
 2. Apache2 Webserver
 3. PHP >= 5.2
 
@@ -34,7 +34,20 @@ the source code is in `/home/alice/catmaid`::
 ####################################
 
 You may find the advice `here <https://help.ubuntu.com/community/PostgreSQL>`_
-useful.  In short, you should do the following::
+useful. While the article is about version 8.x of PostgreSQL,
+it applies to PostgreSQL >= 9.0 as well. Unfortunately, the
+official Ubuntu 10.10 repositories, don't offer PostgreSQL 9.x
+as a backport package yet. To make it available, just add the
+`backports PPA <https://launchpad.net/~pitti/+archive/postgresql>`_
+of Martin Pitt to your system::
+
+        sudo add-apt-repository ppa:pitti/postgresql
+        sudo apt-get update
+
+In case you are upgrading from a previous PostgreSQL version,
+you might want to follow the steps in section
+:ref:`upgrading-postgresql`. For a new and clean installation,
+you can skip those steps and instead just do the following::
 
         sudo apt-get install postgresql pgadmin3 phppgadmin postgresql-contrib
 
@@ -73,6 +86,44 @@ After the above please restart the database::
 Update the catmaid database configuration in:
 `inc/setup.inc.php.template` and rename the file to
 `inc/setup.inc.php`
+
+.. _upgrading-postgresql:
+
+1.1 Upgrading from an older PostgreSQL version
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To upgrade a currently running PostgreSQL server to a newer
+version, you should follow the steps listed below. In short
+you create a backup of your data base, save it to two
+different locations, upgrade PostgreSQL and import your
+backup into the new server.
+
+To do so, the first step is to stop postgresql and services
+that use it (e.g. a web server). Then the backup has to be
+created::
+
+    sudo su - postgres
+    pg_dumpall > backup_db
+    exit
+
+This backup should be copied to another place as well. If you
+modified the PostgreSQL configuration files in `/etc/postgresql`
+you might want to make a backup of these, too.
+
+Now all traces of the old PostgreSQL server (here 8.4) will
+be removed and a newer version (9.1) installed::
+
+    sudo apt-get purge postgresql-8.4
+    sudo apt-get install postgresql-9.1
+
+As a last step the backup made before, has to be restored::
+
+    sudo su - postgres
+    psql < backup_db
+    exit
+
+Now restart postregsql and the services relying on it. Finally,
+check if all the data is in place no service complains.
 
 2. Configure Apache
 ###################

@@ -19,9 +19,9 @@ function WebGLViewer(divID) {
   var randomColors = [];
   randomColors[0] = [255, 255, 0]; // yellow
   randomColors[1] = [255, 0, 255]; // magenta
-  randomColors[2] = [0, 255, 255]; // cyan
-  randomColors[3] = [255, 255, 255]; // white
-  randomColors[4] = [255, 128, 0]; // orange
+  // randomColors[2] = [0, 255, 255]; // cyan
+  randomColors[2] = [255, 255, 255]; // white
+  randomColors[3] = [255, 128, 0]; // orange
 
   /* transform coordinates from CATMAID coordinate system
      to WebGL coordinate system: x->x, y->y+dy, z->-z

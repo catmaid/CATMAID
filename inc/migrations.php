@@ -1067,6 +1067,13 @@ ALTER TABLE broken_slice ADD PRIMARY KEY (id);
 ),
 
 
+	'2012-04-12T15:59:28' => new Migration(
+		'Wiki base url for MediaWiki integration',
+		'
+ALTER TABLE project ADD COLUMN wiki_base_url text;
+'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

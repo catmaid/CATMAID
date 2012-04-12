@@ -112,7 +112,8 @@ def view(request, project_id=None, neuron_id=None, neuron_name=None, logged_in_u
                                   'user': logged_in_user,
                                   'cell_body_choices': CELL_BODY_CHOICES,
                                   'incoming': incoming,
-                                  'outgoing': outgoing} )
+                                  'outgoing': outgoing,
+                                  'wiki_base_url': p.wiki_base_url } )
 
 @catmaid_login_required
 def set_cell_body(request, logged_in_user=None):

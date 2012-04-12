@@ -175,6 +175,14 @@ var ObjectTree = new function()
                   TracingTool.goToNearestInNeuron('neuron', neuronid);
                 }
               },
+                "show_in_catalog": {
+                    "separator_before": true,
+                    "separator_after": false,
+                    "label": "Show in Neuron Catalog",
+                    "action": function (obj) {
+                        window.open( django_url + pid + '/view/' + obj.attr("id").replace("node_", "") );
+                    }
+                },
   /*
             "create_skeleton" : {
               "separator_before"	: false,

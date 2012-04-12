@@ -242,10 +242,10 @@ run::
 
      scripts/database/insert-example-projects.py
 
-To create a login, you should use the `scripts/create-user.py`
+To create a login, you should use the `scripts/database/create-user.py`
 script, such as with::
 
-     scripts/create-user.py humpy "Sir Humphrey Appleby"
+     scripts/database/create-user.py humpy "Sir Humphrey Appleby"
 
 This will prompt you for a password for this new user.
 
@@ -253,14 +253,14 @@ This will prompt you for a password for this new user.
 #######################
 
 You can generate the image tiles for a stack with the
-`scripts/tile_stack` script or by exporting from TrakEM2 with
+`scripts/tiles/tile_stack` script or by exporting from TrakEM2 with
 its "Export > Flat Images" option and selecting the "Export for
 web" checkbox.
 
 Then you can create a new project with the script
-`scripts/create_project_stack.py`::
+`scripts/database/create_project_stack.py`::
 
-      Usage: create-project.py <host> <database-name>
+      scripts/database/create_project_stack.py
 
 The script enables the generation of a new project or uses an
 existing project.  For a new project, it creates the classes and

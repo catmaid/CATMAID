@@ -254,7 +254,7 @@ var SkeletonAnnotations = new function()
                   message += " <i>part_of</i> [<strong>"+d.name+"</strong>]";
                 }
                 statusBar.replaceLastHTML(message);
-                $('#neuronName').text('Selected neuron: '+data[0].name);
+                $('#neuronName').text('Neuron: '+data[0].name + ' / Skeleton ID: '+ node.skeleton_id);
                 }
               } else {
                 alert("Getting the ancestry of the skeleton "+node.skeleton_id+" failed with HTTP status code "+status);

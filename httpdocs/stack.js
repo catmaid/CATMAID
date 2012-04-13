@@ -504,6 +504,15 @@ function Stack(
 		view.appendChild( metadataDisplay );
 	}
 
+    var neuronnameDisplay = document.createElement( "div" );
+    neuronnameDisplay.className = "neuronname";
+    neuronnameDisplay.appendChild( document.createElement( "p" ) );
+    var spanName = document.createElement( "span" );
+    spanName.id = "neuronName";
+    neuronnameDisplay.firstChild.appendChild( spanName );
+    neuronnameDisplay.firstChild.firstChild.appendChild( document.createTextNode( "" ) );
+    view.appendChild( neuronnameDisplay );
+
 	// take care, that all values are within a proper range
     // Declare the x,y,z,s as coordinates in pixels
 	self.z = 0;

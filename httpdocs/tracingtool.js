@@ -52,6 +52,7 @@ function TracingTool()
         "tracingbuttons",
         "trace_");
       $( "#toolbar_nav" ).prepend( box );
+
     }
   };
 

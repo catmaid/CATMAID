@@ -223,8 +223,8 @@ div.sliceView div.metadata p
 div.sliceView div.neuronname
 {
     position:absolute;
-    right:10px;
-    top:72px;
+    right:60px;
+    top:15px;
     height:0.5em;
     width:auto;
     border:none;
@@ -232,7 +232,7 @@ div.sliceView div.neuronname
     margin:0px;
     padding:0px;
     vertical-align:bottom;
-    z-index:3;
+    z-index:10;
 }
 
 div.sliceView div.neuronname p

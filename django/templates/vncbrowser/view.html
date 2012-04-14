@@ -80,6 +80,8 @@
         <a href="{% url vncbrowser.views.skeleton_swc skeleton_id=skeleton.id, project_id=project_id %}">Save SWC file (for
             skeleton {{skeleton.id}} of neuron "{{neuron.name}}")</a><br>
         {% endfor %}
+        <br />
+        <a href="{{wiki_base_url}}{{neuron_class}}">Catalog Entry for neuron class: {{neuron_class}}</a><br>
     </p>
     
 </td>
@@ -116,10 +118,6 @@
   </table>
   </div>
 
-</td>
-
-<td>    
-    <iframe width="800" height="1000" src='{{wiki_base_url}}{{neuron.name}}'></iframe>
 </td>
 
 </tr>

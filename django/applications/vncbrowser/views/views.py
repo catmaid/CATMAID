@@ -31,6 +31,16 @@ try:
 except ImportError:
     pass
 
+def findBrackets( aString ):
+    if '[' in aString:
+        match = aString.split('[',1)[1]
+        open = 1
+        for index in xrange(len(match)):
+            if match[index] in '[]':
+                open = (open + 1) if match[index] == '[' else (open - 1)
+            if not open:
+                return match[:index]
+
 @catmaid_login_required
 def index(request, **kwargs):
     all_neurons, search_form = get_form_and_neurons(request,
@@ -105,6 +115,7 @@ def view(request, project_id=None, neuron_id=None, neuron_name=None, logged_in_u
     return my_render_to_response(request,
                                  'vncbrowser/view.html',
                                  {'neuron': n,
+                                  'neuron_class': findBrackets( n.name ),
                                   'lines': lines,
                                   'skeletons': skeletons,
                                   'project_id': project_id,

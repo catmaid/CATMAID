@@ -51,23 +51,32 @@ ConnectivityPostsynaptic = {
     'id': 3
 }
 
+def get_tile(request, project_id=None, stack_id=None):
 
-def get_image(request, project_id=None, stack_id=None, x=None, y=None, dx=None, dy=None, z=None):
+    scale = float(request.GET.get('scale', '0'))
+    height = int(request.GET.get('height', '0'))
+    width = int(request.GET.get('width', '0'))
+    x = int(request.GET.get('x', '0'))
+    y = int(request.GET.get('y', '0'))
+    z = int(request.GET.get('z', '0'))
+    col = request.GET.get('col', 'y')
+    row = request.GET.get('row', 'x')
+    file_extension = request.GET.get('file_extension', 'png')
+    hdf5_path = request.GET.get('hdf5_path', '/')
+
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}.hdf'.format( project_id, stack_id ) )
+    
+    #print 'exists', os.path.exists(fpath)
+    #with closing(h5py.File(fpath, 'r')) as hfile:
+    #    image_data=hfile[str(z)].value
 
-    print >> sys.stderr, 'fpath', fpath
-    print 'exists', os.path.exists(fpath)
-    with closing(h5py.File(fpath, 'r')) as hfile:
-        image_data=hfile[str(z)].value
-
-    # image = Image.fromarray(image_data[:500,:500].T)
-    # TODO: define a map from skeleton ids stored in the HDF5 to colors & back
     w,h=1000,800
-    img = np.empty((w,h),np.uint32)
-    img.shape=h,w
-    img[0,0]=0x800000FF
-    img[:400,:400]=0xFFFF0000
-    pilImage = Image.frombuffer('RGBA',(w,h),img,'raw','RGBA',0,1)
+    # img = np.empty((width,height), np.uint32)
+    #img.shape=height,width
+    img = np.random.random_integers(0, 256, (height,width) ).astype(np.uint8)
+    #img[0,0]=0x800000FF
+    # img[:400,:400]=0xFFFF0000
+    pilImage = Image.frombuffer('RGBA',(width,height),img,'raw','L',0,1)
     response = HttpResponse(mimetype="image/png")
     pilImage.save(response, "PNG")
     return response

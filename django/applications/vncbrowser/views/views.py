@@ -725,27 +725,6 @@ def stack_info(request, project_id=None, stack_id=None, logged_in_user=None):
     result=get_stack_info(project_id, stack_id, logged_in_user)
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")
 
-def get_tile(request, project_id=None, stack_id=None):
-    params = urllib.urlencode(request.GET)
-    headers = {"Content-type": "application/x-www-form-urlencoded",
-                "Referer": "http://127.0.0.1"}
-    # TODO: Replace hard-coded URL to TileServer URL specified in settings.py
-    conn = httplib.HTTPConnection("127.0.0.1:8888")
-    # Setting the parameters as body (3rd argument) is not parsed by Tornado webserver
-    # We need to attach them to the request URL
-    conn.request("GET", "/?"+ params, '', headers)
-    response = conn.getresponse()
-    read_response = response.read()
-    print >> sys.stderr, read_response, params
-    image = Image.open(cStringIO.StringIO(read_response))
-    if response.status == 200:
-        # serialize to HTTP response
-        newresponse = HttpResponse(mimetype="image/png")
-        image.save(newresponse, "PNG")
-        return newresponse
-    else:
-        return HttpResponse("Error in TileServer response.", mimetype="plain/text")
-
 def push_image(request, project_id=None, stack_id=None):
     """ Push image to server with proper stack field-of-view """
     params = urllib.urlencode(request.POST)

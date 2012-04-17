@@ -25,7 +25,6 @@ from views import convert_annotations_to_networkx
 from views import stack_info
 from views import update_location_reviewer
 
-from views import get_tile
 from views import push_image
 
 from catmaid_replacements import projects
@@ -42,7 +41,7 @@ from catmaid_replacements import node_list
 from neurohdf import skeleton_neurohdf
 from neurohdf import microcircuit_neurohdf
 from neurohdf import stack_models
-from neurohdf import get_image
+from neurohdf import get_tile
 
 from cropping import crop
 from cropping import download_crop

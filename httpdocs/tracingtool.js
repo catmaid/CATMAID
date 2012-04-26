@@ -442,7 +442,7 @@ function TracingTool()
   this.addAction( new Action({
     helpText: "Go to last edited node in this skeleton",
     keyShortcuts: {
-      "E": [ 69 ]
+      "H": [ 72 ]
     },
     run: function (e) {
       if (!mayView())

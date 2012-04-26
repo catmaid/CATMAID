@@ -213,7 +213,7 @@ if (strpos($parentname, "Isolated synaptic terminals")) {
              cici.class_instance_b = $parentid AND
              (cici.relation_id = {$relations['model_of']}
               OR cici.relation_id = {$relations['part_of']})
-       ORDER BY ci.creation_time
+       ORDER BY ci.creation_time DESC
        LIMIT $maxnodes");
 
 }

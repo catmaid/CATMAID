@@ -42,6 +42,8 @@ var zp;
 var yp;
 var xp;
 var inittool;
+var init_active_skeleton;
+var init_active_node_id;
 
 var session;
 var msg_timeout;
@@ -440,8 +442,8 @@ function handle_openProjectStack( status, text, xml )
 			} else if ( inittool === 'navigator' ) {
 			  project.setTool( new Navigator() );
 			} else if ( inittool === 'canvastool' ) {
-                project.setTool( new CanvasTool() );
-            }
+        project.setTool( new CanvasTool() );
+      }
 
 			//! if the stack was initialized by an URL query, move it to a given position
 			if ( pid == e.pid && sids.length > 0 )
@@ -458,6 +460,7 @@ function handle_openProjectStack( status, text, xml )
 						{
 							project.moveTo( zp, yp, xp );
 							stack.moveToPixel( stack.z, stack.y, stack.x, ss[i] );
+
 							sids.splice( i, 1 );
 							ss.splice( i, 1 );
 							break;
@@ -465,6 +468,9 @@ function handle_openProjectStack( status, text, xml )
 					}
 				}
 			}
+
+      window.setTimeout("SkeletonAnnotations.staticSelectNode(init_active_node_id, init_active_skeleton)", 2000);
+
 
 			/* Update the projects "current project" menu. If there is more
 			than one stack linked to the current project, a submenu for easy
@@ -658,7 +664,7 @@ var realInit = function()
 	var y;
 	var x;
 	var s;
-	
+  
 	var account;
 	var password;
 	
@@ -675,7 +681,9 @@ var realInit = function()
 		if ( isNaN( x ) ) delete x;
 		if ( values[ "s" ] ) s = parseInt( values[ "s" ] );
 		if ( isNaN( s ) ) delete s;
-		
+    if ( values[ "active_skeleton_id" ] ) init_active_skeleton = parseInt( values[ "active_skeleton_id" ] );
+    if ( values[ "active_node_id" ] ) init_active_node_id = parseInt( values[ "active_node_id" ] );
+
 		if ( !(
 				typeof z == "undefined" ||
 				typeof y == "undefined" ||

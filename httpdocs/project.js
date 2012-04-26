@@ -342,6 +342,13 @@ function Project( pid )
 			//coords = stacks[ 0 ].projectCoordinates();		//!< @todo get this from the SELECTED stack to avoid approximation errors!
 			url += "&zp=" + self.coordinates.z + "&yp=" + self.coordinates.y + "&xp=" + self.coordinates.x;
 			url += "&tool=" + project.getTool().toolname;
+      if( project.getTool().toolname === 'tracingtool' ) {
+        var active_skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
+        if( active_skeleton_id ) {
+          url += "&active_skeleton_id=" + active_skeleton_id;
+          url += "&active_node_id=" + SkeletonAnnotations.getActiveNodeId();
+        }
+      }
 			for ( var i = 0; i < stacks.length; ++i )
 			{
 				url += "&sid" + i + "=" + stacks[ i ].id + "&s" + i + "=" + stacks[ i ].s;

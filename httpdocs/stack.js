@@ -291,7 +291,7 @@ function Stack(
 			zp * resolution.z + translation.z,
 			yp * resolution.y + translation.y,
 			xp * resolution.x + translation.x,
-			sp);
+			sp );
 		
 		return true;
 	}

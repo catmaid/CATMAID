@@ -67,13 +67,22 @@ def get_tile(request, project_id=None, stack_id=None):
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}.hdf'.format( project_id, stack_id ) )
     
     #print 'exists', os.path.exists(fpath)
-    #with closing(h5py.File(fpath, 'r')) as hfile:
-    #    image_data=hfile[str(z)].value
+    
+    with closing(h5py.File(fpath, 'r')) as hfile:
+        hdfpath = hdf5_path + '/scale/' + str(scale) + '/data'
+        print >> sys.stderr, 'hdf5 path', hdfpath
+        image_data=hfile[hdfpath].value
+        data=image_data[y:y+height,x:x+width,z]
+        pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
+        response = HttpResponse(mimetype="image/png")
+        pilImage.save(response, "PNG")
+        return response
+
 
     w,h=1000,800
     # img = np.empty((width,height), np.uint32)
     #img.shape=height,width
-    img = np.random.random_integers(0, 256, (height,width) ).astype(np.uint8)
+    img = np.random.random_integers(0, 150, (height,width) ).astype(np.uint8)
     #img[0,0]=0x800000FF
     # img[:400,:400]=0xFFFF0000
     pilImage = Image.frombuffer('RGBA',(width,height),img,'raw','L',0,1)

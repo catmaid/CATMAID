@@ -179,42 +179,36 @@ function DBThumbnailTool()
         return stack.translation.y + ( stack.y + dist_center_y / stack.scale ) * stack.resolution.y;
     }
 
+    // Used as a workaround -- the canvas overlay doesn't find correct top
+    this.canvasNeedsUpdate = true;
+
     this.addMarker = function( x, y)
     {
-        // expect screen positions
-        var pos_x = self.to_world_x( x );
-        var pos_y = self.to_world_y( y );
-        
-        // create new view/div for the marker
-        var marker_view = document.createElement( "div" );
-        marker_view.id = "marker" + self.markers.length;
-        marker_view.style.width = "auto";
-        marker_view.style.height = "auto";
-        marker_view.style.position = "absolute";
-        marker_view.style.zIndex = 7;
-        marker_view.style.cursor = "move";
+        // TODO: find a better solution to this. The canvas layer
+        // doesnt find the correct top position when initialized
+        // within register().
+        if (self.canvasNeedsUpdate)
+        {
+            canvasLayer.setFieldOfView();
+            self.canvasNeedsUpdate = false;
+        }
 
-        var marker_text = document.createElement( "p" );
-        marker_text.onclick = onmousedown.selectmarker;
-        marker_text.idx = self.markers.length;
-        marker_text.style.bottom = "0px";
-        marker_text.style.padding = "0px 0px 0px 0px";
-        marker_text.style.position = "absolute";
-        marker_text.className= "marker";
-
-        marker_view.appendChild( marker_text );
+        // get screen coords
+        var stack_topleft = self.stack.screenPosition();
+        var stack_x = stack_topleft.left * self.stack.scale + x;
+        var stack_y = stack_topleft.top * self.stack.scale + y;
 
         // remember the new marker
-        var new_marker =
-            { view : marker_view,
-              pos_x_screen : x,
-              pos_y_screen : y,
-              pos_x_world : pos_x,
-              pos_y_world : pos_y,
-              symbol : self.selected_marker_char.symbol,
-              color : self.selected_marker_color.color,
-              size : self.selected_marker_size.size };
-        self.markers[ self.markers.length ] = new_marker;
+        var new_marker = new Marker( stack_x, stack_y, self.to_world_x( stack_x ),
+                self.to_world_y( stack_y ), self.selected_marker_char.symbol,
+                self.selected_marker_color.color, self.selected_marker_size.size );
+
+        // Draw the new marker
+        var context = canvasLayer.canvas.getContext('2d');
+        new_marker.draw( context );
+
+        return;
+        
         // update the view
         self.updateMarkerView( new_marker );
         self.stack.getView().appendChild( marker_view );
@@ -303,15 +297,38 @@ function DBThumbnailTool()
     {
         return 'stack' + stack.getId();
     };
+
+    var createCanvasLayer = function( parentStack )
+    {
+        self.stack = parentStack;
+        canvasLayer = new CanvasLayer( parentStack );
+        //canvasLayer.canvas.isDrawingMode = false;
+ 
+        // TODO: Layer is added to the parent stack, but the view
+        // is not inserted in the DOM - this has to be done manually
+        // in the canvaslayer.js. Is this by design?
+        parentStack.addLayer( "CanvasLayer", canvasLayer );
+    };
     
     this.register = function( parentStack )
     {
         // call register of super class
         DBThumbnailTool.superproto.register.call( self, parentStack );
-        self.stack = parentStack;
 
         document.getElementById( "edit_button_thumbnail" ).className = "button_active";
         document.getElementById( "toolbar_thumbnail" ).style.display = "block";
+
+        if (canvasLayer && self.stack) {
+            if (self.stack !== parentStack) {
+                // If the tracing layer exists and it belongs to a different stack, replace it
+                self.stack.removeLayer( canvasLayer );
+                createCanvasLayer( parentStack );
+            } else {
+                // reactivateBindings();
+            }
+        } else {
+            createCanvasLayer( parentStack );
+        }
 
         self.mouseCatcher.style.cursor = "crosshair";
 
@@ -368,6 +385,9 @@ function DBThumbnailTool()
     this.destroy = function()
     {
 		self.unregister();
+
+        // remove the canvasLayer with the official API
+        self.stack.removeLayer( "CanvasLayer" );
 
         // destroy saved states
         for ( var s in self.state )
@@ -710,6 +730,7 @@ function DBThumbnailTool()
 
     // init
 
+    var canvasLayer = null;
     if ( !ui ) ui = new UI();
 
     //! position markers
@@ -725,4 +746,27 @@ function DBThumbnailTool()
     return this;
 }
 extend( DBThumbnailTool, BoxSelectionTool );
+
+/**
+ * Markers are strings that get drawn on the screen.
+ */
+function Marker( x, y, xw, yw, symbol, color, size )
+{
+    this.pos_x_screen = x;
+    this.pos_y_screen = y;
+    this.pos_x_world = xw;
+    this.pos_y_world = yw;
+    this.symbol = symbol;
+    this.color = color;
+    this.size = size;
+
+    return this;
+}
+
+Marker.prototype.draw = function( ctx )
+{
+    ctx.fillStyle = "#" + this.color;
+    ctx.font = "normal " + this.size + "px Arial";
+    ctx.fillText( this.symbol, this.pos_x_screen, this.pos_y_screen );
+}
 

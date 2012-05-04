@@ -35,7 +35,7 @@ function CanvasTool()
         // more: http://kangax.github.com/fabric.js/kitchensink/
 
         var button_rasterize = document.createElement("button");
-        button_rasterize.appendChild( document.createTextNode('Send labels!') );
+        button_rasterize.appendChild( document.createTextNode('Push labels') );
         button_rasterize.onclick = function() {
             console.log('button click')
             if (!fabric.Canvas.supports('toDataURL')) {
@@ -49,18 +49,23 @@ function CanvasTool()
                     output=data.replace(/^data:image\/(png|jpg);base64,/, ""),
                     fieldofview=canvasLayer.getFieldOfViewParameters(),
                     senddata = {};
-
+                data = data.substr(22, data.length);
                 senddata['x'] = fieldofview.x;
                 senddata['y'] = fieldofview.y;
-                senddata['z'] = fieldofview.y; // TODO
+                senddata['z'] = stack.z; // TODO
+                senddata['scale'] = stack.s;
                 senddata['row'] = 'y';
                 senddata['col'] = 'x';
                 senddata['width'] = fieldofview.width;
                 senddata['height'] = fieldofview.height;
                 senddata['image'] = output;
                 senddata['metadata'] = self.labels;
-
-                if( stack.labelupload_url !== '' ) {
+                console.log('send data', senddata, stack);
+                if( stack.tile_source_type == 2 ) {
+                    if( stack.labelupload_url === '' ) {
+                      alert('Push labels not enabled for this stack');
+                      return;
+                    }
                     // z, t
                     jQuery.ajax({
                         url: stack.labelupload_url, // "dj/" + project.id + "/stack/" + stack.id + "/push_image", // stack.labelUploadURL
@@ -71,9 +76,21 @@ function CanvasTool()
                           console.log('return', data);
                         }
                       });
-                } else {
-                    alert('For this stack is no label upload URL for POST requests defined');
+                } else if ( stack.tile_source_type === 3 ) {
+                    console.log('tile source type 3')
+                    jQuery.ajax({
+                        //url: stack.labelupload_url, // "dj/" + project.id + "/stack/" + stack.id + "/push_image", // stack.labelUploadURL
+                        url: "dj/" + project.id + "/stack/" + stack.id + "/put_tile", // stack.labelUploadURL
+                        type: "POST",
+                        dataType: "json",
+                        data: senddata,
+                        success: function (data) {
+                          console.log('return', data);
+                        }
+                      });
+                  
                 }
+
             }
         };
         controls.appendChild( button_rasterize );

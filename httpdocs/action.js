@@ -242,7 +242,7 @@ var editToolActions = [
 		}
 	}),
 
-    new Action({
+/*    new Action({
        helpText: "Canvas tool",
        buttonID: 'edit_button_canvas',
        buttonName: 'canvas',
@@ -253,7 +253,7 @@ var editToolActions = [
            project.setTool( new CanvasTool() );
        }
     }),
-
+*/
 	new Action({
 		helpText: "Tracing tool",
 		buttonID: 'edit_button_trace',

@@ -558,7 +558,7 @@ var WindowMaker = new function()
     if (typeof win == 'undefined') {
       win = windows['search'];
       if (!win) {
-	return;
+        return;
       }
     }
 

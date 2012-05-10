@@ -785,7 +785,6 @@ TracingTool.search = function()
       if (data.error) {
         setSearchingMessage('Search failed with error: '+data.error);
       } else {
-        console.log("Searching!!!!");
         $('#search-results').empty();
         $('#search-results').append($('<i/>').data('Found '+data.length+' results:'));
         table = $('<table/>');
@@ -812,19 +811,32 @@ TracingTool.search = function()
             // Create a link that will then query, when clicked, for the list of nodes
             // that point to the label, and show a list [1], [2], [3] ... clickable,
             // or better, insert a table below this row with x,y,z,parent skeleton, parent neuron.
-            if (data[i].nodes) {
-              nodes.reduce(function(r, node) {
-                actionLink = $('<a/>');
-                actionLink.atr({'id': ''+data[i].id});
-                actionLink.attr({'href':''});
-                actionLink.click(function() {
-                  alert(node.id);
-                  // TODO go to node
-                });
-                actionLink.text("Go to node");
-                r.append($('<td/>').append(actionLink));
-                return r;
-              }, row);
+            if (data[i].hasOwnProperty('nodes')) {
+              var td = $('<td/>');
+              row.append(td);
+              data[i].nodes.reduce(function(index, node) {
+                // Local copies
+                var z = parseInt(node.z);
+                var y = parseInt(node.y);
+                var x = parseInt(node.x);
+                var id = parseInt(node.id);
+                var skid = parseInt(node.skid);
+                td.append(
+                  $('<a/>').attr({'id': '' + id})
+                           .attr({'href':''})
+                           .click(function(event) {
+                             console.log("skid", skid, "id", id);
+                             project.moveTo(z, y, x,
+                               undefined,
+                               function() {
+                                 SkeletonAnnotations.staticSelectNode(id, skid);
+                               });
+                             return false;
+                           })
+                           .text("[" + index + "]")
+                  ).append("&nbsp;");
+                return index + 1;
+              }, 1);
             }
           } else {
             row.append($('<td/>').text('IMPLEMENT ME'));

@@ -450,7 +450,6 @@ function Navigator()
 	 */
 	this.register = function( parentStack, buttonName )
 	{
-		console.log("tool: register called for navigator");
 		document.getElementById( typeof buttonName == "undefined" ? "edit_button_move" : buttonName ).className = "button_active";
 		document.getElementById( "toolbar_nav" ).style.display = "block";
 		
@@ -536,7 +535,6 @@ function Navigator()
 	 */
 	this.unregister = function()
 	{
-		console.log("tool: unregister called for navigator");
 		if ( self.stack && self.mouseCatcher.parentNode == self.stack.getView() )
 			self.stack.getView().removeChild( self.mouseCatcher );
 		return;
@@ -549,7 +547,6 @@ function Navigator()
 	 */
 	this.destroy = function( buttonName )
 	{
-		console.log("tool: destroy called for navigator");
 		self.unregister();
 		
 		document.getElementById( typeof buttonName == "undefined" ? "edit_button_move" : buttonName ).className = "button";

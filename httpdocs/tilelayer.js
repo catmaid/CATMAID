@@ -71,7 +71,6 @@ function TileLayer(
 	 */
 	this.redraw = function(completionCallback)
 	{
-	    console.trace();
 		var pixelPos = [ stack.x, stack.y, stack.z ];
 		var tileBaseName = getTileBaseName( pixelPos );
 

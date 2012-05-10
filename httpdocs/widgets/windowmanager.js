@@ -854,8 +854,6 @@ function CMWWindow( title )
 	 */
 	this.callListeners = function( signal )
 	{
-	    console.log("sending signal: ", CMWWindow.signalName[signal]+ " from window " + title);
-	    // console.trace();
 		for ( var i = 0; i < listeners.length; ++i )
 			listeners[ i ]( self, signal );
 		
@@ -879,11 +877,9 @@ CMWWindow.RESIZE = 1;
 CMWWindow.FOCUS = 2;
 CMWWindow.BLUR = 3;
 
-CMWWindow.signalName = {};
-CMWWindow.signalName[CMWWindow.CLOSE] = 'CLOSE';
-CMWWindow.signalName[CMWWindow.RESIZE] = 'RESIZE';
-CMWWindow.signalName[CMWWindow.FOCUS] = 'FOCUS';
-CMWWindow.signalName[CMWWindow.BLUR] = 'BLUR';
+
+
+
 
 /**
  * a vertical or horizontal resize handle

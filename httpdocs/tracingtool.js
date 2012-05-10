@@ -789,6 +789,7 @@ TracingTool.search = function()
       if (data.error) {
         setSearchingMessage('Search failed with error: '+data.error);
       } else {
+        console.log("Searching!!!!");
         $('#search-results').empty();
         $('#search-results').append($('<i/>').data('Found '+data.length+' results:'));
         table = $('<table/>');
@@ -811,6 +812,24 @@ TracingTool.search = function()
             });
             actionLink.text("Go to nearest node");
             row.append($('<td/>').append(actionLink));
+          } else if (data[i].class_name === 'label') {
+            // Create a link that will then query, when clicked, for the list of nodes
+            // that point to the label, and show a list [1], [2], [3] ... clickable,
+            // or better, insert a table below this row with x,y,z,parent skeleton, parent neuron.
+            if (data[i].nodes) {
+              nodes.reduce(function(r, node) {
+                actionLink = $('<a/>');
+                actionLink.atr({'id': ''+data[i].id});
+                actionLink.attr({'href':''});
+                actionLink.click(function() {
+                  alert(node.id);
+                  // TODO go to node
+                });
+                actionLink.text("Go to node");
+                r.append($('<td/>').append(actionLink));
+                return r;
+              }, row);
+            }
           } else {
             row.append($('<td/>').text('IMPLEMENT ME'));
           }

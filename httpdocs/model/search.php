@@ -42,30 +42,30 @@ $rows = $db->getResult(
 # Retrieve nodes holding text labels
 $labeled_as_id = null;
 for ($i=0, $length = count($rows); $i<$length; $i++) {
-	# Fetch necessary IDs
-	if ('label' === $rows[$i]['class_name']) {
-      $labeled_as_id = $db->getRelationId( $pid, 'labeled_as' );
-      if (!$labeled_as_id) { echo makeJSON( array( 'error' => 'Can not find "labeled_as" relation for this project' ) ); return; }
-	}
-	# Query for nodes holding the label
-	$nodes = $db->getResult(
-    'SELECT "treenode"."id",
-            (treenode.location).x,
-            (treenode.location).y, 
-            (treenode.location).z,
-						"treenode"."skeleton_id" AS "skid"
-     FROM "treenode_class_instance" AS "tci",
-          "class_instance",
-          "treenode"
-     WHERE treenode.project_id = '.$pid.'
-       AND "treenode"."id" = "tci"."treenode_id"
-       AND "tci"."relation_id" = '.$labeled_as_id.'
-			 AND "tci"."class_instance_id" = "class_instance"."id"
-			 AND "class_instance"."name" = \''.$rows[$i]['name'].'\'
-		 ORDER BY "treenode"."id" DESC');
-	if (count($nodes) > 0) {
-		$rows[$i]['nodes'] = $nodes;
-	}
+  # Fetch necessary IDs
+  if ('label' === $rows[$i]['class_name']) {
+    $labeled_as_id = $db->getRelationId( $pid, 'labeled_as' );
+    if (!$labeled_as_id) { echo makeJSON( array( 'error' => 'Can not find "labeled_as" relation for this project' ) ); return; }
+    # Query for nodes holding the label
+    $nodes = $db->getResult(
+      'SELECT "treenode"."id",
+              (treenode.location).x,
+              (treenode.location).y, 
+              (treenode.location).z,
+              "treenode"."skeleton_id" AS "skid"
+       FROM "treenode_class_instance" AS "tci",
+            "class_instance",
+            "treenode"
+       WHERE treenode.project_id = '.$pid.'
+         AND "treenode"."id" = "tci"."treenode_id"
+         AND "tci"."relation_id" = '.$labeled_as_id.'
+         AND "tci"."class_instance_id" = "class_instance"."id"
+         AND "class_instance"."name" = \''.$rows[$i]['name'].'\'
+       ORDER BY "treenode"."id" DESC');
+    if (count($nodes) > 0) {
+      $rows[$i]['nodes'] = $nodes;
+    }
+  }
 }
 
 if ($rows === FALSE) {

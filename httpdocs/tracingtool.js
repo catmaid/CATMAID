@@ -782,6 +782,10 @@ TracingTool.search = function()
       setSearchingMessage('Search failed with HTTP status'+status);
     } else {
       data = $.parseJSON(text);
+      if (null === data) {
+        setSearchingMessage('Search failed, parseJSON returned null. Check javascript console.');
+        return;
+      }
       if (data.error) {
         setSearchingMessage('Search failed with error: '+data.error);
       } else {

@@ -4,6 +4,12 @@
 
 function updateTreenodeTable() {
   //TreenodeTable.init( project.getId() );
+  TreenodeTable.setSkeleton( -1 );
+  TreenodeTable.oTable.fnClearTable( 0 );
+  TreenodeTable.oTable.fnDraw();
+}
+
+function refreshTreenodeTable() {
   TreenodeTable.oTable.fnClearTable( 0 );
   TreenodeTable.oTable.fnDraw();
 }
@@ -13,10 +19,20 @@ var TreenodeTable = new function()
   var ns = this; // reference to the namespace
   ns.oTable = null;
   var asInitVals = [];
-  var skelid;
+  var skelid = -1;
+  var last_displayed_skeletons = [];
+
+  this.setSkeleton = function( skeleton_id ) {
+    skelid = skeleton_id;
+  }
 
   this.init = function (pid)
   {
+    $("#treenodetable_lastskeletons").change(function() {
+      skelid = parseInt( $('#treenodetable_lastskeletons').val() );
+      refreshTreenodeTable();
+    });
+
     ns.pid = pid;
     ns.oTable = $('#treenodetable').dataTable({
       // http://www.datatables.net/usage/options
@@ -36,30 +52,17 @@ var TreenodeTable = new function()
             delete project.selectedObjects.table_treenode[key];
           }
         }
-
-        skelid = SkeletonAnnotations.getActiveSkeletonId();
-        if (skelid !== null) {
-          // give priority to showing treenodes
-          aoData.push({
-            "name": "skeleton_0",
-            "value": skelid
-          });
-          aoData.push({
-            "name": "skeleton_nr",
-            "value": 1
-          });
-        } else {
-          // check if a treenode is active
-          // send active treenode when set
-          var atnID = SkeletonAnnotations.getActiveNodeId();
-          if (atnID && SkeletonAnnotations.getActiveNodeType() === "treenode") {
-            aoData.push({
-              "name": "atnid",
-              "value": atnID
-            });
-          }
+        if( skelid === -1 ) {
+          skelid = SkeletonAnnotations.getActiveSkeletonId();
         }
-
+        aoData.push({
+          "name": "skeleton_0",
+          "value": skelid
+        });
+        aoData.push({
+          "name": "skeleton_nr",
+          "value": 1
+        });
         aoData.push({
           "name": "pid",
           "value": pid
@@ -69,6 +72,20 @@ var TreenodeTable = new function()
           "value": project.focusedStack.id
         });
 
+        if( skelid && $.inArray( skelid, last_displayed_skeletons) === -1 ) {
+          // check if skeleton id already in list, of so, do not add it
+          last_displayed_skeletons.push( skelid );
+          var new_skeletons = document.getElementById("treenodetable_lastskeletons");
+          while (new_skeletons.length > 0)
+              new_skeletons.remove(0);
+          for ( var i=0, len=last_displayed_skeletons.length; i<len; ++i ){
+              var option = document.createElement("option");
+              option.text = 'Skeleton ' + last_displayed_skeletons[i];
+              option.value = last_displayed_skeletons[i];
+              new_skeletons.appendChild(option);
+          }
+        }
+        $('#treenodetable_lastskeletons').val( skelid );
 
         $.ajax({
           "dataType": 'json',
@@ -86,7 +103,7 @@ var TreenodeTable = new function()
       ],
       "bJQueryUI": true,
       "fnDrawCallback": function () {
-        $('td:eq(6)', ns.oTable.fnGetNodes()).editable('model/treenode.table.update.php', {
+        $('td:eq(7)', ns.oTable.fnGetNodes()).editable('model/treenode.table.update.php', {
           "callback": function (sValue, y) {},
           "submitdata": function (value, settings) {
             var aPos = ns.oTable.fnGetPosition(this);

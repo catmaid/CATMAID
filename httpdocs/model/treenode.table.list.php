@@ -36,9 +36,6 @@ if ( ! $stack_id ) {
 # 3. The user must be allowed to view annotations:
 checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
 
-// retrieve treenode id, when set retrieve skeleton id
-$atnid = isset( $_REQUEST[ 'atnid' ] ) ? intval( $_REQUEST[ 'atnid' ] ) : 0;
-
 // Utility data and associated function below
 $columnToFieldArray = array( "tid",
                      "type",
@@ -74,53 +71,37 @@ try {
      FROM "stack" WHERE "stack"."id" = '.$stack_id );
     $resolution_array = double3dXYZ($project_stacks[0]['resolution']);
 
-	$tabinject = '';
-	if ($atnid != 0) {
-				 $res = $db->getClassInstanceForTreenode( $pid, $atnid, "element_of" );
-				 if(!empty($res)) {
-						$skelid = $res[0]['class_instance_id'];
-						$skelcon = "AND (";
-						$skelcon .= '"tci"."class_instance_id" = '.$skelid;
-						$skelcon .= ")";
-						//$skelcon .= 'AND "treenode"."id" = "tci"."treenode_id"';
-						$tabinject = ', "treenode_class_instance" AS "tci"';
-						
-					} else {
-						emitErrorAndExit( $db, 'Can not find skeleton for the selected treenode.' );
-					}
 
-	} else {
-			// try to retrieve the sent skeleton ids
+    // try to retrieve the sent skeleton ids
 
-			// retrieve skeleton ids if set
-			if ( isset( $_REQUEST['skeleton_nr'] ))
-			{
-				$skelnr = intval( $_REQUEST['skeleton_nr'] );
-				
-				if ( $skelnr )
-				{
-					$skelcon = "AND (";
-					
-					for ( $i = 0; $i < $skelnr; $i++ )
-					{
-						// $skelid[] = $_REQUEST['skeleton_'.$i];
-				if( $i != 0 )
-					$skelcon .= 'OR ';
-				$skelcon .= '"tci"."class_instance_id" = '. intval($_REQUEST['skeleton_'.$i]);
-					}
-					$skelcon .= ")";
-					
-				}
-				else
-				{
-				// just not retrieve anything
-					$skelcon = "AND false";
-				}
-			} else {
-			// just not retrieve anything
-				$skelcon = "AND false";
-			}
-	}
+    // retrieve skeleton ids if set
+    if ( isset( $_REQUEST['skeleton_nr'] ))
+    {
+        $skelnr = intval( $_REQUEST['skeleton_nr'] );
+
+        if ( $skelnr )
+        {
+            $skelcon = "AND (";
+
+            for ( $i = 0; $i < $skelnr; $i++ )
+            {
+                // $skelid[] = $_REQUEST['skeleton_'.$i];
+                if( $i != 0 )
+                    $skelcon .= 'OR ';
+                $skelcon .= '"tci"."class_instance_id" = '. intval($_REQUEST['skeleton_'.$i]);
+            }
+            $skelcon .= ")";
+        }
+        else
+        {
+        // just not retrieve anything
+            $skelcon = "AND false";
+        }
+    } else {
+    // just not retrieve anything
+        $skelcon = "AND false";
+    }
+
 
 	/* Paging */
 	$sLimit = "";

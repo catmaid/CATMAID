@@ -230,7 +230,7 @@ var WindowMaker = new function()
     var add = document.createElement('input');
     add.setAttribute("type", "button");
     add.setAttribute("id", "update_treenodetable_current_skeleton");
-    add.setAttribute("value", "Update table for current skeleton");
+    add.setAttribute("value", "Update table for active skeleton");
     add.onclick = updateTreenodeTable; // function declared in table_treenode.js
     content.appendChild(add);
 
@@ -242,6 +242,14 @@ var WindowMaker = new function()
 
     var label = document.createTextNode('Synchronize');
     content.appendChild(label);
+
+    var sync = document.createElement('select');
+    sync.setAttribute("id", "treenodetable_lastskeletons");
+    var option = document.createElement("option");
+    option.text = "None";
+    option.value = -1;
+    sync.appendChild(option);
+    content.appendChild(sync);
 
     var container = createContainer("treenode_table_widget");
     content.appendChild(container);

@@ -509,6 +509,26 @@ var WindowMaker = new function()
         return win;
     };
 
+  var createExportWidget = function()
+  {
+      var win = new CMWWindow("Export widget");
+      var content = win.getFrame();
+      content.style.backgroundColor = "#ffffff";
+
+      var container = createContainer( "project_export_widget" );
+      content.appendChild( container );
+
+      container.innerHTML =
+        '<h2>Download complete microcircuit reconstruction of this project as as <a href="'+ django_url + project.id + '/microcircuit/neurohdf' + '">NeuroHDF</a></h2>';
+    
+      addListener(win, container);
+
+      addLogic(win);
+
+      return win;
+  };
+
+
   var getHelpForActions = function(actions)
   {
     var action, keys, i, k, result = '';
@@ -735,6 +755,7 @@ var WindowMaker = new function()
     "node-table": createNodeTableWindow,
     "connector-table": createConnectorTableWindow,
     "log-table": createLogTableWindow,
+    "export-widget": createExportWidget,
     "object-tree": createObjectTreeWindow,
     "statistics": createStatisticsWindow,
     "disclaimer": createDisclaimerWindow,

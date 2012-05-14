@@ -303,25 +303,35 @@ var tracingWindowActions = [
     }
   }),
 
-    new Action({
-        helpText: "Show log",
-        buttonID: "data_button_table_log",
-        buttonName: 'table_log',
-        run: function (e) {
-            WindowMaker.show( 'log-table' );
-            return true;
-        }
-    }),
+  new Action({
+      helpText: "Show log",
+      buttonID: "data_button_table_log",
+      buttonName: 'table_log',
+      run: function (e) {
+          WindowMaker.show( 'log-table' );
+          return true;
+      }
+  }),
 
-    new Action({
-        helpText: "Review system",
-        buttonID: "data_button_review",
-        buttonName: 'table_review',
-        run: function (e) {
-            WindowMaker.show('review-system');
-            return true;
-        }
-    }),
+  new Action({
+      helpText: "Review system",
+      buttonID: "data_button_review",
+      buttonName: 'table_review',
+      run: function (e) {
+          WindowMaker.show('review-system');
+          return true;
+      }
+  }),
+
+  new Action({
+      helpText: "Export widget",
+      buttonID: "data_button_export_widget",
+      buttonName: 'export_widget',
+      run: function (e) {
+          WindowMaker.show('export-widget');
+          return true;
+      }
+  }),
 
   new Action({
     helpText: "Show object tree",

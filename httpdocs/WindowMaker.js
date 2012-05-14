@@ -259,7 +259,7 @@ var WindowMaker = new function()
         '</th>' +
         // <input type="text" name="search_type" value="Search" class="search_init" />
             '<th>tags<input type="text" name="search_labels" id="search_labels" value="Search" class="search_init" /></th>' +
-            '<th>confidence</th>' +
+            '<th>c</th>' +
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
@@ -274,7 +274,7 @@ var WindowMaker = new function()
             '<th>id</th>' +
             '<th>type</th>' +
             '<th>tags</th>' +
-            '<th>confidence</th>' +
+            '<th>c</th>' +
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +

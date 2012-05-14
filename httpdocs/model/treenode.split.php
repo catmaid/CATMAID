@@ -101,7 +101,7 @@ try {
 		// DECLARE neu_id for the first time
 		$neu_id = $neu[0]['id'];
 	} else {
-		emitErrorAndExit( 'Cannot find neuron for the skeleton with id: '.$sk_id );
+		emitErrorAndExit($db, 'Cannot find neuron for the skeleton with id: '.$sk_id );
 	}
 
 	// Split $tnid from its parent in $sk_id
@@ -148,6 +148,7 @@ try {
 	// Traverse the entire subtree starting at $tnid and set their skeleton to a new one
 	//    Update element_of of sub-skeleton
 	//    Retrieve all treenode ids by traversing the subtree
+  // WARNING: this is very expensive for big skeletons and should be replaced!
 	$children = $db->getAllTreenodeChildrenRecursively( $pid, $tnid );
 	$newskeleton_treenodes = array();
 
@@ -177,39 +178,23 @@ try {
      SET skeleton_id = $newSkeletonID
      WHERE id IN ($comma_separated_children)");
 
-        if (FALSE === $result) {
-            emitErrorAndExit($db, "Failed to update the skeleton_id column of one of the split-off nodes");
-        }
+    if (FALSE === $result) {
+        emitErrorAndExit($db, "Failed to update the skeleton_id column of one of the split-off nodes");
     }
 
-    // also need to update the pre/postsynaptic terminal part_of relationship for the new skeleton
-    $comma_separated_newskeleton_treenodes = implode(", ", array_keys($newskeleton_treenodes));
-    // retrieve all terminals
-    $newskeleton_terminals = $db->getResult("
-    SELECT class_instance_id
-    FROM treenode_class_instance
-    WHERE treenode_class_instance.treenode_id IN ($comma_separated_newskeleton_treenodes)
-      AND treenode_class_instance.relation_id = $modof_id");
-
-    // if terminal are found, update their part_of skeleton_id relation
-    if (count($newskeleton_terminals) > 0) {
-        $newskeleton_terminals_ids = array();
-        foreach($newskeleton_terminals as $row) {
-              $newskeleton_terminals_ids[$row['class_instance_id']] = TRUE;
-          }
-        $comma_separated_newskeleton_terminals = implode(", ", array_keys($newskeleton_terminals_ids));
-
-        $ids = $db->update("class_instance_class_instance", array("class_instance_b" => $newSkeletonID) ,
-        ' "class_instance_a" IN ('.$comma_separated_newskeleton_terminals.') AND "relation_id" = '.$partof);
-    }
-    
-    // also update treenode_connector table for selected skeletons
+    // also update treenode_connector table for treenodes of new skeleton
     $ids = $db->update("treenode_connector", array("skeleton_id" => $newSkeletonID),
-    ' "treenode_id" IN ('.$comma_separated_newskeleton_treenodes.')');
+      ' "treenode_id" IN ('.$comma_separated_children.')');
+
+    }
 
 	if (! $db->commit() ) {
 		emitErrorAndExit( $db, 'Failed to commit split!' );
 	}
+
+  $location = getLocationAsString( $db, $pid, $tnid );
+  $neuron_name = getClassInstanceName( $db, $pid, $neu_id );
+  insertIntoLog( $db, $uid, $pid, "split_skeleton", $location, "Split skeleton with ID $sk_id (neuron: $neuron_name)" );
 
 	echo json_encode( array( 'message' => 'success' ) );
 

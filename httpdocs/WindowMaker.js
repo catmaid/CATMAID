@@ -266,6 +266,7 @@ var WindowMaker = new function()
             '<th>radius</th>' +
             '<th>username</th>' +
             '<th>last modified</th>' +
+            '<th>last reviewed</th>' +
           '</tr>' +
         '</thead>' +
         '<tfoot>' +
@@ -280,6 +281,7 @@ var WindowMaker = new function()
             '<th>radius</th>' +
             '<th>username</th>' +
             '<th>last modified</th>' +
+            '<th>last reviewed</th>' +
           '</tr>' +
         '</tfoot>' +
         '<tbody>' +
@@ -373,6 +375,122 @@ var WindowMaker = new function()
     return win;
   };
 
+
+    var createLogTableWindow = function()
+    {
+        var win = new CMWWindow("Log");
+        var content = win.getFrame();
+        content.style.backgroundColor = "#ffffff";
+
+        var add = document.createElement('input');
+        add.setAttribute("type", "button");
+        add.setAttribute("id", "update_logtable");
+        add.setAttribute("value", "Update table");
+        add.onclick = updateLogTable; // function declared in table_log.js
+        content.appendChild(add);
+
+        /* users */
+        var sync = document.createElement('select');
+        sync.setAttribute("id", "logtable_username");
+        var option = document.createElement("option");
+        option.text = "All";
+        option.value = -1;
+        sync.appendChild(option);
+        content.appendChild(sync);
+
+        requestQueue.register('model/user.list.php', 'GET', undefined,
+            function (status, data, text) {
+                var e = $.parseJSON(data);
+                if (status !== 200) {
+                    alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+                } else {
+                    var new_users = document.getElementById("logtable_username");
+                    /*while (new_users.length > 0)
+                        new_users.remove(0);*/
+                    for (var i in e) {
+                        var option = document.createElement("option");
+                        option.text = e[i].name + " (" + e[i].longname + ")";
+                        option.value = e[i].id;
+                        new_users.appendChild(option);
+                    }
+                    new_users.size = e.length;
+                }
+        });
+
+        var container = createContainer("logtable_widget");
+        content.appendChild(container);
+
+        container.innerHTML =
+            '<table cellpadding="0" cellspacing="0" border="0" class="display" id="logtable">' +
+                '<thead>' +
+                '<tr>' +
+                    '<th>user</th>' +
+                    '<th>operation</th>' +
+                    '<th>timestamp</th>' +
+                    '<th>x</th>' +
+                    '<th>y</th>' +
+                    '<th>z</th>' +
+                    '<th>freetext</th>' +
+                '</tr>' +
+                '</thead>' +
+                '<tfoot>' +
+                '<tr>' +
+                    '<th>user</th>' +
+                    '<th>operation</th>' +
+                    '<th>timestamp</th>' +
+                    '<th>x</th>' +
+                    '<th>y</th>' +
+                    '<th>z</th>' +
+                    '<th>freetext</th>' +
+                '</tr>' +
+                '</tfoot>' +
+            '</table>';
+
+        addListener(win, container);
+
+        addLogic(win);
+
+        LogTable.init( project.getId() );
+
+        return win;
+    };
+
+    var createReviewWindow = function()
+    {
+        var win = new CMWWindow("Review System");
+        var content = win.getFrame();
+        content.style.backgroundColor = "#ffffff";
+
+        var add = document.createElement('input');
+        add.setAttribute("type", "button");
+        add.setAttribute("id", "start_review_skeleton");
+        add.setAttribute("value", "Start to review skeleton");
+        add.onclick = ReviewSystem.startSkeletonToReview;
+        content.appendChild(add);
+
+        var add = document.createElement('input');
+        add.setAttribute("type", "button");
+        add.setAttribute("id", "end_review_skeleton");
+        add.setAttribute("value", "End review");
+        add.onclick = ReviewSystem.resetReview;
+        content.appendChild(add);
+
+        var add = document.createElement('div');
+        add.setAttribute("id", "reviewing_skeleton");
+        content.appendChild(add);
+
+        var container = createContainer( "project_review_widget" );
+        content.appendChild( container );
+
+        addListener(win, container);
+
+        addLogic(win);
+
+        ReviewSystem.init();
+
+        return win;
+    };
+
   var getHelpForActions = function(actions)
   {
     var action, keys, i, k, result = '';
@@ -440,7 +558,7 @@ var WindowMaker = new function()
     if (typeof win == 'undefined') {
       win = windows['search'];
       if (!win) {
-	return;
+        return;
       }
     }
 
@@ -561,24 +679,12 @@ var WindowMaker = new function()
             '<td id="proj_neurons"></td>' +
           '</tr>' +
           '<tr>' +
-            '<td >#synapses</td>' +
-            '<td id="proj_synapses"></td>' +
-          '</tr>' +
-          '<tr>' +
             '<td >#treenodes</td>' +
             '<td id="proj_treenodes"></td>' +
           '</tr>' +
           '<tr>' +
             '<td >#skeletons</td>' +
             '<td id="proj_skeletons"></td>' +
-          '</tr>' +
-          '<tr>' +
-            '<td >#presynaptic contacts</td>' +
-            '<td id="proj_presyn"></td>' +
-          '</tr>' +
-          '<tr>' +
-            '<td >#postsynaptic contacts</td>' +
-            '<td id="proj_postsyn"></td>' +
           '</tr>' +
           '<tr>' +
             '<td >#textlabels</td>' +
@@ -610,9 +716,11 @@ var WindowMaker = new function()
     "3d-webgl-view": create3dWebGLWindow,
     "node-table": createNodeTableWindow,
     "connector-table": createConnectorTableWindow,
+    "log-table": createLogTableWindow,
     "object-tree": createObjectTreeWindow,
     "statistics": createStatisticsWindow,
-    "disclaimer": createDisclaimerWindow
+    "disclaimer": createDisclaimerWindow,
+    "review-system": createReviewWindow
   };
 
   /** If the window for the given name is already showing, just focus it.

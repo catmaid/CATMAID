@@ -175,6 +175,14 @@ var ObjectTree = new function()
                   TracingTool.goToNearestInNeuron('neuron', neuronid);
                 }
               },
+                "show_in_catalog": {
+                    "separator_before": true,
+                    "separator_after": false,
+                    "label": "Show in Neuron Catalog",
+                    "action": function (obj) {
+                        window.open( django_url + pid + '/view/' + obj.attr("id").replace("node_", "") );
+                    }
+                },
   /*
             "create_skeleton" : {
               "separator_before"	: false,
@@ -232,7 +240,6 @@ var ObjectTree = new function()
                 "separator_after": false,
                 "label": "3D Viewer",
                 "action": function (obj) {
-                  console.log()
                   var myparent = $.jstree._focused()._get_parent(obj);
 
                   WindowMaker.show("3d-webgl-view");
@@ -332,7 +339,25 @@ var ObjectTree = new function()
                 "action": function (obj) {
                   this.remove(obj);
                 }
-              }
+              },
+                "cut": {
+                    "separator_before": true,
+                    "icon": false,
+                    "separator_after": false,
+                    "label": "Cut",
+                    "action": function (obj) {
+                        this.cut(obj);
+                    }
+                },
+                "paste": {
+                    "separator_before": false,
+                    "icon": false,
+                    "separator_after": false,
+                    "label": "Paste",
+                    "action": function (obj) {
+                        this.paste(obj);
+                    }
+                }
             };
           }
           return menu;
@@ -551,13 +576,20 @@ var ObjectTree = new function()
         "operation": "rename_node",
         "id": data.rslt.obj.attr("id").replace("node_", ""),
         "title": data.rslt.new_name,
+        "classname": data.rslt.obj.attr("rel"),
         "pid": pid
-      }, null);
+      }, function (r) {
+          r = $.parseJSON(r);
+          if(r['error']) {
+              alert(r['error']);
+              $.jstree.rollback(data.rlbk);
+          }
+      });
     });
 
     $(object_tree_id).bind("remove.jstree", function (e, data) {
       var treebefore = data.rlbk;
-      var friendly_name = data.rslt.obj.text().replace(/(^\s+|\s+$)/g, '');
+      var friendly_name = data.rslt.obj.context.text; // data.rslt.obj.text().replace(/(^\s+|\s+$)/g, '');
       if (!confirm("Are you sure you want to remove '" + friendly_name + "' and anything it contains?")) {
         $.jstree.rollback(treebefore);
         return false;
@@ -587,6 +619,7 @@ var ObjectTree = new function()
                   project.deselectActiveNode();
               }
 
+              $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Removing object tree node. Just a moment...</h2>' });
               // Remove group, neuron, skeleton
               $.post("model/instance.operation.php", {
                     "operation": "remove_node",
@@ -595,13 +628,14 @@ var ObjectTree = new function()
                     "pid": pid,
                     "rel": data.rslt.obj.attr("rel")
                   }, function (r) {
+                    $.unblockUI();
                     r = $.parseJSON(r);
                     if(r['status']) {
                         $("#tree_object").jstree("refresh", -1);
                         project.updateTool();
                         $('#growl-alert').growlAlert({
                           autoShow: true,
-                          content: 'Object tree element' + data.rslt.obj.text() + ' removed.',
+                          content: 'Object tree element' + data.rslt.obj.context.text + ' removed.',
                           title: 'SUCCESS',
                           position: 'top-right',
                           delayTime: 2500,
@@ -634,12 +668,15 @@ var ObjectTree = new function()
           "operation": "move_node",
           "src": src.attr("id").replace("node_", ""),
           "ref": ref.attr("id").replace("node_", ""),
+          "classname": src.attr("rel"),
+          "targetname": ref.context.text,
           "pid": pid
         },
         success: function (r, status) {
           r = $.parseJSON(r);
-          if(!r['status']) {
+          if(r.error) {
             $.jstree.rollback(data.rlbk);
+            alert("ERROR: " + r['error']);
           }
           else {
             $("#tree_object").jstree("refresh", -1);

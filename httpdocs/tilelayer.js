@@ -36,7 +36,8 @@ function TileLayer(
 		baseURL,					//!< base URL for image tiles
 		tileWidth,
 		tileHeight,
-		fileExtension
+		fileExtension,
+		tileSourceType
 		)
 {
 	/**
@@ -102,6 +103,7 @@ function TileLayer(
 			
 			xd = fc - old_fc;
 			yd = fr - old_fr;
+
 			
 			// re-order the tiles array on demand
 			if ( xd < 0 )
@@ -163,7 +165,7 @@ function TileLayer(
 				tiles.push( new_row );
 			}
 		}
-		
+
 		if ( stack.s != stack.old_s)
 		{
 			if (artificialZoom)
@@ -177,10 +179,10 @@ function TileLayer(
 				LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
 			}
 		}
-		
+
 		var top;
 		var left;
-		
+
 		if ( stack.yc >= 0 )
 			top  = -( stack.yc % effectiveTileHeight );
 		else
@@ -189,7 +191,7 @@ function TileLayer(
 			left = -( stack.xc % effectiveTileWidth );
 		else
 			left = -( ( stack.xc + 1 ) % effectiveTileWidth ) - effectiveTileWidth + 1;
-		
+
 		var t = top;
 		var l = left;
 
@@ -200,7 +202,7 @@ function TileLayer(
 			for ( var j = 0; j < tiles[ 0 ].length; ++j )
 			{
 				var c = fc + j;
-				
+
 				/**
 				 * TODO Test if updating the URLs always was required to
 				 * guarantee homogeneous update speed for modulo-changing steps
@@ -216,8 +218,13 @@ function TileLayer(
 				{
 					// TODO: use this for the new tile naming scheme:
 					// tiles[ i ][ j ].alt = tileBaseName + stack.s + "/" + ( fr + i ) + "/" + ( fc + j );
-					tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
-					tiles[ i ][ j ].src = self.getTileURL( tiles[ i ][ j ].alt );
+					if( tileSourceType === 1 ) {
+					    tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
+					    tiles[ i ][ j ].src = self.getTileURL( tiles[ i ][ j ].alt );
+                    } else if ( tileSourceType === 2 ) {
+					    tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
+					    tiles[ i ][ j ].src = self.getTileURLRequest( c * tileWidth, r * tileHeight, tileWidth, tileHeight, stack.scale, stack.z );
+					}
 				}
 				tiles[ i ][ j ].style.top = t + "px";
 				tiles[ i ][ j ].style.left = l + "px";
@@ -241,6 +248,22 @@ function TileLayer(
 
 		return 2;
 	}
+
+	/**
+	 * Creates the URL for a tile in a generic way.
+     * To be used for instance for Volumina served datasources
+	 */
+    this.getTileURLRequest = function( x, y, dx, dy, scale, z ) {
+    return baseURL + "?" + $.param({
+        x: x,
+        y: y,
+        width : tileWidth,
+        height : tileHeight,
+        row : 'y',
+        col : 'x',
+        scale : scale, // defined as 1/2**zoomlevel
+        z : z});
+    }
 
 	/**
 	 * Creates the URL for a tile.
@@ -291,12 +314,14 @@ function TileLayer(
 	 * Get the stack.
 	 */
 	this.getStack = function(){ return stack; }
-	
+
 	var OverviewLayer = function()
 	{
 		this.redraw = function()
 		{
-			img.src = baseURL + stack.z + "/small." + fileExtension;
+            if( tileSourceType === 1 ) {
+                img.src = baseURL + stack.z + "/small." + fileExtension;
+            }
 			return;
 		}
 		
@@ -310,8 +335,8 @@ function TileLayer(
 		
 		var img = document.createElement( "img" );
 		img.className = "smallMapMap";
-		img.src = "map/small." + fileExtension;
-		
+		img.src = baseURL + stack.z + "/small." + fileExtension;
+
 		stack.overview.getView().appendChild( img );
 		stack.overview.addLayer( "tilelayer", this );
 	}
@@ -339,8 +364,8 @@ function TileLayer(
 	var tilesContainer = document.createElement( "div" );
 	tilesContainer.className = "sliceTiles";
 	stack.getView().appendChild( tilesContainer );
-	
-	var overviewLayer = new OverviewLayer();
+
+    var overviewLayer = new OverviewLayer();
 	
 	var LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
 	var LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );

@@ -21,7 +21,7 @@ import getpass
 from psycopg2 import IntegrityError
 
 if len(sys.argv) != 3:
-    print >> sys.stderr, "Usage: create-project.py <USERNAME> <LONG-NAME>"
+    print >> sys.stderr, "Usage: create-user.py <USERNAME> <LONG-NAME>"
     sys.exit(1)
 
 username = sys.argv[1]

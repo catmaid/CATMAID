@@ -39,36 +39,11 @@ if (! $db->begin() ) {
 
 try {
 
-  // relation ids
-  $cir_id = $db->getRelationId( $pid, 'model_of' );
-  if(!$cir_id) { echo makeJSON( array( 'error' => 'Can not find "model_of" relation for this project' ) ); return; }
-
-  // retrieve class instance id
-  $classin = $db->getResult('SELECT "id" FROM "treenode_class_instance" AS "tci"
-   WHERE "tci"."relation_id" = '.$cir_id.' AND "tci"."treenode_id" = '.$tid.' AND
-   "tci"."project_id" = '.$pid);
-
-  if (false === $classin) {
-    emitErrorAndExit($db, 'Failed to select instance ID.');
-  }
-
-  if(!empty($classin)) { $classin_id = $classin[0]['id']; } else {
-    echo makeJSON( array( 'error' => 'Can not find class_instance of for treenode in this project' ) );
-    return;
-  }
-
   // delete connector from geometry domain
   $ids = $db->deleteFrom("treenode_connector", ' "connector_id" = '.$cid.' AND "treenode_id" = '.$tid);
 
   if (false === $ids) {
      emitErrorAndExit($db, 'Failed to delete connector #'.$cid.' from geometry domain');
-  }
-
-  // remove class_instance
-  $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$classin_id);
-
-  if (false === $ids) {
-     emitErrorAndExit($db, 'Failed to delete class_instance '.$classin_id.' for treenode.');
   }
 
   if (! $db->commit() ) {

@@ -52,6 +52,7 @@ function TracingTool()
         "tracingbuttons",
         "trace_");
       $( "#toolbar_nav" ).prepend( box );
+
     }
   };
 
@@ -325,17 +326,34 @@ function TracingTool()
     }
   }) );
 
+    this.addAction( new Action({
+        helpText: "Switch to skeleton tracing mode",
+        buttonName: "skeleton",
+        buttonID: 'trace_button_skeleton',
+        keyShortcuts: {
+            ";": [ 186 ]
+        },
+        run: function (e) {
+            tracingLayer.svgOverlay.tracingCommand('skeleton');
+            return true;
+        }
+    } ) );
+
   this.addAction( new Action({
-    helpText: "Switch to skeleton tracing mode",
-    buttonName: "skeleton",
-    buttonID: 'trace_button_skeleton',
+    helpText: "Add ends Tag (Shift: Remove) for the active node",
     keyShortcuts: {
       "K": [ 75 ]
     },
-    run: function (e) {
-      tracingLayer.svgOverlay.tracingCommand('skeleton');
-      return true;
-    }
+      run: function (e) {
+          if (!mayEdit())
+              return false;
+          if (e.ctrlKey || e.metaKey || e.shiftKey) {
+              tracingLayer.svgOverlay.tracingCommand('tagENDSremove');
+          } else {
+              tracingLayer.svgOverlay.tracingCommand('tagENDS');
+          }
+          return true;
+      }
   } ) );
 
   this.addAction( new Action({
@@ -424,7 +442,7 @@ function TracingTool()
   this.addAction( new Action({
     helpText: "Go to last edited node in this skeleton",
     keyShortcuts: {
-      "E": [ 69 ]
+      "H": [ 72 ]
     },
     run: function (e) {
       if (!mayView())
@@ -650,6 +668,34 @@ function TracingTool()
     }
   }) );
 
+    this.addAction( new Action({
+        helpText: "Move to previous node in segment for review",
+        keyShortcuts: {
+            'Q': [ 81 ]
+        },
+        run: function (e) {
+            if (!mayEdit())
+                return false;
+            if (ReviewSystem.validSegment())
+                ReviewSystem.moveNodeInSegmentBackward();
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Move to next node in segment for review",
+        keyShortcuts: {
+            'W': [ 87 ]
+        },
+        run: function (e) {
+            if (!mayEdit())
+                return false;
+            if (ReviewSystem.validSegment())
+                ReviewSystem.moveNodeInSegmentForward();
+            return true;
+        }
+    }) );
+
 
   var keyCodeToAction = getKeyCodeToActionMap(actions);
 
@@ -736,6 +782,10 @@ TracingTool.search = function()
       setSearchingMessage('Search failed with HTTP status'+status);
     } else {
       data = $.parseJSON(text);
+      if (null === data) {
+        setSearchingMessage('Search failed, parseJSON returned null. Check javascript console.');
+        return;
+      }
       if (data.error) {
         setSearchingMessage('Search failed with error: '+data.error);
       } else {
@@ -761,6 +811,37 @@ TracingTool.search = function()
             });
             actionLink.text("Go to nearest node");
             row.append($('<td/>').append(actionLink));
+          } else if (data[i].class_name === 'label') {
+            // Create a link that will then query, when clicked, for the list of nodes
+            // that point to the label, and show a list [1], [2], [3] ... clickable,
+            // or better, insert a table below this row with x,y,z,parent skeleton, parent neuron.
+            if (data[i].hasOwnProperty('nodes')) {
+              var td = $('<td/>');
+              row.append(td);
+              data[i].nodes.reduce(function(index, node) {
+                // Local copies
+                var z = parseInt(node.z);
+                var y = parseInt(node.y);
+                var x = parseInt(node.x);
+                var id = parseInt(node.id);
+                var skid = parseInt(node.skid);
+                td.append(
+                  $('<a/>').attr({'id': '' + id})
+                           .attr({'href':''})
+                           .click(function(event) {
+                             console.log("skid", skid, "id", id);
+                             project.moveTo(z, y, x,
+                               undefined,
+                               function() {
+                                 SkeletonAnnotations.staticSelectNode(id, skid);
+                               });
+                             return false;
+                           })
+                           .text("[" + index + "]")
+                  ).append("&nbsp;");
+                return index + 1;
+              }, 1);
+            }
           } else {
             row.append($('<td/>').text('IMPLEMENT ME'));
           }

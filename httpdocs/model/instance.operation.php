@@ -51,54 +51,21 @@ if (! $db->begin() ) {
 
 // remove skeleton, i.e. treenodes and corresponding relations 
 function remove_skeleton($db, $pid, $skelid) {
-	
-	$lablid = $db->getRelationId( $pid, "labeled_as" );
-	$preid = $db->getRelationId( $pid, "presynaptic_to" );
-	$postid = $db->getRelationId( $pid, "postsynaptic_to" );
 
-	// delete all terminals of treenodes
-    $model_of_id = $db->getRelationId( $pid, "model_of" );
-    $res = $db->getResult('SELECT * FROM
-			  "treenode_class_instance" AS "tci"
-			 WHERE
-			  "tci"."treenode_id" IN (
-			    SELECT "tn"."id"
-			    FROM "treenode" AS "tn"
-			    INNER JOIN "treenode_class_instance" AS "tci2"
-			    ON "tci2"."treenode_id" = "tn"."id"
-			    WHERE "tci2"."class_instance_id" = '.$skelid.' AND "tci2"."project_id" = '.$pid.'
-			  ) AND "tci"."relation_id" = '.$model_of_id);
-    if (count($res) > 0) {
-        // remove all the terminals
-        foreach($res as $key => $val) {
-            $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$val['class_instance_id']);
-        }
-    }
-    // -----------
-
-	// labeled_as, presynaptic_to, postsynaptic_to, element_of
-	$relarr = array( $lablid, $preid, $postid );
-	foreach( $relarr as $val ) {
-		$res = $db->getResult('DELETE FROM 
-			  "treenode_class_instance" AS "tci"
-			 WHERE 
-			  "tci"."treenode_id" IN (
-			    SELECT "tn"."id"
-			    FROM "treenode" AS "tn"
-			    INNER JOIN "treenode_class_instance" AS "tci2"
-			    ON "tci2"."treenode_id" = "tn"."id" 
-			    WHERE "tci2"."class_instance_id" = '.$skelid.' AND "tci2"."project_id" = '.$pid.'
-			  ) AND "tci"."relation_id" = '.$val);
-    if (false === $res) {
-      emitErrorAndExit($db, 'Failed to delete treenode instances for skeleton #'.$skid);
-    }
-	}
-	// remove treenodes from treenode table, should remove the remaining
-	// connected treenodes to the skeleton with the element_of relationship using cascade deletion (does it XXX?)
-	$res = $db->getResult("DELETE FROM treenode WHERE skeleton_id = $skelid AND project_id = $pid");
+  $res = $db->getResult("DELETE FROM treenode WHERE skeleton_id = $skelid AND project_id = $pid");
 
   if (false === $res) {
-    emitErrorAndExit($db, 'Failed to delete treenodes fro skeleton #'.$skid);
+    emitErrorAndExit($db, 'Failed to delete in treenode for skeleton #'.$skid);
+  }
+
+  $res = $db->getResult("DELETE FROM treenode_connector WHERE skeleton_id = $skelid AND project_id = $pid");
+
+  if (false === $res) {
+    emitErrorAndExit($db, 'Failed to delete in treenode_connector for skeleton #'.$skid);
+  }
+
+  if (false === $res) {
+    emitErrorAndExit($db, 'Failed to delete treenodes for skeleton #'.$skid);
   }
 }
 
@@ -116,10 +83,17 @@ try {
 
   if ( $op == 'rename_node')
   {
+    // do not allow '|' in name because it is used as string separator in NeuroHDF export
+    if (strstr($name, '|')) {
+      emitErrorAndExit($db, 'Name should not contain pipe character!');
+    }
+
     $ids = $db->update("class_instance", array("name" => $name) ,' "class_instance"."id" = '.$id);
     if (false === $ids) {
       emitErrorAndExit($db, 'Failed to update class instance.');
     }
+    $classname = isset( $_REQUEST[ 'classname' ] ) ? $_REQUEST[ 'classname' ] : 0;
+    insertIntoLog( $db, $uid, $pid, "rename_$classname", null , "Renamed $classname with ID $id to $name" );
     finish( array( 'class_instance_id' => $ids) );
   }
   else if ( $op == 'remove_node')
@@ -135,6 +109,8 @@ try {
           if (false === $ids) {
             emitErrorAndExit($db, 'Failed to delete skeleton from instance able.');
           }
+
+          insertIntoLog( $db, $uid, $pid, "remove_skeleton", null , "Removed skeleton with ID $id and name $name" );
 
           // finish("Removed skeleton successfully.");
           finish( array('status' => 1, 'message' => "Removed skeleton successfully.") );
@@ -157,6 +133,8 @@ try {
           if (false === $ids) {
             emitErrorAndExit($db, 'Failed to delete node from instance table.');
           }
+
+          insertIntoLog( $db, $uid, $pid, "remove_neuron", null , "Removed neuron with ID $id and name $name" );
 
           finish( array('status' => 1, 'message' => "Removed neuron successfully.") );
 
@@ -206,6 +184,8 @@ try {
     if (false === $cid) {
       emitErrorAndExit($db, 'Failed to insert instance of class.');
     }
+
+    insertIntoLog( $db, $uid, $pid, "create_$classname", null , "Created $classname with ID $cid" );
     
     // find correct root element
     if($parentid)
@@ -257,26 +237,31 @@ try {
   {
     if ( $src && $ref )
     {
-      $presyn_id = $db->getRelationId( $pid, "presynaptic_to" );
-      $postsyn_id = $db->getRelationId( $pid, "postsynaptic_to" );
-      $modid = $db->getRelationId( $pid, "model_of" );
-      $partof_id = $db->getRelationId( $pid, "part_of" );
-      
-      // only update for updateable relations of the object tree
-      $up = array('class_instance_b' => $ref);
-      $upw = 'project_id = '.$pid.'
-      AND (relation_id = '.$presyn_id.'
-      OR relation_id = '.$postsyn_id.'
-      OR relation_id = '.$modid.'
-      OR relation_id = '.$partof_id.')
-      AND class_instance_a = '.$src;
-      $q = $db->update( "class_instance_class_instance", $up, $upw);
-      
-      if (false === $q) {
-        emitErrorAndExit($db, 'Failed to update relation.');
+      $classname = isset( $_REQUEST[ 'classname' ] ) ? $_REQUEST[ 'classname' ] : 0;
+      $targetname = isset( $_REQUEST[ 'targetname' ] ) ? $_REQUEST[ 'targetname' ] : 0;
+      if( $classname === 'skeleton' ) {
+        // special case for model_of relationship
+        $modid = $db->getRelationId( $pid, "model_of" );
+        $up = array('class_instance_b' => $ref);
+        $upw = 'project_id = '.$pid.' AND relation_id = '.$modid.' AND class_instance_a = '.$src;
+        $q = $db->update( "class_instance_class_instance", $up, $upw);
+        if (false === $q) {
+          emitErrorAndExit($db, 'Failed to update model_of relation.');
+        }
+      } else {
+        // otherwise update the part_of relationships
+        $partof_id = $db->getRelationId( $pid, "part_of" );
+        $up = array('class_instance_b' => $ref);
+        $upw = 'project_id = '.$pid.' AND relation_id = '.$partof_id.' AND class_instance_a = '.$src;
+        $q = $db->update( "class_instance_class_instance", $up, $upw);
+        if (false === $q) {
+          emitErrorAndExit($db, 'Failed to update part_of relation.');
+        }
       }
-      
-      finish( array( 'status' => 1) );
+
+      insertIntoLog( $db, $uid, $pid, "move_$classname", null , "Moved $classname with ID $src to $targetname with ID $ref" );
+
+      finish( array( 'message' => 'Success.') );
     }
   }
   else if ( $op == 'has_relations' )

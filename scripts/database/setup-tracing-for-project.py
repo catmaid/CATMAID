@@ -26,10 +26,7 @@ classes_required = [ "skeleton",
                      "neuron",
                      "group",
                      "label",
-                     "root",
-                     "synapse",
-                     "presynaptic terminal",
-                     "postsynaptic terminal" ]
+                     "root" ]
 
 class_dictionary = {}
 
@@ -70,6 +67,9 @@ for required_relation in relations_required:
         c.execute("INSERT INTO relation (user_id, project_id, relation_name) "+
                   "VALUES (%s, %s, %s)",
                   (user_id, project_id, required_relation))
+
+c.execute("UPDATE project_user SET can_edit_any=TRUE, can_view_any=TRUE WHERE project_id=" + str(project_id)
+		+ " AND user_id=" + str(user_id))
 
 db_connection.commit()
 c.close()

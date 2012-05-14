@@ -357,22 +357,29 @@ var SkeletonElements = new function()
       if (status !== 200) {
         alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
       } else {
-        // activate parent node when deleted
-        if (wasActiveNode) {
-          if (node.parent) {
-            node.paper.catmaidSVGOverlay.selectNode(node.parent.id);
-          } else {
-            node.paper.catmaidSVGOverlay.activateNode(null);
+
+          if (text && text !== " ") {
+              var e = $.parseJSON(text);
+              if (e.error) {
+                  alert(e.error);
+              } else {
+                  // activate parent node when deleted
+                  if (wasActiveNode) {
+                      if (node.parent) {
+                          node.paper.catmaidSVGOverlay.selectNode(node.parent.id);
+                      } else {
+                          node.paper.catmaidSVGOverlay.activateNode(null);
+                      }
+                  }
+                  // Redraw everything for now
+                  node.paper.catmaidSVGOverlay.updateNodes();
+                  // refresh object tree, in case a root node was deleted and thus its skeleton
+                  ObjectTree.refresh();
+
+                  // TODO something is wrong, in that upon deleting a node updateNodes() is called like 10 times in a row.
+                  // TODO   but cannot reproduce it always.
+              }
           }
-        }
-        // Redraw everything for now
-        node.paper.catmaidSVGOverlay.updateNodes();
-        // refresh object tree, in case a root node was deleted and thus its skeleton
-        ObjectTree.refresh();
-
-        // TODO something is wrong, in that upon deleting a node updateNodes() is called like 10 times in a row.
-        // TODO   but cannot reproduce it always.
-
       }
       return true;
     });
@@ -540,7 +547,8 @@ var SkeletonElements = new function()
           // to existing treenode or connectornode
           // console.log("from source #" + atnID + " to target #" + node.id);
           if (atnType === TYPE_CONNECTORNODE) {
-            paper.catmaidSVGOverlay.createLink(atnID, node.id, "postsynaptic_to", "synapse", "postsynaptic terminal", "connector", "treenode");
+            // careful, atnID is a connector
+            paper.catmaidSVGOverlay.createLink(node.id, atnID, "postsynaptic_to");
             // TODO check for error
             statusBar.replaceLast("Joined node #" + atnID + " to connector #" + node.id);
           } else if (atnType === TYPE_NODE) {
@@ -653,7 +661,7 @@ var SkeletonElements = new function()
             alert("Can not join two connector nodes!");
           } else if (atnType === TYPE_NODE) {
             console.log("from source #", atnID, "to connector #", connectornode.id);
-            paper.catmaidSVGOverlay.createLink(atnID, connectornode.id, "presynaptic_to", "presynaptic terminal", "synapse", "treenode", "connector");
+            paper.catmaidSVGOverlay.createLink(atnID, connectornode.id, "presynaptic_to");
             statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
           }
         } else {
@@ -841,8 +849,7 @@ var SkeletonElements = new function()
     var connectornode = this;
     requestQueue.register("model/connector.delete.php", "POST", {
       pid: project.id,
-      cid: connectornode.id,
-      class_instance_type: 'synapse'
+      cid: connectornode.id
     }, function (status, text, xml) {
       if (status !== 200) {
         alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);

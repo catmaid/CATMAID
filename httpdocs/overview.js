@@ -135,6 +135,20 @@ function Overview( stack )
 
 	//}
 	view.appendChild( rect );
+
+    var hide = function() {
+        toggle.title = "show overview";
+        view.className = "smallMapView_hidden";
+        view.style.width = "";
+        view.style.height = "";
+    };
+
+    var show = function() {
+        toggle.title = "hide overview";
+        view.className = "smallMapView";
+        view.style.width = width + "px";
+        view.style.height = height + "px";
+    }
 	
 	var toggle = document.createElement( "div" );
 	toggle.className = "smallMapToggle";
@@ -148,21 +162,18 @@ function Overview( stack )
 
 		if ( view.className == "smallMapView_hidden" )
 		{
-			toggle.title = "hide overview";
-			view.className = "smallMapView";
-			view.style.width = width + "px";
-			view.style.height = height + "px";
+            show();
 		}
 		else
 		{
-			toggle.title = "show overview";
-			view.className = "smallMapView_hidden";
-			view.style.width = "";
-			view.style.height = "";
+            hide();
 		}
 		return false;
 	};
 	
 	view.appendChild( toggle );
+
+    // hide small maps by default
+    hide();
 }
 

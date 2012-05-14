@@ -254,7 +254,7 @@ var SkeletonAnnotations = new function()
                   message += " <i>part_of</i> [<strong>"+d.name+"</strong>]";
                 }
                 statusBar.replaceLastHTML(message);
-                statusBar.printNeuronname('Selected neuron: '+data[0].name);
+                $('#neuronName').text('Neuron: '+data[0].name + ' / Skeleton ID: '+ node.skeleton_id);
                 }
               } else {
                 alert("Getting the ancestry of the skeleton "+node.skeleton_id+" failed with HTTP status code "+status);
@@ -381,7 +381,7 @@ var SkeletonAnnotations = new function()
       }
     }
 
-    this.tagATNwithTODO = function( label ) {
+    this.tagATNwithLabel = function( label ) {
       requestQueue.register("model/label.update.php", "POST", {
         pid: project.id,
         nid: atn.id,
@@ -394,16 +394,7 @@ var SkeletonAnnotations = new function()
             if (e.error) {
               alert(e.error);
             } else {
-            if( label === 'TODO' ) {
-                $('#growl-alert').growlAlert({
-                  autoShow: true,
-                  content: 'Tag TODO added.',
-                  title: 'Information',
-                  position: 'top-right',
-                  delayTime: 2000,
-                  onComplete: function() { g.remove(); }
-                });
-            } else if( label === '' ) {
+            if( label === '' ) {
                 $('#growl-alert').growlAlert({
                   autoShow: true,
                   content: 'Tags removed.',
@@ -411,6 +402,15 @@ var SkeletonAnnotations = new function()
                   position: 'top-right',
                   delayTime: 2000,
                   onComplete: function() { g.remove(); }
+                });
+            } else {
+                $('#growl-alert').growlAlert({
+                    autoShow: true,
+                    content: 'Tag ' + label + ' added.',
+                    title: 'Information',
+                    position: 'top-right',
+                    delayTime: 2000,
+                    onComplete: function() { g.remove(); }
                 });
             }
               self.updateNodes();
@@ -569,25 +569,28 @@ var SkeletonAnnotations = new function()
 
     this.splitSkeleton = function () {
       if (confirm("Do you really want to to split the skeleton?")) {
+        $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Splitting skeleton. Just a moment...</h2>' });
         requestQueue.register("model/treenode.split.php", "POST", {
-          pid: project.id,
-          tnid: atn.id
-        }, function (status, text, xml) {
-          if (status === 200) {
-            if (text && text !== " ") {
-              var e = $.parseJSON(text);
-              if (e.error) {
-                alert(e.error);
-              } else {
-                // just redraw all for now
-                self.updateNodes();
-                ObjectTree.refresh();
-                refreshAllWidgets();
-                self.selectNode(atn.id);
+            pid: project.id,
+            tnid: atn.id
+          }, function (status, text, xml) {
+            $.unblockUI();
+            if (status === 200) {
+              if (text && text !== " ") {
+                var e = $.parseJSON(text);
+                if (e.error) {
+                  alert(e.error);
+                } else {
+                  // just redraw all for now
+                  self.updateNodes();
+                  ObjectTree.refresh();
+                  refreshAllWidgets();
+                  self.selectNode(atn.id);
+                }
               }
             }
-          }
-        });
+          });
+
       }
     };
 
@@ -640,19 +643,12 @@ var SkeletonAnnotations = new function()
       return;
     };
 
-    this.createLink = function (fromid, toid, link_type, from_type, to_type, from_nodetype, to_nodetype) {
-
+    this.createLink = function (fromid, toid, link_type) {
       requestQueue.register("model/link.create.php", "POST", {
         pid: project.id,
         from_id: fromid,
-        from_relation: 'model_of',
-        from_type: from_type,
-        from_nodetype: from_nodetype,
         link_type: link_type,
-        to_id: toid,
-        to_type: to_type,
-        to_nodetype: to_nodetype,
-        to_relation: 'model_of'
+        to_id: toid
       }, function (status, text, xml) {
         if (status === 200) {
           if (text && text !== " ") {
@@ -675,8 +671,6 @@ var SkeletonAnnotations = new function()
       // not linked to any treenode
       requestQueue.register("model/connector.create.php", "POST", {
         pid: project.id,
-        class_instance_type: 'synapse',
-        class_instance_relation: 'model_of',
         confidence: confval,
         x: phys_x,
         y: phys_y,
@@ -703,77 +697,17 @@ var SkeletonAnnotations = new function()
       }); // endfunction
     };
 
-    // Create a new connector. We also use this function to join connector and treenode (postsynaptic case)
-    // when the locidval is not null, but the id of the connector
-    var createConnector = function (locidval, id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z) {
-      var ip_type, iplre, locid;
-      // id is treenode id
+    var createConnector = function (locidval, treenode_id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z) {
       if (locidval === null) {
-        // we have the presynaptic case where the connector has to be created
-        ip_type = 'presynaptic terminal';
-        iplre = 'presynaptic_to';
-        locid = 0;
-      } else {
-        // we have the postsynaptic case where the connector and treenode is already existing
-        ip_type = 'postsynaptic terminal';
-        iplre = 'postsynaptic_to';
-        locid = locidval;
-      }
-
-      requestQueue.register("model/treenode.connector.create.php", "POST", {
-        pid: project.id,
-        input_id: id,
-        input_relation: 'model_of',
-        input_type: ip_type,
-        input_location_relation: iplre,
-        x: phys_x,
-        y: phys_y,
-        z: phys_z,
-        location_id: locid,
-        location_type: 'synapse',
-        location_relation: 'model_of'
-      }, function (status, text, xml) {
-        if (status === 200) {
-          if (text && text !== " ") {
-            var jso = $.parseJSON(text);
-            if (jso.error) {
-              alert(jso.error);
-            } else {
-              var locid_retrieved = jso.location_id;
-
-              if (locidval === null) {
-                // presynaptic case, we create a new connector node and use the retrieved id
-                var nn = SkeletonElements.newConnectorNode(locid_retrieved, self.paper, 8, pos_x, pos_y, pos_z, 0, 5 /* confidence */);
-                // store the currently activated treenode into the pregroup of the connector
-                nn.pregroup[id] = {'treenode': nodes[id],
-                                   'confidence': 5};
-                nodes[locid_retrieved] = nn;
-                nn.draw();
-                // update the reference to the connector from the treenode
-                nodes[id].connectors[locid_retrieved] = nn;
-                // activate the newly created connector
-                self.activateNode(nn);
-
-              } else {
-                // If the connector is still being displayed, update its postgroup
-                // and redraw:
-                if (locid_retrieved in nodes) {
-                  // postsynaptic case, no requirement to create new connector
-                  // but we need to update the postgroup with corresponding original treenod
-                  nodes[locid_retrieved].postgroup[id] = {'treenode': nodes[id],
-                                                          'confidence': 5};
-                  // do not activate anything but redraw
-                  nodes[locid_retrieved].draw();
-                  // update the reference to the connector from the treenode
-                  nodes[id].connectors[locid_retrieved] = nodes[locid_retrieved];
-                }
-              }
-
+        // need to create the target connector first
+        createSingleConnector( phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
+            function (connectorID) {
+                self.createLink(treenode_id, connectorID, 'presynaptic_to');
             }
-          }
-        }
-        return true;
-      });
+        );
+      } else {
+        self.createLink(treenode_id, locidval, 'postsynaptic_to');
+      }
       return;
     };
 
@@ -1211,7 +1145,7 @@ var SkeletonAnnotations = new function()
         }
         // TODO: deactivation should be encapsulated in a seperate method,
         // like it is partially in tradcingtool's deselectActiveNode
-        statusBar.printNeuronname("");
+        $('#neuronName').text('');
         self.activateNode(null);
       } else if (e.shiftKey) {
         if (null === atn.id) {
@@ -1650,8 +1584,8 @@ var SkeletonAnnotations = new function()
         }
         break;
       case "golastedited":
-        if (atn === null) {
-          alert("There was no active node.  One is required to find the\n" + "last edited node in the same skeleton.");
+        if (atn.id === null) {
+          alert("Need an active skeleton to go to last edited node.");
           break;
         }
         self.updateNodeCoordinatesinDB(function () {
@@ -1687,36 +1621,50 @@ var SkeletonAnnotations = new function()
         self.goToAdjacentBranchOrEndNode(false);
         break;
       case "skelsplitting":
-        if (atn !== null) {
+        if (atn.id !== null) {
           self.splitSkeleton();
         } else {
           alert('Need to activate a treenode before splitting!');
         }
         break;
       case "skelrerooting":
-        if (atn !== null) {
+        if (atn.id !== null) {
           self.rerootSkeleton();
         } else {
           alert('Need to activate a treenode before rerooting!');
         }
         break;
       case "tagging":
-        if (atn != null) {
+        if (atn.id !== null) {
           self.tagATN();
         } else {
           alert('Need to activate a treenode or connector before tagging!');
         }
         break;
+      case "tagENDS":
+          if (atn.id !== null) {
+              self.tagATNwithLabel( 'ends' );
+          } else {
+              alert('Need to activate a treenode or connector before tagging with ends!');
+          }
+          break;
+      case "tagENDSremove":
+          if (atn.id !== null) {
+              self.tagATNwithLabel( '' );
+          } else {
+              alert('Need to activate a treenode or connector before removing ends tag!');
+          }
+          break;
       case "tagTODO":
-        if (atn != null) {
-          self.tagATNwithTODO( 'TODO' );
+        if (atn.id !== null) {
+          self.tagATNwithLabel( 'TODO' );
         } else {
           alert('Need to activate a treenode or connector before tagging with TODO!');
         }
         break;
       case "tagTODOremove":
-        if (atn != null) {
-          self.tagATNwithTODO( '' );
+        if (atn.id !== null) {
+          self.tagATNwithLabel( '' );
         } else {
           alert('Need to activate a treenode or connector before removing TODO tag!');
         }
@@ -1733,14 +1681,14 @@ var SkeletonAnnotations = new function()
         self.showLabels();
         break;
       case "exportswc":
-        if (atn != null) {
+        if (atn.id !== null) {
           SkeletonAnnotations.exportSWC();
         } else {
           alert('Need to activate a treenode before exporting to SWC!');
         }
         break;
       case "3dview":
-        if (atn != null) {
+        if (atn.id !== null) {
           addTo3DView();
         } else {
           alert('Need to activate a treenode or connector before showing them!');

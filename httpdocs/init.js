@@ -42,6 +42,8 @@ var zp;
 var yp;
 var xp;
 var inittool;
+var init_active_skeleton;
+var init_active_node_id;
 
 var session;
 var msg_timeout;
@@ -328,7 +330,7 @@ function handle_updateProjects(status, text, xml) {
     if (project) {
       if (keep_project_alive) project.setEditable(keep_project_editable);
       else {
-        project.unregister();
+        project.destroy();
         delete project;
       }
     }
@@ -345,13 +347,15 @@ function openProjectStack( pid, sid )
 {
 	if ( project && project.id != pid )
 	{
-		project.unregister();
+		project.destroy();
 	}
 	ui.catchEvents( "wait" );
 	requestQueue.register(
 		'model/project.stack.php',
+		//'dj/' + pid + '/stack/' + sid + '/info',
 		'POST',
 		{ pid : pid, sid : sid },
+        // {},
 		handle_openProjectStack );
 	return;
 }
@@ -383,6 +387,12 @@ function handle_openProjectStack( status, text, xml )
 			
 			project.setEditable( e.editable );
 
+			var labelupload = '';
+
+			if( e.hasOwnProperty('labelupload_url') && e.tile_source_type === 2 ) {
+			    labelupload = e.labelupload_url;
+			}
+
 			var stack = new Stack(
 					project,
 					e.sid,
@@ -393,8 +403,11 @@ function handle_openProjectStack( status, text, xml )
 					e.broken_slices,
 					e.trakem2_project,
 					e.num_zoom_levels,
-					-2 );
-			
+                    -2,
+                    e.tile_source_type,
+                    labelupload, // TODO: if there is any
+                    e.metadata);
+
 			document.getElementById( "toolbox_project" ).style.display = "block";
 			
 			var tilelayer = new TileLayer(
@@ -402,7 +415,8 @@ function handle_openProjectStack( status, text, xml )
 					e.image_base,
 					e.tile_width,
 					e.tile_height,
-					e.file_extension);
+					e.file_extension,
+					e.tile_source_type);
 
 			stack.addLayer( "TileLayer", tilelayer );
 
@@ -412,7 +426,8 @@ function handle_openProjectStack( status, text, xml )
 								value.image_base,
 								e.tile_width,
 								e.tile_height,
-								e.file_extension);
+								e.file_extension,
+								e.tile_source_type);
 				// set default opacity internally
 				tilelayer2.setOpacity( value.default_opacity );
 				stack.addLayer( value.title, tilelayer2 );
@@ -426,7 +441,9 @@ function handle_openProjectStack( status, text, xml )
 			  project.setTool( new TracingTool() );
 			} else if ( inittool === 'navigator' ) {
 			  project.setTool( new Navigator() );
-			}
+			} else if ( inittool === 'canvastool' ) {
+        project.setTool( new CanvasTool() );
+      }
 
 			//! if the stack was initialized by an URL query, move it to a given position
 			if ( pid == e.pid && sids.length > 0 )
@@ -443,6 +460,7 @@ function handle_openProjectStack( status, text, xml )
 						{
 							project.moveTo( zp, yp, xp );
 							stack.moveToPixel( stack.z, stack.y, stack.x, ss[i] );
+
 							sids.splice( i, 1 );
 							ss.splice( i, 1 );
 							break;
@@ -450,6 +468,9 @@ function handle_openProjectStack( status, text, xml )
 					}
 				}
 			}
+
+      window.setTimeout("SkeletonAnnotations.staticSelectNode(init_active_node_id, init_active_skeleton)", 2000);
+
 
 			/* Update the projects "current project" menu. If there is more
 			than one stack linked to the current project, a submenu for easy
@@ -643,7 +664,7 @@ var realInit = function()
 	var y;
 	var x;
 	var s;
-	
+  
 	var account;
 	var password;
 	
@@ -660,7 +681,9 @@ var realInit = function()
 		if ( isNaN( x ) ) delete x;
 		if ( values[ "s" ] ) s = parseInt( values[ "s" ] );
 		if ( isNaN( s ) ) delete s;
-		
+    if ( values[ "active_skeleton_id" ] ) init_active_skeleton = parseInt( values[ "active_skeleton_id" ] );
+    if ( values[ "active_node_id" ] ) init_active_node_id = parseInt( values[ "active_node_id" ] );
+
 		if ( !(
 				typeof z == "undefined" ||
 				typeof y == "undefined" ||
@@ -754,7 +777,7 @@ var realInit = function()
 				id : "project_menu_new",
 				action : function()
 				{
-					if ( project ) project.unregister();
+					if ( project ) project.destroy();
 					document.getElementById( "project list" ).style.display = "none";
 					document.getElementById( "new_project_dialog" ).style.display = "block";
 					updateUsers();

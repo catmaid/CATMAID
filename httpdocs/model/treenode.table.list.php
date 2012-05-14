@@ -32,9 +32,6 @@ checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
 
 // retrieve treenode id, when set retrieve skeleton id
 $atnid = isset( $_REQUEST[ 'atnid' ] ) ? intval( $_REQUEST[ 'atnid' ] ) : 0;
-// maximum number of rows to display
-$maxrows = 3000;
-
 
 // Utility data and associated function below
 $columnToFieldArray = array( "tid",
@@ -120,12 +117,10 @@ try {
 	if ( $iDisplayLength > 0 )
 		$sLimit .= ' LIMIT '.$iDisplayLength;
 	else
-		$sLimit .= ' LIMIT '.$maxrows;
-		
+		$sLimit .= '';
+
 	if ( $iDisplayStart > 0 )
 		$sLimit .= ' OFFSET '.$iDisplayStart;
-
-
 
 	/* Ordering */
 	if ( isset( $_REQUEST['iSortCol_0'] ) )
@@ -141,10 +136,7 @@ try {
 		$sOrder = substr_replace( $sOrder, "", -2 );
 	}
 
-
-
 	// label logic
-
 	// get id for relation 'labeled_as'      
 			$tlabelrel_res = $db->getResult('SELECT "relation"."id" FROM "relation"
 			WHERE "relation"."project_id" = '.$pid.' AND
@@ -195,14 +187,15 @@ try {
 				("treenode"."location")."y" AS "y",
 				("treenode"."location")."z" AS "z",
 				"user"."name" AS "username",
+                "treenode"."reviewer_id" AS "last_reviewer",
 				( "treenode"."user_id" = '.$uid.' ) AS "can_edit",
 				to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\') AS "last_modified"
 				
 			FROM "treenode", "user", "treenode_class_instance" AS "tci"
 				
 			WHERE "treenode"."project_id" = '.$pid.' AND
-					"treenode"."user_id" = "user"."id"
-					AND "treenode"."id" = "tci"."treenode_id"
+					"treenode"."user_id" = "user"."id" AND
+					"treenode"."id" = "tci"."treenode_id"
 					'.$skelcon.'
 					'.$sOrder.'
 					'.$sLimit.'
@@ -317,10 +310,8 @@ try {
 
 		$sRow .= json_encode($val["radius"]).',';
 		$sRow .= json_encode($val["username"]).',';
-
-
-		// last modified
-		$sRow .= json_encode($val["last_modified"]);
+		$sRow .= json_encode($val["last_modified"]).',';
+		$sRow .= json_encode($val["last_reviewer"]);
 		
 		$sRow .= "]";
 		
@@ -370,4 +361,3 @@ try {
 
 
 ?>
-

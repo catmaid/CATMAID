@@ -8,7 +8,7 @@ div.sliceView
 	height:100px;
 */
 	margin:0px;
-	top:0px;
+    sliceViewtop:0px;
 	right:0px;
 	bottom:0px;
 	left:0px;
@@ -194,6 +194,58 @@ div.sliceView div.sliceBenchmark p span
 	background:#0000FF;
 }
 
+div.sliceView div.metadata
+{
+	position:absolute;
+	right:10px;
+	top:42px;
+	height:0.5em;
+	width:auto;
+	border:none;
+	overflow:visible;
+	margin:0px;
+	padding:0px;
+	vertical-align:bottom;
+	z-index:3;
+}
+
+div.sliceView div.metadata p
+{
+	border:none;
+	margin:0px;
+	margin-top:-12px;
+	padding:3px 6px 3px 14px;
+	color:#FFFFFF;
+	background:url(blue20.png);
+	overflow:hidden;
+}
+
+div.sliceView div.neuronname
+{
+    position:absolute;
+    right:60px;
+    top:15px;
+    height:0.5em;
+    width:auto;
+    border:none;
+    overflow:visible;
+    margin:0px;
+    padding:0px;
+    vertical-align:bottom;
+    z-index:10;
+}
+
+div.sliceView div.neuronname p
+{
+    border:none;
+    margin:0px;
+    margin-top:-12px;
+    padding:3px 6px 3px 14px;
+    color:#FFFFFF;
+    background:url(blue20.png);
+    overflow:hidden;
+}
+
 div.stackInfo,
 div.stackInfo_selected
 {
@@ -239,7 +291,8 @@ div.stackInfo_selected p.stackClose
 	float:right;
 }
 
-div.sliceView div.cropBox
+div.sliceView div.cropBox,
+div.sliceView div.cropBoxNonActive
 {
 	position:absolute;
 	top:0px;
@@ -250,6 +303,11 @@ div.sliceView div.cropBox
 	background:url(blue20.png);
 	overflow:visible;
 	z-index:3;
+}
+
+div.sliceView div.cropBoxNonActive
+{
+	opacity:.5;
 }
 
 div.sliceView div.cropBox p.world,
@@ -263,6 +321,12 @@ div.sliceView div.cropBox p.screen
 	background:#0000FF;
 	color:#FFFFFF;
 	white-space:nowrap;
+}
+
+div.sliceView div.cropBoxNonActive p.world,
+div.sliceView div.cropBoxNonActive p.screen
+{
+    visibility: hidden;
 }
 
 div.sliceView div.cropBox p.screen

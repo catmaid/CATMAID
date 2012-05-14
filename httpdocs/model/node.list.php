@@ -122,7 +122,7 @@ $active_skeleton_id = isset( $_REQUEST[ 'as' ] ) ? intval( $_REQUEST[ 'as' ] ) :
 // the scale factor to volume bound the query in z-direction based on the z-resolution
 $zbound = 1.0;
 // limit number of retrieved treenodes
-$limit = 400;
+$limit = 4000;
 
 $classes = $db->getMap( $pid, 'class' );
 if (!$classes) {
@@ -137,7 +137,7 @@ if (!$relations) {
 }
 
 // Check that this returned all the required IDs:
-$required_classes = array('synapse', 'presynaptic terminal', 'postsynaptic terminal', 'skeleton');
+$required_classes = array('skeleton');
 $required_relations = array('model_of', 'presynaptic_to', 'postsynaptic_to', 'element_of');
 foreach ($required_classes as $class) {
     if (!array_key_exists($class, $classes)) {

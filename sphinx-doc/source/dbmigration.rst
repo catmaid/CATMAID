@@ -13,9 +13,9 @@ I want to make a change to the database
 ---------------------------------------
 
 If you want to make a change to the database, you would start by generating
-a template migration by running the script `scripts/add-migration.py`, supplying a short description of what change the migration makes, e.g.::
+a template migration by running the script `scripts/database/add-migration.py`, supplying a short description of what change the migration makes, e.g.::
 
-    scripts/add-migration.py "Remove the bezierkey table"
+    scripts/database/add-migration.py "Remove the bezierkey table"
 
 This will add a new migration to the file `inc/migrations.php`.  You should
 edit that file, and you will find near the end a section that looks like::
@@ -49,4 +49,4 @@ database user and the password for that database user::
 (You may get errors saying that the user role has already been created, and that
 the functions already exist.  You can safely ignore these.)
 
-Now visit your CATMAID web page and the schema of the database will be updated.  If you want to add back the example projects, you need to run the script `scripts/insert-example-projects.py`.
+Now visit your CATMAID web page and the schema of the database will be updated.  If you want to add back the example projects, you need to run the script `scripts/database/insert-example-projects.py`.

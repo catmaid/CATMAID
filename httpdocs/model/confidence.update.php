@@ -81,6 +81,9 @@ try {
 		}
 	}
 
+    $location = getLocationAsString( $db, $pid, $tnid );
+    insertIntoLog( $db, $uid, $pid, "change_confidence", $location , "Changed to $confidence" );
+
 	if (! $db->commit() ) {
 		emitErrorAndExit( $db, 'Failed to commit!' );
 	}

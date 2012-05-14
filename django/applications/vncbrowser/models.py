@@ -95,6 +95,7 @@ class Project(models.Model):
         managed = False
     title = models.TextField()
     public = models.BooleanField(default=True)
+    wiki_base_url = models.TextField()
     stacks = models.ManyToManyField("Stack",
                                     through='ProjectStack')
     users = models.ManyToManyField("User",
@@ -118,7 +119,11 @@ class Stack(models.Model):
     comment = models.TextField(null=True)
     trakem2_project = models.BooleanField()
     num_zoom_levels = models.IntegerField()
-    file_extension = models.TextField()
+    file_extension = models.TextField(null=True)
+    tile_width = models.IntegerField()
+    tile_height = models.IntegerField()
+    tile_source_type = models.IntegerField()
+    metadata = models.TextField()
 
 class ProjectStack(models.Model):
     class Meta:
@@ -126,6 +131,17 @@ class ProjectStack(models.Model):
         managed = False
     project = models.ForeignKey(Project)
     stack = models.ForeignKey(Stack)
+    translation = Double3DField()
+
+class Overlay(models.Model):
+    class Meta:
+        db_table = "overlay"
+        managed = False
+    title = models.TextField()
+    stack = models.ForeignKey(Stack)
+    image_base = models.TextField()
+    default_opacity = models.IntegerField()
+    file_extension = models.TextField(null=True)
 
 class Concept(models.Model):
     class Meta:
@@ -166,7 +182,7 @@ class ClassInstance(models.Model):
     class_column = models.ForeignKey(Class, db_column="class_id") # underscore since class is a keyword
     name = models.CharField(max_length=255)
 
-    def get_connected_neurons(self, project_id, direction):
+    def get_connected_neurons(self, project_id, direction, skeletons):
 
         if direction == ConnectivityDirection.PRESYNAPTIC_PARTNERS:
             this_to_syn = 'post'
@@ -180,37 +196,69 @@ class ClassInstance(models.Model):
         relations = dict((r.relation_name, r.id) for r in Relation.objects.filter(project=project_id))
         classes = dict((c.class_name, c.id) for c in Class.objects.filter(project=project_id))
 
-        synapses = ClassInstance.objects.filter(
-            class_column=classes['synapse'],
-            project__id=project_id,
-            cici_via_b__relation=relations[this_to_syn+'synaptic_to'],
-            cici_via_b__class_instance_a__class_column=classes[this_to_syn+'synaptic terminal'],
-            cici_via_b__class_instance_a__cici_via_a__relation=relations['part_of'],
-            cici_via_b__class_instance_a__cici_via_a__class_instance_b__class_column=classes['skeleton'],
-            cici_via_b__class_instance_a__cici_via_a__class_instance_b__cici_via_a__relation=relations['model_of'],
-            cici_via_b__class_instance_a__cici_via_a__class_instance_b__cici_via_a__class_instance_b=self.id)
+        connected_skeletons_dict={}
+        # Find connectivity for each skeleton and add neuron name
+        for skeleton in skeletons:
+            qs_tc = TreenodeConnector.objects.filter(
+                project=project_id,
+                skeleton=skeleton.id,
+                relation=relations[this_to_syn+'synaptic_to']
+            ).select_related('connector')
 
-        connected_neurons = ClassInstance.objects.filter(
-            class_column=classes['neuron'],
-            project__id=project_id,
-            cici_via_b__relation=relations['model_of'],
-            cici_via_b__class_instance_a__class_column=classes['skeleton'],
-            cici_via_b__class_instance_a__cici_via_b__relation=relations['part_of'],
-            cici_via_b__class_instance_a__cici_via_b__class_instance_a__class_column=classes[syn_to_con+'synaptic terminal'],
-            cici_via_b__class_instance_a__cici_via_b__class_instance_a__cici_via_a__relation=relations[syn_to_con+'synaptic_to'],
-            cici_via_b__class_instance_a__cici_via_b__class_instance_a__cici_via_a__class_instance_b__id__in=[s.id for s in list(synapses)])
+            # extract all connector ids
+            connector_ids=[]
+            for tc in qs_tc:
+                connector_ids.append( tc.connector_id )
+            # find all syn_to_con connections
+            qs_tc = TreenodeConnector.objects.filter(
+                project=project_id,
+                connector__in=connector_ids,
+                relation=relations[syn_to_con+'synaptic_to']
+            )
+            # extract all skeleton ids
+            first_indirection_skeletons=[]
+            for tc in qs_tc:
+                first_indirection_skeletons.append( tc.skeleton_id )
 
-        return connected_neurons.values('id','name').annotate(models.Count('id')).order_by('-id__count')
+            qs = ClassInstanceClassInstance.objects.filter(
+                relation__relation_name='model_of',
+                project=project_id,
+                class_instance_a__in=first_indirection_skeletons).select_related("class_instance_b")
+            neuronOfSkeleton={}
+            for ele in qs:
+                neuronOfSkeleton[ele.class_instance_a.id]={
+                    'neuroname':ele.class_instance_b.name,
+                    'neuroid':ele.class_instance_b.id
+                }
 
-    def all_neurons_upstream(self, project_id):
+            # add neurons (or rather skeletons)
+            for skeleton_id in first_indirection_skeletons:
+
+                if skeleton_id in connected_skeletons_dict:
+                    # if already existing, increase count
+                    connected_skeletons_dict[skeleton_id]['id__count']+=1
+                else:
+                    connected_skeletons_dict[skeleton_id]={
+                        'id': neuronOfSkeleton[skeleton_id]['neuroid'],
+                        'id__count': 1, # connectivity count
+                        'skeleton_id': skeleton_id,
+                        'name': '{0} / skeleton {1}'.format(neuronOfSkeleton[skeleton_id]['neuroname'], skeleton_id) }
+
+        # sort by count
+        from operator import itemgetter
+        connected_skeletons = connected_skeletons_dict.values()
+        result = reversed(sorted(connected_skeletons, key=itemgetter('id__count')))
+        return result
+
+    def all_neurons_upstream(self, project_id, skeletons):
         return self.get_connected_neurons(
             project_id,
-            ConnectivityDirection.PRESYNAPTIC_PARTNERS)
+            ConnectivityDirection.PRESYNAPTIC_PARTNERS, skeletons)
 
-    def all_neurons_downstream(self, project_id):
+    def all_neurons_downstream(self, project_id, skeletons):
         return self.get_connected_neurons(
             project_id,
-            ConnectivityDirection.POSTSYNAPTIC_PARTNERS)
+            ConnectivityDirection.POSTSYNAPTIC_PARTNERS, skeletons)
 
     def cell_body_location(self):
         qs = list(ClassInstance.objects.filter(
@@ -376,6 +424,8 @@ class Location(models.Model):
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
     location = Double3DField()
+    reviewer_id = models.IntegerField(default=-1)
+    review_time = models.DateTimeField()
 
 class Treenode(models.Model):
     class Meta:
@@ -390,6 +440,9 @@ class Treenode(models.Model):
     radius = models.FloatField()
     confidence = models.IntegerField(default=5)
     skeleton = models.ForeignKey(ClassInstance)
+    reviewer_id = models.IntegerField(default=-1)
+    review_time = models.DateTimeField()
+
 
 class Connector(models.Model):
     class Meta:
@@ -401,6 +454,9 @@ class Connector(models.Model):
     project = models.ForeignKey(Project)
     location = Double3DField()
     confidence = models.IntegerField(default=5)
+    reviewer_id = models.IntegerField(default=-1)
+    review_time = models.DateTimeField()
+
 
 class TreenodeClassInstance(models.Model):
     class Meta:

@@ -36,7 +36,10 @@ function Stack(
 		skip_planes,				//!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
 		trakem2_project,			//!< {boolean} that states if a TrakEM2 project is available for this stack
 		num_zoom_levels,			//!< {int} that defines the number of available non-artificial zoom levels
-		max_zoom_level				//!< {int} that defines the maximum available zoom level
+		max_zoom_level,				//!< {int} that defines the maximum available zoom level
+		tile_source_type,			//!< {int} that defines the tile source type
+		labelupload_url,			//!< {String} that defines the label upload URL for labels (for tile_source_type==2)
+		metadata					//!< {String} of arbitrary meta data
 )
 {
 	var n = dimension.length;
@@ -129,6 +132,26 @@ function Stack(
       scale : self.scale
     }
   }
+
+  /*
+   * Get stacks width and height
+   */
+  this.getFieldOfViewInPixel = function()
+  {
+    var l =
+	{
+	    stackDivWidth : self.viewWidth,
+		stackDivHeight : self.viewHeight,
+        stackScaledWidth : Math.floor(self.dimension.x * self.scale ),
+        stackScaledHeight : Math.floor(self.dimension.y * self.scale ),
+        worldTop : ( ( self.y - self.viewHeight / self.scale / 2 ) ),
+        worldLeft : ( ( self.x - self.viewWidth / self.scale / 2 ) ),
+        scale : self.scale,
+        worldTopC : self.yc,
+        worldLeftC : self.xc
+    };
+    return l;
+  }
   
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
@@ -148,6 +171,7 @@ function Stack(
 		self.yc = Math.floor( self.y * self.scale - ( self.viewHeight / 2 ) );
 		self.xc = Math.floor( self.x * self.scale - ( self.viewWidth / 2 ) );
 
+
 		// Semaphore pattern from: http://stackoverflow.com/a/3709809/223092
 		for ( var key in layers ) {
 			if (layers.hasOwnProperty(key)) {
@@ -165,6 +189,7 @@ function Stack(
 				completionCallback();
 			}
 		}
+
 
 		/**
 		 * This question is completely useless but without asking it, Firefox on
@@ -266,7 +291,7 @@ function Stack(
 			zp * resolution.z + translation.z,
 			yp * resolution.y + translation.y,
 			xp * resolution.x + translation.x,
-			sp);
+			sp );
 		
 		return true;
 	}
@@ -326,7 +351,7 @@ function Stack(
 		if ( layers[ key ] )
 			layers[ key ].unregister();
 		layers[ key ] = layer;
-    self.overviewlayer.refresh();
+        self.overviewlayer.refresh();
 		return;
 	}
 	
@@ -342,7 +367,7 @@ function Stack(
 		{
 			layer.unregister();
 			delete layers[ key ];
-      self.overviewlayer.refresh();
+			self.overviewlayer.refresh();
 			return layer;
 		}
 		else
@@ -378,6 +403,9 @@ function Stack(
 	self.resolution = resolution;
 	self.translation = translation;
 	self.dimension = dimension;
+
+	self.tile_source_type = tile_source_type;
+	self.labelupload_url = labelupload_url;
 	
 	var tool = null;
 	var layers = {};
@@ -465,7 +493,26 @@ function Stack(
 	scaleBar.firstChild.appendChild( document.createElement( "span" ) );
 	scaleBar.firstChild.firstChild.appendChild( document.createTextNode( "test" ) );
 	view.appendChild( scaleBar );
-	
+
+	self.metadata = metadata;
+	if ( metadata.length > 0 ) {
+		var metadataDisplay = document.createElement( "div" );
+		metadataDisplay.className = "metadata";
+		metadataDisplay.appendChild( document.createElement( "p" ) );
+		metadataDisplay.firstChild.appendChild( document.createElement( "span" ) );
+		metadataDisplay.firstChild.firstChild.appendChild( document.createTextNode( metadata ) );
+		view.appendChild( metadataDisplay );
+	}
+
+    var neuronnameDisplay = document.createElement( "div" );
+    neuronnameDisplay.className = "neuronname";
+    neuronnameDisplay.appendChild( document.createElement( "p" ) );
+    var spanName = document.createElement( "span" );
+    spanName.id = "neuronName";
+    neuronnameDisplay.firstChild.appendChild( spanName );
+    neuronnameDisplay.firstChild.firstChild.appendChild( document.createTextNode( "" ) );
+    view.appendChild( neuronnameDisplay );
+
 	// take care, that all values are within a proper range
     // Declare the x,y,z,s as coordinates in pixels
 	self.z = 0;

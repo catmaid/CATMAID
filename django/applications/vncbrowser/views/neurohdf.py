@@ -5,10 +5,13 @@ from vncbrowser.models import CELL_BODY_CHOICES, \
     Project, User, Treenode, TreenodeConnector, Connector
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
+from vncbrowser.views.export import get_annotation_graph
+
 import json
 try:
     import numpy as np
     import h5py
+    from PIL import Image
 except ImportError:
     pass
 from contextlib import closing
@@ -18,19 +21,19 @@ import sys
 
 # This file defines constants used to correctly define the metadata for NeuroHDF microcircuit data
 
-VerticesTypeSkeletonNode = {
-    'name': 'skeleton',
-    'id': 1
-}
-
 VerticesTypeSkeletonRootNode = {
     'name': 'skeleton root',
     'id': 1
 }
 
+VerticesTypeSkeletonNode = {
+    'name': 'skeleton',
+    'id': 2
+}
+
 VerticesTypeConnectorNode = {
     'name': 'connector',
-    'id': 1
+    'id': 3
 }
 
 ConnectivityNeurite = {
@@ -39,15 +42,35 @@ ConnectivityNeurite = {
 }
 
 ConnectivityPresynaptic = {
-    'name': 'presynaptic',
+    'name': 'presynaptic_to',
     'id': 2
 }
 
 ConnectivityPostsynaptic = {
-    'name': 'postsynaptic',
+    'name': 'postsynaptic_to',
     'id': 3
 }
 
+
+def get_image(request, project_id=None, stack_id=None, x=None, y=None, dx=None, dy=None, z=None):
+    fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}.hdf'.format( project_id, stack_id ) )
+
+    print >> sys.stderr, 'fpath', fpath
+    print 'exists', os.path.exists(fpath)
+    with closing(h5py.File(fpath, 'r')) as hfile:
+        image_data=hfile[str(z)].value
+
+    # image = Image.fromarray(image_data[:500,:500].T)
+    # TODO: define a map from skeleton ids stored in the HDF5 to colors & back
+    w,h=1000,800
+    img = np.empty((w,h),np.uint32)
+    img.shape=h,w
+    img[0,0]=0x800000FF
+    img[:400,:400]=0xFFFF0000
+    pilImage = Image.frombuffer('RGBA',(w,h),img,'raw','RGBA',0,1)
+    response = HttpResponse(mimetype="image/png")
+    pilImage.save(response, "PNG")
+    return response
 
 def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
     # retrieve all treenodes for a given skeleton
@@ -120,6 +143,9 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
 
     treenode_connector_connectivity=[]; treenode_connector_connectivity_type=[]
     cn_type=[]; cn_xyz=[]; cn_id=[]; cn_confidence=[]; cn_userid=[]; cn_radius=[]; cn_skeletonid=[]
+    cn_skeletonid_connector=[] # because skeletons with a single treenode might have no connectivity
+    # (no parent and no synaptic connection), but we still want to recover their skeleton id, we need
+    # to store the skeletonid as a property on the vertices too, with default value 0 for connectors
     found_synapse=False
     for tc in qs_tc:
         if tc.relation.relation_name == 'presynaptic_to':
@@ -138,6 +164,7 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
         cn_confidence.append( tc.connector.confidence )
         cn_userid.append( tc.connector.user_id )
         cn_radius.append( 0 ) # default because no radius for connector
+        cn_skeletonid_connector.append( 0 ) # default skeleton id for connector
         cn_type.append( VerticesTypeConnectorNode['id'] )
         cn_skeletonid.append( tc.skeleton_id )
 
@@ -150,7 +177,8 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
             'type': np.hstack((treenode_type, np.array(cn_type, dtype=np.uint32).ravel() )),
             'confidence': np.hstack((treenode_confidence, np.array(cn_confidence, dtype=np.uint32).ravel() )),
             'userid': np.hstack((treenode_userid, np.array(cn_userid, dtype=np.uint32).ravel() )),
-            'radius': np.hstack((treenode_radius, np.array(cn_radius, dtype=np.int32).ravel() ))
+            'radius': np.hstack((treenode_radius, np.array(cn_radius, dtype=np.int32).ravel() )),
+            'skeletonid': np.hstack((treenode_skeletonid, np.array(cn_skeletonid_connector, dtype=np.int32).ravel() ))
         }
        # print np.array(cn_skeletonid, dtype=np.uint32)
         data['conn'] = {
@@ -168,7 +196,8 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
             'type': treenode_type,
             'confidence': treenode_confidence,
             'userid': treenode_userid,
-            'radius': treenode_radius
+            'radius': treenode_radius,
+            'skeletonid': treenode_skeletonid
         }
         data['conn'] = {
             'id': treenode_connectivity,
@@ -176,40 +205,93 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
             'skeletonid': treenode_connectivity_skeletonid
         }
         # no connprop type
+
+    # add metadata field with mapping from skeleton id to names of the hierarchy
+    g = get_annotation_graph( project_id )
+    skeletonmap={}
+    if skeleton_id is None:
+        allskeletonids = [nid for nid,di in g.nodes_iter(data=True) if di['class']=='skeleton']
+    else:
+        allskeletonids = [skeleton_id]
+    rid = [nid for nid,di in g.nodes_iter(data=True) if di['class']=='root']
+    maxiter = 10
+    for id in allskeletonids:
+        outstr = ''
+        iterat = 0
+        currid = [id]
+        while currid[0] != rid[0] and iterat < maxiter:
+            currid = g.predecessors(currid[0])
+            outstr = g.node[currid[0]]['name']+'|'+outstr
+            iterat+=1
+        skeletonmap[id] = outstr.rstrip('|')
+    data['meta'] = skeletonmap
     return data
 
 def get_temporary_neurohdf_filename_and_url():
     fname = ''.join([choice('abcdefghijklmnopqrstuvwxyz0123456789(-_=+)') for i in range(50)])
-    if not os.path.exists(os.path.join(settings.STATICFILES_LOCAL, 'neurohdf')):
-        os.mkdir(os.path.join(settings.STATICFILES_LOCAL, 'neurohdf'))
-    filepath = os.path.join('neurohdf', '%s.h5' % fname)
-    return os.path.join(settings.STATICFILES_LOCAL, filepath), os.path.join(settings.STATICFILES_URL, filepath)
+    hdf_path = os.path.join(settings.STATICFILES_LOCAL, settings.STATICFILES_HDF5_SUBDIRECTORY)
+    if not os.path.exists( hdf_path ):
+        raise Exception('Need to configure writable path STATICFILES_HDF5_LOCAL in settings_apache.py')
+    filename = os.path.join('%s.h5' % fname)
+    host = settings.CATMAID_DJANGO_URL.lstrip('http://').split('/')[0]
+    return os.path.join(hdf_path, filename), "http://{0}{1}".format( host, os.path.join(settings.STATICFILES_URL,
+        settings.STATICFILES_HDF5_SUBDIRECTORY, filename) )
 
 def create_neurohdf_file(filename, data):
 
     with closing(h5py.File(filename, 'w')) as hfile:
+        hfile.attrs['neurohdf_version'] = '0.1'
         mcgroup = hfile.create_group("Microcircuit")
+        mcgroup.attrs['node_type'] = 'irregular_dataset'
         vert = mcgroup.create_group("vertices")
         conn = mcgroup.create_group("connectivity")
 
         vert.create_dataset("id", data=data['vert']['id'])
         vert.create_dataset("location", data=data['vert']['location'])
-        vert.create_dataset("type", data=data['vert']['type'])
+        verttype=vert.create_dataset("type", data=data['vert']['type'])
+        # create rec array with two columns, value and name
+        my_dtype = np.dtype([('value', 'l'), ('name', h5py.new_vlen(str))])
+        helpdict={VerticesTypeSkeletonRootNode['id']: VerticesTypeSkeletonRootNode['name'],
+                  VerticesTypeSkeletonNode['id']: VerticesTypeSkeletonNode['name'],
+                  VerticesTypeConnectorNode['id']: VerticesTypeConnectorNode['name']
+        }
+        arr=np.recarray( len(helpdict), dtype=my_dtype )
+        for i,kv in enumerate(helpdict.items()):
+            arr[i][0] = kv[0]
+            arr[i][1] = kv[1]
+        verttype.attrs['value_name']=arr
+
         vert.create_dataset("confidence", data=data['vert']['confidence'])
         vert.create_dataset("userid", data=data['vert']['userid'])
         vert.create_dataset("radius", data=data['vert']['radius'])
+        vert.create_dataset("skeletonid", data=data['vert']['skeletonid'])
 
         conn.create_dataset("id", data=data['conn']['id'])
         if data['conn'].has_key('type'):
-            conn.create_dataset("type", data=data['conn']['type'])
+            conntype=conn.create_dataset("type", data=data['conn']['type'])
+            helpdict={ConnectivityNeurite['id']: ConnectivityNeurite['name'],
+                      ConnectivityPresynaptic['id']: ConnectivityPresynaptic['name'],
+                      ConnectivityPostsynaptic['id']: ConnectivityPostsynaptic['name']
+            }
+            arr=np.recarray( len(helpdict), dtype=my_dtype )
+            for i,kv in enumerate(helpdict.items()):
+                arr[i][0] = kv[0]
+                arr[i][1] = kv[1]
+            conntype.attrs['value_name']=arr
+
         if data['conn'].has_key('skeletonid'):
             conn.create_dataset("skeletonid", data=data['conn']['skeletonid'])
 
-        # TODO: add metadata fields!
-        # connproperties["type"].attrs["content_value_1_name"] = "presynaptic"
-        # content_type = "categorial
-        # content_value = [0, 1, 2, 3]
-        # content_name = ["blab", "blubb", ...]
+        if data.has_key('meta'):
+            metadata=mcgroup.create_group('metadata')
+            # create recarray with two columns, skeletonid and string
+            my_dtype = np.dtype([('skeletonid', 'l'), ('name', h5py.new_vlen(str))])
+            arr=np.recarray( len(data['meta']), dtype=my_dtype )
+            for i,kv in enumerate(data['meta'].items()):
+                arr[i][0] = kv[0]
+                arr[i][1] = kv[1]
+
+            metadata.create_dataset('skeleton_name', data=arr )
 
 @catmaid_login_required
 def microcircuit_neurohdf(request, project_id=None, logged_in_user=None):
@@ -218,11 +300,9 @@ def microcircuit_neurohdf(request, project_id=None, logged_in_user=None):
     data=get_skeleton_as_dataarray(project_id)
     neurohdf_filename,neurohdf_url=get_temporary_neurohdf_filename_and_url()
     create_neurohdf_file(neurohdf_filename, data)
-
-    print >> sys.stderr, neurohdf_filename,neurohdf_url
     result = {
         'format': 'NeuroHDF',
-        'format_version': 1.0,
+        'format_version': 0.1,
         'url': neurohdf_url
     }
     return HttpResponse(json.dumps(result), mimetype="text/plain")
@@ -236,11 +316,9 @@ def skeleton_neurohdf(request, project_id=None, skeleton_id=None, logged_in_user
     data=get_skeleton_as_dataarray(project_id, skeleton_id)
     neurohdf_filename,neurohdf_url=get_temporary_neurohdf_filename_and_url()
     create_neurohdf_file(neurohdf_filename, data)
-
-    print >> sys.stderr, neurohdf_filename,neurohdf_url
     result = {
         'format': 'NeuroHDF',
-        'format_version': 1.0,
+        'format_version': 0.1,
         'url': neurohdf_url
     }
     return HttpResponse(json.dumps(result), mimetype="text/json")

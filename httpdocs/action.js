@@ -194,7 +194,7 @@ var toolActions = [
 		buttonName: "help",
 		keyShortcuts: {
 			'?': [ 63 ],
-			'H': [ 72 ]
+			'F1': [ 112 ]
 		},
 		run: function (e) {
 			WindowMaker.show('keyboard-shortcuts');
@@ -242,6 +242,18 @@ var editToolActions = [
 		}
 	}),
 
+/*    new Action({
+       helpText: "Canvas tool",
+       buttonID: 'edit_button_canvas',
+       buttonName: 'canvas',
+       keyShortcuts: {
+
+       },
+       run: function (e) {
+           project.setTool( new CanvasTool() );
+       }
+    }),
+*/
 	new Action({
 		helpText: "Tracing tool",
 		buttonID: 'edit_button_trace',
@@ -291,6 +303,26 @@ var tracingWindowActions = [
     }
   }),
 
+    new Action({
+        helpText: "Show log",
+        buttonID: "data_button_table_log",
+        buttonName: 'table_log',
+        run: function (e) {
+            WindowMaker.show( 'log-table' );
+            return true;
+        }
+    }),
+
+    new Action({
+        helpText: "Review system",
+        buttonID: "data_button_review",
+        buttonName: 'table_review',
+        run: function (e) {
+            WindowMaker.show('review-system');
+            return true;
+        }
+    }),
+
   new Action({
     helpText: "Show object tree",
     buttonID: "data_button_tree",
@@ -323,7 +355,6 @@ var tracingWindowActions = [
       return true;
     }
   })
-
 
 /*
   new Action({

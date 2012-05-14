@@ -1,7 +1,7 @@
 
 function WebGLViewer(divID) {
 
-  self = this;
+  var self = this;
 
   this.divID = divID;
   this.divID_jQuery = '#' + divID;
@@ -19,9 +19,9 @@ function WebGLViewer(divID) {
   var randomColors = [];
   randomColors[0] = [255, 255, 0]; // yellow
   randomColors[1] = [255, 0, 255]; // magenta
-  randomColors[2] = [0, 255, 255]; // cyan
-  randomColors[3] = [255, 255, 255]; // white
-  randomColors[4] = [255, 128, 0]; // orange
+  // randomColors[2] = [0, 255, 255]; // cyan
+  randomColors[2] = [255, 255, 255]; // white
+  randomColors[3] = [255, 128, 0]; // orange
 
   /* transform coordinates from CATMAID coordinate system
      to WebGL coordinate system: x->x, y->y+dy, z->-z
@@ -74,7 +74,6 @@ function WebGLViewer(divID) {
     lightMesh.scale.set( 0.05, 0.05, 0.05 );
     lightMesh.position = pointLight.position;
     scene.add( lightMesh );
-
 */
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -279,13 +278,13 @@ function WebGLViewer(divID) {
             scene.add( this.labelSphere[tokey] );
         }
         if( ($.inArray( "soma", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
-            this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0x0000ff } ) );
+            this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00 } ) );
             this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
             this.labelSphere[fromkey].scale.set( 2, 2, 2 );
             scene.add( this.labelSphere[fromkey] );
         }
         if( ($.inArray( "soma", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
-            this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0x0000ff  } ) );
+            this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00  } ) );
             this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
             this.labelSphere[tokey].scale.set( 2, 2, 2 );
             scene.add( this.labelSphere[tokey] );
@@ -441,7 +440,7 @@ function WebGLViewer(divID) {
 
   function createScene( geometry, start ) {
     //addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshPhongMaterial( { ambient: 0x030303, color: 0x030303, specular: 0x990000, shininess: 30 } ) );
-    addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.2, transparent:true } ) );
+    addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.2 } ) ); // , transparent:true
 	}
 
   function drawmesh() {
@@ -617,7 +616,7 @@ function addNeuronFromCATMAID(divID, info) {
   var divID_jQuery = '#' + divID;
 
   if (!$(divID_jQuery).data('viewer')) {
-    $(divID_jQuery).data('viewer', new WebGLViewer(divID));
+    $(divID_jQuery).data('viewer', new updateZPlane(divID));
   }
 
   $(divID_jQuery).data('viewer').addFromCATMAID(info.project_id, info.skeleton_id, nameFromCATMAIDInfo(info));

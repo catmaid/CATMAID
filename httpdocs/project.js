@@ -62,9 +62,13 @@ function Project( pid )
 		
 		self.setFocusedStack( stack );
 		
-		if ( !tool )
-			tool = new Navigator();
-		self.setTool( tool );
+		// only set the tool for the first stack
+		if ( stacks.length == 1 )
+		{
+			if ( !tool )
+				tool = new Navigator();
+			self.setTool( tool );
+		}
 		
 		return;
 	}
@@ -92,7 +96,7 @@ function Project( pid )
 			{
 				stacks.splice( i, 1 );
 				if ( stacks.length == 0 )
-					self.unregister();
+					self.destroy();
 				else
 					stacks[ ( i + 1 ) % stacks.length ].getWindow().focus();
 			}
@@ -210,9 +214,9 @@ function Project( pid )
 	 *
 	 * @todo: should not the stack handle the navigation toolbar?
 	 */
-	this.unregister = function()
+	this.destroy = function()
 	{
-		if ( tool ) tool.unregister();
+		if ( tool ) tool.destroy();
 		
 		//! close all windows
 		//rootWindow.closeAllChildren();
@@ -338,6 +342,13 @@ function Project( pid )
 			//coords = stacks[ 0 ].projectCoordinates();		//!< @todo get this from the SELECTED stack to avoid approximation errors!
 			url += "&zp=" + self.coordinates.z + "&yp=" + self.coordinates.y + "&xp=" + self.coordinates.x;
 			url += "&tool=" + project.getTool().toolname;
+      if( project.getTool().toolname === 'tracingtool' ) {
+        var active_skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
+        if( active_skeleton_id ) {
+          url += "&active_skeleton_id=" + active_skeleton_id;
+          url += "&active_node_id=" + SkeletonAnnotations.getActiveNodeId();
+        }
+      }
 			for ( var i = 0; i < stacks.length; ++i )
 			{
 				url += "&sid" + i + "=" + stacks[ i ].id + "&s" + i + "=" + stacks[ i ].s;

@@ -64,6 +64,11 @@ var TreenodeTable = new function()
           "name": "pid",
           "value": pid
         });
+        aoData.push({
+          "name": "stack_id",
+          "value": project.focusedStack.id
+        });
+
 
         $.ajax({
           "dataType": 'json',
@@ -150,6 +155,11 @@ var TreenodeTable = new function()
         "sClass": "center",
         "bSearchable": false
       }, // z
+      {
+        "sClass": "center",
+        "bSearchable": false,
+        "bSortable": false
+      }, // section index
       {
         "sClass": "center",
         "bSearchable": false

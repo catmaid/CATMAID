@@ -11,6 +11,7 @@ $db =& getDB();
 $ses =& getSession();
 
 $pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
+$stack_id = isset( $_REQUEST[ 'stack_id' ] ) ? intval( $_REQUEST[ 'stack_id' ] ) : 0;
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
 
 # Check preconditions:
@@ -24,6 +25,11 @@ if ( ! $pid ) {
 # 2. There must be a user id
 if ( ! $uid ) {
     echo json_encode( array( 'error' => 'You are not logged in currently.  Please log in to be able to add treenodes.' ) );
+	return;
+}
+
+if ( ! $stack_id ) {
+    echo json_encode( array( 'error' => 'You need to have an open stack.' ) );
 	return;
 }
 
@@ -41,9 +47,11 @@ $columnToFieldArray = array( "tid",
 					 "x",
 					 "y",
 					 "z",
+					 "section",
 					 "radius",
 					 "username",
-					 "last_modified" );
+					 "last_modified",
+					 "reviewer_id");
 
 function fnColumnToField( $i )
 {
@@ -60,6 +68,11 @@ if (! $db->begin() ) {
 }
 
 try {
+
+    $project_stacks = $db->getResult(
+    'SELECT	"stack"."resolution" AS "resolution"
+     FROM "stack" WHERE "stack"."id" = '.$stack_id );
+    $resolution_array = double3dXYZ($project_stacks[0]['resolution']);
 
 	$tabinject = '';
 	if ($atnid != 0) {
@@ -306,6 +319,7 @@ try {
 		$sRow .= json_encode(sprintf("%.2f",$val["x"])).',';
 		$sRow .= json_encode(sprintf("%.2f",$val["y"])).',';
 		$sRow .= json_encode(sprintf("%.2f",$val["z"])).',';
+		$sRow .= json_encode(intval($val["z"]/$resolution_array["z"])).',';
 
 
 		$sRow .= json_encode($val["radius"]).',';

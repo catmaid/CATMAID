@@ -2,6 +2,12 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
 function updateConnectorTable() {
+  ConnectorTable.setSkeleton( -1 );
+  ConnectorTable.connectorTable.fnClearTable( 0 );
+  ConnectorTable.connectorTable.fnDraw();
+}
+
+function refreshConnectorTable() {
   ConnectorTable.connectorTable.fnClearTable( 0 );
   ConnectorTable.connectorTable.fnDraw();
 }
@@ -13,15 +19,24 @@ var ConnectorTable = new function()
 
   var self = this;
   var asInitValsSyn = new Array();
-
+  var skeletonID = -1;
+  var last_displayed_skeletons = [];
   var possibleLengths = [25, 100, -1];
   var possibleLengthsLabels = possibleLengths.map(
     function (n) { return (n === -1) ? "All" : n.toString() });
 
+  this.setSkeleton = function( skeleton_id ) {
+    skeletonID = skeleton_id;
+  }
+  
   this.init = function (pid) {
     var tableid = '#connectortable';
-    var skeletonID;
 
+    $("#connectortable_lastskeletons").change(function() {
+      skeletonID = parseInt( $('#connectortable_lastskeletons').val() );
+      refreshConnectorTable();
+    });
+    
     self.connectorTable = $(tableid).dataTable(
       {
         // http://www.datatables.net/usage/options
@@ -34,7 +49,11 @@ var ConnectorTable = new function()
         "iDisplayLength": possibleLengths[0],
         "sAjaxSource": 'model/connector.list.php',
         "fnServerData": function (sSource, aoData, fnCallback) {
-          skeletonID = SkeletonAnnotations.getActiveSkeletonId();
+
+          if( skeletonID === -1 ) {
+            skeletonID = SkeletonAnnotations.getActiveSkeletonId();
+          }
+
           if (!skeletonID) {
             $('#growl-alert').growlAlert({
               autoShow: true,
@@ -61,6 +80,22 @@ var ConnectorTable = new function()
             "name" : "skeleton_id",
             "value" : skeletonID
           });
+
+          if( skeletonID && $.inArray( skeletonID, last_displayed_skeletons) === -1 ) {
+            // check if skeleton id already in list, of so, do not add it
+            last_displayed_skeletons.push( skeletonID );
+            var new_skeletons = document.getElementById("connectortable_lastskeletons");
+            while (new_skeletons.length > 0)
+                new_skeletons.remove(0);
+            for ( var i=0, len=last_displayed_skeletons.length; i<len; ++i ){
+                var option = document.createElement("option");
+                option.text = 'Skeleton ' + last_displayed_skeletons[i];
+                option.value = last_displayed_skeletons[i];
+                new_skeletons.appendChild(option);
+            }
+          }
+          $('#connectortable_lastskeletons').val( skeletonID );
+
           $.ajax({
             "dataType": 'json',
             "cache": false,

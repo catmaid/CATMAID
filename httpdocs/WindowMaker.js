@@ -342,6 +342,14 @@ var WindowMaker = new function()
     sync.setAttribute("label", "Synchronize");
     content.appendChild(sync);
 
+    var sync = document.createElement('select');
+    sync.setAttribute("id", "connectortable_lastskeletons");
+    var option = document.createElement("option");
+    option.text = "None";
+    option.value = -1;
+    sync.appendChild(option);
+    content.appendChild(sync);
+
     var container = createContainer("connectortable_widget");
     content.appendChild(container);
 

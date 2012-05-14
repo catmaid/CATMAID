@@ -303,7 +303,9 @@ var ObjectTree = new function()
 
                       WindowMaker.show("node-table");
                       // datatables grabs automatically the selected skeleton
-                      TreenodeTable.oTable.fnDraw();
+                      var skelid = obj.attr("id").replace("node_", "");
+                      TreenodeTable.setSkeleton( skelid );
+                      refreshTreenodeTable();
                     }
                   },
                   "show_connectortable": {

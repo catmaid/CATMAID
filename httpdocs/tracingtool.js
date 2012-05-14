@@ -732,11 +732,12 @@ function TracingTool()
 }
 
 TracingTool.goToNearestInNeuron = function(type, objectID) {
+  var projectCoordinates = project.focusedStack.projectCoordinates();
   var parameters = {
     pid: project.id,
-    x: project.x,
-    y: project.y,
-    z: project.z,
+    x: projectCoordinates.x,
+    y: projectCoordinates.y,
+    z: projectCoordinates.z
   }, nodeIDToSelect, skeletonIDToSelect;
   parameters[type + '_id'] = objectID;
   requestQueue.register("model/node.nearest.php", "GET",

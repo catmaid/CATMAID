@@ -1146,6 +1146,7 @@ var SkeletonAnnotations = new function()
         // TODO: deactivation should be encapsulated in a seperate method,
         // like it is partially in tradcingtool's deselectActiveNode
         $('#neuronName').text('');
+        ObjectTree.deselectAll();
         self.activateNode(null);
       } else if (e.shiftKey) {
         if (null === atn.id) {

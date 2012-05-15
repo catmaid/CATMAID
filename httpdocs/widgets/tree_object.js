@@ -3,6 +3,13 @@
 
 var ObjectTree = new function()
 {
+
+  this.deselectAll = function() {
+    $('#tree_object').jstree("deselect_all");
+    project.selectedObjects.selectedskeleton = null;
+    project.selectedObjects.selectedneuron = null;
+  }
+
   this.init = function (pid) {
     // id of object tree
     var object_tree_id = "#tree_object";
@@ -493,58 +500,23 @@ var ObjectTree = new function()
     });
 
     $(object_tree_id).bind("deselect_node.jstree", function (event, data) {
-      var key;
       var id = data.rslt.obj.attr("id").replace("node_", "");
       var type = data.rslt.obj.attr("rel");
-
-      // deselection only works when explicitly done by ctrl
-      // we get into a bad state when it gets deselected by selecting another node
-      // thus, we only allow one selected node for now
-      // remove all previously selected nodes (or push it to the history)
-      for (key in project.selectedObjects.tree_object) {
-        if(project.selectedObjects.tree_object.hasOwnProperty(key)) {
-          // FIXME: use splice(1,1) instead
-          delete project.selectedObjects.tree_object[key];
-        }
-      }
-
-      project.selectedObjects.selectedneuron = null;
-
-      // deselect skeleton
       if (type === "skeleton") {
         project.selectedObjects.selectedskeleton = null;
+      } else if (type === "neuron" ) {
+        project.selectedObjects.selectedneuron = null;
       }
-
     });
 
     $(object_tree_id).bind("select_node.jstree", function (event, data) {
-      // data.inst.toggle_node(data.rslt.obj);
-      var key;
       id = data.rslt.obj.attr("id").replace("node_", "");
       type = data.rslt.obj.attr("rel");
-
-      // remove all previously selected nodes (or push it to the history)
-      for (key in project.selectedObjects.tree_object) {
-        if(project.selectedObjects.tree_object.hasOwnProperty(key)) {
-          // FIXME: use splice(1,1) instead
-          delete project.selectedObjects.tree_object[key];
-        }
-      }
-
-
-      project.selectedObjects.tree_object[id] = {
-        'id': id,
-        'type': type
-      };
-
       if (type === "neuron") {
         project.selectedObjects.selectedneuron = id;
       } else if (type === "skeleton") {
         project.selectedObjects.selectedskeleton = id;
       }
-
-
-
     });
 
     $(object_tree_id).bind("create.jstree", function (e, data) {

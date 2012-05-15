@@ -44,14 +44,7 @@ var TreenodeTable = new function()
       "bAutoWidth": false,
       "sAjaxSource": 'model/treenode.table.list.php',
       "fnServerData": function (sSource, aoData, fnCallback) {
-        var key;
-        // remove all selected elements in table
-        for (var key in project.selectedObjects.table_treenode) {
-          if (project.selectedObjects.table_treenode.hasOwnProperty(key)) {
-            // FIXME: use splice(1,1) instead
-            delete project.selectedObjects.table_treenode[key];
-          }
-        }
+
         if( skelid === -1 ) {
           skelid = SkeletonAnnotations.getActiveSkeletonId();
         }

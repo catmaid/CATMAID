@@ -20,7 +20,6 @@
 function TracingTool()
 {
   this.prototype = new Navigator();
-  
   var self = this;
   var tracingLayer = null;
   var stack = null;
@@ -29,7 +28,7 @@ function TracingTool()
 
 	this.resize = function( width, height )
 	{
-        self.prototype.resize( width, height );
+    self.prototype.resize( width, height );
 		return;
 	};
 
@@ -100,9 +99,10 @@ function TracingTool()
       return;
     };
 
+    // FIXME: wrong inheritance call. The new prototype function
+    // is never called
     var proto_changeSlice = self.prototype.changeSlice;
-    self.prototype.changeSlice =
-      function( val ) {
+    self.prototype.changeSlice = function( val ) {
         proto_changeSlice( val );
         // if 3d viewer window visible, change its z slice
         if( $( "#view_in_3d_webgl_widget").length ) {

@@ -11,7 +11,7 @@ function WebGLViewer(divID) {
 
   this.neurons = [];
 
-  var camera, scene, renderer, grid_lines, scale, controls, light, zplane;
+  var camera, scene, renderer, grid_lines, scale, controls, light, zplane = null;
   var mouseX = 0, mouseY = 0;
   var project_id = project.id;
   var stack_id = project.focusedStack.id;
@@ -479,12 +479,8 @@ function WebGLViewer(divID) {
         return;
     }
     var newval;
-    if( isNaN(zval) ) {
-        zval = project.focusedStack.z;
-    }
-    newval = (-zval * resolution.z + translation.z) * scale;
-
-    if( !zplane ) {
+    newval = (-zval * resolution.z - translation.z) * scale;
+    if( zplane === null ) {
         var geometry = new THREE.Geometry();
         var xwidth = dimension.x*resolution.x*scale,
             ywidth = dimension.y*resolution.y*scale;
@@ -493,6 +489,7 @@ function WebGLViewer(divID) {
         geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( 0,ywidth,0 ) ) );
         geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( xwidth,ywidth,0 ) ) );
         geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
+
         var material = new THREE.MeshBasicMaterial( { color: 0x151349 } );
         zplane = new THREE.Mesh( geometry, material );
         zplane.doubleSided = true;
@@ -501,7 +498,6 @@ function WebGLViewer(divID) {
         return;
     }
     zplane.position.z = newval;
-
   }
 
   function debugaxes() {
@@ -616,7 +612,7 @@ function addNeuronFromCATMAID(divID, info) {
   var divID_jQuery = '#' + divID;
 
   if (!$(divID_jQuery).data('viewer')) {
-    $(divID_jQuery).data('viewer', new updateZPlane(divID));
+    $(divID_jQuery).data('viewer', new WebGLViewer(divID));
   }
 
   $(divID_jQuery).data('viewer').addFromCATMAID(info.project_id, info.skeleton_id, nameFromCATMAIDInfo(info));
@@ -631,13 +627,13 @@ function createWebGLViewerFromCATMAID(divID) {
   }
 }
 
-function updateZPlane(zindex) {
+function updateZPlane() {
 
   var divID = 'viewer-3d-webgl-canvas';
   var divID_jQuery = '#' + divID;
 
   if( $('#enable_z_plane').attr('checked') != undefined ) {
-      $(divID_jQuery).data('viewer').updateZPlane(zindex);
+      $(divID_jQuery).data('viewer').updateZPlane( project.focusedStack.z );
   } else {
       $(divID_jQuery).data('viewer').updateZPlane(-1);
   }

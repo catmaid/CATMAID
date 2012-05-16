@@ -39,7 +39,8 @@ function Stack(
 		max_zoom_level,				//!< {int} that defines the maximum available zoom level
 		tile_source_type,			//!< {int} that defines the tile source type
 		labelupload_url,			//!< {String} that defines the label upload URL for labels (for tile_source_type==2)
-		metadata					//!< {String} of arbitrary meta data
+		metadata,					//!< {String} of arbitrary meta data
+    inverse_mouse_wheel //!< {boolean} Whether to inverse mouse wheel for changing sections
 )
 {
 	var n = dimension.length;
@@ -504,17 +505,23 @@ function Stack(
 		view.appendChild( metadataDisplay );
 	}
 
-    var neuronnameDisplay = document.createElement( "div" );
-    neuronnameDisplay.className = "neuronname";
-    neuronnameDisplay.appendChild( document.createElement( "p" ) );
-    var spanName = document.createElement( "span" );
-    spanName.id = "neuronName";
-    neuronnameDisplay.firstChild.appendChild( spanName );
-    neuronnameDisplay.firstChild.firstChild.appendChild( document.createTextNode( "" ) );
-    view.appendChild( neuronnameDisplay );
+  if( inverse_mouse_wheel === 0 ) {
+    self.inverse_mouse_wheel = 1;
+  } else {
+    self.inverse_mouse_wheel = -1;
+  }
+
+  var neuronnameDisplay = document.createElement( "div" );
+  neuronnameDisplay.className = "neuronname";
+  neuronnameDisplay.appendChild( document.createElement( "p" ) );
+  var spanName = document.createElement( "span" );
+  spanName.id = "neuronName";
+  neuronnameDisplay.firstChild.appendChild( spanName );
+  neuronnameDisplay.firstChild.firstChild.appendChild( document.createTextNode( "" ) );
+  view.appendChild( neuronnameDisplay );
 
 	// take care, that all values are within a proper range
-    // Declare the x,y,z,s as coordinates in pixels
+  // Declare the x,y,z,s as coordinates in pixels
 	self.z = 0;
 	self.y = Math.floor( MAX_Y / 2 );
 	self.x = Math.floor( MAX_X / 2 );
@@ -525,13 +532,13 @@ function Stack(
 	self.old_x = self.x;
 	self.old_s = self.s;
 
-    self.yc = 0;
-    self.xc = 0;
+  self.yc = 0;
+  self.xc = 0;
 	
 	self.scale = 1 / Math.pow( 2, self.s );
 	self.old_scale = self.scale;
 
-    self.is_trackem2_stack = trakem2_project;
+  self.is_trackem2_stack = trakem2_project;
 }
 
 //!< in nanometers

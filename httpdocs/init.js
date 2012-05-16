@@ -247,7 +247,7 @@ function updateProjects(completionCallback) {
                         'GET',
                         undefined,
                         function (status, text, xml) {
-				handle_updateProjects(status, text, xml);
+                        handle_updateProjects(status, text, xml);
                                 if (typeof completionCallback !== "undefined") {
                                   completionCallback();
                                 }
@@ -390,7 +390,7 @@ function handle_openProjectStack( status, text, xml )
 			var labelupload = '';
 
 			if( e.hasOwnProperty('labelupload_url') && e.tile_source_type === 2 ) {
-			    labelupload = e.labelupload_url;
+				labelupload = e.labelupload_url;
 			}
 
 			var stack = new Stack(
@@ -403,10 +403,11 @@ function handle_openProjectStack( status, text, xml )
 					e.broken_slices,
 					e.trakem2_project,
 					e.num_zoom_levels,
-                    -2,
-                    e.tile_source_type,
-                    labelupload, // TODO: if there is any
-                    e.metadata);
+					-2,
+					e.tile_source_type,
+					labelupload, // TODO: if there is any
+					e.metadata,
+					e.inverse_mouse_wheel);
 
 			document.getElementById( "toolbox_project" ).style.display = "block";
 			

@@ -1074,6 +1074,13 @@ ALTER TABLE project ADD COLUMN wiki_base_url text;
 '
 ),
 
+	'2012-05-16T12:20:53' => new Migration(
+		'Invert mouse wheel direction column',
+		'
+ALTER TABLE project_user ADD COLUMN inverse_mouse_wheel boolean DEFAULT FALSE;
+'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

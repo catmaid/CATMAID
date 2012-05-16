@@ -758,6 +758,47 @@ var SkeletonAnnotations = new function()
 
     };
 
+    var createInterpolatedNode = function (atn, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
+    {
+      // This assumes that the parentID is not null, i.e. exists
+      // Creates treenodes from atn to new node in each z section
+      console.log('interpolate me!', atn, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z);
+
+      requestQueue.register("model/treenode.create.interpolated.php", "POST", {
+        pid: project.id,
+        parent_id: atn.id,
+        x: phys_x,
+        y: phys_y,
+        z: phys_z,
+        radius: radius,
+        confidence: confidence,
+        atnx: self.pix2physX(atn.x),
+        atny: self.pix2physY(atn.y),
+        atnz: self.pix2physZ(atn.z),
+        resx: stack.resolution.x,
+        resy: stack.resolution.y,
+        resz: stack.resolution.z
+      }, function (status, text, xml) {
+        var e;
+        if (status === 200) {
+          if (text && text !== " ") {
+            e = $.parseJSON(text);
+            if (e.error) {
+              alert(e.error);
+            } else {
+              self.updateNodes(function () {
+                console.log('in callback');
+                self.activateNode( nodes[e.treenode_id] );
+              });
+            }
+          }
+        }
+        return true;
+      });
+      return;
+
+    }
+
     // Create a node and activate it
     var createNode = function (parentID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
     {
@@ -1707,6 +1748,22 @@ var SkeletonAnnotations = new function()
         var phys_x = self.pix2physX(pos_x);
         var phys_y = self.pix2physY(pos_y);
         createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+        break;
+      case "createinterpolatedtreenode":
+        if (atn.id === null) {
+          alert('Need to activate a treenode first!');
+        }
+        // take into account current local offset coordinates and scale
+        var pos_x = self.phys2pixX(self.offsetXPhysical);
+        var pos_y = self.phys2pixY(self.offsetYPhysical);
+        // at this point of the execution
+        // project.coordinates.z is not on the new z index, thus simulate it here
+        var pos_z = self.phys2pixZ(project.coordinates.z);
+        var phys_z = self.pix2physZ(pos_z);
+        // get physical coordinates for node position creation
+        var phys_x = self.pix2physX(pos_x);
+        var phys_y = self.pix2physY(pos_y);
+        createInterpolatedNode(atn, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
         break;
       }
       return;

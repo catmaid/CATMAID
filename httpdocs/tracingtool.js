@@ -575,6 +575,19 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
+    helpText: "Create treenode with z axis interpolation",
+    keyShortcuts: {
+      'I': [ 73 ]
+    },
+    run: function (e) {
+      if (!mayEdit())
+        return false;
+      tracingLayer.svgOverlay.tracingCommand('createinterpolatedtreenode');
+      return true;
+    }
+  }) );
+
+  this.addAction( new Action({
     helpText: "Move up 1 slice in z and click",
     keyShortcuts: {
       'N': [ 78 ]

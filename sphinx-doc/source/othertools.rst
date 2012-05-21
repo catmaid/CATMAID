@@ -11,6 +11,7 @@ Interactive skeleton tracing
 * `Viking <http://prometheus.med.utah.edu/~marclab/marclab_2011_Connectomes_index.html>`_ (*)
 * `Program Elegance <http://worms.aecom.yu.edu/pages/Reconstruction%20Software.html>`_ (*)
 * `SSECRETT and Neurotrace <http://gvi.seas.harvard.edu/paper/ssecrett-and-neurotrace-interactive-visualization-and-analysis-tools-largescale-neuroscience-d>`_ (*)
+* `NeuroStruct <http://www.neurostruct.org/index.html>`_ (*)
 
 These are all desktop-based tools. (*) are not directly available for download.
 

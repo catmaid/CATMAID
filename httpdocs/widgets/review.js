@@ -93,7 +93,7 @@ var ReviewSystem = new function()
             $('#review_segment_table').remove();
         }
         $('#reviewing_skeleton').text( 'Skeleton ID under review: ' + skeletonID );
-        table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('width', '420').attr('id', 'review_segment_table');
+        table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('width', '420').attr('id', 'review_segment_table').attr('border', '0');
         // create header
         thead = $('<thead />');
         table.append( thead );
@@ -131,7 +131,9 @@ var ReviewSystem = new function()
         // empty row
         row = $('<tr />');
         tbody.append( row );
+        table.append( $('<br /><br /><br /><br />') );
         $("#project_review_widget").append( table );
+
     }
 
     this.startSkeletonToReview = function( ) {

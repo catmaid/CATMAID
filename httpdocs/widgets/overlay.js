@@ -762,8 +762,6 @@ var SkeletonAnnotations = new function()
     {
       // This assumes that the parentID is not null, i.e. exists
       // Creates treenodes from atn to new node in each z section
-      console.log('interpolate me!', atn, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z);
-
       requestQueue.register("model/treenode.create.interpolated.php", "POST", {
         pid: project.id,
         parent_id: atn.id,
@@ -787,7 +785,6 @@ var SkeletonAnnotations = new function()
               alert(e.error);
             } else {
               self.updateNodes(function () {
-                console.log('in callback');
                 self.activateNode( nodes[e.treenode_id] );
               });
             }

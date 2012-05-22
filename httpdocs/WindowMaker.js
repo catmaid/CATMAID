@@ -519,7 +519,7 @@ var WindowMaker = new function()
       content.appendChild( container );
 
       container.innerHTML =
-        '<h2>Download complete microcircuit reconstruction of this project as as <a target="_top" href="'+ django_url + project.id + '/microcircuit/neurohdf' + '">NeuroHDF</a></h2>';
+        '<h2>Download complete microcircuit reconstruction of this project as as <a target="_new" href="'+ django_url + project.id + '/microcircuit/neurohdf' + '">NeuroHDF</a></h2>';
     
       addListener(win, container);
 

@@ -161,6 +161,13 @@ try {
 		if (! $db->commit() ) {
 			emitErrorAndExit( $db, 'Failed to commit for expand!' );
 		}
+
+		// update last node to reset edition time
+		$result = $db->update("treenode", array("confidence" => 5), "id = $tnid");
+		if (false === $result) {
+			emitErrorAndExit($db, "Failed to update last treenode.");
+		}
+
 		echo json_encode( $json );
 	} else {
 		emitErrorAndExit( $db, 'Failed to produce a JSON string!' );

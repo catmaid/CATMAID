@@ -230,6 +230,8 @@ var SkeletonAnnotations = new function()
       if (node)
       {
         if (node.id === atn.id && node.skeleton_id === atn.skeleton_id) {
+          // Update coordinates
+          atn.set(node);
           return; // Already active
         }
         // Update statusBar
@@ -793,7 +795,6 @@ var SkeletonAnnotations = new function()
         return true;
       });
       return;
-
     }
 
     // Create a node and activate it

@@ -178,7 +178,7 @@ if (strpos($parentname, "Isolated synaptic terminals")) {
                    cici.class_instance_b = $parentid AND
                    (cici.relation_id = ${relations['model_of']}
                     OR cici.relation_id = ${relations['part_of']})
-             ORDER BY ci.creation_time
+             ORDER BY ci.name
              LIMIT $maxnodes");
 
         error_log("got extra_res ".print_r($extra_res, TRUE));
@@ -213,7 +213,7 @@ if (strpos($parentname, "Isolated synaptic terminals")) {
              cici.class_instance_b = $parentid AND
              (cici.relation_id = {$relations['model_of']}
               OR cici.relation_id = {$relations['part_of']})
-       ORDER BY ci.creation_time DESC
+       ORDER BY ci.name ASC
        LIMIT $maxnodes");
 
 }

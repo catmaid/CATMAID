@@ -37,7 +37,7 @@ $escaped_search_string = pg_escape_string($search_string);
 $rows = $db->getResult(
   "SELECT ci.id, ci.name, c.class_name
    FROM class_instance ci inner join class c ON ci.class_id = c.id
-   WHERE name ilike '%{$escaped_search_string}%' order by class_name, name");
+   WHERE name ilike '%{$escaped_search_string}%'  AND ci.project_id = ".$pid." order by class_name, name");
 
 # Retrieve nodes holding text labels
 $labeled_as_id = null;
@@ -59,6 +59,7 @@ for ($i=0, $length = count($rows); $i<$length; $i++) {
        WHERE treenode.project_id = '.$pid.'
          AND "treenode"."id" = "tci"."treenode_id"
          AND "tci"."relation_id" = '.$labeled_as_id.'
+         AND "tci"."project_id" = '.$pid.'
          AND "tci"."class_instance_id" = "class_instance"."id"
          AND "class_instance"."name" = \''.$rows[$i]['name'].'\'
        ORDER BY "treenode"."id" DESC');

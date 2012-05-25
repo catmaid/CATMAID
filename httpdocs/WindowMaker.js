@@ -89,57 +89,57 @@ var WindowMaker = new function()
     var add = document.createElement('input');
     add.setAttribute("type", "button");
     add.setAttribute("id", "add_current_to_3d_webgl_view");
-    add.setAttribute("value", "Add current skeleton to 3D view");
-    add.onclick = addTo3DWebGLView; // function declared in webglapp.js
+    add.setAttribute("value", "Show active skeleton");
+    add.onclick = WebGLApp.addActiveSkeletonToView;
     container.appendChild(add);
 
     var active = document.createElement('input');
     active.setAttribute("type", "button");
     active.setAttribute("id", "update_current_atn_3d_webgl_view");
-    active.setAttribute("value", "Update current active node position");
-    active.onclick = update3DWebGLViewATN; // function declared in webglapp.js
+    active.setAttribute("value", "Show active node");
+    active.onclick = WebGLApp.updateActiveNode;
     container.appendChild(active);
 
     var fulls = document.createElement('input');
     fulls.setAttribute("type", "button");
     fulls.setAttribute("id", "fullscreen_webgl_view");
     fulls.setAttribute("value", "Fullscreen");
-    fulls.onclick = fullscreenWebGL; // function declared in webglapp.js
+    fulls.onclick = WebGLApp.fullscreenWebGL;
     container.appendChild(fulls);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
     rand.setAttribute("id", "randomize_skeleton_color");
     rand.setAttribute("value", "Randomize color");
-    rand.onclick = randomizeWebGLColor; // function declared in webglapp.js
+    rand.onclick = WebGLApp.randomizeColors;
     container.appendChild(rand);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
     rand.setAttribute("id", "xy_plane");
     rand.setAttribute("value", "XY");
-    rand.onclick = XYView; // function declared in webglapp.js
+    rand.onclick =  WebGLApp.XYView;
     container.appendChild(rand);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
     rand.setAttribute("id", "xz_plane");
     rand.setAttribute("value", "XZ");
-    rand.onclick = XZView; // function declared in webglapp.js
+    rand.onclick = WebGLApp.XZView;
     container.appendChild(rand);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
     rand.setAttribute("id", "yz_plane");
     rand.setAttribute("value", "YZ");
-    rand.onclick = YZView; // function declared in webglapp.js
+    rand.onclick = WebGLApp.YZView;
     container.appendChild(rand);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "enable_z_plane");
     rand.setAttribute("value", "Enable z-plane");
-    rand.onclick = updateZPlane; // function declared in webglapp.js
+    rand.onclick = WebGLApp.updateZPlane;
     container.appendChild(rand);
     var rand = document.createTextNode('Enable z-plane');
     container.appendChild(rand);
@@ -152,6 +152,28 @@ var WindowMaker = new function()
     list.setAttribute("id", "view-3d-webgl-object-list")
     container.appendChild(list);
 
+    var tabdiv = document.createElement('div');
+    tabdiv.setAttribute("id", "view-3d-webgl-skeleton-table-div")
+    tabdiv.style.height = "150px";
+    tabdiv.style.overflow = "auto";
+    container.appendChild(tabdiv);
+
+    var tab = document.createElement('table');
+    tab.setAttribute("id", "webgl-skeleton-table");
+    tab.innerHTML =
+        '<thead>' +
+          '<tr>' +
+            '<th>show</th>' +
+            '<th>pre</th>' +
+            '<th>post</th>' +
+            '<th>name</th>' +
+            '<th>action</th>' +
+          '<tr>' +
+        '</thead>' +
+        '<tbody>' +
+        '</tbody>';
+    tabdiv.appendChild(tab);
+
     var canvas = document.createElement('div');
     canvas.setAttribute("id", "viewer-3d-webgl-canvas");
     canvas.style.width = "800px";
@@ -159,12 +181,45 @@ var WindowMaker = new function()
     canvas.style.backgroundColor = "#000000";
     container.appendChild(canvas);
 
-    addListener(win, container);
+    //addListener(win, container);
+    win.addListener(
+      function(callingWindow, signal) {
+        switch (signal) {
+          case CMWWindow.CLOSE:
+            if (typeof project == undefined || project == null) {
+              rootWindow.close();
+              document.getElementById("content").style.display = "none";
+            }
+            else {
+              // Remove from listing
+              for (var name in windows) {
+                if (windows.hasOwnProperty(name)) {
+                  if (win === windows[name]) {
+                    delete windows[name];
+                    // console.log("deleted " + name);
+                    break;
+                  }
+                }
+              }
+              // win.close();
+            }
+            break;
+          case CMWWindow.RESIZE:
+            var frame = win.getFrame();
+            container.style.height = win.getContentHeight() + "px";
+            WebGLApp.resizeView( parseInt(frame.style.width, 10), parseInt(frame.style.height, 10) )
+            break;
+        }
+        return true;
+      });
+
 
     addLogic(win);
 
     // Fill in with a Raphael canvas, now that the window exists in the DOM:
-    createWebGLViewerFromCATMAID(canvas.getAttribute("id"));
+    // createWebGLViewerFromCATMAID(canvas.getAttribute("id"));
+
+    WebGLApp.init( canvas.getAttribute("id") );
 
     return win;
   }
@@ -519,7 +574,7 @@ var WindowMaker = new function()
       content.appendChild( container );
 
       container.innerHTML =
-        '<h2>Download complete microcircuit reconstruction of this project as a <a target="_new" href="'+ django_url + project.id + '/microcircuit/neurohdf' + '">NeuroHDF</a></h2> file';
+        '<h2>Download complete microcircuit reconstruction of this project as a <a target="_new" href="'+ django_url + project.id + '/microcircuit/neurohdf' + '">NeuroHDF</a></h2>';
     
       addListener(win, container);
 

@@ -247,11 +247,10 @@ var ObjectTree = new function()
                 "separator_after": false,
                 "label": "3D Viewer",
                 "action": function (obj) {
-                  var myparent = $.jstree._focused()._get_parent(obj);
-
+                  // var myparent = $.jstree._focused()._get_parent(obj);
                   WindowMaker.show("3d-webgl-view");
                   var skelid = obj.attr("id").replace("node_", "");
-                  addSkeletonTo3DWebGLView( project.id, skelid, this.get_text(obj), this.get_text(myparent) );
+                  WebGLApp.addSkeletonFromID( project.id, skelid )
                 }
               },
               "goto_parent": {

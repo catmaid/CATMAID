@@ -1,20 +1,35 @@
 
-function WebGLViewer(divID) {
+var WebGLApp = new function () {
 
-  var self = this;
-
-  this.divID = divID;
-  this.divID_jQuery = '#' + divID;
-
-  this.divWidth = $(this.divID_jQuery).width();
-  this.divHeight = $(this.divID_jQuery).height();
-
-  this.neurons = [];
+  self = this;
+  self.neurons = [];
 
   var camera, scene, renderer, grid_lines, scale, controls, light, zplane = null;
-  var mouseX = 0, mouseY = 0;
-  var project_id = project.id;
-  var stack_id = project.focusedStack.id;
+  var project_id, stack_id, resolution, dimension, translation, canvasWidth, canvasHeight;
+
+  this.init = function( divID ) {
+
+    self.project_id = project.id;
+    self.stack_id = project.focusedStack.id;
+
+    self.divID = divID;
+    self.divID_jQuery = '#' + divID;
+
+    self.divWidth = $(this.divID_jQuery).width();
+    self.divHeight = $(this.divID_jQuery).height();
+
+    resolution = project.focusedStack.resolution;
+    dimension = project.focusedStack.dimension;
+    translation = project.focusedStack.translation;
+
+    init_webgl();
+    animate();
+    debugaxes();
+    draw_grid();
+    drawmesh();
+    XYView();
+
+  }
 
   var randomColors = [];
   randomColors[0] = [255, 255, 0]; // yellow
@@ -30,19 +45,9 @@ function WebGLViewer(divID) {
     return [point[0],-point[1]+dimension.y*resolution.y,-point[2] ];
   }
 
-  var resolution = project.focusedStack.resolution;
-      dimension = project.focusedStack.dimension;
-      translation = project.focusedStack.translation;
-
   var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
 
-  init();
-  animate();
-  debugaxes();
-  draw_grid();
-  drawmesh();
-
-  function init() {
+  function init_webgl() {
     container = document.getElementById(self.divID);
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera( 75, self.divWidth / self.divHeight, 1, 3000 );
@@ -66,7 +71,7 @@ function WebGLViewer(divID) {
     pointLight = new THREE.PointLight( 0xffaa00 );
     pointLight.position.set( 0, 0, 0 );
     scene.add( pointLight );
-/*  
+/*
     // light representation
 
     sphere = new THREE.SphereGeometry( 100, 16, 8, 1 );
@@ -106,7 +111,7 @@ function WebGLViewer(divID) {
 
   }
 
-  var getBBDimension = function()
+  function getBBDimension()
   {
     return new THREE.Vector3(
       dimension.x*resolution.x*scale,
@@ -114,7 +119,7 @@ function WebGLViewer(divID) {
       dimension.z*resolution.z*scale);
   }
 
-  var getBBCenterTarget = function()
+  function getBBCenterTarget()
   {
     var x_middle = (dimension.x*resolution.x)/2.0 + translation.x,
         y_middle = (dimension.y*resolution.y)/2.0 + translation.y,
@@ -123,18 +128,19 @@ function WebGLViewer(divID) {
     return new THREE.Vector3(coord[0]*scale,coord[1]*scale,coord[2]*scale);
   }
 
-  this.XYView = function()
+  function XYView()
   {
     var pos = getBBCenterTarget(),
       dim = getBBDimension();
     controls.target = pos;
     camera.position.x = pos.x;
     camera.position.y = pos.y;
-    camera.position.z = (dim.z/2)+100;
+    camera.position.z = (dim.z/2)+100+pos.z;
     camera.up.set(0, 1, 0);
   }
+  self.XYView = XYView;
 
-  this.XZView = function()
+  function XZView()
   {
     var pos = getBBCenterTarget(),
       dim = getBBDimension();
@@ -144,8 +150,9 @@ function WebGLViewer(divID) {
     camera.position.z = pos.z;
     camera.up.set(0, 0, -1);
   }
+  self.XZView = XZView;
 
-  this.YZView = function()
+  function YZView()
   {
     var pos = getBBCenterTarget(),
       dim = getBBDimension();
@@ -155,9 +162,21 @@ function WebGLViewer(divID) {
     camera.position.z = pos.z;
     camera.up.set(0, 1, 0);
   }
+  self.YZView = YZView;
+
+  // credit: http://stackoverflow.com/questions/638948/background-color-hex-to-javascript-variable-jquery
+  function rgb2hex(rgb) {
+    console.log(rgb)
+   rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+   function hex(x) {
+    return ("0" + parseInt(x).toString(16)).slice(-2);
+   }
+   return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
+  }
 
   var Skeleton = function( skeleton_data )
   {
+    var self = this;
     this.translate = function( dx, dy, dz )
     {
       for ( var i=0; i<connectivity_types.length; ++i ) {
@@ -176,6 +195,8 @@ function WebGLViewer(divID) {
     this.changeColor = function( value )
     {
       this.actor[connectivity_types[0]].material.color.setRGB( value[0]/255., value[1]/255., value[2]/255. );
+      this.actorColor = value;
+      $('#skeletonaction-changecolor-' + self.id).css("background-color", rgb2hex( 'rgb('+value[0]+','+value[1]+','+value[2]+')' ) );
     }
 
     this.updateCompositeActor = function()
@@ -208,7 +229,8 @@ function WebGLViewer(divID) {
     this.line_material = new Object();
     this.geometry = new Object();
     this.actor = new Object();
-
+    this.actorColor = null;
+    
     this.geometry[connectivity_types[0]] = new THREE.Geometry();
     this.geometry[connectivity_types[1]] = new THREE.Geometry();
     this.geometry[connectivity_types[2]] = new THREE.Geometry();
@@ -228,7 +250,7 @@ function WebGLViewer(divID) {
     for (var fromkey in this.original_connectivity) {
       var to = this.original_connectivity[fromkey];
       for (var tokey in to) {
-        
+
         type = connectivity_types[connectivity_types.indexOf(this.original_connectivity[fromkey][tokey]['type'])];
         var fv=transform_coordinates([
                  this.original_vertices[fromkey]['x'],
@@ -289,7 +311,7 @@ function WebGLViewer(divID) {
             this.labelSphere[tokey].scale.set( 2, 2, 2 );
             scene.add( this.labelSphere[tokey] );
         }
-          
+
       }
     }
 
@@ -307,30 +329,48 @@ function WebGLViewer(divID) {
   {
     var divID = 'view_in_3d_webgl_widget'; //'viewer-3d-webgl-canvas';
     if( THREEx.FullScreen.activated() ){
-        var w = 700, h = 600;
+        var w = canvasWidth, h = canvasHeight;
         $('#viewer-3d-webgl-canvas').width(w);
         $('#viewer-3d-webgl-canvas').height(h);
         $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
         renderer.setSize( w, h );
         THREEx.FullScreen.cancel();
-
     } else {
-        THREEx.FullScreen.request(document.getElementById(divID));
-        var w = 1050, h = 900;
-        //var w = window.innerWidth, h = window.innerHeight - 200;
+        THREEx.FullScreen.request(document.getElementById('viewer-3d-webgl-canvas'));
+        var w = window.innerWidth, h = window.innerHeight;
+        console.log('fullscreen', w, h);
         $('#viewer-3d-webgl-canvas').width(w);
         $('#viewer-3d-webgl-canvas').height(h);
         $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
         renderer.setSize( w, h );
     };
-
   }
 
-  this.createActiveNode = function( x, y, z)
+  self.resizeView = function (w, h) {
+    if( renderer && !THREEx.FullScreen.activated() ) {
+      var canvasWidth = w, canvasHeight = h;
+      if( isNaN(h) && isNaN(w) ) {
+        canvasHeight = 800;
+        canvasWidth = 600;
+      }
+      // use 4:3
+      if( isNaN(h) ) {
+        canvasHeight = canvasWidth / 4 * 3;
+      } else if( isNaN(w) ) {
+        canvasHeight = canvasHeight - 100;
+        canvasWidth = canvasHeight / 3 * 4;
+      }
+      $('#viewer-3d-webgl-canvas').width(canvasWidth);
+      $('#viewer-3d-webgl-canvas').height(canvasHeight);
+      $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
+      renderer.setSize( canvasWidth, canvasHeight );
+    }
+  }
+
+  self.createActiveNode = function( x, y, z)
   {
-    sphere = new THREE.SphereGeometry( 130 * scale, 32, 32, 1 );
+    sphere = new THREE.SphereGeometry( dimension.x / 20 * scale, 32, 32, 1 );
     active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.6, transparent:true } ) );
-    // active_node.scale.set( 0.05, 0.05, 0.05 );
     active_node.position.set( x,y,z );
     scene.add( active_node );
   }
@@ -342,10 +382,18 @@ function WebGLViewer(divID) {
     }
   }
 
-  this.updateActiveNode = function( x, y, z )
+  this.updateActiveNode = function(  )
   {
+    var atn_id = SkeletonAnnotations.getActiveNodeId();
+    if (!atn_id) {
+      alert("You must have an active node selected to add its skeleton to the 3D WebGL View.");
+      self.removeActiveNode();
+      return;
+    }
+    var atn_pos = SkeletonAnnotations.getActiveNodePosition();
+    var x = atn_pos.x, y = atn_pos.y, z = atn_pos.z;
     if(!active_node) {
-      this.createActiveNode( 0, 0, 0 );
+      self.createActiveNode( 0, 0, 0 );
     }
     var co = transform_coordinates( [
       translation.x + ((x) / project.focusedStack.scale) * resolution.x,
@@ -357,17 +405,19 @@ function WebGLViewer(divID) {
 
   this.randomizeColors = function()
   {
-    var i = 0;
+    var i = 0, col;
     for( var skeleton_id in skeletons)
 		{
       if( i < randomColors.length ) {
-        skeletons[skeleton_id].changeColor( randomColors[i] );
+        col = randomColors[i];
       } else {
-        skeletons[skeleton_id].changeColor( [parseInt( Math.random() * 255 ),
+        col = [parseInt( Math.random() * 255 ),
           parseInt( Math.random() * 255 ),
-          parseInt( Math.random() * 255 ) ] );
+          parseInt( Math.random() * 255 ) ];
+
       }
       i=i+1;
+      skeletons[skeleton_id].changeColor( col );
     }
   }
 
@@ -384,22 +434,22 @@ function WebGLViewer(divID) {
     skeleton_data['id'] = skeleton_id;
     skeletons[skeleton_id] = new Skeleton( skeleton_data );
     if(!deleted) {
-      self.addToSkeletonList( skeletons[skeleton_id] );
+      self.addSkeletonToTable( skeletons[skeleton_id] );
     }
     skeletons[skeleton_id].addCompositeActorToScene();
     return true;
   }
 
-  this.changeSkeletonColor = function( skeleton_id, value )
+  this.changeSkeletonColor = function( skeleton_id, value, color )
   {
     if( !skeletons.hasOwnProperty(skeleton_id) ){
         alert("Skeleton "+skeleton_id+" does not exist. Cannot change color it!");
         return;
     } else {
         skeletons[skeleton_id].changeColor( value );
+        $('#skeletonaction-changecolor-' + skeleton_id).css("background-color",color.hex);
         return true;
     }
-
   }
 
   // remove skeleton from scence
@@ -423,10 +473,6 @@ function WebGLViewer(divID) {
     var mesh = new THREE.Mesh( gg, mm );
     mesh.position.set(x, y, z);
     scene.add( mesh );
-    // update camera
-    camera.position.x = x;
-    camera.position.y = y;
-    camera.position.z = (dz/2)+100;
   }
 
   function addMesh( geometry, scale, x, y, z, rx, ry, rz, material ) {
@@ -448,8 +494,7 @@ function WebGLViewer(divID) {
     var s = Date.now(),
         callback = function( geometry ) { createScene( geometry, s ) };
     jQuery.ajax({
-        //url: "../../model/export.skeleton.json.php",
-        url: "dj/"+project_id+"/stack/"+stack_id+"/models",
+        url: "dj/"+self.project_id+"/stack/"+self.stack_id+"/models",
         type: "GET",
         dataType: "json",
         success: function (models) {
@@ -470,8 +515,15 @@ function WebGLViewer(divID) {
       });
   }
 
+  self.updateZPlane = function() {
 
-  this.updateZPlane = function(zval) {
+    var zval;
+    if( $('#enable_z_plane').attr('checked') != undefined ) {
+      zval = project.focusedStack.z;
+    } else {
+      zval = -1;
+    }
+    console.log('zval', zval)
     // if disabled, deselect
     if( zval === -1 ) {
         scene.remove( zplane );
@@ -498,6 +550,7 @@ function WebGLViewer(divID) {
         return;
     }
     zplane.position.z = newval;
+    
   }
 
   function debugaxes() {
@@ -539,49 +592,125 @@ function WebGLViewer(divID) {
     renderer.render( scene, camera );
   }
 
+  self.addSkeletonToTable = function ( skeleton ) {
 
-  this.addToSkeletonList = function ( skeleton ) {
-    var newElement = $('<li/>'),
-        linkElement, enclosingObject = this;
-    newElement.attr('id', '3d-object-' + skeleton.baseName );
-    newElement.text(skeleton.baseName + ' ');
-    linkElement = $('<a/>');
-    linkElement.attr('href', '#');
-    linkElement.text("(remove)");
-    enclosingObject = this;
-    linkElement.click(function (e) {
-      self.removeSkeleton( skeleton.id );
-      newElement.remove();
+    var rowElement = $('<tr/>').attr({
+      id: 'skeletonrow-' + skeleton.id
     });
-    newElement.append(linkElement);
-  
-    $('#view-3d-webgl-object-list').append(newElement);
+    $('#webgl-skeleton-table > tbody:last').append( rowElement );
     
-    colorElement = $('<a/>');
-    colorElement.attr('href', '#');
-    colorElement.text("(change color)");
-    colorElement.click(function (e) {
-      $('#color-wheel-' + skeleton.id).toggle();
-    });
-    newElement.append(colorElement);
+    // show skeleton
+    rowElement.append(
+      $(document.createElement("td")).append(
+        $(document.createElement("input")).attr({
+                  id:    'skeletonshow-' + skeleton.id,
+                  name:  skeleton.baseName,
+                  value: skeleton.id,
+                  type:  'checkbox',
+                  checked:true
+          })
+          .click( function( event )
+          {
+                  var cbox = $(this)[0];
+                  console.log( cbox.value );
+          } )
+    ));
 
-    var colorWheel = $('<div id="color-wheel-' +
-      skeleton.id + '"><div class="colorwheel'+
-      skeleton.id + '"></div></div>');
-    newElement.append(colorWheel);
-    $('#color-wheel-' + skeleton.id).hide();
+    // show pre
+    rowElement.append(
+      $(document.createElement("td")).append(
+        $(document.createElement("input")).attr({
+                  id:    'skeletonpre-' + skeleton.id,
+                  name:  skeleton.baseName,
+                  value: skeleton.id,
+                  type:  'checkbox',
+                  checked:true
+          })
+          .click( function( event )
+          {
+                  var cbox = $(this)[0];
+                  console.log( cbox.value );
+          } )
+    ));
+
+    // show post
+    rowElement.append(
+      $(document.createElement("td")).append(
+        $(document.createElement("input")).attr({
+                  id:    'skeletonpost-' + skeleton.id,
+                  name:  skeleton.baseName,
+                  value: skeleton.id,
+                  type:  'checkbox',
+                  checked:true
+          })
+          .click( function( event )
+          {
+                  var cbox = $(this)[0];
+                  console.log( cbox.value );
+          } )
+    ));
+
+    rowElement.append(
+      $(document.createElement("td")).text( skeleton.baseName + ' (SkeletonID: ' + skeleton.id + ')' )
+    );
+
+    rowElement.append(
+      $(document.createElement("td")).append(
+        $(document.createElement("button")).attr({
+          id:    'skeletonaction-remove-' + skeleton.id,
+          value: 'Remove'
+          })
+          .click( function( event )
+          {
+            console.log('remove', this, $(this), self);
+            self.removeSkeleton( skeleton.id );
+            rowElement.remove();
+          } )
+      ).append(
+        $(document.createElement("button")).attr({
+          id:    'skeletonaction-changecolor-' + skeleton.id,
+          value: 'Change color'
+          })
+          .click( function( event )
+          {
+            console.log('change color', this, $(this), self);
+            $('#color-wheel-' + skeleton.id).toggle();
+          } )
+      ).append(
+        $('<div id="color-wheel-' +
+          skeleton.id + '"><div class="colorwheel'+
+          skeleton.id + '"></div></div>')
+      )
+    );
 
     var cw = Raphael.colorwheel($("#color-wheel-"+skeleton.id+" .colorwheel"+skeleton.id)[0],150);
-		cw.color("#FF9900");
+    cw.color("#FFFF00");
+    $('#skeletonaction-changecolor-' + skeleton.id).css("background-color","#FFFF00");
     cw.onchange(function(color)
     {
       var colors = [parseInt(color.r), parseInt(color.g), parseInt(color.b)]
-      self.changeSkeletonColor( skeleton.id, colors );
+      self.changeSkeletonColor( skeleton.id, colors, color );
     })
 
-  };
+    $('#color-wheel-' + skeleton.id).hide();
 
-  this.addFromCATMAID = function (projectID, skeletonID, neuronName) {
+  }
+
+  self.addActiveSkeletonToView = function() {
+    var atn_id = SkeletonAnnotations.getActiveNodeId(),
+        skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
+    if (!atn_id) {
+      alert("You must have an active node selected to add its skeleton to the 3D WebGL View.");
+      return;
+    }
+    if (SkeletonAnnotations.getActiveNodeType() != "treenode") {
+      alert("You can only add skeletons to the 3D WebGL View at the moment - please select a node of a skeleton.");
+      return;
+    }
+    self.addSkeletonFromID( project.id, skeleton_id );
+  }
+
+  self.addSkeletonFromID = function (projectID, skeletonID) {
     if( skeletonID !== undefined )
     {
         jQuery.ajax({
@@ -590,142 +719,11 @@ function WebGLViewer(divID) {
           type: "GET",
           dataType: "json",
           success: function (skeleton_data) {
-            skeleton_data['baseName'] = neuronName;
+            skeleton_data['baseName'] = skeleton_data['neuron']['neuronname'];
             self.addSkeleton( parseInt(skeletonID), skeleton_data );
           }
         });
     }
   };
 
-  this.toString = function () {
-    return "WebGL Viewer(" + this.divID + ")";
-  };
-
-}
-
-function nameFromCATMAIDInfo(info) {
-  return info.skeleton_name + ' [' + info.neuron_name + ']';
-}
-
-function addNeuronFromCATMAID(divID, info) {
-
-  var divID_jQuery = '#' + divID;
-
-  if (!$(divID_jQuery).data('viewer')) {
-    $(divID_jQuery).data('viewer', new WebGLViewer(divID));
-  }
-
-  $(divID_jQuery).data('viewer').addFromCATMAID(info.project_id, info.skeleton_id, nameFromCATMAIDInfo(info));
-}
-
-function createWebGLViewerFromCATMAID(divID) {
-
-  var divID_jQuery = '#' + divID;
-
-  if (!$(divID_jQuery).data('viewer')) {
-    $(divID_jQuery).data('viewer', new WebGLViewer(divID));
-  }
-}
-
-function updateZPlane() {
-
-  var divID = 'viewer-3d-webgl-canvas';
-  var divID_jQuery = '#' + divID;
-
-  if( $('#enable_z_plane').attr('checked') != undefined ) {
-      $(divID_jQuery).data('viewer').updateZPlane( project.focusedStack.z );
-  } else {
-      $(divID_jQuery).data('viewer').updateZPlane(-1);
-  }
-
-
-
-}
-
-function update3DWebGLViewATN() {
-  var atn = SkeletonAnnotations.getActiveNodePosition();
-
-  var divID = 'viewer-3d-webgl-canvas';
-  var divID_jQuery = '#' + divID;
-
-  if (!$(divID_jQuery).data('viewer')) {
-    $(divID_jQuery).data('viewer', new WebGLViewer(divID));
-  }
-
-  if (!atn) {
-    alert("You must have an active node selected to add its skeleton to the 3D WebGL View.");
-    $(divID_jQuery).data('viewer').removeActiveNode();
-    return;
-  }
-
-  $(divID_jQuery).data('viewer').updateActiveNode( atn.x, atn.y, atn.z );
-  
-}
-
-function addSkeletonTo3DWebGLView(project_id, skeleton_id, skeleton_name, neuron_name) {
-  var e = new Object();
-  e['project_id'] = project_id;
-  e['skeleton_id'] = skeleton_id;
-  e['skeleton_name'] = skeleton_name;
-  e['neuron_name'] = neuron_name;
-  addNeuronFromCATMAID('viewer-3d-webgl-canvas', e);
-}
-
-function fullscreenWebGL() {
-  var divID = 'viewer-3d-webgl-canvas';
-  var divID_jQuery = '#' + divID;
-  $(divID_jQuery).data('viewer').fullscreenWebGL();
-}
-
-function randomizeWebGLColor() {
-  var divID = 'viewer-3d-webgl-canvas';
-  var divID_jQuery = '#' + divID;
-  $(divID_jQuery).data('viewer').randomizeColors();
-}
-
-function XYView() {
-  var divID = 'viewer-3d-webgl-canvas';
-  var divID_jQuery = '#' + divID;
-  $(divID_jQuery).data('viewer').XYView();
-}
-
-function XZView() {
-  var divID = 'viewer-3d-webgl-canvas';
-  var divID_jQuery = '#' + divID;
-  $(divID_jQuery).data('viewer').XZView();
-}
-
-function YZView() {
-  var divID = 'viewer-3d-webgl-canvas';
-  var divID_jQuery = '#' + divID;
-  $(divID_jQuery).data('viewer').YZView();
-}
-
-function addTo3DWebGLView() {
-  var atn_id = SkeletonAnnotations.getActiveNodeId();
-  if (!atn_id) {
-    alert("You must have an active node selected to add its skeleton to the 3D WebGL View.");
-    return;
-  }
-  if (SkeletonAnnotations.getActiveNodeType() != "treenode") {
-    alert("You can only add skeletons to the 3D WebGL View at the moment - please select a node of a skeleton.");
-    return;
-  }
-  requestQueue.register('model/treenode.info.php', 'POST', {
-    pid: project.id,
-    tnid: atn_id
-  }, function (status, text, xml) {
-    if (status == 200) {
-      var e = eval("(" + text + ")");
-      if (e.error) {
-        alert(e.error);
-      } else {
-        e['project_id'] = project.id;
-        addNeuronFromCATMAID('viewer-3d-webgl-canvas', e);
-      }
-    } else {
-      alert("Bad status code " + status + " mapping treenode ID to skeleton and neuron");
-    }
-    return true;
-  });
 }

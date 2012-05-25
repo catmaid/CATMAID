@@ -580,7 +580,17 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
                 'type': tc.relation.relation_name
             }
 
-    return {'vertices':vertices,'connectivity':connectivity}
+    # retrieve neuron name
+    p = get_object_or_404(Project, pk=project_id)
+    sk = get_object_or_404(ClassInstance, pk=skeleton_id, project=project_id)
+
+    neuron = ClassInstance.objects.filter(
+        project=p,
+        cici_via_b__relation__relation_name='model_of',
+        cici_via_b__class_instance_a=sk)
+    n = { 'neuronname': neuron[0].name }
+
+    return {'vertices':vertices,'connectivity':connectivity, 'neuron': n }
 
 @catmaid_login_required
 def update_location_reviewer(request, project_id=None, node_id=None, logged_in_user=None):

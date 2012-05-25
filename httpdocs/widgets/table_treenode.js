@@ -20,7 +20,8 @@ var TreenodeTable = new function()
   ns.oTable = null;
   var asInitVals = [];
   var skelid = -1;
-  var last_displayed_skeletons = [];
+  var last_displayed_skeletons = {};
+  last_displayed_skeletons[0] = 'None';
 
   this.setSkeleton = function( skeleton_id ) {
     skelid = skeleton_id;
@@ -65,17 +66,19 @@ var TreenodeTable = new function()
           "value": project.focusedStack.id
         });
 
-        if( skelid && $.inArray( skelid, last_displayed_skeletons) === -1 ) {
+        if( skelid && !(skelid in last_displayed_skeletons) ) {
           // check if skeleton id already in list, of so, do not add it
-          last_displayed_skeletons.push( skelid );
+          last_displayed_skeletons[ skelid ] = $('#neuronName').text();
           var new_skeletons = document.getElementById("treenodetable_lastskeletons");
           while (new_skeletons.length > 0)
               new_skeletons.remove(0);
-          for ( var i=0, len=last_displayed_skeletons.length; i<len; ++i ){
+          for (var skid in last_displayed_skeletons) {
+            if (last_displayed_skeletons.hasOwnProperty(skid)) {
               var option = document.createElement("option");
-              option.text = 'Skeleton ' + last_displayed_skeletons[i];
-              option.value = last_displayed_skeletons[i];
+              option.text = last_displayed_skeletons[ skid ];
+              option.value = skid;
               new_skeletons.appendChild(option);
+            }
           }
         }
         $('#treenodetable_lastskeletons').val( skelid );

@@ -20,7 +20,8 @@ var ConnectorTable = new function()
   var self = this;
   var asInitValsSyn = new Array();
   var skeletonID = -1;
-  var last_displayed_skeletons = [];
+  var last_displayed_skeletons = {};
+  last_displayed_skeletons[0] = 'None';
   var possibleLengths = [25, 100, -1];
   var possibleLengthsLabels = possibleLengths.map(
     function (n) { return (n === -1) ? "All" : n.toString() });
@@ -81,17 +82,19 @@ var ConnectorTable = new function()
             "value" : skeletonID
           });
 
-          if( skeletonID && $.inArray( skeletonID, last_displayed_skeletons) === -1 ) {
+          if( skeletonID && !(skeletonID in last_displayed_skeletons) ) {
             // check if skeleton id already in list, of so, do not add it
-            last_displayed_skeletons.push( skeletonID );
+            last_displayed_skeletons[ skeletonID ] = $('#neuronName').text();
             var new_skeletons = document.getElementById("connectortable_lastskeletons");
             while (new_skeletons.length > 0)
                 new_skeletons.remove(0);
-            for ( var i=0, len=last_displayed_skeletons.length; i<len; ++i ){
+            for (var skid in last_displayed_skeletons) {
+              if (last_displayed_skeletons.hasOwnProperty(skid)) {
                 var option = document.createElement("option");
-                option.text = 'Skeleton ' + last_displayed_skeletons[i];
-                option.value = last_displayed_skeletons[i];
+                option.text = last_displayed_skeletons[ skid ];
+                option.value = skid;
                 new_skeletons.appendChild(option);
+              }
             }
           }
           $('#connectortable_lastskeletons').val( skeletonID );

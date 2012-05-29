@@ -516,14 +516,12 @@ var WebGLApp = new function () {
   }
 
   self.updateZPlane = function() {
-
     var zval;
     if( $('#enable_z_plane').attr('checked') != undefined ) {
       zval = project.focusedStack.z;
     } else {
       zval = -1;
     }
-    console.log('zval', zval)
     // if disabled, deselect
     if( zval === -1 ) {
         scene.remove( zplane );

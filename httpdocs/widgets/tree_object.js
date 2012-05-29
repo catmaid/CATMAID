@@ -113,7 +113,6 @@ var ObjectTree = new function()
                 "label": "Show all skeletons",
                 "action": function (obj) {
                   var geturl = django_url + project.id + '/objecttree/' + obj.attr("id").replace("node_", "") + '/get_all_skeletons';
-                  console.log('geturl', geturl)
                   $.ajax({
                     async: true,
                     cache: false,

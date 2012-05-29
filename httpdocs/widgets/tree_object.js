@@ -107,6 +107,32 @@ var ObjectTree = new function()
             };
           } else if (type_of_node === "group") {
             menu = {
+              "show_all_skeletons": {
+                "separator_before": false,
+                "separator_after": true,
+                "label": "Show all skeletons",
+                "action": function (obj) {
+                  var geturl = django_url + project.id + '/objecttree/' + obj.attr("id").replace("node_", "") + '/get_all_skeletons';
+                  console.log('geturl', geturl)
+                  $.ajax({
+                    async: true,
+                    cache: false,
+                    type: 'POST',
+                    url: geturl,
+                    data: {},
+                    success: function (r, status) {
+                               if (r['error']) {
+                                 alert("ERROR: " + r['error']);
+                               } else {
+                                  WindowMaker.show("3d-webgl-view");
+                                  for( var i in r['skeletons'] ) {
+                                    WebGLApp.addSkeletonFromID( project.id, r['skeletons'][i] )
+                                  }
+                               }
+                             }
+                  });
+                }
+              },
               "create_group": {
                 "separator_before": false,
                 "separator_after": false,

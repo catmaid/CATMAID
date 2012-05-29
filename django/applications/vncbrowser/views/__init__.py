@@ -24,6 +24,7 @@ from views import export_wiring_diagram_nx
 from views import convert_annotations_to_networkx
 from views import stack_info
 from views import update_location_reviewer
+from views import objecttree_get_all_skeletons
 
 from views import get_tile
 from views import push_image

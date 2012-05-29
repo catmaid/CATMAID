@@ -38,6 +38,8 @@ urlpatterns = patterns(
 
     (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', 'vncbrowser.views.update_location_reviewer'),
 
+    (r'^(?P<project_id>\d+)/objecttree/(?P<node_id>\d+)/get_all_skeletons', 'vncbrowser.views.objecttree_get_all_skeletons'),
+
     (r'^user-list$', 'vncbrowser.views.user_list'),
     (r'^(?P<project_id>\d+)/root-for-skeleton/(?P<skeleton_id>\d+)$', 'vncbrowser.views.root_for_skeleton'),
     (r'^(?P<project_id>\d+)/stats$', 'vncbrowser.views.stats'),

@@ -660,7 +660,6 @@ var WebGLApp = new function () {
           })
           .click( function( event )
           {
-            console.log('remove', this, $(this), self);
             self.removeSkeleton( skeleton.id );
             rowElement.remove();
           } )
@@ -671,7 +670,6 @@ var WebGLApp = new function () {
           })
           .click( function( event )
           {
-            console.log('change color', this, $(this), self);
             $('#color-wheel-' + skeleton.id).toggle();
           } )
       ).append(

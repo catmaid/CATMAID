@@ -681,33 +681,48 @@ function TracingTool()
     }
   }) );
 
-    this.addAction( new Action({
-        helpText: "Move to previous node in segment for review",
-        keyShortcuts: {
-            'Q': [ 81 ]
-        },
-        run: function (e) {
-            if (!mayEdit())
-                return false;
-            if (ReviewSystem.validSegment())
-                ReviewSystem.moveNodeInSegmentBackward();
-            return true;
-        }
-    }) );
+  this.addAction( new Action({
+      helpText: "Move to previous node in segment for review",
+      keyShortcuts: {
+          'Q': [ 81 ]
+      },
+      run: function (e) {
+          if (!mayEdit())
+              return false;
+          if (ReviewSystem.validSegment())
+              ReviewSystem.moveNodeInSegmentBackward();
+          return true;
+      }
+  }) );
 
-    this.addAction( new Action({
-        helpText: "Move to next node in segment for review",
-        keyShortcuts: {
-            'W': [ 87 ]
-        },
-        run: function (e) {
-            if (!mayEdit())
-                return false;
-            if (ReviewSystem.validSegment())
-                ReviewSystem.moveNodeInSegmentForward();
-            return true;
-        }
-    }) );
+  this.addAction( new Action({
+      helpText: "Move to next node in segment for review",
+      keyShortcuts: {
+          'W': [ 87 ]
+      },
+      run: function (e) {
+          if (!mayEdit())
+              return false;
+          if (ReviewSystem.validSegment())
+              ReviewSystem.moveNodeInSegmentForward();
+          return true;
+      }
+  }) );
+
+  this.addAction( new Action({
+      helpText: "Rename object tree node",
+      keyShortcuts: {
+          'F2': [ 113 ]
+      },
+      run: function (e) {
+          if (!mayEdit())
+              return false;
+          ObjectTree.renameCurrentActiveNode();
+          return true;
+      }
+  }) );
+
+
 
 
   var keyCodeToAction = getKeyCodeToActionMap(actions);

@@ -10,6 +10,10 @@ var ObjectTree = new function()
     project.selectedObjects.selectedneuron = null;
   }
 
+  this.renameCurrentActiveNode = function() {
+    $('#tree_object').jstree("rename");
+  }
+
   this.init = function (pid) {
     // id of object tree
     var object_tree_id = "#tree_object";

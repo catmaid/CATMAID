@@ -152,6 +152,13 @@ var WindowMaker = new function()
     list.setAttribute("id", "view-3d-webgl-object-list")
     container.appendChild(list);
 
+    var canvas = document.createElement('div');
+    canvas.setAttribute("id", "viewer-3d-webgl-canvas");
+    canvas.style.width = "800px";
+    canvas.style.height = "600px";
+    canvas.style.backgroundColor = "#000000";
+    container.appendChild(canvas);
+
     var tabdiv = document.createElement('div');
     tabdiv.setAttribute("id", "view-3d-webgl-skeleton-table-div")
     tabdiv.style.height = "150px";
@@ -173,13 +180,6 @@ var WindowMaker = new function()
         '<tbody>' +
         '</tbody>';
     tabdiv.appendChild(tab);
-
-    var canvas = document.createElement('div');
-    canvas.setAttribute("id", "viewer-3d-webgl-canvas");
-    canvas.style.width = "800px";
-    canvas.style.height = "600px";
-    canvas.style.backgroundColor = "#000000";
-    container.appendChild(canvas);
 
     //addListener(win, container);
     win.addListener(

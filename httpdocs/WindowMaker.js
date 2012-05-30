@@ -144,6 +144,15 @@ var WindowMaker = new function()
     var rand = document.createTextNode('Enable z-plane');
     container.appendChild(rand);
 
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "show_meshes");
+    rand.setAttribute("value", "Show meshes");
+    rand.onclick = WebGLApp.toggleMeshes;
+    container.appendChild(rand);
+    var rand = document.createTextNode('Show meshes');
+    container.appendChild(rand);
+
     var introduction = document.createElement('p')
     introduction.setAttribute("id", "view3DWebGLIntroduction");
     container.appendChild(introduction);

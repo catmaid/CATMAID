@@ -4,7 +4,7 @@ var WebGLApp = new function () {
   self = this;
   self.neurons = [];
 
-  var camera, scene, renderer, grid_lines, scale, controls, light, zplane = null;
+  var camera, scene, renderer, grid_lines, scale, controls, light, zplane = null, meshes = [], show_meshes = false;
   var project_id, stack_id, resolution, dimension, translation, canvasWidth, canvasHeight;
 
   this.init = function( divID ) {
@@ -26,7 +26,6 @@ var WebGLApp = new function () {
     animate();
     debugaxes();
     draw_grid();
-    drawmesh();
     XYView();
 
   }
@@ -338,7 +337,6 @@ var WebGLApp = new function () {
     } else {
         THREEx.FullScreen.request(document.getElementById('viewer-3d-webgl-canvas'));
         var w = window.innerWidth, h = window.innerHeight;
-        console.log('fullscreen', w, h);
         $('#viewer-3d-webgl-canvas').width(w);
         $('#viewer-3d-webgl-canvas').height(h);
         $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
@@ -476,11 +474,12 @@ var WebGLApp = new function () {
   }
 
   function addMesh( geometry, scale, x, y, z, rx, ry, rz, material ) {
-    mesh = new THREE.Mesh( geometry, material );
+    var mesh = new THREE.Mesh( geometry, material );
     mesh.scale.set( scale, scale, scale );
     mesh.position.set( x, y, z );
     mesh.rotation.set( rx, ry, rz );
     mesh.doubleSided = true;
+    meshes.push( mesh );
     scene.add( mesh );
 	}
 
@@ -508,11 +507,25 @@ var WebGLApp = new function () {
               vert2.push( fv[1] );
               vert2.push( fv[2] );
             }
-            models[obj].vertices = vert2,
+            models[obj].vertices = vert2;
             loader.createModel( models[obj], callback );
           }
         }
       });
+  }
+
+  self.toggleMeshes = function() {
+    if( show_meshes ) {
+      for(var i=0; i<meshes.length; i++) {
+        scene.remove( meshes[i] );
+      }
+      meshes = [];
+      show_meshes = false;
+    } else {
+      // add them
+      drawmesh();
+      show_meshes = true;
+    }
   }
 
   self.updateZPlane = function() {

@@ -99,6 +99,8 @@ function TracingTool()
       return;
     };
 
+  };
+
 	/**
 	 * install this tool in a stack.
 	 * register all GUI control elements and event handlers

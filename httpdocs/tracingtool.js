@@ -99,22 +99,6 @@ function TracingTool()
       return;
     };
 
-    // FIXME: wrong inheritance call. The new prototype function
-    // is never called
-    var proto_changeSlice = self.prototype.changeSlice;
-    self.prototype.changeSlice = function( val ) {
-        proto_changeSlice( val );
-        // if 3d viewer window visible, change its z slice
-        if( $( "#view_in_3d_webgl_widget").length ) {
-            if( $('#enable_z_plane').attr('checked') != undefined ) {
-                updateZPlane( val );
-            } else {
-                updateZPlane( -1 );
-            }
-        }
-      };
-  };
-
 	/**
 	 * install this tool in a stack.
 	 * register all GUI control elements and event handlers

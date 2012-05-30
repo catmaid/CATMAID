@@ -665,9 +665,8 @@ var WebGLApp = new function () {
       $(document.createElement("td")).text( skeleton.baseName + ' (SkeletonID: ' + skeleton.id + ')' )
     );
 
-    rowElement.append(
-      $(document.createElement("td")).append(
-        $(document.createElement("button")).attr({
+    var td = $(document.createElement("td"));
+    td.append( $(document.createElement("button")).attr({
           id:    'skeletonaction-remove-' + skeleton.id,
           value: 'Remove'
           })
@@ -675,8 +674,10 @@ var WebGLApp = new function () {
           {
             self.removeSkeleton( skeleton.id );
             rowElement.remove();
-          } )
-      ).append(
+          })
+          .text('Remove!')
+    );
+    td.append(
         $(document.createElement("button")).attr({
           id:    'skeletonaction-changecolor-' + skeleton.id,
           value: 'Change color'
@@ -684,13 +685,15 @@ var WebGLApp = new function () {
           .click( function( event )
           {
             $('#color-wheel-' + skeleton.id).toggle();
-          } )
-      ).append(
-        $('<div id="color-wheel-' +
-          skeleton.id + '"><div class="colorwheel'+
-          skeleton.id + '"></div></div>')
-      )
+          })
+          .text('Change color')
+      );
+    td.append(
+      $('<div id="color-wheel-' +
+        skeleton.id + '"><div class="colorwheel'+
+        skeleton.id + '"></div></div>')
     );
+    rowElement.append( td );
 
     var cw = Raphael.colorwheel($("#color-wheel-"+skeleton.id+" .colorwheel"+skeleton.id)[0],150);
     cw.color("#FFFF00");

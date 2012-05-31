@@ -598,6 +598,14 @@ var SkeletonAnnotations = new function()
 
     // Used to join two skeleton together
     this.createTreenodeLink = function (fromid, toid, callback) {
+      if( toid in nodes ) {
+          if( nodes[toid].parent !== null ) {
+              var check = confirm("Do you really want link to this skeleton with more than one node?");
+              if( check === false ) {
+                  return;
+              }
+          }
+      }
       // TODO: rerooting operation should be called on the backend
       // first make sure to reroot target
       requestQueue.register("model/treenode.reroot.php", "POST", {

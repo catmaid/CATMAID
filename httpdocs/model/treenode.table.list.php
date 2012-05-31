@@ -71,6 +71,12 @@ try {
      FROM "stack" WHERE "stack"."id" = '.$stack_id );
     $resolution_array = double3dXYZ($project_stacks[0]['resolution']);
 
+    $project_stacks_translation = $db->getResult(
+    'SELECT	"project_stack"."translation" AS "translation"
+     FROM "project_stack" WHERE "project_stack"."stack_id" = '.$stack_id.' AND '.
+      '"project_stack"."project_id" = '.$pid );
+    $translation_array = double3dXYZ($project_stacks_translation[0]['translation']);
+
 
     // try to retrieve the sent skeleton ids
 
@@ -300,7 +306,7 @@ try {
 		$sRow .= json_encode(sprintf("%.2f",$val["x"])).',';
 		$sRow .= json_encode(sprintf("%.2f",$val["y"])).',';
 		$sRow .= json_encode(sprintf("%.2f",$val["z"])).',';
-		$sRow .= json_encode(intval($val["z"]/$resolution_array["z"])).',';
+		$sRow .= json_encode(intval(($val["z"]-$translation_array["z"])/$resolution_array["z"])).',';
 
 
 		$sRow .= json_encode($val["radius"]).',';

@@ -5,7 +5,7 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import Project, Stack, Class, ClassInstance,\
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode,\
-    Connector, User, Textlabel, ClassInstanceClassInstance
+    Connector, User, Textlabel, ClassInstanceClassInstance, TreenodeConnector
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional,\
     catmaid_login_required
 
@@ -75,6 +75,11 @@ def split_skeleton(request, project_id=None, logged_in_user=None):
         treenode__id__in=change_list,
         project=project_id).update(class_instance=new_skeleton)
     # setting parent of target treenode to null
+    tc = TreenodeConnector.objects.filter(
+        project=project_id,
+        relation__relation_name__endswith = 'synaptic_to',
+        treenode__in=change_list,
+    ).update(skeleton=new_skeleton)
     Treenode.objects.filter(
         id=treenode_id,
         project=project_id).update(parent=None)

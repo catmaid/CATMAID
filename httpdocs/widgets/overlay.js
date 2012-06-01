@@ -570,9 +570,16 @@ var SkeletonAnnotations = new function()
     };
 
     this.splitSkeleton = function () {
-      if (confirm("Do you really want to to split the skeleton?")) {
+        if( nodes[atn.id].parent === null ) {
+            alert('Can not split at root node!');
+            return;
+        }
+        if (confirm("Do you really want to to split the skeleton?")) {
         $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Splitting skeleton. Just a moment...</h2>' });
-        requestQueue.register("model/treenode.split.php", "POST", {
+        requestQueue.register(
+            //"model/treenode.split.php",
+            django_url + project.id + '/skeleton/split',
+            "POST", {
             pid: project.id,
             tnid: atn.id
           }, function (status, text, xml) {

@@ -1,0 +1,4 @@
+host: localhost
+database: CATMAID_DATABASE
+username: CATMAID_USERNAME
+password: CATMAID_PASSWORD

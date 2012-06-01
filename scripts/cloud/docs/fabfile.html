@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>fabfile.py</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  
+  <table cellspacing=0 cellpadding=0>
+  <thead>
+    <tr>
+      <th class=docs><h1>fabfile.py</h1></th>
+      <th class=code></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr id='section-0'>
+      <td class=docs>
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+        <p>This fabric file will launch a standalone instance running catmaid</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre><div class="highlight"><pre></pre></div></pre></div>
+      </td>
+    </tr><tr id='section-1'>
+      <td class=docs>
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+        <h2>Imports</h2>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre><div class="highlight"><pre><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">with_statement</span>
+<span class="kn">from</span> <span class="nn">fabric.api</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">fabric.contrib.console</span> <span class="kn">import</span> <span class="n">confirm</span>
+<span class="kn">from</span> <span class="nn">fabric.contrib.files</span> <span class="kn">import</span> <span class="n">exists</span>
+<span class="kn">from</span> <span class="nn">fabric.contrib.files</span> <span class="kn">import</span> <span class="n">sed</span>
+<span class="kn">import</span> <span class="nn">boto</span>
+<span class="kn">from</span> <span class="nn">boto.s3.key</span> <span class="kn">import</span> <span class="n">Key</span>
+<span class="kn">from</span> <span class="nn">boto</span> <span class="kn">import</span> <span class="n">ec2</span>
+<span class="kn">import</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">pprint</span><span class="o">,</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span></pre></div></pre></div>
+      </td>
+    </tr><tr id='section-2'>
+      <td class=docs>
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-2">#</a>
+        </div>
+        <h1>Amazon web configuration</h1>
+<h2>update with your settings</h2>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre><div class="highlight"><pre><span class="n">aws_access_key_id</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>		<span class="c"># access key for account with launch priviledges </span>
+<span class="n">aws_secret_access_key</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>	<span class="c"># secret key, set EC2 keypair below!</span>
+<span class="n">aws_size</span> <span class="o">=</span> <span class="s">&#39;m1.large&#39;</span> 		<span class="c"># or t1.micro</span>
+<span class="n">aws_keypair</span> <span class="o">=</span> <span class="s">&#39;ec2-keypair&#39;</span>	<span class="c"># your ec2 keypair</span>
+<span class="n">aws_AMI</span> <span class="o">=</span> <span class="s">&#39;ami-63be790a&#39;</span>	<span class="c"># ubuntu 10.04 LTS on US-East</span>
+<span class="n">env</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="s">&#39;ubuntu&#39;</span> 		<span class="c"># default user</span></pre></div></pre></div>
+      </td>
+    </tr><tr id='section-3'>
+      <td class=docs>
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-3">#</a>
+        </div>
+        <p>Creates a new instance with desired settings on aws</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre><div class="highlight"><pre><span class="k">def</span> <span class="nf">buildApp</span><span class="p">():</span>
+	<span class="sd">&#39;&#39;&#39;Creates a new instance on ec2 and returns the ip address and summary information&#39;&#39;&#39;</span>
+	<span class="k">with</span> <span class="n">settings</span><span class="p">(</span><span class="n">warn_only</span> <span class="o">=</span> <span class="bp">True</span><span class="p">):</span>
+
+		<span class="n">conn</span> <span class="o">=</span> <span class="n">ec2</span><span class="o">.</span><span class="n">EC2Connection</span><span class="p">(</span><span class="n">aws_access_key_id</span><span class="p">,</span> <span class="n">aws_secret_access_key</span><span class="p">)</span>
+		<span class="n">reservation</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">run_instances</span><span class="p">(</span><span class="n">aws_AMI</span><span class="p">,</span> <span class="n">instance_type</span><span class="o">=</span><span class="n">aws_size</span><span class="p">,</span> <span class="n">key_name</span><span class="o">=</span><span class="n">aws_keypair</span><span class="p">)</span>
+		<span class="n">instance</span> <span class="o">=</span> <span class="n">reservation</span><span class="o">.</span><span class="n">instances</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+		
+		<span class="k">print</span> <span class="s">&#39;Starting instance </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span>
+		<span class="k">while</span> <span class="ow">not</span> <span class="n">instance</span><span class="o">.</span><span class="n">update</span><span class="p">()</span> <span class="o">==</span> <span class="s">&#39;running&#39;</span><span class="p">:</span>
+			<span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+			<span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
+			<span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+			
+		<span class="n">instance</span><span class="o">.</span><span class="n">add_tag</span><span class="p">(</span><span class="s">&#39;Name&#39;</span><span class="p">,</span> <span class="s">&#39;incf_catmaid&#39;</span><span class="p">)</span>					
+		<span class="k">print</span> <span class="s">&#39;Instance started: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">instance</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]</span>
+		<span class="k">print</span> <span class="s">&#39;Public DNS: </span><span class="si">%s</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">instance</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="s">&#39;public_dns_name&#39;</span><span class="p">]</span>
+		
+		<span class="k">print</span> <span class="s">&#39;************** Waiting 30 seconds for boot to finish **************</span><span class="se">\n</span><span class="s">&#39;</span>
+		<span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span>
+
+		<span class="n">env</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="s">&#39;ubuntu&#39;</span>
+		<span class="n">env</span><span class="o">.</span><span class="n">host_string</span> <span class="o">=</span> <span class="n">instance</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="s">&#39;public_dns_name&#39;</span><span class="p">]</span>
+
+		<span class="n">installBasePackages</span><span class="p">()</span>
+		<span class="n">installImageComponents</span><span class="p">()</span>
+		<span class="n">installCatmaid</span><span class="p">()</span>
+		<span class="n">installFIJI</span><span class="p">()</span>
+		
+		<span class="k">print</span> <span class="s">&#39;Instance has been launched successfully&#39;</span>
+		<span class="k">print</span> <span class="s">&#39;To access, open a browser to http://</span><span class="si">%s</span><span class="s">/catmaid/&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">instance</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="s">&#39;public_dns_name&#39;</span><span class="p">])</span></pre></div></pre></div>
+      </td>
+    </tr><tr id='section-4'>
+      <td class=docs>
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-4">#</a>
+        </div>
+        <p>Basic packages for building, version control</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre><div class="highlight"><pre><span class="k">def</span> <span class="nf">installBasePackages</span><span class="p">():</span>
+	<span class="sd">&#39;&#39;&#39;Basic packages for building, version control&#39;&#39;&#39;</span>
+	<span class="k">with</span> <span class="n">settings</span><span class="p">(</span><span class="n">warn_only</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span></pre></div></pre></div>
+      </td>
+    </tr><tr id='section-5'>
+      <td class=docs>
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-5">#</a>
+        </div>
+        <p>Update image and install needed base components</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre><div class="highlight"><pre>		<span class="n">run</span><span class="p">(</span><span class="s">&quot;sudo apt-get -y update&quot;</span><span class="p">,</span> <span class="n">pty</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+		<span class="n">run</span><span class="p">(</span><span class="s">&quot;sudo apt-get -y upgrade&quot;</span><span class="p">,</span> <span class="n">pty</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>		
+		<span class="n">packagelist</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;git-core&#39;</span><span class="p">,</span> <span class="s">&#39;mercurial&#39;</span><span class="p">,</span> <span class="s">&#39;subversion&#39;</span><span class="p">,</span> <span class="s">&#39;unzip&#39;</span><span class="p">,</span> <span class="s">&#39;build-essential&#39;</span><span class="p">,</span> <span class="s">&#39;g++&#39;</span><span class="p">]</span>
+		<span class="k">for</span> <span class="n">each_package</span> <span class="ow">in</span> <span class="n">packagelist</span><span class="p">:</span> 
+			<span class="k">print</span> <span class="n">each_package</span>
+			<span class="n">run</span><span class="p">(</span><span class="s">&#39;sudo apt-get -y install </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">each_package</span><span class="p">,</span> <span class="n">pty</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span></pre></div></pre></div>
+      </td>
+    </tr><tr id='section-6'>
+      <td class=docs>
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-6">#</a>
+        </div>
+        <p>Basic packages for catmaid</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre><div class="highlight"><pre><span class="k">def</span> <span class="nf">installCatmaid</span><span class="p">():</span>
+	<span class="sd">&#39;&#39;&#39;Basic packages for building, version control&#39;&#39;&#39;</span>
+	<span class="k">with</span> <span class="n">settings</span><span class="p">(</span><span class="n">warn_only</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span></pre></div></pre></div>
+      </td>
+    </tr><tr id='section-7'>
+      <td class=docs>
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-7">#</a>
+        </div>
+        <p>Update image and install needed base components</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre><div class="highlight"><pre>		<span class="n">packagelist</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;libapache2-mod-php5&#39;</span><span class="p">,</span> <span class="s">&#39;php5-pgsql&#39;</span><span class="p">,</span> <span class="s">&#39;imagemagick&#39;</span><span class="p">,</span> <span class="s">&#39;python-psycopg2&#39;</span><span class="p">,</span> <span class="s">&#39;python-yaml&#39;</span><span class="p">,</span> <span class="s">&#39;postgresql&#39;</span><span class="p">,</span><span class="s">&#39;pgadmin3&#39;</span><span class="p">,</span><span class="s">&#39;phppgadmin&#39;</span><span class="p">,</span><span class="s">&#39;postgresql-contrib&#39;</span><span class="p">]</span>
+		<span class="k">for</span> <span class="n">each_package</span> <span class="ow">in</span> <span class="n">packagelist</span><span class="p">:</span> 
+			<span class="k">print</span> <span class="n">each_package</span>
+			<span class="n">run</span><span class="p">(</span><span class="s">&#39;sudo apt-get -y install </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">each_package</span><span class="p">,</span> <span class="n">pty</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+
+		<span class="n">run</span><span class="p">(</span><span class="s">&#39;git clone https://github.com/acardona/CATMAID.git&#39;</span><span class="p">)</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;rm -rvf /var/www/CATMAID&#39;</span><span class="p">)</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;ln -s /home/ubuntu/CATMAID /var/www/CATMAID&#39;</span><span class="p">)</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;mkdir -p /var/log/apache2/catmaid/&#39;</span><span class="p">)</span>
+
+		<span class="n">put</span><span class="p">(</span><span class="s">&#39;apache.conf&#39;</span><span class="p">)</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;chown root:root apache.conf&#39;</span><span class="p">)</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;mv -vf /home/ubuntu/apache.conf /etc/phppgadmin/apache.conf&#39;</span><span class="p">)</span>
+
+		<span class="n">put</span><span class="p">(</span><span class="s">&#39;catmaid&#39;</span><span class="p">)</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;chown root:root catmaid&#39;</span><span class="p">)</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;mv -vf /home/ubuntu/catmaid /etc/apache2/sites-available/catmaid&#39;</span><span class="p">)</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;a2dissite default&#39;</span><span class="p">)</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;a2ensite catmaid&#39;</span><span class="p">)</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;/etc/init.d/apache2 reload&#39;</span><span class="p">)</span>
+
+		<span class="n">put</span><span class="p">(</span><span class="s">&#39;setup.inc.php&#39;</span><span class="p">)</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;chown root:root setup.inc.php&#39;</span><span class="p">)</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;mv -vf /home/ubuntu/setup.inc.php /home/ubuntu/CATMAID/inc/setup.inc.php&#39;</span><span class="p">)</span>
+
+		<span class="n">put</span><span class="p">(</span><span class="s">&#39;pg_hba.conf&#39;</span><span class="p">)</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;chown root:root pg_hba.conf&#39;</span><span class="p">)</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;chmod 600 pg_hba.conf&#39;</span><span class="p">)</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;mv -vf /home/ubuntu/pg_hba.conf /etc/postgresql/8.4/main/pg_hba.conf&#39;</span><span class="p">)</span>
+
+		<span class="k">with</span> <span class="n">cd</span><span class="p">(</span><span class="s">&#39;CATMAID&#39;</span><span class="p">):</span>
+			<span class="n">run</span><span class="p">(</span><span class="s">&#39;sudo -u postgres psql &lt; docs/createuser.sql&#39;</span><span class="p">)</span>
+			</pre></div></pre></div>
+      </td>
+    </tr><tr id='section-8'>
+      <td class=docs>
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-8">#</a>
+        </div>
+        
+      </td>
+      <td class=code>
+        <div class='highlight'><pre><div class="highlight"><pre><span class="k">def</span> <span class="nf">installFIJI</span><span class="p">():</span>
+	<span class="k">with</span> <span class="n">settings</span><span class="p">(</span><span class="n">warn_only</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+		<span class="n">sudo</span><span class="p">(</span><span class="s">&#39;apt-get install -y libxtst-dev&#39;</span><span class="p">)</span>
+		<span class="n">run</span><span class="p">(</span><span class="s">&#39;wget http://fiji.sc/downloads/Madison/fiji-linux64-20110307.tar.bz2&#39;</span><span class="p">)</span>
+		<span class="n">run</span><span class="p">(</span><span class="s">&#39;tar xvjf fiji-linux64-20110307.tar.bz2&#39;</span><span class="p">)</span></pre></div></pre></div>
+      </td>
+    </tr><tr id='section-9'>
+      <td class=docs>
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-9">#</a>
+        </div>
+        <p>Install Jpeg2000 (kakadu) utils</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre><div class="highlight"><pre><span class="k">def</span> <span class="nf">installImageComponents</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">settings</span><span class="p">(</span><span class="n">warn_only</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+            
+            <span class="n">packagelist</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;libjpeg62-dev&#39;</span><span class="p">,</span> <span class="s">&#39;libtiff-dev&#39;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">each_package</span> <span class="ow">in</span> <span class="n">packagelist</span><span class="p">:</span> 
+                    <span class="k">print</span> <span class="n">each_package</span>
+                    <span class="n">run</span><span class="p">(</span><span class="s">&#39;sudo apt-get -y install </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">each_package</span><span class="p">,</span> <span class="n">pty</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+    </pre></div></pre></div>
+      </td>
+    </tr><tr id='section-10'>
+      <td class=docs>
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-10">#</a>
+        </div>
+        <p>install kakadu libraries here</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre><div class="highlight"><pre>            <span class="n">kakadu_tools</span> <span class="o">=</span> <span class="s">&#39;http://s3.amazonaws.com/wholeslide/installs/Kakadu_v6_3_1-00781N_Linux-64-bit-Compiled.tar.gz&#39;</span> 
+            
+            <span class="n">run</span><span class="p">(</span><span class="s">&quot;mkdir kakadu&quot;</span><span class="p">)</span>	
+            <span class="k">with</span> <span class="n">cd</span><span class="p">(</span><span class="s">&#39;kakadu&#39;</span><span class="p">):</span>
+                    <span class="n">run</span><span class="p">(</span><span class="s">&#39;wget </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">kakadu_tools</span><span class="p">)</span>
+                    <span class="n">run</span><span class="p">(</span><span class="s">&#39;tar -xvzf Kakadu_v6_3_1-00781N_Linux-64-bit-Compiled.tar.gz&#39;</span><span class="p">)</span>			
+                    
+                    <span class="n">run</span><span class="p">(</span><span class="s">&#39;sudo mv ./bin/* /usr/local/bin/&#39;</span><span class="p">)</span>
+                    <span class="n">run</span><span class="p">(</span><span class="s">&#39;sudo mv ./lib/* /usr/local/lib/&#39;</span><span class="p">)</span>
+                    <span class="n">run</span><span class="p">(</span><span class="s">&#39;sudo /sbin/ldconfig&#39;</span><span class="p">)</span>
+                    
+            <span class="n">run</span><span class="p">(</span><span class="s">&#39;rm -rvf kakadu&#39;</span><span class="p">)</span></pre></div></pre></div>
+      </td>
+    </tr><tr id='section-11'>
+      <td class=docs>
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-11">#</a>
+        </div>
+        <p>this has to be run AFTER visiting http://domain/catmaid/</p>
+      </td>
+      <td class=code>
+        <div class='highlight'><pre><div class="highlight"><pre><span class="k">def</span> <span class="nf">installExampleData</span><span class="p">():</span>
+	<span class="k">with</span> <span class="n">settings</span><span class="p">(</span><span class="n">warn_only</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+		<span class="k">with</span> <span class="n">cd</span><span class="p">(</span><span class="s">&#39;CATMAID&#39;</span><span class="p">):</span>
+			<span class="n">run</span><span class="p">(</span><span class="s">&#39;sudo -u postgres psql &lt; docs/createuser.sql&#39;</span><span class="p">)</span>
+			<span class="n">run</span><span class="p">(</span><span class="s">&#39;sudo -u postgres psql catmaid &lt; docs/example-projects.sql&#39;</span><span class="p">)</span>
+
+</pre></div></pre></div>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>

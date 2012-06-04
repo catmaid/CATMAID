@@ -17,6 +17,7 @@ except:
     pass
 
 @catmaid_login_required
+@transaction.commit_on_success
 def split_skeleton(request, project_id=None, logged_in_user=None):
     treenode_id = request.POST['tnid']
     p = get_object_or_404(Project, pk=project_id)

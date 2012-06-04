@@ -5,9 +5,10 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import Project, Stack, Class, ClassInstance,\
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode,\
-    Connector, User, Textlabel, ClassInstanceClassInstance, TreenodeConnector
+    Connector, User, Textlabel, ClassInstanceClassInstance, TreenodeConnector, Location
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional,\
     catmaid_login_required
+from common import insert_into_log
 
 import json
 import sys
@@ -84,4 +85,11 @@ def split_skeleton(request, project_id=None, logged_in_user=None):
     Treenode.objects.filter(
         id=treenode_id,
         project=project_id).update(parent=None)
+    locations = Location.objects.filter(
+        project=project_id,
+        id=treenode_id
+    )
+    if len(locations) > 0:
+        location = locations[0].location
+    insert_into_log( project_id, logged_in_user.id, "split_skeleton", location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron[0].name ) )
     return HttpResponse(json.dumps({}), mimetype='text/json')

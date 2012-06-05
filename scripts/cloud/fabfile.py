@@ -1,6 +1,5 @@
 # This fabric file will launch a standalone instance running catmaid
 
-### Imports
 from __future__ import with_statement
 from fabric.api import *
 from fabric.contrib.console import confirm
@@ -148,6 +147,12 @@ def installExampleProject():
             run('scripts/database/insert-example-projects.py')
 
 
+def updateCATMAID():
+    """ Update the source code repository with the latest commit
+    """
+    with settings(warn_only=True):
+        with cd('CATMAID'):
+            run('git clone -b cmw-integration git://github.com/acardona/CATMAID.git')
 
 
 

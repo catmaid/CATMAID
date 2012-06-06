@@ -48,4 +48,10 @@ Now, setup the Django-backend::
 .. add a function to make enable/disable phppgadmin visibility
 
 In the next steps, you have customize and configure users, projects and stacks in the database,
-and host your image data stacks.
+and host your image data stacks. You do not need to host your dataset tile on the same instance,
+but can choose to store them at any web-accessible host. You may want to get in contact with the
+`OpenConnectome Project <http://openconnectomeproject.org/>`_ for large dataset storage.
+
+If you want to update your instance to the latest development commit, just call::
+
+    fab updateCATMAID

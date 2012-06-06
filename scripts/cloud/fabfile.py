@@ -229,7 +229,6 @@ def updateCATMAID():
     """ Update the source code repository with the latest commit """
     with settings(warn_only=True):
         with cd('CATMAID'):
-            run('git clone -b cmw-integration git://github.com/acardona/CATMAID.git')
-
+            run('git pull origin cmw-integration')
 
 

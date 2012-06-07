@@ -1017,15 +1017,7 @@ var SkeletonAnnotations = new function()
         nodes[id] = nn;
       }
 
-      // Keep active state of previous active node
-      if (atn !== null)
-      {
-        nn = nodes[atn.id];
-        if (nn) {
-          // Will recolor all nodes
-          self.activateNode(nn);
-        }
-      }
+
 
       // Disable any unused instances
       SkeletonElements.disableBeyond(nrtn, nrcn);
@@ -1107,6 +1099,16 @@ var SkeletonAnnotations = new function()
       if( self.getLabelStatus() ) {
         self.showLabels();
       }
+
+    // Keep active state of previous active node
+    if (atn !== null)
+    {
+        nn = nodes[atn.id];
+        if (nn) {
+            // Will recolor all nodes
+            self.activateNode(nn);
+        }
+    }
 
     };
 

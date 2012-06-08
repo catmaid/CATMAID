@@ -9,6 +9,7 @@ import json
 def insert_into_log( project_id, user_id, op_type, location=None, freetext=None):
     # valid operation types
     operation_type_array = [
+        "rename_root",
         "create_neuron",
         "rename_neuron",
         "remove_neuron",

@@ -86,6 +86,8 @@ var WindowMaker = new function()
     var container = createContainer("view_in_3d_webgl_widget");
     content.appendChild(container);
 
+
+
     var add = document.createElement('input');
     add.setAttribute("type", "button");
     add.setAttribute("id", "add_current_to_3d_webgl_view");
@@ -152,14 +154,6 @@ var WindowMaker = new function()
     container.appendChild(rand);
     var rand = document.createTextNode('Show meshes');
     container.appendChild(rand);
-
-    var introduction = document.createElement('p')
-    introduction.setAttribute("id", "view3DWebGLIntroduction");
-    container.appendChild(introduction);
-
-    var list = document.createElement('ul');
-    list.setAttribute("id", "view-3d-webgl-object-list")
-    container.appendChild(list);
 
     var canvas = document.createElement('div');
     canvas.setAttribute("id", "viewer-3d-webgl-canvas");

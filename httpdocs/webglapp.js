@@ -50,7 +50,7 @@ var WebGLApp = new function () {
     container = document.getElementById(self.divID);
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera( 75, self.divWidth / self.divHeight, 1, 3000 );
-    //camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
+    // camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
     controls = new THREE.TrackballControls( camera, container );
     controls.rotateSpeed = 1.0;
     controls.zoomSpeed = 1.2;
@@ -347,6 +347,7 @@ var WebGLApp = new function () {
 
   self.resizeView = function (w, h) {
     if( renderer && !THREEx.FullScreen.activated() ) {
+      $('#view_in_3d_webgl_widget').css('overflowY', 'hidden');
       var canvasWidth = w, canvasHeight = h;
       if( isNaN(h) && isNaN(w) ) {
         canvasHeight = 800;
@@ -359,10 +360,19 @@ var WebGLApp = new function () {
         canvasHeight = canvasHeight - 100;
         canvasWidth = canvasHeight / 3 * 4;
       }
-      $('#viewer-3d-webgl-canvas').width(canvasWidth);
+      $('#viewer-3d-webgl-canvas').width(canvasWidth-20);
       $('#viewer-3d-webgl-canvas').height(canvasHeight);
       $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
-      renderer.setSize( canvasWidth, canvasHeight );
+      renderer.setSize( canvasWidth-20, canvasHeight );
+
+      // resize list view, needs frame height to fill it
+      var heightAvailable = $('#view_in_3d_webgl_widget').height() - canvasHeight;
+      if( heightAvailable < 150 ) {
+          $('#view-3d-webgl-skeleton-table-div').height(150);
+      } else {
+          $('#view-3d-webgl-skeleton-table-div').height(heightAvailable - 30);
+      }
+
     }
   }
 

@@ -23,10 +23,14 @@ These are all desktop-based tools. (*) are not directly available for download.
 Web-based image viewer
 ----------------------
 
+* `Mouse Brain Architecture Viewer <http://mouse.brainarchitecture.org/seriesbrowser/>`_
 * `Biological Image Viewer Kitware <http://www.cmake.org/Wiki/index.php?title=IMServer:Demos&oldid=39560>`_
 * `iConnectome <http://www.mouseconnectome.org/iConnectome/>`_
 * `Virtual Fly Brain <http://flybrain.inf.ed.ac.uk/site/stacks/>`_
 * `WebImage Browser <http://openccdb.org/index.shtm>`_
+* `IIPIImage <http://iipimage.sourceforge.net/documentation/iipmooviewer/>`_
+* `Djatoka <http://sourceforge.net/apps/mediawiki/djatoka/index.php?title=Main_Page>`_
+* `OpenLayers <http://openlayers.org/>`_
 
 iPad Apps
 ---------

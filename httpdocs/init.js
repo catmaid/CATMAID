@@ -296,6 +296,11 @@ function updateProjectListMessage(text) {
   $('#project_list_message').text(text);
 }
 
+/**
+ * Update the displayed project list based on the cache
+ * entries. This can involve a filter in the text box
+ * "project_filter_text".
+ */
 function updateProjectListFromCache() {
   var matchingProjects = 0,
       searchString = $('#project_filter_text').val(),
@@ -308,6 +313,7 @@ function updateProjectListFromCache() {
       p,
       catalogueElement, catalogueElementLink,
       pp = document.getElementById("projects_dl");
+  // remove all the projects
   while (pp.firstChild) pp.removeChild(pp.firstChild);
   updateProjectListMessage('');
   // maintain a list of projects/sessions available
@@ -317,6 +323,7 @@ function updateProjectListFromCache() {
     delete projects_available;
   }
   projects_available = new Array();
+  // add new projects according to filter
   for (i in cachedProjectsInfo) {
     p = cachedProjectsInfo[i];
     display = false;
@@ -339,6 +346,7 @@ function updateProjectListFromCache() {
     toappend.push(dt);
 
     projects_available[ p.pid ] = new Array();
+    // add a link for every action (e.g. a stack link)
     for (j in p.action) {
       var sid_title = p.action[j].title;
       var sid_action = p.action[j].action;
@@ -361,6 +369,7 @@ function updateProjectListFromCache() {
         toappend.push(ddc);
       }
     }
+    // optionally, add a neuron catalogue link
     if (p.catalogue) {
       catalogueElement = document.createElement('dd');
       catalogueElementLink = document.createElement('a');

@@ -443,9 +443,9 @@ var WebGLApp = new function () {
     skeleton_data['id'] = skeleton_id;
     skeletons[skeleton_id] = new Skeleton( skeleton_data );
     if(!deleted) {
+      console.log('deleted', deleted);
       self.addSkeletonToTable( skeletons[skeleton_id] );
     }
-    skeletons[skeleton_id].addCompositeActorToScene();
     return true;
   }
 
@@ -716,6 +716,9 @@ var WebGLApp = new function () {
     })
 
     $('#color-wheel-' + skeleton.id).hide();
+
+    console.log('add skeleton to scene');
+    skeleton.addCompositeActorToScene();
 
   }
 

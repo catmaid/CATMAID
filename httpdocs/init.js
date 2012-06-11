@@ -296,7 +296,7 @@ function updateProjectListMessage(text) {
   $('#project_list_message').text(text);
 }
 
-function updateProjectListFromCache(pp) {
+function updateProjectListFromCache() {
   var matchingProjects = 0,
       searchString = $('#project_filter_text').val(),
       display,

@@ -297,6 +297,30 @@ function updateProjectListMessage(text) {
 }
 
 /**
+ * Do a delayed call to updateProjectListFromCache() and indicate
+ * the progress.
+ */
+var cacheLoadingTimeout = null;
+function updateProjectListFromCacheDelayed()
+{
+  // indicate active filtered loading of the projects
+  var indicator = document.getElementById("project_filter_indicator");
+  window.setTimeout( function() { indicator.className = "filtering"; }, 1);
+
+  // clear timeout if already present and create a new one
+  if (cacheLoadingTimeout != null)
+  {
+    clearTimeout(cacheLoadingTimeout);
+  }
+  cacheLoadingTimeout = window.setTimeout(
+    function() {
+      updateProjectListFromCache();
+      // indicate finish of filtered loading of the projects
+      indicator.className = "";
+    }, 500);
+}
+
+/**
  * Update the displayed project list based on the cache
  * entries. This can involve a filter in the text box
  * "project_filter_text".

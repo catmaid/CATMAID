@@ -39,6 +39,13 @@ p, dl
 	margin:1.5em 16px 0.5em 20px;
 }
 
+#project_filter_indicator.filtering
+{
+	padding:4px 24px 4px 0px;
+	vertical-align:middle;
+	background:url(wait_bgwhite.gif) no-repeat right center;
+}
+
 dt,
 dd
 {

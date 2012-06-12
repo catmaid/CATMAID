@@ -212,10 +212,14 @@
 				<p>Please feel free to open one of the public projects or log in with your account and password.</p>
 		
 				<h2 id="projects_h">Projects</h2>
-		
+				<form id="project_filter_form" display="none">Filter projects:
+					<input id="project_filter_text" type="text" onkeyup="updateProjectListFromCacheDelayed();">
+					<span id="project_filter_indicator"></span>
+				</form>
 				<dl id="projects_dl"><dt></dt><dd></dd></dl>
+				<p id="project_list_message"></p>
 			</div>
-			
+
 			<div id="new_project_dialog" class="form">
 				<form name="new_project_form" id="new_project_form" action="">
 				<h2>Create new project</h2>

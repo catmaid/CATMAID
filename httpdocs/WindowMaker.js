@@ -178,7 +178,7 @@ var WindowMaker = new function()
             '<th>post</th>' +
             '<th>name</th>' +
             '<th>action</th>' +
-          '<tr>' +
+          '</tr>' +
         '</thead>' +
         '<tbody>' +
         '</tbody>';

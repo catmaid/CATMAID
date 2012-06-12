@@ -224,6 +224,11 @@ var WebGLApp = new function () {
       }
     }
 
+    this.visiblityCompositeActor = function( type_index, visible )
+    {
+      this.actor[connectivity_types[type_index]].visible = visible;
+    }
+
     var type, from_vector, to_vector;
 
     this.line_material = new Object();
@@ -433,19 +438,17 @@ var WebGLApp = new function () {
   // add skeleton to scene
   this.addSkeleton = function( skeleton_id, skeleton_data )
   {
-    var deleted=false;
     if( skeletons.hasOwnProperty(skeleton_id) ){
+      self.removeSkeleton( skeleton_id );
       // remove skeleton and refetch
+      /*
       skeletons[skeleton_id].removeActorFromScene();
-      delete skeletons[skeleton_id];
-      deleted=true;
+      delete skeletons[skeleton_id];*/
     }
+
     skeleton_data['id'] = skeleton_id;
     skeletons[skeleton_id] = new Skeleton( skeleton_data );
-    if(!deleted) {
-      console.log('deleted', deleted);
-      self.addSkeletonToTable( skeletons[skeleton_id] );
-    }
+    self.addSkeletonToTable( skeletons[skeleton_id] );
     return true;
   }
 
@@ -468,6 +471,8 @@ var WebGLApp = new function () {
         alert("Skeleton "+skeleton_id+" does not exist. Cannot remove it!");
         return;
     } else {
+        console.log('remove skeleton!')
+        $('#skeletonrow-' + skeleton_id).remove();
         skeletons[skeleton_id].removeActorFromScene();
         delete skeletons[skeleton_id];
         return true;
@@ -619,6 +624,7 @@ var WebGLApp = new function () {
     var rowElement = $('<tr/>').attr({
       id: 'skeletonrow-' + skeleton.id
     });
+    // $('#webgl-skeleton-table > tbody:last').append( rowElement );
     $('#webgl-skeleton-table > tbody:last').append( rowElement );
     
     // show skeleton
@@ -633,8 +639,10 @@ var WebGLApp = new function () {
           })
           .click( function( event )
           {
-                  var cbox = $(this)[0];
-                  console.log( cbox.value );
+            var vis = $('#skeletonshow-' + skeleton.id).is(':checked');
+            skeletons[skeleton.id].visiblityCompositeActor( 0, vis);
+            skeletons[skeleton.id].visiblityCompositeActor( 1, vis);
+            skeletons[skeleton.id].visiblityCompositeActor( 2, vis);
           } )
     ));
 
@@ -650,8 +658,7 @@ var WebGLApp = new function () {
           })
           .click( function( event )
           {
-                  var cbox = $(this)[0];
-                  console.log( cbox.value );
+            skeletons[skeleton.id].visiblityCompositeActor( 1, $('#skeletonpre-' + skeleton.id).is(':checked') );
           } )
     ));
 
@@ -667,8 +674,7 @@ var WebGLApp = new function () {
           })
           .click( function( event )
           {
-                  var cbox = $(this)[0];
-                  console.log( cbox.value );
+            skeletons[skeleton.id].visiblityCompositeActor( 2, $('#skeletonpost-' + skeleton.id).is(':checked') );
           } )
     ));
 
@@ -684,7 +690,6 @@ var WebGLApp = new function () {
           .click( function( event )
           {
             self.removeSkeleton( skeleton.id );
-            rowElement.remove();
           })
           .text('Remove!')
     );

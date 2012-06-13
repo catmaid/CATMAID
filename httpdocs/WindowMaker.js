@@ -204,6 +204,7 @@ var WindowMaker = new function()
                   }
                 }
               }
+              WebGLApp.removeAllSkeletons();
               // win.close();
             }
             break;

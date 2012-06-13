@@ -166,7 +166,6 @@ var WebGLApp = new function () {
 
   // credit: http://stackoverflow.com/questions/638948/background-color-hex-to-javascript-variable-jquery
   function rgb2hex(rgb) {
-    console.log(rgb)
    rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
    function hex(x) {
     return ("0" + parseInt(x).toString(16)).slice(-2);
@@ -435,6 +434,17 @@ var WebGLApp = new function () {
     }
   }
 
+
+  this.removeAllSkeletons = function() {
+    for( var skeleton_id in skeletons)
+    {
+      if( skeletons.hasOwnProperty(skeleton_id) ) {
+        self.removeSkeleton( skeleton_id );
+      }
+    }
+  }
+
+
   // add skeleton to scene
   this.addSkeleton = function( skeleton_id, skeleton_data )
   {
@@ -471,7 +481,6 @@ var WebGLApp = new function () {
         alert("Skeleton "+skeleton_id+" does not exist. Cannot remove it!");
         return;
     } else {
-        console.log('remove skeleton!')
         $('#skeletonrow-' + skeleton_id).remove();
         skeletons[skeleton_id].removeActorFromScene();
         delete skeletons[skeleton_id];
@@ -722,7 +731,6 @@ var WebGLApp = new function () {
 
     $('#color-wheel-' + skeleton.id).hide();
 
-    console.log('add skeleton to scene');
     skeleton.addCompositeActorToScene();
 
   }

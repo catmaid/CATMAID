@@ -52,6 +52,35 @@ and host your image data stacks. You do not need to host your dataset tile on th
 but can choose to store them at any web-accessible host. You may want to get in contact with the
 `OpenConnectome Project <http://openconnectomeproject.org/>`_ for large dataset storage.
 
-If you want to update your instance to the latest development commit, just call::
+If you want to update your instance to the latest development version, just call::
 
     fab updateCATMAID
+
+In order to modify and control your database, you can use phppgadmin::
+
+    http://$ec2-hostname/phppgadmin/
+
+To obtain the relevant information for the stack (dimension, image_base), you need to tile your image dataset
+and upload it to publicly accessible host. We assume you have a set of aligned, consecutive image files (e.g. TIFF)
+of your dataset. You can then use the tiling scripts to generate a image pyramid. From the folder with your image
+files, call the *tile_stack* script::
+
+    ./path-to-your-CATMAID-clone/scripts/tiles/tile_stack "*.tif" 256 192
+
+This creates the image pyramid folders with 256x256 pixel sized tiles. You can increase this to a number which is
+a power of two. If you have successfully generated the image pyramid, upload them to your data host, and use
+the URL to the base folder for the *image_base* when creating the stack.
+
+.. note::
+
+   The script creates tiles with non-square dimension, and it is only creating JPG files. We need a better script.
+   Make sure that you also call ./ensure-tilesize.py
+
+
+To create project, stack and user information and enable the tracing tool, you can login to your instance
+by SSH and call relevant Python scripts::
+
+    ssh -i downloaded_catmaidkey.pem ubuntu@$ec2-hostname
+    cd CATMAID/scripts/database
+
+You can then call the scripts as described in section 3 and 4 in :ref:`basic-installation`.

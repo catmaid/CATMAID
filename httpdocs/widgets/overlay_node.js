@@ -552,6 +552,10 @@ var SkeletonElements = new function()
             // TODO check for error
             statusBar.replaceLast("Joined node #" + atnID + " to connector #" + node.id);
           } else if (atnType === TYPE_NODE) {
+            if( node.skeleton_id === SkeletonAnnotations.getActiveSkeletonId() ) {
+              alert('Can not join node with another node of the same skeleton!');
+              return;
+            }
             toActivate = node.id;
             paper.catmaidSVGOverlay.createTreenodeLink(atnID,
                                                        node.id,

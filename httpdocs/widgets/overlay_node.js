@@ -952,6 +952,9 @@ var SkeletonElements = new function()
         "stroke": strocol
       });
       var arrow_mousedown = function(e) {
+        if(!(e.shiftKey && e.ctrlKey)) {
+          return;
+        }
         requestQueue.register("model/link.delete.php", "POST", {
           pid: project.id,
           cid: fromid,

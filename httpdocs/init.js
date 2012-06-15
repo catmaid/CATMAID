@@ -400,7 +400,7 @@ function updateProjectListFromCache() {
       catalogueElementLink.href = 'dj/' + i
       catalogueElementLink.appendChild(document.createTextNode('Browse the Neuron Catalogue'));
       catalogueElement.appendChild(catalogueElementLink);
-      toappend.push(appendChild(catalogueElement));
+      toappend.push(catalogueElement);
     }
     if (display) {
       ++ matchingProjects;

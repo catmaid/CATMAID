@@ -28,6 +28,13 @@ var WebGLApp = new function () {
     draw_grid();
     XYView();
 
+    // if active skeleton exists, add it to the view
+    var ID = SkeletonAnnotations.getActiveNodeId();
+    if(ID) {
+      self.addSkeletonFromID( self.project_id, SkeletonAnnotations.getActiveSkeletonId() );
+    }
+
+
   }
 
   var randomColors = [];

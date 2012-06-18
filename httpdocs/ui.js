@@ -369,6 +369,7 @@ UI = function()
 	}
 	
 	window.onresize = this.onresize;
+  console.log('ui: window on resize');
 	window.onresize();
 	
 	eventCatcher.onmousedown = self.onmousedown;

@@ -476,7 +476,9 @@ function Stack(
 				if ( tool )
 					tool.unregister();
 				tool = null;
-				window.onresize();
+        console.log('stack, BLUR: window on resize');
+				// window.onresize();
+        // stackWindow.redraw();
 				break;
 			}
 			return true;

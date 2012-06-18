@@ -946,6 +946,7 @@ var realInit = function()
   // and move the statusBar
   statusBar.setBottom();
 
+  console.log('init: window on resize');
 	window.onresize();
 
 	$('#growl-alert').growlAlert({

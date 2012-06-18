@@ -397,7 +397,7 @@ function updateProjectListFromCache() {
     if (p.catalogue) {
       catalogueElement = document.createElement('dd');
       catalogueElementLink = document.createElement('a');
-      catalogueElementLink.href = 'dj/' + i
+      catalogueElementLink.href = 'dj/' + p.id;
       catalogueElementLink.appendChild(document.createTextNode('Browse the Neuron Catalogue'));
       catalogueElement.appendChild(catalogueElementLink);
       toappend.push(catalogueElement);

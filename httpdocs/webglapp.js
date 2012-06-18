@@ -32,6 +32,10 @@ var WebGLApp = new function () {
     var ID = SkeletonAnnotations.getActiveNodeId();
     if(ID) {
       self.addSkeletonFromID( self.project_id, SkeletonAnnotations.getActiveSkeletonId() );
+
+      // and create active node
+      $('#enable_active_node').attr('checked', true);
+      self.createActiveNode();
     }
 
 
@@ -390,13 +394,15 @@ var WebGLApp = new function () {
   self.createActiveNode = function()
   {
     if( !SkeletonAnnotations.getActiveNodeId() ) {
-      alert("You must have an active node selected to add its skeleton to the 3D WebGL View.");
+      // alert("You must have an active node selected to add its skeleton to the 3D WebGL View.");
+      return;
     }
     sphere = new THREE.SphereGeometry( 130 * scale, 32, 32, 1 );
     active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
     active_node.position.set( 0,0,0 );
     scene.add( active_node );
     self.updateActiveNode();
+    show_active_node = true;
   }
 
   this.removeActiveNode = function() {

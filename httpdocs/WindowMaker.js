@@ -86,21 +86,12 @@ var WindowMaker = new function()
     var container = createContainer("view_in_3d_webgl_widget");
     content.appendChild(container);
 
-
-
     var add = document.createElement('input');
     add.setAttribute("type", "button");
     add.setAttribute("id", "add_current_to_3d_webgl_view");
     add.setAttribute("value", "Show active skeleton");
     add.onclick = WebGLApp.addActiveSkeletonToView;
     container.appendChild(add);
-
-    var active = document.createElement('input');
-    active.setAttribute("type", "button");
-    active.setAttribute("id", "update_current_atn_3d_webgl_view");
-    active.setAttribute("value", "Show active node");
-    active.onclick = WebGLApp.updateActiveNode;
-    container.appendChild(active);
 
     var fulls = document.createElement('input');
     fulls.setAttribute("type", "button");
@@ -153,6 +144,15 @@ var WindowMaker = new function()
     rand.onclick = WebGLApp.toggleMeshes;
     container.appendChild(rand);
     var rand = document.createTextNode('Show meshes');
+    container.appendChild(rand);
+
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "enable_active_node");
+    rand.setAttribute("value", "Enable active node");
+    rand.onclick = WebGLApp.toggleActiveNode;
+    container.appendChild(rand);
+    var rand = document.createTextNode('Enable active node');
     container.appendChild(rand);
 
     var canvas = document.createElement('div');

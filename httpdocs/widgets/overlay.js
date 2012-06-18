@@ -280,8 +280,14 @@ var SkeletonAnnotations = new function()
       } else {
         atn.set(null);
       }
-      
       self.recolorAllNodes();
+      // if displayed in 3d viewer, update position
+      if( $( "#view_in_3d_webgl_widget").length ) {
+        if( $('#enable_active_node').attr('checked') != undefined ) {
+          WebGLApp.updateActiveNode();
+        }
+      }
+
     };
 
     this.activateNearestNode = function (x, y, z) {

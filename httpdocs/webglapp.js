@@ -4,7 +4,7 @@ var WebGLApp = new function () {
   self = this;
   self.neurons = [];
 
-  var camera, scene, renderer, grid_lines, scale, controls, light, zplane = null, meshes = [], show_meshes = false;
+  var camera, scene, renderer, grid_lines, scale, controls, light, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
   var project_id, stack_id, resolution, dimension, translation, canvasWidth, canvasHeight;
 
   this.init = function( divID ) {
@@ -387,12 +387,16 @@ var WebGLApp = new function () {
     }
   }
 
-  self.createActiveNode = function( x, y, z)
+  self.createActiveNode = function()
   {
-    sphere = new THREE.SphereGeometry( dimension.x / 20 * scale, 32, 32, 1 );
-    active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.6, transparent:true } ) );
-    active_node.position.set( x,y,z );
+    if( !SkeletonAnnotations.getActiveNodeId() ) {
+      alert("You must have an active node selected to add its skeleton to the 3D WebGL View.");
+    }
+    sphere = new THREE.SphereGeometry( 130 * scale, 32, 32, 1 );
+    active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
+    active_node.position.set( 0,0,0 );
     scene.add( active_node );
+    self.updateActiveNode();
   }
 
   this.removeActiveNode = function() {
@@ -402,25 +406,17 @@ var WebGLApp = new function () {
     }
   }
 
-  this.updateActiveNode = function(  )
+  this.updateActiveNode = function()
   {
-    var atn_id = SkeletonAnnotations.getActiveNodeId();
-    if (!atn_id) {
-      alert("You must have an active node selected to add its skeleton to the 3D WebGL View.");
-      self.removeActiveNode();
-      return;
+    if(active_node) {
+      var atn_pos = SkeletonAnnotations.getActiveNodePosition();
+      var co = transform_coordinates( [
+        translation.x + ((atn_pos.x) / project.focusedStack.scale) * resolution.x,
+        translation.y + ((atn_pos.y) / project.focusedStack.scale) * resolution.y,
+        translation.z + atn_pos.z * resolution.z]
+      );
+      active_node.position.set( co[0]*scale, co[1]*scale, co[2]*scale );
     }
-    var atn_pos = SkeletonAnnotations.getActiveNodePosition();
-    var x = atn_pos.x, y = atn_pos.y, z = atn_pos.z;
-    if(!active_node) {
-      self.createActiveNode( 0, 0, 0 );
-    }
-    var co = transform_coordinates( [
-      translation.x + ((x) / project.focusedStack.scale) * resolution.x,
-      translation.y + ((y) / project.focusedStack.scale) * resolution.y,
-      translation.z + z * resolution.z]
-    );
-    active_node.position.set( co[0]*scale, co[1]*scale, co[2]*scale );
   }
 
   this.randomizeColors = function()
@@ -557,6 +553,16 @@ var WebGLApp = new function () {
       // add them
       drawmesh();
       show_meshes = true;
+    }
+  }
+
+  self.toggleActiveNode = function() {
+    if( show_active_node ) {
+      self.removeActiveNode();
+      show_active_node = false;
+    } else {
+      self.createActiveNode();
+      show_active_node = true;
     }
   }
 

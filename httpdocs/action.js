@@ -220,9 +220,6 @@ var editToolActions = [
 		helpText: "Text label tool",
 		buttonID: 'edit_button_text',
 		buttonName: 'text',
-		keyShortcuts: {
-			'X': [ 88 ]
-		},
 		run: function (e) {
 			project.setMode( 'text' );
 			return true;
@@ -233,9 +230,6 @@ var editToolActions = [
 		helpText: "Crop tool",
 		buttonID: 'edit_button_crop',
 		buttonName: 'crop',
-		keyShortcuts: {
-			'C': [ 67 ]
-		},
 		run: function (e) {
 			project.setTool( new CroppingTool() );
 			return true;
@@ -258,9 +252,6 @@ var editToolActions = [
 		helpText: "Tracing tool",
 		buttonID: 'edit_button_trace',
 		buttonName: 'trace',
-		keyShortcuts: {
-			'G': [ 71 ]
-		},
 		run: function (e) {
 			project.setTool( new TracingTool() );
 			return true;

@@ -167,6 +167,13 @@ def installDjangoBackend():
         sudo('/etc/init.d/apache2 reload')
         sudo('sudo /etc/init.d/postgresql restart')
 
+        # TODO: create django/static/neurohdf
+        # and make it writable for the apache process
+
+        # remove files in local temporary folder
+        for file in ['settings_apache.py', 'django.wsgi']:
+            os.remove( op.join( tempfile.gettempdir(), file ) )
+
 
 # Basic packages for catmaid
 def installCatmaid():
@@ -206,7 +213,7 @@ def installCatmaid():
             catmaid_database_username, catmaid_database_password))
 
         # remove files in local temporary folder
-        for file in ['setup.inc.php', 'pg_hba.conf', '.catmaid-db', 'settings_apache.py', 'django.wsgi']:
+        for file in ['setup.inc.php', 'pg_hba.conf', '.catmaid-db']:
             os.remove( op.join( tempfile.gettempdir(), file ) )
 
 # this has to be run AFTER visiting http://domain/catmaid/

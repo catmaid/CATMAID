@@ -111,7 +111,7 @@ try {
     $steps = abs(intval( ($z - $atnz) / $resz ));
 
     if (0 === $steps) {
-        emitErrorAndExit($db, 'Can not interpolate on the same section!');
+        $steps = 1;
     }
 
     $dx = ($x - $atnx) / $steps;

@@ -9,3 +9,4 @@ Developer Documentation
    dbmigration
    djangounittest
    celeryinstall
+   catmaid_aws

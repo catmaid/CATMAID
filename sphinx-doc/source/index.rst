@@ -14,6 +14,10 @@ The **C** ollaborative **A** nnotation **T** oolkit for **M** assive **A** mount
 - SVG and WebGL-based neuronal morphology viewer
 - Open source software
 
+.. raw:: html
+
+        <iframe width="560" height="315" src="http://www.youtube.com/embed/rQyJV0R-Mp8" frameborder="0" allowfullscreen></iframe>
+
 Documentation
 -------------
 

@@ -99,20 +99,6 @@ function TracingTool()
       return;
     };
 
-    // FIXME: wrong inheritance call. The new prototype function
-    // is never called
-    var proto_changeSlice = self.prototype.changeSlice;
-    self.prototype.changeSlice = function( val ) {
-        proto_changeSlice( val );
-        // if 3d viewer window visible, change its z slice
-        if( $( "#view_in_3d_webgl_widget").length ) {
-            if( $('#enable_z_plane').attr('checked') != undefined ) {
-                updateZPlane( val );
-            } else {
-                updateZPlane( -1 );
-            }
-        }
-      };
   };
 
 	/**
@@ -293,7 +279,7 @@ function TracingTool()
   this.addAction( new Action({
     helpText: "Move right (towards positive x)",
     keyShortcuts: {
-      "\u2192": [ arrowKeyCodes.right ],
+      "\u2192": [ arrowKeyCodes.right ]
     },
     run: function (e) {
       self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
@@ -733,6 +719,7 @@ function TracingTool()
   this.handleKeyPress = function( e ) {
     var keyAction = keyCodeToAction[e.keyCode];
     if (keyAction) {
+      tracingLayer.svgOverlay.ensureFocused();
       return keyAction.run(e);
     } else {
       return false;

@@ -280,8 +280,14 @@ var SkeletonAnnotations = new function()
       } else {
         atn.set(null);
       }
-      
       self.recolorAllNodes();
+      // if displayed in 3d viewer, update position
+      if( $( "#view_in_3d_webgl_widget").length ) {
+        if( $('#enable_active_node').attr('checked') != undefined ) {
+          WebGLApp.updateActiveNode();
+        }
+      }
+
     };
 
     this.activateNearestNode = function (x, y, z) {
@@ -570,9 +576,16 @@ var SkeletonAnnotations = new function()
     };
 
     this.splitSkeleton = function () {
-      if (confirm("Do you really want to to split the skeleton?")) {
+        if( nodes[atn.id].parent === null ) {
+            alert('Can not split at root node!');
+            return;
+        }
+        if (confirm("Do you really want to to split the skeleton?")) {
         $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Splitting skeleton. Just a moment...</h2>' });
-        requestQueue.register("model/treenode.split.php", "POST", {
+        requestQueue.register(
+            //"model/treenode.split.php",
+            django_url + project.id + '/skeleton/split',
+            "POST", {
             pid: project.id,
             tnid: atn.id
           }, function (status, text, xml) {
@@ -598,6 +611,14 @@ var SkeletonAnnotations = new function()
 
     // Used to join two skeleton together
     this.createTreenodeLink = function (fromid, toid, callback) {
+      if( toid in nodes ) {
+          if( nodes[toid].parent !== null ) {
+              var check = confirm("Do you really want link to this skeleton with more than one node?");
+              if( check === false ) {
+                  return;
+              }
+          }
+      }
       // TODO: rerooting operation should be called on the backend
       // first make sure to reroot target
       requestQueue.register("model/treenode.reroot.php", "POST", {
@@ -1002,15 +1023,7 @@ var SkeletonAnnotations = new function()
         nodes[id] = nn;
       }
 
-      // Keep active state of previous active node
-      if (atn !== null)
-      {
-        nn = nodes[atn.id];
-        if (nn) {
-          // Will recolor all nodes
-          self.activateNode(nn);
-        }
-      }
+
 
       // Disable any unused instances
       SkeletonElements.disableBeyond(nrtn, nrcn);
@@ -1092,6 +1105,16 @@ var SkeletonAnnotations = new function()
       if( self.getLabelStatus() ) {
         self.showLabels();
       }
+
+    // Keep active state of previous active node
+    if (atn !== null)
+    {
+        nn = nodes[atn.id];
+        if (nn) {
+            // Will recolor all nodes
+            self.activateNode(nn);
+        }
+    }
 
     };
 

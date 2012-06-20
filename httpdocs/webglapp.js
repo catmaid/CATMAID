@@ -4,7 +4,7 @@ var WebGLApp = new function () {
   self = this;
   self.neurons = [];
 
-  var camera, scene, renderer, grid_lines, scale, controls, light, zplane = null, meshes = [], show_meshes = false;
+  var camera, scene, renderer, grid_lines, scale, controls, light, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
   var project_id, stack_id, resolution, dimension, translation, canvasWidth, canvasHeight;
 
   this.init = function( divID ) {
@@ -28,6 +28,17 @@ var WebGLApp = new function () {
     draw_grid();
     XYView();
 
+    // if active skeleton exists, add it to the view
+    var ID = SkeletonAnnotations.getActiveNodeId();
+    if(ID) {
+      self.addSkeletonFromID( self.project_id, SkeletonAnnotations.getActiveSkeletonId() );
+
+      // and create active node
+      $('#enable_active_node').attr('checked', true);
+      self.createActiveNode();
+    }
+
+
   }
 
   var randomColors = [];
@@ -50,6 +61,7 @@ var WebGLApp = new function () {
     container = document.getElementById(self.divID);
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera( 75, self.divWidth / self.divHeight, 1, 3000 );
+    // camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
     controls = new THREE.TrackballControls( camera, container );
     controls.rotateSpeed = 1.0;
     controls.zoomSpeed = 1.2;
@@ -165,7 +177,6 @@ var WebGLApp = new function () {
 
   // credit: http://stackoverflow.com/questions/638948/background-color-hex-to-javascript-variable-jquery
   function rgb2hex(rgb) {
-    console.log(rgb)
    rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
    function hex(x) {
     return ("0" + parseInt(x).toString(16)).slice(-2);
@@ -221,6 +232,11 @@ var WebGLApp = new function () {
       for ( var i=0; i<connectivity_types.length; ++i ) {
         scene.add( this.actor[connectivity_types[i]] );
       }
+    }
+
+    this.visiblityCompositeActor = function( type_index, visible )
+    {
+      this.actor[connectivity_types[type_index]].visible = visible;
     }
 
     var type, from_vector, to_vector;
@@ -346,6 +362,7 @@ var WebGLApp = new function () {
 
   self.resizeView = function (w, h) {
     if( renderer && !THREEx.FullScreen.activated() ) {
+      $('#view_in_3d_webgl_widget').css('overflowY', 'hidden');
       var canvasWidth = w, canvasHeight = h;
       if( isNaN(h) && isNaN(w) ) {
         canvasHeight = 800;
@@ -358,19 +375,34 @@ var WebGLApp = new function () {
         canvasHeight = canvasHeight - 100;
         canvasWidth = canvasHeight / 3 * 4;
       }
-      $('#viewer-3d-webgl-canvas').width(canvasWidth);
+      $('#viewer-3d-webgl-canvas').width(canvasWidth-20);
       $('#viewer-3d-webgl-canvas').height(canvasHeight);
       $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
-      renderer.setSize( canvasWidth, canvasHeight );
+      renderer.setSize( canvasWidth-20, canvasHeight );
+
+      // resize list view, needs frame height to fill it
+      var heightAvailable = $('#view_in_3d_webgl_widget').height() - canvasHeight;
+      if( heightAvailable < 150 ) {
+          $('#view-3d-webgl-skeleton-table-div').height(150);
+      } else {
+          $('#view-3d-webgl-skeleton-table-div').height(heightAvailable - 30);
+      }
+
     }
   }
 
-  self.createActiveNode = function( x, y, z)
+  self.createActiveNode = function()
   {
-    sphere = new THREE.SphereGeometry( dimension.x / 20 * scale, 32, 32, 1 );
-    active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.6, transparent:true } ) );
-    active_node.position.set( x,y,z );
+    if( !SkeletonAnnotations.getActiveNodeId() ) {
+      // alert("You must have an active node selected to add its skeleton to the 3D WebGL View.");
+      return;
+    }
+    sphere = new THREE.SphereGeometry( 130 * scale, 32, 32, 1 );
+    active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
+    active_node.position.set( 0,0,0 );
     scene.add( active_node );
+    self.updateActiveNode();
+    show_active_node = true;
   }
 
   this.removeActiveNode = function() {
@@ -380,25 +412,17 @@ var WebGLApp = new function () {
     }
   }
 
-  this.updateActiveNode = function(  )
+  this.updateActiveNode = function()
   {
-    var atn_id = SkeletonAnnotations.getActiveNodeId();
-    if (!atn_id) {
-      alert("You must have an active node selected to add its skeleton to the 3D WebGL View.");
-      self.removeActiveNode();
-      return;
+    if(active_node) {
+      var atn_pos = SkeletonAnnotations.getActiveNodePosition();
+      var co = transform_coordinates( [
+        translation.x + ((atn_pos.x) / project.focusedStack.scale) * resolution.x,
+        translation.y + ((atn_pos.y) / project.focusedStack.scale) * resolution.y,
+        translation.z + atn_pos.z * resolution.z]
+      );
+      active_node.position.set( co[0]*scale, co[1]*scale, co[2]*scale );
     }
-    var atn_pos = SkeletonAnnotations.getActiveNodePosition();
-    var x = atn_pos.x, y = atn_pos.y, z = atn_pos.z;
-    if(!active_node) {
-      self.createActiveNode( 0, 0, 0 );
-    }
-    var co = transform_coordinates( [
-      translation.x + ((x) / project.focusedStack.scale) * resolution.x,
-      translation.y + ((y) / project.focusedStack.scale) * resolution.y,
-      translation.z + z * resolution.z]
-    );
-    active_node.position.set( co[0]*scale, co[1]*scale, co[2]*scale );
   }
 
   this.randomizeColors = function()
@@ -419,22 +443,31 @@ var WebGLApp = new function () {
     }
   }
 
+
+  this.removeAllSkeletons = function() {
+    for( var skeleton_id in skeletons)
+    {
+      if( skeletons.hasOwnProperty(skeleton_id) ) {
+        self.removeSkeleton( skeleton_id );
+      }
+    }
+  }
+
+
   // add skeleton to scene
   this.addSkeleton = function( skeleton_id, skeleton_data )
   {
-    var deleted=false;
     if( skeletons.hasOwnProperty(skeleton_id) ){
+      self.removeSkeleton( skeleton_id );
       // remove skeleton and refetch
+      /*
       skeletons[skeleton_id].removeActorFromScene();
-      delete skeletons[skeleton_id];
-      deleted=true;
+      delete skeletons[skeleton_id];*/
     }
+
     skeleton_data['id'] = skeleton_id;
     skeletons[skeleton_id] = new Skeleton( skeleton_data );
-    if(!deleted) {
-      self.addSkeletonToTable( skeletons[skeleton_id] );
-    }
-    skeletons[skeleton_id].addCompositeActorToScene();
+    self.addSkeletonToTable( skeletons[skeleton_id] );
     return true;
   }
 
@@ -457,6 +490,7 @@ var WebGLApp = new function () {
         alert("Skeleton "+skeleton_id+" does not exist. Cannot remove it!");
         return;
     } else {
+        $('#skeletonrow-' + skeleton_id).remove();
         skeletons[skeleton_id].removeActorFromScene();
         delete skeletons[skeleton_id];
         return true;
@@ -525,6 +559,16 @@ var WebGLApp = new function () {
       // add them
       drawmesh();
       show_meshes = true;
+    }
+  }
+
+  self.toggleActiveNode = function() {
+    if( show_active_node ) {
+      self.removeActiveNode();
+      show_active_node = false;
+    } else {
+      self.createActiveNode();
+      show_active_node = true;
     }
   }
 
@@ -608,6 +652,7 @@ var WebGLApp = new function () {
     var rowElement = $('<tr/>').attr({
       id: 'skeletonrow-' + skeleton.id
     });
+    // $('#webgl-skeleton-table > tbody:last').append( rowElement );
     $('#webgl-skeleton-table > tbody:last').append( rowElement );
     
     // show skeleton
@@ -622,8 +667,10 @@ var WebGLApp = new function () {
           })
           .click( function( event )
           {
-                  var cbox = $(this)[0];
-                  console.log( cbox.value );
+            var vis = $('#skeletonshow-' + skeleton.id).is(':checked');
+            skeletons[skeleton.id].visiblityCompositeActor( 0, vis);
+            skeletons[skeleton.id].visiblityCompositeActor( 1, vis);
+            skeletons[skeleton.id].visiblityCompositeActor( 2, vis);
           } )
     ));
 
@@ -639,8 +686,7 @@ var WebGLApp = new function () {
           })
           .click( function( event )
           {
-                  var cbox = $(this)[0];
-                  console.log( cbox.value );
+            skeletons[skeleton.id].visiblityCompositeActor( 1, $('#skeletonpre-' + skeleton.id).is(':checked') );
           } )
     ));
 
@@ -656,8 +702,7 @@ var WebGLApp = new function () {
           })
           .click( function( event )
           {
-                  var cbox = $(this)[0];
-                  console.log( cbox.value );
+            skeletons[skeleton.id].visiblityCompositeActor( 2, $('#skeletonpost-' + skeleton.id).is(':checked') );
           } )
     ));
 
@@ -665,18 +710,18 @@ var WebGLApp = new function () {
       $(document.createElement("td")).text( skeleton.baseName + ' (SkeletonID: ' + skeleton.id + ')' )
     );
 
-    rowElement.append(
-      $(document.createElement("td")).append(
-        $(document.createElement("button")).attr({
+    var td = $(document.createElement("td"));
+    td.append( $(document.createElement("button")).attr({
           id:    'skeletonaction-remove-' + skeleton.id,
           value: 'Remove'
           })
           .click( function( event )
           {
             self.removeSkeleton( skeleton.id );
-            rowElement.remove();
-          } )
-      ).append(
+          })
+          .text('Remove!')
+    );
+    td.append(
         $(document.createElement("button")).attr({
           id:    'skeletonaction-changecolor-' + skeleton.id,
           value: 'Change color'
@@ -684,13 +729,15 @@ var WebGLApp = new function () {
           .click( function( event )
           {
             $('#color-wheel-' + skeleton.id).toggle();
-          } )
-      ).append(
-        $('<div id="color-wheel-' +
-          skeleton.id + '"><div class="colorwheel'+
-          skeleton.id + '"></div></div>')
-      )
+          })
+          .text('Change color')
+      );
+    td.append(
+      $('<div id="color-wheel-' +
+        skeleton.id + '"><div class="colorwheel'+
+        skeleton.id + '"></div></div>')
     );
+    rowElement.append( td );
 
     var cw = Raphael.colorwheel($("#color-wheel-"+skeleton.id+" .colorwheel"+skeleton.id)[0],150);
     cw.color("#FFFF00");
@@ -702,6 +749,8 @@ var WebGLApp = new function () {
     })
 
     $('#color-wheel-' + skeleton.id).hide();
+
+    skeleton.addCompositeActorToScene();
 
   }
 

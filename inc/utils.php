@@ -76,6 +76,7 @@ function getLocationAsString( $db, $pid, $node_id ) {
 function insertIntoLog( $db, $uid, $pid, $op_type, $location, $freetext ) {
     // Valid operation_type:
     $operation_type_array = array(
+     "rename_root",
      "create_neuron",
      "rename_neuron",
      "remove_neuron",

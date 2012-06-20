@@ -228,7 +228,7 @@ def get_swc_string(treenodes_qs):
         result += " ".join(str(x) for x in row) + "\n"
     return result
 
-def get_treenodes_qs(project_id=None, skeleton_id=None, treenode_id=None):
+def get_treenodes_qs(project_id=None, skeleton_id=None, treenode_id=None, with_labels=True):
     if treenode_id and not skeleton_id:
         ci = ClassInstance.objects.get(
             project=project_id,
@@ -241,12 +241,16 @@ def get_treenodes_qs(project_id=None, skeleton_id=None, treenode_id=None):
         treenodeclassinstance__relation__relation_name='element_of',
         treenodeclassinstance__class_instance__class_column__class_name='skeleton',
         project=project_id).order_by('id')
-    labels_qs = TreenodeClassInstance.objects.filter(relation__relation_name='labeled_as',
-        treenode__treenodeclassinstance__class_instance__id=skeleton_id,
-        treenode__treenodeclassinstance__relation__relation_name='element_of').select_related('treenode', 'class_instance')
-    labelconnector_qs = ConnectorClassInstance.objects.filter(relation__relation_name='labeled_as',
-            connector__treenodeconnector__treenode__treenodeclassinstance__class_instance__id=skeleton_id,
-            connector__treenodeconnector__treenode__treenodeclassinstance__relation__relation_name='element_of').select_related('connector', 'class_instance')
+    if with_labels:
+        labels_qs = TreenodeClassInstance.objects.filter(relation__relation_name='labeled_as',
+            treenode__treenodeclassinstance__class_instance__id=skeleton_id,
+            treenode__treenodeclassinstance__relation__relation_name='element_of').select_related('treenode', 'class_instance')
+        labelconnector_qs = ConnectorClassInstance.objects.filter(relation__relation_name='labeled_as',
+                connector__treenodeconnector__treenode__treenodeclassinstance__class_instance__id=skeleton_id,
+                connector__treenodeconnector__treenode__treenodeclassinstance__relation__relation_name='element_of').select_related('connector', 'class_instance')
+    else:
+        labels_qs = []
+        labelconnector_qs = []
     return treenode_qs, labels_qs, labelconnector_qs
 
 def export_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None, format=None):
@@ -473,7 +477,7 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, logged_in
 
 def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
 
-    treenode_qs, labels_as, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id)
+    treenode_qs, labels_as, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id, with_labels=False)
 
     labels={}
     for tn in labels_as:
@@ -503,7 +507,10 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
         if tn.id in labels:
             lab = labels[tn.id]
         else:
-            lab = []
+            if tn.confidence < 5:
+                lab = ['uncertain']
+            else:
+                lab = []
         vertices[tn.id] = {
             'x': tn.location.x,
             'y': tn.location.y,
@@ -734,27 +741,6 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
 def stack_info(request, project_id=None, stack_id=None, logged_in_user=None):
     result=get_stack_info(project_id, stack_id, logged_in_user)
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")
-
-def get_tile(request, project_id=None, stack_id=None):
-    params = urllib.urlencode(request.GET)
-    headers = {"Content-type": "application/x-www-form-urlencoded",
-                "Referer": "http://127.0.0.1"}
-    # TODO: Replace hard-coded URL to TileServer URL specified in settings.py
-    conn = httplib.HTTPConnection("127.0.0.1:8888")
-    # Setting the parameters as body (3rd argument) is not parsed by Tornado webserver
-    # We need to attach them to the request URL
-    conn.request("GET", "/?"+ params, '', headers)
-    response = conn.getresponse()
-    read_response = response.read()
-    print >> sys.stderr, read_response, params
-    image = Image.open(cStringIO.StringIO(read_response))
-    if response.status == 200:
-        # serialize to HTTP response
-        newresponse = HttpResponse(mimetype="image/png")
-        image.save(newresponse, "PNG")
-        return newresponse
-    else:
-        return HttpResponse("Error in TileServer response.", mimetype="plain/text")
 
 def push_image(request, project_id=None, stack_id=None):
     """ Push image to server with proper stack field-of-view """

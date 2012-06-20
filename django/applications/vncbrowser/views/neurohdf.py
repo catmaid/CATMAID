@@ -18,6 +18,8 @@ from contextlib import closing
 from random import choice
 import os
 import sys
+import base64, cStringIO
+import time
 
 # This file defines constants used to correctly define the metadata for NeuroHDF microcircuit data
 
@@ -51,26 +53,76 @@ ConnectivityPostsynaptic = {
     'id': 3
 }
 
+def get_tile(request, project_id=None, stack_id=None):
 
-def get_image(request, project_id=None, stack_id=None, x=None, y=None, dx=None, dy=None, z=None):
+    scale = float(request.GET.get('scale', '0'))
+    height = int(request.GET.get('height', '0'))
+    width = int(request.GET.get('width', '0'))
+    x = int(request.GET.get('x', '0'))
+    y = int(request.GET.get('y', '0'))
+    z = int(request.GET.get('z', '0'))
+    col = request.GET.get('col', 'y')
+    row = request.GET.get('row', 'x')
+    file_extension = request.GET.get('file_extension', 'png')
+    hdf5_path = request.GET.get('hdf5_path', '/')
+
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}.hdf'.format( project_id, stack_id ) )
-
-    print >> sys.stderr, 'fpath', fpath
-    print 'exists', os.path.exists(fpath)
+    
+    #print 'exists', os.path.exists(fpath)
+    
     with closing(h5py.File(fpath, 'r')) as hfile:
-        image_data=hfile[str(z)].value
+        #import math
+        #zoomlevel = math.log(int(scale), 2)
+        hdfpath = hdf5_path + '/scale/' + str(int(scale)) + '/data'
+        image_data=hfile[hdfpath].value
+        data=image_data[y:y+height,x:x+width,z].copy()
+        # without copy, would yield expected string or buffer exception
+        # XXX: should directly index into the memmapped hdf5 array
+        #print >> sys.stderr, 'hdf5 path', hdfpath, image_data, data,
+        # data.shape
+        
+        pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
+        response = HttpResponse(mimetype="image/png")
+        pilImage.save(response, "PNG")
+        return response
 
-    # image = Image.fromarray(image_data[:500,:500].T)
-    # TODO: define a map from skeleton ids stored in the HDF5 to colors & back
+
     w,h=1000,800
-    img = np.empty((w,h),np.uint32)
-    img.shape=h,w
-    img[0,0]=0x800000FF
-    img[:400,:400]=0xFFFF0000
-    pilImage = Image.frombuffer('RGBA',(w,h),img,'raw','RGBA',0,1)
+    # img = np.empty((width,height), np.uint32)
+    #img.shape=height,width
+    img = np.random.random_integers(0, 150, (height,width) ).astype(np.uint8)
+    #img[0,0]=0x800000FF
+    # img[:400,:400]=0xFFFF0000
+    pilImage = Image.frombuffer('RGBA',(width,height),img,'raw','L',0,1)
     response = HttpResponse(mimetype="image/png")
     pilImage.save(response, "PNG")
     return response
+
+def put_tile(request, project_id=None, stack_id=None):
+    """ Store labels to HDF5 """
+    #print >> sys.stderr, 'put tile', request.POST
+    
+    scale = float(request.POST.get('scale', '0'))
+    height = int(request.POST.get('height', '0'))
+    width = int(request.POST.get('width', '0'))
+    x = int(request.POST.get('x', '0'))
+    y = int(request.POST.get('y', '0'))
+    z = int(request.POST.get('z', '0'))
+    col = request.POST.get('col', 'y')
+    row = request.POST.get('row', 'x')
+    image = request.POST.get('image', 'x')
+
+    fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}.hdf'.format( project_id, stack_id ) )
+    #print >> sys.stderr, 'fpath', fpath
+
+    with closing(h5py.File(fpath, 'a')) as hfile:
+        hdfpath = '/labels/scale/' + str(int(scale)) + '/data'
+        #print >> sys.stderr, 'storage', x,y,z,height,width,hdfpath
+        #print >> sys.stderr, 'image', base64.decodestring(image)
+        image_from_canvas = np.asarray( Image.open( cStringIO.StringIO(base64.decodestring(image)) ) )
+        hfile[hdfpath][y:y+height,x:x+width,z] = image_from_canvas[:,:,0]
+
+    return HttpResponse("Image pushed to HDF5.", mimetype="plain/text")
 
 def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
     # retrieve all treenodes for a given skeleton
@@ -92,7 +144,9 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
     treenode_userid = np.zeros( (treenode_count,), dtype = np.uint32 )
     treenode_type = np.zeros( (treenode_count,), dtype = np.uint32 )
     treenode_skeletonid = np.zeros( (treenode_count,), dtype = np.uint32 )
-
+    treenode_creationtime = np.zeros( (treenode_count,), dtype = np.uint32 )
+    treenode_modificationtime = np.zeros( (treenode_count,), dtype = np.uint32 )
+    
     treenode_connectivity = np.zeros( (treenode_count, 2), dtype = np.uint32 )
     treenode_connectivity_type = np.zeros( (treenode_count,), dtype = np.uint32 )
     treenode_connectivity_skeletonid = np.zeros( (treenode_count,), dtype = np.uint32 )
@@ -108,6 +162,9 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
         treenode_confidence[i] = tn.confidence
         treenode_userid[i] = tn.user_id
         treenode_skeletonid[i] = tn.skeleton_id
+        treenode_creationtime[i] = int(time.mktime(tn.creation_time.timetuple()))
+        treenode_modificationtime[i] = int(time.mktime(tn.edition_time
+        .timetuple()))
 
         if not tn.parent_id is None:
             treenode_parentid[i] = tn.parent_id
@@ -143,7 +200,8 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
 
     treenode_connector_connectivity=[]; treenode_connector_connectivity_type=[]
     cn_type=[]; cn_xyz=[]; cn_id=[]; cn_confidence=[]; cn_userid=[]; cn_radius=[]; cn_skeletonid=[]
-    cn_skeletonid_connector=[] # because skeletons with a single treenode might have no connectivity
+    cn_skeletonid_connector=[]; cn_creationtime=[]; cn_modificationtime=[]
+    # because skeletons with a single treenode might have no connectivity
     # (no parent and no synaptic connection), but we still want to recover their skeleton id, we need
     # to store the skeletonid as a property on the vertices too, with default value 0 for connectors
     found_synapse=False
@@ -167,6 +225,10 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
         cn_skeletonid_connector.append( 0 ) # default skeleton id for connector
         cn_type.append( VerticesTypeConnectorNode['id'] )
         cn_skeletonid.append( tc.skeleton_id )
+        cn_creationtime.append( int(time.mktime(tc.connector.creation_time
+        .timetuple())) )
+        cn_modificationtime.append( int(time.mktime(tc.connector.edition_time
+        .timetuple())) )
 
     data = {'vert':{},'conn':{}}
     # check if we have synaptic connectivity at all
@@ -178,9 +240,15 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
             'confidence': np.hstack((treenode_confidence, np.array(cn_confidence, dtype=np.uint32).ravel() )),
             'userid': np.hstack((treenode_userid, np.array(cn_userid, dtype=np.uint32).ravel() )),
             'radius': np.hstack((treenode_radius, np.array(cn_radius, dtype=np.int32).ravel() )),
-            'skeletonid': np.hstack((treenode_skeletonid, np.array(cn_skeletonid_connector, dtype=np.int32).ravel() ))
-        }
-       # print np.array(cn_skeletonid, dtype=np.uint32)
+            'skeletonid': np.hstack((treenode_skeletonid,
+                                     np.array(cn_skeletonid_connector, dtype=np.int32).ravel() )),
+            'creation_time': np.hstack((treenode_creationtime,
+                                     np.array(cn_creationtime,
+                                              dtype=np.int32).ravel())),
+            'modification_time': np.hstack((treenode_modificationtime,
+                                     np.array(cn_modificationtime,
+                                              dtype=np.int32).ravel())),
+            }
         data['conn'] = {
             'id': np.vstack((treenode_connectivity, np.array(treenode_connector_connectivity, dtype=np.uint32)) ),
             'type': np.hstack((treenode_connectivity_type,
@@ -197,7 +265,9 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
             'confidence': treenode_confidence,
             'userid': treenode_userid,
             'radius': treenode_radius,
-            'skeletonid': treenode_skeletonid
+            'skeletonid': treenode_skeletonid,
+            'creation_time': treenode_creationtime,
+            'modification_time': treenode_modificationtime
         }
         data['conn'] = {
             'id': treenode_connectivity,
@@ -231,7 +301,7 @@ def get_temporary_neurohdf_filename_and_url():
     fname = ''.join([choice('abcdefghijklmnopqrstuvwxyz0123456789(-_=+)') for i in range(50)])
     hdf_path = os.path.join(settings.STATICFILES_LOCAL, settings.STATICFILES_HDF5_SUBDIRECTORY)
     if not os.path.exists( hdf_path ):
-        raise Exception('Need to configure writable path STATICFILES_HDF5_LOCAL in settings_apache.py')
+        raise Exception('Need to configure writable path STATICFILES_HDF5_SUBDIRECTORY in settings_apache.py')
     filename = os.path.join('%s.h5' % fname)
     host = settings.CATMAID_DJANGO_URL.lstrip('http://').split('/')[0]
     return os.path.join(hdf_path, filename), "http://{0}{1}".format( host, os.path.join(settings.STATICFILES_URL,
@@ -265,6 +335,8 @@ def create_neurohdf_file(filename, data):
         vert.create_dataset("userid", data=data['vert']['userid'])
         vert.create_dataset("radius", data=data['vert']['radius'])
         vert.create_dataset("skeletonid", data=data['vert']['skeletonid'])
+        vert.create_dataset("creation_time", data=data['vert']['creation_time'])
+        vert.create_dataset("modification_time", data=data['vert']['modification_time'])
 
         conn.create_dataset("id", data=data['conn']['id'])
         if data['conn'].has_key('type'):

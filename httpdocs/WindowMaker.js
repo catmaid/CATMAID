@@ -93,13 +93,6 @@ var WindowMaker = new function()
     add.onclick = WebGLApp.addActiveSkeletonToView;
     container.appendChild(add);
 
-    var active = document.createElement('input');
-    active.setAttribute("type", "button");
-    active.setAttribute("id", "update_current_atn_3d_webgl_view");
-    active.setAttribute("value", "Show active node");
-    active.onclick = WebGLApp.updateActiveNode;
-    container.appendChild(active);
-
     var fulls = document.createElement('input');
     fulls.setAttribute("type", "button");
     fulls.setAttribute("id", "fullscreen_webgl_view");
@@ -153,13 +146,14 @@ var WindowMaker = new function()
     var rand = document.createTextNode('Show meshes');
     container.appendChild(rand);
 
-    var introduction = document.createElement('p')
-    introduction.setAttribute("id", "view3DWebGLIntroduction");
-    container.appendChild(introduction);
-
-    var list = document.createElement('ul');
-    list.setAttribute("id", "view-3d-webgl-object-list")
-    container.appendChild(list);
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "enable_active_node");
+    rand.setAttribute("value", "Enable active node");
+    rand.onclick = WebGLApp.toggleActiveNode;
+    container.appendChild(rand);
+    var rand = document.createTextNode('Enable active node');
+    container.appendChild(rand);
 
     var canvas = document.createElement('div');
     canvas.setAttribute("id", "viewer-3d-webgl-canvas");
@@ -184,7 +178,7 @@ var WindowMaker = new function()
             '<th>post</th>' +
             '<th>name</th>' +
             '<th>action</th>' +
-          '<tr>' +
+          '</tr>' +
         '</thead>' +
         '<tbody>' +
         '</tbody>';
@@ -210,6 +204,7 @@ var WindowMaker = new function()
                   }
                 }
               }
+              WebGLApp.removeAllSkeletons();
               // win.close();
             }
             break;
@@ -583,7 +578,8 @@ var WindowMaker = new function()
       content.appendChild( container );
 
       container.innerHTML =
-        '<h2>Download complete microcircuit reconstruction as <a target="_new" href="'+ django_url + project.id + '/microcircuit/neurohdf' + '">NeuroHDF</a></h2>' +
+        '<h2>Download complete microcircuit reconstruction as <a target="_new" href="'+ django_url + project.id + '/microcircuit/neurohdf' + '">NeuroHDF</a>. ' +
+        'You can use the Python <a target="_new" href="https://github.com/unidesigner/microcircuit/">microcircuit package</a> to load the file and do analysis of the neural circuit.</h2>' +
         '<br />' +
         '<h2>Download annotation graph as <a target="_new" href="'+ django_url + project.id + '/annotationdiagram/nx_json ' + '">NetworkX JSON graph</a></h2>';
     

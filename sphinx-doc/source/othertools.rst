@@ -12,6 +12,7 @@ Interactive skeleton tracing
 * `Program Elegance <http://worms.aecom.yu.edu/pages/Reconstruction%20Software.html>`_ (*)
 * `SSECRETT and Neurotrace <http://gvi.seas.harvard.edu/paper/ssecrett-and-neurotrace-interactive-visualization-and-analysis-tools-largescale-neuroscience-d>`_ (*)
 * `NeuroStruct <http://www.neurostruct.org/index.html>`_ (*)
+* `ESPina <http://cajalbbp.cesvima.upm.es/espina>`_ (*)
 
 These are all desktop-based tools. (*) are not directly available for download.
 
@@ -22,10 +23,14 @@ These are all desktop-based tools. (*) are not directly available for download.
 Web-based image viewer
 ----------------------
 
+* `Mouse Brain Architecture Viewer <http://mouse.brainarchitecture.org/seriesbrowser/>`_
 * `Biological Image Viewer Kitware <http://www.cmake.org/Wiki/index.php?title=IMServer:Demos&oldid=39560>`_
 * `iConnectome <http://www.mouseconnectome.org/iConnectome/>`_
 * `Virtual Fly Brain <http://flybrain.inf.ed.ac.uk/site/stacks/>`_
 * `WebImage Browser <http://openccdb.org/index.shtm>`_
+* `IIPIImage <http://iipimage.sourceforge.net/documentation/iipmooviewer/>`_
+* `Djatoka <http://sourceforge.net/apps/mediawiki/djatoka/index.php?title=Main_Page>`_
+* `OpenLayers <http://openlayers.org/>`_
 
 iPad Apps
 ---------

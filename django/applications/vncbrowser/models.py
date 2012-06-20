@@ -539,3 +539,15 @@ class NeuronSearch(forms.Form):
 class ApiKey(models.Model):
     description = models.TextField()
     key = models.CharField(max_length=128)
+
+class Log(models.Model):
+    class Meta:
+        db_table = "log"
+        managed = False
+    user = models.ForeignKey(User)
+    creation_time = models.DateTimeField(default=now)
+    edition_time = models.DateTimeField(default=now)
+    project = models.ForeignKey(Project)
+    operation_type = models.CharField(max_length=255)
+    location = Double3DField()
+    freetext = models.TextField()

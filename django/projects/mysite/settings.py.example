@@ -8,7 +8,7 @@ import djcelery
 DATABASES = {
     'default': {
         'ENGINE': 'custom_postgresql_psycopg2', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'catmaid',                    # Or path to database file if using sqlite3.
+        'NAME': 'catmaid_database_name',      # Or path to database file if using sqlite3.
         'USER': 'catmaid_user',               # Not used with sqlite3.
         'PASSWORD': 'catmaid_user_password',  # Not used with sqlite3.
         'HOST': '',                           # Set to empty string for localhost. Not used with sqlite3.
@@ -28,13 +28,13 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    '/home/mark/catmaid/django/templates'
+    '/home/$USERNAME/$CATMAID_PATH/django/templates'
 )
 
 # Define a temporary folder. This is e.g. used to store cropped
 # microstacks for two weeks. Make sure that the folder is writable
 # by the user running the webserver and Celery.
-TMP_DIR = '/home/tom/catmaid/tmp'
+TMP_DIR = '/home/$USERNAME/$CATMAID_PATH/tmp'
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -56,18 +56,18 @@ SITE_ID = 1
 CATMAID_URL = '/'
 STATICFILES_URL = '/static/'
 
-STATICFILES_LOCAL = '/home/stephan/dev/CATMAID/django/static/'
+STATICFILES_LOCAL = '/home/$USERNAME/$CATMAID_PATH/django/static/'
 # Static path to store generated NeuroHDF files (needs to be writable)
 # as subdirectory of STATICFILES_LOCAL
 STATICFILES_HDF5_SUBDIRECTORY = 'neurohdf'
 
 # Local path to store HDF5 files
 # File name convention: {projectid}_{stackid}.hdf
-HDF5_STORAGE_PATH = '/home/stephan/dev/CATMAID/django/hdf5/'
+HDF5_STORAGE_PATH = '/home/$USERNAME/$CATMAID_PATH/django/hdf5/'
 
 # Define the URL of your CATMAIDs Django instance as it should appear in
 # front of all Django related URLs.
-CATMAID_DJANGO_URL = 'http://your.domain.to/catmaid/dj/'
+CATMAID_DJANGO_URL = 'http://$CATMAID_URL/catmaid/dj/'
 
 ## Celery configuration
 djcelery.setup_loader()

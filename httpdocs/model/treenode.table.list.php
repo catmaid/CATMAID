@@ -323,10 +323,17 @@ try {
 		// 2 -> label			
 		if ( $_REQUEST['sSearch_1'] != "" )
 		{
-			if( strtoupper($_REQUEST['sSearch_1']) != $val["nodetype"])
-			{
-				$skip = True;
-			}
+            if( strtoupper($_REQUEST['sSearch_1']) == 'LR')
+            {
+                if( $val["nodetype"] != 'L' and $val["nodetype"] != 'R') {
+                    $skip = True;
+                }
+            } else {
+                if( strtoupper($_REQUEST['sSearch_1']) != $val["nodetype"])
+                {
+                    $skip = True;
+                }
+            }
 		}
 
 		if ( $_REQUEST['sSearch_2'] != "" )

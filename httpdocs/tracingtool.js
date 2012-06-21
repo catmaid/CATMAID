@@ -572,7 +572,7 @@ function TracingTool()
       return true;
     }
   }) );
-
+/*
   this.addAction( new Action({
     helpText: "Move up 1 slice in z and click",
     keyShortcuts: {
@@ -600,7 +600,7 @@ function TracingTool()
       return true;
     }
   }) );
-
+*/
 
   this.addAction( new Action({
     helpText: "Set confidence in node link to 1",

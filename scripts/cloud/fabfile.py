@@ -13,6 +13,7 @@ from datetime import datetime
 
 import tempfile
 import os.path as op
+import os
 import re
 
 execfile('configuration.py')
@@ -166,6 +167,13 @@ def installDjangoBackend():
         sudo('/etc/init.d/apache2 reload')
         sudo('sudo /etc/init.d/postgresql restart')
 
+        # TODO: create django/static/neurohdf
+        # and make it writable for the apache process
+
+        # remove files in local temporary folder
+        for file in ['settings_apache.py', 'django.wsgi']:
+            os.remove( op.join( tempfile.gettempdir(), file ) )
+
 
 # Basic packages for catmaid
 def installCatmaid():
@@ -204,13 +212,17 @@ def installCatmaid():
             run('scripts/createuser.sh {0} {1} {2} | sudo -u postgres psql'.format( catmaid_database_name, \
             catmaid_database_username, catmaid_database_password))
 
-        # TODO: remove files in tempdir
+        # remove files in local temporary folder
+        for file in ['setup.inc.php', 'pg_hba.conf', '.catmaid-db']:
+            os.remove( op.join( tempfile.gettempdir(), file ) )
 
 # this has to be run AFTER visiting http://domain/catmaid/
 def installExampleProject():
     with settings(warn_only=True):
         with cd('CATMAID'):
             run('scripts/database/insert-example-projects.py')
+
+# TODO: install celery
 
 # See http://boto.readthedocs.org/en/latest/ec2_tut.html
 def stopInstance():

@@ -279,7 +279,7 @@ function TracingTool()
   this.addAction( new Action({
     helpText: "Move right (towards positive x)",
     keyShortcuts: {
-      "\u2192": [ arrowKeyCodes.right ],
+      "\u2192": [ arrowKeyCodes.right ]
     },
     run: function (e) {
       self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
@@ -572,7 +572,7 @@ function TracingTool()
       return true;
     }
   }) );
-
+/*
   this.addAction( new Action({
     helpText: "Move up 1 slice in z and click",
     keyShortcuts: {
@@ -600,7 +600,7 @@ function TracingTool()
       return true;
     }
   }) );
-
+*/
 
   this.addAction( new Action({
     helpText: "Set confidence in node link to 1",
@@ -719,6 +719,7 @@ function TracingTool()
   this.handleKeyPress = function( e ) {
     var keyAction = keyCodeToAction[e.keyCode];
     if (keyAction) {
+      tracingLayer.svgOverlay.ensureFocused();
       return keyAction.run(e);
     } else {
       return false;

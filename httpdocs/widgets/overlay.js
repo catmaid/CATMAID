@@ -280,8 +280,14 @@ var SkeletonAnnotations = new function()
       } else {
         atn.set(null);
       }
-      
       self.recolorAllNodes();
+      // if displayed in 3d viewer, update position
+      if( $( "#view_in_3d_webgl_widget").length ) {
+        if( $('#enable_active_node').attr('checked') != undefined ) {
+          WebGLApp.updateActiveNode();
+        }
+      }
+
     };
 
     this.activateNearestNode = function (x, y, z) {
@@ -1017,15 +1023,7 @@ var SkeletonAnnotations = new function()
         nodes[id] = nn;
       }
 
-      // Keep active state of previous active node
-      if (atn !== null)
-      {
-        nn = nodes[atn.id];
-        if (nn) {
-          // Will recolor all nodes
-          self.activateNode(nn);
-        }
-      }
+
 
       // Disable any unused instances
       SkeletonElements.disableBeyond(nrtn, nrcn);
@@ -1107,6 +1105,16 @@ var SkeletonAnnotations = new function()
       if( self.getLabelStatus() ) {
         self.showLabels();
       }
+
+    // Keep active state of previous active node
+    if (atn !== null)
+    {
+        nn = nodes[atn.id];
+        if (nn) {
+            // Will recolor all nodes
+            self.activateNode(nn);
+        }
+    }
 
     };
 

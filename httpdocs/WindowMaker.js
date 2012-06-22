@@ -93,13 +93,6 @@ var WindowMaker = new function()
     add.onclick = WebGLApp.addActiveSkeletonToView;
     container.appendChild(add);
 
-    var active = document.createElement('input');
-    active.setAttribute("type", "button");
-    active.setAttribute("id", "update_current_atn_3d_webgl_view");
-    active.setAttribute("value", "Show active node");
-    active.onclick = WebGLApp.updateActiveNode;
-    container.appendChild(active);
-
     var fulls = document.createElement('input');
     fulls.setAttribute("type", "button");
     fulls.setAttribute("id", "fullscreen_webgl_view");
@@ -153,13 +146,14 @@ var WindowMaker = new function()
     var rand = document.createTextNode('Show meshes');
     container.appendChild(rand);
 
-    var introduction = document.createElement('p')
-    introduction.setAttribute("id", "view3DWebGLIntroduction");
-    container.appendChild(introduction);
-
-    var list = document.createElement('ul');
-    list.setAttribute("id", "view-3d-webgl-object-list")
-    container.appendChild(list);
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "enable_active_node");
+    rand.setAttribute("value", "Enable active node");
+    rand.onclick = WebGLApp.toggleActiveNode;
+    container.appendChild(rand);
+    var rand = document.createTextNode('Enable active node');
+    container.appendChild(rand);
 
     var canvas = document.createElement('div');
     canvas.setAttribute("id", "viewer-3d-webgl-canvas");
@@ -184,7 +178,7 @@ var WindowMaker = new function()
             '<th>post</th>' +
             '<th>name</th>' +
             '<th>action</th>' +
-          '<tr>' +
+          '</tr>' +
         '</thead>' +
         '<tbody>' +
         '</tbody>';
@@ -210,6 +204,7 @@ var WindowMaker = new function()
                   }
                 }
               }
+              WebGLApp.removeAllSkeletons();
               // win.close();
             }
             break;
@@ -326,7 +321,7 @@ var WindowMaker = new function()
             '<th>type' +
         '' +
         '<select name="search_type" id="search_type" class="search_init">' +
-        '<option value="">None</option><option value="R">Root</option><option value="L">Leaf</option>' +
+        '<option value="">Any</option><option value="R">Root</option><option value="LR">Leaf & Root</option>' +
         '<option value="B">Branch</option><option value="S">Slab</option></select>' +
         '</th>' +
         // <input type="text" name="search_type" value="Search" class="search_init" />

@@ -931,7 +931,7 @@ function ResizeHandle( type, node )
 			ui.registerEvent( "onmousemove", onmousemove.h );
 			ui.registerEvent( "onmouseup", onmouseup.h );
 			ui.catchEvents( "e-resize" );
-            ui.onmousedown( e );
+			ui.onmousedown( e );
 			ui.catchFocus();
 
             return false;
@@ -941,7 +941,7 @@ function ResizeHandle( type, node )
 			ui.registerEvent( "onmousemove", onmousemove.v );
 			ui.registerEvent( "onmouseup", onmouseup.v );
 			ui.catchEvents( "s-resize" );
-            ui.onmousedown( e );
+			ui.onmousedown( e );
 			ui.catchFocus();
 
             return false;

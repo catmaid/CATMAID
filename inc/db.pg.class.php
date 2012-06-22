@@ -52,8 +52,8 @@ class DB
 	var $db;
 	var $handle;
 
-    var $debug = true;
-    var $debugTimings = true;
+    var $debug = false;
+    var $debugTimings = false;
 
 	/**
 	 * Constructor

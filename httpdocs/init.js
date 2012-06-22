@@ -233,6 +233,7 @@ function updateProjects(completionCallback) {
   project_menu_open.update(null);
 
   document.getElementById("projects_h").style.display = "none";
+  document.getElementById("project_filter_form").style.display = "none";
 
   var pp = document.getElementById("projects_dl");
 
@@ -255,6 +256,8 @@ function updateProjects(completionCallback) {
   return;
 }
 
+var cachedProjectsInfo = null;
+
 /**
  * handle a project-menu-update-request answer
  * update the project menu
@@ -269,63 +272,13 @@ function handle_updateProjects(status, text, xml) {
     var keep_project_alive = false;
     var keep_project_editable = false;
 
-    var pp = document.getElementById("projects_dl");
-    while (pp.firstChild) pp.removeChild(pp.firstChild);
-
     if (e.error) {
       project_menu_open.update();
       alert(e.error);
     } else {
-      // maintain a list of projects/sessions available
-      projects_available_ready = false;
-      if (projects_available)
-      {
-        delete projects_available;
-      }
-      projects_available = new Array();
-      for (var i in e) {
-        if (project && project.id == e[i].pid) {
-          keep_project_alive = true;
-          keep_project_editable = e[i].editable;
-        }
-
-        var dt = document.createElement("dt");
-        dt.appendChild(document.createTextNode(e[i].title));
-
-        document.getElementById("projects_h").style.display = "block";
-        pp.appendChild(dt);
-
-        projects_available[ e[i].pid ] = new Array();
-        for (var j in e[i].action) {
-          var sid_title = e[i].action[j].title;
-          var sid_action = e[i].action[j].action;
-          var sid_note = e[i].action[j].comment;
-          projects_available[e[i].pid][j] =
-            { title : sid_title, action : sid_action, note : sid_note };
-          var dd = document.createElement("dd");
-          var a = document.createElement("a");
-          var ddc = document.createElement("dd");
-          a.href = sid_action;
-          a.appendChild(document.createTextNode(sid_title));
-          dd.appendChild(a);
-          pp.appendChild(dd);
-          if (sid_note) {
-            var ddc = document.createElement("dd");
-            ddc.innerHTML = sid_note;
-            pp.appendChild(ddc);
-          }
-        }
-        if (e[i].catalogue) {
-          var catalogueElement = document.createElement('dd');
-          var catalogueElementLink = document.createElement('a');
-          catalogueElementLink.href = 'dj/' + e[i].pid;
-          catalogueElementLink.appendChild(document.createTextNode('Browse the Neuron Catalogue'));
-          catalogueElement.appendChild(catalogueElementLink);
-          pp.appendChild(catalogueElement);
-        }
-      }
-      projects_available_ready = true;
-      project_menu_open.update(e)
+      $('#project_filter_form').show();
+      cachedProjectsInfo = e;
+      updateProjectListFromCache();
     }
     if (project) {
       if (keep_project_alive) project.setEditable(keep_project_editable);
@@ -337,6 +290,132 @@ function handle_updateProjects(status, text, xml) {
   }
   ui.releaseEvents();
   return;
+}
+
+function updateProjectListMessage(text) {
+  $('#project_list_message').text(text);
+}
+
+/**
+ * Do a delayed call to updateProjectListFromCache() and indicate
+ * the progress.
+ */
+var cacheLoadingTimeout = null;
+function updateProjectListFromCacheDelayed()
+{
+  // indicate active filtered loading of the projects
+  var indicator = document.getElementById("project_filter_indicator");
+  window.setTimeout( function() { indicator.className = "filtering"; }, 1);
+
+  // clear timeout if already present and create a new one
+  if (cacheLoadingTimeout != null)
+  {
+    clearTimeout(cacheLoadingTimeout);
+  }
+  cacheLoadingTimeout = window.setTimeout(
+    function() {
+      updateProjectListFromCache();
+      // indicate finish of filtered loading of the projects
+      indicator.className = "";
+    }, 500);
+}
+
+/**
+ * Update the displayed project list based on the cache
+ * entries. This can involve a filter in the text box
+ * "project_filter_text".
+ */
+function updateProjectListFromCache() {
+  var matchingProjects = 0,
+      searchString = $('#project_filter_text').val(),
+      display,
+      re = new RegExp(searchString, "i"),
+      title,
+      toappend,
+      i, j, k,
+      dt, dd, a, ddc,
+      p,
+      catalogueElement, catalogueElementLink,
+      pp = document.getElementById("projects_dl");
+  // remove all the projects
+  while (pp.firstChild) pp.removeChild(pp.firstChild);
+  updateProjectListMessage('');
+  // maintain a list of projects/sessions available
+  projects_available_ready = false;
+  if (projects_available)
+  {
+    delete projects_available;
+  }
+  projects_available = new Array();
+  // add new projects according to filter
+  for (i in cachedProjectsInfo) {
+    p = cachedProjectsInfo[i];
+    display = false;
+    toappend = [];
+    if (project && project.id == i) {
+      keep_project_alive = true;
+      keep_project_editable = p.editable;
+    }
+
+    dt = document.createElement("dt");
+
+    title = p.title;
+    if (re.test(title)) {
+      display = true;
+    }
+    dt.appendChild(document.createTextNode(p.title));
+
+    document.getElementById("projects_h").style.display = "block";
+    document.getElementById("project_filter_form").style.display = "block";
+    toappend.push(dt);
+
+    projects_available[ p.pid ] = new Array();
+    // add a link for every action (e.g. a stack link)
+    for (j in p.action) {
+      var sid_title = p.action[j].title;
+      var sid_action = p.action[j].action;
+      var sid_note = p.action[j].comment;
+      projects_available[p.pid][j] =
+          { title : sid_title, action : sid_action, note : sid_note };
+      dd = document.createElement("dd");
+      a = document.createElement("a");
+      ddc = document.createElement("dd");
+      a.href = sid_action;
+      if (re.test(sid_title)) {
+        display = true;
+      }
+      a.appendChild(document.createTextNode(sid_title));
+      dd.appendChild(a);
+      toappend.push(dd);
+      if (sid_note) {
+        ddc = document.createElement("dd");
+        ddc.innerHTML = sid_note;
+        toappend.push(ddc);
+      }
+    }
+    // optionally, add a neuron catalogue link
+    if (p.catalogue) {
+      catalogueElement = document.createElement('dd');
+      catalogueElementLink = document.createElement('a');
+      catalogueElementLink.href = 'dj/' + p.pid;
+      catalogueElementLink.appendChild(document.createTextNode('Browse the Neuron Catalogue'));
+      catalogueElement.appendChild(catalogueElementLink);
+      toappend.push(catalogueElement);
+    }
+    if (display) {
+      ++ matchingProjects;
+      for (k = 0; k < toappend.length; ++k) {
+        pp.appendChild(toappend[k]);
+      }
+    }
+  }
+  if (cachedProjectsInfo.length === 0) {
+    updateProjectListMessage("No CATMAID projects have been created");
+  } else if (matchingProjects === 0) {
+    updateProjectListMessage("No projects matched '"+searchString+"'");
+  }
+  projects_available_ready = true;
+  project_menu_open.update(cachedProjectsInfo);
 }
 
 /**

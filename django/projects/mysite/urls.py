@@ -1,9 +1,9 @@
-from django.conf.urls.defaults import patterns
+from django.conf.urls.defaults import patterns, include, url
 from django.conf import settings
 
 # Uncomment the next two lines to enable the admin:
-# from django.contrib import admin
-# admin.autodiscover()
+from django.contrib import admin
+admin.autodiscover()
 
 # A regular expression matiching floating point and integer numbers
 num = r'[-+]?[0-9]*\.?[0-9]+'
@@ -97,6 +97,12 @@ urlpatterns += patterns('',
     (r'^(?P<project_id>\d+)/treenode/table/update$', 'vncbrowser.views.treenode.update_treenode_table'),
     (r'^(?P<project_id>\d+)/treenode/info$', 'vncbrowser.views.treenode.treenode_info')
     )
+
+urlpatterns += patterns('',
+    # Uncomment the next line to enable the admin:
+    url(r'^admin/', include(admin.site.urls))
+    )
+
 
 if settings.DEBUG:
     urlpatterns += patterns('',

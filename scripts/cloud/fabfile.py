@@ -155,6 +155,8 @@ def installDjangoBackend():
                 run('pip install django-celery==2.4.2')
                 run('pip install kombu==2.0.0')
                 run('pip install django-kombu==0.9.4')
+                run('pip install PyYAML==3.10')
+                run('pip install python-dateutil==2.1')
 
         # settings_apache.py
         put(op.join( tempfile.gettempdir(), 'settings_apache.py'))

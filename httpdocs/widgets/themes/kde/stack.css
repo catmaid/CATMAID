@@ -220,6 +220,21 @@ div.sliceView div.metadata p
 	overflow:hidden;
 }
 
+div.sliceView div.indicatorbar
+{
+    position:absolute;
+    right:5px;
+    top:25px;
+    height:0.5em;
+    width:auto;
+    border:none;
+    overflow:visible;
+    margin:0px;
+    padding:0px;
+    vertical-align:bottom;
+    z-index:10;
+}
+
 div.sliceView div.neuronname
 {
     position:absolute;

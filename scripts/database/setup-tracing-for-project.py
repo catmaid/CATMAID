@@ -42,7 +42,13 @@ for required_class in classes_required:
                   (user_id, project_id, required_class))
         class_dictionary[required_class] = c.fetchone()[0]
 
-c.execute("INSERT INTO class_instance (user_id, project_id, class_id, name) "+
+c.execute("SELECT id FROM class_instance WHERE class_id = %s AND project_id = %s",
+    (class_dictionary['root'], project_id))
+rows = c.fetchall()
+if len(rows) > 0:
+    print('The root node already exist!')
+else:
+    c.execute("INSERT INTO class_instance (user_id, project_id, class_id, name) "+
           "VALUES (%s, %s, %s, %s)",
           (user_id,
            project_id,
@@ -68,7 +74,15 @@ for required_relation in relations_required:
                   "VALUES (%s, %s, %s)",
                   (user_id, project_id, required_relation))
 
-c.execute("UPDATE project_user SET can_edit_any=TRUE, can_view_any=TRUE WHERE project_id=" + str(project_id)
+c.execute("SELECT * FROM project_user WHERE user_id = %s AND project_id = %s", (str(user_id), project_id))
+rows = c.fetchall()
+if len(rows) == 0:
+    print('Insert project-user combination and enable viewing and editing')
+    c.execute("INSERT INTO project_user (project_id, user_id, can_edit_any, can_view_any, inverse_mouse_wheel) "+
+              "VALUES (%s, %s, %s, %s, %s)", (project_id, user_id, True, True, True))
+else:
+    print('project-user combination already exists. Enable viewing and editing')
+    c.execute("UPDATE project_user SET can_edit_any=TRUE, can_view_any=TRUE WHERE project_id=" + str(project_id)
 		+ " AND user_id=" + str(user_id))
 
 db_connection.commit()

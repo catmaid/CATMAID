@@ -8,7 +8,7 @@ fi
 
 D=$(dirname $(readlink -nf $BASH_SOURCE))
 
-pg_dump --no-privileges --inserts --data-only --no-owner --no-tablespaces \
+pg_dump --no-privileges --inserts --data-only --no-owner --no-tablespaces --column-inserts \
     $1 -U catmaid_user | \
     egrep -v '^--' | \
     egrep -v '^ *$' | \

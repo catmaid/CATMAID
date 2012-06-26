@@ -5,9 +5,10 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import Project, Stack, Class, ClassInstance, \
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode, \
-    Connector, User, Textlabel
+    Connector, User, Textlabel, Location, TreenodeConnector
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional, \
     catmaid_login_required
+from common import insert_into_log
 import json
 
 @catmaid_login_optional
@@ -197,32 +198,41 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user
 
 @catmaid_can_edit_project
 @transaction.commit_on_success
-def update_confidence(request, project_id=None, logged_in_user=None):
-    confidence = request.POST.get('confidence', None)
-    if (confidence == None):
-        raise Http404('Confidence not in range 1-5 inclusive.')
+def update_confidence(request, project_id=None, logged_in_user=None, node=None):
+    new_confidence = request.POST.get('new_confidence', None)
+    if (new_confidence == None):
+        return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
     else:
-        parsed_confidence = int(confidence)
-        if (confidence not in range(1, 6)):
-            raise Http404("Confidence not in range 1-5 inclusive.")
+        parsed_confidence = int(new_confidence)
+        if (parsed_confidence not in range(1, 6)):
+            return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
 
-    tnid = request.POST.get('tnid', None)
-    if (tnid == None):
-        parsed_tnid = 0
+    if (node == None):
+        tnid = 0  # Replaced PHP function defaulted to this if no value was given
     else:
-        parsed_tnid = int(tnid)
+        tnid = int(node)
 
-    if (request.POST.get('toconnector', None) == 'true'):
-        to_connector = True
-    else:
-        to_connector = False
-
-    new_confidence = request.POST.get('new_confidence')
-
-    if (to_connector):
-        TreenodeConnector.objects.filter(
+    if (request.POST.get('toconnector', 'false') == 'true'):
+        toUpdate = TreenodeConnector.objects.filter(
                 project=project_id,
-                treenode=parsed_tnid)
+                treenode=tnid)
+    else:
+        toUpdate = Treenode.objects.filter(
+                project=project_id,
+                id=tnid)
+
+    rows_affected = toUpdate.update(confidence=new_confidence)
+
+    if (rows_affected > 0):
+        location = Location.objects.filter(project=project_id, id=tnid)[0].location
+        insert_into_log(project_id, logged_in_user.id, "change_confidence", location, "Changed to %s" % new_confidence)
+    elif (request.POST.get('toconnector', 'false') == 'true'):
+        return HttpResponse(json.dumps({'error': 'Failed to update confidence of treenode_connector between treenode %s and connector.' % tnid}))
+    else:
+        return HttpResponse(json.dumps({'error': 'Failed to update confidence of treenode_connector between treenode %s.' % tnid}))
+
+    return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+
 
 @catmaid_login_required
 def stats(request, project_id=None, logged_in_user=None):
@@ -268,7 +278,7 @@ def get_class_to_id_map(project_id):
 @catmaid_login_required
 def node_list(request, project_id=None, logged_in_user=None):
     # FIXME: This function is not uptodate, and needs to be rewritten
-    
+
     # This is probably the most complex view.  For the moment, I'm
     # just using the same queries as before:
     relation_to_id = get_relation_to_id_map(project_id)

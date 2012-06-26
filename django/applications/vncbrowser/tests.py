@@ -486,7 +486,45 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
         response = self.client.get('/%d/multiple-presynaptic-terminals' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
-        
+
+    def test_fail_update_confidence(self):
+        treenode_id = Treenode.objects.order_by("-id")[0].id + 1  # Inexistant
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/%d/confidence/update' % (self.test_project_id, treenode_id),
+                {'new_confidence': '4'})
+        self.assertEqual(response.status_code, 200)
+        expected_result = {'error': 'Failed to update confidence of treenode_connector between treenode %s.' % treenode_id}
+        parsed_response = json.loads(response.content)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_update_confidence_of_treenode(self):
+        treenode_id = 7
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/%d/confidence/update' % (self.test_project_id, treenode_id),
+                {'new_confidence': '4'})
+        treenode = Treenode.objects.filter(id=treenode_id).get()
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'success'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(4, treenode.confidence)
+
+        response = self.client.post(
+                '/%d/%d/confidence/update' % (self.test_project_id, treenode_id),
+                {'new_confidence': '5'})
+        treenode = Treenode.objects.filter(id=treenode_id).get()
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'success'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(5, treenode.confidence)
+
+
+    def test_update_confidence_treenode_connector(self):
+        pass
+
 """
     def test_node_list(self):
         self.fake_authentication()

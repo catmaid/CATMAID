@@ -189,6 +189,41 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user
                 'z': tn.location.z}),
                         mimetype='text/json')
 
+# @catmaid_can_edit_project
+# def search(request, project_id=None, logged_in_user=None, search_string=""):
+#     p = get_object_or_404(Project, pk=project_id)
+#     search_string = request.REQUEST['substring']
+
+
+@catmaid_can_edit_project
+@transaction.commit_on_success
+def update_confidence(request, project_id=None, logged_in_user=None):
+    confidence = request.POST.get('confidence', None)
+    if (confidence == None):
+        raise Http404('Confidence not in range 1-5 inclusive.')
+    else:
+        parsed_confidence = int(confidence)
+        if (confidence not in range(1, 6)):
+            raise Http404("Confidence not in range 1-5 inclusive.")
+
+    tnid = request.POST.get('tnid', None)
+    if (tnid == None):
+        parsed_tnid = 0
+    else:
+        parsed_tnid = int(tnid)
+
+    if (request.POST.get('toconnector', None) == 'true'):
+        to_connector = True
+    else:
+        to_connector = False
+
+    new_confidence = request.POST.get('new_confidence')
+
+    if (to_connector):
+        TreenodeConnector.objects.filter(
+                project=project_id,
+                treenode=parsed_tnid)
+
 @catmaid_login_required
 def stats(request, project_id=None, logged_in_user=None):
     qs = Treenode.objects.filter(project=project_id)

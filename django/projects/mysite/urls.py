@@ -64,6 +64,11 @@ urlpatterns += patterns('',
     (r'^crop/download/(?P<file_path>.*)/$', 'vncbrowser.views.download_crop' )
     )
 
+# Replacements
+urlpatterns += patterns('',
+    (r'^(?P<project_id>\d+)/update_confidence$', 'vncbrowser.views.confidence_update')
+    )
+
 if settings.DEBUG:
     urlpatterns += patterns('',
                             (r'^static/(?P<path>.*)$',

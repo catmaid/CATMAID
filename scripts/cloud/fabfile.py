@@ -30,7 +30,7 @@ def buildApp():
             print 'Create CATMAID security group'
             web = conn.create_security_group('catmaidgroup', 'CATMAID security group')
             web.authorize('tcp', 80, 80, '0.0.0.0/0')
-            web.authorize('tcp', 22, 2, '0.0.0.0/0')
+            web.authorize('tcp', 22, 22, '0.0.0.0/0')
         reservation = conn.run_instances(aws_AMI, instance_type=aws_size, key_name=aws_keypair_name,
             security_groups=['catmaidgroup'])
         instance = reservation.instances[0]

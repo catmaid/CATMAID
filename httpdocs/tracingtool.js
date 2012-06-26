@@ -574,23 +574,23 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Move up 1 slice in z and click",
+    helpText: "Toggle simulate shift mode",
     keyShortcuts: {
-      'N': [ 78 ]
+      'O': [ 79 ]
     },
     run: function (e) {
       if (!mayEdit())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('createtreenode');
-      self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
+      tracingLayer.svgOverlay.tracingCommand('simulateshift');
       return true;
     }
   }) );
 
+  /*
   this.addAction( new Action({
     helpText: "Move down 1 slice in z and click",
     keyShortcuts: {
-      'M': [ 77 ]
+      'N': [ 78 ]
     },
     run: function (e) {
       if (!mayEdit())
@@ -600,7 +600,7 @@ function TracingTool()
       return true;
     }
   }) );
-
+*/
 
   this.addAction( new Action({
     helpText: "Set confidence in node link to 1",

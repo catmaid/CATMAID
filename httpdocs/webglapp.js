@@ -260,7 +260,9 @@ var WebGLApp = new function () {
     this.baseName = skeleton_data.baseName;
 
     this.labelSphere = new Object();
-    var labelspheregeometry = new THREE.SphereGeometry( 130 * scale, 32, 32, 1 );
+    var labelspheregeometry = new THREE.SphereGeometry( 130 * scale, 32, 32, 1),
+      somasphere = new THREE.SphereGeometry( 200 * scale, 32, 32, 1);
+
 
     for (var fromkey in this.original_connectivity) {
       var to = this.original_connectivity[fromkey];
@@ -397,7 +399,7 @@ var WebGLApp = new function () {
       // alert("You must have an active node selected to add its skeleton to the 3D WebGL View.");
       return;
     }
-    sphere = new THREE.SphereGeometry( 130 * scale, 32, 32, 1 );
+    sphere = new THREE.SphereGeometry( 160 * scale, 32, 32, 1 );
     active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
     active_node.position.set( 0,0,0 );
     scene.add( active_node );

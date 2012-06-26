@@ -267,6 +267,8 @@ def get_class_to_id_map(project_id):
 
 @catmaid_login_required
 def node_list(request, project_id=None, logged_in_user=None):
+    # FIXME: This function is not uptodate, and needs to be rewritten
+    
     # This is probably the most complex view.  For the moment, I'm
     # just using the same queries as before:
     relation_to_id = get_relation_to_id_map(project_id)

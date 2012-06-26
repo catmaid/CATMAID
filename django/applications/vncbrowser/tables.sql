@@ -32,9 +32,16 @@ SET default_with_oids = false;
 CREATE TABLE applied_migrations (
     id character varying(32) NOT NULL
 );
+CREATE SEQUENCE broken_slice_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
 CREATE TABLE broken_slice (
     stack_id integer NOT NULL,
-    index integer NOT NULL
+    index integer NOT NULL,
+    id integer DEFAULT nextval('broken_slice_id_seq'::regclass) NOT NULL
 );
 CREATE TABLE concept (
     id bigint NOT NULL,
@@ -43,13 +50,6 @@ CREATE TABLE concept (
     edition_time timestamp with time zone DEFAULT now() NOT NULL,
     project_id bigint NOT NULL
 );
-CREATE SEQUENCE concept_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-ALTER SEQUENCE concept_id_seq OWNED BY concept.id;
 CREATE TABLE class (
     class_name character varying(255) NOT NULL,
     description text
@@ -77,8 +77,17 @@ CREATE TABLE class_instance_class_instance (
 )
 INHERITS (relation_instance);
 COMMENT ON TABLE class_instance_class_instance IS 'relates two class_instances';
+CREATE SEQUENCE concept_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+ALTER SEQUENCE concept_id_seq OWNED BY concept.id;
 CREATE TABLE location (
-    location double3d NOT NULL
+    location double3d NOT NULL,
+    reviewer_id integer DEFAULT (-1) NOT NULL,
+    review_time timestamp with time zone
 )
 INHERITS (concept);
 CREATE TABLE connector (
@@ -90,6 +99,12 @@ CREATE TABLE connector_class_instance (
     class_instance_id bigint NOT NULL
 )
 INHERITS (relation_instance);
+CREATE TABLE log (
+    operation_type character varying(255) NOT NULL,
+    location double3d,
+    freetext text
+)
+INHERITS (concept);
 CREATE TABLE message (
     id integer NOT NULL,
     user_id integer NOT NULL,
@@ -125,7 +140,8 @@ ALTER SEQUENCE overlay_id_seq OWNED BY "overlay".id;
 CREATE TABLE project (
     id integer NOT NULL,
     title text NOT NULL,
-    public boolean DEFAULT true NOT NULL
+    public boolean DEFAULT true NOT NULL,
+    wiki_base_url text
 );
 CREATE SEQUENCE project_id_seq
     START WITH 1
@@ -134,15 +150,25 @@ CREATE SEQUENCE project_id_seq
     NO MINVALUE
     CACHE 1;
 ALTER SEQUENCE project_id_seq OWNED BY project.id;
+CREATE SEQUENCE project_stack_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
 CREATE TABLE project_stack (
     project_id integer NOT NULL,
     stack_id integer NOT NULL,
-    translation double3d DEFAULT ROW((0)::double precision, (0)::double precision, (0)::double precision) NOT NULL
+    translation double3d DEFAULT ROW((0)::double precision, (0)::double precision, (0)::double precision) NOT NULL,
+    id integer DEFAULT nextval('project_stack_id_seq'::regclass) NOT NULL
 );
 COMMENT ON COLUMN project_stack.translation IS 'nanometer';
 CREATE TABLE project_user (
     project_id integer NOT NULL,
-    user_id integer NOT NULL
+    user_id integer NOT NULL,
+    can_edit_any boolean DEFAULT false,
+    can_view_any boolean DEFAULT false,
+    inverse_mouse_wheel boolean DEFAULT false
 );
 CREATE TABLE relation (
     relation_name character varying(255) NOT NULL,
@@ -178,7 +204,11 @@ CREATE TABLE stack (
     comment text,
     trakem2_project boolean DEFAULT false NOT NULL,
     num_zoom_levels integer DEFAULT (-1) NOT NULL,
-    file_extension text DEFAULT 'jpg'::text NOT NULL
+    file_extension text DEFAULT 'jpg'::text NOT NULL,
+    tile_width integer DEFAULT 256 NOT NULL,
+    tile_height integer DEFAULT 256 NOT NULL,
+    tile_source_type integer DEFAULT 1 NOT NULL,
+    metadata text DEFAULT ''::text NOT NULL
 );
 COMMENT ON COLUMN stack.dimension IS 'pixel';
 COMMENT ON COLUMN stack.resolution IS 'nanometer per pixel';
@@ -233,7 +263,8 @@ INHERITS (relation_instance);
 CREATE TABLE treenode_connector (
     treenode_id bigint NOT NULL,
     connector_id bigint NOT NULL,
-    skeleton_id bigint
+    skeleton_id bigint,
+    confidence integer DEFAULT 5 NOT NULL
 )
 INHERITS (relation_instance);
 CREATE TABLE "user" (
@@ -249,16 +280,59 @@ CREATE SEQUENCE user_id_seq
     NO MINVALUE
     CACHE 1;
 ALTER SEQUENCE user_id_seq OWNED BY "user".id;
-ALTER TABLE concept ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
-ALTER TABLE message ALTER COLUMN id SET DEFAULT nextval('message_id_seq'::regclass);
-ALTER TABLE "overlay" ALTER COLUMN id SET DEFAULT nextval('overlay_id_seq'::regclass);
-ALTER TABLE project ALTER COLUMN id SET DEFAULT nextval('project_id_seq'::regclass);
-ALTER TABLE sessions ALTER COLUMN id SET DEFAULT nextval('sessions_id_seq'::regclass);
-ALTER TABLE stack ALTER COLUMN id SET DEFAULT nextval('stack_id_seq'::regclass);
-ALTER TABLE textlabel ALTER COLUMN id SET DEFAULT nextval('textlabel_id_seq'::regclass);
-ALTER TABLE "user" ALTER COLUMN id SET DEFAULT nextval('user_id_seq'::regclass);
+ALTER TABLE ONLY class ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY class ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY class ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY class_class ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY class_class ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY class_class ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY class_instance ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY class_instance ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY class_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY class_instance_class_instance ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY class_instance_class_instance ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY class_instance_class_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY concept ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY connector ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY connector ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY connector ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY connector ALTER COLUMN reviewer_id SET DEFAULT (-1);
+ALTER TABLE ONLY connector_class_instance ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY connector_class_instance ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY connector_class_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY location ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY location ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY location ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY log ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY log ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY log ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY message ALTER COLUMN id SET DEFAULT nextval('message_id_seq'::regclass);
+ALTER TABLE ONLY "overlay" ALTER COLUMN id SET DEFAULT nextval('overlay_id_seq'::regclass);
+ALTER TABLE ONLY project ALTER COLUMN id SET DEFAULT nextval('project_id_seq'::regclass);
+ALTER TABLE ONLY relation ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY relation ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY relation ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY relation_instance ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY relation_instance ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY relation_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY sessions ALTER COLUMN id SET DEFAULT nextval('sessions_id_seq'::regclass);
+ALTER TABLE ONLY stack ALTER COLUMN id SET DEFAULT nextval('stack_id_seq'::regclass);
+ALTER TABLE ONLY textlabel ALTER COLUMN id SET DEFAULT nextval('textlabel_id_seq'::regclass);
+ALTER TABLE ONLY treenode ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY treenode ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY treenode ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY treenode ALTER COLUMN reviewer_id SET DEFAULT (-1);
+ALTER TABLE ONLY treenode_class_instance ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY treenode_class_instance ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY treenode_class_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY treenode_connector ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY treenode_connector ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY treenode_connector ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY "user" ALTER COLUMN id SET DEFAULT nextval('user_id_seq'::regclass);
 ALTER TABLE ONLY applied_migrations
     ADD CONSTRAINT applied_migrations_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY broken_slice
+    ADD CONSTRAINT broken_slice_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY class
     ADD CONSTRAINT class_id_key UNIQUE (id);
 ALTER TABLE ONLY class_instance
@@ -291,6 +365,8 @@ ALTER TABLE ONLY location
     ADD CONSTRAINT location_id_key UNIQUE (id);
 ALTER TABLE ONLY location
     ADD CONSTRAINT location_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY log
+    ADD CONSTRAINT log_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY message
     ADD CONSTRAINT message_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY "overlay"
@@ -298,7 +374,7 @@ ALTER TABLE ONLY "overlay"
 ALTER TABLE ONLY project
     ADD CONSTRAINT project_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY project_stack
-    ADD CONSTRAINT project_stack_pkey PRIMARY KEY (project_id, stack_id);
+    ADD CONSTRAINT project_stack_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY project_user
     ADD CONSTRAINT project_user_pkey PRIMARY KEY (project_id, user_id);
 ALTER TABLE ONLY relation
@@ -420,7 +496,7 @@ ALTER TABLE ONLY class
 ALTER TABLE ONLY concept
     ADD CONSTRAINT concept_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
 ALTER TABLE ONLY connector_class_instance
-    ADD CONSTRAINT connector_class_instance_class_instance_id_fkey FOREIGN KEY (class_instance_id) REFERENCES class_instance(id);
+    ADD CONSTRAINT connector_class_instance_class_instance_id_fkey FOREIGN KEY (class_instance_id) REFERENCES class_instance(id) ON DELETE CASCADE;
 ALTER TABLE ONLY connector_class_instance
     ADD CONSTRAINT connector_class_instance_location_id_fkey FOREIGN KEY (connector_id) REFERENCES connector(id) ON DELETE CASCADE;
 ALTER TABLE ONLY connector_class_instance
@@ -458,8 +534,14 @@ ALTER TABLE ONLY treenode_class_instance
 ALTER TABLE ONLY treenode_class_instance
     ADD CONSTRAINT treenode_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
 ALTER TABLE ONLY treenode_connector
-    ADD CONSTRAINT treenode_connector_skeleton_id_fkey FOREIGN KEY (skeleton_id) REFERENCES class_instance(id);
+    ADD CONSTRAINT treenode_connector_connector_id_fkey FOREIGN KEY (connector_id) REFERENCES connector(id) ON DELETE CASCADE;
+ALTER TABLE ONLY treenode_connector
+    ADD CONSTRAINT treenode_connector_skeleton_id_fkey FOREIGN KEY (skeleton_id) REFERENCES class_instance(id) ON DELETE CASCADE;
+ALTER TABLE ONLY treenode_connector
+    ADD CONSTRAINT treenode_connector_treenode_id_fkey FOREIGN KEY (treenode_id) REFERENCES treenode(id) ON DELETE CASCADE;
+ALTER TABLE ONLY treenode_connector
+    ADD CONSTRAINT treenode_connector_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
 ALTER TABLE ONLY treenode
     ADD CONSTRAINT treenode_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES treenode(id);
 ALTER TABLE ONLY treenode
-    ADD CONSTRAINT treenode_skeleton_id_fkey FOREIGN KEY (skeleton_id) REFERENCES class_instance(id);
+    ADD CONSTRAINT treenode_skeleton_id_fkey FOREIGN KEY (skeleton_id) REFERENCES class_instance(id) ON DELETE CASCADE;

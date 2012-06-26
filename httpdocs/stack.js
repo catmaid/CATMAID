@@ -511,6 +511,11 @@ function Stack(
     self.inverse_mouse_wheel = -1;
   }
 
+  var indicatorbar = document.createElement( "div" );
+  indicatorbar.className = "indicatorbar";
+  indicatorbar.id = "indicatorbar";
+  view.appendChild( indicatorbar );
+
   var neuronnameDisplay = document.createElement( "div" );
   neuronnameDisplay.className = "neuronname";
   neuronnameDisplay.appendChild( document.createElement( "p" ) );

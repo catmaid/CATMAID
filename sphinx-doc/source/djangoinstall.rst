@@ -22,8 +22,13 @@ Then run::
 
    source env/bin/activate
 
-... to activate the virtualenv environment.  Then install the packages
-at the right versions (the pip-frozen file is in the django subdirectory)::
+... to activate the virtualenv environment. Now, we need to install a set of
+Python packages. Due to a dependency problem, we install NumPy separately::
+
+   pip install numpy==1.6.1
+
+Then install the rest of the packages at the right versions (the pip-frozen file
+is in the django subdirectory)::
 
    pip install -r pip-frozen
 
@@ -32,7 +37,6 @@ Here is the list of packages and version required::
     Django==1.3.1
     distribute==0.6.25
     django-devserver==0.3.1
-    numpy==1.6.1
     h5py==2.0.1
     psycopg2==2.4.1
     sqlparse==0.1.3
@@ -43,6 +47,8 @@ Here is the list of packages and version required::
     django-celery==2.4.2
     kombu==2.0.0
     django-kombu==0.9.4
+    PyYAML==3.10
+    python-dateutil==2.1
 
 
 *A note on the pgmagick module:* this is a wrapper for GraphicMagick (GM).

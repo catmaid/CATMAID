@@ -11,6 +11,7 @@ from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional, \
 from common import insert_into_log
 import json
 
+
 @catmaid_login_optional
 def projects(request, logged_in_user=None):
     # This is somewhat ridiculous - four queries where one could be
@@ -25,7 +26,7 @@ def projects(request, logged_in_user=None):
     stacks = dict((x.id, x) for x in Stack.objects.all())
 
     # Create a dictionary that maps from projects to stacks:
-    c = connection.cursor() #@UndefinedVariable
+    c = connection.cursor()  # @UndefinedVariable
     c.execute("SELECT project_id, stack_id FROM project_stack")
     project_to_stacks = defaultdict(list)
     for project_id, stack_id in c.fetchall():
@@ -67,12 +68,14 @@ def projects(request, logged_in_user=None):
             'action': stacks_dict}
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")
 
+
 @catmaid_login_required
 def labels_all(request, project_id=None, logged_in_user=None):
     qs = ClassInstance.objects.filter(
         class_column__class_name='label',
         project=project_id)
     return HttpResponse(json.dumps(list(x.name for x in qs)), mimetype="text/plain")
+
 
 @catmaid_login_required
 def labels_for_node(request, project_id=None, ntype=None, location_id=None, logged_in_user=None):
@@ -91,6 +94,7 @@ def labels_for_node(request, project_id=None, ntype=None, location_id=None, logg
     else:
         raise Http404('Unknown node type: "%s"' % (ntype,))
     return HttpResponse(json.dumps(list(x.class_instance.name for x in qs)), mimetype="text/plain")
+
 
 @catmaid_login_required
 def labels_for_nodes(request, project_id=None, logged_in_user=None):
@@ -117,6 +121,7 @@ def labels_for_nodes(request, project_id=None, logged_in_user=None):
         result[cci.connector.id].append(cci.class_instance.name)
 
     return HttpResponse(json.dumps(result), mimetype="text/plain")
+
 
 @catmaid_can_edit_project
 @transaction.commit_on_success
@@ -167,6 +172,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None, logged_
         tci.save()
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
+
 @catmaid_login_required
 def user_list(request, logged_in_user=None):
     result = {}
@@ -176,6 +182,7 @@ def user_list(request, logged_in_user=None):
             "name": u.name,
             "longname": u.longname}
     return HttpResponse(json.dumps(result), mimetype='text/json')
+
 
 @catmaid_login_required
 def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user=None):
@@ -246,6 +253,7 @@ def stats(request, project_id=None, logged_in_user=None):
         result['users'].append(user_name)
     return HttpResponse(json.dumps(result), mimetype='text/json')
 
+
 @catmaid_login_required
 def stats_summary(request, project_id=None, logged_in_user=None):
     result = {
@@ -263,17 +271,20 @@ def stats_summary(request, project_id=None, logged_in_user=None):
             class_column__class_name=class_name).count()
     return HttpResponse(json.dumps(result), mimetype='text/json')
 
+
 def get_relation_to_id_map(project_id):
     result = {}
     for r in Relation.objects.filter(project=project_id):
         result[r.relation_name] = r.id
     return result
 
+
 def get_class_to_id_map(project_id):
     result = {}
     for r in Class.objects.filter(project=project_id):
         result[r.class_name] = r.id
     return result
+
 
 @catmaid_login_required
 def node_list(request, project_id=None, logged_in_user=None):

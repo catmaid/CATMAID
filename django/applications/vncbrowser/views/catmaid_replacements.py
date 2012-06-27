@@ -212,7 +212,7 @@ def update_confidence(request, project_id=None, logged_in_user=None, node=None):
     else:
         tnid = int(node)
 
-    if (request.POST.get('toconnector', 'false') == 'true'):
+    if (request.POST.get('to_connector', 'false') == 'true'):
         toUpdate = TreenodeConnector.objects.filter(
                 project=project_id,
                 treenode=tnid)
@@ -226,7 +226,7 @@ def update_confidence(request, project_id=None, logged_in_user=None, node=None):
     if (rows_affected > 0):
         location = Location.objects.filter(project=project_id, id=tnid)[0].location
         insert_into_log(project_id, logged_in_user.id, "change_confidence", location, "Changed to %s" % new_confidence)
-    elif (request.POST.get('toconnector', 'false') == 'true'):
+    elif (request.POST.get('to_connector', 'false') == 'true'):
         return HttpResponse(json.dumps({'error': 'Failed to update confidence of treenode_connector between treenode %s and connector.' % tnid}))
     else:
         return HttpResponse(json.dumps({'error': 'Failed to update confidence of treenode_connector between treenode %s.' % tnid}))

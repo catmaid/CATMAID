@@ -500,6 +500,7 @@ class TreenodeConnector(models.Model):
     treenode = models.ForeignKey(Treenode)
     connector = models.ForeignKey(Connector)
     skeleton = models.ForeignKey(ClassInstance)
+    confidence = models.IntegerField(default=5)
 
 class Session(models.Model):
     class Meta:

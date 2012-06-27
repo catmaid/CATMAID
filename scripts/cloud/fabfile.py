@@ -99,9 +99,9 @@ def generateConfigFiles():
 
         o = open( out_configfile ,'w')
         data = open( in_configfile, 'r' ).read()
-        data = re.sub('catmaid_database_name', catmaid_database_name, data)
-        data = re.sub('catmaid_user', catmaid_database_username, data)
-        data = re.sub('catmaid_user_password', catmaid_database_password, data)
+        data = re.sub('CATMAID_DATABASE', catmaid_database_name, data)
+        data = re.sub('CATMAID_USERNAME', catmaid_database_username, data)
+        data = re.sub('CATMAID_PASSWORD', catmaid_database_password, data)
         data = re.sub('USERNAME', env.user, data)
         data = re.sub('CATMAID_PATH', 'CATMAID', data)
         data = re.sub('CATMAID_WEBURL', env.host_string, data)

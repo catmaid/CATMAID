@@ -99,9 +99,9 @@ def generateConfigFiles():
 
         o = open( out_configfile ,'w')
         data = open( in_configfile, 'r' ).read()
-        data = re.sub('catmaid_database_name', catmaid_database_name, data)
-        data = re.sub('catmaid_user', catmaid_database_username, data)
-        data = re.sub('catmaid_user_password', catmaid_database_password, data)
+        data = re.sub('CATMAID_DATABASE', catmaid_database_name, data)
+        data = re.sub('CATMAID_USERNAME', catmaid_database_username, data)
+        data = re.sub('CATMAID_PASSWORD', catmaid_database_password, data)
         data = re.sub('USERNAME', env.user, data)
         data = re.sub('CATMAID_PATH', 'CATMAID', data)
         data = re.sub('CATMAID_WEBURL', env.host_string, data)
@@ -125,8 +125,21 @@ def generateConfigFiles():
 def installDjangoBackend():
     with settings(warn_only=True):
 
-        packagelist = ['python-virtualenv', 'libpq-dev python-dev', 'libxml2-dev','libxslt1-dev','libjpeg-dev',\
-                       'libtiff-dev','libgraphicsmagick++3','libgraphicsmagick++1-dev','libboost-python1.42.0','h5py','libboost-python1.42-dev']
+        packagelist = [
+            'python-virtualenv',
+            'libpq-dev python-dev',
+            'libxml2-dev',
+            'libxslt1-dev',
+            'libjpeg-dev',
+            'libtiff-dev',
+            'libgraphicsmagick++3',
+            'libgraphicsmagick++1-dev',
+            'libboost-python1.42.0',
+            'h5py',
+            'libboost-python1.42-dev',
+            'ipython',
+        ]
+
         for each_package in packagelist:
             print each_package
             run('sudo apt-get -y --force-yes install %s' % each_package, pty = True)

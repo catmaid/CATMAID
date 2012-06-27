@@ -125,8 +125,21 @@ def generateConfigFiles():
 def installDjangoBackend():
     with settings(warn_only=True):
 
-        packagelist = ['python-virtualenv', 'libpq-dev python-dev', 'libxml2-dev','libxslt1-dev','libjpeg-dev',\
-                       'libtiff-dev','libgraphicsmagick++3','libgraphicsmagick++1-dev','libboost-python1.42.0','h5py','libboost-python1.42-dev']
+        packagelist = [
+            'python-virtualenv',
+            'libpq-dev python-dev',
+            'libxml2-dev',
+            'libxslt1-dev',
+            'libjpeg-dev',
+            'libtiff-dev',
+            'libgraphicsmagick++3',
+            'libgraphicsmagick++1-dev',
+            'libboost-python1.42.0',
+            'h5py',
+            'libboost-python1.42-dev',
+            'ipython',
+        ]
+
         for each_package in packagelist:
             print each_package
             run('sudo apt-get -y --force-yes install %s' % each_package, pty = True)

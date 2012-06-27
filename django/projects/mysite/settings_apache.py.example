@@ -6,9 +6,9 @@ import djcelery
 DATABASES = {
     'default': {
         'ENGINE': 'custom_postgresql_psycopg2', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'catmaid_database_name',      # Or path to database file if using sqlite3.
-        'USER': 'catmaid_user',               # Not used with sqlite3.
-        'PASSWORD': 'catmaid_user_password',  # Not used with sqlite3.
+        'NAME': 'CATMAID_DATABASE',           # Or path to database file if using sqlite3.
+        'USER': 'CATMAID_USERNAME',           # Not used with sqlite3.
+        'PASSWORD': 'CATMAID_PASSWORD',       # Not used with sqlite3.
         'HOST': '',                           # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '',                           # Set to empty string for default. Not used with sqlite3.
     }

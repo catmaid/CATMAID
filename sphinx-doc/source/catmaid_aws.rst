@@ -36,7 +36,7 @@ You should see a message `No projects available`. You can create example project
 
     fab installExampleProject
 
-Log in using any with the demo username & password 'gerhard'.
+Log in with the username 'gerhard' and password 'gerhard'.
 
 You can access your database with the URL http://$ec2hostname/phppgadmin/. Note that exposing phpPgAdmin
 to the public is highly insecure.

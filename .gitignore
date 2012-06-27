@@ -20,3 +20,4 @@ django/projects/mysite/settings.py
 *.orig
 *.pyc
 scripts/cloud/configuration.py
+*.swp

@@ -12,7 +12,7 @@ aws_size = 't1.micro'
 aws_keypair_name = ''
 
 # ubuntu/images/ebs/ubuntu-oneiric-11.10-amd64-server-20120222 (ami-baba68d3)
-aws_AMI = 'ami-63be790a'
+aws_AMI = 'ami-baba68d3'
 
 # Default user
 env.user = 'ubuntu'

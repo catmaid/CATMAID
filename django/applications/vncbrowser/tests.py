@@ -10,7 +10,7 @@ import datetime
 
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, Session
-from models import Treenode, Connector
+from models import Treenode, Connector, TreenodeConnector
 
 class SimpleTest(TestCase):
     def test_basic_addition(self):
@@ -523,7 +523,34 @@ class ViewPageTests(TestCase):
 
 
     def test_update_confidence_treenode_connector(self):
-        pass
+        treenode_id = 285
+        treenode_connector_id = 360
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/%d/confidence/update' % (self.test_project_id, treenode_id),
+                {
+                    'new_confidence': '4',
+                    'toconnector': 'true'
+                    })
+        connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'success'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(4, connector.confidence)
+
+        response = self.client.post(
+                '/%d/%d/confidence/update' % (self.test_project_id, treenode_id),
+                {
+                    'new_confidence': '5',
+                    'toconnector': 'true'
+                    })
+        connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'success'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(5, connector.confidence)
 
 """
     def test_node_list(self):

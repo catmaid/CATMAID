@@ -66,7 +66,9 @@ urlpatterns += patterns('',
 
 # Replacements
 urlpatterns += patterns('',
-    (r'^(?P<project_id>\d+)/(?P<node>\d+)/confidence/update$', 'vncbrowser.views.catmaid_replacements.update_confidence')
+    (r'^(?P<project_id>\d+)/(?P<node>\d+)/confidence/update$', 'vncbrowser.views.catmaid_replacements.update_confidence'),
+    (r'^(?P<project_id>\d+)/connector/create$', 'vncbrowser.views.catmaid_replacements.create_connector'),
+    (r'^(?P<project_id>\d+)/connector/delete$', 'vncbrowser.views.catmaid_replacements.delete_connector')
     )
 
 if settings.DEBUG:

@@ -2,7 +2,6 @@ from django.test import TestCase
 from django.test.client import Client
 from django.db import connection
 import os
-import sys
 import re
 import urllib
 import json
@@ -12,12 +11,14 @@ from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, Session
 from models import Treenode, Connector, TreenodeConnector
 
+
 class SimpleTest(TestCase):
     def test_basic_addition(self):
         """
         Tests that 1 + 1 always equals 2.
         """
         self.assertEqual(1 + 1, 2)
+
 
 def ensure_schema_exists():
     """
@@ -34,6 +35,7 @@ def ensure_schema_exists():
     with open(os.path.join(current_directory, "tables.sql")) as fp:
         cursor.execute(fp.read())
 
+
 def add_example_data():
     """
     This function will add some example data to the CATMAID
@@ -43,6 +45,7 @@ def add_example_data():
     current_directory = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(current_directory, "data.sql")) as fp:
         cursor.execute(fp.read())
+
 
 class InsertionTest(TestCase):
 
@@ -62,7 +65,7 @@ class InsertionTest(TestCase):
         s.image_base = "http://incf.ini.uzh.ch/image-stack-fib/"
         s.trakem2_project = False
         s.dimension = Integer3D(x=2048, y=1536, z=460)
-        s.resolution = Double3D(x=5.0001, y = 5.0002, z=9.0003)
+        s.resolution = Double3D(x=5.0001, y=5.0002, z=9.0003)
         s.num_zoom_levels = -1
         s.file_extension = 'jpg'
         s.tile_width = 256
@@ -99,6 +102,7 @@ class InsertionTest(TestCase):
         ps.save()
 
         self.assertEqual(p.stacks.count(), 1)
+
 
 class RelationQueryTests(TestCase):
 
@@ -171,9 +175,11 @@ swc_output_for_skeleton_235 = '''237 0 1065 3035 0 0 -1
 239 0 1135 2800 0 0 237
 '''
 
+
 def swc_string_to_sorted_matrix(s):
     m = [ re.split("\s+", x) for x in s.splitlines() if not re.search('^\s*(#|$)', x) ]
     return sorted(m, key=lambda x: x[0])
+
 
 class ViewPageTests(TestCase):
 
@@ -464,21 +470,21 @@ class ViewPageTests(TestCase):
             elif t[0] == 78:
                 self.assertEqual(t[1], 'gerhard (78)')
             else:
-                raise Exception, "Unexpected value in returned stats: "+str(t)
+                raise Exception("Unexpected value in returned stats: " + str(t))
 
     def test_stats_summary(self):
         self.fake_authentication()
         response = self.client.get('/%d/stats-summary' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
-        expected_result = {u"proj_users" : 2,
+        expected_result = {u"proj_users": 2,
                            u'proj_presyn': 0,
                            u'proj_postsyn': 0,
                            u'proj_synapses': 0,
                            u"proj_neurons": 8,
                            u"proj_treenodes": 84,
-                           u"proj_skeletons" : 7,
+                           u"proj_skeletons": 7,
                            u"proj_textlabels": 0,
-                           u"proj_tags" : 4}
+                           u"proj_tags": 4}
         parsed_response = json.loads(response.content)
         self.assertEqual(expected_result, parsed_response)
 
@@ -521,17 +527,13 @@ class ViewPageTests(TestCase):
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(5, treenode.confidence)
 
-
-    def test_update_confidence_treenode_connector(self):
+    def test_update_confidence_of_treenode_connector(self):
         treenode_id = 285
         treenode_connector_id = 360
         self.fake_authentication()
         response = self.client.post(
                 '/%d/%d/confidence/update' % (self.test_project_id, treenode_id),
-                {
-                    'new_confidence': '4',
-                    'to_connector': 'true'
-                    })
+                {'new_confidence': '4', 'to_connector': 'true'})
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
         parsed_response = json.loads(response.content)
         expected_result = {'message': 'success'}
@@ -541,16 +543,52 @@ class ViewPageTests(TestCase):
 
         response = self.client.post(
                 '/%d/%d/confidence/update' % (self.test_project_id, treenode_id),
-                {
-                    'new_confidence': '5',
-                    'to_connector': 'true'
-                    })
+                {'new_confidence': '5', 'to_connector': 'true'})
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
         parsed_response = json.loads(response.content)
         expected_result = {'message': 'success'}
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(5, connector.confidence)
+
+    def test_create_connector(self):
+        self.fake_authentication()
+        connector_count = Connector.objects.all().count()
+        response = self.client.post(
+                '/%d/connector/create' % self.test_project_id,
+                {'x': 111, 'y': 222, 'z': 333, 'confidence': 3})
+        parsed_response = json.loads(response.content)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue('connector_id' in parsed_response.keys())
+        connector_id = parsed_response['connector_id']
+
+        new_connector = Connector.objects.filter(id=connector_id).get()
+        self.assertEqual(111, new_connector.location.x)
+        self.assertEqual(222, new_connector.location.y)
+        self.assertEqual(333, new_connector.location.z)
+        self.assertEqual(3, new_connector.confidence)
+        self.assertEqual(connector_count + 1, Connector.objects.all().count())
+
+    def test_delete_connector(self):
+        self.fake_authentication()
+        connector_id = 356
+        connector = Connector.objects.get(id=connector_id)
+        connector_count = Connector.objects.all().count()
+        treenode_connector_count = TreenodeConnector.objects.all().count()
+        response = self.client.post(
+                '/%d/connector/delete' % self.test_project_id,
+                {'connector_id': connector_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'message': 'Removed connector and class_instances',
+                'connector_id': 356}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+        self.assertEqual(connector_count - 1, Connector.objects.all().count())
+        self.assertEqual(treenode_connector_count - 3, TreenodeConnector.objects.all().count())
+        self.assertEqual(0, Connector.objects.filter(id=connector_id).count())
+        self.assertEqual(0, TreenodeConnector.objects.filter(connector=connector).count())
 
 """
     def test_node_list(self):
@@ -621,7 +659,6 @@ class ViewPageTests(TestCase):
         self.assertTrue(node_367_found)
         self.assertTrue(node_393_found)
 """
-
 
 
 class TreenodeTests(TestCase):

@@ -114,7 +114,7 @@ function Project( pid )
 		if ( tool )
 			self.focusedStack.setTool( tool );
     console.log('project, set focused stack: window on resize');
-		window.onresize();
+		//window.onresize();
 		return;
 	}
 	
@@ -205,7 +205,7 @@ function Project( pid )
 		document.body.appendChild( view );
 		ui.registerEvent( "onresize", resize );
     console.log('project, register: window on resize');
-		window.onresize();
+		//window.onresize();
 		
 		document.onkeydown = onkeydown;
 		

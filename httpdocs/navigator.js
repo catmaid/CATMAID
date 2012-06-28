@@ -543,6 +543,7 @@ function Navigator()
 	this.unregister = function()
 	{
 		console.log("tool: unregister called for navigator");
+    console.trace()
 		if ( self.stack && self.mouseCatcher.parentNode == self.stack.getView() )
 			self.stack.getView().removeChild( self.mouseCatcher );
 		return;

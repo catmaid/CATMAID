@@ -614,18 +614,22 @@ function CMWWindow( title )
 	
 	this.focus = function()
 	{
+    console.log('focus!')
 		var root = self.getRootNode();
 		var windows = root.getWindows();
 		for ( var i = 0; i < windows.length; ++i )
 		{
 			var w = windows[ i ];
-			w.getFrame().firstChild.className = "stackInfo";
-			w.callListeners( CMWWindow.BLUR );
+      if(w.hasFocus()) {
+			  w.getFrame().firstChild.className = "stackInfo";
+			  w.callListeners( CMWWindow.BLUR );
+      }
 		}
-			
-		frame.firstChild.className = "stackInfo_selected";
-		self.callListeners( CMWWindow.FOCUS );
-		
+	  if(!self.hasFocus()) {
+      frame.firstChild.className = "stackInfo_selected";
+      self.callListeners( CMWWindow.FOCUS );
+    }
+
 		return self;
 	}
 	
@@ -757,7 +761,7 @@ function CMWWindow( title )
 		rootNode.releaseDrag();
 		CMWWindow.selectedWindow = null;
 		eventCatcher.className = "eventCatcher";
-		rootNode.redraw();
+		//rootNode.redraw();
 		
 		return false;
 	}

@@ -460,6 +460,8 @@ function Stack(
 				project.removeStack( id );
 				break;
 			case CMWWindow.RESIZE:
+        console.log('resize...')
+        console.trace()
 				resize();
 				self.redraw();
 				break;
@@ -473,10 +475,11 @@ function Stack(
 				break;
 			case CMWWindow.BLUR:
 				self.overview.getView().style.zIndex = "5";
-				if ( tool )
+				/*if ( tool )
 					tool.unregister();
-				tool = null;
-        console.log('stack, BLUR: window on resize');
+				tool = null;*/
+        console.log('stack, BLUR', self.getTool());
+
 				// window.onresize();
         // stackWindow.redraw();
 				break;

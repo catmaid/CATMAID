@@ -5,7 +5,7 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import Project, Stack, Class, ClassInstance, \
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode, \
-    Connector, User, Textlabel, Location, TreenodeConnector
+    Connector, User, Textlabel, Location, TreenodeConnector, Double3D
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional, \
     catmaid_login_required
 from common import insert_into_log
@@ -197,10 +197,42 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user
                 'z': tn.location.z}),
                         mimetype='text/json')
 
-# @catmaid_can_edit_project
-# def search(request, project_id=None, logged_in_user=None, search_string=""):
-#     p = get_object_or_404(Project, pk=project_id)
-#     search_string = request.REQUEST['substring']
+
+@catmaid_can_edit_project
+@transaction.commit_on_success
+def create_connector(request, project_id=None, logged_in_user=None):
+    query_parameters = {}
+    default_values = {'x': 0, 'y': 0, 'z': 0, 'confidence': 5}
+    for p in default_values.keys():
+        query_parameters[p] = request.POST.get(p, None)
+
+    missing_parameters = [p for p, val in query_parameters.iteritems() if val is None]
+    for p in missing_parameters:
+        query_parameters[p] = default_values[p]
+
+    parsed_confidence = int(query_parameters['confidence'])
+    if (parsed_confidence not in range(1, 6)):
+        return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
+
+    location = Double3D(x=float(query_parameters['x']), y=float(query_parameters['y']), z=float(query_parameters['z']))
+    new_connector = Connector(
+            user=logged_in_user,
+            project=Project.objects.get(id=project_id),
+            location=location,
+            confidence=parsed_confidence)
+    new_connector.save()
+
+    return HttpResponse(json.dumps({'connector_id': new_connector.id}))
+
+
+@catmaid_can_edit_project
+@transaction.commit_on_success
+def delete_connector(request, project_id=None, logged_in_user=None):
+    connector_id = int(request.POST.get("connector_id", 0))
+    Connector.objects.filter(id=connector_id).delete()
+    return HttpResponse(json.dumps({
+        'message': 'Removed connector and class_instances',
+        'connector_id': connector_id}))
 
 
 @catmaid_can_edit_project

@@ -47,7 +47,7 @@ def split_skeleton(request, project_id=None, logged_in_user=None):
         graph.add_node( e.id )
         if e.parent_id:
             graph.add_edge( e.parent_id, e.id )
-    # find downstream nodes starting from target treenode_id
+        # find downstream nodes starting from target treenode_id
     # generate id list from it
     change_list = nx.bfs_tree(graph, int(treenode_id)).nodes()
     # create a new skeleton
@@ -93,3 +93,23 @@ def split_skeleton(request, project_id=None, logged_in_user=None):
         location = locations[0].location
     insert_into_log( project_id, logged_in_user.id, "split_skeleton", location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron[0].name ) )
     return HttpResponse(json.dumps({}), mimetype='text/json')
+
+
+def join_skeleton(request, project_id=None, logged_in_user=None):
+    pass
+
+def reroot_skeleton(request, project_id=None, logged_in_user=None):
+    pass
+
+@catmaid_login_required
+def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user=None):
+    tn = Treenode.objects.get(
+        project=project_id,
+        parent__isnull=True,
+        treenodeclassinstance__class_instance__id=skeleton_id)
+    return HttpResponse(json.dumps({
+        'root_id': tn.id,
+        'x': tn.location.x,
+        'y': tn.location.y,
+        'z': tn.location.z}),
+        mimetype='text/json')

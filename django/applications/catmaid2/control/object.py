@@ -6,6 +6,18 @@ try:
 except ImportError:
     pass
 
+def objecttree_get_all_skeletons(request, project_id=None, node_id=None):
+    """ Retrieve all skeleton ids for a given node in the object tree
+    """
+    g = get_annotation_graph( project_id )
+    potential_skeletons = nx.bfs_tree(g, int(node_id)).nodes()
+    result = []
+    for node_id in potential_skeletons:
+        if g.node[node_id]['class'] == 'skeleton':
+            result.append( node_id )
+    json_return = json.dumps({'skeletons': result}, sort_keys=True, indent=4)
+    return HttpResponse(json_return, mimetype='text/json')
+
 def get_annotation_graph(project_id=None):
     qs = ClassInstanceClassInstance.objects.filter(
         relation__relation_name__in=['part_of', 'model_of'],
@@ -26,3 +38,9 @@ def get_annotation_graph(project_id=None):
                 { "edge_type": e.relation.relation_name }
         ) # the part_of/model_of edge
     return g
+
+def convert_annotations_to_networkx(request, project_id=None):
+    g = get_annotation_graph( project_id )
+    data = json_graph.node_link_data(g)
+    json_return = json.dumps(data, sort_keys=True, indent=4)
+    return HttpResponse(json_return, mimetype='text/json')

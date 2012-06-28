@@ -18,21 +18,18 @@ class Concept(ProjectConcept):
 class User(ProjectConcept):
     username = models.StringProperty()
 
-class Group(Concept):
-    # !!!Problematic
-    part_of = models.Relationship('Group',
-        rel_type=neo4django.Outgoing.PART_OF,
-        single=True,
-        related_name='elements')
+class ContainerConcept(Concept):
+    class Meta:
+        abstract = True
 
-    part_of = models.Relationship('Root',
-        rel_type=neo4django.Outgoing.PART_OF,
-        single=True,
-        related_name='elements')
-
-class Root(Concept):
+class Root(ContainerConcept):
     pass
 
+class Group(ContainerConcept):
+    part_of = models.Relationship(ContainerConcept,
+        rel_type=neo4django.Incoming.CONTAINS,
+        single=True,
+        related_name='groups')
 class Neuron(Concept):
 
     # 'new', 'needs review', 'reviewed'
@@ -44,16 +41,39 @@ class Neuron(Concept):
     # reviewed_by: User
     # is_from_lineage: Lineage
 
-    part_of = models.Relationship('Group',
+    part_of = models.Relationship(Group,
         rel_type=neo4django.Outgoing.PART_OF,
         single=True,
-        related_name='elements')
+        related_name='neurons')
 
 class Skeleton(Concept):
     model_of = models.Relationship(Neuron,
-                                rel_type=neo4django.Outgoing.MODEL_OF,
-                                single=True,    
-                                related_name='skeletons')
+        rel_type=neo4django.Outgoing.MODEL_OF,
+        single=True,
+        related_name='skeletons')
 
 class Tag(Concept):
     pass
+
+"""
+>>> e1 = Neuron.objects.create(name='my neuron 1')
+>>> g1 = Group.objects.create(name='my group 1')
+>>> g2 = Group.objects.create(name='my group 2')
+>>> r1 = Root.objects.create(name='my root')
+>>> 
+>>> e1.part_of = g1
+>>> e1.save()
+>>> 
+>>> g1.part_of = g2
+>>> g1.save()
+>>> 
+>>> g2.part_of = r1
+>>> g2.save()
+>>> 
+>>> g2.elements.all()
+[]
+>>> g2.groups.all()
+[<Group: Group object>]
+>>> g2.groups.all()[0] == g1
+True
+"""

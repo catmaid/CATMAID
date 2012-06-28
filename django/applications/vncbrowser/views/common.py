@@ -161,7 +161,6 @@ def get_form_and_neurons(request, project_id, kwargs):
     all_neurons = order_neurons(all_neurons, order_by)
     return (all_neurons, search_form)
 
-
 # TODO After all PHP functions have been replaced and all occurrence of
 # this odd behavior have been found, change callers to not depend on this
 # legacy functionality.
@@ -186,3 +185,16 @@ def cursor_fetch_dictionary(cursor):
             dict(zip([col[0] for col in desc], row))
             for row in cursor.fetchall()
             ]
+
+def get_relation_to_id_map(project_id):
+    result = {}
+    for r in Relation.objects.filter(project=project_id):
+        result[r.relation_name] = r.id
+    return result
+
+def get_class_to_id_map(project_id):
+    result = {}
+    for r in Class.objects.filter(project=project_id):
+        result[r.class_name] = r.id
+    return result
+

@@ -5,11 +5,12 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import Project, Stack, Class, ClassInstance, \
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode, \
-    Connector, User, Textlabel, Location, TreenodeConnector
+    Connector, User, Textlabel, Location, TreenodeConnector, Double3D
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional, \
     catmaid_login_required
 from common import insert_into_log
 import json
+
 
 @catmaid_login_optional
 def projects(request, logged_in_user=None):
@@ -25,7 +26,7 @@ def projects(request, logged_in_user=None):
     stacks = dict((x.id, x) for x in Stack.objects.all())
 
     # Create a dictionary that maps from projects to stacks:
-    c = connection.cursor() #@UndefinedVariable
+    c = connection.cursor()  # @UndefinedVariable
     c.execute("SELECT project_id, stack_id FROM project_stack")
     project_to_stacks = defaultdict(list)
     for project_id, stack_id in c.fetchall():
@@ -67,12 +68,14 @@ def projects(request, logged_in_user=None):
             'action': stacks_dict}
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")
 
+
 @catmaid_login_required
 def labels_all(request, project_id=None, logged_in_user=None):
     qs = ClassInstance.objects.filter(
         class_column__class_name='label',
         project=project_id)
     return HttpResponse(json.dumps(list(x.name for x in qs)), mimetype="text/plain")
+
 
 @catmaid_login_required
 def labels_for_node(request, project_id=None, ntype=None, location_id=None, logged_in_user=None):
@@ -91,6 +94,7 @@ def labels_for_node(request, project_id=None, ntype=None, location_id=None, logg
     else:
         raise Http404('Unknown node type: "%s"' % (ntype,))
     return HttpResponse(json.dumps(list(x.class_instance.name for x in qs)), mimetype="text/plain")
+
 
 @catmaid_login_required
 def labels_for_nodes(request, project_id=None, logged_in_user=None):
@@ -117,6 +121,7 @@ def labels_for_nodes(request, project_id=None, logged_in_user=None):
         result[cci.connector.id].append(cci.class_instance.name)
 
     return HttpResponse(json.dumps(result), mimetype="text/plain")
+
 
 @catmaid_can_edit_project
 @transaction.commit_on_success
@@ -167,6 +172,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None, logged_
         tci.save()
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
+
 @catmaid_login_required
 def user_list(request, logged_in_user=None):
     result = {}
@@ -176,6 +182,7 @@ def user_list(request, logged_in_user=None):
             "name": u.name,
             "longname": u.longname}
     return HttpResponse(json.dumps(result), mimetype='text/json')
+
 
 @catmaid_login_required
 def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user=None):
@@ -190,10 +197,42 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user
                 'z': tn.location.z}),
                         mimetype='text/json')
 
-# @catmaid_can_edit_project
-# def search(request, project_id=None, logged_in_user=None, search_string=""):
-#     p = get_object_or_404(Project, pk=project_id)
-#     search_string = request.REQUEST['substring']
+
+@catmaid_can_edit_project
+@transaction.commit_on_success
+def create_connector(request, project_id=None, logged_in_user=None):
+    query_parameters = {}
+    default_values = {'x': 0, 'y': 0, 'z': 0, 'confidence': 5}
+    for p in default_values.keys():
+        query_parameters[p] = request.POST.get(p, None)
+
+    missing_parameters = [p for p, val in query_parameters.iteritems() if val is None]
+    for p in missing_parameters:
+        query_parameters[p] = default_values[p]
+
+    parsed_confidence = int(query_parameters['confidence'])
+    if (parsed_confidence not in range(1, 6)):
+        return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
+
+    location = Double3D(x=float(query_parameters['x']), y=float(query_parameters['y']), z=float(query_parameters['z']))
+    new_connector = Connector(
+            user=logged_in_user,
+            project=Project.objects.get(id=project_id),
+            location=location,
+            confidence=parsed_confidence)
+    new_connector.save()
+
+    return HttpResponse(json.dumps({'connector_id': new_connector.id}))
+
+
+@catmaid_can_edit_project
+@transaction.commit_on_success
+def delete_connector(request, project_id=None, logged_in_user=None):
+    connector_id = int(request.POST.get("connector_id", 0))
+    Connector.objects.filter(id=connector_id).delete()
+    return HttpResponse(json.dumps({
+        'message': 'Removed connector and class_instances',
+        'connector_id': connector_id}))
 
 
 @catmaid_can_edit_project
@@ -246,6 +285,7 @@ def stats(request, project_id=None, logged_in_user=None):
         result['users'].append(user_name)
     return HttpResponse(json.dumps(result), mimetype='text/json')
 
+
 @catmaid_login_required
 def stats_summary(request, project_id=None, logged_in_user=None):
     result = {
@@ -263,17 +303,20 @@ def stats_summary(request, project_id=None, logged_in_user=None):
             class_column__class_name=class_name).count()
     return HttpResponse(json.dumps(result), mimetype='text/json')
 
+
 def get_relation_to_id_map(project_id):
     result = {}
     for r in Relation.objects.filter(project=project_id):
         result[r.relation_name] = r.id
     return result
 
+
 def get_class_to_id_map(project_id):
     result = {}
     for r in Class.objects.filter(project=project_id):
         result[r.class_name] = r.id
     return result
+
 
 @catmaid_login_required
 def node_list(request, project_id=None, logged_in_user=None):

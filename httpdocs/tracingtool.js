@@ -108,8 +108,6 @@ function TracingTool()
 	 */
 	this.register = function( parentStack )
   {
-    console.log("tool: register called for tracingtool");
-
     setupSubTools();
 
     if (tracingLayer && stack) {
@@ -154,7 +152,6 @@ function TracingTool()
 	 */
   this.unregister = function()
   {
-    console.log("tool: unregister called for tracingtool");
     // do it before calling the prototype destroy that sets stack to null
     if (self.prototype.stack) {
       inactivateBindings();
@@ -171,7 +168,6 @@ function TracingTool()
 	 */
 	this.destroy = function()
 	{
-          console.log("tool: destroy called for tracingtool");
     // Synchronize data with database
     tracingLayer.svgOverlay.updateNodeCoordinatesinDB();
 
@@ -850,7 +846,6 @@ TracingTool.search = function()
                   $('<a/>').attr({'id': '' + id})
                            .attr({'href':''})
                            .click(function(event) {
-                             console.log("skid", skid, "id", id);
                              project.moveTo(z, y, x,
                                undefined,
                                function() {

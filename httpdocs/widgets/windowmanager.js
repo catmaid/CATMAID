@@ -614,7 +614,6 @@ function CMWWindow( title )
 	
 	this.focus = function()
 	{
-    console.log('focus!')
 		var root = self.getRootNode();
 		var windows = root.getWindows();
 		for ( var i = 0; i < windows.length; ++i )
@@ -858,8 +857,6 @@ function CMWWindow( title )
 	 */
 	this.callListeners = function( signal )
 	{
-	    console.log("sending signal: ", CMWWindow.signalName[signal]+ " from window " + title);
-	    // console.trace();
 		for ( var i = 0; i < listeners.length; ++i )
 			listeners[ i ]( self, signal );
 		

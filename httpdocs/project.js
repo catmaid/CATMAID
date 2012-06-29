@@ -113,7 +113,6 @@ function Project( pid )
 		self.focusedStack = stack;
 		if ( tool )
 			self.focusedStack.setTool( tool );
-    console.log('project, set focused stack: window on resize');
 		//window.onresize();
 		return;
 	}
@@ -162,7 +161,6 @@ function Project( pid )
 		if ( self.focusedStack )
 			self.focusedStack.getWindow().focus();
 
-    console.log('project, set tool: window on resize');
 		window.onresize();
 		WindowMaker.setKeyShortcuts();
 		return;
@@ -204,7 +202,6 @@ function Project( pid )
 		document.getElementById( "content" ).style.display = "none";
 		document.body.appendChild( view );
 		ui.registerEvent( "onresize", resize );
-    console.log('project, register: window on resize');
 		//window.onresize();
 		
 		document.onkeydown = onkeydown;
@@ -261,7 +258,6 @@ function Project( pid )
 			document.getElementById("toolbox_edit").style.display = "none";
 			document.getElementById("toolbox_data").style.display = "none";
 		}
-    console.log('project, set editable: window on resize');
 		window.onresize();
 		
 		return;
@@ -366,6 +362,7 @@ function Project( pid )
 	 */
 	this.createTextlabel = function( tlx, tly, tlz, tlr, scale )
 	{
+    console.log('createe teeextlabel')
 		icon_text_apply.style.display = "block";
 		requestQueue.register(
 			'model/textlabel.create.php',

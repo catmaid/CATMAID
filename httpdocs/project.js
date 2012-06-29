@@ -356,60 +356,6 @@ function Project( pid )
 		}
 		return url;
 	}
-	
-	/**
-	 * create a textlabel on the server
-	 */
-	this.createTextlabel = function( tlx, tly, tlz, tlr, scale )
-	{
-    console.log('createe teeextlabel')
-		icon_text_apply.style.display = "block";
-		requestQueue.register(
-			'model/textlabel.create.php',
-			'POST',
-			{
-				pid : project.id,
-				x : tlx,
-				y : tly,
-				z : tlz,
-				r : parseInt( document.getElementById( "fontcolourred" ).value ) / 255,
-				g : parseInt( document.getElementById( "fontcolourgreen" ).value ) / 255,
-				b : parseInt( document.getElementById( "fontcolourblue" ).value ) / 255,
-				a : 1,
-				type : "text",
-				scaling : ( document.getElementById( "fontscaling" ).checked ? 1 : 0 ),
-				fontsize : ( document.getElementById( "fontscaling" ).checked ?
-							Math.max( 16 / scale, parseInt( document.getElementById( "fontsize" ).value ) ) :
-							parseInt( document.getElementById( "fontsize" ).value ) ) * tlr,
-				fontstyle : ( document.getElementById( "fontstylebold" ).checked ? "bold" : "" )
-			},
-			function( status, text, xml )
-			{
-				statusBar.replaceLast( text );
-				
-				if ( status == 200 )
-				{
-					icon_text_apply.style.display = "none";
-					for ( var i = 0; i < stacks.length; ++i )
-					{
-						stacks[ i ].updateTextlabels();
-					}
-					if ( text && text != " " )
-					{
-						var e = eval( "(" + text + ")" );
-						if ( e.error )
-						{
-							alert( e.error );
-						}
-						else
-						{
-						}
-					}
-				}
-				return true;
-			} );
-		return;
-	}
 
 	/** This function should return true if there was any action
 		linked to the key code, or false otherwise. */

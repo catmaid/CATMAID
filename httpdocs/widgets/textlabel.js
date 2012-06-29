@@ -13,63 +13,24 @@ function TextlabelTool()
 
   this.resize = function( width, height )
   {
-      console.log('textlabel RESIZE');
     self.prototype.resize( width, height );
     return;
   };
 
   var setupSubTools = function()
   {
-    var box;
-    if ( self.prototype.stack == null ) {
-      /*box = createButtonsFromActions(
-        actions,
-        "textlabelbuttons",
-        "textlabel_");*/
-      // $( "#toolbar_text" ).prepend( box );
-      // TODO: do we need action buttons at all?
-    }
     document.getElementById( "toolbar_text" ).style.display = "block";
   };
 
   self.updateTextlabels = function () {
-      console.log('tool updateTextlabels');
-      // TODO discuss with Mark. how to get x,y, width, height
       textlabelLayer.update(0, 0, stack.dimension.x * stack.resolution.x,
           stack.dimension.y * stack.resolution.y );
-
-      // TODO: recreate them. do we need this at all?
-      /*
-    var tl_width;
-    var tl_height;
-    if (tiles.length == 0) {
-      tl_width = 0;
-      tl_height = 0;
-    } else {
-      tl_width = tiles[0].length * X_TILE_SIZE / scale;
-      tl_height = tiles.length * Y_TILE_SIZE / scale;
-    }
-    requestQueue.register('model/textlabels.php', 'POST', {
-      pid: project.id,
-      sid: id,
-      z: z * resolution.z + translation.z,
-      top: (y - tl_height / 2) * resolution.y + translation.y,
-      left: (x - tl_width / 2) * resolution.x + translation.x,
-      width: tl_width * resolution.x,
-      height: tl_height * resolution.y,
-      //scale : ( mode == "text" ? 1 : scale ),	// should we display all textlabels when being in text-edit mode?	could be really cluttered
-      scale: scale,
-      resolution: resolution.y
-    }, textlabelLayer.update );
-    return;*/
   }
 
   /**
    * create a textlabel on the server
    */
   var createTextlabel = function (tlx, tly, tlz, tlr, scale) {
-    // TODO:
-    // icon_text_apply.style.display = "block";
     requestQueue.register('model/textlabel.create.php', 'POST', {
       pid: project.id,
       x: tlx,
@@ -84,14 +45,10 @@ function TextlabelTool()
       fontsize: (document.getElementById("fontscaling").checked ? Math.max(16 / scale, parseInt(document.getElementById("fontsize").value)) : parseInt(document.getElementById("fontsize").value)) * tlr,
       fontstyle: (document.getElementById("fontstylebold").checked ? "bold" : "")
     }, function (status, text, xml) {
-      console.log('create textlabel', status, text);
       statusBar.replaceLast(text);
-
       if (status == 200) {
         // icon_text_apply.style.display = "none";
-        //TODO: update textlabel
         self.updateTextlabels();
-          
         if (text && text != " ") {
           var e = eval("(" + text + ")");
           if (e.error) {
@@ -103,7 +60,6 @@ function TextlabelTool()
     });
     return;
   }
-
 
   var createTextlabelLayer = function( parentStack )
   {
@@ -122,8 +78,6 @@ function TextlabelTool()
       {
         case 1:
           // tracingLayer.svgOverlay.whenclicked( e );
-          console.log('case 1');
-            console.trace();
             // needs shift in addition
             if( e.shiftKey ) {
                 var m = ui.getMouse(e, self.prototype.mouseCatcher);
@@ -136,10 +90,8 @@ function TextlabelTool()
           break;
         case 2:
           proto_onmousedown( e );
-          console.log('case 2');
           break;
         default:
-          console.log('case default');
           proto_onmousedown( e );
           break;
       }
@@ -203,13 +155,11 @@ function TextlabelTool()
 	 */
   this.unregister = function()
   {
+    document.getElementById( "toolbar_text" ).style.display = "none";
     // do it before calling the prototype destroy that sets stack to null
     if (self.prototype.stack) {
       inactivateBindings();
     }
-    // Do NOT unregister: would remove the mouseCatcher layer
-    // and the annotations would disappear
-    //self.prototype.unregister();
     return;
   }
 
@@ -219,16 +169,12 @@ function TextlabelTool()
 	 */
 	this.destroy = function()
 	{
-
+    self.unregister();
+    textlabelLayer.removeTextlabels();
     // the prototype destroy calls the prototype's unregister, not self.unregister
     // do it before calling the prototype destroy that sets stack to null
     self.prototype.stack.removeLayer( "TextlabelLayer" );
     self.prototype.destroy( "edit_button_move" );
-    // TODO: remove everything properly
-    // TODO: remove button toolbar
-    // $( "#tracingbuttons" ).remove();
-    // textlabelLayer.svgOverlay.destroy();
-    //
     for (var b in bindings) {
       if (bindings.hasOwnProperty(b)) {
         delete bindings[b];
@@ -253,19 +199,6 @@ function TextlabelTool()
     right: 39,
     down: 40
   };
-
-/*TODO: complete actions
-  this.addAction( new Action({
-    helpText: "Zoom in",
-    keyShortcuts: {
-      '+': [ 43, 107, 61, 187 ]
-    },
-    run: function (e) {
-      self.prototype.slider_s.move(1);
-      return true;
-    }
-  }) );
-*/
 
   var keyCodeToAction = getKeyCodeToActionMap(actions);
 
@@ -332,7 +265,6 @@ Textlabel = function(
 			ph						//!< int optional height of the parent DOM element in pixel
 	)
 	{
-        console.log('redraw: pl', pl, 'pt', pt, 's', s);
 		parentLeft = pl;
 		parentTop = pt;
 		scale = s;
@@ -861,6 +793,7 @@ Textlabel = function(
 	var input_colour_blue = document.getElementById( "fontcolourblue" );
 	var checkbox_fontstyle_bold = document.getElementById( "fontstylebold" );
 	var checkbox_scaling = document.getElementById( "fontscaling" );
+  var checkbox_editable = document.getElementById( "textlabeleditable" );
 	//var button_apply = document.getElementById( "button_text_apply" );
 	var icon_apply = document.getElementById( "icon_text_apply" );
 	
@@ -871,26 +804,54 @@ TextlabelLayer = function(
 		stack,
         parentTool )
 {
+  var self = this;
 	var stack = stack;
-    var parentTool = parentTool;
+	var parentTool = parentTool;
 	var textlabels = new Array();
 	var stackWindow = stack.getWindow();
 
   this.resize = function ( width, height )
   {
-    console.log('textlabel layer resize')
-    // TODO: textlabel layer resize does nothing
     return;
   }
 
   this.redraw = function( completionCallback )
   {
-      // TODO: does nothing
-      console.log('textlabel layer redraw')
-      // calls updateTextLabels which indirectly calls this.update
       parentTool.updateTextlabels();
       return;
   }
+
+  this.unregister = function() {
+    return;
+  }
+
+  this.removeTextlabels = function() {
+    var stackWindowFrame = stackWindow.getFrame();
+    //! remove old text labels
+    while ( textlabels.length > 0 )
+    {
+      var t = textlabels.pop();
+      try		//!< we do not know if it really is in the DOM currently
+      {
+        stackWindowFrame.removeChild( t.getView() );
+      }
+      catch ( error ) {}
+    }
+  }
+
+  this.setUneditableTextlabels = function() {
+    for(var t in textlabels ) {
+      console.log('t', t);
+      t.setEditable(false);
+    }
+  };
+
+  this.setEditableTextlabels = function() {
+    for(var t in textlabels ) {
+      console.log('edit t', t);
+      t.setEditable(true);
+    }
+  };
 
 	/**
 	 * update textlabels in a given box of interest by querying it from the server
@@ -902,7 +863,6 @@ TextlabelLayer = function(
 		height					//!< height in project coordinates
 	)
 	{
-        console.log('textlabel layer update');
 		var scale = stack.scale;
 		var coordinates = stack.projectCoordinates();
 		var resolution = stack.resolution;
@@ -932,7 +892,6 @@ TextlabelLayer = function(
 	 */
 	var handle_update = function( status, text, xml )
 	{
-        // console.log('handle update', status, text);
 		if ( status = 200 )
 		{
 			//alert( "data: " + text );
@@ -941,8 +900,7 @@ TextlabelLayer = function(
 				alert( e.error );
 			else
 			{
-                console.log('currently available textlabels', textlabels )
-                var stackWindowFrame = stackWindow.getFrame();
+				var stackWindowFrame = stackWindow.getFrame();
 				//! remove old text labels
 				while ( textlabels.length > 0 )
 				{
@@ -971,10 +929,8 @@ TextlabelLayer = function(
 						var t = new Textlabel( e[ i ], resolution, translation );
 						textlabels.push( t );
 						stackWindowFrame.appendChild( t.getView() );
-						//if ( mode == "text" )
-                        // TODO: set editable in general ?
-					    t.setEditable( true );
-                        t.redraw( pl, pt, new_scale  );
+						t.setEditable( true );
+						t.redraw( pl, pt, new_scale  );
 					}
 				}
 			}
@@ -982,49 +938,4 @@ TextlabelLayer = function(
 		return;
 	}
 
-    // TODO: do we need this here. or simply replace by updateTextlabels
-	/**
-	 * Move to project-coordinates.
-	 * 
-	 * Considers only coordinates[0], coordinates[1] and scale.  The caller is
-	 * required to call update(x,y,width,height) on change of z,t,scale or
-	 * in case the field of view leaves the current data window.
-	 * 
-	 * @param {Array} coordinates [x,y,z,...]
-	 * @param {Number} scale
-	 */
-    /*
-	this.moveTo = function( coordinates, scale )
-	{
-		alert( "moveTo" );
-		
-		if ( typeof sp == "number" )
-		{
-			s = Math.max( 0, Math.min( MAX_S, Math.round( sp ) ) );
-			scale = 1 / Math.pow( 2, s );
-		}
-		
-		LAST_XT = Math.floor( MAX_X * scale / X_TILE_SIZE );
-		LAST_YT = Math.floor( MAX_Y * scale / Y_TILE_SIZE );
-		
-		x = Math.max( 0, Math.min( MAX_X, Math.round( ( xp - translation.x ) / resolution.x ) ) );
-		y = Math.max( 0, Math.min( MAX_Y, Math.round( ( yp - translation.y ) / resolution.y ) ) );
-		
-		var z1;
-		var z2;
-		z1 = z2 = Math.round( ( zp - translation.z ) / resolution.z );
-		while ( broken_slices[ z1 ] && broken_slices[ z2 ] )
-		{
-			z1 = Math.max( 0, z1 - 1 );
-			z2 = Math.min( MAX_Z, z2 + 1 );
-		}
-		if ( !broken_slices[ z1 ] ) z = z1;
-		else z = z2;
-		z = Math.max( 0, Math.min( MAX_Z, z ) );
-		
-		update();
-		
-		return;
-	}
-	*/
 }

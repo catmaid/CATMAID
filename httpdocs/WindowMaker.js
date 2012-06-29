@@ -382,9 +382,16 @@ var WindowMaker = new function()
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
+    add.setAttribute("id", "refresh_connectortable_current_skeleton");
+    add.setAttribute("value", "Refresh");
+    add.onclick = ConnectorTable.refreshConnectorTable;
+    content.appendChild(add);
+
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
     add.setAttribute("id", "update_connectortable_current_skeleton");
-    add.setAttribute("value", "Update table for current skeleton");
-    add.onclick = updateConnectorTable; // function declared in table_connector.js
+    add.setAttribute("value", "Current skeleton");
+    add.onclick = ConnectorTable.updateConnectorTable;
     content.appendChild(add);
 
     var sync = document.createElement('select');

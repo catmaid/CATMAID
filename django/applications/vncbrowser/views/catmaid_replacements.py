@@ -204,11 +204,7 @@ def create_connector(request, project_id=None, logged_in_user=None):
     query_parameters = {}
     default_values = {'x': 0, 'y': 0, 'z': 0, 'confidence': 5}
     for p in default_values.keys():
-        query_parameters[p] = request.POST.get(p, None)
-
-    missing_parameters = [p for p, val in query_parameters.iteritems() if val is None]
-    for p in missing_parameters:
-        query_parameters[p] = default_values[p]
+        query_parameters[p] = request.POST.get(p, default_values[p])
 
     parsed_confidence = int(query_parameters['confidence'])
     if (parsed_confidence not in range(1, 6)):
@@ -233,6 +229,33 @@ def delete_connector(request, project_id=None, logged_in_user=None):
     return HttpResponse(json.dumps({
         'message': 'Removed connector and class_instances',
         'connector_id': connector_id}))
+
+
+@catmaid_login_required
+@transaction.commit_on_success
+def create_link(request, project_id=None, logged_in_user=None):
+    from_id = request.POST.get('from_id', 0)
+    to_id = request.POST.get('to_id', 0)
+    link_type = request.POST.get('link_type', 'none')
+    project = get_object_or_404(Project, pk=project_id)
+
+    link_id_map = get_relation_to_id_map(project_id)
+    if link_type not in link_id_map:
+        return HttpResponse(json.dumps({'error': 'Can not find %s relation for this project.' % link_type}))
+    relation_id = link_id_map[link_type]
+
+    try:
+        skeleton_id = Treenode.objects.filter(project=project, id=from_id).get()
+    except MultipleObjectsReturned:
+        return HttpResponse(json.dumps({'error': 'Multiple rows for treenode with ID #%s found' % from_id}))
+    except Treenode.DoesNotExist:
+        return HttpResponse(json.dumps({'error': 'Failed to retrieve skeleton id of treenode #%s' % from_id}))
+
+    if (link_type == 'presynaptic_to'):
+        # Enforce only one presynaptic link
+        connector = Connector
+        presyn_links = TreenodeConnector.objects.filter(project=project, )
+
 
 
 @catmaid_can_edit_project

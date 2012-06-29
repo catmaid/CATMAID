@@ -26,6 +26,7 @@ function TracingTool()
   var bindings = {};
   this.toolname = "tracingtool";
 
+
 	this.resize = function( width, height )
 	{
     self.prototype.resize( width, height );
@@ -106,7 +107,7 @@ function TracingTool()
 	 * register all GUI control elements and event handlers
 	 */
 	this.register = function( parentStack )
-	{
+  {
     setupSubTools();
 
     if (tracingLayer && stack) {
@@ -845,7 +846,6 @@ TracingTool.search = function()
                   $('<a/>').attr({'id': '' + id})
                            .attr({'href':''})
                            .click(function(event) {
-                             console.log("skid", skid, "id", id);
                              project.moveTo(z, y, x,
                                undefined,
                                function() {

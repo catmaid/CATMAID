@@ -619,13 +619,16 @@ function CMWWindow( title )
 		for ( var i = 0; i < windows.length; ++i )
 		{
 			var w = windows[ i ];
-			w.getFrame().firstChild.className = "stackInfo";
-			w.callListeners( CMWWindow.BLUR );
+      if(w.hasFocus()) {
+			  w.getFrame().firstChild.className = "stackInfo";
+			  w.callListeners( CMWWindow.BLUR );
+      }
 		}
-			
-		frame.firstChild.className = "stackInfo_selected";
-		self.callListeners( CMWWindow.FOCUS );
-		
+	  if(!self.hasFocus()) {
+      frame.firstChild.className = "stackInfo_selected";
+      self.callListeners( CMWWindow.FOCUS );
+    }
+
 		return self;
 	}
 	
@@ -757,7 +760,7 @@ function CMWWindow( title )
 		rootNode.releaseDrag();
 		CMWWindow.selectedWindow = null;
 		eventCatcher.className = "eventCatcher";
-		rootNode.redraw();
+		//rootNode.redraw();
 		
 		return false;
 	}
@@ -877,9 +880,11 @@ CMWWindow.RESIZE = 1;
 CMWWindow.FOCUS = 2;
 CMWWindow.BLUR = 3;
 
-
-
-
+CMWWindow.signalName = {};
+CMWWindow.signalName[CMWWindow.CLOSE] = 'CLOSE';
+CMWWindow.signalName[CMWWindow.RESIZE] = 'RESIZE';
+CMWWindow.signalName[CMWWindow.FOCUS] = 'FOCUS';
+CMWWindow.signalName[CMWWindow.BLUR] = 'BLUR';
 
 /**
  * a vertical or horizontal resize handle

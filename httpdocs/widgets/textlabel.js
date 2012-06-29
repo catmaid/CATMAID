@@ -19,7 +19,15 @@ function TextlabelTool()
 
   var setupSubTools = function()
   {
+    document.getElementById( typeof buttonName == "undefined" ? "edit_button_text" : buttonName ).className = "button_active";
     document.getElementById( "toolbar_text" ).style.display = "block";
+    $('#textlabeleditable').change(function(e) {
+      if ($(this).attr("checked")) {
+        textlabelLayer.setEditableTextlabels();
+      } else {
+        textlabelLayer.setUneditableTextlabels();
+      }
+    });
   };
 
   self.updateTextlabels = function () {
@@ -27,7 +35,15 @@ function TextlabelTool()
           stack.dimension.y * stack.resolution.y );
   }
 
-  /**
+  this.getMouseHelp = function( e ) {
+    var result = '<p>';
+    result += '<strong>shift-click in space:</strong> create a new textlabel<br />';
+    result += '</p>';
+    return result;
+  };
+
+
+    /**
    * create a textlabel on the server
    */
   var createTextlabel = function (tlx, tly, tlz, tlr, scale) {
@@ -84,7 +100,6 @@ function TextlabelTool()
                 var tlx = (stack.x + (m.offsetX - stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x;
                 var tly = (stack.y + (m.offsetY - stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y;
                 var tlz = stack.z * stack.resolution.z + stack.translation.z;
-                console.log('create new label', tlx, tly, tlz, stack.resolution)
                 createTextlabel(tlx, tly, tlz, stack.resolution.y, stack.scale);
             }
           break;
@@ -169,6 +184,7 @@ function TextlabelTool()
 	 */
 	this.destroy = function()
 	{
+    document.getElementById( typeof buttonName == "undefined" ? "edit_button_text" : buttonName ).className = "button";
     self.unregister();
     textlabelLayer.removeTextlabels();
     // the prototype destroy calls the prototype's unregister, not self.unregister
@@ -400,6 +416,11 @@ Textlabel = function(
 		
 		return;
 	}
+
+  this.setOpacity = function( val )
+  {
+    view.style.opacity = val+"";
+  }
 	
 	this.setEditable = function( e )
 	{
@@ -813,17 +834,24 @@ TextlabelLayer = function(
   this.resize = function ( width, height )
   {
     return;
-  }
+  };
 
   this.redraw = function( completionCallback )
   {
       parentTool.updateTextlabels();
       return;
-  }
+  };
 
   this.unregister = function() {
     return;
-  }
+  };
+
+  this.setOpacity = function ( val )
+  {
+    for(var t in textlabels ) {
+      textlabels[t].setOpacity( val );
+    }
+  };
 
   this.removeTextlabels = function() {
     var stackWindowFrame = stackWindow.getFrame();
@@ -841,15 +869,13 @@ TextlabelLayer = function(
 
   this.setUneditableTextlabels = function() {
     for(var t in textlabels ) {
-      console.log('t', t);
-      t.setEditable(false);
+      textlabels[t].setEditable(false);
     }
   };
 
   this.setEditableTextlabels = function() {
     for(var t in textlabels ) {
-      console.log('edit t', t);
-      t.setEditable(true);
+      textlabels[t].setEditable(true);
     }
   };
 
@@ -892,6 +918,7 @@ TextlabelLayer = function(
 	 */
 	var handle_update = function( status, text, xml )
 	{
+    var check = $('#textlabeleditable').attr("checked");
 		if ( status = 200 )
 		{
 			//alert( "data: " + text );
@@ -918,10 +945,10 @@ TextlabelLayer = function(
 					var translation = stack.translation;
 					var stackWindowFrame = stackWindow.getFrame();
 
-                  var wc = stack.getWorldTopLeft();
-                  var pl = wc.worldLeft,
-                      pt = wc.worldTop,
-                      new_scale = wc.scale;
+					var wc = stack.getWorldTopLeft();
+					var pl = wc.worldLeft,
+							pt = wc.worldTop,
+							new_scale = wc.scale;
 
 					//! import new
 					for ( var i in e )
@@ -929,8 +956,8 @@ TextlabelLayer = function(
 						var t = new Textlabel( e[ i ], resolution, translation );
 						textlabels.push( t );
 						stackWindowFrame.appendChild( t.getView() );
-						t.setEditable( true );
-						t.redraw( pl, pt, new_scale  );
+						t.setEditable( check );
+						t.redraw( pl, pt, new_scale );
 					}
 				}
 			}

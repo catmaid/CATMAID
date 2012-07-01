@@ -221,7 +221,7 @@ var editToolActions = [
 		buttonID: 'edit_button_text',
 		buttonName: 'text',
 		run: function (e) {
-			project.setMode( 'text' );
+			project.setTool( new TextlabelTool() );
 			return true;
 		}
 	}),

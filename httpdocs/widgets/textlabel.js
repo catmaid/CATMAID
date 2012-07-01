@@ -1,19 +1,241 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-/**
- * textlabel.js
- *
- * requirements:
- *	 tools.js
- *	 ui.js
- *	 excanvas.js by Google for IE support
- *	 request.js
- *
- */
+function TextlabelTool()
+{
+  this.prototype = new Navigator();
 
-/**
- */
+  var self = this;
+  var textlabelLayer = null;
+  var stack = null;
+  var bindings = {};
+  this.toolname = "textlabeltool";
+
+  this.resize = function( width, height )
+  {
+    self.prototype.resize( width, height );
+    return;
+  };
+
+  var setupSubTools = function()
+  {
+    document.getElementById( typeof buttonName == "undefined" ? "edit_button_text" : buttonName ).className = "button_active";
+    document.getElementById( "toolbar_text" ).style.display = "block";
+    $('#textlabeleditable').change(function(e) {
+      if ($(this).attr("checked")) {
+        textlabelLayer.setEditableTextlabels();
+      } else {
+        textlabelLayer.setUneditableTextlabels();
+      }
+    });
+  };
+
+  self.updateTextlabels = function () {
+      textlabelLayer.update(0, 0, stack.dimension.x * stack.resolution.x,
+          stack.dimension.y * stack.resolution.y );
+  }
+
+  this.getMouseHelp = function( e ) {
+    var result = '<p>';
+    result += '<strong>shift-click in space:</strong> create a new textlabel<br />';
+    result += '</p>';
+    return result;
+  };
+
+
+    /**
+   * create a textlabel on the server
+   */
+  var createTextlabel = function (tlx, tly, tlz, tlr, scale) {
+    requestQueue.register('model/textlabel.create.php', 'POST', {
+      pid: project.id,
+      x: tlx,
+      y: tly,
+      z: tlz,
+      r: parseInt(document.getElementById("fontcolourred").value) / 255,
+      g: parseInt(document.getElementById("fontcolourgreen").value) / 255,
+      b: parseInt(document.getElementById("fontcolourblue").value) / 255,
+      a: 1,
+      type: "text",
+      scaling: (document.getElementById("fontscaling").checked ? 1 : 0),
+      fontsize: (document.getElementById("fontscaling").checked ? Math.max(16 / scale, parseInt(document.getElementById("fontsize").value)) : parseInt(document.getElementById("fontsize").value)) * tlr,
+      fontstyle: (document.getElementById("fontstylebold").checked ? "bold" : "")
+    }, function (status, text, xml) {
+      statusBar.replaceLast(text);
+      if (status == 200) {
+        // icon_text_apply.style.display = "none";
+        self.updateTextlabels();
+        if (text && text != " ") {
+          var e = eval("(" + text + ")");
+          if (e.error) {
+            alert(e.error);
+          } else {}
+        }
+      }
+      return true;
+    });
+    return;
+  }
+
+  var createTextlabelLayer = function( parentStack )
+  {
+    stack = parentStack;
+
+    textlabelLayer = new TextlabelLayer( parentStack, self );
+    
+    parentStack.addLayer( "TextlabelLayer", textlabelLayer );
+
+    // register the move toolbar and reuse the mouseCatcher
+    self.prototype.register( parentStack, "edit_button_move" );
+    // view is the mouseCatcher now
+    var proto_onmousedown = self.prototype.mouseCatcher.onmousedown;
+    self.prototype.mouseCatcher.onmousedown = function( e ) {
+      switch ( ui.getMouseButton( e ) )
+      {
+        case 1:
+          // tracingLayer.svgOverlay.whenclicked( e );
+            // needs shift in addition
+            if( e.shiftKey ) {
+                var m = ui.getMouse(e, self.prototype.mouseCatcher);
+                var tlx = (stack.x + (m.offsetX - stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x;
+                var tly = (stack.y + (m.offsetY - stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y;
+                var tlz = stack.z * stack.resolution.z + stack.translation.z;
+                createTextlabel(tlx, tly, tlz, stack.resolution.y, stack.scale);
+            }
+          break;
+        case 2:
+          proto_onmousedown( e );
+          break;
+        default:
+          proto_onmousedown( e );
+          break;
+      }
+      return;
+    };
+
+    var proto_changeSlice = self.prototype.changeSlice;
+    self.prototype.changeSlice =
+      function( val ) {
+        proto_changeSlice( val );
+      };
+  };
+
+	/**
+	 * install this tool in a stack.
+	 * register all GUI control elements and event handlers
+	 */
+	this.register = function( parentStack )
+	{
+    setupSubTools();
+
+    if (textlabelLayer && stack) {
+      if (stack !== parentStack) {
+        // If the tracing layer exists and it belongs to a different stack, replace it
+        stack.removeLayer( textlabelLayer );
+        createTextlabelLayer( parentStack );
+      } else {
+        reactivateBindings();
+      }
+    } else {
+      createTextlabelLayer( parentStack );
+    }
+
+    return;
+  };
+
+  /** Inactivate only onmousedown, given that the others are injected when onmousedown is called.
+   * Leave alone onmousewheel: it is different in every browser, and it cannot do any harm to have it active. */
+  var inactivateBindings = function() {
+    var c = self.prototype.mouseCatcher;
+    ['onmousedown'].map(
+      function ( fn ) {
+        if (c[fn]) {
+          bindings[fn] = c[fn];
+          delete c[fn];
+        }
+      });
+  };
+
+  var reactivateBindings = function() {
+    var c = self.prototype.mouseCatcher;
+    for (var b in bindings) {
+      if (bindings.hasOwnProperty(b)) {
+        c[b.name] = b;
+      }
+    }
+  };
+
+	/**
+	 * unregister all stack related mouse and keyboard controls
+	 */
+  this.unregister = function()
+  {
+    document.getElementById( "toolbar_text" ).style.display = "none";
+    // do it before calling the prototype destroy that sets stack to null
+    if (self.prototype.stack) {
+      inactivateBindings();
+    }
+    return;
+  }
+
+	/**
+	 * unregister all project related GUI control connections and event
+	 * handlers, toggle off tool activity signals (like buttons)
+	 */
+	this.destroy = function()
+	{
+    document.getElementById( typeof buttonName == "undefined" ? "edit_button_text" : buttonName ).className = "button";
+    self.unregister();
+    textlabelLayer.removeTextlabels();
+    // the prototype destroy calls the prototype's unregister, not self.unregister
+    // do it before calling the prototype destroy that sets stack to null
+    self.prototype.stack.removeLayer( "TextlabelLayer" );
+    self.prototype.destroy( "edit_button_move" );
+    for (var b in bindings) {
+      if (bindings.hasOwnProperty(b)) {
+        delete bindings[b];
+      }
+    }
+    return;
+	};
+
+  var actions = [];
+
+  this.addAction = function ( action ) {
+    actions.push( action );
+  };
+
+  this.getActions = function () {
+    return actions;
+  };
+
+  var arrowKeyCodes = {
+    left: 37,
+    up: 38,
+    right: 39,
+    down: 40
+  };
+
+  var keyCodeToAction = getKeyCodeToActionMap(actions);
+
+  /** This function should return true if there was any action
+      linked to the key code, or false otherwise. */
+
+  this.handleKeyPress = function( e ) {
+    var keyAction = keyCodeToAction[e.keyCode];
+    if (keyAction) {
+      return keyAction.run(e);
+    } else {
+      return false;
+    }
+  };
+
+  this.redraw = function()
+  {
+    self.prototype.redraw();
+  };
+
+}
 
 /**
  * a textlabel-box
@@ -194,6 +416,11 @@ Textlabel = function(
 		
 		return;
 	}
+
+  this.setOpacity = function( val )
+  {
+    view.style.opacity = val+"";
+  }
 	
 	this.setEditable = function( e )
 	{
@@ -233,7 +460,7 @@ Textlabel = function(
 	var apply = function( e )
 	{
 		icon_apply.style.display = "block";
-		RequestQueue.replace(
+		requestQueue.replace(
 			"model/textlabel.update.php",
 			"POST",
 			{
@@ -281,7 +508,7 @@ Textlabel = function(
 	{
 		icon_apply.style.display = "block";
 		
-		RequestQueue.register(
+		requestQueue.register(
 			'model/textlabel.delete.php',
 			'POST',
 			{
@@ -291,7 +518,8 @@ Textlabel = function(
 				y : self.location.y,
 				z : self.location.z
 			},
-			project.handle_updateTextlabels );
+			window.onresize ); // TODO: what is the proper way to call updateTextlabels of the tool?
+            // the window.onresize solution calls onresize about 6 times
 		return;
 	}
 	
@@ -586,20 +814,71 @@ Textlabel = function(
 	var input_colour_blue = document.getElementById( "fontcolourblue" );
 	var checkbox_fontstyle_bold = document.getElementById( "fontstylebold" );
 	var checkbox_scaling = document.getElementById( "fontscaling" );
+  var checkbox_editable = document.getElementById( "textlabeleditable" );
 	//var button_apply = document.getElementById( "button_text_apply" );
 	var icon_apply = document.getElementById( "icon_text_apply" );
 	
 	var edit = false;
 }
 
-
 TextlabelLayer = function(
-		stack )		//!< int `tile' height
+		stack,
+        parentTool )
 {
+  var self = this;
 	var stack = stack;
+	var parentTool = parentTool;
 	var textlabels = new Array();
 	var stackWindow = stack.getWindow();
-	
+
+  this.resize = function ( width, height )
+  {
+    return;
+  };
+
+  this.redraw = function( completionCallback )
+  {
+      parentTool.updateTextlabels();
+      return;
+  };
+
+  this.unregister = function() {
+    return;
+  };
+
+  this.setOpacity = function ( val )
+  {
+    for(var t in textlabels ) {
+      textlabels[t].setOpacity( val );
+    }
+  };
+
+  this.removeTextlabels = function() {
+    var stackWindowFrame = stackWindow.getFrame();
+    //! remove old text labels
+    while ( textlabels.length > 0 )
+    {
+      var t = textlabels.pop();
+      try		//!< we do not know if it really is in the DOM currently
+      {
+        stackWindowFrame.removeChild( t.getView() );
+      }
+      catch ( error ) {}
+    }
+  }
+
+  this.setUneditableTextlabels = function() {
+    for(var t in textlabels ) {
+      textlabels[t].setEditable(false);
+    }
+  };
+
+  this.setEditableTextlabels = function() {
+    for(var t in textlabels ) {
+      textlabels[t].setEditable(true);
+    }
+  };
+
 	/**
 	 * update textlabels in a given box of interest by querying it from the server
 	 */
@@ -610,9 +889,9 @@ TextlabelLayer = function(
 		height					//!< height in project coordinates
 	)
 	{
-		var scale = stack.getScale();
+		var scale = stack.scale;
 		var coordinates = stack.projectCoordinates();
-		var resolution = stack.resolution();
+		var resolution = stack.resolution;
 		
 		requestQueue.register(
 			'model/textlabels.php',
@@ -639,6 +918,7 @@ TextlabelLayer = function(
 	 */
 	var handle_update = function( status, text, xml )
 	{
+    var check = $('#textlabeleditable').attr("checked");
 		if ( status = 200 )
 		{
 			//alert( "data: " + text );
@@ -647,78 +927,42 @@ TextlabelLayer = function(
 				alert( e.error );
 			else
 			{
+				var stackWindowFrame = stackWindow.getFrame();
 				//! remove old text labels
 				while ( textlabels.length > 0 )
 				{
 					var t = textlabels.pop();
 					try		//!< we do not know if it really is in the DOM currently
 					{
-						view.removeChild( t.getView() );
+						stackWindowFrame.removeChild( t.getView() );
 					}
 					catch ( error ) {}
 				}
 				
 				if ( text )
 				{
-					var resolution = stack.resolution();
-					var translation = stack.translation();
+					var resolution = stack.resolution;
+					var translation = stack.translation;
 					var stackWindowFrame = stackWindow.getFrame();
-					
+
+					var wc = stack.getWorldTopLeft();
+					var pl = wc.worldLeft,
+							pt = wc.worldTop,
+							new_scale = wc.scale;
+
 					//! import new
 					for ( var i in e )
 					{
 						var t = new Textlabel( e[ i ], resolution, translation );
 						textlabels.push( t );
-						stackWindowFrame().appendChild( t.getView() );
-						if ( mode == "text" )
-							t.setEditable( true );
+						stackWindowFrame.appendChild( t.getView() );
+						t.setEditable( check );
+						t.redraw( pl, pt, new_scale );
 					}
 				}
 			}
 		}
 		return;
 	}
-	
-	/**
-	 * Move to project-coordinates.
-	 * 
-	 * Considers only coordinates[0], coordinates[1] and scale.  The caller is
-	 * required to call update(x,y,width,height) on change of z,t,scale or
-	 * in case the field of view leaves the current data window.
-	 * 
-	 * @param {Array} coordinates [x,y,z,...]
-	 * @param {Number} scale
-	 */
-	this.moveTo = function( coordinates, scale )
-	{
-		alert( "moveTo" );
-		
-		if ( typeof sp == "number" )
-		{
-			s = Math.max( 0, Math.min( MAX_S, Math.round( sp ) ) );
-			scale = 1 / Math.pow( 2, s );
-		}
-		
-		LAST_XT = Math.floor( MAX_X * scale / X_TILE_SIZE );
-		LAST_YT = Math.floor( MAX_Y * scale / Y_TILE_SIZE );
-		
-		x = Math.max( 0, Math.min( MAX_X, Math.round( ( xp - translation.x ) / resolution.x ) ) );
-		y = Math.max( 0, Math.min( MAX_Y, Math.round( ( yp - translation.y ) / resolution.y ) ) );
-		
-		var z1;
-		var z2;
-		z1 = z2 = Math.round( ( zp - translation.z ) / resolution.z );
-		while ( broken_slices[ z1 ] && broken_slices[ z2 ] )
-		{
-			z1 = Math.max( 0, z1 - 1 );
-			z2 = Math.min( MAX_Z, z2 + 1 );
-		}
-		if ( !broken_slices[ z1 ] ) z = z1;
-		else z = z2;
-		z = Math.max( 0, Math.min( MAX_Z, z ) );
-		
-		update();
-		
-		return;
-	}
+
 }

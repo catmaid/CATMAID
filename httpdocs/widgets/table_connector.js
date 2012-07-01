@@ -1,17 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-function updateConnectorTable() {
-  ConnectorTable.setSkeleton( -1 );
-  ConnectorTable.connectorTable.fnClearTable( 0 );
-  ConnectorTable.connectorTable.fnDraw();
-}
-
-function refreshConnectorTable() {
-  ConnectorTable.connectorTable.fnClearTable( 0 );
-  ConnectorTable.connectorTable.fnDraw();
-}
-
 var ConnectorTable = new function()
 {
   /** Pointer to the existing instance of table. */
@@ -26,6 +15,17 @@ var ConnectorTable = new function()
   var possibleLengthsLabels = possibleLengths.map(
     function (n) { return (n === -1) ? "All" : n.toString() });
 
+  this.updateConnectorTable = function() {
+    self.setSkeleton( -1 );
+    self.connectorTable.fnClearTable( 0 );
+    self.connectorTable.fnDraw();
+  }
+
+  this.refreshConnectorTable = function() {
+    self.connectorTable.fnClearTable( 0 );
+    self.connectorTable.fnDraw();
+  }
+
   this.setSkeleton = function( skeleton_id ) {
     skeletonID = skeleton_id;
   }
@@ -35,7 +35,7 @@ var ConnectorTable = new function()
 
     $("#connectortable_lastskeletons").change(function() {
       skeletonID = parseInt( $('#connectortable_lastskeletons').val() );
-      refreshConnectorTable();
+      self.refreshConnectorTable();
     });
     
     self.connectorTable = $(tableid).dataTable(

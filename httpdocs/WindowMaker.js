@@ -129,6 +129,13 @@ var WindowMaker = new function()
     container.appendChild(rand);
 
     var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
+    rand.setAttribute("id", "remove_all");
+    rand.setAttribute("value", "Remove all");
+    rand.onclick = WebGLApp.removeAllSkeletons;
+    container.appendChild(rand);
+
+    var rand = document.createElement('input');
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "enable_z_plane");
     rand.setAttribute("value", "Enable z-plane");
@@ -375,9 +382,16 @@ var WindowMaker = new function()
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
+    add.setAttribute("id", "refresh_connectortable_current_skeleton");
+    add.setAttribute("value", "Refresh");
+    add.onclick = ConnectorTable.refreshConnectorTable;
+    content.appendChild(add);
+
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
     add.setAttribute("id", "update_connectortable_current_skeleton");
-    add.setAttribute("value", "Update table for current skeleton");
-    add.onclick = updateConnectorTable; // function declared in table_connector.js
+    add.setAttribute("value", "Current skeleton");
+    add.onclick = ConnectorTable.updateConnectorTable;
     content.appendChild(add);
 
     var sync = document.createElement('select');

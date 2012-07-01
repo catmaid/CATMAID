@@ -654,6 +654,37 @@ class ViewPageTests(TestCase):
         self.assertEqual(0, Connector.objects.filter(id=connector_id).count())
         self.assertEqual(0, TreenodeConnector.objects.filter(connector=connector).count())
 
+    def test_delete_link_failure(self):
+        self.fake_authentication()
+        connector_id = 202020
+        treenode_id = 202020
+
+        tc_count = TreenodeConnector.objects.all().count()
+        response = self.client.post(
+                '/%d/link/delete' % self.test_project_id,
+                {'connector_id': connector_id, 'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'Failed to delete connector #%s from geometry domain.' % connector_id}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(tc_count, TreenodeConnector.objects.all().count())
+
+    def test_delete_link_success(self):
+        self.fake_authentication()
+        connector_id = 356
+        treenode_id = 377
+
+        tc_count = TreenodeConnector.objects.all().count()
+        response = self.client.post(
+                '/%d/link/delete' % self.test_project_id,
+                {'connector_id': connector_id, 'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'result': 'Removed treenode to connector link'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(0, TreenodeConnector.objects.filter(connector=connector_id, treenode=treenode_id).count())
+        self.assertEqual(tc_count - 1, TreenodeConnector.objects.all().count())
+
     def test_create_postsynaptic_link_success(self):
         from_id = 237
         to_id = 432

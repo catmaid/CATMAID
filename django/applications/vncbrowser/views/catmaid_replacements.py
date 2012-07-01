@@ -234,7 +234,7 @@ def delete_connector(request, project_id=None, logged_in_user=None):
         'connector_id': connector_id}))
 
 
-@catmaid_login_required
+@catmaid_can_edit_project
 @transaction_reportable_commit_on_success
 def create_link(request, project_id=None, logged_in_user=None):
     from_id = request.POST.get('from_id', 0)
@@ -274,6 +274,23 @@ def create_link(request, project_id=None, logged_in_user=None):
             ).save()
 
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+
+
+@catmaid_can_edit_project
+@transaction_reportable_commit_on_success
+def delete_link(request, project_id=None, logged_in_user=None):
+    connector_id = request.POST.get('connector_id', 0)
+    treenode_id = request.POST.get('treenode_id', 0)
+
+    links = TreenodeConnector.objects.filter(
+            connector=connector_id,
+            treenode=treenode_id)
+
+    if (links.count() == 0):
+        return HttpResponse(json.dumps({'error': 'Failed to delete connector #%s from geometry domain.' % connector_id}))
+
+    links.delete()
+    return HttpResponse(json.dumps({'result': 'Removed treenode to connector link'}))
 
 
 @catmaid_can_edit_project

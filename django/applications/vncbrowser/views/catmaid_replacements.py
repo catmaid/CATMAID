@@ -1,3 +1,6 @@
+import datetime
+import json
+
 from collections import defaultdict
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction, connection
@@ -11,7 +14,6 @@ from vncbrowser.transaction import transaction_reportable_commit_on_success
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional, \
     catmaid_login_required
 from common import insert_into_log
-import json
 
 
 @catmaid_login_optional
@@ -274,6 +276,38 @@ def create_link(request, project_id=None, logged_in_user=None):
             ).save()
 
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+
+
+@catmaid_login_required
+@transaction_reportable_commit_on_success
+def most_recent_treenode(request, project_id=None, logged_in_user=None):
+    skeleton_id = request.POST.get('skeleton_id', -1)
+    treenode_id = request.POST.get('treenode_id', -1)
+
+    try:
+        tn = Treenode.objects\
+        .filter(project=project_id,
+                skeleton=skeleton_id,
+                user=logged_in_user)\
+        .extra(select={'most_recent': 'greatest(treenode.creation_time, treenode.edition_time)'})\
+        .extra(order_by=['-most_recent'])[0]
+    except IndexError:
+        # TODO Not sure whether this is correct. This is the only place
+        # where the treenode_id is used. Does it really have anything
+        # to do with the query? The error message doesn't make much sense
+        # either.
+        return HttpResponse(json.dumps({'error': 'No skeleton and neuron found for treenode %s' % treenode_id}))
+
+    return HttpResponse(json.dumps({
+        'id': tn.id,
+        'skeleton_id': tn.skeleton.id,
+        'x': int(tn.location.x),
+        'y': int(tn.location.y),
+        'z': int(tn.location.z),
+        # 'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
+        'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f') + tn.most_recent.tzinfo.utcoffset(tn.most_recent),
+        'type': 'treenode'
+        }))
 
 
 @catmaid_can_edit_project

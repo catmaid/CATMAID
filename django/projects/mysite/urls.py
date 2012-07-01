@@ -70,7 +70,8 @@ urlpatterns += patterns('',
     (r'^(?P<project_id>\d+)/connector/create$', 'vncbrowser.views.catmaid_replacements.create_connector'),
     (r'^(?P<project_id>\d+)/connector/delete$', 'vncbrowser.views.catmaid_replacements.delete_connector'),
     (r'^(?P<project_id>\d+)/link/create$', 'vncbrowser.views.catmaid_replacements.create_link'),
-    (r'^(?P<project_id>\d+)/link/delete$', 'vncbrowser.views.catmaid_replacements.delete_link')
+    (r'^(?P<project_id>\d+)/link/delete$', 'vncbrowser.views.catmaid_replacements.delete_link'),
+    (r'^(?P<project_id>\d+)/node/most_recent$', 'vncbrowser.views.catmaid_replacements.most_recent_treenode')
     )
 
 if settings.DEBUG:

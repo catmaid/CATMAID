@@ -1,6 +1,8 @@
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
+from django.http import HttpResponse
 from django.db import connection
+from django.shortcuts import get_object_or_404
 import os
 import re
 import urllib
@@ -9,7 +11,8 @@ import datetime
 
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, Session
-from models import Treenode, Connector, TreenodeConnector
+from models import Treenode, Connector, TreenodeConnector, User
+from transaction import RollbackAndReport, reportable_commit_on_success_transaction
 
 
 class SimpleTest(TestCase):
@@ -45,6 +48,67 @@ def add_example_data():
     current_directory = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(current_directory, "data.sql")) as fp:
         cursor.execute(fp.read())
+
+
+class TransactionTests(TransactionTestCase):
+
+    def setUp(self):
+        ensure_schema_exists()
+
+    def test_successful_commit(self):
+        @reportable_commit_on_success_transaction
+        def insert_user():
+            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
+            return HttpResponse(json.dumps({'message': 'success'}))
+
+        User.objects.all().delete()
+        response = insert_user()
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'success'}
+        self.assertEqual(1, User.objects.all().count())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_report_error(self):
+        @reportable_commit_on_success_transaction
+        def insert_user():
+            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
+            raise RollbackAndReport({'error': 'catch me if you can'})
+            return HttpResponse(json.dumps({'should not': 'return this'}))
+
+        User.objects.all().delete()
+        response = insert_user()
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'catch me if you can'}
+        self.assertEqual(0, User.objects.all().count())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_catch_404(self):
+        @reportable_commit_on_success_transaction
+        def insert_user():
+            get_object_or_404(User, pk=12)
+            return HttpResponse(json.dumps({'should not': 'return this'}))
+
+        User.objects.all().delete()
+        response = insert_user()
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'No User matches the given query.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(0, User.objects.all().count())
+
+    def test_fail_unexpectedly(self):
+        @reportable_commit_on_success_transaction
+        def insert_user():
+            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
+            raise Exception()
+            return HttpResponse(json.dumps({'should not': 'return this'}))
+
+        User.objects.all().delete()
+        with self.assertRaises(Exception):
+            insert_user()
+        self.assertEqual(0, User.objects.all().count())
 
 
 class InsertionTest(TestCase):
@@ -589,6 +653,58 @@ class ViewPageTests(TestCase):
         self.assertEqual(treenode_connector_count - 3, TreenodeConnector.objects.all().count())
         self.assertEqual(0, Connector.objects.filter(id=connector_id).count())
         self.assertEqual(0, TreenodeConnector.objects.filter(connector=connector).count())
+
+    def test_create_postsynaptic_link_success(self):
+        from_id = 237
+        to_id = 432
+        link_type = 'postsynaptic_to'
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/link/create' % self.test_project_id,
+                {
+                    'from_id': from_id,
+                    'to_id': to_id,
+                    'link_type': link_type
+                    })
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'success'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_create_presynaptic_link_fail_due_to_other_presynaptic_links(self):
+        from_id = 237
+        to_id = 432
+        link_type = 'presynaptic_to'
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/link/create' % self.test_project_id,
+                {
+                    'from_id': from_id,
+                    'to_id': to_id,
+                    'link_type': link_type
+                    })
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'Connector %s does not have zero presynaptic connections.' % to_id}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_create_presynaptic_link_success(self):
+        from_id = 237
+        to_id = 2401
+        link_type = 'presynaptic_to'
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/link/create' % self.test_project_id,
+                {
+                    'from_id': from_id,
+                    'to_id': to_id,
+                    'link_type': link_type
+                    })
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'success'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
 
 """
     def test_node_list(self):

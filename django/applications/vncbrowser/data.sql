@@ -160,6 +160,7 @@ INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, loc
 INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, location, confidence, reviewer_id, review_time) VALUES (421, 3, '2011-10-07 13:02:22.656859+02', '2011-10-07 13:02:30.396118+02', 3, '(6260,3990,0)', 5, -1, NULL);
 INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, location, confidence, reviewer_id, review_time) VALUES (432, 3, '2011-10-11 16:49:08.042058+02', '2011-10-31 10:22:37.263519+01', 3, '(2640,3450,0)', 5, -1, NULL);
 INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, location, confidence, reviewer_id, review_time) VALUES (2400, 3, '2011-12-09 14:01:43.965389+01', '2011-12-09 14:01:43.965389+01', 3, '(3400,5620,0)', 5, -1, NULL);
+INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, location, confidence, reviewer_id, review_time) VALUES (2401, 3, '2011-12-09 14:01:44.965389+01', '2011-12-09 14:01:44.965389+01', 3, '(3401,5621,0)', 5, -1, NULL);
 INSERT INTO project (id, title, public, wiki_base_url) VALUES (1, 'Default Project', true, NULL);
 INSERT INTO project (id, title, public, wiki_base_url) VALUES (2, 'Evaluation data set', true, NULL);
 INSERT INTO project (id, title, public, wiki_base_url) VALUES (3, 'Focussed Ion Beam (FIB)', true, NULL);

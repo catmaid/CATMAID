@@ -1,11 +1,13 @@
 from collections import defaultdict
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction, connection
-from django.http import HttpResponse, Http404
 from django.db.models import Count
+from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import Project, Stack, Class, ClassInstance, \
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode, \
     Connector, User, Textlabel, Location, TreenodeConnector, Double3D
+from vncbrowser.transaction import reportable_commit_on_success_transaction
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional, \
     catmaid_login_required
 from common import insert_into_log
@@ -78,6 +80,7 @@ def labels_all(request, project_id=None, logged_in_user=None):
 
 
 @catmaid_login_required
+@reportable_commit_on_success_transaction
 def labels_for_node(request, project_id=None, ntype=None, location_id=None, logged_in_user=None):
     if ntype == 'treenode':
         qs = TreenodeClassInstance.objects.filter(
@@ -124,7 +127,7 @@ def labels_for_nodes(request, project_id=None, logged_in_user=None):
 
 
 @catmaid_can_edit_project
-@transaction.commit_on_success
+@reportable_commit_on_success_transaction
 def label_update(request, project_id=None, location_id=None, ntype=None, logged_in_user=None):
     labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
     p = get_object_or_404(Project, pk=project_id)
@@ -199,7 +202,7 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user
 
 
 @catmaid_can_edit_project
-@transaction.commit_on_success
+@reportable_commit_on_success_transaction
 def create_connector(request, project_id=None, logged_in_user=None):
     query_parameters = {}
     default_values = {'x': 0, 'y': 0, 'z': 0, 'confidence': 5}
@@ -232,35 +235,50 @@ def delete_connector(request, project_id=None, logged_in_user=None):
 
 
 @catmaid_login_required
-@transaction.commit_on_success
+@reportable_commit_on_success_transaction
 def create_link(request, project_id=None, logged_in_user=None):
     from_id = request.POST.get('from_id', 0)
     to_id = request.POST.get('to_id', 0)
     link_type = request.POST.get('link_type', 'none')
-    project = get_object_or_404(Project, pk=project_id)
-
-    link_id_map = get_relation_to_id_map(project_id)
-    if link_type not in link_id_map:
-        return HttpResponse(json.dumps({'error': 'Can not find %s relation for this project.' % link_type}))
-    relation_id = link_id_map[link_type]
 
     try:
-        skeleton_id = Treenode.objects.filter(project=project, id=from_id).get()
-    except MultipleObjectsReturned:
+        project = Project.objects.get(id=project_id)
+        relation = Relation.objects.get(project=project, relation_name=link_type)
+        from_treenode = Treenode.objects.get(id=from_id)
+        to_connector = Connector.objects.get(id=to_id, project=project)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(json.dumps({'error': e.message}))
+
+    related_skeleton_count = ClassInstance.objects.filter(project=project, id=from_treenode.skeleton.id).count()
+    if (related_skeleton_count > 1):
+        # I don't see the utility of this check, think it can only happen if
+        # treenodes with non-unique IDs exist in DB. Duplicating it from PHP
+        # though.
         return HttpResponse(json.dumps({'error': 'Multiple rows for treenode with ID #%s found' % from_id}))
-    except Treenode.DoesNotExist:
+    elif (related_skeleton_count == 0):
         return HttpResponse(json.dumps({'error': 'Failed to retrieve skeleton id of treenode #%s' % from_id}))
 
     if (link_type == 'presynaptic_to'):
         # Enforce only one presynaptic link
-        connector = Connector
-        presyn_links = TreenodeConnector.objects.filter(project=project, )
+        presyn_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation=relation)
+        if (presyn_links.count() != 0):
+            return HttpResponse(json.dumps({'error': 'Connector %s does not have zero presynaptic connections.' % to_id}))
 
+    TreenodeConnector(
+            user=logged_in_user,
+            project=project,
+            relation=relation,
+            treenode=from_treenode,  # treenode_id = from_id
+            skeleton=from_treenode.skeleton,  # treenode.skeleton_id where treenode.id = from_id
+            connector=to_connector  # connector_id = to_id
+            ).save()
+
+    return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
 
 @catmaid_can_edit_project
 @transaction.commit_on_success
-def update_confidence(request, project_id=None, logged_in_user=None, node=None):
+def update_confidence(request, project_id=None, logged_in_user=None, node=0):
     new_confidence = request.POST.get('new_confidence', None)
     if (new_confidence == None):
         return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
@@ -269,10 +287,7 @@ def update_confidence(request, project_id=None, logged_in_user=None, node=None):
         if (parsed_confidence not in range(1, 6)):
             return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
 
-    if (node == None):
-        tnid = 0  # Replaced PHP function defaulted to this if no value was given
-    else:
-        tnid = int(node)
+    tnid = int(node)
 
     if (request.POST.get('to_connector', 'false') == 'true'):
         toUpdate = TreenodeConnector.objects.filter(

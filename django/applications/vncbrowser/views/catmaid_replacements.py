@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 from vncbrowser.models import Project, Stack, Class, ClassInstance, \
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode, \
     Connector, User, Textlabel, Location, TreenodeConnector, Double3D
-from vncbrowser.transaction import reportable_commit_on_success_transaction
+from vncbrowser.transaction import transaction_reportable_commit_on_success
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional, \
     catmaid_login_required
 from common import insert_into_log
@@ -80,7 +80,7 @@ def labels_all(request, project_id=None, logged_in_user=None):
 
 
 @catmaid_login_required
-@reportable_commit_on_success_transaction
+@transaction_reportable_commit_on_success
 def labels_for_node(request, project_id=None, ntype=None, location_id=None, logged_in_user=None):
     if ntype == 'treenode':
         qs = TreenodeClassInstance.objects.filter(
@@ -127,7 +127,7 @@ def labels_for_nodes(request, project_id=None, logged_in_user=None):
 
 
 @catmaid_can_edit_project
-@reportable_commit_on_success_transaction
+@transaction_reportable_commit_on_success
 def label_update(request, project_id=None, location_id=None, ntype=None, logged_in_user=None):
     labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
     p = get_object_or_404(Project, pk=project_id)
@@ -202,7 +202,7 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user
 
 
 @catmaid_can_edit_project
-@reportable_commit_on_success_transaction
+@transaction_reportable_commit_on_success
 def create_connector(request, project_id=None, logged_in_user=None):
     query_parameters = {}
     default_values = {'x': 0, 'y': 0, 'z': 0, 'confidence': 5}
@@ -235,7 +235,7 @@ def delete_connector(request, project_id=None, logged_in_user=None):
 
 
 @catmaid_login_required
-@reportable_commit_on_success_transaction
+@transaction_reportable_commit_on_success
 def create_link(request, project_id=None, logged_in_user=None):
     from_id = request.POST.get('from_id', 0)
     to_id = request.POST.get('to_id', 0)

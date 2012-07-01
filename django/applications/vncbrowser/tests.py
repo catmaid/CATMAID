@@ -12,7 +12,7 @@ import datetime
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, Session
 from models import Treenode, Connector, TreenodeConnector, User
-from transaction import RollbackAndReport, reportable_commit_on_success_transaction
+from transaction import RollbackAndReport, transaction_reportable_commit_on_success
 
 
 class SimpleTest(TestCase):
@@ -56,7 +56,7 @@ class TransactionTests(TransactionTestCase):
         ensure_schema_exists()
 
     def test_successful_commit(self):
-        @reportable_commit_on_success_transaction
+        @transaction_reportable_commit_on_success
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
             return HttpResponse(json.dumps({'message': 'success'}))
@@ -70,7 +70,7 @@ class TransactionTests(TransactionTestCase):
         self.assertEqual(expected_result, parsed_response)
 
     def test_report_error(self):
-        @reportable_commit_on_success_transaction
+        @transaction_reportable_commit_on_success
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
             raise RollbackAndReport({'error': 'catch me if you can'})
@@ -85,7 +85,7 @@ class TransactionTests(TransactionTestCase):
         self.assertEqual(expected_result, parsed_response)
 
     def test_catch_404(self):
-        @reportable_commit_on_success_transaction
+        @transaction_reportable_commit_on_success
         def insert_user():
             get_object_or_404(User, pk=12)
             return HttpResponse(json.dumps({'should not': 'return this'}))
@@ -99,7 +99,7 @@ class TransactionTests(TransactionTestCase):
         self.assertEqual(0, User.objects.all().count())
 
     def test_fail_unexpectedly(self):
-        @reportable_commit_on_success_transaction
+        @transaction_reportable_commit_on_success
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
             raise Exception()

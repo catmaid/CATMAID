@@ -12,7 +12,7 @@ class RollbackAndReport(Exception):
         return self.error_report_dict
 
 
-def reportable_commit_on_success_transaction(f):
+def transaction_reportable_commit_on_success(f):
     """
     This decorator works as django's transaction.commit_on_success
     but with added functionality. For any raised exception, all

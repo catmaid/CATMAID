@@ -1,4 +1,3 @@
-import datetime
 import json
 
 from collections import defaultdict
@@ -9,7 +8,8 @@ from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import Project, Stack, Class, ClassInstance, \
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode, \
-    Connector, User, Textlabel, Location, TreenodeConnector, Double3D
+    Connector, User, Textlabel, Location, TreenodeConnector, Double3D, \
+    TextlabelLocation
 from vncbrowser.transaction import transaction_reportable_commit_on_success
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional, \
     catmaid_login_required
@@ -278,8 +278,51 @@ def create_link(request, project_id=None, logged_in_user=None):
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
 
-@catmaid_login_required
+@catmaid_can_edit_project
 @transaction_reportable_commit_on_success
+def create_textlabel(request, project_id=None, logged_in_user=None):
+    params = {}
+    param_defaults = {
+            'x': 0,
+            'y': 0,
+            'z': 0,
+            'text': 'Edit this text...',
+            'type': 'text',
+            'r': 1,
+            'g': 0.5,
+            'b': 0,
+            'a': 1,
+            'font_name': False,
+            'font_style': False,
+            'font_size': False,
+            'scaling': False}
+    for p in param_defaults.keys():
+        params[p] = request.POST.get(p, param_defaults[p])
+    if (params['type'] != 'bubble'):
+        params['type'] = 'text'
+
+    new_label = Textlabel(
+            text=params['text'],
+            type=params['type'],
+            scaling=params['scaling']
+            )
+    new_label.project_id = project_id
+    if params['font_name']:
+        new_label.font_name = params['font_name']
+    if params['font_style']:
+        new_label.font_style = params['font_style']
+    if params['font_size']:
+        new_label.font_size = params['font_size']
+    new_label.save()
+
+    TextlabelLocation(
+            textlabel=new_label,
+            location=Double3D(float(params['x']), float(params['y']), float(params['z']))).save()
+
+    return HttpResponse(json.dumps({'tid': new_label.id}))
+
+
+@catmaid_login_required
 def most_recent_treenode(request, project_id=None, logged_in_user=None):
     skeleton_id = request.POST.get('skeleton_id', -1)
     treenode_id = request.POST.get('treenode_id', -1)

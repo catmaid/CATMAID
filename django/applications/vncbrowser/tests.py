@@ -12,6 +12,7 @@ import datetime
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, Session
 from models import Treenode, Connector, TreenodeConnector, User
+from models import Textlabel, TextlabelLocation
 from transaction import RollbackAndReport, transaction_reportable_commit_on_success
 
 
@@ -696,6 +697,68 @@ class ViewPageTests(TestCase):
                 }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
+
+    def test_create_textlabel(self):
+        self.fake_authentication()
+
+        label_data = [
+                # param-name, param values
+                ('text',
+                    ['baba tiki dido', 'doop op', '']),
+                ('type',
+                    ['text', 'bubble', 'non-valid-type']),
+                ('font_name',
+                    [False, False, 'Times New Roman']),
+                ('font_style',
+                    [False, 'bold', 'italic']),
+                ('font_size',
+                    [55, 4, False]),
+                ('x',
+                    [1, 2, 3]),
+                ('y',
+                    [1, 100, 233]),
+                ('z',
+                    [1, 0, 555])
+                ]
+
+        label_count = Textlabel.objects.all().count()
+        # Create and test labels
+        for i in range(len(label_data[0][1])):
+            params = {}
+            # Fill request with POST-data
+            for (p, values) in label_data:
+                if values[i]:
+                    params[p] = values[i]
+            response = self.client.post(
+                    '/%d/textlabel/create' % self.test_project_id,
+                    params)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(label_count + 1 + i, Textlabel.objects.all().count())
+            self.assertTrue('tid' in parsed_response.keys())
+            label = get_object_or_404(Textlabel, id=parsed_response['tid'])
+            # label_location = TextlabelLocation.objects.get(textlabel=label.id)
+            # Does not work due to TextlabelLocation table not having an id
+            # column
+
+            # For each attribute, ensure new label is in accord with input
+            # label_location_data = Double3D(x=0, y=0, z=0)
+            for(p, values) in label_data:
+                value = values[i]
+                if (value == False):
+                    continue  # Do not check for default values for now
+
+                if (p == 'type' and value != 'bubble'):
+                    self.assertEqual('text', getattr(label, p))
+                elif (p == 'text' and value == ''):
+                    self.assertEqual('Edit this text...', getattr(label, p))
+                elif (p in ['x', 'y', 'z']):
+                    # setattr(label_location, p, value)
+                    pass
+                else:
+                    self.assertEqual(value, getattr(label, p))
+            # self.assertEqual(label_location_data, label_location.location)
 
     def test_delete_link_success(self):
         self.fake_authentication()

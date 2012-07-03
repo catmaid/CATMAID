@@ -718,7 +718,15 @@ class ViewPageTests(TestCase):
                 ('y',
                     [1, 100, 233]),
                 ('z',
-                    [1, 0, 555])
+                    [1, 0, 555]),
+                ('r',
+                    [1, 2, 3]),
+                ('g',
+                    [3, 4, 5]),
+                ('b',
+                    [5, 7, 9]),
+                ('a',
+                    [225, 225, 225]),
                 ]
 
         label_count = Textlabel.objects.all().count()
@@ -755,6 +763,9 @@ class ViewPageTests(TestCase):
                     self.assertEqual('Edit this text...', getattr(label, p))
                 elif (p in ['x', 'y', 'z']):
                     # setattr(label_location, p, value)
+                    pass
+                elif (p in ['r', 'g', 'b', 'a']):
+                    # Model does not include textlabel colour at the moment
                     pass
                 else:
                     self.assertEqual(value, getattr(label, p))

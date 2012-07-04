@@ -12,7 +12,7 @@ import datetime
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, Session
 from models import Treenode, Connector, TreenodeConnector, User
-from models import Textlabel, TextlabelLocation
+from models import Textlabel
 from transaction import RollbackAndReport, transaction_reportable_commit_on_success
 
 
@@ -770,6 +770,17 @@ class ViewPageTests(TestCase):
                 else:
                     self.assertEqual(value, getattr(label, p))
             # self.assertEqual(label_location_data, label_location.location)
+
+    def test_list_logs(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/logs/list' % self.test_project_id, {
+                    # 'user_id': -1,
+                    })
+        parsed_response = json.loads(response.content)
+        expected_result = {'result': 'Removed treenode to connector link'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
 
     def test_delete_link_success(self):
         self.fake_authentication()

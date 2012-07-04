@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from vncbrowser.models import Project, Stack, Class, ClassInstance, \
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode, \
     Connector, User, Textlabel, Location, TreenodeConnector, Double3D, \
-    TextlabelLocation
+    TextlabelLocation, Log
 from vncbrowser.transaction import transaction_reportable_commit_on_success
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional, \
     catmaid_login_required
@@ -368,6 +368,57 @@ def delete_link(request, project_id=None, logged_in_user=None):
 
     links.delete()
     return HttpResponse(json.dumps({'result': 'Removed treenode to connector link'}))
+
+
+@catmaid_login_required
+@transaction.commit_on_success
+def list_logs(request, project_id=None, logged_in_user=None):
+    user_id = int(request.POST.get('user_id', -1))  # We can see logs for different users
+    display_start = int(request.POST.get('iDisplayStart', 0))
+    display_length = int(request.POST.get('iDisplayLength', -1))
+    if display_length < 0:
+        display_length = 200  # Default number of result rows
+
+    # queried_user = get_object_or_404(User, id=user_id)
+
+    should_sort = request.POST.get('iSortCol_0', False)
+    if should_sort:
+        column_count = int(request.POST.get('iSortingCols', 0))
+        sorting_directions = [int(request.POST.get('iSortDir_%d' % d)) for d in range(column_count)]
+        sorting_directions = map(lambda d: '-' if d == 'DESC' else '', sorting_directions)
+
+        fields = ['user_id', 'operation_type', 'creation_time', 'x', 'y', 'z', 'freetext']
+        sorting_index = [int(request.POST.get('iSortCol_%d' % d)) for d in range(column_count)]
+        sorting_cols = map(lambda i: fields[i], sorting_index)
+
+    log_query = Log.objects.filter(project=project_id)
+    if user_id not in [-1, 0]:
+        log_query = log_query.filter(user=user_id)
+    log_query = log_query.extra(tables=['user'], where=['"log"."user_id" = "user"."id"'], select={
+        'x': '("log"."location")."x"',
+        'y': '("log"."location")."y"',
+        'z': '("log"."location")."z"',
+        'username': '"user"."name"',
+        'timestamp': '''to_char("log"."creation_time", 'DD-MM-YYYY HH24:MI')'''
+        })
+    if should_sort:
+        log_query = log_query.extra(order_by=[di + col for (di, col) in zip(sorting_directions, sorting_cols)])
+
+    result = list(log_query[display_start:display_start + display_length])
+
+    response = {'iTotalRecords': len(result), 'iTotalDisplayRecords': len(result), 'aaData': []}
+    for log in result:
+        response['aaData'] += [
+                log.username,
+                log.operation_type,
+                log.timestamp,
+                log.x,
+                log.y,
+                log.z,
+                log.freetext
+                ]
+
+    return HttpResponse(json.dumps(response))
 
 
 @catmaid_can_edit_project

@@ -72,7 +72,8 @@ urlpatterns += patterns('',
     (r'^(?P<project_id>\d+)/link/create$', 'vncbrowser.views.catmaid_replacements.create_link'),
     (r'^(?P<project_id>\d+)/link/delete$', 'vncbrowser.views.catmaid_replacements.delete_link'),
     (r'^(?P<project_id>\d+)/node/most_recent$', 'vncbrowser.views.catmaid_replacements.most_recent_treenode'),
-    (r'^(?P<project_id>\d+)/textlabel/create$', 'vncbrowser.views.catmaid_replacements.create_textlabel')
+    (r'^(?P<project_id>\d+)/textlabel/create$', 'vncbrowser.views.catmaid_replacements.create_textlabel'),
+    (r'^(?P<project_id>\d+)/logs/list$', 'vncbrowser.views.catmaid_replacements.list_logs')
     )
 
 if settings.DEBUG:

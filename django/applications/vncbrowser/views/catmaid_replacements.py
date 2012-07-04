@@ -348,7 +348,7 @@ def most_recent_treenode(request, project_id=None, logged_in_user=None):
         'y': int(tn.location.y),
         'z': int(tn.location.z),
         # 'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
-        'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f') + tn.most_recent.tzinfo.utcoffset(tn.most_recent),
+        'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f'),
         'type': 'treenode'
         }))
 

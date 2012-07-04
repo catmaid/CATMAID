@@ -384,10 +384,10 @@ def list_logs(request, project_id=None, logged_in_user=None):
     should_sort = request.POST.get('iSortCol_0', False)
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))
-        sorting_directions = [int(request.POST.get('iSortDir_%d' % d)) for d in range(column_count)]
+        sorting_directions = [request.POST.get('iSortDir_%d' % d) for d in range(column_count)]
         sorting_directions = map(lambda d: '-' if d == 'DESC' else '', sorting_directions)
 
-        fields = ['user_id', 'operation_type', 'creation_time', 'x', 'y', 'z', 'freetext']
+        fields = ['user', 'operation_type', 'creation_time', 'x', 'y', 'z', 'freetext']
         sorting_index = [int(request.POST.get('iSortCol_%d' % d)) for d in range(column_count)]
         sorting_cols = map(lambda i: fields[i], sorting_index)
 
@@ -408,7 +408,7 @@ def list_logs(request, project_id=None, logged_in_user=None):
 
     response = {'iTotalRecords': len(result), 'iTotalDisplayRecords': len(result), 'aaData': []}
     for log in result:
-        response['aaData'] += [
+        response['aaData'] += [[
                 log.username,
                 log.operation_type,
                 log.timestamp,
@@ -416,7 +416,7 @@ def list_logs(request, project_id=None, logged_in_user=None):
                 log.y,
                 log.z,
                 log.freetext
-                ]
+                ]]
 
     return HttpResponse(json.dumps(response))
 

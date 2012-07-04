@@ -771,16 +771,90 @@ class ViewPageTests(TestCase):
                     self.assertEqual(value, getattr(label, p))
             # self.assertEqual(label_location_data, label_location.location)
 
-    def test_list_logs(self):
+    log_rows = [
+                    [
+                        'saalfeld',
+                        'create_neuron',
+                        '04-09-2011 13:53',
+                        1.0,
+                        2.0,
+                        3.0,
+                        'Create neuron 1 and skeleton 2'],
+                    [
+                        'test',
+                        'change_confidence',
+                        '04-09-2012 13:53',
+                        1.0,
+                        2.0,
+                        3.0,
+                        'Changed to 4'],
+                    [
+                        'test',
+                        'change_confidence',
+                        '04-07-2012 13:53',
+                        2.0,
+                        2.0,
+                        2.0,
+                        'Changed to 2']
+            ]
+
+    def test_list_logs_user_param(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/logs/list' % self.test_project_id, {'user_id': 1})
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'iTotalDisplayRecords': 1,
+                'iTotalRecords': 1,
+                'aaData': [self.log_rows[0]]
+                }
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_list_logs_sort(self):
         self.fake_authentication()
         response = self.client.post(
                 '/%d/logs/list' % self.test_project_id, {
-                    # 'user_id': -1,
+                    'iSortingCols': 2,
+                    'iSortCol_0': 0,  # user
+                    'iSortDir_0': 'ASC',
+                    'iSortCol_1': 3,  # x
+                    'iSortDir_1': 'DESC'
                     })
         parsed_response = json.loads(response.content)
-        expected_result = {'result': 'Removed treenode to connector link'}
+        expected_result = {
+                'iTotalDisplayRecords': 3,
+                'iTotalRecords': 3,
+                'aaData': [
+                    self.log_rows[0], self.log_rows[2], self.log_rows[1]
+                    ]
+                }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
+
+    def test_list_logs_subset(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/logs/list' % self.test_project_id, {
+                    'iDisplayStart': 1,
+                    'iDisplayLength': 2
+                    })
+        parsed_response = json.loads(response.content)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(2, parsed_response['iTotalDisplayRecords'])
+        self.assertEqual(2, parsed_response['iTotalRecords'])
+
+    def test_list_logs_no_params(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/logs/list' % self.test_project_id, {})
+        parsed_response = json.loads(response.content)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(3, parsed_response['iTotalDisplayRecords'])
+        self.assertEqual(3, parsed_response['iTotalRecords'])
+        self.assertTrue(self.log_rows[0] in parsed_response['aaData'])
+        self.assertTrue(self.log_rows[1] in parsed_response['aaData'])
+        self.assertTrue(self.log_rows[2] in parsed_response['aaData'])
 
     def test_delete_link_success(self):
         self.fake_authentication()

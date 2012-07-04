@@ -181,6 +181,9 @@ INSERT INTO project_user (project_id, user_id, can_edit_any, can_view_any, inver
 INSERT INTO project_user (project_id, user_id, can_edit_any, can_view_any, inverse_mouse_wheel) VALUES (3, 1, true, true, false);
 INSERT INTO project_user (project_id, user_id, can_edit_any, can_view_any, inverse_mouse_wheel) VALUES (3, 3, true, true, false);
 INSERT INTO project_user (project_id, user_id, can_edit_any, can_view_any, inverse_mouse_wheel) VALUES (5, 3, true, true, false);
+INSERT INTO log (user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (1, '2011-09-04 13:53:41.243573+02', '2011-09-04 13:53:41.243573+02', 3, 'create_neuron', '(1,2,3)', 'Create neuron 1 and skeleton 2');
+INSERT INTO log (user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2, '2012-09-04 13:53:41.243573+02', '2012-09-04 13:53:41.243573+02', 3, 'change_confidence', '(1,2,3)', 'Changed to 4');
+INSERT INTO log (user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2, '2012-07-04 13:53:41.243573+02', '2012-07-04 13:53:41.243573+02', 3, 'change_confidence', '(2,2,2)', 'Changed to 2');
 INSERT INTO settings (key, value) VALUES ('schema_version', '2012-05-16T12:20:53');
 INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, parent_id, radius, confidence, skeleton_id, reviewer_id, review_time) VALUES (7, 3, '2011-09-04 13:53:41.243573+02', '2011-12-05 19:51:36.955507+01', 3, '(3590,3240,0)', NULL, -1, 5, 1, -1, NULL);
 INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, parent_id, radius, confidence, skeleton_id, reviewer_id, review_time) VALUES (11, 3, '2011-09-04 13:54:16.301746+02', '2011-12-05 19:51:36.955507+01', 3, '(3600,3250,9)', 7, -1, 5, 1, -1, NULL);

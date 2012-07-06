@@ -78,31 +78,30 @@ def create_treenode(request, project_id=None, logged_in_user=None):
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
 
-    if params['parent_id'] != -1:  # A root node and parent node exist
-        try:
+    response_on_error = ''
+
+    try:
+        if params['parent_id'] != -1:  # A root node and parent node exist
             # Retrieve skeleton of parent
+            response_on_error = 'Can not find skeleton for parent treenode %s in this project.' % params['parent_id']
             p_skeleton = TreenodeClassInstance.objects.filter(
                     treenode=['parent_id'],
                     relation=relation_map['element_of'],
                     project=project_id)[0].class_instance
-        except IndexError:
-            return HttpResponse(json.dumps({'error': 'Can not find skeleton for parent treenode %s in this project.' % ['parent_id']}))
 
-        try:
+            response_on_error = 'Could not insert new treenode!'
             new_treenode = insert_new_treenode(params['parent_id'], p_skeleton)
-        except:
-            return HttpResponse(json.dumps({'error': 'Could not insert new treenode!'}))
-        try:
+
+            response_on_error = 'Could not create element_of relation between treenode and skeleton!'
             make_treenode_element_of_skeleton(new_treenode, p_skeleton)
-        except:
-            return HttpResponse(json.dumps({'error': 'Could not create element_of relation between treenode and skeleton!'}))
 
-        return HttpResponse(json.dumps({'treenode_id': new_treenode.id, 'skeleton_id': p_skeleton.id}))
+            return HttpResponse(json.dumps({'treenode_id': new_treenode.id, 'skeleton_id': p_skeleton.id}))
 
-    else:
-        # No parent node: We must create a new root node, which needs a
-        # skeleton and a neuron to belong to.
-        try:
+        else:
+            # No parent node: We must create a new root node, which needs a
+            # skeleton and a neuron to belong to.
+            response_on_error = 'Could not insert new treenode instance!'
+
             new_skeleton = ClassInstance()
             new_skeleton.user = logged_in_user
             new_skeleton.project_id = project_id
@@ -111,32 +110,25 @@ def create_treenode(request, project_id=None, logged_in_user=None):
             new_skeleton.save()
             new_skeleton.name = 'skeleton %d' % new_skeleton.id
             new_skeleton.save()
-        except:
-            return HttpResponse(json.dumps({'error': 'Could not insert new treenode instance!'}))
 
-        if params['useneuron'] != -1:  # A neuron already exists, so we use it
-            try:
+            if params['useneuron'] != -1:  # A neuron already exists, so we use it
+                response_on_error = 'Could not relate the neuron model to the new skeleton!'
                 relate_neuron_to_skeleton(params['useneuron'], new_skeleton)
-            except:
-                return HttpResponse(json.dumps({'error': 'Could not relate the neuron model to the new skeleton!'}))
 
-            try:
+                response_on_error = 'Could not insert new treenode!'
                 new_treenode = insert_new_treenode(None, new_skeleton)
-            except:
-                return HttpResponse(json.dumps({'error': 'Could not insert new treenode!'}))
-            try:
-                make_treenode_element_of_skeleton(new_treenode, new_skeleton)
-            except:
-                return HttpResponse(json.dumps({'error': 'Could not create element_of relation between treenode and skeleton!'}))
 
-            return HttpResponse(json.dumps({
-                'treenode_id': new_treenode.id,
-                'skeleton_id': new_skeleton.id,
-                'neuron_id': params['useneuron']}))
-        else:
-            # A neuron does not exist, therefore we put the new skeleton
-            # into a new neuron, and put the new neuron into the fragments group.
-            try:
+                response_on_error = 'Could not create element_of relation between treenode and skeleton!'
+                make_treenode_element_of_skeleton(new_treenode, new_skeleton)
+
+                return HttpResponse(json.dumps({
+                    'treenode_id': new_treenode.id,
+                    'skeleton_id': new_skeleton.id,
+                    'neuron_id': params['useneuron']}))
+            else:
+                # A neuron does not exist, therefore we put the new skeleton
+                # into a new neuron, and put the new neuron into the fragments group.
+                response_on_error = 'Failed to insert new instance of a neuron.'
                 new_neuron = ClassInstance()
                 new_neuron.user = logged_in_user
                 new_neuron.project_id = project_id
@@ -145,57 +137,45 @@ def create_treenode(request, project_id=None, logged_in_user=None):
                 new_neuron.save()
                 new_neuron.name = 'neuron %d' % new_neuron.id
                 new_neuron.save()
-            except:
-                return HttpResponse(json.dumps({'error': 'Failed to insert new instance of a neuron.'}))
 
-            try:
+                response_on_error = 'Could not relate the neuron model to the new skeleton!'
                 relate_neuron_to_skeleton(new_neuron, new_skeleton)
-            except:
-                return HttpResponse(json.dumps({'error': 'Could not relate the neuron model to the new skeleton!'}))
 
-            # Add neuron to fragments
-            try:
-                fragment_group = ClassInstance.filter(
-                        name=params['targetgroup'],
-                        project=project_id)[0]
-            except IndexError:
-                # If the fragments group does not exist yet, must create it and add it:
+                # Add neuron to fragments
                 try:
+                    fragment_group = ClassInstance.filter(
+                            name=params['targetgroup'],
+                            project=project_id)[0]
+                except IndexError:
+                    # If the fragments group does not exist yet, must create it and add it:
+                    response_on_error = 'Failed to insert new instance of group.'
                     fragment_group = ClassInstance()
                     fragment_group.user = logged_in_user
                     fragment_group.project = project_id
                     fragment_group.class_column = class_map['group']
                     fragment_group.name = params['targetgroup']
                     fragment_group.save()
-                except:
-                    return HttpResponse(json.dumps({'error': 'Failed to insert new instance of group.'}))
 
-                try:
+                    response_on_error = 'Failed to retrieve root.'
                     root = ClassInstance.objects.filter(
                             project=project_id,
                             class_column=class_map['root'])[0]
-                except IndexError:
-                    return HttpResponse(json.dumps({'error': 'Failed to retrieve root.'}))
 
-                try:
+                    response_on_error = 'Failed to insert part_of relation between root node and fragments group.'
                     create_relation(relation_map['part_of'], fragment_group.id, root.id)
-                except:
-                    return HttpResponse(json.dumps({'error': 'Failed to insert part_of relation between root node and fragments group.'}))
 
-            try:
+                response_on_error = 'Failed to insert part_of relation between neuron id and fragments group.'
                 create_relation(relation_map['part_of'], new_neuron.id, fragment_group.id)
-            except:
-                return HttpResponse(json.dumps({'error': 'Failed to insert part_of relation between neuron id and fragments group.'}))
 
-            try:
+                response_on_error = 'Failed to insert instance of treenode.'
                 insert_new_treenode(None, new_skeleton)
-            except:
-                return HttpResponse(json.dumps({'error': 'Failed to insert instance of treenode.'}))
 
-            insert_into_log(project_id, logged_in_user.id, 'create_neuron', new_treenode.location, 'Create neuron %d and skeleton %d' % new_neuron.id, new_skeleton.id)
+                insert_into_log(project_id, logged_in_user.id, 'create_neuron', new_treenode.location, 'Create neuron %d and skeleton %d' % new_neuron.id, new_skeleton.id)
 
-            return HttpResponse(json.dumps({
-                'skeleton_id': new_skeleton.id,
-                'neuron_id': new_neuron.id,
-                'fragmentgroup_id': fragment_group.id
-                }))
+                return HttpResponse(json.dumps({
+                    'skeleton_id': new_skeleton.id,
+                    'neuron_id': new_neuron.id,
+                    'fragmentgroup_id': fragment_group.id
+                    }))
+    except:
+        return HttpResponse(json.dumps({'error': response_on_error}))

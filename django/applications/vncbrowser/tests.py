@@ -10,10 +10,11 @@ import json
 import datetime
 
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
-from models import ClassInstance, Session
+from models import ClassInstance, Session, Log
 from models import Treenode, Connector, TreenodeConnector, User
-from models import Textlabel
+from models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
 from transaction import RollbackAndReport, transaction_reportable_commit_on_success
+from views.catmaid_replacements import get_relation_to_id_map, get_class_to_id_map
 
 
 class SimpleTest(TestCase):
@@ -855,6 +856,223 @@ class ViewPageTests(TestCase):
         self.assertTrue(self.log_rows[0] in parsed_response['aaData'])
         self.assertTrue(self.log_rows[1] in parsed_response['aaData'])
         self.assertTrue(self.log_rows[2] in parsed_response['aaData'])
+
+    def test_create_treenode_without_existing_fragment_group(self):
+        self.fake_authentication()
+        relation_map = get_relation_to_id_map(self.test_project_id)
+        class_map = get_class_to_id_map(self.test_project_id)
+        group_id = 4
+        group_name = 'Fragments'
+        count_treenodes = lambda: Treenode.objects.all().count()
+        count_tci_relations = lambda: TreenodeClassInstance.objects.all().count()
+        count_skeletons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['skeleton']).count()
+        count_neurons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['neuron']).count()
+
+        treenode_count = count_treenodes()
+        relation_count = count_tci_relations()
+        skeleton_count = count_skeletons()
+        neuron_count = count_neurons()
+
+        response = self.client.post('/%d/treenode/create' % self.test_project_id, {
+            'x': 5,
+            'y': 10,
+            'z': 15,
+            'confidence': 5,
+            'parent_id': -1,
+            'targetgroup': group_name,
+            'radius': 2})
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue('treenode_id' in parsed_response)
+        self.assertTrue('skeleton_id' in parsed_response)
+        self.assertEqual(group_id, int(parsed_response['fragmentgroup_id']))
+
+        self.assertEqual(treenode_count + 1, count_treenodes())
+        self.assertEqual(relation_count + 1, count_tci_relations())
+        self.assertEqual(skeleton_count + 1, count_skeletons())
+        self.assertEqual(neuron_count + 1, count_neurons())
+
+        treenode_skeleton_relation = TreenodeClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['element_of'],
+                treenode=parsed_response['treenode_id'],
+                class_instance=parsed_response['skeleton_id'])
+        neuron_skeleton_relation = ClassInstanceClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['model_of'],
+                class_instance_a=parsed_response['skeleton_id'],
+                class_instance_b=parsed_response['neuron_id'])
+        neuron_fragments_relation = ClassInstanceClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['part_of'],
+                class_instance_a=parsed_response['neuron_id'],
+                class_instance_b=group_id)
+        neuron_log = Log.objects.filter(
+                project=self.test_project_id,
+                operation_type='create_neuron',
+                freetext='Create neuron %s and skeleton %s' % (parsed_response['neuron_id'], parsed_response['skeleton_id']))
+
+        self.assertEqual(1, treenode_skeleton_relation.count())
+        self.assertEqual(1, neuron_skeleton_relation.count())
+        self.assertEqual(1, neuron_fragments_relation.count())
+        self.assertEqual(1, neuron_log.count())
+        neuron_log_location = neuron_log[0].location
+        self.assertEqual(5, neuron_log_location.x)
+        self.assertEqual(10, neuron_log_location.y)
+        self.assertEqual(15, neuron_log_location.z)
+
+    def test_create_treenode_with_existing_fragment_group(self):
+        self.fake_authentication()
+        relation_map = get_relation_to_id_map(self.test_project_id)
+        class_map = get_class_to_id_map(self.test_project_id)
+        group_id = 4
+        group_name = 'Fragments'
+        count_treenodes = lambda: Treenode.objects.all().count()
+        count_tci_relations = lambda: TreenodeClassInstance.objects.all().count()
+        count_skeletons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['skeleton']).count()
+        count_neurons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['neuron']).count()
+
+        treenode_count = count_treenodes()
+        relation_count = count_tci_relations()
+        skeleton_count = count_skeletons()
+        neuron_count = count_neurons()
+
+        response = self.client.post('/%d/treenode/create' % self.test_project_id, {
+            'x': 5,
+            'y': 10,
+            'z': 15,
+            'confidence': 5,
+            'parent_id': -1,
+            'targetgroup': group_name,
+            'radius': 2})
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue('treenode_id' in parsed_response)
+        self.assertTrue('skeleton_id' in parsed_response)
+        self.assertEqual(group_id, int(parsed_response['fragmentgroup_id']))
+
+        self.assertEqual(treenode_count + 1, count_treenodes())
+        self.assertEqual(relation_count + 1, count_tci_relations())
+        self.assertEqual(skeleton_count + 1, count_skeletons())
+        self.assertEqual(neuron_count + 1, count_neurons())
+
+        treenode_skeleton_relation = TreenodeClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['element_of'],
+                treenode=parsed_response['treenode_id'],
+                class_instance=parsed_response['skeleton_id'])
+        neuron_skeleton_relation = ClassInstanceClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['model_of'],
+                class_instance_a=parsed_response['skeleton_id'],
+                class_instance_b=parsed_response['neuron_id'])
+        neuron_fragments_relation = ClassInstanceClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['part_of'],
+                class_instance_a=parsed_response['neuron_id'],
+                class_instance_b=group_id)
+        neuron_log = Log.objects.filter(
+                project=self.test_project_id,
+                operation_type='create_neuron',
+                freetext='Create neuron %s and skeleton %s' % (parsed_response['neuron_id'], parsed_response['skeleton_id']))
+
+        self.assertEqual(1, treenode_skeleton_relation.count())
+        self.assertEqual(1, neuron_skeleton_relation.count())
+        self.assertEqual(1, neuron_fragments_relation.count())
+        self.assertEqual(1, neuron_log.count())
+        neuron_log_location = neuron_log[0].location
+        self.assertEqual(5, neuron_log_location.x)
+        self.assertEqual(10, neuron_log_location.y)
+        self.assertEqual(15, neuron_log_location.z)
+
+    def test_create_treenode_with_existing_neuron(self):
+        self.fake_authentication()
+        relation_map = get_relation_to_id_map(self.test_project_id)
+        class_map = get_class_to_id_map(self.test_project_id)
+        neuron_id = 2389
+        count_skeletons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['skeleton']).count()
+        count_treenodes = lambda: Treenode.objects.all().count()
+        count_tci_relations = lambda: TreenodeClassInstance.objects.all().count()
+
+        treenode_count = count_treenodes()
+        relation_count = count_tci_relations()
+        skeleton_count = count_skeletons()
+
+        response = self.client.post('/%d/treenode/create' % self.test_project_id, {
+            'x': 5,
+            'y': 10,
+            'z': 15,
+            'confidence': 5,
+            'parent_id': -1,
+            'useneuron': neuron_id,
+            'radius': 2})
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue('treenode_id' in parsed_response)
+        self.assertTrue('skeleton_id' in parsed_response)
+        self.assertEqual(neuron_id, int(parsed_response['neuron_id']))
+
+        self.assertEqual(treenode_count + 1, count_treenodes())
+        self.assertEqual(relation_count + 1, count_tci_relations())
+        self.assertEqual(skeleton_count + 1, count_skeletons())
+
+        treenode_skeleton_relation = TreenodeClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['element_of'],
+                treenode=parsed_response['treenode_id'],
+                class_instance=parsed_response['skeleton_id'])
+        neuron_skeleton_relation = ClassInstanceClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['model_of'],
+                class_instance_a=parsed_response['skeleton_id'],
+                class_instance_b=neuron_id)
+
+        self.assertEqual(1, treenode_skeleton_relation.count())
+        self.assertEqual(1, neuron_skeleton_relation.count())
+
+    def test_create_treenode_with_existing_parent(self):
+        self.fake_authentication()
+        relation_map = get_relation_to_id_map(self.test_project_id)
+        parent_id = 7
+        parent_skeleton = TreenodeClassInstance.objects.filter(
+                treenode=parent_id,
+                relation=relation_map['element_of'],
+                project=self.test_project_id)[0].class_instance
+        treenode_count = Treenode.objects.all().count()
+        relation_count = TreenodeClassInstance.objects.all().count()
+        response = self.client.post('/%d/treenode/create' % self.test_project_id, {
+            'x': 5,
+            'y': 10,
+            'z': 15,
+            'confidence': 5,
+            'parent_id': parent_id,
+            'radius': 2})
+        parsed_response = json.loads(response.content)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue('treenode_id' in parsed_response)
+        self.assertTrue('skeleton_id' in parsed_response)
+        self.assertEqual(parent_skeleton.id, parsed_response['skeleton_id'])
+        self.assertEqual(treenode_count + 1, Treenode.objects.all().count())
+        self.assertEqual(relation_count + 1, TreenodeClassInstance.objects.all().count())
+        treenode_skeleton_relation = TreenodeClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['element_of'],
+                treenode=parsed_response['treenode_id'],
+                class_instance=parent_skeleton)
+        self.assertEqual(1, treenode_skeleton_relation.count())
 
     def test_delete_link_success(self):
         self.fake_authentication()

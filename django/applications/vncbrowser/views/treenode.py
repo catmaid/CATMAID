@@ -149,7 +149,7 @@ def create_treenode(request, project_id=None, logged_in_user=None):
                     response_on_error = 'Failed to insert new instance of group.'
                     fragment_group = ClassInstance()
                     fragment_group.user = logged_in_user
-                    fragment_group.project = project_id
+                    fragment_group.project_id = project_id
                     fragment_group.class_column_id = class_map['group']
                     fragment_group.name = params['targetgroup']
                     fragment_group.save()
@@ -168,7 +168,7 @@ def create_treenode(request, project_id=None, logged_in_user=None):
                 response_on_error = 'Failed to insert instance of treenode.'
                 new_treenode = insert_new_treenode(None, new_skeleton)
 
-                response_on_error = 'Failed to insert insert treenode into the skeleton'
+                response_on_error = 'Failed to insert treenode into the skeleton'
                 make_treenode_element_of_skeleton(new_treenode, new_skeleton)
 
                 response_on_error = 'Failed to write to logs.'
@@ -180,6 +180,5 @@ def create_treenode(request, project_id=None, logged_in_user=None):
                     'neuron_id': new_neuron.id,
                     'fragmentgroup_id': fragment_group.id
                     }))
-    except Exception as e:
-        import ipdb; ipdb.set_trace()
+    except:
         return HttpResponse(json.dumps({'error': response_on_error}))

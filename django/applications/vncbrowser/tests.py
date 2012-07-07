@@ -857,7 +857,7 @@ class ViewPageTests(TestCase):
         self.assertTrue(self.log_rows[1] in parsed_response['aaData'])
         self.assertTrue(self.log_rows[2] in parsed_response['aaData'])
 
-    def test_create_treenode_without_existing_fragment_group(self):
+    def test_create_treenode_with_existing_fragment_group(self):
         self.fake_authentication()
         relation_map = get_relation_to_id_map(self.test_project_id)
         class_map = get_class_to_id_map(self.test_project_id)
@@ -926,12 +926,10 @@ class ViewPageTests(TestCase):
         self.assertEqual(10, neuron_log_location.y)
         self.assertEqual(15, neuron_log_location.z)
 
-    def test_create_treenode_with_existing_fragment_group(self):
+    def test_create_treenode_without_existing_fragment_group(self):
         self.fake_authentication()
         relation_map = get_relation_to_id_map(self.test_project_id)
         class_map = get_class_to_id_map(self.test_project_id)
-        group_id = 4
-        group_name = 'Fragments'
         count_treenodes = lambda: Treenode.objects.all().count()
         count_tci_relations = lambda: TreenodeClassInstance.objects.all().count()
         count_skeletons = lambda: ClassInstance.objects.filter(
@@ -940,7 +938,6 @@ class ViewPageTests(TestCase):
         count_neurons = lambda: ClassInstance.objects.filter(
                 project=self.test_project_id,
                 class_column=class_map['neuron']).count()
-
         treenode_count = count_treenodes()
         relation_count = count_tci_relations()
         skeleton_count = count_skeletons()
@@ -952,14 +949,12 @@ class ViewPageTests(TestCase):
             'z': 15,
             'confidence': 5,
             'parent_id': -1,
-            'targetgroup': group_name,
             'radius': 2})
         parsed_response = json.loads(response.content)
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue('treenode_id' in parsed_response)
         self.assertTrue('skeleton_id' in parsed_response)
-        self.assertEqual(group_id, int(parsed_response['fragmentgroup_id']))
 
         self.assertEqual(treenode_count + 1, count_treenodes())
         self.assertEqual(relation_count + 1, count_tci_relations())
@@ -980,16 +975,31 @@ class ViewPageTests(TestCase):
                 project=self.test_project_id,
                 relation=relation_map['part_of'],
                 class_instance_a=parsed_response['neuron_id'],
-                class_instance_b=group_id)
+                class_instance_b=parsed_response['fragmentgroup_id'])
         neuron_log = Log.objects.filter(
                 project=self.test_project_id,
                 operation_type='create_neuron',
                 freetext='Create neuron %s and skeleton %s' % (parsed_response['neuron_id'], parsed_response['skeleton_id']))
+        fragment_group = ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['group'],
+                id=parsed_response['fragmentgroup_id'])
+
+        root = ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['root'])[0]
+        frag_group_root_relation = ClassInstanceClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['part_of'],
+                class_instance_a=fragment_group[0],
+                class_instance_b=root)
 
         self.assertEqual(1, treenode_skeleton_relation.count())
         self.assertEqual(1, neuron_skeleton_relation.count())
         self.assertEqual(1, neuron_fragments_relation.count())
         self.assertEqual(1, neuron_log.count())
+        self.assertEqual(1, fragment_group.count())
+        self.assertEqual(1, frag_group_root_relation.count())
         neuron_log_location = neuron_log[0].location
         self.assertEqual(5, neuron_log_location.x)
         self.assertEqual(10, neuron_log_location.y)

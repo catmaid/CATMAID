@@ -1084,6 +1084,61 @@ class ViewPageTests(TestCase):
                 class_instance=parent_skeleton)
         self.assertEqual(1, treenode_skeleton_relation.count())
 
+    def test_fail_delete_root_treenode_with_children(self):
+        self.fake_authentication()
+        treenode_id = 367
+
+        tn_count = Treenode.objects.all().count()
+        child_count = Treenode.objects.filter(parent=treenode_id).count()
+        response = self.client.post(
+                '/%d/treenode/delete' % self.test_project_id,
+                {'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': "You can't delete the root node when it has children."}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(1, Treenode.objects.filter(id=treenode_id).count())
+        self.assertEqual(tn_count, Treenode.objects.all().count())
+        self.assertEqual(child_count, Treenode.objects.filter(parent=treenode_id).count())
+
+    def test_delete_non_root_non_parent_treenode(self):
+        self.fake_authentication()
+        treenode_id = 349
+
+        tn_count = Treenode.objects.all().count()
+        response = self.client.post(
+                '/%d/treenode/delete' % self.test_project_id,
+                {'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'Removed treenode successfully.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
+        self.assertEqual(tn_count - 1, Treenode.objects.all().count())
+
+    def test_delete_non_root_treenode(self):
+        self.fake_authentication()
+        treenode_id = 265
+
+        children = Treenode.objects.filter(parent=treenode_id)
+        self.assertTrue(children.count() > 0)
+        tn_count = Treenode.objects.all().count()
+        parent = get_object_or_404(Treenode, id=treenode_id).parent
+
+        response = self.client.post(
+                '/%d/treenode/delete' % self.test_project_id,
+                {'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'Removed treenode successfully.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
+        self.assertEqual(tn_count - 1, Treenode.objects.all().count())
+
+        for child in children:
+            child_after_change = get_object_or_404(Treenode, id=child.id)
+            self.assertEqual(parent, child_after_change.parent)
+
     def test_delete_link_success(self):
         self.fake_authentication()
         connector_id = 356

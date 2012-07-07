@@ -1,9 +1,10 @@
 import json
 
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from vncbrowser.models import ClassInstance, TreenodeClassInstance, Treenode, \
         Double3D, ClassInstanceClassInstance
-from vncbrowser.transaction import transaction_reportable_commit_on_success
+from vncbrowser.transaction import transaction_reportable_commit_on_success, RollbackAndReport
 from vncbrowser.views import catmaid_can_edit_project
 from vncbrowser.views.catmaid_replacements import get_relation_to_id_map, get_class_to_id_map
 from common import insert_into_log
@@ -180,5 +181,92 @@ def create_treenode(request, project_id=None, logged_in_user=None):
                     'neuron_id': new_neuron.id,
                     'fragmentgroup_id': fragment_group.id
                     }))
-    except:
-        return HttpResponse(json.dumps({'error': response_on_error}))
+    except RollbackAndReport:
+        raise
+    except Exception as e:
+        if (response_on_error == ''):
+            raise RollbackAndReport({'error': str(e)})
+        else:
+            raise RollbackAndReport({'error': response_on_error})
+
+
+@catmaid_can_edit_project
+@transaction_reportable_commit_on_success
+def delete_treenode(request, project_id=None, logged_in_user=None):
+    treenode_id = int(request.POST.get('treenode_id', -1))
+    relation_map = get_relation_to_id_map(project_id)
+
+    def get_class_instance_for_treenode(treenode, relation):
+        return TreenodeClassInstance.objects.filter(
+                project=project_id,
+                relation=relation_map[relation],
+                treenode=treenode)
+
+    def get_ci_from_ci(class_instance, relation):
+        return ClassInstanceClassInstance.objects.filter(
+                project=project_id,
+                relation=relation_map[relation],
+                class_instance_a=class_instance)
+
+    response_on_error = ''
+    try:
+        treenode = get_object_or_404(Treenode, id=treenode_id)
+        if (treenode.parent is None):
+            # This treenode is root. Each child treenode needs its own skeleton
+            # that is part_of the original neuron.
+
+            # Retrieve the original neuron id of this treenode's skeleton.
+            response_on_error = 'Could not retrieve skeleton for this treenode.'
+            skeleton_query = get_class_instance_for_treenode(treenode, 'element_of')
+            skeleton = skeleton_query[0]
+
+            # Does not do anything at the moment, will be useful when fixing
+            # TODO below.
+            # response_on_error = 'Could not find neuron for the skeleton.'
+            # neuron = get_ci_from_ci(skeleton, 'model_of')[0]
+
+            response_on_error = 'Could not retrieve children'
+            children = Treenode.objects.filter(
+                    project=project_id,
+                    parent=treenode)
+
+            if (children.count() > 0):
+                raise RollbackAndReport({'error': "You can't delete the root node when it has children."})
+
+            # Remove original skeleton.
+            response_on_error = 'Could not delete skeleton.'
+            skeleton_query.delete()
+
+            # TODO Think we can do this pretty easily, comment from PHP function:
+            # FIXME: do not remove neuron without checking if it has other skeletons!
+            # $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$neu_id);
+
+            # Remove treenode
+            response_on_error = 'Could not delete treenode.'
+            treenode.delete()
+
+            return HttpResponse(json.dumps({'success': 'Removed treenode successfully.'}))
+
+        else:
+            # Treenode is not root it has a parent and children. We need to reconnect
+            # all the children to the parent, and do not update the treenode element_of
+            # skeleton relationship
+
+            response_on_error = 'Could not update parent id of children nodes'
+            children = Treenode.objects.filter(
+                    project=project_id,
+                    parent=treenode).update(parent=treenode.parent)
+
+            response_on_error = 'Could not delete treenode #%d' % treenode.id
+            treenode.delete()
+
+            return HttpResponse(json.dumps({'message': 'Removed treenode successfully.'}))
+
+    except RollbackAndReport:
+        raise
+    except Exception as e:
+        import ipdb; ipdb.set_trace()
+        if (response_on_error == ''):
+            raise RollbackAndReport({'error': str(e)})
+        else:
+            raise RollbackAndReport({'error': response_on_error})

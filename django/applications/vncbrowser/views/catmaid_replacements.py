@@ -379,8 +379,6 @@ def list_logs(request, project_id=None, logged_in_user=None):
     if display_length < 0:
         display_length = 200  # Default number of result rows
 
-    # queried_user = get_object_or_404(User, id=user_id)
-
     should_sort = request.POST.get('iSortCol_0', False)
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))

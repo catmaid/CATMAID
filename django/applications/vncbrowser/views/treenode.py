@@ -265,7 +265,6 @@ def delete_treenode(request, project_id=None, logged_in_user=None):
     except RollbackAndReport:
         raise
     except Exception as e:
-        import ipdb; ipdb.set_trace()
         if (response_on_error == ''):
             raise RollbackAndReport({'error': str(e)})
         else:

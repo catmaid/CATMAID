@@ -547,7 +547,7 @@ class ViewPageTests(TestCase):
                            u'proj_postsyn': 0,
                            u'proj_synapses': 0,
                            u"proj_neurons": 8,
-                           u"proj_treenodes": 84,
+                           u"proj_treenodes": 85,
                            u"proj_skeletons": 7,
                            u"proj_textlabels": 0,
                            u"proj_tags": 4}
@@ -1053,14 +1053,9 @@ class ViewPageTests(TestCase):
         self.assertEqual(1, treenode_skeleton_relation.count())
         self.assertEqual(1, neuron_skeleton_relation.count())
 
-    def test_create_treenode_with_existing_parent(self):
+    def test_create_treenode_with_nonexisting_parent_failure(self):
         self.fake_authentication()
-        relation_map = get_relation_to_id_map(self.test_project_id)
-        parent_id = 7
-        parent_skeleton = TreenodeClassInstance.objects.filter(
-                treenode=parent_id,
-                relation=relation_map['element_of'],
-                project=self.test_project_id)[0].class_instance
+        parent_id = 555555
         treenode_count = Treenode.objects.all().count()
         relation_count = TreenodeClassInstance.objects.all().count()
         response = self.client.post('/%d/treenode/create' % self.test_project_id, {
@@ -1071,20 +1066,13 @@ class ViewPageTests(TestCase):
             'parent_id': parent_id,
             'radius': 2})
         parsed_response = json.loads(response.content)
+        expected_result = {'error': 'Can not find skeleton for parent treenode %d in this project.' % parent_id}
         self.assertEqual(response.status_code, 200)
-        self.assertTrue('treenode_id' in parsed_response)
-        self.assertTrue('skeleton_id' in parsed_response)
-        self.assertEqual(parent_skeleton.id, parsed_response['skeleton_id'])
-        self.assertEqual(treenode_count + 1, Treenode.objects.all().count())
-        self.assertEqual(relation_count + 1, TreenodeClassInstance.objects.all().count())
-        treenode_skeleton_relation = TreenodeClassInstance.objects.filter(
-                project=self.test_project_id,
-                relation=relation_map['element_of'],
-                treenode=parsed_response['treenode_id'],
-                class_instance=parent_skeleton)
-        self.assertEqual(1, treenode_skeleton_relation.count())
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(treenode_count, Treenode.objects.all().count())
+        self.assertEqual(relation_count, TreenodeClassInstance.objects.all().count())
 
-    def test_fail_delete_root_treenode_with_children(self):
+    def test_delete_root_treenode_with_children_failure(self):
         self.fake_authentication()
         treenode_id = 367
 
@@ -1111,6 +1099,26 @@ class ViewPageTests(TestCase):
                 {'treenode_id': treenode_id})
         parsed_response = json.loads(response.content)
         expected_result = {'message': 'Removed treenode successfully.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
+        self.assertEqual(tn_count - 1, Treenode.objects.all().count())
+
+    def test_delete_root_treenode(self):
+        self.fake_authentication()
+        treenode_id = 4000
+
+        treenode = Treenode.objects.filter(id=treenode_id)[0]
+        children = Treenode.objects.filter(parent=treenode_id)
+        self.assertEqual(0, children.count())
+        self.assertEqual(None, treenode.parent)
+        tn_count = Treenode.objects.all().count()
+
+        response = self.client.post(
+                '/%d/treenode/delete' % self.test_project_id,
+                {'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'success': 'Removed treenode successfully.'}
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())

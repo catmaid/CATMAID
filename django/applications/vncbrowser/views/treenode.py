@@ -1,11 +1,12 @@
 import json
 
 from django.http import HttpResponse
+from django.db import connection
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import ClassInstance, TreenodeClassInstance, Treenode, \
         Double3D, ClassInstanceClassInstance
 from vncbrowser.transaction import transaction_reportable_commit_on_success, RollbackAndReport
-from vncbrowser.views import catmaid_can_edit_project
+from vncbrowser.views import catmaid_can_edit_project, catmaid_login_required
 from vncbrowser.views.catmaid_replacements import get_relation_to_id_map, get_class_to_id_map
 from common import insert_into_log
 
@@ -269,3 +270,35 @@ def delete_treenode(request, project_id=None, logged_in_user=None):
             raise RollbackAndReport({'error': str(e)})
         else:
             raise RollbackAndReport({'error': response_on_error})
+
+
+@catmaid_login_required
+@transaction_reportable_commit_on_success
+def treenode_info(request, project_id=None, logged_in_user=None):
+    treenode_id = request.POST.get('treenode_id', -1)
+    if (treenode_id < 0):
+        raise RollbackAndReport({'error': 'A treenode id has not been provided!'})
+
+    c = connection.cursor()
+    # Fetch all the treenodes which are in the bounding box:
+    c.execute("""
+SELECT ci.id as skeleton_id, ci.name as skeleton_name,
+ci2.id as neuron_id, ci2.name as neuron_name
+FROM treenode_class_instance tci, relation r, relation r2,
+class_instance ci, class_instance ci2, class_instance_class_instance cici
+WHERE ci.project_id = %s AND
+tci.relation_id = r.id AND r.relation_name = 'element_of' AND
+tci.treenode_id = %s AND ci.id = tci.class_instance_id AND
+ci.id = cici.class_instance_a AND ci2.id = cici.class_instance_b AND
+cici.relation_id = r2.id AND r2.relation_name = 'model_of'
+                            """, (project_id, treenode_id))
+    results = [
+            dict(zip([col[0] for col in c.description], row))
+            for row in c.fetchall()
+            ]
+    if (len(results) > 1):
+        raise RollbackAndReport({'error': 'Found more than one skeleton and neuron for treenode %s' % treenode_id})
+    elif (len(results) == 0):
+        raise RollbackAndReport({'error': 'No skeleton and neuron for treenode %s' % treenode_id})
+    else:
+        return HttpResponse(json.dumps(results[0]))

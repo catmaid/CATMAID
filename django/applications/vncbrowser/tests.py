@@ -1163,6 +1163,30 @@ class ViewPageTests(TestCase):
         self.assertEqual(0, TreenodeConnector.objects.filter(connector=connector_id, treenode=treenode_id).count())
         self.assertEqual(tc_count - 1, TreenodeConnector.objects.all().count())
 
+    def test_treenode_info_nonexisting_treenode_failure(self):
+        self.fake_authentication()
+        treenode_id = 55555
+
+        response = self.client.post(
+                '/%d/treenode/info' % self.test_project_id,
+                {'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'No skeleton and neuron for treenode %s' % treenode_id}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_treenode_info(self):
+        self.fake_authentication()
+        treenode_id = 239
+
+        response = self.client.post(
+                '/%d/treenode/info' % self.test_project_id,
+                {'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'skeleton_id': 235, 'neuron_id': 233, 'skeleton_name': 'skeleton 235', 'neuron_name': 'branched neuron'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
     def test_create_postsynaptic_link_success(self):
         from_id = 237
         to_id = 432

@@ -281,6 +281,7 @@ def treenode_info(request, project_id=None, logged_in_user=None):
 
     c = connection.cursor()
     # Fetch all the treenodes which are in the bounding box:
+    # (use raw SQL since we are returning values from several different models)
     c.execute("""
 SELECT ci.id as skeleton_id, ci.name as skeleton_name,
 ci2.id as neuron_id, ci2.name as neuron_name

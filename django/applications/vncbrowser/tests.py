@@ -1,6 +1,8 @@
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
+from django.http import HttpResponse
 from django.db import connection
+from django.shortcuts import get_object_or_404
 import os
 import re
 import urllib
@@ -8,8 +10,11 @@ import json
 import datetime
 
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
-from models import ClassInstance, Session
-from models import Treenode, Connector, TreenodeConnector
+from models import ClassInstance, Session, Log
+from models import Treenode, Connector, TreenodeConnector, User
+from models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
+from transaction import RollbackAndReport, transaction_reportable_commit_on_success
+from views.catmaid_replacements import get_relation_to_id_map, get_class_to_id_map
 
 
 class SimpleTest(TestCase):
@@ -45,6 +50,67 @@ def add_example_data():
     current_directory = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(current_directory, "data.sql")) as fp:
         cursor.execute(fp.read())
+
+
+class TransactionTests(TransactionTestCase):
+
+    def setUp(self):
+        ensure_schema_exists()
+
+    def test_successful_commit(self):
+        @transaction_reportable_commit_on_success
+        def insert_user():
+            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
+            return HttpResponse(json.dumps({'message': 'success'}))
+
+        User.objects.all().delete()
+        response = insert_user()
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'success'}
+        self.assertEqual(1, User.objects.all().count())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_report_error(self):
+        @transaction_reportable_commit_on_success
+        def insert_user():
+            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
+            raise RollbackAndReport({'error': 'catch me if you can'})
+            return HttpResponse(json.dumps({'should not': 'return this'}))
+
+        User.objects.all().delete()
+        response = insert_user()
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'catch me if you can'}
+        self.assertEqual(0, User.objects.all().count())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_catch_404(self):
+        @transaction_reportable_commit_on_success
+        def insert_user():
+            get_object_or_404(User, pk=12)
+            return HttpResponse(json.dumps({'should not': 'return this'}))
+
+        User.objects.all().delete()
+        response = insert_user()
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'No User matches the given query.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(0, User.objects.all().count())
+
+    def test_fail_unexpectedly(self):
+        @transaction_reportable_commit_on_success
+        def insert_user():
+            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
+            raise Exception()
+            return HttpResponse(json.dumps({'should not': 'return this'}))
+
+        User.objects.all().delete()
+        with self.assertRaises(Exception):
+            insert_user()
+        self.assertEqual(0, User.objects.all().count())
 
 
 class InsertionTest(TestCase):
@@ -467,8 +533,8 @@ class ViewPageTests(TestCase):
         for t in values_and_users:
             if t[0] == 6:
                 self.assertEqual(t[1], 'test (6)')
-            elif t[0] == 78:
-                self.assertEqual(t[1], 'gerhard (78)')
+            elif t[0] == 79:
+                self.assertEqual(t[1], 'gerhard (79)')
             else:
                 raise Exception("Unexpected value in returned stats: " + str(t))
 
@@ -481,7 +547,7 @@ class ViewPageTests(TestCase):
                            u'proj_postsyn': 0,
                            u'proj_synapses': 0,
                            u"proj_neurons": 8,
-                           u"proj_treenodes": 84,
+                           u"proj_treenodes": 85,
                            u"proj_skeletons": 7,
                            u"proj_textlabels": 0,
                            u"proj_tags": 4}
@@ -589,6 +655,625 @@ class ViewPageTests(TestCase):
         self.assertEqual(treenode_connector_count - 3, TreenodeConnector.objects.all().count())
         self.assertEqual(0, Connector.objects.filter(id=connector_id).count())
         self.assertEqual(0, TreenodeConnector.objects.filter(connector=connector).count())
+
+    def test_delete_link_failure(self):
+        self.fake_authentication()
+        connector_id = 202020
+        treenode_id = 202020
+
+        tc_count = TreenodeConnector.objects.all().count()
+        response = self.client.post(
+                '/%d/link/delete' % self.test_project_id,
+                {'connector_id': connector_id, 'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'Failed to delete connector #%s from geometry domain.' % connector_id}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(tc_count, TreenodeConnector.objects.all().count())
+
+    def test_most_recent_treenode(self):
+        self.fake_authentication()
+
+        most_recent_node_id = 2423
+
+        skeleton_id = 2411
+        treenode_id = 0  # This will not affect anything but the error message
+
+        response = self.client.post(
+                '/%d/node/most_recent' % self.test_project_id,
+                {'skeleton_id': skeleton_id, 'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'id': most_recent_node_id,
+                'skeleton_id': skeleton_id,
+                'x': 4140,
+                'y': 6460,
+                'z': 0,
+                # 'most_recent': '2011-12-09 14:02:11.175624+01',
+                # This was the result from the old PHP script. Wasn't ever used
+                # however, so the change is inconsequential and duplicating the
+                # old functionality hard.
+                'most_recent': '2011-12-09 14:02:11.175624',
+                'type': 'treenode'
+                }
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_create_textlabel(self):
+        self.fake_authentication()
+
+        label_data = [
+                # param-name, param values
+                ('text',
+                    ['baba tiki dido', 'doop op', '']),
+                ('type',
+                    ['text', 'bubble', 'non-valid-type']),
+                ('font_name',
+                    [False, False, 'Times New Roman']),
+                ('font_style',
+                    [False, 'bold', 'italic']),
+                ('font_size',
+                    [55, 4, False]),
+                ('x',
+                    [1, 2, 3]),
+                ('y',
+                    [1, 100, 233]),
+                ('z',
+                    [1, 0, 555]),
+                ('r',
+                    [1, 2, 3]),
+                ('g',
+                    [3, 4, 5]),
+                ('b',
+                    [5, 7, 9]),
+                ('a',
+                    [225, 225, 225]),
+                ]
+
+        label_count = Textlabel.objects.all().count()
+        # Create and test labels
+        for i in range(len(label_data[0][1])):
+            params = {}
+            # Fill request with POST-data
+            for (p, values) in label_data:
+                if values[i]:
+                    params[p] = values[i]
+            response = self.client.post(
+                    '/%d/textlabel/create' % self.test_project_id,
+                    params)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(label_count + 1 + i, Textlabel.objects.all().count())
+            self.assertTrue('tid' in parsed_response.keys())
+            label = get_object_or_404(Textlabel, id=parsed_response['tid'])
+            # label_location = TextlabelLocation.objects.get(textlabel=label.id)
+            # Does not work due to TextlabelLocation table not having an id
+            # column
+
+            # For each attribute, ensure new label is in accord with input
+            # label_location_data = Double3D(x=0, y=0, z=0)
+            for(p, values) in label_data:
+                value = values[i]
+                if (value == False):
+                    continue  # Do not check for default values for now
+
+                if (p == 'type' and value != 'bubble'):
+                    self.assertEqual('text', getattr(label, p))
+                elif (p == 'text' and value == ''):
+                    self.assertEqual('Edit this text...', getattr(label, p))
+                elif (p in ['x', 'y', 'z']):
+                    # setattr(label_location, p, value)
+                    pass
+                elif (p in ['r', 'g', 'b', 'a']):
+                    # Model does not include textlabel colour at the moment
+                    pass
+                else:
+                    self.assertEqual(value, getattr(label, p))
+            # self.assertEqual(label_location_data, label_location.location)
+
+    log_rows = [
+                    [
+                        'saalfeld',
+                        'create_neuron',
+                        '04-09-2011 13:53',
+                        1.0,
+                        2.0,
+                        3.0,
+                        'Create neuron 1 and skeleton 2'],
+                    [
+                        'test',
+                        'change_confidence',
+                        '04-09-2012 13:53',
+                        1.0,
+                        2.0,
+                        3.0,
+                        'Changed to 4'],
+                    [
+                        'test',
+                        'change_confidence',
+                        '04-07-2012 13:53',
+                        2.0,
+                        2.0,
+                        2.0,
+                        'Changed to 2']
+            ]
+
+    def test_list_logs_user_param(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/logs/list' % self.test_project_id, {'user_id': 1})
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'iTotalDisplayRecords': 1,
+                'iTotalRecords': 1,
+                'aaData': [self.log_rows[0]]
+                }
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_list_logs_sort(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/logs/list' % self.test_project_id, {
+                    'iSortingCols': 2,
+                    'iSortCol_0': 0,  # user
+                    'iSortDir_0': 'ASC',
+                    'iSortCol_1': 3,  # x
+                    'iSortDir_1': 'DESC'
+                    })
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'iTotalDisplayRecords': 3,
+                'iTotalRecords': 3,
+                'aaData': [
+                    self.log_rows[0], self.log_rows[2], self.log_rows[1]
+                    ]
+                }
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_list_logs_subset(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/logs/list' % self.test_project_id, {
+                    'iDisplayStart': 1,
+                    'iDisplayLength': 2
+                    })
+        parsed_response = json.loads(response.content)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(2, parsed_response['iTotalDisplayRecords'])
+        self.assertEqual(2, parsed_response['iTotalRecords'])
+
+    def test_list_logs_no_params(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/logs/list' % self.test_project_id, {})
+        parsed_response = json.loads(response.content)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(3, parsed_response['iTotalDisplayRecords'])
+        self.assertEqual(3, parsed_response['iTotalRecords'])
+        self.assertTrue(self.log_rows[0] in parsed_response['aaData'])
+        self.assertTrue(self.log_rows[1] in parsed_response['aaData'])
+        self.assertTrue(self.log_rows[2] in parsed_response['aaData'])
+
+    def test_create_treenode_with_existing_fragment_group(self):
+        self.fake_authentication()
+        relation_map = get_relation_to_id_map(self.test_project_id)
+        class_map = get_class_to_id_map(self.test_project_id)
+        group_id = 4
+        group_name = 'Fragments'
+        count_treenodes = lambda: Treenode.objects.all().count()
+        count_tci_relations = lambda: TreenodeClassInstance.objects.all().count()
+        count_skeletons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['skeleton']).count()
+        count_neurons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['neuron']).count()
+
+        treenode_count = count_treenodes()
+        relation_count = count_tci_relations()
+        skeleton_count = count_skeletons()
+        neuron_count = count_neurons()
+
+        response = self.client.post('/%d/treenode/create' % self.test_project_id, {
+            'x': 5,
+            'y': 10,
+            'z': 15,
+            'confidence': 5,
+            'parent_id': -1,
+            'targetgroup': group_name,
+            'radius': 2})
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue('treenode_id' in parsed_response)
+        self.assertTrue('skeleton_id' in parsed_response)
+        self.assertEqual(group_id, int(parsed_response['fragmentgroup_id']))
+
+        self.assertEqual(treenode_count + 1, count_treenodes())
+        self.assertEqual(relation_count + 1, count_tci_relations())
+        self.assertEqual(skeleton_count + 1, count_skeletons())
+        self.assertEqual(neuron_count + 1, count_neurons())
+
+        treenode_skeleton_relation = TreenodeClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['element_of'],
+                treenode=parsed_response['treenode_id'],
+                class_instance=parsed_response['skeleton_id'])
+        neuron_skeleton_relation = ClassInstanceClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['model_of'],
+                class_instance_a=parsed_response['skeleton_id'],
+                class_instance_b=parsed_response['neuron_id'])
+        neuron_fragments_relation = ClassInstanceClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['part_of'],
+                class_instance_a=parsed_response['neuron_id'],
+                class_instance_b=group_id)
+        neuron_log = Log.objects.filter(
+                project=self.test_project_id,
+                operation_type='create_neuron',
+                freetext='Create neuron %s and skeleton %s' % (parsed_response['neuron_id'], parsed_response['skeleton_id']))
+
+        self.assertEqual(1, treenode_skeleton_relation.count())
+        self.assertEqual(1, neuron_skeleton_relation.count())
+        self.assertEqual(1, neuron_fragments_relation.count())
+        self.assertEqual(1, neuron_log.count())
+        neuron_log_location = neuron_log[0].location
+        self.assertEqual(5, neuron_log_location.x)
+        self.assertEqual(10, neuron_log_location.y)
+        self.assertEqual(15, neuron_log_location.z)
+
+    def test_create_treenode_without_existing_fragment_group(self):
+        self.fake_authentication()
+        relation_map = get_relation_to_id_map(self.test_project_id)
+        class_map = get_class_to_id_map(self.test_project_id)
+        count_treenodes = lambda: Treenode.objects.all().count()
+        count_tci_relations = lambda: TreenodeClassInstance.objects.all().count()
+        count_skeletons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['skeleton']).count()
+        count_neurons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['neuron']).count()
+        treenode_count = count_treenodes()
+        relation_count = count_tci_relations()
+        skeleton_count = count_skeletons()
+        neuron_count = count_neurons()
+
+        response = self.client.post('/%d/treenode/create' % self.test_project_id, {
+            'x': 5,
+            'y': 10,
+            'z': 15,
+            'confidence': 5,
+            'parent_id': -1,
+            'radius': 2})
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue('treenode_id' in parsed_response)
+        self.assertTrue('skeleton_id' in parsed_response)
+
+        self.assertEqual(treenode_count + 1, count_treenodes())
+        self.assertEqual(relation_count + 1, count_tci_relations())
+        self.assertEqual(skeleton_count + 1, count_skeletons())
+        self.assertEqual(neuron_count + 1, count_neurons())
+
+        treenode_skeleton_relation = TreenodeClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['element_of'],
+                treenode=parsed_response['treenode_id'],
+                class_instance=parsed_response['skeleton_id'])
+        neuron_skeleton_relation = ClassInstanceClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['model_of'],
+                class_instance_a=parsed_response['skeleton_id'],
+                class_instance_b=parsed_response['neuron_id'])
+        neuron_fragments_relation = ClassInstanceClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['part_of'],
+                class_instance_a=parsed_response['neuron_id'],
+                class_instance_b=parsed_response['fragmentgroup_id'])
+        neuron_log = Log.objects.filter(
+                project=self.test_project_id,
+                operation_type='create_neuron',
+                freetext='Create neuron %s and skeleton %s' % (parsed_response['neuron_id'], parsed_response['skeleton_id']))
+        fragment_group = ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['group'],
+                id=parsed_response['fragmentgroup_id'])
+
+        root = ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['root'])[0]
+        frag_group_root_relation = ClassInstanceClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['part_of'],
+                class_instance_a=fragment_group[0],
+                class_instance_b=root)
+
+        self.assertEqual(1, treenode_skeleton_relation.count())
+        self.assertEqual(1, neuron_skeleton_relation.count())
+        self.assertEqual(1, neuron_fragments_relation.count())
+        self.assertEqual(1, neuron_log.count())
+        self.assertEqual(1, fragment_group.count())
+        self.assertEqual(1, frag_group_root_relation.count())
+        neuron_log_location = neuron_log[0].location
+        self.assertEqual(5, neuron_log_location.x)
+        self.assertEqual(10, neuron_log_location.y)
+        self.assertEqual(15, neuron_log_location.z)
+
+    def test_create_treenode_with_existing_neuron(self):
+        self.fake_authentication()
+        relation_map = get_relation_to_id_map(self.test_project_id)
+        class_map = get_class_to_id_map(self.test_project_id)
+        neuron_id = 2389
+        count_skeletons = lambda: ClassInstance.objects.filter(
+                project=self.test_project_id,
+                class_column=class_map['skeleton']).count()
+        count_treenodes = lambda: Treenode.objects.all().count()
+        count_tci_relations = lambda: TreenodeClassInstance.objects.all().count()
+
+        treenode_count = count_treenodes()
+        relation_count = count_tci_relations()
+        skeleton_count = count_skeletons()
+
+        response = self.client.post('/%d/treenode/create' % self.test_project_id, {
+            'x': 5,
+            'y': 10,
+            'z': 15,
+            'confidence': 5,
+            'parent_id': -1,
+            'useneuron': neuron_id,
+            'radius': 2})
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue('treenode_id' in parsed_response)
+        self.assertTrue('skeleton_id' in parsed_response)
+        self.assertEqual(neuron_id, int(parsed_response['neuron_id']))
+
+        self.assertEqual(treenode_count + 1, count_treenodes())
+        self.assertEqual(relation_count + 1, count_tci_relations())
+        self.assertEqual(skeleton_count + 1, count_skeletons())
+
+        treenode_skeleton_relation = TreenodeClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['element_of'],
+                treenode=parsed_response['treenode_id'],
+                class_instance=parsed_response['skeleton_id'])
+        neuron_skeleton_relation = ClassInstanceClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['model_of'],
+                class_instance_a=parsed_response['skeleton_id'],
+                class_instance_b=neuron_id)
+
+        self.assertEqual(1, treenode_skeleton_relation.count())
+        self.assertEqual(1, neuron_skeleton_relation.count())
+
+    def test_create_treenode_with_nonexisting_parent_failure(self):
+        self.fake_authentication()
+        parent_id = 555555
+        treenode_count = Treenode.objects.all().count()
+        relation_count = TreenodeClassInstance.objects.all().count()
+        response = self.client.post('/%d/treenode/create' % self.test_project_id, {
+            'x': 5,
+            'y': 10,
+            'z': 15,
+            'confidence': 5,
+            'parent_id': parent_id,
+            'radius': 2})
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'Can not find skeleton for parent treenode %d in this project.' % parent_id}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(treenode_count, Treenode.objects.all().count())
+        self.assertEqual(relation_count, TreenodeClassInstance.objects.all().count())
+
+    def test_delete_root_treenode_with_children_failure(self):
+        self.fake_authentication()
+        treenode_id = 367
+
+        tn_count = Treenode.objects.all().count()
+        child_count = Treenode.objects.filter(parent=treenode_id).count()
+        response = self.client.post(
+                '/%d/treenode/delete' % self.test_project_id,
+                {'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': "You can't delete the root node when it has children."}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(1, Treenode.objects.filter(id=treenode_id).count())
+        self.assertEqual(tn_count, Treenode.objects.all().count())
+        self.assertEqual(child_count, Treenode.objects.filter(parent=treenode_id).count())
+
+    def test_delete_non_root_non_parent_treenode(self):
+        self.fake_authentication()
+        treenode_id = 349
+
+        tn_count = Treenode.objects.all().count()
+        response = self.client.post(
+                '/%d/treenode/delete' % self.test_project_id,
+                {'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'Removed treenode successfully.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
+        self.assertEqual(tn_count - 1, Treenode.objects.all().count())
+
+    def test_delete_root_treenode(self):
+        self.fake_authentication()
+        treenode_id = 4000
+
+        treenode = Treenode.objects.filter(id=treenode_id)[0]
+        children = Treenode.objects.filter(parent=treenode_id)
+        self.assertEqual(0, children.count())
+        self.assertEqual(None, treenode.parent)
+        tn_count = Treenode.objects.all().count()
+
+        response = self.client.post(
+                '/%d/treenode/delete' % self.test_project_id,
+                {'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'success': 'Removed treenode successfully.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
+        self.assertEqual(tn_count - 1, Treenode.objects.all().count())
+
+    def test_delete_non_root_treenode(self):
+        self.fake_authentication()
+        treenode_id = 265
+
+        children = Treenode.objects.filter(parent=treenode_id)
+        self.assertTrue(children.count() > 0)
+        tn_count = Treenode.objects.all().count()
+        parent = get_object_or_404(Treenode, id=treenode_id).parent
+
+        response = self.client.post(
+                '/%d/treenode/delete' % self.test_project_id,
+                {'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'Removed treenode successfully.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
+        self.assertEqual(tn_count - 1, Treenode.objects.all().count())
+
+        for child in children:
+            child_after_change = get_object_or_404(Treenode, id=child.id)
+            self.assertEqual(parent, child_after_change.parent)
+
+    def test_delete_link_success(self):
+        self.fake_authentication()
+        connector_id = 356
+        treenode_id = 377
+
+        tc_count = TreenodeConnector.objects.all().count()
+        response = self.client.post(
+                '/%d/link/delete' % self.test_project_id,
+                {'connector_id': connector_id, 'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'result': 'Removed treenode to connector link'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(0, TreenodeConnector.objects.filter(connector=connector_id, treenode=treenode_id).count())
+        self.assertEqual(tc_count - 1, TreenodeConnector.objects.all().count())
+
+    def test_treenode_info_too_many_neurons_failure(self):
+        self.fake_authentication()
+        treenode_id = 55555
+
+        response = self.client.post(
+                '/%d/treenode/info' % self.test_project_id,
+                {'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'No skeleton and neuron for treenode %s' % treenode_id}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_treenode_info_nonexisting_treenode_failure(self):
+        self.fake_authentication()
+        treenode_id = 55555
+
+        response = self.client.post(
+                '/%d/treenode/info' % self.test_project_id,
+                {'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'No skeleton and neuron for treenode %s' % treenode_id}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_treenode_info(self):
+        self.fake_authentication()
+        treenode_id = 239
+
+        response = self.client.post(
+                '/%d/treenode/info' % self.test_project_id,
+                {'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'skeleton_id': 235, 'neuron_id': 233, 'skeleton_name': 'skeleton 235', 'neuron_name': 'branched neuron'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_unread_messages(self):
+        self.fake_authentication()
+
+        response = self.client.post(
+                '/messages/unread', {})
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                '0': {
+                    'action': 'http://www.example.com/message2',
+                    'id': 2,
+                    'text': 'Contents of message 2.',
+                    'time':  '2011-12-20 16:46:01.360422',
+                    'time_formatted': '2011-12-20 16:46:01 CET',
+                    'title': 'Message 2'},
+                '1': {
+                    'action': 'http://www.example.com/message1',
+                    'id': 1,
+                    'text': 'Contents of message 1.',
+                    'time': '2011-12-19 16:46:01.360422',
+                    'time_formatted': '2011-12-19 16:46:01 CET',
+                    'title': 'Message 1'}}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_create_postsynaptic_link_success(self):
+        from_id = 237
+        to_id = 432
+        link_type = 'postsynaptic_to'
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/link/create' % self.test_project_id,
+                {
+                    'from_id': from_id,
+                    'to_id': to_id,
+                    'link_type': link_type
+                    })
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'success'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_create_presynaptic_link_fail_due_to_other_presynaptic_links(self):
+        from_id = 237
+        to_id = 432
+        link_type = 'presynaptic_to'
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/link/create' % self.test_project_id,
+                {
+                    'from_id': from_id,
+                    'to_id': to_id,
+                    'link_type': link_type
+                    })
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'Connector %s does not have zero presynaptic connections.' % to_id}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_create_presynaptic_link_success(self):
+        from_id = 237
+        to_id = 2401
+        link_type = 'presynaptic_to'
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/link/create' % self.test_project_id,
+                {
+                    'from_id': from_id,
+                    'to_id': to_id,
+                    'link_type': link_type
+                    })
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'success'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
 
 """
     def test_node_list(self):

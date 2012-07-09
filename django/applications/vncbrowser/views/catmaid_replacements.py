@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from vncbrowser.models import Project, Stack, Class, ClassInstance, \
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode, \
     Connector, User, Textlabel, Location, TreenodeConnector, Double3D, \
-    TextlabelLocation, Log
+    TextlabelLocation, Log, Message
 from vncbrowser.transaction import transaction_reportable_commit_on_success
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional, \
     catmaid_login_required
@@ -452,6 +452,31 @@ def update_confidence(request, project_id=None, logged_in_user=None, node=0):
         return HttpResponse(json.dumps({'error': 'Failed to update confidence of treenode_connector between treenode %s.' % tnid}))
 
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+
+
+@catmaid_login_required
+def unread_messages(request, project_id=None, logged_in_user=None):
+    messages = Message.objects.filter(
+            user=logged_in_user,
+            read=False).extra(select={
+                'time_formatted': 'to_char("time", \'YYYY-MM-DD HH24:MI:SS TZ\')'})\
+                    .order_by('-time')
+    i = 0
+    formatted_output = {}
+    for message in messages:
+        formatted_output[i] = {
+                'id': message.id,
+                'title': message.title,
+                'action': message.action,
+                'text': message.text,
+                # time does not correspond exactly to PHP version, lacks
+                # timezone postfix. Can't find docs anywhere on how to get it.
+                # Doesn't seem to be used though, luckily.
+                'time': str(message.time),
+                'time_formatted': message.time_formatted
+                }
+        i += 1
+    return HttpResponse(json.dumps(formatted_output))
 
 
 @catmaid_login_required

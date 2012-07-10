@@ -1081,6 +1081,25 @@ ALTER TABLE project_user ADD COLUMN inverse_mouse_wheel boolean DEFAULT FALSE;
 '
 ),
 
+	'2012-07-10T20:43:35' => new Migration(
+		'Add id column to textlabel_location (1)',
+		'
+ALTER TABLE textlabel_location ADD COLUMN id INTEGER;
+CREATE SEQUENCE "textlabel_location_id_seq";
+'
+),
+
+	'2012-07-10T20:44:35' => new Migration(
+		'Add id column to textlabel_location (2)',
+		"
+UPDATE textlabel_location SET id = nextval('textlabel_location_id_seq');
+ALTER TABLE textlabel_location
+  ALTER COLUMN id SET DEFAULT nextval('textlabel_location_id_seq');
+ALTER TABLE textlabel_location ALTER COLUMN id SET NOT NULL;
+ALTER TABLE textlabel_location ADD PRIMARY KEY (id);
+"
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

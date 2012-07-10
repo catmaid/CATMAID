@@ -13,7 +13,7 @@ from vncbrowser.models import Project, Stack, Class, ClassInstance, \
 from vncbrowser.transaction import transaction_reportable_commit_on_success
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional, \
     catmaid_login_required
-from common import insert_into_log
+from common import insert_into_log, makeJSON_legacy_list
 
 
 @catmaid_login_optional
@@ -461,10 +461,9 @@ def unread_messages(request, project_id=None, logged_in_user=None):
             read=False).extra(select={
                 'time_formatted': 'to_char("time", \'YYYY-MM-DD HH24:MI:SS TZ\')'})\
                     .order_by('-time')
-    i = 0
-    formatted_output = {}
-    for message in messages:
-        formatted_output[i] = {
+
+    def message_to_dict(message):
+        return {
                 'id': message.id,
                 'title': message.title,
                 'action': message.action,
@@ -475,8 +474,10 @@ def unread_messages(request, project_id=None, logged_in_user=None):
                 'time': str(message.time),
                 'time_formatted': message.time_formatted
                 }
-        i += 1
-    return HttpResponse(json.dumps(formatted_output))
+
+    messages = map(message_to_dict, messages)
+
+    return HttpResponse(json.dumps(makeJSON_legacy_list(messages)))
 
 
 @catmaid_login_required

@@ -1,15 +1,19 @@
+import json
+
 from collections import defaultdict
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction, connection
-from django.http import HttpResponse, Http404
 from django.db.models import Count
+from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import Project, Stack, Class, ClassInstance, \
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode, \
-    Connector, User, Textlabel, Location, TreenodeConnector, Double3D
+    Connector, User, Textlabel, Location, TreenodeConnector, Double3D, \
+    TextlabelLocation, Log, Message
+from vncbrowser.transaction import transaction_reportable_commit_on_success
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional, \
     catmaid_login_required
 from common import insert_into_log
-import json
 
 
 @catmaid_login_optional
@@ -78,6 +82,7 @@ def labels_all(request, project_id=None, logged_in_user=None):
 
 
 @catmaid_login_required
+@transaction_reportable_commit_on_success
 def labels_for_node(request, project_id=None, ntype=None, location_id=None, logged_in_user=None):
     if ntype == 'treenode':
         qs = TreenodeClassInstance.objects.filter(
@@ -124,7 +129,7 @@ def labels_for_nodes(request, project_id=None, logged_in_user=None):
 
 
 @catmaid_can_edit_project
-@transaction.commit_on_success
+@transaction_reportable_commit_on_success
 def label_update(request, project_id=None, location_id=None, ntype=None, logged_in_user=None):
     labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
     p = get_object_or_404(Project, pk=project_id)
@@ -199,16 +204,12 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user
 
 
 @catmaid_can_edit_project
-@transaction.commit_on_success
+@transaction_reportable_commit_on_success
 def create_connector(request, project_id=None, logged_in_user=None):
     query_parameters = {}
     default_values = {'x': 0, 'y': 0, 'z': 0, 'confidence': 5}
     for p in default_values.keys():
-        query_parameters[p] = request.POST.get(p, None)
-
-    missing_parameters = [p for p, val in query_parameters.iteritems() if val is None]
-    for p in missing_parameters:
-        query_parameters[p] = default_values[p]
+        query_parameters[p] = request.POST.get(p, default_values[p])
 
     parsed_confidence = int(query_parameters['confidence'])
     if (parsed_confidence not in range(1, 6)):
@@ -236,8 +237,191 @@ def delete_connector(request, project_id=None, logged_in_user=None):
 
 
 @catmaid_can_edit_project
+@transaction_reportable_commit_on_success
+def create_link(request, project_id=None, logged_in_user=None):
+    from_id = request.POST.get('from_id', 0)
+    to_id = request.POST.get('to_id', 0)
+    link_type = request.POST.get('link_type', 'none')
+
+    try:
+        project = Project.objects.get(id=project_id)
+        relation = Relation.objects.get(project=project, relation_name=link_type)
+        from_treenode = Treenode.objects.get(id=from_id)
+        to_connector = Connector.objects.get(id=to_id, project=project)
+    except ObjectDoesNotExist as e:
+        return HttpResponse(json.dumps({'error': e.message}))
+
+    related_skeleton_count = ClassInstance.objects.filter(project=project, id=from_treenode.skeleton.id).count()
+    if (related_skeleton_count > 1):
+        # I don't see the utility of this check, think it can only happen if
+        # treenodes with non-unique IDs exist in DB. Duplicating it from PHP
+        # though.
+        return HttpResponse(json.dumps({'error': 'Multiple rows for treenode with ID #%s found' % from_id}))
+    elif (related_skeleton_count == 0):
+        return HttpResponse(json.dumps({'error': 'Failed to retrieve skeleton id of treenode #%s' % from_id}))
+
+    if (link_type == 'presynaptic_to'):
+        # Enforce only one presynaptic link
+        presyn_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation=relation)
+        if (presyn_links.count() != 0):
+            return HttpResponse(json.dumps({'error': 'Connector %s does not have zero presynaptic connections.' % to_id}))
+
+    TreenodeConnector(
+            user=logged_in_user,
+            project=project,
+            relation=relation,
+            treenode=from_treenode,  # treenode_id = from_id
+            skeleton=from_treenode.skeleton,  # treenode.skeleton_id where treenode.id = from_id
+            connector=to_connector  # connector_id = to_id
+            ).save()
+
+    return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+
+
+@catmaid_can_edit_project
+@transaction_reportable_commit_on_success
+def create_textlabel(request, project_id=None, logged_in_user=None):
+    params = {}
+    param_defaults = {
+            'x': 0,
+            'y': 0,
+            'z': 0,
+            'text': 'Edit this text...',
+            'type': 'text',
+            'r': 1,
+            'g': 0.5,
+            'b': 0,
+            'a': 1,
+            'font_name': False,
+            'font_style': False,
+            'font_size': False,
+            'scaling': False}
+    for p in param_defaults.keys():
+        params[p] = request.POST.get(p, param_defaults[p])
+    if (params['type'] != 'bubble'):
+        params['type'] = 'text'
+
+    new_label = Textlabel(
+            text=params['text'],
+            type=params['type'],
+            scaling=params['scaling']
+            )
+    new_label.project_id = project_id
+    if params['font_name']:
+        new_label.font_name = params['font_name']
+    if params['font_style']:
+        new_label.font_style = params['font_style']
+    if params['font_size']:
+        new_label.font_size = params['font_size']
+    new_label.save()
+
+    TextlabelLocation(
+            textlabel=new_label,
+            location=Double3D(float(params['x']), float(params['y']), float(params['z']))).save()
+
+    return HttpResponse(json.dumps({'tid': new_label.id}))
+
+
+@catmaid_login_required
+def most_recent_treenode(request, project_id=None, logged_in_user=None):
+    skeleton_id = request.POST.get('skeleton_id', -1)
+    treenode_id = request.POST.get('treenode_id', -1)
+
+    try:
+        tn = Treenode.objects\
+        .filter(project=project_id,
+                skeleton=skeleton_id,
+                user=logged_in_user)\
+        .extra(select={'most_recent': 'greatest(treenode.creation_time, treenode.edition_time)'})\
+        .extra(order_by=['-most_recent'])[0]
+    except IndexError:
+        # TODO Not sure whether this is correct. This is the only place
+        # where the treenode_id is used. Does it really have anything
+        # to do with the query? The error message doesn't make much sense
+        # either.
+        return HttpResponse(json.dumps({'error': 'No skeleton and neuron found for treenode %s' % treenode_id}))
+
+    return HttpResponse(json.dumps({
+        'id': tn.id,
+        'skeleton_id': tn.skeleton.id,
+        'x': int(tn.location.x),
+        'y': int(tn.location.y),
+        'z': int(tn.location.z),
+        # 'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
+        'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f'),
+        'type': 'treenode'
+        }))
+
+
+@catmaid_can_edit_project
+@transaction_reportable_commit_on_success
+def delete_link(request, project_id=None, logged_in_user=None):
+    connector_id = request.POST.get('connector_id', 0)
+    treenode_id = request.POST.get('treenode_id', 0)
+
+    links = TreenodeConnector.objects.filter(
+            connector=connector_id,
+            treenode=treenode_id)
+
+    if (links.count() == 0):
+        return HttpResponse(json.dumps({'error': 'Failed to delete connector #%s from geometry domain.' % connector_id}))
+
+    links.delete()
+    return HttpResponse(json.dumps({'result': 'Removed treenode to connector link'}))
+
+
+@catmaid_login_required
 @transaction.commit_on_success
-def update_confidence(request, project_id=None, logged_in_user=None, node=None):
+def list_logs(request, project_id=None, logged_in_user=None):
+    user_id = int(request.POST.get('user_id', -1))  # We can see logs for different users
+    display_start = int(request.POST.get('iDisplayStart', 0))
+    display_length = int(request.POST.get('iDisplayLength', -1))
+    if display_length < 0:
+        display_length = 200  # Default number of result rows
+
+    should_sort = request.POST.get('iSortCol_0', False)
+    if should_sort:
+        column_count = int(request.POST.get('iSortingCols', 0))
+        sorting_directions = [request.POST.get('iSortDir_%d' % d) for d in range(column_count)]
+        sorting_directions = map(lambda d: '-' if d == 'DESC' else '', sorting_directions)
+
+        fields = ['user', 'operation_type', 'creation_time', 'x', 'y', 'z', 'freetext']
+        sorting_index = [int(request.POST.get('iSortCol_%d' % d)) for d in range(column_count)]
+        sorting_cols = map(lambda i: fields[i], sorting_index)
+
+    log_query = Log.objects.filter(project=project_id)
+    if user_id not in [-1, 0]:
+        log_query = log_query.filter(user=user_id)
+    log_query = log_query.extra(tables=['user'], where=['"log"."user_id" = "user"."id"'], select={
+        'x': '("log"."location")."x"',
+        'y': '("log"."location")."y"',
+        'z': '("log"."location")."z"',
+        'username': '"user"."name"',
+        'timestamp': '''to_char("log"."creation_time", 'DD-MM-YYYY HH24:MI')'''
+        })
+    if should_sort:
+        log_query = log_query.extra(order_by=[di + col for (di, col) in zip(sorting_directions, sorting_cols)])
+
+    result = list(log_query[display_start:display_start + display_length])
+
+    response = {'iTotalRecords': len(result), 'iTotalDisplayRecords': len(result), 'aaData': []}
+    for log in result:
+        response['aaData'] += [[
+                log.username,
+                log.operation_type,
+                log.timestamp,
+                log.x,
+                log.y,
+                log.z,
+                log.freetext
+                ]]
+
+    return HttpResponse(json.dumps(response))
+
+
+@catmaid_can_edit_project
+@transaction.commit_on_success
+def update_confidence(request, project_id=None, logged_in_user=None, node=0):
     new_confidence = request.POST.get('new_confidence', None)
     if (new_confidence == None):
         return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
@@ -246,10 +430,7 @@ def update_confidence(request, project_id=None, logged_in_user=None, node=None):
         if (parsed_confidence not in range(1, 6)):
             return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
 
-    if (node == None):
-        tnid = 0  # Replaced PHP function defaulted to this if no value was given
-    else:
-        tnid = int(node)
+    tnid = int(node)
 
     if (request.POST.get('to_connector', 'false') == 'true'):
         toUpdate = TreenodeConnector.objects.filter(
@@ -271,6 +452,31 @@ def update_confidence(request, project_id=None, logged_in_user=None, node=None):
         return HttpResponse(json.dumps({'error': 'Failed to update confidence of treenode_connector between treenode %s.' % tnid}))
 
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+
+
+@catmaid_login_required
+def unread_messages(request, project_id=None, logged_in_user=None):
+    messages = Message.objects.filter(
+            user=logged_in_user,
+            read=False).extra(select={
+                'time_formatted': 'to_char("time", \'YYYY-MM-DD HH24:MI:SS TZ\')'})\
+                    .order_by('-time')
+    i = 0
+    formatted_output = {}
+    for message in messages:
+        formatted_output[i] = {
+                'id': message.id,
+                'title': message.title,
+                'action': message.action,
+                'text': message.text,
+                # time does not correspond exactly to PHP version, lacks
+                # timezone postfix. Can't find docs anywhere on how to get it.
+                # Doesn't seem to be used though, luckily.
+                'time': str(message.time),
+                'time_formatted': message.time_formatted
+                }
+        i += 1
+    return HttpResponse(json.dumps(formatted_output))
 
 
 @catmaid_login_required

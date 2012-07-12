@@ -14,15 +14,27 @@ function CanvasTool()
     var self = this;
     var canvasLayer = null;
     var controls = null;
+    var controlsBackground=null;
     var stack = null;
     this.toolname = "canvastool";
+
+    this.componentGroups=[];
+    var componentThreshold=0.02;
+
+
+    var started = false;
+    var x = 0;
+    var y = 0;
+
 
     this.resize = function( width, height )
     {
         self.prototype.resize( width, height );
         return;
     };
-  
+
+
+
     var createControlBox = function() {
 
         controls = document.createElement("div");
@@ -31,6 +43,8 @@ function CanvasTool()
         controls.style.zIndex = 6;
         controls.style.width = "250px";
         controls.style.height = "300px";
+        controls.style.backgroundColor='rgba(255,255,255,0.3)';
+
 
         // more: http://kangax.github.com/fabric.js/kitchensink/
 
@@ -88,12 +102,20 @@ function CanvasTool()
                           console.log('return', data);
                         }
                       });
-                  
+
                 }
 
             }
         };
         controls.appendChild( button_rasterize );
+
+
+        var getCompButton = document.createElement("button");
+        getCompButton.appendChild( document.createTextNode('Get Components') );
+        getCompButton.onclick = function() {
+            self.getComponents();
+        };
+        controls.appendChild( getCompButton );
 
 
         var button = document.createElement("button");
@@ -181,6 +203,7 @@ function CanvasTool()
         createLabels( );
         setColor( 'rgba(255,0,0,1.0)' );
 
+
     };
 
     this.removeControlBox = function() {
@@ -207,7 +230,55 @@ function CanvasTool()
                 console.log('change slice');
                 proto_changeSlice( val );
             };
+
+        view.onmouseup= function(e) { self.mouseup(e); };
+        view.onmousedown=function(e) { self.mousedown(e); };
+        view.onmousemove= function(e) { self.mousemove(e); };
+
     };
+
+    /* Mouseup */
+    this.mouseup = function (e)
+    {
+        x = e.layerX;
+        y = e.layerY;
+
+        if(self.started)
+        {
+            self.started = false;
+        }
+        this.getComponents(x,y);
+
+
+    }
+
+    /* Mousedown */
+    this.mousedown=function(e) {
+        //var mouse = canvasLayer.canvas.getPointer(e.memo.e);
+        self.started = true;
+
+    }
+
+
+    /* Mousemove */
+    this.mousemove=function(e) {
+        if(!self.started) {
+            return false;
+        }
+
+        var mouse = canvasLayer.canvas.getPointer(e.memo.e);
+
+        var w = Math.abs(mouse.x - x),
+            h = Math.abs(mouse.y - y);
+
+        if (!w || !h) {
+            return false;
+        }
+
+
+    }
+
+
 
     /**
      * install this tool in a stack.
@@ -299,7 +370,7 @@ function CanvasTool()
                 console.log('one down')
 				return true;
 			}
-		}),
+		})
 
     ];
 
@@ -361,7 +432,7 @@ function CanvasTool()
         newElement.css('color', "#FFFFFF");
         labellistdiv.append(newElement);
 
-    }
+    };
 
     /* Create a set of labels */
     var createLabels = function( ) {
@@ -369,5 +440,108 @@ function CanvasTool()
             self.addLabelToDiv( self.labels[j] );
         }
     };
+
+    this.getComponents= function(x,y)
+    {
+        var url='http://localhost:8000/1/stack/3/components-for-point'+ "?" + $.param({
+            x: x,
+            y: y,
+            scale : 0.5, // defined as 1/2**zoomlevel
+            z : 0});
+
+        var componentGroupId=self.componentGroups.length;
+        var componentGroup=self.componentGroups[componentGroupId]=[];
+        componentGroup['id']=componentGroupId;
+        componentGroup['components']=[];
+
+
+        $.getJSON(url,function(result){
+
+            for (var componentResultId in result)
+            {
+                var componentResult=result[componentResultId];
+                var add=true;
+
+                for (var componentGroupId in self.componentGroups)
+                {
+                    var componentGroup=self.componentGroups[componentGroupId];
+
+                    for (var componentEntryId in componentGroup.components)
+                    {
+                        var componentEntry=componentGroup.components[componentEntryId];
+                        if(componentEntry.id==componentResultId){add=false;break;}
+                    }
+                    if(!add){break;}
+
+                }
+                if(add)
+                {
+                    var components=componentGroup['components'];
+                    var component=new Component();
+                    components[componentResultId]=component;
+                    component.id=componentResultId;
+                    component.maxX=componentResult.maxX;
+                    component.threshold=componentResult.threshold;
+
+                }
+            }
+
+
+            /*$.each(result, function(i, field,componentGroup)
+            {
+                var add=true;
+                $.each(self.componentGroups, function(id, field)
+                {
+                    if(!add){return false;}
+                    $.each(field['components'], function(component, field)
+                    {
+                        if(component.id==i){add=false;return false;}
+                    });
+                });
+
+                if(add)
+                {
+                    var components=componentGroup['components'];
+                    var component=new Component();
+                    components[i]=component;
+                    component.threshold=field.threshold;
+
+                }
+
+
+            });*/
+
+
+        });
+
+    };
+
+    this.getComponentImage= function(id,x,y,z,width,height,scale)
+    {
+                var canvasPos=$('canvas').offset();
+
+         var url='http://localhost:8000/1/stack/3/componentimage'+ "?" + $.param({
+                    id: id,
+                    scale : scale // defined as 1/2**zoomlevel
+                    });
+
+         fabric.Image.fromURL(url, function(img) {
+                    var oImg = img.set({ left: x, top: y, angle: 0 });
+                    canvasLayer.canvas.add(oImg).renderAll();
+                });
+
+    };
+
+    function Component()
+    {
+        this.id=NaN;
+        this.minX=null;
+        this.minY=null;
+        this.maxX=null;
+        this.maxY=null;
+        this.threshold=null;
+
+    }
+
 
 }

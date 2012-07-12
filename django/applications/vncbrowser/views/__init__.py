@@ -42,6 +42,10 @@ from neurohdf import microcircuit_neurohdf
 from neurohdf import stack_models
 from neurohdf import get_tile
 from neurohdf import put_tile
+from neurohdf import get_component_list_for_rectangle
+from neurohdf import get_component_list_for_point
+from neurohdf import get_component_image
+from neurohdf import get_component_layer_image
 
 from cropping import crop
 from cropping import download_crop

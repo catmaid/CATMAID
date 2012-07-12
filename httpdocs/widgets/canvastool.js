@@ -449,67 +449,63 @@ function CanvasTool()
             scale : 0.5, // defined as 1/2**zoomlevel
             z : 0});
 
-        var componentGroupId=self.componentGroups.length;
-        var componentGroup=self.componentGroups[componentGroupId]=[];
-        componentGroup['id']=componentGroupId;
-        componentGroup['components']=[];
+
 
 
         $.getJSON(url,function(result){
 
+            var componentGroupIdNew=self.componentGroups.length;
+            var componentGroupNew=[];
+            componentGroupNew['id']=componentGroupId;
+            componentGroupNew['components']=[];
+
             for (var componentResultId in result)
             {
-                var componentResult=result[componentResultId];
-                var add=true;
-
-                for (var componentGroupId in self.componentGroups)
+                if(result.hasOwnProperty(componentResultId))
                 {
-                    var componentGroup=self.componentGroups[componentGroupId];
+                    var componentResult=result[componentResultId];
+                    var add=true;
 
-                    for (var componentEntryId in componentGroup.components)
+                    for (var componentGroupId in self.componentGroups)
                     {
-                        var componentEntry=componentGroup.components[componentEntryId];
-                        if(componentEntry.id==componentResultId){add=false;break;}
+                        if(self.componentGroups.hasOwnProperty(componentGroupId))
+                        {
+                            var componentGroup=self.componentGroups[componentGroupId];
+
+                            for (var componentEntryId in componentGroup.components)
+                            {
+                                if(componentGroup.components.hasOwnProperty(componentEntryId))
+                                {
+                                    var componentEntry=componentGroup.components[componentEntryId];
+                                    if(componentEntry.id==componentResultId){add=false;break;}
+                                }
+
+                            }
+                            if(!add){break;}
+                        }
+
+
                     }
-                    if(!add){break;}
+                    if(add)
+                    {
+                        var components=componentGroupNew['components'];
+                        var component=new Component();
+                        components[componentResultId]=component;
+                        component.id=componentResultId;
+                        component.maxX=componentResult.maxX;
+                        component.threshold=componentResult.threshold;
 
+                    }
                 }
-                if(add)
-                {
-                    var components=componentGroup['components'];
-                    var component=new Component();
-                    components[componentResultId]=component;
-                    component.id=componentResultId;
-                    component.maxX=componentResult.maxX;
-                    component.threshold=componentResult.threshold;
 
-                }
             }
 
-
-            /*$.each(result, function(i, field,componentGroup)
+            if((componentGroupNew['components'] != undefined) && componentGroupNew['components'].length>0)
             {
-                var add=true;
-                $.each(self.componentGroups, function(id, field)
-                {
-                    if(!add){return false;}
-                    $.each(field['components'], function(component, field)
-                    {
-                        if(component.id==i){add=false;return false;}
-                    });
-                });
+                self.componentGroups[componentGroupIdNew]=componentGroupNew;
 
-                if(add)
-                {
-                    var components=componentGroup['components'];
-                    var component=new Component();
-                    components[i]=component;
-                    component.threshold=field.threshold;
+            }
 
-                }
-
-
-            });*/
 
 
         });

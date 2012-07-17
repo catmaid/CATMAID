@@ -58,11 +58,12 @@ ConnectivityPostsynaptic = {
 
 
 def get_component_list_for_point(request,project_id=None,stack_id=None):
+    #Generates a JSON List with all intersecting components in a given point
 
     scale = float(request.GET.get('scale', '0'))
     x = int(request.GET.get('x', '0'))
     y = int(request.GET.get('y', '0'))
-    z = int(request.GET.get('z', '0'))
+    z = str(request.GET.get('z', '0'))
 
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
 
@@ -70,12 +71,12 @@ def get_component_list_for_point(request,project_id=None,stack_id=None):
 
     with closing(h5py.File(fpath, 'r')) as hfile:
 
-        image_data=hfile['connected_components/pixel_list_ids']
-        componentMinX=hfile['connected_components/min_x']
-        componentMinY=hfile['connected_components/min_y']
-        componentMaxX=hfile['connected_components/max_x']
-        componentMaxY=hfile["connected_components/max_y"]
-        thresholdTable=hfile['connected_components/values']
+        image_data=hfile['connected_components/'+z+'/pixel_list_ids']
+        componentMinX=hfile['connected_components/'+z+'/min_x']
+        componentMinY=hfile['connected_components/'+z+'/min_y']
+        componentMaxX=hfile['connected_components/'+z+'/max_x']
+        componentMaxY=hfile['connected_components/'+z+'/max_y']
+        thresholdTable=hfile['connected_components/'+z+'/values']
 
 
         length=image_data.len()
@@ -95,11 +96,12 @@ def get_component_list_for_point(request,project_id=None,stack_id=None):
 
         if selectionMinXMaxXMinYMaxY is not None:
 
+            #unique=np.array([np.array(x) for x in set(tuple(x) for x in selectionMinXMaxXMinYMaxY)])
             counter=0
 
             #Generate JSON
             for row in selectionMinXMaxXMinYMaxY:
-                if counter>=3:
+                if counter>=100:
                     break;
                 componentIds[int(row[0])]=\
                     {
@@ -251,39 +253,35 @@ def get_component_image(request, project_id=None, stack_id=None):
 
     id = int(request.GET.get('id', '-1'))
     scale = float(request.GET.get('scale', '0'))
+    z='0'
 
     hdf5_path = request.GET.get('hdf5_path', '/')
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
 
     with closing(h5py.File(fpath, 'r')) as hfile:
 
-        componentPixelStart=hfile['connected_components/begin_indices'].value[id].copy()
-        componentPixelEnd=hfile['connected_components/end_indices'].value[id].copy()
+        componentPixelStart=hfile['connected_components/'+z+'/begin_indices'].value[id].copy()
+        componentPixelEnd=hfile['connected_components/'+z+'/end_indices'].value[id].copy()
 
-        data=hfile['connected_components/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
-        threshold=float(hfile['connected_components/values'].value[id].copy())
+        data=hfile['connected_components/'+z+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
+        threshold=float(hfile['connected_components/'+z+'/values'].value[id].copy())
 
-        componentMinX=hfile['connected_components/min_x'].value[id].copy()
-        componentMinY=hfile['connected_components/min_y'].value[id].copy()
-        componentMaxX=hfile['connected_components/max_x'].value[id].copy()
-        componentMaxY=hfile["connected_components/max_y"].value[id].copy()
+        componentMinX=hfile['connected_components/'+z+'/min_x'].value[id].copy()
+        componentMinY=hfile['connected_components/'+z+'/min_y'].value[id].copy()
+        componentMaxX=hfile['connected_components/'+z+'/max_x'].value[id].copy()
+        componentMaxY=hfile['connected_components/'+z+'/max_y'].value[id].copy()
 
         height=(componentMaxY-componentMinY)+1
         width=(componentMaxX-componentMinX)+1
 
-        componentImage = Image.new('RGBA', (width, height), (0, 0, 0, 0)) # Create a blank image
-        pixelarrray=componentImage.load()
-
-        red=200+int(threshold*55)
-        blue=100+int(threshold*155)
+        red=0+int(threshold*255)
+        green=255-(threshold*255)
+        blue=0
         opacity=255
 
-
-        data2=np.array([(data['x']),(data['y'])], np.int, ndmin=2)
-        pix = (red, 0, blue, opacity)
-
-        for i in xrange(data2.shape[-1]):
-            pixelarrray[int(data2[0][i]-componentMinX),int(data2[1][i]-componentMinY)] = pix
+        img = np.zeros( (width,height,4), dtype=np.uint8)
+        img[data['x']-componentMinX,data['y']-componentMinY] = (red,green,blue,opacity) # (red, 0, blue, opacity)
+        componentImage = Image.fromarray(np.swapaxes(img,0,1))
 
         response = HttpResponse(mimetype="image/png")
         componentImage.save(response, "PNG")
@@ -293,10 +291,6 @@ def get_component_image(request, project_id=None, stack_id=None):
     return None
 
 
-def set_pixel_value(row,pixelarray, red, green, blue, opacity):
-    #Current implementation doesn't work with np.vectorize
-    #pixelarray[int(row['x']),int(row['y'])]=(red, green, blue, opacity)
-    return None
 
 def get_tile(request, project_id=None, stack_id=None):
 

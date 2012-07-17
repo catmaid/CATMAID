@@ -18,13 +18,32 @@ function CanvasTool()
     var stack = null;
     this.toolname = "canvastool";
 
-    this.componentGroups=[];
+
     var componentThreshold=0.02;
+    var enumFactory=new EnumFactory();
+    this.componentStore=new ComponentStore();
 
+    this.stateEnum=enumFactory.defineEnum({
+        COMPONENTVIEW : {
+            value : 1,
+            string : 'componentview'
+        },
+        COMPONENTDRAW : {
+            value : 2,
+            string : 'componentdraw'
+        },
+        SEGMENTATIONDRAW : {
+            value : 3,
+            string : 'segementationdraw'
+        }
+    });
 
-    var started = false;
+    this.state=this.stateEnum.COMPONENTVIEW;
+
     var x = 0;
     var y = 0;
+
+
 
 
     this.resize = function( width, height )
@@ -233,7 +252,109 @@ function CanvasTool()
 
         view.onmouseup= function(e) { self.mouseup(e); };
         view.onmousedown=function(e) { self.mousedown(e); };
-        view.onmousemove= function(e) { self.mousemove(e); };
+        view.onmousewheel=function(e){self.mousewheel(e);};
+
+    };
+
+    this.mousewheel=function(e)
+    {
+        var up=true;
+        if(e.wheelDelta<0){up=false;}
+
+        var currentComponentLayer=self.componentStore.componentLayers[self.componentStore.currentZ];
+        var currentComponentGroup=currentComponentLayer.componentGroups[currentComponentLayer.activeGroupIndex];
+        var index=currentComponentGroup.selectedComponentIndex;
+        if(index==0&&up){return;}
+        var componentGroupLength=0;
+        for (var componentCountId in currentComponentGroup.components){componentGroupLength+=1;}
+        if(index==(componentGroupLength-1)&&!up){return;}
+
+        var component=currentComponentGroup.components[index];
+        component.visible=false;
+
+        canvasLayer.canvas.clear();
+
+        var newComponent=null;
+        var newIndex=null;
+
+        if(up)
+        {
+            newIndex=index-1;
+
+        }
+        else
+        {
+            newIndex=index+1;
+        }
+        newComponent=currentComponentGroup.components[newIndex];
+        newComponent.visible=true;
+        currentComponentGroup.selectedComponentIndex=newIndex;
+        self.showActiveComponents();
+
+
+
+        /*for (var componentGroupId in self.componentGroups)
+        {
+            if(self.componentGroups.hasOwnProperty(componentGroupId))
+            {
+                var componentGroup=self.componentGroups[componentGroupId];
+                if(componentGroup["active"]==false){continue;}
+
+                var index=componentGroup["index"];
+                if(index==0&&up){break;}
+
+                var componentGroupLength=0;
+                for (var componentCountId in componentGroup.components){componentGroupLength+=1;}
+
+                if(index==(componentGroupLength-1)&&!up){break;}
+
+                var component=componentGroup.components[index];
+                component.visible=false;
+
+                canvasLayer.canvas.clear();
+
+                var newComponent=null;
+                var newIndex=null;
+
+                if(up)
+                {
+                    newIndex=index-1;
+
+                }
+                else
+                {
+                    newIndex=index+1;
+                }
+                newComponent=componentGroup.components[newIndex];
+                newComponent.visible=true;
+                componentGroup["index"]=newIndex;
+                componentGroup['minX']=newComponent.minX;
+                componentGroup['minX']=newComponent.maxX;
+                componentGroup['minX']=newComponent.minY;
+                componentGroup['minX']=newComponent.maxY;
+                self.showActiveComponents();
+
+
+
+
+            }
+        }*/
+    };
+
+    this.showActiveComponents=function()
+    {
+        for (var componentGroupId in self.componentStore.componentLayers[self.componentStore.currentZ].componentGroups)
+        {
+            if(self.componentStore.componentLayers[self.componentStore.currentZ].componentGroups.hasOwnProperty(componentGroupId))
+            {
+                var componentGroup=self.componentStore.componentLayers[self.componentStore.currentZ].componentGroups[componentGroupId];
+                canvasLayer.canvas.add(componentGroup.components[componentGroup.selectedComponentIndex].image);
+                var index=canvasLayer.canvas._objects.length;
+                if(index!=0){index-=1;}
+                canvasLayer.canvas.item(index).selectable=false;
+            }
+        }
+
 
     };
 
@@ -247,10 +368,21 @@ function CanvasTool()
         {
             self.started = false;
         }
-        this.getComponents(x,y);
+
+        var intersectingComponentGroup=self.CheckForIntersectingGroup(x,y)
+        if(intersectingComponentGroup!=null)
+        {
+
+        }
+        else
+        {
+            this.getComponents(x,y);
+        }
 
 
-    }
+
+
+    };
 
     /* Mousedown */
     this.mousedown=function(e) {
@@ -260,23 +392,10 @@ function CanvasTool()
     }
 
 
-    /* Mousemove */
-    this.mousemove=function(e) {
-        if(!self.started) {
-            return false;
-        }
-
-        var mouse = canvasLayer.canvas.getPointer(e.memo.e);
-
-        var w = Math.abs(mouse.x - x),
-            h = Math.abs(mouse.y - y);
-
-        if (!w || !h) {
-            return false;
-        }
-
-
-    }
+    this.CheckForIntersectingGroup=function(x,y)
+    {
+        return null;
+    };
 
 
 
@@ -292,13 +411,17 @@ function CanvasTool()
                 stack.removeLayer( canvasLayer );
                 createCanvasLayer( parentStack );
                 createControlBox();
+                self.generateComponentLayer();
             } else {
                 // reactivateBindings();
             }
         } else {
+            self.generateComponentLayer();
             createCanvasLayer( parentStack );
             createControlBox();
         }
+
+
 
         return;
     };
@@ -443,6 +566,11 @@ function CanvasTool()
 
     this.getComponents= function(x,y)
     {
+        if(self.state!=self.stateEnum.COMPONENTVIEW)
+        {
+            return 0;
+        }
+
         var url='http://localhost:8000/1/stack/3/components-for-point'+ "?" + $.param({
             x: x,
             y: y,
@@ -454,10 +582,10 @@ function CanvasTool()
 
         $.getJSON(url,function(result){
 
-            var componentGroupIdNew=self.componentGroups.length;
-            var componentGroupNew=[];
-            componentGroupNew['id']=componentGroupId;
-            componentGroupNew['components']=[];
+            var currentComponentGroups=self.componentStore.componentLayers[self.componentStore.currentZ].componentGroups;
+
+            var componentGroupIdNew=currentComponentGroups.length;
+            var componentGroupNew=new ComponentGroup();
 
             for (var componentResultId in result)
             {
@@ -466,11 +594,11 @@ function CanvasTool()
                     var componentResult=result[componentResultId];
                     var add=true;
 
-                    for (var componentGroupId in self.componentGroups)
+                    for (var componentGroupId in currentComponentGroups)
                     {
-                        if(self.componentGroups.hasOwnProperty(componentGroupId))
+                        if(currentComponentGroups.hasOwnProperty(componentGroupId))
                         {
-                            var componentGroup=self.componentGroups[componentGroupId];
+                            var componentGroup=currentComponentGroups[componentGroupId];
 
                             for (var componentEntryId in componentGroup.components)
                             {
@@ -488,11 +616,14 @@ function CanvasTool()
                     }
                     if(add)
                     {
-                        var components=componentGroupNew['components'];
+                        var components=componentGroupNew.components;
                         var component=new Component();
                         components[componentResultId]=component;
                         component.id=componentResultId;
                         component.maxX=componentResult.maxX;
+                        component.minX=componentResult.minX;
+                        component.maxY=componentResult.maxY;
+                        component.minY=componentResult.minY;
                         component.threshold=componentResult.threshold;
 
                     }
@@ -500,9 +631,33 @@ function CanvasTool()
 
             }
 
-            if((componentGroupNew['components'] != undefined) && componentGroupNew['components'].length>0)
+            if((componentGroupNew.components != undefined) && componentGroupNew.components.length>0)
             {
-                self.componentGroups[componentGroupIdNew]=componentGroupNew;
+                componentGroupNew.active=true;
+
+                var currentComponentLayer=self.componentStore.componentLayers[self.componentStore.currentZ];
+                if(currentComponentLayer.activeGroupIndex!=-1)
+                {
+                    currentComponentGroups[currentComponentLayer.activeGroupIndex].active=false;
+                }
+
+                currentComponentGroups[componentGroupIdNew]=componentGroupNew;
+                currentComponentLayer.activeGroupIndex=currentComponentGroups.length-1;
+
+                componentGroupNew.components=componentGroupNew.components.sort(function(a,b){return a.threshold- b.threshold;});
+                componentGroupNew.selectedComponentIndex=0;
+
+                var visible=true;
+                for(var componentToLoadId in componentGroupNew.components)
+                {
+                    if(componentGroupNew.components.hasOwnProperty(componentToLoadId))
+                    {
+
+                        self.getComponentImage(componentGroupNew.components[componentToLoadId],x,y,0,0.5,visible);
+                        visible=false;
+
+                    }
+                }
 
             }
 
@@ -512,18 +667,31 @@ function CanvasTool()
 
     };
 
-    this.getComponentImage= function(id,x,y,z,width,height,scale)
+    this.getComponentImage= function(component,x,y,z,scale,visible)
     {
-                var canvasPos=$('canvas').offset();
+                //var canvasPos=$('canvas').offset();
 
          var url='http://localhost:8000/1/stack/3/componentimage'+ "?" + $.param({
-                    id: id,
+                    id: component.id,
+                    z:z,
                     scale : scale // defined as 1/2**zoomlevel
                     });
 
-         fabric.Image.fromURL(url, function(img) {
-                    var oImg = img.set({ left: x, top: y, angle: 0 });
-                    canvasLayer.canvas.add(oImg).renderAll();
+        component.visible=visible;
+
+        fabric.Image.fromURL(url, function(img)
+        {
+
+                    component.image = img.set({ left: component.centerX(), top: component.centerY(), angle: 0 }).scale(1);
+                    if(visible)
+                    {
+                        canvasLayer.canvas.add(component.image);
+                        var item=canvasLayer.canvas.item(canvasLayer.canvas._objects.length-1);
+
+                        canvasLayer.canvas.item(canvasLayer.canvas._objects.length-1).selectable=false;
+                    }
+
+
                 });
 
     };
@@ -536,8 +704,104 @@ function CanvasTool()
         this.maxX=null;
         this.maxY=null;
         this.threshold=null;
+        this.image=null;
+        this.visible=false;
+
+        this.width=function(){return this.maxX-this.minX; };
+        this.height=function(){return this.maxY-this.minY; };
+        this.centerX=function(){return this.minX+(this.maxX-this.minX)/2; };
+        this.centerY=function(){return this.minY+(this.maxY-this.minY)/2; };
+    }
+
+    function ComponentGroup()
+    {
+        this.selectedComponentIndex=-1;
+        this.components=[];
+        this.active=false;
+    }
+
+    function ComponentLayer()
+    {
+        this.activeGroupIndex=-1;
+        this.componentGroups=[];
+    }
+
+    function ComponentStore()
+    {
+        this.componentLayers=[];
+        this.currentZ=-1;
+    }
+
+    this.generateComponentLayer=function()
+    {
+        var newLayer=new ComponentLayer();
+        var newZ=self.componentStore.currentZ+1;
+        self.componentStore.componentLayers[newZ]=newLayer;
+        self.componentStore.currentZ=newZ;
 
     }
 
 
+
+
 }
+
+function EnumFactory()
+{
+    function Enum() {
+        this._enums = [];
+        this._lookups = {};
+    }
+
+    Enum.prototype.getEnums = function() {
+        return _enums;
+    }
+
+    Enum.prototype.forEach = function(callback){
+        var length = this._enums.length;
+        for (var i = 0; i < length; ++i){
+            callback(this._enums[i]);
+        }
+    }
+
+    Enum.prototype.addEnum = function(e) {
+        this._enums.push(e);
+    }
+
+    Enum.prototype.getByName = function(name) {
+        return this[name];
+    }
+
+    Enum.prototype.getByValue = function(field, value) {
+        var lookup = this._lookups[field];
+        if(lookup) {
+            return lookup[value];
+        } else {
+            this._lookups[field] = ( lookup = {});
+            var k = this._enums.length - 1;
+            for(; k >= 0; --k) {
+                var m = this._enums[k];
+                var j = m[field];
+                lookup[j] = m;
+                if(j == value) {
+                    return m;
+                }
+            }
+        }
+        return null;
+    }
+
+    this.defineEnum=function(definition) {
+        var k;
+        var e = new Enum();
+        for(k in definition) {
+            var j = definition[k];
+            e[k] = j;
+            e.addEnum(j)
+        }
+        return e;
+    }
+
+}
+
+

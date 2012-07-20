@@ -1141,6 +1141,48 @@ class ViewPageTests(TestCase):
             child_after_change = get_object_or_404(Treenode, id=child.id)
             self.assertEqual(parent, child_after_change.parent)
 
+    def test_search_with_no_nodes(self):
+        self.fake_authentication()
+
+        response = self.client.get(
+                '/%d/search' % self.test_project_id,
+                {'substring': 'tr'})
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                {"id":374, "name":"downstream-A", "class_name":"neuron"},
+                {"id":362, "name":"downstream-B", "class_name":"neuron"}]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_search_with_no_results(self):
+        self.fake_authentication()
+
+        response = self.client.get(
+                '/%d/search' % self.test_project_id,
+                {'substring': 'bobobobobobobo'})
+        parsed_response = json.loads(response.content)
+        expected_result = []
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_search_with_nodes(self):
+        self.fake_authentication()
+
+        response = self.client.get(
+                '/%d/search' % self.test_project_id,
+                {'substring': 'c'})
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                {"id":485, "name":"Local", "class_name":"cell_body_location"},
+                {"id":487, "name":"Non-Local", "class_name":"cell_body_location"},
+                {"id":458, "name":"c005", "class_name":"driver_line"},
+                {"id":364, "name":"Isolated synaptic terminals", "class_name":"group"},
+                {"id":2342, "name":"uncertain end", "class_name":"label",
+                    "nodes":[{"id":403, "x":7840, "y":2380, "z":0, "skid":373}]},
+                {"id":233, "name":"branched neuron", "class_name":"neuron"}]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
     def test_delete_link_success(self):
         self.fake_authentication()
         connector_id = 356

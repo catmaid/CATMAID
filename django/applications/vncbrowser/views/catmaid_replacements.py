@@ -372,6 +372,51 @@ def delete_link(request, project_id=None, logged_in_user=None):
 
 @catmaid_login_required
 @transaction.commit_on_success
+def search(request, project_id=None, logged_in_user=None):
+    def format_node_data(node):
+        '''
+        Formats node data for our json output.
+
+        When we start using Django 1.4, we can use prefetch_related instead of using
+        .values('treenode__xxx'), and will then be able to access a proper location
+        object.
+        '''
+        location = Double3D.from_str(node['treenode__location'])
+        return {
+                'id': node['treenode'],
+                'x': int(location.x),
+                'y': int(location.y),
+                'z': int(location.z),
+                'skid': node['treenode__skeleton']}
+
+    search_string = request.GET.get('substring', "")
+
+    row_query = ClassInstance.objects.values('id', 'name', 'class_column__class_name').filter(
+            name__icontains=search_string,
+            project=project_id).order_by('class_column__class_name', 'name')
+    rows = list(row_query)
+
+    relation_map = get_relation_to_id_map(project_id)
+    for row in rows:
+        # Change key-name of class_column__class_name for json output
+        row['class_name'] = row.pop('class_column__class_name')
+        # Retrieve nodes holding text labels
+        if row['class_name'] == 'label':
+            node_query = TreenodeClassInstance.objects.filter(
+                    project=project_id,
+                    treenode__project=project_id,
+                    relation=relation_map['labeled_as'],
+                    class_instance__name=row['name'])\
+                            .order_by('-treenode__id')\
+                            .values('treenode', 'treenode__location', 'treenode__skeleton')
+            if node_query.count() > 0:
+                row['nodes'] = map(format_node_data, node_query)
+
+    return HttpResponse(json.dumps(rows))
+
+
+@catmaid_login_required
+@transaction.commit_on_success
 def list_logs(request, project_id=None, logged_in_user=None):
     user_id = int(request.POST.get('user_id', -1))  # We can see logs for different users
     display_start = int(request.POST.get('iDisplayStart', 0))

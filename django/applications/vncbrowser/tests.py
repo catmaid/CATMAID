@@ -1122,6 +1122,14 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
         treenode_id = 265
 
+
+        relation_map = get_relation_to_id_map(self.test_project_id)
+        get_skeleton = lambda: TreenodeClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['element_of'],
+                treenode=treenode_id)
+        self.assertEqual(1, get_skeleton().count())
+
         children = Treenode.objects.filter(parent=treenode_id)
         self.assertTrue(children.count() > 0)
         tn_count = Treenode.objects.all().count()
@@ -1135,6 +1143,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
+        self.assertEqual(0, get_skeleton().count())
         self.assertEqual(tn_count - 1, Treenode.objects.all().count())
 
         for child in children:

@@ -1260,22 +1260,23 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
-    def test_create_presynaptic_link_success(self):
-        from_id = 237
-        to_id = 2401
-        link_type = 'presynaptic_to'
-        self.fake_authentication()
-        response = self.client.post(
-                '/%d/link/create' % self.test_project_id,
-                {
-                    'from_id': from_id,
-                    'to_id': to_id,
-                    'link_type': link_type
-                    })
-        parsed_response = json.loads(response.content)
-        expected_result = {'message': 'success'}
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(expected_result, parsed_response)
+    # TODO Create connector with no previous presynaptic links
+    # def test_create_presynaptic_link_success(self):
+    #     from_id = 237
+    #     to_id = 2401
+    #     link_type = 'presynaptic_to'
+    #     self.fake_authentication()
+    #     response = self.client.post(
+    #             '/%d/link/create' % self.test_project_id,
+    #             {
+    #                 'from_id': from_id,
+    #                 'to_id': to_id,
+    #                 'link_type': link_type
+    #                 })
+    #     parsed_response = json.loads(response.content)
+    #     expected_result = {'message': 'success'}
+    #     self.assertEqual(response.status_code, 200)
+    #     self.assertEqual(expected_result, parsed_response)
 
 
 """

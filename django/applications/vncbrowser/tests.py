@@ -527,8 +527,8 @@ class ViewPageTests(TestCase):
         for t in values_and_users:
             if t[0] == 6:
                 self.assertEqual(t[1], 'test (6)')
-            elif t[0] == 78:
-                self.assertEqual(t[1], 'gerhard (78)')
+            elif t[0] == 79:
+                self.assertEqual(t[1], 'gerhard (79)')
             else:
                 raise Exception("Unexpected value in returned stats: " + str(t))
 
@@ -540,9 +540,9 @@ class ViewPageTests(TestCase):
                            u'proj_presyn': 0,
                            u'proj_postsyn': 0,
                            u'proj_synapses': 0,
-                           u"proj_neurons": 8,
-                           u"proj_treenodes": 84,
-                           u"proj_skeletons": 7,
+                           u"proj_neurons": 9,
+                           u"proj_treenodes": 85,
+                           u"proj_skeletons": 8,
                            u"proj_textlabels": 0,
                            u"proj_tags": 4}
         parsed_response = json.loads(response.content)
@@ -1099,26 +1099,25 @@ class ViewPageTests(TestCase):
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
         self.assertEqual(tn_count - 1, Treenode.objects.all().count())
 
-    # TODO Generate a root treenode with no children to delete
-    # def test_delete_root_treenode(self):
-    #     self.fake_authentication()
-    #     treenode_id = 4000
+    def test_delete_root_treenode(self):
+        self.fake_authentication()
+        treenode_id = 2437
 
-    #     treenode = Treenode.objects.filter(id=treenode_id)[0]
-    #     children = Treenode.objects.filter(parent=treenode_id)
-    #     self.assertEqual(0, children.count())
-    #     self.assertEqual(None, treenode.parent)
-    #     tn_count = Treenode.objects.all().count()
+        treenode = Treenode.objects.filter(id=treenode_id)[0]
+        children = Treenode.objects.filter(parent=treenode_id)
+        self.assertEqual(0, children.count())
+        self.assertEqual(None, treenode.parent)
+        tn_count = Treenode.objects.all().count()
 
-    #     response = self.client.post(
-    #             '/%d/treenode/delete' % self.test_project_id,
-    #             {'treenode_id': treenode_id})
-    #     parsed_response = json.loads(response.content)
-    #     expected_result = {'success': 'Removed treenode successfully.'}
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(expected_result, parsed_response)
-    #     self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
-    #     self.assertEqual(tn_count - 1, Treenode.objects.all().count())
+        response = self.client.post(
+                '/%d/treenode/delete' % self.test_project_id,
+                {'treenode_id': treenode_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'success': 'Removed treenode successfully.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
+        self.assertEqual(tn_count - 1, Treenode.objects.all().count())
 
     def test_delete_non_root_treenode(self):
         self.fake_authentication()

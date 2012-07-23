@@ -25,10 +25,11 @@ class SimpleTest(TestCase):
         self.assertEqual(1 + 1, 2)
 
 
-def ensure_schema_exists():
+def ensure_schema_and_data_exist():
     """
     This function will create the CATMAID schema is it doesn't seem to
-    exist yet (based on the presence or not of the 'project' table.
+    exist yet (based on the presence or not of the 'project' table).
+    If it needs to add the schema, it will also add testing data.
     """
     cursor = connection.cursor()
     # See if the project table has been created:
@@ -37,25 +38,26 @@ def ensure_schema_exists():
     if row[0] == 1:
         return
     current_directory = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(current_directory, "tables.sql")) as fp:
+    with open(os.path.join(current_directory, "tables_and_data.sql")) as fp:
         cursor.execute(fp.read())
 
 
-def add_example_data():
+def remove_example_data():
     """
-    This function will add some example data to the CATMAID
-    database.
+    This function will remove example data from the database, without touching
+    the schema. Warning: This takes a long time to run.
     """
+    tables = connection.introspection.table_names()
     cursor = connection.cursor()
-    current_directory = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(current_directory, "data.sql")) as fp:
-        cursor.execute(fp.read())
+    for table in tables:
+        cursor.execute('TRUNCATE TABLE "%s" RESTART IDENTITY CASCADE' % table)
 
 
 class TransactionTests(TransactionTestCase):
 
     def setUp(self):
-        ensure_schema_exists()
+        ensure_schema_and_data_exist()
+        remove_example_data()
 
     def test_successful_commit(self):
         @transaction_reportable_commit_on_success
@@ -116,7 +118,8 @@ class TransactionTests(TransactionTestCase):
 class InsertionTest(TestCase):
 
     def setUp(self):
-        ensure_schema_exists()
+        ensure_schema_and_data_exist()
+        remove_example_data()
 
     def insert_project(self):
         p = Project()
@@ -149,13 +152,6 @@ class InsertionTest(TestCase):
         p = self.insert_project()
         self.assertEqual(p.id, 1)
 
-    def insert_project(self):
-        p = Project()
-        p.title = "Example Project"
-        p.comment = "This is an example project for the Django tests"
-        p.save()
-        return p
-
     def test_stack_insertion(self):
         p = self.insert_project()
         s = self.insert_stack()
@@ -173,8 +169,7 @@ class InsertionTest(TestCase):
 class RelationQueryTests(TestCase):
 
     def setUp(self):
-        ensure_schema_exists()
-        add_example_data()
+        ensure_schema_and_data_exist()
         self.test_project_id = 3
 
     def test_find_all_neurons(self):
@@ -250,8 +245,7 @@ def swc_string_to_sorted_matrix(s):
 class ViewPageTests(TestCase):
 
     def setUp(self):
-        ensure_schema_exists()
-        add_example_data()
+        ensure_schema_and_data_exist()
         self.test_project_id = 3
         self.client = Client()
 
@@ -1349,8 +1343,7 @@ class ViewPageTests(TestCase):
 class TreenodeTests(TestCase):
 
     def setUp(self):
-        ensure_schema_exists()
-        add_example_data()
+        ensure_schema_and_data_exist()
         self.test_project_id = 3
 
     def test_find_all_treenodes(self):

@@ -527,8 +527,8 @@ class ViewPageTests(TestCase):
         for t in values_and_users:
             if t[0] == 6:
                 self.assertEqual(t[1], 'test (6)')
-            elif t[0] == 79:
-                self.assertEqual(t[1], 'gerhard (79)')
+            elif t[0] == 83:
+                self.assertEqual(t[1], 'gerhard (83)')
             else:
                 raise Exception("Unexpected value in returned stats: " + str(t))
 
@@ -540,9 +540,9 @@ class ViewPageTests(TestCase):
                            u'proj_presyn': 0,
                            u'proj_postsyn': 0,
                            u'proj_synapses': 0,
-                           u"proj_neurons": 9,
-                           u"proj_treenodes": 85,
-                           u"proj_skeletons": 8,
+                           u"proj_neurons": 11,
+                           u"proj_treenodes": 89,
+                           u"proj_skeletons": 10,
                            u"proj_textlabels": 0,
                            u"proj_tags": 4}
         parsed_response = json.loads(response.content)
@@ -766,91 +766,90 @@ class ViewPageTests(TestCase):
                     self.assertEqual(value, getattr(label, p))
             # self.assertEqual(label_location_data, label_location.location)
 
-    # TODO Generate log data to test with
-    # log_rows = [
-    #                 [
-    #                     'saalfeld',
-    #                     'create_neuron',
-    #                     '04-09-2011 13:53',
-    #                     1.0,
-    #                     2.0,
-    #                     3.0,
-    #                     'Create neuron 1 and skeleton 2'],
-    #                 [
-    #                     'test',
-    #                     'change_confidence',
-    #                     '04-09-2012 13:53',
-    #                     1.0,
-    #                     2.0,
-    #                     3.0,
-    #                     'Changed to 4'],
-    #                 [
-    #                     'test',
-    #                     'change_confidence',
-    #                     '04-07-2012 13:53',
-    #                     2.0,
-    #                     2.0,
-    #                     2.0,
-    #                     'Changed to 2']
-    #         ]
+    log_rows = [
+                    [
+                        'gerhard',
+                        'create_neuron',
+                        '22-07-2012 22:50',
+                        5290,
+                        3930,
+                        279,
+                        'Create neuron 2434 and skeleton 2433'],
+                    [
+                        'gerhard',
+                        'create_neuron',
+                        '23-07-2012 01:12',
+                        4470,
+                        2110,
+                        180,
+                        'Create neuron 2441 and skeleton 2440'],
+                    [
+                        'gerhard',
+                        'create_neuron',
+                        '23-07-2012 01:15',
+                        3680,
+                        2530,
+                        180,
+                        'Create neuron 2452 and skeleton 2451']
+            ]
 
-    # def test_list_logs_user_param(self):
-    #     self.fake_authentication()
-    #     response = self.client.post(
-    #             '/%d/logs/list' % self.test_project_id, {'user_id': 1})
-    #     parsed_response = json.loads(response.content)
-    #     expected_result = {
-    #             'iTotalDisplayRecords': 1,
-    #             'iTotalRecords': 1,
-    #             'aaData': [self.log_rows[0]]
-    #             }
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(expected_result, parsed_response)
+    def test_list_logs_user_param(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/logs/list' % self.test_project_id, {'user_id': 1})
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'iTotalDisplayRecords': 0,
+                'iTotalRecords': 0,
+                'aaData': []
+                }
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
 
-    # def test_list_logs_sort(self):
-    #     self.fake_authentication()
-    #     response = self.client.post(
-    #             '/%d/logs/list' % self.test_project_id, {
-    #                 'iSortingCols': 2,
-    #                 'iSortCol_0': 0,  # user
-    #                 'iSortDir_0': 'ASC',
-    #                 'iSortCol_1': 3,  # x
-    #                 'iSortDir_1': 'DESC'
-    #                 })
-    #     parsed_response = json.loads(response.content)
-    #     expected_result = {
-    #             'iTotalDisplayRecords': 3,
-    #             'iTotalRecords': 3,
-    #             'aaData': [
-    #                 self.log_rows[0], self.log_rows[2], self.log_rows[1]
-    #                 ]
-    #             }
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(expected_result, parsed_response)
+    def test_list_logs_sort(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/logs/list' % self.test_project_id, {
+                    'iSortingCols': 2,
+                    'iSortCol_0': 5,  # z
+                    'iSortDir_0': 'ASC',
+                    'iSortCol_1': 3,  # x
+                    'iSortDir_1': 'DESC'
+                    })
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'iTotalDisplayRecords': 3,
+                'iTotalRecords': 3,
+                'aaData': [
+                    self.log_rows[1], self.log_rows[2], self.log_rows[0]
+                    ]
+                }
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
 
-    # def test_list_logs_subset(self):
-    #     self.fake_authentication()
-    #     response = self.client.post(
-    #             '/%d/logs/list' % self.test_project_id, {
-    #                 'iDisplayStart': 1,
-    #                 'iDisplayLength': 2
-    #                 })
-    #     parsed_response = json.loads(response.content)
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(2, parsed_response['iTotalDisplayRecords'])
-    #     self.assertEqual(2, parsed_response['iTotalRecords'])
+    def test_list_logs_subset(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/logs/list' % self.test_project_id, {
+                    'iDisplayStart': 1,
+                    'iDisplayLength': 2
+                    })
+        parsed_response = json.loads(response.content)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(2, parsed_response['iTotalDisplayRecords'])
+        self.assertEqual(2, parsed_response['iTotalRecords'])
 
-    # def test_list_logs_no_params(self):
-    #     self.fake_authentication()
-    #     response = self.client.post(
-    #             '/%d/logs/list' % self.test_project_id, {})
-    #     parsed_response = json.loads(response.content)
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(3, parsed_response['iTotalDisplayRecords'])
-    #     self.assertEqual(3, parsed_response['iTotalRecords'])
-    #     self.assertTrue(self.log_rows[0] in parsed_response['aaData'])
-    #     self.assertTrue(self.log_rows[1] in parsed_response['aaData'])
-    #     self.assertTrue(self.log_rows[2] in parsed_response['aaData'])
+    def test_list_logs_no_params(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/logs/list' % self.test_project_id, {})
+        parsed_response = json.loads(response.content)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(3, parsed_response['iTotalDisplayRecords'])
+        self.assertEqual(3, parsed_response['iTotalRecords'])
+        self.assertTrue(self.log_rows[0] in parsed_response['aaData'])
+        self.assertTrue(self.log_rows[1] in parsed_response['aaData'])
+        self.assertTrue(self.log_rows[2] in parsed_response['aaData'])
 
     def test_create_treenode_with_existing_fragment_group(self):
         self.fake_authentication()

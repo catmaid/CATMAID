@@ -86,7 +86,7 @@ CREATE SEQUENCE concept_id_seq
     NO MAXVALUE
     CACHE 1;
 ALTER SEQUENCE concept_id_seq OWNED BY concept.id;
-SELECT pg_catalog.setval('concept_id_seq', 2457, true);
+SELECT pg_catalog.setval('concept_id_seq', 2458, true);
 CREATE TABLE location (
     location double3d NOT NULL,
     reviewer_id integer DEFAULT (-1) NOT NULL,
@@ -198,7 +198,7 @@ CREATE SEQUENCE sessions_id_seq
     NO MAXVALUE
     CACHE 1;
 ALTER SEQUENCE sessions_id_seq OWNED BY sessions.id;
-SELECT pg_catalog.setval('sessions_id_seq', 47, true);
+SELECT pg_catalog.setval('sessions_id_seq', 50, true);
 CREATE TABLE settings (
     key text NOT NULL,
     value text
@@ -481,15 +481,16 @@ INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, loc
 INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, confidence) VALUES (421, 3, '2011-10-07 13:02:22.656859+02', '2011-10-07 13:02:30.396118+02', 3, '(6260,3990,0)', -1, NULL, 5);
 INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, confidence) VALUES (432, 3, '2011-10-11 16:49:08.042058+02', '2011-10-31 10:22:37.263519+01', 3, '(2640,3450,0)', -1, NULL, 5);
 INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, confidence) VALUES (2400, 3, '2011-12-09 14:01:43.965389+01', '2011-12-09 14:01:43.965389+01', 3, '(3400,5620,0)', -1, NULL, 5);
+INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, confidence) VALUES (2458, 3, '2012-07-24 03:54:02.486863+02', '2012-07-24 03:54:02.486863+02', 3, '(5870,3460,243)', -1, NULL, 5);
 INSERT INTO connector_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, connector_id, class_instance_id) VALUES (2354, 3, '2011-10-31 10:24:57.406099+01', '2011-10-31 10:24:57.406099+01', 3, 35, 432, 2353);
 INSERT INTO connector_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, connector_id, class_instance_id) VALUES (2355, 3, '2011-10-31 10:24:57.406099+01', '2011-10-31 10:24:57.406099+01', 3, 35, 432, 351);
+INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2439, 3, '2012-07-22 22:50:57.758826+02', '2012-07-22 22:50:57.758826+02', 3, 'create_neuron', '(5290,3930,279)', 'Create neuron 2434 and skeleton 2433');
+INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2446, 3, '2012-07-23 01:12:54.541987+02', '2012-07-23 01:12:54.541987+02', 3, 'create_neuron', '(4470,2110,180)', 'Create neuron 2441 and skeleton 2440');
+INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2457, 3, '2012-07-23 01:15:24.010388+02', '2012-07-23 01:15:24.010388+02', 3, 'create_neuron', '(3680,2530,180)', 'Create neuron 2452 and skeleton 2451');
 INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (1, 3, '2011-12-19 16:46:01.360422+01', false, 'Message 1', 'Contents of message 1.', 'http://www.example.com/message1');
 INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (2, 3, '2011-12-20 16:46:01.360422+01', false, 'Message 2', 'Contents of message 2.', 'http://www.example.com/message2');
 INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (3, 3, '2011-12-21 16:46:01.360422+01', true, 'Message 3', 'Contents of message 3.', 'http://www.example.com/message3');
 INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (4, 3, '2011-12-22 16:46:01.360422+01', true, 'Message 4', 'Contents of message 4.', 'http://www.example.com/message4');
-INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2439, 3, '2012-07-22 22:50:57.758826+02', '2012-07-22 22:50:57.758826+02', 3, 'create_neuron', '(5290,3930,279)', 'Create neuron 2434 and skeleton 2433');
-INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2446, 3, '2012-07-23 01:12:54.541987+02', '2012-07-23 01:12:54.541987+02', 3, 'create_neuron', '(4470,2110,180)', 'Create neuron 2441 and skeleton 2440');
-INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2457, 3, '2012-07-23 01:15:24.010388+02', '2012-07-23 01:15:24.010388+02', 3, 'create_neuron', '(3680,2530,180)', 'Create neuron 2452 and skeleton 2451');
 INSERT INTO project (id, title, public, wiki_base_url) VALUES (1, 'Default Project', true, NULL);
 INSERT INTO project (id, title, public, wiki_base_url) VALUES (2, 'Evaluation data set', true, NULL);
 INSERT INTO project (id, title, public, wiki_base_url) VALUES (3, 'Focussed Ion Beam (FIB)', true, NULL);

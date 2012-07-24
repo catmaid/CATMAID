@@ -175,7 +175,7 @@ class RelationQueryTests(TestCase):
     def test_find_all_neurons(self):
         all_neurons = ClassInstance.objects.filter(class_column__class_name='neuron',
                                                    project=self.test_project_id)
-        self.assertEqual(all_neurons.count(), 8)
+        self.assertEqual(all_neurons.count(), 11)
 
     def test_find_downstream_neurons(self):
         upstream = ClassInstance.objects.get(name='branched neuron')
@@ -1121,7 +1121,6 @@ class ViewPageTests(TestCase):
     def test_delete_non_root_treenode(self):
         self.fake_authentication()
         treenode_id = 265
-
 
         relation_map = get_relation_to_id_map(self.test_project_id)
         get_skeleton = lambda: TreenodeClassInstance.objects.filter(

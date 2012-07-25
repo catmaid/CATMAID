@@ -157,6 +157,9 @@ def get_form_and_neurons(request, project_id, kwargs):
     return (all_neurons, search_form)
 
 
+# TODO After all PHP functions have been replaced and all occurrence of
+# this odd behavior have been found, change callers to not depend on this
+# legacy functionality.
 def makeJSON_legacy_list(objects):
     '''
     The PHP function makeJSON, when operating on a list of rows as

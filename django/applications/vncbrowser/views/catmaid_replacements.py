@@ -397,20 +397,34 @@ def search(request, project_id=None, logged_in_user=None):
     rows = list(row_query)
 
     relation_map = get_relation_to_id_map(project_id)
+    label_rows = {}
     for row in rows:
         # Change key-name of class_column__class_name for json output
         row['class_name'] = row.pop('class_column__class_name')
-        # Retrieve nodes holding text labels
+        # Prepare for retrieving nodes holding text labels
         if row['class_name'] == 'label':
-            node_query = TreenodeClassInstance.objects.filter(
-                    project=project_id,
-                    treenode__project=project_id,
-                    relation=relation_map['labeled_as'],
-                    class_instance__name=row['name'])\
-                            .order_by('-treenode__id')\
-                            .values('treenode', 'treenode__location', 'treenode__skeleton')
-            if node_query.count() > 0:
-                row['nodes'] = map(format_node_data, node_query)
+            row['nodes'] = []
+            label_rows[row['name']] = row
+
+    node_query = TreenodeClassInstance.objects.filter(
+            project=project_id,
+            treenode__project=project_id,
+            relation=relation_map['labeled_as'],
+            class_instance__name__in=label_rows.keys())\
+                    .order_by('-treenode__id')\
+                    .values('treenode',
+                            'treenode__location',
+                            'treenode__skeleton',
+                            'class_instance__name')
+    # Insert nodes into their rows
+    for node in node_query:
+        row_with_node = label_rows[node['class_instance__name']]
+        row_with_node['nodes'].append(format_node_data(node))
+
+    # Delete the nodes property from rows with no nodes
+    for row in rows:
+        if 'nodes' in row and len(row['nodes']) == 0:
+            del row['nodes']
 
     return HttpResponse(json.dumps(rows))
 

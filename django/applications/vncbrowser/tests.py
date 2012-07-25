@@ -1165,6 +1165,58 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
+    def test_search_with_several_nodes(self):
+        self.fake_authentication()
+
+        response = self.client.get(
+                '/%d/search' % self.test_project_id,
+                {'substring': 't'})
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                {"id":465, "name":"tubby bye bye", "class_name":"driver_line"},
+                {"id":4, "name":"Fragments", "class_name":"group"},
+                {"id":364, "name":"Isolated synaptic terminals", "class_name":"group"},
+                {"id":2353, "name":"synapse with more targets", "class_name":"label"},
+                {"id":2345, "name":"t", "class_name":"label"},
+                {"id":351, "name":"TODO", "class_name":"label", "nodes":[
+                    {"id":349, "x":3580, "y":3350, "z":252, "skid":1},
+                    {"id":261, "x":2820, "y":1345, "z":0, "skid":235}]},
+                {"id":2342, "name":"uncertain end", "class_name":"label", "nodes":[
+                    {"id":403, "x":7840, "y":2380, "z":0, "skid":373}]},
+                {"id":374, "name":"downstream-A", "class_name":"neuron"},
+                {"id":362, "name":"downstream-B", "class_name":"neuron"},
+                {"id":1, "name":"dull skeleton", "class_name":"skeleton"},
+                {"id":235, "name":"skeleton 235", "class_name":"skeleton"},
+                {"id":2364, "name":"skeleton 2364", "class_name":"skeleton"},
+                {"id":2388, "name":"skeleton 2388", "class_name":"skeleton"},
+                {"id":2411, "name":"skeleton 2411", "class_name":"skeleton"},
+                {"id":361, "name":"skeleton 361", "class_name":"skeleton"},
+                {"id":373, "name":"skeleton 373", "class_name":"skeleton"}]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_search_with_nodes_and_nonode_label(self):
+        self.fake_authentication()
+
+        response = self.client.get(
+                '/%d/search' % self.test_project_id,
+                {'substring': 'a'})
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                {"id":485, "name":"Local", "class_name":"cell_body_location"},
+                {"id":487, "name":"Non-Local", "class_name":"cell_body_location"},
+                {"id":454, "name":"and", "class_name":"driver_line"},
+                {"id":4, "name":"Fragments", "class_name":"group"},
+                {"id":364, "name":"Isolated synaptic terminals", "class_name":"group"},
+                {"id":2353, "name":"synapse with more targets", "class_name":"label"},
+                {"id":2342, "name":"uncertain end", "class_name":"label", "nodes":[
+                    {"id":403, "x":7840, "y":2380, "z":0, "skid":373}]},
+                {"id":233, "name":"branched neuron", "class_name":"neuron"},
+                {"id":374, "name":"downstream-A", "class_name":"neuron"},
+                {"id":362, "name":"downstream-B", "class_name":"neuron"}]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
     def test_search_with_nodes(self):
         self.fake_authentication()
 

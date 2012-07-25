@@ -81,6 +81,27 @@ class Double3DField(models.Field):
 
 # ------------------------------------------------------------------------
 
+class Component(models.Model):
+    class Meta:
+        db_table = "component"
+        managed = False
+    user = models.ForeignKey(User)
+    creation_time = models.DateTimeField(default=now)
+    edition_time = models.DateTimeField(default=now)
+    project = models.ForeignKey(Project)
+    stack = models.ForeignKey(Stack)
+    neuron_id = models.IntegerField()
+    min_x = models.IntegerField()
+    min_y = models.IntegerField()
+    max_x = models.IntegerField()
+    max_y = models.IntegerField()
+    z = models.IntegerField()
+    threshold = models.FloatField()
+    status = models.IntegerField(default=0)
+    # TODO: Fixme, should be an array
+    # http://stackoverflow.com/questions/4400762/how-to-map-postgresql-array-field-in-django-orm
+    correction_path = models.TextField()
+
 class User(models.Model):
     class Meta:
         db_table = "user"

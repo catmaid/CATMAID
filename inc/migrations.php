@@ -1081,6 +1081,35 @@ ALTER TABLE project_user ADD COLUMN inverse_mouse_wheel boolean DEFAULT FALSE;
 '
 ),
 
+	'2012-07-25T12:20:53' => new Migration(
+		'Create component table',
+		"
+CREATE TABLE component (
+    stack_id bigint NOT NULL,
+    neuron_id bigint NOT NULL,
+    component_id bigint NOT NULL,
+    min_x bigint NOT NULL,
+    min_y bigint NOT NULL,
+    max_x bigint NOT NULL,
+    max_y bigint NOT NULL,
+    z bigint NOT NULL,
+    threshold double precision,
+    status integer DEFAULT 0 NOT NULL,
+    correction_path text[]
+)
+INHERITS (concept);
+
+ALTER TABLE ONLY component ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY component ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY component ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY component ADD CONSTRAINT component_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY component ADD CONSTRAINT component_stack_id_fkey FOREIGN KEY (stack_id) REFERENCES stack(id) ON DELETE CASCADE;
+ALTER TABLE ONLY component ADD CONSTRAINT component_project_id_fkey FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE;
+ALTER TABLE ONLY component ADD CONSTRAINT component_user_id_fkey FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE;
+"
+),
+
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

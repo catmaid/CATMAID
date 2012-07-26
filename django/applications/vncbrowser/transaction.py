@@ -5,8 +5,13 @@ import json
 
 
 class RollbackAndReport(Exception):
-    def __init__(self, error_report_dict):
-        self.error_report_dict = error_report_dict
+    def __init__(self, error):
+        if isinstance(error, dict):
+            self.error_report_dict = error
+        elif isinstance(error, str):
+            self.error_report_dict = {'error': error}
+        else:
+            self.error_report_dict = {'error': 'Unknown error.'}
 
     def __str__(self):
         return self.error_report_dict

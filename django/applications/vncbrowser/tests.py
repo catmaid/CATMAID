@@ -73,7 +73,7 @@ class TransactionTests(TransactionTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
-    def test_report_error(self):
+    def test_report_error_dict(self):
         @transaction_reportable_commit_on_success
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
@@ -84,6 +84,36 @@ class TransactionTests(TransactionTestCase):
         response = insert_user()
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'catch me if you can'}
+        self.assertEqual(0, User.objects.all().count())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_report_error_string(self):
+        @transaction_reportable_commit_on_success
+        def insert_user():
+            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
+            raise RollbackAndReport('catch me if you can')
+            return HttpResponse(json.dumps({'should not': 'return this'}))
+
+        User.objects.all().delete()
+        response = insert_user()
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'catch me if you can'}
+        self.assertEqual(0, User.objects.all().count())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_report_error_unrecognized_argument(self):
+        @transaction_reportable_commit_on_success
+        def insert_user():
+            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
+            raise RollbackAndReport(5)
+            return HttpResponse(json.dumps({'should not': 'return this'}))
+
+        User.objects.all().delete()
+        response = insert_user()
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'Unknown error.'}
         self.assertEqual(0, User.objects.all().count())
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
@@ -238,7 +268,7 @@ swc_output_for_skeleton_235 = '''237 0 1065 3035 0 0 -1
 
 
 def swc_string_to_sorted_matrix(s):
-    m = [ re.split("\s+", x) for x in s.splitlines() if not re.search('^\s*(#|$)', x) ]
+    m = [re.split("\s+", x) for x in s.splitlines() if not re.search('^\s*(#|$)', x)]
     return sorted(m, key=lambda x: x[0])
 
 
@@ -265,7 +295,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(len(m1), len(m2))
 
         fields = ['id', 'type', 'x', 'y', 'z', 'radius', 'parent']
-        d = dict((x,i) for (i,x) in enumerate(fields))
+        d = dict((x, i) for (i, x) in enumerate(fields))
 
         for i, e1 in enumerate(m1):
             e2 = m2[i]
@@ -306,52 +336,52 @@ class ViewPageTests(TestCase):
                               "synapse with more targets",
                               "uncertain end",
                               "TODO"]))
-        nods = {"7":"7",
-                "237":"237",
-                "367":"367",
-                "377":"377",
-                "417":"417",
-                "409":"409",
-                "407":"407",
-                "399":"399",
-                "397":"397",
-                "395":"395",
-                "393":"393",
-                "387":"387",
-                "385":"385",
-                "403":"403",
-                "405":"405",
-                "383":"383",
-                "391":"391",
-                "415":"415",
-                "289":"289",
-                "285":"285",
-                "283":"283",
-                "281":"281",
-                "277":"277",
-                "275":"275",
-                "273":"273",
-                "271":"271",
-                "279":"279",
-                "267":"267",
-                "269":"269",
-                "265":"265",
-                "261":"261",
-                "259":"259",
-                "257":"257",
-                "255":"255",
-                "263":"263",
-                "253":"253",
-                "251":"251",
-                "249":"249",
-                "247":"247",
-                "245":"245",
-                "243":"243",
-                "241":"241",
-                "239":"239",
-                "356":"356",
-                "421":"421",
-                "432":"432"}
+        nods = {"7": "7",
+                "237": "237",
+                "367": "367",
+                "377": "377",
+                "417": "417",
+                "409": "409",
+                "407": "407",
+                "399": "399",
+                "397": "397",
+                "395": "395",
+                "393": "393",
+                "387": "387",
+                "385": "385",
+                "403": "403",
+                "405": "405",
+                "383": "383",
+                "391": "391",
+                "415": "415",
+                "289": "289",
+                "285": "285",
+                "283": "283",
+                "281": "281",
+                "277": "277",
+                "275": "275",
+                "273": "273",
+                "271": "271",
+                "279": "279",
+                "267": "267",
+                "269": "269",
+                "265": "265",
+                "261": "261",
+                "259": "259",
+                "257": "257",
+                "255": "255",
+                "263": "263",
+                "253": "253",
+                "251": "251",
+                "249": "249",
+                "247": "247",
+                "245": "245",
+                "243": "243",
+                "241": "241",
+                "239": "239",
+                "356": "356",
+                "421": "421",
+                "432": "432"}
         response = self.client.post('/%d/labels-for-nodes' % (self.test_project_id,),
                               {'nods': json.dumps(nods)})
 

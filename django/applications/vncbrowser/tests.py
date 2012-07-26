@@ -73,7 +73,7 @@ class TransactionTests(TransactionTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
-    def test_report_error(self):
+    def test_report_error_dict(self):
         @transaction_reportable_commit_on_success
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
@@ -84,6 +84,36 @@ class TransactionTests(TransactionTestCase):
         response = insert_user()
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'catch me if you can'}
+        self.assertEqual(0, User.objects.all().count())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_report_error_string(self):
+        @transaction_reportable_commit_on_success
+        def insert_user():
+            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
+            raise RollbackAndReport('catch me if you can')
+            return HttpResponse(json.dumps({'should not': 'return this'}))
+
+        User.objects.all().delete()
+        response = insert_user()
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'catch me if you can'}
+        self.assertEqual(0, User.objects.all().count())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_report_error_unrecognized_argument(self):
+        @transaction_reportable_commit_on_success
+        def insert_user():
+            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
+            raise RollbackAndReport(5)
+            return HttpResponse(json.dumps({'should not': 'return this'}))
+
+        User.objects.all().delete()
+        response = insert_user()
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'Unknown error.'}
         self.assertEqual(0, User.objects.all().count())
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)

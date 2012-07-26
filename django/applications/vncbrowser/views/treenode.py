@@ -186,9 +186,9 @@ def create_treenode(request, project_id=None, logged_in_user=None):
         raise
     except Exception as e:
         if (response_on_error == ''):
-            raise RollbackAndReport({'error': str(e)})
+            raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport({'error': response_on_error})
+            raise RollbackAndReport(response_on_error)
 
 
 @catmaid_can_edit_project
@@ -232,7 +232,7 @@ def delete_treenode(request, project_id=None, logged_in_user=None):
                     parent=treenode)
 
             if (children.count() > 0):
-                raise RollbackAndReport({'error': "You can't delete the root node when it has children."})
+                raise RollbackAndReport("You can't delete the root node when it has children.")
 
             # Remove original skeleton.
             response_on_error = 'Could not delete skeleton.'
@@ -267,9 +267,9 @@ def delete_treenode(request, project_id=None, logged_in_user=None):
         raise
     except Exception as e:
         if (response_on_error == ''):
-            raise RollbackAndReport({'error': str(e)})
+            raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport({'error': response_on_error})
+            raise RollbackAndReport(response_on_error)
 
 
 @catmaid_login_required
@@ -277,7 +277,7 @@ def delete_treenode(request, project_id=None, logged_in_user=None):
 def treenode_info(request, project_id=None, logged_in_user=None):
     treenode_id = request.POST.get('treenode_id', -1)
     if (treenode_id < 0):
-        raise RollbackAndReport({'error': 'A treenode id has not been provided!'})
+        raise RollbackAndReport('A treenode id has not been provided!')
 
     c = connection.cursor()
     # Fetch all the treenodes which are in the bounding box:
@@ -298,8 +298,8 @@ cici.relation_id = r2.id AND r2.relation_name = 'model_of'
             for row in c.fetchall()
             ]
     if (len(results) > 1):
-        raise RollbackAndReport({'error': 'Found more than one skeleton and neuron for treenode %s' % treenode_id})
+        raise RollbackAndReport('Found more than one skeleton and neuron for treenode %s' % treenode_id)
     elif (len(results) == 0):
-        raise RollbackAndReport({'error': 'No skeleton and neuron for treenode %s' % treenode_id})
+        raise RollbackAndReport('No skeleton and neuron for treenode %s' % treenode_id)
     else:
         return HttpResponse(json.dumps(results[0]))

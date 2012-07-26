@@ -160,3 +160,21 @@ def get_form_and_neurons(request, project_id, kwargs):
 
     all_neurons = order_neurons(all_neurons, order_by)
     return (all_neurons, search_form)
+
+
+# TODO After all PHP functions have been replaced and all occurrence of
+# this odd behavior have been found, change callers to not depend on this
+# legacy functionality.
+def makeJSON_legacy_list(objects):
+    '''
+    The PHP function makeJSON, when operating on a list of rows as
+    results, will output a JSON list of key-values, with keys being
+    integers from 0 and upwards. We return a dict with the same
+    structure so that it looks the same when used with json.dumps.
+    '''
+    i = 0
+    res = {}
+    for o in objects:
+        res[i] = o
+        i += 1
+    return res

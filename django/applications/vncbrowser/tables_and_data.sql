@@ -86,7 +86,7 @@ CREATE SEQUENCE concept_id_seq
     NO MAXVALUE
     CACHE 1;
 ALTER SEQUENCE concept_id_seq OWNED BY concept.id;
-SELECT pg_catalog.setval('concept_id_seq', 2432, true);
+SELECT pg_catalog.setval('concept_id_seq', 2458, true);
 CREATE TABLE location (
     location double3d NOT NULL,
     reviewer_id integer DEFAULT (-1) NOT NULL,
@@ -198,7 +198,7 @@ CREATE SEQUENCE sessions_id_seq
     NO MAXVALUE
     CACHE 1;
 ALTER SEQUENCE sessions_id_seq OWNED BY sessions.id;
-SELECT pg_catalog.setval('sessions_id_seq', 44, true);
+SELECT pg_catalog.setval('sessions_id_seq', 50, true);
 CREATE TABLE settings (
     key text NOT NULL,
     value text
@@ -253,10 +253,18 @@ CREATE SEQUENCE textlabel_id_seq
     CACHE 1;
 ALTER SEQUENCE textlabel_id_seq OWNED BY textlabel.id;
 SELECT pg_catalog.setval('textlabel_id_seq', 1, false);
+CREATE SEQUENCE textlabel_location_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+SELECT pg_catalog.setval('textlabel_location_id_seq', 1, false);
 CREATE TABLE textlabel_location (
     textlabel_id integer NOT NULL,
     location double3d NOT NULL,
-    deleted boolean DEFAULT false NOT NULL
+    deleted boolean DEFAULT false NOT NULL,
+    id integer DEFAULT nextval('textlabel_location_id_seq'::regclass) NOT NULL
 );
 CREATE TABLE treenode (
     parent_id bigint,
@@ -371,6 +379,8 @@ INSERT INTO applied_migrations (id) VALUES ('2012-04-06T18:07:41');
 INSERT INTO applied_migrations (id) VALUES ('2012-04-10T10:15:16');
 INSERT INTO applied_migrations (id) VALUES ('2012-04-12T15:59:28');
 INSERT INTO applied_migrations (id) VALUES ('2012-05-16T12:20:53');
+INSERT INTO applied_migrations (id) VALUES ('2012-07-10T20:43:35');
+INSERT INTO applied_migrations (id) VALUES ('2012-07-10T20:44:35');
 INSERT INTO class (id, user_id, creation_time, edition_time, project_id, class_name, description) VALUES (5, 1, '2010-08-26 18:23:53.551017+02', '2010-08-26 18:23:53.551017+02', 3, 'neuron', NULL);
 INSERT INTO class (id, user_id, creation_time, edition_time, project_id, class_name, description) VALUES (14, 1, '2010-08-26 19:19:57.046457+02', '2010-08-26 19:19:57.046457+02', 3, 'skeleton', NULL);
 INSERT INTO class (id, user_id, creation_time, edition_time, project_id, class_name, description) VALUES (33, 3, '2010-08-27 17:28:08.713582+02', '2010-08-27 17:28:08.713582+02', 3, 'label', NULL);
@@ -432,6 +442,12 @@ INSERT INTO class_instance (id, user_id, creation_time, edition_time, project_id
 INSERT INTO class_instance (id, user_id, creation_time, edition_time, project_id, class_id, name) VALUES (2389, 3, '2011-12-09 14:01:37.57599+01', '2011-12-09 14:01:37.57599+01', 3, 5, 'neuron 2389');
 INSERT INTO class_instance (id, user_id, creation_time, edition_time, project_id, class_id, name) VALUES (2411, 3, '2011-12-09 14:01:59.149053+01', '2011-12-09 14:01:59.149053+01', 3, 14, 'skeleton 2411');
 INSERT INTO class_instance (id, user_id, creation_time, edition_time, project_id, class_id, name) VALUES (2412, 3, '2011-12-09 14:01:59.149053+01', '2011-12-09 14:01:59.149053+01', 3, 5, 'neuron 2412');
+INSERT INTO class_instance (id, user_id, creation_time, edition_time, project_id, class_id, name) VALUES (2433, 3, '2012-07-22 22:50:57.758826+02', '2012-07-22 22:50:57.758826+02', 3, 14, 'skeleton 2433');
+INSERT INTO class_instance (id, user_id, creation_time, edition_time, project_id, class_id, name) VALUES (2434, 3, '2012-07-22 22:50:57.758826+02', '2012-07-22 22:50:57.758826+02', 3, 5, 'neuron 2434');
+INSERT INTO class_instance (id, user_id, creation_time, edition_time, project_id, class_id, name) VALUES (2440, 3, '2012-07-23 01:12:54.541987+02', '2012-07-23 01:12:54.541987+02', 3, 14, 'skeleton 2440');
+INSERT INTO class_instance (id, user_id, creation_time, edition_time, project_id, class_id, name) VALUES (2441, 3, '2012-07-23 01:12:54.541987+02', '2012-07-23 01:12:54.541987+02', 3, 5, 'neuron 2441');
+INSERT INTO class_instance (id, user_id, creation_time, edition_time, project_id, class_id, name) VALUES (2451, 3, '2012-07-23 01:15:24.010388+02', '2012-07-23 01:15:24.010388+02', 3, 14, 'skeleton 2451');
+INSERT INTO class_instance (id, user_id, creation_time, edition_time, project_id, class_id, name) VALUES (2452, 3, '2012-07-23 01:15:24.010388+02', '2012-07-23 01:15:24.010388+02', 3, 5, 'neuron 2452');
 INSERT INTO class_instance_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, class_instance_a, class_instance_b) VALUES (3, 3, '2011-09-04 13:53:41.243573+02', '2011-09-04 13:53:41.243573+02', 3, 10, 1, 2);
 INSERT INTO class_instance_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, class_instance_a, class_instance_b) VALUES (5, 3, '2011-09-04 13:53:41.243573+02', '2011-09-04 13:53:41.243573+02', 3, 9, 4, 2323);
 INSERT INTO class_instance_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, class_instance_a, class_instance_b) VALUES (6, 3, '2011-09-04 13:53:41.243573+02', '2011-09-04 13:53:41.243573+02', 3, 9, 2, 4);
@@ -455,16 +471,22 @@ INSERT INTO class_instance_class_instance (id, user_id, creation_time, edition_t
 INSERT INTO class_instance_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, class_instance_a, class_instance_b) VALUES (2391, 3, '2011-12-09 14:01:37.57599+01', '2011-12-09 14:01:37.57599+01', 3, 9, 2389, 4);
 INSERT INTO class_instance_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, class_instance_a, class_instance_b) VALUES (2413, 3, '2011-12-09 14:01:59.149053+01', '2011-12-09 14:01:59.149053+01', 3, 10, 2411, 2412);
 INSERT INTO class_instance_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, class_instance_a, class_instance_b) VALUES (2414, 3, '2011-12-09 14:01:59.149053+01', '2011-12-09 14:01:59.149053+01', 3, 9, 2412, 4);
+INSERT INTO class_instance_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, class_instance_a, class_instance_b) VALUES (2435, 3, '2012-07-22 22:50:57.758826+02', '2012-07-22 22:50:57.758826+02', 3, 10, 2433, 2434);
+INSERT INTO class_instance_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, class_instance_a, class_instance_b) VALUES (2436, 3, '2012-07-22 22:50:57.758826+02', '2012-07-22 22:50:57.758826+02', 3, 9, 2434, 4);
+INSERT INTO class_instance_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, class_instance_a, class_instance_b) VALUES (2442, 3, '2012-07-23 01:12:54.541987+02', '2012-07-23 01:12:54.541987+02', 3, 10, 2440, 2441);
+INSERT INTO class_instance_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, class_instance_a, class_instance_b) VALUES (2443, 3, '2012-07-23 01:12:54.541987+02', '2012-07-23 01:12:54.541987+02', 3, 9, 2441, 4);
+INSERT INTO class_instance_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, class_instance_a, class_instance_b) VALUES (2453, 3, '2012-07-23 01:15:24.010388+02', '2012-07-23 01:15:24.010388+02', 3, 10, 2451, 2452);
+INSERT INTO class_instance_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, class_instance_a, class_instance_b) VALUES (2454, 3, '2012-07-23 01:15:24.010388+02', '2012-07-23 01:15:24.010388+02', 3, 9, 2452, 4);
 INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, confidence) VALUES (356, 3, '2011-09-27 13:57:15.967079+02', '2011-10-27 16:45:09.87073+02', 3, '(6730,2700,0)', -1, NULL, 5);
 INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, confidence) VALUES (421, 3, '2011-10-07 13:02:22.656859+02', '2011-10-07 13:02:30.396118+02', 3, '(6260,3990,0)', -1, NULL, 5);
 INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, confidence) VALUES (432, 3, '2011-10-11 16:49:08.042058+02', '2011-10-31 10:22:37.263519+01', 3, '(2640,3450,0)', -1, NULL, 5);
 INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, confidence) VALUES (2400, 3, '2011-12-09 14:01:43.965389+01', '2011-12-09 14:01:43.965389+01', 3, '(3400,5620,0)', -1, NULL, 5);
-INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, confidence) VALUES (2401, 3, '2011-12-09 14:01:44.965389+01', '2011-12-09 14:01:44.965389+01', 3, '(3401,5621,0)', -1, NULL, 5);
+INSERT INTO connector (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, confidence) VALUES (2458, 3, '2012-07-24 03:54:02.486863+02', '2012-07-24 03:54:02.486863+02', 3, '(5870,3460,243)', -1, NULL, 5);
 INSERT INTO connector_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, connector_id, class_instance_id) VALUES (2354, 3, '2011-10-31 10:24:57.406099+01', '2011-10-31 10:24:57.406099+01', 3, 35, 432, 2353);
 INSERT INTO connector_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, connector_id, class_instance_id) VALUES (2355, 3, '2011-10-31 10:24:57.406099+01', '2011-10-31 10:24:57.406099+01', 3, 35, 432, 351);
-INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2430, 1, '2011-09-04 13:53:41.243573+02', '2011-09-04 13:53:41.243573+02', 3, 'create_neuron', '(1,2,3)', 'Create neuron 1 and skeleton 2');
-INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2431, 2, '2012-09-04 13:53:41.243573+02', '2012-09-04 13:53:41.243573+02', 3, 'change_confidence', '(1,2,3)', 'Changed to 4');
-INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2432, 2, '2012-07-04 13:53:41.243573+02', '2012-07-04 13:53:41.243573+02', 3, 'change_confidence', '(2,2,2)', 'Changed to 2');
+INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2439, 3, '2012-07-22 22:50:57.758826+02', '2012-07-22 22:50:57.758826+02', 3, 'create_neuron', '(5290,3930,279)', 'Create neuron 2434 and skeleton 2433');
+INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2446, 3, '2012-07-23 01:12:54.541987+02', '2012-07-23 01:12:54.541987+02', 3, 'create_neuron', '(4470,2110,180)', 'Create neuron 2441 and skeleton 2440');
+INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2457, 3, '2012-07-23 01:15:24.010388+02', '2012-07-23 01:15:24.010388+02', 3, 'create_neuron', '(3680,2530,180)', 'Create neuron 2452 and skeleton 2451');
 INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (1, 3, '2011-12-19 16:46:01.360422+01', false, 'Message 1', 'Contents of message 1.', 'http://www.example.com/message1');
 INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (2, 3, '2011-12-20 16:46:01.360422+01', false, 'Message 2', 'Contents of message 2.', 'http://www.example.com/message2');
 INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (3, 3, '2011-12-21 16:46:01.360422+01', true, 'Message 3', 'Contents of message 3.', 'http://www.example.com/message3');
@@ -506,7 +528,7 @@ INSERT INTO relation (id, user_id, creation_time, edition_time, project_id, rela
 INSERT INTO relation (id, user_id, creation_time, edition_time, project_id, relation_name, uri, description, isreciprocal) VALUES (2338, 3, '2011-10-29 10:33:34.26307+02', '2011-10-29 10:33:34.26307+02', 5, 'model_of', NULL, NULL, false);
 INSERT INTO relation (id, user_id, creation_time, edition_time, project_id, relation_name, uri, description, isreciprocal) VALUES (2339, 3, '2011-10-29 10:33:34.26307+02', '2011-10-29 10:33:34.26307+02', 5, 'part_of', NULL, NULL, false);
 INSERT INTO relation (id, user_id, creation_time, edition_time, project_id, relation_name, uri, description, isreciprocal) VALUES (2340, 3, '2011-10-29 10:33:34.26307+02', '2011-10-29 10:33:34.26307+02', 5, 'is_a', NULL, NULL, false);
-INSERT INTO settings (key, value) VALUES ('schema_version', '2012-05-16T12:20:53');
+INSERT INTO settings (key, value) VALUES ('schema_version', '2012-07-10T20:44:35');
 INSERT INTO stack (id, title, dimension, resolution, image_base, comment, trakem2_project, num_zoom_levels, file_extension, tile_width, tile_height, tile_source_type, metadata) VALUES (1, 'Original data.', '(4096,4096,16)', '(3.26140000000000008,3.26140000000000008,60)', 'http://fly.mpi-cbg.de/map/evaluation/original/', '<p>&copy;2007 by Stephan Saalfeld.</p> <p>Rendered with <a href="http://www.povray.org/">POV-Ray&nbsp;v3.6</a> using this <a href="http://fly.mpi-cbg.de/~saalfeld/download/volume.tar.bz2">scene-file</a>.</p>', false, -1, 'jpg', 256, 256, 1, '');
 INSERT INTO stack (id, title, dimension, resolution, image_base, comment, trakem2_project, num_zoom_levels, file_extension, tile_width, tile_height, tile_source_type, metadata) VALUES (3, 'Focussed Ion Beam (FIB) stack of Rat Striatum	', '(2048,1536,460)', '(5,5,9)', 'http://incf.ini.uzh.ch/image-stack-fib/', '<p>&copy;2009 <a href="http://people.epfl.ch/graham.knott">Graham Knott</a>.</p> <p>Public INCF data set available at the <a href="http://www.incf.org/about/nodes/switzerland/data">Swiss INCF Node</a>.</p>', false, -1, 'jpg', 256, 256, 1, '');
 INSERT INTO stack (id, title, dimension, resolution, image_base, comment, trakem2_project, num_zoom_levels, file_extension, tile_width, tile_height, tile_source_type, metadata) VALUES (5, 'FIB data, first stack', '(2048,1536,460)', '(5,5,9)', 'http://incf.ini.uzh.ch/image-stack-fib/', 'Stack 1 for testing purposes', false, -1, 'jpg', 256, 256, 1, '');
@@ -566,7 +588,6 @@ INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, loca
 INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (345, 3, '2011-09-27 13:56:19.96011+02', '2011-12-05 19:51:36.955507+01', 3, '(3650,3350,234)', -1, NULL, 343, -1, 5, 1);
 INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (347, 3, '2011-09-27 13:56:21.927429+02', '2011-12-05 19:51:36.955507+01', 3, '(3600,3370,243)', -1, NULL, 345, -1, 5, 1);
 INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (349, 3, '2011-09-27 13:56:24.082282+02', '2011-12-05 19:51:36.955507+01', 3, '(3580,3350,252)', -1, NULL, 347, -1, 5, 1);
-INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (4000, 3, '2011-09-27 13:57:17.808802+02', '2011-12-05 19:51:36.955507+01', 3, '(7030,1980,0)', -1, NULL, NULL, -1, 5, 361);
 INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (367, 3, '2011-09-27 13:57:17.808802+02', '2011-12-05 19:51:36.955507+01', 3, '(7030,1980,0)', -1, NULL, NULL, -1, 5, 361);
 INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (377, 3, '2011-09-27 13:57:19.447829+02', '2011-12-05 19:51:36.955507+01', 3, '(7620,2890,0)', -1, NULL, NULL, -1, 5, 373);
 INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (383, 3, '2011-09-27 13:57:24.747026+02', '2011-12-05 19:51:36.955507+01', 3, '(7850,1970,0)', -1, NULL, 367, -1, 5, 361);
@@ -596,6 +617,11 @@ INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, loca
 INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (2417, 3, '2011-12-09 14:02:00.466912+01', '2011-12-09 14:02:00.466912+01', 3, '(4400,5730,0)', -1, NULL, 2415, -1, 5, 2411);
 INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (2419, 3, '2011-12-09 14:02:01.614859+01', '2011-12-09 14:02:01.614859+01', 3, '(5040,5650,0)', -1, NULL, 2417, -1, 5, 2411);
 INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (2423, 3, '2011-12-09 14:02:11.175624+01', '2011-12-09 14:02:11.175624+01', 3, '(4140,6460,0)', -1, NULL, 2415, -1, 5, 2411);
+INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (2437, 3, '2012-07-22 22:50:57.758826+02', '2012-07-22 22:50:57.758826+02', 3, '(5290,3930,279)', -1, NULL, NULL, -1, 5, 2433);
+INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (2444, 3, '2012-07-23 01:12:54.541987+02', '2012-07-23 01:12:54.541987+02', 3, '(4470,2110,180)', -1, NULL, NULL, -1, 5, 2440);
+INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (2447, 3, '2012-07-23 01:13:08.185091+02', '2012-07-23 01:13:08.185091+02', 3, '(4910,3260,180)', -1, NULL, 2444, -1, 5, 2440);
+INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (2449, 3, '2012-07-23 01:13:26.149834+02', '2012-07-23 01:13:26.149834+02', 3, '(5110,2500,180)', -1, NULL, 2444, -1, 5, 2440);
+INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (2455, 3, '2012-07-23 01:15:24.010388+02', '2012-07-23 01:15:24.010388+02', 3, '(3680,2530,180)', -1, NULL, NULL, -1, 5, 2451);
 INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (8, 3, '2011-09-04 13:53:41.243573+02', '2011-09-04 13:53:41.243573+02', 3, 11, 7, 1);
 INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (12, 3, '2011-09-04 13:54:16.301746+02', '2011-09-04 13:54:16.301746+02', 3, 11, 11, 1);
 INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (14, 3, '2011-09-04 13:54:24.528781+02', '2011-09-04 13:54:24.528781+02', 3, 11, 13, 1);
@@ -653,7 +679,6 @@ INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, p
 INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (350, 3, '2011-09-27 13:56:24.082282+02', '2011-09-27 13:56:24.082282+02', 3, 11, 349, 1);
 INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (353, 3, '2011-09-27 13:56:45.996753+02', '2011-09-27 13:56:45.996753+02', 3, 35, 349, 351);
 INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (368, 3, '2011-09-27 13:57:17.808802+02', '2011-09-27 13:57:17.808802+02', 3, 11, 367, 361);
-INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (4001, 3, '2011-09-27 13:57:17.808802+02', '2011-09-27 13:57:17.808802+02', 3, 11, 4000, 361);
 INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (378, 3, '2011-09-27 13:57:19.447829+02', '2011-09-27 13:57:19.447829+02', 3, 11, 377, 373);
 INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (384, 3, '2011-09-27 13:57:24.747026+02', '2011-09-27 13:57:24.747026+02', 3, 11, 383, 361);
 INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (386, 3, '2011-09-27 13:57:25.555145+02', '2011-09-27 13:57:25.555145+02', 3, 11, 385, 361);
@@ -684,6 +709,11 @@ INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, p
 INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (2418, 3, '2011-12-09 14:02:00.466912+01', '2011-12-09 14:02:00.466912+01', 3, 11, 2417, 2411);
 INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (2420, 3, '2011-12-09 14:02:01.614859+01', '2011-12-09 14:02:01.614859+01', 3, 11, 2419, 2411);
 INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (2424, 3, '2011-12-09 14:02:11.175624+01', '2011-12-09 14:02:11.175624+01', 3, 11, 2423, 2411);
+INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (2438, 3, '2012-07-22 22:50:57.758826+02', '2012-07-22 22:50:57.758826+02', 3, 11, 2437, 2433);
+INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (2445, 3, '2012-07-23 01:12:54.541987+02', '2012-07-23 01:12:54.541987+02', 3, 11, 2444, 2440);
+INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (2448, 3, '2012-07-23 01:13:08.185091+02', '2012-07-23 01:13:08.185091+02', 3, 11, 2447, 2440);
+INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (2450, 3, '2012-07-23 01:13:26.149834+02', '2012-07-23 01:13:26.149834+02', 3, 11, 2449, 2440);
+INSERT INTO treenode_class_instance (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, class_instance_id) VALUES (2456, 3, '2012-07-23 01:15:24.010388+02', '2012-07-23 01:15:24.010388+02', 3, 11, 2455, 2451);
 INSERT INTO treenode_connector (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, connector_id, skeleton_id, confidence) VALUES (360, 3, '2011-09-27 13:57:15.967079+02', '2011-12-20 16:46:01.360422+01', 3, 23, 285, 356, 235, 5);
 INSERT INTO treenode_connector (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, connector_id, skeleton_id, confidence) VALUES (372, 3, '2011-09-27 13:57:18.175214+02', '2011-12-20 16:46:01.360422+01', 3, 24, 367, 356, 361, 5);
 INSERT INTO treenode_connector (id, user_id, creation_time, edition_time, project_id, relation_id, treenode_id, connector_id, skeleton_id, confidence) VALUES (382, 3, '2011-09-27 13:57:19.797106+02', '2011-12-20 16:46:01.360422+01', 3, 24, 377, 356, 373, 5);
@@ -758,6 +788,8 @@ ALTER TABLE ONLY settings
     ADD CONSTRAINT settings_pkey PRIMARY KEY (key);
 ALTER TABLE ONLY stack
     ADD CONSTRAINT stack_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY textlabel_location
+    ADD CONSTRAINT textlabel_location_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY textlabel
     ADD CONSTRAINT textlabel_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY treenode_class_instance

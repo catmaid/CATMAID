@@ -205,7 +205,7 @@ class RelationQueryTests(TestCase):
     def test_find_all_neurons(self):
         all_neurons = ClassInstance.objects.filter(class_column__class_name='neuron',
                                                    project=self.test_project_id)
-        self.assertEqual(all_neurons.count(), 8)
+        self.assertEqual(all_neurons.count(), 11)
 
     def test_find_downstream_neurons(self):
         upstream = ClassInstance.objects.get(name='branched neuron')
@@ -557,8 +557,8 @@ class ViewPageTests(TestCase):
         for t in values_and_users:
             if t[0] == 6:
                 self.assertEqual(t[1], 'test (6)')
-            elif t[0] == 79:
-                self.assertEqual(t[1], 'gerhard (79)')
+            elif t[0] == 83:
+                self.assertEqual(t[1], 'gerhard (83)')
             else:
                 raise Exception("Unexpected value in returned stats: " + str(t))
 
@@ -570,9 +570,9 @@ class ViewPageTests(TestCase):
                            u'proj_presyn': 0,
                            u'proj_postsyn': 0,
                            u'proj_synapses': 0,
-                           u"proj_neurons": 8,
-                           u"proj_treenodes": 85,
-                           u"proj_skeletons": 7,
+                           u"proj_neurons": 11,
+                           u"proj_treenodes": 89,
+                           u"proj_skeletons": 10,
                            u"proj_textlabels": 0,
                            u"proj_tags": 4}
         parsed_response = json.loads(response.content)
@@ -798,29 +798,29 @@ class ViewPageTests(TestCase):
 
     log_rows = [
                     [
-                        'saalfeld',
+                        'gerhard',
                         'create_neuron',
-                        '04-09-2011 13:53',
-                        1.0,
-                        2.0,
-                        3.0,
-                        'Create neuron 1 and skeleton 2'],
+                        '22-07-2012 22:50',
+                        5290,
+                        3930,
+                        279,
+                        'Create neuron 2434 and skeleton 2433'],
                     [
-                        'test',
-                        'change_confidence',
-                        '04-09-2012 13:53',
-                        1.0,
-                        2.0,
-                        3.0,
-                        'Changed to 4'],
+                        'gerhard',
+                        'create_neuron',
+                        '23-07-2012 01:12',
+                        4470,
+                        2110,
+                        180,
+                        'Create neuron 2441 and skeleton 2440'],
                     [
-                        'test',
-                        'change_confidence',
-                        '04-07-2012 13:53',
-                        2.0,
-                        2.0,
-                        2.0,
-                        'Changed to 2']
+                        'gerhard',
+                        'create_neuron',
+                        '23-07-2012 01:15',
+                        3680,
+                        2530,
+                        180,
+                        'Create neuron 2452 and skeleton 2451']
             ]
 
     def test_list_logs_user_param(self):
@@ -829,9 +829,9 @@ class ViewPageTests(TestCase):
                 '/%d/logs/list' % self.test_project_id, {'user_id': 1})
         parsed_response = json.loads(response.content)
         expected_result = {
-                'iTotalDisplayRecords': 1,
-                'iTotalRecords': 1,
-                'aaData': [self.log_rows[0]]
+                'iTotalDisplayRecords': 0,
+                'iTotalRecords': 0,
+                'aaData': []
                 }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
@@ -841,7 +841,7 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/logs/list' % self.test_project_id, {
                     'iSortingCols': 2,
-                    'iSortCol_0': 0,  # user
+                    'iSortCol_0': 5,  # z
                     'iSortDir_0': 'ASC',
                     'iSortCol_1': 3,  # x
                     'iSortDir_1': 'DESC'
@@ -851,7 +851,7 @@ class ViewPageTests(TestCase):
                 'iTotalDisplayRecords': 3,
                 'iTotalRecords': 3,
                 'aaData': [
-                    self.log_rows[0], self.log_rows[2], self.log_rows[1]
+                    self.log_rows[1], self.log_rows[2], self.log_rows[0]
                     ]
                 }
         self.assertEqual(response.status_code, 200)
@@ -1130,7 +1130,7 @@ class ViewPageTests(TestCase):
 
     def test_delete_root_treenode(self):
         self.fake_authentication()
-        treenode_id = 4000
+        treenode_id = 2437
 
         treenode = Treenode.objects.filter(id=treenode_id)[0]
         children = Treenode.objects.filter(parent=treenode_id)
@@ -1152,6 +1152,13 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
         treenode_id = 265
 
+        relation_map = get_relation_to_id_map(self.test_project_id)
+        get_skeleton = lambda: TreenodeClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['element_of'],
+                treenode=treenode_id)
+        self.assertEqual(1, get_skeleton().count())
+
         children = Treenode.objects.filter(parent=treenode_id)
         self.assertTrue(children.count() > 0)
         tn_count = Treenode.objects.all().count()
@@ -1165,6 +1172,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
+        self.assertEqual(0, get_skeleton().count())
         self.assertEqual(tn_count - 1, Treenode.objects.all().count())
 
         for child in children:
@@ -1283,7 +1291,7 @@ class ViewPageTests(TestCase):
 
     def test_create_presynaptic_link_success(self):
         from_id = 237
-        to_id = 2401
+        to_id = 2458
         link_type = 'presynaptic_to'
         self.fake_authentication()
         response = self.client.post(

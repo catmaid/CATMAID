@@ -8,8 +8,8 @@
 # data for a test case.
 
 # To use this script, you should change the paths below to point to the
-# correct script and .sql files. I have put this script on my path, making
-# it easy to use from any terminal.
+# correct script and .sql files. You also need to change the password.
+# I have put this script on my path, making it easy to use from any terminal.
 
 if [ $# -ne 1 ]
 then

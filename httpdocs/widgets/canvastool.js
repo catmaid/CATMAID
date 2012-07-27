@@ -130,9 +130,9 @@ function CanvasTool()
 
 
         var getCompButton = document.createElement("button");
-        getCompButton.appendChild( document.createTextNode('Get Components') );
+        getCompButton.appendChild( document.createTextNode('Save Components') );
         getCompButton.onclick = function() {
-            self.getComponents();
+            self.putComponents();
         };
         controls.appendChild( getCompButton );
 
@@ -261,7 +261,7 @@ function CanvasTool()
         var up=true;
         if(e.wheelDelta<0){up=false;}
 
-        var currentComponentLayer=self.componentStore.componentLayers[self.componentStore.currentZ];
+        var currentComponentLayer=self.componentStore.componentLayers[stack.z];
         var currentComponentGroup=currentComponentLayer.componentGroups[currentComponentLayer.activeGroupIndex];
         var index=currentComponentGroup.selectedComponentIndex;
         if(index==0&&up){return;}
@@ -341,13 +341,56 @@ function CanvasTool()
         }*/
     };
 
+    this.putComponents=function()
+    {
+        if(self.state!=self.stateEnum.COMPONENTVIEW)
+        {
+            return 0;
+        }
+
+        var url='http://localhost:8000/1/stack/3/put-components';
+        var jsonObjects ={};
+
+        for (var componentGroupId in self.componentStore.componentLayers[stack.z].componentGroups)
+        {
+            if(self.componentStore.componentLayers[stack.z].componentGroups.hasOwnProperty(componentGroupId))
+            {
+                var componentGroup=self.componentStore.componentLayers[stack.z].componentGroups[componentGroupId];
+                var component=componentGroup.components[componentGroup.selectedComponentIndex];
+                jsonObjects[component.id]={id:component.id,minX:component.minX,minY:component.minY,maxX:component.maxX,maxY:component.maxY,threshold:component.threshold};
+
+            }
+        }
+
+        var viewstate=canvasLayer.getFieldOfViewParameters();
+
+        $.ajax({
+            url: url,
+            type: "POST",
+            data: {skeleton_id:61,z:stack.z,x:viewstate.x,y:viewstate.y,width:viewstate.width,height:viewstate.height,components: JSON.stringify(jsonObjects) },
+            dataType: "json",
+            beforeSend: function(x) {
+                //Log before send
+            },
+            success: function(result)
+            {
+                //Log result, report on error
+
+                }
+            });
+
+
+    }
+
+
+
     this.showActiveComponents=function()
     {
-        for (var componentGroupId in self.componentStore.componentLayers[self.componentStore.currentZ].componentGroups)
+        for (var componentGroupId in self.componentStore.componentLayers[stack.z].componentGroups)
         {
-            if(self.componentStore.componentLayers[self.componentStore.currentZ].componentGroups.hasOwnProperty(componentGroupId))
+            if(self.componentStore.componentLayers[stack.z].componentGroups.hasOwnProperty(componentGroupId))
             {
-                var componentGroup=self.componentStore.componentLayers[self.componentStore.currentZ].componentGroups[componentGroupId];
+                var componentGroup=self.componentStore.componentLayers[stack.z].componentGroups[componentGroupId];
                 canvasLayer.canvas.add(componentGroup.components[componentGroup.selectedComponentIndex].image);
                 var index=canvasLayer.canvas._objects.length;
                 if(index!=0){index-=1;}
@@ -369,18 +412,16 @@ function CanvasTool()
             self.started = false;
         }
 
-        var intersectingComponentGroup=self.CheckForIntersectingGroup(x,y)
-        if(intersectingComponentGroup!=null)
+        var intersectingComponentGroupId=self.CheckForIntersectingGroup(x,y);
+        if(intersectingComponentGroupId!=null)
         {
+            self.componentStore.componentLayers[stack.z].activeGroupIndex=intersectingComponentGroupId;
 
         }
         else
         {
             this.getComponents(x,y);
         }
-
-
-
 
     };
 
@@ -394,6 +435,24 @@ function CanvasTool()
 
     this.CheckForIntersectingGroup=function(x,y)
     {
+        if(self.componentStore.componentLayers[stack.z]!=undefined)
+        {
+            for(var componentGroupId in self.componentStore.componentLayers[stack.z].componentGroups)
+            {
+                if(self.componentStore.componentLayers[stack.z].componentGroups.hasOwnProperty(componentGroupId))
+                {
+                    var component = self.componentStore.componentLayers[stack.z].componentGroups[componentGroupId].components[self.componentStore.componentLayers[stack.z].componentGroups[componentGroupId].selectedComponentIndex];
+                    if(component.minX>x){continue;}
+                    if(component.maxX<x){continue;}
+                    if(component.minY>y){continue;}
+                    if(component.maxY<y){continue;}
+
+                    return componentGroupId;
+                }
+
+            }
+        }
+
         return null;
     };
 
@@ -412,14 +471,16 @@ function CanvasTool()
                 createCanvasLayer( parentStack );
                 createControlBox();
                 self.generateComponentLayer();
+
             } else {
                 // reactivateBindings();
             }
         } else {
-            self.generateComponentLayer();
             createCanvasLayer( parentStack );
             createControlBox();
+            self.generateComponentLayer();
         }
+        console.log(canvasLayer.getFieldOfViewParameters())
 
 
 
@@ -479,7 +540,7 @@ function CanvasTool()
 				',': [ 44, 188 ]
 			},
 			run: function (e) {
-                console.log('one up')
+                console.log('one up');
 				return true;
 			}
 		}),
@@ -490,7 +551,7 @@ function CanvasTool()
 				'.': [ 46, 190 ]
 			},
 			run: function (e) {
-                console.log('one down')
+                console.log('one down');
 				return true;
 			}
 		})
@@ -575,14 +636,14 @@ function CanvasTool()
             x: x,
             y: y,
             scale : 0.5, // defined as 1/2**zoomlevel
-            z : 0});
+            z : stack.z});
 
 
 
 
         $.getJSON(url,function(result){
 
-            var currentComponentGroups=self.componentStore.componentLayers[self.componentStore.currentZ].componentGroups;
+            var currentComponentGroups=self.componentStore.componentLayers[stack.z].componentGroups;
 
             var componentGroupIdNew=currentComponentGroups.length;
             var componentGroupNew=new ComponentGroup();
@@ -635,7 +696,7 @@ function CanvasTool()
             {
                 componentGroupNew.active=true;
 
-                var currentComponentLayer=self.componentStore.componentLayers[self.componentStore.currentZ];
+                var currentComponentLayer=self.componentStore.componentLayers[stack.z];
                 if(currentComponentLayer.activeGroupIndex!=-1)
                 {
                     currentComponentGroups[currentComponentLayer.activeGroupIndex].active=false;
@@ -653,7 +714,7 @@ function CanvasTool()
                     if(componentGroupNew.components.hasOwnProperty(componentToLoadId))
                     {
 
-                        self.getComponentImage(componentGroupNew.components[componentToLoadId],x,y,0,0.5,visible);
+                        self.getComponentImage(componentGroupNew.components[componentToLoadId],x,y, stack.z,0.5,visible);
                         visible=false;
 
                     }
@@ -729,15 +790,17 @@ function CanvasTool()
     function ComponentStore()
     {
         this.componentLayers=[];
-        this.currentZ=-1;
     }
 
     this.generateComponentLayer=function()
     {
-        var newLayer=new ComponentLayer();
-        var newZ=self.componentStore.currentZ+1;
-        self.componentStore.componentLayers[newZ]=newLayer;
-        self.componentStore.currentZ=newZ;
+
+        if(self.componentStore.componentLayers[stack.z]==undefined)
+        {
+            self.componentStore.componentLayers[stack.z]=new ComponentLayer();
+        }
+
+
 
     }
 

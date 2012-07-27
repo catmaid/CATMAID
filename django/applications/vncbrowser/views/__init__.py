@@ -46,6 +46,7 @@ from neurohdf import get_component_list_for_rectangle
 from neurohdf import get_component_list_for_point
 from neurohdf import get_component_image
 from neurohdf import get_component_layer_image
+from neurohdf import put_components
 
 from cropping import crop
 from cropping import download_crop

@@ -4,10 +4,11 @@ from django.conf import settings
 from django.http import HttpResponse
 from vncbrowser.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
-    Project, User, Treenode, TreenodeConnector, Connector
+    Project, User, Treenode, TreenodeConnector, Connector, Component
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
 from vncbrowser.views.export import get_annotation_graph
+from django.shortcuts import get_object_or_404
 
 
 try:
@@ -253,7 +254,7 @@ def get_component_image(request, project_id=None, stack_id=None):
 
     id = int(request.GET.get('id', '-1'))
     scale = float(request.GET.get('scale', '0'))
-    z='0'
+    z=request.GET.get('z', '-1')
 
     hdf5_path = request.GET.get('hdf5_path', '/')
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
@@ -290,6 +291,55 @@ def get_component_image(request, project_id=None, stack_id=None):
 
     return None
 
+#TODO: in transaction
+@catmaid_login_required
+def put_components(request, project_id=None, stack_id=None, logged_in_user=None):
+
+    # parse request
+    components=json.loads(request.POST['components'])
+    skeleton_id = int(request.POST['skeleton_id'])
+    z = int(request.POST['z'])
+
+
+    # field of view
+    viewX=int(request.POST['x'])
+    viewY=int(request.POST['y'])
+    viewHeight=int(request.POST['height'])
+    viewWidth=int(request.POST['width'])
+
+    viewMaxX=viewX+viewWidth
+    ViewMaxY=viewY+viewHeight
+
+    s = get_object_or_404(ClassInstance, pk=skeleton_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+    # fetch all the components for the given skeleton and z section
+    all_components = Component.objects.filter(
+        project=p,skeleton_id=skeleton_id,
+        z = z).all()
+
+    # discard the components out of field of view
+
+
+    for i in components:
+
+        comp=components[i]
+
+        new_component = Component(
+            project_id = p,
+            skeleton_id = s,
+            component_id=comp['id'],
+            min_x=comp['minX'],
+            min_y=comp['minY'],
+            max_x=comp['maxX'],
+            max_y=comp['maxY'],
+            z=z,
+            threshold=comp['threshold'],
+            status=1,
+            correction_path='')
+        new_component.save()
+
+        # delete components that were deselected
 
 
 def get_tile(request, project_id=None, stack_id=None):

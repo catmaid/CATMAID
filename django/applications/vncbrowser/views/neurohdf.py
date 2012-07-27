@@ -322,7 +322,7 @@ def get_saved_components(request, project_id=None, stack_id=None, logged_in_user
     for compData in all_components:
         componentIds[int(compData.component_id)]=\
             {
-            'minX':int(compData. min_x),
+            'minX':int(compData.min_x),
             'minY':int(compData.min_y),
             'maxX':int(compData.max_x),
             'maxY':int(compData.max_y),

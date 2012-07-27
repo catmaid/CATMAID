@@ -447,6 +447,9 @@ function CanvasTool()
                     if(component.minY>y){continue;}
                     if(component.maxY<y){continue;}
 
+                    var pixelvalue=canvasLayer.canvas.contextContainer.getImageData(x,y,1,1);
+                    if(pixelvalue.data[3]==0){continue;}
+
                     return componentGroupId;
                 }
 
@@ -695,6 +698,7 @@ function CanvasTool()
             if((componentGroupNew.components != undefined) && componentGroupNew.components.length>0)
             {
                 componentGroupNew.active=true;
+                componentGroupNew.groupLoaded=true;
 
                 var currentComponentLayer=self.componentStore.componentLayers[stack.z];
                 if(currentComponentLayer.activeGroupIndex!=-1)
@@ -779,6 +783,7 @@ function CanvasTool()
         this.selectedComponentIndex=-1;
         this.components=[];
         this.active=false;
+        this.groupLoaded=false;
     }
 
     function ComponentLayer()

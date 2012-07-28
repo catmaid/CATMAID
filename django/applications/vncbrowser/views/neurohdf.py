@@ -125,6 +125,7 @@ def extract_as_numpy_array( project_id, stack_id, id, z):
     """ Extract component to a 2D NumPy array
     """
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
+    z = str(z)
 
     with closing(h5py.File(fpath, 'r')) as hfile:
 
@@ -335,6 +336,9 @@ def initialize_components_for_skeleton(request, project_id=None, stack_id=None, 
         if component_key in all_component_ids:
             print >> sys.stderr, 'Component with id', component_key, ' exists already in the database. Skip it.'
             continue
+
+        # TODO generate default color for all components based on a map of
+        # the skeleton id to color space
 
         # if not, create it
         new_component = Component(

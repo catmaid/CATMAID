@@ -5,10 +5,10 @@ from vncbrowser.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
     Project, User, Treenode, TreenodeConnector, Connector, Component,Stack
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
-    get_form_and_neurons, get_treenodes_qs 
+    get_form_and_neurons
 from vncbrowser.views.export import get_annotation_graph
 from django.shortcuts import get_object_or_404
-
+from views import get_treenodes_qs
 try:
     import numpy as np
     import h5py
@@ -55,7 +55,7 @@ ConnectivityPostsynaptic = {
 }
 
 
-def retrieve_components_for_location(project_id, stack_id, x, y, z):
+def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=4):
     componentIds = {}
     fpath = os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
     with closing(h5py.File(fpath, 'r')) as hfile:
@@ -84,7 +84,13 @@ def retrieve_components_for_location(project_id, stack_id, x, y, z):
                     selectionMinXMaxXMinYMaxY = selectionMinXMaxXMinY[selectionMinXMaxXMinY[...,4]>=y]
 
         if selectionMinXMaxXMinYMaxY is not None:
-            for row in selectionMinXMaxXMinYMaxY:
+
+            idx = np.argsort(selectionMinXMaxXMinYMaxY[:,5])
+            limit_counter = 0
+            for i in idx:
+                if limit_counter >= limit:
+                    break
+                row = selectionMinXMaxXMinYMaxY[i,:]
                 componentPixelStart=hfile['connected_components/'+z+'/begin_indices'].value[row[0]].copy()
                 componentPixelEnd=hfile['connected_components/'+z+'/end_indices'].value[row[0]].copy()
                 data=hfile['connected_components/'+z+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
@@ -99,6 +105,7 @@ def retrieve_components_for_location(project_id, stack_id, x, y, z):
                     'maxY': int(row[4]),
                     'threshold': row[5]
                 }
+                limit_counter += 1
                 
     return componentIds
 
@@ -112,47 +119,6 @@ def get_component_list_for_point(request, project_id=None, stack_id=None):
     componentIds = retrieve_components_for_location(project_id, stack_id, x, y, z)
     return HttpResponse(json.dumps(componentIds), mimetype="text/json")
 
-# TODO: Remove?
-def get_component_layer_image(request, project_id=None, stack_id=None):
-    """ Generates an image consisting of all components of the id list
-    in the given view rectangle
-    """
-    id_List=json.loads(request.GET['id_list'])
-    height = int(request.GET.get('height', '0'))
-    width = int(request.GET.get('width', '0'))
-    x = int(request.GET.get('x', '0'))
-    y = int(request.GET.get('y', '0'))
-    z = int(request.GET.get('z', '0'))
-
-    allComponents=None
-
-    fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
-
-    with closing(h5py.File(fpath, 'r')) as hfile:
-        for id in id_List:
-            componentPixelStart=hfile['connected_components/begin_indices'].value[int(id)].copy()
-            componentPixelEnd=hfile['connected_components/end_indices'].value[int(id)].copy()
-            data=hfile['connected_components/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
-            data2=np.array([(data['x']),(data['y'])], np.int, ndmin=2)
-            if allComponents is not None:
-                allComponents=np.hstack((allComponents,data2))
-            else:
-                allComponents=data2.copy()
-
-        componentImage = Image.new('RGBA', (width, height), (0, 0, 0, 0)) # Create a blank image
-        pixelarrray=componentImage.load()
-
-        red, green, blue, opacity = 255,0,255,255
-        data2=np.array([(allComponents['x']),(allComponents['y'])], np.int, ndmin=2)
-        pix = (red, green, blue, opacity)
-        for i in xrange(data2.shape[-1]):
-            pixelarrray[int(data2[0][i]),int(data2[1][i])] = pix
-
-        response = HttpResponse(mimetype="image/png")
-        componentImage.save(response, "PNG")
-        return response
-
-    return None
 
 def extract_as_numpy_array( project_id, stack_id, id, z):
     """ Extract component to a 2D NumPy array

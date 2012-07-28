@@ -13,4 +13,4 @@ then
   exit 1
 fi
 
-/home/oliver/CATMAID/scripts/dump-database-schema.sh $1 > /home/oliver/CATMAID/django/applications/vncbrowser/tables_and_data.sql
+/home/oliver/CATMAID/scripts/database/dump-database.sh $1 > /home/oliver/CATMAID/django/applications/vncbrowser/tables_and_data.sql

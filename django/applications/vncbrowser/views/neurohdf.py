@@ -342,6 +342,27 @@ def put_components(request, project_id=None, stack_id=None, logged_in_user=None)
         # delete components that were deselected
 
 
+def initialize_components_for_skeleton(request, project_id=None, stack_id=None):
+
+    skeleton_id = int(request.POST['skeleton_id'])
+
+    # retrieve all treenodes for the given skeleton
+    from views import get_treenodes_qs
+
+    treenodes_qs, labels_qs, labelconnector_qs = get_treenodes_qs( project_id, skeleton_id )
+
+    # some sanity checks, like missing treenodes in a section
+
+    # for each treenode location
+    for tn in treenodes_qs:
+        # get component id
+        
+
+        # select component with lowest threshold value and that contains the pixel value of the location
+
+        # store in database
+
+
 def get_tile(request, project_id=None, stack_id=None):
 
     scale = float(request.GET.get('scale', '0'))

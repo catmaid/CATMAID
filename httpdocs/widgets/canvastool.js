@@ -78,6 +78,63 @@ function CanvasTool()
     };
 
 
+    this.pushLabels = function() {
+        
+        if (!fabric.Canvas.supports('toDataURL')) {
+            alert('This browser doesn\'t provide means to serialize canvas to an image');
+        }
+        else {
+            //window.open(canvasLayer.canvas.toDataURL('png'));
+            //return;
+            // POST request to server
+            var data=canvasLayer.canvas.toDataURL('png'),
+                output=data.replace(/^data:image\/(png|jpg);base64,/, ""),
+                fieldofview=canvasLayer.getFieldOfViewParameters(),
+                senddata = {};
+            data = data.substr(22, data.length);
+            senddata['x'] = fieldofview.x;
+            senddata['y'] = fieldofview.y;
+            senddata['z'] = self.stack.z; // TODO
+            senddata['scale'] = self.stack.s;
+            senddata['row'] = 'y';
+            senddata['col'] = 'x';
+            senddata['width'] = fieldofview.width;
+            senddata['height'] = fieldofview.height;
+            senddata['image'] = output;
+            senddata['metadata'] = self.labels;
+            // console.log('send data', senddata, self.stack);
+            if( self.stack.tile_source_type == 2 ) {
+                if( self.stack.labelupload_url === '' ) {
+                  alert('Push labels not enabled for this stack');
+                  return;
+                }
+                // z, t
+                jQuery.ajax({
+                    url: self.stack.labelupload_url, // "dj/" + project.id + "/stack/" + stack.id + "/push_image", // stack.labelUploadURL
+                    type: "POST",
+                    dataType: "json",
+                    data: senddata,
+                    success: function (data) {
+                      console.log('return', data);
+                    }
+                  });
+            } else if ( self.stack.tile_source_type === 3 ) {
+                console.log('tile source type 3')
+                jQuery.ajax({
+                    //url: stack.labelupload_url, // "dj/" + project.id + "/stack/" + stack.id + "/push_image", // stack.labelUploadURL
+                    url: "dj/" + project.id + "/stack/" + self.stack.id + "/put_tile", // stack.labelUploadURL
+                    type: "POST",
+                    dataType: "json",
+                    data: senddata,
+                    success: function (data) {
+                      console.log('return', data);
+                    }
+                  });
+
+            }
+
+        }
+    };
 
     var createControlBox = function() {
 
@@ -89,87 +146,19 @@ function CanvasTool()
         controls.style.height = "300px";
         controls.style.backgroundColor='rgba(255,255,255,0.3)';
 
+        $('#button_push_labels').click(function() {
+            self.pushLabels();
+        });
 
-        // more: http://kangax.github.com/fabric.js/kitchensink/
-
-        var button_rasterize = document.createElement("button");
-        button_rasterize.appendChild( document.createTextNode('Push labels') );
-        button_rasterize.onclick = function() {
-            console.log('button click')
-            if (!fabric.Canvas.supports('toDataURL')) {
-                alert('This browser doesn\'t provide means to serialize canvas to an image');
-            }
-            else {
-                //window.open(canvasLayer.canvas.toDataURL('png'));
-                //return;
-                // POST request to server
-                var data=canvasLayer.canvas.toDataURL('png'),
-                    output=data.replace(/^data:image\/(png|jpg);base64,/, ""),
-                    fieldofview=canvasLayer.getFieldOfViewParameters(),
-                    senddata = {};
-                data = data.substr(22, data.length);
-                senddata['x'] = fieldofview.x;
-                senddata['y'] = fieldofview.y;
-                senddata['z'] = stack.z; // TODO
-                senddata['scale'] = stack.s;
-                senddata['row'] = 'y';
-                senddata['col'] = 'x';
-                senddata['width'] = fieldofview.width;
-                senddata['height'] = fieldofview.height;
-                senddata['image'] = output;
-                senddata['metadata'] = self.labels;
-                console.log('send data', senddata, self.stack);
-                if( self.stack.tile_source_type == 2 ) {
-                    if( self.stack.labelupload_url === '' ) {
-                      alert('Push labels not enabled for this stack');
-                      return;
-                    }
-                    // z, t
-                    jQuery.ajax({
-                        url: self.stack.labelupload_url, // "dj/" + project.id + "/stack/" + stack.id + "/push_image", // stack.labelUploadURL
-                        type: "POST",
-                        dataType: "json",
-                        data: senddata,
-                        success: function (data) {
-                          console.log('return', data);
-                        }
-                      });
-                } else if ( self.stack.tile_source_type === 3 ) {
-                    console.log('tile source type 3')
-                    jQuery.ajax({
-                        //url: stack.labelupload_url, // "dj/" + project.id + "/stack/" + stack.id + "/push_image", // stack.labelUploadURL
-                        url: "dj/" + project.id + "/stack/" + self.stack.id + "/put_tile", // stack.labelUploadURL
-                        type: "POST",
-                        dataType: "json",
-                        data: senddata,
-                        success: function (data) {
-                          console.log('return', data);
-                        }
-                      });
-
-                }
-
-            }
-        };
-        controls.appendChild( button_rasterize );
-
-
-        var getCompButton = document.createElement("button");
-        getCompButton.appendChild( document.createTextNode('Save Components') );
-        getCompButton.onclick = function() {
+        $('#button_save_components').click(function() {
             self.putComponents();
-        };
-        controls.appendChild( getCompButton );
+        });
 
-
-        var button = document.createElement("button");
-        button.appendChild( document.createTextNode('Clear canvas') );
-        button.onclick = function() {
+        $('#button_clear_canvas').click(function() {
             if (confirm('Are you sure?')) {
                 canvasLayer.canvas.clear();
             }
-        };
-        controls.appendChild( button );
+        });
 
         var brush = document.createElement("div");
         var html = '<div style="display:none;" id="drawing-mode-options">';

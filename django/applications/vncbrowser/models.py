@@ -574,6 +574,5 @@ class Component(models.Model):
     z = models.IntegerField()
     threshold = models.FloatField()
     status = models.IntegerField(default=0)
-    # TODO: Fixme, should be an array
-    # http://stackoverflow.com/questions/4400762/how-to-map-postgresql-array-field-in-django-orm
-    correction_path = models.TextField()
+
+

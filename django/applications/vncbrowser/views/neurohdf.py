@@ -4,7 +4,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from vncbrowser.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
-    Project, User, Treenode, TreenodeConnector, Connector, Component
+    Project, User, Treenode, TreenodeConnector, Connector, Component,Stack
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
 from vncbrowser.views.export import get_annotation_graph
@@ -61,6 +61,9 @@ ConnectivityPostsynaptic = {
 def get_component_list_for_point(request,project_id=None,stack_id=None):
     #Generates a JSON List with all intersecting components in a given point
 
+    """
+
+    """
     scale = float(request.GET.get('scale', '0'))
     x = int(request.GET.get('x', '0'))
     y = int(request.GET.get('y', '0'))
@@ -80,9 +83,11 @@ def get_component_list_for_point(request,project_id=None,stack_id=None):
         thresholdTable=hfile['connected_components/'+z+'/values']
 
 
+
         length=image_data.len()
 
         #Merge all data into single array
+        #TODO:ID instead of length
         merge=np.dstack((np.arange(length),componentMinX.value,componentMinY.value,componentMaxX.value,componentMaxY.value,thresholdTable.value))
 
         selectionMinXMaxXMinYMaxY=None
@@ -97,13 +102,16 @@ def get_component_list_for_point(request,project_id=None,stack_id=None):
 
         if selectionMinXMaxXMinYMaxY is not None:
 
-            #unique=np.array([np.array(x) for x in set(tuple(x) for x in selectionMinXMaxXMinYMaxY)])
-            counter=0
 
             #Generate JSON
             for row in selectionMinXMaxXMinYMaxY:
-                if counter>=100:
-                    break;
+                componentPixelStart=hfile['connected_components/'+z+'/begin_indices'].value[row[0]].copy()
+                componentPixelEnd=hfile['connected_components/'+z+'/end_indices'].value[row[0]].copy()
+                data=hfile['connected_components/'+z+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
+
+                if not len(np.where((data['x'] == x) & (data['y'] == y))[0]):
+                    continue
+
                 componentIds[int(row[0])]=\
                     {
                     'minX':int(row[1]),
@@ -113,7 +121,7 @@ def get_component_list_for_point(request,project_id=None,stack_id=None):
                     'threshold':row[5]
 
                 }
-                counter+=1
+
 
     return HttpResponse(json.dumps(componentIds), mimetype="text/json")
 
@@ -291,6 +299,41 @@ def get_component_image(request, project_id=None, stack_id=None):
 
     return None
 
+
+#TODO: in transaction
+@catmaid_login_required
+def get_saved_components(request, project_id=None, stack_id=None, logged_in_user=None):
+
+    # parse request
+    skeleton_id = int(request.POST['skeleton_id'])
+    z = int(request.POST['z'])
+
+    s = get_object_or_404(ClassInstance, pk=skeleton_id)
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+    # fetch all the components for the given skeleton and z section
+    all_components = Component.objects.filter(stack=stack,
+    project=p,skeleton_id=skeleton_id,
+    z = z).all()
+
+    componentIds=[]
+
+    for compData in all_components:
+        componentIds[int(compData.component_id)]=\
+            {
+            'minX':int(compData.min_x),
+            'minY':int(compData.min_y),
+            'maxX':int(compData.max_x),
+            'maxY':int(compData.max_y),
+            'threshold':compData.threshold
+
+            }
+
+
+    return HttpResponse(json.dumps(componentIds), mimetype="text/json")
+
+
 #TODO: in transaction
 @catmaid_login_required
 def put_components(request, project_id=None, stack_id=None, logged_in_user=None):
@@ -311,23 +354,34 @@ def put_components(request, project_id=None, stack_id=None, logged_in_user=None)
     ViewMaxY=viewY+viewHeight
 
     s = get_object_or_404(ClassInstance, pk=skeleton_id)
+    stack = get_object_or_404(Stack, pk=stack_id)
     p = get_object_or_404(Project, pk=project_id)
 
     # fetch all the components for the given skeleton and z section
     all_components = Component.objects.filter(
-        project=p,skeleton_id=skeleton_id,
+        project=p,stack=stack,skeleton_id=skeleton_id,
         z = z).all()
 
     # discard the components out of field of view
-
+    activeComponentIds=[]
 
     for i in components:
 
         comp=components[i]
+        inDatabase=False
+        for compDatabse in all_components:
+            if str(compDatabse.component_id)==str(comp['id']):
+                inDatabase=True
+                activeComponentIds.insert(activeComponentIds.__sizeof__(),comp['id'])
+                break
+        if inDatabase:
+            continue
 
         new_component = Component(
-            project_id = p,
-            skeleton_id = s,
+            user=logged_in_user,
+            project = p,
+            skeleton_id = s.id,
+            stack=stack,
             component_id=comp['id'],
             min_x=comp['minX'],
             min_y=comp['minY'],
@@ -335,11 +389,17 @@ def put_components(request, project_id=None, stack_id=None, logged_in_user=None)
             max_y=comp['maxY'],
             z=z,
             threshold=comp['threshold'],
-            status=1,
-            correction_path='')
+            status=1
+            )
         new_component.save()
+        activeComponentIds.insert(activeComponentIds.__sizeof__(),comp['id'])
 
         # delete components that were deselected
+    for compDatabse in all_components:
+        if not activeComponentIds.count(str(compDatabse.component_id)):
+            Component.delete(compDatabse)
+
+    return HttpResponse(json.dumps(True), mimetype="text/json")
 
 
 def initialize_components_for_skeleton(request, project_id=None, stack_id=None):

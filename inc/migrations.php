@@ -1094,8 +1094,7 @@ CREATE TABLE component (
     max_y bigint NOT NULL,
     z bigint NOT NULL,
     threshold double precision,
-    status integer DEFAULT 0 NOT NULL,
-    correction_path text[]
+    status integer DEFAULT 0 NOT NULL
 )
 INHERITS (concept);
 

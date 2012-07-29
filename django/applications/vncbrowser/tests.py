@@ -1228,6 +1228,9 @@ class ViewPageTests(TestCase):
                 {"id":2364, "name":"skeleton 2364", "class_name":"skeleton"},
                 {"id":2388, "name":"skeleton 2388", "class_name":"skeleton"},
                 {"id":2411, "name":"skeleton 2411", "class_name":"skeleton"},
+                {"id":2433, "name":"skeleton 2433", "class_name":"skeleton"},
+                {"id":2440, "name":"skeleton 2440", "class_name":"skeleton"},
+                {"id":2451, "name":"skeleton 2451", "class_name":"skeleton"},
                 {"id":361, "name":"skeleton 361", "class_name":"skeleton"},
                 {"id":373, "name":"skeleton 373", "class_name":"skeleton"}]
         self.assertEqual(response.status_code, 200)

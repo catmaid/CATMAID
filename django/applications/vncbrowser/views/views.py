@@ -671,7 +671,10 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
     if len(ps_all) != 1:
         return {'error': 'Multiple project - stack associations, but should only be one.'}
     ps=ps_all[0]
-    pu = ProjectUser.objects.filter(project=project_id, user=user.id).count()
+    if not user is None:
+        pu = ProjectUser.objects.filter(project=project_id, user=user.id).count()
+    else:
+        pu = 0
 
     # https://github.com/acardona/CATMAID/wiki/Convention-for-Stack-Image-Sources
     if int(s.tile_source_type) == 2:

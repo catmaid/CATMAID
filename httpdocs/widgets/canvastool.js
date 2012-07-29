@@ -15,8 +15,33 @@ function CanvasTool()
     var canvasLayer = null;
     var controls = null;
     var controlsBackground=null;
-    var stack = null;
+    this.stack = null;
     this.toolname = "canvastool";
+
+    var sliders_box = document.getElementById( "sliders_box_seg" );
+
+    /* remove all existing dimension sliders */
+    while ( sliders_box.firstChild )
+      sliders_box.removeChild( sliders_box.firstChild );
+
+    this.slider_z = new Slider(
+        SLIDER_HORIZONTAL,
+        true,
+        1,
+        388,
+        388,
+        1,
+        function( val ){ statusBar.replaceLast( "z: " + val ); return; } );
+
+    var slider_z_box = document.createElement( "div" );
+    slider_z_box.className = "box";
+    slider_z_box.id = "slider_z_box";
+    var slider_z_box_label = document.createElement( "p" );
+    slider_z_box_label.appendChild( document.createTextNode( "z-index&nbsp;&nbsp;" ) );
+    slider_z_box.appendChild( self.slider_z.getView() );
+    slider_z_box.appendChild( self.slider_z.getInputView() );
+
+    sliders_box.appendChild( slider_z_box );
 
 
     var componentThreshold=0.02;
@@ -53,6 +78,63 @@ function CanvasTool()
     };
 
 
+    this.pushLabels = function() {
+        
+        if (!fabric.Canvas.supports('toDataURL')) {
+            alert('This browser doesn\'t provide means to serialize canvas to an image');
+        }
+        else {
+            //window.open(canvasLayer.canvas.toDataURL('png'));
+            //return;
+            // POST request to server
+            var data=canvasLayer.canvas.toDataURL('png'),
+                output=data.replace(/^data:image\/(png|jpg);base64,/, ""),
+                fieldofview=canvasLayer.getFieldOfViewParameters(),
+                senddata = {};
+            data = data.substr(22, data.length);
+            senddata['x'] = fieldofview.x;
+            senddata['y'] = fieldofview.y;
+            senddata['z'] = self.stack.z; // TODO
+            senddata['scale'] = self.stack.s;
+            senddata['row'] = 'y';
+            senddata['col'] = 'x';
+            senddata['width'] = fieldofview.width;
+            senddata['height'] = fieldofview.height;
+            senddata['image'] = output;
+            senddata['metadata'] = self.labels;
+            // console.log('send data', senddata, self.stack);
+            if( self.stack.tile_source_type == 2 ) {
+                if( self.stack.labelupload_url === '' ) {
+                  alert('Push labels not enabled for this stack');
+                  return;
+                }
+                // z, t
+                jQuery.ajax({
+                    url: self.stack.labelupload_url, // "dj/" + project.id + "/stack/" + stack.id + "/push_image", // stack.labelUploadURL
+                    type: "POST",
+                    dataType: "json",
+                    data: senddata,
+                    success: function (data) {
+                      console.log('return', data);
+                    }
+                  });
+            } else if ( self.stack.tile_source_type === 3 ) {
+                console.log('tile source type 3')
+                jQuery.ajax({
+                    //url: stack.labelupload_url, // "dj/" + project.id + "/stack/" + stack.id + "/push_image", // stack.labelUploadURL
+                    url: "dj/" + project.id + "/stack/" + self.stack.id + "/put_tile", // stack.labelUploadURL
+                    type: "POST",
+                    dataType: "json",
+                    data: senddata,
+                    success: function (data) {
+                      console.log('return', data);
+                    }
+                  });
+
+            }
+
+        }
+    };
 
     var createControlBox = function() {
 
@@ -64,87 +146,19 @@ function CanvasTool()
         controls.style.height = "300px";
         controls.style.backgroundColor='rgba(255,255,255,0.3)';
 
+        $('#button_push_labels').click(function() {
+            self.pushLabels();
+        });
 
-        // more: http://kangax.github.com/fabric.js/kitchensink/
-
-        var button_rasterize = document.createElement("button");
-        button_rasterize.appendChild( document.createTextNode('Push labels') );
-        button_rasterize.onclick = function() {
-            console.log('button click')
-            if (!fabric.Canvas.supports('toDataURL')) {
-                alert('This browser doesn\'t provide means to serialize canvas to an image');
-            }
-            else {
-                //window.open(canvasLayer.canvas.toDataURL('png'));
-                //return;
-                // POST request to server
-                var data=canvasLayer.canvas.toDataURL('png'),
-                    output=data.replace(/^data:image\/(png|jpg);base64,/, ""),
-                    fieldofview=canvasLayer.getFieldOfViewParameters(),
-                    senddata = {};
-                data = data.substr(22, data.length);
-                senddata['x'] = fieldofview.x;
-                senddata['y'] = fieldofview.y;
-                senddata['z'] = stack.z; // TODO
-                senddata['scale'] = stack.s;
-                senddata['row'] = 'y';
-                senddata['col'] = 'x';
-                senddata['width'] = fieldofview.width;
-                senddata['height'] = fieldofview.height;
-                senddata['image'] = output;
-                senddata['metadata'] = self.labels;
-                console.log('send data', senddata, stack);
-                if( stack.tile_source_type == 2 ) {
-                    if( stack.labelupload_url === '' ) {
-                      alert('Push labels not enabled for this stack');
-                      return;
-                    }
-                    // z, t
-                    jQuery.ajax({
-                        url: stack.labelupload_url, // "dj/" + project.id + "/stack/" + stack.id + "/push_image", // stack.labelUploadURL
-                        type: "POST",
-                        dataType: "json",
-                        data: senddata,
-                        success: function (data) {
-                          console.log('return', data);
-                        }
-                      });
-                } else if ( stack.tile_source_type === 3 ) {
-                    console.log('tile source type 3')
-                    jQuery.ajax({
-                        //url: stack.labelupload_url, // "dj/" + project.id + "/stack/" + stack.id + "/push_image", // stack.labelUploadURL
-                        url: "dj/" + project.id + "/stack/" + stack.id + "/put_tile", // stack.labelUploadURL
-                        type: "POST",
-                        dataType: "json",
-                        data: senddata,
-                        success: function (data) {
-                          console.log('return', data);
-                        }
-                      });
-
-                }
-
-            }
-        };
-        controls.appendChild( button_rasterize );
-
-
-        var getCompButton = document.createElement("button");
-        getCompButton.appendChild( document.createTextNode('Save Components') );
-        getCompButton.onclick = function() {
+        $('#button_save_components').click(function() {
             self.putComponents();
-        };
-        controls.appendChild( getCompButton );
+        });
 
-
-        var button = document.createElement("button");
-        button.appendChild( document.createTextNode('Clear canvas') );
-        button.onclick = function() {
+        $('#button_clear_canvas').click(function() {
             if (confirm('Are you sure?')) {
                 canvasLayer.canvas.clear();
             }
-        };
-        controls.appendChild( button );
+        });
 
         var brush = document.createElement("div");
         var html = '<div style="display:none;" id="drawing-mode-options">';
@@ -172,7 +186,7 @@ function CanvasTool()
         controls.appendChild( labelList );
 
         // ******************
-        stack.getView().appendChild( controls );
+        self.stack.getView().appendChild( controls );
         // ******************
 
         var drawingOptionsEl = document.getElementById('drawing-mode-options'),
@@ -231,7 +245,7 @@ function CanvasTool()
 
     var createCanvasLayer = function( parentStack )
     {
-        stack = parentStack;
+        self.stack = parentStack;
         canvasLayer = new CanvasLayer( parentStack );
 
         self.prototype.setMouseCatcher( canvasLayer.view );
@@ -261,7 +275,7 @@ function CanvasTool()
         var up=true;
         if(e.wheelDelta<0){up=false;}
 
-        var currentComponentLayer=self.componentStore.componentLayers[stack.z];
+        var currentComponentLayer=self.componentStore.componentLayers[self.stack.z];
         var currentComponentGroup=currentComponentLayer.componentGroups[currentComponentLayer.activeGroupIndex];
         var index=currentComponentGroup.selectedComponentIndex;
         if(index==0&&up){return;}
@@ -351,11 +365,11 @@ function CanvasTool()
         var url='http://localhost:8000/1/stack/3/put-components';
         var jsonObjects ={};
 
-        for (var componentGroupId in self.componentStore.componentLayers[stack.z].componentGroups)
+        for (var componentGroupId in self.componentStore.componentLayers[self.stack.z].componentGroups)
         {
-            if(self.componentStore.componentLayers[stack.z].componentGroups.hasOwnProperty(componentGroupId))
+            if(self.componentStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId))
             {
-                var componentGroup=self.componentStore.componentLayers[stack.z].componentGroups[componentGroupId];
+                var componentGroup=self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
                 var component=componentGroup.components[componentGroup.selectedComponentIndex];
                 jsonObjects[component.id]={id:component.id,minX:component.minX,minY:component.minY,maxX:component.maxX,maxY:component.maxY,threshold:component.threshold};
 
@@ -367,7 +381,7 @@ function CanvasTool()
         $.ajax({
             url: url,
             type: "POST",
-            data: {skeleton_id:61,z:stack.z,x:viewstate.x,y:viewstate.y,width:viewstate.width,height:viewstate.height,components: JSON.stringify(jsonObjects) },
+            data: {skeleton_id:61,z:self.stack.z,x:viewstate.x,y:viewstate.y,width:viewstate.width,height:viewstate.height,components: JSON.stringify(jsonObjects) },
             dataType: "json",
             beforeSend: function(x) {
                 //Log before send
@@ -386,11 +400,11 @@ function CanvasTool()
 
     this.showActiveComponents=function()
     {
-        for (var componentGroupId in self.componentStore.componentLayers[stack.z].componentGroups)
+        for (var componentGroupId in self.componentStore.componentLayers[self.stack.z].componentGroups)
         {
-            if(self.componentStore.componentLayers[stack.z].componentGroups.hasOwnProperty(componentGroupId))
+            if(self.componentStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId))
             {
-                var componentGroup=self.componentStore.componentLayers[stack.z].componentGroups[componentGroupId];
+                var componentGroup=self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
                 canvasLayer.canvas.add(componentGroup.components[componentGroup.selectedComponentIndex].image);
                 var index=canvasLayer.canvas._objects.length;
                 if(index!=0){index-=1;}
@@ -415,7 +429,7 @@ function CanvasTool()
         var intersectingComponentGroupId=self.CheckForIntersectingGroup(x,y);
         if(intersectingComponentGroupId!=null)
         {
-            self.componentStore.componentLayers[stack.z].activeGroupIndex=intersectingComponentGroupId;
+            self.componentStore.componentLayers[self.stack.z].activeGroupIndex=intersectingComponentGroupId;
 
         }
         else
@@ -436,25 +450,25 @@ function CanvasTool()
     this.CheckForIntersectingGroup=function(x,y)
     {
         var returnGroup=null;
-        if(self.componentStore.componentLayers[stack.z]!=undefined)
+        if(self.componentStore.componentLayers[self.stack.z]!=undefined)
         {
             //make all invisible
 
            canvasLayer.canvas.clear();
 
             var counter=-1;
-            for(var componentGroupId in self.componentStore.componentLayers[stack.z].componentGroups)
+            for(var componentGroupId in self.componentStore.componentLayers[self.stack.z].componentGroups)
             {
-                if(self.componentStore.componentLayers[stack.z].componentGroups.hasOwnProperty(componentGroupId))
+                if(self.componentStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId))
                 {
                     counter+=1;
-                    var component = self.componentStore.componentLayers[stack.z].componentGroups[componentGroupId].components[self.componentStore.componentLayers[stack.z].componentGroups[componentGroupId].selectedComponentIndex];
+                    var component = self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId].components[self.componentStore.componentLayers[stack.z].componentGroups[componentGroupId].selectedComponentIndex];
                     if(component.minX>x){continue;}
                     if(component.maxX<x){continue;}
                     if(component.minY>y){continue;}
                     if(component.maxY<y){continue;}
 
-                    var componentGroup=self.componentStore.componentLayers[stack.z].componentGroups[componentGroupId];
+                    var componentGroup=self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
                     canvasLayer.canvas.add(componentGroup.components[componentGroup.selectedComponentIndex].image);
                     var index=canvasLayer.canvas._objects.length;
                     if(index!=0){index-=1;}
@@ -485,10 +499,11 @@ function CanvasTool()
      */
     this.register = function( parentStack )
     {
-        if (canvasLayer && stack) {
-            if (stack !== parentStack) {
+        document.getElementById( "toolbar_seg" ).style.display = "block";
+        if (canvasLayer && self.stack) {
+            if (self.stack !== parentStack) {
                 // If the tracing layer exists and it belongs to a different stack, replace it
-                stack.removeLayer( canvasLayer );
+                self.stack.removeLayer( canvasLayer );
                 createCanvasLayer( parentStack );
                 createControlBox();
                 self.generateComponentLayer();
@@ -501,8 +516,22 @@ function CanvasTool()
             createControlBox();
             self.generateComponentLayer();
         }
-        console.log(canvasLayer.getFieldOfViewParameters())
+        console.log('field of view parameters', canvasLayer.getFieldOfViewParameters())
 
+        if ( self.stack.slices.length < 2 )	//!< hide the self.slider_z if there is only one slice
+        {
+          self.slider_z.getView().parentNode.style.display = "none";
+        }
+        else
+        {
+          self.slider_z.getView().parentNode.style.display = "block";
+        }
+        self.slider_z.update(
+          0,
+          0,
+          self.stack.slices,
+          self.stack.z,
+          self.changeSlice );
 
 
         return;
@@ -522,6 +551,7 @@ function CanvasTool()
      */
     this.destroy = function()
     {
+        document.getElementById( "toolbar_seg" ).style.display = "none";
 
         // remove the canvasLayer with the official API
         stack.removeLayer( "CanvasLayer" );
@@ -561,7 +591,7 @@ function CanvasTool()
 				',': [ 44, 188 ]
 			},
 			run: function (e) {
-                console.log('one up');
+        self.slider_z.move(-(e.shiftKey ? 10 : 1));
 				return true;
 			}
 		}),
@@ -572,7 +602,7 @@ function CanvasTool()
 				'.': [ 46, 190 ]
 			},
 			run: function (e) {
-                console.log('one down');
+        self.slider_z.move((e.shiftKey ? 10 : 1));
 				return true;
 			}
 		})
@@ -657,14 +687,14 @@ function CanvasTool()
             x: x,
             y: y,
             scale : 0.5, // defined as 1/2**zoomlevel
-            z : stack.z});
+            z : self.stack.z});
 
 
 
 
         $.getJSON(url,function(result){
 
-            var currentComponentGroups=self.componentStore.componentLayers[stack.z].componentGroups;
+            var currentComponentGroups=self.componentStore.componentLayers[self.stack.z].componentGroups;
 
             var componentGroupIdNew=currentComponentGroups.length;
             var componentGroupNew=new ComponentGroup();
@@ -718,7 +748,7 @@ function CanvasTool()
                 componentGroupNew.active=true;
                 componentGroupNew.groupLoaded=true;
 
-                var currentComponentLayer=self.componentStore.componentLayers[stack.z];
+                var currentComponentLayer=self.componentStore.componentLayers[self.stack.z];
                 if(currentComponentLayer.activeGroupIndex!=-1)
                 {
                     currentComponentGroups[currentComponentLayer.activeGroupIndex].active=false;
@@ -736,7 +766,7 @@ function CanvasTool()
                     if(componentGroupNew.components.hasOwnProperty(componentToLoadId))
                     {
 
-                        self.getComponentImage(componentGroupNew.components[componentToLoadId],x,y, stack.z,0.5,visible);
+                        self.getComponentImage(componentGroupNew.components[componentToLoadId],x,y, self.stack.z,0.5,visible);
                         visible=false;
 
                     }
@@ -818,16 +848,45 @@ function CanvasTool()
     this.generateComponentLayer=function()
     {
 
-        if(self.componentStore.componentLayers[stack.z]==undefined)
+        if(self.componentStore.componentLayers[self.stack.z]==undefined)
         {
-            self.componentStore.componentLayers[stack.z]=new ComponentLayer();
+            self.componentStore.componentLayers[self.stack.z]=new ComponentLayer();
         }
 
 
 
     }
 
+	//--------------------------------------------------------------------------
+	/**
+	 * Slider commands for changing the slice come in too frequently, thus the
+	 * execution of the actual slice change has to be delayed slightly.  The
+	 * timer is overridden if a new action comes in before the last had time to
+	 * be executed.
+	 */
+	var changeSliceDelayedTimer = null;
+	var changeSliceDelayedParam = null;
 
+	var changeSliceDelayedAction = function()
+	{
+		window.clearTimeout( changeSliceDelayedTimer );
+		self.changeSlice( changeSliceDelayedParam.z );
+		changeSliceDelayedParam = null;
+		return false;
+	}
+
+	this.changeSliceDelayed = function( val )
+	{
+		if ( changeSliceDelayedTimer ) window.clearTimeout( changeSliceDelayedTimer );
+		changeSliceDelayedParam = { z : val };
+		changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 100 );
+	}
+
+	this.changeSlice = function( val )
+	{
+		self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
+		return;
+	}
 
 
 }

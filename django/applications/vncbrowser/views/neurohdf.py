@@ -8,7 +8,7 @@ from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
 from vncbrowser.views.export import get_annotation_graph
 from django.shortcuts import get_object_or_404
-from views import get_treenodes_qs
+from views import get_treenodes_qs, get_stack_info
 try:
     import numpy as np
     import h5py
@@ -21,6 +21,7 @@ from random import choice
 import os
 import base64, cStringIO
 import time
+import sys
 
 # This file defines constants used to correctly define the metadata for NeuroHDF microcircuit data
 
@@ -124,6 +125,7 @@ def extract_as_numpy_array( project_id, stack_id, id, z):
     """ Extract component to a 2D NumPy array
     """
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
+    z = str(z)
 
     with closing(h5py.File(fpath, 'r')) as hfile:
 
@@ -263,18 +265,18 @@ def put_components(request, project_id=None, stack_id=None, logged_in_user=None)
             continue
 
         new_component = Component(
-            user=logged_in_user,
             project = p,
+            stack = stack,
+            user = logged_in_user,
             skeleton_id = s.id,
-            stack=stack,
-            component_id=comp['id'],
-            min_x=comp['minX'],
-            min_y=comp['minY'],
-            max_x=comp['maxX'],
-            max_y=comp['maxY'],
-            z=z,
-            threshold=comp['threshold'],
-            status=1
+            component_id = comp['id'],
+            min_x = comp['minX'],
+            min_y = comp['minY'],
+            max_x = comp['maxX'],
+            max_y = comp['maxY'],
+            z = z,
+            threshold = comp['threshold'],
+            status = 1
             )
         new_component.save()
         activeComponentIds.insert(activeComponentIds.__sizeof__(),comp['id'])
@@ -286,29 +288,76 @@ def put_components(request, project_id=None, stack_id=None, logged_in_user=None)
 
     return HttpResponse(json.dumps(True), mimetype="text/json")
 
-
-def initialize_components_for_skeleton(request, project_id=None, stack_id=None):
-
+@catmaid_login_required
+def initialize_components_for_skeleton(request, project_id=None, stack_id=None, logged_in_user=None):
     skeleton_id = int(request.POST['skeleton_id'])
-
+    
     # retrieve all treenodes for the given skeleton
-
     treenodes_qs, labels_qs, labelconnector_qs = get_treenodes_qs( project_id, skeleton_id )
+    # retrieve stack information to transform world coordinates to pixel coordinates
+    stack_info = get_stack_info( project_id, stack_id )
 
-    # some sanity checks, like missing treenodes in a section
+    skeleton = get_object_or_404(ClassInstance, pk=skeleton_id)
+    stack = get_object_or_404(Stack, pk=stack_id)
+    project = get_object_or_404(Project, pk=project_id)
+
+    # retrieve all the components belonging to the skeleton
+    all_components = Component.objects.filter(
+        project = project,
+        stack = stack,
+        skeleton_id = skeleton.id
+    ).all()
+    all_component_ids = [comp.component_id for comp in all_components]
+
+    # TODO: some sanity checks, like missing treenodes in a section
 
     # for each treenode location
     for tn in treenodes_qs:
-        # get component ids
-        # TODO: convert x,y world coordinates to pixel
-        x_pixel = tn.x
-        y_pixel = tn.y
-        component_ids = retrieve_components_for_location(project_id, stack_id, x_pixel, y_pixeel, z)
+
+        x_pixel = int(tn.location.x / stack_info['resolution']['x'])
+        y_pixel = int(tn.location.y / stack_info['resolution']['y'])
+        z = str( int(tn.location.z / stack_info['resolution']['z']) )
 
         # select component with lowest threshold value and that contains the pixel value of the location
+        component_ids = retrieve_components_for_location(project_id, stack_id, x_pixel, y_pixel, z, limit = 1)
 
-        # store in database
+        if not len(component_ids):
+            print >> sys.stderr, 'No component found for treenode id', tn.id
+            continue
+        elif len(component_ids) == 1:
+            print >> sys.stderr, 'Exactly one component found for treenode id', tn.id, component_ids
+        else:
+            print >> sys.stderr, 'More than one component found for treenode id', tn.id, component_ids
+            continue
 
+        component_key, component_value = component_ids.items()[0]
+
+        # check if component already exists for this skeleton in the database
+        if component_key in all_component_ids:
+            print >> sys.stderr, 'Component with id', component_key, ' exists already in the database. Skip it.'
+            continue
+
+        # TODO generate default color for all components based on a map of
+        # the skeleton id to color space
+
+        # if not, create it
+        new_component = Component(
+            project = project,
+            stack = stack,
+            user = logged_in_user,
+            skeleton_id = skeleton.id,
+            component_id = component_key,
+            min_x = component_value['minX'],
+            min_y = component_value['minY'],
+            max_x = component_value['minY'],
+            max_y = component_value['minY'],
+            z = z,
+            threshold = component_value['threshold'],
+            status = 5 # means automatically selected component
+        )
+        new_component.save()
+
+    return HttpResponse(json.dumps({'status': 'success'}), mimetype="text/json")
 
 def get_tile(request, project_id=None, stack_id=None):
 

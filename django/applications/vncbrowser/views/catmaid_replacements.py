@@ -13,7 +13,7 @@ from vncbrowser.models import Project, Stack, Class, ClassInstance, \
 from vncbrowser.transaction import transaction_reportable_commit_on_success
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional, \
     catmaid_login_required
-from common import insert_into_log
+from common import insert_into_log, makeJSON_legacy_list
 
 
 @catmaid_login_optional
@@ -372,6 +372,65 @@ def delete_link(request, project_id=None, logged_in_user=None):
 
 @catmaid_login_required
 @transaction.commit_on_success
+def search(request, project_id=None, logged_in_user=None):
+    def format_node_data(node):
+        '''
+        Formats node data for our json output.
+
+        When we start using Django 1.4, we can use prefetch_related instead of using
+        .values('treenode__xxx'), and will then be able to access a proper location
+        object.
+        '''
+        location = Double3D.from_str(node['treenode__location'])
+        return {
+                'id': node['treenode'],
+                'x': int(location.x),
+                'y': int(location.y),
+                'z': int(location.z),
+                'skid': node['treenode__skeleton']}
+
+    search_string = request.GET.get('substring', "")
+
+    row_query = ClassInstance.objects.values('id', 'name', 'class_column__class_name').filter(
+            name__icontains=search_string,
+            project=project_id).order_by('class_column__class_name', 'name')
+    rows = list(row_query)
+
+    relation_map = get_relation_to_id_map(project_id)
+    label_rows = {}
+    for row in rows:
+        # Change key-name of class_column__class_name for json output
+        row['class_name'] = row.pop('class_column__class_name')
+        # Prepare for retrieving nodes holding text labels
+        if row['class_name'] == 'label':
+            row['nodes'] = []
+            label_rows[row['name']] = row
+
+    node_query = TreenodeClassInstance.objects.filter(
+            project=project_id,
+            treenode__project=project_id,
+            relation=relation_map['labeled_as'],
+            class_instance__name__in=label_rows.keys())\
+                    .order_by('-treenode__id')\
+                    .values('treenode',
+                            'treenode__location',
+                            'treenode__skeleton',
+                            'class_instance__name')
+    # Insert nodes into their rows
+    for node in node_query:
+        row_with_node = label_rows[node['class_instance__name']]
+        row_with_node['nodes'].append(format_node_data(node))
+
+    # Delete the nodes property from rows with no nodes
+    for row in rows:
+        if 'nodes' in row and len(row['nodes']) == 0:
+            del row['nodes']
+
+    return HttpResponse(json.dumps(rows))
+
+
+@catmaid_login_required
+@transaction.commit_on_success
 def list_logs(request, project_id=None, logged_in_user=None):
     user_id = int(request.POST.get('user_id', -1))  # We can see logs for different users
     display_start = int(request.POST.get('iDisplayStart', 0))
@@ -461,10 +520,9 @@ def unread_messages(request, project_id=None, logged_in_user=None):
             read=False).extra(select={
                 'time_formatted': 'to_char("time", \'YYYY-MM-DD HH24:MI:SS TZ\')'})\
                     .order_by('-time')
-    i = 0
-    formatted_output = {}
-    for message in messages:
-        formatted_output[i] = {
+
+    def message_to_dict(message):
+        return {
                 'id': message.id,
                 'title': message.title,
                 'action': message.action,
@@ -475,8 +533,10 @@ def unread_messages(request, project_id=None, logged_in_user=None):
                 'time': str(message.time),
                 'time_formatted': message.time_formatted
                 }
-        i += 1
-    return HttpResponse(json.dumps(formatted_output))
+
+    messages = map(message_to_dict, messages)
+
+    return HttpResponse(json.dumps(makeJSON_legacy_list(messages)))
 
 
 @catmaid_login_required

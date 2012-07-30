@@ -6,7 +6,8 @@ from vncbrowser.models import SORT_ORDERS_DICT, NeuronSearch, CELL_BODY_CHOICES,
     ClassInstance, ClassInstanceClassInstance, Log
 import json
 
-def insert_into_log( project_id, user_id, op_type, location=None, freetext=None):
+
+def insert_into_log(project_id, user_id, op_type, location=None, freetext=None):
     # valid operation types
     operation_type_array = [
         "rename_root",
@@ -33,7 +34,7 @@ def insert_into_log( project_id, user_id, op_type, location=None, freetext=None)
     ]
 
     if not op_type in operation_type_array:
-        return { 'error': 'Operation type {0} not valid'.format( op_type ) }
+        return {'error': 'Operation type {0} not valid'.format(op_type)}
 
     new_log = Log()
     new_log.user_id = user_id
@@ -50,7 +51,6 @@ def insert_into_log( project_id, user_id, op_type, location=None, freetext=None)
     # echo json_encode( array ( 'error' => "Failed to insert operation $op_type for user $uid in project %pid." ) );
 
 
-
 # Tip from: http://lincolnloop.com/blog/2008/may/10/getting-requestcontext-your-templates/
 # Required because we need a RequestContext, not just a Context - the
 # former looks at TEMPLATE_CONTEXT_PROCESSORS, while the latter doesn't.
@@ -59,14 +59,18 @@ def my_render_to_response(req, *args, **kwargs):
     kwargs['context_instance'] = RequestContext(req)
     return render_to_response(*args, **kwargs)
 
-# When an operation fails we should return a JSON dictionary
-# with the key 'error' set to an error message.  This is a
-# helper method to return such a structure:
+
 def json_error_response(message):
+    """
+    When an operation fails we should return a JSON dictionary
+    with the key 'error' set to an error message.  This is a
+    helper method to return such a structure:
+    """
     return HttpResponse(json.dumps({'error': message}),
                         mimetype='text/json')
 
-def order_neurons( neurons, order_by = None ):
+
+def order_neurons(neurons, order_by=None):
     column, reverse = 'name', False
     if order_by and (order_by in SORT_ORDERS_DICT):
         column, reverse, _ = SORT_ORDERS_DICT[order_by]
@@ -77,7 +81,7 @@ def order_neurons( neurons, order_by = None ):
         elif column == 'cell_body':
             neurons.sort(key=lambda x: x.cached_cell_body)
         else:
-            raise Exception, "Unknown column (%s) in order_neurons" % (column,)
+            raise Exception("Unknown column (%s) in order_neurons" % (column,))
         if reverse:
             neurons.reverse()
     return neurons
@@ -85,19 +89,20 @@ def order_neurons( neurons, order_by = None ):
 # Both index and visual_index take a request and kwargs and then
 # return a list of neurons and a NeuronSearch form:
 
+
 def get_form_and_neurons(request, project_id, kwargs):
     # If we've been passed parameters in a REST-style GET request,
     # create a form from them.  Otherwise, if it's a POST request,
     # create the form from the POST parameters.  Otherwise, it's a
     # plain request, so create the default search form.
-    rest_keys = ('search','cell_body_location','order_by')
+    rest_keys = ('search', 'cell_body_location', 'order_by')
     if any((x in kwargs) for x in rest_keys):
-        kw_search = kwargs.get('search',None) or ""
-        kw_cell_body_choice = kwargs.get('cell_body_location',None) or "a"
-        kw_order_by = kwargs.get('order_by',None) or 'name'
+        kw_search = kwargs.get('search', None) or ""
+        kw_cell_body_choice = kwargs.get('cell_body_location', None) or "a"
+        kw_order_by = kwargs.get('order_by', None) or 'name'
         search_form = NeuronSearch({'search': kw_search,
                                     'cell_body_location': kw_cell_body_choice,
-                                    'order_by': kw_order_by })
+                                    'order_by': kw_order_by})
     elif request.method == 'POST':
         search_form = NeuronSearch(request.POST)
     else:
@@ -155,3 +160,21 @@ def get_form_and_neurons(request, project_id, kwargs):
 
     all_neurons = order_neurons(all_neurons, order_by)
     return (all_neurons, search_form)
+
+
+# TODO After all PHP functions have been replaced and all occurrence of
+# this odd behavior have been found, change callers to not depend on this
+# legacy functionality.
+def makeJSON_legacy_list(objects):
+    '''
+    The PHP function makeJSON, when operating on a list of rows as
+    results, will output a JSON list of key-values, with keys being
+    integers from 0 and upwards. We return a dict with the same
+    structure so that it looks the same when used with json.dumps.
+    '''
+    i = 0
+    res = {}
+    for o in objects:
+        res[i] = o
+        i += 1
+    return res

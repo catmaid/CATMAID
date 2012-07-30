@@ -25,10 +25,11 @@ class SimpleTest(TestCase):
         self.assertEqual(1 + 1, 2)
 
 
-def ensure_schema_exists():
+def ensure_schema_and_data_exist():
     """
     This function will create the CATMAID schema is it doesn't seem to
-    exist yet (based on the presence or not of the 'project' table.
+    exist yet (based on the presence or not of the 'project' table).
+    If it needs to add the schema, it will also add testing data.
     """
     cursor = connection.cursor()
     # See if the project table has been created:
@@ -37,25 +38,26 @@ def ensure_schema_exists():
     if row[0] == 1:
         return
     current_directory = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(current_directory, "tables.sql")) as fp:
+    with open(os.path.join(current_directory, "tables_and_data.sql")) as fp:
         cursor.execute(fp.read())
 
 
-def add_example_data():
+def remove_example_data():
     """
-    This function will add some example data to the CATMAID
-    database.
+    This function will remove example data from the database, without touching
+    the schema. Warning: This takes a long time to run.
     """
+    tables = connection.introspection.table_names()
     cursor = connection.cursor()
-    current_directory = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(current_directory, "data.sql")) as fp:
-        cursor.execute(fp.read())
+    for table in tables:
+        cursor.execute('TRUNCATE TABLE "%s" RESTART IDENTITY CASCADE' % table)
 
 
 class TransactionTests(TransactionTestCase):
 
     def setUp(self):
-        ensure_schema_exists()
+        ensure_schema_and_data_exist()
+        remove_example_data()
 
     def test_successful_commit(self):
         @transaction_reportable_commit_on_success
@@ -71,7 +73,7 @@ class TransactionTests(TransactionTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
-    def test_report_error(self):
+    def test_report_error_dict(self):
         @transaction_reportable_commit_on_success
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
@@ -82,6 +84,36 @@ class TransactionTests(TransactionTestCase):
         response = insert_user()
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'catch me if you can'}
+        self.assertEqual(0, User.objects.all().count())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_report_error_string(self):
+        @transaction_reportable_commit_on_success
+        def insert_user():
+            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
+            raise RollbackAndReport('catch me if you can')
+            return HttpResponse(json.dumps({'should not': 'return this'}))
+
+        User.objects.all().delete()
+        response = insert_user()
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'catch me if you can'}
+        self.assertEqual(0, User.objects.all().count())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_report_error_unrecognized_argument(self):
+        @transaction_reportable_commit_on_success
+        def insert_user():
+            User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
+            raise RollbackAndReport(5)
+            return HttpResponse(json.dumps({'should not': 'return this'}))
+
+        User.objects.all().delete()
+        response = insert_user()
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'Unknown error.'}
         self.assertEqual(0, User.objects.all().count())
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
@@ -116,7 +148,8 @@ class TransactionTests(TransactionTestCase):
 class InsertionTest(TestCase):
 
     def setUp(self):
-        ensure_schema_exists()
+        ensure_schema_and_data_exist()
+        remove_example_data()
 
     def insert_project(self):
         p = Project()
@@ -149,13 +182,6 @@ class InsertionTest(TestCase):
         p = self.insert_project()
         self.assertEqual(p.id, 1)
 
-    def insert_project(self):
-        p = Project()
-        p.title = "Example Project"
-        p.comment = "This is an example project for the Django tests"
-        p.save()
-        return p
-
     def test_stack_insertion(self):
         p = self.insert_project()
         s = self.insert_stack()
@@ -173,14 +199,13 @@ class InsertionTest(TestCase):
 class RelationQueryTests(TestCase):
 
     def setUp(self):
-        ensure_schema_exists()
-        add_example_data()
+        ensure_schema_and_data_exist()
         self.test_project_id = 3
 
     def test_find_all_neurons(self):
         all_neurons = ClassInstance.objects.filter(class_column__class_name='neuron',
                                                    project=self.test_project_id)
-        self.assertEqual(all_neurons.count(), 8)
+        self.assertEqual(all_neurons.count(), 11)
 
     def test_find_downstream_neurons(self):
         upstream = ClassInstance.objects.get(name='branched neuron')
@@ -243,15 +268,14 @@ swc_output_for_skeleton_235 = '''237 0 1065 3035 0 0 -1
 
 
 def swc_string_to_sorted_matrix(s):
-    m = [ re.split("\s+", x) for x in s.splitlines() if not re.search('^\s*(#|$)', x) ]
+    m = [re.split("\s+", x) for x in s.splitlines() if not re.search('^\s*(#|$)', x)]
     return sorted(m, key=lambda x: x[0])
 
 
 class ViewPageTests(TestCase):
 
     def setUp(self):
-        ensure_schema_exists()
-        add_example_data()
+        ensure_schema_and_data_exist()
         self.test_project_id = 3
         self.client = Client()
 
@@ -271,7 +295,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(len(m1), len(m2))
 
         fields = ['id', 'type', 'x', 'y', 'z', 'radius', 'parent']
-        d = dict((x,i) for (i,x) in enumerate(fields))
+        d = dict((x, i) for (i, x) in enumerate(fields))
 
         for i, e1 in enumerate(m1):
             e2 = m2[i]
@@ -312,52 +336,52 @@ class ViewPageTests(TestCase):
                               "synapse with more targets",
                               "uncertain end",
                               "TODO"]))
-        nods = {"7":"7",
-                "237":"237",
-                "367":"367",
-                "377":"377",
-                "417":"417",
-                "409":"409",
-                "407":"407",
-                "399":"399",
-                "397":"397",
-                "395":"395",
-                "393":"393",
-                "387":"387",
-                "385":"385",
-                "403":"403",
-                "405":"405",
-                "383":"383",
-                "391":"391",
-                "415":"415",
-                "289":"289",
-                "285":"285",
-                "283":"283",
-                "281":"281",
-                "277":"277",
-                "275":"275",
-                "273":"273",
-                "271":"271",
-                "279":"279",
-                "267":"267",
-                "269":"269",
-                "265":"265",
-                "261":"261",
-                "259":"259",
-                "257":"257",
-                "255":"255",
-                "263":"263",
-                "253":"253",
-                "251":"251",
-                "249":"249",
-                "247":"247",
-                "245":"245",
-                "243":"243",
-                "241":"241",
-                "239":"239",
-                "356":"356",
-                "421":"421",
-                "432":"432"}
+        nods = {"7": "7",
+                "237": "237",
+                "367": "367",
+                "377": "377",
+                "417": "417",
+                "409": "409",
+                "407": "407",
+                "399": "399",
+                "397": "397",
+                "395": "395",
+                "393": "393",
+                "387": "387",
+                "385": "385",
+                "403": "403",
+                "405": "405",
+                "383": "383",
+                "391": "391",
+                "415": "415",
+                "289": "289",
+                "285": "285",
+                "283": "283",
+                "281": "281",
+                "277": "277",
+                "275": "275",
+                "273": "273",
+                "271": "271",
+                "279": "279",
+                "267": "267",
+                "269": "269",
+                "265": "265",
+                "261": "261",
+                "259": "259",
+                "257": "257",
+                "255": "255",
+                "263": "263",
+                "253": "253",
+                "251": "251",
+                "249": "249",
+                "247": "247",
+                "245": "245",
+                "243": "243",
+                "241": "241",
+                "239": "239",
+                "356": "356",
+                "421": "421",
+                "432": "432"}
         response = self.client.post('/%d/labels-for-nodes' % (self.test_project_id,),
                               {'nods': json.dumps(nods)})
 
@@ -533,8 +557,8 @@ class ViewPageTests(TestCase):
         for t in values_and_users:
             if t[0] == 6:
                 self.assertEqual(t[1], 'test (6)')
-            elif t[0] == 79:
-                self.assertEqual(t[1], 'gerhard (79)')
+            elif t[0] == 83:
+                self.assertEqual(t[1], 'gerhard (83)')
             else:
                 raise Exception("Unexpected value in returned stats: " + str(t))
 
@@ -546,9 +570,9 @@ class ViewPageTests(TestCase):
                            u'proj_presyn': 0,
                            u'proj_postsyn': 0,
                            u'proj_synapses': 0,
-                           u"proj_neurons": 8,
-                           u"proj_treenodes": 85,
-                           u"proj_skeletons": 7,
+                           u"proj_neurons": 11,
+                           u"proj_treenodes": 89,
+                           u"proj_skeletons": 10,
                            u"proj_textlabels": 0,
                            u"proj_tags": 4}
         parsed_response = json.loads(response.content)
@@ -774,29 +798,29 @@ class ViewPageTests(TestCase):
 
     log_rows = [
                     [
-                        'saalfeld',
+                        'gerhard',
                         'create_neuron',
-                        '04-09-2011 13:53',
-                        1.0,
-                        2.0,
-                        3.0,
-                        'Create neuron 1 and skeleton 2'],
+                        '22-07-2012 22:50',
+                        5290,
+                        3930,
+                        279,
+                        'Create neuron 2434 and skeleton 2433'],
                     [
-                        'test',
-                        'change_confidence',
-                        '04-09-2012 13:53',
-                        1.0,
-                        2.0,
-                        3.0,
-                        'Changed to 4'],
+                        'gerhard',
+                        'create_neuron',
+                        '23-07-2012 01:12',
+                        4470,
+                        2110,
+                        180,
+                        'Create neuron 2441 and skeleton 2440'],
                     [
-                        'test',
-                        'change_confidence',
-                        '04-07-2012 13:53',
-                        2.0,
-                        2.0,
-                        2.0,
-                        'Changed to 2']
+                        'gerhard',
+                        'create_neuron',
+                        '23-07-2012 01:15',
+                        3680,
+                        2530,
+                        180,
+                        'Create neuron 2452 and skeleton 2451']
             ]
 
     def test_list_logs_user_param(self):
@@ -805,9 +829,9 @@ class ViewPageTests(TestCase):
                 '/%d/logs/list' % self.test_project_id, {'user_id': 1})
         parsed_response = json.loads(response.content)
         expected_result = {
-                'iTotalDisplayRecords': 1,
-                'iTotalRecords': 1,
-                'aaData': [self.log_rows[0]]
+                'iTotalDisplayRecords': 0,
+                'iTotalRecords': 0,
+                'aaData': []
                 }
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
@@ -817,7 +841,7 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/logs/list' % self.test_project_id, {
                     'iSortingCols': 2,
-                    'iSortCol_0': 0,  # user
+                    'iSortCol_0': 5,  # z
                     'iSortDir_0': 'ASC',
                     'iSortCol_1': 3,  # x
                     'iSortDir_1': 'DESC'
@@ -827,7 +851,7 @@ class ViewPageTests(TestCase):
                 'iTotalDisplayRecords': 3,
                 'iTotalRecords': 3,
                 'aaData': [
-                    self.log_rows[0], self.log_rows[2], self.log_rows[1]
+                    self.log_rows[1], self.log_rows[2], self.log_rows[0]
                     ]
                 }
         self.assertEqual(response.status_code, 200)
@@ -1106,7 +1130,7 @@ class ViewPageTests(TestCase):
 
     def test_delete_root_treenode(self):
         self.fake_authentication()
-        treenode_id = 4000
+        treenode_id = 2437
 
         treenode = Treenode.objects.filter(id=treenode_id)[0]
         children = Treenode.objects.filter(parent=treenode_id)
@@ -1128,6 +1152,13 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
         treenode_id = 265
 
+        relation_map = get_relation_to_id_map(self.test_project_id)
+        get_skeleton = lambda: TreenodeClassInstance.objects.filter(
+                project=self.test_project_id,
+                relation=relation_map['element_of'],
+                treenode=treenode_id)
+        self.assertEqual(1, get_skeleton().count())
+
         children = Treenode.objects.filter(parent=treenode_id)
         self.assertTrue(children.count() > 0)
         tn_count = Treenode.objects.all().count()
@@ -1141,11 +1172,106 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
+        self.assertEqual(0, get_skeleton().count())
         self.assertEqual(tn_count - 1, Treenode.objects.all().count())
 
         for child in children:
             child_after_change = get_object_or_404(Treenode, id=child.id)
             self.assertEqual(parent, child_after_change.parent)
+
+    def test_search_with_no_nodes(self):
+        self.fake_authentication()
+
+        response = self.client.get(
+                '/%d/search' % self.test_project_id,
+                {'substring': 'tr'})
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                {"id":374, "name":"downstream-A", "class_name":"neuron"},
+                {"id":362, "name":"downstream-B", "class_name":"neuron"}]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_search_with_no_results(self):
+        self.fake_authentication()
+
+        response = self.client.get(
+                '/%d/search' % self.test_project_id,
+                {'substring': 'bobobobobobobo'})
+        parsed_response = json.loads(response.content)
+        expected_result = []
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_search_with_several_nodes(self):
+        self.fake_authentication()
+
+        response = self.client.get(
+                '/%d/search' % self.test_project_id,
+                {'substring': 't'})
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                {"id":465, "name":"tubby bye bye", "class_name":"driver_line"},
+                {"id":4, "name":"Fragments", "class_name":"group"},
+                {"id":364, "name":"Isolated synaptic terminals", "class_name":"group"},
+                {"id":2353, "name":"synapse with more targets", "class_name":"label"},
+                {"id":2345, "name":"t", "class_name":"label"},
+                {"id":351, "name":"TODO", "class_name":"label", "nodes":[
+                    {"id":349, "x":3580, "y":3350, "z":252, "skid":1},
+                    {"id":261, "x":2820, "y":1345, "z":0, "skid":235}]},
+                {"id":2342, "name":"uncertain end", "class_name":"label", "nodes":[
+                    {"id":403, "x":7840, "y":2380, "z":0, "skid":373}]},
+                {"id":374, "name":"downstream-A", "class_name":"neuron"},
+                {"id":362, "name":"downstream-B", "class_name":"neuron"},
+                {"id":1, "name":"dull skeleton", "class_name":"skeleton"},
+                {"id":235, "name":"skeleton 235", "class_name":"skeleton"},
+                {"id":2364, "name":"skeleton 2364", "class_name":"skeleton"},
+                {"id":2388, "name":"skeleton 2388", "class_name":"skeleton"},
+                {"id":2411, "name":"skeleton 2411", "class_name":"skeleton"},
+                {"id":361, "name":"skeleton 361", "class_name":"skeleton"},
+                {"id":373, "name":"skeleton 373", "class_name":"skeleton"}]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_search_with_nodes_and_nonode_label(self):
+        self.fake_authentication()
+
+        response = self.client.get(
+                '/%d/search' % self.test_project_id,
+                {'substring': 'a'})
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                {"id":485, "name":"Local", "class_name":"cell_body_location"},
+                {"id":487, "name":"Non-Local", "class_name":"cell_body_location"},
+                {"id":454, "name":"and", "class_name":"driver_line"},
+                {"id":4, "name":"Fragments", "class_name":"group"},
+                {"id":364, "name":"Isolated synaptic terminals", "class_name":"group"},
+                {"id":2353, "name":"synapse with more targets", "class_name":"label"},
+                {"id":2342, "name":"uncertain end", "class_name":"label", "nodes":[
+                    {"id":403, "x":7840, "y":2380, "z":0, "skid":373}]},
+                {"id":233, "name":"branched neuron", "class_name":"neuron"},
+                {"id":374, "name":"downstream-A", "class_name":"neuron"},
+                {"id":362, "name":"downstream-B", "class_name":"neuron"}]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_search_with_nodes(self):
+        self.fake_authentication()
+
+        response = self.client.get(
+                '/%d/search' % self.test_project_id,
+                {'substring': 'c'})
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                {"id":485, "name":"Local", "class_name":"cell_body_location"},
+                {"id":487, "name":"Non-Local", "class_name":"cell_body_location"},
+                {"id":458, "name":"c005", "class_name":"driver_line"},
+                {"id":364, "name":"Isolated synaptic terminals", "class_name":"group"},
+                {"id":2342, "name":"uncertain end", "class_name":"label",
+                    "nodes":[{"id":403, "x":7840, "y":2380, "z":0, "skid":373}]},
+                {"id":233, "name":"branched neuron", "class_name":"neuron"}]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
 
     def test_delete_link_success(self):
         self.fake_authentication()
@@ -1259,7 +1385,7 @@ class ViewPageTests(TestCase):
 
     def test_create_presynaptic_link_success(self):
         from_id = 237
-        to_id = 2401
+        to_id = 2458
         link_type = 'presynaptic_to'
         self.fake_authentication()
         response = self.client.post(
@@ -1349,8 +1475,7 @@ class ViewPageTests(TestCase):
 class TreenodeTests(TestCase):
 
     def setUp(self):
-        ensure_schema_exists()
-        add_example_data()
+        ensure_schema_and_data_exist()
         self.test_project_id = 3
 
     def test_find_all_treenodes(self):

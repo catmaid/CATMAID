@@ -56,7 +56,7 @@ ConnectivityPostsynaptic = {
 }
 
 
-def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=4):
+def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=8):
     componentIds = {}
     fpath = os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
     with closing(h5py.File(fpath, 'r')) as hfile:
@@ -149,6 +149,10 @@ def get_component_image(request, project_id=None, stack_id=None):
 
     id = int(request.GET.get('id', '-1'))
     z=request.GET.get('z', '-1')
+    red=request.GET.get('red','255')
+    green=request.GET.get('green','255')
+    blue=request.GET.get('blue','255')
+    alpha=request.GET.get('alpha','255')
 
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
     with closing(h5py.File(fpath, 'r')) as hfile:
@@ -167,13 +171,9 @@ def get_component_image(request, project_id=None, stack_id=None):
         height=(componentMaxY-componentMinY)+1
         width=(componentMaxX-componentMinX)+1
 
-        red=0+int(threshold*255)
-        green=255-(threshold*255)
-        blue=0
-        opacity=255
 
         img = np.zeros( (width,height,4), dtype=np.uint8)
-        img[data['x']-componentMinX,data['y']-componentMinY] = (red,green,blue,opacity) # (red, 0, blue, opacity)
+        img[data['x']-componentMinX,data['y']-componentMinY] = (red,green,blue,alpha) # (red, 0, blue, opacity)
         componentImage = Image.fromarray(np.swapaxes(img,0,1))
 
         response = HttpResponse(mimetype="image/png")
@@ -348,8 +348,8 @@ def initialize_components_for_skeleton(request, project_id=None, stack_id=None, 
             component_id = component_key,
             min_x = component_value['minX'],
             min_y = component_value['minY'],
-            max_x = component_value['minY'],
-            max_y = component_value['minY'],
+            max_x = component_value['maxX'],
+            max_y = component_value['maxY'],
             z = z,
             threshold = component_value['threshold'],
             status = 5 # means automatically selected component

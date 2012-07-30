@@ -17,6 +17,7 @@ function CanvasTool()
     var controlsBackground=null;
     this.stack = null;
     this.toolname = "canvastool";
+    this.componentColor=[0,255,255,255];
 
     var sliders_box = document.getElementById( "sliders_box_seg" );
 
@@ -45,7 +46,6 @@ function CanvasTool()
     sliders_box.appendChild( slider_z_box );
 
 
-    var componentThreshold=0.02;
     var enumFactory=new EnumFactory();
     this.componentStore=new ComponentStore();
 
@@ -53,6 +53,10 @@ function CanvasTool()
         COMPONENTVIEW : {
             value : 1,
             string : 'componentview'
+        },
+        NOSKELETONSELECTED : {
+            value : 1,
+            string : 'noskeletonselected'
         },
         COMPONENTDRAW : {
             value : 2,
@@ -72,21 +76,47 @@ function CanvasTool()
         return;
     };
 
+    this.initskeleton=function()
+    {
+        var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/initialize_components';
+
+        $.ajax({
+            url: url,
+            type: "POST",
+            data: {skeleton_id:330 },
+            dataType: "json",
+            beforeSend: function(x) {
+                //Log before send
+            },
+            success: function(result)
+            {
+                //Log result, report on error
+
+            }
+        });
+    };
+
 
 
     this.loadComponents=function()
     {
+        if(project.selectedObjects.selectedskeleton==null)
+        {
+            return;
+        }
         //Load components from DB
-        if(self.state!=self.stateEnum.COMPONENTVIEW || self.componentStore.componentLayers[self.stack.z]!=undefined)
+        if(self.state!=self.stateEnum.COMPONENTVIEW  || self.componentStore.componentLayers[self.stack.z]!=undefined)
         {
             self.showActiveComponents();
             return 0;
         }
 
-        //TODO:remove hardcoded project nr
+        //TODO:remove debug url
 
-        var url='http://localhost:8000/1/stack/3/get-saved-components'+ "?" + $.param({
-            skeleton_id:61,
+        //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/get-saved-components";
+
+        var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/get-saved-components'+ "?" + $.param({
+            skeleton_id:project.selectedObjects.selectedskeleton,
             z : self.stack.z});
 
 
@@ -180,7 +210,7 @@ function CanvasTool()
                     }
                   });
             } else if ( self.stack.tile_source_type === 3 ) {
-                console.log('tile source type 3')
+                console.log('tile source type 3');
                 jQuery.ajax({
                     //url: stack.labelupload_url, // "dj/" + project.id + "/stack/" + stack.id + "/push_image", // stack.labelUploadURL
                     url: "dj/" + project.id + "/stack/" + self.stack.id + "/put_tile", // stack.labelUploadURL
@@ -418,14 +448,16 @@ function CanvasTool()
 
     this.putComponents=function()
     {
-        if(self.state!=self.stateEnum.COMPONENTVIEW || self.componentStore.componentLayers.length==0)
+        if(project.selectedObjects.selectedskeleton==null||self.state!=self.stateEnum.COMPONENTVIEW || self.componentStore.componentLayers.length==0)
         {
             return 0;
         }
 
-        //TODO:Remove hardcoded project & stack nr in url
+        //TODO:remove debug url
 
-        var url='http://localhost:8000/1/stack/3/put-components';
+        //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/put-components";
+
+        var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/put-components';
         var jsonObjects ={};
 
         for (var componentGroupId in self.componentStore.componentLayers[self.stack.z].componentGroups)
@@ -446,7 +478,7 @@ function CanvasTool()
         $.ajax({
             url: url,
             type: "POST",
-            data: {skeleton_id:61,z:self.stack.z,x:viewstate.x,y:viewstate.y,width:viewstate.width,height:viewstate.height,components: JSON.stringify(jsonObjects) },
+            data: {skeleton_id:project.selectedObjects.selectedskeleton,z:self.stack.z,x:viewstate.x,y:viewstate.y,width:viewstate.width,height:viewstate.height,components: JSON.stringify(jsonObjects) },
             dataType: "json",
             beforeSend: function(x) {
                 //Log before send
@@ -459,12 +491,16 @@ function CanvasTool()
             });
 
 
-    }
+    };
 
 
 
     this.showActiveComponents=function()
     {
+        if(project.selectedObjects.selectedskeleton==null)
+        {
+            return;
+        }
         canvasLayer.canvas.clear();
 
         //redraw all
@@ -486,6 +522,12 @@ function CanvasTool()
     /* Mouseup */
     this.mouseup = function (e)
     {
+        if(project.selectedObjects.selectedskeleton==null)
+        {
+            window.alert('Please select a skeleton!')
+            return
+        }
+
         x = e.layerX;
         y = e.layerY;
 
@@ -498,11 +540,12 @@ function CanvasTool()
         if(intersectingComponentGroupId!=null)
         {
             self.componentStore.componentLayers[self.stack.z].activeGroupIndex=intersectingComponentGroupId;
+
             var activeGroup=self.componentStore.componentLayers[self.stack.z].componentGroups[intersectingComponentGroupId];
-            self.getComponents(activeGroup.components[activeGroup.selectedComponentIndex].centerX(),activeGroup.components[activeGroup.selectedComponentIndex].centerY(),intersectingComponentGroupId)
-
-            //TODO:Check if Group is loaded and if not load the rest
-
+            if(!activeGroup.grouploaded)
+            {
+                self.getComponents(activeGroup.components[activeGroup.selectedComponentIndex].displayPositionX(),activeGroup.components[activeGroup.selectedComponentIndex].displayPositionY(),intersectingComponentGroupId)
+            }
 
         }
         else
@@ -517,7 +560,7 @@ function CanvasTool()
         //var mouse = canvasLayer.canvas.getPointer(e.memo.e);
         self.started = true;
 
-    }
+    };
 
 
     this.CheckForIntersectingGroup=function(x,y)
@@ -526,8 +569,9 @@ function CanvasTool()
         if(self.componentStore.componentLayers[self.stack.z]!=undefined)
         {
             //make all invisible
-
            canvasLayer.canvas.clear();
+
+            var fieldOfView=canvasLayer.getFieldOfViewParameters();
 
             var counter=-1;
             for(var componentGroupId in self.componentStore.componentLayers[self.stack.z].componentGroups)
@@ -536,10 +580,10 @@ function CanvasTool()
                 {
                     counter+=1;
                     var component = self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId].components[self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId].selectedComponentIndex];
-                    if(component.minX>x){continue;}
-                    if(component.maxX<x){continue;}
-                    if(component.minY>y){continue;}
-                    if(component.maxY<y){continue;}
+                    if((component.minX-fieldOfView.x)>x){continue;}
+                    if((component.maxX-fieldOfView.x)<x){continue;}
+                    if((component.minY-fieldOfView.y)>y){continue;}
+                    if((component.maxY-fieldOfView.y)<y){continue;}
 
                     var componentGroup=self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
                     canvasLayer.canvas.add(componentGroup.components[componentGroup.selectedComponentIndex].image);
@@ -652,7 +696,9 @@ function CanvasTool()
                 '+': [ 43, 107, 61, 187 ]
             },
             run: function (e) {
+                self.initskeleton();
                 console.log('+');
+
                 //self.prototype.slider_s.move(1);
                 return false;
             }
@@ -755,12 +801,15 @@ function CanvasTool()
         {
             return 0;
         }
+        var fieldOfView=canvasLayer.getFieldOfViewParameters();
 
-        //TODO:remove hardcoded project nr
+        //TODO:remove debug url
 
-        var url='http://localhost:8000/1/stack/3/components-for-point'+ "?" + $.param({
-            x: x,
-            y: y,
+        //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/components-for-point";
+
+        var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/components-for-point'+ "?" + $.param({
+            x: (x+fieldOfView.x),
+            y: (y+fieldOfView.y),
             scale : 0.5, // defined as 1/2**zoomlevel
             z : self.stack.z});
 
@@ -857,29 +906,32 @@ function CanvasTool()
             }
 
 
-
         });
 
     };
 
-
-
     this.getComponentImage= function(component,x,y,z,scale,visible)
     {
-                //var canvasPos=$('canvas').offset();
+        //TODO:remove debug url
 
-         var url='http://localhost:8000/1/stack/3/componentimage'+ "?" + $.param({
+        //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/componentimage";
+
+         var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/componentimage'+ "?" + $.param({
                     id: component.id,
                     z:z,
-                    scale : scale // defined as 1/2**zoomlevel
+                    scale : scale, // defined as 1/2**zoomlevel
+                    red:self.componentColor[0],
+                    green:self.componentColor[1],
+                    blue:self.componentColor[2],
+                    alpha:self.componentColor[3]
                     });
 
         component.visible=visible;
+        var fieldOfView=canvasLayer.getFieldOfViewParameters();
 
         fabric.Image.fromURL(url, function(img)
         {
-
-                    component.image = img.set({ left: component.centerX(), top: component.centerY(), angle: 0 }).scale(1);
+                    component.image = img.set({ left: component.displayPositionX(), top: component.displayPositionY(), angle: 0 }).scale(1);
                     if(visible)
                     {
                         canvasLayer.canvas.add(component.image);
@@ -887,7 +939,6 @@ function CanvasTool()
 
                         canvasLayer.canvas.item(canvasLayer.canvas._objects.length-1).selectable=false;
                     }
-
 
                 });
 
@@ -908,6 +959,8 @@ function CanvasTool()
         this.height=function(){return this.maxY-this.minY; };
         this.centerX=function(){return Math.round(this.minX+(this.maxX-this.minX)/2); };
         this.centerY=function(){return Math.round(this.minY+(this.maxY-this.minY)/2); };
+        this.displayPositionX=function(){return Math.round((this.minX+(this.maxX-this.minX)/2)-canvasLayer.getFieldOfViewParameters().x); };
+        this.displayPositionY=function(){return Math.round((this.minY+(this.maxY-this.minY)/2)-canvasLayer.getFieldOfViewParameters().y); };
     }
 
     function ComponentGroup()
@@ -915,7 +968,7 @@ function CanvasTool()
         this.selectedComponentIndex=-1;
         this.components=[];
         this.active=false;
-        this.groupLoaded=false;
+        this.grouploaded=false;
     }
 
     function ComponentLayer()
@@ -937,7 +990,7 @@ function CanvasTool()
             self.componentStore.componentLayers[self.stack.z]=new ComponentLayer();
         }
 
-    }
+    };
 
 	//--------------------------------------------------------------------------
 	/**
@@ -955,14 +1008,14 @@ function CanvasTool()
 		self.changeSlice( changeSliceDelayedParam.z );
 		changeSliceDelayedParam = null;
 		return false;
-	}
+	};
 
 	this.changeSliceDelayed = function( val )
 	{
 		if ( changeSliceDelayedTimer ) window.clearTimeout( changeSliceDelayedTimer );
 		changeSliceDelayedParam = { z : val };
 		changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 100 );
-	}
+	};
 
 	this.changeSlice = function( val )
 	{
@@ -992,22 +1045,22 @@ function EnumFactory()
 
     Enum.prototype.getEnums = function() {
         return _enums;
-    }
+    };
 
     Enum.prototype.forEach = function(callback){
         var length = this._enums.length;
         for (var i = 0; i < length; ++i){
             callback(this._enums[i]);
         }
-    }
+    };
 
     Enum.prototype.addEnum = function(e) {
         this._enums.push(e);
-    }
+    };
 
     Enum.prototype.getByName = function(name) {
         return this[name];
-    }
+    };
 
     Enum.prototype.getByValue = function(field, value) {
         var lookup = this._lookups[field];
@@ -1026,7 +1079,7 @@ function EnumFactory()
             }
         }
         return null;
-    }
+    };
 
     this.defineEnum=function(definition) {
         var k;

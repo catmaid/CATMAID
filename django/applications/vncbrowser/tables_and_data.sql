@@ -489,8 +489,8 @@ INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation
 INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2457, 3, '2012-07-23 01:15:24.010388+02', '2012-07-23 01:15:24.010388+02', 3, 'create_neuron', '(3680,2530,180)', 'Create neuron 2452 and skeleton 2451');
 INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (1, 3, '2011-12-19 16:46:01.360422+01', false, 'Message 1', 'Contents of message 1.', 'http://www.example.com/message1');
 INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (2, 3, '2011-12-20 16:46:01.360422+01', false, 'Message 2', 'Contents of message 2.', 'http://www.example.com/message2');
-INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (3, 3, '2011-12-21 16:46:01.360422+01', true, 'Message 3', 'Contents of message 3.', 'http://www.example.com/message3');
-INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (4, 3, '2011-12-22 16:46:01.360422+01', true, 'Message 4', 'Contents of message 4.', 'http://www.example.com/message4');
+INSERT INTO message (id, user_id, "time", read, title, text) VALUES (3, 3, '2011-12-21 16:46:01.360422+01', true, 'Message 3', 'Contents of message 3.');
+INSERT INTO message (id, user_id, "time", read, title, text) VALUES (4, 3, '2011-12-22 16:46:01.360422+01', true, 'Message 4', 'Contents of message 4.');
 INSERT INTO project (id, title, public, wiki_base_url) VALUES (1, 'Default Project', true, NULL);
 INSERT INTO project (id, title, public, wiki_base_url) VALUES (2, 'Evaluation data set', true, NULL);
 INSERT INTO project (id, title, public, wiki_base_url) VALUES (3, 'Focussed Ion Beam (FIB)', true, NULL);

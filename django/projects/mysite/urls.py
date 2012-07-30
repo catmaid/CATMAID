@@ -76,6 +76,7 @@ urlpatterns += patterns('',
     (r'^(?P<project_id>\d+)/logs/list$', 'vncbrowser.views.catmaid_replacements.list_logs'),
     (r'^(?P<project_id>\d+)/search$', 'vncbrowser.views.catmaid_replacements.search'),
     (r'^messages/unread$', 'vncbrowser.views.catmaid_replacements.unread_messages'),
+    (r'^messages/mark_read$', 'vncbrowser.views.catmaid_replacements.read_message'),
     (r'^(?P<project_id>\d+)/treenode/create$', 'vncbrowser.views.treenode.create_treenode'),
     (r'^(?P<project_id>\d+)/treenode/delete$', 'vncbrowser.views.treenode.delete_treenode'),
     (r'^(?P<project_id>\d+)/treenode/info$', 'vncbrowser.views.treenode.treenode_info')

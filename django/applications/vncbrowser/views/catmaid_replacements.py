@@ -12,7 +12,7 @@ from vncbrowser.models import Project, Stack, Class, ClassInstance, \
     TextlabelLocation, Log, Message
 from vncbrowser.transaction import transaction_reportable_commit_on_success
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional, \
-    catmaid_login_required
+    catmaid_login_required, my_render_to_response
 from common import insert_into_log, makeJSON_legacy_list
 
 
@@ -537,6 +537,40 @@ def unread_messages(request, project_id=None, logged_in_user=None):
     messages = map(message_to_dict, messages)
 
     return HttpResponse(json.dumps(makeJSON_legacy_list(messages)))
+
+
+@catmaid_login_required
+@transaction_reportable_commit_on_success
+def read_message(request, project_id=None, logged_in_user=None):
+    message_id = request.GET.get('id', 0)
+    message_on_error = ''
+    try:
+        message_on_error = 'Could not retrieve message with id %s.' % message_id
+        message = Message.objects.filter(user=logged_in_user, id=message_id)[0]
+        message_on_error = 'Could not mark message with id %s as read.' % message_id
+        message.read = True
+        message.save()
+
+        if message.action is not None and message.action != '':
+            redirect = 'location.replace(%s)' % message.action
+            redir_link = message.action
+        else:
+            redirect = 'history.back()'
+            redir_link = 'history.back()'
+
+        return my_render_to_response(request, 'vncbrowser/read_message.html', {
+                    'url': request.build_absolute_uri(),
+                    'redirect': redirect,
+                    'redir_link': redir_link})
+
+    except Exception as e:
+        if message_on_error != '':
+            error = message_on_error
+        elif e.message != '':
+            error = e.message
+        else:
+            error = 'Unknown error.'
+        return my_render_to_response(request, 'vncbrowser/error.html', {'error': error})
 
 
 @catmaid_login_required

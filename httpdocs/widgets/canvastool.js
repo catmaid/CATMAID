@@ -31,7 +31,8 @@ function CanvasTool()
         388,
         388,
         1,
-        function( val ){ statusBar.replaceLast( "z: " + val ); return; } );
+        function( val )
+        { statusBar.replaceLast( "z: " + val );  return; } );
 
     var slider_z_box = document.createElement( "div" );
     slider_z_box.className = "box";
@@ -65,16 +66,76 @@ function CanvasTool()
 
     this.state=this.stateEnum.COMPONENTVIEW;
 
-    var x = 0;
-    var y = 0;
-
-
-
-
     this.resize = function( width, height )
     {
         self.prototype.resize( width, height );
         return;
+    };
+
+
+
+    this.loadComponents=function()
+    {
+        //Load components from DB
+        if(self.state!=self.stateEnum.COMPONENTVIEW || self.componentStore.componentLayers[self.stack.z]!=undefined)
+        {
+            self.showActiveComponents();
+            return 0;
+        }
+
+        //TODO:remove hardcoded project nr
+
+        var url='http://localhost:8000/1/stack/3/get-saved-components'+ "?" + $.param({
+            skeleton_id:61,
+            z : self.stack.z});
+
+
+        $.getJSON(url,function(result)
+        {
+            self.componentStore.componentLayers[self.stack.z]=new ComponentLayer();
+            var currentComponentGroups=self.componentStore.componentLayers[self.stack.z].componentGroups;
+
+            for (var componentResultId in result)
+            {
+                if(result.hasOwnProperty(componentResultId))
+                {
+
+                    var componentGroupNew=new ComponentGroup();
+                    componentGroupNew.active=true;
+                    componentGroupNew.groupLoaded=false;
+
+                    var componentResult=result[componentResultId];
+
+                    var components=componentGroupNew.components;
+                    var component=new Component();
+                        components[components.length]=component;
+                        component.id=componentResultId;
+                        component.maxX=componentResult.maxX;
+                        component.minX=componentResult.minX;
+                        component.maxY=componentResult.maxY;
+                        component.minY=componentResult.minY;
+                        component.threshold=componentResult.threshold;
+
+                    componentGroupNew.selectedComponentIndex=0;
+                    var currentComponentLayer=self.componentStore.componentLayers[self.stack.z];
+                    if(currentComponentLayer.activeGroupIndex!=-1)
+                    {
+                        currentComponentGroups[currentComponentLayer.activeGroupIndex].active=false;
+                    }
+                    var componentGroupIdNew=currentComponentGroups.length;
+                    currentComponentGroups[componentGroupIdNew]=componentGroupNew;
+                    currentComponentLayer.activeGroupIndex=currentComponentGroups.length-1;
+
+
+                    self.getComponentImage(componentGroupNew.components[0],x,y, self.stack.z,0.5,true);
+
+                }
+
+            }
+
+            self.showActiveComponents();
+
+        });
     };
 
 
@@ -247,6 +308,8 @@ function CanvasTool()
     {
         self.stack = parentStack;
         canvasLayer = new CanvasLayer( parentStack );
+        canvasLayer.canvas.interactive=false;
+        canvasLayer.canvas.selection=false;
 
         self.prototype.setMouseCatcher( canvasLayer.view );
         // TODO: Layer is added to the parent stack, but the view
@@ -285,8 +348,6 @@ function CanvasTool()
 
         var component=currentComponentGroup.components[index];
         component.visible=false;
-
-        canvasLayer.canvas.clear();
 
         var newComponent=null;
         var newIndex=null;
@@ -357,10 +418,12 @@ function CanvasTool()
 
     this.putComponents=function()
     {
-        if(self.state!=self.stateEnum.COMPONENTVIEW)
+        if(self.state!=self.stateEnum.COMPONENTVIEW || self.componentStore.componentLayers.length==0)
         {
             return 0;
         }
+
+        //TODO:Remove hardcoded project & stack nr in url
 
         var url='http://localhost:8000/1/stack/3/put-components';
         var jsonObjects ={};
@@ -377,6 +440,8 @@ function CanvasTool()
         }
 
         var viewstate=canvasLayer.getFieldOfViewParameters();
+
+        //TODO:Only save array if not empty
 
         $.ajax({
             url: url,
@@ -400,6 +465,9 @@ function CanvasTool()
 
     this.showActiveComponents=function()
     {
+        canvasLayer.canvas.clear();
+
+        //redraw all
         for (var componentGroupId in self.componentStore.componentLayers[self.stack.z].componentGroups)
         {
             if(self.componentStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId))
@@ -430,6 +498,11 @@ function CanvasTool()
         if(intersectingComponentGroupId!=null)
         {
             self.componentStore.componentLayers[self.stack.z].activeGroupIndex=intersectingComponentGroupId;
+            var activeGroup=self.componentStore.componentLayers[self.stack.z].componentGroups[intersectingComponentGroupId];
+            self.getComponents(activeGroup.components[activeGroup.selectedComponentIndex].centerX(),activeGroup.components[activeGroup.selectedComponentIndex].centerY(),intersectingComponentGroupId)
+
+            //TODO:Check if Group is loaded and if not load the rest
+
 
         }
         else
@@ -462,7 +535,7 @@ function CanvasTool()
                 if(self.componentStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId))
                 {
                     counter+=1;
-                    var component = self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId].components[self.componentStore.componentLayers[stack.z].componentGroups[componentGroupId].selectedComponentIndex];
+                    var component = self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId].components[self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId].selectedComponentIndex];
                     if(component.minX>x){continue;}
                     if(component.maxX<x){continue;}
                     if(component.minY>y){continue;}
@@ -484,7 +557,6 @@ function CanvasTool()
 
             }
             //make all visible
-            canvasLayer.canvas.clear();
             self.showActiveComponents();
         }
 
@@ -514,7 +586,6 @@ function CanvasTool()
         } else {
             createCanvasLayer( parentStack );
             createControlBox();
-            self.generateComponentLayer();
         }
         console.log('field of view parameters', canvasLayer.getFieldOfViewParameters())
 
@@ -532,6 +603,8 @@ function CanvasTool()
           self.stack.slices,
           self.stack.z,
           self.changeSlice );
+
+        self.loadComponents();
 
 
         return;
@@ -676,12 +749,14 @@ function CanvasTool()
         }
     };
 
-    this.getComponents= function(x,y)
+    this.getComponents= function(x,y,activeGroupIndex)
     {
         if(self.state!=self.stateEnum.COMPONENTVIEW)
         {
             return 0;
         }
+
+        //TODO:remove hardcoded project nr
 
         var url='http://localhost:8000/1/stack/3/components-for-point'+ "?" + $.param({
             x: x,
@@ -690,14 +765,18 @@ function CanvasTool()
             z : self.stack.z});
 
 
-
-
         $.getJSON(url,function(result){
 
             var currentComponentGroups=self.componentStore.componentLayers[self.stack.z].componentGroups;
 
             var componentGroupIdNew=currentComponentGroups.length;
-            var componentGroupNew=new ComponentGroup();
+            var componentGroupNew=null;
+            if(activeGroupIndex!=undefined)
+            {
+                componentGroupNew=self.componentStore.componentLayers[self.stack.z].componentGroups[activeGroupIndex];
+            }
+            else{componentGroupNew=new ComponentGroup();}
+
 
             for (var componentResultId in result)
             {
@@ -730,7 +809,7 @@ function CanvasTool()
                     {
                         var components=componentGroupNew.components;
                         var component=new Component();
-                        components[componentResultId]=component;
+                        components[componentGroupNew.components.length]=component;
                         component.id=componentResultId;
                         component.maxX=componentResult.maxX;
                         component.minX=componentResult.minX;
@@ -754,18 +833,21 @@ function CanvasTool()
                     currentComponentGroups[currentComponentLayer.activeGroupIndex].active=false;
                 }
 
-                currentComponentGroups[componentGroupIdNew]=componentGroupNew;
-                currentComponentLayer.activeGroupIndex=currentComponentGroups.length-1;
+                var visible=false;
+                if(activeGroupIndex==undefined)
+                {
+                    currentComponentGroups[componentGroupIdNew]=componentGroupNew;
+                    currentComponentLayer.activeGroupIndex=currentComponentGroups.length-1;
 
-                componentGroupNew.components=componentGroupNew.components.sort(function(a,b){return a.threshold- b.threshold;});
-                componentGroupNew.selectedComponentIndex=0;
+                    componentGroupNew.components=componentGroupNew.components.sort(function(a,b){return a.threshold- b.threshold;});
+                    componentGroupNew.selectedComponentIndex=0;
+                    visible=true;
+                }
 
-                var visible=true;
                 for(var componentToLoadId in componentGroupNew.components)
                 {
-                    if(componentGroupNew.components.hasOwnProperty(componentToLoadId))
+                    if(componentGroupNew.components.hasOwnProperty(componentToLoadId)&&componentGroupNew.components[componentToLoadId].image==null)
                     {
-
                         self.getComponentImage(componentGroupNew.components[componentToLoadId],x,y, self.stack.z,0.5,visible);
                         visible=false;
 
@@ -779,6 +861,8 @@ function CanvasTool()
         });
 
     };
+
+
 
     this.getComponentImage= function(component,x,y,z,scale,visible)
     {
@@ -822,8 +906,8 @@ function CanvasTool()
 
         this.width=function(){return this.maxX-this.minX; };
         this.height=function(){return this.maxY-this.minY; };
-        this.centerX=function(){return this.minX+(this.maxX-this.minX)/2; };
-        this.centerY=function(){return this.minY+(this.maxY-this.minY)/2; };
+        this.centerX=function(){return Math.round(this.minX+(this.maxX-this.minX)/2); };
+        this.centerY=function(){return Math.round(this.minY+(this.maxY-this.minY)/2); };
     }
 
     function ComponentGroup()
@@ -852,8 +936,6 @@ function CanvasTool()
         {
             self.componentStore.componentLayers[self.stack.z]=new ComponentLayer();
         }
-
-
 
     }
 
@@ -884,7 +966,17 @@ function CanvasTool()
 
 	this.changeSlice = function( val )
 	{
+        //Save current component groups
+        self.putComponents();
+
+        canvasLayer.canvas.clear();
+
 		self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
+
+        //Load saved component groups
+        self.loadComponents();
+
+
 		return;
 	}
 

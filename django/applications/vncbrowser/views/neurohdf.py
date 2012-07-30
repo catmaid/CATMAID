@@ -188,8 +188,8 @@ def get_component_image(request, project_id=None, stack_id=None):
 def get_saved_components(request, project_id=None, stack_id=None, logged_in_user=None):
 
     # parse request
-    skeleton_id = int(request.POST['skeleton_id'])
-    z = int(request.POST['z'])
+    skeleton_id = int(request.GET['skeleton_id'])
+    z = int(request.GET['z'])
 
     s = get_object_or_404(ClassInstance, pk=skeleton_id)
     stack = get_object_or_404(Stack, pk=stack_id)
@@ -200,8 +200,7 @@ def get_saved_components(request, project_id=None, stack_id=None, logged_in_user
     project=p,skeleton_id=skeleton_id,
     z = z).all()
 
-    # TODO: should n't it be a dict?
-    componentIds=[]
+    componentIds={}
 
     for compData in all_components:
         componentIds[int(compData.component_id)]=\

@@ -10,7 +10,7 @@ import json
 import datetime
 
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
-from models import ClassInstance, Session, Log
+from models import ClassInstance, Session, Log, Message
 from models import Treenode, Connector, TreenodeConnector, User
 from models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
 from transaction import RollbackAndReport, transaction_reportable_commit_on_success
@@ -1324,6 +1324,35 @@ class ViewPageTests(TestCase):
         expected_result = {'skeleton_id': 235, 'neuron_id': 233, 'skeleton_name': 'skeleton 235', 'neuron_name': 'branched neuron'}
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
+
+    def test_read_message_error(self):
+        self.fake_authentication()
+        message_id = 5050
+
+        response = self.client.get('/messages/mark_read', {'id': message_id})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Could not retrieve message with id %s' % message_id)
+
+    def test_read_message_without_action(self):
+        self.fake_authentication()
+        message_id = 3
+
+        response = self.client.get('/messages/mark_read', {'id': message_id})
+        self.assertEqual(response.status_code, 200)
+        message = Message.objects.filter(id=message_id)[0]
+        self.assertEqual(True, message.read)
+        self.assertContains(response, 'history.back()', count=2)
+
+    def test_read_message_with_action(self):
+        self.fake_authentication()
+        message_id = 1
+
+        response = self.client.get('/messages/mark_read', {'id': message_id})
+        self.assertEqual(response.status_code, 200)
+        message = Message.objects.filter(id=message_id)[0]
+        self.assertEqual(True, message.read)
+        self.assertContains(response, 'location.replace')
+        self.assertContains(response, message.action, count=2)
 
     def test_unread_messages(self):
         self.fake_authentication()

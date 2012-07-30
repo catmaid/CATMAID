@@ -529,23 +529,18 @@ var ObjectTree = new function()
       // console.log("Object tree loaded.");
     });
 
-    $(object_tree_id).bind("deselect_node.jstree", function (event, data) {
-      var id = data.rslt.obj.attr("id").replace("node_", "");
-      var type = data.rslt.obj.attr("rel");
-      if (type === "skeleton") {
-        project.selectedObjects.selectedskeleton = null;
-      } else if (type === "neuron" ) {
-        project.selectedObjects.selectedneuron = null;
-      }
-    });
-
     $(object_tree_id).bind("select_node.jstree", function (event, data) {
-      id = data.rslt.obj.attr("id").replace("node_", "");
+      id = parseInt( data.rslt.obj.attr("id").replace("node_", "") );
       type = data.rslt.obj.attr("rel");
       if (type === "neuron") {
         project.selectedObjects.selectedneuron = id;
+        project.selectedObjects.selectedskeleton = null;
       } else if (type === "skeleton") {
+        project.selectedObjects.selectedneuron = null;
         project.selectedObjects.selectedskeleton = id;
+      } else {
+        project.selectedObjects.selectedneuron = null;
+        project.selectedObjects.selectedskeleton = null;
       }
     });
 

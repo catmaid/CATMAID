@@ -1276,6 +1276,180 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
+    def test_instance_operation_remove_neuron(self):
+        self.fake_authentication()
+        node_id = 2
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+        response = self.client.post(
+                '/%d/instance_operation' % self.test_project_id, {
+                    'operation': 'remove_node',
+                    'rel': 'neuron',
+                    'id': node_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'status': 1, 'message': 'Removed neuron successfully.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+        self.assertEqual(0, Treenode.objects.filter(skeleton=node_id).count())
+        self.assertEqual(0, ClassInstanceClassInstance.objects.filter(class_instance_b=node_id).count())
+        self.assertEqual(0, ClassInstanceClassInstance.objects.filter(class_instance_a=node_id).count())
+        self.assertEqual(0, ClassInstance.objects.filter(id=node_id).count())
+        # A skeleton part of this neuron
+        self.assertEqual(0, ClassInstance.objects.filter(id=2).count())
+        self.assertEqual(0, TreenodeClassInstance.objects.filter(class_instance=node_id).count())
+        # This is a TCI related to a treenode included in a skeleton part of
+        # this neuron
+        self.assertEqual(0, TreenodeClassInstance.objects.filter(id=353).count())
+
+        self.assertEqual(log_count + 1, count_logs())
+
+    def test_instance_operation_move_skeleton(self):
+        self.fake_authentication()
+        src = 2364
+        ref = 2
+        classname = 'skeleton'
+        targetname = 'dull neuron'
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+        response = self.client.post(
+                '/%d/instance_operation' % self.test_project_id, {
+                    'operation': 'move_node',
+                    'src': src,
+                    'ref': ref,
+                    'classname': classname,
+                    'targetname': targetname})
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'Success.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+        self.assertEqual(log_count + 1, count_logs())
+        self.assertEqual(1, ClassInstanceClassInstance.objects.filter(class_instance_a=src, class_instance_b=ref).count())
+
+    def test_instance_operation_move_neuron(self):
+        self.fake_authentication()
+        src = 2
+        ref = 231
+        classname = 'neuron'
+        targetname = 'group'
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+        response = self.client.post(
+                '/%d/instance_operation' % self.test_project_id, {
+                    'operation': 'move_node',
+                    'src': src,
+                    'ref': ref,
+                    'classname': classname,
+                    'targetname': targetname})
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'Success.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+        self.assertEqual(log_count + 1, count_logs())
+        self.assertEqual(1, ClassInstanceClassInstance.objects.filter(class_instance_a=src, class_instance_b=ref).count())
+
+    def test_instance_operation_remove_inexistent_neuron(self):
+        self.fake_authentication()
+        node_id = 59595959
+
+        response = self.client.post(
+                '/%d/instance_operation' % self.test_project_id, {
+                    'operation': 'remove_node',
+                    'rel': 'neuron',
+                    'id': node_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'Could not find any node with ID %s' % node_id}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_instance_operation_remove_skeleton(self):
+        self.fake_authentication()
+        node_id = 1
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+        response = self.client.post(
+                '/%d/instance_operation' % self.test_project_id, {
+                    'operation': 'remove_node',
+                    'rel': 'skeleton',
+                    'id': node_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'status': 1, 'message': 'Removed skeleton successfully.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+        self.assertEqual(0, Treenode.objects.filter(skeleton=node_id).count())
+        self.assertEqual(0, ClassInstanceClassInstance.objects.filter(class_instance_b=node_id).count())
+        self.assertEqual(0, ClassInstance.objects.filter(id=node_id).count())
+        self.assertEqual(0, TreenodeClassInstance.objects.filter(class_instance=node_id).count())
+        # This is a TCI related to a treenode included in the skeleton
+        self.assertEqual(0, TreenodeClassInstance.objects.filter(id=353).count())
+
+        self.assertEqual(log_count + 1, count_logs())
+
+    def test_instance_operation_has_relations(self):
+        self.fake_authentication()
+
+        response = self.client.post(
+                '/%d/instance_operation' % self.test_project_id, {
+                    'operation': 'has_relations',
+                    'relationnr': 2,
+                    'relation0': 'part_of',
+                    'relation1': 'model_of',
+                    'id': 2365})
+        parsed_response = json.loads(response.content)
+        expected_result = {'has_relation': 1}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_instance_operation_create_group_with_parent(self):
+        self.fake_authentication()
+        parent_id = 4
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+        response = self.client.post(
+                '/%d/instance_operation' % self.test_project_id, {
+                    'operation': 'create_node',
+                    'classname': 'group',
+                    'relationname': 'part_of',
+                    'parentid': parent_id,
+                    'objname': 'group'})
+        parsed_response = json.loads(response.content)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue('class_instance_id' in parsed_response)
+        node_id = parsed_response['class_instance_id']
+        group = ClassInstance.objects.filter(id=node_id)[0]
+        self.assertEqual('group', group.name)
+        self.assertEqual(1, ClassInstanceClassInstance.objects.filter(class_instance_a=group, class_instance_b=parent_id).count())
+        self.assertEqual(log_count + 1, count_logs())
+
+    def test_instance_operation_rename(self):
+        self.fake_authentication()
+        node_id = 1
+        new_title = 'Don\'t we carry in us the rustling of the leaves?'
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+        response = self.client.post(
+                '/%d/instance_operation' % self.test_project_id, {
+                    'operation': 'rename_node',
+                    'classname': 'skeleton',
+                    'id': node_id,
+                    'title': new_title})
+        parsed_response = json.loads(response.content)
+        expected_result = {'class_instance_ids': [node_id]}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        node = ClassInstance.objects.filter(id=node_id)[0]
+        self.assertEqual(new_title, node.name)
+        self.assertEqual(log_count + 1, count_logs())
+
     def test_delete_link_success(self):
         self.fake_authentication()
         connector_id = 356

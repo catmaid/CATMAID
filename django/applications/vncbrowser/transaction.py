@@ -8,7 +8,7 @@ class RollbackAndReport(Exception):
     def __init__(self, error):
         if isinstance(error, dict):
             self.error_report_dict = error
-        elif isinstance(error, str):
+        elif isinstance(error, str) or isinstance(error, unicode):
             self.error_report_dict = {'error': error}
         else:
             self.error_report_dict = {'error': 'Unknown error.'}

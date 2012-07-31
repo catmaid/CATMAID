@@ -708,10 +708,6 @@ var WebGLApp = new function () {
           } )
     ));
 
-    rowElement.append(
-      $(document.createElement("td")).text( skeleton.baseName + ' (SkeletonID: ' + skeleton.id + ')' )
-    );
-
     var td = $(document.createElement("td"));
     td.append( $(document.createElement("button")).attr({
           id:    'skeletonaction-remove-' + skeleton.id,
@@ -751,6 +747,10 @@ var WebGLApp = new function () {
     })
 
     $('#color-wheel-' + skeleton.id).hide();
+
+    rowElement.append(
+      $(document.createElement("td")).text( skeleton.baseName + ' (SkeletonID: ' + skeleton.id + ')' )
+    );
 
     skeleton.addCompositeActorToScene();
 

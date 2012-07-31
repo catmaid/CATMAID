@@ -102,13 +102,6 @@ var WindowMaker = new function()
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
-    rand.setAttribute("id", "randomize_skeleton_color");
-    rand.setAttribute("value", "Randomize color");
-    rand.onclick = WebGLApp.randomizeColors;
-    container.appendChild(rand);
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
     rand.setAttribute("id", "xy_plane");
     rand.setAttribute("value", "XY");
     rand.onclick =  WebGLApp.XYView;
@@ -133,6 +126,13 @@ var WindowMaker = new function()
     rand.setAttribute("id", "remove_all");
     rand.setAttribute("value", "Remove all");
     rand.onclick = WebGLApp.removeAllSkeletons;
+    container.appendChild(rand);
+
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
+    rand.setAttribute("id", "randomize_skeleton_color");
+    rand.setAttribute("value", "Randomize color");
+    rand.onclick = WebGLApp.randomizeColors;
     container.appendChild(rand);
 
     var rand = document.createElement('input');
@@ -183,8 +183,8 @@ var WindowMaker = new function()
             '<th>show</th>' +
             '<th>pre</th>' +
             '<th>post</th>' +
-            '<th>name</th>' +
             '<th>action</th>' +
+            '<th>name</th>' +
           '</tr>' +
         '</thead>' +
         '<tbody>' +

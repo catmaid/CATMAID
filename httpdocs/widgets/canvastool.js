@@ -9,7 +9,7 @@
  */
 function CanvasTool()
 {
-    this.prototype = new Navigator();
+    // this.prototype = new Navigator();
 
     var self = this;
     var canvasLayer = null;
@@ -18,6 +18,8 @@ function CanvasTool()
     this.stack = null;
     this.toolname = "canvastool";
     this.componentColor=[0,255,255,255];
+
+	  if ( !ui ) ui = new UI();
 
     var sliders_box = document.getElementById( "sliders_box_seg" );
 
@@ -45,7 +47,6 @@ function CanvasTool()
 
     sliders_box.appendChild( slider_z_box );
 
-
     var enumFactory=new EnumFactory();
     this.componentStore=new ComponentStore();
 
@@ -72,7 +73,8 @@ function CanvasTool()
 
     this.resize = function( width, height )
     {
-        self.prototype.resize( width, height );
+        // self.prototype.resize( width, height );
+        console.log('resize', width, height);
         return;
     };
 
@@ -251,6 +253,24 @@ function CanvasTool()
             }
         });
 
+        $('#button_drawing_mode').click(function() {
+
+            // TODO: disable component mode
+            canvasLayer.canvas.isDrawingMode = !canvasLayer.canvas.isDrawingMode;
+            if (canvasLayer.canvas.isDrawingMode) {
+              $('#button_drawing_mode').text('Cancel drawing mode')
+              // TODO: hide drawing mode options
+              // drawingOptionsEl.style.display = '';
+            }
+            else {
+              $('#button_drawing_mode').text('Drawing mode')
+              // TODO: show drawing mode options
+              // drawingOptionsEl.style.display = 'none';
+            }
+
+        });
+        
+
         var brush = document.createElement("div");
         var html = '<div style="display:none;" id="drawing-mode-options">';
         // '<button id="drawing-mode">Cancel drawing mode</button>' +
@@ -277,7 +297,7 @@ function CanvasTool()
         controls.appendChild( labelList );
 
         // ******************
-        self.stack.getView().appendChild( controls );
+        // self.stack.getView().appendChild( controls );
         // ******************
 
         var drawingOptionsEl = document.getElementById('drawing-mode-options'),
@@ -341,7 +361,10 @@ function CanvasTool()
         canvasLayer.canvas.interactive=false;
         canvasLayer.canvas.selection=false;
 
-        self.prototype.setMouseCatcher( canvasLayer.view );
+		    //self.mouseCatcher.onmousedown = onmousedown;
+        //self.stack.getView().appendChild( self.mouseCatcher );
+
+        // self.prototype.setMouseCatcher( canvasLayer.view );
         // TODO: Layer is added to the parent stack, but the view
         // is not inserted in the DOM - this has to be done manually
         // in the canvaslayer.js. Is this by design?
@@ -350,15 +373,15 @@ function CanvasTool()
         // view is the mouseCatcher now
         var view = canvasLayer.view;
 
-        var proto_changeSlice = self.prototype.changeSlice;
-        self.prototype.changeSlice =
-            function( val ) {
-                console.log('change slice');
-                proto_changeSlice( val );
-            };
-
         view.onmouseup= function(e) { self.mouseup(e); };
-        view.onmousedown=function(e) { self.mousedown(e); };
+        view.onmousedown=function(e) {
+          // if middle mouse, propagate to onmousedown
+          if( e.button === 1) {
+            onmousedown(e);
+          } else {
+            self.mousedown(e);
+          }
+        };
         view.onmousewheel=function(e){self.mousewheel(e);};
 
     };
@@ -608,6 +631,38 @@ function CanvasTool()
     };
 
 
+	var onmousemove = function( e )
+	{
+		self.lastX = self.stack.x + ui.diffX; // TODO - or + ?
+		self.lastY = self.stack.y + ui.diffY;
+		self.stack.moveToPixel(
+			self.stack.z,
+			self.stack.y - ui.diffY / self.stack.scale,
+			self.stack.x - ui.diffX / self.stack.scale,
+			self.stack.s );
+		return true;
+	};
+
+	var onmouseup = function( e )
+	{
+		ui.releaseEvents();
+		ui.removeEvent( "onmousemove", onmousemove );
+		ui.removeEvent( "onmouseup", onmouseup );
+		return false;
+	};
+
+	var onmousedown = function( e )
+	{
+		ui.registerEvent( "onmousemove", onmousemove );
+		ui.registerEvent( "onmouseup", onmouseup );
+		ui.catchEvents( "move" );
+		ui.onmousedown( e );
+
+		ui.catchFocus();
+
+		return false;
+	};
+
 
     /**
      * install this tool in a stack.
@@ -616,6 +671,7 @@ function CanvasTool()
     this.register = function( parentStack )
     {
         document.getElementById( "toolbar_seg" ).style.display = "block";
+
         if (canvasLayer && self.stack) {
             if (self.stack !== parentStack) {
                 // If the tracing layer exists and it belongs to a different stack, replace it
@@ -631,7 +687,7 @@ function CanvasTool()
             createCanvasLayer( parentStack );
             createControlBox();
         }
-        console.log('field of view parameters', canvasLayer.getFieldOfViewParameters())
+        // console.log('field of view parameters', canvasLayer.getFieldOfViewParameters())
 
         if ( self.stack.slices.length < 2 )	//!< hide the self.slider_z if there is only one slice
         {
@@ -681,7 +737,10 @@ function CanvasTool()
 
     this.redraw = function()
     {
-        self.prototype.redraw();
+        // self.prototype.redraw();
+
+        // update slider
+      	self.slider_z.setByValue( self.stack.z, true );
     };
 
     /*
@@ -697,8 +756,7 @@ function CanvasTool()
             },
             run: function (e) {
                 self.initskeleton();
-                console.log('+');
-
+                console.log('+ init skeleton');
                 //self.prototype.slider_s.move(1);
                 return false;
             }

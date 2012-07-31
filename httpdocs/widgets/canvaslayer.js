@@ -6,6 +6,7 @@ function CanvasLayer( stack )
     // define the x,y location and width and height of the
     // current field of view of the canvas in bitmap pixel
     var xindex, yindex, width, height;
+    var self = this;
 
     this.setOpacity = function( val )
     {
@@ -22,6 +23,14 @@ function CanvasLayer( stack )
     {
         //var pixelPos = [ stack.x, stack.y, stack.z ];
         //console.log("redraw pixel pos", pixelPos);
+        var wc = stack.getWorldTopLeft();
+        var pl = wc.worldLeft,
+            pt = wc.worldTop,
+            new_scale = wc.scale;
+
+        self.updateCanvasLeftTop(Math.floor((-pl / stack.resolution.x) * new_scale),
+            Math.floor((-pt / stack.resolution.y) * new_scale));
+
         return;
     }
 
@@ -30,11 +39,21 @@ function CanvasLayer( stack )
         // TODO: Resize is called too much
         //this.setFieldOfView();
         self.redraw();
+
+        var width = Math.floor(stack.dimension.x * stack.scale);
+        var height = Math.floor(stack.dimension.y * stack.scale);
+
+        self.updateCanvasWidthHeight( width, height );
+
         return;
     }
 
     this.getFieldOfViewParameters = function()
     {
+        var wc = stack.getWorldTopLeft();
+        var pl = wc.worldLeft,
+            pt = wc.worldTop,
+            new_scale = wc.scale;
         var l = {
             x: xindex,
             y: yindex,
@@ -183,7 +202,7 @@ function CanvasLayer( stack )
     });
     canvas.add(rect);
 */
-    
+
     this.unregister = function()
     {
         stack.getView().removeChild( view );

@@ -56,7 +56,7 @@ ConnectivityPostsynaptic = {
 }
 
 
-def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=8):
+def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=3):
     componentIds = {}
     fpath = os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
     with closing(h5py.File(fpath, 'r')) as hfile:

@@ -80,22 +80,30 @@ function CanvasTool()
 
     this.initskeleton=function()
     {
-        var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/initialize_components';
+        if(project.selectedObjects.selectedskeleton==null){return;}
 
-        $.ajax({
-            url: url,
-            type: "POST",
-            data: {skeleton_id:330 },
-            dataType: "json",
-            beforeSend: function(x) {
-                //Log before send
-            },
-            success: function(result)
-            {
-                //Log result, report on error
+        //TODO:Remove debug URL
 
-            }
-        });
+        $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Initializing skeleton. Just a moment...</h2>' });
+        requestQueue.register(
+            'http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/initialize_components',
+            "POST", {
+                skeleton_id:project.selectedObjects.selectedskeleton
+            }, function (status, text, xml) {
+                $.unblockUI();
+                if (status === 200) {
+                    if (text && text !== " ") {
+                        var e = $.parseJSON(text);
+                        if (e.error) {
+                            alert(e.error);
+                        } else {
+                            // just redraw all for now
+                            self.loadComponents();
+                        }
+                    }
+                }
+            });
+
     };
 
 
@@ -250,32 +258,69 @@ function CanvasTool()
         $('#button_clear_canvas').click(function() {
             if (confirm('Are you sure?')) {
                 canvasLayer.canvas.clear();
+
             }
         });
-        $('#button_color_wheel_box').click(function() {
+        $('#button_init_components').click(function() {
+
+            self.initskeleton();
+        });
+
+        var colorWheelBox = document.createElement("div");
+        colorWheelBox.id = "div_color_wheel_box";
+        colorWheelBox.className = "colorWheelCanvas";
+        colorWheelBox.style.zIndex = 6;
+        colorWheelBox.style.display = "none";
+        colorWheelBox.style.backgroundColor='rgba(255,255,255,1)';
+
+
+        var colorWheelDiv = document.createElement("div");
+        colorWheelDiv.id = "div_color_wheel";
+        colorWheelBox.appendChild(colorWheelDiv);
+        self.stack.getView().appendChild( colorWheelBox );
+
+
+        $('#button_color_wheel').click(function()
+        {
+            var myLayer = document.getElementById('div_color_wheel_box');
+            if(myLayer.style.display=="none" || myLayer.style.display==""){
+                myLayer.style.display="block";
+            } else {
+                myLayer.style.display="none";
+            }
+
 
         });
 
         var cw = Raphael.colorwheel($("#div_color_wheel")[0],150);
-        cw.color("#000000");
+        cw.color("#00ffff");
+        document.getElementById('button_color_wheel').style.backgroundColor="#00ffff";
+
         cw.onchange(function(color)
         {
             self.componentColor=[parseInt(color.r),parseInt(color.g),parseInt(color.b),255];
+            document.getElementById('button_color_wheel').style.backgroundColor=color.hex;
+            event.stopPropagation();
         });
 
         $('#button_drawing_mode').click(function() {
 
             // TODO: disable component mode
             canvasLayer.canvas.isDrawingMode = !canvasLayer.canvas.isDrawingMode;
+
             if (canvasLayer.canvas.isDrawingMode) {
-              $('#button_drawing_mode').text('Cancel drawing mode')
+              $('#button_drawing_mode').text('Cancel drawing mode');
               // TODO: hide drawing mode options
               // drawingOptionsEl.style.display = '';
+                self.state=self.stateEnum.COMPONENTDRAW;
             }
             else {
-              $('#button_drawing_mode').text('Drawing mode')
+              $('#button_drawing_mode').text('Drawing mode');
               // TODO: show drawing mode options
               // drawingOptionsEl.style.display = 'none';
+                self.state=self.stateEnum.COMPONENTVIEW;
+                canvasLayer.canvas.interactive=false;
+                canvasLayer.canvas.selection=false;
             }
 
         });
@@ -398,6 +443,11 @@ function CanvasTool()
 
     this.mousewheel=function(e)
     {
+        if(project.selectedObjects.selectedskeleton==null||self.state!=self.stateEnum.COMPONENTVIEW || self.componentStore.componentLayers.length==0)
+        {
+            return;
+        }
+
         var up=true;
         if(e.wheelDelta<0){up=false;}
 
@@ -530,7 +580,7 @@ function CanvasTool()
 
     this.showActiveComponents=function()
     {
-        if(project.selectedObjects.selectedskeleton==null)
+        if(self.state!=self.stateEnum.COMPONENTVIEW ||project.selectedObjects.selectedskeleton==null ||self.componentStore.componentLayers[self.stack.z]==undefined)
         {
             return;
         }
@@ -561,8 +611,13 @@ function CanvasTool()
             return
         }
 
-        x = e.layerX;
-        y = e.layerY;
+        if(self.state!=self.stateEnum.COMPONENTVIEW)
+        {
+            return;
+        }
+
+        x = e.offsetX;
+        y = e.offsetY;
 
         if(self.started)
         {
@@ -577,7 +632,7 @@ function CanvasTool()
             var activeGroup=self.componentStore.componentLayers[self.stack.z].componentGroups[intersectingComponentGroupId];
             if(!activeGroup.grouploaded)
             {
-                self.getComponents(activeGroup.components[activeGroup.selectedComponentIndex].displayPositionX(),activeGroup.components[activeGroup.selectedComponentIndex].displayPositionY(),intersectingComponentGroupId)
+                self.getComponents(activeGroup.components[activeGroup.selectedComponentIndex].centerX(),activeGroup.components[activeGroup.selectedComponentIndex].centerY(),intersectingComponentGroupId)
             }
 
         }
@@ -613,10 +668,10 @@ function CanvasTool()
                 {
                     counter+=1;
                     var component = self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId].components[self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId].selectedComponentIndex];
-                    if((component.minX-fieldOfView.x)>x){continue;}
-                    if((component.maxX-fieldOfView.x)<x){continue;}
-                    if((component.minY-fieldOfView.y)>y){continue;}
-                    if((component.maxY-fieldOfView.y)<y){continue;}
+                    if((component.minX)>x){continue;}
+                    if((component.maxX)<x){continue;}
+                    if((component.minY)>y){continue;}
+                    if((component.maxY)<y){continue;}
 
                     var componentGroup=self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
                     canvasLayer.canvas.add(componentGroup.components[componentGroup.selectedComponentIndex].image);
@@ -737,10 +792,10 @@ function CanvasTool()
         document.getElementById( "toolbar_seg" ).style.display = "none";
 
         // remove the canvasLayer with the official API
-        stack.removeLayer( "CanvasLayer" );
+        self.stack.removeLayer( "CanvasLayer" );
 
         // canvas tool responsability to remove the controls
-        stack.getView().removeChild( controls );
+        // stack.getView().removeChild( controls );
 
         return;
     };
@@ -765,8 +820,7 @@ function CanvasTool()
                 '+': [ 43, 107, 61, 187 ]
             },
             run: function (e) {
-                self.initskeleton();
-                console.log('+ init skeleton');
+                console.log('+ sali!');
                 //self.prototype.slider_s.move(1);
                 return false;
             }
@@ -775,7 +829,7 @@ function CanvasTool()
 		new Action({
 			helpText: "Move up 1 slice in z (or 10 with Shift held)",
 			keyShortcuts: {
-				',': [ 44, 188 ]
+				',': [ 188 ]
 			},
 			run: function (e) {
         self.slider_z.move(-(e.shiftKey ? 10 : 1));
@@ -786,13 +840,23 @@ function CanvasTool()
 		new Action({
 			helpText: "Move down 1 slice in z (or 10 with Shift held)",
 			keyShortcuts: {
-				'.': [ 46, 190 ]
+				'.': [ 190 ]
 			},
 			run: function (e) {
         self.slider_z.move((e.shiftKey ? 10 : 1));
 				return true;
 			}
-		})
+		}),
+        new Action({
+            helpText: "Delete component group",
+            keyShortcuts: {
+                'delete': [ 46 ]
+            },
+            run: function (e) {
+                self.deleteComponentGroup();
+                return true;
+            }
+        })
 
     ];
 
@@ -863,6 +927,30 @@ function CanvasTool()
         }
     };
 
+    this.deleteComponentGroup=function()
+    {
+        if(self.state==self.stateEnum.COMPONENTVIEW&&self.componentStore.componentLayers[self.stack.z]!=undefined)
+        {
+            var newLayer=new ComponentLayer();
+            var countGroups=-1;
+            for (var componentGroupId in self.componentStore.componentLayers[self.stack.z].componentGroups)
+            {
+                if(self.componentStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId) && componentGroupId!=self.componentStore.componentLayers[self.stack.z].activeGroupIndex)
+                {
+                    countGroups+=1;
+                    newLayer.componentGroups[countGroups]=self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
+                }
+            }
+            newLayer.activeGroupIndex=countGroups;
+            self.componentStore.componentLayers[self.stack.z]=newLayer;
+
+            self.showActiveComponents();
+
+        }
+
+    };
+
+
     this.getComponents= function(x,y,activeGroupIndex)
     {
         if(self.state!=self.stateEnum.COMPONENTVIEW)
@@ -875,9 +963,10 @@ function CanvasTool()
 
         //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/components-for-point";
 
+
         var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/components-for-point'+ "?" + $.param({
-            x: (x+fieldOfView.x),
-            y: (y+fieldOfView.y),
+            x: x,
+            y: y,
             scale : 0.5, // defined as 1/2**zoomlevel
             z : self.stack.z});
 
@@ -951,6 +1040,7 @@ function CanvasTool()
                 }
 
                 var visible=false;
+
                 if(activeGroupIndex==undefined)
                 {
                     currentComponentGroups[componentGroupIdNew]=componentGroupNew;
@@ -959,6 +1049,13 @@ function CanvasTool()
                     componentGroupNew.components=componentGroupNew.components.sort(function(a,b){return a.threshold- b.threshold;});
                     componentGroupNew.selectedComponentIndex=0;
                     visible=true;
+                }
+                else
+                {
+                    var currentComponent=componentGroupNew.components[0];
+                    componentGroupNew.components=componentGroupNew.components.sort(function(a,b){return a.threshold- b.threshold;});
+                    var newIndex=componentGroupNew.components.indexOf(currentComponent);
+                    componentGroupNew.selectedComponentIndex=newIndex;
                 }
 
                 for(var componentToLoadId in componentGroupNew.components)
@@ -1027,8 +1124,8 @@ function CanvasTool()
         this.height=function(){return this.maxY-this.minY; };
         this.centerX=function(){return Math.round(this.minX+(this.maxX-this.minX)/2); };
         this.centerY=function(){return Math.round(this.minY+(this.maxY-this.minY)/2); };
-        this.displayPositionX=function(){return Math.round((this.minX+(this.maxX-this.minX)/2)-canvasLayer.getFieldOfViewParameters().x); };
-        this.displayPositionY=function(){return Math.round((this.minY+(this.maxY-this.minY)/2)-canvasLayer.getFieldOfViewParameters().y); };
+        this.displayPositionX=function(){return Math.round((this.minX+(this.maxX-this.minX)/2)); };
+        this.displayPositionY=function(){return Math.round((this.minY+(this.maxY-this.minY)/2)); };
     }
 
     function ComponentGroup()

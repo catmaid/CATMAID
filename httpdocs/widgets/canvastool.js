@@ -250,6 +250,16 @@ function CanvasTool()
                 canvasLayer.canvas.clear();
             }
         });
+        $('#button_color_wheel_box').click(function() {
+
+        });
+
+        var cw = Raphael.colorwheel($("#div_color_wheel")[0],150);
+        cw.color("#000000");
+        cw.onchange(function(color)
+        {
+            self.componentColor=[parseInt(color.r),parseInt(color.g),parseInt(color.b),255];
+        });
 
         var brush = document.createElement("div");
         var html = '<div style="display:none;" id="drawing-mode-options">';
@@ -300,14 +310,14 @@ function CanvasTool()
             }
         };*/
 
-        /*
-        var cw = Raphael.colorwheel($("#color-wheel-canvas")[0],150);
+
+       /* var cw = Raphael.colorwheel($("#color-wheel-canvas")[0],150);
         cw.color("#000000");
         cw.onchange(function(color)
         {
-          canvasLayer.canvas.freeDrawingColor = 'rgb('+parseInt(color.r)+','+parseInt(color.g)+','+parseInt(color.b)+')';
-        });
-        */
+            self.componentColor=[parseInt(color.r),parseInt(color.g),parseInt(color.b),255];
+        });*/
+
 
         // append jquery elements
         var widthslider = $("#width-slider-canvas").slider({

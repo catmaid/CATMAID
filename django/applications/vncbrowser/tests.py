@@ -1606,6 +1606,46 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
+    def test_node_nearest_for_skeleton(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/node/nearest' % self.test_project_id,
+                {
+                    'x': 5115,
+                    'y': 3835,
+                    'z': 4050,
+                    'skeleton_id': 2388,
+                    })
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                "treenode_id": "2394",
+                "x": "3110",
+                "y": "6030",
+                "z": "0",
+                "skeleton_id": "2388"}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_node_nearest_for_neuron(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/node/nearest' % self.test_project_id,
+                {
+                    'x': 5115,
+                    'y': 3835,
+                    'z': 0,
+                    'neuron_id': 362,
+                    })
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                "treenode_id": "367",
+                "x": "7030",
+                "y": "1980",
+                "z": "0",
+                "skeleton_id": "361"}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
 
 """
     def test_node_list(self):

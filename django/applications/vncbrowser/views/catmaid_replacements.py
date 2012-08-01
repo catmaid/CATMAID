@@ -1,4 +1,5 @@
 import json
+import re
 
 from collections import defaultdict
 from django.core.exceptions import ObjectDoesNotExist
@@ -616,6 +617,43 @@ def get_class_to_id_map(project_id):
     for r in Class.objects.filter(project=project_id):
         result[r.class_name] = r.id
     return result
+
+
+@catmaid_can_edit_project
+@transaction_reportable_commit_on_success
+def node_update(request, project_id=None, logged_in_user=None):
+    nodes = {}
+    for key, value in request.POST.items():
+        parsed_key = re.search('^(?P<property>[a-zA-Z_]+)(?P<node_index>[0-9]+)$', key)
+        if not parsed_key:
+            continue
+        node_index = parsed_key.group('node_index')
+        node_property = parsed_key.group('property')
+        if node_index not in nodes:
+            nodes[node_index] = {}
+        nodes[node_index][node_property] = value
+
+    required_properties = ['node_id', 'x', 'y', 'z', 'type']
+    for node_index, node in nodes.items():
+        for req_prop in required_properties:
+            if req_prop not in node:
+                raise RollbackAndReport('Missing key: %s in index %s' % (req_prop, node_index))
+
+        try:
+            if node['type'] == 'treenode':
+                Treenode.objects.filter(id=node['node_id']).update(
+                        user=logged_in_user,
+                        location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
+            elif node['type'] == 'connector':
+                Location.objects.filter(id=node['node_id']).update(
+                        user=logged_in_user,
+                        location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
+            else:
+                raise RollbackAndReport('Unknown node type: %s' % node['type'])
+        except:
+            raise RollbackAndReport('Failed to update treenode: %s' % node['node_id'])
+
+    return HttpResponse(json.dumps({'updated': len(nodes)}))
 
 
 @catmaid_login_required

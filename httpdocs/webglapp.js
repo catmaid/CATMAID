@@ -244,7 +244,7 @@ var WebGLApp = new function () {
     this.line_material = new Object();
     this.geometry = new Object();
     this.actor = new Object();
-    this.actorColor = null;
+    this.actorColor = [255, 255, 0];
     
     this.geometry[connectivity_types[0]] = new THREE.Geometry();
     this.geometry[connectivity_types[1]] = new THREE.Geometry();
@@ -785,5 +785,43 @@ var WebGLApp = new function () {
         });
     }
   };
+
+  self.getListOfAllSkeletonIDs = function() {
+    var data = new Object(), hexcol;
+    data['nodes'] = {};
+    data['edges'] = {};
+
+    for( var skeleton_id in skeletons)
+    {
+      if( skeletons.hasOwnProperty(skeleton_id) ) {
+        hexcol = rgb2hex( 'rgb('+skeletons[skeleton_id].actorColor[0]+','+
+          skeletons[skeleton_id].actorColor[1]+','+
+          skeletons[skeleton_id].actorColor[2]+')' )
+        data['nodes'][skeleton_id] = {
+          color: hexcol,
+          id: skeletons[skeleton_id].id,
+          baseName: skeletons[skeleton_id].baseName
+        }
+        // add connectivity
+        for (var fromkey in this.original_connectivity) {
+          var to = this.original_connectivity[fromkey];
+          for (var tokey in to) {
+            if(data['edges'][fromkey]) {
+              if(data['edges'][fromkey][tokey]) {
+                data['edges'][fromkey][tokey]['weight'] += 1;
+              } else {
+                data['edges'][fromkey][tokey]['weight'] = 1;
+              }
+            } else {
+              data['edges'][fromkey] = {};
+              data['edges'][fromkey][tokey] = {};
+              data['edges'][fromkey][tokey]['weight'] = 1;
+            }
+          }
+        }
+      }
+    }
+    return data;
+  }
 
 }

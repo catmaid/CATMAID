@@ -287,6 +287,36 @@ var WindowMaker = new function()
   };
 
 
+  var createGraphWindow = function()
+  {
+    var win = new CMWWindow("Graph Widget");
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer("graph_widget");
+    content.appendChild(container);
+
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
+    add.setAttribute("id", "show_neurons_from_3d_view");
+    add.setAttribute("value", "Show graph of selected 3D viewer neuron(s)");
+    add.onclick = GraphWidget.updateGraphFrom3DViewer;
+    container.appendChild(add);
+
+    var graph = document.createElement('div');
+    graph.innerHTML =
+      '<div id="cytoscapeweb">Cytoscape Web will replace the contents of this div with your graph.</div>';
+    container.appendChild(graph);
+
+    addListener(win, container);
+
+    addLogic(win);
+
+    GraphWidget.init();
+
+    return win;
+  };
+
   var createNodeTableWindow = function()
   {
     var win = new CMWWindow("Table of Skeleton Nodes");
@@ -832,6 +862,7 @@ var WindowMaker = new function()
     "connector-table": createConnectorTableWindow,
     "log-table": createLogTableWindow,
     "export-widget": createExportWidget,
+    "graph-widget": createGraphWindow,
     "object-tree": createObjectTreeWindow,
     "statistics": createStatisticsWindow,
     "disclaimer": createDisclaimerWindow,

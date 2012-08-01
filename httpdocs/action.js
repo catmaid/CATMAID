@@ -325,6 +325,16 @@ var tracingWindowActions = [
   }),
 
   new Action({
+      helpText: "Graph widget",
+      buttonID: "data_button_graph_widget",
+      buttonName: 'export_widget',
+      run: function (e) {
+          WindowMaker.show('graph-widget');
+          return true;
+      }
+  }),
+
+  new Action({
     helpText: "Show object tree",
     buttonID: "data_button_tree",
     buttonName: 'tree',

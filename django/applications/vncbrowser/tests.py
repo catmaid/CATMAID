@@ -1555,6 +1555,36 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
+    def test_skeleton_ancestry(self):
+        skeleton_id = 361
+
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/skeleton/ancestry' % self.test_project_id,
+                {'skeleton_id': skeleton_id})
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                {"name":"downstream-B", "id":362, "class":"neuron"},
+                {"name":"Isolated synaptic terminals", "id":364, "class":"group"},
+                {"name":"neuropile", "id":2323, "class":"root"}]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_skeleton_ancestry_2(self):
+        skeleton_id = 2364
+
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/skeleton/ancestry' % self.test_project_id,
+                {'skeleton_id': skeleton_id})
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                {"name":"neuron 2365", "id":2365, "class":"neuron"},
+                {"name":"Fragments", "id":4, "class":"group"},
+                {"name":"neuropile", "id":2323, "class":"root"}]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
     def test_create_postsynaptic_link_success(self):
         from_id = 237
         to_id = 432

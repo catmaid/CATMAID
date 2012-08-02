@@ -30,13 +30,11 @@ var GraphWidget = new function()
 
       // init and draw
       vis = new org.cytoscapeweb.Visualization(div_id, options);
-      vis.draw({ network: networ_json });
+      // vis.draw({ network: networ_json });
   };
 
   this.updateGraphFrom3DViewer = function() {
     var data = WebGLApp.getListOfAllSkeletonIDs();
-    console.log('data', data);
-
     var nodes = [], edges = [];
     for( var skeleton_id in data['nodes'])
     {
@@ -56,18 +54,13 @@ var GraphWidget = new function()
             id: fromkey+'_'+tokey,
             source: fromkey.toString(),
             target: tokey.toString(),
-            weigtt: data['edges'][fromkey][tokey].weight,
+            weight: data['edges'][fromkey][tokey].weight,
+            label: data['edges'][fromkey][tokey].weight.toString(),
             directed: true
           })
         }
       }
     }
-
-/*[{ id: "2to1",
-                  target: "1",
-                  source: "2",
-                  weight: 10,
-                  directed: true} ]*/
 
     var visual_style = {
                     global: {

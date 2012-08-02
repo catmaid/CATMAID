@@ -790,7 +790,8 @@ var WebGLApp = new function () {
     var data = new Object(), hexcol;
     data['nodes'] = {};
     data['edges'] = {};
-
+    var connectors = {}, type;
+    
     for( var skeleton_id in skeletons)
     {
       if( skeletons.hasOwnProperty(skeleton_id) ) {
@@ -803,22 +804,52 @@ var WebGLApp = new function () {
           baseName: skeletons[skeleton_id].baseName
         }
         // add connectivity
-        for (var fromkey in this.original_connectivity) {
-          var to = this.original_connectivity[fromkey];
+        for (var fromkey in skeletons[skeleton_id].original_connectivity) {
+          var to = skeletons[skeleton_id].original_connectivity[fromkey];
           for (var tokey in to) {
-            if(data['edges'][fromkey]) {
-              if(data['edges'][fromkey][tokey]) {
-                data['edges'][fromkey][tokey]['weight'] += 1;
+            type = connectivity_types[connectivity_types.indexOf(skeletons[skeleton_id].original_connectivity[fromkey][tokey]['type'])];
+            // console.log(fromkey, tokey, 'type', type);
+            if( type === 'presynaptic_to' | type === 'postsynaptic_to') {
+              if( connectors[tokey]) {
+                if( connectors[tokey][type] ) {
+                  connectors[tokey][type].push( parseInt(skeleton_id) );
+                } else {
+                  connectors[tokey][type] = [ parseInt(skeleton_id) ];
+                }
               } else {
-                data['edges'][fromkey][tokey]['weight'] = 1;
+                connectors[tokey] = {};
+                connectors[tokey][type] = [];
+                connectors[tokey][type].push( parseInt(skeleton_id) );
               }
-            } else {
-              data['edges'][fromkey] = {};
-              data['edges'][fromkey][tokey] = {};
-              data['edges'][fromkey][tokey]['weight'] = 1;
             }
           }
         }
+        for( var connector_id in connectors ) {
+          if( connectors.hasOwnProperty(connector_id) ) {
+            if( connectors[connector_id]['presynaptic_to']) {
+              for( var presyn_id in connectors[connector_id]['presynaptic_to']) {
+                for( var postsyn_id in connectors[connector_id]['postsynaptic_to']) {
+
+                    var fromkey = connectors[connector_id]['presynaptic_to'][presyn_id],
+                        tokey = connectors[connector_id]['postsynaptic_to'][postsyn_id];
+
+                    if(data['edges'][fromkey]) {
+                      if(data['edges'][fromkey][tokey]) {
+                        data['edges'][fromkey][tokey]['weight'] += 1;
+                      } else {
+                        data['edges'][fromkey][tokey]['weight'] = 1;
+                      }
+                    } else {
+                      data['edges'][fromkey] = {};
+                      data['edges'][fromkey][tokey] = {};
+                      data['edges'][fromkey][tokey]['weight'] = 1;
+                    }
+                }
+              }
+            }
+          }
+        }
+
       }
     }
     return data;

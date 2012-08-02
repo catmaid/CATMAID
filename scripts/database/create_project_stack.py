@@ -59,6 +59,7 @@ else:
     # Check if project already exists
     insert = "INSERT INTO project (title, public) VALUES (%s, %s) RETURNING id"
     c.execute(insert, (project_name, project_public,) )
+    db_connection.commit()
 
     project_id = c.fetchone()[0]
 
@@ -68,10 +69,6 @@ else:
     print("Annotation classes and relations successfully created.")
 
     print("Project successfully created with ID {0}".format(project_id) )
-
-    insert = 'INSERT INTO project_user (project_id, user_id) '
-    insert += 'VALUES (%s, %s)'
-    c.execute(insert, (project_id, user_id) )
 
     print("Created association between user with id {0} and project with id {1}".format(user_id, project_id))
 

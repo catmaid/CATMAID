@@ -837,6 +837,7 @@ var WebGLApp = new function () {
                       if(data['edges'][fromkey][tokey]) {
                         data['edges'][fromkey][tokey]['weight'] += 1;
                       } else {
+                        data['edges'][fromkey][tokey] = {};
                         data['edges'][fromkey][tokey]['weight'] = 1;
                       }
                     } else {

@@ -27,6 +27,24 @@ function getTileBaseName( pixelPos )
 	return dir;
 }
 
+function getTileBaseName3D( stack, pixelPos, adjacent )
+{
+  if(!adjacent) {
+    adjacent = 0;
+  }
+  var z = pixelPos[ 2 ] + adjacent;
+  if( z < 0 ) {
+    z = 0;
+  }
+  if( z > stack.slices[stack.slices.length-1] ) {
+    z = stack.slices[stack.slices.length-1];
+  }
+  if( $.inArray(z, stack.slices) === -1 ) {
+    return null;
+  }
+  return z + "/";
+}
+
 
 /**
  * 
@@ -228,6 +246,17 @@ function TileLayer(
 					    tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
 					    tiles[ i ][ j ].src = self.getTileHDF5Request( c * tileWidth, r * tileHeight, tileWidth, tileHeight, stack.scale, stack.z );
 					}
+
+          // prefetch tiles
+          var adj = [-2, -1, 1, 2], tmpimg = new Image(), tmptileBaseName;
+          for( var jj in adj ) {
+            tmptileBaseName = getTileBaseName3D( stack, pixelPos, adj[jj] );
+            // only prefetch for type 1
+            if( tileSourceType === 1 ) {
+              tmpimg.src = self.getTileURL( tmptileBaseName + r + "_" + c + "_" + zoom );
+            }
+          }
+
 				}
 				tiles[ i ][ j ].style.top = t + "px";
 				tiles[ i ][ j ].style.left = l + "px";
@@ -237,9 +266,7 @@ function TileLayer(
 				tiles[ i ][ j ].style.height = effectiveTileHeight + "px";
 
 				l += effectiveTileWidth;
-				
-				//alert( l + ", " + t );
-				
+
 			}
 			l = left;
 			t += effectiveTileHeight;

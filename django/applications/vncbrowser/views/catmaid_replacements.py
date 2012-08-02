@@ -281,6 +281,32 @@ def create_link(request, project_id=None, logged_in_user=None):
 
 @catmaid_can_edit_project
 @transaction_reportable_commit_on_success
+def delete_textlabel(request, project_id=None, logged_in_user=None):
+    textlabel_id = request.POST.get('tid', None)
+
+    if textlabel_id is None:
+        raise RollbackAndReport('No treenode id provided.')
+
+    response_on_error = ''
+    try:
+        response_on_error = 'Could not delete TextlabelLocations for treenode #%s' % textlabel_id
+        TextlabelLocation.objects.filter(textlabel=textlabel_id).delete()
+        response_on_error = 'Could not delete Textlabels for treenode #%s' % textlabel_id
+        Textlabel.objects.filter(id=textlabel_id).delete()
+
+    except RollbackAndReport:
+        raise
+    except Exception as e:
+        if (response_on_error == ''):
+            raise RollbackAndReport(str(e))
+        else:
+            raise RollbackAndReport(response_on_error)
+
+    return HttpResponse(json.dumps({'message': 'Success.'}))
+
+
+@catmaid_can_edit_project
+@transaction_reportable_commit_on_success
 def create_textlabel(request, project_id=None, logged_in_user=None):
     params = {}
     param_defaults = {

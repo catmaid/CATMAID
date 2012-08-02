@@ -6,9 +6,9 @@ from vncbrowser.views.neurohdf import extract_as_numpy_array
 
 import numpy as np
 
-project_id = 3
+project_id = 1
 stack_id = 3
-skeleton_id = 3901
+skeleton_id = 431
 
 # retrieve all components for a given skeleton id
 components = Component.objects.filter(
@@ -39,13 +39,20 @@ data = np.zeros( (maxY-minY, maxX-minX, maxZ-minZ), dtype = np.uint8 )
 
 # for all components, retrieve image and bounding box location
 for comp in components:
-    img = extract_as_numpy_array( project_id, stack_id, comp.component_id, comp.z )
+    print 'work on component', comp.id,  comp.component_id
+    img = extract_as_numpy_array( project_id, stack_id, comp.component_id, comp.z ).T
     # store image in array
-    height = maxY-minY
-    width = maxX-minX
+
+    height = comp.max_y - comp.min_y + 1
+    width = comp.max_x - comp.min_x + 1
     print 'height, width', height, width
     print 'image shape (should match)', img.shape
-    data[minY:minY+height,minX:minX+width,comp.z] = img
+    try:
+        indX = comp.min_x - minX
+        indY = comp.min_y - minY
+        data[indY:indY+height,indX:indX+width,comp.z] = img
+    except:
+        pass
 
 # marching cube to extract surface
 # visualize surface
@@ -53,7 +60,9 @@ from mayavi import mlab
 mlab.figure(bgcolor=(0, 0, 0), size=(400, 400))
 src = mlab.pipeline.scalar_field(data)
 # Our data is not equally spaced in all directions:
-sx, sy, sz = stack_info['resolution']
+sx = stack_info['resolution']['x']
+sy = stack_info['resolution']['y']
+sz = stack_info['resolution']['z']
 src.spacing = [float(sy), float(sx), float(sz)]
 src.update_image_data = True
 

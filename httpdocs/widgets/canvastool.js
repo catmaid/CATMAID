@@ -21,6 +21,7 @@ function CanvasTool()
 
 	  if ( !ui ) ui = new UI();
 
+    //Create Z slider controls:
     var sliders_box = document.getElementById( "sliders_box_seg" );
 
     /* remove all existing dimension sliders */
@@ -46,6 +47,39 @@ function CanvasTool()
     slider_z_box.appendChild( self.slider_z.getInputView() );
 
     sliders_box.appendChild( slider_z_box );
+
+
+
+
+    //Create brush size slider
+    var sliders_brush_size_box = document.getElementById( "sliders_box_brush_size" );
+
+    // remove all existing dimension sliders
+    while ( sliders_brush_size_box.firstChild )
+        sliders_brush_size_box.removeChild( sliders_brush_size_box.firstChild );
+
+    this.slider_brush_size = new Slider(
+        SLIDER_HORIZONTAL,
+        true,
+        1,
+        30,
+        30,
+        1,
+        function( val )
+        { return;});
+
+    var slider_brush_size_box = document.createElement( "div" );
+    slider_brush_size_box.className = "box";
+    slider_brush_size_box.id = "slider_brush_size_box";
+    var slider_brush_size_box_label = document.createElement( "p" );
+    slider_brush_size_box_label.appendChild( document.createTextNode( "brush size&nbsp;&nbsp;" ) );
+    slider_brush_size_box.appendChild( self.slider_brush_size.getView() );
+    slider_brush_size_box.appendChild( self.slider_brush_size.getInputView() );
+
+    sliders_brush_size_box.appendChild( slider_brush_size_box );
+
+
+
 
     var enumFactory=new EnumFactory();
     this.componentStore=new ComponentStore();
@@ -239,14 +273,6 @@ function CanvasTool()
 
     var createControlBox = function() {
 
-        controls = document.createElement("div");
-        controls.className = "canvasControls";
-        controls.id = "canvasControlsId";
-        controls.style.zIndex = 6;
-        controls.style.width = "250px";
-        controls.style.height = "300px";
-        controls.style.backgroundColor='rgba(255,255,255,0.3)';
-
         $('#button_push_labels').click(function() {
             self.pushLabels();
         });
@@ -273,11 +299,54 @@ function CanvasTool()
         colorWheelBox.style.display = "none";
         colorWheelBox.style.backgroundColor='rgba(255,255,255,1)';
 
-
         var colorWheelDiv = document.createElement("div");
         colorWheelDiv.id = "div_color_wheel";
         colorWheelBox.appendChild(colorWheelDiv);
         self.stack.getView().appendChild( colorWheelBox );
+
+        canvasLayer.canvas.freeDrawingLineWidth = 11;
+
+
+        /*controls = document.createElement("div");
+         controls.className = "canvasControls";
+         controls.id = "canvasControlsId";
+         controls.style.zIndex = 6;
+         controls.style.width = "250px";
+         controls.style.height = "300px";
+         controls.style.backgroundColor='rgba(255,255,255,0.3)';*/
+
+        /*var widthslider = $("#sliders_box_brush_size").slider({
+            value: 11,
+            min: 1,
+            max: 20,
+            step: 2,
+            slide: function(event, ui) {
+                canvasLayer.canvas.freeDrawingLineWidth = ui.value;
+                widthSliderField.value = "" + ui.value;
+            }
+        });*/
+
+        //widthSliderField.value = "11";
+
+        /*var brush = document.createElement("div");
+        var html = '<div style="display:none;" id="drawing-mode-options">';
+        // '<button id="drawing-mode">Cancel drawing mode</button>' +
+        brush.innerHTML = html;
+        controls.appendChild( brush );
+
+        // slider for brush size
+        var widthSlider = document.createElement("div");
+        widthSlider.id = "width-slider-canvas";
+        controls.appendChild( widthSlider );
+
+        var widthSliderField = document.createElement("input");
+        widthSliderField.id = "width-slider-field";
+        widthSliderField.size = "3";
+        controls.appendChild( widthSliderField );
+
+        var labelList = document.createElement("ul");
+        labelList.id = "labellist-canvas";
+        controls.appendChild( labelList );*/
 
 
         $('#button_color_wheel').click(function()
@@ -292,7 +361,7 @@ function CanvasTool()
 
         });
 
-        var cw = Raphael.colorwheel($("#div_color_wheel")[0],150);
+        var cw = Raphael.colorwheel($("#div_color_wheel")[0],250);
         cw.color("#00ffff");
         document.getElementById('button_color_wheel').style.backgroundColor="#00ffff";
 
@@ -305,8 +374,7 @@ function CanvasTool()
 
         $('#button_drawing_mode').click(function() {
 
-            // TODO: disable component mode
-            canvasLayer.canvas.isDrawingMode = !canvasLayer.canvas.isDrawingMode;
+           canvasLayer.canvas.isDrawingMode = !canvasLayer.canvas.isDrawingMode;
 
             if (canvasLayer.canvas.isDrawingMode) {
               $('#button_drawing_mode').text('Cancel drawing mode');
@@ -326,38 +394,15 @@ function CanvasTool()
         });
         
 
-        var brush = document.createElement("div");
-        var html = '<div style="display:none;" id="drawing-mode-options">';
-        // '<button id="drawing-mode">Cancel drawing mode</button>' +
-        brush.innerHTML = html;
-        controls.appendChild( brush );
 
-        // color wheel
-        //var chweel = document.createElement("div");
-        //chweel.id = "color-wheel-canvas";
-        //controls.appendChild( chweel );
-
-        // slider for brush size
-        var widthSlider = document.createElement("div");
-        widthSlider.id = "width-slider-canvas";
-        controls.appendChild( widthSlider );
-
-        var widthSliderField = document.createElement("input");
-        widthSliderField.id = "width-slider-field";
-        widthSliderField.size = "3";
-        controls.appendChild( widthSliderField );
-
-        var labelList = document.createElement("ul");
-        labelList.id = "labellist-canvas";
-        controls.appendChild( labelList );
 
         // ******************
         // self.stack.getView().appendChild( controls );
         // ******************
 
-        var drawingOptionsEl = document.getElementById('drawing-mode-options'),
+       /* var drawingOptionsEl = document.getElementById('drawing-mode-options'),
             drawingColorEl = document.getElementById('drawing-color'),
-            drawingLineWidthEl = document.getElementById('drawing-line-width');
+            drawingLineWidthEl = document.getElementById('drawing-line-width');*/
 
         /*
         var drawingModeEl = document.getElementById('drawing-mode');
@@ -376,31 +421,12 @@ function CanvasTool()
         };*/
 
 
-       /* var cw = Raphael.colorwheel($("#color-wheel-canvas")[0],150);
-        cw.color("#000000");
-        cw.onchange(function(color)
-        {
-            self.componentColor=[parseInt(color.r),parseInt(color.g),parseInt(color.b),255];
-        });*/
-
-
         // append jquery elements
-        var widthslider = $("#width-slider-canvas").slider({
-                  value: 11,
-                  min: 1,
-                  max: 20,
-                  step: 2,
-                  slide: function(event, ui) {
-                    canvasLayer.canvas.freeDrawingLineWidth = ui.value;
-                    widthSliderField.value = "" + ui.value;
-                  }
-          });
-        canvasLayer.canvas.freeDrawingLineWidth = 11;
-        widthSliderField.value = "11";
+
 
         // labels
-        createLabels( );
-        setColor( 'rgba(255,0,0,1.0)' );
+        /*createLabels( );
+        setColor( 'rgba(255,0,0,1.0)' );*/
 
 
     };
@@ -963,7 +989,6 @@ function CanvasTool()
 
         //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/components-for-point";
 
-
         var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/components-for-point'+ "?" + $.param({
             x: x,
             y: y,
@@ -1054,8 +1079,7 @@ function CanvasTool()
                 {
                     var currentComponent=componentGroupNew.components[0];
                     componentGroupNew.components=componentGroupNew.components.sort(function(a,b){return a.threshold- b.threshold;});
-                    var newIndex=componentGroupNew.components.indexOf(currentComponent);
-                    componentGroupNew.selectedComponentIndex=newIndex;
+                    componentGroupNew.selectedComponentIndex=componentGroupNew.components.indexOf(currentComponent);
                 }
 
                 for(var componentToLoadId in componentGroupNew.components)
@@ -1109,43 +1133,7 @@ function CanvasTool()
 
     };
 
-    function Component()
-    {
-        this.id=NaN;
-        this.minX=null;
-        this.minY=null;
-        this.maxX=null;
-        this.maxY=null;
-        this.threshold=null;
-        this.image=null;
-        this.visible=false;
 
-        this.width=function(){return this.maxX-this.minX; };
-        this.height=function(){return this.maxY-this.minY; };
-        this.centerX=function(){return Math.round(this.minX+(this.maxX-this.minX)/2); };
-        this.centerY=function(){return Math.round(this.minY+(this.maxY-this.minY)/2); };
-        this.displayPositionX=function(){return Math.round((this.minX+(this.maxX-this.minX)/2)); };
-        this.displayPositionY=function(){return Math.round((this.minY+(this.maxY-this.minY)/2)); };
-    }
-
-    function ComponentGroup()
-    {
-        this.selectedComponentIndex=-1;
-        this.components=[];
-        this.active=false;
-        this.grouploaded=false;
-    }
-
-    function ComponentLayer()
-    {
-        this.activeGroupIndex=-1;
-        this.componentGroups=[];
-    }
-
-    function ComponentStore()
-    {
-        this.componentLayers=[];
-    }
 
     this.generateComponentLayer=function()
     {
@@ -1200,6 +1188,46 @@ function CanvasTool()
 
 
 }
+
+
+function Component()
+{
+    this.id=NaN;
+    this.minX=null;
+    this.minY=null;
+    this.maxX=null;
+    this.maxY=null;
+    this.threshold=null;
+    this.image=null;
+    this.visible=false;
+
+    this.width=function(){return this.maxX-this.minX; };
+    this.height=function(){return this.maxY-this.minY; };
+    this.centerX=function(){return Math.round(this.minX+(this.maxX-this.minX)/2); };
+    this.centerY=function(){return Math.round(this.minY+(this.maxY-this.minY)/2); };
+    this.displayPositionX=function(){return Math.round((this.minX+(this.maxX-this.minX)/2)); };
+    this.displayPositionY=function(){return Math.round((this.minY+(this.maxY-this.minY)/2)); };
+}
+
+function ComponentGroup()
+{
+    this.selectedComponentIndex=-1;
+    this.components=[];
+    this.active=false;
+    this.grouploaded=false;
+}
+
+function ComponentLayer()
+{
+    this.activeGroupIndex=-1;
+    this.componentGroups=[];
+}
+
+function ComponentStore()
+{
+    this.componentLayers=[];
+}
+
 
 function EnumFactory()
 {

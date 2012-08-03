@@ -10,7 +10,7 @@ import json
 import datetime
 
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
-from models import ClassInstance, Session, Log, Message
+from models import ClassInstance, Session, Log, Message, TextlabelLocation
 from models import Treenode, Connector, TreenodeConnector, User
 from models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
 from transaction import RollbackAndReport, transaction_reportable_commit_on_success
@@ -573,7 +573,7 @@ class ViewPageTests(TestCase):
                            u"proj_neurons": 11,
                            u"proj_treenodes": 89,
                            u"proj_skeletons": 10,
-                           u"proj_textlabels": 0,
+                           u"proj_textlabels": 2,
                            u"proj_tags": 4}
         parsed_response = json.loads(response.content)
         self.assertEqual(expected_result, parsed_response)
@@ -720,6 +720,100 @@ class ViewPageTests(TestCase):
                 'most_recent': '2011-12-09 14:02:11.175624',
                 'type': 'treenode'
                 }
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_update_textlabel(self):
+        self.fake_authentication()
+
+        textlabel_id = 1
+
+        params = {
+                'tid': textlabel_id,
+                'pid': self.test_project_id,
+                'x': 3,
+                'y': 1,
+                'z': 4,
+                'r': 0,
+                'g': 0,
+                'b': 0,
+                'a': 0,
+                'type': 'text',
+                'text': 'Lets dance the Grim Fandango!',
+                'fontname': 'We may have years, we may have hours',
+                'fontstyle': 'But sooner or later we all push up flowers',
+                'fontsize': 5555,
+                'scaling': 0}
+
+        response = self.client.post(
+                '/%d/textlabel/update' % self.test_project_id,
+                params)
+        expected_result = ' '
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, response.content)
+
+        label = Textlabel.objects.filter(id=textlabel_id)[0]
+        label_location = TextlabelLocation.objects.filter(textlabel=textlabel_id)[0]
+        self.assertEqual(params['pid'], label.project_id)
+        self.assertEqual(params['x'], label_location.location.x)
+        self.assertEqual(params['y'], label_location.location.y)
+        self.assertEqual(params['z'], label_location.location.z)
+        self.assertEqual(params['type'], label.type)
+        self.assertEqual(params['text'], label.text)
+        self.assertEqual(params['fontname'], label.font_name)
+        self.assertEqual(params['fontstyle'], label.font_style)
+        self.assertEqual(params['fontsize'], label.font_size)
+        self.assertEqual(False, label.scaling)
+
+    def test_update_textlabel_using_optionals(self):
+        """
+        Omits some parameters and ensures corresponding
+        properties of label were unchanged.
+        """
+        self.fake_authentication()
+
+        textlabel_id = 1
+
+        params = {
+                'tid': textlabel_id,
+                'text': 'Almost faltering, we held on to each other so that neither of us touched the ground.',
+                'type': 'bubble'}
+
+        label_before_update = Textlabel.objects.filter(id=textlabel_id)[0]
+        label_location_before_update = TextlabelLocation.objects.filter(textlabel=textlabel_id)[0]
+
+        response = self.client.post(
+                '/%d/textlabel/update' % self.test_project_id,
+                params)
+        expected_result = ' '
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, response.content)
+
+        label = Textlabel.objects.filter(id=textlabel_id)[0]
+        label_location = TextlabelLocation.objects.filter(textlabel=textlabel_id)[0]
+        self.assertEqual(label_before_update.project_id, label.project_id)
+        self.assertEqual(label_location_before_update.location.x, label_location.location.x)
+        self.assertEqual(label_location_before_update.location.y, label_location.location.y)
+        self.assertEqual(label_location_before_update.location.z, label_location.location.z)
+        self.assertEqual(params['type'], label.type)
+        self.assertEqual(params['text'], label.text)
+        self.assertEqual(label_before_update.font_name, label.font_name)
+        self.assertEqual(label_before_update.font_style, label.font_style)
+        self.assertEqual(label_before_update.font_size, label.font_size)
+        self.assertEqual(label_before_update.scaling, label.scaling)
+
+    def test_update_textlabel_failure(self):
+        self.fake_authentication()
+
+        textlabel_id = 404
+
+        params = {'tid': textlabel_id, 'pid': self.test_project_id}
+
+        response = self.client.post(
+                '/%d/textlabel/update' % self.test_project_id,
+                params)
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'Failed to find Textlabel with id %s.' % textlabel_id}
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
@@ -1622,7 +1716,6 @@ class ViewPageTests(TestCase):
         expected_result = {'message': 'success'}
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
-
 
     def test_node_nearest_for_skeleton(self):
         self.fake_authentication()

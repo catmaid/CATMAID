@@ -120,7 +120,7 @@ while True:
         continue
 
     insert = 'INSERT INTO stack (title, dimension, resolution, image_base, comment, num_zoom_levels, file_extension) '
-    insert += 'VALUES (%s, %s, %s, %s, %s) RETURNING id'
+    insert += 'VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id'
     c.execute(insert, (title, dimension, resolution, image_base, comment, num_zoom_levels, file_extension) )
     stack_id = c.fetchone()[0]
 

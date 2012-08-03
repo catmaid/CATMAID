@@ -723,6 +723,23 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
 
+    def test_delete_textlabel(self):
+        self.fake_authentication()
+
+        textlabel_id = 1
+
+        self.assertEqual(1, Textlabel.objects.filter(id=textlabel_id).count())
+        self.assertEqual(1, TextlabelLocation.objects.filter(textlabel=textlabel_id).count())
+        response = self.client.post(
+                '/%d/textlabel/delete' % self.test_project_id,
+                {'tid': textlabel_id})
+        parsed_response = json.loads(response.content)
+        expected_result = {'message': 'Success.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(0, Textlabel.objects.filter(id=textlabel_id).count())
+        self.assertEqual(0, TextlabelLocation.objects.filter(textlabel=textlabel_id).count())
+
     def test_create_textlabel(self):
         self.fake_authentication()
 

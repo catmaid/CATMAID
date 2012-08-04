@@ -605,6 +605,80 @@ def stats_summary(request, project_id=None, logged_in_user=None):
     return HttpResponse(json.dumps(result), mimetype='text/json')
 
 
+@catmaid_login_required
+@transaction_reportable_commit_on_success
+def skeleton_ancestry(request, project_id=None, logged_in_user=None):
+    # All of the values() things in this function can be replaced by
+    # prefetch_related when we upgrade to Django 1.4 or above
+    skeleton_id = request.POST.get('skeleton_id', None)
+    if skeleton_id is None:
+        raise RollbackAndReport('A skeleton id has not been provided!')
+
+    relation_map = get_relation_to_id_map(project_id)
+    for rel in ['model_of', 'part_of']:
+        if rel not in relation_map:
+            raise RollbackAndReport(' => "Failed to find the required relation %s' % rel)
+
+    response_on_error = ''
+    try:
+        response_on_error = 'The search query failed.'
+        neuron_rows = ClassInstanceClassInstance.objects.filter(
+                class_instance_a=skeleton_id,
+                relation=relation_map['model_of']).values(
+                        'class_instance_b',
+                        'class_instance_b__name')
+        neuron_count = neuron_rows.count()
+        if neuron_count == 0:
+            raise RollbackAndReport('No neuron was found that the skeleton %s models' % skeleton_id)
+        elif neuron_count > 1:
+            raise RollbackAndReport('More than one neuron was found that the skeleton %s models' % skeleton_id)
+
+        parent_neuron = neuron_rows[0]
+        ancestry = []
+        ancestry.append({
+            'name': parent_neuron['class_instance_b__name'],
+            'id': parent_neuron['class_instance_b'],
+            'class': 'neuron'})
+
+        # Doing this query in a loop is horrible, but it should be very rare
+        # for the hierarchy to be more than 4 deep or so.  (This is a classic
+        # problem of not being able to do recursive joins in pure SQL.) Just
+        # in case a cyclic hierarchy has somehow been introduced, limit the
+        # number of parents that may be found to 10.
+        current_ci = parent_neuron['class_instance_b']
+        for i in range(10):
+            response_on_error = 'Could not retrieve parent of class instance %s' % current_ci
+            parents = ClassInstanceClassInstance.objects.filter(
+                    class_instance_a=current_ci,
+                    relation=relation_map['part_of']).values(
+                            'class_instance_b__name',
+                            'class_instance_b',
+                            'class_instance_b__class_column__class_name')
+            parent_count = parents.count()
+            if parent_count == 0:
+                break  # We've reached the top of the hierarchy.
+            elif parent_count > 1:
+                raise RollbackAndReport('More than one class_instance was found that the class_instance %s is part_of.' % current_ci)
+            else:
+                parent = parents[0]
+                ancestry.append({
+                    'name': parent['class_instance_b__name'],
+                    'id': parent['class_instance_b'],
+                    'class': parent['class_instance_b__class_column__class_name']
+                    })
+                current_ci = parent['class_instance_b']
+
+        return HttpResponse(json.dumps(ancestry))
+
+    except RollbackAndReport:
+        raise
+    except Exception as e:
+        if (response_on_error == ''):
+            raise RollbackAndReport(str(e))
+        else:
+            raise RollbackAndReport(response_on_error)
+
+
 def get_relation_to_id_map(project_id):
     result = {}
     for r in Relation.objects.filter(project=project_id):

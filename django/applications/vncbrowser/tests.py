@@ -10,7 +10,7 @@ import json
 import datetime
 
 from models import Project, Stack, Integer3D, Double3D, ProjectStack
-from models import ClassInstance, Session, Log, Message
+from models import ClassInstance, Session, Log, Message, TextlabelLocation
 from models import Treenode, Connector, TreenodeConnector, User
 from models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
 from transaction import RollbackAndReport, transaction_reportable_commit_on_success
@@ -728,38 +728,25 @@ class ViewPageTests(TestCase):
 
         label_data = [
                 # param-name, param values
-                ('text',
-                    ['baba tiki dido', 'doop op', '']),
-                ('type',
-                    ['text', 'bubble', 'non-valid-type']),
-                ('font_name',
-                    [False, False, 'Times New Roman']),
-                ('font_style',
-                    [False, 'bold', 'italic']),
-                ('font_size',
-                    [55, 4, False]),
-                ('x',
-                    [1, 2, 3]),
-                ('y',
-                    [1, 100, 233]),
-                ('z',
-                    [1, 0, 555]),
-                ('r',
-                    [1, 2, 3]),
-                ('g',
-                    [3, 4, 5]),
-                ('b',
-                    [5, 7, 9]),
-                ('a',
-                    [225, 225, 225]),
-                ]
+                ('text', ['baba tiki dido', 'doop op', '']),
+                ('type', ['text', 'bubble', 'non-valid-type']),
+                ('font_name', [False, False, 'Times New Roman']),
+                ('font_style', [False, 'bold', 'italic']),
+                ('font_size', [55, 4, False]),
+                ('x', [1, 2, 3]),
+                ('y', [1, 100, 233]),
+                ('z', [1, 0, 555]),
+                ('r', [1, 2, 3]),
+                ('g', [3, 4, 5]),
+                ('b', [5, 7, 9]),
+                ('a', [225, 225, 225])]
 
         label_count = Textlabel.objects.all().count()
         # Create and test labels
         for i in range(len(label_data[0][1])):
             params = {}
             # Fill request with POST-data
-            for (p, values) in label_data:
+            for p, values in label_data:
                 if values[i]:
                     params[p] = values[i]
             response = self.client.post(
@@ -771,13 +758,11 @@ class ViewPageTests(TestCase):
             self.assertEqual(label_count + 1 + i, Textlabel.objects.all().count())
             self.assertTrue('tid' in parsed_response.keys())
             label = get_object_or_404(Textlabel, id=parsed_response['tid'])
-            # label_location = TextlabelLocation.objects.get(textlabel=label.id)
-            # Does not work due to TextlabelLocation table not having an id
-            # column
+            label_location = TextlabelLocation.objects.get(textlabel=label.id)
 
             # For each attribute, ensure new label is in accord with input
             # label_location_data = Double3D(x=0, y=0, z=0)
-            for(p, values) in label_data:
+            for p, values in label_data:
                 value = values[i]
                 if (value == False):
                     continue  # Do not check for default values for now
@@ -787,8 +772,7 @@ class ViewPageTests(TestCase):
                 elif (p == 'text' and value == ''):
                     self.assertEqual('Edit this text...', getattr(label, p))
                 elif (p in ['x', 'y', 'z']):
-                    # setattr(label_location, p, value)
-                    pass
+                    self.assertEqual(value, getattr(label_location.location, p))
                 elif (p in ['r', 'g', 'b', 'a']):
                     # Model does not include textlabel colour at the moment
                     pass
@@ -1635,7 +1619,6 @@ class ViewPageTests(TestCase):
         expected_result = {'message': 'success'}
         self.assertEqual(response.status_code, 200)
         self.assertEqual(expected_result, parsed_response)
-
 
     def test_node_nearest_for_skeleton(self):
         self.fake_authentication()

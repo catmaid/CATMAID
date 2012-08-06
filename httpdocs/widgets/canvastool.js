@@ -21,6 +21,7 @@ function CanvasTool()
 
 	  if ( !ui ) ui = new UI();
 
+
     //Create Z slider controls:
     var sliders_box = document.getElementById( "sliders_box_seg" );
 
@@ -49,8 +50,6 @@ function CanvasTool()
     sliders_box.appendChild( slider_z_box );
 
 
-
-
     //Create brush size slider
     var sliders_brush_size_box = document.getElementById( "sliders_box_brush_size" );
 
@@ -62,11 +61,14 @@ function CanvasTool()
         SLIDER_HORIZONTAL,
         true,
         1,
-        30,
-        30,
-        1,
+        40,
+        40,
+        15,
         function( val )
-        { return;});
+        {
+            canvasLayer.canvas.freeDrawingLineWidth = parseInt(val, 10) || 1; // disallow 0, NaN, etc.
+
+         });
 
     var slider_brush_size_box = document.createElement( "div" );
     slider_brush_size_box.className = "box";
@@ -79,10 +81,8 @@ function CanvasTool()
     sliders_brush_size_box.appendChild( slider_brush_size_box );
 
 
-
-
     var enumFactory=new EnumFactory();
-    this.componentStore=new ComponentStore();
+    this.layerStore=new LayerStore();
 
     this.stateEnum=enumFactory.defineEnum({
         COMPONENTVIEW : {
@@ -140,23 +140,24 @@ function CanvasTool()
 
     };
 
+    this.loadDrawingsByComponentId=function()
+    {
+        //TODO
+    };
+
 
 
     this.loadComponents=function()
     {
-        if(project.selectedObjects.selectedskeleton==null)
-        {
-            return;
-        }
+
         //Load components from DB
-        if(self.state!=self.stateEnum.COMPONENTVIEW  || self.componentStore.componentLayers[self.stack.z]!=undefined)
+        if(project.selectedObjects.selectedskeleton==null||self.state!=self.stateEnum.COMPONENTVIEW  || self.layerStore.componentLayers[self.stack.z]!=undefined)
         {
-            self.showActiveComponents();
-            return 0;
+            self.showActiveElements();
+            return;
         }
 
         //TODO:remove debug url
-
         //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/get-saved-components";
 
         var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/get-saved-components'+ "?" + $.param({
@@ -166,8 +167,8 @@ function CanvasTool()
 
         $.getJSON(url,function(result)
         {
-            self.componentStore.componentLayers[self.stack.z]=new ComponentLayer();
-            var currentComponentGroups=self.componentStore.componentLayers[self.stack.z].componentGroups;
+            self.layerStore.componentLayers[self.stack.z]=new ComponentLayer();
+            var currentComponentGroups=self.layerStore.componentLayers[self.stack.z].componentGroups;
 
             for (var componentResultId in result)
             {
@@ -191,7 +192,7 @@ function CanvasTool()
                         component.threshold=componentResult.threshold;
 
                     componentGroupNew.selectedComponentIndex=0;
-                    var currentComponentLayer=self.componentStore.componentLayers[self.stack.z];
+                    var currentComponentLayer=self.layerStore.componentLayers[self.stack.z];
                     if(currentComponentLayer.activeGroupIndex!=-1)
                     {
                         currentComponentGroups[currentComponentLayer.activeGroupIndex].active=false;
@@ -207,7 +208,7 @@ function CanvasTool()
 
             }
 
-            self.showActiveComponents();
+            self.showActiveElements();
 
         });
     };
@@ -292,6 +293,9 @@ function CanvasTool()
             self.initskeleton();
         });
 
+
+        self.removeElement("div_color_wheel_box");
+
         var colorWheelBox = document.createElement("div");
         colorWheelBox.id = "div_color_wheel_box";
         colorWheelBox.className = "colorWheelCanvas";
@@ -303,9 +307,6 @@ function CanvasTool()
         colorWheelDiv.id = "div_color_wheel";
         colorWheelBox.appendChild(colorWheelDiv);
         self.stack.getView().appendChild( colorWheelBox );
-
-        canvasLayer.canvas.freeDrawingLineWidth = 11;
-
 
         /*controls = document.createElement("div");
          controls.className = "canvasControls";
@@ -369,6 +370,7 @@ function CanvasTool()
         {
             self.componentColor=[parseInt(color.r),parseInt(color.g),parseInt(color.b),255];
             document.getElementById('button_color_wheel').style.backgroundColor=color.hex;
+            canvasLayer.canvas.freeDrawingColor = 'rgb('+Math.round(color.r)+','+Math.round(color.g)+','+Math.round(color.b)+')';
             event.stopPropagation();
         });
 
@@ -386,6 +388,7 @@ function CanvasTool()
               $('#button_drawing_mode').text('Drawing mode');
               // TODO: show drawing mode options
               // drawingOptionsEl.style.display = 'none';
+
                 self.state=self.stateEnum.COMPONENTVIEW;
                 canvasLayer.canvas.interactive=false;
                 canvasLayer.canvas.selection=false;
@@ -393,40 +396,6 @@ function CanvasTool()
 
         });
         
-
-
-
-        // ******************
-        // self.stack.getView().appendChild( controls );
-        // ******************
-
-       /* var drawingOptionsEl = document.getElementById('drawing-mode-options'),
-            drawingColorEl = document.getElementById('drawing-color'),
-            drawingLineWidthEl = document.getElementById('drawing-line-width');*/
-
-        /*
-        var drawingModeEl = document.getElementById('drawing-mode');
-        drawingModeEl.onclick = function() {
-            canvasLayer.canvas.isDrawingMode = !canvasLayer.canvas.isDrawingMode;
-            if (canvasLayer.canvas.isDrawingMode) {
-                drawingModeEl.innerHTML = 'Cancel drawing mode';
-                drawingModeEl.className = 'is-drawing';
-                drawingOptionsEl.style.display = '';
-            }
-            else {
-                drawingModeEl.innerHTML = 'Enter drawing mode';
-                drawingModeEl.className = '';
-                drawingOptionsEl.style.display = 'none';
-            }
-        };*/
-
-
-        // append jquery elements
-
-
-        // labels
-        /*createLabels( );
-        setColor( 'rgba(255,0,0,1.0)' );*/
 
 
     };
@@ -442,10 +411,6 @@ function CanvasTool()
         canvasLayer.canvas.interactive=false;
         canvasLayer.canvas.selection=false;
 
-		    //self.mouseCatcher.onmousedown = onmousedown;
-        //self.stack.getView().appendChild( self.mouseCatcher );
-
-        // self.prototype.setMouseCatcher( canvasLayer.view );
         // TODO: Layer is added to the parent stack, but the view
         // is not inserted in the DOM - this has to be done manually
         // in the canvaslayer.js. Is this by design?
@@ -469,7 +434,7 @@ function CanvasTool()
 
     this.mousewheel=function(e)
     {
-        if(project.selectedObjects.selectedskeleton==null||self.state!=self.stateEnum.COMPONENTVIEW || self.componentStore.componentLayers.length==0)
+        if(project.selectedObjects.selectedskeleton==null||self.state!=self.stateEnum.COMPONENTVIEW || self.layerStore.componentLayers.length==0)
         {
             return;
         }
@@ -477,7 +442,7 @@ function CanvasTool()
         var up=true;
         if(e.wheelDelta<0){up=false;}
 
-        var currentComponentLayer=self.componentStore.componentLayers[self.stack.z];
+        var currentComponentLayer=self.layerStore.componentLayers[self.stack.z];
         var currentComponentGroup=currentComponentLayer.componentGroups[currentComponentLayer.activeGroupIndex];
         var index=currentComponentGroup.selectedComponentIndex;
         if(index==0&&up){return;}
@@ -503,77 +468,90 @@ function CanvasTool()
         newComponent=currentComponentGroup.components[newIndex];
         newComponent.visible=true;
         currentComponentGroup.selectedComponentIndex=newIndex;
-        self.showActiveComponents();
+        self.showActiveElements();
 
 
+    };
 
-        /*for (var componentGroupId in self.componentGroups)
+    this.onPathCreated=function(object)
+    {
+        var path=object.path;
+        var drawing=new Drawing();
+        drawing.minX=path.left;
+        drawing.minY=path.top;
+        drawing.maxX=path.left+path.width;
+        drawing.maxY=path.top+path.height;
+        drawing.drawingObject=path;
+
+        var currentComponentLayer=self.layerStore.componentLayers[self.stack.z];
+        if(currentComponentLayer.activeGroupIndex!=-1)
         {
-            if(self.componentGroups.hasOwnProperty(componentGroupId))
+            var currentGroup=currentComponentLayer.componentGroups[currentComponentLayer.activeGroupIndex];
+            drawing.componentId=currentGroup.components[currentGroup.selectedComponentIndex].id;
+
+        }
+
+        var drawings=self.layerStore.drawingLayers[self.stack.z].drawings;
+        drawings[drawings.length]=drawing;
+    };
+
+
+    this.putDrawings=function()
+    {
+        //TODO:remove debug url
+        //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/put-components";
+
+        var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/put-drawings';
+        var jsonObjects ={};
+        for (var drawingId in self.layerStore.drawingLayers[self.stack.z].drawings)
+        {
+            if(self.layerStore.drawingLayers[self.stack.z].drawings.hasOwnProperty(drawingId))
             {
-                var componentGroup=self.componentGroups[componentGroupId];
-                if(componentGroup["active"]==false){continue;}
-
-                var index=componentGroup["index"];
-                if(index==0&&up){break;}
-
-                var componentGroupLength=0;
-                for (var componentCountId in componentGroup.components){componentGroupLength+=1;}
-
-                if(index==(componentGroupLength-1)&&!up){break;}
-
-                var component=componentGroup.components[index];
-                component.visible=false;
-
-                canvasLayer.canvas.clear();
-
-                var newComponent=null;
-                var newIndex=null;
-
-                if(up)
-                {
-                    newIndex=index-1;
-
-                }
-                else
-                {
-                    newIndex=index+1;
-                }
-                newComponent=componentGroup.components[newIndex];
-                newComponent.visible=true;
-                componentGroup["index"]=newIndex;
-                componentGroup['minX']=newComponent.minX;
-                componentGroup['minX']=newComponent.maxX;
-                componentGroup['minX']=newComponent.minY;
-                componentGroup['minX']=newComponent.maxY;
-                self.showActiveComponents();
-
-
-
+                var drawing=self.layerStore.drawingLayers[self.stack.z].drawings[drawingId];
+                jsonObjects[drawingId]={id:drawing.id,minX:drawing.minX,minY:drawing.minY,maxX:drawing.maxX,maxY:drawing.maxY,svg:drawing.svg(),type:0,componentId:drawing.componentId};
 
             }
-        }*/
+        }
+
+        var viewstate=canvasLayer.getFieldOfViewParameters();
+
+        //TODO:Only save array if not empty
+
+        $.ajax({
+            url: url,
+            type: "POST",
+            data: {skeleton_id:project.selectedObjects.selectedskeleton,z:self.stack.z,x:viewstate.x,y:viewstate.y,width:viewstate.width,height:viewstate.height,drawings: JSON.stringify(jsonObjects) },
+            dataType: "json",
+            beforeSend: function(x) {
+                //Log before send
+            },
+            success: function(result)
+            {
+                //Log result, report on error
+
+            }
+        });
+
     };
 
     this.putComponents=function()
     {
-        if(project.selectedObjects.selectedskeleton==null||self.state!=self.stateEnum.COMPONENTVIEW || self.componentStore.componentLayers.length==0)
+        if(project.selectedObjects.selectedskeleton==null||self.state!=self.stateEnum.COMPONENTVIEW || self.layerStore.componentLayers.length==0)
         {
             return 0;
         }
 
         //TODO:remove debug url
-
         //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/put-components";
 
         var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/put-components';
         var jsonObjects ={};
 
-        for (var componentGroupId in self.componentStore.componentLayers[self.stack.z].componentGroups)
+        for (var componentGroupId in self.layerStore.componentLayers[self.stack.z].componentGroups)
         {
-            if(self.componentStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId))
+            if(self.layerStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId))
             {
-                var componentGroup=self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
+                var componentGroup=self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
                 var component=componentGroup.components[componentGroup.selectedComponentIndex];
                 jsonObjects[component.id]={id:component.id,minX:component.minX,minY:component.minY,maxX:component.maxX,maxY:component.maxY,threshold:component.threshold};
 
@@ -599,29 +577,66 @@ function CanvasTool()
                 }
             });
 
+    };
+
+
+    this.showActiveElements=function()
+    {
+        canvasLayer.canvas.clear();
+        self.showActiveComponents();
+        self.showUnassociatedDrawings();
 
     };
 
 
+    this.showDrawingsByComponentId=function(componentId)
+    {
+        for (var drawingId in self.layerStore.drawingLayers[self.stack.z].drawings)
+        {
+            if(self.layerStore.drawingLayers[self.stack.z].drawings.hasOwnProperty(drawingId))
+            {
+                var drawing=self.layerStore.drawingLayers[self.stack.z].drawings[drawingId];
+                if(drawing.componentId==componentId){canvasLayer.canvas.add(drawing.drawingObject);}
+
+            }
+        }
+    };
+
+    this.showUnassociatedDrawings=function()
+    {
+        for (var drawingId in self.layerStore.drawingLayers[self.stack.z].drawings)
+        {
+            if(self.layerStore.drawingLayers[self.stack.z].drawings.hasOwnProperty(drawingId))
+            {
+                var drawing=self.layerStore.drawingLayers[self.stack.z].drawings[drawingId];
+                if(drawing.componentId==null)
+                {
+                    canvasLayer.canvas.add(drawing.drawingObject);
+                }
+
+            }
+        }
+    };
+
 
     this.showActiveComponents=function()
     {
-        if(self.state!=self.stateEnum.COMPONENTVIEW ||project.selectedObjects.selectedskeleton==null ||self.componentStore.componentLayers[self.stack.z]==undefined)
+        if(project.selectedObjects.selectedskeleton==null ||self.layerStore.componentLayers[self.stack.z]==undefined)
         {
             return;
         }
-        canvasLayer.canvas.clear();
 
         //redraw all
-        for (var componentGroupId in self.componentStore.componentLayers[self.stack.z].componentGroups)
+        for (var componentGroupId in self.layerStore.componentLayers[self.stack.z].componentGroups)
         {
-            if(self.componentStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId))
+            if(self.layerStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId))
             {
-                var componentGroup=self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
+                var componentGroup=self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
                 canvasLayer.canvas.add(componentGroup.components[componentGroup.selectedComponentIndex].image);
                 var index=canvasLayer.canvas._objects.length;
                 if(index!=0){index-=1;}
                 canvasLayer.canvas.item(index).selectable=false;
+                self.showDrawingsByComponentId(componentGroup.components[componentGroup.selectedComponentIndex].id);
             }
         }
 
@@ -631,9 +646,9 @@ function CanvasTool()
     /* Mouseup */
     this.mouseup = function (e)
     {
-        if(project.selectedObjects.selectedskeleton==null)
+        if(self.state==self.stateEnum.COMPONENTVIEW && project.selectedObjects.selectedskeleton==null)
         {
-            window.alert('Please select a skeleton!')
+            window.alert('Please select a skeleton!');
             return
         }
 
@@ -653,9 +668,9 @@ function CanvasTool()
         var intersectingComponentGroupId=self.CheckForIntersectingGroup(x,y);
         if(intersectingComponentGroupId!=null)
         {
-            self.componentStore.componentLayers[self.stack.z].activeGroupIndex=intersectingComponentGroupId;
+            self.layerStore.componentLayers[self.stack.z].activeGroupIndex=intersectingComponentGroupId;
 
-            var activeGroup=self.componentStore.componentLayers[self.stack.z].componentGroups[intersectingComponentGroupId];
+            var activeGroup=self.layerStore.componentLayers[self.stack.z].componentGroups[intersectingComponentGroupId];
             if(!activeGroup.grouploaded)
             {
                 self.getComponents(activeGroup.components[activeGroup.selectedComponentIndex].centerX(),activeGroup.components[activeGroup.selectedComponentIndex].centerY(),intersectingComponentGroupId)
@@ -680,7 +695,7 @@ function CanvasTool()
     this.CheckForIntersectingGroup=function(x,y)
     {
         var returnGroup=null;
-        if(self.componentStore.componentLayers[self.stack.z]!=undefined)
+        if(self.layerStore.componentLayers[self.stack.z]!=undefined)
         {
             //make all invisible
            canvasLayer.canvas.clear();
@@ -688,18 +703,18 @@ function CanvasTool()
             var fieldOfView=canvasLayer.getFieldOfViewParameters();
 
             var counter=-1;
-            for(var componentGroupId in self.componentStore.componentLayers[self.stack.z].componentGroups)
+            for(var componentGroupId in self.layerStore.componentLayers[self.stack.z].componentGroups)
             {
-                if(self.componentStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId))
+                if(self.layerStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId))
                 {
                     counter+=1;
-                    var component = self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId].components[self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId].selectedComponentIndex];
+                    var component = self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId].components[self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId].selectedComponentIndex];
                     if((component.minX)>x){continue;}
                     if((component.maxX)<x){continue;}
                     if((component.minY)>y){continue;}
                     if((component.maxY)<y){continue;}
 
-                    var componentGroup=self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
+                    var componentGroup=self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
                     canvasLayer.canvas.add(componentGroup.components[componentGroup.selectedComponentIndex].image);
                     var index=canvasLayer.canvas._objects.length;
                     if(index!=0){index-=1;}
@@ -715,7 +730,7 @@ function CanvasTool()
 
             }
             //make all visible
-            self.showActiveComponents();
+            self.showActiveElements();
         }
 
         return returnGroup;
@@ -767,18 +782,16 @@ function CanvasTool()
             if (self.stack !== parentStack) {
                 // If the tracing layer exists and it belongs to a different stack, replace it
                 self.stack.removeLayer( canvasLayer );
-                createCanvasLayer( parentStack );
-                createControlBox();
-                self.generateComponentLayer();
+
+                self.initialize(parentStack);
+
 
             } else {
                 // reactivateBindings();
             }
         } else {
-            createCanvasLayer( parentStack );
-            createControlBox();
+            self.initialize(parentStack);
         }
-        // console.log('field of view parameters', canvasLayer.getFieldOfViewParameters())
 
         if ( self.stack.slices.length < 2 )	//!< hide the self.slider_z if there is only one slice
         {
@@ -795,11 +808,25 @@ function CanvasTool()
           self.stack.z,
           self.changeSlice );
 
-        self.loadComponents();
+
 
 
         return;
     };
+
+
+    this.initialize=function(parentStack)
+    {
+        createCanvasLayer( parentStack );
+        createControlBox();
+        self.generateLayer();
+        canvasLayer.canvas.observe('path:created',function(path){self.onPathCreated(path)});
+
+        self.loadComponents();
+
+        canvasLayer.canvas.freeDrawingLineWidth=15;
+        canvasLayer.canvas.freeDrawingColor ="rgb(0, 255, 255)";
+    }
 
     /**
      * unregister all stack related mouse and keyboard controls
@@ -807,7 +834,7 @@ function CanvasTool()
     this.unregister = function()
     {
         return;
-    }
+    };
 
     /**
      * unregister all project related GUI control connections and event
@@ -816,6 +843,8 @@ function CanvasTool()
     this.destroy = function()
     {
         document.getElementById( "toolbar_seg" ).style.display = "none";
+        document.getElementById('div_color_wheel_box').style.display="none";
+
 
         // remove the canvasLayer with the official API
         self.stack.removeLayer( "CanvasLayer" );
@@ -955,22 +984,22 @@ function CanvasTool()
 
     this.deleteComponentGroup=function()
     {
-        if(self.state==self.stateEnum.COMPONENTVIEW&&self.componentStore.componentLayers[self.stack.z]!=undefined)
+        if(self.state==self.stateEnum.COMPONENTVIEW&&self.layerStore.componentLayers[self.stack.z]!=undefined)
         {
             var newLayer=new ComponentLayer();
             var countGroups=-1;
-            for (var componentGroupId in self.componentStore.componentLayers[self.stack.z].componentGroups)
+            for (var componentGroupId in self.layerStore.componentLayers[self.stack.z].componentGroups)
             {
-                if(self.componentStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId) && componentGroupId!=self.componentStore.componentLayers[self.stack.z].activeGroupIndex)
+                if(self.layerStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId) && componentGroupId!=self.layerStore.componentLayers[self.stack.z].activeGroupIndex)
                 {
                     countGroups+=1;
-                    newLayer.componentGroups[countGroups]=self.componentStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
+                    newLayer.componentGroups[countGroups]=self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
                 }
             }
             newLayer.activeGroupIndex=countGroups;
-            self.componentStore.componentLayers[self.stack.z]=newLayer;
+            self.layerStore.componentLayers[self.stack.z]=newLayer;
 
-            self.showActiveComponents();
+            self.showActiveElements();
 
         }
 
@@ -998,13 +1027,13 @@ function CanvasTool()
 
         $.getJSON(url,function(result){
 
-            var currentComponentGroups=self.componentStore.componentLayers[self.stack.z].componentGroups;
+            var currentComponentGroups=self.layerStore.componentLayers[self.stack.z].componentGroups;
 
             var componentGroupIdNew=currentComponentGroups.length;
             var componentGroupNew=null;
             if(activeGroupIndex!=undefined)
             {
-                componentGroupNew=self.componentStore.componentLayers[self.stack.z].componentGroups[activeGroupIndex];
+                componentGroupNew=self.layerStore.componentLayers[self.stack.z].componentGroups[activeGroupIndex];
             }
             else{componentGroupNew=new ComponentGroup();}
 
@@ -1058,7 +1087,7 @@ function CanvasTool()
                 componentGroupNew.active=true;
                 componentGroupNew.groupLoaded=true;
 
-                var currentComponentLayer=self.componentStore.componentLayers[self.stack.z];
+                var currentComponentLayer=self.layerStore.componentLayers[self.stack.z];
                 if(currentComponentLayer.activeGroupIndex!=-1)
                 {
                     currentComponentGroups[currentComponentLayer.activeGroupIndex].active=false;
@@ -1099,6 +1128,14 @@ function CanvasTool()
 
     };
 
+    this.removeElement= function(id)
+    {
+        var elem=document.getElementById(id);
+        if(elem!=null){return elem.parentNode.removeChild(elem);}
+
+    };
+
+
     this.getComponentImage= function(component,x,y,z,scale,visible)
     {
         //TODO:remove debug url
@@ -1135,12 +1172,16 @@ function CanvasTool()
 
 
 
-    this.generateComponentLayer=function()
+    this.generateLayer=function()
     {
 
-        if(self.componentStore.componentLayers[self.stack.z]==undefined)
+        if(self.layerStore.componentLayers[self.stack.z]==undefined)
         {
-            self.componentStore.componentLayers[self.stack.z]=new ComponentLayer();
+            self.layerStore.componentLayers[self.stack.z]=new ComponentLayer();
+        }
+        if(self.layerStore.drawingLayers[self.stack.z]==undefined)
+        {
+            self.layerStore.drawingLayers[self.stack.z]=new DrawingLayer();
         }
 
     };
@@ -1189,6 +1230,33 @@ function CanvasTool()
 
 }
 
+function Drawing()
+{
+    this.id=null;
+    this.componentId=null;
+    this.minX=null;
+    this.minY=null;
+    this.maxX=null;
+    this.maxY=null;
+    this.svg=function(){return this.drawingObject.toSVG();};
+    this.drawingObject=null;
+
+    this.width=function(){return this.maxX-this.minX; };
+    this.height=function(){return this.maxY-this.minY; };
+    this.centerX=function(){return Math.round(this.minX+(this.maxX-this.minX)/2); };
+    this.centerY=function(){return Math.round(this.minY+(this.maxY-this.minY)/2); };
+}
+
+
+function DrawingLayer()
+{
+    this.activeDrawingIndex=-1;
+    this.drawings=[];
+
+    this.getDrawings=function(componentId){};
+    this.deleteDrawings=function(componentId){};
+}
+
 
 function Component()
 {
@@ -1223,9 +1291,10 @@ function ComponentLayer()
     this.componentGroups=[];
 }
 
-function ComponentStore()
+function LayerStore()
 {
     this.componentLayers=[];
+    this.drawingLayers=[];
 }
 
 

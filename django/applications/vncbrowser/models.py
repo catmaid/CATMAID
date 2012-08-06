@@ -575,4 +575,24 @@ class Component(models.Model):
     threshold = models.FloatField()
     status = models.IntegerField(default=0)
 
+class Drawing(models.Model):
+    class Meta:
+        db_table = "drawing"
+        managed = False
+    user = models.ForeignKey(User)
+    creation_time = models.DateTimeField(default=now)
+    edition_time = models.DateTimeField(default=now)
+    project = models.ForeignKey(Project)
+    stack = models.ForeignKey(Stack)
+    skeleton_id = models.IntegerField()
+    z = models.IntegerField()
+    component_id=models.IntegerField()
+    min_x = models.IntegerField()
+    min_y = models.IntegerField()
+    max_x = models.IntegerField()
+    max_y = models.IntegerField()
+    svg = models.TextField()
+    type=models.IntegerField(default=0)
+    status = models.IntegerField(default=0)
+
 

@@ -47,6 +47,9 @@ from neurohdf import get_component_image
 from neurohdf import put_components
 from neurohdf import get_saved_components
 from neurohdf import initialize_components_for_skeleton
+from neurohdf import get_saved_drawings_by_component_id
+from neurohdf import get_saved_drawings_by_view
+from neurohdf import put_drawings
 
 from cropping import crop
 from cropping import download_crop

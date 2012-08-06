@@ -1110,6 +1110,36 @@ ALTER TABLE ONLY component ADD CONSTRAINT component_user_id_fkey FOREIGN KEY (us
 ),
 
 
+'2012-08-06T13:21:53' => new Migration(
+		'Create drawing table',
+		"
+CREATE TABLE drawing (
+    stack_id bigint NOT NULL,
+    z bigint NOT NULL,
+    skeleton_id bigint,
+    component_id bigint,
+    min_x bigint NOT NULL,
+    min_y bigint NOT NULL,
+    max_x bigint NOT NULL,
+    max_y bigint NOT NULL,
+    svg text NOT NULL,
+    type integer DEFAULT 0 NOT NULL,
+    status integer DEFAULT 0 NOT NULL
+)
+INHERITS (concept);
+
+ALTER TABLE ONLY drawing ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY drawing ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY drawing ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY drawing ADD CONSTRAINT drawing_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY drawing ADD CONSTRAINT drawing_stack_id_fkey FOREIGN KEY (stack_id) REFERENCES stack(id) ON DELETE CASCADE;
+ALTER TABLE ONLY drawing ADD CONSTRAINT drawing_project_id_fkey FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE;
+ALTER TABLE ONLY drawing ADD CONSTRAINT drawing_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"user\"(id) ON DELETE CASCADE;
+
+"
+),
+
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

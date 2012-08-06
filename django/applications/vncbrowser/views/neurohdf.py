@@ -3,7 +3,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from vncbrowser.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
-    Project, User, Treenode, TreenodeConnector, Connector, Component,Stack
+    Project, User, Treenode, TreenodeConnector, Connector, Component,Stack,Drawing
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
 from vncbrowser.views.export import get_annotation_graph
@@ -179,6 +179,74 @@ def get_component_image(request, project_id=None, stack_id=None):
         response = HttpResponse(mimetype="image/png")
         componentImage.save(response, "PNG")
         return response
+
+    return None
+
+#TODO: in transaction
+@catmaid_login_required
+def get_saved_drawings_by_component_id(request, project_id=None, stack_id=None, logged_in_user=None):
+    # parse request
+    component_id = int(request.GET['component_id'])
+    skeleton_id = int(request.GET['skeleton_id'])
+    z = int(request.GET['z'])
+
+    s = get_object_or_404(ClassInstance, pk=skeleton_id)
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+    # fetch all the components for the given skeleton and z section
+    all_drawings = Drawing.objects.filter(stack=stack,
+        project=p,skeleton_id=skeleton_id,
+        z = z,component_id=component_id).all()
+
+    drawings={}
+
+    for drawing in all_drawings:
+        drawings[int(drawing.id)]=\
+            {'component_id':int(drawing.component_id),
+            'minX':int(drawing.min_x),
+            'minY':int(drawing.min_y),
+            'maxX':int(drawing.max_x),
+            'maxY':int(drawing.max_y),
+            'path':drawing.path
+
+        }
+
+
+    return HttpResponse(json.dumps(drawings), mimetype="text/json")
+
+
+
+
+#TODO: in transaction
+@catmaid_login_required
+def get_saved_drawings_by_view(request, project_id=None, stack_id=None, logged_in_user=None):
+
+    return None
+
+#TODO: in transaction
+@catmaid_login_required
+def put_drawings(request, project_id=None, stack_id=None, logged_in_user=None):
+    # parse request
+    components=json.loads(request.POST['components'])
+    skeleton_id = int(request.POST['skeleton_id'])
+    z = int(request.POST['z'])
+
+    # field of view
+    viewX=int(request.POST['x'])
+    viewY=int(request.POST['y'])
+    viewHeight=int(request.POST['height'])
+    viewWidth=int(request.POST['width'])
+
+    viewMaxX=viewX+viewWidth
+    ViewMaxY=viewY+viewHeight
+
+    s = get_object_or_404(ClassInstance, pk=skeleton_id)
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+
+
 
     return None
 

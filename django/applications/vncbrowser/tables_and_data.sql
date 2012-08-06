@@ -198,7 +198,7 @@ CREATE SEQUENCE sessions_id_seq
     NO MAXVALUE
     CACHE 1;
 ALTER SEQUENCE sessions_id_seq OWNED BY sessions.id;
-SELECT pg_catalog.setval('sessions_id_seq', 50, true);
+SELECT pg_catalog.setval('sessions_id_seq', 53, true);
 CREATE TABLE settings (
     key text NOT NULL,
     value text
@@ -252,14 +252,14 @@ CREATE SEQUENCE textlabel_id_seq
     NO MAXVALUE
     CACHE 1;
 ALTER SEQUENCE textlabel_id_seq OWNED BY textlabel.id;
-SELECT pg_catalog.setval('textlabel_id_seq', 1, false);
+SELECT pg_catalog.setval('textlabel_id_seq', 2, true);
 CREATE SEQUENCE textlabel_location_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;
-SELECT pg_catalog.setval('textlabel_location_id_seq', 1, false);
+SELECT pg_catalog.setval('textlabel_location_id_seq', 2, true);
 CREATE TABLE textlabel_location (
     textlabel_id integer NOT NULL,
     location double3d NOT NULL,
@@ -489,8 +489,8 @@ INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation
 INSERT INTO log (id, user_id, creation_time, edition_time, project_id, operation_type, location, freetext) VALUES (2457, 3, '2012-07-23 01:15:24.010388+02', '2012-07-23 01:15:24.010388+02', 3, 'create_neuron', '(3680,2530,180)', 'Create neuron 2452 and skeleton 2451');
 INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (1, 3, '2011-12-19 16:46:01.360422+01', false, 'Message 1', 'Contents of message 1.', 'http://www.example.com/message1');
 INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (2, 3, '2011-12-20 16:46:01.360422+01', false, 'Message 2', 'Contents of message 2.', 'http://www.example.com/message2');
-INSERT INTO message (id, user_id, "time", read, title, text) VALUES (3, 3, '2011-12-21 16:46:01.360422+01', true, 'Message 3', 'Contents of message 3.');
-INSERT INTO message (id, user_id, "time", read, title, text) VALUES (4, 3, '2011-12-22 16:46:01.360422+01', true, 'Message 4', 'Contents of message 4.');
+INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (3, 3, '2011-12-21 16:46:01.360422+01', true, 'Message 3', 'Contents of message 3.', NULL);
+INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (4, 3, '2011-12-22 16:46:01.360422+01', true, 'Message 4', 'Contents of message 4.', NULL);
 INSERT INTO project (id, title, public, wiki_base_url) VALUES (1, 'Default Project', true, NULL);
 INSERT INTO project (id, title, public, wiki_base_url) VALUES (2, 'Evaluation data set', true, NULL);
 INSERT INTO project (id, title, public, wiki_base_url) VALUES (3, 'Focussed Ion Beam (FIB)', true, NULL);
@@ -533,6 +533,10 @@ INSERT INTO stack (id, title, dimension, resolution, image_base, comment, trakem
 INSERT INTO stack (id, title, dimension, resolution, image_base, comment, trakem2_project, num_zoom_levels, file_extension, tile_width, tile_height, tile_source_type, metadata) VALUES (3, 'Focussed Ion Beam (FIB) stack of Rat Striatum	', '(2048,1536,460)', '(5,5,9)', 'http://incf.ini.uzh.ch/image-stack-fib/', '<p>&copy;2009 <a href="http://people.epfl.ch/graham.knott">Graham Knott</a>.</p> <p>Public INCF data set available at the <a href="http://www.incf.org/about/nodes/switzerland/data">Swiss INCF Node</a>.</p>', false, -1, 'jpg', 256, 256, 1, '');
 INSERT INTO stack (id, title, dimension, resolution, image_base, comment, trakem2_project, num_zoom_levels, file_extension, tile_width, tile_height, tile_source_type, metadata) VALUES (5, 'FIB data, first stack', '(2048,1536,460)', '(5,5,9)', 'http://incf.ini.uzh.ch/image-stack-fib/', 'Stack 1 for testing purposes', false, -1, 'jpg', 256, 256, 1, '');
 INSERT INTO stack (id, title, dimension, resolution, image_base, comment, trakem2_project, num_zoom_levels, file_extension, tile_width, tile_height, tile_source_type, metadata) VALUES (6, 'FIB data, second stack', '(2048,1536,460)', '(5,5,9)', 'http://incf.ini.uzh.ch/image-stack-fib/', 'Stack 2 for testing purposes', false, -1, 'jpg', 256, 256, 1, '');
+INSERT INTO textlabel (id, type, text, colour, font_name, font_style, font_size, project_id, scaling, creation_time, edition_time, deleted) VALUES (1, 'text', 'World.', '(1,0.498039216,0,1)', NULL, 'bold', 160, 3, true, '2012-08-02 03:05:39.457391+02', '2012-08-02 03:06:08.930644+02', false);
+INSERT INTO textlabel (id, type, text, colour, font_name, font_style, font_size, project_id, scaling, creation_time, edition_time, deleted) VALUES (2, 'text', 'Helo.', '(1,0.498039216,0,1)', NULL, 'bold', 160, 3, true, '2012-08-02 03:05:51.030652+02', '2012-08-02 03:06:18.35172+02', false);
+INSERT INTO textlabel_location (textlabel_id, location, deleted, id) VALUES (1, '(3155,1775,27)', false, 1);
+INSERT INTO textlabel_location (textlabel_id, location, deleted, id) VALUES (2, '(2345,1785,27)', false, 2);
 INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (7, 3, '2011-09-04 13:53:41.243573+02', '2011-12-05 19:51:36.955507+01', 3, '(3590,3240,0)', -1, NULL, NULL, -1, 5, 1);
 INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (11, 3, '2011-09-04 13:54:16.301746+02', '2011-12-05 19:51:36.955507+01', 3, '(3600,3250,9)', -1, NULL, 7, -1, 5, 1);
 INSERT INTO treenode (id, user_id, creation_time, edition_time, project_id, location, reviewer_id, review_time, parent_id, radius, confidence, skeleton_id) VALUES (13, 3, '2011-09-04 13:54:24.528781+02', '2011-12-05 19:51:36.955507+01', 3, '(3600,3250,18)', -1, NULL, 11, -1, 5, 1);

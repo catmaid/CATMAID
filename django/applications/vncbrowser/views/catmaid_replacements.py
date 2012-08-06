@@ -1,5 +1,6 @@
 import json
 import re
+# import sets
 
 from collections import defaultdict
 from django.core.exceptions import ObjectDoesNotExist
@@ -277,6 +278,88 @@ def create_link(request, project_id=None, logged_in_user=None):
             ).save()
 
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+
+
+@catmaid_can_edit_project
+@transaction_reportable_commit_on_success
+def update_textlabel(request, project_id=None, logged_in_user=None):
+    params = {}
+    parameter_names = ['tid', 'pid', 'x', 'y', 'z', 'text', 'type', 'r', 'g', 'b', 'a', 'fontname', 'fontstyle', 'fontsize', 'scaling']
+    for p in parameter_names:
+        params[p] = request.POST.get(p, None)
+    # Rename params in to match model parameter names.
+    params['font_name'] = params['fontname']
+    params['font_style'] = params['fontstyle']
+    params['font_size'] = params['fontsize']
+    del params['fontname']
+    del params['fontstyle']
+    del params['fontsize']
+
+    # Scaling is given 0 or 1 value by the caller, but our models use bool
+    if params['scaling'] is not None:
+        params['scaling'] = bool(int(params['scaling']))
+
+    # Type must be either bubble or text.
+    if params['type'] is not None:
+        if (params['type'] != 'bubble'):
+            params['type'] = 'text'
+
+    response_on_error = ''
+    try:
+        response_on_error = 'Failed to find Textlabel with id %s.' % params['tid']
+        label = Textlabel.objects.filter(id=params['tid'])[0]
+
+        response_on_error = 'Failed to update Textlabel with id %s.' % params['tid']
+        special_parameters = ['x', 'y', 'z', 'r', 'g', 'b', 'a', 'tid']
+        # Set new values for label unless they haven't been specified or need
+        # special handling.
+        # for par in [p for p in parameter_names if p not in special_parameters]:
+        for par in set(params.keys()).difference(special_parameters):
+            if params[par] is not None:
+                setattr(label, par, params[par])
+        label.save()
+
+        # If all parameters x, y and z have been specified, change the location
+        if all([val is not None for val in [params[p] for p in ['x', 'y', 'z']]]):
+            response_on_error = 'Failed to update the location of textlabel with id %s' % params['tid']
+            TextlabelLocation.objects.filter(textlabel=params['tid']).update(
+                    location=Double3D(float(params['x']), float(params['y']), float(params['z'])))
+
+        return HttpResponse(' ')
+
+    except RollbackAndReport:
+        raise
+    except Exception as e:
+        if (response_on_error == ''):
+            raise RollbackAndReport(str(e))
+        else:
+            raise RollbackAndReport(response_on_error)
+
+
+@catmaid_can_edit_project
+@transaction_reportable_commit_on_success
+def delete_textlabel(request, project_id=None, logged_in_user=None):
+    textlabel_id = request.POST.get('tid', None)
+
+    if textlabel_id is None:
+        raise RollbackAndReport('No treenode id provided.')
+
+    response_on_error = ''
+    try:
+        response_on_error = 'Could not delete TextlabelLocations for treenode #%s' % textlabel_id
+        TextlabelLocation.objects.filter(textlabel=textlabel_id).delete()
+        response_on_error = 'Could not delete Textlabels for treenode #%s' % textlabel_id
+        Textlabel.objects.filter(id=textlabel_id).delete()
+
+    except RollbackAndReport:
+        raise
+    except Exception as e:
+        if (response_on_error == ''):
+            raise RollbackAndReport(str(e))
+        else:
+            raise RollbackAndReport(response_on_error)
+
+    return HttpResponse(json.dumps({'message': 'Success.'}))
 
 
 @catmaid_can_edit_project
@@ -605,6 +688,80 @@ def stats_summary(request, project_id=None, logged_in_user=None):
     return HttpResponse(json.dumps(result), mimetype='text/json')
 
 
+@catmaid_login_required
+@transaction_reportable_commit_on_success
+def skeleton_ancestry(request, project_id=None, logged_in_user=None):
+    # All of the values() things in this function can be replaced by
+    # prefetch_related when we upgrade to Django 1.4 or above
+    skeleton_id = request.POST.get('skeleton_id', None)
+    if skeleton_id is None:
+        raise RollbackAndReport('A skeleton id has not been provided!')
+
+    relation_map = get_relation_to_id_map(project_id)
+    for rel in ['model_of', 'part_of']:
+        if rel not in relation_map:
+            raise RollbackAndReport(' => "Failed to find the required relation %s' % rel)
+
+    response_on_error = ''
+    try:
+        response_on_error = 'The search query failed.'
+        neuron_rows = ClassInstanceClassInstance.objects.filter(
+                class_instance_a=skeleton_id,
+                relation=relation_map['model_of']).values(
+                        'class_instance_b',
+                        'class_instance_b__name')
+        neuron_count = neuron_rows.count()
+        if neuron_count == 0:
+            raise RollbackAndReport('No neuron was found that the skeleton %s models' % skeleton_id)
+        elif neuron_count > 1:
+            raise RollbackAndReport('More than one neuron was found that the skeleton %s models' % skeleton_id)
+
+        parent_neuron = neuron_rows[0]
+        ancestry = []
+        ancestry.append({
+            'name': parent_neuron['class_instance_b__name'],
+            'id': parent_neuron['class_instance_b'],
+            'class': 'neuron'})
+
+        # Doing this query in a loop is horrible, but it should be very rare
+        # for the hierarchy to be more than 4 deep or so.  (This is a classic
+        # problem of not being able to do recursive joins in pure SQL.) Just
+        # in case a cyclic hierarchy has somehow been introduced, limit the
+        # number of parents that may be found to 10.
+        current_ci = parent_neuron['class_instance_b']
+        for i in range(10):
+            response_on_error = 'Could not retrieve parent of class instance %s' % current_ci
+            parents = ClassInstanceClassInstance.objects.filter(
+                    class_instance_a=current_ci,
+                    relation=relation_map['part_of']).values(
+                            'class_instance_b__name',
+                            'class_instance_b',
+                            'class_instance_b__class_column__class_name')
+            parent_count = parents.count()
+            if parent_count == 0:
+                break  # We've reached the top of the hierarchy.
+            elif parent_count > 1:
+                raise RollbackAndReport('More than one class_instance was found that the class_instance %s is part_of.' % current_ci)
+            else:
+                parent = parents[0]
+                ancestry.append({
+                    'name': parent['class_instance_b__name'],
+                    'id': parent['class_instance_b'],
+                    'class': parent['class_instance_b__class_column__class_name']
+                    })
+                current_ci = parent['class_instance_b']
+
+        return HttpResponse(json.dumps(ancestry))
+
+    except RollbackAndReport:
+        raise
+    except Exception as e:
+        if (response_on_error == ''):
+            raise RollbackAndReport(str(e))
+        else:
+            raise RollbackAndReport(response_on_error)
+
+
 def get_relation_to_id_map(project_id):
     result = {}
     for r in Relation.objects.filter(project=project_id):
@@ -791,7 +948,7 @@ SELECT treenode.id AS id,
     c.execute('''
 SELECT connector.id AS id,
        (connector.location).x AS x,
-       (connector.location).y AS y,
+  (connector.location).y AS y,
        (connector.location).z AS z,
        connector.user_id AS user_id,
        ((connector.location).z - %(z)s) AS z_diff,

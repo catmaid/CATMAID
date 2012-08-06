@@ -106,6 +106,7 @@ var GraphWidget = new function()
         edgeLabelsVisible: true,
         nodeLabelsVisible: true,
         visualStyle: visual_style,
+        panZoomControlPosition: 'topRight'
         
       });
     

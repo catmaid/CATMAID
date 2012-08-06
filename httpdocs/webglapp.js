@@ -709,7 +709,7 @@ var WebGLApp = new function () {
     ));
 
     var td = $(document.createElement("td"));
-    td.append( $(document.createElement("button")).attr({
+    td.append( $(document.createElement("img")).attr({
           id:    'skeletonaction-remove-' + skeleton.id,
           value: 'Remove'
           })
@@ -717,6 +717,7 @@ var WebGLApp = new function () {
           {
             self.removeSkeleton( skeleton.id );
           })
+          .attr('src','widgets/themes/kde/delete.png')
           .text('Remove!')
     );
     td.append(

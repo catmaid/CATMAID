@@ -304,8 +304,7 @@ var WindowMaker = new function()
     container.appendChild(add);
 
     var graph = document.createElement('div');
-    graph.innerHTML =
-      '<div id="cytoscapeweb">Cytoscape Web will replace the contents of this div with your graph.</div>';
+    graph.innerHTML = '<div id="cytoscapeweb"></div>';
     container.appendChild(graph);
 
     addListener(win, container);

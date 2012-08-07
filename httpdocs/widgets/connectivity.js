@@ -102,13 +102,14 @@ var SkeletonConnectivity = new function()
         table.append( tbody );
         // create a row
         for(var e in data['outgoing'] ) {
+            var skeleton_id = data['incoming'][e]['skeleton_id'];
             row = $('<tr />');
             row.append( $('<td />').text( data['outgoing'][e]['name'] ) );
             row.append( $('<td />').text( data['outgoing'][e]['id__count'] ) );
             row.append(
                 $('<td />').append(
                     $(document.createElement("input")).attr({
-                        id:    'outgoing-show-skeleton-' + data['outgoing'][e]['skeleton_id'],
+                        id:    'outgoing-show-skeleton-' + skeleton_id,
                         type:  'checkbox',
                         value:  skeleton_id,
                         checked: false

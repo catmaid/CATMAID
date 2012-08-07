@@ -611,6 +611,31 @@ var WindowMaker = new function()
         return win;
     };
 
+    var createConnectivityWindow = function()
+    {
+        var win = new CMWWindow("Skeleton Connectivity");
+        var content = win.getFrame();
+        content.style.backgroundColor = "#ffffff";
+
+        var add = document.createElement('input');
+        add.setAttribute("type", "button");
+        add.setAttribute("id", "retrieve_connectivity");
+        add.setAttribute("value", "Get connectivity");
+        add.onclick = SkeletonConnectivity.fetchConnectivityForSkeleton;
+        content.appendChild(add);
+
+        var container = createContainer( "connectivity_widget" );
+        content.appendChild( container );
+
+        addListener(win, container);
+
+        addLogic(win);
+
+        SkeletonConnectivity.init();
+
+        return win;
+    };
+
   var createExportWidget = function()
   {
       var win = new CMWWindow("Export widget");
@@ -865,7 +890,8 @@ var WindowMaker = new function()
     "object-tree": createObjectTreeWindow,
     "statistics": createStatisticsWindow,
     "disclaimer": createDisclaimerWindow,
-    "review-system": createReviewWindow
+    "review-system": createReviewWindow,
+    "connectivity-widget": createConnectivityWindow,
   };
 
   /** If the window for the given name is already showing, just focus it.

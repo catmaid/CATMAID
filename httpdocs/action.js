@@ -314,6 +314,16 @@ var tracingWindowActions = [
       }
   }),
 
+    new Action({
+        helpText: "Connectivity widget",
+        buttonID: "data_button_connectivit",
+        buttonName: 'table_connectivity',
+        run: function (e) {
+            WindowMaker.show('connectivity-widget');
+            return true;
+        }
+    }),
+
   new Action({
       helpText: "Export widget",
       buttonID: "data_button_export_widget",

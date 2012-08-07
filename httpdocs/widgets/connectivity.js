@@ -69,7 +69,7 @@ var SkeletonConnectivity = new function()
                         .click( function( event )
                         {
                             if( $( "#view_in_3d_webgl_widget").length ) {
-                                var vis = $('#incoming-show-skeleton-' + data['incoming'][e]['id']).is(':checked');
+                                var vis = $('#incoming-show-skeleton-' + data['incoming'][e]['skeleton_id']).is(':checked');
                                 if( vis ) {
                                     WebGLApp.addSkeletonFromID( project.id, data['incoming'][e]['skeleton_id'] );
                                 } else {
@@ -112,7 +112,7 @@ var SkeletonConnectivity = new function()
                         .click( function( event )
                         {
                             if( $( "#view_in_3d_webgl_widget").length ) {
-                                var vis = $('#outgoing-show-skeleton-' + data['outgoing'][e]['id']).is(':checked');
+                                var vis = $('#outgoing-show-skeleton-' + data['outgoing'][e]['skeleton_id']).is(':checked');
                                 if( vis ) {
                                     WebGLApp.addSkeletonFromID( project.id, data['outgoing'][e]['skeleton_id'] );
                                 } else {

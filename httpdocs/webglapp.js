@@ -736,6 +736,16 @@ var WebGLApp = new function () {
         skeleton.id + '"><div class="colorwheel'+
         skeleton.id + '"></div></div>')
     );
+    td.append( $(document.createElement("img")).attr({
+      id:    'skeletonaction-activate-' + skeleton.id,
+      value: 'Remove'
+    })
+      .click( function( event )
+      {
+          TracingTool.goToNearestInNeuron( 'skeleton', skeleton.id );
+      })
+      .attr('src','widgets/themes/kde/activate.gif')
+    );
     rowElement.append( td );
 
     var cw = Raphael.colorwheel($("#color-wheel-"+skeleton.id+" .colorwheel"+skeleton.id)[0],150);

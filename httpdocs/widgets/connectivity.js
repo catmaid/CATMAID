@@ -102,7 +102,7 @@ var SkeletonConnectivity = new function()
         table.append( tbody );
         // create a row
         for(var e in data['outgoing'] ) {
-            var skeleton_id = data['incoming'][e]['skeleton_id'];
+            var skeleton_id = data['outgoing'][e]['skeleton_id'];
             row = $('<tr />');
             row.append( $('<td />').text( data['outgoing'][e]['name'] ) );
             row.append( $('<td />').text( data['outgoing'][e]['id__count'] ) );

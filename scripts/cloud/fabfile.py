@@ -134,10 +134,10 @@ def installDjangoBackend():
             'libtiff-dev',
             'libgraphicsmagick++3',
             'libgraphicsmagick++1-dev',
-            'libboost-python1.42.0',
-            'h5py',
-            'libboost-python1.42-dev',
-            'ipython',
+            'libboost-python1.48.0',
+            'libboost-python1.48-dev',
+            'ipython',	
+            'python-h5py',	
         ]
 
         for each_package in packagelist:
@@ -149,7 +149,7 @@ def installDjangoBackend():
             print each_package
             run('sudo apt-get -y --force-yes build-dep %s' % each_package, pty = True)
 
-        run('sudo apt-get install libapache2-mod-wsgi')
+        run('sudo apt-get install libapache2-mod-wsgi')	
 
         with cd('CATMAID/django'):
             run('virtualenv --no-site-packages env')

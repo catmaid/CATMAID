@@ -641,6 +641,16 @@ class ViewPageTests(TestCase):
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(5, connector.confidence)
 
+    def test_tree_object_expand(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/tree_object/expand' % self.test_project_id,
+                {'skeleton_id': 235})
+        parsed_response = json.loads(response.content)
+        expected_response = [2323, 231, 233, 235]
+        self.assertEqual(expected_response, parsed_response)
+        self.assertEqual(response.status_code, 200)
+
     def test_create_connector(self):
         self.fake_authentication()
         connector_count = Connector.objects.all().count()

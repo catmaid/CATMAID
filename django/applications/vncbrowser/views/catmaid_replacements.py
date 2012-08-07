@@ -658,6 +658,57 @@ def read_message(request, project_id=None, logged_in_user=None):
 
 
 @catmaid_login_required
+@transaction_reportable_commit_on_success
+def tree_object_expand(request, project_id=None, logged_in_user=None):
+    skeleton_id = request.POST.get('skeleton_id', None)
+    if skeleton_id is None:
+        raise RollbackAndReport('A skeleton id has not been provided!')
+    else:
+        skeleton_id = int(skeleton_id)
+
+    relation_map = get_relation_to_id_map(project_id)
+
+    # Treenode is element_of class_instance (skeleton), which is model_of (neuron)
+    # which is part_of class_instance (?), recursively, until reaching class_instance
+    # ('root').
+
+    response_on_error = ''
+    try:
+        # 1. Retrieve neuron id of the skeleton
+        response_on_error = 'Cannot find neuron for the skeleton with id: %s' % skeleton_id
+        neuron_id = ClassInstanceClassInstance.objects.filter(
+                project=project_id,
+                relation=relation_map['model_of'],
+                class_instance_a=skeleton_id)[0].class_instance_b_id
+
+        path = [skeleton_id, neuron_id]
+
+        while True:
+            # 2. Retrieve all the nodes of which the neuron is a part of.
+            response_on_error = 'Cannot find parent instance for instance with id: %s' % path[-1]
+            parent = ClassInstanceClassInstance.objects.filter(
+                    project=project_id,
+                    class_instance_a=path[-1],
+                    relation=relation_map['part_of']).values(
+                            'class_instance_b',
+                            'class_instance_b__class_column__class_name')[0]
+            path.append(parent['class_instance_b'])
+            if 'root' == parent['class_instance_b__class_column__class_name']:
+                break
+
+        path.reverse()
+        return HttpResponse(json.dumps(path))
+
+    except RollbackAndReport:
+        raise
+    except Exception as e:
+        if (response_on_error == ''):
+            raise RollbackAndReport(str(e))
+        else:
+            raise RollbackAndReport(response_on_error)
+
+
+@catmaid_login_required
 def stats(request, project_id=None, logged_in_user=None):
     qs = Treenode.objects.filter(project=project_id)
     qs = qs.values('user__name').annotate(count=Count('user__name'))

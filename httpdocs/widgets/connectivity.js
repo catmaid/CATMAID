@@ -56,24 +56,27 @@ var SkeletonConnectivity = new function()
         table.append( tbody );
         // create a row
         for(var e in data['incoming'] ) {
+            var skeleton_id = data['incoming'][e]['skeleton_id'];
             row = $('<tr />');
             row.append( $('<td />').text( data['incoming'][e]['name'] ) );
             row.append( $('<td />').text( data['incoming'][e]['id__count'] ) );
             row.append(
                 $('<td />').append(
                     $(document.createElement("input")).attr({
-                        id:    'incoming-show-skeleton-' + data['incoming'][e]['skeleton_id'],
+                        id:    'incoming-show-skeleton-' + skeleton_id,
                         type:  'checkbox',
+                        value:  skeleton_id,
                         checked: false
                     })
                         .click( function( event )
                         {
                             if( $( "#view_in_3d_webgl_widget").length ) {
-                                var vis = $('#incoming-show-skeleton-' + data['incoming'][e]['skeleton_id']).is(':checked');
+                                var skelid = parseInt( event.target.value );
+                                var vis = $('#incoming-show-skeleton-' + skelid).is(':checked');
                                 if( vis ) {
-                                    WebGLApp.addSkeletonFromID( project.id, data['incoming'][e]['skeleton_id'] );
+                                    WebGLApp.addSkeletonFromID( project.id, skelid );
                                 } else {
-                                    WebGLApp.removeSkeleton( data['incoming'][e]['skeleton_id'] );
+                                    WebGLApp.removeSkeleton( skelid );
                                 }
                             }
                         } )
@@ -107,11 +110,13 @@ var SkeletonConnectivity = new function()
                     $(document.createElement("input")).attr({
                         id:    'outgoing-show-skeleton-' + data['outgoing'][e]['skeleton_id'],
                         type:  'checkbox',
+                        value:  skeleton_id,
                         checked: false
                     })
                         .click( function( event )
                         {
                             if( $( "#view_in_3d_webgl_widget").length ) {
+                                var skelid = parseInt( event.target.value );
                                 var vis = $('#outgoing-show-skeleton-' + data['outgoing'][e]['skeleton_id']).is(':checked');
                                 if( vis ) {
                                     WebGLApp.addSkeletonFromID( project.id, data['outgoing'][e]['skeleton_id'] );

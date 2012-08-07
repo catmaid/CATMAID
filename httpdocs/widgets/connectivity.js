@@ -117,11 +117,11 @@ var SkeletonConnectivity = new function()
                         {
                             if( $( "#view_in_3d_webgl_widget").length ) {
                                 var skelid = parseInt( event.target.value );
-                                var vis = $('#outgoing-show-skeleton-' + data['outgoing'][e]['skeleton_id']).is(':checked');
+                                var vis = $('#outgoing-show-skeleton-' + skelid).is(':checked');
                                 if( vis ) {
-                                    WebGLApp.addSkeletonFromID( project.id, data['outgoing'][e]['skeleton_id'] );
+                                    WebGLApp.addSkeletonFromID( project.id, skelid );
                                 } else {
-                                    WebGLApp.removeSkeleton( data['outgoing'][e]['skeleton_id'] );
+                                    WebGLApp.removeSkeleton( skelid );
                                 }
                             }
                         } )

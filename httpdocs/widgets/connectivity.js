@@ -62,7 +62,7 @@ var SkeletonConnectivity = new function()
             row.append(
                 $('<td />').append(
                     $(document.createElement("input")).attr({
-                        id:    'incoming-show-skeleton-' + data['incoming'][e]['id'],
+                        id:    'incoming-show-skeleton-' + data['incoming'][e]['skeleton_id'],
                         type:  'checkbox',
                         checked: false
                     })
@@ -105,7 +105,7 @@ var SkeletonConnectivity = new function()
             row.append(
                 $('<td />').append(
                     $(document.createElement("input")).attr({
-                        id:    'outgoing-show-skeleton-' + data['outgoing'][e]['id'],
+                        id:    'outgoing-show-skeleton-' + data['outgoing'][e]['skeleton_id'],
                         type:  'checkbox',
                         checked: false
                     })

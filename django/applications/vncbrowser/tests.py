@@ -1571,6 +1571,82 @@ class ViewPageTests(TestCase):
         self.assertEqual(0, TreenodeConnector.objects.filter(connector=connector_id, treenode=treenode_id).count())
         self.assertEqual(tc_count - 1, TreenodeConnector.objects.all().count())
 
+    def test_reroot_treenodes(self):
+        self.fake_authentication()
+
+        new_root = 407
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+
+        response = self.client.post(
+                '/%d/treenode/reroot' % self.test_project_id,
+                {'tnid': new_root})
+        parsed_response = json.loads(response.content)
+        expected_result = {'newroot': 407}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(1 + log_count, count_logs())
+
+        def assertHasParent(treenode_id, parent_id):
+            treenode = get_object_or_404(Treenode, id=treenode_id)
+            self.assertEqual(parent_id, treenode.parent_id)
+
+        assertHasParent(405, 407)
+        assertHasParent(377, 405)
+        assertHasParent(407, None)
+
+    def test_reroot_and_link_treenodes(self):
+        self.fake_authentication()
+
+        new_root = 2394
+        link_to = 2394
+        link_from = 2415
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+        new_skeleton_id = get_object_or_404(Treenode, id=link_from).skeleton_id
+
+        response = self.client.post(
+                '/%d/treenode/reroot' % self.test_project_id,
+                {'tnid': new_root})
+        parsed_response = json.loads(response.content)
+        expected_result = {'newroot': 2394}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+        response = self.client.post(
+                '/%d/treenode/link' % self.test_project_id, {
+                    'from_id': link_from,
+                    'to_id': link_to})
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'message': 'success',
+                'fromid': link_from,
+                'toid': link_to}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+        self.assertEqual(2 + log_count, count_logs())
+
+        def assertTreenodeHasProperties(treenode_id, parent_id, skeleton_id):
+            treenode = get_object_or_404(Treenode, id=treenode_id)
+            self.assertEqual(parent_id, treenode.parent_id)
+            self.assertEqual(skeleton_id, treenode.skeleton_id)
+
+        assertTreenodeHasProperties(2396, 2394, new_skeleton_id)
+        assertTreenodeHasProperties(2392, 2394, new_skeleton_id)
+        assertTreenodeHasProperties(2394, 2415, new_skeleton_id)
+
+        self.assertEqual(0, ClassInstance.objects.filter(id=2388).count())
+        self.assertEqual(0, ClassInstanceClassInstance.objects.filter(id=2390).count())
+
+        self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeClassInstance, id=2393).class_instance_id)
+        self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeClassInstance, id=2395).class_instance_id)
+        self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeClassInstance, id=2397).class_instance_id)
+
+        self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeConnector, id=2405).skeleton_id)
+
     def test_treenode_info_too_many_neurons_failure(self):
         self.fake_authentication()
         treenode_id = 55555

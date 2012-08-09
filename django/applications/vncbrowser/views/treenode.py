@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.db import connection
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import ClassInstance, TreenodeClassInstance, Treenode, \
-        Double3D, ClassInstanceClassInstance
+        Double3D, ClassInstanceClassInstance, TreenodeConnector
 from vncbrowser.transaction import transaction_reportable_commit_on_success, RollbackAndReport
 from vncbrowser.views import catmaid_can_edit_project, catmaid_login_required
 from vncbrowser.views.catmaid_replacements import get_relation_to_id_map, get_class_to_id_map
@@ -182,6 +182,142 @@ def create_treenode(request, project_id=None, logged_in_user=None):
                     'neuron_id': new_neuron.id,
                     'fragmentgroup_id': fragment_group.id
                     }))
+    except RollbackAndReport:
+        raise
+    except Exception as e:
+        if (response_on_error == ''):
+            raise RollbackAndReport(str(e))
+        else:
+            raise RollbackAndReport(response_on_error)
+
+
+@catmaid_can_edit_project
+@transaction_reportable_commit_on_success
+def reroot_treenode(request, project_id=None, logged_in_user=None):
+    treenode_id = request.POST.get('tnid', None)
+    if treenode_id is None:
+        raise RollbackAndReport('A treenode id has not been provided!')
+
+    response_on_error = ''
+    try:
+        response_on_error = 'Failed to select treenode with id %s.' % treenode_id
+        treenode = Treenode.objects.filter(
+                id=treenode_id,
+                project=project_id)
+
+        # no parent found or is root, then return
+        response_on_error = 'An error occured while rerooting. No valid query result.'
+        treenode = treenode[0]
+
+        first_parent = treenode.parent
+        if first_parent is None:
+            raise RollbackAndReport('An error occured while rerooting. No valid query result.')
+
+        # Traverse up the chain of parents, reversing the parent relationships so
+        # that the selected treenode (with ID treenode_id) becomes the root.
+        node_to_become_new_parent = treenode
+        change_node = first_parent  # Will have its parent changed each iteration.
+        while True:
+            # The parent's parent will have its parent changed next iteration.
+            change_nodes_old_parent = change_node.parent
+
+            response_on_error = 'Failed to update treenode with id %s to have new parent %s' % (change_node.id, node_to_become_new_parent.id)
+            change_node.parent = node_to_become_new_parent
+            change_node.save()
+
+            if change_nodes_old_parent is None:
+                break
+            else:
+                node_to_become_new_parent = change_node
+                change_node = change_nodes_old_parent
+
+        # Finally make treenode root
+        response_on_error = 'Failed to set treenode with ID %s as root.' % treenode.id
+        treenode.parent = None
+        treenode.save()
+
+        response_on_error = 'Failed to log reroot.'
+        insert_into_log(project_id, logged_in_user.id, 'reroot_skeleton', treenode.location, 'Rerooted skeleton for treenode with ID %s' % treenode.id)
+
+        return HttpResponse(json.dumps({'newroot': treenode.id}))
+
+    except RollbackAndReport:
+        raise
+    except Exception as e:
+        if (response_on_error == ''):
+            raise RollbackAndReport(str(e))
+        else:
+            raise RollbackAndReport(response_on_error)
+
+
+@catmaid_can_edit_project
+@transaction_reportable_commit_on_success
+def link_treenode(request, project_id=None, logged_in_user=None):
+    from_treenode = request.POST.get('from_id', None)
+    to_treenode = request.POST.get('to_id', None)
+    if from_treenode is None or to_treenode is None:
+        raise RollbackAndReport('From treenode or to treenode not given.')
+    else:
+        from_treenode = int(from_treenode)
+        to_treenode = int(to_treenode)
+
+    relation_map = get_relation_to_id_map(project_id)
+    if 'element_of' not in relation_map:
+        raise RollbackAndReport('Could not find element_of relation.')
+
+    response_on_error = ''
+    try:
+        response_on_error = 'Can not find skeleton for from-treenode.'
+        from_skeleton = TreenodeClassInstance.objects.filter(
+                project=project_id,
+                treenode=from_treenode,
+                relation=relation_map['element_of'])[0].class_instance_id
+
+        response_on_error = 'Can not find skeleton for to-treenode.'
+        to_skeleton = TreenodeClassInstance.objects.filter(
+                project=project_id,
+                treenode=to_treenode,
+                relation=relation_map['element_of'])[0].class_instance_id
+
+        if from_skeleton == to_skeleton:
+            raise RollbackAndReport('Please do not join treenodes of the same skeleton. This introduces loops.')
+
+        # Update element_of relationship of target skeleton the target skeleton is
+        # removed and its treenode assume the skeleton id of the from-skeleton.
+
+        response_on_error = 'Could not update TreenodeClassInstance table.'
+        TreenodeClassInstance.objects.filter(
+                class_instance=to_skeleton,
+                relation=relation_map['element_of']).update(
+                        class_instance=from_skeleton)
+
+        response_on_error = 'Could not update Treenode table.'
+        Treenode.objects.filter(
+                skeleton=to_skeleton).update(skeleton=from_skeleton)
+
+        response_on_error = 'Could not update TreenodeConnector table.'
+        TreenodeConnector.objects.filter(
+                skeleton=to_skeleton).update(skeleton=from_skeleton)
+
+        # Remove skeleton of to_id (should delete part of to neuron by cascade,
+        # leaving the parent neuron dangeling in the object tree).
+
+        response_on_error = 'Could not delete skeleton with ID %s.' % to_skeleton
+        ClassInstance.objects.filter(id=to_skeleton).delete()
+
+        # Update the parent of to_treenode.
+        response_on_error = 'Could not update parent of treenode with ID %s' % to_treenode
+        Treenode.objects.filter(id=to_treenode).update(parent=from_treenode)
+
+        response_on_error = 'Could not log actions.'
+        location = get_object_or_404(Treenode, id=from_treenode).location
+        insert_into_log(project_id, logged_in_user.id, 'join_skeleton', location, 'Joined skeleton with ID %s to skeleton with ID %s' % (from_skeleton, to_skeleton))
+
+        return HttpResponse(json.dumps({
+            'message': 'success',
+            'fromid': from_treenode,
+            'toid': to_treenode}))
+
     except RollbackAndReport:
         raise
     except Exception as e:

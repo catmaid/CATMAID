@@ -268,7 +268,6 @@ var SkeletonAnnotations = new function()
                 project.selectedObjects.selectedneuron = parseInt(data[0].id);
                 project.selectedObjects.selectedskeleton = parseInt(node.skeleton_id);
 
-
                 }
               } else {
                 alert("Getting the ancestry of the skeleton "+node.skeleton_id+" failed with HTTP status code "+status);

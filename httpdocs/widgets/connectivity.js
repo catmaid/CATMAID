@@ -14,7 +14,7 @@ var SkeletonConnectivity = new function()
         // current neuron id
         var neuronid = project.selectedObjects.selectedneuron,
             skeletonid = project.selectedObjects.selectedskeleton;
-        if( skeletonid ) {
+        if( neuronid && skeletonid ) {
             jQuery.ajax({
                 url: "dj/" + project.id + "/skeleton/" + skeletonid + '/info',
                 type: "POST",
@@ -134,6 +134,8 @@ var SkeletonConnectivity = new function()
         tbody.append( row );
         table.append( $('<br /><br /><br /><br />') );
         outgoing.append( table );
+
+        $("#connectivity_table").prepend( $(document.createTextNode( $('#neuronName').text() )) );
 
     }
 

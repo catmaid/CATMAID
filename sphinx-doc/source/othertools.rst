@@ -31,6 +31,7 @@ Web-based image viewer
 * `IIPIImage <http://iipimage.sourceforge.net/documentation/iipmooviewer/>`_
 * `Djatoka <http://sourceforge.net/apps/mediawiki/djatoka/index.php?title=Main_Page>`_
 * `OpenLayers <http://openlayers.org/>`_
+* `JCB Data Viewer <http://jcb-dataviewer.rupress.org/`_
 
 iPad Apps
 ---------

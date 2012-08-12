@@ -332,6 +332,42 @@ def link_treenode(request, project_id=None, logged_in_user=None):
 
 @catmaid_can_edit_project
 @transaction_reportable_commit_on_success
+def update_treenode_table(request, project_id=None, logged_in_user=None):
+    property_name = request.POST.get('type', None)
+    treenode_id = request.POST.get('id', None)
+    property_value = request.POST.get('value', None)
+
+    if None in [property_name, treenode_id, property_value]:
+        raise RollbackAndReport('Need type, treenode id and value.')
+    else:
+        treenode_id = int(treenode_id)
+        property_value = int(property_value)
+
+    if property_name not in ['confidence', 'radius']:
+        raise RollbackAndReport('Can only modify confidence and radius.')
+
+    response_on_error = ''
+    try:
+        response_on_error = 'Could not find treenode with ID %s.' % treenode_id
+        treenode = get_object_or_404(Treenode, project=project_id, id=treenode_id)
+        response_on_error = 'Could not update %s for treenode with ID %s.' % (property_name, treenode_id)
+        setattr(treenode, property_name, property_value)
+        treenode.user = logged_in_user
+        treenode.save()
+
+        return HttpResponse(json.dumps({'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}))
+
+    except RollbackAndReport:
+        raise
+    except Exception as e:
+        if (response_on_error == ''):
+            raise RollbackAndReport(str(e))
+        else:
+            raise RollbackAndReport(response_on_error)
+
+
+@catmaid_can_edit_project
+@transaction_reportable_commit_on_success
 def delete_treenode(request, project_id=None, logged_in_user=None):
     treenode_id = int(request.POST.get('treenode_id', -1))
     relation_map = get_relation_to_id_map(project_id)

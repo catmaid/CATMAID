@@ -583,6 +583,53 @@ class ViewPageTests(TestCase):
         response = self.client.get('/%d/multiple-presynaptic-terminals' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
 
+    def test_update_treenode_table_nonexisting_property(self):
+        self.fake_authentication()
+        property_value = 4
+        property_name = 'And though sickly with disease we trod the world asunder.'
+        treenode_id = 239
+        response = self.client.post(
+                '/%d/treenode/table/update' % (self.test_project_id), {
+                'value': property_value,
+                'id': treenode_id,
+                'type': property_name})
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'Can only modify confidence and radius.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_update_treenode_table_confidence(self):
+        self.fake_authentication()
+        property_value = 4
+        property_name = 'confidence'
+        treenode_id = 239
+        response = self.client.post(
+                '/%d/treenode/table/update' % (self.test_project_id), {
+                'value': property_value,
+                'id': treenode_id,
+                'type': property_name})
+        parsed_response = json.loads(response.content)
+        expected_result = {'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(property_value, get_object_or_404(Treenode, id=treenode_id).confidence)
+
+    def test_update_treenode_table_radius(self):
+        self.fake_authentication()
+        property_value = 4
+        property_name = 'radius'
+        treenode_id = 239
+        response = self.client.post(
+                '/%d/treenode/table/update' % (self.test_project_id), {
+                'value': property_value,
+                'id': treenode_id,
+                'type': property_name})
+        parsed_response = json.loads(response.content)
+        expected_result = {'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(property_value, get_object_or_404(Treenode, id=treenode_id).radius)
+
     def test_list_treenode_table_filtering(self):
         self.fake_authentication()
         response = self.client.post(

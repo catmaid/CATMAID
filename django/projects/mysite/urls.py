@@ -90,6 +90,7 @@ urlpatterns += patterns('',
     (r'^(?P<project_id>\d+)/treenode/link$', 'vncbrowser.views.treenode.link_treenode'),
     (r'^(?P<project_id>\d+)/treenode/reroot$', 'vncbrowser.views.treenode.reroot_treenode'),
     (r'^(?P<project_id>\d+)/treenode/table/list$', 'vncbrowser.views.treenode.list_treenode_table'),
+    (r'^(?P<project_id>\d+)/treenode/table/update$', 'vncbrowser.views.treenode.update_treenode_table'),
     (r'^(?P<project_id>\d+)/treenode/info$', 'vncbrowser.views.treenode.treenode_info')
     )
 

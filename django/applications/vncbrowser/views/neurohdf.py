@@ -55,6 +55,7 @@ ConnectivityPostsynaptic = {
     'id': 3
 }
 
+import time
 
 def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=5):
     componentIds = {}
@@ -70,6 +71,9 @@ def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=5):
 
         length=image_data.len()
 
+        print >> sys.stderr, "extract components ...."
+        start = time.time()
+
         #Merge all data into single array
         #TODO:ID instead of length
         merge=np.dstack((np.arange(length),componentMinX.value,componentMinY.value,componentMaxX.value,componentMaxY.value,thresholdTable.value))
@@ -84,6 +88,12 @@ def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=5):
                 if len(selectionMinXMaxXMinY):
                     selectionMinXMaxXMinYMaxY = selectionMinXMaxXMinY[selectionMinXMaxXMinY[...,4]>=y]
 
+        delta = time.time() - start
+        print >> sys.stderr, "took", delta
+
+        print >> sys.stderr, "create components ...."
+        start = time.time()
+
         if selectionMinXMaxXMinYMaxY is not None:
 
             idx = np.argsort(selectionMinXMaxXMinYMaxY[:,5])
@@ -92,12 +102,13 @@ def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=5):
                 if limit_counter >= limit:
                     break
                 row = selectionMinXMaxXMinYMaxY[i,:]
-                componentPixelStart=hfile['connected_components/'+z+'/begin_indices'].value[row[0]].copy()
-                componentPixelEnd=hfile['connected_components/'+z+'/end_indices'].value[row[0]].copy()
-                data=hfile['connected_components/'+z+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
+                #componentPixelStart=hfile['connected_components/'+z+'/begin_indices'].value[row[0]].copy()
+                #componentPixelEnd=hfile['connected_components/'+z+'/end_indices'].value[row[0]].copy()
+                #data=hfile['connected_components/'+z+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
 
-                if not len(np.where((data['x'] == x) & (data['y'] == y))[0]):
-                    continue
+                # check containment of the pixel in the component
+                #if not len(np.where((data['x'] == x) & (data['y'] == y))[0]):
+                #    continue
 
                 componentIds[int(row[0])]={
                     'minX': int(row[1]),
@@ -107,6 +118,9 @@ def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=5):
                     'threshold': row[5]
                 }
                 limit_counter += 1
+
+        delta = time.time() - start
+        print >> sys.stderr, "took", delta
                 
     return componentIds
 

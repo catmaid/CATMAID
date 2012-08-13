@@ -120,7 +120,8 @@ function CanvasTool()
 
         $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Initializing skeleton. Just a moment...</h2>' });
         requestQueue.register(
-            'http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/initialize_components',
+            // 'http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/initialize_components',
+            django_url + project.id + "/stack/" + self.stack.id + '/initialize_components',
             "POST", {
                 skeleton_id:project.selectedObjects.selectedskeleton
             }, function (status, text, xml) {
@@ -160,7 +161,7 @@ function CanvasTool()
         //TODO:remove debug url
         //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/get-saved-components";
 
-        var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/get-saved-components'+ "?" + $.param({
+        var url= django_url + project.id + "/stack/" + self.stack.id + '/get-saved-components'+ "?" + $.param({
             skeleton_id:project.selectedObjects.selectedskeleton,
             z : self.stack.z});
 
@@ -501,7 +502,7 @@ function CanvasTool()
         //TODO:remove debug url
         //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/put-components";
 
-        var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/put-drawings';
+        var url= django_url + project.id + "/stack/" + self.stack.id + '/put-drawings';
         var jsonObjects ={};
         for (var drawingId in self.layerStore.drawingLayers[self.stack.z].drawings)
         {
@@ -544,7 +545,7 @@ function CanvasTool()
         //TODO:remove debug url
         //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/put-components";
 
-        var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/put-components';
+        var url= django_url + project.id + "/stack/" + self.stack.id + '/put-components';
         var jsonObjects ={};
 
         for (var componentGroupId in self.layerStore.componentLayers[self.stack.z].componentGroups)
@@ -1018,7 +1019,7 @@ function CanvasTool()
 
         //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/components-for-point";
 
-        var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/components-for-point'+ "?" + $.param({
+        var url= django_url + project.id + "/stack/" + self.stack.id + '/components-for-point'+ "?" + $.param({
             x: x,
             y: y,
             scale : 0.5, // defined as 1/2**zoomlevel
@@ -1142,7 +1143,7 @@ function CanvasTool()
 
         //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/componentimage";
 
-         var url='http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/componentimage'+ "?" + $.param({
+         var url=django_url + project.id + "/stack/" + self.stack.id + '/componentimage'+ "?" + $.param({
                     id: component.id,
                     z:z,
                     scale : scale, // defined as 1/2**zoomlevel

@@ -132,7 +132,7 @@ function CanvasTool()
                             alert(e.error);
                         } else {
                             // just redraw all for now
-                            self.loadComponents();
+                            self.loadElements();
                         }
                     }
                 }
@@ -140,8 +140,24 @@ function CanvasTool()
 
     };
 
+    this.loadElements=function()
+    {
+        self.loadUnassociatedDrawings();
+        self.loadComponents();
+    };
+
+
     this.loadDrawingsByComponentId=function()
     {
+        //TODO
+    };
+
+    this.loadUnassociatedDrawings=function()
+    {
+        if(self.layerStore.drawingLayers[self.stack.z]==undefined)
+        {
+            self.layerStore.drawingLayers[self.stack.z]=new DrawingLayer();
+        }
         //TODO
     };
 
@@ -149,9 +165,13 @@ function CanvasTool()
 
     this.loadComponents=function()
     {
+        if(self.layerStore.componentLayers[self.stack.z]==undefined)
+        {
+            self.layerStore.componentLayers[self.stack.z]=new ComponentLayer();
+        }
 
         //Load components from DB
-        if(project.selectedObjects.selectedskeleton==null||self.state!=self.stateEnum.COMPONENTVIEW  || self.layerStore.componentLayers[self.stack.z]!=undefined)
+        if(project.selectedObjects.selectedskeleton==null||self.state!=self.stateEnum.COMPONENTVIEW )
         {
             self.showActiveElements();
             return;
@@ -498,6 +518,11 @@ function CanvasTool()
 
     this.putDrawings=function()
     {
+        if(self.layerStore.drawingLayers[self.stack.z].drawings==undefined || self.layerStore.drawingLayers[self.stack.z].drawings.length==0)
+        {
+            return;
+        }
+
         //TODO:remove debug url
         //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/put-components";
 
@@ -515,7 +540,6 @@ function CanvasTool()
 
         var viewstate=canvasLayer.getFieldOfViewParameters();
 
-        //TODO:Only save array if not empty
 
         $.ajax({
             url: url,
@@ -559,8 +583,6 @@ function CanvasTool()
         }
 
         var viewstate=canvasLayer.getFieldOfViewParameters();
-
-        //TODO:Only save array if not empty
 
         $.ajax({
             url: url,
@@ -822,7 +844,7 @@ function CanvasTool()
         self.generateLayer();
         canvasLayer.canvas.observe('path:created',function(path){self.onPathCreated(path)});
 
-        self.loadComponents();
+        self.loadElements();
 
         canvasLayer.canvas.freeDrawingLineWidth=15;
         canvasLayer.canvas.freeDrawingColor ="rgb(0, 255, 255)";
@@ -1213,15 +1235,16 @@ function CanvasTool()
 
 	this.changeSlice = function( val )
 	{
-        //Save current component groups
+        //Save current component groups & drawings
         self.putComponents();
+        self.putDrawings();
 
         canvasLayer.canvas.clear();
 
 		self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
 
         //Load saved component groups
-        self.loadComponents();
+        self.loadElements();
 
 
 		return;

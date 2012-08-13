@@ -8,7 +8,7 @@ import numpy as np
 
 project_id = 1
 stack_id = 3
-skeleton_id = 431
+skeleton_id = 1443
 
 # retrieve all components for a given skeleton id
 components = Component.objects.filter(

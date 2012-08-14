@@ -651,6 +651,91 @@ class ViewPageTests(TestCase):
         self.assertEqual(expected_response, parsed_response)
         self.assertEqual(response.status_code, 200)
 
+    def test_list_connector_empty(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/connector/list' % self.test_project_id, {
+                    'iDisplayStart': 0,
+                    'iDisplayLength': 25,
+                    'iSortingCols': 1,
+                    'iSortCol_0': 0,
+                    'sSortDir_0': 'asc',
+                    'relation_type': 1,
+                    'pid': 3,
+                    'skeleton_id': 0})
+        parsed_response = json.loads(response.content)
+        expected_result = {'iTotalRecords': 0, 'iTotalDisplayRecords': 0, 'aaData': []}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_list_connector_outgoing_with_sorting_and_paging(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/connector/list' % self.test_project_id, {
+                    'iDisplayStart': 1,
+                    'iDisplayLength': 2,
+                    'iSortingCols': 1,
+                    'iSortCol_0': 6,
+                    'sSortDir_0': 'desc',
+                    'relation_type': 1,
+                    'pid': 3,
+                    'skeleton_id': 235})
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'iTotalRecords': 4,
+                'iTotalDisplayRecords': 4,
+                'aaData': [
+                    ["421", "373", "6630.00", "4330.00", "0.00", "", "5", "gerhard", "409"],
+                    ["356", "373", "7620.00", "2890.00", "0.00", "", "5", "gerhard", "377"]]}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_list_connector_outgoing_with_sorting(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/connector/list' % self.test_project_id, {
+                    'iDisplayStart': 0,
+                    'iDisplayLength': 25,
+                    'iSortingCols': 1,
+                    'iSortCol_0': 6,
+                    'sSortDir_0': 'desc',
+                    'relation_type': 1,
+                    'pid': 3,
+                    'skeleton_id': 235})
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'iTotalRecords': 4,
+                'iTotalDisplayRecords': 4,
+                'aaData': [
+                    ["356", "361", "7030.00", "1980.00", "0.00", "", "9", "gerhard", "367"],
+                    ["421", "373", "6630.00", "4330.00", "0.00", "", "5", "gerhard", "409"],
+                    ["356", "373", "7620.00", "2890.00", "0.00", "", "5", "gerhard", "377"],
+                    ["432", "", "2640.00", "3450.00", "0.00", "synapse with more targets, TODO", "0", "gerhard", ""]]}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_list_connector_incoming_with_connecting_skeletons(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/connector/list' % self.test_project_id, {
+                    'iDisplayStart': 0,
+                    'iDisplayLength': 25,
+                    'iSortingCols': 1,
+                    'iSortCol_0': 0,
+                    'sSortDir_0': 'asc',
+                    'relation_type': 0,
+                    'pid': 3,
+                    'skeleton_id': 373})
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'iTotalRecords': 2,
+                'iTotalDisplayRecords': 2,
+                'aaData': [
+                    ["356", "235", "6100.00", "2980.00", "0.00", "", "28", "gerhard", "285"],
+                    ["421", "235", "5810.00", "3950.00", "0.00", "", "28", "gerhard", "415"]]}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
     def test_create_connector(self):
         self.fake_authentication()
         connector_count = Connector.objects.all().count()

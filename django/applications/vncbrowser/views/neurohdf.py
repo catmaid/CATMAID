@@ -238,13 +238,13 @@ def get_saved_drawings_by_component_id(request, project_id=None, stack_id=None, 
 @catmaid_login_required
 def get_saved_drawings_by_view(request, project_id=None, stack_id=None, logged_in_user=None):
     # parse request
-    z = int(request.POST['z'])
+    z = int(request.GET['z'])
 
     # field of view
-    viewX=int(request.POST['x'])
-    viewY=int(request.POST['y'])
-    viewHeight=int(request.POST['height'])
-    viewWidth=int(request.POST['width'])
+    viewX=int(request.GET['x'])
+    viewY=int(request.GET['y'])
+    viewHeight=int(request.GET['height'])
+    viewWidth=int(request.GET['width'])
 
     stack = get_object_or_404(Stack, pk=stack_id)
     p = get_object_or_404(Project, pk=project_id)
@@ -256,14 +256,43 @@ def get_saved_drawings_by_view(request, project_id=None, stack_id=None, logged_i
         skeleton_id = None,
         z = z).all()
 
+    drawings={}
 
-    return None
+    for drawing in all_drawings:
+        drawings[int(drawing.id)]=\
+            {
+            'minX':int(drawing.min_x),
+            'minY':int(drawing.min_y),
+            'maxX':int(drawing.max_x),
+            'maxY':int(drawing.max_y),
+            'svg':drawing.svg,
+            'status':drawing.status,
+            'type':drawing.type,
+            'id':drawing.id,
+            'componentId':drawing.component_id,
+            'skeletonId':drawing.skeleton_id
+
+            }
+
+    return HttpResponse(json.dumps(drawings), mimetype="text/json")
 
 #TODO: in transaction
 @catmaid_login_required
-def put_drawings(request, project_id=None, stack_id=None, logged_in_user=None):
+def delete_drawing(request, project_id=None, stack_id=None, logged_in_user=None):
     # parse request
-    drawings=json.loads(request.POST['drawings'])
+    drawingId=json.loads(request.POST['drawing'])
+
+    all_drawings = Drawing.objects.filter(id=drawingId).all();
+    Drawing.delete(all_drawings[0])
+
+    return HttpResponse(json.dumps(True), mimetype="text/json")
+
+
+#TODO: in transaction
+@catmaid_login_required
+def put_drawing(request, project_id=None, stack_id=None, logged_in_user=None):
+    # parse request
+    drawing=json.loads(request.POST['drawing'])
     skeleton_id = request.POST.__getitem__('skeleton_id')
     z = int(request.POST['z'])
 
@@ -275,49 +304,22 @@ def put_drawings(request, project_id=None, stack_id=None, logged_in_user=None):
 
     viewMaxX=viewX+viewWidth
     ViewMaxY=viewY+viewHeight
-    s=None
+    skeleton=None
 
 
     if not skeleton_id =='null':
-        skeleton_id=int(skeleton_id)
-        s = get_object_or_404(ClassInstance, pk=skeleton_id)
-    else:
-        skeleton_id=None
+        skeleton=int(skeleton_id)
+
 
     stack = get_object_or_404(Stack, pk=stack_id)
     p = get_object_or_404(Project, pk=project_id)
 
 
-    # fetch all the components for the given skeleton and z section
-    all_drawings = Drawing.objects.filter(
-        project = p,
-        stack = stack,
-        skeleton_id = skeleton_id,
-        z = z).all()
-
-    # discard the components out of field of view
-    activeDrawingIds=[]
-
-    for i in drawings:
-
-        drawing=drawings[i]
-        inDatabase=False
-        for drawingDatabse in all_drawings:
-            if str(drawingDatabse.id)==str(drawing['id']):
-                inDatabase=True
-                activeDrawingIds.insert(activeDrawingIds.__sizeof__(),drawing['id'])
-                break
-        if inDatabase:
-            continue
-        skelFk=None
-        if not skeleton_id is None:
-            skelFk=s.id
-
-        new_drawing = Drawing(
+    new_drawing = Drawing(
             project = p,
             stack = stack,
             user = logged_in_user,
-            skeleton_id = skelFk,
+            skeleton_id = skeleton,
             component_id = drawing['componentId'],
             min_x = drawing['minX'],
             min_y = drawing['minY'],
@@ -327,16 +329,10 @@ def put_drawings(request, project_id=None, stack_id=None, logged_in_user=None):
             svg = drawing['svg'],
             type=drawing['type'],
             status = 1
-        )
-        new_drawing.save()
-        activeDrawingIds.insert(activeDrawingIds.__sizeof__(),new_drawing.id)
+    )
+    new_drawing.save()
 
-    # delete components that were deselected
-    for drawingDatabase in all_drawings:
-        if not activeDrawingIds.count(str(drawingDatabase.id)):
-            Drawing.delete(drawingDatabase)
-
-    return HttpResponse(json.dumps(True), mimetype="text/json")
+    return HttpResponse(json.dumps(new_drawing.id), mimetype="text/json")
 
 
 #TODO: in transaction

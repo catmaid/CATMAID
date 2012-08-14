@@ -940,6 +940,9 @@ var SkeletonElements = new function()
       var xdiff = (x2 - x1);
       var ydiff = (y2 - y1);
       var le = Math.sqrt(xdiff * xdiff + ydiff * ydiff);
+      if( le === 0 ) {
+          le = 0.9 * rloc;
+      }
       var x1new = (x1 - x2) * (1 - rloc / le) + x2;
       var y1new = (y1 - y2) * (1 - rloc / le) + y2;
       var x2new = (x2 - x1) * (1 - rloc / le) + x1;

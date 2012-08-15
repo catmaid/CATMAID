@@ -1,9 +1,11 @@
 import json
 from string import upper
-
+from decimal import Decimal
 from django.http import HttpResponse
-from django.db import connection
+
+
 from django.db.models import Count
+from django.db import connection, transaction
 from django.shortcuts import get_object_or_404
 from vncbrowser.models import ClassInstance, TreenodeClassInstance, Treenode, \
         Double3D, ClassInstanceClassInstance, TreenodeConnector, ProjectStack, \
@@ -185,6 +187,108 @@ def create_treenode(request, project_id=None, logged_in_user=None):
                     'neuron_id': new_neuron.id,
                     'fragmentgroup_id': fragment_group.id
                     }))
+    except RollbackAndReport:
+        raise
+    except Exception as e:
+        if (response_on_error == ''):
+            raise RollbackAndReport(str(e))
+        else:
+            raise RollbackAndReport(response_on_error)
+
+
+@catmaid_can_edit_project
+@transaction_reportable_commit_on_success
+def create_interpolated_treenode(request, project_id=None, logged_in_user=None):
+    params = {}
+    default_values = {
+            'parent_id': 0,
+            'x': 0,
+            'y': 0,
+            'z': 0,
+            'radius': 0,
+            'confidence': 0,
+            'atnx': 0,
+            'atny': 0,
+            'atnz': 0,
+            'resx': 0,
+            'resy': 0,
+            'resz': 0}
+    for p in default_values.keys():
+        if p in ['atnx', 'atny', 'atnz', 'x', 'y', 'z', 'resx', 'resy', 'resz']:
+            params[p] = Decimal(request.POST.get(p, default_values[p]))
+        else:
+            params[p] = int(request.POST.get(p, default_values[p]))
+
+    relation_map = get_relation_to_id_map(project_id)
+    class_map = get_class_to_id_map(project_id)
+
+    for class_name in ['neuron', 'skeleton']:
+        if class_name not in class_map:
+            raise RollbackAndReport('Can not find "%s" class for this project' % class_name)
+
+    for relation in ['element_of', 'model_of', 'part_of']:
+        if relation not in relation_map:
+            raise RollbackAndReport('Can not find "%s" relation for this project' % relation)
+
+    response_on_error = ''
+    try:
+        # Retrieve skeleton id of parent id and skeleton group and element_of relation
+        response_on_error = 'Can not find skeleton for parent treenode %s in this project.' % params['parent_id']
+        parent_skeleton_id = TreenodeClassInstance.objects.filter(
+                treenode=int(params['parent_id']),
+                relation=relation_map['element_of'],
+                project=project_id)[0].class_instance_id
+
+        steps = abs((params['z'] - params['atnz']) / params['resz']).quantize(Decimal('1'), rounding=decimal.ROUND_FLOOR)
+        if steps == Decimal(0):
+            steps = Decimal(1)
+
+        dx = (params['x'] - params['atnx']) / steps
+        dy = (params['y'] - params['atny']) / steps
+        dz = (params['z'] - params['atnz']) / steps
+
+        # Loop the creation of treenodes in z resolution steps until target
+        # section is reached
+        parent_id = params['parent_id']
+        for i in range(1, steps + 1):
+            response_on_error = 'Error while trying to insert treenode.'
+            new_treenode = Treenode()
+            new_treenode.user_id = logged_in_user.id
+            new_treenode.project_id = project_id
+            new_treenode.location = Double3D(
+                    float(params['atnx'] + dx * i),
+                    float(params['atny'] + dy * i),
+                    float(params['atnz'] + dz * i))
+            new_treenode.radius = params['radius']
+            new_treenode.skeleton_id = parent_skeleton_id
+            new_treenode.confidence = params['confidence']
+            new_treenode.parent_id = parent_id  # This is not a root node.
+            new_treenode.save()
+
+            response_on_error = 'Could not insert new TreenodeClassInstance relation for treenode %s.' % new_treenode.id
+            new_tci = TreenodeClassInstance()
+            new_tci.user_id = logged_in_user.id
+            new_tci.project_id = project_id
+            new_tci.relation_id = relation_map['element_of']
+            new_tci.treenode_id = new_treenode.id
+            new_tci.class_instance_id = parent_skeleton_id
+            new_tci.save()
+
+            parent_id = new_treenode.id
+
+        # Update last inserted node to reset edition time, necessary
+        # to make DB know which treenode in the skeleton was edited
+        # most recently.
+        transaction.commit()
+        new_tci.confidence = params['confidence'] + 1
+        new_tci.save()
+        transaction.commit()
+        new_tci.confidence = params['confidence']
+        new_tci.save()
+        transaction.commit()
+
+        return HttpResponse(json.dumps({'treenode_id': new_treenode.id, 'skeleton_id': parent_skeleton_id}))
+
     except RollbackAndReport:
         raise
     except Exception as e:

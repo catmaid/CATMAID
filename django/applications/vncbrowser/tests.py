@@ -778,6 +778,111 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         self.assertEqual(expected_result, parsed_response)
 
+    def test_treenode_create_interpolated_fail_no_parent(self):
+        self.fake_authentication()
+        x = 585
+        y = 4245
+        z = 0
+        radius = -1
+        confidence = 5
+        parent_id = 55555555
+        response = self.client.post(
+                '/%d/treenode/create/interpolated' % self.test_project_id, {
+                    'parent_id': parent_id,
+                    'x': x,
+                    'y': y,
+                    'z': z,
+                    'radius': radius,
+                    'confidence': confidence,
+                    'atnx': 6210,
+                    'atny': 3480,
+                    'atnz': 0,
+                    'resx': 5,
+                    'resy': 5,
+                    'resz': 9})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'Can not find skeleton for parent treenode %s in this project.' % parent_id}
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_treenode_create_interpolated_single_new_node(self):
+        self.fake_authentication()
+        x = 585
+        y = 4245
+        z = 0
+        radius = -1
+        confidence = 5
+        parent_id = 289
+        response = self.client.post(
+                '/%d/treenode/create/interpolated' % self.test_project_id, {
+                    'parent_id': parent_id,
+                    'x': x,
+                    'y': y,
+                    'z': z,
+                    'radius': radius,
+                    'confidence': confidence,
+                    'atnx': 6210,
+                    'atny': 3480,
+                    'atnz': 0,
+                    'resx': 5,
+                    'resy': 5,
+                    'resz': 9})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        treenode = get_object_or_404(Treenode, id=parsed_response['treenode_id'])
+        self.assertEqual(confidence, treenode.confidence)
+        self.assertEqual(radius, treenode.radius)
+        self.assertEqual(x, treenode.location.x)
+        self.assertEqual(y, treenode.location.y)
+        self.assertEqual(z, treenode.location.z)
+        self.assertEqual(parsed_response['skeleton_id'], treenode.skeleton_id)
+        self.assertEqual(get_object_or_404(Treenode, id=parent_id).skeleton_id, treenode.skeleton_id)
+
+    def test_treenode_create_interpolated_many_new_nodes(self):
+        self.fake_authentication()
+        x = 9135
+        y = 1215
+        z = 36
+        radius = -1
+        confidence = 5
+        parent_id = 2368
+
+        count_treenodes = lambda: Treenode.objects.all().count()
+        count_tci_relations = lambda: TreenodeClassInstance.objects.all().count()
+
+        treenode_count = count_treenodes()
+        relation_count = count_tci_relations()
+
+        response = self.client.post(
+                '/%d/treenode/create/interpolated' % self.test_project_id, {
+                    'parent_id': parent_id,
+                    'x': x,
+                    'y': y,
+                    'z': z,
+                    'radius': radius,
+                    'confidence': confidence,
+                    'atnx': 1820,
+                    'atny': 5390,
+                    'atnz': 0,
+                    'resx': 5,
+                    'resy': 5,
+                    'resz': 9})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        treenode = get_object_or_404(Treenode, id=parsed_response['treenode_id'])
+        self.assertEqual(confidence, treenode.confidence)
+        self.assertEqual(radius, treenode.radius)
+        self.assertEqual(x, treenode.location.x)
+        self.assertEqual(y, treenode.location.y)
+        self.assertEqual(z, treenode.location.z)
+        self.assertEqual(parsed_response['skeleton_id'], treenode.skeleton_id)
+        self.assertEqual(get_object_or_404(Treenode, id=parent_id).skeleton_id, treenode.skeleton_id)
+        # Ensure nodes in-between have been created
+        self.assertEqual(4 + treenode_count, count_treenodes())
+        self.assertEqual(4 + relation_count, count_tci_relations())
+        # Ensure the returned treenode has the latest edition time
+        self.assertEqual(treenode, Treenode.objects.latest('edition_time'))
+
     def test_fail_update_confidence(self):
         treenode_id = Treenode.objects.order_by("-id")[0].id + 1  # Inexistant
         self.fake_authentication()
@@ -966,7 +1071,6 @@ class ViewPageTests(TestCase):
                     'iSortCol_0': 0,
                     'sSortDir_0': 'asc',
                     'relation_type': 1,
-                    'pid': 3,
                     'skeleton_id': 0})
         parsed_response = json.loads(response.content)
         expected_result = {'iTotalRecords': 0, 'iTotalDisplayRecords': 0, 'aaData': []}
@@ -983,7 +1087,6 @@ class ViewPageTests(TestCase):
                     'iSortCol_0': 6,
                     'sSortDir_0': 'desc',
                     'relation_type': 1,
-                    'pid': 3,
                     'skeleton_id': 235})
         parsed_response = json.loads(response.content)
         expected_result = {
@@ -1005,7 +1108,6 @@ class ViewPageTests(TestCase):
                     'iSortCol_0': 6,
                     'sSortDir_0': 'desc',
                     'relation_type': 1,
-                    'pid': 3,
                     'skeleton_id': 235})
         parsed_response = json.loads(response.content)
         expected_result = {
@@ -1029,7 +1131,6 @@ class ViewPageTests(TestCase):
                     'iSortCol_0': 0,
                     'sSortDir_0': 'asc',
                     'relation_type': 0,
-                    'pid': 3,
                     'skeleton_id': 373})
         parsed_response = json.loads(response.content)
         expected_result = {

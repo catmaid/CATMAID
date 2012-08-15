@@ -520,6 +520,7 @@ function CanvasTool()
 
         var component=currentComponentGroup.components[index];
         component.visible=false;
+        self.invertComponent(component,false);
 
         var newComponent=null;
         var newIndex=null;
@@ -533,7 +534,9 @@ function CanvasTool()
         {
             newIndex=index+1;
         }
+
         newComponent=currentComponentGroup.components[newIndex];
+        self.invertComponent(newComponent,true);
         newComponent.visible=true;
         currentComponentGroup.selectedComponentIndex=newIndex;
         self.showActiveElements();
@@ -745,6 +748,13 @@ function CanvasTool()
             self.started = false;
         }
 
+        var intersectingPath=self.CheckForIntersectingPath(x,y);
+        if(intersectingComponentGroupId!=null)
+        {
+            //check
+            return;
+        }
+
         var intersectingComponentGroupId=self.CheckForIntersectingGroup(x,y);
         if(intersectingComponentGroupId!=null)
         {
@@ -752,7 +762,7 @@ function CanvasTool()
             self.layerStore.componentLayers[self.stack.z].activeGroupIndex=intersectingComponentGroupId;
 
             var activeGroup=self.layerStore.componentLayers[self.stack.z].componentGroups[intersectingComponentGroupId];
-            if(!activeGroup.grouploaded)
+            if(!activeGroup.groupLoaded)
             {
                 self.getComponents(activeGroup.components[activeGroup.selectedComponentIndex].centerX(),activeGroup.components[activeGroup.selectedComponentIndex].centerY(),intersectingComponentGroupId)
             }
@@ -762,6 +772,7 @@ function CanvasTool()
         }
         else
         {
+            self.deselectAllComponents();
             this.getComponents(x,y);
         }
 
@@ -788,6 +799,18 @@ function CanvasTool()
     };
 
 
+    this.CheckForIntersectingPath=function(x,y)
+    {
+        var returnPath=null;
+        if(self.layerStore.drawingLayers[self.stack.z]!=undefined)
+        {
+            //make all invisible
+            canvasLayer.canvas.clear();
+
+        }
+
+        return returnPath;
+    };
 
 
     this.CheckForIntersectingGroup=function(x,y)
@@ -797,8 +820,6 @@ function CanvasTool()
         {
             //make all invisible
            canvasLayer.canvas.clear();
-
-            var fieldOfView=canvasLayer.getFieldOfViewParameters();
 
             var counter=-1;
             for(var componentGroupId in self.layerStore.componentLayers[self.stack.z].componentGroups)
@@ -1250,6 +1271,7 @@ function CanvasTool()
                     componentGroupNew.selectedComponentIndex=componentGroupNew.components.indexOf(currentComponent);
                 }
 
+
                 for(var componentToLoadId in componentGroupNew.components)
                 {
                     if(componentGroupNew.components.hasOwnProperty(componentToLoadId)&&componentGroupNew.components[componentToLoadId].image==null)
@@ -1259,6 +1281,7 @@ function CanvasTool()
 
                     }
                 }
+
 
             }
 
@@ -1299,10 +1322,13 @@ function CanvasTool()
                     component.image = img.set({ left: component.displayPositionX(), top: component.displayPositionY(), angle: 0,clipTo:img }).scale(1);
                     if(visible)
                     {
+
                         canvasLayer.canvas.add(component.image);
                         var item=canvasLayer.canvas.item(canvasLayer.canvas._objects.length-1);
 
                         canvasLayer.canvas.item(canvasLayer.canvas._objects.length-1).selectable=false;
+                        self.invertComponent(component,true);
+
                     }
 
                 });
@@ -1422,7 +1448,7 @@ function ComponentGroup()
     this.selectedComponentIndex=-1;
     this.components=[];
     this.active=false;
-    this.grouploaded=false;
+    this.groupLoaded=false;
 }
 
 function ComponentLayer()

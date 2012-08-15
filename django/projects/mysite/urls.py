@@ -61,6 +61,7 @@ urlpatterns = patterns(
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-components$', 'vncbrowser.views.get_saved_components'),
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put-drawing$', 'vncbrowser.views.put_drawing'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/delete-drawing$', 'vncbrowser.views.delete_drawing'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-drawings-by-id$', 'vncbrowser.views.get_saved_drawings_by_component_id'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-drawings-by-view$', 'vncbrowser.views.get_saved_drawings_by_view'),
 

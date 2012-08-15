@@ -102,13 +102,13 @@ def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=10):
                 if limit_counter >= limit:
                     break
                 row = selectionMinXMaxXMinYMaxY[i,:]
-                #componentPixelStart=hfile['connected_components/'+z+'/begin_indices'].value[row[0]].copy()
-                #componentPixelEnd=hfile['connected_components/'+z+'/end_indices'].value[row[0]].copy()
-                #data=hfile['connected_components/'+z+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
+                componentPixelStart=hfile['connected_components/'+z+'/begin_indices'].value[row[0]].copy()
+                componentPixelEnd=hfile['connected_components/'+z+'/end_indices'].value[row[0]].copy()
+                data=hfile['connected_components/'+z+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
 
                 # check containment of the pixel in the component
-                #if not len(np.where((data['x'] == x) & (data['y'] == y))[0]):
-                #    continue
+                if not len(np.where((data['x'] == x) & (data['y'] == y))[0]):
+                    continue
 
                 componentIds[int(row[0])]={
                     'minX': int(row[1]),
@@ -280,10 +280,10 @@ def get_saved_drawings_by_view(request, project_id=None, stack_id=None, logged_i
 @catmaid_login_required
 def delete_drawing(request, project_id=None, stack_id=None, logged_in_user=None):
     # parse request
-    drawingId=json.loads(request.POST['drawing'])
-
-    all_drawings = Drawing.objects.filter(id=drawingId).all();
-    Drawing.delete(all_drawings[0])
+    drawingId=request.GET.get('id',None)
+    if not drawingId is None:
+        all_drawings = Drawing.objects.filter(id=drawingId).all()
+        Drawing.delete(all_drawings[0])
 
     return HttpResponse(json.dumps(True), mimetype="text/json")
 

@@ -209,7 +209,7 @@ function CanvasTool()
 
                     });
 
-                    self.layerStore.drawingLayers[self.stack.z].drawings[freeDrawingId]=newFreeDrawing;
+                    self.layerStore.drawingLayers[self.stack.z].drawings[self.layerStore.drawingLayers[self.stack.z].drawings.length]=newFreeDrawing;
                 }
             }
 
@@ -242,6 +242,7 @@ function CanvasTool()
 
         $.getJSON(url,function(result)
         {
+            //TODO: Load only not already loaded components!!!
             self.layerStore.componentLayers[self.stack.z]=new ComponentLayer();
             var currentComponentGroups=self.layerStore.componentLayers[self.stack.z].componentGroups;
 
@@ -576,11 +577,11 @@ function CanvasTool()
         var index=canvasLayer.canvas._objects.length;
         if(index!=0){index-=1;}
         var componentItem=canvasLayer.canvas.item(index);
-         componentItem.lockRotation = true;
+         /*componentItem.lockRotation = true;
          componentItem.lockScalingX = componentItem.lockScalingY = true;
          componentItem.lockMovementX = true;
-         componentItem.lockMovementY = true;
-        componentItem.selectable = true;
+         componentItem.lockMovementY = true;*/
+        componentItem.selectable = false;
     };
 
 
@@ -747,18 +748,23 @@ function CanvasTool()
         {
             self.started = false;
         }
+        self.deselectAllPaths();
+        self.deselectAllComponents();
 
         var intersectingPath=self.CheckForIntersectingPath(x,y);
-        if(intersectingComponentGroupId!=null)
+        if(intersectingPath!=null)
         {
+
             //check
+            self.invertPath(self.layerStore.drawingLayers[self.stack.z].drawings[intersectingPath],true);
+            canvasLayer.canvas.renderAll(false);
             return;
         }
 
         var intersectingComponentGroupId=self.CheckForIntersectingGroup(x,y);
         if(intersectingComponentGroupId!=null)
         {
-            self.deselectAllComponents();
+
             self.layerStore.componentLayers[self.stack.z].activeGroupIndex=intersectingComponentGroupId;
 
             var activeGroup=self.layerStore.componentLayers[self.stack.z].componentGroups[intersectingComponentGroupId];
@@ -772,6 +778,7 @@ function CanvasTool()
         }
         else
         {
+            self.deselectAllPaths();
             self.deselectAllComponents();
             this.getComponents(x,y);
         }
@@ -791,11 +798,39 @@ function CanvasTool()
         }
 
     };
+    this.deselectAllPaths=function()
+    {
+        for(var pathIndex in self.layerStore.drawingLayers[self.stack.z].drawings)
+        {
+            if(self.layerStore.drawingLayers[self.stack.z].drawings.hasOwnProperty(pathIndex))
+            {
+                var drawing = self.layerStore.drawingLayers[self.stack.z].drawings[pathIndex];
+                self.invertPath(drawing,false);
+
+            }
+        }
+
+    };
 
     this.invertComponent=function(component,invert)
     {
         component.image.filters[0]=invert && new fabric.Image.filters.Invert();
         component.image.applyFilters(canvasLayer.canvas.renderAll.bind(canvasLayer.canvas));
+    };
+
+    this.invertPath=function(path,invert)
+    {
+        if(invert)
+        {
+            path.drawingObject.stroke='rgb('+(255-self.componentColor[0]).toString()+','+(255-self.componentColor[1]).toString()+','+(255-self.componentColor[2]).toString()+')';
+
+        }
+        else
+        {
+            path.drawingObject.stroke='rgb('+(self.componentColor[0]).toString()+','+(self.componentColor[1]).toString()+','+(self.componentColor[2]).toString()+')';
+        }
+        path.inverted=invert;
+        canvasLayer.canvas.renderAll.bind(canvasLayer.canvas);
     };
 
 
@@ -806,6 +841,28 @@ function CanvasTool()
         {
             //make all invisible
             canvasLayer.canvas.clear();
+
+            var counter=-1;
+            for(var drawingIndex in self.layerStore.drawingLayers[self.stack.z].drawings)
+            {
+                if(self.layerStore.drawingLayers[self.stack.z].drawings.hasOwnProperty(drawingIndex))
+                {
+                    counter+=1;
+                    var drawing = self.layerStore.drawingLayers[self.stack.z].drawings[drawingIndex];
+
+                    canvasLayer.canvas.add(drawing.drawingObject);
+
+                    var pixelvalue=canvasLayer.canvas.contextContainer.getImageData(x,y,1,1);
+                    if(pixelvalue.data[3]==0){continue;}
+
+                    returnPath=drawingIndex;
+                    break;
+
+                }
+
+            }
+            //make all visible
+            self.showActiveElements();
 
         }
 
@@ -835,9 +892,6 @@ function CanvasTool()
 
                     var componentGroup=self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
                     canvasLayer.canvas.add(componentGroup.components[componentGroup.selectedComponentIndex].image);
-                    var index=canvasLayer.canvas._objects.length;
-                    if(index!=0){index-=1;}
-                    canvasLayer.canvas.item(index).selectable=false;
 
                     var pixelvalue=canvasLayer.canvas.contextContainer.getImageData(x,y,1,1);
                     if(pixelvalue.data[3]==0){continue;}
@@ -1118,50 +1172,90 @@ function CanvasTool()
 
     this.deleteElement=function()
     {
-        if(self.state==self.stateEnum.COMPONENTVIEW)
+
+        if(self.deleteComponentGroup())
         {
-            self.deleteComponentGroup();
+            //Log
         }
-        else if(self.state==self.stateEnum.COMPONENTDRAW)
+        else if(self.deleteDrawing())
         {
-            self.deleteComponentDrawing();
+            //Log
         }
-        Console.log('Element deleted!');
+        else
+        {
+            return;
+        }
+        self.showActiveElements();
     };
 
-    this.deleteComponentDrawing=function()
+    this.deleteDrawing=function()
     {
+        var match=false;
         var newLayer=new DrawingLayer();
-        var countGroups=-1;
-        for (var counter=0;counter<self.layerStore.drawingLayers[self.stack.z].drawings.length-1;counter+=1)
+        for (var drawingIndex in self.layerStore.drawingLayers[self.stack.z].drawings)
         {
-            newLayer.drawings[counter]=self.layerStore.drawingLayers[self.stack.z].drawings[counter];
+            if(self.layerStore.drawingLayers[self.stack.z].drawings.hasOwnProperty(drawingIndex))
+            {
+                if(self.layerStore.drawingLayers[self.stack.z].drawings[drawingIndex].inverted)
+                {
+                    //TODO:remove debug url
+
+                    //django_url
+
+                    var url= 'http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/delete-drawing'+ "?" + $.param({
+                        id: self.layerStore.drawingLayers[self.stack.z].drawings[drawingIndex].id
+                       });
+
+
+                    $.getJSON(url,function(result)
+                    {
+
+                    });
+                    match=true;
+                }
+                else
+                {
+                    newLayer.drawings[drawingIndex]=self.layerStore.drawingLayers[self.stack.z].drawings[drawingIndex];
+                }
+            }
+
+
         }
-        self.layerStore.drawingLayers[self.stack.z]=newLayer;
-        self.showActiveElements();
+
+        if(match)
+        {
+            self.layerStore.drawingLayers[self.stack.z]=newLayer;
+        }
+        return match;
     };
 
 
     this.deleteComponentGroup=function()
     {
+        var match=false;
         if(self.state==self.stateEnum.COMPONENTVIEW&&self.layerStore.componentLayers[self.stack.z]!=undefined)
         {
             var newLayer=new ComponentLayer();
             var countGroups=-1;
             for (var componentGroupId in self.layerStore.componentLayers[self.stack.z].componentGroups)
             {
-                if(self.layerStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId) && componentGroupId!=self.layerStore.componentLayers[self.stack.z].activeGroupIndex)
+                if(self.layerStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId) &&
+                    self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId].components[self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId].selectedComponentIndex].image.filters[0]==false)
                 {
                     countGroups+=1;
                     newLayer.componentGroups[countGroups]=self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
                 }
+                else
+                {
+                    //TODO:Delete component associated drawings
+                    match=true;
+                }
             }
             newLayer.activeGroupIndex=countGroups;
-            self.layerStore.componentLayers[self.stack.z]=newLayer;
-
-            self.showActiveElements();
+            if(match){self.layerStore.componentLayers[self.stack.z]=newLayer;}
 
         }
+        return match;
 
     };
 
@@ -1406,6 +1500,7 @@ function Drawing()
     this.svg=function(){return this.drawingObject.toSVG();};
     this.drawingObject=null;
     this.type=null;
+    this.inverted=false;
 
     this.width=function(){return this.maxX-this.minX; };
     this.height=function(){return this.maxY-this.minY; };
@@ -1418,9 +1513,6 @@ function DrawingLayer()
 {
     this.activeDrawingIndex=-1;
     this.drawings=[];
-
-    this.getDrawings=function(componentId){};
-    this.deleteDrawings=function(componentId){};
 }
 
 

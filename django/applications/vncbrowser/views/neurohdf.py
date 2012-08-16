@@ -224,7 +224,9 @@ def get_saved_drawings_by_component_id(request, project_id=None, stack_id=None, 
             'maxX':int(drawing.max_x),
             'maxY':int(drawing.max_y),
             'type':int(drawing.type),
-            'svg':drawing.svg
+            'svg':drawing.svg,
+            'status':drawing.status,
+            'skeletonId':drawing.skeleton_id
 
         }
 

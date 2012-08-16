@@ -149,9 +149,76 @@ function CanvasTool()
     };
 
 
+
     this.loadDrawingsByComponentId=function(componentId)
     {
-        //TODO
+        //TODO:remove debug url
+        // django_url
+        var url= 'http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/get-saved-drawings-by-component-id'+ "?" + $.param({
+            z : self.stack.z,
+            skeleton_id:project.selectedObjects.selectedskeleton,
+            component_id: componentId});
+
+        $.getJSON(url,function(result)
+        {
+            self.parseDrawingList(result,false);
+            self.showDrawingsByComponentId(componentId);
+
+        });
+    };
+
+    this.parseDrawingList=function(result,showOnCanvas)
+    {
+        for (var componentDrawingId in result)
+        {
+            if(result.hasOwnProperty(componentDrawingId))
+            {
+                var componentDrawing=result[componentDrawingId];
+
+                if(self.checkIfDrawingIsLoaded(componentDrawingId)){continue;}
+
+                var newComponentDrawing=new Drawing();
+                newComponentDrawing.id=componentDrawing.id;
+                newComponentDrawing.componentId=componentDrawing.componentId;
+                newComponentDrawing.minX=componentDrawing.minX;
+                newComponentDrawing.minY=componentDrawing.minY;
+                newComponentDrawing.maxX=componentDrawing.maxX;
+                newComponentDrawing.maxY=componentDrawing.maxY;
+                newComponentDrawing.type=componentDrawing.type;
+                fabric.loadSVGFromString(componentDrawing.svg,function(elements,options)
+                {
+                    var drawingObject=elements[0];
+                    drawingObject.set({ left: newComponentDrawing.minX, top: newComponentDrawing.minY, angle: 0 }).scale(1)
+                    newComponentDrawing.drawingObject=drawingObject;
+                    if(showOnCanvas)
+                    {
+                        canvasLayer.canvas.add(drawingObject);
+                    }
+
+                });
+
+                self.layerStore.drawingLayers[self.stack.z].drawings[self.layerStore.drawingLayers[self.stack.z].drawings.length]=newComponentDrawing;
+            }
+        }
+    }
+
+    this.checkIfDrawingIsLoaded=function(drawingIdToCheck)
+    {
+        var alreadyLoaded=false;
+        for (var drawingId in self.layerStore.drawingLayers[self.stack.z].drawings)
+        {
+            if(self.layerStore.drawingLayers[self.stack.z].drawings.hasOwnProperty(drawingId))
+            {
+                var drawing=self.layerStore.drawingLayers[self.stack.z].drawings[drawingId];
+                if(drawing.id==drawingIdToCheck)
+                {
+                    alreadyLoaded=true;
+                    break;
+                }
+            }
+        }
+        return alreadyLoaded;
+
     };
 
     this.loadUnassociatedDrawings=function()
@@ -168,54 +235,16 @@ function CanvasTool()
             x: fieldOfView.x,
             y: fieldOfView.y,
             height:fieldOfView.height ,
-            width:canvasLayer.canvas.width,
+            width:fieldOfView.width,
             z : self.stack.z});
 
 
         $.getJSON(url,function(result)
         {
-            for (var freeDrawingId in result)
-            {
-                if(result.hasOwnProperty(freeDrawingId))
-                {
-                    var freeDrawing=result[freeDrawingId];
-                    var alreadyLoaded=false;
-                    for (var drawingId in self.layerStore.drawingLayers[self.stack.z].drawings)
-                    {
-                        if(self.layerStore.drawingLayers[self.stack.z].drawings.hasOwnProperty(drawingId))
-                        {
-                            var drawing=self.layerStore.drawingLayers[self.stack.z].drawings[drawingId];
-                            if(drawing.id==freeDrawingId)
-                            {
-                                alreadyLoaded=true;
-                                break;
-                            }
-                        }
-                    }
-                    if(alreadyLoaded){continue;}
-                    var newFreeDrawing=new Drawing();
-                    newFreeDrawing.id=freeDrawing.id;
-                    newFreeDrawing.minX=freeDrawing.minX;
-                    newFreeDrawing.minY=freeDrawing.minY;
-                    newFreeDrawing.maxX=freeDrawing.maxX;
-                    newFreeDrawing.maxY=freeDrawing.maxY;
-                    newFreeDrawing.type=freeDrawing.type;
-                    fabric.loadSVGFromString(freeDrawing.svg,function(elements,options)
-                    {
-                        var drawingObject=elements[0];
-                        drawingObject.set({ left: newFreeDrawing.minX, top: newFreeDrawing.minY, angle: 0 }).scale(1)
-                        newFreeDrawing.drawingObject=drawingObject;
-                        canvasLayer.canvas.add(drawingObject);
-
-                    });
-
-                    self.layerStore.drawingLayers[self.stack.z].drawings[self.layerStore.drawingLayers[self.stack.z].drawings.length]=newFreeDrawing;
-                }
-            }
+            self.parseDrawingList(result,true);
 
         });
     };
-
 
 
     this.loadComponents=function()
@@ -276,7 +305,7 @@ function CanvasTool()
                     var componentGroupIdNew=currentComponentGroups.length;
                     currentComponentGroups[componentGroupIdNew]=componentGroupNew;
                     currentComponentLayer.activeGroupIndex=currentComponentGroups.length-1;
-
+                    self.loadDrawingsByComponentId(component.id);
 
                     self.getComponentImage(componentGroupNew.components[0],x,y, self.stack.z,0.5,true);
 
@@ -709,6 +738,9 @@ function CanvasTool()
             if(self.layerStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId))
             {
                 var componentGroup=self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
+                self.showDrawingsByComponentId(componentGroup.components[componentGroup.selectedComponentIndex].id);
+                if(componentGroup.components[componentGroup.selectedComponentIndex].image==null){continue;}
+
                 canvasLayer.canvas.add(componentGroup.components[componentGroup.selectedComponentIndex].image);
                 var index=canvasLayer.canvas._objects.length;
                 if(index!=0){index-=1;}
@@ -719,7 +751,7 @@ function CanvasTool()
                 componentItem.lockMovementY = true;*/
                 componentItem.selectable = false;
 
-                self.showDrawingsByComponentId(componentGroup.components[componentGroup.selectedComponentIndex].id);
+
             }
         }
 
@@ -782,6 +814,7 @@ function CanvasTool()
             self.deselectAllComponents();
             this.getComponents(x,y);
         }
+
 
     };
 
@@ -1199,7 +1232,6 @@ function CanvasTool()
                 if(self.layerStore.drawingLayers[self.stack.z].drawings[drawingIndex].inverted)
                 {
                     //TODO:remove debug url
-
                     //django_url
 
                     var url= 'http://localhost:8000/' + project.id + "/stack/" + self.stack.id + '/delete-drawing'+ "?" + $.param({
@@ -1209,6 +1241,7 @@ function CanvasTool()
 
                     $.getJSON(url,function(result)
                     {
+                        //Log
 
                     });
                     match=true;
@@ -1229,6 +1262,25 @@ function CanvasTool()
         return match;
     };
 
+    this.deleteDrawingByComponentId=function(componentId)
+    {
+        self.deselectAllPaths();
+        for (var drawingId in self.layerStore.drawingLayers[self.stack.z].drawings)
+        {
+            if(self.layerStore.drawingLayers[self.stack.z].drawings.hasOwnProperty(drawingId))
+            {
+                var drawing=self.layerStore.drawingLayers[self.stack.z].drawings[drawingId];
+                if(drawing.componentId==componentId)
+                {
+                    self.invertPath(drawing,true);
+                    self.deleteDrawing();
+
+                }
+
+            }
+        }
+    };
+
 
     this.deleteComponentGroup=function()
     {
@@ -1247,7 +1299,15 @@ function CanvasTool()
                 }
                 else
                 {
-                    //TODO:Delete component associated drawings
+                    //Delete component drawings
+                    var componentGroup=self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
+                    for(var componentId in componentGroup.components)
+                    {
+                        if(componentGroup.components.hasOwnProperty(componentId))
+                        {
+                            self.deleteDrawingByComponentId(componentGroup.components[componentId].id);
+                        }
+                    }
                     match=true;
                 }
             }
@@ -1330,6 +1390,8 @@ function CanvasTool()
                         component.maxY=componentResult.maxY;
                         component.minY=componentResult.minY;
                         component.threshold=componentResult.threshold;
+
+                        self.loadDrawingsByComponentId(component.id);
 
                     }
                 }
@@ -1423,6 +1485,8 @@ function CanvasTool()
                         canvasLayer.canvas.item(canvasLayer.canvas._objects.length-1).selectable=false;
                         self.invertComponent(component,true);
 
+
+
                     }
 
                 });
@@ -1472,6 +1536,8 @@ function CanvasTool()
 
 	this.changeSlice = function( val )
 	{
+        if(self.stack.z==val)
+        {return;}
         //Save current component groups & drawings
         self.putComponents();
 

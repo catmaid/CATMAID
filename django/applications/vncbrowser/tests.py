@@ -583,6 +583,182 @@ class ViewPageTests(TestCase):
         response = self.client.get('/%d/multiple-presynaptic-terminals' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
 
+    def test_update_treenode_table_nonexisting_property(self):
+        self.fake_authentication()
+        property_value = 4
+        property_name = 'And though sickly with disease we trod the world asunder.'
+        treenode_id = 239
+        response = self.client.post(
+                '/%d/treenode/table/update' % (self.test_project_id), {
+                'value': property_value,
+                'id': treenode_id,
+                'type': property_name})
+        parsed_response = json.loads(response.content)
+        expected_result = {'error': 'Can only modify confidence and radius.'}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_update_treenode_table_confidence(self):
+        self.fake_authentication()
+        property_value = 4
+        property_name = 'confidence'
+        treenode_id = 239
+        response = self.client.post(
+                '/%d/treenode/table/update' % (self.test_project_id), {
+                'value': property_value,
+                'id': treenode_id,
+                'type': property_name})
+        parsed_response = json.loads(response.content)
+        expected_result = {'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(property_value, get_object_or_404(Treenode, id=treenode_id).confidence)
+
+    def test_update_treenode_table_radius(self):
+        self.fake_authentication()
+        property_value = 4
+        property_name = 'radius'
+        treenode_id = 239
+        response = self.client.post(
+                '/%d/treenode/table/update' % (self.test_project_id), {
+                'value': property_value,
+                'id': treenode_id,
+                'type': property_name})
+        parsed_response = json.loads(response.content)
+        expected_result = {'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(property_value, get_object_or_404(Treenode, id=treenode_id).radius)
+
+    def test_list_treenode_table_filtering(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/treenode/table/list' % (self.test_project_id), {
+                    'iDisplayStart': 0,
+                    'iDisplayLength': -1,
+                    'iSortingCols': 1,
+                    'iSortCol_0': 0,
+                    'sSortDir_0': 'asc',
+                    'skeleton_0': 235,
+                    'skeleton_nr': 1,
+                    'sSearch_1': 'LR',
+                    'sSearch_2': 'todo',
+                    'pid': 3,
+                    'stack_id': 3})
+        self.assertEqual(response.status_code, 200)
+        expected_result = {
+                "iTotalRecords": 28,
+                "iTotalDisplayRecords": 28,
+                "aaData": [
+                    ["261", "L", "TODO", "5", "2820.00", "1345.00", "0.00", 0, "-1", "gerhard", "05-12-2011 19:51", "-1"]]}
+        parsed_response = json.loads(response.content)
+        self.assertEqual(expected_result['iTotalRecords'], parsed_response['iTotalRecords'])
+        self.assertEqual(expected_result['iTotalDisplayRecords'], parsed_response['iTotalDisplayRecords'])
+        # Check each aaData row instead of everything at once for more granular
+        # error reporting.
+        for (expected, parsed) in zip(expected_result['aaData'], parsed_response['aaData']):
+            self.assertEqual(expected, parsed)
+
+    def test_list_treenode_table_sorting_and_tag(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/treenode/table/list' % (self.test_project_id), {
+                    'iDisplayStart': 0,
+                    'iDisplayLength': -1,
+                    'iSortingCols': 1,
+                    'iSortCol_0': 4,
+                    'sSortDir_0': 'asc',
+                    'skeleton_0': 373,
+                    'skeleton_nr': 1,
+                    'pid': 3,
+                    'stack_id': 3})
+        self.assertEqual(response.status_code, 200)
+        expected_result = {
+                "iTotalRecords": 5,
+                "iTotalDisplayRecords": 5,
+                "aaData": [
+                    ["409", "L", "", "5", "6630.00", "4330.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+                    ["407", "S", "", "5", "7080.00", "3960.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+                    ["405", "S", "", "5", "7390.00", "3510.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+                    ["377", "R", "", "5", "7620.00", "2890.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+                    ["403", "L", "uncertain end", "5", "7840.00", "2380.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"]]}
+        parsed_response = json.loads(response.content)
+        self.assertEqual(expected_result['iTotalRecords'], parsed_response['iTotalRecords'])
+        self.assertEqual(expected_result['iTotalDisplayRecords'], parsed_response['iTotalDisplayRecords'])
+        # Check each aaData row instead of everything at once for more granular
+        # error reporting.
+        for (expected, parsed) in zip(expected_result['aaData'], parsed_response['aaData']):
+            self.assertEqual(expected, parsed)
+
+    def test_list_treenode_table_simple(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/treenode/table/list' % (self.test_project_id), {
+                    'iDisplayStart': 0,
+                    'iDisplayLength': -1,
+                    'iSortingCols': 1,
+                    'iSortCol_0': 0,
+                    'sSortDir_0': 'asc',
+                    'skeleton_0': 235,
+                    'skeleton_nr': 1,
+                    'pid': 3,
+                    'stack_id': 3})
+        self.assertEqual(response.status_code, 200)
+        expected_result = {"iTotalRecords": 28, "iTotalDisplayRecords": 28, "aaData": [
+            ["237", "R", "", "5", "1065.00", "3035.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["239", "S", "", "5", "1135.00", "2800.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["241", "S", "", "5", "1340.00", "2660.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["243", "S", "", "5", "1780.00", "2570.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["245", "S", "", "5", "1970.00", "2595.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["247", "S", "", "5", "2610.00", "2700.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["249", "S", "", "5", "2815.00", "2590.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["251", "S", "", "5", "3380.00", "2330.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["253", "B", "", "5", "3685.00", "2160.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["255", "S", "", "5", "3850.00", "1790.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["257", "S", "", "5", "3825.00", "1480.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["259", "S", "", "5", "3445.00", "1385.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["261", "L", "TODO", "5", "2820.00", "1345.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["263", "S", "", "5", "3915.00", "2105.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["265", "B", "", "5", "4570.00", "2125.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["267", "S", "", "5", "5400.00", "2200.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["269", "S", "", "5", "4820.00", "1900.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["271", "S", "", "5", "5090.00", "1675.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["273", "S", "", "5", "5265.00", "1610.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["275", "S", "", "5", "5800.00", "1560.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["277", "L", "", "5", "6090.00", "1550.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["279", "S", "", "5", "5530.00", "2465.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["281", "S", "", "5", "5675.00", "2635.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["283", "S", "", "5", "5985.00", "2745.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["285", "S", "", "5", "6100.00", "2980.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["289", "S", "", "5", "6210.00", "3480.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["415", "S", "", "5", "5810.00", "3950.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"],
+            ["417", "L", "", "5", "4990.00", "4200.00", "0.00", 0, "-1.0", "gerhard", "05-12-2011 19:51", "-1"]]}
+        parsed_response = json.loads(response.content)
+        self.assertEqual(expected_result['iTotalRecords'], parsed_response['iTotalRecords'])
+        self.assertEqual(expected_result['iTotalDisplayRecords'], parsed_response['iTotalDisplayRecords'])
+        # Check each aaData row instead of everything at once for more granular
+        # error reporting.
+        for (expected, parsed) in zip(expected_result['aaData'], parsed_response['aaData']):
+            self.assertEqual(expected, parsed)
+
+    def test_list_treenode_table_empty(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/treenode/table/list' % (self.test_project_id), {
+                    'iDisplayStart': 0,
+                    'iDisplayLength': -1,
+                    'iSortingCols': 1,
+                    'iSortCol_0': 0,
+                    'sSortDir_0': 'asc',
+                    'skeleton_0': None,
+                    'skeleton_nr': 1,
+                    'stack_id': 3}
+                )
+        self.assertEqual(response.status_code, 200)
+        expected_result = {"iTotalRecords": 0, "iTotalDisplayRecords": 0, "aaData": []}
+        parsed_response = json.loads(response.content)
+        self.assertEqual(expected_result, parsed_response)
+
     def test_fail_update_confidence(self):
         treenode_id = Treenode.objects.order_by("-id")[0].id + 1  # Inexistant
         self.fake_authentication()

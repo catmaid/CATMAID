@@ -1,6 +1,7 @@
 import json
 import re
 
+from string import upper
 from collections import defaultdict
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction, connection
@@ -742,7 +743,7 @@ def list_logs(request, project_id=None, logged_in_user=None):
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))
         sorting_directions = [request.POST.get('iSortDir_%d' % d) for d in range(column_count)]
-        sorting_directions = map(lambda d: '-' if d == 'DESC' else '', sorting_directions)
+        sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '', sorting_directions)
 
         fields = ['user', 'operation_type', 'creation_time', 'x', 'y', 'z', 'freetext']
         sorting_index = [int(request.POST.get('iSortCol_%d' % d)) for d in range(column_count)]

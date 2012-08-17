@@ -314,6 +314,25 @@ class ViewPageTests(TestCase):
         response = self.client.get('/%d' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
 
+    def test_user_project_permissions_not_logged_in(self):
+        response = self.client.get('/permissions')
+        parsed_response = json.loads(response.content)
+        expected_result = []
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_user_project_permissions(self):
+        self.fake_authentication()
+        response = self.client.get('/permissions')
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                '1': {'can_edit_any': True, 'can_view_any': True},
+                '2': {'can_edit_any': True, 'can_view_any': True},
+                '3': {'can_edit_any': True, 'can_view_any': True},
+                '5': {'can_edit_any': True, 'can_view_any': True}}
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(expected_result, parsed_response)
+
     def test_swc_file(self):
         self.fake_authentication()
         for url in ['/%d/skeleton/235/swc' % (self.test_project_id,),

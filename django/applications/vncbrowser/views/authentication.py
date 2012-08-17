@@ -1,11 +1,13 @@
 import re
 import urllib
+import json
 from vncbrowser.views import my_render_to_response
 from django.conf import settings
-from django.http import HttpResponseRedirect
+from django.db import connection
+from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from vncbrowser.models import Project, Session, User
-from vncbrowser.views.common import json_error_response
+from vncbrowser.views.common import json_error_response, cursor_fetch_dictionary
 
 
 def login(request):
@@ -20,6 +22,7 @@ def login(request):
 def redirect_to_login(return_url):
     return HttpResponseRedirect(
         reverse('vncbrowser.views.login') + "?return_url=" + urllib.quote(return_url, ''))
+
 
 # Note that this method does not work in general - there could be
 # ';'s within a string, for example.  However, it is sufficient
@@ -122,3 +125,24 @@ def catmaid_can_edit_project(f):
             return json_error_response("The user '%s' may not edit project %d" % (u.longname, kwargs['project_id']))
 
     return decorated_with_catmaid_can_edit_project
+
+
+def user_project_permissions(request):
+    user = valid_catmaid_login(request)
+    if not user:
+        return HttpResponse(json.dumps([]))
+
+    c = connection.cursor()
+    c.execute('''
+            SELECT project_id, can_edit_any, can_view_any
+            FROM project_user
+            WHERE user_id = %s
+            ''', [user.id])
+    permissions = cursor_fetch_dictionary(c)
+    result = {}
+    for permission in permissions:
+        result[permission['project_id']] = {
+                'can_edit_any': permission['can_edit_any'],
+                'can_view_any': permission['can_view_any']}
+
+    return HttpResponse(json.dumps(result))

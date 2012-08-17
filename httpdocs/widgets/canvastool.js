@@ -108,7 +108,7 @@ function CanvasTool()
     this.resize = function( width, height )
     {
         // self.prototype.resize( width, height );
-        console.log('resize', width, height);
+        console.log('resize'    , width, height);
         return;
     };
 
@@ -188,7 +188,7 @@ function CanvasTool()
                 fabric.loadSVGFromString(componentDrawing.svg,function(elements,options)
                 {
                     var drawingObject=elements[0];
-                    drawingObject.set({ left: newComponentDrawing.minX, top: newComponentDrawing.minY, angle: 0 }).scale(1)
+                    drawingObject.set({ left: self.getCanvasXFromStackX(newComponentDrawing.minX), top: self.getCanvasYFromStackY(newComponentDrawing.minY), angle: 0 }).scale(1)
                     newComponentDrawing.drawingObject=drawingObject;
                     if(showOnCanvas)
                     {
@@ -578,8 +578,8 @@ function CanvasTool()
     {
         var path=object.path;
         var drawing=new Drawing();
-        drawing.minX=path.left;
-        drawing.minY=path.top;
+        drawing.minX=self.getStackXFromCanvasX( path.left);
+        drawing.minY=self.getStackYFromCanvasY(path.top);
         drawing.maxX=path.left+path.width;
         drawing.maxY=path.top+path.height;
         drawing.drawingObject=path;
@@ -619,13 +619,13 @@ function CanvasTool()
     {
         var url=  'http://localhost:8000/'+ project.id + "/stack/" + self.stack.id + '/put-drawing';
         var drawingToJson ={id:drawing.id,minX:drawing.minX,minY:drawing.minY,maxX:drawing.maxX,maxY:drawing.maxY,svg:drawing.svg(),type:0,componentId:drawing.componentId};
-        var viewstate=canvasLayer.getFieldOfViewParameters();
+        var viewState=canvasLayer.getFieldOfViewParameters();
 
 
         $.ajax({
             url: url,
             type: "POST",
-            data: {skeleton_id:project.selectedObjects.selectedskeleton,z:self.stack.z,x:viewstate.x,y:viewstate.y,width:viewstate.width,height:viewstate.height,drawing: JSON.stringify(drawingToJson) },
+            data: {skeleton_id:project.selectedObjects.selectedskeleton,z:self.stack.z,x:viewState.x,y:viewState.y,width:viewState.width,height:viewState.height,drawing: JSON.stringify(drawingToJson) },
             dataType: "json",
             beforeSend: function(x)
             {
@@ -905,6 +905,9 @@ function CanvasTool()
 
     this.CheckForIntersectingGroup=function(x,y)
     {
+        var stackX=self.getStackXFromCanvasX(x);
+        var stackY=self.getStackYFromCanvasY(y);
+
         var returnGroup=null;
         if(self.layerStore.componentLayers[self.stack.z]!=undefined)
         {
@@ -918,10 +921,10 @@ function CanvasTool()
                 {
                     counter+=1;
                     var component = self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId].components[self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId].selectedComponentIndex];
-                    if((component.minX)>x){continue;}
-                    if((component.maxX)<x){continue;}
-                    if((component.minY)>y){continue;}
-                    if((component.maxY)<y){continue;}
+                    if((component.minX)>stackX){continue;}
+                    if((component.maxX)<stackX){continue;}
+                    if((component.minY)>stackY){continue;}
+                    if((component.maxY)<stackY){continue;}
 
                     var componentGroup=self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
                     canvasLayer.canvas.add(componentGroup.components[componentGroup.selectedComponentIndex].image);
@@ -1333,8 +1336,8 @@ function CanvasTool()
         //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/components-for-point";
 
         var url= django_url + project.id + "/stack/" + self.stack.id + '/components-for-point'+ "?" + $.param({
-            x: x,
-            y: y,
+            x: self.getStackXFromCanvasX(x),
+            y: self.getStackYFromCanvasY(y),
             scale : 0.5, // defined as 1/2**zoomlevel
             z : self.stack.z});
 
@@ -1446,6 +1449,29 @@ function CanvasTool()
 
     };
 
+    this.getCanvasXFromStackX=function(stackX)
+    {
+
+        return stackX-canvasLayer.getFieldOfViewParameters().x;
+
+    };
+
+    this.getCanvasYFromStackY=function(stackY)
+    {
+        return stackY-canvasLayer.getFieldOfViewParameters().y;
+    };
+
+    this.getStackYFromCanvasY=function(canvasY)
+    {
+        return canvasLayer.getFieldOfViewParameters().y+canvasY;
+    };
+
+    this.getStackXFromCanvasX=function(canvasX)
+    {
+        return canvasLayer.getFieldOfViewParameters().x+canvasX;
+    };
+
+
     this.removeElement= function(id)
     {
         var elem=document.getElementById(id);
@@ -1471,13 +1497,15 @@ function CanvasTool()
                     });
 
         component.visible=visible;
-        var fieldOfView=canvasLayer.getFieldOfViewParameters();
 
         fabric.Image.fromURL(url, function(img)
         {
-                    component.image = img.set({ left: component.displayPositionX(), top: component.displayPositionY(), angle: 0,clipTo:img }).scale(1);
+
+
+                    component.image = img.set({ left: self.getCanvasXFromStackX(component.centerX()), top: self.getCanvasYFromStackY(component.centerY()), angle: 0,clipTo:img }).scale(1);
                     if(visible)
                     {
+                        console.log('adding compoentn at',self.getCanvasXFromStackX(component.centerX()),self.getCanvasYFromStackY(component.centerY()));
 
                         canvasLayer.canvas.add(component.image);
                         var item=canvasLayer.canvas.item(canvasLayer.canvas._objects.length-1);
@@ -1597,8 +1625,6 @@ function Component()
     this.height=function(){return this.maxY-this.minY; };
     this.centerX=function(){return Math.round(this.minX+(this.maxX-this.minX)/2); };
     this.centerY=function(){return Math.round(this.minY+(this.maxY-this.minY)/2); };
-    this.displayPositionX=function(){return Math.round((this.minX+(this.maxX-this.minX)/2)); };
-    this.displayPositionY=function(){return Math.round((this.minY+(this.maxY-this.minY)/2)); };
 }
 
 function ComponentGroup()

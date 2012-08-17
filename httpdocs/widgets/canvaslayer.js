@@ -21,15 +21,7 @@ function CanvasLayer( stack )
 
     this.redraw = function()
     {
-        //var pixelPos = [ stack.x, stack.y, stack.z ];
-        //console.log("redraw pixel pos", pixelPos);
-        var wc = stack.getWorldTopLeft();
-        var pl = wc.worldLeft,
-            pt = wc.worldTop,
-            new_scale = wc.scale;
-
-        self.updateCanvasLeftTop(Math.floor((-pl / stack.resolution.x) * new_scale),
-            Math.floor((-pt / stack.resolution.y) * new_scale));
+        self.setFieldOfView();
 
         return;
     }
@@ -40,10 +32,6 @@ function CanvasLayer( stack )
         //this.setFieldOfView();
         self.redraw();
 
-        var width = Math.floor(stack.dimension.x * stack.scale);
-        var height = Math.floor(stack.dimension.y * stack.scale);
-
-        self.updateCanvasWidthHeight( width, height );
 
         return;
     }
@@ -132,7 +120,7 @@ function CanvasLayer( stack )
 
         self.updateCanvasLeftTop( canvasleft, canvastop );
         self.updateCanvasWidthHeight( width, height );
-        // console.log('index: x, y, width, height', xindex, yindex, width, height )
+        console.log('index: x, y, width, height, canvas top, left', xindex, yindex, width, height, canvasleft, canvastop )
     }
 
     this.updateCanvasWidthHeight = function( width, height )

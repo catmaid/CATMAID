@@ -6,17 +6,6 @@ try:
 except ImportError:
     pass
 
-def objecttree_get_all_skeletons(request, project_id=None, node_id=None):
-    """ Retrieve all skeleton ids for a given node in the object tree
-    """
-    g = get_annotation_graph( project_id )
-    potential_skeletons = nx.bfs_tree(g, int(node_id)).nodes()
-    result = []
-    for node_id in potential_skeletons:
-        if g.node[node_id]['class'] == 'skeleton':
-            result.append( node_id )
-    json_return = json.dumps({'skeletons': result}, sort_keys=True, indent=4)
-    return HttpResponse(json_return, mimetype='text/json')
 
 def get_annotation_graph(project_id=None):
     qs = ClassInstanceClassInstance.objects.filter(

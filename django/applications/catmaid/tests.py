@@ -16,7 +16,7 @@ class SimpleTest(TestCase):
         self.assertEqual(1 + 1, 2)
 
 """
-from catmaid2.models import *
+from catmaid.models import *
 pid = 4
 
 u1=User.objects.create(username='stephan', project_id=pid)

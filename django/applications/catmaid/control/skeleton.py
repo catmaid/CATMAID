@@ -3,12 +3,13 @@ from django.db import transaction, connection
 from django.http import HttpResponse, Http404
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
-from vncbrowser.models import Project, Stack, Class, ClassInstance,\
+
+from catmaid.models import Project, Stack, Class, ClassInstance,\
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode,\
     Connector, User, Textlabel, ClassInstanceClassInstance, TreenodeConnector, Location
-from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional,\
-    catmaid_login_required
-from common import insert_into_log
+
+from catmaid.control.authentication import catmaid_login_required
+from log import insert_into_log
 
 import json
 import sys

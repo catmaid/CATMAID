@@ -47,7 +47,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'devserver',
     'djcelery',
-    'catmaid2'
+    'catmaid'
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = ('mysite.context_processors.staticfiles',

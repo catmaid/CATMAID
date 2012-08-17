@@ -2,6 +2,7 @@ import json
 import re
 
 from collections import defaultdict
+from string import upper
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction, connection
 from django.db.models import Count

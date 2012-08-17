@@ -1,5 +1,11 @@
+import json
 
-def get_wiring_diagram(project_id=None, LOWER_TREENODE_NUMBER_LIMIT=0):
+from django.http import HttpResponse
+
+from catmaid.models import Treenode, TreenodeConnector
+from catmaid.control.authentication import catmaid_login_required
+
+def get_wiring_diagram(project_id=None, lower_treenode_number_limit=0):
 
     # result dictionary: {connectorid: presyn_skeletonid}
     tmp={}
@@ -31,8 +37,8 @@ def get_wiring_diagram(project_id=None, LOWER_TREENODE_NUMBER_LIMIT=0):
         if e.connector_id in tmp:
 
             # limit the skeletons to include
-            if skeletons[ tmp[e.connector_id] ] < LOWER_TREENODE_NUMBER_LIMIT or\
-               skeletons[ e.skeleton_id ] < LOWER_TREENODE_NUMBER_LIMIT:
+            if skeletons[ tmp[e.connector_id] ] < lower_treenode_number_limit or\
+               skeletons[ e.skeleton_id ] < lower_treenode_number_limit:
                 continue
 
             # an existing connector, so we add a connection
@@ -74,14 +80,15 @@ def get_wiring_diagram(project_id=None, LOWER_TREENODE_NUMBER_LIMIT=0):
     return { 'nodes': nodes, 'edges': edges }
 
 
+@catmaid_login_required
 def export_wiring_diagram_nx(request, project_id=None):
 
     if request.POST.has_key('lower_skeleton_count'):
-        LOWER_TREENODE_NUMBER_LIMIT=request.POST['lower_skeleton_count']
+        lower_treenode_number_limit=request.POST['lower_skeleton_count']
     else:
-        LOWER_TREENODE_NUMBER_LIMIT=0
+        lower_treenode_number_limit=0
 
-    nodes_and_edges=get_wiring_diagram(project_id, LOWER_TREENODE_NUMBER_LIMIT)
+    nodes_and_edges=get_wiring_diagram(project_id, lower_treenode_number_limit)
     g=nx.DiGraph()
 
     for n in nodes_and_edges['nodes']:
@@ -94,15 +101,15 @@ def export_wiring_diagram_nx(request, project_id=None):
     json_return = json.dumps(data, sort_keys=True, indent=4)
     return HttpResponse(json_return, mimetype='text/json')
 
-
+@catmaid_login_required
 def export_wiring_diagram(request, project_id=None):
 
     if request.POST.has_key('lower_skeleton_count'):
-        LOWER_TREENODE_NUMBER_LIMIT=request.POST['lower_skeleton_count']
+        lower_treenode_number_limit=request.POST['lower_skeleton_count']
     else:
-        LOWER_TREENODE_NUMBER_LIMIT=0
+        lower_treenode_number_limit=0
 
-    nodes_and_edges=get_wiring_diagram(project_id, LOWER_TREENODE_NUMBER_LIMIT)
+    nodes_and_edges=get_wiring_diagram(project_id, lower_treenode_number_limit)
 
     nodesDataSchema=[
             {'name':'id','type':'string'},

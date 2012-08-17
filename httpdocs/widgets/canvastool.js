@@ -18,6 +18,8 @@ function CanvasTool()
     this.stack = null;
     this.toolname = "canvastool";
     this.componentColor=[0,255,255,255];
+    this.lastPosition=null;
+
 
 	  if ( !ui ) ui = new UI();
 
@@ -162,7 +164,7 @@ function CanvasTool()
         $.getJSON(url,function(result)
         {
             self.parseDrawingList(result,false);
-            self.showDrawingsByComponentId(componentId);
+            self.showDrawingsByComponentId(componentId,false);
 
         });
     };
@@ -313,7 +315,7 @@ function CanvasTool()
 
             }
 
-            self.showActiveElements();
+            self.showActiveElements(false);
 
         });
     };
@@ -686,29 +688,36 @@ function CanvasTool()
     };
 
 
-    this.showActiveElements=function()
+    this.showActiveElements=function(updatePosition)
     {
         canvasLayer.canvas.clear();
-        self.showActiveComponents();
-        self.showUnassociatedDrawings();
+        self.showActiveComponents(updatePosition);
+        self.showUnassociatedDrawings(updatePosition);
 
     };
 
 
-    this.showDrawingsByComponentId=function(componentId)
+    this.showDrawingsByComponentId=function(componentId,updatePosition)
     {
         for (var drawingId in self.layerStore.drawingLayers[self.stack.z].drawings)
         {
             if(self.layerStore.drawingLayers[self.stack.z].drawings.hasOwnProperty(drawingId))
             {
                 var drawing=self.layerStore.drawingLayers[self.stack.z].drawings[drawingId];
-                if(drawing.componentId==componentId){canvasLayer.canvas.add(drawing.drawingObject);}
+                if(drawing.componentId==componentId)
+                {
+                    if(updatePosition)
+                    {
+                        drawing.drawingObject.set({ left: self.getCanvasXFromStackX(drawing.minX), top: self.getCanvasYFromStackY(drawing.minY)});
+                    }
+                    canvasLayer.canvas.add(drawing.drawingObject);
+                }
 
             }
         }
     };
 
-    this.showUnassociatedDrawings=function()
+    this.showUnassociatedDrawings=function(updatePosition)
     {
         for (var drawingId in self.layerStore.drawingLayers[self.stack.z].drawings)
         {
@@ -717,6 +726,10 @@ function CanvasTool()
                 var drawing=self.layerStore.drawingLayers[self.stack.z].drawings[drawingId];
                 if(drawing.componentId==null)
                 {
+                    if(updatePosition)
+                    {
+                        drawing.drawingObject.set({ left: self.getCanvasXFromStackX(drawing.drawingObject.minX), top: self.getCanvasYFromStackY(drawing.drawingObject.minY)});
+                    }
                     canvasLayer.canvas.add(drawing.drawingObject);
                 }
 
@@ -725,7 +738,7 @@ function CanvasTool()
     };
 
 
-    this.showActiveComponents=function()
+    this.showActiveComponents=function(updatePosition)
     {
         if(project.selectedObjects.selectedskeleton==null ||self.layerStore.componentLayers[self.stack.z]==undefined)
         {
@@ -738,10 +751,19 @@ function CanvasTool()
             if(self.layerStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId))
             {
                 var componentGroup=self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
-                self.showDrawingsByComponentId(componentGroup.components[componentGroup.selectedComponentIndex].id);
-                if(componentGroup.components[componentGroup.selectedComponentIndex].image==null){continue;}
+                var component=componentGroup.components[componentGroup.selectedComponentIndex];
+                self.showDrawingsByComponentId(component.id,updatePosition);
+                if(component.image==null){continue;}
 
-                canvasLayer.canvas.add(componentGroup.components[componentGroup.selectedComponentIndex].image);
+                //update position
+                if(updatePosition)
+                {
+                    componentGroup.components[componentGroup.selectedComponentIndex].image.set({ left: self.getCanvasXFromStackX(component.centerX()), top: self.getCanvasYFromStackY(component.centerY())});
+
+                }
+
+
+                canvasLayer.canvas.add(component.image);
                 var index=canvasLayer.canvas._objects.length;
                 if(index!=0){index-=1;}
                 var componentItem=canvasLayer.canvas.item(index);
@@ -895,7 +917,7 @@ function CanvasTool()
 
             }
             //make all visible
-            self.showActiveElements();
+            self.showActiveElements(false);
 
         }
 
@@ -939,7 +961,7 @@ function CanvasTool()
 
             }
             //make all visible
-            self.showActiveElements();
+            self.showActiveElements(false);
         }
 
         return returnGroup;
@@ -1031,6 +1053,7 @@ function CanvasTool()
         self.generateLayer();
         canvasLayer.canvas.observe('path:created',function(path){self.onPathCreated(path)});
         canvasLayer.canvas.observe('mouse:up',function(e){self.mouseup(e)});
+        canvasLayer.canvas.observe('after:render',function(e){self.afterRender(e)});
 
         canvasLayer.view.onmousedown=function(e) {
             // if middle mouse, propagate to onmousedown
@@ -1040,11 +1063,13 @@ function CanvasTool()
             }
         };
         canvasLayer.view.onmousewheel=function(e){self.mousewheel(e);};
+        canvasLayer.canvas.freeDrawingLineWidth=15;
+        canvasLayer.canvas.freeDrawingColor ="rgb(0, 255, 255)";
+        this.lastPosition=canvasLayer.getFieldOfViewParameters();
 
         self.loadElements();
 
-        canvasLayer.canvas.freeDrawingLineWidth=15;
-        canvasLayer.canvas.freeDrawingColor ="rgb(0, 255, 255)";
+
     };
 
     /**
@@ -1053,6 +1078,19 @@ function CanvasTool()
     this.unregister = function()
     {
         return;
+    };
+
+    this.afterRender=function(event)
+    {
+        var newPosition=canvasLayer.getFieldOfViewParameters();
+        if(newPosition.x!=self.lastPosition.x || newPosition.y!=self.lastPosition.y)
+        {
+            self.lastPosition=newPosition;
+            self.showActiveElements(true);
+
+        }
+
+
     };
 
     /**
@@ -1221,7 +1259,7 @@ function CanvasTool()
         {
             return;
         }
-        self.showActiveElements();
+        self.showActiveElements(false);
     };
 
     this.deleteDrawing=function()

@@ -6,6 +6,7 @@ import string
 from string import upper
 from collections import defaultdict
 from pprint import pprint
+from string import upper
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction, connection
 from django.db.models import Count

@@ -84,33 +84,7 @@ def visual_index(request, **kwargs):
                                   'user': kwargs['logged_in_user'],
                                   'search_form': search_form })
 
-@catmaid_login_required
-def skeleton_info(request, project_id=None, skeleton_id=None, logged_in_user=None):
-    p = get_object_or_404(Project, pk=project_id)
 
-    neuron_id = request.POST['neuron_id']
-
-    n = get_object_or_404(ClassInstance, pk=neuron_id, project=project_id)
-
-    skeletons = ClassInstance.objects.filter(
-        project=p,
-        cici_via_a__relation__relation_name='model_of',
-        class_column__class_name='skeleton',
-        cici_via_a__class_instance_b=n)
-
-    outgoing = n.all_neurons_downstream(project_id, skeletons)
-    incoming = n.all_neurons_upstream(project_id, skeletons)
-
-    outgoing = [x for x in outgoing if not x['name'].startswith('orphaned ')]
-    incoming = [x for x in incoming if not x['name'].startswith('orphaned ')]
-
-    data = {
-        'incoming': incoming,
-        'outgoing': outgoing
-    }
-
-    json_return = json.dumps(data, sort_keys=True, indent=4)
-    return HttpResponse(json_return, mimetype='text/json')
 
 @catmaid_login_required
 def view(request, project_id=None, neuron_id=None, neuron_name=None, logged_in_user=None):
@@ -236,18 +210,7 @@ def lines_delete(request, project_id=None, logged_in_user=None):
                                         kwargs={'neuron_id':neuron.id,
                                                 'project_id':p.id}))
 
-@catmaid_login_required
-def neuron_to_skeletons(request, project_id=None, neuron_id=None, logged_in_user=None):
-    p = get_object_or_404(Project, pk=project_id)
-    neuron = get_object_or_404(ClassInstance,
-                               pk=neuron_id,
-                               class_column__class_name='neuron',
-                               project=p)
-    qs = ClassInstance.objects.filter(
-        project=p,
-        cici_via_a__relation__relation_name='model_of',
-        cici_via_a__class_instance_b=neuron)
-    return HttpResponse(json.dumps([x.id for x in qs]), mimetype="text/json")
+
 
 @catmaid_login_required
 def multiple_presynaptic_terminals(request, project_id=None, logged_in_user=None):

@@ -32,12 +32,20 @@ urlpatterns = patterns(
     (r'^(?P<project_id>\d+)/neuron-to-skeletons/(?P<neuron_id>\d+)$', 'vncbrowser.views.neuron_to_skeletons'),
     (r'^login$', 'vncbrowser.views.login'),
     (r'^projects$', 'vncbrowser.views.projects'),
-    (r'^(?P<project_id>\d+)/labels-all$', 'vncbrowser.views.labels_all'),
-    (r'^(?P<project_id>\d+)/labels-for-nodes$', 'vncbrowser.views.labels_for_nodes'),
-    (r'^(?P<project_id>\d+)/labels-for-node/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'vncbrowser.views.labels_for_node'),
-    (r'^(?P<project_id>\d+)/label-update/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'vncbrowser.views.label_update'),
 
-    (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', 'vncbrowser.views.update_location_reviewer'),
+
+
+    (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/confidence/update$', 'catmaid2.control.update_confidence'),
+    (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', 'catmaid2.control.update_location_reviewer'),
+
+    (r'^(?P<project_id>\d+)/labels-all$', 'catmaid2.control.views.labels_all'),
+    (r'^(?P<project_id>\d+)/labels-for-nodes$', 'catmaid2.control.views.labels_for_nodes'),
+    (r'^(?P<project_id>\d+)/labels-for-node/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'catmaid2.control.views.labels_for_node'),
+    (r'^(?P<project_id>\d+)/label-update/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'catmaid2.control.views.label_update'),
+
+    (r'^messages/unread$', 'catmaid2.control.unread_messages'),
+    (r'^messages/mark_read$', 'catmaid2.control.read_message'),
+
 
     (r'^(?P<project_id>\d+)/objecttree/(?P<node_id>\d+)/get_all_skeletons', 'vncbrowser.views.objecttree_get_all_skeletons'),
 
@@ -67,10 +75,7 @@ urlpatterns += patterns('',
 
 # Replacements
 urlpatterns += patterns('',
-    (r'^(?P<project_id>\d+)/(?P<node>\d+)/confidence/update$', 'vncbrowser.views.catmaid_replacements.update_confidence'),
-    (r'^(?P<project_id>\d+)/connector/create$', 'vncbrowser.views.catmaid_replacements.create_connector'),
-    (r'^(?P<project_id>\d+)/connector/delete$', 'vncbrowser.views.catmaid_replacements.delete_connector'),
-    (r'^(?P<project_id>\d+)/connector/list$', 'vncbrowser.views.catmaid_replacements.list_connector'),
+
     (r'^(?P<project_id>\d+)/skeleton/ancestry$', 'vncbrowser.views.catmaid_replacements.skeleton_ancestry'),
     (r'^(?P<project_id>\d+)/link/create$', 'vncbrowser.views.catmaid_replacements.create_link'),
     (r'^(?P<project_id>\d+)/link/delete$', 'vncbrowser.views.catmaid_replacements.delete_link'),
@@ -84,8 +89,6 @@ urlpatterns += patterns('',
     (r'^(?P<project_id>\d+)/tree_object/list$', 'vncbrowser.views.catmaid_replacements.tree_object_list'),
     (r'^(?P<project_id>\d+)/logs/list$', 'vncbrowser.views.catmaid_replacements.list_logs'),
     (r'^(?P<project_id>\d+)/search$', 'vncbrowser.views.catmaid_replacements.search'),
-    (r'^messages/unread$', 'vncbrowser.views.catmaid_replacements.unread_messages'),
-    (r'^messages/mark_read$', 'vncbrowser.views.catmaid_replacements.read_message'),
     (r'^permissions$', 'vncbrowser.views.authentication.user_project_permissions'),
     (r'^(?P<project_id>\d+)/instance_operation$', 'vncbrowser.views.tree_operations.instance_operation'),
     (r'^(?P<project_id>\d+)/treenode/create$', 'vncbrowser.views.treenode.create_treenode'),

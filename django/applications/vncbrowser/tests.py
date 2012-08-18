@@ -836,6 +836,116 @@ class ViewPageTests(TestCase):
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(5, connector.confidence)
 
+    def test_tree_object_list_no_parent(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/tree_object/list' % self.test_project_id, {
+                    'parentid': 0})
+        parsed_response = json.loads(response.content)
+        expected_response = [{
+            'data': {'title': 'neuropile'},
+            'attr': {'id': 'node_2323', 'rel': 'root'},
+            'state': 'closed'}]
+        self.assertEqual(expected_response, parsed_response)
+        self.assertEqual(response.status_code, 200)
+
+    def test_tree_object_list_empty(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/tree_object/list' % self.test_project_id, {
+                    'parentid': 1,
+                    'parentname': 'dull skeleton (gerhard)'})
+        parsed_response = json.loads(response.content)
+        expected_response = []
+        self.assertEqual(expected_response, parsed_response)
+        self.assertEqual(response.status_code, 200)
+
+    def test_tree_object_list_groups(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/tree_object/list' % self.test_project_id, {
+                    'parentid': 2323,
+                    'parentname': 'neuropile'})
+        parsed_response = json.loads(response.content)
+        expected_response = [{
+            'data': {'title': 'Fragments'},
+            'attr': {'id': 'node_4', 'rel': 'group'},
+            'state': 'closed'},
+            {'data': {'title': 'group'},
+            'attr': {'id': 'node_231', 'rel': 'group'},
+            'state': 'closed'},
+            {'data': {'title': 'Isolated synaptic terminals'},
+            'attr': {'id': 'node_364', 'rel': 'group'},
+            'state': 'closed'}]
+        self.assertEqual(expected_response, parsed_response)
+        self.assertEqual(response.status_code, 200)
+
+    def test_tree_object_list_isol_case(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/tree_object/list' % self.test_project_id, {
+                    'parentid': 364,
+                    'parentname': 'Isolated synaptic terminals'})
+        parsed_response = json.loads(response.content)
+        expected_response = [{
+            'data': {'title': 'downstream-A'},
+            'attr': {'id': 'node_374', 'rel': 'neuron'},
+            'state': 'closed'},
+            {'data': {'title':'downstream-B'},
+            'attr': {'id': 'node_362', 'rel': 'neuron'},
+            'state': 'closed'}]
+        self.assertEqual(expected_response, parsed_response)
+        self.assertEqual(response.status_code, 200)
+
+    def test_tree_object_list_skeleton(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/tree_object/list' % self.test_project_id, {
+                    'parentid': 2,
+                    'parentname': 'dull neuron'})
+        parsed_response = json.loads(response.content)
+        expected_response = [
+                {'data': {'title': 'dull skeleton (gerhard)'},
+                'attr': {'id': 'node_1', 'rel': 'skeleton'},
+                'state': 'closed'}]
+        self.assertEqual(expected_response, parsed_response)
+        self.assertEqual(response.status_code, 200)
+
+    def test_tree_object_list_neurons(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/tree_object/list' % self.test_project_id, {
+                    'parentid': 4,
+                    'parentname': 'Fragments'})
+        parsed_response = json.loads(response.content)
+        expected_response = [
+                {'data': {'title': 'dull neuron'},
+                'attr': {'id': 'node_2', 'rel': 'neuron'},
+                'state': 'closed'},
+                {'data': {'title': 'neuron 2365'},
+                'attr': {'id': 'node_2365', 'rel': 'neuron'},
+                'state': 'closed'},
+                {'data': {'title': 'neuron 2381'},
+                'attr': {'id': 'node_2381', 'rel': 'neuron'},
+                'state': 'closed'},
+                {'data': {'title': 'neuron 2389'},
+                'attr': {'id': 'node_2389', 'rel': 'neuron'},
+                'state': 'closed'},
+                {'data': {'title': 'neuron 2412'},
+                'attr': {'id': 'node_2412', 'rel': 'neuron'},
+                'state': 'closed'},
+                {'data': {'title': 'neuron 2434'},
+                'attr': {'id': 'node_2434', 'rel': 'neuron'},
+                'state': 'closed'},
+                {'data': {'title': 'neuron 2441'},
+                'attr': {'id': 'node_2441', 'rel': 'neuron'},
+                'state': 'closed'},
+                {'data': {'title': 'neuron 2452'},
+                'attr': {'id': 'node_2452', 'rel': 'neuron'},
+                'state': 'closed'}]
+        self.assertEqual(expected_response, parsed_response)
+        self.assertEqual(response.status_code, 200)
+
     def test_tree_object_expand(self):
         self.fake_authentication()
         response = self.client.post(

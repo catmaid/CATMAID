@@ -1,8 +1,11 @@
+import sys
 import json
 import re
+import string
 
 from string import upper
 from collections import defaultdict
+from pprint import pprint
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction, connection
 from django.db.models import Count
@@ -872,6 +875,197 @@ def read_message(request, project_id=None, logged_in_user=None):
         else:
             error = 'Unknown error.'
         return my_render_to_response(request, 'vncbrowser/error.html', {'error': error})
+
+
+@catmaid_login_required
+@transaction_reportable_commit_on_success
+def tree_object_list(request, project_id=None, logged_in_user=None):
+    parent_id = int(request.POST.get('parentid', 0))
+    parent_name = request.POST.get('parentname', '')
+    expand_request = request.POST.get('expandtarget', None)
+    if expand_request is None:
+        expand_request = []
+    else:
+        expand_request = expand_request.split(',')
+
+    max_nodes = 1000  # Limit number of nodes retrievable.
+
+    relation_map = get_relation_to_id_map(project_id)
+    class_map = get_class_to_id_map(project_id)
+
+    for class_name in ['neuron', 'skeleton', 'group', 'root']:
+        if class_name not in class_map:
+            raise RollbackAndReport('Can not find "%s" class for this project' % class_name)
+
+    for relation in ['model_of', 'part_of']:
+        if relation not in relation_map:
+            raise RollbackAndReport('Can not find "%s" relation for this project' % relation)
+
+    response_on_error = ''
+    try:
+        if parent_id == 0:
+            response_on_error = 'Could not select the id of the root node.'
+            root_node_q = ClassInstance.objects.filter(
+                    project=project_id,
+                    class_column=class_map['root'])
+
+            if root_node_q.count() == 0:
+                root_id = 0
+                root_name = 'noname'
+            else:
+                root_node = root_node_q[0]
+                root_id = root_node.id
+                root_name = root_node.name
+
+            return HttpResponse(json.dumps([{
+                'data': {'title': root_name},
+                'attr': {'id': 'node_%s' % root_id, 'rel': 'root'},
+                'state': 'closed'}]))
+
+        if 'Isolated synaptic terminals' in parent_name:
+            response_on_error = 'Failed to find children of the Isolated synaptic terminals'
+            c = connection.cursor()
+            c.execute('''
+                    SELECT count(tci.id) as treenodes,
+                            ci.id,
+                            ci.name,
+                            ci.class_id, cici.relation_id,
+                            cici.class_instance_b AS parent,
+                            sk.id AS skeleton_id,
+                            u.name AS username,
+                            cl.class_name
+                    FROM class_instance ci,
+                        class cl,
+                        class_instance_class_instance cici,
+                        class_instance_class_instance modof,
+                        class_instance sk,
+                        treenode_class_instance tci,
+                        "user" u
+                    WHERE cici.class_instance_b = %s AND
+                        cici.class_instance_a = ci.id AND
+                        cl.id = ci.class_id AND
+                        modof.class_instance_b = cici.class_instance_a AND
+                        modof.relation_id = %s AND
+                        sk.id = modof.class_instance_a AND
+                        tci.class_instance_id = sk.id AND
+                        tci.relation_id = %s AND
+                        u.id = ci.user_id AND
+                        ci.project_id = %s
+                    GROUP BY ci.id,
+                            ci.name,
+                            ci.class_id,
+                            cici.relation_id,
+                            cici.class_instance_b,
+                            skeleton_id,
+                            u.name,
+                            cl.class_name
+                    HAVING count(tci.id) > 1
+            ''', [parent_id, relation_map['model_of'], relation_map['element_of'], project_id])
+            res = cursor_fetch_dictionary(c)
+
+            # If this list is part of an expansion caused by selecting a
+            # particular skeleton that is part of a neuron that is in the
+            # 'Isolated synaptic terminals', add that to the results.
+
+            if parent_id not in expand_request:
+                print >> sys.stderr, 'got isolated_group_index '
+                print >> sys.stderr, 'got len(expand_request) %s' % len(expand_request)
+            else:
+                isolated_group_index = expand_request.index(parent_id)
+                print >> sys.stderr, 'got isolated_group_index %s' % isolated_group_index
+                print >> sys.stderr, 'got len(expand_request) %s' % len(expand_request)
+
+                response_on_error = 'Failed to find the requested neuron.'
+                neuron_id = expand_request[isolated_group_index + 1]
+
+                c.execute('''
+                        SELECT ci.id,
+                                ci.name,
+                                ci.class_id,
+                                u.name AS username,
+                                cici.relation_id,
+                                cici.class_instance_b AS parent,
+                                cl.class_name
+                        FROM class_instance AS ci
+                        INNER JOIN class_instance_class_instance AS cici
+                            ON ci.id = cici.class_instance_a
+                        INNER JOIN class AS cl
+                            ON ci.class_id = cl.id
+                        INNER JOIN "user" AS u
+                            ON ci.user_id = u.id
+                        WHERE ci.id = %s AND
+                            ci.project_id = %s AND
+                            cici.class_instance_b = %s AND
+                            (cici.relation_id = %s
+                                OR cici.relation_id = %s)
+                        ORDER BY ci.name
+                        LIMIT %s''', [
+                            neuron_id,
+                            project_id,
+                            parent_id,
+                            relation_map['model_of'],
+                            relation_map['part_of'],
+                            max_nodes])
+                extra_res = cursor_fetch_dictionary(c)
+                print >> sys.stderr, pprint.pformat(extra_res)
+
+                res += extra_res
+
+        # parent_name is not 'Isolated synaptic terminals'
+        response_on_error = 'Could not retrieve child nodes.'
+        c = connection.cursor()
+        c.execute('''
+                SELECT ci.id,
+                        ci.name,
+                        ci.class_id,
+                        "user".name AS username,
+                        cici.relation_id,
+                        cici.class_instance_b AS parent,
+                        cl.class_name
+                FROM class_instance AS ci
+                    INNER JOIN class_instance_class_instance AS cici
+                    ON ci.id = cici.class_instance_a
+                    INNER JOIN class AS cl
+                    ON ci.class_id = cl.id
+                    INNER JOIN "user"
+                    ON ci.user_id = "user".id
+                WHERE ci.project_id = %s AND
+                        cici.class_instance_b = %s AND
+                        (cici.relation_id = %s
+                        OR cici.relation_id = %s)
+                ORDER BY ci.name ASC
+                LIMIT %s''', [
+                    project_id,
+                    parent_id,
+                    relation_map['model_of'],
+                    relation_map['part_of'],
+                    max_nodes])
+        res = cursor_fetch_dictionary(c)
+
+        output = []
+        for row in res:
+            formatted_row = {
+                    'data': {'title': row['name']},
+                    'attr': {
+                        'id': 'node_%s' % row['id'],
+                        # Replace whitespace because of tree object types.
+                        'rel': string.replace(row['class_name'], ' ', '')},
+                    'state': 'closed'}
+
+            if row['class_name'] == 'skeleton':
+                formatted_row['data']['title'] += ' (%s)' % row['username']
+
+            output.append(formatted_row)
+
+        return HttpResponse(json.dumps(output))
+
+    except RollbackAndReport:
+        raise
+    except Exception as e:
+        if (response_on_error == ''):
+            raise RollbackAndReport(str(e))
+        else:
+            raise RollbackAndReport(response_on_error)
 
 
 @catmaid_login_required

@@ -1,15 +1,19 @@
-from collections import defaultdict
-from django.db import transaction, connection
-from django.http import HttpResponse, Http404
-from django.db.models import Count
+
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import Project, Stack, Class, ClassInstance,\
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode,\
     Connector, User, Textlabel, ClassInstanceClassInstance, TreenodeConnector, Location
 
-from catmaid.control.authentication import catmaid_login_required
-from log import insert_into_log
+from catmaid.models import Project, Stack, Class, ClassInstance,\
+    TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode,\
+    Connector, User, Textlabel
+
+from catmaid.control.authentication import *
+from catmaid.control.common import *
+from catmaid.transaction import *
+
 
 import json
 import sys

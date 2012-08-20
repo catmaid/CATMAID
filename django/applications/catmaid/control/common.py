@@ -2,8 +2,8 @@ from collections import defaultdict
 from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from vncbrowser.models import SORT_ORDERS_DICT, NeuronSearch, CELL_BODY_CHOICES, \
-    ClassInstance, ClassInstanceClassInstance, Log
+from catmaid.models import SORT_ORDERS_DICT, NeuronSearch, CELL_BODY_CHOICES, ClassInstance, \
+    ClassInstanceClassInstance, Log
 import json
 
 

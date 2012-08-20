@@ -1,14 +1,14 @@
 import re
 import urllib
 import json
-from vncbrowser.views import my_render_to_response
+
 from django.conf import settings
 from django.db import connection
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
-from vncbrowser.models import Project, Session, User
-from vncbrowser.views.common import json_error_response, cursor_fetch_dictionary
-
+from catmaid.models import Project, Session, User
+from catmaid.control.common import json_error_response, cursor_fetch_dictionary
+from catmaid.control.common import my_render_to_response
 
 def login(request):
     return my_render_to_response(request,

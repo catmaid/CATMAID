@@ -1,11 +1,12 @@
-from vncbrowser.models import ClassInstanceClassInstance
+from django.http import HttpResponse
+
+from catmaid.models import ClassInstanceClassInstance
 
 try:
     import networkx as nx
     from networkx.readwrite import json_graph
 except ImportError:
     pass
-
 
 def get_annotation_graph(project_id=None):
     qs = ClassInstanceClassInstance.objects.filter(

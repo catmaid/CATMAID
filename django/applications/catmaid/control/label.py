@@ -1,14 +1,19 @@
+import json
+
 from collections import defaultdict
 from django.db import transaction, connection
 from django.http import HttpResponse, Http404
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
-from vncbrowser.models import Project, Stack, Class, ClassInstance,\
+
+from catmaid.models import Project, Stack, Class, ClassInstance,\
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode,\
     Connector, User, Textlabel
-from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional,\
-    catmaid_login_required
-import json
+
+from catmaid.control.authentication import *
+from catmaid.control.common import *
+from catmaid.transaction import *
+
 
 @catmaid_login_required
 def labels_all(request, project_id=None, logged_in_user=None):

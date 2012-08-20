@@ -1,11 +1,14 @@
 from django.conf import settings
 from django.http import HttpResponse
-from vncbrowser.models import CELL_BODY_CHOICES, \
+from catmaid.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
     Project, User, Treenode, TreenodeConnector, Connector
-from vncbrowser.views import catmaid_login_required, my_render_to_response, \
-    get_form_and_neurons
-from vncbrowser.views.export import get_annotation_graph
+
+from catmaid.control.authentication import *
+from catmaid.control.common import *
+from catmaid.transaction import *
+
+from catmaid.control.object import get_annotation_graph
 
 import json
 try:

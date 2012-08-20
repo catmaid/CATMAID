@@ -64,6 +64,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/label-update/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'catmaid.control.views.label_update'),
 
     (r'^(?P<project_id>\d+)/object-tree/expand$', 'catmaid.control.tree_object_expand'),
+    (r'^(?P<project_id>\d+)/object-tree/list', 'catmaid.control.tree_object_list'),
     (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/get_all_skeletons', 'catmaid.control.objecttree_get_all_skeletons'),
     (r'^(?P<project_id>\d+)/object-tree/instance-operation$', 'catmaid.control.instance_operation'),
 
@@ -89,11 +90,12 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/annotationdiagram/nx_json$', 'catmaid.control.convert_annotations_to_networkx'),
     (r'^(?P<project_id>\d+)/microcircuit/neurohdf$', 'catmaid.control.microcircuit_neurohdf'),
 
-    (r'^(?P<project_id>\d+)/treenode/create$', 'catmaid.control.treenode.create_treenode'),
-    (r'^(?P<project_id>\d+)/treenode/delete$', 'catmaid.control.treenode.delete_treenode'),
-    (r'^(?P<project_id>\d+)/treenode/info$', 'catmaid.control.treenode.treenode_info'),
-    (r'^(?P<project_id>\d+)/treenode/table/list$', 'catmaid.control.treenode.list_treenode_table'),
-    (r'^(?P<project_id>\d+)/treenode/table/update$', 'catmaid.control.treenode.update_treenode_table'),
+    (r'^(?P<project_id>\d+)/treenode/create$', 'catmaid.control.create_treenode'),
+    (r'^(?P<project_id>\d+)/treenode/create/interpolated$', 'catmaid.control.create_interpolated_treenode'),
+    (r'^(?P<project_id>\d+)/treenode/delete$', 'catmaid.control.delete_treenode'),
+    (r'^(?P<project_id>\d+)/treenode/info$', 'catmaid.control.treenode_info'),
+    (r'^(?P<project_id>\d+)/treenode/table/list$', 'catmaid.control.list_treenode_table'),
+    (r'^(?P<project_id>\d+)/treenode/table/update$', 'catmaid.control.update_treenode_table'),
 
     (r'^(?P<project_id>\d+)/node-list$', 'vncbrowser.views.node_list'),
 

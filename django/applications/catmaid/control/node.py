@@ -1,15 +1,17 @@
-from collections import defaultdict
+import json
+
 from django.db import transaction, connection
-from django.http import HttpResponse, Http404
-from django.db.models import Count
+from django.http import HttpResponse
+
 from django.shortcuts import get_object_or_404
-from vncbrowser.models import Project, Stack, Class, ClassInstance,\
+
+from catmaid.models import Project, Stack, Class, ClassInstance,\
     TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode,\
     Connector, User, Textlabel
-from vncbrowser.views import catmaid_can_edit_project, catmaid_login_optional,\
-    catmaid_login_required
-from common import get_relation_to_id_map, get_class_to_id_map
-import json
+
+from catmaid.control.authentication import *
+from catmaid.control.common import *
+from catmaid.transaction import *
 
 @catmaid_login_required
 def node_list(request, project_id=None, logged_in_user=None):

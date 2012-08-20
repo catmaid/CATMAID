@@ -1,11 +1,14 @@
+import json
+
 from django.db import models
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from vncbrowser.models import Project, Stack, Message, User
-from vncbrowser.views import catmaid_login_required
-from vncbrowser.views.common import json_error_response
-import json
+from catmaid.models import Project, Stack, Message, User
+
+from catmaid.control.authentication import *
+from catmaid.control.common import *
+from catmaid.transaction import *
 
 try:
     import numpy as np

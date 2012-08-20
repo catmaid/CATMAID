@@ -1,8 +1,7 @@
-from django.db import transaction
-from django.http import HttpResponse, Http404
-
 import json
 
+from django.db import transaction
+from django.http import HttpResponse, Http404
 
 class RollbackAndReport(Exception):
     def __init__(self, error):

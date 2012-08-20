@@ -1,20 +1,17 @@
 import json
-from string import upper
+
 from decimal import Decimal
 from django.http import HttpResponse
 
-
-from django.db.models import Count
 from django.db import connection, transaction
 from django.shortcuts import get_object_or_404
-from vncbrowser.models import ClassInstance, TreenodeClassInstance, Treenode, \
+from catmaid.models import ClassInstance, TreenodeClassInstance, Treenode, \
         Double3D, ClassInstanceClassInstance, TreenodeConnector, ProjectStack, \
         Stack
-from vncbrowser.transaction import transaction_reportable_commit_on_success, RollbackAndReport
-from vncbrowser.views import catmaid_can_edit_project, catmaid_login_required
-from vncbrowser.views.catmaid_replacements import get_relation_to_id_map, get_class_to_id_map
-from common import insert_into_log
 
+from catmaid.control.authentication import *
+from catmaid.control.common import *
+from catmaid.transaction import *
 
 @catmaid_can_edit_project
 @transaction_reportable_commit_on_success

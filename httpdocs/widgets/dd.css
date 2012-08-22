@@ -74,7 +74,7 @@
     position:relative;
 }
 .dd2 .ddTitle {
-    background:transparent url(../images/msDropDown.gif) no-repeat;
+    background:transparent url(images/msDropDown.gif) no-repeat;
     padding:0 3px;
     text-indent:0;
     cursor:default;
@@ -82,7 +82,7 @@
     height:36px;
 }
 .dd2 .ddTitle span.arrow {
-    background:transparent url(../images/icon-arrow.gif) no-repeat 0 0; float:right; display:inline-block;width:27px; height:27px; cursor:pointer; top:5px; position:relative; right:2px;
+    background:transparent url(images/icon-arrow.gif) no-repeat 0 0; float:right; display:inline-block;width:27px; height:27px; cursor:pointer; top:5px; position:relative; right:2px;
 }
 
 .dd2 .ddTitle span.ddTitleText {text-indent:1px; overflow:hidden; line-height:33px; font-family:Georgia, "Times New Roman", Times, serif; font-size:16px; font-weight:bold; color:#fff;}
@@ -130,7 +130,7 @@
 
 /************* use sprite *****************/
 .dd .ddChild a.sprite, .dd .ddChild a.sprite:visited {
-    background-image:url(../icons/sprite.gif);
+    background-image:url(icons/sprite.gif);
     background-repeat:no-repeat;
     padding-left:24px;
 }

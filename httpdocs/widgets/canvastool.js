@@ -208,6 +208,8 @@ function CanvasTool()
         canvasLayer.canvas.freeDrawingColor ="rgb(0, 255, 255)";
         this.lastPosition=canvasLayer.getFieldOfViewParameters();
 
+        self.switchToComponentMode();
+
         self.loadElements();
 
 
@@ -291,6 +293,12 @@ function CanvasTool()
 
         $('#button_drawing_mode').click(function() {
 
+            if(project.selectedObjects.selectedskeleton==null)
+            {
+                window.alert('Please select a skeleton!');
+                return
+            }
+
             canvasLayer.canvas.isDrawingMode = !canvasLayer.canvas.isDrawingMode;
 
 
@@ -334,13 +342,15 @@ function CanvasTool()
         self.drawingTypeEnum.forEach(function(drawingType)
         {
             var option=new Option(drawingType.string, drawingType.value, false, false);
-            option.style.height='20px';
-            var test=self.rgbToHex(drawingType.color[0],drawingType.color[1],drawingType.color[2]);
-            option.style.backgroundColor='#'+test;
+            option.title="widgets/icons/icon_cd.gif";
+            option.style.backgroundColor='#'+self.rgbToHex(drawingType.color[0],drawingType.color[1],drawingType.color[2]);
 
             selectDrawing.append(option);
 
         });
+
+        //TODO:Add msdropdown to select box with nice icons of mitochondria, membranes etc.
+        //selectDrawing.msDropDown(); //dd is default;
 
         selectDrawing.change(function () {
             $("#select_drawing_type option:selected").each(function ()
@@ -457,9 +467,14 @@ function CanvasTool()
         document.getElementById( "toolbar_seg" ).style.display = "none";
         document.getElementById('div_color_wheel_box').style.display="none";
         $('#select_drawing_type').empty();
-        $('#button_mode_component').die();
-        $('#button_color_wheel').die();
-        $('#div_color_wheel_box').die();
+        $('#button_mode_component').off('click');
+        $('#button_mode_free_drawing').off('click');
+        $('#button_clear_canvas').off('click');
+        $('#button_color_wheel').off('click');
+        $('#div_color_wheel_box').off('click');
+        $('#button_save_components').off('click');
+        $('#button_init_components').off('click');
+        $('#button_drawing_mode').off('click');
 
         // remove the canvasLayer with the official API
         self.stack.removeLayer( "CanvasLayer" );
@@ -588,8 +603,10 @@ function CanvasTool()
     /* Mouseup */
     this.mouseup = function (event)
     {
-
-
+        if(self.state==self.stateEnum.FREEDRAWING)
+        {
+            return
+        }
 
         x = event.e.offsetX;
         y = event.e.offsetY;
@@ -599,10 +616,10 @@ function CanvasTool()
             self.started = false;
         }
         self.deselectAllPaths();
+        self.deselectAllComponents();
         var intersectingPath=self.CheckForIntersectingPath(x,y);
         if(intersectingPath!=null)
         {
-
             //check
             self.invertPath(self.layerStore.drawingLayers[self.stack.z].drawings[intersectingPath],true);
             canvasLayer.canvas.renderAll(false);
@@ -615,7 +632,7 @@ function CanvasTool()
             return
         }
 
-        self.deselectAllComponents();
+
 
 
 
@@ -989,7 +1006,7 @@ function CanvasTool()
     this.putDrawing=function(drawing)
     {
         var url=  django_url+ project.id + "/stack/" + self.stack.id + '/put-drawing';
-        var drawingToJson ={id:drawing.id,minX:drawing.minX,minY:drawing.minY,maxX:drawing.maxX,maxY:drawing.maxY,svg:drawing.svg(),type:0,componentId:drawing.componentId};
+        var drawingToJson ={id:drawing.id,minX:drawing.minX,minY:drawing.minY,maxX:drawing.maxX,maxY:drawing.maxY,svg:drawing.svg(),type:drawing.type,componentId:drawing.componentId};
         var viewState=canvasLayer.getFieldOfViewParameters();
 
 

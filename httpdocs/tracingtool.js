@@ -756,7 +756,8 @@ TracingTool.goToNearestInNeuron = function(type, objectID) {
     z: projectCoordinates.z
   }, nodeIDToSelect, skeletonIDToSelect;
   parameters[type + '_id'] = objectID;
-  requestQueue.register("model/node.nearest.php", "GET",
+  //requestQueue.register("model/node.nearest.php", "GET",
+  requestQueue.register(django_url + project.id + "/node/nearest", "POST",
                         parameters, function (status, text) {
     var data;
     if (status !== 200) {
@@ -790,7 +791,8 @@ TracingTool.search = function()
   };
 
   setSearchingMessage('Search in progress...');
-  requestQueue.register("model/search.php", "GET", {
+  //requestQueue.register("model/search.php", "GET", {
+  requestQueue.register(django_url + project.id + '/search', "GET", {
     pid: project.id,
     substring: $('#search-box').val()
   }, function (status, text) {

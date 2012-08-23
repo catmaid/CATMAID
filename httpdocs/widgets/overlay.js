@@ -248,11 +248,11 @@ var SkeletonAnnotations = new function()
             // if we switched the skeleton, we need to reopen the object tree
             openSkeletonNodeInObjectTree(node);
             // also update the status with the ancestry of that skeleton:
-            requestQueue.register("model/skeleton.ancestry.php", "POST", {
+            requestQueue.register(django_url + project.id + '/skeleton/ancestry', "POST", {
               pid: project.id,
               skeleton_id: node.skeleton_id
             }, function (status, text) {
-              var data = $.parseJSON(text), message, i, d;
+              var data = $.parseJSON(text), message, i, d, neuronid;
               if (status === 200) {
                 if ('error' in data) {
                   alert("There was an error fetching the ancestry of skeleton "+node.skeleton_id+":\n"+data.error);
@@ -263,9 +263,10 @@ var SkeletonAnnotations = new function()
                   message += " <i>part_of</i> [<strong>"+d.name+"</strong>]";
                 }
                 statusBar.replaceLastHTML(message);
+                neuronid = data[0].id;
                 $('#neuronName').text(data[0].name + ' (Skeleton ID: '+ node.skeleton_id+')');
 
-                project.selectedObjects.selectedneuron = parseInt(data[0].id);
+                project.selectedObjects.selectedneuron = neuronid;
                 project.selectedObjects.selectedskeleton = parseInt(node.skeleton_id);
 
                 }
@@ -678,7 +679,8 @@ var SkeletonAnnotations = new function()
     };
 
     this.createLink = function (fromid, toid, link_type) {
-      requestQueue.register("model/link.create.php", "POST", {
+      //requestQueue.register("model/link.create.php", "POST", {
+      requestQueue.register(django_url + project.id + '/link/create', "POST", {
         pid: project.id,
         from_id: fromid,
         link_type: link_type,
@@ -703,7 +705,7 @@ var SkeletonAnnotations = new function()
     var createSingleConnector = function (phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, completionCallback) {
       // create a single connector with a synapse instance that is
       // not linked to any treenode
-      requestQueue.register("model/connector.create.php", "POST", {
+      requestQueue.register(django_url + project.id + '/connector/create', "POST", {
         pid: project.id,
         confidence: confval,
         x: phys_x,
@@ -751,7 +753,8 @@ var SkeletonAnnotations = new function()
       // set to rootnode (no parent exists)
       var parid = -1;
 
-      requestQueue.register("model/treenode.create.php", "POST", {
+      //requestQueue.register("model/treenode.create.php", "POST", {
+      requestQueue.register(django_url + project.id + '/treenode/create', "POST", {
         pid: project.id,
         parent_id: parid,
         x: phys_x,
@@ -796,7 +799,7 @@ var SkeletonAnnotations = new function()
     {
       // This assumes that the parentID is not null, i.e. exists
       // Creates treenodes from atn to new node in each z section
-      requestQueue.register("model/treenode.create.interpolated.php", "POST", {
+      requestQueue.register(django_url + project.id + '/treenode/create/interpolated', "POST", {
         pid: project.id,
         parent_id: atn.id,
         x: phys_x,
@@ -847,7 +850,7 @@ var SkeletonAnnotations = new function()
         useneuron = -1;
       }
 
-      requestQueue.register("model/treenode.create.php", "POST", {
+      requestQueue.register(django_url + project.id + '/treenode/create', "POST", {
         pid: project.id,
         parent_id: parentID,
         x: phys_x,
@@ -931,7 +934,8 @@ var SkeletonAnnotations = new function()
         }
         return true;
       };
-      requestQueue.register("model/node.update.php", "POST", requestDictionary, callback);
+      //requestQueue.register("model/node.update.php", "POST", requestDictionary, callback);
+      requestQueue.register(django_url + project.id + '/node/update', "POST", requestDictionary, callback);
     };
 
     this.updateNodeCoordinatesinDB = function (completedCallback) {
@@ -1469,11 +1473,11 @@ var SkeletonAnnotations = new function()
       var atn = self.getActiveNode();
       if (atn !== null) {
         if (atn.parent !== null || toConnector) {
-          requestQueue.register("model/confidence.update.php", "POST", {
+          requestQueue.register(django_url + project.id + '/node/' + atn.id + '/confidence/update', "POST", {
             pid: project.id,
             toconnector: toConnector,
             tnid: atn.id,
-            confidence: newConfidence
+            new_confidence: newConfidence
           }, function (status, text, xml) {
             var e;
             if (status === 200) {

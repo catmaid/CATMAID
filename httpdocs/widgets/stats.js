@@ -37,7 +37,8 @@ var ProjectStatistics = new function()
   }
 
   var refresh_project_statistics = function() {
-    requestQueue.register("model/stats.list.php", "POST", {
+    //requestQueue.register("model/stats.list.php", "POST", {
+    requestQueue.register(django_url + project.id + '/stats-summary', "POST", {
       "pid": project.getId()
     }, function (status, text, xml) {
       if (status == 200) {
@@ -54,7 +55,8 @@ var ProjectStatistics = new function()
       return true;
     });
 
-    requestQueue.register("model/stats.treenodes.list.php", "POST", {
+    //requestQueue.register("model/stats.treenodes.list.php", "POST", {
+    requestQueue.register(django_url + project.id + '/stats', "POST", {
       "pid": project.id
     }, function (status, text, xml) {
       if (status == 200) {

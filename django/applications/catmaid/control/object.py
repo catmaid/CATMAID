@@ -1,6 +1,6 @@
 from django.http import HttpResponse
 
-from catmaid.models import ClassInstanceClassInstance
+from catmaid.models import *
 
 try:
     import networkx as nx

@@ -3,10 +3,7 @@ import json
 from django.http import HttpResponse
 from django.db.models import Count
 
-from catmaid.models import Project, Stack, Class, ClassInstance,\
-    TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode,\
-    Connector, User, Textlabel
-
+from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *

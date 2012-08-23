@@ -1,3 +1,5 @@
+
+from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *

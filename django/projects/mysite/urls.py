@@ -25,7 +25,7 @@ urlpatterns = patterns('',
     (r'^(?P<project_id>\d+)/lines/delete$', 'vncbrowser.views.lines_delete'),
     (r'^(?P<project_id>\d+)/visual_index$', 'vncbrowser.views.visual_index'),
     (r'^(?P<project_id>\d+)/visual_index(/find/(?P<search>[^/]*))?(/sorted/(?P<order_by>[^/]*))?(/cell_body_location/(?P<cell_body_location>[^/]*))?(/page/(?P<page>[0-9]*))?$', 'vncbrowser.views.visual_index'),
-    (r'^(?P<project_id>\d+)/skeleton-for-treenode/(?P<treenode_id>\d+)/swc$', 'vncbrowser.views.skeleton_swc'),
+
 )
 
 # Django CATMAID API
@@ -40,6 +40,7 @@ urlpatterns += patterns(
     (r'^messages/mark_read$', 'catmaid.control.read_message'),
 
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'catmaid.control.skeleton_swc'),
+    (r'^(?P<project_id>\d+)/skeleton-for-treenode/(?P<treenode_id>\d+)/swc$', 'catmaid.control.skeleton_swc'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', 'catmaid.control.skeleton_json'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neurohdf$', 'catmaid.control.skeleton_neurohdf'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review$', 'catmaid.control.export_review_skeleton'),
@@ -58,10 +59,10 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/node/nearest$', 'catmaid.control.node_nearest'),
     (r'^(?P<project_id>\d+)/node/update$', 'catmaid.control.node_update'),
 
-    (r'^(?P<project_id>\d+)/labels-all$', 'catmaid.control.views.labels_all'),
-    (r'^(?P<project_id>\d+)/labels-for-nodes$', 'catmaid.control.views.labels_for_nodes'),
-    (r'^(?P<project_id>\d+)/labels-for-node/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'catmaid.control.views.labels_for_node'),
-    (r'^(?P<project_id>\d+)/label-update/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'catmaid.control.views.label_update'),
+    (r'^(?P<project_id>\d+)/labels-all$', 'catmaid.control.labels_all'),
+    (r'^(?P<project_id>\d+)/labels-for-nodes$', 'catmaid.control.labels_for_nodes'),
+    (r'^(?P<project_id>\d+)/labels-for-node/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'catmaid.control.labels_for_node'),
+    (r'^(?P<project_id>\d+)/label-update/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'catmaid.control.label_update'),
 
     (r'^(?P<project_id>\d+)/object-tree/expand$', 'catmaid.control.tree_object_expand'),
     (r'^(?P<project_id>\d+)/object-tree/list', 'catmaid.control.tree_object_list'),
@@ -97,14 +98,18 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/treenode/table/list$', 'catmaid.control.list_treenode_table'),
     (r'^(?P<project_id>\d+)/treenode/table/update$', 'catmaid.control.update_treenode_table'),
 
-    (r'^(?P<project_id>\d+)/node-list$', 'vncbrowser.views.node_list'),
+    (r'^(?P<project_id>\d+)/connector/create$', 'catmaid.control.create_connector'),
+    (r'^(?P<project_id>\d+)/connector/delete', 'catmaid.control.delete_connector'),
+    (r'^(?P<project_id>\d+)/connector/table/list$', 'catmaid.control.list_connector'),
+
+    # (r'^(?P<project_id>\d+)/node-list$', 'vncbrowser.views.node_list'),
 
     )
 
 # Cropping
 urlpatterns += patterns('',
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_ids>%s)/crop/(?P<x_min>%s),(?P<x_max>%s)/(?P<y_min>%s),(?P<y_max>%s)/(?P<z_min>%s),(?P<z_max>%s)/(?P<zoom_level>\d+)/$' % (intlist, num, num, num, num, num, num), 'catmaid2.control.crop'),
-    (r'^crop/download/(?P<file_path>.*)/$', 'catmaid2.control.download_crop')
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_ids>%s)/crop/(?P<x_min>%s),(?P<x_max>%s)/(?P<y_min>%s),(?P<y_max>%s)/(?P<z_min>%s),(?P<z_max>%s)/(?P<zoom_level>\d+)/$' % (intlist, num, num, num, num, num, num), 'catmaid.control.crop'),
+    (r'^crop/download/(?P<file_path>.*)/$', 'catmaid.control.download_crop')
     )
 
 urlpatterns += patterns('',

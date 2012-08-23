@@ -2,9 +2,52 @@ from collections import defaultdict
 from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from catmaid.models import SORT_ORDERS_DICT, NeuronSearch, CELL_BODY_CHOICES, ClassInstance, \
-    ClassInstanceClassInstance, Log
+
+from catmaid.models import Relation, Class, Log
 import json
+
+def insert_into_log(project_id, user_id, op_type, location=None, freetext=None):
+    # valid operation types
+    operation_type_array = [
+        "rename_root",
+        "create_neuron",
+        "rename_neuron",
+        "remove_neuron",
+        "move_neuron",
+
+        "create_group",
+        "rename_group",
+        "remove_group",
+        "move_group",
+
+        "create_skeleton",
+        "rename_skeleton",
+        "remove_skeleton",
+        "move_skeleton",
+
+        "split_skeleton",
+        "join_skeleton",
+        "reroot_skeleton",
+
+        "change_confidence"
+    ]
+
+    if not op_type in operation_type_array:
+        return {'error': 'Operation type {0} not valid'.format(op_type)}
+
+    new_log = Log()
+    new_log.user_id = user_id
+    new_log.project_id = project_id
+    new_log.operation_type = op_type
+    if not location is None:
+        new_log.location = location
+    if not freetext is None:
+        new_log.freetext = freetext
+
+    new_log.save()
+
+    # $q = $db->insertIntoId('log', $data );
+    # echo json_encode( array ( 'error' => "Failed to insert operation $op_type for user $uid in project %pid." ) );
 
 
 # Tip from: http://lincolnloop.com/blog/2008/may/10/getting-requestcontext-your-templates/

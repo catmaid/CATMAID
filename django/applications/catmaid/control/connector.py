@@ -1,7 +1,10 @@
 import json
+from string import upper
 
 from django.http import HttpResponse
+from django.db.models import Count
 
+from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *

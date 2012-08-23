@@ -5,10 +5,8 @@ from django.http import HttpResponse
 
 from django.db import connection, transaction
 from django.shortcuts import get_object_or_404
-from catmaid.models import ClassInstance, TreenodeClassInstance, Treenode, \
-        Double3D, ClassInstanceClassInstance, TreenodeConnector, ProjectStack, \
-        Stack
 
+from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *

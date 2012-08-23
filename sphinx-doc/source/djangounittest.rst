@@ -1,6 +1,23 @@
 Django unit tests for CATMAID
 =============================
 
+Running tests
+-------------
+
+You can run the tests with::
+
+    ./manage.py test
+
+If you see an error::
+
+    DatabaseError: must be owner of extension plpgsql
+
+Fix it with::
+
+    sudo -u postgres psql
+    ALTER ROLE catmaid_user WITH superuser;
+
+
 Loading the test fixtures (schema and data) into a new CATMAID database
 -----------------------------------------------------------------------
 

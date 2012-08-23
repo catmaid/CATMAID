@@ -1,19 +1,10 @@
-
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
-from catmaid.models import Project, Stack, Class, ClassInstance,\
-    TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode,\
-    Connector, User, Textlabel, ClassInstanceClassInstance, TreenodeConnector, Location
-
-from catmaid.models import Project, Stack, Class, ClassInstance,\
-    TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode,\
-    Connector, User, Textlabel
-
+from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
-
 
 import json
 import sys

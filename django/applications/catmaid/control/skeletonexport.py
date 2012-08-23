@@ -1,15 +1,17 @@
 import json
 
 from django.http import HttpResponse
-from django.db.models import Count
+from django.shortcuts import get_object_or_404
 
-from catmaid.models import Project, Stack, Class, ClassInstance,\
-    TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode,\
-    Connector, User, Textlabel
-
+from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
+
+try:
+    import networkx as nx
+except ImportError:
+    pass
 
 def get_treenodes_qs(project_id=None, skeleton_id=None, treenode_id=None, with_labels=True):
     if treenode_id and not skeleton_id:

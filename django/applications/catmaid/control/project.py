@@ -4,10 +4,7 @@ from collections import defaultdict
 from django.db import transaction, connection
 from django.http import HttpResponse
 
-from catmaid.models import Project, Stack, Class, ClassInstance,\
-    TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode,\
-    Connector, User, Textlabel
-
+from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
@@ -37,19 +34,19 @@ def projects(request, logged_in_user=None):
     # Find all the projects, and mark those that are editable from the
     # project_user table:
     if logged_in_user:
-        projects = Project.objects.all()
+        projects = Project.objects.all().order_by('title')
         c.execute("SELECT project_id FROM project_user WHERE user_id = %s",
             [logged_in_user.id])
         editable_projects = set(x[0] for x in c.fetchall())
     else:
-        projects = Project.objects.filter(public=True)
+        projects = Project.objects.filter(public=True).order_by('title')
         editable_projects = set([])
 
     # Find all the projects that are editable:
     catalogueable_projects = set(x.project.id for x in Class.objects.filter(class_name='driver_line').select_related('project'))
 
     # Create a dictionary with those results that we can output as JSON:
-    result = {}
+    result = []
     for p in projects:
         if p.id not in project_to_stacks:
             continue
@@ -61,12 +58,13 @@ def projects(request, logged_in_user=None):
                 'note': '',
                 'action': 'javascript:openProjectStack(%d,%d)' % (p.id, s.id)}
         editable = p.id in editable_projects
-        result[p.id] = {
+        result.append( {
+            'pid': p.id,
             'title': p.title,
             'public_project': int(p.public),
             'editable': int(editable),
             'catalogue': int(p.id in catalogueable_projects),
             'note': '[ editable ]' if editable else '',
-            'action': stacks_dict}
+            'action': stacks_dict} )
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")
 

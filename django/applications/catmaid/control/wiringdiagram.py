@@ -1,8 +1,9 @@
 import json
 
 from django.http import HttpResponse
+from django.db.models import Count
 
-from catmaid.models import Treenode, TreenodeConnector
+from catmaid.models import *
 from catmaid.control.authentication import catmaid_login_required
 
 def get_wiring_diagram(project_id=None, lower_treenode_number_limit=0):

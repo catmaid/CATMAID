@@ -31,7 +31,7 @@ var LogTable = new function()
                 "bServerSide": true,
                 "bAutoWidth": false,
                 "iDisplayLength": possibleLengths[0],
-                "sAjaxSource": 'model/log.list.php',
+                "sAjaxSource": django_url + project.id + '/logs/list',
                 "fnServerData": function (sSource, aoData, fnCallback) {
                     aoData.push({
                         "name": "user_id",

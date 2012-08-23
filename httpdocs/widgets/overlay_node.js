@@ -851,7 +851,7 @@ var SkeletonElements = new function()
   var connectorDelete = function ()
   {
     var connectornode = this;
-    requestQueue.register("model/connector.delete.php", "POST", {
+    requestQueue.register(django_url + project.id + '/connector/delete', "POST", {
       pid: project.id,
       cid: connectornode.id
     }, function (status, text, xml) {
@@ -962,7 +962,7 @@ var SkeletonElements = new function()
         if(!(e.shiftKey && e.ctrlKey)) {
           return;
         }
-        requestQueue.register("model/link.delete.php", "POST", {
+        requestQueue.register(django_url + project.id + '/link/delete', "POST", {
           pid: project.id,
           cid: fromid,
           tid: toid

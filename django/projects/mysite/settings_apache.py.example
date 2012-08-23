@@ -72,3 +72,8 @@ PROJECT_ROOT = os.path.realpath(os.path.join(
         os.path.dirname(__file__), '..', '..'))
 for subdirectory in ('projects', 'applications', 'lib'):
     sys.path.insert(0, os.path.join(PROJECT_ROOT, subdirectory))
+
+# Serving admin static files
+# http://stackoverflow.com/questions/9959875/how-to-serve-admin-static-files-with-django-contrib-staticfiles-in-django-1-4-u
+STATIC_URL = '/static/'
+STATIC_ROOT =  '/home/USERNAME/CATMAID_PATH/django/static-admin'

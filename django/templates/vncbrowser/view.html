@@ -77,7 +77,7 @@
 
     <p>
         {% for skeleton in skeletons %}
-        <a href="{% url vncbrowser.views.skeleton_swc skeleton_id=skeleton.id, project_id=project_id %}">Save SWC file (for
+        <a href="{% url catmaid.control.skeleton_swc skeleton_id=skeleton.id, project_id=project_id %}">Save SWC file (for
             skeleton {{skeleton.id}} of neuron "{{neuron.name}}")</a><br>
         {% endfor %}
         <br />

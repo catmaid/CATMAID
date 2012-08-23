@@ -181,6 +181,8 @@ function CanvasTool()
 
     this.initialize=function(parentStack)
     {
+        //TODO remove debug url
+        django_url='http://localhost:8000/';
         /*$(document).ready(function(e) {
             try {
                 $("body select").msDropDown();
@@ -304,7 +306,6 @@ function CanvasTool()
 
             if (canvasLayer.canvas.isDrawingMode) {
                 $('#button_drawing_mode').text('Stop Correction');
-                // TODO: hide drawing mode options
                 $('#sliders_box_brush_size').show();
 
                 self.state=self.stateEnum.COMPONENTDRAW;
@@ -312,7 +313,6 @@ function CanvasTool()
             }
             else {
                 $('#button_drawing_mode').text('Correction Mode');
-                // TODO: show drawing mode options
                 $('#sliders_box_brush_size').hide();
                 self.state=self.stateEnum.COMPONENTVIEW;
                 canvasLayer.canvas.interactive=false;
@@ -329,8 +329,9 @@ function CanvasTool()
         });
         $('#button_mode_component').click(function()
         {
-            this.style.selected=true;
-            self.switchToComponentMode();
+            self.generateSegmentationFile();
+            //this.style.selected=true;
+            //self.switchToComponentMode();
 
         });
 
@@ -438,9 +439,6 @@ function CanvasTool()
         // view is the mouseCatcher now
         var view = canvasLayer.view;
 
-
-
-
     };
 
     this.generateLayer=function()
@@ -507,6 +505,29 @@ function CanvasTool()
 
         }
 
+
+    };
+
+    this.generateSegmentationFile=function()
+    {
+        if(project.selectedObjects.selectedskeleton ==null){return;}
+        var url=  django_url+ project.id + "/stack/" + self.stack.id + '/generate-segmentation-file';
+
+
+        $.ajax({
+            url: url,
+            type: "POST",
+            data: {skeleton_id:project.selectedObjects.selectedskeleton },
+            dataType: "json",
+            beforeSend: function(x)
+            {
+                //Log before send
+            },
+            success: function(result)
+            {
+
+            }
+        });
 
     };
 
@@ -801,8 +822,6 @@ function CanvasTool()
             return;
         }
 
-        //TODO:remove debug url
-        //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/get-saved-components";
 
         var url= django_url + project.id + "/stack/" + self.stack.id + '/get-saved-components'+ "?" + $.param({
             skeleton_id:project.selectedObjects.selectedskeleton,
@@ -1081,7 +1100,6 @@ function CanvasTool()
     {
         if(project.selectedObjects.selectedskeleton==null){return;}
 
-        //TODO:Remove debug URL
 
         $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Initializing skeleton. Just a moment...</h2>' });
         requestQueue.register(

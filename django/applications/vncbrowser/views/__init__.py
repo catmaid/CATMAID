@@ -51,6 +51,8 @@ from neurohdf import get_saved_drawings_by_component_id
 from neurohdf import get_saved_drawings_by_view
 from neurohdf import put_drawing
 from neurohdf import delete_drawing
+from neurohdf import create_segmentation_file
+
 
 from cropping import crop
 from cropping import download_crop

@@ -22,6 +22,8 @@ import os
 import base64, cStringIO
 import time
 import sys
+import cairo
+import rsvg
 
 # This file defines constants used to correctly define the metadata for NeuroHDF microcircuit data
 
@@ -208,7 +210,6 @@ def get_saved_drawings_by_component_id(request, project_id=None, stack_id=None, 
     stack = get_object_or_404(Stack, pk=stack_id)
     p = get_object_or_404(Project, pk=project_id)
 
-    # fetch all the components for the given skeleton and z section
     all_drawings = Drawing.objects.filter(stack=stack,
         project=p,skeleton_id=skeleton_id,
         z = z,component_id=component_id).all()
@@ -512,6 +513,139 @@ def initialize_components_for_skeleton(request, project_id=None, stack_id=None, 
 
     return HttpResponse(json.dumps({'status': 'success'}), mimetype="text/json")
 
+
+def create_segmentation_file(request, project_id=None, stack_id=None):
+
+    skeleton_id = int(request.POST.__getitem__('skeleton_id'))
+
+
+
+    create_segmentation_neurohdf_file(project_id,skeleton_id,stack_id)
+
+
+def create_segmentation_neurohdf_file(project_id, skeleton_id,stack_id):
+    if project_id is None or skeleton_id is None:
+        return
+
+    filename=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_segmentation.hdf'.format( project_id, stack_id ) )
+    componentTreeFilePath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
+
+    with closing(h5py.File(filename, 'w')) as hfile:
+        hfile.attrs['neurohdf_version'] = '0.1'
+        scaleGroup = hfile.create_group("Scale")
+        scale_zero = scaleGroup.create_group("0")
+        section = scale_zero.create_group("section")
+
+        # retrieve stack information to transform world coordinates to pixel coordinates
+        stack_info = get_stack_info( project_id, stack_id )
+
+        skeleton = get_object_or_404(ClassInstance, pk=skeleton_id)
+        stack = get_object_or_404(Stack, pk=stack_id)
+        project = get_object_or_404(Project, pk=project_id)
+
+        for z in xrange(2):
+
+            #create np array x * y * typeCount
+            #   0   Components
+            #   1   Component drawings
+            #   2   Mitochondria
+            #   3   Membrane
+            #   4   Soma
+            #   5   Misc
+            #   6   Erasor
+
+            shape=(1025,1025,7)
+            segmentation=np.zeros(shape, dtype=np.long)
+
+            # retrieve all the components belonging to the skeleton
+            all_components = Component.objects.filter(
+                project = project,
+                stack = stack,
+                skeleton_id = skeleton.id,
+                z=z
+            ).all()
+            for comp in all_components:
+
+                with closing(h5py.File(componentTreeFilePath, 'r')) as componenthfile:
+                    componentPixelStart=componenthfile['connected_components/'+str(z)+'/begin_indices'].value[comp.component_id].copy()
+                    componentPixelEnd=componenthfile['connected_components/'+str(z)+'/end_indices'].value[comp.component_id].copy()
+
+                    data=componenthfile['connected_components/'+str(z)+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
+                    segmentation[data['y'],data['x'],0] =comp.component_id
+
+            all_drawings = Drawing.objects.filter(stack=stack,
+                project=project,skeleton_id=skeleton_id,
+                z = z).all()
+            for compDrawing in all_drawings:
+                svg2pixel(compDrawing,compDrawing.id)
+
+                    #img =  cairo.ImageSurface(cairo.FORMAT_ARGB32, (compDrawing.max_x-compDrawing.min_x),(compDrawing.max_y-compDrawing.min_y))
+                    #img =  cairo.ImageSurface(cairo.FORMAT_ARGB32, 1024,1024)
+
+
+                    #ctx = cairo.Context(img)
+
+                    ## handler= rsvg.Handle(<svg filename>)
+                    # or, for in memory SVG data:
+                    #handler= rsvg.Handle(None, str('<path d="M100,10 L100,10 40,180 190,60 10,60 160,180 z" stroke="blue" fill="darkblue" stroke-width="4" />'))
+
+
+#  get component drawings for z belonging to  this skeleton
+                #convert drawing to pixel
+                # add drawing id to np array at drawing pixel coordinates
+
+            #  get drawings for z with componentId=none
+                #convert drawing to pixel
+                # add drawing id to np array at drawing pixel coordinates
+
+
+            #store no array to hdf file
+            section.create_dataset(str(z), data=segmentation, compression='gzip', compression_opts=4)
+
+    return HttpResponse(True, mimetype="text/json")
+
+
+def svg2pixel(drawing, id, maxwidth=0, maxheight=0):
+
+    nopos=find_between(drawing.svg,">",">")+'>'
+    hallo=drawing.svg
+    data='<svg>'+nopos+'</svg>'
+    svg = rsvg.Handle(data=data)
+
+    x = width = svg.props.width
+    y = height = svg.props.height
+    print "actual dims are " + str((width, height))
+    print "converting to " + str((maxwidth, maxheight))
+
+    yscale = xscale = 1
+
+    if (maxheight != 0 and width > maxwidth) or (maxheight != 0 and height > maxheight):
+        x = maxwidth
+        y = float(maxwidth)/float(width) * height
+        print "first resize: " + str((x, y))
+        if y > maxheight:
+            y = maxheight
+            x = float(maxheight)/float(height) * width
+            print "second resize: " + str((x, y))
+        xscale = float(x)/svg.props.width
+        yscale = float(y)/svg.props.height
+
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1024, 1024)
+    context = cairo.Context(surface)
+    context.scale(xscale, yscale)
+    svg.render_cairo(context)
+    surface.write_to_png("svg"+str(id)+".png")
+
+def find_between( s, first, last ):
+    try:
+        start = s.index( first ) + len( first )
+        end = s.index( last, start )
+        return s[start:end]
+    except ValueError:
+        return ""
+
+
+
 def get_tile(request, project_id=None, stack_id=None):
 
     scale = float(request.GET.get('scale', '0'))
@@ -765,6 +899,8 @@ def get_temporary_neurohdf_filename_and_url():
     host = settings.CATMAID_DJANGO_URL.lstrip('http://').split('/')[0]
     return os.path.join(hdf_path, filename), "http://{0}{1}".format( host, os.path.join(settings.STATICFILES_URL,
         settings.STATICFILES_HDF5_SUBDIRECTORY, filename) )
+
+
 
 def create_neurohdf_file(filename, data):
 

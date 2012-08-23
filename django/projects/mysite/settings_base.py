@@ -45,6 +45,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'vncbrowser',
     'django.contrib.admin',
+    'django.contrib.staticfiles',
     'devserver',
     'djcelery',
     'catmaid'

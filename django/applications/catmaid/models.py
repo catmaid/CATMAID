@@ -437,7 +437,7 @@ class Treenode(models.Model):
     edition_time = models.DateTimeField(default=now)
     project = models.ForeignKey(Project)
     location = Double3DField()
-    parent = models.ForeignKey('Treenode', null=True)
+    parent = models.ForeignKey('self', null=True, related_name='children')
     radius = models.FloatField()
     confidence = models.IntegerField(default=5)
     skeleton = models.ForeignKey(ClassInstance)
@@ -501,6 +501,7 @@ class TreenodeConnector(models.Model):
     treenode = models.ForeignKey(Treenode)
     connector = models.ForeignKey(Connector)
     skeleton = models.ForeignKey(ClassInstance)
+    confidence = models.IntegerField(default=5)
 
 class Session(models.Model):
     class Meta:

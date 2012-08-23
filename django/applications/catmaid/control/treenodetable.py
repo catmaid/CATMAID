@@ -1,7 +1,11 @@
 import json
+from string import upper
 
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.db.models import Count
 
+from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
@@ -182,10 +186,11 @@ def list_treenode_table(request, project_id=None, logged_in_user=None):
             else:
                 treenode.nodetype = 'L'
 
+
         # Now that we've assigned node types, filter based on them:
-        if filter_nodetype is not None:
+        if filter_nodetype is not None and not filter_nodetype == '':
             def nodetype_filter(treenode):
-                upper(treenode.nodetype) in upper(filter_nodetype)
+                return upper(treenode.nodetype) in upper(filter_nodetype)
             treenodes = filter(nodetype_filter, treenodes)
 
         response_on_error = 'Could not retrieve resolution and translation parameters for project.'

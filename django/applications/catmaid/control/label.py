@@ -6,10 +6,7 @@ from django.http import HttpResponse, Http404
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 
-from catmaid.models import Project, Stack, Class, ClassInstance,\
-    TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode,\
-    Connector, User, Textlabel
-
+from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *

@@ -1,53 +1,12 @@
 import json
+from string import upper
 
 from django.http import HttpResponse
 
+from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
-
-def insert_into_log(project_id, user_id, op_type, location=None, freetext=None):
-    # valid operation types
-    operation_type_array = [
-        "rename_root",
-        "create_neuron",
-        "rename_neuron",
-        "remove_neuron",
-        "move_neuron",
-
-        "create_group",
-        "rename_group",
-        "remove_group",
-        "move_group",
-
-        "create_skeleton",
-        "rename_skeleton",
-        "remove_skeleton",
-        "move_skeleton",
-
-        "split_skeleton",
-        "join_skeleton",
-        "reroot_skeleton",
-
-        "change_confidence"
-    ]
-
-    if not op_type in operation_type_array:
-        return {'error': 'Operation type {0} not valid'.format(op_type)}
-
-    new_log = Log()
-    new_log.user_id = user_id
-    new_log.project_id = project_id
-    new_log.operation_type = op_type
-    if not location is None:
-        new_log.location = location
-    if not freetext is None:
-        new_log.freetext = freetext
-
-    new_log.save()
-
-    # $q = $db->insertIntoId('log', $data );
-    # echo json_encode( array ( 'error' => "Failed to insert operation $op_type for user $uid in project %pid." ) );
 
 
 @catmaid_login_required
@@ -62,7 +21,7 @@ def list_logs(request, project_id=None, logged_in_user=None):
     should_sort = request.POST.get('iSortCol_0', False)
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))
-        sorting_directions = [request.POST.get('iSortDir_%d' % d) for d in range(column_count)]
+        sorting_directions = [request.POST.get('iSortDir_%d' % d, 'DESC') for d in range(column_count)]
         sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '', sorting_directions)
 
         fields = ['user', 'operation_type', 'creation_time', 'x', 'y', 'z', 'freetext']

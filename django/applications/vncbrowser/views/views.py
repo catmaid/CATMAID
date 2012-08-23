@@ -4,23 +4,17 @@ from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
-from vncbrowser.models import CELL_BODY_CHOICES, \
+
+from catmaid.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
     Project, User, Treenode, TreenodeConnector, Connector, Stack, ProjectStack, \
     TreenodeClassInstance, ConnectorClassInstance, Location, ProjectUser, Overlay, \
     BrokenSlice
-from vncbrowser.views import catmaid_login_required, my_render_to_response, \
-    get_form_and_neurons
+from catmaid.control.authentication import *
+from catmaid.control.common import *
+from catmaid.transaction import *
 
-from django.db.models import Count
-import json
-import re
-import sys
-
-from urllib import urlencode
-from datetime import datetime
-import httplib, urllib
-import cStringIO
+import urllib
 
 try:
     import networkx as nx

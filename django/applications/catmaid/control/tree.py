@@ -2,12 +2,10 @@ import json
 
 from django.http import HttpResponse
 
-from catmaid.models import ClassInstance, Treenode, TreenodeConnector, ClassInstanceClassInstance
-
+from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
-
 
 @catmaid_can_edit_project
 @transaction_reportable_commit_on_success

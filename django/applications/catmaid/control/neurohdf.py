@@ -1,9 +1,7 @@
 from django.conf import settings
 from django.http import HttpResponse
-from catmaid.models import CELL_BODY_CHOICES, \
-    ClassInstanceClassInstance, Relation, Class, ClassInstance, \
-    Project, User, Treenode, TreenodeConnector, Connector
 
+from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *

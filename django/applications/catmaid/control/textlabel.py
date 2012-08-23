@@ -2,10 +2,7 @@ import json
 
 from django.http import HttpResponse
 
-from catmaid.models import Project, Stack, Class, ClassInstance,\
-    TreenodeClassInstance, ConnectorClassInstance, Relation, Treenode,\
-    Connector, User, Textlabel
-
+from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
@@ -106,9 +103,9 @@ def create_textlabel(request, project_id=None, logged_in_user=None):
         'g': 0.5,
         'b': 0,
         'a': 1,
-        'font_name': False,
-        'font_style': False,
-        'font_size': False,
+        'fontname': False,
+        'fontstyle': False,
+        'fontsize': False,
         'scaling': False}
     for p in param_defaults.keys():
         params[p] = request.POST.get(p, param_defaults[p])
@@ -121,12 +118,12 @@ def create_textlabel(request, project_id=None, logged_in_user=None):
         scaling=params['scaling']
     )
     new_label.project_id = project_id
-    if params['font_name']:
-        new_label.font_name = params['font_name']
-    if params['font_style']:
-        new_label.font_style = params['font_style']
-    if params['font_size']:
-        new_label.font_size = params['font_size']
+    if params['fontname']:
+        new_label.font_name = params['fontname']
+    if params['fontstyle']:
+        new_label.font_style = params['fontstyle']
+    if params['fontsize']:
+        new_label.font_size = params['fontsize']
     new_label.save()
 
     TextlabelLocation(

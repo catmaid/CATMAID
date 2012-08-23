@@ -13,8 +13,10 @@ from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, Session, Log, Message, TextlabelLocation
 from models import Treenode, Connector, TreenodeConnector, User
 from models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
-from transaction import RollbackAndReport, transaction_reportable_commit_on_success
-from views.catmaid_replacements import get_relation_to_id_map, get_class_to_id_map
+
+from catmaid.control.authentication import *
+from catmaid.control.common import *
+from catmaid.transaction import *
 
 
 class SimpleTest(TestCase):

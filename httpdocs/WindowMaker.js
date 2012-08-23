@@ -16,12 +16,13 @@ var WindowMaker = new function()
     container.style.position = "relative";
     container.style.bottom = "0px";
     container.style.width = "100%";
+    container.style.height = "100%";
     container.style.overflow = "auto";
     container.style.backgroundColor = "#ffffff";
     return container;
   };
 
-  var addListener = function(win, container) {
+  var addListener = function(win, container, button_bar) {
     win.addListener(
       function(callingWindow, signal) {
         switch (signal) {
@@ -45,7 +46,12 @@ var WindowMaker = new function()
             }
             break;
           case CMWWindow.RESIZE:
-            container.style.height = win.getContentHeight() + "px";
+            if( button_bar !== undefined ) {
+                container.style.height = ( win.getContentHeight() - $('#' + 'table_of_connector_buttons').height() ) + "px";
+            } else {
+                container.style.height = ( win.getContentHeight() ) + "px";
+            }
+
             break;
         }
         return true;
@@ -293,21 +299,26 @@ var WindowMaker = new function()
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
-    var container = createContainer("graph_widget");
-    content.appendChild(container);
+    var contentbutton = document.createElement('div');
+    contentbutton.setAttribute("id", 'graph_window_buttons');
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
     add.setAttribute("id", "show_neurons_from_3d_view");
     add.setAttribute("value", "Show graph of selected 3D viewer neuron(s)");
     add.onclick = GraphWidget.updateGraphFrom3DViewer;
-    container.appendChild(add);
+    contentbutton.appendChild(add);
+
+    content.appendChild( contentbutton );
+
+    var container = createContainer("graph_widget");
+    content.appendChild(container);
 
     var graph = document.createElement('div');
     graph.innerHTML = '<div id="cytoscapeweb"></div>';
     container.appendChild(graph);
 
-    addListener(win, container);
+    addListener(win, container, 'graph_window_buttons');
 
     addLogic(win);
 
@@ -322,21 +333,24 @@ var WindowMaker = new function()
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
+    var contentbutton = document.createElement('div');
+    contentbutton.setAttribute("id", 'table_of_skeleton_buttons');
+
     var add = document.createElement('input');
     add.setAttribute("type", "button");
     add.setAttribute("id", "update_treenodetable_current_skeleton");
     add.setAttribute("value", "Update table for active skeleton");
     add.onclick = updateTreenodeTable; // function declared in table_treenode.js
-    content.appendChild(add);
+    contentbutton.appendChild(add);
 
     var sync = document.createElement('input');
     sync.setAttribute("type", "checkbox");
     sync.setAttribute("id", "synchronize_treenodetable");
     sync.setAttribute("label", "Synchronize");
-    content.appendChild(sync);
+    contentbutton.appendChild(sync);
 
     var label = document.createTextNode('Synchronize');
-    content.appendChild(label);
+    contentbutton.appendChild(label);
 
     var sync = document.createElement('select');
     sync.setAttribute("id", "treenodetable_lastskeletons");
@@ -344,10 +358,12 @@ var WindowMaker = new function()
     option.text = "None";
     option.value = -1;
     sync.appendChild(option);
-    content.appendChild(sync);
+    contentbutton.appendChild(sync);
+
+    content.appendChild( contentbutton );
 
     var container = createContainer("treenode_table_widget");
-    content.appendChild(container);
+    content.appendChild( container );
 
     container.innerHTML =
       '<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable">' +
@@ -394,7 +410,7 @@ var WindowMaker = new function()
         '</tbody>' +
       '</table>';
 
-    addListener(win, container);
+    addListener(win, container, 'table_of_skeleton_buttons');
 
     addLogic(win);
 
@@ -409,19 +425,22 @@ var WindowMaker = new function()
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
+    var contentbutton = document.createElement('div');
+    contentbutton.setAttribute("id", 'table_of_connector_buttons');
+
     var add = document.createElement('input');
     add.setAttribute("type", "button");
     add.setAttribute("id", "refresh_connectortable_current_skeleton");
     add.setAttribute("value", "Refresh");
     add.onclick = ConnectorTable.refreshConnectorTable;
-    content.appendChild(add);
+      contentbutton.appendChild(add);
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
     add.setAttribute("id", "update_connectortable_current_skeleton");
     add.setAttribute("value", "Current skeleton");
     add.onclick = ConnectorTable.updateConnectorTable;
-    content.appendChild(add);
+      contentbutton.appendChild(add);
 
     var sync = document.createElement('select');
     sync.setAttribute("id", "connector_relation_type");
@@ -434,15 +453,15 @@ var WindowMaker = new function()
     objOption2.value = "1";
     objOption2.selected = "selected";
     sync.appendChild(objOption2);
-    content.appendChild(sync);
+      contentbutton.appendChild(sync);
 
     var rand = document.createTextNode('Synchronize');
-    content.appendChild(rand);
+    contentbutton.appendChild(rand);
     var sync = document.createElement('input');
     sync.setAttribute("type", "checkbox");
     sync.setAttribute("id", "synchronize_connectortable");
     sync.setAttribute("label", "Synchronize");
-    content.appendChild(sync);
+    contentbutton.appendChild(sync);
 
     var sync = document.createElement('select');
     sync.setAttribute("id", "connectortable_lastskeletons");
@@ -450,7 +469,9 @@ var WindowMaker = new function()
     option.text = "None";
     option.value = -1;
     sync.appendChild(option);
-    content.appendChild(sync);
+    contentbutton.appendChild(sync);
+
+    content.appendChild( contentbutton );
 
     var container = createContainer("connectortable_widget");
     content.appendChild(container);
@@ -486,7 +507,7 @@ var WindowMaker = new function()
       '</table>';
 
 
-    addListener(win, container);
+    addListener(win, container, 'table_of_connector_buttons');
 
     addLogic(win);
 
@@ -502,12 +523,15 @@ var WindowMaker = new function()
         var content = win.getFrame();
         content.style.backgroundColor = "#ffffff";
 
+        var contentbutton = document.createElement('div');
+        contentbutton.setAttribute("id", 'table_of_log_buttons');
+
         var add = document.createElement('input');
         add.setAttribute("type", "button");
         add.setAttribute("id", "update_logtable");
         add.setAttribute("value", "Update table");
         add.onclick = updateLogTable; // function declared in table_log.js
-        content.appendChild(add);
+        contentbutton.appendChild(add);
 
         /* users */
         var sync = document.createElement('select');
@@ -516,7 +540,7 @@ var WindowMaker = new function()
         option.text = "All";
         option.value = -1;
         sync.appendChild(option);
-        content.appendChild(sync);
+        contentbutton.appendChild(sync);
 
         requestQueue.register('model/user.list.php', 'GET', undefined,
             function (status, data, text) {
@@ -536,6 +560,8 @@ var WindowMaker = new function()
                     new_users.size = e.length;
                 }
         });
+
+        content.appendChild( contentbutton );
 
         var container = createContainer("logtable_widget");
         content.appendChild(container);
@@ -566,7 +592,7 @@ var WindowMaker = new function()
                 '</tfoot>' +
             '</table>';
 
-        addListener(win, container);
+        addListener(win, container, 'table_of_log_buttons');
 
         addLogic(win);
 
@@ -581,19 +607,24 @@ var WindowMaker = new function()
         var content = win.getFrame();
         content.style.backgroundColor = "#ffffff";
 
+        var contentbutton = document.createElement('div');
+        contentbutton.setAttribute("id", 'review_window_buttons');
+
         var add = document.createElement('input');
         add.setAttribute("type", "button");
         add.setAttribute("id", "start_review_skeleton");
         add.setAttribute("value", "Start to review skeleton");
         add.onclick = ReviewSystem.startSkeletonToReview;
-        content.appendChild(add);
+        contentbutton.appendChild(add);
 
         var add = document.createElement('input');
         add.setAttribute("type", "button");
         add.setAttribute("id", "end_review_skeleton");
         add.setAttribute("value", "End review");
         add.onclick = ReviewSystem.resetReview;
-        content.appendChild(add);
+        contentbutton.appendChild(add);
+
+        content.appendChild( contentbutton );
 
         var add = document.createElement('div');
         add.setAttribute("id", "reviewing_skeleton");
@@ -602,7 +633,7 @@ var WindowMaker = new function()
         var container = createContainer( "project_review_widget" );
         content.appendChild( container );
 
-        addListener(win, container);
+        addListener(win, container, 'review_window_buttons');
 
         addLogic(win);
 
@@ -617,17 +648,22 @@ var WindowMaker = new function()
         var content = win.getFrame();
         content.style.backgroundColor = "#ffffff";
 
+        var contentbutton = document.createElement('div');
+        contentbutton.setAttribute("id", 'skeleton_connectivity_buttons');
+
         var add = document.createElement('input');
         add.setAttribute("type", "button");
         add.setAttribute("id", "retrieve_connectivity");
         add.setAttribute("value", "Get connectivity");
         add.onclick = SkeletonConnectivity.fetchConnectivityForSkeleton;
-        content.appendChild(add);
+        contentbutton.appendChild(add);
+
+        content.appendChild( contentbutton );
 
         var container = createContainer( "connectivity_widget" );
         content.appendChild( container );
 
-        addListener(win, container);
+        addListener(win, container, 'skeleton_connectivity_buttons');
 
         addLogic(win);
 
@@ -650,7 +686,7 @@ var WindowMaker = new function()
         'You can use the Python <a target="_new" href="https://github.com/unidesigner/microcircuit/">microcircuit package</a> to load the file and do analysis of the neural circuit.</h2>' +
         '<br />' +
         '<h2>Download annotation graph as <a target="_new" href="'+ django_url + project.id + '/annotationdiagram/nx_json ' + '">NetworkX JSON graph</a></h2>';
-    
+
       addListener(win, container);
 
       addLogic(win);
@@ -784,7 +820,7 @@ var WindowMaker = new function()
 
     var container = createContainer( "object_tree_widget" );
     content.appendChild( container );
-    
+
     container.innerHTML =
       '<input type="button" id="refresh_object_tree" value="refresh" style="display:block; float:left;" />' +
       '&nbsp; Synchronize <input type="checkbox" id="synchronize_object_tree" checked="yes" />' +
@@ -832,7 +868,7 @@ var WindowMaker = new function()
 
     var container = createContainer( "project_stats_widget" );
     content.appendChild( container );
-    
+
     container.innerHTML =
       '<input type="button" id="refresh_stats" value="Refresh" style="display:block; float:left;" />' +
       '<br clear="all" />' +

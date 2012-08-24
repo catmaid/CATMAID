@@ -46,7 +46,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review$', 'catmaid.control.export_review_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/info$', 'catmaid.control.skeleton_info'),
     (r'^(?P<project_id>\d+)/skeleton/split', 'catmaid.control.split_skeleton'),
-    (r'^(?P<project_id>\d+)/skeleton/get-root$', 'catmaid.control.root_for_skeleton'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/get-root$', 'catmaid.control.root_for_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/ancestry$', 'catmaid.control.skeleton_ancestry'),
     (r'^(?P<project_id>\d+)/skeleton/join$', 'catmaid.control.join_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/reroot$', 'catmaid.control.reroot_skeleton'),
@@ -66,7 +66,7 @@ urlpatterns += patterns(
 
     (r'^(?P<project_id>\d+)/object-tree/expand$', 'catmaid.control.tree_object_expand'),
     (r'^(?P<project_id>\d+)/object-tree/list', 'catmaid.control.tree_object_list'),
-    (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/get_all_skeletons', 'catmaid.control.objecttree_get_all_skeletons'),
+    (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/get-all-skeletons', 'catmaid.control.objecttree_get_all_skeletons'),
     (r'^(?P<project_id>\d+)/object-tree/instance-operation$', 'catmaid.control.instance_operation'),
 
     (r'^(?P<project_id>\d+)/link/create$', 'catmaid.control.create_link'),

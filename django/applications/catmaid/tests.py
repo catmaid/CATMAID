@@ -2073,8 +2073,8 @@ class ViewPageTests(TestCase):
         log_count = count_logs()
 
         response = self.client.post(
-                '/%d/treenode/reroot' % self.test_project_id,
-                {'tnid': new_root})
+                '/%d/skeleton/reroot' % self.test_project_id,
+                {'treenode_id': new_root})
         parsed_response = json.loads(response.content)
         expected_result = {'newroot': 407}
         self.assertEqual(response.status_code, 200)
@@ -2101,8 +2101,8 @@ class ViewPageTests(TestCase):
         new_skeleton_id = get_object_or_404(Treenode, id=link_from).skeleton_id
 
         response = self.client.post(
-                '/%d/treenode/reroot' % self.test_project_id,
-                {'tnid': new_root})
+                '/%d/skeleton/reroot' % self.test_project_id,
+                {'treenode_id': new_root})
         parsed_response = json.loads(response.content)
         expected_result = {'newroot': 2394}
         self.assertEqual(response.status_code, 200)

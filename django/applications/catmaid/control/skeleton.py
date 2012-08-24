@@ -16,7 +16,7 @@ except:
 @catmaid_login_required
 @transaction.commit_on_success
 def split_skeleton(request, project_id=None, logged_in_user=None):
-    treenode_id = request.POST['tnid']
+    treenode_id = request.POST['treenode_id']
     p = get_object_or_404(Project, pk=project_id)
     # retrieve skeleton
     ci = ClassInstance.objects.get(
@@ -90,12 +90,6 @@ def split_skeleton(request, project_id=None, logged_in_user=None):
     insert_into_log( project_id, logged_in_user.id, "split_skeleton", location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron[0].name ) )
     return HttpResponse(json.dumps({}), mimetype='text/json')
 
-
-def join_skeleton(request, project_id=None, logged_in_user=None):
-    pass
-
-def reroot_skeleton(request, project_id=None, logged_in_user=None):
-    pass
 
 @catmaid_login_required
 def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user=None):
@@ -220,7 +214,7 @@ def skeleton_info(request, project_id=None, skeleton_id=None, logged_in_user=Non
 @catmaid_can_edit_project
 @transaction_reportable_commit_on_success
 def reroot_skeleton(request, project_id=None, logged_in_user=None):
-    treenode_id = request.POST.get('tnid', None)
+    treenode_id = request.POST.get('treenode_id', None)
     if treenode_id is None:
         raise RollbackAndReport('A treenode id has not been provided!')
 

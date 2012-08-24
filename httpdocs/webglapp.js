@@ -785,8 +785,7 @@ var WebGLApp = new function () {
     if( skeletonID !== undefined )
     {
         jQuery.ajax({
-          //url: "../../model/export.skeleton.json.php",
-          url: "dj/"+projectID+"/skeleton/" + skeletonID + "/json",
+          url: django_url + project.id + '/skeleton/' + skeletonID + '/json',
           type: "GET",
           dataType: "json",
           success: function (skeleton_data) {

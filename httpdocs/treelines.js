@@ -749,9 +749,8 @@ function addTo3DView() {
     return;
   }
 
-  requestQueue.register('model/treenode.info.php', 'POST', {
-    pid: project.id,
-    tnid: atn_id
+  requestQueue.register(django_url + project.id + '/treenode/info', 'POST', {
+    treenode_id: atn_id
   }, function (status, text, xml) {
     if (status == 200) {
       var e = eval("(" + text + ")");

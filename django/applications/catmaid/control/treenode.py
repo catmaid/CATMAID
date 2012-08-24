@@ -1,6 +1,6 @@
 import json
 
-from decimal import Decimal
+import decimal
 from django.http import HttpResponse
 
 from django.db import connection, transaction
@@ -210,7 +210,7 @@ def create_interpolated_treenode(request, project_id=None, logged_in_user=None):
             'resz': 0}
     for p in default_values.keys():
         if p in ['atnx', 'atny', 'atnz', 'x', 'y', 'z', 'resx', 'resy', 'resz']:
-            params[p] = Decimal(request.POST.get(p, default_values[p]))
+            params[p] = decimal.Decimal(request.POST.get(p, default_values[p]))
         else:
             params[p] = int(request.POST.get(p, default_values[p]))
 
@@ -234,9 +234,9 @@ def create_interpolated_treenode(request, project_id=None, logged_in_user=None):
                 relation=relation_map['element_of'],
                 project=project_id)[0].class_instance_id
 
-        steps = abs((params['z'] - params['atnz']) / params['resz']).quantize(Decimal('1'), rounding=decimal.ROUND_FLOOR)
-        if steps == Decimal(0):
-            steps = Decimal(1)
+        steps = abs((params['z'] - params['atnz']) / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
+        if steps == decimal.Decimal(0):
+            steps = decimal.Decimal(1)
 
         dx = (params['x'] - params['atnx']) / steps
         dy = (params['y'] - params['atny']) / steps

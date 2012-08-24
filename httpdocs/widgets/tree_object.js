@@ -36,8 +36,8 @@ var ObjectTree = new function()
       "plugins": ["themes", "json_data", "ui", "crrm", "types", "dnd", "contextmenu"],
       "json_data": {
         "ajax": {
-          "url": django_url + pid + '/object-tree/list',
-          //"url": "model/tree.object.list.php",
+          //"url": django_url + pid + '/object-tree/list',
+          "url": "model/tree.object.list.php",
           "data": function (n) {
             var expandRequest, parentName, parameters;
             // depending on which type of node it is, display those
@@ -113,7 +113,7 @@ var ObjectTree = new function()
                 "separator_after": true,
                 "label": "Show all skeletons",
                 "action": function (obj) {
-                  var geturl = django_url + project.id + '/objecttree/' + obj.attr("id").replace("node_", "") + '/get_all_skeletons';
+                  var geturl = django_url + project.id + '/object-tree/' + obj.attr("id").replace("node_", "") + '/get-all-skeletons';
                   $.ajax({
                     async: true,
                     cache: false,
@@ -212,7 +212,7 @@ var ObjectTree = new function()
                   TracingTool.goToNearestInNeuron('neuron', neuronid);
                 }
               },
-                "show_in_catalog": {
+/*              "show_in_catalog": {
                     "separator_before": true,
                     "separator_after": false,
                     "label": "Show in Neuron Catalog",
@@ -220,7 +220,7 @@ var ObjectTree = new function()
                         window.open( django_url + pid + '/view/' + obj.attr("id").replace("node_", "") );
                     }
                 },
-  /*
+
             "create_skeleton" : {
               "separator_before"	: false,
               "separator_after"	: false,
@@ -290,9 +290,8 @@ var ObjectTree = new function()
                 "action": function (obj) {
 
                   var skelid = obj.attr("id").replace("node_", "");
-                  requestQueue.register("model/skeleton.root.get.php", "POST", {
-                    pid: project.id,
-                    skeletonid: skelid
+                  requestQueue.register(django_url + project.id + '/skeleton/' + skelid + '/get-root', "POST", {
+                    pid: project.id
                   }, function (status, text, xml) {
                     var nodeID, skeletonID;
                     if (status === 200) {
@@ -560,7 +559,7 @@ var ObjectTree = new function()
         async: false,
         cache: false,
         type: 'POST',
-        url: "model/instance.operation.php",
+        url: django_url + project.id + '/object-tree/instance-operation',
         data: data,
         dataType: 'json',
         success: function (data2) {
@@ -572,7 +571,7 @@ var ObjectTree = new function()
     });
 
     $(object_tree_id).bind("rename.jstree", function (e, data) {
-      $.post("model/instance.operation.php", {
+      $.post(django_url + project.id + '/object-tree/instance-operation', {
         "operation": "rename_node",
         "id": data.rslt.obj.attr("id").replace("node_", ""),
         "title": data.rslt.new_name,
@@ -597,7 +596,7 @@ var ObjectTree = new function()
 
           type = data.rslt.obj.attr("rel");
 
-      $.post("model/instance.operation.php", {
+      $.post(django_url + project.id + '/object-tree/instance-operation', {
             "operation": "has_relations",
             "relationnr": 2,
             "relation0": "part_of",
@@ -621,7 +620,7 @@ var ObjectTree = new function()
 
               $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Removing object tree node. Just a moment...</h2>' });
               // Remove group, neuron, skeleton
-              $.post("model/instance.operation.php", {
+              $.post(django_url + project.id + '/object-tree/instance-operation', {
                     "operation": "remove_node",
                     "id": data.rslt.obj.attr("id").replace("node_", ""),
                     "title": data.rslt.new_name,
@@ -663,7 +662,7 @@ var ObjectTree = new function()
         async: false,
         cache: false,
         type: 'POST',
-        url: "model/instance.operation.php",
+        url: django_url + project.id + '/object-tree/instance-operation',
         data: {
           "operation": "move_node",
           "src": src.attr("id").replace("node_", ""),

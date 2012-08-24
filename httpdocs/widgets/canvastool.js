@@ -100,34 +100,34 @@ function CanvasTool()
 
     this.drawingTypeEnum=enumFactory.defineEnum({
         mitochondria : {
-            value : 200,
+            value : 300,
             string : 'mitochondria',
             color:[50,50,255]
         },
         membrane : {
-            value : 300,
+            value : 400,
             string : 'membrane',
             color:[50,255,50]
         },
         soma : {
-            value : 400,
+            value : 500,
             string : 'soma',
             color:[255,255,0]
         },
         misc : {
-            value : 900,
+            value : 600,
             string : 'misc',
             color:[255,50,50]
         },
         erasor : {
-            value : 1000,
+            value : 700,
             string : 'erasor',
             color:[255,255,255]
         }
 
     });
 
-    this.drawingType=this.drawingTypeEnum.MITOCHONDRIA;
+    this.drawingType=this.drawingTypeEnum.mitochondria;
 
     //
     //

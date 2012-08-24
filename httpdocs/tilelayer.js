@@ -272,7 +272,7 @@ function TileLayer(
    * Get Tile from HDF5 through Django (tiles_source_type == 3)
    */
   this.getTileHDF5Request = function( x, y, dx, dy, scale, z ) {
-    return django_url + project.id + '/stack/' + stack.id + '/tile?' + $.param({
+      return django_url + project.id + '/stack/' + stack.id + '/tile?' + $.param({
         x: x,
         y: y,
         width : tileWidth,

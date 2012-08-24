@@ -256,7 +256,7 @@ def get_saved_drawings_by_view(request, project_id=None, stack_id=None, logged_i
     all_drawings = Drawing.objects.filter(
         project = p,
         stack = stack,
-        skeleton_id = None,
+        component_id = None,
         z = z).all()
 
     drawings={}
@@ -522,6 +522,8 @@ def create_segmentation_file(request, project_id=None, stack_id=None):
 
     create_segmentation_neurohdf_file(project_id,skeleton_id,stack_id)
 
+    return HttpResponse(json.dumps(True), mimetype="text/json")
+
 
 def create_segmentation_neurohdf_file(project_id, skeleton_id,stack_id):
     if project_id is None or skeleton_id is None:
@@ -532,7 +534,7 @@ def create_segmentation_neurohdf_file(project_id, skeleton_id,stack_id):
 
     with closing(h5py.File(filename, 'w')) as hfile:
         hfile.attrs['neurohdf_version'] = '0.1'
-        scaleGroup = hfile.create_group("Scale")
+        scaleGroup = hfile.create_group("scale")
         scale_zero = scaleGroup.create_group("0")
         section = scale_zero.create_group("section")
 
@@ -546,15 +548,16 @@ def create_segmentation_neurohdf_file(project_id, skeleton_id,stack_id):
         for z in xrange(2):
 
             #create np array x * y * typeCount
-            #   0   Components
-            #   1   Component drawings
-            #   2   Mitochondria
-            #   3   Membrane
-            #   4   Soma
-            #   5   Misc
-            #   6   Erasor
+            #   0   SkeletonIds
+            #   1   Components
+            #   2   Component drawings
+            #   3   Mitochondria
+            #   4   Membrane
+            #   5   Soma
+            #   6   Misc
+            #   7   Erasor
 
-            shape=(1025,1025,7)
+            shape=(1025,1025,8)
             segmentation=np.zeros(shape, dtype=np.long)
 
             # retrieve all the components belonging to the skeleton
@@ -571,45 +574,51 @@ def create_segmentation_neurohdf_file(project_id, skeleton_id,stack_id):
                     componentPixelEnd=componenthfile['connected_components/'+str(z)+'/end_indices'].value[comp.component_id].copy()
 
                     data=componenthfile['connected_components/'+str(z)+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
-                    segmentation[data['y'],data['x'],0] =comp.component_id
+                    segmentation[data['y'],data['x'],0] =comp.skeleton_id
+                    segmentation[data['y'],data['x'],1] =comp.component_id
 
             all_drawings = Drawing.objects.filter(stack=stack,
-                project=project,skeleton_id=skeleton_id,
-                z = z).all()
+                project=project,
+                z = z).exclude(component_id__isnull=True).all()
             for compDrawing in all_drawings:
-                svg2pixel(compDrawing,compDrawing.id)
+                drawingArray = svg2pixel(compDrawing,compDrawing.id)
 
-                    #img =  cairo.ImageSurface(cairo.FORMAT_ARGB32, (compDrawing.max_x-compDrawing.min_x),(compDrawing.max_y-compDrawing.min_y))
-                    #img =  cairo.ImageSurface(cairo.FORMAT_ARGB32, 1024,1024)
+                indices=np.where(drawingArray>0)
 
-
-                    #ctx = cairo.Context(img)
-
-                    ## handler= rsvg.Handle(<svg filename>)
-                    # or, for in memory SVG data:
-                    #handler= rsvg.Handle(None, str('<path d="M100,10 L100,10 40,180 190,60 10,60 160,180 z" stroke="blue" fill="darkblue" stroke-width="4" />'))
+                x_index = indices[0]+(compDrawing.min_x-50)
+                y_index = indices[1]+(compDrawing.min_y-50)
+                idx = (x_index > 0) & (x_index < 1024) & (y_index > 0) & (y_index < 1024)
+                segmentation[x_index[idx],y_index[idx],2]=compDrawing.id
 
 
-#  get component drawings for z belonging to  this skeleton
-                #convert drawing to pixel
-                # add drawing id to np array at drawing pixel coordinates
+            all_free_drawings = Drawing.objects.filter(stack=stack,
+                project=project,
+                z = z).exclude(component_id__isnull=False).all()
+            for freeDrawing in all_free_drawings:
+                drawingArray = svg2pixel(freeDrawing,freeDrawing.id)
+                indices=np.where(drawingArray>0)
 
-            #  get drawings for z with componentId=none
-                #convert drawing to pixel
-                # add drawing id to np array at drawing pixel coordinates
+                x_index = indices[0]+(freeDrawing.min_x-50)
+                y_index = indices[1]+(freeDrawing.min_y-50)
+                idx = (x_index > 0) & (x_index < 1024) & (y_index > 0) & (y_index < 1024)
+
+                segmentation[x_index[idx],y_index[idx],(freeDrawing.type/100)]=freeDrawing.id
 
 
             #store no array to hdf file
             section.create_dataset(str(z), data=segmentation, compression='gzip', compression_opts=4)
 
-    return HttpResponse(True, mimetype="text/json")
+
 
 
 def svg2pixel(drawing, id, maxwidth=0, maxheight=0):
+    #Converts drawings into pixel array. Be careful,50px offset are added to the drawing!!!
 
-    nopos=find_between(drawing.svg,">",">")+'>'
-    hallo=drawing.svg
+    nopos=find_between(drawing.svg,">","transform=")+'transform="translate(50 50)" />'
     data='<svg>'+nopos+'</svg>'
+
+    #data='<svg>'+drawing.svg.replace("L","C")+'</svg>'
+
     svg = rsvg.Handle(data=data)
 
     x = width = svg.props.width
@@ -630,11 +639,18 @@ def svg2pixel(drawing, id, maxwidth=0, maxheight=0):
         xscale = float(x)/svg.props.width
         yscale = float(y)/svg.props.height
 
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1024, 1024)
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width+100, height+100)
     context = cairo.Context(surface)
     context.scale(xscale, yscale)
     svg.render_cairo(context)
-    surface.write_to_png("svg"+str(id)+".png")
+
+    a = np.frombuffer(surface.get_data(), np.uint8)
+    newShape=np.reshape(a,(width+100,height+100,4))
+    gray = np.sum(newShape.astype(np.uint8), axis=2) / 4
+
+    #surface.write_to_png("svg"+str(id)+".png")
+
+    return gray
 
 def find_between( s, first, last ):
     try:
@@ -643,6 +659,33 @@ def find_between( s, first, last ):
         return s[start:end]
     except ValueError:
         return ""
+
+
+def get_segmentation_tile(project_id, stack_id,scale,height,width,x,y,z,file_extension):
+
+
+    fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_segmentation.hdf'.format( project_id, stack_id ) )
+
+    with closing(h5py.File(fpath, 'r')) as hfile:
+
+        hdfpath = 'scale/' + str(int(scale)) + '/section/'+ str(z)
+        image_data=hfile[hdfpath].value
+        data=np.sum( image_data[y:y+height,x:x+width,:], axis = 2 )
+
+        #rgba=np.zeros((data.shape[0],data.shape[1],4))
+        #rgba[np.where(data>0)]=(255,255,255,255)
+
+        #blank=np.zeros(data.shape)
+        data[data > 0] = 255
+        data = data.astype( np.uint8 )
+
+        # pilImage = Image.frombuffer('RGBA',(width,height),rgba)
+        pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
+
+        response = HttpResponse(mimetype="image/png")
+        pilImage.save(response, "PNG")
+        return response
+
 
 
 
@@ -658,6 +701,9 @@ def get_tile(request, project_id=None, stack_id=None):
     row = request.GET.get('row', 'x')
     file_extension = request.GET.get('file_extension', 'png')
     hdf5_path = request.GET.get('hdf5_path', '/')
+
+    if hdf5_path=="segmentation_file":
+        return get_segmentation_tile(project_id,stack_id,scale,height,width,x,y,z,file_extension)
 
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}.hdf'.format( project_id, stack_id ) )
     

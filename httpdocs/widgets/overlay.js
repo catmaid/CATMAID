@@ -126,7 +126,7 @@ var SkeletonAnnotations = new function()
     // retrieve SWC file of currently active treenode's skeleton
     var recipe = window.open('', 'RecipeWindow', 'width=600,height=600');
 
-    requestQueue.register("model/export.skeleton.php", "GET", {
+    requestQueue.register(django_url + project.id + '/skeleton-for-treenode/' + atn.id + '/swc', "GET", {
       pid: project.id,
       tnid: atn.id
     }, function (status, text, xml) {
@@ -364,7 +364,7 @@ var SkeletonAnnotations = new function()
         }
       }
       jQuery.ajax({
-        url: "model/label.node.list.all.php",
+        url: django_url + project.id + '/labels-for-nodes',
         cache: false,
         type: "POST",
         data: {
@@ -402,10 +402,8 @@ var SkeletonAnnotations = new function()
     }
 
     this.tagATNwithLabel = function( label ) {
-      requestQueue.register("model/label.update.php", "POST", {
+      requestQueue.register(django_url + project.id + '/label-update/' + atn.type + '/' + atn.id, "POST", {
         pid: project.id,
-        nid: atn.id,
-        ntype: atn.type,
         tags: label
       }, function (status, text, xml) {
         if (status === 200) {
@@ -502,7 +500,7 @@ var SkeletonAnnotations = new function()
       });
 
       // add autocompletion
-      requestQueue.register("model/label.all.list.php", "POST", {
+      requestQueue.register(django_url + project.id + '/labels-all', "POST", {
         pid: project.id
       }, function (status, text, xml) {
 
@@ -521,10 +519,8 @@ var SkeletonAnnotations = new function()
         }
       });
       
-      requestQueue.register("model/label.node.list.php", "POST", {
-        pid: project.id,
-        nid: atn.id,
-        ntype: atn.type
+      requestQueue.register(django_url + project.id + '/labels-for-node/' + atn.type  + '/' + atn.id, "POST", {
+        pid: project.id
       }, function (status, text, xml) {
 
         if (status === 200) {
@@ -535,7 +531,7 @@ var SkeletonAnnotations = new function()
             } else {
               var nodeitems = $.parseJSON(text);
               $("#Tags" + atn.id).tagEditor({
-                items: nodeitems[atn.id],
+                items: nodeitems,
                 confirmRemoval: false,
                 completeOnSeparator: true
               });
@@ -568,9 +564,8 @@ var SkeletonAnnotations = new function()
 
     this.rerootSkeleton = function () {
       if (confirm("Do you really want to to reroot the skeleton?")) {
-        requestQueue.register("model/treenode.reroot.php", "POST", {
-          pid: project.id,
-          tnid: atn.id
+        requestQueue.register(django_url + project.id + '/skeleton/reroot', "POST", {
+          treenode_id: atn.id
         }, function (status, text, xml) {
           if (status === 200) {
             if (text && text !== " ") {
@@ -599,7 +594,7 @@ var SkeletonAnnotations = new function()
             django_url + project.id + '/skeleton/split',
             "POST", {
             pid: project.id,
-            tnid: atn.id
+            treenode_id: atn.id
           }, function (status, text, xml) {
             $.unblockUI();
             if (status === 200) {
@@ -633,7 +628,7 @@ var SkeletonAnnotations = new function()
       }
       // TODO: rerooting operation should be called on the backend
       // first make sure to reroot target
-      requestQueue.register("model/treenode.reroot.php", "POST", {
+      requestQueue.register(django_url + project.id + '/skeleton/reroot', "POST", {
         pid: project.id,
         tnid: toid
       }, function (status, text, xml) {
@@ -645,8 +640,7 @@ var SkeletonAnnotations = new function()
               alert(e.error);
             } else {
               // then link again, in the continuation
-              requestQueue.register("model/treenode.link.php", "POST", {
-                pid: project.id,
+              requestQueue.register(django_url + project.id + '/skeleton/join', "POST", {
                 from_id: fromid,
                 to_id: toid
               }, function (status, text, xml) {
@@ -1470,12 +1464,13 @@ var SkeletonAnnotations = new function()
     };
 
     this.setConfidence = function(newConfidence, toConnector) {
+
       var atn = self.getActiveNode();
-      if (atn !== null) {
+      if (atn !== null && (atn.type === 'treenode')) {
         if (atn.parent !== null || toConnector) {
           requestQueue.register(django_url + project.id + '/node/' + atn.id + '/confidence/update', "POST", {
             pid: project.id,
-            toconnector: toConnector,
+            to_connector: toConnector,
             tnid: atn.id,
             new_confidence: newConfidence
           }, function (status, text, xml) {
@@ -1667,10 +1662,11 @@ var SkeletonAnnotations = new function()
           break;
         }
         self.updateNodeCoordinatesinDB(function () {
-          requestQueue.register("model/last.edited.or.added.php", "POST", {
+          //requestQueue.register("model/last.edited.or.added.php", "POST", {
+          requestQueue.register(django_url + project.id + '/node/most_recent', "POST", {
             pid: project.id,
-            tnid: atn.id,
-            skid: atn.skeleton_id
+            treenode_id: atn.id,
+            skeleton_id: atn.skeleton_id
           }, function (status, text, xml) {
             var nodeToActivate, skeletonToActivate;
             if (status === 200) {

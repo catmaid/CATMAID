@@ -1,6 +1,13 @@
 import json
 
+try:
+    import networkx as nx
+except ImportError:
+    pass
+
 from django.http import HttpResponse
+
+from catmaid.control.object import get_annotation_graph
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -234,7 +241,7 @@ def tree_object_expand(request, project_id=None, logged_in_user=None):
 
 @catmaid_login_required
 @transaction_reportable_commit_on_success
-def objecttree_get_all_skeletons(request, project_id=None, node_id=None):
+def objecttree_get_all_skeletons(request, project_id=None, node_id=None, logged_in_user=None):
     """ Retrieve all skeleton ids for a given node in the object tree
     """
     g = get_annotation_graph( project_id )

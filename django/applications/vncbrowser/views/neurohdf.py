@@ -623,34 +623,63 @@ def svg2pixel(drawing, id, maxwidth=0, maxheight=0):
 
     x = width = svg.props.width
     y = height = svg.props.height
-    print "actual dims are " + str((width, height))
-    print "converting to " + str((maxwidth, maxheight))
+#    print "actual dims are " + str((width, height))
+#    print "converting to " + str((maxwidth, maxheight))
+#
+    #yscale = xscale = 1
+#
+#    if (maxheight != 0 and width > maxwidth) or (maxheight != 0 and height > maxheight):
+#        x = maxwidth
+#        y = float(maxwidth)/float(width) * height
+#        print "first resize: " + str((x, y))
+#        if y > maxheight:
+#            y = maxheight
+#            x = float(maxheight)/float(height) * width
+#            print "second resize: " + str((x, y))
+#        xscale = float(x)/svg.props.width
+#        yscale = float(y)/svg.props.height
 
-    yscale = xscale = 1
+    newWidth=width+100
+    newHeight=height+100
 
-    if (maxheight != 0 and width > maxwidth) or (maxheight != 0 and height > maxheight):
-        x = maxwidth
-        y = float(maxwidth)/float(width) * height
-        print "first resize: " + str((x, y))
-        if y > maxheight:
-            y = maxheight
-            x = float(maxheight)/float(height) * width
-            print "second resize: " + str((x, y))
-        xscale = float(x)/svg.props.width
-        yscale = float(y)/svg.props.height
-
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width+100, height+100)
+    #Color
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, newWidth, newHeight)
     context = cairo.Context(surface)
-    context.scale(xscale, yscale)
+    #context.scale(xscale, yscale)
     svg.render_cairo(context)
+    surface.write_to_png("svg_cairo_color_"+str(id)+".png")
 
-    a = np.frombuffer(surface.get_data(), np.uint8)
-    newShape=np.reshape(a,(width+100,height+100,4))
-    gray = np.sum(newShape.astype(np.uint8), axis=2) / 4
+    #Grey
+#    grayCairo = cairo.ImageSurface( cairo.FORMAT_A8, newWidth, newHeight)
+#    context = cairo.Context(grayCairo)
+#    svg.render_cairo(context)
+#    grayCairo.write_to_png("svg_cairo_grey_"+str(id)+".png")
+#
+#    a = np.frombuffer(grayCairo.get_data(), dtype=np.uint8, count=newWidth*newHeight, offset=0)
+#    a.shape = (newWidth, newHeight)
 
-    #surface.write_to_png("svg"+str(id)+".png")
+    #pilversuch
+    pilImage = Image.frombuffer('RGBA',(newWidth,newHeight),surface.get_data(),'raw','RGBA',0,1)
+    pilImage.save("svg_pil_rgb_"+str(id), "PNG")
 
-    return gray
+    pilGray=pilImage.convert('L')
+    pixArray = np.array(pilGray)
+    pilGray.save("svg_pil_rgb_"+str(id), "PNG")
+
+
+
+
+    #a = np.frombuffer(surface.get_data(), np.uint8)
+    #newShape=np.reshape(a,(width+100,height+100,4))
+    #gray = np.sum(newShape.astype(np.uint8), axis=2) / 4
+
+#    pilImage = Image.frombuffer('RGBA',(width+100,height+100),surface.get_data(),'raw','RGBA',0,1)
+#
+#    pilImage.save("svg_pil_gray_"+str(id), "PNG")
+
+
+
+    return pixArray
 
 def find_between( s, first, last ):
     try:

@@ -182,7 +182,7 @@ function CanvasTool()
     this.initialize=function(parentStack)
     {
         //TODO remove debug url
-        django_url='http://localhost:8000/';
+        //django_url='http://localhost:8000/';
         /*$(document).ready(function(e) {
             try {
                 $("body select").msDropDown();

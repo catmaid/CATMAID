@@ -57,7 +57,37 @@ ConnectivityPostsynaptic = {
     'id': 3
 }
 
+DrawingTypes={'mitochondria' : {
+                'value' : 300,
+                'string' : 'mitochondria',
+                'color':[50,50,255]
+                },
+              'membrane' : {
+                  'value' : 400,
+                  'string' : 'membrane',
+                  'color':[50,255,50]
+              },
+              'soma' : {
+                  'value' : 500,
+                  'string' : 'soma',
+                  'color':[255,255,0]
+              },
+              'misc' : {
+                  'value' : 600,
+                  'string' : 'misc',
+                  'color':[255,50,50]
+              },
+              'erasor' : {
+                  'value' : 700,
+                  'string' : 'erasor',
+                  'color':[255,255,255]
+              }}
+
 import time
+
+def get_drawing_enum(request, project_id=None, stack_id=None):
+    return HttpResponse(json.dumps(DrawingTypes), mimetype="text/json")
+
 
 def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=10):
     componentIds = {}
@@ -529,6 +559,15 @@ def create_segmentation_neurohdf_file(project_id, skeleton_id,stack_id):
     if project_id is None or skeleton_id is None:
         return
 
+        #   0   SkeletonIds
+        #   1   Components
+        #   2   Component drawings
+        #   3   Mitochondria
+        #   4   Membrane
+        #   5   Soma
+        #   6   Misc
+        #   7   Erasor
+
     filename=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_segmentation.hdf'.format( project_id, stack_id ) )
     componentTreeFilePath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
 
@@ -536,29 +575,25 @@ def create_segmentation_neurohdf_file(project_id, skeleton_id,stack_id):
         hfile.attrs['neurohdf_version'] = '0.1'
         scaleGroup = hfile.create_group("scale")
         scale_zero = scaleGroup.create_group("0")
-        section = scale_zero.create_group("section")
+        sectionGroup = scale_zero.create_group("section")
 
         # retrieve stack information to transform world coordinates to pixel coordinates
         stack_info = get_stack_info( project_id, stack_id )
+
+        width=stack_info['dimension']['x']
+        height=stack_info['dimension']['x']
 
         skeleton = get_object_or_404(ClassInstance, pk=skeleton_id)
         stack = get_object_or_404(Stack, pk=stack_id)
         project = get_object_or_404(Project, pk=project_id)
 
         for z in xrange(2):
+            section = sectionGroup.create_group(str(z))
 
-            #create np array x * y * typeCount
-            #   0   SkeletonIds
-            #   1   Components
-            #   2   Component drawings
-            #   3   Mitochondria
-            #   4   Membrane
-            #   5   Soma
-            #   6   Misc
-            #   7   Erasor
+            shape=(height,width)
 
-            shape=(1025,1025,8)
-            segmentation=np.zeros(shape, dtype=np.long)
+            componentIdsPixelArray=np.zeros(shape, dtype=np.long)
+            skeletonIdsPixelArray=np.zeros(shape, dtype=np.long)
 
             # retrieve all the components belonging to the skeleton
             all_components = Component.objects.filter(
@@ -574,39 +609,74 @@ def create_segmentation_neurohdf_file(project_id, skeleton_id,stack_id):
                     componentPixelEnd=componenthfile['connected_components/'+str(z)+'/end_indices'].value[comp.component_id].copy()
 
                     data=componenthfile['connected_components/'+str(z)+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
-                    segmentation[data['y'],data['x'],0] =comp.skeleton_id
-                    segmentation[data['y'],data['x'],1] =comp.component_id
+                    skeletonIdsPixelArray[data['y'],data['x']] =comp.skeleton_id
+                    componentIdsPixelArray[data['y'],data['x']] =comp.component_id
 
+            #store arrays to hdf file
+            section.create_dataset("components", data=componentIdsPixelArray, compression='gzip', compression_opts=4)
+            section.create_dataset("skeletons", data=skeletonIdsPixelArray, compression='gzip', compression_opts=4)
+
+
+            #generate array
+            componentDrawingIdsPixelArray=np.zeros(shape, dtype=np.long)
+
+            #Get all drawings belonging to this skeleton
             all_drawings = Drawing.objects.filter(stack=stack,
                 project=project,
-                z = z).exclude(component_id__isnull=True).all()
-            for compDrawing in all_drawings:
-                drawingArray = svg2pixel(compDrawing,compDrawing.id)
+                z = z,skeleton_id = skeleton.id).exclude(component_id__isnull=True).all()
+            for componentDrawing in all_drawings:
 
+                drawingArray = svg2pixel(componentDrawing,componentDrawing.id)
                 indices=np.where(drawingArray>0)
+                x_index = indices[0]+(componentDrawing.min_x-50)
+                y_index = indices[1]+(componentDrawing.min_y-50)
+                idx = (x_index >= 0) & (x_index < width) & (y_index >= 0) & (y_index < height)
+                componentDrawingIdsPixelArray[y_index[idx],x_index[idx]]=componentDrawing.id
+            section.create_dataset("component_drawings", data=componentDrawingIdsPixelArray, compression='gzip', compression_opts=4)
 
-                x_index = indices[0]+(compDrawing.min_x-50)
-                y_index = indices[1]+(compDrawing.min_y-50)
-                idx = (x_index > 0) & (x_index < 1024) & (y_index > 0) & (y_index < 1024)
-                segmentation[x_index[idx],y_index[idx],2]=compDrawing.id
+
+            #generate arrays
+            mitochondriaIdsPixelArray=np.zeros(shape, dtype=np.long)
+            membraneIdsPixelArray=np.zeros(shape, dtype=np.long)
+            somaIdsPixelArray=np.zeros(shape, dtype=np.long)
+            miscIdsPixelArray=np.zeros(shape, dtype=np.long)
+            erasorIdsPixelArray=np.zeros(shape, dtype=np.long)
 
 
+            #Get all drawings without skeleton id
             all_free_drawings = Drawing.objects.filter(stack=stack,
                 project=project,
                 z = z).exclude(component_id__isnull=False).all()
+
             for freeDrawing in all_free_drawings:
                 drawingArray = svg2pixel(freeDrawing,freeDrawing.id)
                 indices=np.where(drawingArray>0)
 
-                x_index = indices[0]+(freeDrawing.min_x-50)
-                y_index = indices[1]+(freeDrawing.min_y-50)
-                idx = (x_index > 0) & (x_index < 1024) & (y_index > 0) & (y_index < 1024)
+                x_index = indices[1]+(freeDrawing.min_x-50)
+                y_index = indices[0]+(freeDrawing.min_y-50)
+                idx = (x_index >= 0) & (x_index < width) & (y_index >= 0) & (y_index < height)
 
-                segmentation[x_index[idx],y_index[idx],(freeDrawing.type/100)]=freeDrawing.id
+                #Use number from JS canvas tool enum
 
+                if freeDrawing.type==300:
+                    mitochondriaIdsPixelArray[y_index[idx],x_index[idx]]=freeDrawing.id
+                elif freeDrawing.type==400:
+                    membraneIdsPixelArray[y_index[idx],x_index[idx]]=freeDrawing.id
+                elif freeDrawing.type==500:
+                    somaIdsPixelArray[y_index[idx],x_index[idx]]=freeDrawing.id
+                elif freeDrawing.type==600:
+                    miscIdsPixelArray[y_index[idx],x_index[idx]]=freeDrawing.id
+                elif freeDrawing.type==700:
+                    erasorIdsPixelArray[y_index[idx],x_index[idx]]=freeDrawing.id
 
-            #store no array to hdf file
-            section.create_dataset(str(z), data=segmentation, compression='gzip', compression_opts=4)
+            #store arrays to hdf file
+            section.create_dataset("mitochondria", data=mitochondriaIdsPixelArray, compression='gzip', compression_opts=4)
+            section.create_dataset("membranes", data=membraneIdsPixelArray, compression='gzip', compression_opts=4)
+            section.create_dataset("soma", data=somaIdsPixelArray, compression='gzip', compression_opts=4)
+            section.create_dataset("misc", data=miscIdsPixelArray, compression='gzip', compression_opts=4)
+            section.create_dataset("erasor", data=erasorIdsPixelArray, compression='gzip', compression_opts=4)
+
+    return
 
 
 
@@ -647,37 +717,18 @@ def svg2pixel(drawing, id, maxwidth=0, maxheight=0):
     context = cairo.Context(surface)
     #context.scale(xscale, yscale)
     svg.render_cairo(context)
-    surface.write_to_png("svg_cairo_color_"+str(id)+".png")
+    #surface.write_to_png("svg_cairo_color_"+str(id)+".png")
 
-    #Grey
-#    grayCairo = cairo.ImageSurface( cairo.FORMAT_A8, newWidth, newHeight)
-#    context = cairo.Context(grayCairo)
-#    svg.render_cairo(context)
-#    grayCairo.write_to_png("svg_cairo_grey_"+str(id)+".png")
-#
-#    a = np.frombuffer(grayCairo.get_data(), dtype=np.uint8, count=newWidth*newHeight, offset=0)
-#    a.shape = (newWidth, newHeight)
+    #Hack via pilimage, cairo frombuffer to numpy produces errors due to wrong array length
 
-    #pilversuch
     pilImage = Image.frombuffer('RGBA',(newWidth,newHeight),surface.get_data(),'raw','RGBA',0,1)
-    pilImage.save("svg_pil_rgb_"+str(id), "PNG")
+#    pilImage.save("svg_pil_rgb_"+str(id), "PNG")
+    #pilCrop=pilImage.crop((50,50,newWidth-50,newHeight-50))
+    #pilCrop.save("svg_pil_rgb_crop_"+str(id), "PNG")
 
     pilGray=pilImage.convert('L')
     pixArray = np.array(pilGray)
-    pilGray.save("svg_pil_rgb_"+str(id), "PNG")
-
-
-
-
-    #a = np.frombuffer(surface.get_data(), np.uint8)
-    #newShape=np.reshape(a,(width+100,height+100,4))
-    #gray = np.sum(newShape.astype(np.uint8), axis=2) / 4
-
-#    pilImage = Image.frombuffer('RGBA',(width+100,height+100),surface.get_data(),'raw','RGBA',0,1)
-#
-#    pilImage.save("svg_pil_gray_"+str(id), "PNG")
-
-
+#    pilGray.save("svg_pil_gray_"+str(id), "PNG")
 
     return pixArray
 
@@ -690,29 +741,25 @@ def find_between( s, first, last ):
         return ""
 
 
-def get_segmentation_tile(project_id, stack_id,scale,height,width,x,y,z,file_extension):
+def get_segmentation_tile(project_id, stack_id,scale,height,width,x,y,z,type):
 
 
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_segmentation.hdf'.format( project_id, stack_id ) )
 
     with closing(h5py.File(fpath, 'r')) as hfile:
 
-        hdfpath = 'scale/' + str(int(scale)) + '/section/'+ str(z)
+        hdfpath = 'scale/' + str(int(scale)) + '/section/'+ str(z)+'/'+type
         image_data=hfile[hdfpath].value
-        data=np.sum( image_data[y:y+height,x:x+width,:], axis = 2 )
+        data=image_data[y:y+height,x:x+width]
 
-        #rgba=np.zeros((data.shape[0],data.shape[1],4))
-        #rgba[np.where(data>0)]=(255,255,255,255)
-
-        #blank=np.zeros(data.shape)
         data[data > 0] = 255
         data = data.astype( np.uint8 )
 
-        # pilImage = Image.frombuffer('RGBA',(width,height),rgba)
         pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
 
         response = HttpResponse(mimetype="image/png")
         pilImage.save(response, "PNG")
+        #pilImage.save('segmentation_tile_'+str(x)+'_'+str(y), "PNG")
         return response
 
 
@@ -730,9 +777,10 @@ def get_tile(request, project_id=None, stack_id=None):
     row = request.GET.get('row', 'x')
     file_extension = request.GET.get('file_extension', 'png')
     hdf5_path = request.GET.get('hdf5_path', '/')
+    type = request.GET.get('type', 'none')
 
     if hdf5_path=="segmentation_file":
-        return get_segmentation_tile(project_id,stack_id,scale,height,width,x,y,z,file_extension)
+        return get_segmentation_tile(project_id,stack_id,scale,height,width,x,y,z,type)
 
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}.hdf'.format( project_id, stack_id ) )
     

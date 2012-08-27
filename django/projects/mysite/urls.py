@@ -70,6 +70,8 @@ urlpatterns = patterns(
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/initialize_components$', 'vncbrowser.views.initialize_components_for_skeleton'),
 
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-drawing-enum$', 'vncbrowser.views.get_drawing_enum'),
+
     (r'^(?P<project_id>\d+)/skeleton/split', 'vncbrowser.views.split_skeleton'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put_tile$', 'vncbrowser.views.put_tile')
     )

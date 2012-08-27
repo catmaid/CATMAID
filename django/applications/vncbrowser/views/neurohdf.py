@@ -1,25 +1,29 @@
+import json
 from django.conf import settings
 from django.http import HttpResponse
 from vncbrowser.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
-    Project, User, Treenode, TreenodeConnector, Connector
+    Project, User, Treenode, TreenodeConnector, Connector, Component,Stack,Drawing
 from vncbrowser.views import catmaid_login_required, my_render_to_response, \
     get_form_and_neurons
 from vncbrowser.views.export import get_annotation_graph
-
-import json
+from django.shortcuts import get_object_or_404
+from views import get_treenodes_qs, get_stack_info
 try:
     import numpy as np
     import h5py
     from PIL import Image
 except ImportError:
     pass
+
 from contextlib import closing
 from random import choice
 import os
-import sys
 import base64, cStringIO
 import time
+import sys
+import cairo
+import rsvg
 
 # This file defines constants used to correctly define the metadata for NeuroHDF microcircuit data
 
@@ -53,6 +57,667 @@ ConnectivityPostsynaptic = {
     'id': 3
 }
 
+import time
+
+def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=10):
+    componentIds = {}
+    fpath = os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
+    with closing(h5py.File(fpath, 'r')) as hfile:
+
+        image_data = hfile['connected_components/'+z+'/pixel_list_ids']
+        componentMinX = hfile['connected_components/'+z+'/min_x']
+        componentMinY = hfile['connected_components/'+z+'/min_y']
+        componentMaxX = hfile['connected_components/'+z+'/max_x']
+        componentMaxY = hfile['connected_components/'+z+'/max_y']
+        thresholdTable = hfile['connected_components/'+z+'/values']
+
+        length=image_data.len()
+
+        print >> sys.stderr, "extract components ...."
+        start = time.time()
+
+        #Merge all data into single array
+        #TODO:ID instead of length
+        merge=np.dstack((np.arange(length),componentMinX.value,componentMinY.value,componentMaxX.value,componentMaxY.value,thresholdTable.value))
+        # FIXME: use np.where instead of merging into a new array
+        selectionMinXMaxXMinYMaxY=None
+
+        selectionMinX = merge[merge[...,1]<=x]
+        if len(selectionMinX):
+            selectionMinXMaxX = selectionMinX[selectionMinX[...,3]>=x]
+            if len(selectionMinXMaxX):
+                selectionMinXMaxXMinY = selectionMinXMaxX[selectionMinXMaxX[...,2]<=y]
+                if len(selectionMinXMaxXMinY):
+                    selectionMinXMaxXMinYMaxY = selectionMinXMaxXMinY[selectionMinXMaxXMinY[...,4]>=y]
+
+        delta = time.time() - start
+        print >> sys.stderr, "took", delta
+
+        print >> sys.stderr, "create components ...."
+        start = time.time()
+
+        if selectionMinXMaxXMinYMaxY is not None:
+
+            idx = np.argsort(selectionMinXMaxXMinYMaxY[:,5])
+            limit_counter = 0
+            for i in idx:
+                if limit_counter >= limit:
+                    break
+                row = selectionMinXMaxXMinYMaxY[i,:]
+                componentPixelStart=hfile['connected_components/'+z+'/begin_indices'].value[row[0]].copy()
+                componentPixelEnd=hfile['connected_components/'+z+'/end_indices'].value[row[0]].copy()
+                data=hfile['connected_components/'+z+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
+
+                # check containment of the pixel in the component
+                if not len(np.where((data['x'] == x) & (data['y'] == y))[0]):
+                    continue
+
+                componentIds[int(row[0])]={
+                    'minX': int(row[1]),
+                    'minY': int(row[2]),
+                    'maxX': int(row[3]),
+                    'maxY': int(row[4]),
+                    'threshold': row[5]
+                }
+                limit_counter += 1
+
+        delta = time.time() - start
+        print >> sys.stderr, "took", delta
+                
+    return componentIds
+
+def get_component_list_for_point(request, project_id=None, stack_id=None):
+    """ Generates a JSON List with all intersecting components for
+    a given location
+    """
+    x = int(request.GET.get('x', '0'))
+    y = int(request.GET.get('y', '0'))
+    z = str(request.GET.get('z', '0'))
+    componentIds = retrieve_components_for_location(project_id, stack_id, x, y, z)
+    return HttpResponse(json.dumps(componentIds), mimetype="text/json")
+
+
+def extract_as_numpy_array( project_id, stack_id, id, z):
+    """ Extract component to a 2D NumPy array
+    """
+    fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
+    z = str(z)
+
+    with closing(h5py.File(fpath, 'r')) as hfile:
+
+        componentPixelStart = hfile['connected_components/'+z+'/begin_indices'].value[id].copy()
+        componentPixelEnd = hfile['connected_components/'+z+'/end_indices'].value[id].copy()
+        data = hfile['connected_components/'+z+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
+        componentMinX = hfile['connected_components/'+z+'/min_x'].value[id]
+        componentMinY = hfile['connected_components/'+z+'/min_y'].value[id]
+        componentMaxX = hfile['connected_components/'+z+'/max_x'].value[id]
+        componentMaxY = hfile['connected_components/'+z+'/max_y'].value[id]
+
+        height, width = componentMaxY - componentMinY + 1, componentMaxX - componentMinX + 1
+
+        img = np.zeros( (width,height), dtype=np.uint8)
+        img[data['x']-componentMinX,data['y']-componentMinY] = 1
+
+    return img
+
+# TODO: use extract_as_numpy_array and apply color transfer function depending on the skeleton_id
+def get_component_image(request, project_id=None, stack_id=None):
+
+    id = int(request.GET.get('id', '-1'))
+    z=request.GET.get('z', '-1')
+    red=request.GET.get('red','255')
+    green=request.GET.get('green','255')
+    blue=request.GET.get('blue','255')
+    alpha=request.GET.get('alpha','255')
+
+    fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
+    with closing(h5py.File(fpath, 'r')) as hfile:
+
+        componentPixelStart=hfile['connected_components/'+z+'/begin_indices'].value[id].copy()
+        componentPixelEnd=hfile['connected_components/'+z+'/end_indices'].value[id].copy()
+
+        data=hfile['connected_components/'+z+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
+        threshold=float(hfile['connected_components/'+z+'/values'].value[id].copy())
+
+        componentMinX=hfile['connected_components/'+z+'/min_x'].value[id].copy()
+        componentMinY=hfile['connected_components/'+z+'/min_y'].value[id].copy()
+        componentMaxX=hfile['connected_components/'+z+'/max_x'].value[id].copy()
+        componentMaxY=hfile['connected_components/'+z+'/max_y'].value[id].copy()
+
+        height=(componentMaxY-componentMinY)+1
+        width=(componentMaxX-componentMinX)+1
+
+
+        img = np.zeros( (width,height,4), dtype=np.uint8)
+        img[data['x']-componentMinX,data['y']-componentMinY] = (red,green,blue,alpha) # (red, 0, blue, opacity)
+        componentImage = Image.fromarray(np.swapaxes(img,0,1))
+
+        response = HttpResponse(mimetype="image/png")
+        componentImage.save(response, "PNG")
+        return response
+
+    return None
+
+#TODO: in transaction
+@catmaid_login_required
+def get_saved_drawings_by_component_id(request, project_id=None, stack_id=None, logged_in_user=None):
+    # parse request
+    component_id = int(request.GET['component_id'])
+    skeleton_id = int(request.GET['skeleton_id'])
+    z = int(request.GET['z'])
+
+    s = get_object_or_404(ClassInstance, pk=skeleton_id)
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+    all_drawings = Drawing.objects.filter(stack=stack,
+        project=p,skeleton_id=skeleton_id,
+        z = z,component_id=component_id).all()
+
+    drawings={}
+
+    for drawing in all_drawings:
+        drawings[int(drawing.id)]=\
+            {'id':int(drawing.id),
+             'componentId':int(drawing.component_id),
+            'minX':int(drawing.min_x),
+            'minY':int(drawing.min_y),
+            'maxX':int(drawing.max_x),
+            'maxY':int(drawing.max_y),
+            'type':int(drawing.type),
+            'svg':drawing.svg,
+            'status':drawing.status,
+            'skeletonId':drawing.skeleton_id
+
+        }
+
+
+    return HttpResponse(json.dumps(drawings), mimetype="text/json")
+
+
+
+
+#TODO: in transaction
+@catmaid_login_required
+def get_saved_drawings_by_view(request, project_id=None, stack_id=None, logged_in_user=None):
+    # parse request
+    z = int(request.GET['z'])
+
+    # field of view
+    viewX=int(request.GET['x'])
+    viewY=int(request.GET['y'])
+    viewHeight=int(request.GET['height'])
+    viewWidth=int(request.GET['width'])
+
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+    # fetch all the components for the given z section
+    all_drawings = Drawing.objects.filter(
+        project = p,
+        stack = stack,
+        component_id = None,
+        z = z).all()
+
+    drawings={}
+
+    for drawing in all_drawings:
+        drawings[int(drawing.id)]=\
+            {
+            'minX':int(drawing.min_x),
+            'minY':int(drawing.min_y),
+            'maxX':int(drawing.max_x),
+            'maxY':int(drawing.max_y),
+            'svg':drawing.svg,
+            'status':drawing.status,
+            'type':drawing.type,
+            'id':drawing.id,
+            'componentId':drawing.component_id,
+            'skeletonId':drawing.skeleton_id
+
+            }
+
+    return HttpResponse(json.dumps(drawings), mimetype="text/json")
+
+#TODO: in transaction
+@catmaid_login_required
+def delete_drawing(request, project_id=None, stack_id=None, logged_in_user=None):
+    # parse request
+    drawingId=request.GET.get('id',None)
+    if not drawingId is None:
+        all_drawings = Drawing.objects.filter(id=drawingId).all()
+        Drawing.delete(all_drawings[0])
+
+    return HttpResponse(json.dumps(True), mimetype="text/json")
+
+
+#TODO: in transaction
+@catmaid_login_required
+def put_drawing(request, project_id=None, stack_id=None, logged_in_user=None):
+    # parse request
+    drawing=json.loads(request.POST['drawing'])
+    skeleton_id = request.POST.__getitem__('skeleton_id')
+    z = int(request.POST['z'])
+
+    # field of view
+    viewX=int(request.POST['x'])
+    viewY=int(request.POST['y'])
+    viewHeight=int(request.POST['height'])
+    viewWidth=int(request.POST['width'])
+
+    viewMaxX=viewX+viewWidth
+    ViewMaxY=viewY+viewHeight
+    skeleton=None
+
+
+    if not skeleton_id =='null':
+        skeleton=int(skeleton_id)
+
+
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+
+    new_drawing = Drawing(
+            project = p,
+            stack = stack,
+            user = logged_in_user,
+            skeleton_id = skeleton,
+            component_id = drawing['componentId'],
+            min_x = drawing['minX'],
+            min_y = drawing['minY'],
+            max_x = drawing['maxX'],
+            max_y = drawing['maxY'],
+            z = z,
+            svg = drawing['svg'],
+            type=drawing['type'],
+            status = 1
+    )
+    new_drawing.save()
+
+    return HttpResponse(json.dumps(new_drawing.id), mimetype="text/json")
+
+
+#TODO: in transaction
+@catmaid_login_required
+def get_saved_components(request, project_id=None, stack_id=None, logged_in_user=None):
+
+    # parse request
+    skeleton_id = int(request.GET['skeleton_id'])
+    z = int(request.GET['z'])
+
+    s = get_object_or_404(ClassInstance, pk=skeleton_id)
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+    # fetch all the components for the given skeleton and z section
+    all_components = Component.objects.filter(stack=stack,
+    project=p,skeleton_id=skeleton_id,
+    z = z).all()
+
+    componentIds={}
+
+    for compData in all_components:
+        componentIds[int(compData.component_id)]=\
+            {
+            'minX':int(compData.min_x),
+            'minY':int(compData.min_y),
+            'maxX':int(compData.max_x),
+            'maxY':int(compData.max_y),
+            'threshold':compData.threshold
+
+            }
+
+
+    return HttpResponse(json.dumps(componentIds), mimetype="text/json")
+
+
+#TODO: in transaction; separate out creation of a new component in a function
+
+@catmaid_login_required
+def put_components(request, project_id=None, stack_id=None, logged_in_user=None):
+
+    # parse request
+    components=json.loads(request.POST['components'])
+    skeleton_id = int(request.POST['skeleton_id'])
+    z = int(request.POST['z'])
+
+
+    # field of view
+    viewX=int(request.POST['x'])
+    viewY=int(request.POST['y'])
+    viewHeight=int(request.POST['height'])
+    viewWidth=int(request.POST['width'])
+
+    viewMaxX=viewX+viewWidth
+    ViewMaxY=viewY+viewHeight
+
+    s = get_object_or_404(ClassInstance, pk=skeleton_id)
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+    # fetch all the components for the given skeleton and z section
+    all_components = Component.objects.filter(
+        project = p,
+        stack = stack,
+        skeleton_id = skeleton_id,
+        z = z).all()
+
+    # discard the components out of field of view
+    activeComponentIds=[]
+
+    for i in components:
+
+        comp=components[i]
+        inDatabase=False
+        for compDatabse in all_components:
+            if str(compDatabse.component_id)==str(comp['id']):
+                inDatabase=True
+                activeComponentIds.insert(activeComponentIds.__sizeof__(),comp['id'])
+                break
+        if inDatabase:
+            continue
+
+        new_component = Component(
+            project = p,
+            stack = stack,
+            user = logged_in_user,
+            skeleton_id = s.id,
+            component_id = comp['id'],
+            min_x = comp['minX'],
+            min_y = comp['minY'],
+            max_x = comp['maxX'],
+            max_y = comp['maxY'],
+            z = z,
+            threshold = comp['threshold'],
+            status = 1
+            )
+        new_component.save()
+        activeComponentIds.insert(activeComponentIds.__sizeof__(),comp['id'])
+
+    # delete components that were deselected
+    for compDatabse in all_components:
+        if not activeComponentIds.count(str(compDatabse.component_id)):
+            Component.delete(compDatabse)
+
+    return HttpResponse(json.dumps(True), mimetype="text/json")
+
+@catmaid_login_required
+def initialize_components_for_skeleton(request, project_id=None, stack_id=None, logged_in_user=None):
+    skeleton_id = int(request.POST['skeleton_id'])
+    
+    # retrieve all treenodes for the given skeleton
+    treenodes_qs, labels_qs, labelconnector_qs = get_treenodes_qs( project_id, skeleton_id )
+    # retrieve stack information to transform world coordinates to pixel coordinates
+    stack_info = get_stack_info( project_id, stack_id )
+
+    skeleton = get_object_or_404(ClassInstance, pk=skeleton_id)
+    stack = get_object_or_404(Stack, pk=stack_id)
+    project = get_object_or_404(Project, pk=project_id)
+
+    # retrieve all the components belonging to the skeleton
+    all_components = Component.objects.filter(
+        project = project,
+        stack = stack,
+        skeleton_id = skeleton.id
+    ).all()
+    all_component_ids = [comp.component_id for comp in all_components]
+
+    # TODO: some sanity checks, like missing treenodes in a section
+
+    # for each treenode location
+    for tn in treenodes_qs:
+
+        x_pixel = int(tn.location.x / stack_info['resolution']['x'])
+        y_pixel = int(tn.location.y / stack_info['resolution']['y'])
+        z = str( int(tn.location.z / stack_info['resolution']['z']) )
+
+        # select component with lowest threshold value and that contains the pixel value of the location
+        component_ids = retrieve_components_for_location(project_id, stack_id, x_pixel, y_pixel, z, limit = 1)
+
+        if not len(component_ids):
+            print >> sys.stderr, 'No component found for treenode id', tn.id
+            continue
+        elif len(component_ids) == 1:
+            print >> sys.stderr, 'Exactly one component found for treenode id', tn.id, component_ids
+        else:
+            print >> sys.stderr, 'More than one component found for treenode id', tn.id, component_ids
+            continue
+
+        component_key, component_value = component_ids.items()[0]
+
+        # check if component already exists for this skeleton in the database
+        if component_key in all_component_ids:
+            print >> sys.stderr, 'Component with id', component_key, ' exists already in the database. Skip it.'
+            continue
+
+        # TODO generate default color for all components based on a map of
+        # the skeleton id to color space
+
+        # if not, create it
+        new_component = Component(
+            project = project,
+            stack = stack,
+            user = logged_in_user,
+            skeleton_id = skeleton.id,
+            component_id = component_key,
+            min_x = component_value['minX'],
+            min_y = component_value['minY'],
+            max_x = component_value['maxX'],
+            max_y = component_value['maxY'],
+            z = z,
+            threshold = component_value['threshold'],
+            status = 5 # means automatically selected component
+        )
+        new_component.save()
+
+    return HttpResponse(json.dumps({'status': 'success'}), mimetype="text/json")
+
+
+def create_segmentation_file(request, project_id=None, stack_id=None):
+
+    skeleton_id = int(request.POST.__getitem__('skeleton_id'))
+
+
+
+    create_segmentation_neurohdf_file(project_id,skeleton_id,stack_id)
+
+    return HttpResponse(json.dumps(True), mimetype="text/json")
+
+
+def create_segmentation_neurohdf_file(project_id, skeleton_id,stack_id):
+    if project_id is None or skeleton_id is None:
+        return
+
+    filename=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_segmentation.hdf'.format( project_id, stack_id ) )
+    componentTreeFilePath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
+
+    with closing(h5py.File(filename, 'w')) as hfile:
+        hfile.attrs['neurohdf_version'] = '0.1'
+        scaleGroup = hfile.create_group("scale")
+        scale_zero = scaleGroup.create_group("0")
+        section = scale_zero.create_group("section")
+
+        # retrieve stack information to transform world coordinates to pixel coordinates
+        stack_info = get_stack_info( project_id, stack_id )
+
+        skeleton = get_object_or_404(ClassInstance, pk=skeleton_id)
+        stack = get_object_or_404(Stack, pk=stack_id)
+        project = get_object_or_404(Project, pk=project_id)
+
+        for z in xrange(2):
+
+            #create np array x * y * typeCount
+            #   0   SkeletonIds
+            #   1   Components
+            #   2   Component drawings
+            #   3   Mitochondria
+            #   4   Membrane
+            #   5   Soma
+            #   6   Misc
+            #   7   Erasor
+
+            shape=(1025,1025,8)
+            segmentation=np.zeros(shape, dtype=np.long)
+
+            # retrieve all the components belonging to the skeleton
+            all_components = Component.objects.filter(
+                project = project,
+                stack = stack,
+                skeleton_id = skeleton.id,
+                z=z
+            ).all()
+            for comp in all_components:
+
+                with closing(h5py.File(componentTreeFilePath, 'r')) as componenthfile:
+                    componentPixelStart=componenthfile['connected_components/'+str(z)+'/begin_indices'].value[comp.component_id].copy()
+                    componentPixelEnd=componenthfile['connected_components/'+str(z)+'/end_indices'].value[comp.component_id].copy()
+
+                    data=componenthfile['connected_components/'+str(z)+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
+                    segmentation[data['y'],data['x'],0] =comp.skeleton_id
+                    segmentation[data['y'],data['x'],1] =comp.component_id
+
+            all_drawings = Drawing.objects.filter(stack=stack,
+                project=project,
+                z = z).exclude(component_id__isnull=True).all()
+            for compDrawing in all_drawings:
+                drawingArray = svg2pixel(compDrawing,compDrawing.id)
+
+                indices=np.where(drawingArray>0)
+
+                x_index = indices[0]+(compDrawing.min_x-50)
+                y_index = indices[1]+(compDrawing.min_y-50)
+                idx = (x_index > 0) & (x_index < 1024) & (y_index > 0) & (y_index < 1024)
+                segmentation[x_index[idx],y_index[idx],2]=compDrawing.id
+
+
+            all_free_drawings = Drawing.objects.filter(stack=stack,
+                project=project,
+                z = z).exclude(component_id__isnull=False).all()
+            for freeDrawing in all_free_drawings:
+                drawingArray = svg2pixel(freeDrawing,freeDrawing.id)
+                indices=np.where(drawingArray>0)
+
+                x_index = indices[0]+(freeDrawing.min_x-50)
+                y_index = indices[1]+(freeDrawing.min_y-50)
+                idx = (x_index > 0) & (x_index < 1024) & (y_index > 0) & (y_index < 1024)
+
+                segmentation[x_index[idx],y_index[idx],(freeDrawing.type/100)]=freeDrawing.id
+
+
+            #store no array to hdf file
+            section.create_dataset(str(z), data=segmentation, compression='gzip', compression_opts=4)
+
+
+
+
+def svg2pixel(drawing, id, maxwidth=0, maxheight=0):
+    #Converts drawings into pixel array. Be careful,50px offset are added to the drawing!!!
+
+    nopos=find_between(drawing.svg,">","transform=")+'transform="translate(50 50)" />'
+    data='<svg>'+nopos+'</svg>'
+
+    #data='<svg>'+drawing.svg.replace("L","C")+'</svg>'
+
+    svg = rsvg.Handle(data=data)
+
+    x = width = svg.props.width
+    y = height = svg.props.height
+#    print "actual dims are " + str((width, height))
+#    print "converting to " + str((maxwidth, maxheight))
+#
+    #yscale = xscale = 1
+#
+#    if (maxheight != 0 and width > maxwidth) or (maxheight != 0 and height > maxheight):
+#        x = maxwidth
+#        y = float(maxwidth)/float(width) * height
+#        print "first resize: " + str((x, y))
+#        if y > maxheight:
+#            y = maxheight
+#            x = float(maxheight)/float(height) * width
+#            print "second resize: " + str((x, y))
+#        xscale = float(x)/svg.props.width
+#        yscale = float(y)/svg.props.height
+
+    newWidth=width+100
+    newHeight=height+100
+
+    #Color
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, newWidth, newHeight)
+    context = cairo.Context(surface)
+    #context.scale(xscale, yscale)
+    svg.render_cairo(context)
+    surface.write_to_png("svg_cairo_color_"+str(id)+".png")
+
+    #Grey
+#    grayCairo = cairo.ImageSurface( cairo.FORMAT_A8, newWidth, newHeight)
+#    context = cairo.Context(grayCairo)
+#    svg.render_cairo(context)
+#    grayCairo.write_to_png("svg_cairo_grey_"+str(id)+".png")
+#
+#    a = np.frombuffer(grayCairo.get_data(), dtype=np.uint8, count=newWidth*newHeight, offset=0)
+#    a.shape = (newWidth, newHeight)
+
+    #pilversuch
+    pilImage = Image.frombuffer('RGBA',(newWidth,newHeight),surface.get_data(),'raw','RGBA',0,1)
+    pilImage.save("svg_pil_rgb_"+str(id), "PNG")
+
+    pilGray=pilImage.convert('L')
+    pixArray = np.array(pilGray)
+    pilGray.save("svg_pil_rgb_"+str(id), "PNG")
+
+
+
+
+    #a = np.frombuffer(surface.get_data(), np.uint8)
+    #newShape=np.reshape(a,(width+100,height+100,4))
+    #gray = np.sum(newShape.astype(np.uint8), axis=2) / 4
+
+#    pilImage = Image.frombuffer('RGBA',(width+100,height+100),surface.get_data(),'raw','RGBA',0,1)
+#
+#    pilImage.save("svg_pil_gray_"+str(id), "PNG")
+
+
+
+    return pixArray
+
+def find_between( s, first, last ):
+    try:
+        start = s.index( first ) + len( first )
+        end = s.index( last, start )
+        return s[start:end]
+    except ValueError:
+        return ""
+
+
+def get_segmentation_tile(project_id, stack_id,scale,height,width,x,y,z,file_extension):
+
+
+    fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_segmentation.hdf'.format( project_id, stack_id ) )
+
+    with closing(h5py.File(fpath, 'r')) as hfile:
+
+        hdfpath = 'scale/' + str(int(scale)) + '/section/'+ str(z)
+        image_data=hfile[hdfpath].value
+        data=np.sum( image_data[y:y+height,x:x+width,:], axis = 2 )
+
+        #rgba=np.zeros((data.shape[0],data.shape[1],4))
+        #rgba[np.where(data>0)]=(255,255,255,255)
+
+        #blank=np.zeros(data.shape)
+        data[data > 0] = 255
+        data = data.astype( np.uint8 )
+
+        # pilImage = Image.frombuffer('RGBA',(width,height),rgba)
+        pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
+
+        response = HttpResponse(mimetype="image/png")
+        pilImage.save(response, "PNG")
+        return response
+
+
+
+
 def get_tile(request, project_id=None, stack_id=None):
 
     scale = float(request.GET.get('scale', '0'))
@@ -65,6 +730,9 @@ def get_tile(request, project_id=None, stack_id=None):
     row = request.GET.get('row', 'x')
     file_extension = request.GET.get('file_extension', 'png')
     hdf5_path = request.GET.get('hdf5_path', '/')
+
+    if hdf5_path=="segmentation_file":
+        return get_segmentation_tile(project_id,stack_id,scale,height,width,x,y,z,file_extension)
 
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}.hdf'.format( project_id, stack_id ) )
     
@@ -306,6 +974,8 @@ def get_temporary_neurohdf_filename_and_url():
     host = settings.CATMAID_DJANGO_URL.lstrip('http://').split('/')[0]
     return os.path.join(hdf_path, filename), "http://{0}{1}".format( host, os.path.join(settings.STATICFILES_URL,
         settings.STATICFILES_HDF5_SUBDIRECTORY, filename) )
+
+
 
 def create_neurohdf_file(filename, data):
 

@@ -10,7 +10,7 @@ import numpy as np
 
 project_id = 3
 stack_id = 4
-filepath = '/home/stephan/dev/CATMAID/django/hdf5'
+filepath = '/home/ottj/CATMAID/django/hdf5'
 
 with closing(h5py.File(op.join(filepath, '%s_%s.hdf' % (project_id, stack_id)), 'w')) as hfile:
     mesh=hfile.create_group('meshes')

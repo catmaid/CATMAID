@@ -299,7 +299,7 @@ function TileLayer(
    * Get Tile from HDF5 through Django (tiles_source_type == 3)
    */
   this.getTileHDF5Request = function( x, y, dx, dy, scale, z ) {
-    return django_url + project.id + '/stack/' + stack.id + '/tile?' + $.param({
+      return django_url + project.id + '/stack/' + stack.id + '/tile?' + $.param({
         x: x,
         y: y,
         width : tileWidth,
@@ -312,6 +312,8 @@ function TileLayer(
         hdf5_path: baseURL // image_base refers to path within HDF5 to dataset
     });
   }
+
+
 
 	/**
 	 * Creates the URL for a tile.

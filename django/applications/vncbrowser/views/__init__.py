@@ -43,6 +43,18 @@ from neurohdf import microcircuit_neurohdf
 from neurohdf import stack_models
 from neurohdf import get_tile
 from neurohdf import put_tile
+from neurohdf import get_component_list_for_point
+from neurohdf import get_component_image
+from neurohdf import put_components
+from neurohdf import get_saved_components
+from neurohdf import initialize_components_for_skeleton
+from neurohdf import get_saved_drawings_by_component_id
+from neurohdf import get_saved_drawings_by_view
+from neurohdf import put_drawing
+from neurohdf import delete_drawing
+from neurohdf import create_segmentation_file
+from neurohdf import get_segmentation_tile
+
 
 from cropping import crop
 from cropping import download_crop

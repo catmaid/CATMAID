@@ -6,17 +6,46 @@ from django.conf import settings
 from django.db import connection
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
-from catmaid.models import Project, Session, User
+
+from catmaid.models import Project, User
+from django.contrib.auth.models import User as AuthUser
+
 from catmaid.control.common import json_error_response, cursor_fetch_dictionary
 from catmaid.control.common import my_render_to_response
 
-def login(request):
+from django.contrib.auth import authenticate, logout, login
+
+def login_vnc(request):
     return my_render_to_response(request,
                                  'vncbrowser/login.html',
                                 {'return_url': request.GET.get('return_url', '/'),
                                  'project_id': 0,
                                  'catmaid_url': settings.CATMAID_URL,
                                  'catmaid_login': settings.CATMAID_URL + 'model/login.php'})
+
+
+def login_user(request):
+    username = request.POST['name']
+    password = request.POST['pwd']
+    user = authenticate(username=username, password=password)
+    if user is not None:
+        if user.is_active:
+            # Redirect to a success page.
+            login(request, user)
+            request.session['user_id'] = user.id
+
+            # HttpResponse(json.dumps())
+            return HttpResponse(json.dumps({'id': request.session.session_key, 'longname': user.first_name + ' ' + user.last_name } ))
+        else:
+           # Return a 'disabled account' error message
+           return HttpResponse(json.dumps({'error': ' Disabled account'}))
+    else:
+        # Return an 'invalid login' error message.
+        return HttpResponse(json.dumps({'error': ' Invalid login'}))
+
+def logout_user(request):
+    logout(request)
+    return HttpResponse(json.dumps({'success': True}))
 
 
 def redirect_to_login(return_url):
@@ -51,8 +80,18 @@ def parse_php_session_data(s):
         result[k] = value_string
     return result
 
-
 def valid_catmaid_login(request):
+    # TODO: check if valid session exists too session for user
+    user_id = request.session.get( 'user_id', 0 )
+    u = User.objects.get(pk=int(user_id))
+    try:
+        u = AuthUser.objects.get(pk=3)
+    except AuthUser.DoesNotExist:
+        return None
+
+    return u
+
+def valid_catmaid_login2(request):
     if 'PHPSESSID' not in request.COOKIES:
         return None
     phpsessid = request.COOKIES['PHPSESSID']

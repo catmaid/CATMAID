@@ -114,7 +114,8 @@ function login(
 	ui.catchEvents( "wait" );
 	if ( account || password )
 		requestQueue.register(
-			'model/login.php',
+			//'model/login.php',
+            django_url + 'accounts/login',
 			'POST',
 			{ name : account, pwd : password },
 			loginCompletion );
@@ -192,7 +193,7 @@ function logout() {
   if (msg_timeout) window.clearTimeout(msg_timeout);
 
   ui.catchEvents("wait");
-  requestQueue.register('model/logout.php', 'GET', undefined, handle_logout);
+  requestQueue.register(django_url + 'accounts/logout', 'POST', undefined, handle_logout);
 
   return;
 }
@@ -586,7 +587,7 @@ function handle_openProjectStack( status, text, xml )
  */
 
 function message() {
-  requestQueue.register(django_url + 'messages/unread', 'GET', undefined, handle_message);
+  requestQueue.register( django_url + 'messages/unread', 'GET', undefined, handle_message);
   return;
 }
 

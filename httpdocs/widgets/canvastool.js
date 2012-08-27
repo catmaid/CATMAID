@@ -329,9 +329,9 @@ function CanvasTool()
         });
         $('#button_mode_component').click(function()
         {
-            self.generateSegmentationFile();
-            //this.style.selected=true;
-            //self.switchToComponentMode();
+            //self.generateSegmentationFile();
+            this.style.selected=true;
+            self.switchToComponentMode();
 
         });
 

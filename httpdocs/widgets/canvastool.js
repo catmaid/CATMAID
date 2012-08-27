@@ -97,8 +97,10 @@ function CanvasTool()
     });
 
     this.state=this.stateEnum.COMPONENTVIEW;
+    this.drawingTypeEnum=null;
+    this.drawingType=null;
 
-    this.drawingTypeEnum=enumFactory.defineEnum({
+    /*this.drawingTypeEnum=enumFactory.defineEnum({
         mitochondria : {
             value : 300,
             string : 'mitochondria',
@@ -125,9 +127,9 @@ function CanvasTool()
             color:[255,255,255]
         }
 
-    });
+    });*/
 
-    this.drawingType=this.drawingTypeEnum.mitochondria;
+
 
     //
     //
@@ -191,7 +193,10 @@ function CanvasTool()
             }
         });*/
 
+
+
         createCanvasLayer( parentStack );
+        self.getDrawingEnum();
         createControlBox();
         self.generateLayer();
         canvasLayer.canvas.observe('path:created',function(path){self.onPathCreated(path)});
@@ -210,12 +215,57 @@ function CanvasTool()
         canvasLayer.canvas.freeDrawingColor ="rgb(0, 255, 255)";
         this.lastPosition=canvasLayer.getFieldOfViewParameters();
 
+
+
         self.switchToComponentMode();
 
         self.loadElements();
 
 
     };
+
+    this.getDrawingEnum=function()
+    {
+        var url= django_url + project.id + "/stack/" + self.stack.id + '/get-drawing-enum'
+        $.getJSON(url,function(result)
+        {
+          self.drawingTypeEnum=enumFactory.defineEnum(result);
+          self.drawingType=self.drawingTypeEnum.getByValue('value',300);
+            var selectDrawing=$('#select_drawing_type');
+
+            self.drawingTypeEnum.forEach(function(drawingType)
+            {
+                var option=new Option(drawingType.string, drawingType.value, false, false);
+                option.title="widgets/icons/icon_cd.gif";
+                option.style.backgroundColor='#'+self.rgbToHex(drawingType.color[0],drawingType.color[1],drawingType.color[2]);
+
+                selectDrawing.append(option);
+
+            });
+
+            //TODO:Add msdropdown to select box with nice icons of mitochondria, membranes etc.
+            //selectDrawing.msDropDown(); //dd is default;
+
+            selectDrawing.change(function () {
+                $("#select_drawing_type option:selected").each(function ()
+                {
+                    document.getElementById('select_drawing_type').style.backgroundColor=this.style.backgroundColor;
+                    self.drawingType=self.drawingTypeEnum.getByName(this.text);
+                    canvasLayer.canvas.freeDrawingColor =self.rgbArrayToRgbString(self.drawingType.color,false);
+
+
+                });
+
+            })
+                .trigger('change');
+
+            //$('#select_drawing_type').val(300);
+
+
+
+        });
+    };
+
 
     /**
      * unregister all stack related mouse and keyboard controls
@@ -243,6 +293,7 @@ function CanvasTool()
         });
 
         $('#button_clear_canvas').click(function() {
+            //self.generateSegmentationFile();
             if (confirm('Are you sure?')) {
                 self.clearCanvas();
 
@@ -329,7 +380,7 @@ function CanvasTool()
         });
         $('#button_mode_component').click(function()
         {
-            //self.generateSegmentationFile();
+
             this.style.selected=true;
             self.switchToComponentMode();
 
@@ -340,31 +391,9 @@ function CanvasTool()
 
         var selectDrawing=$('#select_drawing_type');
 
-        self.drawingTypeEnum.forEach(function(drawingType)
-        {
-            var option=new Option(drawingType.string, drawingType.value, false, false);
-            option.title="widgets/icons/icon_cd.gif";
-            option.style.backgroundColor='#'+self.rgbToHex(drawingType.color[0],drawingType.color[1],drawingType.color[2]);
-
-            selectDrawing.append(option);
-
-        });
-
-        //TODO:Add msdropdown to select box with nice icons of mitochondria, membranes etc.
-        //selectDrawing.msDropDown(); //dd is default;
-
-        selectDrawing.change(function () {
-            $("#select_drawing_type option:selected").each(function ()
-            {
-                document.getElementById('select_drawing_type').style.backgroundColor=this.style.backgroundColor;
-                self.drawingType=self.drawingTypeEnum.getByName(this.text);
-                canvasLayer.canvas.freeDrawingColor =self.rgbArrayToRgbString(self.drawingType.color,false);
 
 
-            });
 
-        })
-            .trigger('change');
 
         //Create Z slider controls:
         var sliders_box = document.getElementById( "sliders_box_seg" );
@@ -587,10 +616,10 @@ function CanvasTool()
     {
         var path=object.path;
         var drawing=new Drawing();
-        drawing.minX=self.getStackXFromCanvasX( path.left);
-        drawing.minY=self.getStackYFromCanvasY(path.top);
-        drawing.maxX=path.left+path.width;
-        drawing.maxY=path.top+path.height;
+        drawing.minX=self.getStackXFromCanvasX( path.left-Math.floor(path.width/2));
+        drawing.minY=self.getStackYFromCanvasY(path.top-Math.floor(path.height/2));
+        drawing.maxX=drawing.minX+path.width;
+        drawing.maxY= drawing.minY+path.height;
         drawing.drawingObject=path;
         drawing.skeletonId=project.selectedObjects.selectedskeleton;
 
@@ -915,7 +944,7 @@ function CanvasTool()
                 fabric.loadSVGFromString(componentDrawing.svg,function(elements,options)
                 {
                     var drawingObject=elements[0];
-                    drawingObject.set({ left: self.getCanvasXFromStackX(newComponentDrawing.minX), top: self.getCanvasYFromStackY(newComponentDrawing.minY), angle: 0 }).scale(1)
+                    drawingObject.set({ left: self.getCanvasXFromStackX(newComponentDrawing.centerX()), top: self.getCanvasYFromStackY(newComponentDrawing.centerY()), angle: 0 }).scale(1)
                     newComponentDrawing.drawingObject=drawingObject;
                     if(showOnCanvas)
                     {
@@ -1145,7 +1174,7 @@ function CanvasTool()
                 {
                     if(updatePosition)
                     {
-                        drawing.drawingObject.set({ left: self.getCanvasXFromStackX(drawing.minX), top: self.getCanvasYFromStackY(drawing.minY)});
+                        drawing.drawingObject.set({ left: self.getCanvasXFromStackX(drawing.centerX()), top: self.getCanvasYFromStackY(drawing.centerY())});
                     }
                     canvasLayer.canvas.add(drawing.drawingObject);
                 }
@@ -1165,7 +1194,7 @@ function CanvasTool()
                 {
                     if(updatePosition)
                     {
-                        drawing.drawingObject.set({ left: self.getCanvasXFromStackX(drawing.minX), top: self.getCanvasYFromStackY(drawing.minY)});
+                        drawing.drawingObject.set({ left: self.getCanvasXFromStackX(drawing.centerX()), top: self.getCanvasYFromStackY(drawing.centerY())});
                     }
                     canvasLayer.canvas.add(drawing.drawingObject);
                 }

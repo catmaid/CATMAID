@@ -309,7 +309,8 @@ function TileLayer(
         scale : stack.s, // defined as 1/2**zoomlevel
         z : z,
         file_extension: fileExtension,
-        hdf5_path: baseURL // image_base refers to path within HDF5 to dataset
+        hdf5_path: baseURL, // image_base refers to path within HDF5 to dataset
+        type:'mitochondria'
     });
   }
 

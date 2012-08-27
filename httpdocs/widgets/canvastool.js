@@ -300,9 +300,14 @@ function CanvasTool()
             }
         });
         $('#button_init_components').click(function() {
-
             self.initSkeleton();
         });
+
+        $('#button_init_hdf').click(function() {
+            self.generateSegmentationFile();
+        });
+
+
 
 
         self.removeElement("div_color_wheel_box");
@@ -502,6 +507,7 @@ function CanvasTool()
         $('#button_save_components').off('click');
         $('#button_init_components').off('click');
         $('#button_drawing_mode').off('click');
+        $('#button_init_hdf').off('click');
 
         // remove the canvasLayer with the official API
         self.stack.removeLayer( "CanvasLayer" );
@@ -539,9 +545,7 @@ function CanvasTool()
 
     this.generateSegmentationFile=function()
     {
-        if(project.selectedObjects.selectedskeleton ==null){return;}
         var url=  django_url+ project.id + "/stack/" + self.stack.id + '/generate-segmentation-file';
-
 
         $.ajax({
             url: url,

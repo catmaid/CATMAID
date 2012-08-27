@@ -120,7 +120,6 @@ function CanvasLayer( stack )
 
         self.updateCanvasLeftTop( canvasleft, canvastop );
         self.updateCanvasWidthHeight( width, height );
-        console.log('index: x, y, width, height, canvas top, left', xindex, yindex, width, height, canvasleft, canvastop )
     }
 
     this.updateCanvasWidthHeight = function( width, height )

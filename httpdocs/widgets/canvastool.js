@@ -194,7 +194,6 @@ function CanvasTool()
         });*/
 
 
-
         createCanvasLayer( parentStack );
         self.getDrawingEnum();
         createControlBox();
@@ -227,43 +226,17 @@ function CanvasTool()
     this.getDrawingEnum=function()
     {
         var url= django_url + project.id + "/stack/" + self.stack.id + '/get-drawing-enum'
-        $.getJSON(url,function(result)
-        {
-          self.drawingTypeEnum=enumFactory.defineEnum(result);
-          self.drawingType=self.drawingTypeEnum.getByValue('value',300);
-            var selectDrawing=$('#select_drawing_type');
-
-            self.drawingTypeEnum.forEach(function(drawingType)
+        var response=$.ajax(
             {
-                var option=new Option(drawingType.string, drawingType.value, false, false);
-                option.title="widgets/icons/icon_cd.gif";
-                option.style.backgroundColor='#'+self.rgbToHex(drawingType.color[0],drawingType.color[1],drawingType.color[2]);
+                url: url,
+                async: false,
+                dataType: 'json'
+            }
+        ).responseText;
 
-                selectDrawing.append(option);
+          self.drawingTypeEnum=enumFactory.defineEnum($.parseJSON(response));
+          self.drawingType=self.drawingTypeEnum.getByValue('value',300);
 
-            });
-
-            //TODO:Add msdropdown to select box with nice icons of mitochondria, membranes etc.
-            //selectDrawing.msDropDown(); //dd is default;
-
-            selectDrawing.change(function () {
-                $("#select_drawing_type option:selected").each(function ()
-                {
-                    document.getElementById('select_drawing_type').style.backgroundColor=this.style.backgroundColor;
-                    self.drawingType=self.drawingTypeEnum.getByName(this.text);
-                    canvasLayer.canvas.freeDrawingColor =self.rgbArrayToRgbString(self.drawingType.color,false);
-
-
-                });
-
-            })
-                .trigger('change');
-
-            //$('#select_drawing_type').val(300);
-
-
-
-        });
     };
 
 
@@ -394,9 +367,34 @@ function CanvasTool()
         $('#free_drawing_controls').hide();
         $('#sliders_box_brush_size').hide();
 
+
         var selectDrawing=$('#select_drawing_type');
 
+        self.drawingTypeEnum.forEach(function(drawingType)
+        {
+            var option=new Option(drawingType.string, drawingType.value, false, false);
+            option.title="widgets/icons/icon_cd.gif";
+            option.style.backgroundColor='#'+self.rgbToHex(drawingType.color[0],drawingType.color[1],drawingType.color[2]);
 
+            selectDrawing.append(option);
+
+        });
+
+        //TODO:Add msdropdown to select box with nice icons of mitochondria, membranes etc.
+        //selectDrawing.msDropDown(); //dd is default;
+
+        selectDrawing.change(function () {
+            $("#select_drawing_type option:selected").each(function ()
+            {
+                document.getElementById('select_drawing_type').style.backgroundColor=this.style.backgroundColor;
+                self.drawingType=self.drawingTypeEnum.getByName(this.text);
+                canvasLayer.canvas.freeDrawingColor =self.rgbArrayToRgbString(self.drawingType.color,false);
+
+
+            });
+
+        })
+            .trigger('change');
 
 
 

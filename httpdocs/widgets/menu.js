@@ -67,6 +67,7 @@ Menu = function () {
       //icon.appendChild( document.createElement( "p" ) );
       //icon.firstChild.appendChild( document.createTextNode( key + "." ) );
       note.appendChild(document.createElement("p"));
+      // FIXME: should render HTML
       note.firstChild.appendChild(document.createTextNode(content[key].note));
 
       var d = document.createElement("div");

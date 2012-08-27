@@ -61,7 +61,8 @@ function Navigator()
 	slider_z_box.className = "box";
 	slider_z_box.id = "slider_z_box";
 	var slider_z_box_label = document.createElement( "p" );
-	slider_z_box_label.appendChild( document.createTextNode( "z-index&nbsp;&nbsp;" ) );
+	slider_z_box_label.appendChild( document.createTextNode( "z-index" + "   " ) );
+    slider_z_box.appendChild( slider_z_box_label );
 	slider_z_box.appendChild( self.slider_z.getView() );
 	slider_z_box.appendChild( self.slider_z.getInputView() );
 	
@@ -402,7 +403,7 @@ function Navigator()
 		}),
 		
 		new Action({
-			helpText: "Move left (towards negative x)",
+			helpText: "Move left (towards negative x, faster with Shift held)",
 			keyShortcuts: {
 				"\u2190": [ arrowKeyCodes.left ]
 			},
@@ -414,9 +415,9 @@ function Navigator()
 		}),
 
 		new Action({
-			helpText: "Move right (towards positive x)",
+			helpText: "Move right (towards positive x, faster with Shift held)",
 			keyShortcuts: {
-				"\u2192": [ arrowKeyCodes.right ],
+				"\u2192": [ arrowKeyCodes.right ]
 			},
 			run: function (e) {
 				self.input_x.value = parseInt(self.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
@@ -426,7 +427,7 @@ function Navigator()
 		}),
 
 		new Action({
-			helpText: "Move up (towards negative y)",
+			helpText: "Move up (towards negative y, faster with Shift held)",
 			keyShortcuts: {
 				"\u2191": [ arrowKeyCodes.up ]
 			},
@@ -438,7 +439,7 @@ function Navigator()
 		}),
 
 		new Action({
-			helpText: "Move down (towards positive y)",
+			helpText: "Move down (towards positive y, faster with Shift held)",
 			keyShortcuts: {
 				"\u2193": [ arrowKeyCodes.down ]
 			},

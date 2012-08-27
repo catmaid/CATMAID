@@ -447,6 +447,7 @@ function openProjectStack( pid, sid )
  */
 function handle_openProjectStack( status, text, xml )
 {
+
 	if ( status == 200 && text )
 	{
 		var e = eval( "(" + text + ")" );
@@ -549,7 +550,9 @@ function handle_openProjectStack( status, text, xml )
 				}
 			}
 
-      window.setTimeout("SkeletonAnnotations.staticSelectNode(init_active_node_id, init_active_skeleton)", 2000);
+            if( init_active_skeleton || init_active_skeleton ) {
+                window.setTimeout("SkeletonAnnotations.staticSelectNode(init_active_node_id, init_active_skeleton)", 2000);
+            }
 
 
 			/* Update the projects "current project" menu. If there is more
@@ -760,9 +763,9 @@ var realInit = function()
 		if ( values[ "x" ] ) x = parseInt( values[ "x" ] );
 		if ( isNaN( x ) ) delete x;
 		if ( values[ "s" ] ) s = parseInt( values[ "s" ] );
-		if ( isNaN( s ) ) delete s;
-    if ( values[ "active_skeleton_id" ] ) init_active_skeleton = parseInt( values[ "active_skeleton_id" ] );
-    if ( values[ "active_node_id" ] ) init_active_node_id = parseInt( values[ "active_node_id" ] );
+        if ( isNaN( s ) ) delete s;
+        if ( values[ "active_skeleton_id" ] ) init_active_skeleton = parseInt( values[ "active_skeleton_id" ] );
+        if ( values[ "active_node_id" ] ) init_active_node_id = parseInt( values[ "active_node_id" ] );
 
 		if ( !(
 				typeof z == "undefined" ||

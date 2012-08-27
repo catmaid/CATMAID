@@ -503,13 +503,13 @@ class TreenodeConnector(models.Model):
     skeleton = models.ForeignKey(ClassInstance)
     confidence = models.IntegerField(default=5)
 
-class Session(models.Model):
-    class Meta:
-        db_table = "sessions"
-        managed = False
-    session_id = models.CharField(max_length=26)
-    data = models.TextField(default='')
-    last_accessed = models.DateTimeField(default=now)
+#class Session(models.Model):
+#    class Meta:
+#        db_table = "sessions"
+#        managed = False
+#    session_id = models.CharField(max_length=26)
+#    data = models.TextField(default='')
+#    last_accessed = models.DateTimeField(default=now)
 
 # ------------------------------------------------------------------------
 # Now the non-Django tables:

@@ -31,8 +31,11 @@ urlpatterns = patterns('',
 # Django CATMAID API
 urlpatterns += patterns(
     '',
+    
+    (r'^login$', 'catmaid.control.login_vnc'),
+    (r'^accounts/login$', 'catmaid.control.login_user'),
+    (r'^accounts/logout$', 'catmaid.control.logout_user'),
 
-    (r'^login$', 'catmaid.control.login'),
     (r'^projects$', 'catmaid.control.projects'),
     (r'^user-list$', 'catmaid.control.user_list'),
     (r'^permissions$', 'catmaid.control.user_project_permissions'),

@@ -266,7 +266,7 @@ var SkeletonAnnotations = new function()
                 $('#neuronName').text(data[0].name + ' (Skeleton ID: '+ node.skeleton_id+')');
 
                 project.selectedObjects.selectedneuron = parseInt(data[0].id);
-                project.selectedObjects.selectedskeleton = parseInt(node.skeleton_id);
+                project.setSelectedSkeleton( parseInt(node.skeleton_id) );
 
                 }
               } else {

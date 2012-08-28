@@ -6,7 +6,7 @@ var ObjectTree = new function()
 
   this.deselectAll = function() {
     $('#tree_object').jstree("deselect_all");
-    project.selectedObjects.selectedskeleton = null;
+    project.setSelectedSkeleton( null );
     project.selectedObjects.selectedneuron = null;
   }
 
@@ -534,13 +534,13 @@ var ObjectTree = new function()
       type = data.rslt.obj.attr("rel");
       if (type === "neuron") {
         project.selectedObjects.selectedneuron = id;
-        project.selectedObjects.selectedskeleton = null;
+        project.setSelectedSkeleton( null );
       } else if (type === "skeleton") {
         project.selectedObjects.selectedneuron = null;
-        project.selectedObjects.selectedskeleton = id;
+        project.setSelectedSkeleton( id );
       } else {
         project.selectedObjects.selectedneuron = null;
-        project.selectedObjects.selectedskeleton = null;
+        project.setSelectedSkeleton( null );
       }
     });
 

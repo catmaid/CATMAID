@@ -68,7 +68,7 @@ DrawingTypes={'mitochondria' : {
               'membrane' : {
                   'value' : 400,
                   'string' : 'membrane',
-                  'color':[50,255,50]
+                  'color':[150,50,50]
               },
               'soma' : {
                   'value' : 500,

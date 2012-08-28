@@ -1,12 +1,13 @@
 /**
  * The Canvas layer that hosts the tracing data
  */
+
+
 function CanvasLayer( stack )
 {
     // define the x,y location and width and height of the
     // current field of view of the canvas in bitmap pixel
     var xindex, yindex, width, height;
-    var self = this;
 
     this.setOpacity = function( val )
     {
@@ -194,8 +195,5 @@ function CanvasLayer( stack )
     {
         stack.getView().removeChild( view );
     };
-
-
-
 
 }

@@ -1081,7 +1081,7 @@ function CanvasTool()
 
     this.putComponents=function(skeletonID)
     {
-        if(project.selectedObjects.selectedskeleton==null||self.state!=self.stateEnum.COMPONENTVIEW || self.layerStore.componentLayers.length==0)
+        if(project.selectedObjects.selectedskeleton==null||!(self.state==self.stateEnum.COMPONENTVIEW||self.state==self.stateEnum.COMPONENTDRAW) || self.layerStore.componentLayers.length==0)
         {
             return 0;
         }

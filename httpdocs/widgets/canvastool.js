@@ -629,6 +629,7 @@ function CanvasTool()
         drawing.maxY= drawing.minY+path.height;
         drawing.drawingObject=path;
         drawing.skeletonId=project.selectedObjects.selectedskeleton;
+        canvasLayer.canvas.bringToFront(path);
 
         var currentComponentLayer=self.layerStore.componentLayers[self.stack.z];
         if(self.state==self.stateEnum.COMPONENTDRAW && currentComponentLayer.activeGroupIndex!=-1)
@@ -1183,6 +1184,7 @@ function CanvasTool()
                         drawing.drawingObject.set({ left: self.getCanvasXFromStackX(drawing.centerX()), top: self.getCanvasYFromStackY(drawing.centerY())});
                     }
                     canvasLayer.canvas.add(drawing.drawingObject);
+                    canvasLayer.canvas.bringToFront(drawing.drawingObject);
                 }
 
             }

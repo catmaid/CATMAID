@@ -465,9 +465,9 @@ def put_components(request, project_id=None, stack_id=None, logged_in_user=None)
         activeComponentIds.insert(activeComponentIds.__sizeof__(),comp['id'])
 
     # delete components that were deselected
-    for compDatabse in all_components:
-        if not activeComponentIds.count(str(compDatabse.component_id)):
-            Component.delete(compDatabse)
+    for compDatabase in all_components:
+        if not activeComponentIds.count(str(compDatabase.component_id)):
+            Component.delete(compDatabase)
 
     return HttpResponse(json.dumps(True), mimetype="text/json")
 
@@ -560,14 +560,6 @@ def create_segmentation_file(request, project_id=None, stack_id=None):
 
 def create_segmentation_neurohdf_file(project_id, stack_id, skeleton_id=None):
 
-    #   0   SkeletonIds
-    #   1   Components
-    #   2   Component drawings
-    #   3   Mitochondria
-    #   4   Membrane
-    #   5   Soma
-    #   6   Misc
-    #   7   Erasor
 
     filename=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_segmentation.hdf'.format( project_id, stack_id ) )
     componentTreeFilePath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
@@ -593,7 +585,7 @@ def create_segmentation_neurohdf_file(project_id, stack_id, skeleton_id=None):
         whitelist = range( int(stack_info['dimension']['z']) )
         [whitelist.remove( int(k) ) for k,v in stack_info['broken_slices'].items()]
 
-        for z in [0]: # whitelist[0]:
+        for z in whitelist:
             section = sectionGroup.create_group(str(z))
 
             shape=(height,width)
@@ -640,11 +632,9 @@ def create_segmentation_neurohdf_file(project_id, stack_id, skeleton_id=None):
             section.create_dataset("component_drawings", data=componentDrawingIdsPixelArray, compression='gzip', compression_opts=1)
 
             #generate arrays
-            mitochondriaIdsPixelArray=np.zeros(shape, dtype=np.long)
-            membraneIdsPixelArray=np.zeros(shape, dtype=np.long)
-            somaIdsPixelArray=np.zeros(shape, dtype=np.long)
-            miscIdsPixelArray=np.zeros(shape, dtype=np.long)
-            erasorIdsPixelArray=np.zeros(shape, dtype=np.long)
+            drawingTypeArrays={}
+            for drawingType in DrawingTypes:
+                drawingTypeArrays[DrawingTypes[drawingType]['value']]=np.zeros(shape, dtype=np.long)
 
             #Get all drawings without skeleton id
             all_free_drawings = Drawing.objects.filter(stack=stack,
@@ -660,24 +650,16 @@ def create_segmentation_neurohdf_file(project_id, stack_id, skeleton_id=None):
                 idx = (x_index >= 0) & (x_index < width) & (y_index >= 0) & (y_index < height)
 
                 #Use number from JS canvas tool enum
-
-                if freeDrawing.type==300:
-                    mitochondriaIdsPixelArray[y_index[idx],x_index[idx]]=freeDrawing.id
-                elif freeDrawing.type==400:
-                    membraneIdsPixelArray[y_index[idx],x_index[idx]]=freeDrawing.id
-                elif freeDrawing.type==500:
-                    somaIdsPixelArray[y_index[idx],x_index[idx]]=freeDrawing.id
-                elif freeDrawing.type==600:
-                    miscIdsPixelArray[y_index[idx],x_index[idx]]=freeDrawing.id
-                elif freeDrawing.type==700:
-                    erasorIdsPixelArray[y_index[idx],x_index[idx]]=freeDrawing.id
+                drawingTypeArrays[freeDrawing.type][y_index[idx],x_index[idx]]=freeDrawing.id
 
             #store arrays to hdf file
-            section.create_dataset("mitochondria", data=mitochondriaIdsPixelArray, compression='gzip', compression_opts=1)
-            section.create_dataset("membranes", data=membraneIdsPixelArray, compression='gzip', compression_opts=1)
-            section.create_dataset("soma", data=somaIdsPixelArray, compression='gzip', compression_opts=1)
-            section.create_dataset("misc", data=miscIdsPixelArray, compression='gzip', compression_opts=1)
-            section.create_dataset("erasor", data=erasorIdsPixelArray, compression='gzip', compression_opts=1)
+            for drawingArrayId in drawingTypeArrays:
+                match=None
+                for drawingType in DrawingTypes:
+                    if DrawingTypes[drawingType]['value']==drawingArrayId:
+                        match=drawingType
+                        break
+                section.create_dataset(match, data=drawingTypeArrays[drawingArrayId], compression='gzip', compression_opts=1)
 
     return
 
@@ -711,6 +693,7 @@ def svg2pixel(drawing, id, maxwidth=0, maxheight=0):
 #        xscale = float(x)/svg.props.width
 #        yscale = float(y)/svg.props.height
 
+    #Add frame of 50px due to stroke width
     newWidth=width+100
     newHeight=height+100
 
@@ -721,18 +704,14 @@ def svg2pixel(drawing, id, maxwidth=0, maxheight=0):
     svg.render_cairo(context)
     #surface.write_to_png("svg_cairo_color_"+str(id)+".png")
 
-    #Hack via pilimage, cairo frombuffer to numpy produces errors due to wrong array length
-
+    #Hack via pilimage, cairo frombuffer to numpy produces errors due to wrong array length!!!
     pilImage = Image.frombuffer('RGBA',(newWidth,newHeight),surface.get_data(),'raw','RGBA',0,1)
 #    pilImage.save("svg_pil_rgb_"+str(id), "PNG")
-    #pilCrop=pilImage.crop((50,50,newWidth-50,newHeight-50))
-    #pilCrop.save("svg_pil_rgb_crop_"+str(id), "PNG")
 
     pilGray=pilImage.convert('L')
-    pixArray = np.array(pilGray)
 #    pilGray.save("svg_pil_gray_"+str(id), "PNG")
 
-    return pixArray
+    return np.array(pilGray)
 
 def find_between( s, first, last ):
     try:
@@ -792,29 +771,21 @@ def get_tile(request, project_id=None, stack_id=None):
         #import math
         #zoomlevel = math.log(int(scale), 2)
         hdfpath = hdf5_path + '/scale/' + str(int(scale)) + '/data'
-        image_data=hfile[hdfpath].value
-        data=image_data[y:y+height,x:x+width,z].copy()
+        image_data=hfile[hdfpath].value        #
+        # data=image_data[y:y+height,x:x+width,z].copy()
         # without copy, would yield expected string or buffer exception
+
         # XXX: should directly index into the memmapped hdf5 array
         #print >> sys.stderr, 'hdf5 path', hdfpath, image_data, data,
         # data.shape
         
-        pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
+        #pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
+        pilImage = Image.frombuffer('RGBA',(width,height),image_data[y:y+height,x:x+width,z].copy(),'raw','L',0,1)
         response = HttpResponse(mimetype="image/png")
         pilImage.save(response, "PNG")
         return response
 
 
-    w,h=1000,800
-    # img = np.empty((width,height), np.uint32)
-    #img.shape=height,width
-    img = np.random.random_integers(0, 150, (height,width) ).astype(np.uint8)
-    #img[0,0]=0x800000FF
-    # img[:400,:400]=0xFFFF0000
-    pilImage = Image.frombuffer('RGBA',(width,height),img,'raw','L',0,1)
-    response = HttpResponse(mimetype="image/png")
-    pilImage.save(response, "PNG")
-    return response
 
 def put_tile(request, project_id=None, stack_id=None):
     """ Store labels to HDF5 """

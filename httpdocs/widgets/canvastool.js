@@ -7,6 +7,7 @@
 /**
  * Constructor for the Canvas tool.
  */
+// var CanvasTool = new function()
 function CanvasTool()
 {
     // this.prototype = new Navigator();
@@ -22,25 +23,15 @@ function CanvasTool()
     var enumFactory=new EnumFactory();
     this.layerStore=new LayerStore();
     this.slider_z = null;
+    this.lastSkeletonId=null;
 
+    if ( !ui ) ui = new UI();
 
     /*
      * Keyboard actions
      */
 
     var actions = [
-
-        new Action({
-            helpText: "Blubb",
-            keyShortcuts: {
-                '+': [ 43, 107, 61, 187 ]
-            },
-            run: function (e) {
-                console.log('+ sali!');
-                //self.prototype.slider_s.move(1);
-                return false;
-            }
-        }),
 
         new Action({
             helpText: "Move up 1 slice in z (or 10 with Shift held)",
@@ -78,8 +69,6 @@ function CanvasTool()
     ];
     var keyCodeToAction = getKeyCodeToActionMap(actions);
 
-
-	  if ( !ui ) ui = new UI();
 
     this.stateEnum=enumFactory.defineEnum({
         COMPONENTVIEW : {
@@ -142,6 +131,7 @@ function CanvasTool()
      */
     this.register = function( parentStack )
     {
+        document.getElementById( "edit_button_canvas" ).className = "button_active";
         document.getElementById( "toolbar_seg" ).style.display = "block";
 
         if (canvasLayer && self.stack) {
@@ -530,6 +520,18 @@ function CanvasTool()
     //EVENTS
     //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+    this.on_skeleton_id_change = function( skeleton_id ) {
+        if(self.lastSkeletonId!=null)
+        {
+            self.putComponents(self.lastSkeletonId);
+
+        }
+        self.lastSkeletonId=skeleton_id;
+        self.layerStore=new LayerStore();
+        self.loadElements();
+
+    };
+
     this.afterRender=function(event)
     {
         var newPosition=canvasLayer.getFieldOfViewParameters();
@@ -592,7 +594,7 @@ function CanvasTool()
 
         var component=currentComponentGroup.components[index];
         component.visible=false;
-        self.invertComponent(component,false);
+        component.unsetActive();
 
         var newComponent=null;
         var newIndex=null;
@@ -608,7 +610,8 @@ function CanvasTool()
         }
 
         newComponent=currentComponentGroup.components[newIndex];
-        self.invertComponent(newComponent,true);
+        newComponent.setActive();
+        self.refreshFilters(newComponent);
         newComponent.visible=true;
         currentComponentGroup.selectedComponentIndex=newIndex;
         self.showActiveElements();
@@ -686,10 +689,6 @@ function CanvasTool()
             return
         }
 
-
-
-
-
         var intersectingComponentGroupId=self.CheckForIntersectingGroup(x,y);
         if(intersectingComponentGroupId!=null)
         {
@@ -701,8 +700,8 @@ function CanvasTool()
             {
                 self.getComponents(activeGroup.components[activeGroup.selectedComponentIndex].centerX(),activeGroup.components[activeGroup.selectedComponentIndex].centerY(),intersectingComponentGroupId)
             }
-            self.invertComponent(activeGroup.components[activeGroup.selectedComponentIndex],true)
-
+            activeGroup.components[activeGroup.selectedComponentIndex].setActive();
+            self.refreshFilters(activeGroup.components[activeGroup.selectedComponentIndex]);
 
         }
         else
@@ -711,7 +710,6 @@ function CanvasTool()
             self.deselectAllComponents();
             this.getComponents(x,y);
         }
-
 
     };
 
@@ -899,7 +897,7 @@ function CanvasTool()
                     currentComponentLayer.activeGroupIndex=currentComponentGroups.length-1;
                     self.loadDrawingsByComponentId(component.id);
 
-                    self.getComponentImage(componentGroupNew.components[0],x,y, self.stack.z,0.5,true);
+                    self.getComponentImage(componentGroupNew.components[0],x,y, self.stack.z,0.5,true,false);
 
                 }
 
@@ -1081,11 +1079,15 @@ function CanvasTool()
     };
 
 
-    this.putComponents=function()
+    this.putComponents=function(skeletonID)
     {
         if(project.selectedObjects.selectedskeleton==null||self.state!=self.stateEnum.COMPONENTVIEW || self.layerStore.componentLayers.length==0)
         {
             return 0;
+        }
+        if(skeletonID==undefined || skeletonID==null)
+        {
+            skeletonID=project.selectedObjects.selectedskeleton;
         }
 
         //TODO:remove debug url
@@ -1110,7 +1112,7 @@ function CanvasTool()
         $.ajax({
             url: url,
             type: "POST",
-            data: {skeleton_id:project.selectedObjects.selectedskeleton,z:self.stack.z,x:viewstate.x,y:viewstate.y,width:viewstate.width,height:viewstate.height,components: JSON.stringify(jsonObjects) },
+            data: {skeleton_id:skeletonID,z:self.stack.z,x:viewstate.x,y:viewstate.y,width:viewstate.width,height:viewstate.height,components: JSON.stringify(jsonObjects) },
             dataType: "json",
             beforeSend: function(x) {
                 //Log before send
@@ -1258,7 +1260,8 @@ function CanvasTool()
             if(self.layerStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId))
             {
                 var component = self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId].components[self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId].selectedComponentIndex];
-                self.invertComponent(component,false);
+                component.unsetActive();
+                self.refreshFilters( component );
 
             }
         }
@@ -1278,6 +1281,11 @@ function CanvasTool()
 
     };
 
+    this.refreshFilters=function(component)
+    {
+        component.image.applyFilters(canvasLayer.canvas.renderAll.bind(canvasLayer.canvas));
+    }
+
     this.invertComponent=function(component,invert)
     {
         component.image.filters[0]=invert && new fabric.Image.filters.Invert();
@@ -1292,10 +1300,7 @@ function CanvasTool()
         }
         else
         {
-            console.log('try:'+path.type);
             path.drawingObject.stroke=self.rgbArrayToRgbString(self.drawingTypeEnum.getByValue('value',path.type).color,invert);
-            console.log('success!!!');
-
         }
 
         path.inverted=invert;
@@ -1470,7 +1475,7 @@ function CanvasTool()
             for (var componentGroupId in self.layerStore.componentLayers[self.stack.z].componentGroups)
             {
                 if(self.layerStore.componentLayers[self.stack.z].componentGroups.hasOwnProperty(componentGroupId) &&
-                    self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId].components[self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId].selectedComponentIndex].image.filters[0]==false)
+                    self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId].components[self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId].selectedComponentIndex].active==false)
                 {
                     countGroups+=1;
                     newLayer.componentGroups[countGroups]=self.layerStore.componentLayers[self.stack.z].componentGroups[componentGroupId];
@@ -1505,10 +1510,6 @@ function CanvasTool()
             return 0;
         }
         var fieldOfView=canvasLayer.getFieldOfViewParameters();
-
-        //TODO:remove debug url
-
-        //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/components-for-point";
 
         var url= django_url + project.id + "/stack/" + self.stack.id + '/components-for-point'+ "?" + $.param({
             x: self.getStackXFromCanvasX(x),
@@ -1610,7 +1611,7 @@ function CanvasTool()
                 {
                     if(componentGroupNew.components.hasOwnProperty(componentToLoadId)&&componentGroupNew.components[componentToLoadId].image==null)
                     {
-                        self.getComponentImage(componentGroupNew.components[componentToLoadId],x,y, self.stack.z,0.5,visible);
+                        self.getComponentImage(componentGroupNew.components[componentToLoadId],x,y, self.stack.z,0.5,visible,true);
                         visible=false;
 
                     }
@@ -1632,7 +1633,7 @@ function CanvasTool()
     };
 
 
-    this.getComponentImage= function(component,x,y,z,scale,visible)
+    this.getComponentImage= function(component,x,y,z,scale,visible,active)
     {
 
          var url=django_url + project.id + "/stack/" + self.stack.id + '/componentimage'+ "?" + $.param({
@@ -1649,25 +1650,22 @@ function CanvasTool()
 
         fabric.Image.fromURL(url, function(img)
         {
+            component.image = img.set({ left: self.getCanvasXFromStackX(component.centerX()), top: self.getCanvasYFromStackY(component.centerY()), angle: 0,clipTo:img }).scale(1);
+            if(visible)
+            {
+                canvasLayer.canvas.add(component.image);
+                var item=canvasLayer.canvas.item(canvasLayer.canvas._objects.length-1);
 
+                canvasLayer.canvas.item(canvasLayer.canvas._objects.length-1).selectable=false;
+                if(active) {
+                   component.setActive();
+                } else {
+                   component.unsetActive();
+                }
+                self.refreshFilters(component);
 
-                    component.image = img.set({ left: self.getCanvasXFromStackX(component.centerX()), top: self.getCanvasYFromStackY(component.centerY()), angle: 0,clipTo:img }).scale(1);
-                    if(visible)
-                    {
-                        console.log('adding compoentn at',self.getCanvasXFromStackX(component.centerX()),self.getCanvasYFromStackY(component.centerY()));
-
-                        canvasLayer.canvas.add(component.image);
-                        var item=canvasLayer.canvas.item(canvasLayer.canvas._objects.length-1);
-
-                        canvasLayer.canvas.item(canvasLayer.canvas._objects.length-1).selectable=false;
-                        self.invertComponent(component,true);
-
-
-
-                    }
-
-                });
-
+            }
+        });
     };
 
 
@@ -1712,8 +1710,11 @@ function CanvasTool()
     }
 
     this.rgbArrayToRgbString=function(array,invert){
-        if(invert){return "rgb("+(255-array[0]).toString()+","+(255-array[1]).toString()+","+(255-array[2]).toString()+")"}
-        return "rgb("+array[0]+","+array[1]+","+array[2]+")"}
+        if(invert) {
+            //return "rgb("+(255-array[0]).toString()+","+(255-array[1]).toString()+","+(255-array[2]).toString()+")"
+            return "rgb("+(0).toString()+","+(255).toString()+","+(0).toString()+")"
+        };
+        return "rgb("+array[0]+","+array[1]+","+array[2]+")"};
 
 
 }
@@ -1754,11 +1755,28 @@ function Component()
     this.threshold=null;
     this.image=null;
     this.visible=false;
+    this.active=true;
 
     this.width=function(){return this.maxX-this.minX; };
     this.height=function(){return this.maxY-this.minY; };
     this.centerX=function(){return Math.round(this.minX+(this.maxX-this.minX)/2); };
     this.centerY=function(){return Math.round(this.minY+(this.maxY-this.minY)/2); };
+
+    this.setActive = function() {
+        if(this.image!==null) {
+            this.active = true;
+            this.image.filters[0]=this.active && new fabric.Image.filters.Sepia2();
+        }
+    }
+
+    this.unsetActive = function() {
+        this.active = false;
+        this.image.filters[0]=this.active && new fabric.Image.filters.Sepia2();
+    }
+
+    this.toggleActive = function() {
+        this.active = !this.active;
+    }
 }
 
 function ComponentGroup()

@@ -1198,6 +1198,7 @@ function CanvasTool()
                 {
                     if(updatePosition)
                     {
+                        self.loadUnassociatedDrawings();
                         drawing.drawingObject.set({ left: self.getCanvasXFromStackX(drawing.centerX()), top: self.getCanvasYFromStackY(drawing.centerY())});
                     }
                     canvasLayer.canvas.add(drawing.drawingObject);

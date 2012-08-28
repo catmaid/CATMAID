@@ -24,7 +24,7 @@ import time
 import sys
 import cairo
 import rsvg
-import vtk
+#import vtk
 import random
 #from bar.rec.pipeline import barPipeline, VTK_PIPELINE
 

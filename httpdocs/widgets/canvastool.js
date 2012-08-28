@@ -234,7 +234,9 @@ function CanvasTool()
             }
         ).responseText;
 
-          self.drawingTypeEnum=enumFactory.defineEnum($.parseJSON(response));
+            var result=$.parseJSON(response);
+
+          self.drawingTypeEnum=enumFactory.defineEnum(result);
           self.drawingType=self.drawingTypeEnum.getByValue('value',300);
 
     };
@@ -1289,7 +1291,9 @@ function CanvasTool()
         }
         else
         {
+            console.log('try:'+path.type);
             path.drawingObject.stroke=self.rgbArrayToRgbString(self.drawingTypeEnum.getByValue('value',path.type).color,invert);
+            console.log('success!!!');
 
         }
 
@@ -1810,14 +1814,16 @@ function EnumFactory()
         } else {
             this._lookups[field] = ( lookup = {});
             var k = this._enums.length - 1;
+            var returnValue=null;
             for(; k >= 0; --k) {
                 var m = this._enums[k];
                 var j = m[field];
                 lookup[j] = m;
                 if(j == value) {
-                    return m;
+                    returnValue=m;
                 }
             }
+            return returnValue;
         }
         return null;
     };

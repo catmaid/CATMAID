@@ -24,9 +24,11 @@ import time
 import sys
 import cairo
 import rsvg
-#import vtk
+import vtk
 import random
-#from bar.rec.pipeline import barPipeline, VTK_PIPELINE
+sys.path.append('/home/ottj/3dbar/lib/pymodules/python2.6')
+
+from bar.rec.pipeline import barPipeline, VTK_PIPELINE
 
 # This file defines constants used to correctly define the metadata for NeuroHDF microcircuit data
 
@@ -92,7 +94,7 @@ def get_drawing_enum(request, project_id=None, stack_id=None):
     return HttpResponse(json.dumps(DrawingTypes), mimetype="text/json")
 
 def generate_mesh(request, project_id=None, stack_id=None):
-    skeleton_id = int(request.GET['skeleton_id'])
+    skeleton_id = int(request.POST.get('skeleton_id',-1))
 
     # retrieve all components for a given skeleton id
     components = Component.objects.filter(
@@ -138,8 +140,26 @@ def generate_mesh(request, project_id=None, stack_id=None):
         except:
             pass
 
+            # Load npy volume from given file, set origin and spacing of the volue
+    npVolWrapper = VTKStructuredPoints.loadVolumeDS(data, spacing = (1,1,20))
 
-    return None
+    # Convert npy volume to vtkImageData so vtk can handle it
+    vtkNumpyDataImport = dataImporterFromNumpy(npVolWrapper)
+
+    # Load pipeline from the xml file
+    pipeline = barPipeline.fromXML('default_pipeline.xml')
+
+    # Code just for exporting the mesh (no visualization at this point)
+    mesh =  pipeline[0:-1].execute(vtkNumpyDataImport).GetOutput()
+
+    writer = vtk.vtkPolyDataWriter()
+    writer.SetInput(mesh)
+    writer.SetFileName('test.vtk')
+    writer.SetFileTypeToBinary()
+    writer.Write()
+
+
+    return HttpResponse(json.dumps(True), mimetype="text/json")
 
 
 
@@ -1174,3 +1194,59 @@ def stack_models(request, project_id=None, stack_id=None, logged_in_user=None):
                  'colors': []
                 }
     return HttpResponse(json.dumps(d), mimetype="text/json")
+
+class dataImporterFromNumpy(vtk.vtkImageImport):
+    def __init__(self, structVol):
+        # For VTK to be able to use the data, it must be stored as a VTK-image. This can be done by the vtkImageImport-class which
+        # imports raw data and stores it.
+        # The preaviusly created array is converted to a string of chars and imported.
+        volExtent = structVol.size
+        volSpacing = structVol.spacing
+        volOrigin = structVol.origin
+
+        data_string = structVol.vol.tostring('F')
+        self.CopyImportVoidPointer(data_string, len(data_string))
+        del data_string
+
+        # The type of the newly imported data is set to unsigned char (uint8)
+        self.SetDataScalarTypeToUnsignedChar()
+
+        # Because the data that is imported only contains an intensity value (it
+        # isnt RGB-coded or someting similar), the importer must be told this is
+        # the case.
+        self.SetNumberOfScalarComponents(1)
+
+        # honestly dont know the difference between SetDataExtent() and
+        # SetWholeExtent() although VTK complains if not both are used.
+
+        self.SetDataExtent (0, volExtent[0]-1, 0, volExtent[1]-1, 0, volExtent[2]-1)
+        self.SetWholeExtent(0, volExtent[0]-1, 0, volExtent[1]-1, 0, volExtent[2]-1)
+        self.SetDataSpacing(volSpacing[0], volSpacing[1], volSpacing[2])
+        self.SetDataOrigin (volOrigin[0],  volOrigin[1],  volOrigin[2])
+
+class VTKStructuredPoints():
+    def __init__(self, (nx, ny, nz)):
+        self.vol=np.zeros( (nx, ny, nz), dtype=np.uint8 )
+        self.size=self.vol.shape
+
+    def setOrigin(self, (x, y, z)):\
+        self.origin=(x, y, z)
+
+    def setSpacing(self, (sx, sy, sz)):
+        self.spacing=(sx, sy, sz)
+
+    def setSlices(self, slideIndexList, sliceArray):
+        self.vol[:, :, slideIndexList] = sliceArray
+
+    def prepareVolume(self, indexholderReference):
+        # Obligatory (required by vtk):
+        self.vol= np.swapaxes(self.vol, 1,0)
+
+    @classmethod
+    def loadVolumeDS(cls, arch, origin = (0,0,0), spacing = (1,1,1)):
+        result = cls((1, 1, 1))
+        result.vol = arch
+        result.size = result.vol.shape
+        result.origin = origin
+        result.spacing = spacing
+        return result

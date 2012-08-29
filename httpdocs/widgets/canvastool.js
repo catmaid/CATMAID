@@ -264,12 +264,17 @@ function CanvasTool()
 
             }
         });
+
+
         $('#button_init_components').click(function() {
             self.initSkeleton();
         });
 
         $('#button_init_hdf').click(function() {
             self.generateSegmentationFile();
+        });
+        $('#button_mesh').click(function() {
+            self.generateMesh();
         });
 
 
@@ -498,6 +503,7 @@ function CanvasTool()
         $('#button_init_components').off('click');
         $('#button_drawing_mode').off('click');
         $('#button_init_hdf').off('click');
+        $('#button_mesh').off('click');
 
         // remove the canvasLayer with the official API
         self.stack.removeLayer( "CanvasLayer" );
@@ -1052,6 +1058,32 @@ function CanvasTool()
     //
     //Saving functions
     //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+    this.generateMesh=function()
+    {
+
+        var url=  django_url+ project.id + "/stack/" + self.stack.id + '/get-mesh';
+        var viewState=canvasLayer.getFieldOfViewParameters();
+
+
+        $.ajax({
+            url: url,
+            type: "POST",
+            data: {skeleton_id:project.selectedObjects.selectedskeleton,z:self.stack.z,x:viewState.x,y:viewState.y,width:viewState.width,height:viewState.height },
+            dataType: "json",
+            beforeSend: function(x)
+            {
+                //Log before send
+            },
+            success: function(result)
+            {
+
+
+            }
+        });
+
+    };
 
 
     this.putDrawing=function(drawing)

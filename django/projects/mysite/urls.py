@@ -73,6 +73,8 @@ urlpatterns = patterns(
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-drawing-enum$', 'vncbrowser.views.get_drawing_enum'),
 
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-mesh$', 'vncbrowser.views.generate_mesh'),
+
     (r'^(?P<project_id>\d+)/skeleton/split', 'vncbrowser.views.split_skeleton'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put_tile$', 'vncbrowser.views.put_tile')
     )

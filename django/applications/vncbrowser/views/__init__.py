@@ -55,6 +55,7 @@ from neurohdf import delete_drawing
 from neurohdf import create_segmentation_file
 from neurohdf import get_segmentation_tile
 from neurohdf import get_drawing_enum
+from neurohdf import generate_mesh
 
 
 from cropping import crop

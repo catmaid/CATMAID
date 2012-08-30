@@ -1158,6 +1158,41 @@ ALTER TABLE ONLY drawing ADD CONSTRAINT drawing_user_id_fkey FOREIGN KEY (user_i
 "
 ),
 
+	'2012-08-30T01:41:10' => new Migration(
+		'Use auth_user to identify users',
+		'
+ALTER TABLE ONLY class_instance_class_instance DROP CONSTRAINT class_instance_relation_instance_user_id_fkey;
+ALTER TABLE ONLY class_instance DROP CONSTRAINT class_instance_user_id_fkey;
+ALTER TABLE ONLY class_class DROP CONSTRAINT class_relation_instance_user_id_fkey;
+ALTER TABLE ONLY class DROP CONSTRAINT class_user_id_fkey;
+ALTER TABLE ONLY component DROP CONSTRAINT component_user_id_fkey;
+ALTER TABLE ONLY concept DROP CONSTRAINT concept_user_id_fkey;
+ALTER TABLE ONLY connector_class_instance DROP CONSTRAINT connector_class_instance_user_id_fkey;
+ALTER TABLE ONLY drawing DROP CONSTRAINT drawing_user_id_fkey;
+ALTER TABLE ONLY message DROP CONSTRAINT message_user_id_fkey;
+ALTER TABLE ONLY project_user DROP CONSTRAINT project_user_user_id_fkey;
+ALTER TABLE ONLY relation_instance DROP CONSTRAINT relation_instance_user_id_fkey;
+ALTER TABLE ONLY relation DROP CONSTRAINT relation_user_id_fkey;
+ALTER TABLE ONLY treenode_class_instance DROP CONSTRAINT treenode_class_instance_user_id_fkey;
+ALTER TABLE ONLY treenode_connector DROP CONSTRAINT treenode_connector_user_id_fkey;
+
+ALTER TABLE ONLY class_instance_class_instance ADD CONSTRAINT class_instance_relation_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY class_instance ADD CONSTRAINT class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY class_class ADD CONSTRAINT class_relation_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY class ADD CONSTRAINT class_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY component ADD CONSTRAINT component_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id) ON DELETE CASCADE;
+ALTER TABLE ONLY concept ADD CONSTRAINT concept_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY connector_class_instance ADD CONSTRAINT connector_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY drawing ADD CONSTRAINT drawing_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id) ON DELETE CASCADE;
+ALTER TABLE ONLY message ADD CONSTRAINT message_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY project_user ADD CONSTRAINT project_user_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY relation_instance ADD CONSTRAINT relation_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY relation ADD CONSTRAINT relation_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY treenode_class_instance ADD CONSTRAINT treenode_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY treenode_connector ADD CONSTRAINT treenode_connector_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

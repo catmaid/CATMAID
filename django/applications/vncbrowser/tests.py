@@ -2412,76 +2412,75 @@ class ViewPageTests(TestCase):
             self.assertEqual(z[i], node.location.z)
             i += 1
 
-
-"""
-    def test_node_list(self):
+    def test_node_list_without_active_skeleton(self):
         self.fake_authentication()
-        expected_result = [{"id":"367","parentid":None,"x":"7030","y":"1980","z":"0","confidence":"5","user_id":"3","radius":"-1","z_diff":"0","skeleton_id":"361","type":"treenode"},
-                           {"id":"377","parentid":None,"x":"7620","y":"2890","z":"0","confidence":"5","user_id":"3","radius":"-1","z_diff":"0","skeleton_id":"373","type":"treenode"},
-                           {"id":"393","parentid":"391","x":"6910","y":"990","z":"0","confidence":"5","user_id":"3","radius":"-1","z_diff":"0","skeleton_id":"361","type":"treenode"},
-                           {"id":"387","parentid":"385","x":"9030","y":"1480","z":"0","confidence":"5","user_id":"3","radius":"-1","z_diff":"0","skeleton_id":"361","type":"treenode"},
-                           {"id":"385","parentid":"383","x":"8530","y":"1820","z":"0","confidence":"5","user_id":"3","radius":"-1","z_diff":"0","skeleton_id":"361","type":"treenode"},
-                           {"id":"403","parentid":"377","x":"7840","y":"2380","z":"0","confidence":"5","user_id":"3","radius":"-1","z_diff":"0","skeleton_id":"373","type":"treenode"},
-                           {"id":"405","parentid":"377","x":"7390","y":"3510","z":"0","confidence":"5","user_id":"3","radius":"-1","z_diff":"0","skeleton_id":"373","type":"treenode"},
-                           {"id":"383","parentid":"367","x":"7850","y":"1970","z":"0","confidence":"5","user_id":"3","radius":"-1","z_diff":"0","skeleton_id":"361","type":"treenode"},
-                           {"id":"391","parentid":"367","x":"6740","y":"1530","z":"0","confidence":"5","user_id":"3","radius":"-1","z_diff":"0","skeleton_id":"361","type":"treenode"},
-                           {"id":"356","x":"6730","y":"2700","z":"0","user_id":"3","z_diff":"0","type":"location",
-                            "pre":[{"lid":"356","tnid":"285","lcname":"synapse 354","tcname":"presynaptic terminal 355"}],
-                            "post":[{"lid":"356","tnid":"367","lcname":"synapse 354","tcname":"postsynaptic terminal 369"},
-                                    {"lid":"356","tnid":"377","lcname":"synapse 354","tcname":"postsynaptic terminal 379"}]}]
-        response = self.client.get('/%d/node-list' % (self.test_project_id,),
-                                   {'sid': 3,
-                                    'z': 0,
-                                    'top': 745,
-                                    'left': 6575,
-                                    'width': 2720,
-                                    'height': 2960,
-                                    'zres': 9})
+        expected_result = [
+                {"id": 2374, "parentid": 2372, "x": 3310, "y": 5190, "z": 0, "confidence": 5, "user_id": 2, "radius": -1, "z_diff": 0, "skeleton_id": 2364, "type": "treenode"},
+                {"id": 2378, "parentid": 2376, "x": 4420, "y": 4880, "z": 0, "confidence": 5, "user_id": 2, "radius": -1, "z_diff": 0, "skeleton_id": 2364, "type": "treenode"},
+                {"id": 2394, "parentid": 2392, "x": 3110, "y": 6030, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 2388, "type": "treenode"},
+                {"id": 2396, "parentid": 2394, "x": 3680, "y": 6550, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 2388, "type": "treenode"},
+                {"id": 2415, "parentid": None, "x": 4110, "y": 6080, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 2411, "type": "treenode"},
+                {"id": 2417, "parentid": 2415, "x": 4400, "y": 5730, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 2411, "type": "treenode"},
+                {"id": 2419, "parentid": 2417, "x": 5040, "y": 5650, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 2411, "type": "treenode"},
+                {"id": 2423, "parentid": 2415, "x": 4140, "y": 6460, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 2411, "type": "treenode"},
+                {"id": 2400, "x": 3400, "y": 5620, "z": 0, "confidence": 5, "user_id": 3, "z_diff": 0, "type": "connector", "pre": [
+                    {"tnid": 2394, "confidence": 5},
+                    {"tnid": 2415, "confidence": 5}],
+                    "post": [{"tnid": 2374, "confidence": 5}]}]
+        response = self.client.get('/%d/node-list' % (self.test_project_id,), {
+            'sid': 3,
+            'z': 0,
+            'top': 4625,
+            'left': 2860,
+            'width': 8000,
+            'height': 3450,
+            'zres': 9,
+            'as': 0})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         self.assertEqual(len(expected_result), len(parsed_response))
-        node_393_found = False
-        node_367_found = False
-        node_356_found = False
-        for node_dict in expected_result:
-            if node_dict['id'] == '356':
-                node_356_found = True
-                self.assertEqual(node_dict['type'], 'location')
-                self.assertTrue('pre' in node_dict)
-                self.assertTrue('post' in node_dict)
-            else:
-                self.assertEqual(node_dict['type'], 'treenode')
-                self.assertTrue('pre' not in node_dict)
-                self.assertTrue('post' not in node_dict)
-            # Check two particular nodes:
-            if node_dict['id'] == '393':
-                node_393_found = True
-                self.assertEqual(node_dict['parentid'], '391')
-                self.assertEqual(node_dict["x"], "6910")
-                self.assertEqual(node_dict["y"], "990")
-                self.assertEqual(node_dict["z"], "0")
-                self.assertEqual(node_dict["confidence"], "5")
-                self.assertEqual(node_dict["user_id"], "3")
-                self.assertEqual(node_dict["radius"], "-1")
-                self.assertEqual(node_dict["z_diff"], "0")
-                self.assertEqual(node_dict["skeleton_id"], "361")
-            elif node_dict['id'] == '367':
-                node_367_found = True
-                self.assertEqual(node_dict["id"], "367")
-                self.assertEqual(node_dict["parentid"], None)
-                self.assertEqual(node_dict["x"], "7030")
-                self.assertEqual(node_dict["y"], "1980")
-                self.assertEqual(node_dict["z"], "0")
-                self.assertEqual(node_dict["confidence"], "5")
-                self.assertEqual(node_dict["user_id"], "3")
-                self.assertEqual(node_dict["radius"], "-1")
-                self.assertEqual(node_dict["z_diff"], "0")
-                self.assertEqual(node_dict["skeleton_id"], "361")
-                self.assertEqual(node_dict["type"], "treenode")
-        self.assertTrue(node_356_found)
-        self.assertTrue(node_367_found)
-        self.assertTrue(node_393_found)
-"""
+        for row in expected_result:
+            self.assertTrue(row in parsed_response)
+
+    def test_node_list_with_active_skeleton(self):
+        self.fake_authentication()
+        expected_result = [
+                {"id": 279, "parentid": 267, "x": 5530, "y": 2465, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 235, "type": "treenode"},
+                {"id": 281, "parentid": 279, "x": 5675, "y": 2635, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 235, "type": "treenode"},
+                {"id": 283, "parentid": 281, "x": 5985, "y": 2745, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 235, "type": "treenode"},
+                {"id": 285, "parentid": 283, "x": 6100, "y": 2980, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 235, "type": "treenode"},
+                {"id": 289, "parentid": 285, "x": 6210, "y": 3480, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 235, "type": "treenode"},
+                {"id": 377, "parentid": None, "x": 7620, "y": 2890, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 373, "type": "treenode"},
+                {"id": 403, "parentid": 377, "x": 7840, "y": 2380, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 373, "type": "treenode"},
+                {"id": 405, "parentid": 377, "x": 7390, "y": 3510, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 373, "type": "treenode"},
+                {"id": 407, "parentid": 405, "x": 7080, "y": 3960, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 373, "type": "treenode"},
+                {"id": 409, "parentid": 407, "x": 6630, "y": 4330, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 373, "type": "treenode"},
+                {"id": 415, "parentid": 289, "x": 5810, "y": 3950, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 235, "type": "treenode"},
+                {"id": 417, "parentid": 415, "x": 4990, "y": 4200, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 235, "type": "treenode"},
+                {"id": 2419, "parentid": 2417, "x": 5040, "y": 5650, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 2411, "type": "treenode"},
+                {"id": 367, "parentid": None, "x": 7030, "y": 1980, "z": 0, "confidence": 5, "user_id": 3, "radius": -1, "z_diff": 0, "skeleton_id": 361, "type": "treenode"},
+                {"id": 356, "x": 6730, "y": 2700, "z": 0, "confidence": 5, "user_id": 3, "z_diff": 0, "type": "connector",
+                    "pre": [{"tnid": 285, "confidence": 5}],
+                    "post": [
+                        {"tnid": 367, "confidence": 5},
+                        {"tnid": 377, "confidence": 5}]},
+                {"id": 421, "x": 6260, "y": 3990, "z": 0, "confidence": 5, "user_id": 3, "z_diff": 0, "type": "connector",
+                    "pre": [{"tnid": 415, "confidence": 5}],
+                    "post": [{"tnid": 409, "confidence": 5}]}]
+        response = self.client.get('/%d/node-list' % (self.test_project_id,), {
+                'sid': 3,
+                'z': 0,
+                'top': 2280,
+                'left': 4430,
+                'width': 8000,
+                'height': 3450,
+                'zres': 9,
+                'as': 373})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(len(expected_result), len(parsed_response))
+        for row in expected_result:
+            self.assertTrue(row in parsed_response)
 
 
 class TreenodeTests(TestCase):

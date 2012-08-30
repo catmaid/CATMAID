@@ -78,6 +78,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/textlabel/create$', 'catmaid.control.create_textlabel'),
     (r'^(?P<project_id>\d+)/textlabel/delete$', 'catmaid.control.delete_textlabel'),
     (r'^(?P<project_id>\d+)/textlabel/update$', 'catmaid.control.update_textlabel'),
+    (r'^(?P<project_id>\d+)/textlabel/all', 'catmaid.control.textlabels'),
 
     (r'^(?P<project_id>\d+)/logs/list$', 'catmaid.control.list_logs'),
     (r'^(?P<project_id>\d+)/search$', 'catmaid.control.search'),

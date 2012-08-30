@@ -131,3 +131,89 @@ def create_textlabel(request, project_id=None, logged_in_user=None):
         location=Double3D(float(params['x']), float(params['y']), float(params['z']))).save()
 
     return HttpResponse(json.dumps({'tid': new_label.id}))
+
+@catmaid_login_required
+@transaction_reportable_commit_on_success
+def textlabels(request, project_id=None, logged_in_user=None):
+    params = {'pid': project_id, 'uid': logged_in_user.id}
+    parameter_names = ['sid', 'z', 'top', 'left', 'width', 'height', 'scale', 'resolution']
+    for p in parameter_names:
+        if p in ['pid', 'sid']:
+            params[p] = int(request.POST.get(p, 0))
+        elif p in ['scale', 'resolution']:
+            params[p] = float(request.POST.get(p, 1))
+        else:
+            params[p] = float(request.POST.get(p, 0))
+
+    params['right'] = params['left'] + params['width']
+    params['bottom'] = params['top'] + params['height']
+    params['scale_div_res'] = params['scale'] / params['resolution']
+
+    response_on_error = ''
+    try:
+        response_on_error = 'Could not retrieve textlabels.'
+        c = connection.cursor()
+        c.execute('''
+        SELECT	DISTINCT ON ( "tid" ) "textlabel"."id" AS "tid",
+        "textlabel"."type" AS "type",
+                        "textlabel"."text" AS "text",
+                        "textlabel"."font_name" AS "font_name",
+                        "textlabel"."font_style" AS "font_style",
+                        "textlabel"."font_size" AS "font_size",
+                        "textlabel"."scaling" AS "scaling",
+                        floor(255*("textlabel"."colour")."r") AS "r",
+                        floor(255*("textlabel"."colour")."g") AS "g",
+                        floor(255*("textlabel"."colour")."b") AS "b",
+                        ("textlabel"."colour")."a" AS "a",
+                        ("textlabel_location"."location")."x" AS "x",
+                        ("textlabel_location"."location")."y" AS "y",
+                        ("textlabel_location"."location")."z" AS "z",
+                        abs( ("textlabel_location"."location")."z" - ("textlabel_location"."location")."z" ) AS "z_diff"
+        FROM "textlabel" INNER JOIN "textlabel_location" ON "textlabel"."id" = "textlabel_location"."textlabel_id"
+        INNER JOIN "project" ON "project"."id" = "textlabel"."project_id"
+        LEFT JOIN "project_user" ON "project"."id" = "project_user"."project_id"
+        INNER JOIN "project_stack" ON "project"."id" = "project_stack"."project_id"
+        INNER JOIN "stack" ON "stack"."id" = "project_stack"."stack_id"
+        WHERE	"project"."id" = %(pid)s AND
+                        "stack"."id" = %(sid)s AND
+                        ( "project_user"."user_id" = %(uid)s OR
+                            "project"."public" ) AND
+                        NOT "textlabel"."deleted" AND
+                        NOT "textlabel_location"."deleted" AND
+                        ("textlabel_location"."location")."x" >= %(left)s AND
+                        ("textlabel_location"."location")."x" <= %(right)s AND
+                        ("textlabel_location"."location")."y" >= %(top)s AND
+                        ("textlabel_location"."location")."y" <= %(bottom)s AND
+                        ("textlabel_location"."location")."z" >= %(z)s - 0.5 * ("stack"."resolution")."z" AND
+                        ("textlabel_location"."location")."z" <= %(z)s + 0.5 * ("stack"."resolution")."z" AND
+                        ( ( "textlabel"."scaling" AND "textlabel"."font_size" * %(scale_div_res)s >= 3 ) OR
+                                NOT "textlabel"."scaling" )
+        ORDER BY "tid", "z_diff"
+        ''', params)
+        textlabels = cursor_fetch_dictionary(c)
+
+        response_on_error = 'Failed to format output'
+        for tl in textlabels:
+            tl['colour'] = {'r': tl['r'], 'g': tl['g'], 'b': tl['b'], 'a': tl['a']}
+            del(tl['r'])
+            del(tl['g'])
+            del(tl['b'])
+            del(tl['a'])
+            tl['location'] = {'x': tl['x'], 'y': tl['y'], 'z': tl['z']}
+            del(tl['x'])
+            del(tl['y'])
+            del(tl['z'])
+            if tl['scaling']:
+                tl['scaling'] = 1
+            else:
+                tl['scaling'] = 0
+
+        return HttpResponse(json.dumps(makeJSON_legacy_list(textlabels)))
+
+    except RollbackAndReport:
+        raise
+    except Exception as e:
+        if (response_on_error == ''):
+            raise RollbackAndReport(str(e))
+        else:
+            raise RollbackAndReport(response_on_error)

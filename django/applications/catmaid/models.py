@@ -84,13 +84,13 @@ class Double3DField(models.Field):
 
 # ------------------------------------------------------------------------
 
-class User(models.Model):
-    class Meta:
-        db_table = "user"
-        managed = False
-    name = models.CharField(max_length=30)
-    pwd = models.CharField(max_length=30)
-    longname = models.TextField()
+#class User(models.Model):
+#    class Meta:
+#        db_table = "user"
+#        managed = False
+#    name = models.CharField(max_length=30)
+#    pwd = models.CharField(max_length=30)
+#    longname = models.TextField()
 
 class Project(models.Model):
     class Meta:
@@ -101,7 +101,7 @@ class Project(models.Model):
     wiki_base_url = models.TextField()
     stacks = models.ManyToManyField("Stack",
                                     through='ProjectStack')
-    users = models.ManyToManyField("User",
+    users = models.ManyToManyField("django.contrib.auth.models.User",
                                    through='ProjectUser')
 
 class ProjectUser(models.Model):

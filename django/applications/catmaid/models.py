@@ -5,6 +5,8 @@ import sys
 import re
 import urllib
 
+from django.contrib.auth.models import User
+
 def now():
     return datetime.now()
 

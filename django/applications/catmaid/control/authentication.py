@@ -1,3 +1,4 @@
+import sys
 import re
 import urllib
 import json
@@ -25,8 +26,8 @@ def login_vnc(request):
 
 
 def login_user(request):
-    username = request.POST['name']
-    password = request.POST['pwd']
+    username = request.POST.get('name', 0)
+    password = request.POST.get('pwd', 0)
     user = authenticate(username=username, password=password)
     if user is not None:
         if user.is_active:
@@ -82,10 +83,12 @@ def parse_php_session_data(s):
 
 def valid_catmaid_login(request):
     # TODO: check if valid session exists too session for user
+    # FIXME
     user_id = request.session.get( 'user_id', 0 )
-    u = User.objects.get(pk=int(user_id))
+    print >> sys.stderr, 'session has userid', user_id
+    # u = User.objects.get(pk=int(user_id))
     try:
-        u = AuthUser.objects.get(pk=3)
+        u = AuthUser.objects.get(pk=int(user_id))
     except AuthUser.DoesNotExist:
         return None
 
@@ -156,12 +159,14 @@ def catmaid_can_edit_project(f):
         u = valid_catmaid_login(request)
         if not u:
             return json_error_response(request.get_full_path() + " is not accessible unless you are logged in")
-        p = Project(pk=kwargs['project_id'])
+        #p = Project(pk=kwargs['project_id'])
+        p = Project.objects.get(pk=kwargs['project_id'])
+        # FIXME: throws AttributeError: 'str' object has no attribute '_default_manager'
         if u in p.users.all():
             kwargs['logged_in_user'] = u
             return f(request, *args, **kwargs)
         else:
-            return json_error_response("The user '%s' may not edit project %d" % (user.first_name + ' ' + user.last_name, kwargs['project_id']))
+            return json_error_response("The user '%s' may not edit project %d" % (u.first_name + ' ' + u.last_name, int(kwargs['project_id'])))
 
     return decorated_with_catmaid_can_edit_project
 

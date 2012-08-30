@@ -2482,6 +2482,63 @@ class ViewPageTests(TestCase):
         for row in expected_result:
             self.assertTrue(row in parsed_response)
 
+    def test_textlabels_empty(self):
+        self.fake_authentication()
+        expected_result = {}
+
+        response = self.client.post('/%d/textlabels' % (self.test_project_id,), {
+                'pid': 3,
+                'sid': 3,
+                'z': 9,
+                'top': 0,
+                'left': 0,
+                'width': 10240,
+                'height': 7680,
+                'scale': 0.5,
+                'resolution': 5})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_textlabels_nonempty(self):
+        self.fake_authentication()
+        expected_result = {
+                '0': {
+                    'tid': 1,
+                    'type': 'text',
+                    'text': 'World.',
+                    'font_name': None,
+                    'font_style': 'bold',
+                    'font_size': 160,
+                    'scaling': 1,
+                    'z_diff': 0,
+                    'colour': {'r': 255, 'g': 127, 'b': 0, 'a': 1},
+                    'location': {'x': 3155, 'y': 1775, 'z': 27}},
+                '1': {
+                    'tid': 2,
+                    'type': 'text',
+                    'text': 'Helo.',
+                    'font_name': None,
+                    'font_style': 'bold',
+                    'font_size': 160,
+                    'scaling': 1,
+                    'z_diff': 0,
+                    'colour': {'r': 255, 'g': 127, 'b': 0, 'a': 1},
+                    'location': {'x': 2345, 'y': 1785, 'z': 27}}}
+
+        response = self.client.post('/%d/textlabels' % (self.test_project_id,), {
+                'sid': 3,
+                'z': 27,
+                'top': 0,
+                'left': 0,
+                'width': 10240,
+                'height': 7680,
+                'scale': 0.5,
+                'resolution': 5})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(expected_result, parsed_response)
+
 
 class TreenodeTests(TestCase):
 

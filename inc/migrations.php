@@ -1100,6 +1100,28 @@ ALTER TABLE textlabel_location ADD PRIMARY KEY (id);
 "
 ),
 
+	'2012-07-10T22:41:35' => new Migration(
+  'Add primary id column to project_usr preparation',
+  '
+ALTER TABLE project_user DROP CONSTRAINT "project_user_pkey";
+ALTER TABLE project_user ADD COLUMN id INTEGER;
+CREATE SEQUENCE "project_user_id_seq";
+'
+),
+
+	'2012-07-10T22:44:35' => new Migration(
+		'Add primary id column to project_user',
+		"
+UPDATE project_user SET id = nextval('project_user_id_seq');
+ALTER TABLE project_user
+  ALTER COLUMN id SET DEFAULT nextval('project_user_id_seq');
+ALTER TABLE project_user ALTER COLUMN id SET NOT NULL;
+ALTER TABLE project_user ADD UNIQUE (id);
+ALTER TABLE project_user DROP CONSTRAINT project_user_id_key RESTRICT;
+ALTER TABLE project_user ADD PRIMARY KEY (id);
+"
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

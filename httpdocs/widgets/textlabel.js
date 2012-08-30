@@ -897,7 +897,7 @@ TextlabelLayer = function(
 		var resolution = stack.resolution;
 		
 		requestQueue.register(
-			'model/textlabels.php',
+            django_url + project.id + '/textlabel/all',
 			'POST',
 			{
 				pid : stack.getProject().getId(),

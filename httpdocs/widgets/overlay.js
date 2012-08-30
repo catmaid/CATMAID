@@ -1394,7 +1394,8 @@ var SkeletonAnnotations = new function()
       
         //TODO add the padding to the range
 
-        requestQueue.replace('model/node.list.php', 'POST', {
+        //requestQueue.replace('model/node.list.php', 'POST', {
+        requestQueue.replace(django_url + project.id + '/node/list', 'POST', {
           pid: stack.getProject().id,
           sid: stack.getId(),
           z: stack.z * stack.resolution.z + stack.translation.z,

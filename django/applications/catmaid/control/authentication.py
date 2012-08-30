@@ -161,7 +161,7 @@ def catmaid_can_edit_project(f):
             kwargs['logged_in_user'] = u
             return f(request, *args, **kwargs)
         else:
-            return json_error_response("The user '%s' may not edit project %d" % (u.longname, kwargs['project_id']))
+            return json_error_response("The user '%s' may not edit project %d" % (user.first_name + ' ' + user.last_name, kwargs['project_id']))
 
     return decorated_with_catmaid_can_edit_project
 

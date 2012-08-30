@@ -114,16 +114,9 @@ function login(
 	ui.catchEvents( "wait" );
 	if ( account || password )
 		requestQueue.register(
-			//'model/login.php',
             django_url + 'accounts/login',
 			'POST',
 			{ name : account, pwd : password },
-			loginCompletion );
-	else
-		requestQueue.register(
-			'model/login.php',
-			'GET',
-			undefined,
 			loginCompletion );
 	return;
 }
@@ -170,16 +163,6 @@ function handle_login(status, text, xml, completionCallback) {
       completionCallback();
     }
   }
-
-  // Whatever happened, get details of which projects this user (or no
-  // user) is allowed to edit:
-  $.get(django_url + '/permissions', function (data) {
-    if (data.error) {
-      alert(data.error);
-    } else {
-      user_permissions = data;
-    }
-  }, 'json');
 
   return;
 }
@@ -230,7 +213,18 @@ function handle_logout()
  */
 
 function updateProjects(completionCallback) {
-  //ui.catchEvents( "wait" );
+
+    // Whatever happened, get details of which projects this user (or no
+    // user) is allowed to edit:
+    $.get(django_url + '/permissions', function (data) {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            user_permissions = data;
+        }
+    }, 'json');
+
+    //ui.catchEvents( "wait" );
   project_menu_open.update(null);
 
   document.getElementById("projects_h").style.display = "none";
@@ -429,6 +423,7 @@ function openProjectStack( pid, sid )
 	{
 		project.destroy();
 	}
+
 	ui.catchEvents( "wait" );
 	requestQueue.register(
 		django_url + pid + '/stack/' + sid + '/info',
@@ -464,7 +459,9 @@ function handle_openProjectStack( status, text, xml )
 				project_view = project.getView();
 				project.register();
 			}
-			
+
+            // TODO: need to check permission of the user to decide on what to display
+
 			project.setEditable( e.editable );
 
 			var labelupload = '';
@@ -895,11 +892,7 @@ var realInit = function()
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
 
-	//! auto login by url (unsafe as can be but convenient)
-	if ( account && password )
-		login( account, password );
-	else
-		login();
+    updateProjects();
 
 	if ( pid && sids.length > 0 )
 	{

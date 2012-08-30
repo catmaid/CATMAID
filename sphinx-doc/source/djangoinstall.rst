@@ -34,7 +34,7 @@ is in the django subdirectory)::
 
 Here is the list of packages and version required::
 
-    Django==1.3.1
+    Django==1.4
     distribute==0.6.25
     django-devserver==0.3.1
     h5py==2.0.1
@@ -128,6 +128,7 @@ Then you need to edit your Apache configuration to point to that WSGI
 file and set up the appropriate aliases.  An example is given here::
 
     Alias /catmaid/dj-static/ /home/alice/CATMAID/django/static/
+    Alias /static/ /home/alice/CATMAID/django/static-admin/
 
     Alias /catmaid/dj /home/alice/CATMAID/django/projects/mysite/django.wsgi
     <Location /catmaid/dj>

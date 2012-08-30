@@ -13,6 +13,7 @@ CELL_BODY_CHOICES = (
     ('l', 'Local'),
     ('n', 'Non-Local' ))
 
+
 # ------------------------------------------------------------------------
 # Classes to support the integer3d compound type:
 

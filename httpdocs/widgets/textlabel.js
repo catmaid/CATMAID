@@ -47,7 +47,8 @@ function TextlabelTool()
    * create a textlabel on the server
    */
   var createTextlabel = function (tlx, tly, tlz, tlr, scale) {
-    requestQueue.register('model/textlabel.create.php', 'POST', {
+    //requestQueue.register('model/textlabel.create.php', 'POST', {
+    requestQueue.register(django_url + project.id + '/textlabel/create', 'POST', {
       pid: project.id,
       x: tlx,
       y: tly,
@@ -461,7 +462,8 @@ Textlabel = function(
 	{
 		icon_apply.style.display = "block";
 		requestQueue.replace(
-			"model/textlabel.update.php",
+			//"model/textlabel.update.php",
+            django_url + project.id + '/textlabel/update',
 			"POST",
 			{
 				pid : project.id,
@@ -509,7 +511,8 @@ Textlabel = function(
 		icon_apply.style.display = "block";
 		
 		requestQueue.register(
-			'model/textlabel.delete.php',
+			//'model/textlabel.delete.php',
+            django_url + project.id + '/textlabel/delete',
 			'POST',
 			{
 				pid : project.id,

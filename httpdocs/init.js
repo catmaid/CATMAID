@@ -114,7 +114,8 @@ function login(
 	ui.catchEvents( "wait" );
 	if ( account || password )
 		requestQueue.register(
-			'model/login.php',
+			//'model/login.php',
+            django_url + 'accounts/login',
 			'POST',
 			{ name : account, pwd : password },
 			loginCompletion );
@@ -172,7 +173,7 @@ function handle_login(status, text, xml, completionCallback) {
 
   // Whatever happened, get details of which projects this user (or no
   // user) is allowed to edit:
-  $.get('model/user-project-permissions.php', function (data) {
+  $.get(django_url + '/permissions', function (data) {
     if (data.error) {
       alert(data.error);
     } else {
@@ -192,7 +193,7 @@ function logout() {
   if (msg_timeout) window.clearTimeout(msg_timeout);
 
   ui.catchEvents("wait");
-  requestQueue.register('model/logout.php', 'GET', undefined, handle_logout);
+  requestQueue.register(django_url + 'accounts/logout', 'POST', undefined, handle_logout);
 
   return;
 }
@@ -244,7 +245,7 @@ function updateProjects(completionCallback) {
   w.appendChild(document.createTextNode("loading ..."));
   pp.appendChild(w);
 
-  requestQueue.register('model/project.list.php',
+  requestQueue.register(django_url + 'projects',
                         'GET',
                         undefined,
                         function (status, text, xml) {
@@ -430,8 +431,7 @@ function openProjectStack( pid, sid )
 	}
 	ui.catchEvents( "wait" );
 	requestQueue.register(
-		'model/project.stack.php',
-		//'dj/' + pid + '/stack/' + sid + '/info',
+		django_url + pid + '/stack/' + sid + '/info',
 		'POST',
 		{ pid : pid, sid : sid },
         // {},
@@ -587,7 +587,7 @@ function handle_openProjectStack( status, text, xml )
  */
 
 function message() {
-  requestQueue.register('model/message.list.php', 'GET', undefined, handle_message);
+  requestQueue.register( django_url + 'messages/unread', 'GET', undefined, handle_message);
   return;
 }
 
@@ -653,7 +653,7 @@ function handle_message( status, text, xml )
 function updateUsers() {
   document.getElementById("new_project_form").elements[3].style.display = "none";
   document.getElementById("new_project_owners_wait").style.display = "block";
-  requestQueue.register('model/user.list.php', 'GET', undefined, handle_updateUsers);
+  requestQueue.register(django_url + 'user-list', 'GET', undefined, handle_updateUsers);
   return;
 }
 
@@ -696,7 +696,7 @@ function handle_updateUsers(status, text, xml) {
  */
 
 function read_message(id) {
-  requestQueue.register('model/message.read.php', 'POST', {
+  requestQueue.register(django_url + 'messages/mark_read', 'POST', {
     id: id
   }, null);
   return;

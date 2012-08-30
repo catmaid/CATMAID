@@ -34,7 +34,8 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-)
+    'django.contrib.messages.middleware.MessageMiddleware',
+    )
 
 ROOT_URLCONF = 'mysite.urls'
 
@@ -45,8 +46,10 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'vncbrowser',
     'django.contrib.admin',
+    'django.contrib.staticfiles',
     'devserver',
-    'djcelery'
+    'djcelery',
+    'catmaid'
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = ('mysite.context_processors.staticfiles',

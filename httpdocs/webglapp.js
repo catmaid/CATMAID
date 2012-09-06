@@ -1,11 +1,14 @@
 
+var camera;
+
 var WebGLApp = new function () {
 
   self = this;
   self.neurons = [];
 
-  var camera, scene, renderer, grid_lines, scale, controls, light, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
-  var project_id, stack_id, resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false;
+  var scene, renderer, grid_lines, scale, controls, light, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
+  var project_id, stack_id, resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false,
+      bbmesh, floormesh, black_bg = true;
 
   this.init = function( divID ) {
 
@@ -38,7 +41,6 @@ var WebGLApp = new function () {
       self.createActiveNode();
     }
 
-
   }
 
   var randomColors = [];
@@ -57,17 +59,6 @@ var WebGLApp = new function () {
 
   var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
 
-  function toggleOrthographic() {
-      if( ortho ) {
-          camera.toPerspective();
-          ortho = false;
-      } else {
-          camera.toOrthographic();
-          ortho = true;
-      }
-  }
-  self.toggleOrthographic = toggleOrthographic;
-
   function init_webgl() {
     container = document.getElementById(self.divID);
     scene = new THREE.Scene();
@@ -75,7 +66,8 @@ var WebGLApp = new function () {
 
     //camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
       //camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
-    camera = new THREE.CombinedCamera( -self.divWidth, -self.divHeight, 75, 1, 3000, -1000, 0.01, 2000 );
+    camera = new THREE.CombinedCamera( -self.divWidth, -self.divHeight, 75, 1, 3000, -1000, 1, 500 );
+    camera.frustumCulled = false;
     // THREE.CombinedCamera = function ( width, height, fov, near, far, orthonear, orthofar ) {
     controls = new THREE.TrackballControls( camera, container );
     controls.rotateSpeed = 1.0;
@@ -136,6 +128,17 @@ var WebGLApp = new function () {
     controls.target = new THREE.Vector3(coord[0]*scale,coord[1]*scale,coord[2]*scale);
 
   }
+
+  function toggleOrthographic() {
+      if( ortho ) {
+          camera.toPerspective();
+          ortho = false;
+      } else {
+          camera.toOrthographic();
+          ortho = true;
+      }
+  }
+  self.toggleOrthographic = toggleOrthographic;
 
   function getBBDimension()
   {
@@ -265,9 +268,9 @@ var WebGLApp = new function () {
     this.geometry[connectivity_types[1]] = new THREE.Geometry();
     this.geometry[connectivity_types[2]] = new THREE.Geometry();
 
-    this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
-    this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } )
-    this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } )
+    this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 5 } );
+    this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 8 } )
+    this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 8 } )
 
     this.original_vertices = skeleton_data.vertices;
     this.original_connectivity = skeleton_data.connectivity;
@@ -433,12 +436,14 @@ var WebGLApp = new function () {
   {
     if(active_node) {
       var atn_pos = SkeletonAnnotations.getActiveNodePosition();
-      var co = transform_coordinates( [
-        translation.x + ((atn_pos.x) / project.focusedStack.scale) * resolution.x,
-        translation.y + ((atn_pos.y) / project.focusedStack.scale) * resolution.y,
-        translation.z + atn_pos.z * resolution.z]
-      );
-      active_node.position.set( co[0]*scale, co[1]*scale, co[2]*scale );
+      if( atn_pos !== null) {
+          var co = transform_coordinates( [
+            translation.x + ((atn_pos.x) / project.focusedStack.scale) * resolution.x,
+            translation.y + ((atn_pos.y) / project.focusedStack.scale) * resolution.y,
+            translation.z + atn_pos.z * resolution.z]
+          );
+          active_node.position.set( co[0]*scale, co[1]*scale, co[2]*scale );
+      }
     }
   }
 
@@ -514,14 +519,47 @@ var WebGLApp = new function () {
     }
   }
 
+  self.toggleBackground = function()
+  {
+      if( black_bg ) {
+          renderer.setClearColorHex( 0xffffff, 1 );
+          black_bg = false;
+      } else {
+          renderer.setClearColorHex( 0x000000, 1 );
+          black_bg = true;
+      }
+  }
+
+  self.toggleFloor = function()
+  {
+      if( floormesh.visible ) {
+          // disable floor
+          floormesh.visible = false;
+      } else {
+          // enable floor
+          floormesh.visible = true;
+      }
+  }
+
+  self.toggleBB = function()
+  {
+      if( bbmesh.visible ) {
+          // disable floor
+          bbmesh.visible = false;
+      } else {
+          // enable floor
+          bbmesh.visible = true;
+      }
+  }
+
   function create_stackboundingbox(x, y, z, dx, dy, dz)
   {
     //console.log('bouding box', x, y, z, dx, dy, dz);
     var gg = new THREE.CubeGeometry( dx, dy, dz );
     var mm = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
-    var mesh = new THREE.Mesh( gg, mm );
-    mesh.position.set(x, y, z);
-    scene.add( mesh );
+    bbmesh = new THREE.Mesh( gg, mm );
+    bbmesh.position.set(x, y, z);
+    scene.add( bbmesh );
   }
 
   function addMesh( geometry, scale, x, y, z, rx, ry, rz, material ) {
@@ -644,8 +682,8 @@ var WebGLApp = new function () {
       geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( i * step - 500, floor,  500 ) ) );
 
     }
-    grid_lines = new THREE.Line( geometry, line_material, THREE.LinePieces );
-    scene.add( grid_lines );
+    floormesh = new THREE.Line( geometry, line_material, THREE.LinePieces );
+    scene.add( floormesh );
   }
 
   function animate() {

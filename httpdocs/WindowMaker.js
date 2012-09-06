@@ -903,11 +903,14 @@ var WindowMaker = new function()
     container.innerHTML =
       '<input type="button" id="refresh_stats" value="Refresh" style="display:block; float:left;" />' +
       '<br clear="all" />' +
-      '<div id="project_stats">' +
-        '<table cellpadding="0" cellspacing="0" border="0" class="display" id="project_stats_table">' +
+			'<!-- piechart -->' +
+      '<div class="project-stats">' +
+				'<h3>Overall Statistics</h3>' +
+        '<table cellpadding="0" cellspacing="0" border="0" class="project-stats" id="project_stats_table">' +
           '<tr>' +
             '<td >#users</td>' +
             '<td id="proj_users"></td>' +
+            '</td>' +
           '</tr>' +
           '<tr>' +
             '<td >#neurons</td>' +
@@ -931,9 +934,14 @@ var WindowMaker = new function()
           '</tr>' +
         '</table>' +
       '</div>' +
-      '<!-- piechart -->' +
-      '<h3>Annotation User Contribution</h3>' +
-      '<div id="piechart_treenode_holder"></div>';
+			'<div class="piechart">' + 
+				'<h3>Annotation User Contribution</h3>' +
+				'<div id="piechart_treenode_holder"></div>' +
+			'</div>' + 
+      '<div class="annotation-history">' + 
+				'<h3 style="text-align: center">Annotation History</h3>' +
+				'<div id="linechart_treenode_holder"></div>' + 
+			'</div>';
 
     addListener(win, container);
 

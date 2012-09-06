@@ -8,7 +8,7 @@ var WebGLApp = new function () {
 
   var scene, renderer, grid_lines, scale, controls, light, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
   var project_id, stack_id, resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false,
-      bbmesh, floormesh, black_bg = true;
+      bbmesh, floormesh, black_bg = true, debugax;
 
   this.init = function( divID ) {
 
@@ -255,6 +255,12 @@ var WebGLApp = new function () {
     this.visiblityCompositeActor = function( type_index, visible )
     {
       this.actor[connectivity_types[type_index]].visible = visible;
+
+      if( type_index === 0 ) {
+          for ( var k in this.labelSphere ) {
+              this.labelSphere[k].visible = visible;
+          }
+      }
     }
 
     var type, from_vector, to_vector;
@@ -546,9 +552,11 @@ var WebGLApp = new function () {
       if( bbmesh.visible ) {
           // disable floor
           bbmesh.visible = false;
+          debugax.visible = false;
       } else {
           // enable floor
           bbmesh.visible = true;
+          debugax.visible = true;
       }
   }
 
@@ -664,10 +672,10 @@ var WebGLApp = new function () {
   }
 
   function debugaxes() {
-    var object = new THREE.AxisHelper();
-    object.position.set( -1, -1, 0 );
-    object.scale.x = object.scale.y = object.scale.z = 0.1;
-    scene.add( object );
+    debugax = new THREE.AxisHelper();
+    debugax.position.set( -1, -1, 0 );
+    debugax.scale.x = debugax.scale.y = debugax.scale.z = 0.1;
+    scene.add( debugax );
   }
 
   function draw_grid() {

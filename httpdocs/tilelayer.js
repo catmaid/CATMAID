@@ -248,7 +248,8 @@ function TileLayer(
 					}
 
           // prefetch tiles
-          var adj = [-2, -1, 1, 2], tmpimg = new Image(), tmptileBaseName;
+            // TODO: fetch information in stack table: -2, -1, 1, 2
+            var adj = [], tmpimg = new Image(), tmptileBaseName;
           for( var jj in adj ) {
             tmptileBaseName = getTileBaseName3D( stack, pixelPos, adj[jj] );
             // only prefetch for type 1

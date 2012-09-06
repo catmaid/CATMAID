@@ -5,7 +5,7 @@ var WebGLApp = new function () {
   self.neurons = [];
 
   var camera, scene, renderer, grid_lines, scale, controls, light, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
-  var project_id, stack_id, resolution, dimension, translation, canvasWidth, canvasHeight;
+  var project_id, stack_id, resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false;
 
   this.init = function( divID ) {
 
@@ -57,11 +57,26 @@ var WebGLApp = new function () {
 
   var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
 
+  function toggleOrthographic() {
+      if( ortho ) {
+          camera.toPerspective();
+          ortho = false;
+      } else {
+          camera.toOrthographic();
+          ortho = true;
+      }
+  }
+  self.toggleOrthographic = toggleOrthographic;
+
   function init_webgl() {
     container = document.getElementById(self.divID);
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera( 75, self.divWidth / self.divHeight, 1, 3000 );
-    // camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
+    //camera = new THREE.PerspectiveCamera( 75, self.divWidth / self.divHeight, 1, 3000 );
+
+    //camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
+      //camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
+    camera = new THREE.CombinedCamera( -self.divWidth, -self.divHeight, 75, 1, 3000, -1000, 0.01, 2000 );
+    // THREE.CombinedCamera = function ( width, height, fov, near, far, orthonear, orthofar ) {
     controls = new THREE.TrackballControls( camera, container );
     controls.rotateSpeed = 1.0;
     controls.zoomSpeed = 1.2;

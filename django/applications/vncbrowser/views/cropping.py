@@ -376,7 +376,7 @@ def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min
     """
     # Make sure tmp dir exists and is writable
     if not os.path.exists( settings.TMP_DIR ) or not os.access( settings.TMP_DIR, os.W_OK ):
-        json_message = "Please make sure your temporary folder (TMP_DIR in settings.py) exists and is writable."
+        err_message = "Please make sure your temporary folder (TMP_DIR in settings.py) exists and is writable."
         err_response = json_error_response( err_message )
         err_response['Connection'] = 'close'
         return err_response

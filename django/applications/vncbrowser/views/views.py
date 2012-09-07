@@ -90,7 +90,13 @@ def visual_index(request, **kwargs):
 def skeleton_info(request, project_id=None, skeleton_id=None, logged_in_user=None):
     p = get_object_or_404(Project, pk=project_id)
 
-    neuron_id = request.POST['neuron_id']
+    from catmaid_replacements import get_relation_to_id_map
+    relation_map = get_relation_to_id_map(project_id)
+
+    neuron_id = ClassInstanceClassInstance.objects.filter(
+        project=project_id,
+        relation=relation_map['model_of'],
+        class_instance_a=skeleton_id)[0].class_instance_b_id
 
     n = get_object_or_404(ClassInstance, pk=neuron_id, project=project_id)
 

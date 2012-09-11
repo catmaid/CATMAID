@@ -274,9 +274,9 @@ var WebGLApp = new function () {
     this.geometry[connectivity_types[1]] = new THREE.Geometry();
     this.geometry[connectivity_types[2]] = new THREE.Geometry();
 
-    this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 5 } );
-    this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 8 } )
-    this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 8 } )
+    this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
+    this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } )
+    this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } )
 
     this.original_vertices = skeleton_data.vertices;
     this.original_connectivity = skeleton_data.connectivity;

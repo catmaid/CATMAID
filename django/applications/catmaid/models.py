@@ -101,7 +101,7 @@ class Project(models.Model):
     wiki_base_url = models.TextField()
     stacks = models.ManyToManyField("Stack",
                                     through='ProjectStack')
-    users = models.ManyToManyField("django.contrib.auth.models.User",
+    users = models.ManyToManyField(User,
                                    through='ProjectUser')
 
 class ProjectUser(models.Model):

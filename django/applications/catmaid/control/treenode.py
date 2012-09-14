@@ -27,6 +27,8 @@ def create_treenode(request, project_id=None, logged_in_user=None):
     If a neuron id is given, use that one to create the skeleton as a model of it.
     """
 
+    print >> sys.stderr, 'creating a new tree node '
+    
     params = {}
     default_values = {
             'x': 0,

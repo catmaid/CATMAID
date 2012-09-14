@@ -126,6 +126,7 @@ def catmaid_login_required(f):
     User object.
     """
     def decorated_with_catmaid_login_required(request, *args, **kwargs):
+        print >> sys.stderr, 'checking if user is logged in'
         u = valid_catmaid_login(request)
         if u:
             kwargs['logged_in_user'] = u
@@ -156,22 +157,28 @@ def catmaid_can_edit_project(f):
     """
 
     def decorated_with_catmaid_can_edit_project(request, *args, **kwargs):
+        print >> sys.stderr, 'checking if user has access to project ', kwargs['project_id']
         u = valid_catmaid_login(request)
         if not u:
             return json_error_response(request.get_full_path() + " is not accessible unless you are logged in")
         #p = Project(pk=kwargs['project_id'])
+        print >> sys.stderr, 'getting project object'
         p = Project.objects.get(pk=kwargs['project_id'])
         # FIXME: throws AttributeError: 'str' object has no attribute '_default_manager'
+        print >> sys.stderr, 'getting project users'
         if u in p.users.all():
+            print >> sys.stderr, 'user has access to project'
             kwargs['logged_in_user'] = u
             return f(request, *args, **kwargs)
         else:
+            print >> sys.stderr, 'user does not have access to project'
             return json_error_response("The user '%s' may not edit project %d" % (u.first_name + ' ' + u.last_name, int(kwargs['project_id'])))
 
     return decorated_with_catmaid_can_edit_project
 
 
 def user_project_permissions(request):
+    print >> sys.stderr, 'getting user_project_permissions '
     user = valid_catmaid_login(request)
     if not user:
         return HttpResponse(json.dumps([]))

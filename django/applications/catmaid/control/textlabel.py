@@ -92,6 +92,7 @@ def delete_textlabel(request, project_id=None, logged_in_user=None):
 @catmaid_can_edit_project
 @transaction_reportable_commit_on_success
 def create_textlabel(request, project_id=None, logged_in_user=None):
+    print >> sys.stderr, 'creating text label'
     params = {}
     param_defaults = {
         'x': 0,

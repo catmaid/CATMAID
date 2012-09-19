@@ -101,6 +101,8 @@ class Project(models.Model):
     wiki_base_url = models.TextField()
     stacks = models.ManyToManyField("Stack",
                                     through='ProjectStack')
+    # Reference User directly instead of by string.
+    # https://code.djangoproject.com/ticket/10405
     users = models.ManyToManyField(User,
                                    through='ProjectUser')
 

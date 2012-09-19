@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 
-from catmaid.models import Relation, Class, Log
+from catmaid.models import Relation, Class, Log, NeuronSearch, CELL_BODY_CHOICES, ClassInstance, ClassInstanceClassInstance, SORT_ORDERS_DICT
 import json
 
 def insert_into_log(project_id, user_id, op_type, location=None, freetext=None):

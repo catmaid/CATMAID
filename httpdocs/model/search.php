@@ -54,6 +54,7 @@ for ($i=0, $length = count($rows); $i<$length; $i++) {
 	$name = $rows[$i]['name'];
 	# Check if already done
 	if (in_array($name, $matched_labels)) {
+		unset($rows[$i]);
 		continue;
 	}
 	$matched_labels[] = $name;
@@ -74,7 +75,7 @@ for ($i=0, $length = count($rows); $i<$length; $i++) {
          AND "tci"."relation_id" = '.$labeled_as_id.'
          AND "tci"."project_id" = '.$pid.'
          AND "tci"."class_instance_id" = "class_instance"."id"
-         AND "class_instance"."name" = \''.$rows[$i]['name'].'\'
+         AND "class_instance"."name" = \''.$name.'\'
        ORDER BY "treenode"."id" DESC');
     if (count($nodes) > 0) {
       $rows[$i]['nodes'] = $nodes;
@@ -87,6 +88,6 @@ if ($rows === FALSE) {
     return;
 }
 
-echo json_encode($rows);
+echo json_encode(array_values($rows)); # re-index array
 
 ?>

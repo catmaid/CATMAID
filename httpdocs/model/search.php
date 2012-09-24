@@ -46,11 +46,20 @@ if (!$labeled_as_id) {
 	return;
 }
 
+
+# Labels for which nodes have already been fetched
+$matched_labels = array();
 # For every label that matches, retrieve nodes holding that label
 for ($i=0, $length = count($rows); $i<$length; $i++) {
+	$name = $rows[$i]['name'];
+	# Check if already done
+	if (in_array($name, $matched_labels)) {
+		continue;
+	}
+	$matched_labels[] = $name;
   # Fetch necessary IDs
   if ('label' === $rows[$i]['class_name']) {
-    # Query for nodes holding the label
+    # Query for nodes holding exactly the label (not just similar)
     $nodes = $db->getResult(
       'SELECT "treenode"."id",
               (treenode.location).x,

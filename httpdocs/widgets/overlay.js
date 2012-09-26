@@ -619,60 +619,76 @@ var SkeletonAnnotations = new function()
       }
     };
 
-    // Used to join two skeleton together
+    // Used to join two skeletons together
     this.createTreenodeLink = function (fromid, toid, callback) {
       if( toid in nodes ) {
-          if( nodes[toid].parent !== null ) {
-              var check = confirm("Do you really want link to this skeleton with more than one node?");
-              if( check === false ) {
-                  return;
-              }
-          }
-      }
-      // TODO: rerooting operation should be called on the backend
-      // first make sure to reroot target
-      requestQueue.register("model/treenode.reroot.php", "POST", {
-        pid: project.id,
-        tnid: toid
-      }, function (status, text, xml) {
-        if (status === 200) {
-          if (text && text !== " ") {
-            var e = $.parseJSON(text);
-            // console.log(e);
-            if (e.error) {
-              alert(e.error);
-            } else {
-              // then link again, in the continuation
-              requestQueue.register("model/treenode.link.php", "POST", {
-                pid: project.id,
-                from_id: fromid,
-                to_id: toid
-              }, function (status, text, xml) {
-                if (status === 200) {
-                  if (text && text !== " ") {
-                    var e = $.parseJSON(text);
-                    if (e.error) {
-                      alert(e.error);
-                    } else {
-                      // just redraw all for now
-                      self.updateNodes(function () {
-                        ObjectTree.refresh();
-                        refreshAllWidgets();
-                        if (typeof callback !== "undefined") {
-                          callback();
-                        }
-                      });
-                    }
+        // Count the number of nodes of the skeleton that contains the node with id toid
+        requestQueue.register("model/count.skeleton.nodes.php", "POST", {
+          pid: project.id,
+          skid: nodes[toid].skeleton_id
+        }, function(status, text, xml) {
+          if (status === 200) {
+            if (text && text !== " ") {
+              var r = $.parseJSON(text);
+              if (r.error) {
+                alert(r.error);
+              } else {
+                // If the count is more than 1, then ask for confirmation:
+                if (r.count > 1) {
+                  var check = confirm("Do you really want link to this skeleton with more than one node?");
+                  if (check === false) {
+                    return;
                   }
                 }
-                return true;
-              });
+                // Else, execute the join
+                // TODO: rerooting operation should be called on the backend
+                //
+                // First make sure to reroot target
+                requestQueue.register("model/treenode.reroot.php", "POST", {
+                  pid: project.id,
+                  tnid: toid
+                }, function (status, text, xml) {
+                  if (status === 200) {
+                    if (text && text !== " ") {
+                      var e = $.parseJSON(text);
+                      if (e.error) {
+                        alert(e.error);
+                      } else {
+                        // Then link again, in the continuation
+                        requestQueue.register("model/treenode.link.php", "POST", {
+                          pid: project.id,
+                          from_id: fromid,
+                          to_id: toid
+                        }, function (status, text, xml) {
+                          if (status === 200) {
+                            if (text && text !== " ") {
+                              var e = $.parseJSON(text);
+                              if (e.error) {
+                                alert(e.error);
+                              } else {
+                                // Just redraw all for now
+                                self.updateNodes(function () {
+                                  ObjectTree.refresh();
+                                  refreshAllWidgets();
+                                  if (typeof callback !== "undefined") {
+                                    callback();
+                                  }
+                                });
+                              }
+                            }
+                          }
+                          return true;
+                        });
 
+                      }
+                    }
+                  }
+                });
+              }
             }
           }
-        }
-      });
-
+        });
+      }
       return;
     };
 

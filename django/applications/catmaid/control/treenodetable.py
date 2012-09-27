@@ -93,10 +93,10 @@ def list_treenode_table(request, project_id=None, logged_in_user=None):
         t = TreenodeClassInstance.objects.filter(
             project=project_id,
             class_instance__in=skeleton_ids).extra(
-            tables=['user', 'treenode'],
+            tables=['auth_user', 'treenode'],
             where=[
                 '"treenode_class_instance"."treenode_id" = "treenode"."id"',
-                '"treenode_class_instance"."user_id" = "user"."id"'],
+                '"treenode_class_instance"."user_id" = "auth_user"."id"'],
             select={
                 'tid': '"treenode"."id"',
                 'radius': '"treenode"."radius"',
@@ -107,7 +107,7 @@ def list_treenode_table(request, project_id=None, logged_in_user=None):
                 'x': '("treenode"."location")."x"',
                 'y': '("treenode"."location")."y"',
                 'z': '("treenode"."location")."z"',
-                'username': '"user"."name"',
+                'username': '"auth_user"."username"',
                 'last_reviewer': '"treenode"."reviewer_id"',
                 'last_modified': 'to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\')'
             }).distinct()

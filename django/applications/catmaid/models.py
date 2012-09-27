@@ -1,11 +1,17 @@
 from django import forms
 from django.db import models
+from django.db.models import Q
 from datetime import datetime
 import sys
 import re
 import urllib
 
 from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
+
+from guardian.shortcuts import get_objects_for_user
+
 
 def now():
     return datetime.now()
@@ -15,6 +21,10 @@ CELL_BODY_CHOICES = (
     ('l', 'Local'),
     ('n', 'Non-Local' ))
 
+class UserRole(object):
+    Admin = 'Admin'
+    Annotate = 'Annotate'
+    Browse = 'Browse'
 
 # ------------------------------------------------------------------------
 # Classes to support the integer3d compound type:
@@ -84,27 +94,24 @@ class Double3DField(models.Field):
 
 # ------------------------------------------------------------------------
 
-#class User(models.Model):
-#    class Meta:
-#        db_table = "user"
-#        managed = False
-#    name = models.CharField(max_length=30)
-#    pwd = models.CharField(max_length=30)
-#    longname = models.TextField()
-
 class Project(models.Model):
     class Meta:
         db_table = "project"
         managed = False
+        permissions = (
+            ("can_administer", "Can administer projects"), 
+            ("can_annotate", "Can annotate projects"), 
+            ("can_browse", "Can browse projects")
+        )
     title = models.TextField()
     public = models.BooleanField(default=True)
     wiki_base_url = models.TextField()
     stacks = models.ManyToManyField("Stack",
                                     through='ProjectStack')
-    # Reference User directly instead of by string.
-    # https://code.djangoproject.com/ticket/10405
-    users = models.ManyToManyField(User,
-                                   through='ProjectUser')
+    
+    def __unicode__(self):
+        return self.title
+
 
 class ProjectUser(models.Model):
     class Meta:
@@ -396,6 +403,35 @@ class Settings(models.Model):
     key = models.TextField()
     value = models.TextField(null=True)
 
+
+class UserFocusedManager(models.Manager):
+    # TODO: should there be a parameter or separate function that allows the caller to specify read-only vs. read-write objects?
+    
+    def for_user(self, user):
+        fullSet = super(UserFocusedManager, self).get_query_set()
+        
+        if user.is_superuser:
+            return fullSet
+        else:
+            # Get the projects that the user can see.
+            adminProjects = get_objects_for_user(user, 'can_administer', Project)
+            print >> sys.stderr, 'user is admin for ', str(adminProjects)
+            otherProjects = get_objects_for_user(user, ['can_annotate', 'can_browse'], Project, any_perm = True)
+            otherProjects = [a for a in otherProjects if a not in adminProjects]
+            print >> sys.stderr, 'user has access to ', str(otherProjects)
+            
+            # Now filter to the data to which the user has access.
+            return fullSet.filter(Q(project__in = adminProjects) | (Q(project__in = otherProjects) & Q(user = user)))
+
+
+class UserFocusedModel(models.Model):
+    objects = UserFocusedManager()
+    user = models.ForeignKey(User)
+    project = models.ForeignKey(Project)
+    class Meta:
+        abstract = True
+
+
 class Textlabel(models.Model):
     class Meta:
         db_table = "textlabel"
@@ -420,26 +456,22 @@ class TextlabelLocation(models.Model):
     location = Double3DField()
     deleted = models.BooleanField()
 
-class Location(models.Model):
+class Location(UserFocusedModel):
     class Meta:
         db_table = "location"
         managed = False
-    user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
-    project = models.ForeignKey(Project)
     location = Double3DField()
     reviewer_id = models.IntegerField(default=-1)
     review_time = models.DateTimeField()
 
-class Treenode(models.Model):
+class Treenode(UserFocusedModel):
     class Meta:
         db_table = "treenode"
         managed = False
-    user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
-    project = models.ForeignKey(Project)
     location = Double3DField()
     parent = models.ForeignKey('self', null=True, related_name='children')
     radius = models.FloatField()
@@ -449,57 +481,49 @@ class Treenode(models.Model):
     review_time = models.DateTimeField()
 
 
-class Connector(models.Model):
+class Connector(UserFocusedModel):
     class Meta:
         db_table = "connector"
         managed = False
-    user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
-    project = models.ForeignKey(Project)
     location = Double3DField()
     confidence = models.IntegerField(default=5)
     reviewer_id = models.IntegerField(default=-1)
     review_time = models.DateTimeField()
 
 
-class TreenodeClassInstance(models.Model):
+class TreenodeClassInstance(UserFocusedModel):
     class Meta:
         db_table = "treenode_class_instance"
         managed = False
     # Repeat the columns inherited from 'relation_instance'
-    user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
-    project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
     # Now new columns:
     treenode = models.ForeignKey(Treenode)
     class_instance = models.ForeignKey(ClassInstance)
 
-class ConnectorClassInstance(models.Model):
+class ConnectorClassInstance(UserFocusedModel):
     class Meta:
         db_table = "connector_class_instance"
         managed = False
     # Repeat the columns inherited from 'relation_instance'
-    user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
-    project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
     # Now new columns:
     connector = models.ForeignKey(Connector)
     class_instance = models.ForeignKey(ClassInstance)
 
-class TreenodeConnector(models.Model):
+class TreenodeConnector(UserFocusedModel):
     class Meta:
         db_table = "treenode_connector"
         managed = False
     # Repeat the columns inherited from 'relation_instance'
-    user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
-    project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
     # Now new columns:
     treenode = models.ForeignKey(Treenode)
@@ -546,14 +570,12 @@ class ApiKey(models.Model):
     description = models.TextField()
     key = models.CharField(max_length=128)
 
-class Log(models.Model):
+class Log(UserFocusedModel):
     class Meta:
         db_table = "log"
         managed = False
-    user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
-    project = models.ForeignKey(Project)
     operation_type = models.CharField(max_length=255)
     location = Double3DField()
     freetext = models.TextField()

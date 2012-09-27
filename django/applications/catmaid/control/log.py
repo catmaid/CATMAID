@@ -9,9 +9,9 @@ from catmaid.control.common import *
 from catmaid.transaction import *
 
 
-@catmaid_login_required
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 @transaction.commit_on_success
-def list_logs(request, project_id=None, logged_in_user=None):
+def list_logs(request, project_id=None):
     user_id = int(request.POST.get('user_id', -1))  # We can see logs for different users
     display_start = int(request.POST.get('iDisplayStart', 0))
     display_length = int(request.POST.get('iDisplayLength', -1))
@@ -28,14 +28,14 @@ def list_logs(request, project_id=None, logged_in_user=None):
         sorting_index = [int(request.POST.get('iSortCol_%d' % d)) for d in range(column_count)]
         sorting_cols = map(lambda i: fields[i], sorting_index)
 
-    log_query = Log.objects.filter(project=project_id)
+    log_query = Log.objects.for_user(request.user).filter(project=project_id)
     if user_id not in [-1, 0]:
         log_query = log_query.filter(user=user_id)
-    log_query = log_query.extra(tables=['user'], where=['"log"."user_id" = "user"."id"'], select={
+    log_query = log_query.extra(tables=['auth_user'], where=['"log"."user_id" = "auth_user"."id"'], select={
         'x': '("log"."location")."x"',
         'y': '("log"."location")."y"',
         'z': '("log"."location")."z"',
-        'username': '"user"."name"',
+        'username': '"auth_user"."username"',
         'timestamp': '''to_char("log"."creation_time", 'DD-MM-YYYY HH24:MI')'''
     })
     if should_sort:

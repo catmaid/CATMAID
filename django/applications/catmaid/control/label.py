@@ -12,15 +12,15 @@ from catmaid.control.common import *
 from catmaid.transaction import *
 
 
-@catmaid_login_required
-def labels_all(request, project_id=None, logged_in_user=None):
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def labels_all(request, project_id=None):
     qs = ClassInstance.objects.filter(
         class_column__class_name='label',
         project=project_id)
     return HttpResponse(json.dumps(list(x.name for x in qs)), mimetype="text/plain")
 
-@catmaid_login_required
-def labels_for_node(request, project_id=None, ntype=None, location_id=None, logged_in_user=None):
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def labels_for_node(request, project_id=None, ntype=None, location_id=None):
     if ntype == 'treenode':
         qs = TreenodeClassInstance.objects.filter(
             relation__relation_name='labeled_as',
@@ -37,8 +37,8 @@ def labels_for_node(request, project_id=None, ntype=None, location_id=None, logg
         raise Http404('Unknown node type: "%s"' % (ntype,))
     return HttpResponse(json.dumps(list(x.class_instance.name for x in qs)), mimetype="text/plain")
 
-@catmaid_login_required
-def labels_for_nodes(request, project_id=None, logged_in_user=None):
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def labels_for_nodes(request, project_id=None):
     nodes = [int(x, 10) for x in json.loads(request.POST['nods']).keys()]
 
     qs_treenodes = TreenodeClassInstance.objects.filter(
@@ -63,51 +63,69 @@ def labels_for_nodes(request, project_id=None, logged_in_user=None):
 
     return HttpResponse(json.dumps(result), mimetype="text/plain")
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction.commit_on_success
-def label_update(request, project_id=None, location_id=None, ntype=None, logged_in_user=None):
+def label_update(request, project_id=None, location_id=None, ntype=None):
     labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
     p = get_object_or_404(Project, pk=project_id)
+    
+    newTags = request.POST['tags'].split(',')
+    
+    # Get the existing list of tags for the tree node/connector and delete any that are not in the new list.
     if ntype == 'treenode':
-        TreenodeClassInstance.objects.filter(
+        existingLabels = TreenodeClassInstance.objects.filter(
             treenode__id=location_id,
             relation=labeled_as_relation,
-            class_instance__class_column__class_name='label').delete()
+            class_instance__class_column__class_name='label')
+        TreenodeClassInstance.objects.for_user(request.user).filter(
+            treenode__id=location_id,
+            relation=labeled_as_relation,
+            class_instance__class_column__class_name='label').exclude(class_instance__name__in=newTags).delete()
     elif ntype == 'connector' or ntype == 'location':
-        ConnectorClassInstance.objects.filter(
+        existingLabels = ConnectorClassInstance.objects.filter(
             connector__id=location_id,
             relation=labeled_as_relation,
-            class_instance__class_column__class_name='label').delete()
+            class_instance__class_column__class_name='label')
+        ConnectorClassInstance.objects.for_user(request.user).filter(
+            connector__id=location_id,
+            relation=labeled_as_relation,
+            class_instance__class_column__class_name='label').exclude(class_instance__name__in=newTags).delete()
     else:
         raise Http404('Unknown node type: "%s"' % (ntype,))
+    
+    # Add any new labels.
     label_class = Class.objects.get(project=project_id, class_name='label')
-    for tag_name in json.loads(request.POST['tags']):
-        existing_tags = list(ClassInstance.objects.filter(
-            project=p,
-            name=tag_name,
-            class_column=label_class))
-        if len(existing_tags) < 1:
-            tag = ClassInstance(
+    for tag_name in newTags:
+        if len(tag_name) > 0 and tag_name not in existingNames:
+            # Make sure the tag instance exists.
+            existing_tags = list(ClassInstance.objects.filter(
                 project=p,
                 name=tag_name,
-                user=logged_in_user,
-                class_column=label_class)
-            tag.save()
-        else:
-            tag = existing_tags[0]
-        if ntype == 'treenode':
-            tci = TreenodeClassInstance(
-                user=logged_in_user,
-                project=p,
-                relation=labeled_as_relation,
-                treenode=Treenode(id=location_id),
-                class_instance=tag)
-        else:
-            tci = ConnectorClassInstance(
-                user=logged_in_user,
-                project=p,
-                relation=labeled_as_relation,
-                connector=Connector(id=location_id),
-                class_instance=tag)
-        tci.save()
+                class_column=label_class))
+            if len(existing_tags) < 1:
+                tag = ClassInstance(
+                    project=p,
+                    name=tag_name,
+                    user=request.user,
+                    class_column=label_class)
+                tag.save()
+            else:
+                tag = existing_tags[0]
+            
+            # Add the tag to the tree node/connector.
+            if ntype == 'treenode':
+                tci = TreenodeClassInstance(
+                    user=request.user,
+                    project=p,
+                    relation=labeled_as_relation,
+                    treenode=Treenode(id=location_id),
+                    class_instance=tag)
+            else:
+                tci = ConnectorClassInstance(
+                    user=request.user,
+                    project=p,
+                    relation=labeled_as_relation,
+                    connector=Connector(id=location_id),
+                    class_instance=tag)
+            tci.save()
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')

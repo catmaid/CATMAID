@@ -11,9 +11,9 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def create_treenode(request, project_id=None, logged_in_user=None):
+def create_treenode(request, project_id=None):
     """
     Add a new treenode to the database
     ----------------------------------
@@ -47,7 +47,7 @@ def create_treenode(request, project_id=None, logged_in_user=None):
 
     def insert_new_treenode(parent_id=None, skeleton=None):
         new_treenode = Treenode()
-        new_treenode.user = logged_in_user
+        new_treenode.user = request.user
         new_treenode.project_id = project_id
         new_treenode.location = Double3D(float(params['x']), float(params['y']), float(params['z']))
         new_treenode.radius = int(params['radius'])
@@ -60,7 +60,7 @@ def create_treenode(request, project_id=None, logged_in_user=None):
 
     def make_treenode_element_of_skeleton(treenode, skeleton):
         new_treenode_ci = TreenodeClassInstance()
-        new_treenode_ci.user = logged_in_user
+        new_treenode_ci.user = request.user
         new_treenode_ci.project_id = project_id
         new_treenode_ci.relation_id = relation_map['element_of']
         new_treenode_ci.treenode = treenode
@@ -69,7 +69,7 @@ def create_treenode(request, project_id=None, logged_in_user=None):
 
     def create_relation(relation_id, instance_a_id, instance_b_id):
         neuron_relation = ClassInstanceClassInstance()
-        neuron_relation.user = logged_in_user
+        neuron_relation.user = request.user
         neuron_relation.project_id = project_id
         neuron_relation.relation_id = relation_id
         neuron_relation.class_instance_a_id = instance_a_id
@@ -105,7 +105,7 @@ def create_treenode(request, project_id=None, logged_in_user=None):
             response_on_error = 'Could not insert new treenode instance!'
 
             new_skeleton = ClassInstance()
-            new_skeleton.user = logged_in_user
+            new_skeleton.user = request.user
             new_skeleton.project_id = project_id
             new_skeleton.class_column_id = class_map['skeleton']
             new_skeleton.name = 'skeleton'
@@ -132,7 +132,7 @@ def create_treenode(request, project_id=None, logged_in_user=None):
                 # into a new neuron, and put the new neuron into the fragments group.
                 response_on_error = 'Failed to insert new instance of a neuron.'
                 new_neuron = ClassInstance()
-                new_neuron.user = logged_in_user
+                new_neuron.user = request.user
                 new_neuron.project_id = project_id
                 new_neuron.class_column_id = class_map['neuron']
                 new_neuron.name = 'neuron'
@@ -152,7 +152,7 @@ def create_treenode(request, project_id=None, logged_in_user=None):
                     # If the fragments group does not exist yet, must create it and add it:
                     response_on_error = 'Failed to insert new instance of group.'
                     fragment_group = ClassInstance()
-                    fragment_group.user = logged_in_user
+                    fragment_group.user = request.user
                     fragment_group.project_id = project_id
                     fragment_group.class_column_id = class_map['group']
                     fragment_group.name = params['targetgroup']
@@ -176,7 +176,7 @@ def create_treenode(request, project_id=None, logged_in_user=None):
                 make_treenode_element_of_skeleton(new_treenode, new_skeleton)
 
                 response_on_error = 'Failed to write to logs.'
-                insert_into_log(project_id, logged_in_user.id, 'create_neuron', new_treenode.location, 'Create neuron %d and skeleton %d' % (new_neuron.id, new_skeleton.id))
+                insert_into_log(project_id, request.user.id, 'create_neuron', new_treenode.location, 'Create neuron %d and skeleton %d' % (new_neuron.id, new_skeleton.id))
 
                 return HttpResponse(json.dumps({
                     'treenode_id': new_treenode.id,
@@ -193,9 +193,9 @@ def create_treenode(request, project_id=None, logged_in_user=None):
             raise RollbackAndReport(response_on_error)
 
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def create_interpolated_treenode(request, project_id=None, logged_in_user=None):
+def create_interpolated_treenode(request, project_id=None):
     params = {}
     default_values = {
             'parent_id': 0,
@@ -250,7 +250,7 @@ def create_interpolated_treenode(request, project_id=None, logged_in_user=None):
         for i in range(1, steps + 1):
             response_on_error = 'Error while trying to insert treenode.'
             new_treenode = Treenode()
-            new_treenode.user_id = logged_in_user.id
+            new_treenode.user_id = request.user.id
             new_treenode.project_id = project_id
             new_treenode.location = Double3D(
                     float(params['atnx'] + dx * i),
@@ -264,7 +264,7 @@ def create_interpolated_treenode(request, project_id=None, logged_in_user=None):
 
             response_on_error = 'Could not insert new TreenodeClassInstance relation for treenode %s.' % new_treenode.id
             new_tci = TreenodeClassInstance()
-            new_tci.user_id = logged_in_user.id
+            new_tci.user_id = request.user.id
             new_tci.project_id = project_id
             new_tci.relation_id = relation_map['element_of']
             new_tci.treenode_id = new_treenode.id
@@ -295,9 +295,9 @@ def create_interpolated_treenode(request, project_id=None, logged_in_user=None):
             raise RollbackAndReport(response_on_error)
 
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def reroot_treenode(request, project_id=None, logged_in_user=None):
+def reroot_treenode(request, project_id=None):
     treenode_id = request.POST.get('tnid', None)
     if treenode_id is None:
         raise RollbackAndReport('A treenode id has not been provided!')
@@ -341,7 +341,7 @@ def reroot_treenode(request, project_id=None, logged_in_user=None):
         treenode.save()
 
         response_on_error = 'Failed to log reroot.'
-        insert_into_log(project_id, logged_in_user.id, 'reroot_skeleton', treenode.location, 'Rerooted skeleton for treenode with ID %s' % treenode.id)
+        insert_into_log(project_id, request.user.id, 'reroot_skeleton', treenode.location, 'Rerooted skeleton for treenode with ID %s' % treenode.id)
 
         return HttpResponse(json.dumps({'newroot': treenode.id}))
 
@@ -354,9 +354,9 @@ def reroot_treenode(request, project_id=None, logged_in_user=None):
             raise RollbackAndReport(response_on_error)
 
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def link_treenode(request, project_id=None, logged_in_user=None):
+def link_treenode(request, project_id=None):
     from_treenode = request.POST.get('from_id', None)
     to_treenode = request.POST.get('to_id', None)
     if from_treenode is None or to_treenode is None:
@@ -415,7 +415,7 @@ def link_treenode(request, project_id=None, logged_in_user=None):
 
         response_on_error = 'Could not log actions.'
         location = get_object_or_404(Treenode, id=from_treenode).location
-        insert_into_log(project_id, logged_in_user.id, 'join_skeleton', location, 'Joined skeleton with ID %s to skeleton with ID %s' % (from_skeleton, to_skeleton))
+        insert_into_log(project_id, request.user.id, 'join_skeleton', location, 'Joined skeleton with ID %s to skeleton with ID %s' % (from_skeleton, to_skeleton))
 
         return HttpResponse(json.dumps({
             'message': 'success',
@@ -431,9 +431,9 @@ def link_treenode(request, project_id=None, logged_in_user=None):
             raise RollbackAndReport(response_on_error)
 
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def update_treenode_table(request, project_id=None, logged_in_user=None):
+def update_treenode_table(request, project_id=None):
     property_name = request.POST.get('type', None)
     treenode_id = request.POST.get('id', None)
     property_value = request.POST.get('value', None)
@@ -453,7 +453,7 @@ def update_treenode_table(request, project_id=None, logged_in_user=None):
         treenode = get_object_or_404(Treenode, project=project_id, id=treenode_id)
         response_on_error = 'Could not update %s for treenode with ID %s.' % (property_name, treenode_id)
         setattr(treenode, property_name, property_value)
-        treenode.user = logged_in_user
+        treenode.user = request.user
         treenode.save()
 
         return HttpResponse(json.dumps({'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}))
@@ -466,9 +466,9 @@ def update_treenode_table(request, project_id=None, logged_in_user=None):
         else:
             raise RollbackAndReport(response_on_error)
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def delete_treenode(request, project_id=None, logged_in_user=None):
+def delete_treenode(request, project_id=None):
     treenode_id = int(request.POST.get('treenode_id', -1))
     relation_map = get_relation_to_id_map(project_id)
 
@@ -549,9 +549,9 @@ def delete_treenode(request, project_id=None, logged_in_user=None):
 
 
 
-@catmaid_login_required
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 @transaction_reportable_commit_on_success
-def treenode_info(request, project_id=None, logged_in_user=None):
+def treenode_info(request, project_id=None):
     treenode_id = request.POST.get('treenode_id', -1)
     if (treenode_id < 0):
         raise RollbackAndReport('A treenode id has not been provided!')

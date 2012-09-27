@@ -32,11 +32,11 @@ def node_list(request, project_id=None, logged_in_user=None):
 
     params = {}
     for p in ('z', 'top', 'left', 'width', 'height', 'zres', 'as'):
-        params[p] = int(request.GET.get(p, 0))
+        params[p] = int(request.POST.get(p, 0))
     params['limit'] = 2000  # Limit the number of retrieved treenodes.
     params['zbound'] = 1.0  # The scale factor to volume bound the query in z-direction based on the z-resolution.
     params['project_id'] = project_id
-
+    
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
 
@@ -296,9 +296,9 @@ def most_recent_treenode(request, project_id=None, logged_in_user=None):
     }))
 
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def node_update(request, project_id=None, logged_in_user=None):
+def node_update(request, project_id=None):
     nodes = {}
     for key, value in request.POST.items():
         parsed_key = re.search('^(?P<property>[a-zA-Z_]+)(?P<node_index>[0-9]+)$', key)
@@ -319,17 +319,17 @@ def node_update(request, project_id=None, logged_in_user=None):
         try:
             if node['type'] == 'treenode':
                 Treenode.objects.filter(id=node['node_id']).update(
-                    user=logged_in_user,
+                    user=request.user,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
             elif node['type'] == 'connector':
                 Location.objects.filter(id=node['node_id']).update(
-                    user=logged_in_user,
+                    user=request.user,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
             else:
                 raise RollbackAndReport('Unknown node type: %s' % node['type'])
         except:
             raise RollbackAndReport('Failed to update treenode: %s' % node['node_id'])
-
+    
     return HttpResponse(json.dumps({'updated': len(nodes)}))
 
 

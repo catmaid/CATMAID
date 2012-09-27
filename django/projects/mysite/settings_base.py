@@ -44,12 +44,12 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
-    'vncbrowser',
     'django.contrib.admin',
     'django.contrib.staticfiles',
     'devserver',
     'djcelery',
-    'catmaid'
+    'catmaid',
+    'guardian'
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = ('mysite.context_processors.staticfiles',
@@ -58,3 +58,9 @@ TEMPLATE_CONTEXT_PROCESSORS = ('mysite.context_processors.staticfiles',
 URL_PREFIX = '/'
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = URL_PREFIX + 'accounts/login'
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend', # default
+    'guardian.backends.ObjectPermissionBackend',
+)
+ANONYMOUS_USER_ID = -1

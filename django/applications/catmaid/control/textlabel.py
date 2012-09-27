@@ -7,9 +7,9 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def update_textlabel(request, project_id=None, logged_in_user=None):
+def update_textlabel(request, project_id=None):
     params = {}
     parameter_names = ['tid', 'pid', 'x', 'y', 'z', 'text', 'type', 'r', 'g', 'b', 'a', 'fontname', 'fontstyle', 'fontsize', 'scaling']
     for p in parameter_names:
@@ -63,9 +63,9 @@ def update_textlabel(request, project_id=None, logged_in_user=None):
             raise RollbackAndReport(response_on_error)
 
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def delete_textlabel(request, project_id=None, logged_in_user=None):
+def delete_textlabel(request, project_id=None):
     textlabel_id = request.POST.get('tid', None)
 
     if textlabel_id is None:
@@ -89,9 +89,9 @@ def delete_textlabel(request, project_id=None, logged_in_user=None):
     return HttpResponse(json.dumps({'message': 'Success.'}))
 
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def create_textlabel(request, project_id=None, logged_in_user=None):
+def create_textlabel(request, project_id=None):
     print >> sys.stderr, 'creating text label'
     params = {}
     param_defaults = {
@@ -133,10 +133,10 @@ def create_textlabel(request, project_id=None, logged_in_user=None):
 
     return HttpResponse(json.dumps({'tid': new_label.id}))
 
-@catmaid_login_required
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 @transaction_reportable_commit_on_success
-def textlabels(request, project_id=None, logged_in_user=None):
-    params = {'pid': project_id, 'uid': logged_in_user.id}
+def textlabels(request, project_id=None):
+    params = {'pid': project_id, 'uid': request.user.id}
     parameter_names = ['sid', 'z', 'top', 'left', 'width', 'height', 'scale', 'resolution']
     for p in parameter_names:
         if p in ['pid', 'sid']:
@@ -172,13 +172,10 @@ def textlabels(request, project_id=None, logged_in_user=None):
                         abs( ("textlabel_location"."location")."z" - ("textlabel_location"."location")."z" ) AS "z_diff"
         FROM "textlabel" INNER JOIN "textlabel_location" ON "textlabel"."id" = "textlabel_location"."textlabel_id"
         INNER JOIN "project" ON "project"."id" = "textlabel"."project_id"
-        LEFT JOIN "project_user" ON "project"."id" = "project_user"."project_id"
         INNER JOIN "project_stack" ON "project"."id" = "project_stack"."project_id"
         INNER JOIN "stack" ON "stack"."id" = "project_stack"."stack_id"
         WHERE	"project"."id" = %(pid)s AND
                         "stack"."id" = %(sid)s AND
-                        ( "project_user"."user_id" = %(uid)s OR
-                            "project"."public" ) AND
                         NOT "textlabel"."deleted" AND
                         NOT "textlabel_location"."deleted" AND
                         ("textlabel_location"."location")."x" >= %(left)s AND

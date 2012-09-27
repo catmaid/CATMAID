@@ -542,7 +542,7 @@ var SkeletonAnnotations = new function()
       });
 
       var updateTags = function() {
-        requestQueue.register("model/label.update.php", "POST", {
+        requestQueue.register(django_url + project.id + '/label-update/' + atn.type + '/' + atn.id, "POST", {
           pid: project.id,
           nid: atn.id,
           ntype: atn.type,
@@ -555,6 +555,11 @@ var SkeletonAnnotations = new function()
                 alert(e.error);
               }
             }
+          }
+          else if (status === 500) {
+            win = window.open('', '', 'width=1100,height=620');
+            win.document.write(text);
+            win.focus();
           }
         });
       }
@@ -1192,6 +1197,7 @@ var SkeletonAnnotations = new function()
       }
       var m = ui.getMouse(e, self.view);
 
+      // TODO alert user of lack of permission?
       if (!mayEdit())
         return;
 

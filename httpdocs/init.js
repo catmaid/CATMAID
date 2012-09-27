@@ -54,14 +54,14 @@ var rootWindow;
 
 var user_permissions = null;
 function checkPermission(p) {
-  return user_permissions && user_permissions[project.getId()][p];
+  return user_permissions && user_permissions[p][project.getId()];
 }
 function mayEdit() {
-  return checkPermission('can_edit_any');
+  return checkPermission('can_annotate');
 }
 
 function mayView() {
-  return checkPermission('can_view_any');
+  return checkPermission('can_annotate') || checkPermission('can_browse');
 }
 
 // From: http://stackoverflow.com/q/956719/223092

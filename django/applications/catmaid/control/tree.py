@@ -1,4 +1,5 @@
 import json
+import string
 
 try:
     import networkx as nx

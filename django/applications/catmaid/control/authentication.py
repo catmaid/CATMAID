@@ -8,8 +8,7 @@ from django.db import connection
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 
-from catmaid.models import Project, User
-from django.contrib.auth.models import User as AuthUser
+from catmaid.models import Project, User, ProjectUser
 
 from catmaid.control.common import json_error_response, cursor_fetch_dictionary
 from catmaid.control.common import my_render_to_response
@@ -85,11 +84,11 @@ def valid_catmaid_login(request):
     # TODO: check if valid session exists too session for user
     # FIXME
     user_id = request.session.get( 'user_id', 0 )
-    print >> sys.stderr, 'session has userid', user_id
+    # print >> sys.stderr, 'session has userid', user_id
     # u = User.objects.get(pk=int(user_id))
     try:
-        u = AuthUser.objects.get(pk=int(user_id))
-    except AuthUser.DoesNotExist:
+        u = User.objects.get(pk=int(user_id))
+    except User.DoesNotExist:
         return None
 
     return u
@@ -176,17 +175,13 @@ def user_project_permissions(request):
     if not user:
         return HttpResponse(json.dumps([]))
 
-    c = connection.cursor()
-    c.execute('''
-            SELECT project_id, can_edit_any, can_view_any
-            FROM project_user
-            WHERE user_id = %s
-            ''', [user.id])
-    permissions = cursor_fetch_dictionary(c)
+    pus = ProjectUser.objects.filter(user=user)
     result = {}
-    for permission in permissions:
-        result[permission['project_id']] = {
-                'can_edit_any': permission['can_edit_any'],
-                'can_view_any': permission['can_view_any']}
+
+    for pu in pus:
+        result[pu.project_id] = {
+            'can_edit_any': pu.can_edit_any,
+            'can_view_any': pu.can_view_any
+        }
 
     return HttpResponse(json.dumps(result))

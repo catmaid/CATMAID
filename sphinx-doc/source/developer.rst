@@ -7,6 +7,7 @@ Developer Documentation
    installation
    djangoinstall
    dbmigration
+   faq
    djangounittest
    celeryinstall
    catmaid_aws

@@ -4,7 +4,7 @@ Similar software tools
 Interactive skeleton tracing
 ----------------------------
 
-* `TrakEM2 <http://www.ini.uzh.ch/~acardona/trakem2.html>`_
+* `TrakEM2 <http://www.plosone.org/article/info%3Adoi%2F10.1371%2Fjournal.pone.0038011>`_
 * `Knossos <http://www.knossostool.org/>`_
 * `Reconstruct <http://synapses.clm.utexas.edu/tools/reconstruct/reconstruct.stm>`_
 * `Raveler <http://janelia.org/team-project/fly-em>`_ (*)

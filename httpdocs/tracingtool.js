@@ -733,7 +733,8 @@ function TracingTool()
     result += '<strong>ctrl-click in space:</strong> deselect the active node<br />';
     result += '<strong>ctrl-shift-click on a node:</strong> delete that node<br />';
     result += '<strong>ctrl-shift-click on an arrowhead:</strong> delete that link<br />';
-    result += '<strong>shift-click in space:</strong> create a synapse (if there was an active treenode)<br />';
+    result += '<strong>shift-click in space:</strong> create a synapse with the active treenode being presynaptic.<br />';
+    result += '<strong>shift-alt-click in space:</strong> create a synapse with the active treenode as postsynaptic.<br />';
     result += '<strong>shift-click in space:</strong> create a post-synaptic node (if there was an active synapse)<br />';
     result += '<strong>shift-click on a treenode:</strong> join two skeletons (if there was an active treenode)<br />';
     result += '</p>';

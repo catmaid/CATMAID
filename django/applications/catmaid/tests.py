@@ -2203,11 +2203,11 @@ class ViewPageTests(TestCase):
         self.assertContains(response, 'location.replace')
         self.assertContains(response, message.action, count=2)
 
-    def test_unread_messages(self):
+    def test_list_messages(self):
         self.fake_authentication()
 
         response = self.client.post(
-                '/messages/unread', {})
+                '/messages/list', {})
         parsed_response = json.loads(response.content)
         expected_result = {
                 '0': {

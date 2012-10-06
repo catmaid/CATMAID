@@ -39,7 +39,7 @@ urlpatterns += patterns(
     (r'^projects$', 'catmaid.control.projects'),
     (r'^user-list$', 'catmaid.control.user_list'),
     (r'^permissions$', 'catmaid.control.user_project_permissions'),
-    (r'^messages/unread$', 'catmaid.control.unread_messages'),
+    (r'^messages/list$', 'catmaid.control.list_messages'),
     (r'^messages/mark_read$', 'catmaid.control.read_message'),
 
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'catmaid.control.skeleton_swc'),

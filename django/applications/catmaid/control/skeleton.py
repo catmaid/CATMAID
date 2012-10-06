@@ -178,7 +178,7 @@ def skeleton_ancestry(request, project_id=None, logged_in_user=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
 
 @catmaid_login_required
@@ -267,7 +267,7 @@ def reroot_skeleton(request, project_id=None, logged_in_user=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
 
 @catmaid_can_edit_project
@@ -344,5 +344,5 @@ def join_skeleton(request, project_id=None, logged_in_user=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 

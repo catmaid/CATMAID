@@ -238,7 +238,7 @@ def tree_object_expand(request, project_id=None, logged_in_user=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
 @catmaid_login_required
 @transaction_reportable_commit_on_success
@@ -255,8 +255,8 @@ def objecttree_get_all_skeletons(request, project_id=None, node_id=None, logged_
     return HttpResponse(json_return, mimetype='text/json')
 
 
-#@catmaid_login_required
-#@transaction_reportable_commit_on_success
+@catmaid_login_required
+@transaction_reportable_commit_on_success
 def tree_object_list(request, project_id=None, logged_in_user=None):
     parent_id = int(request.GET.get('parentid', 0))
     parent_name = request.GET.get('parentname', '')

@@ -188,10 +188,10 @@ def create_treenode(request, project_id=None, logged_in_user=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
 
-@catmaid_can_edit_project
+#@catmaid_can_edit_project
 @transaction_reportable_commit_on_success
 def create_interpolated_treenode(request, project_id=None, logged_in_user=None):
     params = {}
@@ -290,7 +290,8 @@ def create_interpolated_treenode(request, project_id=None, logged_in_user=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
+
 
 
 @catmaid_can_edit_project
@@ -349,7 +350,7 @@ def reroot_treenode(request, project_id=None, logged_in_user=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
 
 @catmaid_can_edit_project
@@ -426,7 +427,7 @@ def link_treenode(request, project_id=None, logged_in_user=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
 
 @catmaid_can_edit_project
@@ -462,7 +463,7 @@ def update_treenode_table(request, project_id=None, logged_in_user=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
 @catmaid_can_edit_project
 @transaction_reportable_commit_on_success
@@ -542,7 +543,7 @@ def delete_treenode(request, project_id=None, logged_in_user=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
 
 

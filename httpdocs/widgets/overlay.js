@@ -1809,9 +1809,31 @@ var SkeletonAnnotations = new function()
           // Radius of 7 pixels, in physical coordinates
           var phys_radius = (7.0 / stack.scale) * Math.max(stack.resolution.x, stack.resolution.y);
           var nearestnode = self.findNodeWithinRadius(lastX, lastY, project.coordinates.z, phys_radius);
+
           if (nearestnode !== null) {
-            self.activateNode(nearestnode);
-            return;
+            // TODO the tracingCommand function should be broken down into many functions, each accepting the event as argument.
+            if (null !== arguments[1] && arguments[1].shiftKey) {
+              statusBar.replaceLast("Would interpolate and join, but not ready yet!");
+              // Shift+i pressed
+//              if (null === atn.id) { return; }
+//              if (nearestnode.skeleton_id === atn.skeleton_id) {
+//                self.activateNode(nearestnode);
+//                return;
+//              }
+//              // Else, ask to join the two skeletons
+//              var nearestnode_id = nearestnode.id; // must cache
+//              self.createTreenodeLink(atn.id,
+//                                      nearestnode.id,
+//                                      function() {
+//                                        // can't use self.activateNode: the refresh may have reused the node instance for some other node ID. For the same reason, can't use nearestnode.id, but rather, the cached nearestnode_id:
+//                                        self.selectNode(nearestnode_id);
+//                                      });
+              return;
+            } else {
+              // If shift is not down, just select the node:
+              self.activateNode(nearestnode);
+              return;
+            }
           }
         }
         // Else, check that there is a node activated

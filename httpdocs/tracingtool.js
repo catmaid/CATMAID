@@ -569,7 +569,7 @@ function TracingTool()
     run: function (e) {
       if (!mayEdit())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('createinterpolatedtreenode');
+      tracingLayer.svgOverlay.tracingCommand('createinterpolatedtreenode', e);
       return true;
     }
   }) );

@@ -176,8 +176,6 @@ def textlabels(request, project_id=None, logged_in_user=None):
         INNER JOIN "stack" ON "stack"."id" = "project_stack"."stack_id"
         WHERE	"project"."id" = %(pid)s AND
                         "stack"."id" = %(sid)s AND
-                        ( "project_user"."user_id" = %(uid)s OR
-                            "project"."public" ) AND
                         NOT "textlabel"."deleted" AND
                         NOT "textlabel_location"."deleted" AND
                         ("textlabel_location"."location")."x" >= %(left)s AND

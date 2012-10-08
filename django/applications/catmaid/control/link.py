@@ -7,7 +7,7 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
 def create_link(request, project_id=None, logged_in_user=None):
     from_id = request.POST.get('from_id', 0)
@@ -49,7 +49,7 @@ def create_link(request, project_id=None, logged_in_user=None):
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
 def delete_link(request, project_id=None, logged_in_user=None):
     connector_id = request.POST.get('connector_id', 0)

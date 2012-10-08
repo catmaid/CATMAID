@@ -7,6 +7,7 @@ except ImportError:
     pass
 
 from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 
 from catmaid.control.object import get_annotation_graph
 
@@ -15,9 +16,9 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def instance_operation(request, project_id=None, logged_in_user=None):
+def instance_operation(request, project_id=None):
     params = {}
     default_values = {
             'operation': 0,
@@ -67,7 +68,7 @@ def instance_operation(request, project_id=None, logged_in_user=None):
         node_ids = [node.id for node in nodes_to_rename]
         if len(node_ids) > 0:
             nodes_to_rename.update(name=params['title'])
-            insert_into_log(project_id, logged_in_user.id, "rename_%s" % params['classname'], None, "Renamed %s with ID %s to %s" % (params['classname'], params['id'], params['title']))
+            insert_into_log(project_id, request.user.id, "rename_%s" % params['classname'], None, "Renamed %s with ID %s to %s" % (params['classname'], params['id'], params['title']))
             return HttpResponse(json.dumps({'class_instance_ids': node_ids}))
         else:
             raise RollbackAndReport('Could not find any node with ID %s' % params['id'])
@@ -79,7 +80,7 @@ def instance_operation(request, project_id=None, logged_in_user=None):
 
         elif params['rel'] == 'skeleton':
             remove_skeletons([params['id']])
-            insert_into_log(project_id, logged_in_user.id, 'remove_skeleton', None, 'Removed skeleton with ID %s and name %s' % (params['id'], params['title']))
+            insert_into_log(project_id, request.user.id, 'remove_skeleton', None, 'Removed skeleton with ID %s and name %s' % (params['id'], params['title']))
             return HttpResponse(json.dumps({'status': 1, 'message': 'Removed skeleton successfully.'}))
 
         elif params['rel'] == 'neuron':
@@ -93,7 +94,7 @@ def instance_operation(request, project_id=None, logged_in_user=None):
             node_to_delete = ClassInstance.objects.filter(id=params['id'])
             if node_to_delete.count() > 0:
                 node_to_delete.delete()
-                insert_into_log(project_id, logged_in_user.id, 'remove_neuron', None, 'Removed neuron with ID %s and name %s' % (params['id'], params['title']))
+                insert_into_log(project_id, request.user.id, 'remove_neuron', None, 'Removed neuron with ID %s and name %s' % (params['id'], params['title']))
                 return HttpResponse(json.dumps({'status': 1, 'message': 'Removed neuron successfully.'}))
             else:
                 raise RollbackAndReport('Could not find any node with ID %s' % params['id'])
@@ -112,12 +113,12 @@ def instance_operation(request, project_id=None, logged_in_user=None):
             raise RollbackAndReport('Failed to select class.')
         instance_operation.res_on_err = 'Failed to insert instance of class.'
         node = ClassInstance(
-                user=logged_in_user,
+                user=request.user,
                 name=params['objname'])
         node.project_id = project_id
         node.class_column_id = class_map[params['classname']]
         node.save()
-        insert_into_log(project_id, logged_in_user.id, "create_%s" % params['classname'], None, "Created %s with ID %s" % (params['classname'], params['id']))
+        insert_into_log(project_id, request.user.id, "create_%s" % params['classname'], None, "Created %s with ID %s" % (params['classname'], params['id']))
 
         # We need to connect the node to its parent, or to root if no valid parent is given.
         node_parent_id = params['parentid']
@@ -133,7 +134,7 @@ def instance_operation(request, project_id=None, logged_in_user=None):
 
         instance_operation.res_on_err = 'Failed to insert relation.'
         cici = ClassInstanceClassInstance()
-        cici.user = logged_in_user
+        cici.user = request.user
         cici.project_id = project_id
         cici.relation_id = relation_map[params['relationname']]
         cici.class_instance_a_id = node.id
@@ -156,7 +157,7 @@ def instance_operation(request, project_id=None, logged_in_user=None):
                 relation=relation_map[relation_type],
                 class_instance_a=params['src']).update(class_instance_b=params['ref'])
 
-        insert_into_log(project_id, logged_in_user.id, 'move_%s' % params['classname'], None, 'Moved %s with ID %s to %s with ID %s' % (params['classname'], params['id'], params['targetname'], params['ref']))
+        insert_into_log(project_id, request.user.id, 'move_%s' % params['classname'], None, 'Moved %s with ID %s to %s with ID %s' % (params['classname'], params['id'], params['targetname'], params['ref']))
         return HttpResponse(json.dumps({'message': 'Success.'}))
 
     def has_relations():
@@ -190,9 +191,9 @@ def instance_operation(request, project_id=None, logged_in_user=None):
             raise RollbackAndReport({'error': instance_operation.res_on_err})
 
 
-@catmaid_login_required
+@login_required
 @transaction_reportable_commit_on_success
-def tree_object_expand(request, project_id=None, logged_in_user=None):
+def tree_object_expand(request, project_id=None):
     skeleton_id = request.POST.get('skeleton_id', None)
     if skeleton_id is None:
         raise RollbackAndReport('A skeleton id has not been provided!')
@@ -240,9 +241,9 @@ def tree_object_expand(request, project_id=None, logged_in_user=None):
         else:
             raise RollbackAndReport(response_on_error + ':' + str(e))
 
-@catmaid_login_required
+@login_required
 @transaction_reportable_commit_on_success
-def objecttree_get_all_skeletons(request, project_id=None, node_id=None, logged_in_user=None):
+def objecttree_get_all_skeletons(request, project_id=None, node_id=None):
     """ Retrieve all skeleton ids for a given node in the object tree
     """
     g = get_annotation_graph( project_id )
@@ -255,9 +256,9 @@ def objecttree_get_all_skeletons(request, project_id=None, node_id=None, logged_
     return HttpResponse(json_return, mimetype='text/json')
 
 
-@catmaid_login_required
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 @transaction_reportable_commit_on_success
-def tree_object_list(request, project_id=None, logged_in_user=None):
+def tree_object_list(request, project_id=None):
     parent_id = int(request.GET.get('parentid', 0))
     parent_name = request.GET.get('parentname', '')
     expand_request = request.GET.get('expandtarget', None)

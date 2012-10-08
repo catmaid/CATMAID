@@ -1,5 +1,6 @@
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -13,9 +14,9 @@ try:
 except:
     pass
 
-@catmaid_login_required
+@login_required
 @transaction.commit_on_success
-def split_skeleton(request, project_id=None, logged_in_user=None):
+def split_skeleton(request, project_id=None):
     treenode_id = request.POST['treenode_id']
     p = get_object_or_404(Project, pk=project_id)
     # retrieve skeleton
@@ -50,7 +51,7 @@ def split_skeleton(request, project_id=None, logged_in_user=None):
     new_skeleton = ClassInstance()
     new_skeleton.name = 'Skeleton'
     new_skeleton.project = p
-    new_skeleton.user = logged_in_user
+    new_skeleton.user = request.user
     new_skeleton.class_column = Class.objects.get(class_name='skeleton', project=p)
     new_skeleton.save()
     new_skeleton.name = 'Skeleton {0}'.format( new_skeleton.id )
@@ -60,7 +61,7 @@ def split_skeleton(request, project_id=None, logged_in_user=None):
     cici.class_instance_a = new_skeleton
     cici.class_instance_b = neuron[0]
     cici.relation = r
-    cici.user = logged_in_user
+    cici.user = request.user
     cici.project = p
     cici.save()
     # update skeleton_id of list in treenode table
@@ -87,12 +88,12 @@ def split_skeleton(request, project_id=None, logged_in_user=None):
     )
     if len(locations) > 0:
         location = locations[0].location
-    insert_into_log( project_id, logged_in_user.id, "split_skeleton", location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron[0].name ) )
+    insert_into_log( project_id, request.user.id, "split_skeleton", location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron[0].name ) )
     return HttpResponse(json.dumps({}), mimetype='text/json')
 
 
-@catmaid_login_required
-def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user=None):
+@login_required
+def root_for_skeleton(request, project_id=None, skeleton_id=None):
     tn = Treenode.objects.get(
         project=project_id,
         parent__isnull=True,
@@ -107,9 +108,9 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None, logged_in_user
 
 
 
-@catmaid_login_required
+@login_required
 @transaction_reportable_commit_on_success
-def skeleton_ancestry(request, project_id=None, logged_in_user=None):
+def skeleton_ancestry(request, project_id=None):
     # All of the values() things in this function can be replaced by
     # prefetch_related when we upgrade to Django 1.4 or above
     skeleton_id = request.POST.get('skeleton_id', None)
@@ -181,8 +182,8 @@ def skeleton_ancestry(request, project_id=None, logged_in_user=None):
             raise RollbackAndReport(response_on_error + ':' + str(e))
 
 
-@catmaid_login_required
-def skeleton_info(request, project_id=None, skeleton_id=None, logged_in_user=None):
+@login_required
+def skeleton_info(request, project_id=None, skeleton_id=None):
     p = get_object_or_404(Project, pk=project_id)
 
     neuron_id = request.POST['neuron_id']
@@ -211,9 +212,9 @@ def skeleton_info(request, project_id=None, skeleton_id=None, logged_in_user=Non
 
 
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def reroot_skeleton(request, project_id=None, logged_in_user=None):
+def reroot_skeleton(request, project_id=None):
     treenode_id = request.POST.get('treenode_id', None)
     if treenode_id is None:
         raise RollbackAndReport('A treenode id has not been provided!')
@@ -257,7 +258,7 @@ def reroot_skeleton(request, project_id=None, logged_in_user=None):
         treenode.save()
 
         response_on_error = 'Failed to log reroot.'
-        insert_into_log(project_id, logged_in_user.id, 'reroot_skeleton', treenode.location, 'Rerooted skeleton for treenode with ID %s' % treenode.id)
+        insert_into_log(project_id, request.user.id, 'reroot_skeleton', treenode.location, 'Rerooted skeleton for treenode with ID %s' % treenode.id)
 
         return HttpResponse(json.dumps({'newroot': treenode.id}))
 
@@ -270,9 +271,9 @@ def reroot_skeleton(request, project_id=None, logged_in_user=None):
             raise RollbackAndReport(response_on_error + ':' + str(e))
 
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def join_skeleton(request, project_id=None, logged_in_user=None):
+def join_skeleton(request, project_id=None):
     from_treenode = request.POST.get('from_id', None)
     to_treenode = request.POST.get('to_id', None)
     if from_treenode is None or to_treenode is None:
@@ -331,7 +332,7 @@ def join_skeleton(request, project_id=None, logged_in_user=None):
 
         response_on_error = 'Could not log actions.'
         location = get_object_or_404(Treenode, id=from_treenode).location
-        insert_into_log(project_id, logged_in_user.id, 'join_skeleton', location, 'Joined skeleton with ID %s to skeleton with ID %s' % (from_skeleton, to_skeleton))
+        insert_into_log(project_id, request.user.id, 'join_skeleton', location, 'Joined skeleton with ID %s to skeleton with ID %s' % (from_skeleton, to_skeleton))
 
         return HttpResponse(json.dumps({
             'message': 'success',

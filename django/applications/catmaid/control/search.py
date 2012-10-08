@@ -1,6 +1,7 @@
 import json
 
 from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -8,9 +9,9 @@ from catmaid.control.common import *
 from catmaid.transaction import *
 
 
-@catmaid_login_required
+@login_required
 @transaction.commit_on_success
-def search(request, project_id=None, logged_in_user=None):
+def search(request, project_id=None):
     def format_node_data(node):
         '''
         Formats node data for our json output.

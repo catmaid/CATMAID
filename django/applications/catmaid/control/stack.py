@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -16,7 +17,7 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
     if len(ps_all) != 1:
         return {'error': 'Multiple project - stack associations, but should only be one.'}
     ps=ps_all[0]
-    pu = ProjectUser.objects.filter(project=project_id, user=user.id).count()
+    can_edit = user.has_perm('can_administer', p) or user.has_perm('can_annotate', p)
 
     # https://github.com/acardona/CATMAID/wiki/Convention-for-Stack-Image-Sources
     if int(s.tile_source_type) == 2:
@@ -55,7 +56,7 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
             'image_base': s.image_base,
             'num_zoom_levels': int(s.num_zoom_levels),
             'file_extension': s.file_extension,
-            'editable': int(pu>0),
+            'editable': can_edit,
             'translation': {
                 'x': ps.translation.x,
                 'y': ps.translation.y,
@@ -82,13 +83,13 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
 
     return result
 
-@catmaid_login_required
-def stack_info(request, project_id=None, stack_id=None, logged_in_user=None):
-    result=get_stack_info(project_id, stack_id, logged_in_user)
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def stack_info(request, project_id=None, stack_id=None):
+    result=get_stack_info(project_id, stack_id, request.user)
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")
 
-@catmaid_login_required
-def stack_models(request, project_id=None, stack_id=None, logged_in_user=None):
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def stack_models(request, project_id=None, stack_id=None):
     """ Retrieve Mesh models for a stack
     """
     d={}

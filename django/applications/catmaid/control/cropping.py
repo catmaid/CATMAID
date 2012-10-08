@@ -4,6 +4,7 @@ from django.db import models
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -372,8 +373,8 @@ def sanity_check( job ):
         errors.append( "zoom_level must not be smaller than 0" )
     return errors
 
-@catmaid_login_required
-def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min=None, y_max=None, z_min=None, z_max=None, zoom_level=None, logged_in_user=None):
+@login_required
+def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min=None, y_max=None, z_min=None, z_max=None, zoom_level=None):
     """ Crops out the specified region of the stack. The region is expected to
     be given in terms of real world units (e.g. nm).
     """
@@ -389,7 +390,7 @@ def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min
     stack_ids = [int( x ) for x in string_list]
 
     # Crate a new cropping job
-    job = CropJob(logged_in_user, project_id, stack_ids, x_min, x_max, y_min, y_max, z_min, z_max, zoom_level)
+    job = CropJob(request.user, project_id, stack_ids, x_min, x_max, y_min, y_max, z_min, z_max, zoom_level)
 
     # Parameter check
     errors = sanity_check( job )
@@ -422,8 +423,8 @@ def cleanup( max_age=1209600 ):
     for item in files_to_remove:
             os.remove( item )
 
-@catmaid_login_required
-def download_crop(request, file_path=None, logged_in_user=None):
+@login_required
+def download_crop(request, file_path=None):
     """ Retrieves a previously cropped micro_stack from its temporary location
     and deletes the files afterwards.
     """

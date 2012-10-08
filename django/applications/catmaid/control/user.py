@@ -1,16 +1,14 @@
 import json
 
 from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 
-from catmaid.models import User
-from catmaid.control.authentication import catmaid_login_required
-
-@catmaid_login_required
-def user_list(request, logged_in_user=None):
+@login_required
+def user_list(request):
     result = {}
-    for u in User.objects.all().order_by('longname'):
+    for u in User.objects.all().order_by('last_name', 'first_name'):
         result[str(u.id)] = {
             "id": u.id,
-            "name": u.name,
-            "longname": u.longname}
+            "name": u.username,
+            "longname": u.get_full_name()}
     return HttpResponse(json.dumps(result), mimetype='text/json')

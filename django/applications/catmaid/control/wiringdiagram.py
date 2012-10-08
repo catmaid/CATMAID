@@ -2,9 +2,9 @@ import json
 
 from django.http import HttpResponse
 from django.db.models import Count
+from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
-from catmaid.control.authentication import catmaid_login_required
 
 def get_wiring_diagram(project_id=None, lower_treenode_number_limit=0):
 
@@ -81,7 +81,7 @@ def get_wiring_diagram(project_id=None, lower_treenode_number_limit=0):
     return { 'nodes': nodes, 'edges': edges }
 
 
-@catmaid_login_required
+@login_required
 def export_wiring_diagram_nx(request, project_id=None):
 
     if request.POST.has_key('lower_skeleton_count'):
@@ -102,7 +102,7 @@ def export_wiring_diagram_nx(request, project_id=None):
     json_return = json.dumps(data, sort_keys=True, indent=4)
     return HttpResponse(json_return, mimetype='text/json')
 
-@catmaid_login_required
+@login_required
 def export_wiring_diagram(request, project_id=None):
 
     if request.POST.has_key('lower_skeleton_count'):

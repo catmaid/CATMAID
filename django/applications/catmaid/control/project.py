@@ -11,8 +11,7 @@ from catmaid.transaction import *
 
 
 
-@catmaid_login_optional
-def projects(request, logged_in_user=None):
+def projects(request):
     # This is somewhat ridiculous - four queries where one could be
     # used in raw SQL.  The problem here is chiefly that
     # 'select_related' in Django doesn't work through
@@ -33,14 +32,10 @@ def projects(request, logged_in_user=None):
 
     # Find all the projects, and mark those that are editable from the
     # project_user table:
-    if logged_in_user:
+    if request.user.is_authenticated():
         projects = Project.objects.all().order_by('title')
-        c.execute("SELECT project_id FROM project_user WHERE user_id = %s",
-            [logged_in_user.id])
-        editable_projects = set(x[0] for x in c.fetchall())
     else:
         projects = Project.objects.filter(public=True).order_by('title')
-        editable_projects = set([])
 
     # Find all the projects that are editable:
     catalogueable_projects = set(x.project.id for x in Class.objects.filter(class_name='driver_line').select_related('project'))
@@ -57,7 +52,7 @@ def projects(request, logged_in_user=None):
                 'comment': s.comment,
                 'note': '',
                 'action': 'javascript:openProjectStack(%d,%d)' % (p.id, s.id)}
-        editable = p.id in editable_projects
+        editable = request.user.is_superuser or request.user.has_perm('can_administer', p) or request.user.has_perm('can_annotate', p)
         result.append( {
             'pid': p.id,
             'title': p.title,

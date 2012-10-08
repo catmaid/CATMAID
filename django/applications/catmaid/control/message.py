@@ -1,16 +1,17 @@
 import json
 
 from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
 
-@catmaid_login_required
-def list_messages(request, project_id=None, logged_in_user=None):
+@login_required
+def list_messages(request, project_id=None):
     messages = Message.objects.filter(
-        user=logged_in_user,
+        user=request.user,
         read=False).extra(select={
         'time_formatted': 'to_char("time", \'YYYY-MM-DD HH24:MI:SS TZ\')'})\
     .order_by('-time')
@@ -33,14 +34,14 @@ def list_messages(request, project_id=None, logged_in_user=None):
     return HttpResponse(json.dumps(makeJSON_legacy_list(messages)))
 
 
-@catmaid_login_required
+@login_required
 @transaction_reportable_commit_on_success
-def read_message(request, project_id=None, logged_in_user=None):
+def read_message(request, project_id=None):
     message_id = request.GET.get('id', 0)
     message_on_error = ''
     try:
         message_on_error = 'Could not retrieve message with id %s.' % message_id
-        message = Message.objects.filter(user=logged_in_user, id=message_id)[0]
+        message = Message.objects.filter(user=request.user, id=message_id)[0]
         message_on_error = 'Could not mark message with id %s as read.' % message_id
         message.read = True
         message.save()

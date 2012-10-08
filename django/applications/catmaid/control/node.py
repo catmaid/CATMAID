@@ -2,6 +2,7 @@ import json
 
 from django.db import transaction, connection
 from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 
 from django.shortcuts import get_object_or_404
 
@@ -10,9 +11,9 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
 
-@catmaid_login_required
+@login_required
 @transaction_reportable_commit_on_success
-def node_list(request, project_id=None, logged_in_user=None):
+def node_list(request, project_id=None):
     # TODO This function is used very often and Catmaid would benefit from its
     # optimization. The following things should have big effects, ordered by
     # expected efficiencty gain VS effort to implement.
@@ -215,21 +216,21 @@ def node_list(request, project_id=None, logged_in_user=None):
             raise RollbackAndReport(response_on_error + ';' + str(e))
 
 
-@catmaid_login_required
-def update_location_reviewer(request, project_id=None, node_id=None, logged_in_user=None):
+@login_required
+def update_location_reviewer(request, project_id=None, node_id=None):
     """ Updates the reviewer id and review time of a node """
     p = get_object_or_404(Project, pk=project_id)
     loc = Location.objects.get(
         pk=node_id,
         project=p)
-    loc.reviewer_id=logged_in_user.id
+    loc.reviewer_id=request.user.id
     loc.review_time=datetime.now()
     loc.save()
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction.commit_on_success
-def update_confidence(request, project_id=None, logged_in_user=None, node_id=0):
+def update_confidence(request, project_id=None, node_id=0):
     new_confidence = request.POST.get('new_confidence', None)
     if (new_confidence == None):
         return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
@@ -253,7 +254,7 @@ def update_confidence(request, project_id=None, logged_in_user=None, node_id=0):
 
     if (rows_affected > 0):
         location = Location.objects.filter(project=project_id, id=tnid)[0].location
-        insert_into_log(project_id, logged_in_user.id, "change_confidence", location, "Changed to %s" % new_confidence)
+        insert_into_log(project_id, request.user.id, "change_confidence", location, "Changed to %s" % new_confidence)
     elif (request.POST.get('to_connector', 'false') == 'true'):
         return HttpResponse(json.dumps({'error': 'Failed to update confidence of treenode_connector between treenode %s and connector.' % tnid}))
     else:
@@ -262,8 +263,8 @@ def update_confidence(request, project_id=None, logged_in_user=None, node_id=0):
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
 
-@catmaid_login_required
-def most_recent_treenode(request, project_id=None, logged_in_user=None):
+@login_required
+def most_recent_treenode(request, project_id=None):
     skeleton_id = request.POST.get('skeleton_id', -1)
     treenode_id = request.POST.get('treenode_id', -1)
 
@@ -271,7 +272,7 @@ def most_recent_treenode(request, project_id=None, logged_in_user=None):
         tn = Treenode.objects\
              .filter(project=project_id,
             skeleton=skeleton_id,
-            user=logged_in_user)\
+            user=request.user)\
              .extra(select={'most_recent': 'greatest(treenode.creation_time, treenode.edition_time)'})\
              .extra(order_by=['-most_recent'])[0]
     except IndexError:
@@ -330,9 +331,9 @@ def node_update(request, project_id=None):
     return HttpResponse(json.dumps({'updated': len(nodes)}))
 
 
-@catmaid_login_required
+@login_required
 @transaction_reportable_commit_on_success
-def node_nearest(request, project_id=None, logged_in_user=None):
+def node_nearest(request, project_id=None):
     params = {}
     param_defaults = {
         'x': 0,

@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -296,8 +297,8 @@ def create_neurohdf_file(filename, data):
 
             metadata.create_dataset('skeleton_name', data=arr )
 
-@catmaid_login_required
-def microcircuit_neurohdf(request, project_id=None, logged_in_user=None):
+@login_required
+def microcircuit_neurohdf(request, project_id=None):
     """ Export the complete microcircuit connectivity to NeuroHDF
     """
     data=get_skeleton_as_dataarray(project_id)
@@ -310,8 +311,8 @@ def microcircuit_neurohdf(request, project_id=None, logged_in_user=None):
     }
     return HttpResponse(json.dumps(result), mimetype="text/plain")
 
-@catmaid_login_required
-def skeleton_neurohdf(request, project_id=None, skeleton_id=None, logged_in_user=None):
+@login_required
+def skeleton_neurohdf(request, project_id=None, skeleton_id=None):
     """ Generate the NeuroHDF on the local file system with a long hash
     that is sent back to the user and which can be used (not-logged in) to
     retrieve the file from the not-listed static folder

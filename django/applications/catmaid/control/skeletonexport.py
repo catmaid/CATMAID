@@ -2,6 +2,7 @@ import json
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -55,7 +56,7 @@ def get_swc_string(treenodes_qs):
         result += " ".join(str(x) for x in row) + "\n"
     return result
 
-def export_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, logged_in_user=None, format=None):
+def export_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, format=None):
     treenode_qs, labels_qs, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id, treenode_id)
 
     if format == 'swc':
@@ -189,7 +190,7 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
 
     return {'vertices':vertices,'connectivity':connectivity, 'neuron': n }
 
-def export_extended_skeleton_response(request, project_id=None, skeleton_id=None, logged_in_user=None, format=None):
+def export_extended_skeleton_response(request, project_id=None, skeleton_id=None, format=None):
 
     data=generate_extended_skeleton_data( project_id, skeleton_id )
 
@@ -199,18 +200,18 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
     else:
         raise Exception, "Unknown format ('%s') in export_extended_skeleton_response" % (format,)
 
-@catmaid_login_required
+@login_required
 def skeleton_swc(*args, **kwargs):
     kwargs['format'] = 'swc'
     return export_skeleton_response(*args, **kwargs)
 
-@catmaid_login_required
+@login_required
 def skeleton_json(*args, **kwargs):
     kwargs['format'] = 'json'
     return export_extended_skeleton_response(*args, **kwargs)
 
-@catmaid_login_required
-def export_review_skeleton(request, project_id=None, skeleton_id=None, logged_in_user=None, format=None):
+@login_required
+def export_review_skeleton(request, project_id=None, skeleton_id=None, format=None):
     data=generate_extended_skeleton_data( project_id, skeleton_id )
     g=nx.DiGraph()
     for id, d in data['vertices'].items():

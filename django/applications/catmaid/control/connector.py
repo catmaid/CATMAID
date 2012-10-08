@@ -3,15 +3,16 @@ from string import upper
 
 from django.http import HttpResponse
 from django.db.models import Count
+from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
 
-@catmaid_login_required
+@login_required
 @transaction_reportable_commit_on_success
-def list_connector(request, project_id=None, logged_in_user=None):
+def list_connector(request, project_id=None):
     skeleton_id = request.POST.get('skeleton_id', None)
     if skeleton_id is None:
         return HttpResponse(json.dumps({
@@ -226,9 +227,9 @@ def list_connector(request, project_id=None, logged_in_user=None):
             raise RollbackAndReport(response_on_error + ':' + str(e))
 
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def create_connector(request, project_id=None, logged_in_user=None):
+def create_connector(request, project_id=None):
     query_parameters = {}
     default_values = {'x': 0, 'y': 0, 'z': 0, 'confidence': 5}
     for p in default_values.keys():
@@ -240,7 +241,7 @@ def create_connector(request, project_id=None, logged_in_user=None):
 
     location = Double3D(x=float(query_parameters['x']), y=float(query_parameters['y']), z=float(query_parameters['z']))
     new_connector = Connector(
-        user=logged_in_user,
+        user=request.user,
         project=Project.objects.get(id=project_id),
         location=location,
         confidence=parsed_confidence)
@@ -249,9 +250,9 @@ def create_connector(request, project_id=None, logged_in_user=None):
     return HttpResponse(json.dumps({'connector_id': new_connector.id}))
 
 
-@catmaid_can_edit_project
+@requires_user_role(UserRole.Annotate)
 @transaction.commit_on_success
-def delete_connector(request, project_id=None, logged_in_user=None):
+def delete_connector(request, project_id=None):
     connector_id = int(request.POST.get("connector_id", 0))
     Connector.objects.filter(id=connector_id).delete()
     return HttpResponse(json.dumps({

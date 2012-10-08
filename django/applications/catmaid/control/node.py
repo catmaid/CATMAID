@@ -147,29 +147,26 @@ def node_list(request, project_id=None, logged_in_user=None):
         for cn in connector_relations:
             if cn['tnid'] is not None and cn['tnid'] not in treenodes_by_id:
                 missing_treenode_ids.append(cn['tnid'])
-        params['missing_treenode_ids'] = ', '.join(map(str, missing_treenode_ids))
+        params['missing_treenode_ids'] = ','.join(map(str, missing_treenode_ids))
 
         if len(missing_treenode_ids) > 0:
             response_on_error = 'Failed to query treenodes from connectors.'
-            c.execute('''
-            SELECT treenode.id AS id,
-                treenode.parent_id AS parentid,
-                (treenode.location).x AS x,
-                (treenode.location).y AS y,
-                (treenode.location).z AS z,
-                treenode.confidence AS confidence,
-                treenode.user_id AS user_id,
-                treenode.radius AS radius,
-                ((treenode.location).z - %(z)s) AS z_diff,
-                skeleton_id,
-                'treenode' AS type
-            FROM treenode
-            WHERE id IN (%(missing_treenode_ids)s)
-            ''', params)
-            connector_treenodes = cursor_fetch_dictionary(c)
-
-            for tn in connector_treenodes:
-                treenodes_by_id[tn['id']] = tn
+            tnds = Treenode.objects.filter(
+                id__in = missing_treenode_ids
+            ).select_related('parent')
+            for tn in tnds:
+                treenodes_by_id[tn.id] = {
+                    'id': tn.id,
+                    'parentid': tn.parent_id,
+                    'x': tn.location.x,
+                    'y': tn.location.y,
+                    'z': tn.location.z,
+                    'confidence': tn.confidence,
+                    'radius': tn.radius,
+                    'z_diff': float(tn.location.z) - float(params['z']),
+                    'skeleton_id': tn.skeleton_id,
+                    'type': 'treenode'
+                }
 
         # For each connector, collect its relation properties.
         connectors_by_id = {}
@@ -215,7 +212,7 @@ def node_list(request, project_id=None, logged_in_user=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ';' + str(e))
 
 
 @catmaid_login_required

@@ -36,8 +36,8 @@ var ObjectTree = new function()
       "plugins": ["themes", "json_data", "ui", "crrm", "types", "dnd", "contextmenu"],
       "json_data": {
         "ajax": {
-          //"url": django_url + pid + '/object-tree/list',
-          "url": "model/tree.object.list.php",
+          "url": django_url + pid + '/object-tree/list',
+          //"url": "model/tree.object.list.php",
           "data": function (n) {
             var expandRequest, parentName, parameters;
             // depending on which type of node it is, display those

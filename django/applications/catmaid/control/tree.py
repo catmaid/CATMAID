@@ -1,4 +1,5 @@
 import json
+import string
 
 try:
     import networkx as nx
@@ -237,7 +238,7 @@ def tree_object_expand(request, project_id=None, logged_in_user=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
 @catmaid_login_required
 @transaction_reportable_commit_on_success
@@ -257,15 +258,15 @@ def objecttree_get_all_skeletons(request, project_id=None, node_id=None, logged_
 @catmaid_login_required
 @transaction_reportable_commit_on_success
 def tree_object_list(request, project_id=None, logged_in_user=None):
-    parent_id = int(request.POST.get('parentid', 0))
-    parent_name = request.POST.get('parentname', '')
-    expand_request = request.POST.get('expandtarget', None)
+    parent_id = int(request.GET.get('parentid', 0))
+    parent_name = request.GET.get('parentname', '')
+    expand_request = request.GET.get('expandtarget', None)
     if expand_request is None:
         expand_request = []
     else:
         expand_request = expand_request.split(',')
 
-    max_nodes = 1000  # Limit number of nodes retrievable.
+    max_nodes = 5000  # Limit number of nodes retrievable.
 
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
@@ -442,4 +443,4 @@ def tree_object_list(request, project_id=None, logged_in_user=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + str(e))

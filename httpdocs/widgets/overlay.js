@@ -634,7 +634,7 @@ var SkeletonAnnotations = new function()
       // first make sure to reroot target
       requestQueue.register(django_url + project.id + '/skeleton/reroot', "POST", {
         pid: project.id,
-        tnid: toid
+        treenode_id: toid
       }, function (status, text, xml) {
         if (status === 200) {
           if (text && text !== " ") {

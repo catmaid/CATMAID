@@ -190,7 +190,7 @@ def create_treenode(request, project_id=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)
@@ -292,7 +292,8 @@ def create_interpolated_treenode(request, project_id=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
+
 
 
 @requires_user_role(UserRole.Annotate)
@@ -351,7 +352,7 @@ def reroot_treenode(request, project_id=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)
@@ -428,7 +429,7 @@ def link_treenode(request, project_id=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)
@@ -464,7 +465,7 @@ def update_treenode_table(request, project_id=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
 @requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
@@ -544,7 +545,7 @@ def delete_treenode(request, project_id=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
 
 

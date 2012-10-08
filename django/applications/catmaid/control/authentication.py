@@ -36,11 +36,9 @@ def login_user(request):
     if user is not None:
         if user.is_active:
             # Redirect to a success page.
-            login(request, user)
             request.session['user_id'] = user.id
-
-            # HttpResponse(json.dumps())
-            return HttpResponse(json.dumps({'id': request.session.session_key, 'longname': user.first_name + ' ' + user.last_name } ))
+            login(request, user)
+            return HttpResponse(json.dumps({'id': request.session.session_key, 'longname': user.get_full_name() } ))
         else:
            # Return a 'disabled account' error message
            return HttpResponse(json.dumps({'error': ' Disabled account'}))
@@ -49,6 +47,7 @@ def login_user(request):
         return HttpResponse(json.dumps({'error': ' Invalid login'}))
 
 def logout_user(request):
+    # FIXME: call to logout seems not to remove the session from the django_session table
     logout(request)
     return HttpResponse(json.dumps({'success': True}))
 
@@ -89,7 +88,7 @@ def valid_catmaid_login(request):
     # TODO: check if valid session exists too session for user
     # FIXME
     user_id = request.session.get( 'user_id', 0 )
-    print >> sys.stderr, 'session has userid', user_id
+    # print >> sys.stderr, 'session has userid', user_id
     # u = User.objects.get(pk=int(user_id))
     try:
         u = User.objects.get(pk=int(user_id))
@@ -159,24 +158,18 @@ def catmaid_can_edit_project(f):
     This decorator will return a JSON error response unless the user
     is logged in and allowed to edit the project:
     """
-
     def decorated_with_catmaid_can_edit_project(request, *args, **kwargs):
         print >> sys.stderr, 'checking if user has access to project ', kwargs['project_id']
         u = valid_catmaid_login(request)
         if not u:
-            return json_error_response(request.get_full_path() + " is not accessible unless you are logged in")
-        #p = Project(pk=kwargs['project_id'])
-        print >> sys.stderr, 'getting project object'
+            return HttpResponse(json.dumps({'error': request.get_full_path() + " is not accessible unless you are logged in"}))
         p = Project.objects.get(pk=kwargs['project_id'])
-        # FIXME: throws AttributeError: 'str' object has no attribute '_default_manager'
-        print >> sys.stderr, 'getting project users'
         if u in p.users.all():
             print >> sys.stderr, 'user has access to project'
             kwargs['logged_in_user'] = u
             return f(request, *args, **kwargs)
         else:
-            print >> sys.stderr, 'user does not have access to project'
-            return json_error_response("The user '%s' may not edit project %d" % (u.first_name + ' ' + u.last_name, int(kwargs['project_id'])))
+            return HttpResponse(json.dumps({'error': "The user '%s' may not edit project %d" % (u.get_full_name(), int(kwargs['project_id']))}))
 
     return decorated_with_catmaid_can_edit_project
 
@@ -240,5 +233,5 @@ def user_project_permissions(request):
             if permName not in result:
                 result[permName] = {}
             result[permName][project.id] = permName in userPerms
-
+    
     return HttpResponse(json.dumps(result))

@@ -8,7 +8,7 @@ from catmaid.control.common import *
 from catmaid.transaction import *
 
 @catmaid_login_required
-def unread_messages(request, project_id=None, logged_in_user=None):
+def list_messages(request, project_id=None, logged_in_user=None):
     messages = Message.objects.filter(
         user=logged_in_user,
         read=False).extra(select={

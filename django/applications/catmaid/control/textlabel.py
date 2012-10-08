@@ -60,7 +60,7 @@ def update_textlabel(request, project_id=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)
@@ -84,7 +84,7 @@ def delete_textlabel(request, project_id=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))
 
     return HttpResponse(json.dumps({'message': 'Success.'}))
 
@@ -214,4 +214,4 @@ def textlabels(request, project_id=None):
         if (response_on_error == ''):
             raise RollbackAndReport(str(e))
         else:
-            raise RollbackAndReport(response_on_error)
+            raise RollbackAndReport(response_on_error + ':' + str(e))

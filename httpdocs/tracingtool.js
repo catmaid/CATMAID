@@ -574,19 +574,6 @@ function TracingTool()
     }
   }) );
 
-  this.addAction( new Action({
-    helpText: "Toggle simulate shift mode",
-    keyShortcuts: {
-      'O': [ 79 ]
-    },
-    run: function (e) {
-      if (!mayEdit())
-        return false;
-      tracingLayer.svgOverlay.tracingCommand('simulateshift');
-      return true;
-    }
-  }) );
-
   /*
   this.addAction( new Action({
     helpText: "Move down 1 slice in z and click",

@@ -4,9 +4,6 @@
 /** A namespace to contain the current state of skeleton annotations. */
 var SkeletonAnnotations = new function()
 {
-
-  var simulateShift = false;
-
   // A table stack vs SVGOverlay instances.
   // The SVGOverlay construct adds the new instance here,
   // and the SVGOVerlay.destroy() removes it.
@@ -15,10 +12,6 @@ var SkeletonAnnotations = new function()
   this.getSVGOverlay = function ( stack ) {
     return SVGOverlays[stack];
   }
-
-  this.getShiftModeStatus = function() {
-    return simulateShift;
-  };
 
   /** Select a node in any of the existing SVGOverlay instances, by its ID and its skeletonID. */
   this.staticSelectNode = function(nodeID, skeletonID)
@@ -1242,7 +1235,7 @@ var SkeletonAnnotations = new function()
         $('#neuronName').text('');
         ObjectTree.deselectAll();
         self.activateNode(null);
-      } else if ((e.shiftKey||simulateShift)) {
+      } else if (e.shiftKey) {
         if (null === atn.id) {
           if (getMode() === "skeletontracing") {
             $('#growl-alert').growlAlert({
@@ -1257,7 +1250,7 @@ var SkeletonAnnotations = new function()
           }
         } else {
           if ("treenode" === atn.type) {
-            if ((e.shiftKey||simulateShift) && e.altKey) {
+            if (e.shiftKey && e.altKey) {
               statusBar.replaceLast("created connector, with postynaptic treenode id " + atn.id);
               targetTreenodeID = atn.id;
               createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
@@ -1265,7 +1258,7 @@ var SkeletonAnnotations = new function()
                                       createConnector(connectorID, targetTreenodeID, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
                                     });
               e.stopPropagation();
-            } else if ((e.shiftKey||simulateShift)) {
+            } else if (e.shiftKey) {
               statusBar.replaceLast("created connector, with presynaptic treenode id " + atn.id);
               createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
               e.stopPropagation();
@@ -1852,20 +1845,6 @@ var SkeletonAnnotations = new function()
         var phys_x = self.pix2physX(pos_x);
         var phys_y = self.pix2physY(pos_y);
         createInterpolatedNode(atn, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
-        break;
-      case "simulateshift":
-        simulateShift = !simulateShift;
-        if(simulateShift) {
-          var e = $(document.createElement("button")).attr({
-            id:    'shiftmode'
-          }).text('Shift Mode')
-            .css("background-color","#FF0000")
-            .css("right","60px")
-            .css("top","40px");
-          $("#indicatorbar").append(e);
-        } else {
-          $('#shiftmode').remove();
-        }
         break;
       }
       return;

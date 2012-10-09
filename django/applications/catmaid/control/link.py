@@ -9,7 +9,7 @@ from catmaid.transaction import *
 
 @requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def create_link(request, project_id=None, logged_in_user=None):
+def create_link(request, project_id=None):
     from_id = request.POST.get('from_id', 0)
     to_id = request.POST.get('to_id', 0)
     link_type = request.POST.get('link_type', 'none')
@@ -38,7 +38,7 @@ def create_link(request, project_id=None, logged_in_user=None):
             return HttpResponse(json.dumps({'error': 'Connector %s does not have zero presynaptic connections.' % to_id}))
 
     TreenodeConnector(
-        user=logged_in_user,
+        user=request.user,
         project=project,
         relation=relation,
         treenode=from_treenode,  # treenode_id = from_id

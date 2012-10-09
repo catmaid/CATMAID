@@ -842,11 +842,41 @@ var WebGLApp = new function () {
     for( var skeleton_id in skeletons)
     {
         if( skeletons.hasOwnProperty(skeleton_id) ) {
-            keys.push( int(skeleton_id) );
+            keys.push( parseInt(skeleton_id) );
         }
     }
     return keys;
   };
+
+  self.storeSkeletonList = function() {
+    var shortname = prompt('Short name reference for skeleton list?'),
+        description = prompt('Short description?');
+    jQuery.ajax({
+      url: django_url + project.id + '/skeletonlist/save',
+      data: { shortname: shortname, description: description,
+        skeletonlist: self.getListOfSkeletonIDs() },
+      type: "POST",
+      dataType: "json",
+      success: function () {
+      }
+    });
+  };
+
+  self.loadSkeletonList = function() {
+    var shortname = prompt('Short name reference?');
+    jQuery.ajax({
+      url: django_url + project.id + '/skeletonlist/load',
+      data: { shortname: shortname },
+      type: "POST",
+      dataType: "json",
+      success: function ( data ) {
+        for( var idx in data['skeletonlist'])
+        {
+          self.addSkeletonFromID( self.project_id, data['skeletonlist'][idx] );
+        }
+      }
+    });
+  }
 
   self.getListOfAllSkeletonIDs = function() {
     var data = new Object(), hexcol;

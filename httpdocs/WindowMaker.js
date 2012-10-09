@@ -142,6 +142,20 @@ var WindowMaker = new function()
     container.appendChild(rand);
 
     var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
+    rand.setAttribute("id", "store_skeleton_list");
+    rand.setAttribute("value", "Store list");
+    rand.onclick = WebGLApp.storeSkeletonList;
+    container.appendChild(rand);
+
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
+    rand.setAttribute("id", "load_skeleton_list");
+    rand.setAttribute("value", "Load list");
+    rand.onclick = WebGLApp.loadSkeletonList;
+    container.appendChild(rand);
+
+    var rand = document.createElement('input');
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "enable_z_plane");
     rand.setAttribute("value", "Enable z-plane");

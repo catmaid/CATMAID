@@ -623,3 +623,11 @@ class Log(UserFocusedModel):
     operation_type = models.CharField(max_length=255)
     location = Double3DField()
     freetext = models.TextField()
+
+class SkeletonlistDashboard(UserFocusedModel):
+    class Meta:
+        db_table = "skeletonlist_dashboard"
+        managed = False
+    shortname = models.CharField(max_length=255)
+    skeleton_list = IntegerArrayField()
+    description = models.TextField()

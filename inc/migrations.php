@@ -1109,6 +1109,20 @@ ALTER TABLE connector_class_instance DROP CONSTRAINT IF EXISTS connector_class_i
 '
 ),
 
+	'2012-10-09T21:19:38' => new Migration(
+		'Skeletongroup_dashboard',
+		'
+CREATE TABLE skeletonlist_dashboard (
+    shortname character varying(255) NOT NULL,
+    skeleton_list int[],
+    description text
+    )
+INHERITS (concept);
+ALTER TABLE ONLY skeletonlist_dashboard
+    ADD CONSTRAINT skeletonlist_dashboard_pkey PRIMARY KEY (id);
+'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

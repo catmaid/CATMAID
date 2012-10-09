@@ -35,7 +35,9 @@ class Skeleton(object):
         self.edge_length_sum = 0.0
 
         self.graph = self._create_graph()
-        self.connected_skeletons = self._fetch_connected_skeletons()
+        self.connected_connectors = self._fetch_connected_connectors()
+        self.downstream_skeletons = self._fetch_downstream_skeletons()
+        self.upstream_skeletons = self._fetch_upstream_skeletons()
 
         self._compute_skeleton_edge_deltatime()
 
@@ -62,16 +64,11 @@ class Skeleton(object):
             n += len(v['postsynaptic_to'])
         return n
 
-    def _fetch_connected_skeletons(self):
-        """ Returns a dictionary where keys are Skeleton IDs of Skeletons synaptically related to this Skeleton,
-        and values are dictionaries with the keys 'presynaptic_to' and 'postsynaptic_to'.
-        For 'presynaptic_to', the values are dictionaries with node IDs (of this Skeleton) as key and connector IDs as values,
-        For 'postsynaptic_to', the values are dictionaries with connector IDs (of other Skeleton instances) as keys,
-        and node IDs as values."
-
+    def _fetch_connected_connectors(self):
+        """
         Example:
-        { skeletonid: {'presynaptic_to': { node_id: connector_id },
-                       'postsynaptic_to': { connector_id: node_id } }
+        { connector_id: {'presynaptic_to': [node_id1, node_id2],
+                         'postsynaptic_to': [node_id3] }
         """
 
         qs_tc = TreenodeConnector.objects.filter(
@@ -84,25 +81,42 @@ class Skeleton(object):
 
         for tc in qs_tc:
             if not tc.skeleton_id in results:
-                results[tc.skeleton_id] = {
-                    'presynaptic_to': {},
-                    'postsynaptic_to': {}
+                results[tc.connector_id] = {
+                    'presynaptic_to': [],
+                    'postsynaptic_to': [],
+                    # TODO: labels, location etc.
                 }
 
             if tc.relation_id == relations['presynaptic_to']:
-                results[tc.skeleton_id]['presynaptic_to'][tc.treenode_id] = tc.connector_id
+                results[tc.connector_id]['presynaptic_to'].append( tc.treenode_id )
             elif tc.relation_id == relations['postsynaptic_to']:
-                results[tc.skeleton_id]['postsynaptic_to'][tc.connector_id] = tc.treenode_id
+                results[tc.connector_id]['postsynaptic_to'].append( tc.treenode_id )
 
         return results
 
-    def downstream_skeletons(self):
-        """ Returns a list of Skeleton instances that this Skeleton synapses onto. """
-        return [k for k,v in self.connected_skeletons.items() if len(v['presynaptic_to']) != 0]
+    def _fetch_downstream_skeletons(self):
+        """ Returns a list of skeleton IDs that this Skeleton synapses onto. """
+        relations = dict((r.relation_name, r.id) for r in Relation.objects.filter(project=self.project_id))
+        presynaptic_connectors = [k for k,v in self.connected_connectors.items() if len(v['presynaptic_to']) != 0]
+        qs_tc = TreenodeConnector.objects.filter( project=self.project_id, connector__in=presynaptic_connectors, relation=relations['postsynaptic_to'] )
+        res = {}
+        for ele in qs_tc:
+            if not ele.skeleton_id in res:
+                res[ele.skeleton_id] = 0
+            res[ele.skeleton_id] += 1
+        return res
 
-    def upstream_skeletons(self):
-        """ Returns a list of Skeleton instances that synapse onto this Skeleton.  """
-        return [k for k,v in self.connected_skeletons.items() if len(v['postsynaptic_to']) != 0]
+    def _fetch_upstream_skeletons(self):
+        """ Returns a list of skeleton IDs that synapse onto this Skeleton.  """
+        relations = dict((r.relation_name, r.id) for r in Relation.objects.filter(project=self.project_id))
+        postsynaptic_connectors = [k for k,v in self.connected_connectors.items() if len(v['postsynaptic_to']) != 0]
+        qs_tc = TreenodeConnector.objects.filter( project=self.project_id, connector__in=postsynaptic_connectors, relation=relations['presynaptic_to'] )
+        res = {}
+        for ele in qs_tc:
+            if not ele.skeleton_id in res:
+                res[ele.skeleton_id] = 0
+            res[ele.skeleton_id] += 1
+        return res
 
     def _create_graph(self):
         # retrieve all nodes of the skeleton
@@ -185,29 +199,28 @@ class SkeletonGroup(object):
     def _connectivity_graph(self):
         graph = nx.DiGraph()
         graph.add_nodes_from( self.skeleton_id_list )
-        print grpah.nodes()
+
+        connectors = {}
         for skeleton in self.skeletons:
-            print '----skeleton', skeleton.skeleton_id
+            for connector_id, v in skeleton.connected_connectors.items():
+                if not connectors.has_key(connector_id):
+                    connectors[connector_id] = {
+                        'pre': [], 'post': []
+                    }
+                if len(v['presynaptic_to']) != 0:
+                    connectors[connector_id]['pre'].append( skeleton.skeleton_id )
 
-            for k,v in skeleton.connected_skeletons.items():
+                if len(v['postsynaptic_to']) != 0:
+                    connectors[connector_id]['post'].append( skeleton.skeleton_id )
 
-                print k,v
+        # merge connectors into graph
+        for connector_id, v in connectors.items():
+            for from_skeleton in v['pre']:
+                for to_skeleton in v['post']:
 
-                if graph.has_node( k ):
+                    if not graph.has_edge( from_skeleton, to_skeleton ):
+                        graph.add_edge( from_skeleton, to_skeleton, {'count': 0} )
 
-                    number_of_connections = len(v['presynaptic_to'])
-                    if number_of_connections != 0:
-
-                        if not graph.has_edge(k, skeleton.skeleton_id):
-                            graph.add_edge(k, skeleton.skeleton_id )
-
-                        if hasattr(graph[k][skeleton.skeleton_id], 'presynaptic_to'):
-                            print 'add up', number_of_connections
-                            graph[k][skeleton_id]['presynaptic_to'] += number_of_connections
-                        else:
-                            print 'init edge', number_of_connections
-                            graph[k][skeleton.skeleton_id] = {
-                                'presynaptic_to': number_of_connections
-                            }
+                    graph.edge[from_skeleton][to_skeleton]['count'] += 1
 
         return graph

@@ -672,6 +672,37 @@ var WindowMaker = new function()
         return win;
     };
 
+
+    var createAdjacencyMatrixWindow = function()
+    {
+        var win = new CMWWindow("Adjacency Matrix");
+        var content = win.getFrame();
+        content.style.backgroundColor = "#ffffff";
+
+        var contentbutton = document.createElement('div');
+        contentbutton.setAttribute("id", 'skeleton_adjmatrix_buttons');
+
+        var add = document.createElement('input');
+        add.setAttribute("type", "button");
+        add.setAttribute("id", "retrieve_adjmatrix");
+        add.setAttribute("value", "Get matrix");
+        add.onclick = AdjacencyMatrix.fetchMatrixForSkeletons;
+        contentbutton.appendChild(add);
+
+        content.appendChild( contentbutton );
+
+        var container = createContainer( "adjacencymatrix_widget" );
+        content.appendChild( container );
+
+        addListener(win, container, 'skeleton_adjmatrix_buttons');
+
+        addLogic(win);
+
+        AdjacencyMatrix.init();
+
+        return win;
+    };
+
   var createExportWidget = function()
   {
       var win = new CMWWindow("Export widget");
@@ -928,6 +959,7 @@ var WindowMaker = new function()
     "disclaimer": createDisclaimerWindow,
     "review-system": createReviewWindow,
     "connectivity-widget": createConnectivityWindow,
+    "adjacencymatrix-widget": createAdjacencyMatrixWindow
   };
 
   /** If the window for the given name is already showing, just focus it.

@@ -837,6 +837,17 @@ var WebGLApp = new function () {
     }
   };
 
+  self.getListOfSkeletonIDs = function() {
+    var keys = [];
+    for( var skeleton_id in skeletons)
+    {
+        if( skeletons.hasOwnProperty(skeleton_id) ) {
+            keys.push( int(skeleton_id) );
+        }
+    }
+    return keys;
+  };
+
   self.getListOfAllSkeletonIDs = function() {
     var data = new Object(), hexcol;
     data['nodes'] = {};

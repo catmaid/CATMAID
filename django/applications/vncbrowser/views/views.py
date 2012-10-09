@@ -4,12 +4,14 @@ from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
 
 from catmaid.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
     Project, User, Treenode, TreenodeConnector, Connector, Stack, ProjectStack, \
     TreenodeClassInstance, ConnectorClassInstance, Location, ProjectUser, Overlay, \
     BrokenSlice
+
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
@@ -33,7 +35,7 @@ def findBrackets( aString ):
             if not open:
                 return match[:index]
 
-@catmaid_login_required
+@login_required
 def index(request, **kwargs):
     all_neurons, search_form = get_form_and_neurons(request,
                                                     kwargs['project_id'],
@@ -46,7 +48,7 @@ def index(request, **kwargs):
                                   'user': kwargs['logged_in_user'],
                                   'search_form': search_form})
 
-@catmaid_login_required
+@login_required
 def visual_index(request, **kwargs):
 
     all_neurons, search_form = get_form_and_neurons( request,
@@ -80,7 +82,7 @@ def visual_index(request, **kwargs):
 
 
 
-@catmaid_login_required
+@login_required
 def view(request, project_id=None, neuron_id=None, neuron_name=None, logged_in_user=None):
     p = get_object_or_404(Project, pk=project_id)
     # FIXME: add the class name as well
@@ -120,7 +122,7 @@ def view(request, project_id=None, neuron_id=None, neuron_name=None, logged_in_u
                                   'outgoing': outgoing,
                                   'wiki_base_url': p.wiki_base_url } )
 
-@catmaid_login_required
+@login_required
 def set_cell_body(request, logged_in_user=None):
     neuron_id = request.POST['neuron_id']
     n = get_object_or_404(ClassInstance, pk=neuron_id)
@@ -134,7 +136,7 @@ def set_cell_body(request, logged_in_user=None):
                                         kwargs={'neuron_id':neuron_id,
                                                 'project_id':n.project.id}))
 
-@catmaid_login_required
+@login_required
 def line(request, project_id=None, line_id=None, logged_in_user=None):
     p = get_object_or_404(Project, pk=project_id)
     l = get_object_or_404(ClassInstance, pk=line_id, project=p, class_column__class_name='driver_line')
@@ -149,7 +151,7 @@ def line(request, project_id=None, line_id=None, logged_in_user=None):
                                   'user': logged_in_user,
                                   'neurons': sorted_neurons})
 
-@catmaid_login_required
+@login_required
 def lines_add(request, project_id=None, logged_in_user=None):
     p = Project.objects.get(pk=project_id)
     # FIXME: for the moment, just hardcode the user ID:
@@ -187,7 +189,7 @@ def lines_add(request, project_id=None, logged_in_user=None):
                                         kwargs={'neuron_id':neuron.id,
                                                 'project_id':p.id}))
 
-@catmaid_login_required
+@login_required
 def lines_delete(request, project_id=None, logged_in_user=None):
     p = Project.objects.get(pk=project_id)
     neuron = get_object_or_404(ClassInstance,
@@ -206,7 +208,7 @@ def lines_delete(request, project_id=None, logged_in_user=None):
 
 
 
-@catmaid_login_required
+@login_required
 def multiple_presynaptic_terminals(request, project_id=None, logged_in_user=None):
     p = get_object_or_404(Project, pk=project_id)
 
@@ -219,7 +221,7 @@ def multiple_presynaptic_terminals(request, project_id=None, logged_in_user=None
                                   'stacks': p.stacks.all(),
                                   'connector_counts': tcs})
 
-@catmaid_login_required
+@login_required
 def goto_connector(request, project_id=None, connector_id=None, stack_id=None, logged_in_user=None):
     c = get_object_or_404(Connector, pk=connector_id)
     parameters = {"pid": project_id,

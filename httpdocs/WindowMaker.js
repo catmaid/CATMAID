@@ -142,6 +142,13 @@ var WindowMaker = new function()
     container.appendChild(rand);
 
     var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
+    rand.setAttribute("id", "save_image");
+    rand.setAttribute("value", "Save");
+    rand.onclick = WebGLApp.saveImage;
+    container.appendChild(rand);
+
+    var rand = document.createElement('input');
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "enable_z_plane");
     rand.setAttribute("value", "Enable z-plane");

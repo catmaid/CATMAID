@@ -453,6 +453,11 @@ var WebGLApp = new function () {
     }
   }
 
+  this.saveImage = function() {
+      render();
+      window.open(renderer.domElement.toDataURL("image/png"));
+  }
+
   this.randomizeColors = function()
   {
     var i = 0, col;

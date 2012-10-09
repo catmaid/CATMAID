@@ -1122,6 +1122,15 @@ ALTER TABLE project_user ADD PRIMARY KEY (id);
 "
 ),
 
+	'2012-10-09T14:40:01' => new Migration(
+		'Remove some wrong user foreign key constraints',
+		'
+ALTER TABLE treenode_connector DROP CONSTRAINT treenode_connector_user_id_fkey;
+ALTER TABLE concept DROP CONSTRAINT concept_user_id_fkey;
+ALTER TABLE connector_class_instance DROP CONSTRAINT connector_class_instance_user_id_fkey;
+'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

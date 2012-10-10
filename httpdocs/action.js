@@ -193,7 +193,6 @@ var toolActions = [
 		buttonID: 'key_help_button',
 		buttonName: "help",
 		keyShortcuts: {
-			'?': [ 63 ],
 			'F1': [ 112 ]
 		},
 		run: function (e) {

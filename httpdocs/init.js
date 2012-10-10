@@ -54,14 +54,14 @@ var rootWindow;
 
 var user_permissions = null;
 function checkPermission(p) {
-  return user_permissions && user_permissions[project.getId()][p];
+  return user_permissions && user_permissions[p][project.getId()];
 }
 function mayEdit() {
-  return checkPermission('can_edit_any');
+  return checkPermission('can_annotate');
 }
 
 function mayView() {
-  return checkPermission('can_view_any');
+  return checkPermission('can_annotate') || checkPermission('can_browse');
 }
 
 // From: http://stackoverflow.com/q/956719/223092
@@ -114,15 +114,9 @@ function login(
 	ui.catchEvents( "wait" );
 	if ( account || password )
 		requestQueue.register(
-			'model/login.php',
+            django_url + 'accounts/login',
 			'POST',
 			{ name : account, pwd : password },
-			loginCompletion );
-	else
-		requestQueue.register(
-			'model/login.php',
-			'GET',
-			undefined,
 			loginCompletion );
 	return;
 }
@@ -170,16 +164,6 @@ function handle_login(status, text, xml, completionCallback) {
     }
   }
 
-  // Whatever happened, get details of which projects this user (or no
-  // user) is allowed to edit:
-  $.get('model/user-project-permissions.php', function (data) {
-    if (data.error) {
-      alert(data.error);
-    } else {
-      user_permissions = data;
-    }
-  }, 'json');
-
   return;
 }
 
@@ -192,7 +176,7 @@ function logout() {
   if (msg_timeout) window.clearTimeout(msg_timeout);
 
   ui.catchEvents("wait");
-  requestQueue.register('model/logout.php', 'GET', undefined, handle_logout);
+  requestQueue.register(django_url + 'accounts/logout', 'POST', undefined, handle_logout);
 
   return;
 }
@@ -229,7 +213,18 @@ function handle_logout()
  */
 
 function updateProjects(completionCallback) {
-  //ui.catchEvents( "wait" );
+
+    // Whatever happened, get details of which projects this user (or no
+    // user) is allowed to edit:
+    $.get(django_url + '/permissions', function (data) {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            user_permissions = data;
+        }
+    }, 'json');
+
+    //ui.catchEvents( "wait" );
   project_menu_open.update(null);
 
   document.getElementById("projects_h").style.display = "none";
@@ -244,7 +239,7 @@ function updateProjects(completionCallback) {
   w.appendChild(document.createTextNode("loading ..."));
   pp.appendChild(w);
 
-  requestQueue.register('model/project.list.php',
+  requestQueue.register(django_url + 'projects',
                         'GET',
                         undefined,
                         function (status, text, xml) {
@@ -428,10 +423,10 @@ function openProjectStack( pid, sid )
 	{
 		project.destroy();
 	}
+
 	ui.catchEvents( "wait" );
 	requestQueue.register(
-		'model/project.stack.php',
-		//'dj/' + pid + '/stack/' + sid + '/info',
+		django_url + pid + '/stack/' + sid + '/info',
 		'POST',
 		{ pid : pid, sid : sid },
         // {},
@@ -447,6 +442,7 @@ function openProjectStack( pid, sid )
  */
 function handle_openProjectStack( status, text, xml )
 {
+
 	if ( status == 200 && text )
 	{
 		var e = eval( "(" + text + ")" );
@@ -463,7 +459,9 @@ function handle_openProjectStack( status, text, xml )
 				project_view = project.getView();
 				project.register();
 			}
-			
+
+            // TODO: need to check permission of the user to decide on what to display
+
 			project.setEditable( e.editable );
 
 			var labelupload = '';
@@ -549,7 +547,9 @@ function handle_openProjectStack( status, text, xml )
 				}
 			}
 
-      window.setTimeout("SkeletonAnnotations.staticSelectNode(init_active_node_id, init_active_skeleton)", 2000);
+            if( init_active_skeleton || init_active_skeleton ) {
+                window.setTimeout("SkeletonAnnotations.staticSelectNode(init_active_node_id, init_active_skeleton)", 2000);
+            }
 
 
 			/* Update the projects "current project" menu. If there is more
@@ -584,7 +584,7 @@ function handle_openProjectStack( status, text, xml )
  */
 
 function message() {
-  requestQueue.register('model/message.list.php', 'GET', undefined, handle_message);
+  requestQueue.register( django_url + 'messages/list', 'GET', undefined, handle_message);
   return;
 }
 
@@ -615,7 +615,7 @@ function handle_message( status, text, xml )
 				var n = 0;
 				for ( var i in e )
 				{
-					e[ i ].action = "model/message.read.php?id=" + e[ i ].id;
+					e[ i ].action = django_url + 'messages/mark_read?id=' + e[ i ].id;
 					e[ i ].note = e[ i ].time_formatted;
 					++n;
 					var dt = document.createElement( "dt" );
@@ -623,6 +623,7 @@ function handle_message( status, text, xml )
 					var dd1 = document.createElement( "dd" );
 					var dd1a = document.createElement( "a" );
 					dd1a.href = e[ i ].action;
+                    dd1a.target = '_blank'; // FIXME: does not open in new window
 					dd1a.appendChild( document.createTextNode( e[ i ].title ) );
 					dd1.appendChild( dd1a );
 					var dd2 = document.createElement( "dd" );
@@ -650,7 +651,7 @@ function handle_message( status, text, xml )
 function updateUsers() {
   document.getElementById("new_project_form").elements[3].style.display = "none";
   document.getElementById("new_project_owners_wait").style.display = "block";
-  requestQueue.register('model/user.list.php', 'GET', undefined, handle_updateUsers);
+  requestQueue.register(django_url + 'user-list', 'GET', undefined, handle_updateUsers);
   return;
 }
 
@@ -693,7 +694,7 @@ function handle_updateUsers(status, text, xml) {
  */
 
 function read_message(id) {
-  requestQueue.register('model/message.read.php', 'POST', {
+  requestQueue.register(django_url + 'messages/mark_read', 'POST', {
     id: id
   }, null);
   return;
@@ -760,9 +761,9 @@ var realInit = function()
 		if ( values[ "x" ] ) x = parseInt( values[ "x" ] );
 		if ( isNaN( x ) ) delete x;
 		if ( values[ "s" ] ) s = parseInt( values[ "s" ] );
-		if ( isNaN( s ) ) delete s;
-    if ( values[ "active_skeleton_id" ] ) init_active_skeleton = parseInt( values[ "active_skeleton_id" ] );
-    if ( values[ "active_node_id" ] ) init_active_node_id = parseInt( values[ "active_node_id" ] );
+        if ( isNaN( s ) ) delete s;
+        if ( values[ "active_skeleton_id" ] ) init_active_skeleton = parseInt( values[ "active_skeleton_id" ] );
+        if ( values[ "active_node_id" ] ) init_active_node_id = parseInt( values[ "active_node_id" ] );
 
 		if ( !(
 				typeof z == "undefined" ||
@@ -892,11 +893,7 @@ var realInit = function()
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
 
-	//! auto login by url (unsafe as can be but convenient)
-	if ( account && password )
-		login( account, password );
-	else
-		login();
+    updateProjects();
 
 	if ( pid && sids.length > 0 )
 	{

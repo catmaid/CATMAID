@@ -48,7 +48,8 @@ var ConnectorTable = new function()
         "bServerSide": true,
         "bAutoWidth": false,
         "iDisplayLength": possibleLengths[0],
-        "sAjaxSource": 'model/connector.list.php',
+        // "sAjaxSource": 'model/connector.list.php',
+        "sAjaxSource": django_url + project.id + '/connector/table/list',
         "fnServerData": function (sSource, aoData, fnCallback) {
 
           if( skeletonID === -1 ) {

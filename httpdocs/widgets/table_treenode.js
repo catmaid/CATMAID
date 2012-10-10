@@ -43,7 +43,8 @@ var TreenodeTable = new function()
       "bProcessing": true,
       "bServerSide": true,
       "bAutoWidth": false,
-      "sAjaxSource": 'model/treenode.table.list.php',
+      // "sAjaxSource": 'model/treenode.table.list.php',
+      "sAjaxSource": django_url + project.id + '/treenode/table/list',
       "fnServerData": function (sSource, aoData, fnCallback) {
 
         if( skelid === -1 ) {
@@ -99,7 +100,8 @@ var TreenodeTable = new function()
       ],
       "bJQueryUI": true,
       "fnDrawCallback": function () {
-        $('td:eq(7)', ns.oTable.fnGetNodes()).editable('model/treenode.table.update.php', {
+        //$('td:eq(7)', ns.oTable.fnGetNodes()).editable('model/treenode.table.update.php', {
+        $('td:eq(7)', ns.oTable.fnGetNodes()).editable(django_url + project.id + '/treenode/table/update', {
           "callback": function (sValue, y) {},
           "submitdata": function (value, settings) {
             var aPos = ns.oTable.fnGetPosition(this);

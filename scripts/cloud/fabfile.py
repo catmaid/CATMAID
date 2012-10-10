@@ -154,7 +154,7 @@ def installDjangoBackend():
         with cd('CATMAID/django'):
             run('virtualenv --no-site-packages env')
             with prefix('source /home/ubuntu/CATMAID/django/env/bin/activate'):
-                run('pip install Django==1.3.1')
+                run('pip install Django==1.4')
                 run('pip install distribute==0.6.25')
                 run('pip install django-devserver==0.3.1')
                 run('pip install numpy==1.6.1')

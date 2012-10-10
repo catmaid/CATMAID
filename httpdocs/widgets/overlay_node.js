@@ -350,9 +350,9 @@ var SkeletonElements = new function()
    */
   var nodeDelete = function (wasActiveNode) {
     var node = this;
-    requestQueue.register("model/treenode.delete.php", "POST", {
+    requestQueue.register(django_url + project.id + '/treenode/delete', "POST", {
       pid: project.id,
-      tnid: node.id
+      treenode_id: node.id
     }, function (status, text) {
       if (status !== 200) {
         alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
@@ -851,9 +851,9 @@ var SkeletonElements = new function()
   var connectorDelete = function ()
   {
     var connectornode = this;
-    requestQueue.register("model/connector.delete.php", "POST", {
+    requestQueue.register(django_url + project.id + '/connector/delete', "POST", {
       pid: project.id,
-      cid: connectornode.id
+      connector_id: connectornode.id
     }, function (status, text, xml) {
       if (status !== 200) {
         alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
@@ -962,10 +962,10 @@ var SkeletonElements = new function()
         if(!(e.shiftKey && e.ctrlKey)) {
           return;
         }
-        requestQueue.register("model/link.delete.php", "POST", {
+        requestQueue.register(django_url + project.id + '/link/delete', "POST", {
           pid: project.id,
-          cid: fromid,
-          tid: toid
+          connector_id: fromid,
+          treenode_id: toid
         }, function (status, text, xml) {
           if (status !== 200) {
             alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);

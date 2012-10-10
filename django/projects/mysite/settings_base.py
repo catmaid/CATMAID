@@ -34,7 +34,8 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-)
+    'django.contrib.messages.middleware.MessageMiddleware',
+    )
 
 ROOT_URLCONF = 'mysite.urls'
 
@@ -43,10 +44,12 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
-    'vncbrowser',
     'django.contrib.admin',
+    'django.contrib.staticfiles',
     'devserver',
-    'djcelery'
+    'djcelery',
+    'catmaid',
+    'guardian'
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = ('mysite.context_processors.staticfiles',
@@ -55,3 +58,9 @@ TEMPLATE_CONTEXT_PROCESSORS = ('mysite.context_processors.staticfiles',
 URL_PREFIX = '/'
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = URL_PREFIX + 'accounts/login'
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend', # default
+    'guardian.backends.ObjectPermissionBackend',
+)
+ANONYMOUS_USER_ID = -1

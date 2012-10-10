@@ -1,8 +1,8 @@
 # For in a django shell
 
-from vncbrowser.models import Component
-from vncbrowser.views.views import get_stack_info
-from vncbrowser.views.neurohdf import extract_as_numpy_array
+from catmaid.models import Component
+from catmaid.control.stack import get_stack_info
+from catmaid.control.neurohdf import extract_as_numpy_array
 
 import numpy as np
 

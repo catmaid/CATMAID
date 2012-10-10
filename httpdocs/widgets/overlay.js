@@ -247,7 +247,14 @@ var SkeletonAnnotations = new function()
               var data = $.parseJSON(text), message, i, d;
               if (status === 200) {
                 if ('error' in data) {
-                  alert("There was an error fetching the ancestry of skeleton "+node.skeleton_id+":\n"+data.error);
+                  $('#growl-alert').growlAlert({
+                    autoShow: true,
+                    content: "There was an error fetching the ancestry of skeleton "+node.skeleton_id+":\n"+data.error,
+                    title: 'Skeleton ancestry',
+                    position: 'top-right',
+                    delayTime: 2000,
+                    onComplete: function() { g.remove(); }
+                  });
                 } else {
                   message = "Activated treenode with id " + node.id + " and skeleton id " + node.skeleton_id;
                 for (i = 0; i < data.length; ++i) {

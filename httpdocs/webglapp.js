@@ -184,6 +184,14 @@ var WebGLApp = new function () {
    return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
   }
 
+  function rgb2hex2(rgb) {
+    rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    function hex(x) {
+      return ("0" + parseInt(x).toString(16)).slice(-2);
+    }
+    return "0x" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
+  }
+
   var Skeleton = function( skeleton_data )
   {
     var self = this;
@@ -202,10 +210,17 @@ var WebGLApp = new function () {
       }
     }
 
+    this.updateSkeletonColor = function() {
+      this.actor[connectivity_types[0]].material.color.setRGB( this.actorColor[0]/255., this.actorColor[1]/255., this.actorColor[2]/255. );
+      for ( var k in this.otherSpheres ) {
+        this.otherSpheres[k].material.color.setRGB( this.actorColor[0]/255., this.actorColor[1]/255., this.actorColor[2]/255. );
+      }
+    }
+
     this.changeColor = function( value )
     {
-      this.actor[connectivity_types[0]].material.color.setRGB( value[0]/255., value[1]/255., value[2]/255. );
       this.actorColor = value;
+      this.updateSkeletonColor();
       $('#skeletonaction-changecolor-' + self.id).css("background-color", rgb2hex( 'rgb('+value[0]+','+value[1]+','+value[2]+')' ) );
     }
 
@@ -225,6 +240,9 @@ var WebGLApp = new function () {
       for ( var k in this.labelSphere ) {
           scene.removeObject( this.labelSphere[k] );
       }
+      for ( var k in this.otherSpheres ) {
+        scene.removeObject( this.otherSpheres[k] );
+      }
     }
 
     this.addCompositeActorToScene = function()
@@ -238,6 +256,13 @@ var WebGLApp = new function () {
     {
       this.actor[connectivity_types[type_index]].visible = visible;
     }
+
+    this.getActorColorAsHex = function()
+    {
+      return parseInt( rgb2hex2( 'rgb('+this.actorColor[0]+','+
+        this.actorColor[1]+','+
+        this.actorColor[2]+')' ), 16);
+    };
 
     var type, from_vector, to_vector;
 
@@ -260,9 +285,8 @@ var WebGLApp = new function () {
     this.baseName = skeleton_data.baseName;
 
     this.labelSphere = new Object();
-    var labelspheregeometry = new THREE.SphereGeometry( 130 * scale, 32, 32, 1),
-      somasphere = new THREE.SphereGeometry( 200 * scale, 32, 32, 1);
-
+    var labelspheregeometry = new THREE.SphereGeometry( 130 * scale, 32, 32, 1);
+    this.otherSpheres = new Object();
 
     for (var fromkey in this.original_connectivity) {
       var to = this.original_connectivity[fromkey];
@@ -293,6 +317,23 @@ var WebGLApp = new function () {
         to_vector.multiplyScalar( scale );
 
         this.geometry[type].vertices.push( new THREE.Vertex( to_vector ) );
+
+        // check if either from or to key vertex has a sphere associated with it
+        var radiusFrom = parseFloat( this.original_vertices[fromkey]['radius'] );
+        if( !(fromkey in this.otherSpheres) && radiusFrom > 0 ) {
+          var radiusSphere = new THREE.SphereGeometry( radiusFrom * scale, 32, 32, 1);
+          this.otherSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+          this.otherSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
+          scene.add( this.otherSpheres[fromkey] );
+        }
+
+        var radiusTo = parseFloat( this.original_vertices[tokey]['radius'] );
+        if( !(tokey in this.otherSpheres) && radiusTo > 0 ) {
+          var radiusSphere = new THREE.SphereGeometry( radiusTo * scale, 32, 32, 1);
+          this.otherSpheres[tokey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+          this.otherSpheres[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
+          scene.add( this.otherSpheres[tokey] );
+        }
 
         // if either from or to have a relevant label, and they are not yet
         // created, create one

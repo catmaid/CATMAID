@@ -102,7 +102,6 @@ var TreenodeTable = new function()
       "fnDrawCallback": function () {
         //$('td:eq(7)', ns.oTable.fnGetNodes()).editable('model/treenode.table.update.php', {
         $('td:eq(7)', ns.oTable.fnGetNodes()).editable(django_url + project.id + '/treenode/table/update', {
-          "callback": function (sValue, y) {},
           "submitdata": function (value, settings) {
             var aPos = ns.oTable.fnGetPosition(this);
             var aData = ns.oTable.fnGetData(aPos[0]);

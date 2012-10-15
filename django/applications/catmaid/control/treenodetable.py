@@ -22,7 +22,12 @@ def update_treenode_table(request, project_id=None):
         raise RollbackAndReport('Need type, treenode id and value.')
     else:
         treenode_id = int(treenode_id)
-        property_value = int(property_value)
+        if property_name == 'confidence':
+            property_value = int(property_value)
+        elif property_name == 'radius':
+            property_value = float(property_value)
+        else:
+            property_value = int(property_value)
 
     if property_name not in ['confidence', 'radius']:
         raise RollbackAndReport('Can only modify confidence and radius.')
@@ -36,7 +41,8 @@ def update_treenode_table(request, project_id=None):
         treenode.user = request.user
         treenode.save()
 
-        return HttpResponse(json.dumps({'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}))
+        # return HttpResponse(json.dumps({'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}))
+        return HttpResponse(property_value)
 
     except RollbackAndReport:
         raise

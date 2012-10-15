@@ -672,6 +672,18 @@ var WindowMaker = new function()
         add.onclick = SkeletonConnectivity.fetchConnectivityForSkeleton;
         contentbutton.appendChild(add);
 
+        var sync = document.createElement('select');
+        sync.setAttribute("id", "connectivity_count_threshold");
+        var option = document.createElement("option");
+        option.text = "10";
+        option.value = 10;
+        sync.appendChild(option);
+        var option = document.createElement("option");
+        option.text = "0";
+        option.value = 0;
+        sync.appendChild(option);
+        contentbutton.appendChild(sync);
+
         content.appendChild( contentbutton );
 
         var container = createContainer( "connectivity_widget" );

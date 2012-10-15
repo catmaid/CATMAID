@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
+from catmaid.objects import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
@@ -186,30 +187,45 @@ def skeleton_ancestry(request, project_id=None):
 def skeleton_info(request, project_id=None, skeleton_id=None):
     p = get_object_or_404(Project, pk=project_id)
 
-    neuron_id = request.POST['neuron_id']
+    synaptic_count_high_pass = int( request.POST.get( 'threshold', 10 ) )
 
-    n = get_object_or_404(ClassInstance, pk=neuron_id, project=project_id)
 
-    skeletons = ClassInstance.objects.filter(
-        project=p,
-        cici_via_a__relation__relation_name='model_of',
-        class_column__class_name='skeleton',
-        cici_via_a__class_instance_b=n)
-
-    outgoing = n.all_neurons_downstream(project_id, skeletons)
-    incoming = n.all_neurons_upstream(project_id, skeletons)
-
-    outgoing = [x for x in outgoing if not x['name'].startswith('orphaned ')]
-    incoming = [x for x in incoming if not x['name'].startswith('orphaned ')]
+    skeleton = Skeleton( skeleton_id, project_id )
 
     data = {
-        'incoming': incoming,
-        'outgoing': outgoing
+        'incoming': {},
+        'outgoing': {}
     }
 
-    json_return = json.dumps(data, sort_keys=True, indent=4)
-    return HttpResponse(json_return, mimetype='text/json')
+    for skeleton_id_upstream, synaptic_count in skeleton.upstream_skeletons.items():
+        if synaptic_count >= synaptic_count_high_pass:
+            tmp_skeleton = Skeleton( skeleton_id_upstream )
+            data['incoming'][skeleton_id_upstream] = {
+                'synaptic_count': synaptic_count,
+                'skeleton_id': skeleton_id_upstream,
+                'percentage_reviewed': '%i' % tmp_skeleton.percentage_reviewed(),
+                'node_count': tmp_skeleton.node_count(),
+                'name': '{0} / skeleton {1}'.format( tmp_skeleton.neuron.name, skeleton_id_upstream)
+            }
 
+    for skeleton_id_downstream, synaptic_count in skeleton.downstream_skeletons.items():
+        if synaptic_count >= synaptic_count_high_pass:
+            tmp_skeleton = Skeleton( skeleton_id_downstream )
+            data['outgoing'][skeleton_id_downstream] = {
+                'synaptic_count': synaptic_count,
+                'skeleton_id': skeleton_id_downstream,
+                'percentage_reviewed': '%i' % tmp_skeleton.percentage_reviewed(),
+                'node_count': tmp_skeleton.node_count(),
+                'name': '{0} / skeleton {1}'.format( tmp_skeleton.neuron.name, skeleton_id_downstream)
+            }
+
+    from operator import itemgetter
+    result = {
+        'incoming': list(reversed(sorted(data['incoming'].values(), key=itemgetter('synaptic_count')))),
+        'outgoing': list(reversed(sorted(data['outgoing'].values(), key=itemgetter('synaptic_count'))))
+    }
+    json_return = json.dumps(result, sort_keys=True, indent=4)
+    return HttpResponse(json_return, mimetype='text/json')
 
 
 @requires_user_role(UserRole.Annotate)

@@ -53,15 +53,15 @@ class Skeleton(object):
     def input_count(self):
         """ Returns the number of anatomical synaptic inputs onto this Skeleton. """
         n = 0
-        for k,v in self.connected_skeletons.items():
-            n += len(v['presynaptic_to'])
+        for k,v in self.upstream_skeletons.items():
+            n += v
         return n
 
     def output_count(self):
         """ Returns the number of anatomical synaptic outputs onto other Skeleton instances. """
         n = 0
-        for k,v in self.connected_skeletons.items():
-            n += len(v['postsynaptic_to'])
+        for k,v in self.downstream_skeletons.items():
+            n += v
         return n
 
     def _fetch_connected_connectors(self):
@@ -145,14 +145,14 @@ class Skeleton(object):
 
     def cable_length(self):
         """ Compute the sum of the edge lengths which is the total cable length. """
-        if self.edge_length_sum != 0.0:
-            return self.edge_length_sum
+        if self._edge_length_sum != 0.0:
+            return self._edge_length_sum
         sum = 0.0
         node = self.graph.node
         for ID_from, ID_to in self.graph.edges(data=False):
             sum += np.linalg.norm(node[ID_to]['location'] - node[ID_from]['location'])
-        self.edge_length_sum = sum
-        return self.edge_length_sum
+        self._edge_length_sum = sum
+        return self._edge_length_sum
 
     def _compute_skeleton_edge_deltatime(self):
         node = self.graph.node
@@ -180,7 +180,7 @@ class Skeleton(object):
         """ Measure the percent of nodes that have been reviewed. """
         node_count_reviewed = len([k for k,v in self.graph.nodes(data=True) if v['reviewer_id'] != -1])
         if node_count_reviewed:
-            return 1.0 * self.node_count() / node_count_reviewed
+            return 100.0 * node_count_reviewed / self.node_count()
         else:
             return 0.0
 
@@ -191,9 +191,10 @@ class SkeletonGroup(object):
         """ A set of skeleton ids """
         self.skeleton_id_list = skeleton_id_list
         self.project_id = project_id
-        self.skeletons = []
+        self.skeletons = {}
         for skeleton_id in skeleton_id_list:
-            self.skeletons.append( Skeleton(skeleton_id, self.project_id) )
+            if not skeleton_id in self.skeletons:
+                self.skeletons[skeleton_id] = Skeleton(skeleton_id, self.project_id)
         self.graph = self._connectivity_graph()
 
     def _connectivity_graph(self):
@@ -201,7 +202,7 @@ class SkeletonGroup(object):
         graph.add_nodes_from( self.skeleton_id_list )
 
         connectors = {}
-        for skeleton in self.skeletons:
+        for skeleton_id, skeleton in self.skeletons.items():
             for connector_id, v in skeleton.connected_connectors.items():
                 if not connectors.has_key(connector_id):
                     connectors[connector_id] = {

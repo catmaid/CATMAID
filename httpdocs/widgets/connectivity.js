@@ -19,7 +19,9 @@ var SkeletonConnectivity = new function()
                 url: "dj/" + project.id + "/skeleton/" + skeletonid + '/info',
                 type: "POST",
                 dataType: "json",
-                data: { neuron_id: neuronid },
+                data : {
+                  'threshold': $('#connectivity_count_threshold').val()
+                },
                 success: function (data) {
                     self.createConnectivityTable( data )
                 }
@@ -48,8 +50,10 @@ var SkeletonConnectivity = new function()
         thead = $('<thead />');
         table.append( thead );
         row = $('<tr />')
-        row.append( $('<td />').text("Presynaptic") );
-        row.append( $('<td />').text("count") );
+        row.append( $('<td />').text("Upstream neuron") );
+        row.append( $('<td />').text("syn count") );
+        row.append( $('<td />').text("reviewed") );
+        row.append( $('<td />').text("node count") );
         row.append( $('<td />').text("show") );
         thead.append( row );
         tbody = $('<tbody />');
@@ -59,7 +63,9 @@ var SkeletonConnectivity = new function()
             var skeleton_id = data['incoming'][e]['skeleton_id'];
             row = $('<tr />');
             row.append( $('<td />').text( data['incoming'][e]['name'] ) );
-            row.append( $('<td />').text( data['incoming'][e]['id__count'] ) );
+            row.append( $('<td />').text( data['incoming'][e]['synaptic_count'] ) );
+            row.append( $('<td />').text( data['incoming'][e]['percentage_reviewed'] ) );
+            row.append( $('<td />').text( data['incoming'][e]['node_count'] ) );
             row.append(
                 $('<td />').append(
                     $(document.createElement("input")).attr({
@@ -94,8 +100,10 @@ var SkeletonConnectivity = new function()
         thead = $('<thead />');
         table.append( thead );
         row = $('<tr />')
-        row.append( $('<td />').text("Postsynaptic") );
-        row.append( $('<td />').text("count") );
+        row.append( $('<td />').text("Downstream neuron") );
+        row.append( $('<td />').text("syn count") );
+        row.append( $('<td />').text("reviewed") );
+        row.append( $('<td />').text("node count") );
         row.append( $('<td />').text("show") );
         thead.append( row );
         tbody = $('<tbody />');
@@ -105,7 +113,9 @@ var SkeletonConnectivity = new function()
             var skeleton_id = data['outgoing'][e]['skeleton_id'];
             row = $('<tr />');
             row.append( $('<td />').text( data['outgoing'][e]['name'] ) );
-            row.append( $('<td />').text( data['outgoing'][e]['id__count'] ) );
+            row.append( $('<td />').text( data['outgoing'][e]['synaptic_count'] ) );
+            row.append( $('<td />').text( data['outgoing'][e]['percentage_reviewed'] ) );
+            row.append( $('<td />').text( data['outgoing'][e]['node_count'] ) );
             row.append(
                 $('<td />').append(
                     $(document.createElement("input")).attr({

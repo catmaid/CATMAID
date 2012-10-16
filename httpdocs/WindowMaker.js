@@ -154,7 +154,10 @@ var WindowMaker = new function()
     rand.setAttribute("id", "load_skeleton_list");
     rand.setAttribute("value", "Load list");
     rand.onclick = WebGLApp.loadSkeletonList;
+    container.appendChild(rand);
 
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
     rand.setAttribute("id", "save_image");
     rand.setAttribute("value", "Save");
     rand.onclick = WebGLApp.saveImage;

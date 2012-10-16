@@ -202,7 +202,8 @@ class SkeletonGroup(object):
 
         for skeleton_id in self.skeleton_id_list:
             graph.add_node( skeleton_id, {
-                'baseName': '%s (SkeletonID: %s)' % (self.skeletons[skeleton_id].neuron.name, str(skeleton_id) )
+                'baseName': '%s (SkeletonID: %s)' % (self.skeletons[skeleton_id].neuron.name, str(skeleton_id) ),
+                'neuronname': self.skeletons[skeleton_id].neuron.name
             })
 
         connectors = {}

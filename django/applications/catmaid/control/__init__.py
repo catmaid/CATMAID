@@ -27,3 +27,4 @@ from treenode import *
 from treenodetable import *
 from user import *
 from wiringdiagram import *
+from segmentation import *

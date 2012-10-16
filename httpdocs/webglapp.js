@@ -257,6 +257,12 @@ var WebGLApp = new function () {
       this.actor[connectivity_types[type_index]].visible = visible;
     }
 
+    this.getActorColorAsHTMLHex = function () {
+      return rgb2hex( 'rgb('+this.actorColor[0]+','+
+        this.actorColor[1]+','+
+        this.actorColor[2]+')' );
+    }
+
     this.getActorColorAsHex = function()
     {
       return parseInt( rgb2hex2( 'rgb('+this.actorColor[0]+','+
@@ -496,6 +502,13 @@ var WebGLApp = new function () {
     }
   }
 
+  this.getColorOfSkeleton = function( skeleton_id ) {
+    if( skeleton_id in skeletons) {
+      return skeletons[skeleton_id].getActorColorAsHTMLHex();
+    } else {
+      return '#FF0000';
+    }
+  }
 
   // add skeleton to scene
   this.addSkeleton = function( skeleton_id, skeleton_data )
@@ -517,7 +530,7 @@ var WebGLApp = new function () {
   this.changeSkeletonColor = function( skeleton_id, value, color )
   {
     if( !skeletons.hasOwnProperty(skeleton_id) ){
-        alert("Skeleton "+skeleton_id+" does not exist. Cannot change color it!");
+        alert("Skeleton "+skeleton_id+" does not exist. Cannot change color!");
         return;
     } else {
         skeletons[skeleton_id].changeColor( value );
@@ -530,7 +543,14 @@ var WebGLApp = new function () {
   this.removeSkeleton = function( skeleton_id )
   {
     if( !skeletons.hasOwnProperty(skeleton_id) ){
-        alert("Skeleton "+skeleton_id+" does not exist. Cannot remove it!");
+        $('#growl-alert').growlAlert({
+          autoShow: true,
+          content: "Skeleton "+skeleton_id+" does not exist. Cannot remove it!",
+          title: 'Warning',
+          position: 'top-right',
+          delayTime: 2000,
+          onComplete: function() {  }
+        });
         return;
     } else {
         $('#skeletonrow-' + skeleton_id).remove();
@@ -876,76 +896,6 @@ var WebGLApp = new function () {
         }
       }
     });
-  }
-
-  self.getListOfAllSkeletonIDs = function() {
-    var data = new Object(), hexcol;
-    data['nodes'] = {};
-    data['edges'] = {};
-    var connectors = {}, type;
-    
-    for( var skeleton_id in skeletons)
-    {
-      if( skeletons.hasOwnProperty(skeleton_id) ) {
-        hexcol = rgb2hex( 'rgb('+skeletons[skeleton_id].actorColor[0]+','+
-          skeletons[skeleton_id].actorColor[1]+','+
-          skeletons[skeleton_id].actorColor[2]+')' )
-        data['nodes'][skeleton_id] = {
-          color: hexcol,
-          id: skeletons[skeleton_id].id,
-          baseName: skeletons[skeleton_id].baseName
-        }
-        // add connectivity
-        for (var fromkey in skeletons[skeleton_id].original_connectivity) {
-          var to = skeletons[skeleton_id].original_connectivity[fromkey];
-          for (var tokey in to) {
-            type = connectivity_types[connectivity_types.indexOf(skeletons[skeleton_id].original_connectivity[fromkey][tokey]['type'])];
-            // console.log(fromkey, tokey, 'type', type);
-            if( type === 'presynaptic_to' | type === 'postsynaptic_to') {
-              if( connectors[tokey]) {
-                if( connectors[tokey][type] ) {
-                  connectors[tokey][type].push( parseInt(skeleton_id) );
-                } else {
-                  connectors[tokey][type] = [ parseInt(skeleton_id) ];
-                }
-              } else {
-                connectors[tokey] = {};
-                connectors[tokey][type] = [];
-                connectors[tokey][type].push( parseInt(skeleton_id) );
-              }
-            }
-          }
-        }
-        for( var connector_id in connectors ) {
-          if( connectors.hasOwnProperty(connector_id) ) {
-            if( connectors[connector_id]['presynaptic_to']) {
-              for( var presyn_id in connectors[connector_id]['presynaptic_to']) {
-                for( var postsyn_id in connectors[connector_id]['postsynaptic_to']) {
-
-                    var fromkey = connectors[connector_id]['presynaptic_to'][presyn_id],
-                        tokey = connectors[connector_id]['postsynaptic_to'][postsyn_id];
-
-                    if(data['edges'][fromkey]) {
-                      if(data['edges'][fromkey][tokey]) {
-                        data['edges'][fromkey][tokey]['weight'] += 1;
-                      } else {
-                        data['edges'][fromkey][tokey] = {};
-                        data['edges'][fromkey][tokey]['weight'] = 1;
-                      }
-                    } else {
-                      data['edges'][fromkey] = {};
-                      data['edges'][fromkey][tokey] = {};
-                      data['edges'][fromkey][tokey]['weight'] = 1;
-                    }
-                }
-              }
-            }
-          }
-        }
-
-      }
-    }
-    return data;
   }
 
 }

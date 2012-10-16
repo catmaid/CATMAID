@@ -199,7 +199,11 @@ class SkeletonGroup(object):
 
     def _connectivity_graph(self):
         graph = nx.DiGraph()
-        graph.add_nodes_from( self.skeleton_id_list )
+
+        for skeleton_id in self.skeleton_id_list:
+            graph.add_node( skeleton_id, {
+                'baseName': '%s (SkeletonID: %s)' % (self.skeletons[skeleton_id].neuron.name, str(skeleton_id) )
+            })
 
         connectors = {}
         for skeleton_id, skeleton in self.skeletons.items():

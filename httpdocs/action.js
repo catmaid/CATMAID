@@ -326,7 +326,7 @@ var tracingWindowActions = [
     new Action({
         helpText: "Adjacency Matrix widget",
         buttonID: "data_button_connectivity",
-        buttonName: 'table_connectivity',
+        buttonName: 'adj_matrix',
         run: function (e) {
             WindowMaker.show('adjacencymatrix-widget');
             return true;

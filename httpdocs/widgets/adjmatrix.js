@@ -13,10 +13,9 @@ var AdjacencyMatrix = new function()
 
     this.fetchMatrixForSkeletons = function() {
         // Retrieve a list of skeleton ids and call the backend to return the JSON graph
-        console.log('skeleton list', WebGLApp.getListOfSkeletonIDs() );
-        /*
+
         jQuery.ajax({
-            url: "dj/" + project.id + "/skeleton/" + skeletonid + '/info',
+            url: "dj/" + project.id + "/skeletongroup/adjacency_matrix",
             type: "POST",
             dataType: "json",
             data: { skeleton_list: WebGLApp.getListOfSkeletonIDs() },
@@ -24,7 +23,7 @@ var AdjacencyMatrix = new function()
                 self.createAdjacencyMatrix( data )
             }
         });
-        */
+
     }
 
     this.createAdjacencyMatrix = function( data ) {

@@ -1,11 +1,14 @@
 
+var camera;
+
 var WebGLApp = new function () {
 
   self = this;
   self.neurons = [];
 
-  var camera, scene, renderer, grid_lines, scale, controls, light, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
-  var project_id, stack_id, resolution, dimension, translation, canvasWidth, canvasHeight;
+  var scene, renderer, grid_lines, scale, controls, light, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
+  var project_id, stack_id, resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false,
+      bbmesh, floormesh, black_bg = true, debugax;
 
   this.init = function( divID ) {
 
@@ -38,7 +41,6 @@ var WebGLApp = new function () {
       self.createActiveNode();
     }
 
-
   }
 
   var randomColors = [];
@@ -60,8 +62,13 @@ var WebGLApp = new function () {
   function init_webgl() {
     container = document.getElementById(self.divID);
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera( 75, self.divWidth / self.divHeight, 1, 3000 );
-    // camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
+    //camera = new THREE.PerspectiveCamera( 75, self.divWidth / self.divHeight, 1, 3000 );
+
+    //camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
+      //camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
+    camera = new THREE.CombinedCamera( -self.divWidth, -self.divHeight, 75, 1, 3000, -1000, 1, 500 );
+    camera.frustumCulled = false;
+    // THREE.CombinedCamera = function ( width, height, fov, near, far, orthonear, orthofar ) {
     controls = new THREE.TrackballControls( camera, container );
     controls.rotateSpeed = 1.0;
     controls.zoomSpeed = 1.2;
@@ -121,6 +128,17 @@ var WebGLApp = new function () {
     controls.target = new THREE.Vector3(coord[0]*scale,coord[1]*scale,coord[2]*scale);
 
   }
+
+  function toggleOrthographic() {
+      if( ortho ) {
+          camera.toPerspective();
+          ortho = false;
+      } else {
+          camera.toOrthographic();
+          ortho = true;
+      }
+  }
+  self.toggleOrthographic = toggleOrthographic;
 
   function getBBDimension()
   {
@@ -255,6 +273,12 @@ var WebGLApp = new function () {
     this.visiblityCompositeActor = function( type_index, visible )
     {
       this.actor[connectivity_types[type_index]].visible = visible;
+
+      if( type_index === 0 ) {
+          for ( var k in this.labelSphere ) {
+              this.labelSphere[k].visible = visible;
+          }
+      }
     }
 
     this.getActorColorAsHTMLHex = function () {
@@ -465,13 +489,20 @@ var WebGLApp = new function () {
   {
     if(active_node) {
       var atn_pos = SkeletonAnnotations.getActiveNodePosition();
-      var co = transform_coordinates( [
-        translation.x + ((atn_pos.x) / project.focusedStack.scale) * resolution.x,
-        translation.y + ((atn_pos.y) / project.focusedStack.scale) * resolution.y,
-        translation.z + atn_pos.z * resolution.z]
-      );
-      active_node.position.set( co[0]*scale, co[1]*scale, co[2]*scale );
+      if( atn_pos !== null) {
+          var co = transform_coordinates( [
+            translation.x + ((atn_pos.x) / project.focusedStack.scale) * resolution.x,
+            translation.y + ((atn_pos.y) / project.focusedStack.scale) * resolution.y,
+            translation.z + atn_pos.z * resolution.z]
+          );
+          active_node.position.set( co[0]*scale, co[1]*scale, co[2]*scale );
+      }
     }
+  }
+
+  this.saveImage = function() {
+      render();
+      window.open(renderer.domElement.toDataURL("image/png"));
   }
 
   this.randomizeColors = function()
@@ -560,14 +591,49 @@ var WebGLApp = new function () {
     }
   }
 
+  self.toggleBackground = function()
+  {
+      if( black_bg ) {
+          renderer.setClearColorHex( 0xffffff, 1 );
+          black_bg = false;
+      } else {
+          renderer.setClearColorHex( 0x000000, 1 );
+          black_bg = true;
+      }
+  }
+
+  self.toggleFloor = function()
+  {
+      if( floormesh.visible ) {
+          // disable floor
+          floormesh.visible = false;
+      } else {
+          // enable floor
+          floormesh.visible = true;
+      }
+  }
+
+  self.toggleBB = function()
+  {
+      if( bbmesh.visible ) {
+          // disable floor
+          bbmesh.visible = false;
+          debugax.visible = false;
+      } else {
+          // enable floor
+          bbmesh.visible = true;
+          debugax.visible = true;
+      }
+  }
+
   function create_stackboundingbox(x, y, z, dx, dy, dz)
   {
     //console.log('bouding box', x, y, z, dx, dy, dz);
     var gg = new THREE.CubeGeometry( dx, dy, dz );
     var mm = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
-    var mesh = new THREE.Mesh( gg, mm );
-    mesh.position.set(x, y, z);
-    scene.add( mesh );
+    bbmesh = new THREE.Mesh( gg, mm );
+    bbmesh.position.set(x, y, z);
+    scene.add( bbmesh );
   }
 
   function addMesh( geometry, scale, x, y, z, rx, ry, rz, material ) {
@@ -672,10 +738,10 @@ var WebGLApp = new function () {
   }
 
   function debugaxes() {
-    var object = new THREE.AxisHelper();
-    object.position.set( -1, -1, 0 );
-    object.scale.x = object.scale.y = object.scale.z = 0.1;
-    scene.add( object );
+    debugax = new THREE.AxisHelper();
+    debugax.position.set( -1, -1, 0 );
+    debugax.scale.x = debugax.scale.y = debugax.scale.z = 0.1;
+    scene.add( debugax );
   }
 
   function draw_grid() {
@@ -690,8 +756,8 @@ var WebGLApp = new function () {
       geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( i * step - 500, floor,  500 ) ) );
 
     }
-    grid_lines = new THREE.Line( geometry, line_material, THREE.LinePieces );
-    scene.add( grid_lines );
+    floormesh = new THREE.Line( geometry, line_material, THREE.LinePieces );
+    scene.add( floormesh );
   }
 
   function animate() {

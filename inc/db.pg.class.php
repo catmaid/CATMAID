@@ -50,6 +50,7 @@ class DB
 	var $user;
 	var $pw;
 	var $db;
+	var $port;
 	var $handle;
 
     var $debug = false;
@@ -60,13 +61,14 @@ class DB
 	 */  
 	function DB( $mode = 'read' )
 	{
-		global $db_host, $db_user, $db_pw, $db_db;
+		global $db_host, $db_user, $db_pw, $db_db, $db_port;
 		$this->host = $db_host[ $mode ];
 		$this->user = $db_user[ $mode ];
 		$this->pw = $db_pw[ $mode ];
 		$this->db = $db_db[ $mode ];
-		
-		$this->handle = pg_connect( 'host='.$this->host.' port=5432 dbname='.$this->db.' user='.$this->user.' password= '.$this->pw ) or die( pg_last_error() );
+		$this->port = isset( $db_port[ $mode ] ) ? $db_port[ $mode ] : 5432;
+
+		$this->handle = pg_connect( 'host='.$this->host.' port='.$this->port.' dbname='.$this->db.' user='.$this->user.' password= '.$this->pw ) or die( pg_last_error() );
 	}
 	/**#@-*/
 	

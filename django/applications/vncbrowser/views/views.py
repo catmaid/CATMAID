@@ -80,8 +80,6 @@ def visual_index(request, **kwargs):
                                   'user': kwargs['logged_in_user'],
                                   'search_form': search_form })
 
-
-
 @login_required
 def view(request, project_id=None, neuron_id=None, neuron_name=None, logged_in_user=None):
     p = get_object_or_404(Project, pk=project_id)

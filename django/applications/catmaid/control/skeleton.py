@@ -16,6 +16,14 @@ except:
     pass
 
 @login_required
+def node_count(request, project_id=None, skeleton_id=None):
+    p = get_object_or_404(Project, pk=project_id)
+    return HttpResponse(json.dumps({
+        'count': Skeleton(skeleton_id, p.id).node_count()}),
+        mimetype='text/json')
+
+
+@login_required
 @transaction.commit_on_success
 def split_skeleton(request, project_id=None):
     treenode_id = request.POST['treenode_id']
@@ -105,9 +113,6 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None):
         'y': tn.location.y,
         'z': tn.location.z}),
         mimetype='text/json')
-
-
-
 
 @login_required
 @transaction_reportable_commit_on_success

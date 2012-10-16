@@ -245,6 +245,10 @@ function TileLayer(
           } else if ( tileSourceType === 3 ) {
 					    tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
 					    tiles[ i ][ j ].src = self.getTileHDF5Request( c * tileWidth, r * tileHeight, tileWidth, tileHeight, stack.scale, stack.z );
+					} else if ( tileSourceType === 4) {
+						  // tileBaseName includes a backslash at the end
+					    tiles[ i ][ j ].alt = tileBaseName + zoom + "/" + r + "_" + c;
+              tiles[ i ][ j ].src = self.getTileURL( tiles[ i ][ j ].alt );
 					}
 
           // prefetch tiles

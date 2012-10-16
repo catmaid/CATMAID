@@ -12,9 +12,9 @@ var SkeletonConnectivity = new function()
 
     this.fetchConnectivityForSkeleton = function() {
         // current neuron id
-        var neuronid = project.selectedObjects.selectedneuron,
-            skeletonid = project.selectedObjects.selectedskeleton;
-        if( neuronid && skeletonid ) {
+        var skeletonid = project.selectedObjects.selectedskeleton;
+
+        if( skeletonid ) {
             jQuery.ajax({
                 url: "dj/" + project.id + "/skeleton/" + skeletonid + '/info',
                 type: "POST",

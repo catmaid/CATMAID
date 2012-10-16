@@ -37,16 +37,30 @@ $escaped_search_string = pg_escape_string($search_string);
 $rows = $db->getResult(
   "SELECT ci.id, ci.name, c.class_name
    FROM class_instance ci inner join class c ON ci.class_id = c.id
-   WHERE name ilike '%{$escaped_search_string}%'  AND ci.project_id = ".$pid." order by class_name, name");
+   WHERE ci.project_id = ".$pid." AND name ilike '%{$escaped_search_string}%' order by class_name, name");
 
-# Retrieve nodes holding text labels
-$labeled_as_id = null;
+# Fetch the id of the "labeled_as" relation
+$labeled_as_id = $db->getRelationId( $pid, 'labeled_as' );
+if (!$labeled_as_id) {
+	echo makeJSON( array( 'error' => 'Can not find "labeled_as" relation for this project' ) );
+	return;
+}
+
+
+# Labels for which nodes have already been fetched
+$matched_labels = array();
+# For every label that matches, retrieve nodes holding that label
 for ($i=0, $length = count($rows); $i<$length; $i++) {
+	$name = $rows[$i]['name'];
+	# Check if already done
+	if (in_array($name, $matched_labels)) {
+		unset($rows[$i]);
+		continue;
+	}
+	$matched_labels[] = $name;
   # Fetch necessary IDs
   if ('label' === $rows[$i]['class_name']) {
-    $labeled_as_id = $db->getRelationId( $pid, 'labeled_as' );
-    if (!$labeled_as_id) { echo makeJSON( array( 'error' => 'Can not find "labeled_as" relation for this project' ) ); return; }
-    # Query for nodes holding the label
+    # Query for nodes holding exactly the label (not just similar)
     $nodes = $db->getResult(
       'SELECT "treenode"."id",
               (treenode.location).x,
@@ -61,7 +75,7 @@ for ($i=0, $length = count($rows); $i<$length; $i++) {
          AND "tci"."relation_id" = '.$labeled_as_id.'
          AND "tci"."project_id" = '.$pid.'
          AND "tci"."class_instance_id" = "class_instance"."id"
-         AND "class_instance"."name" = \''.$rows[$i]['name'].'\'
+         AND "class_instance"."name" = \''.$name.'\'
        ORDER BY "treenode"."id" DESC');
     if (count($nodes) > 0) {
       $rows[$i]['nodes'] = $nodes;
@@ -74,6 +88,6 @@ if ($rows === FALSE) {
     return;
 }
 
-echo json_encode($rows);
+echo json_encode(array_values($rows)); # re-index array
 
 ?>

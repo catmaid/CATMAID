@@ -143,6 +143,7 @@ var WindowMaker = new function()
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
+
     rand.setAttribute("id", "store_skeleton_list");
     rand.setAttribute("value", "Store list");
     rand.onclick = WebGLApp.storeSkeletonList;
@@ -153,6 +154,10 @@ var WindowMaker = new function()
     rand.setAttribute("id", "load_skeleton_list");
     rand.setAttribute("value", "Load list");
     rand.onclick = WebGLApp.loadSkeletonList;
+
+    rand.setAttribute("id", "save_image");
+    rand.setAttribute("value", "Save");
+    rand.onclick = WebGLApp.saveImage;
     container.appendChild(rand);
 
     var rand = document.createElement('input');
@@ -181,6 +186,42 @@ var WindowMaker = new function()
     container.appendChild(rand);
     var rand = document.createTextNode('Enable active node');
     container.appendChild(rand);
+
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "toggle_ortho");
+    rand.setAttribute("value", "Toggle Ortho");
+    rand.onclick = WebGLApp.toggleOrthographic;
+    container.appendChild(rand);
+    var rand = document.createTextNode('Toggle Ortho');
+    container.appendChild(rand);
+
+      var rand = document.createElement('input');
+      rand.setAttribute("type", "checkbox");
+      rand.setAttribute("id", "toggle_floor");
+      rand.setAttribute("value", "Toggle Floor");
+      rand.onclick = WebGLApp.toggleFloor;
+      container.appendChild(rand);
+      var rand = document.createTextNode('Toggle floor');
+      container.appendChild(rand);
+
+      var rand = document.createElement('input');
+      rand.setAttribute("type", "checkbox");
+      rand.setAttribute("id", "toggle_aabb");
+      rand.setAttribute("value", "Toggle Bounding Box");
+      rand.onclick = WebGLApp.toggleBB;
+      container.appendChild(rand);
+      var rand = document.createTextNode('Toggle Bounding Box');
+      container.appendChild(rand);
+
+      var rand = document.createElement('input');
+      rand.setAttribute("type", "checkbox");
+      rand.setAttribute("id", "toggle_bgcolor");
+      rand.setAttribute("value", "Toggle Background Color");
+      rand.onclick = WebGLApp.toggleBackground;
+      container.appendChild(rand);
+      var rand = document.createTextNode('Toggle Background Color');
+      container.appendChild(rand);
 
     var canvas = document.createElement('div');
     canvas.setAttribute("id", "viewer-3d-webgl-canvas");

@@ -4,9 +4,6 @@
 /** A namespace to contain the current state of skeleton annotations. */
 var SkeletonAnnotations = new function()
 {
-
-  var simulateShift = false;
-
   // A table stack vs SVGOverlay instances.
   // The SVGOverlay construct adds the new instance here,
   // and the SVGOVerlay.destroy() removes it.
@@ -15,10 +12,6 @@ var SkeletonAnnotations = new function()
   this.getSVGOverlay = function ( stack ) {
     return SVGOverlays[stack];
   }
-
-  this.getShiftModeStatus = function() {
-    return simulateShift;
-  };
 
   /** Select a node in any of the existing SVGOverlay instances, by its ID and its skeletonID. */
   this.staticSelectNode = function(nodeID, skeletonID)
@@ -254,7 +247,14 @@ var SkeletonAnnotations = new function()
               var data = $.parseJSON(text), message, i, d, neuronid;
               if (status === 200) {
                 if ('error' in data) {
-                  alert("There was an error fetching the ancestry of skeleton "+node.skeleton_id+":\n"+data.error);
+                  $('#growl-alert').growlAlert({
+                    autoShow: true,
+                    content: "There was an error fetching the ancestry of skeleton "+node.skeleton_id+":\n"+data.error,
+                    title: 'Skeleton ancestry',
+                    position: 'top-right',
+                    delayTime: 2000,
+                    onComplete: function() { g.remove(); }
+                  });
                 } else {
                   message = "Activated treenode with id " + node.id + " and skeleton id " + node.skeleton_id;
                 for (i = 0; i < data.length; ++i) {
@@ -302,7 +302,17 @@ var SkeletonAnnotations = new function()
     };
 
     this.activateNearestNode = function (x, y, z) {
-      var xdiff, ydiff, zdiff, distsq, mindistsq = Number.MAX_VALUE, nearestnode = null, node, nodeid;
+      var nearestnode = this.findNodeWithinRadius(x, y, z, Number.MAX_VALUE);
+      if (nearestnode) {
+        self.activateNode(nearestnode);
+      } else {
+        statusBar.replaceLast("No nodes were visible - can't activate the nearest");
+      }
+      return nearestnode;
+    };
+
+    this.findNodeWithinRadius = function (x, y, z, radius) {
+      var xdiff, ydiff, zdiff, distsq, mindistsq = radius * radius, nearestnode = null, node, nodeid;
       for (nodeid in nodes) {
         if (nodes.hasOwnProperty(nodeid)) {
           node = nodes[nodeid];
@@ -316,12 +326,8 @@ var SkeletonAnnotations = new function()
           }
         }
       }
-      if (nearestnode) {
-        self.activateNode(nearestnode);
-      } else {
-        statusBar.replaceLast("No nodes were visible - can't activate the nearest");
-      }
-    }
+      return nearestnode;
+    };
 
     this.hideLabels = function() {
       // remove all labels in the view
@@ -620,61 +626,65 @@ var SkeletonAnnotations = new function()
       }
     };
 
-    // Used to join two skeleton together
+    // Used to join two skeletons together
     this.createTreenodeLink = function (fromid, toid, callback) {
       if( toid in nodes ) {
-          if( nodes[toid].parent !== null ) {
-              var check = confirm("Do you really want link to this skeleton with more than one node?");
-              if( check === false ) {
-                  return;
-              }
-          }
-      }
-      // TODO: rerooting operation should be called on the backend
-      // first make sure to reroot target
-      requestQueue.register(django_url + project.id + '/skeleton/reroot', "POST", {
-        pid: project.id,
-        treenode_id: toid
-      }, function (status, text, xml) {
-        if (status === 200) {
-          if (text && text !== " ") {
-            var e = $.parseJSON(text);
-            // console.log(e);
-            if (e.error) {
-              alert(e.error);
-            } else {
-              // then link again, in the continuation
-              requestQueue.register(django_url + project.id + '/skeleton/join', "POST", {
-                from_id: fromid,
-                to_id: toid
-              }, function (status, text, xml) {
-                if (status === 200) {
-                  if (text && text !== " ") {
-                    var e = $.parseJSON(text);
-                    if (e.error) {
-                      alert(e.error);
-                    } else {
-                      // just redraw all for now
-                      self.updateNodes(function () {
-                        ObjectTree.refresh();
-                        refreshAllWidgets();
-                        if (typeof callback !== "undefined") {
-                          callback();
-                        }
-                      });
-                    }
+        // Count the number of nodes of the skeleton that contains the node with id toid
+        requestQueue.register(django_url + project.id + '/skeleton/' + nodes[toid].skeleton_id + '/node_count', "POST", {
+        }, function(status, text, xml) {
+          if (status === 200) {
+            if (text && text !== " ") {
+              var r = $.parseJSON(text);
+              if (r.error) {
+                alert(r.error);
+              } else {
+                // If the count is more than 1, then ask for confirmation:
+                if (r.count > 1) {
+                  var check = confirm("Do you really want link to this skeleton with more than one node?");
+                  if (check === false) {
+                    return;
                   }
                 }
-                return true;
-              });
-
-            }
-          }
-        }
-      });
-
-      return;
-    };
+                // TODO: rerooting operation should be called on the backend
+                // first make sure to reroot target
+                requestQueue.register(django_url + project.id + '/skeleton/reroot', "POST", {
+                  pid: project.id,
+                  treenode_id: toid
+                }, function (status, text, xml) {
+                  if (status === 200) {
+                    if (text && text !== " ") {
+                      var e = $.parseJSON(text);
+                      // console.log(e);
+                      if (e.error) {
+                        alert(e.error);
+                      } else {
+                        // then link again, in the continuation
+                        requestQueue.register(django_url + project.id + '/skeleton/join', "POST", {
+                          from_id: fromid,
+                          to_id: toid
+                        }, function (status, text, xml) {
+                          if (status === 200) {
+                            if (text && text !== " ") {
+                              var e = $.parseJSON(text);
+                              if (e.error) {
+                                alert(e.error);
+                              } else {
+                                // just redraw all for now
+                                self.updateNodes(function () {
+                                  ObjectTree.refresh();
+                                  refreshAllWidgets();
+                                  if (typeof callback !== "undefined") {
+                                    callback();
+                                  }
+                                });
+                              }
+                            }
+                          }
+                        });
+                  }
+                }}});
+            }}}});
+    }};
 
     this.createLink = function (fromid, toid, link_type) {
       //requestQueue.register("model/link.create.php", "POST", {
@@ -1224,7 +1234,7 @@ var SkeletonAnnotations = new function()
         $('#neuronName').text('');
         ObjectTree.deselectAll();
         self.activateNode(null);
-      } else if ((e.shiftKey||simulateShift)) {
+      } else if (e.shiftKey) {
         if (null === atn.id) {
           if (getMode() === "skeletontracing") {
             $('#growl-alert').growlAlert({
@@ -1239,7 +1249,7 @@ var SkeletonAnnotations = new function()
           }
         } else {
           if ("treenode" === atn.type) {
-            if ((e.shiftKey||simulateShift) && e.altKey) {
+            if (e.shiftKey && e.altKey) {
               statusBar.replaceLast("created connector, with postynaptic treenode id " + atn.id);
               targetTreenodeID = atn.id;
               createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
@@ -1247,7 +1257,7 @@ var SkeletonAnnotations = new function()
                                       createConnector(connectorID, targetTreenodeID, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
                                     });
               e.stopPropagation();
-            } else if ((e.shiftKey||simulateShift)) {
+            } else if (e.shiftKey) {
               statusBar.replaceLast("created connector, with presynaptic treenode id " + atn.id);
               createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
               e.stopPropagation();
@@ -1788,34 +1798,55 @@ var SkeletonAnnotations = new function()
         createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
         break;
       case "createinterpolatedtreenode":
+        // Check if there is already a node under the mouse
+        // and if so, then activate it
+        if (lastX !== null && lastY !== null) {
+          // Radius of 7 pixels, in physical coordinates
+          var phys_radius = (7.0 / stack.scale) * Math.max(stack.resolution.x, stack.resolution.y);
+          var nearestnode = self.findNodeWithinRadius(lastX, lastY, project.coordinates.z, phys_radius);
+
+          if (nearestnode !== null) {
+            // TODO the tracingCommand function should be broken down into many functions, each accepting the event as argument.
+            if (null !== arguments[1] && arguments[1].shiftKey) {
+              statusBar.replaceLast("Would interpolate and join, but not ready yet!");
+              // Shift+i pressed
+//              if (null === atn.id) { return; }
+//              if (nearestnode.skeleton_id === atn.skeleton_id) {
+//                self.activateNode(nearestnode);
+//                return;
+//              }
+//              // Else, ask to join the two skeletons
+//              var nearestnode_id = nearestnode.id; // must cache
+//              self.createTreenodeLink(atn.id,
+//                                      nearestnode.id,
+//                                      function() {
+//                                        // can't use self.activateNode: the refresh may have reused the node instance for some other node ID. For the same reason, can't use nearestnode.id, but rather, the cached nearestnode_id:
+//                                        self.selectNode(nearestnode_id);
+//                                      });
+              return;
+            } else {
+              // If shift is not down, just select the node:
+              self.activateNode(nearestnode);
+              return;
+            }
+          }
+        }
+        // Else, check that there is a node activated
         if (atn.id === null) {
           alert('Need to activate a treenode first!');
+          return;
         }
-        // take into account current local offset coordinates and scale
+        // Take into account current local offset coordinates and scale
         var pos_x = self.phys2pixX(self.offsetXPhysical);
         var pos_y = self.phys2pixY(self.offsetYPhysical);
-        // at this point of the execution
+        // At this point of the execution
         // project.coordinates.z is not on the new z index, thus simulate it here
         var pos_z = self.phys2pixZ(project.coordinates.z);
         var phys_z = self.pix2physZ(pos_z);
-        // get physical coordinates for node position creation
+        // Get physical coordinates for node position creation
         var phys_x = self.pix2physX(pos_x);
         var phys_y = self.pix2physY(pos_y);
         createInterpolatedNode(atn, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
-        break;
-      case "simulateshift":
-        simulateShift = !simulateShift;
-        if(simulateShift) {
-          var e = $(document.createElement("button")).attr({
-            id:    'shiftmode'
-          }).text('Shift Mode')
-            .css("background-color","#FF0000")
-            .css("right","60px")
-            .css("top","40px");
-          $("#indicatorbar").append(e);
-        } else {
-          $('#shiftmode').remove();
-        }
         break;
       }
       return;

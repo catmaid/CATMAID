@@ -25,7 +25,7 @@ if (isset($_REQUEST['expandtarget'])) {
 
 // extend it by giving a set of relationship types
 // limit number of nodes retrievable
-$maxnodes = 1000;
+$maxnodes = 5000;
 
 
 # 1. There must be a project id

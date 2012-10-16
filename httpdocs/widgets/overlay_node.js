@@ -528,9 +528,9 @@ var SkeletonElements = new function()
         e.stopPropagation();
         return;
       }
-      if ((e.shiftKey||SkeletonAnnotations.getShiftModeStatus())) {
+      if (e.shiftKey) {
         var atnID = SkeletonAnnotations.getActiveNodeId();
-        if ((e.ctrlKey || e.metaKey) && (e.shiftKey||SkeletonAnnotations.getShiftModeStatus())) {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           // if it is active node, set active node to null
           if (node.id === atnID) {
             paper.catmaidSVGOverlay.activateNode(null);
@@ -646,8 +646,8 @@ var SkeletonElements = new function()
       }
       // return some log information when clicked on the node
       // this usually refers here to the mc object
-      if ((e.shiftKey||SkeletonAnnotations.getShiftModeStatus())) {
-        if ((e.ctrlKey || e.metaKey) && (e.shiftKey||SkeletonAnnotations.getShiftModeStatus())) {
+      if (e.shiftKey) {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           if (connectornode.id === atnID) {
             paper.catmaidSVGOverlay.activateNode(null);
             wasActiveNode = true;

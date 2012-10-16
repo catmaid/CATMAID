@@ -25,7 +25,6 @@ urlpatterns = patterns('',
     (r'^(?P<project_id>\d+)/lines/delete$', 'vncbrowser.views.lines_delete'),
     (r'^(?P<project_id>\d+)/visual_index$', 'vncbrowser.views.visual_index'),
     (r'^(?P<project_id>\d+)/visual_index(/find/(?P<search>[^/]*))?(/sorted/(?P<order_by>[^/]*))?(/cell_body_location/(?P<cell_body_location>[^/]*))?(/page/(?P<page>[0-9]*))?$', 'vncbrowser.views.visual_index'),
-
 )
 
 # Django CATMAID API
@@ -47,6 +46,27 @@ urlpatterns += patterns(
 
     (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'catmaid.control.adjacency_matrix'),
     (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'catmaid.control.skeletonlist_subgraph'),
+
+    # Segmentation tool
+
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/components-for-point$', 'catmaid.control.get_component_list_for_point'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/componentimage$', 'catmaid.control.get_component_image'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put-components$', 'catmaid.control.put_components'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-components$', 'catmaid.control.get_saved_components'),
+
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/generate-segmentation-file$', 'catmaid.control.create_segmentation_file'),
+    # (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segmentation$', 'catmaid.control.get_segementation_tile'),
+
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put-drawing$', 'catmaid.control.put_drawing'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/delete-drawing$', 'catmaid.control.delete_drawing'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-drawings-by-component-id$', 'catmaid.control.get_saved_drawings_by_component_id'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-drawings-by-view$', 'catmaid.control.get_saved_drawings_by_view'),
+
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/initialize_components$', 'catmaid.control.initialize_components_for_skeleton'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-drawing-enum$', 'catmaid.control.get_drawing_enum'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-mesh$', 'catmaid.control.generate_mesh'),
+
+    # ------
 
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'catmaid.control.skeleton_swc'),
     (r'^(?P<project_id>\d+)/skeleton-for-treenode/(?P<treenode_id>\d+)/swc$', 'catmaid.control.skeleton_swc'),

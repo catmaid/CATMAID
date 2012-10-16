@@ -70,7 +70,7 @@ def list_connector(request, project_id=None):
             treenode tn_other,
             treenode_connector tc_other,
             connector,
-            "user" treenode_user,
+            "auth_user" treenode_user,
             treenode_connector tc_this,
             treenode tn_this,
             treenode_class_instance tci_this
@@ -120,7 +120,7 @@ def list_connector(request, project_id=None):
             tc_this.relation_id AS this_to_connector_relation_id
             FROM
             connector,
-            "user" connector_user,
+            "auth_user" connector_user,
             treenode_connector tc_this,
             treenode tn_this,
             treenode_class_instance tci_this

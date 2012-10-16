@@ -32,8 +32,10 @@ def node_list(request, project_id=None):
     # so in a separate iteration over the result list/dictionary.
 
     params = {}
-    for p in ('z', 'top', 'left', 'width', 'height', 'zres', 'as'):
+    for p in ('z', 'width', 'height', 'zres', 'as'):
         params[p] = int(request.POST.get(p, 0))
+    for p in ('top', 'left'):
+        params[p] = float(request.POST.get(p, 0))
     params['limit'] = 2000  # Limit the number of retrieved treenodes.
     params['zbound'] = 1.0  # The scale factor to volume bound the query in z-direction based on the z-resolution.
     params['project_id'] = project_id

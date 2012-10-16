@@ -235,8 +235,8 @@ var editToolActions = [
 		}
 	}),
 
-/*    new Action({
-       helpText: "Canvas tool",
+    new Action({
+       helpText: "Segmentation Tool",
        buttonID: 'edit_button_canvas',
        buttonName: 'canvas',
        keyShortcuts: {
@@ -246,7 +246,7 @@ var editToolActions = [
            project.setTool( new CanvasTool() );
        }
     }),
-*/
+
 	new Action({
 		helpText: "Tracing tool",
 		buttonID: 'edit_button_trace',

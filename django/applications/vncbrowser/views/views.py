@@ -232,4 +232,3 @@ def goto_connector(request, project_id=None, connector_id=None, stack_id=None, l
                   "sid0": stack_id,
                   "s0" : 0}
     return HttpResponseRedirect(settings.CATMAID_URL + "?" + urllib.urlencode(parameters))
-

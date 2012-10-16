@@ -138,6 +138,44 @@ EOSQL
     }
 }
 
+class MigrateUsersToDjangoAuthUser {
+    var $name = 'Migrate user from user to auth_user';
+
+    function apply( $db, $ignoreErrors) {
+        try {
+            error_log("Running the migration: ".$this->name);
+            $db->getResult("SAVEPOINT migrate_users");
+
+            foreach( $db->getResult('SELECT * FROM "user"') as $p ) {
+
+                $user_id = $p['id'];
+                $username = $p['name'];
+                $pwd = $p['pwd'];
+                $longname = $p['longname'];
+                // dummy password to overwrite
+                $password = 'pbkdf2_sha256$10000$sBbzKfMBmGZD$+PR/24axXSQ22kdX8TUh9LGZxfmD4ZfeYxbOOXB+lfE=';
+                $db->getResult("
+INSERT INTO auth_user
+  (id, username, first_name, last_name, password, email, is_staff, is_active, is_superuser, last_login, date_joined)
+  VALUES (".$user_id.", '".$username."', 'FirstName', 'Lastname', '".$password."', 'mail@mail.com', true, true, false, NOW(), NOW())
+"
+                                );
+            }
+
+		} catch( Exception $e ) {
+			if ($ignoreErrors) {
+				error_log("Ignoring the failed migration: ".$e);
+				$db->getResult("ROLLBACK TO SAVEPOINT migrate_users");
+			} else {
+				error_log("The migration failed: ".$e);
+				throw $e;
+			}
+		}
+    }
+
+
+}
+
 /* This is another non-trivial migration, which adds the skeleton_id
  * column to the treenode table, and also populates that column */
 
@@ -1100,6 +1138,7 @@ ALTER TABLE textlabel_location ADD PRIMARY KEY (id);
 "
 ),
 
+
 	'2012-10-09T14:40:01' => new Migration(
 		'Remove some wrong user foreign key constraints',
 		'
@@ -1122,6 +1161,102 @@ ALTER TABLE ONLY skeletonlist_dashboard
     ADD CONSTRAINT skeletonlist_dashboard_pkey PRIMARY KEY (id);
 '
 ),
+
+	'2012-10-10T12:20:53' => new Migration(
+		'Create component table',
+		"
+CREATE TABLE component (
+    stack_id bigint NOT NULL,
+    skeleton_id bigint NOT NULL,
+    component_id bigint NOT NULL,
+    min_x bigint NOT NULL,
+    min_y bigint NOT NULL,
+    max_x bigint NOT NULL,
+    max_y bigint NOT NULL,
+    z bigint NOT NULL,
+    threshold double precision,
+    status integer DEFAULT 0 NOT NULL
+)
+INHERITS (concept);
+
+ALTER TABLE ONLY component ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY component ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY component ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY component ADD CONSTRAINT component_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY component ADD CONSTRAINT component_stack_id_fkey FOREIGN KEY (stack_id) REFERENCES stack(id) ON DELETE CASCADE;
+ALTER TABLE ONLY component ADD CONSTRAINT component_project_id_fkey FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE;
+ALTER TABLE ONLY component ADD CONSTRAINT component_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"auth_user\"(id) ON DELETE CASCADE;
+
+"
+),
+
+
+'2012-10-11T13:21:53' => new Migration(
+		'Create drawing table',
+		"
+CREATE TABLE drawing (
+    stack_id bigint NOT NULL,
+    z bigint NOT NULL,
+    skeleton_id bigint,
+    component_id bigint,
+    min_x bigint NOT NULL,
+    min_y bigint NOT NULL,
+    max_x bigint NOT NULL,
+    max_y bigint NOT NULL,
+    svg text NOT NULL,
+    type integer DEFAULT 0 NOT NULL,
+    status integer DEFAULT 0 NOT NULL
+)
+INHERITS (concept);
+
+ALTER TABLE ONLY drawing ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+ALTER TABLE ONLY drawing ALTER COLUMN creation_time SET DEFAULT now();
+ALTER TABLE ONLY drawing ALTER COLUMN edition_time SET DEFAULT now();
+ALTER TABLE ONLY drawing ADD CONSTRAINT drawing_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY drawing ADD CONSTRAINT drawing_stack_id_fkey FOREIGN KEY (stack_id) REFERENCES stack(id) ON DELETE CASCADE;
+ALTER TABLE ONLY drawing ADD CONSTRAINT drawing_project_id_fkey FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE;
+ALTER TABLE ONLY drawing ADD CONSTRAINT drawing_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"auth_user\"(id) ON DELETE CASCADE;
+
+"
+),
+
+	'2012-10-11T14:41:10' => new MigrateUsersToDjangoAuthUser(),
+
+	'2012-10-12T01:41:10' => new Migration(
+		'Use auth_user to identify users',
+		'
+ALTER TABLE ONLY class_instance_class_instance DROP CONSTRAINT class_instance_relation_instance_user_id_fkey;
+ALTER TABLE ONLY class_instance DROP CONSTRAINT class_instance_user_id_fkey;
+ALTER TABLE ONLY class_class DROP CONSTRAINT class_relation_instance_user_id_fkey;
+ALTER TABLE ONLY class DROP CONSTRAINT class_user_id_fkey;
+ALTER TABLE ONLY component DROP CONSTRAINT component_user_id_fkey;
+ALTER TABLE ONLY concept DROP CONSTRAINT concept_user_id_fkey;
+ALTER TABLE ONLY connector_class_instance DROP CONSTRAINT connector_class_instance_user_id_fkey;
+ALTER TABLE ONLY drawing DROP CONSTRAINT drawing_user_id_fkey;
+ALTER TABLE ONLY message DROP CONSTRAINT message_user_id_fkey;
+ALTER TABLE ONLY project_user DROP CONSTRAINT project_user_user_id_fkey;
+ALTER TABLE ONLY relation_instance DROP CONSTRAINT relation_instance_user_id_fkey;
+ALTER TABLE ONLY relation DROP CONSTRAINT relation_user_id_fkey;
+ALTER TABLE ONLY treenode_class_instance DROP CONSTRAINT treenode_class_instance_user_id_fkey;
+ALTER TABLE ONLY treenode_connector DROP CONSTRAINT treenode_connector_user_id_fkey;
+
+ALTER TABLE ONLY class_instance_class_instance ADD CONSTRAINT class_instance_relation_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY class_instance ADD CONSTRAINT class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY class_class ADD CONSTRAINT class_relation_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY class ADD CONSTRAINT class_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY component ADD CONSTRAINT component_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id) ON DELETE CASCADE;
+ALTER TABLE ONLY concept ADD CONSTRAINT concept_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY connector_class_instance ADD CONSTRAINT connector_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY drawing ADD CONSTRAINT drawing_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id) ON DELETE CASCADE;
+ALTER TABLE ONLY message ADD CONSTRAINT message_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY project_user ADD CONSTRAINT project_user_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY relation_instance ADD CONSTRAINT relation_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY relation ADD CONSTRAINT relation_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY treenode_class_instance ADD CONSTRAINT treenode_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+ALTER TABLE ONLY treenode_connector ADD CONSTRAINT treenode_connector_user_id_fkey FOREIGN KEY (user_id) REFERENCES "auth_user"(id);
+'
+),
+
 
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates

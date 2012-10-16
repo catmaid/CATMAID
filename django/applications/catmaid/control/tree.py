@@ -311,7 +311,7 @@ def tree_object_list(request, project_id=None):
                             ci.class_id, cici.relation_id,
                             cici.class_instance_b AS parent,
                             sk.id AS skeleton_id,
-                            u.name AS username,
+                            u.username AS username,
                             cl.class_name
                     FROM class_instance ci,
                         class cl,
@@ -319,7 +319,7 @@ def tree_object_list(request, project_id=None):
                         class_instance_class_instance modof,
                         class_instance sk,
                         treenode_class_instance tci,
-                        "user" u
+                        "auth_user" u
                     WHERE cici.class_instance_b = %s AND
                         cici.class_instance_a = ci.id AND
                         cl.id = ci.class_id AND
@@ -361,7 +361,7 @@ def tree_object_list(request, project_id=None):
                         SELECT ci.id,
                                 ci.name,
                                 ci.class_id,
-                                u.name AS username,
+                                u.username AS username,
                                 cici.relation_id,
                                 cici.class_instance_b AS parent,
                                 cl.class_name
@@ -370,7 +370,7 @@ def tree_object_list(request, project_id=None):
                             ON ci.id = cici.class_instance_a
                         INNER JOIN class AS cl
                             ON ci.class_id = cl.id
-                        INNER JOIN "user" AS u
+                        INNER JOIN "auth_user" AS u
                             ON ci.user_id = u.id
                         WHERE ci.id = %s AND
                             ci.project_id = %s AND
@@ -397,7 +397,7 @@ def tree_object_list(request, project_id=None):
                 SELECT ci.id,
                         ci.name,
                         ci.class_id,
-                        "user".name AS username,
+                        "auth_user".username AS username,
                         cici.relation_id,
                         cici.class_instance_b AS parent,
                         cl.class_name
@@ -406,8 +406,8 @@ def tree_object_list(request, project_id=None):
                     ON ci.id = cici.class_instance_a
                     INNER JOIN class AS cl
                     ON ci.class_id = cl.id
-                    INNER JOIN "user"
-                    ON ci.user_id = "user".id
+                    INNER JOIN "auth_user"
+                    ON ci.user_id = "auth_user".id
                 WHERE ci.project_id = %s AND
                         cici.class_instance_b = %s AND
                         (cici.relation_id = %s

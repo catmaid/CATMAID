@@ -300,7 +300,7 @@ function TileLayer(
    * Get Tile from HDF5 through Django (tiles_source_type == 3)
    */
   this.getTileHDF5Request = function( x, y, dx, dy, scale, z ) {
-    return django_url + project.id + '/stack/' + stack.id + '/tile?' + $.param({
+      return django_url + project.id + '/stack/' + stack.id + '/tile?' + $.param({
         x: x,
         y: y,
         width : tileWidth,
@@ -310,9 +310,12 @@ function TileLayer(
         scale : stack.s, // defined as 1/2**zoomlevel
         z : z,
         file_extension: fileExtension,
-        hdf5_path: baseURL // image_base refers to path within HDF5 to dataset
+        hdf5_path: baseURL, // image_base refers to path within HDF5 to dataset
+        type:'mitochondria'
     });
   }
+
+
 
 	/**
 	 * Creates the URL for a tile.

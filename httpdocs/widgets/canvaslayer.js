@@ -1,6 +1,8 @@
 /**
  * The Canvas layer that hosts the tracing data
  */
+
+
 function CanvasLayer( stack )
 {
     // define the x,y location and width and height of the
@@ -20,8 +22,8 @@ function CanvasLayer( stack )
 
     this.redraw = function()
     {
-        //var pixelPos = [ stack.x, stack.y, stack.z ];
-        //console.log("redraw pixel pos", pixelPos);
+        self.setFieldOfView();
+
         return;
     }
 
@@ -30,11 +32,17 @@ function CanvasLayer( stack )
         // TODO: Resize is called too much
         //this.setFieldOfView();
         self.redraw();
+
+
         return;
     }
 
     this.getFieldOfViewParameters = function()
     {
+        var wc = stack.getWorldTopLeft();
+        var pl = wc.worldLeft,
+            pt = wc.worldTop,
+            new_scale = wc.scale;
         var l = {
             x: xindex,
             y: yindex,
@@ -113,7 +121,6 @@ function CanvasLayer( stack )
 
         self.updateCanvasLeftTop( canvasleft, canvastop );
         self.updateCanvasWidthHeight( width, height );
-        // console.log('index: x, y, width, height', xindex, yindex, width, height )
     }
 
     this.updateCanvasWidthHeight = function( width, height )
@@ -158,14 +165,14 @@ function CanvasLayer( stack )
     // XXX: add it here to DOM?
     stack.getView().appendChild( view );
 
-    var canvashtml = document.createElement("canvas")
-    canvashtml.id = "myCanvas"
+    var canvashtml = document.createElement("canvas");
+    canvashtml.id = "myCanvas";
     canvashtml.style.border = "0px";
     self.view.appendChild( canvashtml );
 
     // CURSOR: "url(widgets/themes/kde/svg-circle.cur) 15 15, crosshair"
     var canvas = new fabric.Canvas( 'myCanvas' , {'interactive':true, CURSOR:'crosshair'} );
-    canvas.isDrawingMode = true;
+    canvas.isDrawingMode = false;
     self.canvas = canvas;
     self.setFieldOfView();
 
@@ -183,7 +190,7 @@ function CanvasLayer( stack )
     });
     canvas.add(rect);
 */
-    
+
     this.unregister = function()
     {
         stack.getView().removeChild( view );

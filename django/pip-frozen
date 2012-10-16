@@ -13,3 +13,4 @@ kombu==2.0.0
 django-kombu==0.9.4
 PyYAML==3.10
 python-dateutil==2.1
+django-guardian==1.0.4

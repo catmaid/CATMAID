@@ -129,7 +129,6 @@ function Project( pid )
 		stacks[ ( i + stacks.length + s ) % stacks.length ].getWindow().focus();
 		return;
 	}
-	
 
 	//!< Associative array of selected objects
 	// in the Treenode Table and Object Tree.
@@ -140,8 +139,18 @@ function Project( pid )
 		'selectedneuron': null,
 		'selectedskeleton': null
 	};
-	
-	this.hideToolbars = function()
+
+    this.setSelectedSkeleton = function( skeleton_id ) {
+        this.selectedObjects.selectedskeleton = skeleton_id;
+
+        // depending on the chosen tool, trigger functions
+        if( self.getTool().toolname === 'canvastool' ) {
+            self.getTool().on_skeleton_id_change( this.selectedObjects.selectedskeleton );
+        }
+    }
+
+
+    this.hideToolbars = function()
 	{
 		document.getElementById( "toolbar_nav" ).style.display = "none";
 		document.getElementById( "toolbar_text" ).style.display = "none";

@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="utf-8"?>
+	<pipeline>
+		<elements>
+			<pipelineelement disable="False" displayable="True" on="False" order="0">
+				<vtkclass>
+					barVtkAllFlip
+                </vtkclass>
+				<desc>
+					Flip axes
+				</desc>
+				<params>
+					<param display="True" hidden="False" order="0">
+						<name>
+							SetFlipx
+						</name>
+						<desc>
+							FlipX
+						</desc>
+						<args>
+							<value order="0" type="bool">
+								True
+							</value>
+						</args>
+					</param>
+					<param display="True" hidden="False" order="0">
+						<name>
+							SetFlipAbOriginx
+						</name>
+						<desc>
+							Flip about x origin
+						</desc>
+						<args>
+							<value order="0" type="bool">
+								True
+							</value>
+						</args>
+					</param>
+					<param display="True" hidden="False" order="0">
+						<name>
+							SetFlipy
+						</name>
+						<desc>
+							Flipy
+						</desc>
+						<args>
+							<value order="0" type="bool">
+								True
+							</value>
+						</args>
+					</param>
+					<param display="True" hidden="False" order="0">
+						<name>
+							SetFlipAbOriginy
+						</name>
+						<desc>
+							Flip about y origin
+						</desc>
+						<args>
+							<value order="0" type="bool">
+								True
+							</value>
+						</args>
+					</param>
+					<param display="True" hidden="False" order="0">
+						<name>
+							SetFlipz
+						</name>
+						<desc>
+							Flipz
+						</desc>
+						<args>
+							<value order="0" type="bool">
+								True
+							</value>
+						</args>
+					</param>
+					<param display="True" hidden="False" order="0">
+						<name>
+							SetFlipAbOriginz
+						</name>
+						<desc>
+							Flip about z origin
+						</desc>
+						<args>
+							<value order="0" type="bool">
+								True
+							</value>
+						</args>
+					</param>
+				</params>
+            </pipelineelement>
+
+			<pipelineelement disable="False" displayable="True" on="False" order="0">
+				<vtkclass>
+					vtkImagePermute
+				</vtkclass>
+				<desc>
+					Axes permutation
+				</desc>
+				<params>
+					<param display="False" hidden="False" order="0">
+						<name>
+							SetFilteredAxes
+						</name>
+						<desc>
+							New order of axes
+						</desc>
+						<args>
+							<value order="0" type="int">
+								0
+							</value>
+							<value order="1" type="int">
+								1
+							</value>
+							<value order="2" type="int">
+								2
+							</value>
+						</args>
+					</param>
+				</params>
+            </pipelineelement>
+
+
+			<pipelineelement disable="False" displayable="True" on="False" order="0">
+				<vtkclass>
+				    vtkImageChangeInformation
+				</vtkclass>
+				<desc>
+					Change volume information
+				</desc>
+				<params>
+					<param display="False" hidden="False" order="0">
+						<name>
+							SetOriginTranslation
+						</name>
+						<desc>
+							Translate origin
+						</desc>
+						<args>
+							<value order="0" type="float">
+								0.0
+							</value>
+							<value order="1" type="float">
+								0.0
+							</value>
+							<value order="2" type="float">
+								0.0
+							</value>
+						</args>
+					</param>
+				</params>
+            </pipelineelement>
+
+			<pipelineelement disable="False" displayable="True" on="False" order="1">
+				<vtkclass>
+					vtkImageGaussianSmooth
+				</vtkclass>
+				<desc>
+					Gaussian volume smoothing
+				</desc>
+				<params>
+					<param display="False" hidden="False" order="0">
+						<name>
+							SetStandardDeviation
+						</name>
+						<desc>
+							Standard deviation
+along x,y and z axes
+						</desc>
+						<args>
+							<value order="0" type="float">
+								1.0
+							</value>
+							<value order="1" type="float">
+								1.0
+							</value>
+							<value order="2" type="float">
+								1.0
+							</value>
+						</args>
+					</param>
+				</params>
+			</pipelineelement>
+			<pipelineelement disable="True" displayable="True" on="True" order="2">
+				<vtkclass>
+					vtkMarchingCubes
+				</vtkclass>
+				<desc>
+					Isosurface extraction
+				</desc>
+				<params>
+					<param display="False" hidden="False" order="0">
+						<name>
+							SetValue
+						</name>
+						<desc>
+							Contour value
+						</desc>
+						<args>
+							<value order="0" type="float">
+								0
+							</value>
+							<value order="1" type="float">
+								0.5
+							</value>
+						</args>
+					</param>
+					<param display="False" hidden="True" order="1">
+						<name>
+							ComputeScalars
+						</name>
+						<args>
+							<value order="0" type="bool">
+								False
+							</value>
+						</args>
+					</param>
+					<param display="False" hidden="True" order="2">
+						<name>
+							ComputeGradients
+						</name>
+						<args>
+							<value order="0" type="bool">
+								False
+							</value>
+						</args>
+					</param>
+					<param display="False" hidden="True" order="3">
+						<name>
+							ComputeNormals
+						</name>
+						<args>
+							<value order="0" type="bool">
+								False
+							</value>
+						</args>
+					</param>
+				</params>
+			</pipelineelement>
+			<pipelineelement disable="False" displayable="False" on="True" order="3">
+				<vtkclass>
+					vtkTriangleFilter
+				</vtkclass>
+				<desc>
+					libvtkGraphicsPython.vtkTriangleFilter
+				</desc>
+				<params/>
+			</pipelineelement>
+			<pipelineelement disable="False" displayable="True" on="False" order="4">
+				<vtkclass>
+					vtkSmoothPolyDataFilter
+				</vtkclass>
+				<desc>
+					Mesh smoothing
+				</desc>
+				<params>
+					<param display="False" hidden="False" order="0">
+						<name>
+							SetRelaxationFactor
+						</name>
+						<desc>
+							Relaxation factor
+						</desc>
+						<args>
+							<value order="0" type="float">
+								0.5
+							</value>
+						</args>
+						<span>
+							<value order="0" type="int">
+								0
+							</value>
+							<value order="1" type="int">
+								2
+							</value>
+						</span>
+					</param>
+					<param display="False" hidden="False" order="1">
+						<name>
+							SetNumberOfIterations
+						</name>
+						<desc>
+							Number of iterations
+						</desc>
+						<args>
+							<value order="0" type="int">
+								20
+							</value>
+						</args>
+						<span>
+							<value order="0" type="int">
+								1
+							</value>
+							<value order="1" type="int">
+								50
+							</value>
+						</span>
+					</param>
+					<param display="False" hidden="False" order="2">
+						<name>
+							FeatureEdgeSmoothing
+						</name>
+						<desc>
+							Edge smoothing
+						</desc>
+						<args>
+							<value order="0" type="bool">
+								True
+							</value>
+						</args>
+					</param>
+				</params>
+			</pipelineelement>
+			<pipelineelement disable="False" displayable="True" on="True" order="5">
+				<vtkclass>
+					vtkQuadricClustering
+				</vtkclass>
+				<desc>
+					Mesh simplification
+				</desc>
+				<params>
+					<param display="False" hidden="False" order="0">
+						<name>
+							SetNumberOfXDivisions
+						</name>
+						<desc>
+							Number of x divisions
+						</desc>
+						<args>
+							<value order="0" type="int">
+								90
+							</value>
+						</args>
+						<span>
+							<value order="0" type="int">
+								1
+							</value>
+							<value order="1" type="int">
+								200
+							</value>
+						</span>
+					</param>
+					<param display="False" hidden="False" order="1">
+						<name>
+							SetNumberOfYDivisions
+						</name>
+						<desc>
+							Number of y divisions
+						</desc>
+						<args>
+							<value order="0" type="int">
+								90
+							</value>
+						</args>
+						<span>
+							<value order="0" type="int">
+								1
+							</value>
+							<value order="1" type="int">
+								200
+							</value>
+						</span>
+					</param>
+					<param display="False" hidden="False" order="2">
+						<name>
+							SetNumberOfZDivisions
+						</name>
+						<desc>
+							Number of z divisions
+						</desc>
+						<args>
+							<value order="0" type="int">
+								90
+							</value>
+						</args>
+						<span>
+							<value order="0" type="int">
+								1
+							</value>
+							<value order="1" type="int">
+								200
+							</value>
+						</span>
+					</param>
+				</params>
+			</pipelineelement>
+            <pipelineelement disable="False" displayable="True"  on="True" order="6">
+                <vtkclass>vtkCleanPolyData</vtkclass>
+                <desc>libvtkGraphicsPython.vtkCleanPolyData</desc>
+                <params/>
+            </pipelineelement>
+			<pipelineelement disable="False" displayable="False" on="True" order="7">
+				<vtkclass>
+					vtkPolyDataNormals
+				</vtkclass>
+				<desc>
+					libvtkGraphicsPython.vtkPolyDataNormals
+				</desc>
+				<params>
+					<param display="False" hidden="False" order="0">
+						<name>
+							SetFeatureAngle
+						</name>
+						<args>
+							<value order="0" type="float">
+								80.0
+							</value>
+						</args>
+						<span>
+							<value order="0" type="int">
+								0
+							</value>
+							<value order="1" type="int">
+								90
+							</value>
+						</span>
+					</param>
+					<param display="False" hidden="False" order="1">
+						<name>
+							FlipNormals
+						</name>
+						<args>
+							<value order="0" type="bool">
+								False
+							</value>
+						</args>
+					</param>
+				</params>
+			</pipelineelement>
+			<pipelineelement disable="False" displayable="True" on="False" order="8">
+				<vtkclass>
+					barVtkMirror
+				</vtkclass>
+				<desc>
+					Mirror
+hemisphere
+				</desc>
+				<params/>
+			</pipelineelement>
+			<pipelineelement disable="False" displayable="False" on="True" order="9">
+				<vtkclass>
+					vtkPolyDataMapper
+				</vtkclass>
+				<desc>
+					libvtkRenderingPython.vtkPolyDataMapper
+				</desc>
+				<params>
+					<param display="False" hidden="False" order="0">
+						<name>
+							ScalarVisibility
+						</name>
+						<args>
+							<value order="0" type="bool">
+								False
+							</value>
+						</args>
+					</param>
+				</params>
+			</pipelineelement>
+		</elements>
+	</pipeline>

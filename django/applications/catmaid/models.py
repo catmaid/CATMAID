@@ -631,3 +631,38 @@ class SkeletonlistDashboard(UserFocusedModel):
     shortname = models.CharField(max_length=255)
     skeleton_list = IntegerArrayField()
     description = models.TextField()
+
+class Component(UserFocusedModel):
+    class Meta:
+        db_table = "component"
+        managed = False
+    creation_time = models.DateTimeField(default=now)
+    edition_time = models.DateTimeField(default=now)
+    stack = models.ForeignKey(Stack)
+    skeleton_id = models.IntegerField()
+    component_id=models.IntegerField()
+    min_x = models.IntegerField()
+    min_y = models.IntegerField()
+    max_x = models.IntegerField()
+    max_y = models.IntegerField()
+    z = models.IntegerField()
+    threshold = models.FloatField()
+    status = models.IntegerField(default=0)
+
+class Drawing(UserFocusedModel):
+    class Meta:
+        db_table = "drawing"
+        managed = False
+    creation_time = models.DateTimeField(default=now)
+    edition_time = models.DateTimeField(default=now)
+    stack = models.ForeignKey(Stack)
+    skeleton_id = models.IntegerField()
+    z = models.IntegerField()
+    component_id=models.IntegerField()
+    min_x = models.IntegerField()
+    min_y = models.IntegerField()
+    max_x = models.IntegerField()
+    max_y = models.IntegerField()
+    svg = models.TextField()
+    type=models.IntegerField(default=0)
+    status = models.IntegerField(default=0)

@@ -22,6 +22,8 @@
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/themes/kde/jsTree/classic/style.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/themes/kde/stats.css" />
 
+        <link rel="stylesheet" type="text/css" href="widgets/dd.css" />
+
 		<!--[if gte IE 5]>
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/ui.ie.css" />
 		<link rel="stylesheet" type="text/css" media="all" href="widgets/themes/kde/stack.ie.css" />
@@ -48,6 +50,7 @@
 		<script type="text/javascript" src="libs/jquery/jquery-ui-1.8.16.custom.min.js"></script>
 		<script type="text/javascript" src="libs/jquery/growlAlert.plugin.js"></script>
 		<script type="text/javascript" src="libs/jquery/jquery.blockUI.js"></script>
+        <script type="text/javascript" src="libs/jquery/jquery.dd.js"></script>
         <script type="text/javascript" src="libs/fabric.js/all.min.js"></script>
 		<script type="text/javascript" src="tools.js"></script>
 		<script type="text/javascript" src="widgets/console.js"></script>
@@ -110,7 +113,6 @@
         <script type="text/javascript" src="widgets/graph_widget.js"></script>
         <script type="text/javascript" src="widgets/connectivity.js"></script>
         <script type="text/javascript" src="widgets/adjmatrix.js"></script>
-		
 	</head>
 	<body onload="init();"><a></a>
 		<div id="growl-alert" class="growl-message" style="display: none"></div>
@@ -167,6 +169,51 @@
 				<div class="box_right"><p><a id="a_url" name="a_url" title="This is the URL to this view. You can bookmark it or send it to the people." href="">URL to this view</a></p></div>
 				<div class="toolbar_fill"></div>
 			</div>
+			<!--
+			*******************************************************************
+			-->
+
+			<!-- Segmentation/Canvas
+			*******************************************************************
+			-->
+			<div id="toolbar_seg" class="toolbar" style="display:none;">
+
+
+				<div id="sliders_box_seg"></div>
+                <div class="box">
+                    <button id="button_mode_component"  name="button_mode_component" style="height:20px;width: 80px; margin-top: 6px;" class="button_active">Components</button>
+                    <button id="button_mode_free_drawing" name="button_mode_free_drawing"  style=";width: 80px;height:20px;background-color: #e0ffff;margin-top: 6px;" >Labeling</button>
+                </div>
+                <div class="box">
+                    <button id="button_clear_canvas" name="button_clear_canvas"  style="width: 80px;height:20px;background-color: #f08080; margin-top: 6px;" >Clear canvas</button>
+                </div>
+                <div style="width:1px;height:32px;background-color:black;float:left;"></div>
+
+                <div class="box" id="component_controls">
+                    <button id="button_init_components" name="button_init_components" style="height:20px; margin-top: 6px;"  >Initialize components</button>
+                    <button id="button_save_components" name="button_save_components" style="height:20px;margin-top: 6px;" >Save components</button>
+                    <button id="button_color_wheel" name="button_color_wheel" style="height:20px;margin-top: 6px;" >Component Color</button>
+                    <button id="button_init_hdf" name="button_init_hdf" style="height:20px;margin-top: 6px;">Init HDF</button>
+                    <button id="button_mesh" name="button_mesh" style="height:20px;margin-top: 6px;">Mesh!</button>
+                    <button id="button_drawing_mode" name="button_drawing_mode" style="height:20px;margin-top: 6px;"  >Correction Mode</button>
+                </div>
+
+                <div class="box" id="free_drawing_controls">
+                    <select id="select_drawing_type" style="height:100%; background-color: #e0ffff;"></select>
+
+
+                </div>
+
+                <div class="box" id="drawing_controls">
+
+
+                </div>
+                <div id="sliders_box_brush_size"><span>&nbsp; Brush size:</span></div>
+
+
+				<div class="toolbar_fill"></div>
+			</div>
+
 			<!--
 			*******************************************************************
 			-->

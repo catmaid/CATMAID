@@ -98,7 +98,7 @@ needs to be adjusted, too. This file contains the task definitions::
 
  # Define a periodic task that runs every day at midnight and noon.
  # It removes all cropped stacks that are older than 12 hours.
- from vncbrowser.views.cropping import cleanup as cropping_cleanup
+ from catmaid.control.cropping import cleanup as cropping_cleanup
  @periodic_task( run_every=crontab( hour="0,12" ) )
  def cleanup_cropped_stacks():
      twelve_hours = 43200 # seconds

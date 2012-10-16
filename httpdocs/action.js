@@ -243,7 +243,12 @@ var editToolActions = [
 
        },
        run: function (e) {
-           project.setTool( new CanvasTool() );
+         // check if zoom level 0 active
+          if( project.focusedStack.s !== 0 ) {
+            alert('Segmentation Tool only works on zoom-level 0!');
+            return;
+          }
+          project.setTool( new CanvasTool() );
        }
     }),
 

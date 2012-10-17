@@ -48,7 +48,7 @@ def skeletonlist_subgraph(request, project_id=None):
 
     data = {
         'nodes': [ {'id': str(k),
-                    'label': d['baseName']} for k,d in skelgroup.graph.nodes_iter(data=True)  ],
+                    'label': str(d['baseName'])} for k,d in skelgroup.graph.nodes_iter(data=True)  ],
         'edges': [ {'id': '%i_%i' % (u,v),
                     'source': str(u),
                     'target': str(v),

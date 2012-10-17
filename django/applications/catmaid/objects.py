@@ -32,7 +32,7 @@ class Skeleton(object):
 
         self.skeleton_id = skeleton_id
         self.project_id = project_id
-        self.edge_length_sum = 0.0
+        self._edge_length_sum = 0.0
 
         self.graph = self._create_graph()
         self.connected_connectors = self._fetch_connected_connectors()
@@ -203,7 +203,10 @@ class SkeletonGroup(object):
         for skeleton_id in self.skeleton_id_list:
             graph.add_node( skeleton_id, {
                 'baseName': '%s (SkeletonID: %s)' % (self.skeletons[skeleton_id].neuron.name, str(skeleton_id) ),
-                'neuronname': self.skeletons[skeleton_id].neuron.name
+                'neuronname': self.skeletons[skeleton_id].neuron.name,
+                'node_count': str( self.skeletons[skeleton_id].node_count() ),
+                'percentage_reviewed': str( self.skeletons[skeleton_id].percentage_reviewed() ),
+                'cable_length': str( self.skeletons[skeleton_id].cable_length() )
             })
 
         connectors = {}

@@ -216,7 +216,7 @@ function updateProjects(completionCallback) {
 
     // Whatever happened, get details of which projects this user (or no
     // user) is allowed to edit:
-    $.get(django_url + '/permissions', function (data) {
+    $.get(django_url + 'permissions', function (data) {
         if (data.error) {
             alert(data.error);
         } else {

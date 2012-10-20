@@ -499,13 +499,14 @@ function handle_openProjectStack( status, text, xml )
 			stack.addLayer( "TileLayer", tilelayer );
 
 			$.each(e.overlay, function(key, value) {
+        console.log('add tile layer for overlay value', e, value);
 				var tilelayer2 = new TileLayer(
 								stack,
 								value.image_base,
-								e.tile_width,
-								e.tile_height,
-								e.file_extension,
-								e.tile_source_type);
+								value.tile_width,
+								value.tile_height,
+								value.file_extension,
+								value.tile_source_type);
 				// set default opacity internally
 				tilelayer2.setOpacity( value.default_opacity );
 				stack.addLayer( value.title, tilelayer2 );

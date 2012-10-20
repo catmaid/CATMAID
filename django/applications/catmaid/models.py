@@ -198,6 +198,9 @@ class Overlay(models.Model):
     image_base = models.TextField()
     default_opacity = models.IntegerField()
     file_extension = models.TextField(null=True)
+    tile_width = models.IntegerField()
+    tile_height = models.IntegerField()
+    tile_source_type = models.IntegerField()
 
 class Concept(models.Model):
     class Meta:

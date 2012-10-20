@@ -46,6 +46,7 @@ function getTileBaseName3D( stack, pixelPos, adjacent )
 }
 
 
+
 /**
  * 
  */
@@ -375,9 +376,9 @@ function TileLayer(
 	{
 		this.redraw = function()
 		{
-            if( tileSourceType === 1 ) {
-                img.src = baseURL + stack.z + "/small." + fileExtension;
-            }
+      if( tileSourceType === 1 ) {
+          img.src = baseURL + stack.z + "/small." + fileExtension;
+      }
 			return;
 		}
 		
@@ -388,13 +389,16 @@ function TileLayer(
 		}
 		
 		var self = this;
-		
-		var img = document.createElement( "img" );
-		img.className = "smallMapMap";
-		img.src = baseURL + stack.z + "/small." + fileExtension;
 
-		stack.overview.getView().appendChild( img );
-		stack.overview.addLayer( "tilelayer", this );
+    if( tileSourceType === 1 ) {
+      var img = document.createElement( "img" );
+      img.className = "smallMapMap";
+      img.src = baseURL + stack.z + "/small." + fileExtension;
+
+      stack.overview.getView().appendChild( img );
+      stack.overview.addLayer( "tilelayer", this );
+    }
+
 	}
 
 	this.setOpacity = function( val )
@@ -421,7 +425,7 @@ function TileLayer(
 	tilesContainer.className = "sliceTiles";
 	stack.getView().appendChild( tilesContainer );
 
-    var overviewLayer = new OverviewLayer();
+  var overviewLayer = new OverviewLayer();
 	
 	var LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
 	var LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );

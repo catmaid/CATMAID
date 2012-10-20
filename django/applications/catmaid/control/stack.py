@@ -47,6 +47,10 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
                 'title': ele.title,
                 'image_base': ele.image_base,
                 'default_opacity': ele.default_opacity,
+                'tile_width': ele.tile_width,
+                'tile_height': ele.tile_height,
+                'tile_source_type': ele.tile_source_type,
+                'file_extension': ele.file_extension
                 } )
         result={
             'sid': int(s.id),

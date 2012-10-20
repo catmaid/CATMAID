@@ -1257,6 +1257,16 @@ ALTER TABLE ONLY treenode_connector ADD CONSTRAINT treenode_connector_user_id_fk
 '
 ),
 
+	'2012-10-13T08:46:38' => new Migration(
+		'More properties for overlay table',
+		'
+ALTER TABLE overlay ADD COLUMN tile_width integer NOT NULL DEFAULT 512;
+ALTER TABLE overlay ADD COLUMN tile_height integer NOT NULL DEFAULT 512;
+ALTER TABLE overlay ADD COLUMN tile_source_type integer NOT NULL DEFAULT 1;
+'
+),
+
+
 
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates

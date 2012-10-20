@@ -11,15 +11,16 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
 
+import numpy as np
+import urllib2 as urllib
+import string
+import random
+import os.path
+import glob
+from time import time
+
 try:
-    import numpy as np
     from pgmagick import Blob, Image, ImageList, Geometry, Color, CompositeOperator as co, ResolutionType
-    import urllib2 as urllib
-    import string
-    import random
-    import os.path
-    import glob
-    from time import time
     from celery.task import task
 except ImportError:
     pass

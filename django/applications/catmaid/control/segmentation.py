@@ -29,8 +29,17 @@ import sys
 
 try:
     import cairo
-    import vtk
+except ImportError:
+    pass
+
+
+try:
     import rsvg
+except ImportError:
+    pass
+
+try:
+    import vtk
 except ImportError:
     pass
 
@@ -100,7 +109,13 @@ DrawingTypes = {
         'value' : 700,
         'string' : 'erasor',
         'color': [255,255,255]
-    }}
+    },
+    'synapticdensity' : {
+        'value' : 800,
+        'string' : 'synaptic density',
+        'color': [255,0,0]
+    },
+}
 
 def get_drawing_enum(request, project_id=None, stack_id=None):
     return HttpResponse(json.dumps(DrawingTypes), mimetype="text/json")
@@ -632,19 +647,12 @@ import sys
 
 def create_segmentation_file(request, project_id=None, stack_id=None):
 
-    skeleton_id = request.POST.get('skeleton_id', None)
-
-    if skeleton_id != 'null':
-        skeleton_id = int(skeleton_id)
-    else:
-        skeleton_id = None
-
-    create_segmentation_neurohdf_file(request, project_id,stack_id,skeleton_id)
+    create_segmentation_neurohdf_file(request, project_id,stack_id)
 
     return HttpResponse(json.dumps(True), mimetype="text/json")
 
 
-def create_segmentation_neurohdf_file(request, project_id, stack_id,skeleton_id=None):
+def create_segmentation_neurohdf_file(request, project_id, stack_id):
     filename=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_segmentation.hdf'.format( project_id, stack_id ) )
     componentTreeFilePath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
 
@@ -659,9 +667,6 @@ def create_segmentation_neurohdf_file(request, project_id, stack_id,skeleton_id=
 
         width=stack_info['dimension']['x']
         height=stack_info['dimension']['x']
-
-        if not skeleton_id is None:
-            skeleton = get_object_or_404(ClassInstance, pk=skeleton_id)
 
         stack = get_object_or_404(Stack, pk=stack_id)
         project = get_object_or_404(Project, pk=project_id)
@@ -678,37 +683,21 @@ def create_segmentation_neurohdf_file(request, project_id, stack_id,skeleton_id=
             skeletonIdsPixelArray=np.zeros(shape, dtype=np.long)
             componentDrawingIdsPixelArray=np.zeros(shape, dtype=np.long)
 
-            if not skeleton_id is None:
+            # retrieve all the components belonging to the skeleton
+            all_components = Component.objects.filter(
+                project = project,
+                stack = stack,
+                z=z
+            ).all()
+            for comp in all_components:
 
-                # retrieve all the components belonging to the skeleton
-                all_components = Component.objects.filter(
-                    project = project,
-                    stack = stack,
-                    skeleton_id = skeleton.id,
-                    z=z
-                ).all()
-                for comp in all_components:
+                with closing(h5py.File(componentTreeFilePath, 'r')) as componenthfile:
+                    componentPixelStart=componenthfile['connected_components/'+str(z)+'/begin_indices'].value[comp.component_id].copy()
+                    componentPixelEnd=componenthfile['connected_components/'+str(z)+'/end_indices'].value[comp.component_id].copy()
 
-                    with closing(h5py.File(componentTreeFilePath, 'r')) as componenthfile:
-                        componentPixelStart=componenthfile['connected_components/'+str(z)+'/begin_indices'].value[comp.component_id].copy()
-                        componentPixelEnd=componenthfile['connected_components/'+str(z)+'/end_indices'].value[comp.component_id].copy()
-
-                        data=componenthfile['connected_components/'+str(z)+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
-                        skeletonIdsPixelArray[data['y'],data['x']] =comp.skeleton_id
-                        componentIdsPixelArray[data['y'],data['x']] =comp.component_id
-
-                #Get all drawings belonging to this skeleton
-                all_drawings = Drawing.objects.filter(stack=stack,
-                    project=project,
-                    z = z, skeleton_id = skeleton.id).exclude(component_id__isnull=True).all()
-                for componentDrawing in all_drawings:
-
-                    drawingArray = svg2pixel(componentDrawing,componentDrawing.id)
-                    indices=np.where(drawingArray>0)
-                    x_index = indices[0]+(componentDrawing.min_x-50)
-                    y_index = indices[1]+(componentDrawing.min_y-50)
-                    idx = (x_index >= 0) & (x_index < width) & (y_index >= 0) & (y_index < height)
-                    componentDrawingIdsPixelArray[y_index[idx],x_index[idx]]=componentDrawing.id
+                    data=componenthfile['connected_components/'+str(z)+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
+                    skeletonIdsPixelArray[data['y'],data['x']] =comp.skeleton_id
+                    componentIdsPixelArray[data['y'],data['x']] =comp.component_id
 
             #store arrays to hdf file
             section.create_dataset("components", data=componentIdsPixelArray, compression='gzip', compression_opts=1)
@@ -732,7 +721,6 @@ def create_segmentation_neurohdf_file(request, project_id, stack_id,skeleton_id=
                 x_index = indices[1]+(freeDrawing.min_x-50)
                 y_index = indices[0]+(freeDrawing.min_y-50)
                 idx = (x_index >= 0) & (x_index < width) & (y_index >= 0) & (y_index < height)
-
                 #Use number from JS canvas tool enum
                 drawingTypeArrays[freeDrawing.type][y_index[idx],x_index[idx]]=freeDrawing.id
 
@@ -807,12 +795,27 @@ def find_between( s, first, last ):
 
 
 def get_segmentation_tile(project_id, stack_id,scale,height,width,x,y,z,type):
+    print 'segmentation tile'
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_segmentation.hdf'.format( project_id, stack_id ) )
+    print fpath
     with closing(h5py.File(fpath, 'r')) as hfile:
 
-        hdfpath = 'scale/' + str(int(scale)) + '/section/'+ str(z)+'/'+type
-        image_data=hfile[hdfpath].value
-        data=image_data[y:y+height,x:x+width]
+        if type == 'all':
+            hdfpath = 'scale/' + str(int(scale)) + '/section/'+ str(z)+'/mitochondria'
+            image_data=hfile[hdfpath].value
+            data=image_data[y:y+height,x:x+width]
+
+            hdfpath = 'scale/' + str(int(scale)) + '/section/'+ str(z)+'/components'
+            image_data=hfile[hdfpath].value
+            data_components=image_data[y:y+height,x:x+width]
+
+            indices=np.where(data_components>0)
+            data[indices[0],indices[1]] = 1
+
+        else:
+            hdfpath = 'scale/' + str(int(scale)) + '/section/'+ str(z)+'/'+type
+            image_data=hfile[hdfpath].value
+            data=image_data[y:y+height,x:x+width]
 
         data[data > 0] = 255
         data = data.astype( np.uint8 )

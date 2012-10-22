@@ -1222,6 +1222,15 @@ ALTER TABLE ONLY drawing ADD CONSTRAINT drawing_user_id_fkey FOREIGN KEY (user_i
 
 	'2012-10-11T14:41:10' => new MigrateUsersToDjangoAuthUser(),
 
+    '2012-10-12T01:00:00' => new Migration(
+       'Fix to allow running of migration 2012-10-12T01:41:10 -- reverts 2012-10-09T14:40:01',
+       "
+ALTER TABLE ONLY concept ADD CONSTRAINT concept_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"user\"(id);
+ALTER TABLE ONLY connector_class_instance ADD CONSTRAINT connector_class_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"user\"(id);
+ALTER TABLE ONLY treenode_connector ADD CONSTRAINT treenode_connector_user_id_fkey FOREIGN KEY (user_id) REFERENCES \"user\"(id);
+"
+),
+
 	'2012-10-12T01:41:10' => new Migration(
 		'Use auth_user to identify users',
 		'

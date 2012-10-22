@@ -669,3 +669,30 @@ class Drawing(UserFocusedModel):
     svg = models.TextField()
     type=models.IntegerField(default=0)
     status = models.IntegerField(default=0)
+
+class DataViewType(models.Model):
+    class Meta:
+        db_table = "data_view_type"
+        managed = False
+    title = models.TextField()
+    code_type = models.TextField()
+    comment = models.TextField()
+
+    def __unicode__(self):
+        return self.title
+
+class DataView(models.Model):
+    class Meta:
+        db_table = "data_view"
+        managed = False
+        permissions = (
+            ("can_administer", "Can administer data views"),
+            ("can_browse", "Can browse data views")
+        )
+    title = models.TextField()
+    data_view_type = models.ForeignKey(DataViewType)
+    config = models.TextField(default="{}")
+    is_default = models.BooleanField(default=False)
+    position = models.IntegerField()
+    comment = models.TextField(default="",blank=True)
+

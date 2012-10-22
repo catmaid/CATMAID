@@ -147,3 +147,27 @@ div.form textarea, div.form input, div.form select
 	padding:0.5em 1em 0.5em 1em;
 }
 
+div#data_view table
+{
+	margin:1.5em 16px 0.5em 20px;
+	line-height:1.1em;
+	font-weight:normal;
+	border: 0px;
+}
+
+div#data_view td.projectname
+{
+	font-weight:bold;
+}
+
+div#data_view td.stackimage
+{
+	vertical-align: top;
+	text-align: right;
+}
+
+div#data_view td.stackname
+{
+	vertical-align: top;
+	text-align: left;
+}

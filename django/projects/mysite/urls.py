@@ -152,6 +152,13 @@ urlpatterns += patterns('',
     url(r'^admin/', include(admin.site.urls))
     )
 
+# Data views
+urlpatterns += patterns('',
+    (r'^dataviews/list$', 'catmaid.control.get_available_data_views'),
+    (r'^dataviews/show/(?P<data_view_id>\d+)$', 'catmaid.control.get_data_view'),
+    (r'^dataviews/type/comment$', 'catmaid.control.get_data_view_type_comment'),
+    )
+
 if settings.DEBUG:
     urlpatterns += patterns('',
                             (r'^static/(?P<path>.*)$',

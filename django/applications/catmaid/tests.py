@@ -13,7 +13,7 @@ from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, Session, Log, Message, TextlabelLocation
 from models import Treenode, Connector, TreenodeConnector, User
 from models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
-from transaction import RollbackAndReport, transaction_reportable_commit_on_success
+from transaction import CatmaidException, transaction_reportable_commit_on_success
 from views.catmaid_replacements import get_relation_to_id_map, get_class_to_id_map
 
 
@@ -77,7 +77,7 @@ class TransactionTests(TransactionTestCase):
         @transaction_reportable_commit_on_success
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
-            raise RollbackAndReport({'error': 'catch me if you can'})
+            raise CatmaidException({'error': 'catch me if you can'})
             return HttpResponse(json.dumps({'should not': 'return this'}))
 
         User.objects.all().delete()
@@ -92,7 +92,7 @@ class TransactionTests(TransactionTestCase):
         @transaction_reportable_commit_on_success
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
-            raise RollbackAndReport('catch me if you can')
+            raise CatmaidException('catch me if you can')
             return HttpResponse(json.dumps({'should not': 'return this'}))
 
         User.objects.all().delete()
@@ -107,7 +107,7 @@ class TransactionTests(TransactionTestCase):
         @transaction_reportable_commit_on_success
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
-            raise RollbackAndReport(5)
+            raise CatmaidException(5)
             return HttpResponse(json.dumps({'should not': 'return this'}))
 
         User.objects.all().delete()

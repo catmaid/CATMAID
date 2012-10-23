@@ -35,13 +35,8 @@ def save_skeletonlist(request, project_id=None):
             skeleton_list = skellist
         ).save()
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))
 
     return HttpResponse(json.dumps({'success': '1'}))
 

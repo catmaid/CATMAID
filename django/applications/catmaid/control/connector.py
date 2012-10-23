@@ -35,7 +35,7 @@ def list_connector(request, project_id=None):
         relation_map = get_relation_to_id_map(project_id)
         for rel in ['presynaptic_to', 'postsynaptic_to', 'element_of', 'labeled_as']:
             if rel not in relation_map:
-                raise RollbackAndReport('Failed to find the required relation %s' % rel)
+                raise CatmaidException('Failed to find the required relation %s' % rel)
 
         if relation_type == 1:
             relation_type_id = relation_map['presynaptic_to']
@@ -218,13 +218,8 @@ def list_connector(request, project_id=None):
             'iTotalDisplayRecords': total_result_count,
             'aaData': aaData_output}))
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)

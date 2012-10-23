@@ -19,7 +19,7 @@ def update_treenode_table(request, project_id=None):
     property_value = request.POST.get('value', None)
 
     if None in [property_name, treenode_id, property_value]:
-        raise RollbackAndReport('Need type, treenode id and value.')
+        raise CatmaidException('Need type, treenode id and value.')
     else:
         treenode_id = int(treenode_id)
         if property_name == 'confidence':
@@ -30,7 +30,7 @@ def update_treenode_table(request, project_id=None):
             property_value = int(property_value)
 
     if property_name not in ['confidence', 'radius']:
-        raise RollbackAndReport('Can only modify confidence and radius.')
+        raise CatmaidException('Can only modify confidence and radius.')
 
     response_on_error = ''
     try:
@@ -44,13 +44,8 @@ def update_treenode_table(request, project_id=None):
         # return HttpResponse(json.dumps({'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}))
         return HttpResponse(property_value)
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))
 
 @login_required
 @transaction_reportable_commit_on_success
@@ -228,10 +223,5 @@ def list_treenode_table(request, project_id=None):
 
         return HttpResponse(json.dumps(result))
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))

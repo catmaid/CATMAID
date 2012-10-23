@@ -54,13 +54,8 @@ def update_textlabel(request, project_id=None):
 
         return HttpResponse(' ')
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)
@@ -69,7 +64,7 @@ def delete_textlabel(request, project_id=None):
     textlabel_id = request.POST.get('tid', None)
 
     if textlabel_id is None:
-        raise RollbackAndReport('No treenode id provided.')
+        raise CatmaidException('No treenode id provided.')
 
     response_on_error = ''
     try:
@@ -78,13 +73,8 @@ def delete_textlabel(request, project_id=None):
         response_on_error = 'Could not delete Textlabels for treenode #%s' % textlabel_id
         Textlabel.objects.filter(id=textlabel_id).delete()
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))
 
     return HttpResponse(json.dumps({'message': 'Success.'}))
 
@@ -208,10 +198,5 @@ def textlabels(request, project_id=None):
 
         return HttpResponse(json.dumps(makeJSON_legacy_list(textlabels)))
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))

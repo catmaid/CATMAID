@@ -45,11 +45,11 @@ def node_list(request, project_id=None):
 
     for class_name in ['skeleton']:
         if class_name not in class_map:
-            raise RollbackAndReport('Can not find "%s" class for this project' % class_name)
+            raise CatmaidException('Can not find "%s" class for this project' % class_name)
 
     for relation in ['presynaptic_to', 'postsynaptic_to', 'model_of', 'element_of']:
         if relation not in relation_map:
-            raise RollbackAndReport('Can not find "%s" relation for this project' % relation)
+            raise CatmaidException('Can not find "%s" relation for this project' % relation)
 
     response_on_error = ''
     try:
@@ -209,13 +209,8 @@ def node_list(request, project_id=None):
 
         return HttpResponse(json.dumps(treenodes_by_id.values() + connectors_by_id.values()))
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ';' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))
 
 
 @login_required
@@ -314,7 +309,7 @@ def node_update(request, project_id=None):
     for node_index, node in nodes.items():
         for req_prop in required_properties:
             if req_prop not in node:
-                raise RollbackAndReport('Missing key: %s in index %s' % (req_prop, node_index))
+                raise CatmaidException('Missing key: %s in index %s' % (req_prop, node_index))
 
         try:
             if node['type'] == 'treenode':
@@ -326,9 +321,9 @@ def node_update(request, project_id=None):
                     user=request.user,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
             else:
-                raise RollbackAndReport('Unknown node type: %s' % node['type'])
+                raise CatmaidException('Unknown node type: %s' % node['type'])
         except:
-            raise RollbackAndReport('Failed to update treenode: %s' % node['node_id'])
+            raise CatmaidException('Failed to update treenode: %s' % node['node_id'])
     
     return HttpResponse(json.dumps({'updated': len(nodes)}))
 
@@ -348,11 +343,11 @@ def node_nearest(request, project_id=None):
     relation_map = get_relation_to_id_map(project_id)
 
     if params['skeleton_id'] < 0 and params['neuron_id'] < 0:
-        raise RollbackAndReport('You must specify either a skeleton or a neuron')
+        raise CatmaidException('You must specify either a skeleton or a neuron')
 
     for rel in ['part_of', 'model_of']:
         if rel not in relation_map:
-            raise RollbackAndReport('Could not find required relation %s for project %s.' % (rel, project_id))
+            raise CatmaidException('Could not find required relation %s for project %s.' % (rel, project_id))
 
     skeletons = []
     if params['skeleton_id'] > 0:
@@ -393,7 +388,7 @@ def node_nearest(request, project_id=None):
             int(params['z']),
             treenodes)
         if nearestTreenode is None:
-            raise RollbackAndReport('No treenodes were found.')
+            raise CatmaidException('No treenodes were found.')
 
         # TODO Check if callers really need string data.
         # Return string data to emulate behavior of pg_fetch_assoc.
@@ -404,10 +399,5 @@ def node_nearest(request, project_id=None):
             'z': str(int(nearestTreenode.location.z)),
             'skeleton_id': str(nearestTreenode.skeleton_id)}))
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (message_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(message_on_error)
+        raise CatmaidException(response_on_error + ':' + str(e))

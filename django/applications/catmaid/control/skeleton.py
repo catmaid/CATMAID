@@ -121,12 +121,12 @@ def skeleton_ancestry(request, project_id=None):
     # prefetch_related when we upgrade to Django 1.4 or above
     skeleton_id = request.POST.get('skeleton_id', None)
     if skeleton_id is None:
-        raise RollbackAndReport('A skeleton id has not been provided!')
+        raise CatmaidException('A skeleton id has not been provided!')
 
     relation_map = get_relation_to_id_map(project_id)
     for rel in ['model_of', 'part_of']:
         if rel not in relation_map:
-            raise RollbackAndReport(' => "Failed to find the required relation %s' % rel)
+            raise CatmaidException(' => "Failed to find the required relation %s' % rel)
 
     response_on_error = ''
     try:
@@ -138,9 +138,9 @@ def skeleton_ancestry(request, project_id=None):
             'class_instance_b__name')
         neuron_count = neuron_rows.count()
         if neuron_count == 0:
-            raise RollbackAndReport('No neuron was found that the skeleton %s models' % skeleton_id)
+            raise CatmaidException('No neuron was found that the skeleton %s models' % skeleton_id)
         elif neuron_count > 1:
-            raise RollbackAndReport('More than one neuron was found that the skeleton %s models' % skeleton_id)
+            raise CatmaidException('More than one neuron was found that the skeleton %s models' % skeleton_id)
 
         parent_neuron = neuron_rows[0]
         ancestry = []
@@ -167,7 +167,7 @@ def skeleton_ancestry(request, project_id=None):
             if parent_count == 0:
                 break  # We've reached the top of the hierarchy.
             elif parent_count > 1:
-                raise RollbackAndReport('More than one class_instance was found that the class_instance %s is part_of.' % current_ci)
+                raise CatmaidException('More than one class_instance was found that the class_instance %s is part_of.' % current_ci)
             else:
                 parent = parents[0]
                 ancestry.append({
@@ -179,13 +179,8 @@ def skeleton_ancestry(request, project_id=None):
 
         return HttpResponse(json.dumps(ancestry))
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))
 
 
 @login_required
@@ -238,7 +233,7 @@ def skeleton_info(request, project_id=None, skeleton_id=None):
 def reroot_skeleton(request, project_id=None):
     treenode_id = request.POST.get('treenode_id', None)
     if treenode_id is None:
-        raise RollbackAndReport('A treenode id has not been provided!')
+        raise CatmaidException('A treenode id has not been provided!')
 
     response_on_error = ''
     try:
@@ -253,7 +248,7 @@ def reroot_skeleton(request, project_id=None):
 
         first_parent = treenode.parent
         if first_parent is None:
-            raise RollbackAndReport('An error occured while rerooting. No valid query result.')
+            raise CatmaidException('An error occured while rerooting. No valid query result.')
 
         # Traverse up the chain of parents, reversing the parent relationships so
         # that the selected treenode (with ID treenode_id) becomes the root.
@@ -283,13 +278,8 @@ def reroot_skeleton(request, project_id=None):
 
         return HttpResponse(json.dumps({'newroot': treenode.id}))
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)
@@ -298,14 +288,14 @@ def join_skeleton(request, project_id=None):
     from_treenode = request.POST.get('from_id', None)
     to_treenode = request.POST.get('to_id', None)
     if from_treenode is None or to_treenode is None:
-        raise RollbackAndReport('From treenode or to treenode not given.')
+        raise CatmaidException('From treenode or to treenode not given.')
     else:
         from_treenode = int(from_treenode)
         to_treenode = int(to_treenode)
 
     relation_map = get_relation_to_id_map(project_id)
     if 'element_of' not in relation_map:
-        raise RollbackAndReport('Could not find element_of relation.')
+        raise CatmaidException('Could not find element_of relation.')
 
     response_on_error = ''
     try:
@@ -322,7 +312,7 @@ def join_skeleton(request, project_id=None):
             relation=relation_map['element_of'])[0].class_instance_id
 
         if from_skeleton == to_skeleton:
-            raise RollbackAndReport('Please do not join treenodes of the same skeleton. This introduces loops.')
+            raise CatmaidException('Please do not join treenodes of the same skeleton. This introduces loops.')
 
         # Update element_of relationship of target skeleton the target skeleton is
         # removed and its treenode assume the skeleton id of the from-skeleton.
@@ -360,11 +350,5 @@ def join_skeleton(request, project_id=None):
             'fromid': from_treenode,
             'toid': to_treenode}))
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
-
+        raise CatmaidException(response_on_error + ':' + str(e))

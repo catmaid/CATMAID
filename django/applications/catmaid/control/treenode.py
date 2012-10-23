@@ -184,13 +184,9 @@ def create_treenode(request, project_id=None):
                     'neuron_id': new_neuron.id,
                     'fragmentgroup_id': fragment_group.id
                     }))
-    except RollbackAndReport:
-        raise
+
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)
@@ -221,11 +217,11 @@ def create_interpolated_treenode(request, project_id=None):
 
     for class_name in ['neuron', 'skeleton']:
         if class_name not in class_map:
-            raise RollbackAndReport('Can not find "%s" class for this project' % class_name)
+            raise CatmaidException('Can not find "%s" class for this project' % class_name)
 
     for relation in ['element_of', 'model_of', 'part_of']:
         if relation not in relation_map:
-            raise RollbackAndReport('Can not find "%s" relation for this project' % relation)
+            raise CatmaidException('Can not find "%s" relation for this project' % relation)
 
     response_on_error = ''
     try:
@@ -273,26 +269,10 @@ def create_interpolated_treenode(request, project_id=None):
 
             parent_id = new_treenode.id
 
-        # Update last inserted node to reset edition time, necessary
-        # to make DB know which treenode in the skeleton was edited
-        # most recently.
-        transaction.commit()
-        new_tci.confidence = params['confidence'] + 1
-        new_tci.save()
-        transaction.commit()
-        new_tci.confidence = params['confidence']
-        new_tci.save()
-        transaction.commit()
-
         return HttpResponse(json.dumps({'treenode_id': new_treenode.id, 'skeleton_id': parent_skeleton_id}))
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))
 
 
 
@@ -301,7 +281,7 @@ def create_interpolated_treenode(request, project_id=None):
 def reroot_treenode(request, project_id=None):
     treenode_id = request.POST.get('tnid', None)
     if treenode_id is None:
-        raise RollbackAndReport('A treenode id has not been provided!')
+        raise CatmaidException('A treenode id has not been provided!')
 
     response_on_error = ''
     try:
@@ -316,7 +296,7 @@ def reroot_treenode(request, project_id=None):
 
         first_parent = treenode.parent
         if first_parent is None:
-            raise RollbackAndReport('An error occured while rerooting. No valid query result.')
+            raise CatmaidException('An error occured while rerooting. No valid query result.')
 
         # Traverse up the chain of parents, reversing the parent relationships so
         # that the selected treenode (with ID treenode_id) becomes the root.
@@ -346,13 +326,8 @@ def reroot_treenode(request, project_id=None):
 
         return HttpResponse(json.dumps({'newroot': treenode.id}))
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)
@@ -361,14 +336,14 @@ def link_treenode(request, project_id=None):
     from_treenode = request.POST.get('from_id', None)
     to_treenode = request.POST.get('to_id', None)
     if from_treenode is None or to_treenode is None:
-        raise RollbackAndReport('From treenode or to treenode not given.')
+        raise CatmaidException('From treenode or to treenode not given.')
     else:
         from_treenode = int(from_treenode)
         to_treenode = int(to_treenode)
 
     relation_map = get_relation_to_id_map(project_id)
     if 'element_of' not in relation_map:
-        raise RollbackAndReport('Could not find element_of relation.')
+        raise CatmaidException('Could not find element_of relation.')
 
     response_on_error = ''
     try:
@@ -385,7 +360,7 @@ def link_treenode(request, project_id=None):
                 relation=relation_map['element_of'])[0].class_instance_id
 
         if from_skeleton == to_skeleton:
-            raise RollbackAndReport('Please do not join treenodes of the same skeleton. This introduces loops.')
+            raise CatmaidException('Please do not join treenodes of the same skeleton. This introduces loops.')
 
         # Update element_of relationship of target skeleton the target skeleton is
         # removed and its treenode assume the skeleton id of the from-skeleton.
@@ -423,13 +398,8 @@ def link_treenode(request, project_id=None):
             'fromid': from_treenode,
             'toid': to_treenode}))
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)
@@ -440,13 +410,13 @@ def update_treenode_table(request, project_id=None):
     property_value = request.POST.get('value', None)
 
     if None in [property_name, treenode_id, property_value]:
-        raise RollbackAndReport('Need type, treenode id and value.')
+        raise CatmaidException('Need type, treenode id and value.')
     else:
         treenode_id = int(treenode_id)
         property_value = int(property_value)
 
     if property_name not in ['confidence', 'radius']:
-        raise RollbackAndReport('Can only modify confidence and radius.')
+        raise CatmaidException('Can only modify confidence and radius.')
 
     response_on_error = ''
     try:
@@ -459,13 +429,8 @@ def update_treenode_table(request, project_id=None):
 
         return HttpResponse(json.dumps({'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}))
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))
 
 @requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
@@ -508,7 +473,7 @@ def delete_treenode(request, project_id=None):
                     parent=treenode)
 
             if (children.count() > 0):
-                raise RollbackAndReport("You can't delete the root node when it has children.")
+                raise CatmaidException("You can't delete the root node when it has children.")
 
             # Remove original skeleton.
             response_on_error = 'Could not delete skeleton.'
@@ -539,13 +504,8 @@ def delete_treenode(request, project_id=None):
 
             return HttpResponse(json.dumps({'message': 'Removed treenode successfully.'}))
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))
 
 
 
@@ -555,7 +515,7 @@ def delete_treenode(request, project_id=None):
 def treenode_info(request, project_id=None):
     treenode_id = request.POST.get('treenode_id', -1)
     if (treenode_id < 0):
-        raise RollbackAndReport('A treenode id has not been provided!')
+        raise CatmaidException('A treenode id has not been provided!')
 
     c = connection.cursor()
     # Fetch all the treenodes which are in the bounding box:
@@ -576,8 +536,8 @@ cici.relation_id = r2.id AND r2.relation_name = 'model_of'
             for row in c.fetchall()
             ]
     if (len(results) > 1):
-        raise RollbackAndReport('Found more than one skeleton and neuron for treenode %s' % treenode_id)
+        raise CatmaidException('Found more than one skeleton and neuron for treenode %s' % treenode_id)
     elif (len(results) == 0):
-        raise RollbackAndReport('No skeleton and neuron for treenode %s' % treenode_id)
+        raise CatmaidException('No skeleton and neuron for treenode %s' % treenode_id)
     else:
         return HttpResponse(json.dumps(results[0]))

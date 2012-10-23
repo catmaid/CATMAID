@@ -61,7 +61,7 @@ def instance_operation(request, project_id=None):
     def rename_node():
         # Do not allow '|' in name because it is used as string separator in NeuroHDF export
         if '|' in params['title']:
-            raise RollbackAndReport('Name should not contain pipe character!')
+            raise CatmaidException('Name should not contain pipe character!')
 
         instance_operation.res_on_err = 'Failed to update class instance.'
         nodes_to_rename = ClassInstance.objects.filter(id=params['id'])
@@ -71,12 +71,12 @@ def instance_operation(request, project_id=None):
             insert_into_log(project_id, request.user.id, "rename_%s" % params['classname'], None, "Renamed %s with ID %s to %s" % (params['classname'], params['id'], params['title']))
             return HttpResponse(json.dumps({'class_instance_ids': node_ids}))
         else:
-            raise RollbackAndReport('Could not find any node with ID %s' % params['id'])
+            raise CatmaidException('Could not find any node with ID %s' % params['id'])
 
     def remove_node():
         # Check if node is a skeleton. If so, we have to remove its treenodes as well!
         if params['rel'] == None:
-            RollbackAndReport('No relation given!')
+            CatmaidException('No relation given!')
 
         elif params['rel'] == 'skeleton':
             remove_skeletons([params['id']])
@@ -97,7 +97,7 @@ def instance_operation(request, project_id=None):
                 insert_into_log(project_id, request.user.id, 'remove_neuron', None, 'Removed neuron with ID %s and name %s' % (params['id'], params['title']))
                 return HttpResponse(json.dumps({'status': 1, 'message': 'Removed neuron successfully.'}))
             else:
-                raise RollbackAndReport('Could not find any node with ID %s' % params['id'])
+                raise CatmaidException('Could not find any node with ID %s' % params['id'])
 
         else:
             instance_operation.res_on_err = 'Failed to delete node from instance table.'
@@ -106,11 +106,11 @@ def instance_operation(request, project_id=None):
                 node_to_delete.delete()
                 return HttpResponse(json.dumps({'status': 1, 'message': 'Removed node successfully.'}))
             else:
-                raise RollbackAndReport('Could not find any node with ID %s' % params['id'])
+                raise CatmaidException('Could not find any node with ID %s' % params['id'])
 
     def create_node():
         if params['classname'] not in class_map:
-            raise RollbackAndReport('Failed to select class.')
+            raise CatmaidException('Failed to select class.')
         instance_operation.res_on_err = 'Failed to insert instance of class.'
         node = ClassInstance(
                 user=request.user,
@@ -130,7 +130,7 @@ def instance_operation(request, project_id=None):
                     class_column=class_map['root'])[0].id
 
         if params['relationname'] not in relation_map:
-            RollbackAndReport('Failed to select relation %s' % params['relationname'])
+            CatmaidException('Failed to select relation %s' % params['relationname'])
 
         instance_operation.res_on_err = 'Failed to insert relation.'
         cici = ClassInstanceClassInstance()
@@ -145,7 +145,7 @@ def instance_operation(request, project_id=None):
 
     def move_node():
         if params['src'] == 0 or params['ref'] == 0:
-            RollbackAndReport('src (%s) or ref (%s) not set.' % (params['src'], params['ref']))
+            CatmaidException('src (%s) or ref (%s) not set.' % (params['src'], params['ref']))
 
         relation_type = 'part_of'
         if params['classname'] == 'skeleton':  # Special case for model_of relationship
@@ -179,16 +179,13 @@ def instance_operation(request, project_id=None):
     try:
         # Dispatch to operation
         if params['operation'] not in ['rename_node', 'remove_node', 'create_node', 'move_node', 'has_relations']:
-            raise RollbackAndReport('No operation called %s.' % params['operation'])
+            raise CatmaidException('No operation called %s.' % params['operation'])
         return locals()[params['operation']]()
 
-    except RollbackAndReport:
+    except CatmaidException:
         raise
     except Exception as e:
-        if (instance_operation.res_on_err == ''):
-            raise RollbackAndReport({'error': str(e)})
-        else:
-            raise RollbackAndReport({'error': instance_operation.res_on_err})
+        raise CatmaidException(instance_operation.res_on_err + '\n' + str(e))
 
 
 @login_required
@@ -196,7 +193,7 @@ def instance_operation(request, project_id=None):
 def tree_object_expand(request, project_id=None):
     skeleton_id = request.POST.get('skeleton_id', None)
     if skeleton_id is None:
-        raise RollbackAndReport('A skeleton id has not been provided!')
+        raise CatmaidException('A skeleton id has not been provided!')
     else:
         skeleton_id = int(skeleton_id)
 
@@ -233,13 +230,8 @@ def tree_object_expand(request, project_id=None):
         path.reverse()
         return HttpResponse(json.dumps(path))
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + ':' + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))
 
 @login_required
 @transaction_reportable_commit_on_success
@@ -274,11 +266,11 @@ def tree_object_list(request, project_id=None):
 
     for class_name in ['neuron', 'skeleton', 'group', 'root']:
         if class_name not in class_map:
-            raise RollbackAndReport('Can not find "%s" class for this project' % class_name)
+            raise CatmaidException('Can not find "%s" class for this project' % class_name)
 
     for relation in ['model_of', 'part_of']:
         if relation not in relation_map:
-            raise RollbackAndReport('Can not find "%s" relation for this project' % relation)
+            raise CatmaidException('Can not find "%s" relation for this project' % relation)
 
     response_on_error = ''
     try:
@@ -438,10 +430,5 @@ def tree_object_list(request, project_id=None):
 
         return HttpResponse(json.dumps(output))
 
-    except RollbackAndReport:
-        raise
     except Exception as e:
-        if (response_on_error == ''):
-            raise RollbackAndReport(str(e))
-        else:
-            raise RollbackAndReport(response_on_error + str(e))
+        raise CatmaidException(response_on_error + ':' + str(e))

@@ -11,13 +11,13 @@
  * @access private
  */
 $db_host[ 'write' ]	= 'localhost';
-$db_port[ 'write' ]	= '5432'
+$db_port[ 'write' ]	= '5432';
 $db_user[ 'write' ]	= 'catmaid_user';
 $db_pw[ 'write' ]	= 'password';
 $db_db[ 'write' ]	= 'catmaid';
 
 $db_host[ 'read' ]	= 'localhost';
-$db_port[ 'read' ]	= '5432'
+$db_port[ 'read' ]	= '5432';
 $db_user[ 'read' ]	= 'catmaid_user';
 $db_pw[ 'read' ]	= 'password';
 $db_db[ 'read' ]	= 'catmaid';

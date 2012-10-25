@@ -16,7 +16,7 @@ from catmaid.transaction import *
 def node_list(request, project_id=None):
     # TODO This function is used very often and Catmaid would benefit from its
     # optimization. The following things should have big effects, ordered by
-    # expected efficiencty gain VS effort to implement.
+    # expected efficienct gain VS effort to implement.
 
     # - Stop using cursor_fetch_dictionary, dictionary creation requires an
     # entire iteration over each query result list. Instead access each

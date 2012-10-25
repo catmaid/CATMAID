@@ -283,6 +283,8 @@ def most_recent_treenode(request, project_id=None):
         # to do with the query? The error message doesn't make much sense
         # either.
         return HttpResponse(json.dumps({'error': 'No skeleton and neuron found for treenode %s' % treenode_id}))
+    except Exception as e:
+        return HttpResponse(json.dumps({'error': str(e)}))
 
     return HttpResponse(json.dumps({
         'id': tn.id,

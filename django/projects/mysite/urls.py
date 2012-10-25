@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib import admin
 admin.autodiscover()
 
-# A regular expression matiching floating point and integer numbers
+# A regular expression matching floating point and integer numbers
 num = r'[-+]?[0-9]*\.?[0-9]+'
 # A regular expression matching lists of integers with comma as delimiter
 intlist = r'[0-9]+(,[0-9]+)*'

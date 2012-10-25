@@ -32,6 +32,11 @@ def node_list(request, project_id=None):
     # so in a separate iteration over the result list/dictionary.
 
     params = {}
+    # z: the section index in calibrated units.
+    # width: the width of the field of view in calibrated units.
+    # height: the height of the field of view in calibrated units.
+    # zres: the resolution in the Z axis, used to determine the thickness of a section.
+    # as: the ID of the active skeleton
     for p in ('z', 'width', 'height', 'zres', 'as'):
         params[p] = int(request.POST.get(p, 0))
     for p in ('top', 'left'):

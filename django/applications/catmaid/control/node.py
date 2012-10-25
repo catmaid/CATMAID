@@ -271,7 +271,7 @@ def most_recent_treenode(request, project_id=None):
             skeleton=skeleton_id,
             user=request.user)\
              .extra(select={'most_recent': 'greatest(treenode.creation_time, treenode.edition_time)'})\
-             .extra(order_by=['-most_recent'])[0]
+             .extra(order_by=['-most_recent', '-treenode.id'])[0]
     except IndexError:
         # TODO Not sure whether this is correct. This is the only place
         # where the treenode_id is used. Does it really have anything

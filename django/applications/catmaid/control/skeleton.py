@@ -248,7 +248,7 @@ def reroot_skeleton(request, project_id=None):
 
         first_parent = treenode.parent
         if first_parent is None:
-            raise CatmaidException('An error occured while rerooting. No valid query result.')
+            raise CatmaidException(response_on_error)
 
         # Traverse up the chain of parents, reversing the parent relationships so
         # that the selected treenode (with ID treenode_id) becomes the root.

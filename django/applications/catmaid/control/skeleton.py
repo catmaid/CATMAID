@@ -252,25 +252,35 @@ def reroot_skeleton(request, project_id=None):
 
         # Traverse up the chain of parents, reversing the parent relationships so
         # that the selected treenode (with ID treenode_id) becomes the root.
-        node_to_become_new_parent = treenode
-        change_node = first_parent  # Will have its parent changed each iteration.
+        new_parent = treenode
+        new_confidence = treenode.confidence
+        node = first_parent
+
         while True:
-            # The parent's parent will have its parent changed next iteration.
-            change_nodes_old_parent = change_node.parent
+            response_on_error = 'Failed to update treenode with id %s to have new parent %s' % (node.id, new_parent.id)
 
-            response_on_error = 'Failed to update treenode with id %s to have new parent %s' % (change_node.id, node_to_become_new_parent.id)
-            change_node.parent = node_to_become_new_parent
-            change_node.save()
+            # Store current values to be used in next iteration
+            parent = node.parent
+            confidence = node.confidence
 
-            if change_nodes_old_parent is None:
+            # Set new values
+            node.parent = new_parent
+            node.confidence = new_confidence
+            node.save()
+
+            if parent is None:
+                # Root has been reached
                 break
             else:
-                node_to_become_new_parent = change_node
-                change_node = change_nodes_old_parent
+                # Prepare next iteration
+                new_parent = node
+                new_confidence = confidence
+                node = parent
 
         # Finally make treenode root
         response_on_error = 'Failed to set treenode with ID %s as root.' % treenode.id
         treenode.parent = None
+        treenode.confidence = 5 # reset to maximum confidence, now it is root.
         treenode.save()
 
         response_on_error = 'Failed to log reroot.'

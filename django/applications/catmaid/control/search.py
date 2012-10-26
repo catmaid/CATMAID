@@ -42,7 +42,6 @@ def search(request, project_id=None):
         row['class_name'] = row.pop('class_column__class_name')
         # Prepare for retrieving nodes holding text labels
         if row['class_name'] == 'label':
-            row['nodes'] = []
             label_rows[row['name']] = row
 
     node_query = TreenodeClassInstance.objects.filter(
@@ -55,16 +54,15 @@ def search(request, project_id=None):
         'treenode__location',
         'treenode__skeleton',
         'class_instance__name')
+
     # Insert nodes into their rows
     for node in node_query:
         row_with_node = label_rows[node['class_instance__name']]
-        row_with_node['nodes'].append(format_node_data(node))
-
-    # Delete the nodes property from rows with no nodes
-    for row in rows:
-        if 'nodes' in row and len(row['nodes']) == 0:
-            del row['nodes']
+        nodes = row_with_node.get('nodes', None)
+        if not nodes:
+          nodes = []
+          row_with_node['nodes'] = nodes
+        nodes.append(format_node_data(node))
 
     return HttpResponse(json.dumps(rows))
-
 

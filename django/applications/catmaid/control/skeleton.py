@@ -310,16 +310,32 @@ def _reroot_skeleton(treenode_id, project_id):
 @requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
 def join_skeleton(request, project_id=None):
-    _join_skeleton(request.POST.get('from_id', None),
-                   request.POST.get('to_id', None),
-                   project_id)
+    try:
+        from_treenode_id = request.POST.get('from_id', None)
+        to_treenode_id = request.POST.get('to_id', None)
+        from_skeleton, to_skeleton = _join_skeleton(from_treenode_id, to_treenode_id, project_id)
+
+        response_on_error = 'Could not log actions.'
+        location = get_object_or_404(Treenode, id=from_treenode_id).location
+        insert_into_log(project_id, request.user.id, 'join_skeleton', location, 'Joined skeleton with ID %s into skeleton with ID %s' % (to_skeleton, from_skeleton))
+
+        return HttpResponse(json.dumps({
+            'message': 'success',
+            'fromid': from_treenode_id,
+            'toid': to_treenode_id}))
+
+    except Exception as e:
+        raise CatmaidException(response_on_error + ':' + str(e))
+
 
 def _join_skeleton(from_treenode_id, to_treenode_id, project_id):
     """ Take the IDs of two nodes, each belonging to a different skeleton,
     and make to_treenode be a child of from_treenode,
     and join the nodes of the skeleton of to_treenode
     into the skeleton of from_treenode,
-    and delete the former skeleton of to_treenode."""
+    and delete the former skeleton of to_treenode.
+    Returns the tuple from_skeleton, to_skeleton
+    the latter not existing anymore on return."""
     if from_treenode_id is None or to_treenode_id is None:
         raise CatmaidException('From treenode or to treenode not given.')
     else:
@@ -350,7 +366,6 @@ def _join_skeleton(from_treenode_id, to_treenode_id, project_id):
         # Reroot to_skeleton at to_treenode if necessary
         response_on_error = 'Could not reroot at treenode %s' % to_treenode_id
         _reroot_skeleton(to_treenode_id, project_id)
-        # TODO remove the javascript call to reroot prior to join
 
         # Update element_of relationship of target skeleton. The target skeleton is
         # removed and its treenode assume the skeleton id of the from-skeleton.
@@ -379,14 +394,7 @@ def _join_skeleton(from_treenode_id, to_treenode_id, project_id):
         response_on_error = 'Could not update parent of treenode with ID %s' % to_treenode_id
         Treenode.objects.filter(id=to_treenode_id).update(parent=from_treenode_id)
 
-        response_on_error = 'Could not log actions.'
-        location = get_object_or_404(Treenode, id=from_treenode_id).location
-        insert_into_log(project_id, request.user.id, 'join_skeleton', location, 'Joined skeleton with ID %s to skeleton with ID %s' % (from_skeleton, to_skeleton))
-
-        return HttpResponse(json.dumps({
-            'message': 'success',
-            'fromid': from_treenode_id,
-            'toid': to_treenode_id}))
+        return from_skeleton, to_skeleton
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))

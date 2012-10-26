@@ -645,45 +645,30 @@ var SkeletonAnnotations = new function()
                     return;
                   }
                 }
-                // TODO: rerooting operation should be called on the backend
-                // first make sure to reroot target
-                requestQueue.register(django_url + project.id + '/skeleton/reroot', "POST", {
-                  pid: project.id,
-                  treenode_id: toid
+                // The call to join will reroot the target skeleton at the shift-clicked treenode
+                requestQueue.register(django_url + project.id + '/skeleton/join', "POST", {
+                  from_id: fromid,
+                  to_id: toid
                 }, function (status, text, xml) {
                   if (status === 200) {
                     if (text && text !== " ") {
                       var e = $.parseJSON(text);
-                      // console.log(e);
                       if (e.error) {
                         alert(e.error);
                       } else {
-                        // then link again, in the continuation
-                        requestQueue.register(django_url + project.id + '/skeleton/join', "POST", {
-                          from_id: fromid,
-                          to_id: toid
-                        }, function (status, text, xml) {
-                          if (status === 200) {
-                            if (text && text !== " ") {
-                              var e = $.parseJSON(text);
-                              if (e.error) {
-                                alert(e.error);
-                              } else {
-                                // just redraw all for now
-                                self.updateNodes(function () {
-                                  ObjectTree.refresh();
-                                  refreshAllWidgets();
-                                  if (typeof callback !== "undefined") {
-                                    callback();
-                                  }
-                                });
-                              }
-                            }
+                        // just redraw all for now
+                        self.updateNodes(function () {
+                          ObjectTree.refresh();
+                          refreshAllWidgets();
+                          if (typeof callback !== "undefined") {
+                            callback();
                           }
                         });
+                      }
+                    }
                   }
-                }}});
-            }}}});
+                });
+              }}}});
     }};
 
     this.createLink = function (fromid, toid, link_type) {

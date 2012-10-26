@@ -232,23 +232,41 @@ def skeleton_info(request, project_id=None, skeleton_id=None):
 @transaction_reportable_commit_on_success
 def reroot_skeleton(request, project_id=None):
     treenode_id = request.POST.get('treenode_id', None)
+    treenode = _reroot_skeleton(treenode_id, project_id)
+    response_on_error = ''
+    try:
+        print >> sys.stderr, "treenode is", treenode
+        if treenode:
+            response_on_error = 'Failed to log reroot.'
+            insert_into_log(project_id, request.user.id, 'reroot_skeleton', treenode.location, 'Rerooted skeleton for treenode with ID %s' % treenode.id)
+            return HttpResponse(json.dumps({'newroot': treenode.id}))
+        # Else, already root
+        return HttpResponse(json.dumps({'error': 'Node #%s is already root!' % treenode_id}))
+    except Exception as e:
+        raise CatmaidException(response_on_error + ':' + str(e))
+
+
+def _reroot_skeleton(treenode_id, project_id):
+    """ Returns the treenode instance that is now root,
+    or False if the treenode was root already. """
     if treenode_id is None:
         raise CatmaidException('A treenode id has not been provided!')
 
     response_on_error = ''
     try:
         response_on_error = 'Failed to select treenode with id %s.' % treenode_id
-        treenode = Treenode.objects.filter(
+        q_treenode = Treenode.objects.filter(
             id=treenode_id,
             project=project_id)
 
-        # no parent found or is root, then return
+        # Obtain the treenode from the response
         response_on_error = 'An error occured while rerooting. No valid query result.'
-        treenode = treenode[0]
-
+        treenode = q_treenode[0]
         first_parent = treenode.parent
+
+        # If no parent found it is assumed this node is already root
         if first_parent is None:
-            raise CatmaidException(response_on_error)
+            return False
 
         # Traverse up the chain of parents, reversing the parent relationships so
         # that the selected treenode (with ID treenode_id) becomes the root.
@@ -283,10 +301,7 @@ def reroot_skeleton(request, project_id=None):
         treenode.confidence = 5 # reset to maximum confidence, now it is root.
         treenode.save()
 
-        response_on_error = 'Failed to log reroot.'
-        insert_into_log(project_id, request.user.id, 'reroot_skeleton', treenode.location, 'Rerooted skeleton for treenode with ID %s' % treenode.id)
-
-        return HttpResponse(json.dumps({'newroot': treenode.id}))
+        return treenode
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))
@@ -295,13 +310,21 @@ def reroot_skeleton(request, project_id=None):
 @requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
 def join_skeleton(request, project_id=None):
-    from_treenode = request.POST.get('from_id', None)
-    to_treenode = request.POST.get('to_id', None)
-    if from_treenode is None or to_treenode is None:
+    _join_skeleton(request.POST.get('from_id', None),
+                   request.POST.get('to_id', None),
+                   project_id)
+
+def _join_skeleton(from_treenode_id, to_treenode_id, project_id):
+    """ Take the IDs of two nodes, each belonging to a different skeleton,
+    and make to_treenode be a child of from_treenode,
+    and join the nodes of the skeleton of to_treenode
+    into the skeleton of from_treenode,
+    and delete the former skeleton of to_treenode."""
+    if from_treenode_id is None or to_treenode_id is None:
         raise CatmaidException('From treenode or to treenode not given.')
     else:
-        from_treenode = int(from_treenode)
-        to_treenode = int(to_treenode)
+        from_treenode_id = int(from_treenode_id)
+        to_treenode_id = int(to_treenode_id)
 
     relation_map = get_relation_to_id_map(project_id)
     if 'element_of' not in relation_map:
@@ -312,19 +335,24 @@ def join_skeleton(request, project_id=None):
         response_on_error = 'Can not find skeleton for from-treenode.'
         from_skeleton = TreenodeClassInstance.objects.filter(
             project=project_id,
-            treenode=from_treenode,
+            treenode=from_treenode_id,
             relation=relation_map['element_of'])[0].class_instance_id
 
         response_on_error = 'Can not find skeleton for to-treenode.'
         to_skeleton = TreenodeClassInstance.objects.filter(
             project=project_id,
-            treenode=to_treenode,
+            treenode=to_treenode_id,
             relation=relation_map['element_of'])[0].class_instance_id
 
         if from_skeleton == to_skeleton:
-            raise CatmaidException('Please do not join treenodes of the same skeleton. This introduces loops.')
+            raise CatmaidException('Cannot join treenodes of the same skeleton, would introduce a loop.')
 
-        # Update element_of relationship of target skeleton the target skeleton is
+        # Reroot to_skeleton at to_treenode if necessary
+        response_on_error = 'Could not reroot at treenode %s' % to_treenode_id
+        _reroot_skeleton(to_treenode_id, project_id)
+        # TODO remove the javascript call to reroot prior to join
+
+        # Update element_of relationship of target skeleton. The target skeleton is
         # removed and its treenode assume the skeleton id of the from-skeleton.
 
         response_on_error = 'Could not update TreenodeClassInstance table.'
@@ -348,17 +376,17 @@ def join_skeleton(request, project_id=None):
         ClassInstance.objects.filter(id=to_skeleton).delete()
 
         # Update the parent of to_treenode.
-        response_on_error = 'Could not update parent of treenode with ID %s' % to_treenode
-        Treenode.objects.filter(id=to_treenode).update(parent=from_treenode)
+        response_on_error = 'Could not update parent of treenode with ID %s' % to_treenode_id
+        Treenode.objects.filter(id=to_treenode_id).update(parent=from_treenode_id)
 
         response_on_error = 'Could not log actions.'
-        location = get_object_or_404(Treenode, id=from_treenode).location
+        location = get_object_or_404(Treenode, id=from_treenode_id).location
         insert_into_log(project_id, request.user.id, 'join_skeleton', location, 'Joined skeleton with ID %s to skeleton with ID %s' % (from_skeleton, to_skeleton))
 
         return HttpResponse(json.dumps({
             'message': 'success',
-            'fromid': from_treenode,
-            'toid': to_treenode}))
+            'fromid': from_treenode_id,
+            'toid': to_treenode_id}))
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))

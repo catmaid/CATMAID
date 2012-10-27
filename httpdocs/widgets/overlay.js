@@ -212,6 +212,29 @@ var SkeletonAnnotations = new function()
       }
     };
 
+    /**
+     * Find connectors pre- and postsynaptic to the given node ID.
+     * Returns an array of two arrays, containing IDs of pre and post connectors.
+     */
+    this.findConnectors = function (node_id) {
+      var id, node;
+      var pre = [];
+      var post = [];
+      for (id in nodes) {
+        if (nodes.hasOwnProperty(id)) {
+          node = nodes[id];
+          if ("connector" === node.type) {
+            if (node.pregroup.hasOwnProperty(node_id)) {
+              pre.push(id);
+            } else if (node.postgroup.hasOwnProperty(node_id)) {
+              post.push(id);
+            }
+          }
+        }
+      }
+      return [pre, post];
+    };
+
     this.recolorAllNodes = function () {
       // Assumes that atn and active_skeleton_id are correct:
       var nodeid, node;

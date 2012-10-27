@@ -875,8 +875,20 @@ var SkeletonElements = new function()
             if (e.error) {
               alert(e.error);
             } else {
+              var ov = connectornode.paper.catmaidSVGOverlay;
+              // If there was a presynaptic node, select it
+              var preIDs  = Object.keys(connectornode.pregroup);
+              var postIDs = Object.keys(connectornode.postgroup);
+              if (preIDs.length > 0) {
+                  ov.selectNode(preIDs[0]);
+              } else if (postIDs.length > 0) {
+                  ov.selectNode(postIDs[0]);
+              } else {
+                  ov.activateNode(null);
+              }
               // Refresh all nodes in any case, to reflect the new state of the database
-              connectornode.paper.catmaidSVGOverlay.updateNodes();
+              ov.updateNodes();
+
               return true;
             }
           }

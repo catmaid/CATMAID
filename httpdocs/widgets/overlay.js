@@ -825,6 +825,45 @@ var SkeletonAnnotations = new function()
       return;
     }
 
+    // Interpolate and join, both
+    var createTreenodeLinkInterpolated = function (atn, nearestnode_id, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
+    {
+      // This assumes that the parentID is not null, i.e. exists
+      // Creates treenodes from atn to nearestnode_id in each z section
+      requestQueue.register(django_url + project.id + '/skeleton/join_interpolated', "POST", {
+        pid: project.id,
+        from_id: atn.id,
+        to_id: nearestnode_id,
+        x: phys_x,
+        y: phys_y,
+        z: phys_z,
+        radius: radius,
+        confidence: confidence,
+        atnx: self.pix2physX(atn.x),
+        atny: self.pix2physY(atn.y),
+        atnz: self.pix2physZ(atn.z),
+        resx: stack.resolution.x,
+        resy: stack.resolution.y,
+        resz: stack.resolution.z
+      }, function (status, text, xml) {
+        var e;
+        if (status === 200) {
+          if (text && text !== " ") {
+            e = $.parseJSON(text);
+            if (e.error) {
+              alert(e.error);
+            } else {
+              self.updateNodes(function () {
+                self.activateNode( nodes[e.toid] );
+              });
+            }
+          }
+        }
+        return true;
+      });
+      return;
+    }
+
     // Create a node and activate it
     var createNode = function (parentID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
     {
@@ -1793,21 +1832,24 @@ var SkeletonAnnotations = new function()
           if (nearestnode !== null) {
             // TODO the tracingCommand function should be broken down into many functions, each accepting the event as argument.
             if (null !== arguments[1] && arguments[1].shiftKey) {
-              statusBar.replaceLast("Would interpolate and join, but not ready yet!");
-              // Shift+i pressed
-//              if (null === atn.id) { return; }
-//              if (nearestnode.skeleton_id === atn.skeleton_id) {
-//                self.activateNode(nearestnode);
-//                return;
-//              }
-//              // Else, ask to join the two skeletons
-//              var nearestnode_id = nearestnode.id; // must cache
-//              self.createTreenodeLink(atn.id,
-//                                      nearestnode.id,
-//                                      function() {
-//                                        // can't use self.activateNode: the refresh may have reused the node instance for some other node ID. For the same reason, can't use nearestnode.id, but rather, the cached nearestnode_id:
-//                                        self.selectNode(nearestnode_id);
-//                                      });
+              // Shift down: interpolate and join
+              if (null === atn.id) { return; }
+              if (nearestnode.skeleton_id === atn.skeleton_id) {
+                self.activateNode(nearestnode);
+                return;
+              }
+              // Take into account current local offset coordinates and scale
+              var pos_x = self.phys2pixX(self.offsetXPhysical);
+              var pos_y = self.phys2pixY(self.offsetYPhysical);
+              // At this point of the execution
+              // project.coordinates.z is not on the new z index, thus simulate it here
+              var pos_z = self.phys2pixZ(project.coordinates.z);
+              var phys_z = self.pix2physZ(pos_z);
+              // Get physical coordinates for node position creation
+              var phys_x = self.pix2physX(pos_x);
+              var phys_y = self.pix2physY(pos_y);
+              // Ask to join the two skeletons with interpolated nodes
+              createTreenodeLinkInterpolated(atn, nearestnode.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
               return;
             } else {
               // If shift is not down, just select the node:

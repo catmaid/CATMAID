@@ -212,16 +212,17 @@ def create_interpolated_treenode(request, project_id=None):
         else:
             params[p] = int(request.POST.get(p, default_values[p]))
 
+    last_treenode_id, parent_skeleton_id = _create_interpolated_treenode(request, params, project_id, False)
+    return HttpResponse(json.dumps({'treenode_id': last_treenode_id, 'skeleton_id': parent_skeleton_id}))
+
+
+def _create_interpolated_treenode(request, params, project_id, skip_last):
+    """ Create interpolated treenodes between the 'parent_id' and the clicked x,y,z
+    coordinate. The skip_last is to prevent the creation of the last node, used by
+    the join_skeletons_interpolated. """
     relation_map = get_relation_to_id_map(project_id)
-    class_map = get_class_to_id_map(project_id)
-
-    for class_name in ['neuron', 'skeleton']:
-        if class_name not in class_map:
-            raise CatmaidException('Can not find "%s" class for this project' % class_name)
-
-    for relation in ['element_of', 'model_of', 'part_of']:
-        if relation not in relation_map:
-            raise CatmaidException('Can not find "%s" relation for this project' % relation)
+    if 'element_of' not in relation_map:
+        raise CatmaidException('Can not find "%s" relation for this project' % relation)
 
     response_on_error = ''
     try:
@@ -243,7 +244,7 @@ def create_interpolated_treenode(request, project_id=None):
         # Loop the creation of treenodes in z resolution steps until target
         # section is reached
         parent_id = params['parent_id']
-        for i in range(1, steps + 1):
+        for i in range(1, steps + (0 if skip_last else 1)):
             response_on_error = 'Error while trying to insert treenode.'
             new_treenode = Treenode()
             new_treenode.user_id = request.user.id
@@ -258,6 +259,7 @@ def create_interpolated_treenode(request, project_id=None):
             new_treenode.parent_id = parent_id  # This is not a root node.
             new_treenode.save()
 
+            # TODO given the skeleton_id column, the code below should disappear
             response_on_error = 'Could not insert new TreenodeClassInstance relation for treenode %s.' % new_treenode.id
             new_tci = TreenodeClassInstance()
             new_tci.user_id = request.user.id
@@ -269,7 +271,8 @@ def create_interpolated_treenode(request, project_id=None):
 
             parent_id = new_treenode.id
 
-        return HttpResponse(json.dumps({'treenode_id': new_treenode.id, 'skeleton_id': parent_skeleton_id}))
+        # parent_id contains the ID of the last added node
+        return parent_id, parent_skeleton_id
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))
@@ -541,3 +544,35 @@ cici.relation_id = r2.id AND r2.relation_name = 'model_of'
         raise CatmaidException('No skeleton and neuron for treenode %s' % treenode_id)
     else:
         return HttpResponse(json.dumps(results[0]))
+
+
+
+@requires_user_role(UserRole.Annotate)
+@transaction_reportable_commit_on_success
+def join_skeletons_interpolated(request, project_id=None):
+    """ Join two skeletons, adding nodes in between the two nodes to join
+    if they are separated by more than one section in the Z axis."""
+    # Parse parameters
+    keysDecimal = ['atnx', 'atny', 'atnz', 'x', 'y', 'z', 'resx', 'resy', 'resz']
+    keysInt = ['from_id', 'to_id', 'radius', 'confidence']
+    params = {}
+    for p in keysDecimal:
+        params[p] = decimal.Decimal(request.POST.get(p, 0))
+    for p in keysInt:
+        params[p] = int(request.POST.get(p, 0))
+    # Copy of the id for _create_interpolated_treenode
+    params['parent_id'] = params['from_id']
+
+    # Create interpolate nodes skipping the last one 
+    last_treenode_id, parent_skeleton_id = _create_interpolated_treenode(request, params, project_id, True)
+
+    # Link last_treenode_id to to_id
+    # TODO this is not elegant
+    from skeleton import _join_skeleton
+    _join_skeleton(last_treenode_id, params['to_id'], project_id)
+
+    return HttpResponse(json.dumps({'message': 'success',
+                                    'fromid': params['from_id'],
+                                    'toid': params['to_id']}))
+
+

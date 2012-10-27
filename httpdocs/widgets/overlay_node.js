@@ -365,16 +365,28 @@ var SkeletonElements = new function()
               } else {
                   // activate parent node when deleted
                   if (wasActiveNode) {
+                      var ov = node.paper.catmaidSVGOverlay;
                       if (node.parent) {
-                          node.paper.catmaidSVGOverlay.selectNode(node.parent.id);
+                          ov.selectNode(node.parent.id);
                       } else {
-                          node.paper.catmaidSVGOverlay.activateNode(null);
+                          // No parent. But if this node was postsynaptic or presynaptic
+                          // to a connector, the connector must be selected:
+                          var pp = ov.findConnectors(node.id);
+                          // Try first connectors for which node is postsynaptic:
+                          if (pp[1].length > 0) {
+                              ov.selectNode(pp[1][0]);
+                          // Then try connectors for which node is presynaptic
+                          } else if (pp[0].length > 0) {
+                              ov.selectNode(pp[0][0]);
+                          } else {
+                              ov.activateNode(null);
+                          }
+                          // Refresh object tree as well, given that the node had no parent and therefore the deletion of its skeleton was triggered
+                          ObjectTree.refresh();
                       }
                   }
                   // Redraw everything for now
                   node.paper.catmaidSVGOverlay.updateNodes();
-                  // refresh object tree, in case a root node was deleted and thus its skeleton
-                  ObjectTree.refresh();
 
                   // TODO something is wrong, in that upon deleting a node updateNodes() is called like 10 times in a row.
                   // TODO   but cannot reproduce it always.

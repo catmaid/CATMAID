@@ -649,6 +649,32 @@ var SkeletonAnnotations = new function()
       }
     };
 
+    /**
+     * Execute the function fn if the skeleton with id skeleton_id
+     * has more than one node, or if, having a single node,
+     * the dialog is confirmed.
+     * The verb is the action to perform, as written as a question in a dialog
+     * to confirm the action if the skeleton has a single node.
+     */
+    var maybeExecuteIfSkeletonHasMoreThanOneNode = function(skeleton_id, verb, fn) {
+      requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/node_count', "POST", {}, function(status, text, xml) {
+        if (status === 200) {
+          if (text && text !== " ") {
+            var r = $.parseJSON(text);
+            if (r.error) {
+              alert(r.error);
+            } else {
+              if (r.count > 1
+                && !confirm("Do you really want to " + verb + " skeleton #" + skeleton_id + ", which has more than one node?")) {
+                return;
+              }
+              fn();
+            }
+          }
+        }
+      });
+    };
+
     // Used to join two skeletons together
     this.createTreenodeLink = function (fromid, toid, callback) {
       if( toid in nodes ) {

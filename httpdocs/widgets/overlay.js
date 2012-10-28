@@ -676,7 +676,7 @@ var SkeletonAnnotations = new function()
     };
 
     // Used to join two skeletons together
-    this.createTreenodeLink = function (fromid, toid, callback) {
+    this.createTreenodeLink = function (fromid, toid) {
       if( toid in nodes ) {
         maybeExecuteIfSkeletonHasMoreThanOneNode(
             nodes[toid].skeleton_id,
@@ -697,9 +697,7 @@ var SkeletonAnnotations = new function()
                       self.updateNodes(function () {
                         ObjectTree.refresh();
                         refreshAllWidgets();
-                        if (typeof callback !== "undefined") {
-                          callback();
-                        }
+                        self.selectNode(toid);
                       });
                     }
                   }

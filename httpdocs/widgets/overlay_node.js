@@ -534,8 +534,7 @@ var SkeletonElements = new function()
     var mc_click = function(e) {
       var node = this.catmaidNode,
         paper = this.paper,
-        wasActiveNode = false,
-        toActivate;
+        wasActiveNode = false;
       if (this.paper.catmaidSVGOverlay.ensureFocused()) {
         e.stopPropagation();
         return;
@@ -568,12 +567,7 @@ var SkeletonElements = new function()
               alert('Can not join node with another node of the same skeleton!');
               return;
             }
-            toActivate = node.id;
-            paper.catmaidSVGOverlay.createTreenodeLink(atnID,
-                                                       node.id,
-                                                       function () {
-                                                         paper.catmaidSVGOverlay.selectNode(toActivate);
-                                                       });
+            paper.catmaidSVGOverlay.createTreenodeLink(atnID, node.id);
             // TODO check for error
             statusBar.replaceLast("Joined node #" + atnID + " to node #" + node.id);
           }

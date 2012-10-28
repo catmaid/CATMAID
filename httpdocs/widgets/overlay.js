@@ -678,47 +678,36 @@ var SkeletonAnnotations = new function()
     // Used to join two skeletons together
     this.createTreenodeLink = function (fromid, toid, callback) {
       if( toid in nodes ) {
-        // Count the number of nodes of the skeleton that contains the node with id toid
-        requestQueue.register(django_url + project.id + '/skeleton/' + nodes[toid].skeleton_id + '/node_count', "POST", {
-        }, function(status, text, xml) {
-          if (status === 200) {
-            if (text && text !== " ") {
-              var r = $.parseJSON(text);
-              if (r.error) {
-                alert(r.error);
-              } else {
-                // If the count is more than 1, then ask for confirmation:
-                if (r.count > 1) {
-                  var check = confirm("Do you really want link to this skeleton with more than one node?");
-                  if (check === false) {
-                    return;
-                  }
-                }
-                // The call to join will reroot the target skeleton at the shift-clicked treenode
-                requestQueue.register(django_url + project.id + '/skeleton/join', "POST", {
-                  from_id: fromid,
-                  to_id: toid
-                }, function (status, text, xml) {
-                  if (status === 200) {
-                    if (text && text !== " ") {
-                      var e = $.parseJSON(text);
-                      if (e.error) {
-                        alert(e.error);
-                      } else {
-                        // just redraw all for now
-                        self.updateNodes(function () {
-                          ObjectTree.refresh();
-                          refreshAllWidgets();
-                          if (typeof callback !== "undefined") {
-                            callback();
-                          }
-                        });
-                      }
+        maybeExecuteIfSkeletonHasMoreThanOneNode(
+            nodes[toid].skeleton_id,
+            "join",
+            function() {
+              // The call to join will reroot the target skeleton at the shift-clicked treenode
+              requestQueue.register(django_url + project.id + '/skeleton/join', "POST", {
+                from_id: fromid,
+                to_id: toid
+              }, function (status, text, xml) {
+                if (status === 200) {
+                  if (text && text !== " ") {
+                    var e = $.parseJSON(text);
+                    if (e.error) {
+                      alert(e.error);
+                    } else {
+                      // just redraw all for now
+                      self.updateNodes(function () {
+                        ObjectTree.refresh();
+                        refreshAllWidgets();
+                        if (typeof callback !== "undefined") {
+                          callback();
+                        }
+                      });
                     }
                   }
-                });
-              }}}});
-    }};
+                }
+              });
+            });
+      }
+    };
 
     this.createLink = function (fromid, toid, link_type) {
       //requestQueue.register("model/link.create.php", "POST", {
@@ -875,22 +864,22 @@ var SkeletonAnnotations = new function()
     }
 
     // Interpolate and join, both
-    var createTreenodeLinkInterpolated = function (atn, nearestnode_id, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
+    var createTreenodeLinkInterpolated = function (atn_id, atn_x, atn_y, atn_z, nearestnode_id, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
     {
       // This assumes that the parentID is not null, i.e. exists
       // Creates treenodes from atn to nearestnode_id in each z section
       requestQueue.register(django_url + project.id + '/skeleton/join_interpolated', "POST", {
         pid: project.id,
-        from_id: atn.id,
+        from_id: atn_id,
         to_id: nearestnode_id,
         x: phys_x,
         y: phys_y,
         z: phys_z,
         radius: radius,
         confidence: confidence,
-        atnx: self.pix2physX(atn.x),
-        atny: self.pix2physY(atn.y),
-        atnz: self.pix2physZ(atn.z),
+        atnx: self.pix2physX(atn_x),
+        atny: self.pix2physY(atn_y),
+        atnz: self.pix2physZ(atn_z),
         resx: stack.resolution.x,
         resy: stack.resolution.y,
         resz: stack.resolution.z
@@ -1887,18 +1876,29 @@ var SkeletonAnnotations = new function()
                 self.activateNode(nearestnode);
                 return;
               }
-              // Take into account current local offset coordinates and scale
-              var pos_x = self.phys2pixX(self.offsetXPhysical);
-              var pos_y = self.phys2pixY(self.offsetYPhysical);
-              // At this point of the execution
-              // project.coordinates.z is not on the new z index, thus simulate it here
-              var pos_z = self.phys2pixZ(project.coordinates.z);
-              var phys_z = self.pix2physZ(pos_z);
-              // Get physical coordinates for node position creation
-              var phys_x = self.pix2physX(pos_x);
-              var phys_y = self.pix2physY(pos_y);
-              // Ask to join the two skeletons with interpolated nodes
-              createTreenodeLinkInterpolated(atn, nearestnode.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+              // If the target skeleton has more than one node, ask for confirmation
+              var nearestnode_id = nearestnode.id;
+              var atn_id = atn.id;
+              var atn_x = atn.x;
+              var atn_y = atn.y;
+              var atn_z = atn.z;
+              maybeExecuteIfSkeletonHasMoreThanOneNode(
+                  nearestnode.skeleton_id,
+                  "join",
+                  function() {
+                    // Take into account current local offset coordinates and scale
+                    var pos_x = self.phys2pixX(self.offsetXPhysical);
+                    var pos_y = self.phys2pixY(self.offsetYPhysical);
+                    // At this point of the execution
+                    // project.coordinates.z is not on the new z index, thus simulate it here
+                    var pos_z = self.phys2pixZ(project.coordinates.z);
+                    var phys_z = self.pix2physZ(pos_z);
+                    // Get physical coordinates for node position creation
+                    var phys_x = self.pix2physX(pos_x);
+                    var phys_y = self.pix2physY(pos_y);
+                    // Ask to join the two skeletons with interpolated nodes
+                    createTreenodeLinkInterpolated(atn_id, atn_x, atn_y, atn_z, nearestnode_id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+                  });
               return;
             } else {
               // If shift is not down, just select the node:

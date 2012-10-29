@@ -386,9 +386,7 @@ var SkeletonAnnotations = new function()
       // create node id array
       for (nodeid in nodes) {
         if (nodes.hasOwnProperty(nodeid)) {
-
           if (0 === nodes[nodeid].zdiff) {
-
             if( 'treenode' === nodes[nodeid].type ) {
               treenode_ids.push( nodeid );
             } else {
@@ -403,8 +401,8 @@ var SkeletonAnnotations = new function()
         cache: false,
         type: "POST",
         data: {
-          treenode_ids: treenode_ids,
-          connector_ids: connector_ids,
+          treenode_ids: treenode_ids.join(','),
+          connector_ids: connector_ids.join(','),
           pid: project.id
         },
         dataType: "json",

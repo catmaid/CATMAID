@@ -39,8 +39,9 @@ def labels_for_node(request, project_id=None, ntype=None, location_id=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_for_nodes(request, project_id=None):
-    treenode_ids = request.POST.getlist('treenode_ids[]')
-    connector_ids = request.POST.getlist('connector_ids[]')
+    # Two POST variables, which are each an array of integers stringed together with commas as separators
+    treenode_ids = (int(x) for x in request.POST['treenode_ids'].split(','))
+    connector_ids = (int(x) for x in request.POST['connector_ids'].split(','))
 
     qs_treenodes = TreenodeClassInstance.objects.filter(
         relation__relation_name='labeled_as',

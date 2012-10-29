@@ -45,6 +45,16 @@ LANGUAGE_CODE = 'en-gb'
 
 SITE_ID = 1
 
+# Usually, CATMAID's Django back-end is not accessible on a domain's
+# root ('/'), but rather a sub-directory like 'dj'. This might even be
+# 'catmaid/dj' if catmaid is on a sub-directory as well. Django needs
+# to know about this relative path and some web and WSGI servers pass
+# this information to Django automatically (e.g. Apache + mod_wsgi).
+# However, some don't (e.g. Nginx + Gevent) and the easiest way to
+# tell Django were it lives is with the help of the FORCE_SCRIPT_NAME
+# variable. It must not have a trailing slash.
+FORCE_SCRIPT_NAME = '/catmaid/dj'
+
 CATMAID_URL = '/catmaid/'
 STATICFILES_URL = '/catmaid/dj-static/'
 

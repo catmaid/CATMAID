@@ -1275,7 +1275,25 @@ ALTER TABLE overlay ADD COLUMN tile_source_type integer NOT NULL DEFAULT 1;
 '
 ),
 
+	'2012-10-29T18:42:05' => new Migration(
+		'Add indices to the treenode connector_class_instance',
+		'
+CREATE INDEX treenode_id_index ON treenode_class_instance USING btree (treenode_id);
+CREATE INDEX connector_id_index ON connector_class_instance USING btree (connector_id);
+'
+),
 
+	'2012-10-29T19:42:05' => new Migration(
+		'Add indices to other tables',
+		'
+CREATE INDEX skeleton_id_treenode_connector_index ON treenode_connector USING btree (skeleton_id);
+CREATE INDEX treenode_id_treenode_connector_index ON treenode_connector USING btree (treenode_id);
+CREATE INDEX connector_id_treenode_connector_index ON treenode_connector USING btree (connector_id);
+CREATE INDEX class_id_ci_index ON class_instance USING btree (class_id);
+CREATE INDEX class_instance_a_cici_index ON class_instance_class_instance USING btree (class_instance_a);
+CREATE INDEX class_instance_b_cici_index ON class_instance_class_instance USING btree (class_instance_b);
+'
+),
 
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates

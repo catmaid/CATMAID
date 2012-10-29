@@ -26,31 +26,32 @@ def labels_for_node(request, project_id=None, ntype=None, location_id=None):
             relation__relation_name='labeled_as',
             class_instance__class_column__class_name='label',
             treenode=location_id,
-            project=project_id).select_related('class_instance')
+            project=project_id).select_related('class_instance__name')
     elif ntype == 'location' or ntype == 'connector':
         qs = ConnectorClassInstance.objects.filter(
             relation__relation_name='labeled_as',
             class_instance__class_column__class_name='label',
             connector=location_id,
-            project=project_id).select_related('class_instance')
+            project=project_id).select_related('class_instance__name')
     else:
         raise Http404('Unknown node type: "%s"' % (ntype,))
     return HttpResponse(json.dumps(list(x.class_instance.name for x in qs)), mimetype="text/plain")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_for_nodes(request, project_id=None):
-    nodes = [int(x, 10) for x in json.loads(request.POST['nods']).keys()]
+    treenode_ids = request.POST.getlist('treenode_ids[]')
+    connector_ids = request.POST.getlist('connector_ids[]')
 
     qs_treenodes = TreenodeClassInstance.objects.filter(
         relation__relation_name='labeled_as',
         class_instance__class_column__class_name='label',
-        treenode__id__in=nodes,
+        treenode__id__in=treenode_ids,
         project=project_id).select_related('treenode', 'class_instance')
 
     qs_connectors = ConnectorClassInstance.objects.filter(
         relation__relation_name='labeled_as',
         class_instance__class_column__class_name='label',
-        connector__id__in=nodes,
+        connector__id__in=connector_ids,
         project=project_id).select_related('connector', 'class_instance')
 
     result = defaultdict(list)
@@ -76,7 +77,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
         existingLabels = TreenodeClassInstance.objects.filter(
             treenode__id=location_id,
             relation=labeled_as_relation,
-            class_instance__class_column__class_name='label')
+            class_instance__class_column__class_name='label').select_related('class_instance__name')
         TreenodeClassInstance.objects.for_user(request.user).filter(
             treenode__id=location_id,
             relation=labeled_as_relation,
@@ -85,14 +86,16 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
         existingLabels = ConnectorClassInstance.objects.filter(
             connector__id=location_id,
             relation=labeled_as_relation,
-            class_instance__class_column__class_name='label')
+            class_instance__class_column__class_name='label').select_related('class_instance__name')
         ConnectorClassInstance.objects.for_user(request.user).filter(
             connector__id=location_id,
             relation=labeled_as_relation,
             class_instance__class_column__class_name='label').exclude(class_instance__name__in=newTags).delete()
     else:
         raise Http404('Unknown node type: "%s"' % (ntype,))
-    
+
+    existingNames = set(ele.class_instance.name for ele in existingLabels)
+
     # Add any new labels.
     label_class = Class.objects.get(project=project_id, class_name='label')
     for tag_name in newTags:

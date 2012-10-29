@@ -377,7 +377,7 @@ var SkeletonAnnotations = new function()
     }
 
     this.showLabels = function() {
-      var labid, nods = {}, nodeid;
+      var labid, treenode_ids = [], connector_ids = [], nodeid;
       
       // remove all labels in the view
       self.hideLabels();
@@ -386,17 +386,25 @@ var SkeletonAnnotations = new function()
       // create node id array
       for (nodeid in nodes) {
         if (nodes.hasOwnProperty(nodeid)) {
+
           if (0 === nodes[nodeid].zdiff) {
-            nods[nodeid] = nodeid;
+
+            if( 'treenode' === nodes[nodeid].type ) {
+              treenode_ids.push( nodeid );
+            } else {
+              connector_ids.push( nodeid );
+            }
           }
         }
       }
+
       jQuery.ajax({
         url: django_url + project.id + '/labels-for-nodes',
         cache: false,
         type: "POST",
         data: {
-          nods: JSON.stringify(nods),
+          treenode_ids: treenode_ids,
+          connector_ids: connector_ids,
           pid: project.id
         },
         dataType: "json",
@@ -430,7 +438,7 @@ var SkeletonAnnotations = new function()
     }
 
     this.tagATNwithLabel = function( label ) {
-      requestQueue.register(django_url + project.id + '/label-update/' + atn.type + '/' + atn.id, "POST", {
+      requestQueue.register(django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update', "POST", {
         pid: project.id,
         tags: label
       }, function (status, text, xml) {
@@ -571,7 +579,7 @@ var SkeletonAnnotations = new function()
       });
 
       var updateTags = function() {
-        requestQueue.register(django_url + project.id + '/label-update/' + atn.type + '/' + atn.id, "POST", {
+        requestQueue.register(django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update', "POST", {
           pid: project.id,
           nid: atn.id,
           ntype: atn.type,

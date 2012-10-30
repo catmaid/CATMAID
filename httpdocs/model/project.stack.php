@@ -17,7 +17,6 @@ $sid = isset( $_POST[ 'sid' ] ) ? intval( $_POST[ 'sid' ] ) : 0;
 $pid = isset( $_REQUEST[ 'pid' ] ) ? intval( $_REQUEST[ 'pid' ] ) : 0;
 $sid = isset( $_REQUEST[ 'sid' ] ) ? intval( $_REQUEST[ 'sid' ] ) : 0;
 $uid = $ses->isSessionValid() ? $ses->getId() : 0;
-$adjustable_stack = isset( $_REQUEST[ 'adjustable' ] ) ? intval( $_REQUEST[ 'adjustable' ] ) : 0;
 
 # Check preconditions:
 
@@ -121,8 +120,6 @@ try {
     $project_stack[ 'trakem2_project' ] = $project_stack[ 'trakem2_project' ] == 't';
     $project_stack[ 'overlay' ] = $overlays;
     $project_stack[ 'inverse_mouse_wheel' ] = $project_stack[ 'inverse_mouse_wheel' ] == 't';
-    $project_stack[ 'adjustable' ] = $adjustable_stack;
-
 
     if (! $db->commit() ) {
       emitErrorAndExit( $db, 'Failed to commit!' );

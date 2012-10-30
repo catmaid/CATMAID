@@ -19,7 +19,7 @@
  * - is related to one ore more stacks of statically aligned layers
  *   ( all stacks of a project are related by translation using physical dimensions )
  */
-function Project( pid, ptitle )
+function Project( pid )
 {
 	this.getView = function()
 	{
@@ -84,15 +84,7 @@ function Project( pid, ptitle )
 		}
 		return false;
 	}
-
-	/**
-	 * get all the currently opened stacks
-	 */
-	this.getStacks = function()
-	{
-		return stacks;
-	}
-
+	
 	/**
 	 * remove a stack from the list
 	 */
@@ -259,7 +251,7 @@ function Project( pid, ptitle )
 		editable = bool;
 		if (editable) {
 			document.getElementById("toolbox_edit").style.display = "block";
-			//document.getElementById("toolbox_data").style.display = "block";
+			document.getElementById("toolbox_data").style.display = "block";
 		}
 		else 
 		{
@@ -453,15 +445,9 @@ function Project( pid, ptitle )
 	 */
 	this.getId = function(){ return pid; }
 	
-	/**
-	 * Get project title.
-	 */
-	this.getTitle = function(){ return self.title; }
-
 	// initialise
 	var self = this;
 	this.id = pid;
-	this.title = ptitle
 	if ( typeof ui == "undefined" ) ui = new UI();
 	if ( typeof requestQueue == "undefined" ) requestQueue = new RequestQueue();
 	

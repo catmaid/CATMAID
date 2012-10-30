@@ -248,19 +248,6 @@ var editToolActions = [
     }),
 */
 	new Action({
-		helpText: "Thumbnail tool",
-		buttonID: 'edit_button_thumbnail',
-		buttonName: 'thumbnail',
-		keyShortcuts: {
-			'T': [ 84 ]
-		},
-		run: function (e) {
-			project.setTool( new DBThumbnailTool() );
-			return true;
-		}
-	}),
-
-	new Action({
 		helpText: "Tracing tool",
 		buttonID: 'edit_button_trace',
 		buttonName: 'trace',

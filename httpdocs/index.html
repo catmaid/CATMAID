@@ -62,12 +62,10 @@
         <script type="text/javascript" src="overviewlayer.js"></script>
 		<script type="text/javascript" src="stack.js"></script>
 		<script type="text/javascript" src="tilelayer.js"></script>
-		<script type="text/javascript" src="proctilelayer.js"></script>
 		<script type="text/javascript" src="navigator.js"></script>
 		<script type="text/javascript" src="selector.js"></script>
 		<script type="text/javascript" src="boxselectiontool.js"></script>
 		<script type="text/javascript" src="croppingtool.js"></script>
-		<script type="text/javascript" src="dbthumbnailtool.js"></script>
 		<script type="text/javascript" src="tracingtool.js"></script>
 		<script type="text/javascript" src="tracinglayer.js"></script>
         <script type="text/javascript" src="widgets/canvastool.js"></script>
@@ -208,38 +206,6 @@
 			<!--
 			*******************************************************************
 			-->
-
-			<!-- Thumbnail
-			*******************************************************************
-			-->
-			<div id="toolbar_thumbnail" class="toolbar" style="display:none">
-				<div id="thumbnail_mode_box" class="box">
-					<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p><a>Mode:</a></p>
-					<div class="pulldown" id="thumbnail_mode_menu"></div></div>
-				    <div class="box" id="thumbnail_mode_name"><p></p></div>
-				</div>
-				<div id="thumbnail_tissue_box" class="box">
-					<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p><a>Tissue:</a></p>
-					<div class="pulldown" id="thumbnail_tissue_menu"></div></div>
-				    <div class="box" id="thumbnail_tissue_name"><p></p></div>
-				</div>
-				<div id="thumbnail_marker_box" class="box">
-					<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p><a>Marker character:</a></p>
-						<div class="pulldown" id="thumbnail_marker_char_menu"></div></div>
-				    <div class="box" id="thumbnail_marker_char_name"><p></p></div>
-					<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p><a>Marker color:</a></p>
-						<div class="pulldown" id="thumbnail_marker_color_menu"></div></div>
-				    <div class="box" id="thumbnail_marker_color_name"><p></p></div>
-					<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p><a>Marker size:</a></p>
-						<div class="pulldown" id="thumbnail_marker_size_menu"></div></div>
-				    <div class="box" id="thumbnail_marker_size_name"><p></p></div>
-				</div>
-				<div class="box_right"><a href="#" class="button" id="button_thumbnail_apply" onclick="return false;"><img src="widgets/themes/kde/apply.gif" alt="apply" title="apply" /></a></div>
-				<div class="toolbar_fill"></div>
-			</div>
-			<!--
-			*******************************************************************
-			-->
 		</div>
 
 		<!-- Main screen, project list, forms etc.
@@ -249,7 +215,7 @@
 			<h1>CATMAID v0.24</h1>
 		
 			<div id="project_list">
-                    <p>Please feel free to open one of the public projects or log in with your account and password. You can<br />request new uploads as well as bug reports and feature requests with the help of a new issue in <a href="http://rablibrary.mpi-cbg.de/redmine/projects/rablibrary">Redmine</a>.<br />The imprint (Impressum) can be found <a href="http://rablibrary.mpi-cbg.de/impressum-en.html">here</a> (in german: <a href="http://rablibrary.mpi-cbg.de/impressum-de.html">here</a>).</p>
+				<p>Please feel free to open one of the public projects or log in with your account and password.</p>
 		
 				<h2 id="projects_h">Projects</h2>
 				<form id="project_filter_form" display="none">Filter projects:

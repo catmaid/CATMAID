@@ -688,7 +688,7 @@ def goto_connector(request, project_id=None, connector_id=None, stack_id=None, l
                   "s0" : 0}
     return HttpResponseRedirect(settings.CATMAID_URL + "?" + urllib.urlencode(parameters))
 
-def get_stack_info(project_id=None, stack_id=None, adjustable_stack=False, user=None):
+def get_stack_info(project_id=None, stack_id=None, user=None):
     """ Returns a dictionary with relevant information for stacks.
     Depending on the tile_source_type, get information from database
     or from tile server directly
@@ -760,15 +760,14 @@ def get_stack_info(project_id=None, stack_id=None, adjustable_stack=False, user=
             'metadata' : s.metadata,
             'broken_slices': broken_slices,
             'trakem2_project': int(s.trakem2_project),
-            'overlay': overlays,
-            'adjustable': int(adjustable_stack)
+            'overlay': overlays
         }
 
     return result
 
 @catmaid_login_required
-def stack_info(request, project_id=None, stack_id=None, adjustable_stack=False, logged_in_user=None):
-    result=get_stack_info(project_id, stack_id, adjustable_stack, logged_in_user)
+def stack_info(request, project_id=None, stack_id=None, logged_in_user=None):
+    result=get_stack_info(project_id, stack_id, logged_in_user)
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")
 
 def push_image(request, project_id=None, stack_id=None):

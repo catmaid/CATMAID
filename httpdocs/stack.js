@@ -50,7 +50,6 @@ function Stack(
 	 */
 	var updateScaleBar = function()
 	{
-		// calculate pixels per nanometers wrt. scale
 		var meter = self.scale / resolution.x;
 		var width = 0;
 		var text = "";
@@ -445,7 +444,7 @@ function Stack(
 	var viewLeft   = parseInt( getPropertyFromCssRules( 3, 0, "left" ) );
 	var viewRight  = parseInt( getPropertyFromCssRules( 3, 0, "right" ) );
 	
-	var stackWindow = new CMWWindow( title + " | " + project.getTitle() );
+	var stackWindow = new CMWWindow( title );
 	var view = stackWindow.getFrame();
 
 	var viewWidth = stackWindow.getFrame().offsetWidth;

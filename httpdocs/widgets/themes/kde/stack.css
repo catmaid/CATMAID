@@ -142,23 +142,6 @@ div.OverviewLayer
     color:#FFFFFF;
 }
 
-div.IntensityLayer
-{
-    margin:0px;
-    padding:0px;
-    position:relative;
-    top:10px;
-    left:10px;
-    width:150px;
-    color:#FFFFFF;
-}
-
-div.IntensityLayer div.IntensityBox
-{
-    position:relative;
-    margin-top:30px;
-}
-
 div.sliceView div.sliceMouseCatcher
 {
 	position:absolute;
@@ -364,17 +347,4 @@ div.sliceView div.cropBoxNonActive p.screen
 div.sliceView div.cropBox p.screen
 {
 	bottom:-47px;
-}
-
-p.marker
-{
-   margin: 0px 0px 0px 0px;
-}
-
-p.selectedMarker
-{
-   border-width: 1px;
-   border-color: orange;
-   border-style: solid;
-   margin: 0px 0px -1px -1px;
 }

@@ -19,11 +19,6 @@ function Selector()
 {
 	var self = this;
 	var stack = null;
-	var position_markers = new Array();
-	// settings for duplicated cursors
-	var img_path = "widgets/themes/kde/svg-cursor-30px.png";
-	var img_width = 30;
-	var img_height = 30;
 
 	if ( !ui ) ui = new UI();
 
@@ -48,26 +43,10 @@ function Selector()
 			var m = ui.getMouse( e, stack.getView() );
 			if ( m )
 			{
-				var dist_center_x = m.offsetX - stack.viewWidth / 2;
-				var dist_center_y = m.offsetY - stack.viewHeight / 2;
-
-				var pos_x = stack.translation.x + ( stack.x + dist_center_x / stack.scale ) * stack.resolution.x;
-				var pos_y = stack.translation.y + ( stack.y + dist_center_y / stack.scale ) * stack.resolution.y;
+				var pos_x = stack.translation.x + ( stack.x + ( m.offsetX - stack.viewWidth / 2 ) / stack.scale ) * stack.resolution.x;
+				var pos_y = stack.translation.y + ( stack.y + ( m.offsetY - stack.viewHeight / 2 ) / stack.scale ) * stack.resolution.y;
 				statusBar.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 3 ) + "]" );
-
-				// update position marks in other open stacks as well
-				for ( i = 0; i < position_markers.length; ++i )
-				{
-					var current_stack = position_markers[ i ].stack;
-					// positioning is relative to the center of the current view
-					var rel_x = ( current_stack.viewWidth / 2 ) + dist_center_x - img_width / 2;
-					var rel_y = ( current_stack.viewHeight / 2 ) + dist_center_y - img_height / 2;
-					var stack_marker = position_markers[ i ].marker;
-					stack_marker.style.left = rel_x + "px";
-					stack_marker.style.top = rel_y + "px";
-				}
 			}
-
 			return false;
 		},
 		move : function( e )
@@ -154,68 +133,6 @@ function Selector()
 		}
 		return false;
 	}
-
-	/**
-	 * Adds an position marker for all opened stacks related to the
-	 * current project.
-	 */
-	this.addPositionMarkers = function()
-	{
-		stacks = project.getStacks();
-		for ( i = 0; i < stacks.length; ++i )
-		{
-			s_id = stacks[ i ].id;
-			// don't add one to the current stack
-			if ( s_id == stack.id )
-					continue;
-			// create new image div
-			var img = document.createElement( "img" );
-			img.src = img_path;
-			var position_marker = document.createElement( "div" );
-			position_marker.id = "positionMarkerId" + s_id;
-			position_marker.style.zIndex = 5;
-			position_marker.style.width = img_width;
-			position_marker.style.height = img_height;
-			position_marker.style.position = "absolute";
-			position_marker.appendChild( img );
-			// add it to view
-			var stack_view = stacks[ i ].getView();
-			stack_view.appendChild( position_marker );
-			position_markers[ position_markers.length ] =
-				{ marker : position_marker,
-				  view : stack_view,
-				  stack : stacks[ i ] };
-		}
-	}
-
-	/**
-	 * Removes all existant position markers from the views they
-	 * are attached.
-	 */
-	this.removePositionMarkers = function()
-	{
-		// remove all the created div tags
-		for ( i = 0; i < position_markers.length; ++i )
-		{
-			stack_view = position_markers[ i ].view;
-			stack_marker = position_markers[ i ].marker;
-			stack_view.removeChild( stack_marker );
-		}
-		// Clear the array
-		position_markers.length = 0
-	}
-
-	/**
-	 * unregister all stack related mouse and keyboard controls
-	 */
-	this.unregister = function()
-	{
-		if ( stack && mouseCatcher.parentNode == stack.getView() )
-			stack.getView().removeChild( mouseCatcher );
-		mouseCatcher.style.cursor = "default";
-		self.removePositionMarkers();
-		return;
-	}
 	
 	/**
 	 * install this tool in a stack.
@@ -228,8 +145,6 @@ function Selector()
 		stack = parentStack;
 
 		mouseCatcher.onmousedown = onmousedown;
-		mouseCatcher.onmousemove = onmousemove.pos;
-
 		try
 		{
 			mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel, false );
@@ -244,15 +159,19 @@ function Selector()
 			}
 			catch ( error ) {}
 		}
-
-		mouseCatcher.style.cursor = "url(widgets/themes/kde/svg-circle.cur) 15 15, crosshair";
+		
 		stack.getView().appendChild( mouseCatcher );
 
-		// make sure there are no markers already there
-		self.removePositionMarkers();
-		// create a DIV in the view of every opened stack
-		self.addPositionMarkers();
-
+		return;
+	}
+	
+	/**
+	 * unregister all stack related mouse and keyboard controls
+	 */
+	this.unregister = function()
+	{
+		if ( stack && mouseCatcher.parentNode == stack.getView() )
+			stack.getView().removeChild( mouseCatcher );
 		return;
 	}
 	

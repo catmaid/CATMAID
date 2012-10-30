@@ -9,8 +9,6 @@ from django.conf import settings
 num = r'[-+]?[0-9]*\.?[0-9]+'
 # A regular expression matching lists of integers with comma as delimiter
 intlist = r'[0-9]+(,[0-9]+)*'
-# Matches a lists of integers or floating point numbers with comma as delimiter
-numlist = r'%s(,%s)*' % (num, num)
 
 urlpatterns = patterns(
     '',
@@ -99,17 +97,6 @@ urlpatterns += patterns('',
     (r'^(?P<project_id>\d+)/treenode/table/list$', 'vncbrowser.views.treenode.list_treenode_table'),
     (r'^(?P<project_id>\d+)/treenode/table/update$', 'vncbrowser.views.treenode.update_treenode_table'),
     (r'^(?P<project_id>\d+)/treenode/info$', 'vncbrowser.views.treenode.treenode_info')
-    )
-
-# Thumbnailing
-urlpatterns += patterns('',
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_ids>%s)/thumbnail/(?P<x_min>%s),(?P<x_max>%s)/(?P<y_min>%s),(?P<y_max>%s)/(?P<z_min>%s),(?P<z_max>%s)/(?P<zoom_level>\d+)/$' % (intlist, num, num, num, num, num, num), 'vncbrowser.views.make_thumbnail' ),
-    )
-
-# Tile processing
-urlpatterns += patterns('',
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/adj/(?P<adjustable_stack>[0|1])/info$', 'vncbrowser.views.stack_info'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_ids>%s)/combine_tiles/(?P<section>\d+)/(?P<x>\d+)/(?P<y>\d+)/(?P<zoom_level>\d+)/(?P<intensities>%s)/$' % (intlist, numlist), 'vncbrowser.views.create_tile' )
     )
 
 if settings.DEBUG:

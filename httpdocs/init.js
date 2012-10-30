@@ -74,10 +74,6 @@ function countProperties(obj) {
   return count;
 }
 
-// URL of the CATMAID instance relative to the host. It is
-// expected to end with a slash.
-var catmaid_url = "catmaid-dev/"
-
 // url of the django instance relative to the CATMAID URL
 // (if any, needed e.g. by cropping tool). It is expected
 // to end with a slash.
@@ -397,15 +393,6 @@ function updateProjectListFromCache() {
         toappend.push(ddc);
       }
     }
-
-    // adjustable composite
-    var dd = document.createElement("dd");
-    var a_ct = document.createElement("a");
-    a_ct.href = "javascript:openProjectStack(" + p.pid + ", " + getFirstKey( projects_available[ p.pid ] ) +  ", true)"
-    a_ct.appendChild(document.createTextNode("Adjustable Composite"));
-    dd.appendChild(a_ct);
-    toappend.push(dd);
-
     // optionally, add a neuron catalogue link
     if (p.catalogue) {
       catalogueElement = document.createElement('dd');
@@ -435,26 +422,18 @@ function updateProjectListFromCache() {
  * queue an open-project-stack-request to the request queue
  * freeze the window to wait for an answer
  */
-function openProjectStack( pid, sid, adjustable_stack )
+function openProjectStack( pid, sid )
 {
 	if ( project && project.id != pid )
 	{
 		project.destroy();
 	}
-	if ( adjustable_stack == undefined || adjustable_stack == false )
-	{
-		adjustable_stack = 0;
-	}
-	else
-	{
-		adjustable_stack = 1;
-	}
 	ui.catchEvents( "wait" );
 	requestQueue.register(
 		'model/project.stack.php',
-		//'dj/' + pid + '/stack/' + sid + '/adj/' + adjustable_stack + '/info',
+		//'dj/' + pid + '/stack/' + sid + '/info',
 		'POST',
-		{ pid : pid, sid : sid, adjustable : adjustable_stack },
+		{ pid : pid, sid : sid },
         // {},
 		handle_openProjectStack );
 	return;
@@ -481,7 +460,7 @@ function handle_openProjectStack( status, text, xml )
 			//! look if the project is already opened, otherwise open a new one
 			if ( !( project && project.id == e.pid ) )
 			{
-				project = new Project( e.pid, e.ptitle );
+				project = new Project( e.pid );
 				project_view = project.getView();
 				project.register();
 			}
@@ -512,27 +491,14 @@ function handle_openProjectStack( status, text, xml )
 
 			document.getElementById( "toolbox_project" ).style.display = "block";
 			
-			var tilelayer;
-			if ( e.adjustable )
-			{
-				tilelayer = new ProcTileLayer(
+			var tilelayer = new TileLayer(
 					stack,
 					e.image_base,
 					e.tile_width,
 					e.tile_height,
 					e.file_extension,
 					e.tile_source_type);
-			}
-			else
-			{
-				tilelayer = new TileLayer(
-					stack,
-					e.image_base,
-					e.tile_width,
-					e.tile_height,
-					e.file_extension,
-					e.tile_source_type);
-			}
+
 			stack.addLayer( "TileLayer", tilelayer );
 
 			$.each(e.overlay, function(key, value) {

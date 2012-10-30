@@ -278,61 +278,6 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
         raise CatmaidException(response_on_error + ':' + str(e))
 
 
-
-@requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
-def reroot_treenode(request, project_id=None):
-    treenode_id = request.POST.get('tnid', None)
-    if treenode_id is None:
-        raise CatmaidException('A treenode id has not been provided!')
-
-    response_on_error = ''
-    try:
-        response_on_error = 'Failed to select treenode with id %s.' % treenode_id
-        treenode = Treenode.objects.filter(
-                id=treenode_id,
-                project=project_id)
-
-        # no parent found or is root, then return
-        response_on_error = 'An error occured while rerooting. No valid query result.'
-        treenode = treenode[0]
-
-        first_parent = treenode.parent
-        if first_parent is None:
-            raise CatmaidException('An error occured while rerooting. No valid query result.')
-
-        # Traverse up the chain of parents, reversing the parent relationships so
-        # that the selected treenode (with ID treenode_id) becomes the root.
-        node_to_become_new_parent = treenode
-        change_node = first_parent  # Will have its parent changed each iteration.
-        while True:
-            # The parent's parent will have its parent changed next iteration.
-            change_nodes_old_parent = change_node.parent
-
-            response_on_error = 'Failed to update treenode with id %s to have new parent %s' % (change_node.id, node_to_become_new_parent.id)
-            change_node.parent = node_to_become_new_parent
-            change_node.save()
-
-            if change_nodes_old_parent is None:
-                break
-            else:
-                node_to_become_new_parent = change_node
-                change_node = change_nodes_old_parent
-
-        # Finally make treenode root
-        response_on_error = 'Failed to set treenode with ID %s as root.' % treenode.id
-        treenode.parent = None
-        treenode.save()
-
-        response_on_error = 'Failed to log reroot.'
-        insert_into_log(project_id, request.user.id, 'reroot_skeleton', treenode.location, 'Rerooted skeleton for treenode with ID %s' % treenode.id)
-
-        return HttpResponse(json.dumps({'newroot': treenode.id}))
-
-    except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
-
-
 @requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
 def link_treenode(request, project_id=None):

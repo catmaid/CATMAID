@@ -1355,6 +1355,14 @@ INSERT INTO data_view_type
 VALUES ( 'Project list view', 'project_list_data_view', 'A simple adjustable list of all projects and their stacks. This view is rendered server side and supports the display of sample images. The following options are available: \"sample_images\": [true|false], \"sample_stack\": [\"first\"|\"last\"], \"sample_slice\": [slice number|\"first\"|\"center\"|\"last\"]. By default projects are sorted. Use \"sort\":false to turn this off. Thus, a valid sample configuration could look like: {\"sample_images\":true,\"sample_stack\":\"last\",\"sample_slice\":\"center\"}' );
 "
 ),
+    '2012-10-30T22:01:00' => new Migration(
+            'Add a table data view type',
+            "
+INSERT INTO data_view_type
+(title, code_type, comment)
+VALUES ( 'Tabular project view', 'project_table_data_view', 'A simple table of all projects and their stacks. This view is rendered server side and supports the display of sample images instead of stack names. The following options are available: \"sample_images\": [true|false], \"sample_slice\": [slice number|\"first\"|\"center\"|\"last\"], \"sort\": [true|false]. By default projects are sorted and displayed without images. A valid configuration could look like: {\"sample_images\":true,\"sample_slice\":\"center\"}' );
+"
+),
 
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates

@@ -693,6 +693,6 @@ class DataView(models.Model):
     data_view_type = models.ForeignKey(DataViewType)
     config = models.TextField(default="{}")
     is_default = models.BooleanField(default=False)
-    position = models.IntegerField()
+    position = models.IntegerField(default=0)
     comment = models.TextField(default="",blank=True)
 

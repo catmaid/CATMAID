@@ -1497,21 +1497,19 @@ var SkeletonAnnotations = new function()
       });
     };
 
-        /**
+    /**
      * handle an update-treelinenodes-request answer
      *
      */
     var handle_updateNodes = function (status, text, xml, callback) {
       if (status == 200) {
-        //console.log("update noded text", $.parseJSON(text));
-        var e = eval("(" + text + ")");
-        //var e = $.parseJSON(text);
-        if (e.error) {
-          if (e.error !== "REPLACED") {
-            alert(e.error);
-          }
+        var jso = $.parseJSON(text);
+        // There could be a genuine error (something went wrong in the server)
+        // or a subsequent request replaced this request, which was canceled
+        // and served with the "REPLACED" tag as error message.
+        if (jso.error && "REPLACED" !== jso.error) {
+          alert(jso.error);
         } else {
-          var jso = $.parseJSON(text);
           // XXX: how much time does calling the function like this take?
           self.refreshNodes(jso);
           stack.redraw();

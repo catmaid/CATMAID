@@ -91,7 +91,7 @@ def node_list(request, project_id=None):
 
         # Now, if an ID for the active skeleton was supplied, make sure
         # that all treenodes for that skeleton are added:
-        if (params['as'] != 0):
+        if 0 != params['as']:
             response_on_error = "Failed to query active skeleton's (id %s) treenodes" % params['as']
             c.execute('''
             SELECT treenode.id AS id,

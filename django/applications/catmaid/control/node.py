@@ -156,6 +156,7 @@ def node_list(request, project_id=None):
                 missing_treenode_ids.add(cn['tnid'])
 
         if len(missing_treenode_ids) > 0:
+            params_z = float(params['z'])
             response_on_error = 'Failed to query treenodes from connectors.'
             tnds = Treenode.objects.filter(
                 id__in = missing_treenode_ids
@@ -169,7 +170,7 @@ def node_list(request, project_id=None):
                     'z': tn.location.z,
                     'confidence': tn.confidence,
                     'radius': tn.radius,
-                    'z_diff': float(tn.location.z) - float(params['z']),
+                    'z_diff': tn.location.z - params_z,
                     'skeleton_id': tn.skeleton_id,
                     'type': 'treenode'
                 }

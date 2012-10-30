@@ -150,10 +150,10 @@ def node_list(request, project_id=None):
         # to all of its connected treenodes, even if one is several slices
         # below.
 
-        missing_treenode_ids = []
+        missing_treenode_ids = set()
         for cn in connector_relations:
             if cn['tnid'] is not None and cn['tnid'] not in treenodes_by_id:
-                missing_treenode_ids.append(cn['tnid'])
+                missing_treenode_ids.add(cn['tnid'])
 
         if len(missing_treenode_ids) > 0:
             response_on_error = 'Failed to query treenodes from connectors.'

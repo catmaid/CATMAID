@@ -48,9 +48,8 @@ def node_list(request, project_id=None):
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
 
-    for class_name in ['skeleton']:
-        if class_name not in class_map:
-            raise CatmaidException('Can not find "%s" class for this project' % class_name)
+    if 'skeleton' not in class_map:
+        raise CatmaidException('Can not find "skeleton" class for this project')
 
     for relation in ['presynaptic_to', 'postsynaptic_to', 'model_of', 'element_of']:
         if relation not in relation_map:

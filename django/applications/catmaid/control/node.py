@@ -154,7 +154,6 @@ def node_list(request, project_id=None):
         for cn in connector_relations:
             if cn['tnid'] is not None and cn['tnid'] not in treenodes_by_id:
                 missing_treenode_ids.append(cn['tnid'])
-        params['missing_treenode_ids'] = ','.join(map(str, missing_treenode_ids))
 
         if len(missing_treenode_ids) > 0:
             response_on_error = 'Failed to query treenodes from connectors.'

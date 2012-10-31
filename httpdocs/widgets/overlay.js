@@ -857,7 +857,10 @@ var SkeletonAnnotations = new function()
               alert(e.error);
             } else {
               self.updateNodes(function () {
-                self.activateNode( nodes[e.treenode_id] );
+                // Active the node if it hasn't been changed by a new request
+                if (atn && atn_id === atn.id) {
+                  self.activateNode( nodes[e.treenode_id] );
+                }
               });
             }
           }
@@ -896,7 +899,10 @@ var SkeletonAnnotations = new function()
               alert(e.error);
             } else {
               self.updateNodes(function () {
-                self.activateNode( nodes[e.toid] );
+                // Activate the node if it hasn't been changed by a new request
+                if (atn && atn_id === atn.id) {
+                  self.activateNode( nodes[e.toid] );
+                }
               });
             }
           }

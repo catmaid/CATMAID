@@ -67,8 +67,8 @@ var SkeletonElements = new function()
     z, // z coordinates
     zdiff, // the different from the current slices
     confidence,
-    skeleton_id,
-    is_root_node) // the id of the skeleton this node is an element of
+    skeleton_id, // the id of the skeleton this node is an element of
+    is_root_node)
   {
     var node;
     if (nextNodeIndex < nodePool.length) {

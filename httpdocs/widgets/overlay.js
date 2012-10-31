@@ -830,21 +830,21 @@ var SkeletonAnnotations = new function()
 
     };
 
-    var createInterpolatedNode = function (atn, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
+    var createInterpolatedNode = function (atn_id, atn_x, atn_y, atn_z, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
     {
       // This assumes that the parentID is not null, i.e. exists
       // Creates treenodes from atn to new node in each z section
       requestQueue.register(django_url + project.id + '/treenode/create/interpolated', "POST", {
         pid: project.id,
-        parent_id: atn.id,
+        parent_id: atn_id,
         x: phys_x,
         y: phys_y,
         z: phys_z,
         radius: radius,
         confidence: confidence,
-        atnx: self.pix2physX(atn.x),
-        atny: self.pix2physY(atn.y),
-        atnz: self.pix2physZ(atn.z),
+        atnx: self.pix2physX(atn_x),
+        atny: self.pix2physY(atn_y),
+        atnz: self.pix2physZ(atn_z),
         resx: stack.resolution.x,
         resy: stack.resolution.y,
         resz: stack.resolution.z
@@ -2045,7 +2045,7 @@ var SkeletonAnnotations = new function()
         // Get physical coordinates for node position creation
         var phys_x = self.pix2physX(pos_x);
         var phys_y = self.pix2physY(pos_y);
-        createInterpolatedNode(atn, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+        createInterpolatedNode(atn.id, atn.x, atn.y, atn.z, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
         break;
       }
       return;

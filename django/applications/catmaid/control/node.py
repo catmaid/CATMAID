@@ -158,7 +158,7 @@ def node_list(request, project_id=None):
 
         if len(missing_treenode_ids) > 0:
             params_z = float(params['z'])
-            response_on_error = 'Failed to query treenodes from connectors.'
+            response_on_error = 'Failed to query treenodes from connectors'
             tnds = Treenode.objects.filter(
                 id__in = missing_treenode_ids
             ).select_related('parent')

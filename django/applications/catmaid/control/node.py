@@ -87,8 +87,7 @@ def node_list(request, project_id=None):
         ''', params)
 
         treenodes_by_id = {}
-        treenodes_q = cursor_fetch_dictionary(c)
-        for tn in treenodes_q:
+        for tn in cursor_fetch_dictionary(c):
             treenodes_by_id[tn['id']] = tn
 
         # Now, if an ID for the active skeleton was supplied, make sure

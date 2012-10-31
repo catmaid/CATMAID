@@ -221,29 +221,25 @@ def node_list(request, project_id=None):
 @login_required
 @transaction_reportable_commit_on_success
 def node_list_tuples(request, project_id=None):
-    # TODO This function is used very often and Catmaid would benefit from its
-    # optimization. The following things should have big effects, ordered by
-    # expected efficienct gain VS effort to implement.
-
-    # - Stop using cursor_fetch_dictionary, dictionary creation requires an
-    # entire iteration over each query result list. Instead access each
-    # selected column directly.
-
-    # - Do not use the two separate dictionaries treenodes_by_id and
-    # connectors_by_id. Instead, just append newly queries data onto a result
-    # list. This will require manually keeping track of connectors and their
-    # places in the list when collecting their relation properties.
-
-    # - Remove a connector's top level relation properties when it is first
-    # encountered (when implementing the optimization above), instead of doing
-    # so in a separate iteration over the result list/dictionary.
-
+    ''' Retrieve an JSON array with two entries:
+    [0] an array of arrays, each array representing a treenode
+    [1] an array of arrays, each array representing a connector and containing
+    arrays inside that specify the relations between the connector and treenodes.
+    In this function tuples are used as much as possible for immutable list,
+    and uses directly the tuples returned by the database cursor.
+    The returned JSON data is therefore sensitive to indices in the array,
+    so care must be taken never to alter the order of the variables in the SQL
+    statements without modifying the accesses to said data both in this function
+    and in the client that consumes it.
+    '''
     params = {}
     # z: the section index in calibrated units.
     # width: the width of the field of view in calibrated units.
     # height: the height of the field of view in calibrated units.
     # zres: the resolution in the Z axis, used to determine the thickness of a section.
     # as: the ID of the active skeleton
+    # top: the Y coordinate of the bounding box (field of view) in calibrated units
+    # left: the X coordinate of the bounding box (field of view) in calibrated units
     for p in ('z', 'width', 'height', 'zres', 'as'):
         params[p] = int(request.POST.get(p, 0))
     for p in ('top', 'left'):
@@ -369,7 +365,7 @@ def node_list_tuples(request, project_id=None):
             # Collect treeenode IDs related to connectors but not yet in treenode_ids
             # because they lay beyond adjacent sections
             tnid = row[7] # The tnid column is index 7 (see SQL statement above)
-            cid = row[0]
+            cid = row[0] # connector ID
             if tnid is not None:
                 if tnid not in treenode_ids:
                     missing_treenode_ids.add(tnid)

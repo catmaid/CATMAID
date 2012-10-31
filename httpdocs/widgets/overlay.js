@@ -1070,8 +1070,9 @@ var SkeletonAnnotations = new function()
     /** Recreate all nodes (or reuse existing ones if possible).
      *
      * @param jso is an array of JSON objects, where each object may specify a Node or a ConnectorNode
+     * @param pz is the z of the section in calibrated coordinates
      */
-    this.refreshNodes = function (jso)
+    var refreshNodes = function (jso, pz)
     {
       var rad, nrtn = 0, nrcn = 0, parid, nid, nn, pn, isRootNode, i, j, len;
 
@@ -1205,6 +1206,127 @@ var SkeletonAnnotations = new function()
         }
     }
 
+    };
+
+    /** Recreate all nodes (or reuse existing ones if possible).
+     *
+     * @param jso is an array of JSON objects, where each object may specify a Node or a ConnectorNode
+     * @param pz is the z of the section in calibrated coordinates
+     */
+    var refreshNodesFromTuples = function (jso, pz)
+    {
+      // Reset nodes and labels
+      nodes = {};
+      // remove labels, but do not hide them
+      self.removeLabels();
+
+      // Prepare existing Node and ConnectorNode instances for reuse
+      SkeletonElements.resetCache();
+
+      // Populate Nodes
+      jso[0].forEach(function(a, index, array) {
+        // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
+        // a[6]: user_id, a[7]: radius, a[8]: skeleton_id
+        nodes[a[0]] = SkeletonElements.newNode(
+          a[0], self.paper, null, a[7], phys2pixX(a[2]),
+          phys2pixY(a[3]), phys2pixZ(a[4]),
+          (a[4] - pz) / stack.resolution.z, a[5], a[8], null === a[1]);
+      });
+
+      // Populate ConnectorNodes
+      jso[1].forEach(function(a, index, array) {
+        // a[0]: ID, a[1]: x, a[2]: y, a[3]: z, a[4]: confidence,
+        // a[5]: user_id, a[6]: presynaptic nodes as array of arrays with treenode id
+        // and confidence, a[7]: postsynaptic nodes as array of arrays with treenode id
+        // and confidence.
+        nodes[a[0]] = SkeletonElements.newConnectorNode(
+          a[0], self.paper, 8, phys2pixX(a[1]),
+          phys2pixY(a[2]), phys2pixZ(a[3]),
+          (a[3] - pz) / stack.resolution.z, a[5]);
+      });
+
+      // Disable any unused instances
+      SkeletonElements.disableBeyond(jso[0].length, jso[1].length);
+
+      // Now that all Node instances are in place, loop nodes again
+      // and set correct parent objects and parent's children update
+      // TODO this fails, nodes still have a null as parent
+      jso[0].forEach(function(a, index, array) {
+        var nid = a[0]; // Node's ID
+        var pn = nodes[a[1]]; // parent Node
+        if (pn) {
+          var nn = nodes[nid];
+          // if parent exists, update the references
+          nn.parent = pn;
+          // update the parent's children
+          pn.addChildNode(nn);
+        }
+      });
+
+      // Now that ConnectorNode and Node instances are in place,
+      // set the pre and post relations
+      jso[1].forEach(function(a, index, array) {
+        // a[0] is the ID of the ConnectorNode
+        var connector = nodes[a[0]];
+        // a[6]: pre relation which is an array of arrays of tnid and tc_confidence
+        a[6].forEach(function(r, i, ar) {
+          // r[0]: tnid, r[1]: tc_confidence
+          var tnid = r[0];
+          var node = nodes[tnid];
+          if (node) {
+            // link it to pregroup, to connect it to the connector
+            connector.pregroup[tnid] = {'treenode': node,
+                                        'confidence': r[1]};
+          }
+        });
+        // a[7]: post relation which is an array of arrays of tnid and tc_confidence
+        a[7].forEach(function(r, i, ar) {
+          // r[0]: tnid, r[1]: tc_confidence
+          var tnid = r[0];
+          var node = nodes[tnid];
+          if (node) {
+            // link it to postgroup, to connect it to the connector
+            connector.postgroup[tnid] = {'treenode': node,
+                                         'confidence': r[1]};
+          }
+        });
+      });
+
+      // TODO: below, create edges only if zdiff is for next/prev sections
+      // TODO: below, create circle only if z equals current section
+
+      if (edgetoggle) {
+        // Draw node edges first
+        var i;
+        for (i in nodes) {
+          if (nodes.hasOwnProperty(i)) {
+            nodes[i].setColor();
+            nodes[i].drawEdges();
+          }
+        }
+      } // end speed toggle
+
+      // Create raphael's circles on top of the edges
+      // so that the events reach the circles first
+      for (i in nodes) {
+        if (nodes.hasOwnProperty(i)) {
+          nodes[i].createCircle();
+        }
+      }
+
+      if( self.getLabelStatus() ) {
+        self.showLabels();
+      }
+
+      // Keep active state of previous active node
+      if (atn !== null)
+      {
+          var nn = nodes[atn.id];
+          if (nn) {
+              // Will recolor all nodes
+              self.activateNode(nn);
+          }
+      }
     };
 
     // Initialize to the value of stack.scale at instantiation of SVGOverlay
@@ -1477,10 +1599,11 @@ var SkeletonAnnotations = new function()
         //TODO add the padding to the range
 
         //requestQueue.replace('model/node.list.php', 'POST', {
+        var pz = stack.z * stack.resolution.z + stack.translation.z;
         requestQueue.replace(django_url + project.id + '/node/list', 'POST', {
           pid: stack.getProject().id,
           sid: stack.getId(),
-          z: stack.z * stack.resolution.z + stack.translation.z,
+          z: pz,
           top: (stack.y - (stack.viewHeight / 2) / stack.scale) * stack.resolution.y + stack.translation.y,
           left: (stack.x - (stack.viewWidth / 2) / stack.scale) * stack.resolution.x + stack.translation.x,
           width: (stack.viewWidth / stack.scale) * stack.resolution.x,
@@ -1488,7 +1611,7 @@ var SkeletonAnnotations = new function()
           zres: stack.resolution.z,
           as: activeSkeleton
         }, function (status, text, xml) {
-          handle_updateNodes(status, text, xml, callback);
+          handle_updateNodes(status, text, xml, callback, pz);
         },
         'nodes_for_overlay_request');
       
@@ -1501,7 +1624,7 @@ var SkeletonAnnotations = new function()
      * handle an update-treelinenodes-request answer
      *
      */
-    var handle_updateNodes = function (status, text, xml, callback) {
+    var handle_updateNodes = function (status, text, xml, callback, pz) {
       if (status == 200) {
         var jso = $.parseJSON(text);
         // There could be a genuine error (something went wrong in the server)
@@ -1511,7 +1634,7 @@ var SkeletonAnnotations = new function()
           alert(jso.error);
         } else {
           // XXX: how much time does calling the function like this take?
-          self.refreshNodes(jso);
+          refreshNodesFromTuples(jso, pz);
           stack.redraw();
         }
       }

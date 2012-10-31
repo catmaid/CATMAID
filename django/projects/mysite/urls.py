@@ -89,7 +89,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/node/most_recent$', 'catmaid.control.most_recent_treenode'),
     (r'^(?P<project_id>\d+)/node/nearest$', 'catmaid.control.node_nearest'),
     (r'^(?P<project_id>\d+)/node/update$', 'catmaid.control.node_update'),
-    (r'^(?P<project_id>\d+)/node/list', 'catmaid.control.node_list'),
+    (r'^(?P<project_id>\d+)/node/list', 'catmaid.control.node_list_tuples'),
 
     (r'^(?P<project_id>\d+)/labels-all$', 'catmaid.control.labels_all'),
     (r'^(?P<project_id>\d+)/labels-for-nodes$', 'catmaid.control.labels_for_nodes'),

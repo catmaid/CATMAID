@@ -1,5 +1,7 @@
 import json
 
+from collections import defaultdict
+
 from django.db import transaction, connection
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
@@ -215,6 +217,218 @@ def node_list(request, project_id=None):
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))
+
+
+@login_required
+@transaction_reportable_commit_on_success
+def node_list_tuples(request, project_id=None):
+    # TODO This function is used very often and Catmaid would benefit from its
+    # optimization. The following things should have big effects, ordered by
+    # expected efficienct gain VS effort to implement.
+
+    # - Stop using cursor_fetch_dictionary, dictionary creation requires an
+    # entire iteration over each query result list. Instead access each
+    # selected column directly.
+
+    # - Do not use the two separate dictionaries treenodes_by_id and
+    # connectors_by_id. Instead, just append newly queries data onto a result
+    # list. This will require manually keeping track of connectors and their
+    # places in the list when collecting their relation properties.
+
+    # - Remove a connector's top level relation properties when it is first
+    # encountered (when implementing the optimization above), instead of doing
+    # so in a separate iteration over the result list/dictionary.
+
+    params = {}
+    # z: the section index in calibrated units.
+    # width: the width of the field of view in calibrated units.
+    # height: the height of the field of view in calibrated units.
+    # zres: the resolution in the Z axis, used to determine the thickness of a section.
+    # as: the ID of the active skeleton
+    for p in ('z', 'width', 'height', 'zres', 'as'):
+        params[p] = int(request.POST.get(p, 0))
+    for p in ('top', 'left'):
+        params[p] = float(request.POST.get(p, 0))
+    params['limit'] = 2000  # Limit the number of retrieved treenodes.
+    params['zbound'] = 1.0  # The scale factor to volume bound the query in z-direction based on the z-resolution.
+    params['project_id'] = project_id
+    
+    relation_map = get_relation_to_id_map(project_id)
+    class_map = get_class_to_id_map(project_id)
+
+    if 'skeleton' not in class_map:
+        raise CatmaidException('Can not find "skeleton" class for this project')
+
+    for relation in ['presynaptic_to', 'postsynaptic_to', 'model_of', 'element_of']:
+        if relation not in relation_map:
+            raise CatmaidException('Can not find "%s" relation for this project' % relation)
+
+    try:
+        cursor = connection.cursor()
+        # Fetch treenodes which are in the bounding box:
+        response_on_error = 'Failed to query treenodes.'
+        cursor.execute('''
+        SELECT treenode.id AS id,
+            treenode.parent_id AS parentid,
+            (treenode.location).x AS x,
+            (treenode.location).y AS y,
+            (treenode.location).z AS z,
+            treenode.confidence AS confidence,
+            treenode.user_id AS user_id,
+            treenode.radius AS radius,
+            skeleton_id
+        FROM treenode
+        WHERE
+            treenode.project_id = %(project_id)s
+            AND (treenode.location).x >= %(left)s
+            AND (treenode.location).x <= (%(left)s + %(width)s)
+            AND (treenode.location).y >= %(top)s
+            AND (treenode.location).y <= (%(top)s + %(height)s)
+            AND (treenode.location).z >= (%(z)s - %(zbound)s * %(zres)s)
+            AND (treenode.location).z <= (%(z)s + %(zbound)s * %(zres)s)
+        LIMIT %(limit)s
+        ''', params)
+
+        # A list of tuples, each tuple containing the selected columns for each treenode
+        # The id is the first element of each tuple
+        treenodes = []
+        # A set of unique treenode IDs
+        treenode_ids = set()
+
+        for row in cursor.fetchall():
+          treenodes.append(row)
+          treenode_ids.add(row[0])
+
+        # Now, if an ID for the active skeleton was supplied, make sure
+        # that all treenodes for that skeleton are added:
+        if 0 != params['as']:
+            response_on_error = "Failed to query active skeleton's (id %s) treenodes" % params['as']
+            cursor.execute('''
+            SELECT treenode.id AS id,
+                treenode.parent_id AS parentid,
+                (treenode.location).x AS x,
+                (treenode.location).y AS y,
+                (treenode.location).z AS z,
+                treenode.confidence AS confidence,
+                treenode.user_id AS user_id,
+                treenode.radius AS radius,
+                skeleton_id
+            FROM treenode
+            WHERE
+                skeleton_id = %(as)s
+            ''', params)
+
+            for row in cursor.fetchall():
+                tnid = row[0]
+                if tnid not in treenode_ids:
+                    treenode_ids.add(tnid)
+                    treenodes.append(row)
+
+
+        params['zbound'] = 4.1
+        # Retrieve connectors that are synapses - do a LEFT OUTER JOIN with
+        # the treenode_connector table, so that we get entries even if the
+        # connector is not connected to any treenodes
+        response_on_error = 'Failed to query connector locations.'
+        cursor.execute('''
+        SELECT connector.id AS id,
+            (connector.location).x AS x,
+            (connector.location).y AS y,
+            (connector.location).z AS z,
+            connector.confidence AS confidence,
+            connector.user_id AS user_id,
+            treenode_connector.relation_id AS treenode_relation_id,
+            treenode_connector.treenode_id AS tnid,
+            treenode_connector.confidence AS tc_confidence
+        FROM connector LEFT OUTER JOIN treenode_connector
+            ON treenode_connector.connector_id = connector.id
+        WHERE connector.project_id = %(project_id)s AND
+            (connector.location).x >= %(left)s AND
+            (connector.location).x <= (%(left)s + %(width)s) AND
+            (connector.location).y >= %(top)s AND
+            (connector.location).y <= (%(top)s + %(height)s) AND
+            (connector.location).z >= (%(z)s - %(zbound)s * %(zres)s) AND
+            (connector.location).z <= (%(z)s + %(zbound)s * %(zres)s)
+        LIMIT %(limit)s
+        ''', params)
+
+
+        # A list of tuples, each tuple containing the selected columns of each connector
+        # which could be repeated given the join with treenode_connector
+        connectors = []
+        # A set of unique connector IDs
+        connector_ids = set()
+        # A set of missing treenode IDs
+        missing_treenode_ids = set()
+        # The relations between connectors and treenodes, stored
+        # as connector ID keys vs a list of tuples, each with the treenode id,
+        # the type of relation (presynaptic_to or postsynaptic_to), and the confidence.
+        pre = defaultdict(list)
+        post = defaultdict(list)
+
+        for row in cursor.fetchall():
+            # Collect treeenode IDs related to connectors but not yet in treenode_ids
+            # because they lay beyond adjacent sections
+            tnid = row[7] # The tnid column is index 7 (see SQL statement above)
+            cid = row[0]
+            if tnid is not None:
+                if tnid not in treenode_ids:
+                    missing_treenode_ids.add(tnid)
+                # Collect relations between connectors and treenodes
+                # row[0]: connector id (cid above)
+                # row[6]: treenode_relation_id
+                # tow[7]: treenode_id (tnid above)
+                # row[8]: tc_confidence
+                if row[6] == relation_map['presynaptic_to']:
+                    pre[cid].append((tnid, row[8]))
+                else:
+                    post[cid].append((tnid, row[8]))
+
+            # Collect unique connectors
+            if cid not in connector_ids:
+                connectors.append(row)
+                connector_ids.add(cid)
+
+        # Fix connectors to contain only the relevant entries, plus the relations
+        for i in xrange(len(connectors)):
+            c = connectors[i]
+            cid = c[0]
+            connectors[i] = (cid, c[1], c[2], c[3], c[4], c[5], pre[cid], post[cid])
+
+
+        # Fetch missing treenodes. These are related to connectors
+        # but not in the bounding box or the active skeleton.
+        # This is so that we can draw arrows from any displayed connector
+        # to all of its connected treenodes, even if one is several slices
+        # below.
+
+        if missing_treenode_ids:
+            params['missing'] =  tuple(missing_treenode_ids)
+            response_on_error = 'Failed to query treenodes from connectors'
+            cursor.execute('''
+            SELECT treenode.id AS id,
+                treenode.parent_id AS parentid,
+                (treenode.location).x AS x,
+                (treenode.location).y AS y,
+                (treenode.location).z AS z,
+                treenode.confidence AS confidence,
+                treenode.user_id AS user_id,
+                treenode.radius AS radius,
+                skeleton_id
+            FROM treenode
+            WHERE id IN %(missing)s''', params)
+
+            for row in cursor.fetchall():
+                treenodes.append(row)
+                treenode_ids.add(row[0])
+
+        # TODO above, SQL command can be far shorter, no need for "treenode."
+
+        return HttpResponse(json.dumps((treenodes, connectors)))
+
+    except Exception as e:
+        raise CatmaidException(response_on_error + ':' + str(e))
+
 
 
 @login_required

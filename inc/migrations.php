@@ -1295,6 +1295,13 @@ CREATE INDEX class_instance_b_cici_index ON class_instance_class_instance USING 
 '
 ),
 
+	'2012-10-30T19:42:05' => new Migration(
+		'Add index to treenode table',
+		'
+CREATE INDEX skeleton_id_treenode_index ON treenode USING btree (skeleton_id);
+'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

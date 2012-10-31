@@ -208,7 +208,7 @@ def node_list(request, project_id=None):
         # Clean out connector relation info from the top level of each
         # connector, as it has been added to relationship arrays at this point.
         for cn in connectors_by_id.values():
-            for key in ['tnid', 'treenode_relation_id', 'tc_confidence']:
+            for key in ('tnid', 'treenode_relation_id', 'tc_confidence'):
                 if key in cn:
                     del(cn[key])
 

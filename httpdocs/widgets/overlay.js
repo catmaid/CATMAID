@@ -1634,8 +1634,10 @@ var SkeletonAnnotations = new function()
         // There could be a genuine error (something went wrong in the server)
         // or a subsequent request replaced this request, which was canceled
         // and served with the "REPLACED" tag as error message.
-        if (jso.error && "REPLACED" !== jso.error) {
-          alert(jso.error);
+        if (jso.error) {
+          if ("REPLACED" !== jso.error) {
+            alert(jso.error);
+          }
         } else {
           // XXX: how much time does calling the function like this take?
           refreshNodesFromTuples(jso, pz);

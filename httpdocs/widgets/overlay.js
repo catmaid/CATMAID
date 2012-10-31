@@ -1250,7 +1250,6 @@ var SkeletonAnnotations = new function()
 
       // Now that all Node instances are in place, loop nodes again
       // and set correct parent objects and parent's children update
-      // TODO this fails, nodes still have a null as parent
       jso[0].forEach(function(a, index, array) {
         var nid = a[0]; // Node's ID
         var pn = nodes[a[1]]; // parent Node
@@ -1292,15 +1291,13 @@ var SkeletonAnnotations = new function()
         });
       });
 
-      // TODO: below, create edges only if zdiff is for next/prev sections
-      // TODO: below, create circle only if z equals current section
-
       if (edgetoggle) {
         // Draw node edges first
         var i;
         for (i in nodes) {
           if (nodes.hasOwnProperty(i)) {
             nodes[i].setColor();
+            // Will only create it or unhide it the edge is to be displayed
             nodes[i].drawEdges();
           }
         }
@@ -1310,6 +1307,7 @@ var SkeletonAnnotations = new function()
       // so that the events reach the circles first
       for (i in nodes) {
         if (nodes.hasOwnProperty(i)) {
+          // Will only create it or unhide it if the node is to be displayed
           nodes[i].createCircle();
         }
       }

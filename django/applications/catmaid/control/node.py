@@ -13,6 +13,11 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
 
+try:
+    import networkx as nx
+except:
+    pass
+
 @login_required
 @transaction_reportable_commit_on_success
 def node_list(request, project_id=None):
@@ -616,3 +621,72 @@ def node_nearest(request, project_id=None):
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))
+
+
+def _skeleton_as_graph(skeleton_id):
+    # Fetch all nodes of the skeleton
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT id, parent_id
+        FROM treenode
+        WHERE skeleton_id=%s''' % skeleton_id)
+    # Create a directed graph of the skeleton
+    graph = nx.DiGraph()
+    for row in cursor.fetchall():
+        # row[0]: id
+        # row[1]: parent_id
+        graph.add_node(row[0])
+        if row[1]:
+            # Create directional edge from parent to child
+            graph.add_edge(row[1], row[0])
+    return graph
+
+def _fetch_location(treenode_id):
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT
+          id,
+          (location).x AS x,
+          (location).y AS y,
+          (location).z AS z
+        FROM treenode
+        WHERE id=%s''' % treenode_id)
+    return cursor.fetchone()
+
+@login_required
+def find_previous_branchnode_or_root(request, project_id=None):
+    try:
+        tnid = int(request.POST['tnid'])
+        graph = _skeleton_as_graph(request.POST['skid'])
+        # Travel upstream until finding a parent node with more than one child 
+        # or reaching the root node
+        while True:
+            parents = graph.predecessors(tnid)
+            if parents: # list of parents is not empty
+                tnid = parents[0] # Can ony have one parent
+                if 1 != len(graph.successors(tnid)):
+                    break # Found a branch node
+            else:
+                break # Found the root node
+        return HttpResponse(json.dumps(_fetch_location(tnid)))
+    except Exception as e:
+        raise CatmaidException('Could not obtain previous branch node or root:' + str(e))
+
+@login_required
+def find_next_branchnode_or_end(request, project_id=None):
+    try:
+        tnid = int(request.POST['tnid'])
+        graph = _skeleton_as_graph(request.POST['skid'])
+        # Travel downstream until finding a child node with more than one child
+        # or reaching an end node
+        while True:
+            children = graph.successors(tnid)
+            if 1 == len(children):
+                tnid = children[0]
+            else:
+                break # Found an end node or a branch node
+        return HttpResponse(json.dumps(_fetch_location(tnid)))
+    except Exception as e:
+        raise CatmaidException('Could not obtain next branch node or root:' + str(e))
+
+

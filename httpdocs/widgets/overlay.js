@@ -1698,60 +1698,62 @@ var SkeletonAnnotations = new function()
       }
     };
 
-    this.goToAdjacentBranchOrEndNode = function(next) {
-      var foundNode, originalActiveNode, current, id;
-      var nodeToActivate, skeletonToActivate;
-      if (null !== atn.id) {
-        foundNode = false;
-        originalActiveNode = nodes[atn.id];
-        current = originalActiveNode;
-        while (true) {
-          if ((!next) && (null === current.parent)) {
-            if (originalActiveNode === current) {
-              alert("You are already at the root node");
-            } else {
-              // Then we reached the root node:
-              foundNode = true;
-            }
-            break;
-          }
-          if (next && (current.numberOfChildren === 0)) {
-            if (originalActiveNode === current) {
-              alert("You are already at an end node");
-            } else {
-              // Then we reached an end node:
-              foundNode = true;
-            }
-            break;
-          }
-          if (next) {
-            if (current.numberOfChildren > 1) {
-              alert("There are multiple possible next branch / end nodes");
-              break;
-            }
-            // Otherwise there must be just one child node:
-            for( id in current.children ) {
-              if (current.children.hasOwnProperty(id)) {
-                current = current.children[id];
-                break;
+    this.goToPreviousBranchOrRootNode = function(treenode_id, skeleton_id) {
+      requestQueue.register(
+          django_url + project.id + "/node/previous_branch_or_root",
+          "POST",
+          {tnid: treenode_id, skid: skeleton_id},
+          function(status, text) {
+            console.log("status: " + status);
+            if (200 === status) {
+              var json = $.parseJSON(text);
+              if (json.error) {
+                alert("Error when trying to find previous branch or root node:" + json.error);
+              } else {
+                // json is a tuple:
+                // json[0]: treenode id
+                // json[1], [2], [3]: x, y, z in calibrated world units
+                if (treenode_id === json[0]) {
+                  // Already at the root node
+                  // TODO issue a growl
+                } else {
+                  stack.getProject().moveTo(json[3], json[2], json[1], undefined,
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json[0], skeleton_id);
+                    });
+                }
               }
             }
-          } else {
-            // Going to the previous node is easier:
-            current = current.parent;
-          }
-          if (current.numberOfChildren > 1) {
-            foundNode = true;
-            break;
-          }
-        }
-        if (foundNode) {
-          self.moveToAndSelectNode(current);
-        }
-      } else {
-        alert("No active node selected; can't find previous branch point");
-      }
-    }
+          });
+    };
+
+    this.goToNextBranchOrEndNode = function(treenode_id, skeleton_id) {
+      requestQueue.register(
+          django_url + project.id + "/node/next_branch_or_end",
+          "POST",
+          {tnid: treenode_id, skid: skeleton_id},
+          function(status, text) {
+            if (200 === status) {
+              var json = $.parseJSON(text);
+              if (json.error) {
+                alert("Error when trying to find next branch or end node:" + json.error);
+              } else {
+                // json is a tuple:
+                // json[0]: treenode id
+                // json[1], [2], [3]: x, y, z in calibrated world units
+                if (treenode_id === json[0]) {
+                  // Already at a branch or end node
+                  // TODO issue a growl
+                } else {
+                  stack.getProject().moveTo(json[3], json[2], json[1], undefined,
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json[0], skeleton_id);
+                    });
+                }
+              }
+            }
+          });
+    };
 
     this.moveToAndSelectNode = function (node) {
       var nodeIDToActivate, skeletonIDToActivate, afterMove;
@@ -1898,10 +1900,16 @@ var SkeletonAnnotations = new function()
         });
         break;
       case "gonextbranch":
-        self.goToAdjacentBranchOrEndNode(true);
+        console.log("ATN" + atn + ", " + atn.id + ", " + atn.skeleton_id);
+        if (atn.id !== null) {
+          self.goToNextBranchOrEndNode(atn.id, atn.skeleton_id);
+        }
         break;
       case "goprevbranch":
-        self.goToAdjacentBranchOrEndNode(false);
+        console.log("ATN" + atn + ", " + atn.id + ", " + atn.skeleton_id);
+        if (atn.id !== null) {
+          self.goToPreviousBranchOrRootNode(atn.id, atn.skeleton_id);
+        }
         break;
       case "skelsplitting":
         if (atn.id !== null) {

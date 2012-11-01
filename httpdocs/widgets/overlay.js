@@ -811,7 +811,7 @@ var SkeletonAnnotations = new function()
               nid = parseInt(jso.treenode_id);
 
               // always create a new treenode which is the root of a new skeleton
-              var nn = SkeletonElements.newNode(nid, self.paper, null, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
+              var nn = SkeletonElements.newNode(nid, self.paper, null, null, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id));
               if (nn.line) nn.line.toBack();
 
               // add node to nodes list
@@ -951,8 +951,8 @@ var SkeletonAnnotations = new function()
               // add treenode to the display and update it
               var jso = $.parseJSON(text);
               nid = parseInt(jso.treenode_id);
-              // The parent will be null if there isn't one or if the parent Node object is not within the set of retrieved nodes.
-              var nn = SkeletonElements.newNode(nid, self.paper, nodes[parentID], radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), -1 === parentID);
+              // The parent will be null if there isn't one or if the parent Node object is not within the set of retrieved nodes, but the parentID will be defined.
+              var nn = SkeletonElements.newNode(nid, self.paper, nodes[parentID], parentID, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id));
 
               nodes[nid] = nn;
               nn.draw();
@@ -1080,7 +1080,7 @@ var SkeletonAnnotations = new function()
      */
     var refreshNodes = function (jso, pz)
     {
-      var rad, nrtn = 0, nrcn = 0, parid, nid, nn, pn, isRootNode, i, j, len;
+      var rad, nrtn = 0, nrcn = 0, parid, nid, nn, pn, i, j, len;
 
       // Reset nodes and labels
       nodes = {};
@@ -1106,8 +1106,7 @@ var SkeletonAnnotations = new function()
 
         if (jso[i].type === "treenode")
         {
-          isRootNode = isNaN(parseInt(jso[i].parentid));
-          nn = SkeletonElements.newNode(id, self.paper, null, rad, pos_x, pos_y, pos_z, zdiff, jso[i].confidence, parseInt(jso[i].skeleton_id), isRootNode);
+          nn = SkeletonElements.newNode(id, self.paper, null, parseInt(jso[i].parentid), rad, pos_x, pos_y, pos_z, zdiff, jso[i].confidence, parseInt(jso[i].skeleton_id));
           nrtn++;
         }
         else
@@ -1234,9 +1233,9 @@ var SkeletonAnnotations = new function()
         // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
         // a[6]: user_id, a[7]: radius, a[8]: skeleton_id
         nodes[a[0]] = SkeletonElements.newNode(
-          a[0], self.paper, null, a[7], phys2pixX(a[2]),
+          a[0], self.paper, null, a[1], a[7], phys2pixX(a[2]),
           phys2pixY(a[3]), phys2pixZ(a[4]),
-          (a[4] - pz) / stack.resolution.z, a[5], a[8], null === a[1]);
+          (a[4] - pz) / stack.resolution.z, a[5], a[8]);
       });
 
       // Populate ConnectorNodes

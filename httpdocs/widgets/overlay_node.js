@@ -61,21 +61,21 @@ var SkeletonElements = new function()
     id, // unique id for the node from the database
     paper, // the raphael paper this node is drawn to
     parent, // the parent node, if present within the subset of nodes retrieved for display; otherwise null.
+    parent_id, // the id of the parent node, or null if it is root
     r, // the radius
     x, // the x coordinate in pixel coordinates
     y, // y coordinates
     z, // z coordinates
     zdiff, // the different from the current slices
     confidence,
-    skeleton_id, // the id of the skeleton this node is an element of
-    is_root_node)
+    skeleton_id) // the id of the skeleton this node is an element of
   {
     var node;
     if (nextNodeIndex < nodePool.length) {
       node = nodePool[nextNodeIndex];
-      reuseNode(node, id, parent, r, x, y, z, zdiff, confidence, skeleton_id, is_root_node);
+      reuseNode(node, id, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id);
     } else {
-      node = new this.Node(id, paper, parent, r, x, y, z, zdiff, confidence, skeleton_id, is_root_node);
+      node = new this.Node(id, paper, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id);
       nodePool.push(node);
     }
     nextNodeIndex += 1;
@@ -86,15 +86,15 @@ var SkeletonElements = new function()
   this.Node = function(
     id, // unique id for the node from the database
     paper, // the raphael paper this node is drawn to
-    parent, // the parent node
+    parent, // the parent node (may be null if the node is not loaded)
+    parent_id, // is null only for the root node
     r, // the radius
     x, // the x coordinate in pixel coordinates
     y, // y coordinates
     z, // z coordinates
     zdiff, // the different from the current slices
     confidence,
-    skeleton_id,
-    is_root_node) // the id of the skeleton this node is an element of
+    skeleton_id) // the id of the skeleton this node is an element of
   {
     this.id = id;
     this.type = TYPE_NODE;
@@ -111,7 +111,7 @@ var SkeletonElements = new function()
     this.shouldDisplay = displayTreenode;
     this.confidence = confidence;
     this.skeleton_id = skeleton_id;
-    this.isroot = is_root_node;
+    this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
     this.fillcolor = inactive_skeleton_color;
     this.c = null; // The Raphael circle for drawing
     this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
@@ -166,10 +166,11 @@ var SkeletonElements = new function()
   };
 
   /** Takes an existing Node and sets all the proper members as given, and resets the children and connectors. */
-  var reuseNode = function(node, id, parent, r, x, y, z, zdiff, confidence, skeleton_id, isroot)
+  var reuseNode = function(node, id, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id, isroot)
   {
     node.id = id;
     node.parent = parent;
+    node.parent_id = parent_id;
     node.children = {};
     node.numberOfChildren = 0;
     node.connectors = {};

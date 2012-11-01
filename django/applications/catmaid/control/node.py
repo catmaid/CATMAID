@@ -307,13 +307,15 @@ def node_list_tuples(request, project_id=None):
           treenodes.append(row)
           treenode_ids.add(row[0])
 
-        # Ensure that the parents and children of all nodes of the skeleton
-        # within the visible section are added:
+        # Ensure that the parents and children of all nodes of
+        # the selected skeleton are added
+        # (Doing it for all visible nodes in the section is far too expensive.)
         ids = set() # ids of nodes within visible section
         parent_ids = set() # ids of not yet fetched parents
         z1 = z0 + zres
+        skeleton_id = params['as']
         for row in treenodes:
-            if z0 <= row[4] < z1:
+            if row[8] == skeleton_id and z0 <= row[4] < z1:
                 # Collect node ids within visible section
                 ids.add(row[0])
                 # Check if the parent is loaded
@@ -336,8 +338,8 @@ def node_list_tuples(request, project_id=None):
                 skeleton_id
             FROM treenode
             WHERE
-                ((location).z < %s OR (location).z >= %s)
-                AND ''' % (z0, z1)
+                skeleton_id = %s
+                AND ''' % skeleton_id
             if parent_ids:
                 query += "(id IN (%s) OR parent_id IN (%s))" %\
                     (','.join(str(x) for x in parent_ids), # tuple(missing_ids) would add numbers as 456L (notice the L), which fails in SQL

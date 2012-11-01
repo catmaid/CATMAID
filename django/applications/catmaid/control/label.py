@@ -40,28 +40,31 @@ def labels_for_node(request, project_id=None, ntype=None, location_id=None):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_for_nodes(request, project_id=None):
     # Two POST variables, which are each an array of integers stringed together with commas as separators
-    treenode_ids = (int(x) for x in request.POST['treenode_ids'].split(','))
-    connector_ids = (int(x) for x in request.POST['connector_ids'].split(','))
-
-    qs_treenodes = TreenodeClassInstance.objects.filter(
-        relation__relation_name='labeled_as',
-        class_instance__class_column__class_name='label',
-        treenode__id__in=treenode_ids,
-        project=project_id).select_related('treenode', 'class_instance')
-
-    qs_connectors = ConnectorClassInstance.objects.filter(
-        relation__relation_name='labeled_as',
-        class_instance__class_column__class_name='label',
-        connector__id__in=connector_ids,
-        project=project_id).select_related('connector', 'class_instance')
-
+    treenode_ids = request.POST['treenode_ids'].strip()
+    connector_ids = request.POST['connector_ids'].strip()
     result = defaultdict(list)
 
-    for tci in qs_treenodes:
-        result[tci.treenode.id].append(tci.class_instance.name)
+    import sys
+    print >> sys.stderr, "'" + treenode_ids + "'"
+    print >> sys.stderr, "'" + connector_ids + "'"
 
-    for cci in qs_connectors:
-        result[cci.connector.id].append(cci.class_instance.name)
+    if treenode_ids:
+        qs_treenodes = TreenodeClassInstance.objects.filter(
+            relation__relation_name='labeled_as',
+            class_instance__class_column__class_name='label',
+            treenode__id__in=(int(x) for x in treenode_ids.split(',')),
+            project=project_id).select_related('treenode', 'class_instance')
+        for tci in qs_treenodes:
+            result[tci.treenode.id].append(tci.class_instance.name)
+
+    if connector_ids:
+        qs_connectors = ConnectorClassInstance.objects.filter(
+            relation__relation_name='labeled_as',
+            class_instance__class_column__class_name='label',
+            connector__id__in=(int(x) for x in connector_ids.split(',')),
+            project=project_id).select_related('connector', 'class_instance')
+        for cci in qs_connectors:
+            result[cci.connector.id].append(cci.class_instance.name)
 
     return HttpResponse(json.dumps(result), mimetype="text/plain")
 

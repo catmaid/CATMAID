@@ -1754,6 +1754,45 @@ var SkeletonAnnotations = new function()
           });
     };
 
+    /** Checks first if the parent is loaded,
+     * otherwise fetches its location from the database. */
+    this.goToParentNode = function(treenode_id, skeleton_id) {
+      if (null === treenode_id) { return };
+      var node = nodes[treenode_id];
+      if (null === node) {
+        alert("Could not find node with id #" + treenode_id);
+        return;
+      }
+      if (null === node.parent) {
+        alert("This is the root node - can't move to its parent");
+      }
+      var parent_id = node.parent_id; // caching ID for the continuation
+      var parent_node = nodes[parent_id];
+      if (null !== parent_node) {
+        // Parent node is already loaded
+        self.moveToAndSelectNode(parent_node);
+      } else {
+        requestQueue.replace(
+          django_url + project.id + "/node/get_location",
+          "POST",
+          {tnid: parent_id},
+          function(status, text) {
+            if (200 === status) {
+              var json = $.parseJSON(text);
+              if (json.error) {
+                alert("Could not retrieve parent node location: " + json.error);
+              } else {
+                // json[0], [1], [2], [3]: id, x, y, z
+                stack.getProject().moveTo(json[3], json[2], json[1], undefined,
+                  function() {
+                    SkeletonAnnotations.staticSelectNode(parent_id, skeleton_id);
+                  });
+              }
+            }
+          });
+      }
+    };
+
     this.moveToAndSelectNode = function (node) {
       var nodeIDToActivate, skeletonIDToActivate, afterMove;
       nodeIDToActivate = node.id;
@@ -1791,11 +1830,7 @@ var SkeletonAnnotations = new function()
         break;
       case "goparent":
         if (null !== atn.id) {
-          if (null !== atn.parent_id) {
-            self.moveToAndSelectNode(nodes[atn.parent_id]);
-          } else {
-            alert("This is the root node - can't move to its parent");
-          }
+          self.goToParentNode(atn.id, atn.skeleton_id);
         } else {
           alert('There must be a currently active node in order to move to its parent.');
         }

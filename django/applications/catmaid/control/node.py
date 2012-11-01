@@ -654,6 +654,14 @@ def _fetch_location(treenode_id):
     return cursor.fetchone()
 
 @login_required
+def get_location(request, project_id=None):
+    try:
+        tnid = request.POST['tnid']
+        return HttpResponse(json.dumps(_fetch_location(tnid)))
+    except Exception as e:
+        raise CatmaidException('Could not obtain the location of node with id #%s' % tnid)
+
+@login_required
 def find_previous_branchnode_or_root(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])
@@ -688,5 +696,4 @@ def find_next_branchnode_or_end(request, project_id=None):
         return HttpResponse(json.dumps(_fetch_location(tnid)))
     except Exception as e:
         raise CatmaidException('Could not obtain next branch node or root:' + str(e))
-
 

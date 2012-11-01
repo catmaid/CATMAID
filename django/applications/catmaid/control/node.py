@@ -454,7 +454,39 @@ def node_list_tuples(request, project_id=None):
                 treenodes.append(row)
                 treenode_ids.add(row[0])
 
-        return HttpResponse(json.dumps((treenodes, connectors)))
+        labels = defaultdict(list)
+        if request.POST['labels']:
+            # Collect treenodes visible in the current section
+            visible = ','.join(str(row[0]) for row in treenodes if z0 <= row[4] <= z1)
+            if visible:
+                cursor.execute('''
+                SELECT treenode.id, class_instance.name
+                FROM treenode, class_instance, treenode_class_instance, relation
+                WHERE relation.id = treenode_class_instance.relation_id
+                  AND relation.relation_name = 'labeled_as'
+                  AND treenode_class_instance.treenode_id = treenode.id
+                  AND class_instance.id = treenode_class_instance.class_instance_id
+                  AND treenode.id IN (%s)
+                ''' % visible)
+                for row in cursor.fetchall():
+                    labels[row[0]].append(row[1])
+
+            # Collect connectors visible in the current section
+            visible = ','.join(str(row[0]) for row in connectors if z0 <= row[3] <= z1)
+            if visible:
+                cursor.execute('''
+                SELECT connector.id, class_instance.name
+                FROM connector, class_instance, connector_class_instance, relation
+                WHERE relation.id = connector_class_instance.relation_id
+                  AND relation.relation_name = 'labeled_as'
+                  AND connector_class_instance.connector_id = connector.id
+                  AND class_instance.id = connector_class_instance.class_instance_id
+                  AND connector.id IN (%s)
+                ''' % visible)
+                for row in cursor.fetchall():
+                    labels[row[0]].append(row[1])
+
+        return HttpResponse(json.dumps((treenodes, connectors, labels)))
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))

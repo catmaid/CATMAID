@@ -377,53 +377,8 @@ var SkeletonAnnotations = new function()
     }
 
     this.showLabels = function() {
-      var labid, treenode_ids = [], connector_ids = [], nodeid;
-      
-      // remove all labels in the view
-      self.hideLabels();
-
-      // retrieve all currently existing
-      // create node id array
-      for (nodeid in nodes) {
-        if (nodes.hasOwnProperty(nodeid)) {
-          if (0 === nodes[nodeid].zdiff) {
-            if( 'treenode' === nodes[nodeid].type ) {
-              treenode_ids.push( nodeid );
-            } else {
-              connector_ids.push( nodeid );
-            }
-          }
-        }
-      }
-
-      jQuery.ajax({
-        url: django_url + project.id + '/labels-for-nodes',
-        cache: false,
-        type: "POST",
-        data: {
-          treenode_ids: treenode_ids.join(','),
-          connector_ids: connector_ids.join(','),
-          pid: project.id
-        },
-        dataType: "json",
-        beforeSend: function (x) {
-          if (x && x.overrideMimeType) {
-            x.overrideMimeType("application/json;charset=UTF-8");
-          }
-        },
-        success: function (nodeitems) {
-          // for all retrieved, create a label
-          for (var nodeid in nodeitems) {
-            if (nodeitems.hasOwnProperty(nodeid)) {
-              var tl = new OverlayLabel(nodeitems[nodeid], self.paper, nodes[nodeid].x, nodes[nodeid].y, nodeitems[nodeid]);
-              labels[nodeid] = tl;
-            }
-          }
-          // set show labels to true
-          show_labels = true;
-          document.getElementById( "trace_button_togglelabels" ).className = "button_active";
-        }
-      });
+      show_labels = true;
+      document.getElementById( "trace_button_togglelabels" ).className = "button_active";
     }
 
     var tagbox = null;
@@ -1298,8 +1253,7 @@ var SkeletonAnnotations = new function()
 
       if (edgetoggle) {
         // Draw node edges first
-        var i;
-        for (i in nodes) {
+        for (var i in nodes) {
           if (nodes.hasOwnProperty(i)) {
             nodes[i].setColor();
             // Will only create it or unhide it the edge is to be displayed
@@ -1310,15 +1264,22 @@ var SkeletonAnnotations = new function()
 
       // Create raphael's circles on top of the edges
       // so that the events reach the circles first
-      for (i in nodes) {
+      for (var i in nodes) {
         if (nodes.hasOwnProperty(i)) {
           // Will only create it or unhide it if the node is to be displayed
           nodes[i].createCircle();
         }
       }
 
-      if( self.getLabelStatus() ) {
-        self.showLabels();
+      if (self.getLabelStatus()) {
+        // For every node ID
+        var m = jso[2];
+        for (var nid in m) {
+          if (m.hasOwnProperty(nid)) {
+            var node = nodes[nid];
+            labels[nid] = new OverlayLabel(nid, self.paper, node.x, node.y, m[nid]);
+          }
+        }
       }
 
       // Keep active state of previous active node
@@ -1612,7 +1573,8 @@ var SkeletonAnnotations = new function()
           width: (stack.viewWidth / stack.scale) * stack.resolution.x,
           height: (stack.viewHeight / stack.scale) * stack.resolution.y,
           zres: stack.resolution.z,
-          as: activeSkeleton
+          as: activeSkeleton,
+          labels: self.getLabelStatus()
         }, function (status, text, xml) {
           handle_updateNodes(status, text, xml, callback, pz);
         },

@@ -66,7 +66,7 @@ def node_list(request, project_id=None):
     try:
         c = connection.cursor()
         # Fetch treenodes which are in the bounding box:
-        response_on_error = 'Failed to query treenodes.'
+        response_on_error = 'Failed to query treenodes'
         c.execute('''
         SELECT treenode.id AS id,
             treenode.parent_id AS parentid,
@@ -299,30 +299,51 @@ def node_list_tuples(request, project_id=None):
           treenodes.append(row)
           treenode_ids.add(row[0])
 
-        # Now, if an ID for the active skeleton was supplied, make sure
-        # that all treenodes for that skeleton are added:
+        # If an ID for the active skeleton was supplied, make sure
+        # that the parents and children of all nodes of the skeleton
+        # within the queried bounds are added:
         if 0 != params['as']:
-            response_on_error = "Failed to query active skeleton's (id %s) treenodes" % params['as']
-            cursor.execute('''
-            SELECT treenode.id AS id,
-                treenode.parent_id AS parentid,
-                (treenode.location).x AS x,
-                (treenode.location).y AS y,
-                (treenode.location).z AS z,
-                treenode.confidence AS confidence,
-                treenode.user_id AS user_id,
-                treenode.radius AS radius,
-                skeleton_id
-            FROM treenode
-            WHERE
-                skeleton_id = %(as)s
-            ''', params)
+            skeleton_id = params['as']
+            ids = set() # node ids of the selected skeleton
+            parent_ids = set() # ids of not yet fetched parents
+            for row in treenodes:
+                if row[8] == skeleton_id:
+                    # Collect node ids of the selected skeleton
+                    ids.add(row[0])
+                    # Check if the parent is loaded
+                    if row[1] and row[1] not in treenode_ids:
+                        parent_ids.add(row[1])
+            if ids or parent_ids:
+                query = '''
+                SELECT
+                    id,
+                    parent_id,
+                    (location).x AS x,
+                    (location).y AS y,
+                    (location).z AS z,
+                    confidence,
+                    user_id,
+                    radius,
+                    skeleton_id
+                FROM treenode
+                WHERE
+                    skeleton_id=%s
+                    AND ''' % skeleton_id
+                if ids and parent_ids:
+                    query += "(id IN (%s) OR parent_id IN (%s))" %\
+                        (','.join(str(x) for x in parent_ids), # tuple(missing_ids) would add numbers as 456L (notice the L)
+                         ','.join(str(x) for x in ids))
+                elif ids: # and not parent_ids
+                    query += "parent_id IN (%s)" % ','.join(str(x) for x in ids)
+                elif parent_ids: # and not ids
+                    query += "id IN (%s)" % ','.join(str(x) for x in parent_ids)
 
-            for row in cursor.fetchall():
-                tnid = row[0]
-                if tnid not in treenode_ids:
-                    treenode_ids.add(tnid)
-                    treenodes.append(row)
+                cursor.execute(query)
+                for row in cursor.fetchall():
+                    tnid = row[0]
+                    if tnid not in treenode_ids:
+                        treenode_ids.add(tnid)
+                        treenodes.append(row)
 
 
         params['zbound'] = 4.1
@@ -403,7 +424,7 @@ def node_list_tuples(request, project_id=None):
         # below.
 
         if missing_treenode_ids:
-            params['missing'] =  tuple(missing_treenode_ids)
+            params['missing'] = tuple(missing_treenode_ids)
             response_on_error = 'Failed to query treenodes from connectors'
             cursor.execute('''
             SELECT treenode.id AS id,

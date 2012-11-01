@@ -1900,13 +1900,11 @@ var SkeletonAnnotations = new function()
         });
         break;
       case "gonextbranch":
-        console.log("ATN" + atn + ", " + atn.id + ", " + atn.skeleton_id);
         if (atn.id !== null) {
           self.goToNextBranchOrEndNode(atn.id, atn.skeleton_id);
         }
         break;
       case "goprevbranch":
-        console.log("ATN" + atn + ", " + atn.id + ", " + atn.skeleton_id);
         if (atn.id !== null) {
           self.goToPreviousBranchOrRootNode(atn.id, atn.skeleton_id);
         }

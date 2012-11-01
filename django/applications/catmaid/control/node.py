@@ -353,10 +353,12 @@ def node_list_tuples(request, project_id=None):
                     treenodes.append(row)
 
 
-        params['zbound'] = 4.1
+        params['zlow'] = z0 - 4.0 * zres
+        params['zhigh'] =  z0 + 5.0 * zres
         # Retrieve connectors that are synapses - do a LEFT OUTER JOIN with
         # the treenode_connector table, so that we get entries even if the
         # connector is not connected to any treenodes
+        # Retrieves connectors up to 4 sections below and above
         response_on_error = 'Failed to query connector locations.'
         cursor.execute('''
         SELECT connector.id AS id,
@@ -372,11 +374,11 @@ def node_list_tuples(request, project_id=None):
             ON treenode_connector.connector_id = connector.id
         WHERE connector.project_id = %(project_id)s AND
             (connector.location).x >= %(left)s AND
-            (connector.location).x <= (%(left)s + %(width)s) AND
+            (connector.location).x <= %(right)s AND
             (connector.location).y >= %(top)s AND
-            (connector.location).y <= (%(top)s + %(height)s) AND
-            (connector.location).z >= (%(z)s - %(zbound)s * %(zres)s) AND
-            (connector.location).z <= (%(z)s + %(zbound)s * %(zres)s)
+            (connector.location).y <= %(bottom)s AND
+            (connector.location).z >= %(zlow)s AND
+            (connector.location).z <  %(zhigh)s
         LIMIT %(limit)s
         ''', params)
 

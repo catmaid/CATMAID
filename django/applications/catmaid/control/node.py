@@ -438,14 +438,14 @@ def node_list_tuples(request, project_id=None):
             params['missing'] = tuple(missing_treenode_ids)
             response_on_error = 'Failed to query treenodes from connectors'
             cursor.execute('''
-            SELECT treenode.id AS id,
-                treenode.parent_id AS parentid,
-                (treenode.location).x AS x,
-                (treenode.location).y AS y,
-                (treenode.location).z AS z,
-                treenode.confidence AS confidence,
-                treenode.user_id AS user_id,
-                treenode.radius AS radius,
+            SELECT id,
+                parent_id,
+                (location).x AS x,
+                (location).y AS y,
+                (location).z AS z,
+                confidence,
+                user_id,
+                radius,
                 skeleton_id
             FROM treenode
             WHERE id IN %(missing)s''', params)
@@ -453,8 +453,6 @@ def node_list_tuples(request, project_id=None):
             for row in cursor.fetchall():
                 treenodes.append(row)
                 treenode_ids.add(row[0])
-
-        # TODO above, SQL command can be far shorter, no need for "treenode."
 
         return HttpResponse(json.dumps((treenodes, connectors)))
 

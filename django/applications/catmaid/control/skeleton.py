@@ -42,11 +42,7 @@ def split_skeleton(request, project_id=None):
         cici_via_b__relation__relation_name='model_of',
         cici_via_b__class_instance_a=sk)
     # retrieve all nodes of the skeleton
-    treenode_qs = Treenode.objects.filter(
-        treenodeclassinstance__class_instance__id=skeleton_id,
-        treenodeclassinstance__relation__relation_name='element_of',
-        treenodeclassinstance__class_instance__class_column__class_name='skeleton',
-        project=project_id).order_by('id')
+    treenode_qs = Treenode.objects.filter(skeleton_id=skeleton_id)
     # build the networkx graph from it
     graph = nx.DiGraph()
     for e in treenode_qs:

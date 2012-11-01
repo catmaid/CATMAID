@@ -328,7 +328,7 @@ def tree_object_list(request, project_id=None):
                             cici.relation_id,
                             cici.class_instance_b,
                             skeleton_id,
-                            u.name,
+                            u.username,
                             cl.class_name
                     HAVING count(tci.id) > 1
             ''', [parent_id, relation_map['model_of'], relation_map['element_of'], project_id])

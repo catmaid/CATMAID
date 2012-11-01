@@ -43,21 +43,52 @@ def labels_for_nodes(request, project_id=None):
     treenode_ids = request.POST['treenode_ids'].strip()
     connector_ids = request.POST['connector_ids'].strip()
     result = defaultdict(list)
-
-    import sys
-    print >> sys.stderr, "'" + treenode_ids + "'"
-    print >> sys.stderr, "'" + connector_ids + "'"
+    cursor = connection.cursor();
 
     if treenode_ids:
+        # Could use treenode_ids directly as a string, but it is good to sanitize arguments
+        cursor.execute('''
+        SELECT treenode.id, class_instance.name
+        FROM treenode, class_instance, treenode_class_instance, relation
+        WHERE relation.id = treenode_class_instance.relation_id
+          AND relation.relation_name = 'labeled_as'
+          AND treenode_class_instance.treenode_id = treenode.id
+          AND class_instance.id = treenode_class_instance.class_instance_id
+          AND treenode.id IN (%s)
+        ''' % ','.join(str(int(x)) for x in treenode_ids.split(','))) # convoluted to sanitize
+
+        for row in cursor.fetchall():
+            result[row[0]].append(row[1])
+        # The code below:
+        # 1. Is hard to read, compared to plain SQL (see above)
+        # 2. Selects all possible columns, wastefully
+        # 3. If appended with values(...), then returns a dictionary, wastefully
+        # 4. Runs slower than the equivalent code above
+        """
         qs_treenodes = TreenodeClassInstance.objects.filter(
             relation__relation_name='labeled_as',
             class_instance__class_column__class_name='label',
             treenode__id__in=(int(x) for x in treenode_ids.split(',')),
-            project=project_id).select_related('treenode', 'class_instance')
+            project=project_id).select_related('treenode', 'class_instance').values('treenode_id', 'class_instance__name')
         for tci in qs_treenodes:
-            result[tci.treenode.id].append(tci.class_instance.name)
+            result[tci['treenode_id']].append(tci['class_instance__name'])
+        """
 
     if connector_ids:
+        cursor.execute('''
+        SELECT connector.id, class_instance.name
+        FROM connector, class_instance, connector_class_instance, relation
+        WHERE relation.id = connector_class_instance.relation_id
+          AND relation.relation_name = 'labeled_as'
+          AND connector_class_instance.connector_id = connector.id
+          AND class_instance.id = connector_class_instance.class_instance_id
+          AND connector.id IN (%s)
+        ''' % ','.join(str(int(x)) for x in connector_ids.split(','))) # convoluted to sanitize
+        for row in cursor.fetchall():
+            result[row[0]].append(row[1])
+
+        # See notes above for treenode_ids
+        """
         qs_connectors = ConnectorClassInstance.objects.filter(
             relation__relation_name='labeled_as',
             class_instance__class_column__class_name='label',
@@ -65,6 +96,7 @@ def labels_for_nodes(request, project_id=None):
             project=project_id).select_related('connector', 'class_instance')
         for cci in qs_connectors:
             result[cci.connector.id].append(cci.class_instance.name)
+        """
 
     return HttpResponse(json.dumps(result), mimetype="text/plain")
 

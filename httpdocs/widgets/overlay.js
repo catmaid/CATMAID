@@ -356,11 +356,11 @@ var SkeletonAnnotations = new function()
       // remove all labels in the view
       // empty the labels array
       document.getElementById( "trace_button_togglelabels" ).className = "button";
-      for (labid in labels) {
-              if (labels.hasOwnProperty(labid)) {
-                labels[labid].remove();
-              }
-            }
+      for (var labid in labels) {
+        if (labels.hasOwnProperty(labid)) {
+          labels[labid].remove();
+        }
+      }
       labels = {};
       show_labels = false;
     }
@@ -368,11 +368,11 @@ var SkeletonAnnotations = new function()
     this.removeLabels = function() {
       // remove all labels in the view
       // empty the labels array
-      for (labid in labels) {
-              if (labels.hasOwnProperty(labid)) {
-                labels[labid].remove();
-              }
-            }
+      for (var labid in labels) {
+        if (labels.hasOwnProperty(labid)) {
+          labels[labid].remove();
+        }
+      }
       labels = {};
     }
 

@@ -12,6 +12,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from guardian.shortcuts import get_objects_for_user
 
+from taggit.managers import TaggableManager
 
 def now():
     return datetime.now()
@@ -147,6 +148,7 @@ class Project(models.Model):
     wiki_base_url = models.TextField(blank=True)
     stacks = models.ManyToManyField("Stack",
                                     through='ProjectStack')
+    tags = TaggableManager(blank=True)
     
     def __unicode__(self):
         return self.title
@@ -180,6 +182,7 @@ class Stack(models.Model):
     tile_height = models.IntegerField()
     tile_source_type = models.IntegerField()
     metadata = models.TextField()
+    tags = TaggableManager(blank=True)
 
 class ProjectStack(models.Model):
     class Meta:

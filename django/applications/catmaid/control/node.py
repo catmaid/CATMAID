@@ -298,51 +298,50 @@ def node_list_tuples(request, project_id=None):
           treenodes.append(row)
           treenode_ids.add(row[0])
 
-        # If an ID for the active skeleton was supplied, make sure
-        # that the parents and children of all nodes of the skeleton
-        # within the queried bounds are added:
-        if 0 != params['as']:
-            skeleton_id = params['as']
-            ids = set() # node ids of the selected skeleton
-            parent_ids = set() # ids of not yet fetched parents
-            for row in treenodes:
-                if row[8] == skeleton_id:
-                    # Collect node ids of the selected skeleton
-                    ids.add(row[0])
-                    # Check if the parent is loaded
-                    if row[1] and row[1] not in treenode_ids:
-                        parent_ids.add(row[1])
-            if ids or parent_ids:
-                query = '''
-                SELECT
-                    id,
-                    parent_id,
-                    (location).x AS x,
-                    (location).y AS y,
-                    (location).z AS z,
-                    confidence,
-                    user_id,
-                    radius,
-                    skeleton_id
-                FROM treenode
-                WHERE
-                    skeleton_id=%s
-                    AND ''' % skeleton_id
-                if ids and parent_ids:
-                    query += "(id IN (%s) OR parent_id IN (%s))" %\
-                        (','.join(str(x) for x in parent_ids), # tuple(missing_ids) would add numbers as 456L (notice the L)
-                         ','.join(str(x) for x in ids))
-                elif ids: # and not parent_ids
-                    query += "parent_id IN (%s)" % ','.join(str(x) for x in ids)
-                elif parent_ids: # and not ids
-                    query += "id IN (%s)" % ','.join(str(x) for x in parent_ids)
+        # Ensure that the parents and children of all nodes of the skeleton
+        # within the visible section are added:
+        ids = set() # ids of nodes within visible section
+        parent_ids = set() # ids of not yet fetched parents
+        z0 = params['z']
+        z1 = z0 + params['zres']
+        for row in treenodes:
+            if z0 <= row[4] < z1:
+                # Collect node ids within visible section
+                ids.add(row[0])
+                # Check if the parent is loaded
+                if row[1] and row[1] not in treenode_ids:
+                    parent_ids.add(row[1])
+        if ids: # There can only be parent_ids if there are ids
+            # Select nodes whose Z is smaller than z0 or larger than z1,
+            # and whose parent is in ids or itself is in parent_ids
+            query = '''
+            SELECT
+                id,
+                parent_id,
+                (location).x AS x,
+                (location).y AS y,
+                (location).z AS z,
+                confidence,
+                user_id,
+                radius,
+                skeleton_id
+            FROM treenode
+            WHERE
+                AND ((location).z < %s OR (location).z >= %s)
+                AND ''' % (z0, z1)
+            if parent_ids:
+                query += "(id IN (%s) OR parent_id IN (%s))" %\
+                    (','.join(str(x) for x in parent_ids), # tuple(missing_ids) would add numbers as 456L (notice the L), which fails in SQL
+                     ','.join(str(x) for x in ids))
+            else: # not parent_ids
+                query += "parent_id IN (%s)" % ','.join(str(x) for x in ids)
 
-                cursor.execute(query)
-                for row in cursor.fetchall():
-                    tnid = row[0]
-                    if tnid not in treenode_ids:
-                        treenode_ids.add(tnid)
-                        treenodes.append(row)
+            cursor.execute(query)
+            for row in cursor.fetchall():
+                tnid = row[0]
+                if tnid not in treenode_ids:
+                    treenode_ids.add(tnid)
+                    treenodes.append(row)
 
 
         params['zbound'] = 4.1

@@ -100,6 +100,7 @@ var SkeletonElements = new function()
     this.type = TYPE_NODE;
     this.paper = paper;
     this.parent = parent;
+    this.parent_id = parent_id;
     this.children = {};
     this.numberOfChildren = 0;
     this.connectors = {};

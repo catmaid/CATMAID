@@ -264,27 +264,36 @@ def node_list_tuples(request, project_id=None):
 
     try:
         cursor = connection.cursor()
-        # Fetch treenodes which are in the bounding box:
-        response_on_error = 'Failed to query treenodes.'
+        # Fetch treenodes which are in the bounding box,
+        # which in z it includes the full thickess of the prior section
+        # and of the next section (therefore the '<' and not '<=' for zhigh)
+        response_on_error = 'Failed to query treenodes'
+        z0 = params['z']
+        zres = params['zres']
+        params['zlow']  = z0 - zres
+        params['zhigh'] = z0 + 2 * zres
+        params['bottom'] = params['top'] + params['height']
+        params['right'] = params['left'] + params['width']
         cursor.execute('''
-        SELECT treenode.id AS id,
-            treenode.parent_id AS parentid,
-            (treenode.location).x AS x,
-            (treenode.location).y AS y,
-            (treenode.location).z AS z,
-            treenode.confidence AS confidence,
-            treenode.user_id AS user_id,
-            treenode.radius AS radius,
+        SELECT
+            id,
+            parent_id,
+            (location).x AS x,
+            (location).y AS y,
+            (location).z AS z,
+            confidence,
+            user_id,
+            radius,
             skeleton_id
         FROM treenode
         WHERE
-            treenode.project_id = %(project_id)s
-            AND (treenode.location).x >= %(left)s
-            AND (treenode.location).x <= (%(left)s + %(width)s)
-            AND (treenode.location).y >= %(top)s
-            AND (treenode.location).y <= (%(top)s + %(height)s)
-            AND (treenode.location).z >= (%(z)s - %(zres)s)
-            AND (treenode.location).z <  (%(z)s + 2 * %(zres)s)
+            project_id = %(project_id)s
+            AND (location).x >= %(left)s
+            AND (location).x <= %(right)s
+            AND (location).y >= %(top)s
+            AND (location).y <= %(bottom)s
+            AND (location).z >= %(zlow)s
+            AND (location).z <  %(zhigh)s
         LIMIT %(limit)s
         ''', params)
 
@@ -302,8 +311,7 @@ def node_list_tuples(request, project_id=None):
         # within the visible section are added:
         ids = set() # ids of nodes within visible section
         parent_ids = set() # ids of not yet fetched parents
-        z0 = params['z']
-        z1 = z0 + params['zres']
+        z1 = z0 + zres
         for row in treenodes:
             if z0 <= row[4] < z1:
                 # Collect node ids within visible section
@@ -312,8 +320,9 @@ def node_list_tuples(request, project_id=None):
                 if row[1] and row[1] not in treenode_ids:
                     parent_ids.add(row[1])
         if ids: # There can only be parent_ids if there are ids
-            # Select nodes whose Z is smaller than z0 or larger than z1,
+            # Select nodes whose Z is smaller than z0 or larger or equal than z1,
             # and whose parent is in ids or itself is in parent_ids
+            # No need to specify the project_id
             query = '''
             SELECT
                 id,
@@ -327,7 +336,7 @@ def node_list_tuples(request, project_id=None):
                 skeleton_id
             FROM treenode
             WHERE
-                AND ((location).z < %s OR (location).z >= %s)
+                ((location).z < %s OR (location).z >= %s)
                 AND ''' % (z0, z1)
             if parent_ids:
                 query += "(id IN (%s) OR parent_id IN (%s))" %\

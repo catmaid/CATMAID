@@ -1759,16 +1759,17 @@ var SkeletonAnnotations = new function()
     this.goToParentNode = function(treenode_id, skeleton_id) {
       if (null === treenode_id) { return };
       var node = nodes[treenode_id];
-      if (null === node) {
+      if (!node) {
         alert("Could not find node with id #" + treenode_id);
         return;
       }
-      if (null === node.parent) {
+      if (!node.parent) {
         alert("This is the root node - can't move to its parent");
+        return;
       }
       var parent_id = node.parent_id; // caching ID for the continuation
       var parent_node = nodes[parent_id];
-      if (null !== parent_node) {
+      if (parent_node) {
         // Parent node is already loaded
         self.moveToAndSelectNode(parent_node);
       } else {

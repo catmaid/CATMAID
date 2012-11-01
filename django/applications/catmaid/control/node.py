@@ -250,7 +250,6 @@ def node_list_tuples(request, project_id=None):
     for p in ('top', 'left'):
         params[p] = float(request.POST.get(p, 0))
     params['limit'] = 2000  # Limit the number of retrieved treenodes.
-    params['zbound'] = 1.0  # The scale factor to volume bound the query in z-direction based on the z-resolution.
     params['project_id'] = project_id
     
     relation_map = get_relation_to_id_map(project_id)
@@ -284,8 +283,8 @@ def node_list_tuples(request, project_id=None):
             AND (treenode.location).x <= (%(left)s + %(width)s)
             AND (treenode.location).y >= %(top)s
             AND (treenode.location).y <= (%(top)s + %(height)s)
-            AND (treenode.location).z >= (%(z)s - %(zbound)s * %(zres)s)
-            AND (treenode.location).z <= (%(z)s + %(zbound)s * %(zres)s)
+            AND (treenode.location).z >= (%(z)s - %(zres)s)
+            AND (treenode.location).z <  (%(z)s + 2 * %(zres)s)
         LIMIT %(limit)s
         ''', params)
 

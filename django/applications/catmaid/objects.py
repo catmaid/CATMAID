@@ -22,7 +22,7 @@ class Neuron(object):
 
 class Skeleton(object):
 
-    def __init__(self, skeleton_id, project_id=None):
+    def __init__(self, skeleton_id, project_id = None):
 
         if project_id is None:
             self.skeleton = ClassInstance.objects.get(pk=skeleton_id)
@@ -121,8 +121,7 @@ class Skeleton(object):
     def _create_graph(self):
         # retrieve all nodes of the skeleton
         treenode_qs = Treenode.objects.filter(
-            skeleton_id=self.skeleton_id,
-            project=self.project_id).order_by('id')
+            skeleton_id=self.skeleton_id)
         # build the networkx graph from it
         graph = nx.DiGraph()
         for e in treenode_qs:

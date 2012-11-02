@@ -79,8 +79,30 @@ var ObjectTree = new function()
           var id_of_node = obj.attr("id");
           var type_of_node = obj.attr("rel");
           var menu = {};
+          var show_all_skeletons = {
+                "separator_before": false,
+                "separator_after": true,
+                "label": "Show all skeletons",
+                "action": function (obj) {
+                  requestQueue.register(django_url + project.id + '/object-tree/' + obj.attr("id").replace("node_", "") + '/get-skeletons', "POST", {},
+                      function(status, text, xml) {
+                        if (200 === status) {
+                          var json = $.parseJSON(text);
+                          if (json.error) {
+                            alert(json.error);
+                          } else {
+                            WindowMaker.show("3d-webgl-view");
+                            json.forEach(function(skid) {
+                              WebGLApp.addSkeletonFromID(project.id, skid);
+                            });
+                          }
+                        }
+                      });
+                }
+              }
           if (type_of_node === "root") {
             menu = {
+              "show_all_skeletons": show_all_skeletons,
               "create_group": {
                 "separator_before": false,
                 "separator_after": false,
@@ -108,31 +130,7 @@ var ObjectTree = new function()
             };
           } else if (type_of_node === "group") {
             menu = {
-              "show_all_skeletons": {
-                "separator_before": false,
-                "separator_after": true,
-                "label": "Show all skeletons",
-                "action": function (obj) {
-                  var geturl = django_url + project.id + '/object-tree/' + obj.attr("id").replace("node_", "") + '/get-all-skeletons';
-                  $.ajax({
-                    async: true,
-                    cache: false,
-                    type: 'POST',
-                    url: geturl,
-                    data: {},
-                    success: function (r, status) {
-                               if (r['error']) {
-                                 alert("ERROR: " + r['error']);
-                               } else {
-                                  WindowMaker.show("3d-webgl-view");
-                                  for( var i in r['skeletons'] ) {
-                                    WebGLApp.addSkeletonFromID( project.id, r['skeletons'][i] )
-                                  }
-                               }
-                             }
-                  });
-                }
-              },
+              "show_all_skeletons": show_all_skeletons,
               "create_group": {
                 "separator_before": false,
                 "separator_after": false,
@@ -203,6 +201,7 @@ var ObjectTree = new function()
             };
           } else if (type_of_node === "neuron") {
             menu = {
+              "show_all_skeletons": show_all_skeletons,
               "select_nearest": {
                 "separator_before": false,
                 "separator_after": false,

@@ -171,3 +171,10 @@ div#data_view td.stackname
 	vertical-align: top;
 	text-align: left;
 }
+
+div#data_view td.head
+{
+	vertical-align: top;
+	text-align: center;
+	font-weight:bold;
+}

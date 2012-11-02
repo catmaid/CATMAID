@@ -1,5 +1,6 @@
 import json
 import string
+from collections import deque
 
 try:
     import networkx as nx
@@ -246,6 +247,86 @@ def objecttree_get_all_skeletons(request, project_id=None, node_id=None):
             result.append( node_id )
     json_return = json.dumps({'skeletons': result}, sort_keys=True, indent=4)
     return HttpResponse(json_return, mimetype='text/json')
+
+
+def _collect_neuron_ids(node_id):
+    """ Retrieve a list of neuron IDs that are nested inside node_id in the Object Tree."""
+    cursor = connection.cursor()
+
+    # Check whether node_id is a neuron itself
+    cursor.execute('''
+    SELECT class.class_name
+    FROM class, class_instance
+    WHERE class.id = class_instance.class_id
+      AND class_instance.id = %s
+    ''' % node_id)
+    row = cursor.fetchone()
+    if row and 'neuron' == row[0]:
+        return [node_id]
+
+    # Recursive search into groups
+    groups = deque()
+    groups.append(node_id)
+    neuron_ids = []
+    while len(groups) > 0:
+        nid = groups.popleft()
+        # Find all part_of nid
+        # In table class_instance_class_instance, class_instance_a is part_of class_instance_b
+        cursor.execute('''
+        SELECT
+            class_instance_class_instance.class_instance_a,
+            class.class_name
+        FROM
+            class,
+            class_instance,
+            class_instance_class_instance,
+            relation
+        WHERE
+            relation.relation_name = 'part_of'
+            AND class_instance_class_instance.relation_id = relation.id
+            AND class_instance_class_instance.class_instance_b = %s
+            AND class_instance_class_instance.class_instance_a = class_instance.id
+            AND class_instance.class_id = class.id
+        ''' % nid)
+        for row in cursor.fetchall():
+            # row[0] is the class_instance.id that is part_of nid
+            # row[1] is the class.class_name
+            print >> sys.stderr, row
+            if 'neuron' == row[1]:
+                neuron_ids.append(row[0])
+            elif 'group' == row[1]:
+                groups.append(row[0])
+
+    return neuron_ids
+
+@login_required
+def collect_neuron_ids(request, project_id=None, node_id=None):
+    """ Retrieve all neuron IDs under a given group or neuron node of the Object Tree,
+    recursively."""
+    return HttpResponse(json.dumps(list(str(x) for x in _collect_neuron_ids(node_id))))
+
+@login_required
+def collect_skeleton_ids(request, project_id=None, node_id=None):
+    """ Retrieve all skeleton IDs under a given group or neuron node of the Object Tree,
+    recursively."""
+    neuron_ids = _collect_neuron_ids(node_id)
+    if neuron_ids:
+        # Find skeleton IDs
+        # A skeleton is a model_of a neuron
+        cursor = connection.cursor()
+        cursor.execute('''
+        SELECT class_instance_class_instance.class_instance_a
+        FROM class_instance_class_instance,
+             relation
+        WHERE relation.relation_name = 'model_of'
+          AND class_instance_class_instance.relation_id = relation.id
+          AND class_instance_class_instance.class_instance_b IN (%s)
+        ''' % ','.join(str(x) for x in neuron_ids))
+        skeleton_ids = [row[0] for row in cursor.fetchall()]
+    else:
+        skeleton_ids = []
+
+    return HttpResponse(json.dumps(skeleton_ids))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

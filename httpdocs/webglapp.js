@@ -26,10 +26,12 @@ var WebGLApp = new function () {
     translation = project.focusedStack.translation;
 
     init_webgl();
-    animate();
     debugaxes();
     draw_grid();
     XYView();
+
+	  document.addEventListener('mousemove', onDocumentMouseMove, false);
+	  document.addEventListener('mousewheel', onDocumentMouseWheel, false);
 
     // if active skeleton exists, add it to the view
     var ID = SkeletonAnnotations.getActiveNodeId();
@@ -41,7 +43,15 @@ var WebGLApp = new function () {
       self.createActiveNode();
     }
 
+		self.render();
   }
+
+	/** Clean up. */
+	this.destroy = function() {
+		document.removeEventListener('mousemove', onDocumentMouseMove, false);
+		document.removeEventListener('mousewheel', onDocumentMouseWheel, false);
+		self.removeAllSkeletons();
+	};
 
   var randomColors = [];
   randomColors[0] = [255, 255, 0]; // yellow
@@ -760,17 +770,27 @@ var WebGLApp = new function () {
     scene.add( floormesh );
   }
 
+	/**
+	// DISABLED: causes continuous refresh at a rate of 60 fps
   function animate() {
     requestAnimationFrame( animate );
     render();
   }
-/*
-  function onDocumentMouseMove(event) {
-    mouseX = ( event.clientX - self.divWidth );
-    mouseY = ( event.clientY - self.divHeight );
-  }*/
+	*/
 
-  function render() {
+	/** To execute every time the mouse is moved. */
+  function onDocumentMouseMove(event) {
+    //var mouseX = ( event.clientX - self.divWidth );
+    //var mouseY = ( event.clientY - self.divHeight );
+		self.render();
+  }
+
+	/** To execute every time the mouse is moved. */
+	function onDocumentMouseWheel(event) {
+		self.render();
+	}
+
+  self.render = function render() {
     controls.update();
     renderer.clear();
     renderer.render( scene, camera );
@@ -918,6 +938,7 @@ var WebGLApp = new function () {
           success: function (skeleton_data) {
             skeleton_data['baseName'] = skeleton_data['neuron']['neuronname'];
             self.addSkeleton( parseInt(skeletonID), skeleton_data );
+						self.render();
           }
         });
     }

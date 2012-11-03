@@ -190,7 +190,7 @@ def instance_operation(request, project_id=None):
 
 
 @login_required
-@transaction_reportable_commit_on_success
+@report_error
 def tree_object_expand(request, project_id=None):
     skeleton_id = request.POST.get('skeleton_id', None)
     if skeleton_id is None:
@@ -237,31 +237,32 @@ def tree_object_expand(request, project_id=None):
 @login_required
 @transaction_reportable_commit_on_success
 def objecttree_get_all_skeletons(request, project_id=None, node_id=None):
-    """ Retrieve all skeleton ids for a given node in the object tree
-    """
+    """ Retrieve all skeleton ids for a given node in the object tree. """
     g = get_annotation_graph( project_id )
     potential_skeletons = nx.bfs_tree(g, int(node_id)).nodes()
-    result = []
-    for node_id in potential_skeletons:
-        if g.node[node_id]['class'] == 'skeleton':
-            result.append( node_id )
+    result = (nid for nid in potential_skeletons if 'skeleton' == g.node[nid]['class'])
     json_return = json.dumps({'skeletons': result}, sort_keys=True, indent=4)
     return HttpResponse(json_return, mimetype='text/json')
 
 
-def _collect_neuron_ids(node_id):
-    """ Retrieve a list of neuron IDs that are nested inside node_id in the Object Tree."""
+def _collect_neuron_ids(node_id, node_type=None):
+    """ Retrieve a list of neuron IDs that are nested inside node_id in the Object Tree.
+    If the node_type is 'neuron', returns node_id. """
     cursor = connection.cursor()
 
     # Check whether node_id is a neuron itself
-    cursor.execute('''
-    SELECT class.class_name
-    FROM class, class_instance
-    WHERE class.id = class_instance.class_id
-      AND class_instance.id = %s
-    ''' % node_id)
-    row = cursor.fetchone()
-    if row and 'neuron' == row[0]:
+    if not node_type:
+        cursor.execute('''
+        SELECT class.class_name
+        FROM class, class_instance
+        WHERE class.id = class_instance.class_id
+          AND class_instance.id = %s
+        ''' % node_id)
+        row = cursor.fetchone()
+        if row:
+            node_type = row[0]
+    
+    if 'neuron' == node_type:
         return [node_id]
 
     # Recursive search into groups
@@ -300,33 +301,41 @@ def _collect_neuron_ids(node_id):
     return neuron_ids
 
 @login_required
-def collect_neuron_ids(request, project_id=None, node_id=None):
+@report_error
+def collect_neuron_ids(request, project_id=None, node_id=None, node_type=None):
     """ Retrieve all neuron IDs under a given group or neuron node of the Object Tree,
     recursively."""
-    return HttpResponse(json.dumps(list(str(x) for x in _collect_neuron_ids(node_id))))
+    try:
+        return HttpResponse(json.dumps(list(str(x) for x in _collect_neuron_ids(node_id, node_type))))
+    except Exception as e:
+        raise CatmaidException('Failed to obtain a list of neuron IDs:' + str(e))
 
 @login_required
-def collect_skeleton_ids(request, project_id=None, node_id=None):
+@report_error
+def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None):
     """ Retrieve all skeleton IDs under a given group or neuron node of the Object Tree,
     recursively."""
-    neuron_ids = _collect_neuron_ids(node_id)
-    if neuron_ids:
-        # Find skeleton IDs
-        # A skeleton is a model_of a neuron
-        cursor = connection.cursor()
-        cursor.execute('''
-        SELECT class_instance_class_instance.class_instance_a
-        FROM class_instance_class_instance,
-             relation
-        WHERE relation.relation_name = 'model_of'
-          AND class_instance_class_instance.relation_id = relation.id
-          AND class_instance_class_instance.class_instance_b IN (%s)
-        ''' % ','.join(str(x) for x in neuron_ids))
-        skeleton_ids = [row[0] for row in cursor.fetchall()]
-    else:
-        skeleton_ids = []
+    try:
+        neuron_ids = _collect_neuron_ids(node_id, node_type)
+        if neuron_ids:
+            # Find skeleton IDs
+            # A skeleton is a model_of a neuron
+            cursor = connection.cursor()
+            cursor.execute('''
+            SELECT class_instance_class_instance.class_instance_a
+            FROM class_instance_class_instance,
+                 relation
+            WHERE relation.relation_name = 'model_of'
+              AND class_instance_class_instance.relation_id = relation.id
+              AND class_instance_class_instance.class_instance_b IN (%s)
+            ''' % ','.join(str(x) for x in neuron_ids))
+            skeleton_ids = [row[0] for row in cursor.fetchall()]
+        else:
+            skeleton_ids = []
 
-    return HttpResponse(json.dumps(skeleton_ids))
+        return HttpResponse(json.dumps(skeleton_ids))
+    except Exception as e:
+        raise CatmaidException('Failed to obtain a list of skeleton IDs:' + str(e))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

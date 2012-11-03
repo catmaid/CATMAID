@@ -84,7 +84,7 @@ var ObjectTree = new function()
                 "separator_after": true,
                 "label": "Show all skeletons",
                 "action": function (obj) {
-                  requestQueue.register(django_url + project.id + '/object-tree/' + obj.attr("id").replace("node_", "") + '/get-skeletons', "POST", {},
+                  requestQueue.register(django_url + project.id + '/object-tree/' + obj.attr("id").replace("node_", "") + '/' + obj.attr("rel") + '/get-skeletons', "POST", {},
                       function(status, text, xml) {
                         if (200 === status) {
                           var json = $.parseJSON(text);

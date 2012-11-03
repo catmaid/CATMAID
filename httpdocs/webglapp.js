@@ -33,9 +33,8 @@ var WebGLApp = new function () {
 	  document.addEventListener('mousemove', onDocumentMouseMove, false);
 	  document.addEventListener('mousewheel', onDocumentMouseWheel, false);
 
-    // if active skeleton exists, add it to the view
-    var ID = SkeletonAnnotations.getActiveNodeId();
-    if(ID) {
+    // if there is an active skeleton, add it to the view
+    if(SkeletonAnnotations.getActiveNodeId()) {
       self.addSkeletonFromID( self.project_id, SkeletonAnnotations.getActiveSkeletonId() );
 
       // and create active node

@@ -16,7 +16,7 @@ class Neuron(object):
         qs = ClassInstanceClassInstance.objects.filter(
             relation__relation_name='model_of',
             project=self.project_id,
-            class_instance_b=self.neuron_id).select_related("class_instance_b")
+            class_instance_b=self.neuron_id).select_related("class_instance_a__id")
 
         return [ele.class_instance_a.id for ele in qs]
 

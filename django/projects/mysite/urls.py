@@ -102,7 +102,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/object-tree/expand$', 'catmaid.control.tree_object_expand'),
     (r'^(?P<project_id>\d+)/object-tree/list', 'catmaid.control.tree_object_list'),
     (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/get-all-skeletons', 'catmaid.control.objecttree_get_all_skeletons'),
-    (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/get-skeletons', 'catmaid.control.collect_skeleton_ids'),
+    (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/(?P<node_type>\w+)/get-skeletons', 'catmaid.control.collect_skeleton_ids'),
     (r'^(?P<project_id>\d+)/object-tree/instance-operation$', 'catmaid.control.instance_operation'),
 
     (r'^(?P<project_id>\d+)/link/create$', 'catmaid.control.create_link'),

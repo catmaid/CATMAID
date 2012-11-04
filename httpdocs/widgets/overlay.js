@@ -588,7 +588,8 @@ var SkeletonAnnotations = new function()
             django_url + project.id + '/skeleton/split',
             "POST", {
             pid: project.id,
-            treenode_id: atn.id
+            treenode_id: atn.id,
+            skeleton_id: atn.skeleton_id
           }, function (status, text, xml) {
             $.unblockUI();
             if (status === 200) {
@@ -639,14 +640,18 @@ var SkeletonAnnotations = new function()
     // Used to join two skeletons together
     this.createTreenodeLink = function (fromid, toid) {
       if( toid in nodes ) {
+        var from_skid = nodes[fromid].skeleton_id;
+        var to_skid = nodes[toid].skeleton_id;
         maybeExecuteIfSkeletonHasMoreThanOneNode(
-            nodes[toid].skeleton_id,
+            to_skid,
             "join",
             function() {
               // The call to join will reroot the target skeleton at the shift-clicked treenode
               requestQueue.register(django_url + project.id + '/skeleton/join', "POST", {
                 from_id: fromid,
-                to_id: toid
+                from_skid: from_skid,
+                to_id: toid,
+                to_skid: to_skid
               }, function (status, text, xml) {
                 if (status === 200) {
                   if (text && text !== " ") {
@@ -785,13 +790,14 @@ var SkeletonAnnotations = new function()
 
     };
 
-    var createInterpolatedNode = function (atn_id, atn_x, atn_y, atn_z, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
+    var createInterpolatedNode = function (atn_id, atn_skeleton_id, atn_x, atn_y, atn_z, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
     {
       // This assumes that the parentID is not null, i.e. exists
       // Creates treenodes from atn to new node in each z section
       requestQueue.register(django_url + project.id + '/treenode/create/interpolated', "POST", {
         pid: project.id,
         parent_id: atn_id,
+        skeleton_id: atn_skeleton_id,
         x: phys_x,
         y: phys_y,
         z: phys_z,
@@ -826,14 +832,16 @@ var SkeletonAnnotations = new function()
     }
 
     // Interpolate and join, both
-    var createTreenodeLinkInterpolated = function (atn_id, atn_x, atn_y, atn_z, nearestnode_id, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
+    var createTreenodeLinkInterpolated = function (atn_id, atn_skid, atn_x, atn_y, atn_z, nearestnode_id, nearestnode_skid, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
     {
       // This assumes that the parentID is not null, i.e. exists
       // Creates treenodes from atn to nearestnode_id in each z section
       requestQueue.register(django_url + project.id + '/skeleton/join_interpolated', "POST", {
         pid: project.id,
         from_id: atn_id,
+        from_skid: atn_skid,
         to_id: nearestnode_id,
+        to_skid: nearestnode_skid,
         x: phys_x,
         y: phys_y,
         z: phys_z,
@@ -868,13 +876,16 @@ var SkeletonAnnotations = new function()
     }
 
     // Create a node and activate it
-    var createNode = function (parentID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
+    var createNode = function (parentID, skeletonID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
     {
       var selneuron, useneuron;
 
       if (!parentID) {
         parentID = -1;
+        skeletonID = -1;
       }
+
+      console.log("parentID, skeletonID: ", parentID, skeletonID);
 
       // check if we want the newly create node to be
       // a model of a neuron
@@ -888,6 +899,7 @@ var SkeletonAnnotations = new function()
       requestQueue.register(django_url + project.id + '/treenode/create', "POST", {
         pid: project.id,
         parent_id: parentID,
+        skeleton_id: skeletonID,
         x: phys_x,
         y: phys_y,
         z: phys_z,
@@ -1433,7 +1445,7 @@ var SkeletonAnnotations = new function()
             if (null !== atn.id) {
               statusBar.replaceLast("Created new node as child of node #" + atn.id);
             }
-            createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+            createNode(atn.id, atn.skeleton_id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
             e.stopPropagation();
             return true;
           }
@@ -1886,6 +1898,7 @@ var SkeletonAnnotations = new function()
                   /* The returned JSON is similar to other node
                      objects, but actually the coordinates are world
                      coordinates: */
+                  // TODO this is silly, moveToAndSelectNode will transform the coordinates back to phys. Could use moveTo directly.
                   e.x = self.phys2pixX(e.x);
                   e.y = self.phys2pixY(e.y);
                   e.z = self.phys2pixZ(e.z);
@@ -1991,7 +2004,7 @@ var SkeletonAnnotations = new function()
         // get physical coordinates for node position creation
         var phys_x = self.pix2physX(pos_x);
         var phys_y = self.pix2physY(pos_y);
-        createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+        createNode(atn.id, atn.skeleton_id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
         break;
       case "createinterpolatedtreenode":
         // Check if there is already a node under the mouse
@@ -2012,7 +2025,9 @@ var SkeletonAnnotations = new function()
               }
               // If the target skeleton has more than one node, ask for confirmation
               var nearestnode_id = nearestnode.id;
+              var nearestnode_skid = nearestnode.skeleton_id;
               var atn_id = atn.id;
+              var atn_skid = atn.skeleton_id;
               var atn_x = atn.x;
               var atn_y = atn.y;
               var atn_z = atn.z;
@@ -2031,7 +2046,7 @@ var SkeletonAnnotations = new function()
                     var phys_x = self.pix2physX(pos_x);
                     var phys_y = self.pix2physY(pos_y);
                     // Ask to join the two skeletons with interpolated nodes
-                    createTreenodeLinkInterpolated(atn_id, atn_x, atn_y, atn_z, nearestnode_id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+                    createTreenodeLinkInterpolated(atn_id, atn_skid, atn_x, atn_y, atn_z, nearestnode_id, nearestnode_skid, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
                   });
               return;
             } else {
@@ -2056,7 +2071,7 @@ var SkeletonAnnotations = new function()
         // Get physical coordinates for node position creation
         var phys_x = self.pix2physX(pos_x);
         var phys_y = self.pix2physY(pos_y);
-        createInterpolatedNode(atn.id, atn.x, atn.y, atn.z, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+        createInterpolatedNode(atn.id, atn.skeleton_id, atn.x, atn.y, atn.z, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
         break;
       }
       return;

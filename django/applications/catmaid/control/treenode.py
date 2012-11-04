@@ -27,20 +27,27 @@ def create_treenode(request, project_id=None):
     If a neuron id is given, use that one to create the skeleton as a model of it.
     """
 
-    print >> sys.stderr, 'creating a new tree node '
-    
+    #print >> sys.stderr, 'creating a new tree node '
+
     params = {}
-    default_values = {
+    float_values = {
             'x': 0,
             'y': 0,
             'z': 0,
+            'radius': 0}
+    int_values = {
             'confidence': 0,
             'useneuron': -1,
-            'parent_id': 0,
-            'radius': 0,
+            'parent_id': -1,
+            'skeleton_id': 0}
+    string_values = {
             'targetgroup': 'none'}
-    for p in default_values.keys():
-        params[p] = request.POST.get(p, default_values[p])
+    for p in float_values.keys():
+        params[p] = float(request.POST.get(p, float_values[p]))
+    for p in int_values.keys():
+        params[p] = int(request.POST.get(p, int_values[p]))
+    for p in string_values.keys():
+        params[p] = request.POST.get(p, string_values[p])
 
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
@@ -58,15 +65,6 @@ def create_treenode(request, project_id=None):
         new_treenode.save()
         return new_treenode
 
-    def make_treenode_element_of_skeleton(treenode, skeleton):
-        new_treenode_ci = TreenodeClassInstance()
-        new_treenode_ci.user = request.user
-        new_treenode_ci.project_id = project_id
-        new_treenode_ci.relation_id = relation_map['element_of']
-        new_treenode_ci.treenode = treenode
-        new_treenode_ci.class_instance = skeleton
-        new_treenode_ci.save()
-
     def create_relation(relation_id, instance_a_id, instance_b_id):
         neuron_relation = ClassInstanceClassInstance()
         neuron_relation.user = request.user
@@ -81,23 +79,14 @@ def create_treenode(request, project_id=None):
         return create_relation(relation_map['model_of'], skeleton, neuron)
 
     response_on_error = ''
-
     try:
         if int(params['parent_id']) != -1:  # A root node and parent node exist
             # Retrieve skeleton of parent
-            response_on_error = 'Can not find skeleton for parent treenode %s in this project.' % params['parent_id']
-            p_skeleton = TreenodeClassInstance.objects.filter(
-                    treenode=params['parent_id'],
-                    relation=relation_map['element_of'],
-                    project=project_id)[0].class_instance
+            skeleton = ClassInstance.objects.get(pk=params['skeleton_id']) # pk must stand for "primary key"
+            response_on_error = 'Could not insert new treenode ARGH!'
+            new_treenode = insert_new_treenode(params['parent_id'], skeleton)
 
-            response_on_error = 'Could not insert new treenode!'
-            new_treenode = insert_new_treenode(params['parent_id'], p_skeleton)
-
-            response_on_error = 'Could not create element_of relation between treenode and skeleton!'
-            make_treenode_element_of_skeleton(new_treenode, p_skeleton)
-
-            return HttpResponse(json.dumps({'treenode_id': new_treenode.id, 'skeleton_id': p_skeleton.id}))
+            return HttpResponse(json.dumps({'treenode_id': new_treenode.id, 'skeleton_id': params['skeleton_id']}))
 
         else:
             # No parent node: We must create a new root node, which needs a
@@ -119,9 +108,6 @@ def create_treenode(request, project_id=None):
 
                 response_on_error = 'Could not insert new treenode!'
                 new_treenode = insert_new_treenode(None, new_skeleton)
-
-                response_on_error = 'Could not create element_of relation between treenode and skeleton!'
-                make_treenode_element_of_skeleton(new_treenode, new_skeleton)
 
                 return HttpResponse(json.dumps({
                     'treenode_id': new_treenode.id,
@@ -172,9 +158,6 @@ def create_treenode(request, project_id=None):
                 response_on_error = 'Failed to insert instance of treenode.'
                 new_treenode = insert_new_treenode(None, new_skeleton)
 
-                response_on_error = 'Failed to insert treenode into the skeleton'
-                make_treenode_element_of_skeleton(new_treenode, new_skeleton)
-
                 response_on_error = 'Failed to write to logs.'
                 insert_into_log(project_id, request.user.id, 'create_neuron', new_treenode.location, 'Create neuron %d and skeleton %d' % (new_neuron.id, new_skeleton.id))
 
@@ -193,45 +176,37 @@ def create_treenode(request, project_id=None):
 @transaction_reportable_commit_on_success
 def create_interpolated_treenode(request, project_id=None):
     params = {}
-    default_values = {
-            'parent_id': 0,
+    decimal_values = {
             'x': 0,
             'y': 0,
             'z': 0,
-            'radius': 0,
-            'confidence': 0,
             'atnx': 0,
             'atny': 0,
             'atnz': 0,
             'resx': 0,
             'resy': 0,
-            'resz': 0}
-    for p in default_values.keys():
-        if p in ['atnx', 'atny', 'atnz', 'x', 'y', 'z', 'resx', 'resy', 'resz']:
-            params[p] = decimal.Decimal(request.POST.get(p, default_values[p]))
-        else:
-            params[p] = int(request.POST.get(p, default_values[p]))
+            'resz': 0,
+            'radius': 0}
+    int_values = {
+            'parent_id': 0,
+            'skeleton_id': 0,
+            'confidence': 0}
+    for p in decimal_values.keys():
+        params[p] = decimal.Decimal(request.POST.get(p, decimal_values[p]))
+    for p in int_values.keys():
+        params[p] = int(request.POST.get(p, int_values[p]))
 
-    last_treenode_id, parent_skeleton_id = _create_interpolated_treenode(request, params, project_id, False)
-    return HttpResponse(json.dumps({'treenode_id': last_treenode_id, 'skeleton_id': parent_skeleton_id}))
+    last_treenode_id = _create_interpolated_treenode(request, params, project_id, False)
+    return HttpResponse(json.dumps({'treenode_id': last_treenode_id, 'skeleton_id': params['skeleton_id']}))
 
 
 def _create_interpolated_treenode(request, params, project_id, skip_last):
     """ Create interpolated treenodes between the 'parent_id' and the clicked x,y,z
     coordinate. The skip_last is to prevent the creation of the last node, used by
     the join_skeletons_interpolated. """
-    relation_map = get_relation_to_id_map(project_id)
-    if 'element_of' not in relation_map:
-        raise CatmaidException('Can not find "%s" relation for this project' % relation)
-
-    response_on_error = ''
+    response_on_error = 'Could not create interpolated treenode'
     try:
-        # Retrieve skeleton id of parent id and skeleton group and element_of relation
-        response_on_error = 'Can not find skeleton for parent treenode %s in this project.' % params['parent_id']
-        parent_skeleton_id = TreenodeClassInstance.objects.filter(
-                treenode=int(params['parent_id']),
-                relation=relation_map['element_of'],
-                project=project_id)[0].class_instance_id
+        parent_skeleton_id = int(params['skeleton_id'])
 
         steps = abs((params['z'] - params['atnz']) / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
         if steps == decimal.Decimal(0):
@@ -259,20 +234,10 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
             new_treenode.parent_id = parent_id  # This is not a root node.
             new_treenode.save()
 
-            # TODO given the skeleton_id column, the code below should disappear
-            response_on_error = 'Could not insert new TreenodeClassInstance relation for treenode %s.' % new_treenode.id
-            new_tci = TreenodeClassInstance()
-            new_tci.user_id = request.user.id
-            new_tci.project_id = project_id
-            new_tci.relation_id = relation_map['element_of']
-            new_tci.treenode_id = new_treenode.id
-            new_tci.class_instance_id = parent_skeleton_id
-            new_tci.save()
-
             parent_id = new_treenode.id
 
         # parent_id contains the ID of the last added node
-        return parent_id, parent_skeleton_id
+        return parent_id
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))
@@ -308,77 +273,43 @@ def update_treenode_table(request, project_id=None):
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))
 
+# REMARK this function went from 1.6 seconds to 400 ms when de-modelized
 @requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
 def delete_treenode(request, project_id=None):
     treenode_id = int(request.POST.get('treenode_id', -1))
-    relation_map = get_relation_to_id_map(project_id)
-
-    def get_class_instance_for_treenode(treenode, relation):
-        return TreenodeClassInstance.objects.filter(
-                project=project_id,
-                relation=relation_map[relation],
-                treenode=treenode)
-
-    def get_ci_from_ci(class_instance, relation):
-        return ClassInstanceClassInstance.objects.filter(
-                project=project_id,
-                relation=relation_map[relation],
-                class_instance_a=class_instance)
+    parent_id = int(request.POST.get('parent_id', -1))
+    skeleton_id = int(request.POST.get('skeleton_id', -1))
 
     response_on_error = ''
     try:
-        treenode = get_object_or_404(Treenode, id=treenode_id)
-        if (treenode.parent is None):
-            # This treenode is root. Each child treenode needs its own skeleton
-            # that is part_of the original neuron.
-
-            # Retrieve the original neuron id of this treenode's skeleton.
-            response_on_error = 'Could not retrieve skeleton for this treenode.'
-            skeleton_query = get_class_instance_for_treenode(treenode, 'element_of')
-            skeleton = skeleton_query[0]
-
-            # Does not do anything at the moment, will be useful when fixing
-            # TODO below.
-            # response_on_error = 'Could not find neuron for the skeleton.'
-            # neuron = get_ci_from_ci(skeleton, 'model_of')[0]
+        cursor = connection.cursor()
+        if -1 == parent_id:
+            # This treenode is root.
 
             response_on_error = 'Could not retrieve children'
-            children = Treenode.objects.filter(
-                    project=project_id,
-                    parent=treenode)
-
-            if (children.count() > 0):
+            cursor.execute("SELECT count(id) FROM treenode WHERE parent_id=%s" % treenode_id)
+            n_children = cursor.fetchone()[0]
+            if n_children > 0:
+                # TODO yes you can, the new root is the first of the children, and other children become independent skeletons
                 raise CatmaidException("You can't delete the root node when it has children.")
 
             # Remove original skeleton.
             response_on_error = 'Could not delete skeleton.'
-            skeleton_query.delete()
-
-            # TODO Think we can do this pretty easily, comment from PHP function:
-            # FIXME: do not remove neuron without checking if it has other skeletons!
-            # $ids = $db->deleteFrom("class_instance", ' "class_instance"."id" = '.$neu_id);
-
-            # Remove treenode
-            response_on_error = 'Could not delete treenode.'
-            treenode.delete()
-
-            return HttpResponse(json.dumps({'success': 'Removed treenode successfully.'}))
+            cursor = connection.cursor()
+            cursor.execute("DELETE FROM class_instance WHERE id=%s" % skeleton_id)
 
         else:
-            # Treenode is not root it has a parent and children. We need to reconnect
-            # all the children to the parent, and do not update the treenode element_of
-            # skeleton relationship
-
+            # Treenode is not root, it has a parent and children.
+            # Reconnect all the children to the parent.
             response_on_error = 'Could not update parent id of children nodes'
-            children = Treenode.objects.filter(
-                    project=project_id,
-                    parent=treenode).update(parent=treenode.parent)
+            cursor.execute("UPDATE treenode SET parent_id=%s WHERE parent_id=%s" % (parent_id, treenode_id))
 
-            response_on_error = 'Could not delete treenode #%d' % treenode.id
-            treenode.delete()
+        # Remove treenode
+        response_on_error = 'Could not delete treenode.'
+        cursor.execute("DELETE FROM treenode WHERE id=%s" % treenode_id)
 
-            return HttpResponse(json.dumps({'message': 'Removed treenode successfully.'}))
+        return HttpResponse(json.dumps({'success': 'Removed treenode successfully.'}))
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))
@@ -387,26 +318,35 @@ def delete_treenode(request, project_id=None):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@transaction_reportable_commit_on_success
+@report_error
 def treenode_info(request, project_id=None):
-    treenode_id = request.POST.get('treenode_id', -1)
-    if (treenode_id < 0):
+    treenode_id = int(request.POST.get('treenode_id', -1))
+    if treenode_id < 0:
         raise CatmaidException('A treenode id has not been provided!')
 
     c = connection.cursor()
-    # Fetch all the treenodes which are in the bounding box:
     # (use raw SQL since we are returning values from several different models)
     c.execute("""
-SELECT ci.id as skeleton_id, ci.name as skeleton_name,
-ci2.id as neuron_id, ci2.name as neuron_name
-FROM treenode_class_instance tci, relation r, relation r2,
-class_instance ci, class_instance ci2, class_instance_class_instance cici
-WHERE ci.project_id = %s AND
-tci.relation_id = r.id AND r.relation_name = 'element_of' AND
-tci.treenode_id = %s AND ci.id = tci.class_instance_id AND
-ci.id = cici.class_instance_a AND ci2.id = cici.class_instance_b AND
-cici.relation_id = r2.id AND r2.relation_name = 'model_of'
-                            """, (project_id, treenode_id))
+    SELECT
+        treenode.skeleton_id,
+        ci.name as skeleton_name,
+        ci2.id as neuron_id,
+        ci2.name as neuron_name
+    FROM
+        treenode,
+        relation r,
+        relation r2,
+        class_instance ci,
+        class_instance ci2,
+        class_instance_class_instance cici
+    WHERE ci.project_id = %s
+      AND treenode.id = %s
+      AND ci.id = treenode.skeleton_id
+      AND ci.id = cici.class_instance_a
+      AND ci2.id = cici.class_instance_b
+      AND cici.relation_id = r2.id
+      AND r2.relation_name = 'model_of'
+    """, (project_id, treenode_id))
     results = [
             dict(zip([col[0] for col in c.description], row))
             for row in c.fetchall()
@@ -427,7 +367,7 @@ def join_skeletons_interpolated(request, project_id=None):
     if they are separated by more than one section in the Z axis."""
     # Parse parameters
     keysDecimal = ['atnx', 'atny', 'atnz', 'x', 'y', 'z', 'resx', 'resy', 'resz']
-    keysInt = ['from_id', 'to_id', 'radius', 'confidence']
+    keysInt = ['from_id', 'from_skid', 'to_id', 'to_skid', 'radius', 'confidence']
     params = {}
     for p in keysDecimal:
         params[p] = decimal.Decimal(request.POST.get(p, 0))
@@ -435,14 +375,15 @@ def join_skeletons_interpolated(request, project_id=None):
         params[p] = int(request.POST.get(p, 0))
     # Copy of the id for _create_interpolated_treenode
     params['parent_id'] = params['from_id']
+    params['skeleton_id'] = params['from_skid']
 
     # Create interpolate nodes skipping the last one 
-    last_treenode_id, parent_skeleton_id = _create_interpolated_treenode(request, params, project_id, True)
+    last_treenode_id = _create_interpolated_treenode(request, params, project_id, True)
 
     # Link last_treenode_id to to_id
     # TODO this is not elegant
     from skeleton import _join_skeleton
-    _join_skeleton(last_treenode_id, params['to_id'], project_id)
+    _join_skeleton(last_treenode_id, params['from_skid'], params['to_id'], params['to_skid'], project_id)
 
     return HttpResponse(json.dumps({'message': 'success',
                                     'fromid': params['from_id'],

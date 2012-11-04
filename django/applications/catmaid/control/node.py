@@ -58,7 +58,7 @@ def node_list(request, project_id=None):
     if 'skeleton' not in class_map:
         raise CatmaidException('Can not find "skeleton" class for this project')
 
-    for relation in ['presynaptic_to', 'postsynaptic_to', 'model_of', 'element_of']:
+    for relation in ['presynaptic_to', 'postsynaptic_to', 'model_of']:
         if relation not in relation_map:
             raise CatmaidException('Can not find "%s" relation for this project' % relation)
 
@@ -258,7 +258,7 @@ def node_list_tuples(request, project_id=None):
     if 'skeleton' not in class_map:
         raise CatmaidException('Can not find "skeleton" class for this project')
 
-    for relation in ['presynaptic_to', 'postsynaptic_to', 'model_of', 'element_of']:
+    for relation in ['presynaptic_to', 'postsynaptic_to', 'model_of']:
         if relation not in relation_map:
             raise CatmaidException('Can not find "%s" relation for this project' % relation)
 

@@ -16,24 +16,16 @@ except ImportError:
 
 def get_treenodes_qs(project_id=None, skeleton_id=None, treenode_id=None, with_labels=True):
     if treenode_id and not skeleton_id:
-        ci = ClassInstance.objects.get(
-            project=project_id,
-            class_column__class_name='skeleton',
-            treenodeclassinstance__relation__relation_name='element_of',
-            treenodeclassinstance__treenode__id=treenode_id)
-        skeleton_id = ci.id
-    treenode_qs = Treenode.objects.filter(
-        treenodeclassinstance__class_instance__id=skeleton_id,
-        treenodeclassinstance__relation__relation_name='element_of',
-        treenodeclassinstance__class_instance__class_column__class_name='skeleton',
-        project=project_id).order_by('id')
+        t = Treenode.objects.get(pk=treenode_id)
+        skeleton_id = t.skeleton_id
+    treenode_qs = Treenode.objects.filter(skeleton_id=skeleton_id)
     if with_labels:
-        labels_qs = TreenodeClassInstance.objects.filter(relation__relation_name='labeled_as',
-            treenode__treenodeclassinstance__class_instance__id=skeleton_id,
-            treenode__treenodeclassinstance__relation__relation_name='element_of').select_related('treenode', 'class_instance')
-        labelconnector_qs = ConnectorClassInstance.objects.filter(relation__relation_name='labeled_as',
-            connector__treenodeconnector__treenode__treenodeclassinstance__class_instance__id=skeleton_id,
-            connector__treenodeconnector__treenode__treenodeclassinstance__relation__relation_name='element_of').select_related('connector', 'class_instance')
+        labels_qs = TreenodeClassInstance.objects.filter(
+            relation__relation_name='labeled_as',
+            treenode__skeleton_id=skeleton_id).select_related('treenode', 'class_instance')
+        labelconnector_qs = ConnectorClassInstance.objects.filter(
+            relation__relation_name='labeled_as',
+            connector__treenodeconnector__treenode__skeleton_id=skeleton_id).select_related('connector', 'class_instance')
     else:
         labels_qs = []
         labelconnector_qs = []

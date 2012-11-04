@@ -275,8 +275,8 @@ var WindowMaker = new function()
                   }
                 }
               }
-              WebGLApp.removeAllSkeletons();
-              // win.close();
+              WebGLApp.destroy();
+              // win.close(); // it is done anyway
             }
             break;
           case CMWWindow.RESIZE:

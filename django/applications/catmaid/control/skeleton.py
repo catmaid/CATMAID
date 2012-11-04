@@ -26,15 +26,9 @@ def node_count(request, project_id=None, skeleton_id=None):
 @login_required
 @transaction.commit_on_success
 def split_skeleton(request, project_id=None):
-    treenode_id = request.POST['treenode_id']
+    treenode_id = int(request.POST['treenode_id'])
+    skeleton_id = int(request.POST['skeleton_id'])
     p = get_object_or_404(Project, pk=project_id)
-    # retrieve skeleton
-    ci = ClassInstance.objects.get(
-        project=project_id,
-        class_column__class_name='skeleton',
-        treenodeclassinstance__relation__relation_name='element_of',
-        treenodeclassinstance__treenode__id=treenode_id)
-    skeleton_id = ci.id
     # retrieve neuron id of this skeleton
     sk = get_object_or_404(ClassInstance, pk=skeleton_id, project=project_id)
     neuron = ClassInstance.objects.filter(
@@ -70,27 +64,17 @@ def split_skeleton(request, project_id=None):
     cici.project = p
     cici.save()
     # update skeleton_id of list in treenode table
-    tns = Treenode.objects.filter(
-        id__in=change_list,
-        project=project_id).update(skeleton=new_skeleton)
-    # update treenodeclassinstance element_of relation
-    tci = TreenodeClassInstance.objects.filter(
-        relation__relation_name='element_of',
-        treenode__id__in=change_list,
-        project=project_id).update(class_instance=new_skeleton)
-    # setting parent of target treenode to null
+    tns = Treenode.objects.filter(id__in=change_list).update(skeleton=new_skeleton)
+    # update connectors
     tc = TreenodeConnector.objects.filter(
         project=project_id,
         relation__relation_name__endswith = 'synaptic_to',
         treenode__in=change_list,
     ).update(skeleton=new_skeleton)
-    Treenode.objects.filter(
-        id=treenode_id,
-        project=project_id).update(parent=None)
-    locations = Location.objects.filter(
-        project=project_id,
-        id=treenode_id
-    )
+    # setting parent of target treenode to null
+    Treenode.objects.filter(id=treenode_id).update(parent=None)
+    # Obtain the location of the node at which the split as done
+    locations = Location.objects.filter(id=treenode_id)
     if len(locations) > 0:
         location = locations[0].location
     insert_into_log( project_id, request.user.id, "split_skeleton", location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron[0].name ) )
@@ -99,6 +83,7 @@ def split_skeleton(request, project_id=None):
 
 @login_required
 def root_for_skeleton(request, project_id=None, skeleton_id=None):
+    # TODO this needs an update, and also not retrieve all columns
     tn = Treenode.objects.get(
         project=project_id,
         parent__isnull=True,
@@ -231,7 +216,6 @@ def reroot_skeleton(request, project_id=None):
     treenode = _reroot_skeleton(treenode_id, project_id)
     response_on_error = ''
     try:
-        print >> sys.stderr, "treenode is", treenode
         if treenode:
             response_on_error = 'Failed to log reroot.'
             insert_into_log(project_id, request.user.id, 'reroot_skeleton', treenode.location, 'Rerooted skeleton for treenode with ID %s' % treenode.id)
@@ -306,14 +290,17 @@ def _reroot_skeleton(treenode_id, project_id):
 @requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
 def join_skeleton(request, project_id=None):
+    response_on_error = 'Failed to join'
     try:
-        from_treenode_id = request.POST.get('from_id', None)
-        to_treenode_id = request.POST.get('to_id', None)
-        from_skeleton, to_skeleton = _join_skeleton(from_treenode_id, to_treenode_id, project_id)
+        from_treenode_id = int(request.POST.get('from_id', None))
+        from_skid = int(request.POST.get('from_skid', None))
+        to_treenode_id = int(request.POST.get('to_id', None))
+        to_skid = int(request.POST.get('to_skid', None))
+        _join_skeleton(from_treenode_id, from_skid, to_treenode_id, to_skid, project_id)
 
         response_on_error = 'Could not log actions.'
         location = get_object_or_404(Treenode, id=from_treenode_id).location
-        insert_into_log(project_id, request.user.id, 'join_skeleton', location, 'Joined skeleton with ID %s into skeleton with ID %s' % (to_skeleton, from_skeleton))
+        insert_into_log(project_id, request.user.id, 'join_skeleton', location, 'Joined skeleton with ID %s into skeleton with ID %s' % (to_skid, from_skid))
 
         return HttpResponse(json.dumps({
             'message': 'success',
@@ -324,73 +311,48 @@ def join_skeleton(request, project_id=None):
         raise CatmaidException(response_on_error + ':' + str(e))
 
 
-def _join_skeleton(from_treenode_id, to_treenode_id, project_id):
+def _join_skeleton(from_treenode_id, from_skid, to_treenode_id, to_skid, project_id):
     """ Take the IDs of two nodes, each belonging to a different skeleton,
     and make to_treenode be a child of from_treenode,
     and join the nodes of the skeleton of to_treenode
     into the skeleton of from_treenode,
-    and delete the former skeleton of to_treenode.
-    Returns the tuple from_skeleton, to_skeleton
-    the latter not existing anymore on return."""
-    if from_treenode_id is None or to_treenode_id is None:
-        raise CatmaidException('From treenode or to treenode not given.')
-    else:
-        from_treenode_id = int(from_treenode_id)
-        to_treenode_id = int(to_treenode_id)
-
-    relation_map = get_relation_to_id_map(project_id)
-    if 'element_of' not in relation_map:
-        raise CatmaidException('Could not find element_of relation.')
+    and delete the former skeleton of to_treenode."""
+    if from_treenode_id is None or to_treenode_id is None or from_skid is None or to_skid is None:
+        raise CatmaidException('Missing arguments to _join_skeleton')
 
     response_on_error = ''
     try:
-        response_on_error = 'Can not find skeleton for from-treenode.'
-        from_skeleton = TreenodeClassInstance.objects.filter(
-            project=project_id,
-            treenode=from_treenode_id,
-            relation=relation_map['element_of'])[0].class_instance_id
+        from_treenode_id = int(from_treenode_id)
+        from_skid = int(from_skid)
+        to_treenode_id = int(to_treenode_id)
+        to_skid = int(to_skid)
 
-        response_on_error = 'Can not find skeleton for to-treenode.'
-        to_skeleton = TreenodeClassInstance.objects.filter(
-            project=project_id,
-            treenode=to_treenode_id,
-            relation=relation_map['element_of'])[0].class_instance_id
-
-        if from_skeleton == to_skeleton:
+        if from_skid == to_skid:
             raise CatmaidException('Cannot join treenodes of the same skeleton, would introduce a loop.')
 
-        # Reroot to_skeleton at to_treenode if necessary
+        # Reroot to_skid at to_treenode if necessary
         response_on_error = 'Could not reroot at treenode %s' % to_treenode_id
         _reroot_skeleton(to_treenode_id, project_id)
 
-        # Update element_of relationship of target skeleton. The target skeleton is
-        # removed and its treenode assume the skeleton id of the from-skeleton.
+        # The target skeleton is removed and its treenode assumes
+        # the skeleton id of the from-skeleton.
 
-        response_on_error = 'Could not update TreenodeClassInstance table.'
-        TreenodeClassInstance.objects.filter(
-            class_instance=to_skeleton,
-            relation=relation_map['element_of']).update(
-            class_instance=from_skeleton)
-
-        response_on_error = 'Could not update Treenode table.'
-        Treenode.objects.filter(
-            skeleton=to_skeleton).update(skeleton=from_skeleton)
+        response_on_error = 'Could not update Treenode table with new skeleton id for joined treenodes.'
+        Treenode.objects.filter(skeleton=to_skid).update(skeleton=from_skid)
 
         response_on_error = 'Could not update TreenodeConnector table.'
         TreenodeConnector.objects.filter(
-            skeleton=to_skeleton).update(skeleton=from_skeleton)
+            skeleton=to_skid).update(skeleton=from_skid)
 
         # Remove skeleton of to_id (should delete part of to neuron by cascade,
         # leaving the parent neuron dangeling in the object tree).
 
-        response_on_error = 'Could not delete skeleton with ID %s.' % to_skeleton
-        ClassInstance.objects.filter(id=to_skeleton).delete()
+        response_on_error = 'Could not delete skeleton with ID %s.' % to_skid
+        ClassInstance.objects.filter(id=to_skid).delete()
 
         # Update the parent of to_treenode.
         response_on_error = 'Could not update parent of treenode with ID %s' % to_treenode_id
         Treenode.objects.filter(id=to_treenode_id).update(parent=from_treenode_id)
-
-        return from_skeleton, to_skeleton
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))

@@ -84,6 +84,15 @@ ConnectivityPostsynaptic = {
     'id': 3
 }
 
+DrawingTypesColormap = {
+    'mitochondria' : np.array([50,50,255], np.uint8),
+    'membrane' : np.array([150,50,50], np.uint8),
+    'soma' : np.array([255,255,0], np.uint8),
+    'misc' : np.array([255,50,50], np.uint8),
+    'erasor' : np.array([0,0,0], np.uint8),
+    'synapticdensity' : np.array([255,0,10], np.uint8)
+}
+
 DrawingTypes = {
     'mitochondria' : {
         'value' : 300,
@@ -116,6 +125,7 @@ DrawingTypes = {
         'color': [255,0,0]
     },
 }
+DrawingTypesId = dict([(v['value'], k) for k,v in DrawingTypes.items()])
 
 def get_drawing_enum(request, project_id=None, stack_id=None):
     return HttpResponse(json.dumps(DrawingTypes), mimetype="text/json")
@@ -651,11 +661,29 @@ def create_segmentation_file(request, project_id=None, stack_id=None):
 
     return HttpResponse(json.dumps(True), mimetype="text/json")
 
+def get_pixellist_for_component(project_id, stack_id, z, component_id):
+    componentTreeFilePath = os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
+    with closing(h5py.File(componentTreeFilePath, 'r')) as componenthfile:
+        componentPixelStart=componenthfile['connected_components/'+str(z)+'/begin_indices'].value[component_id].copy()
+        componentPixelEnd=componenthfile['connected_components/'+str(z)+'/end_indices'].value[component_id].copy()
+
+        data = componenthfile['connected_components/'+str(z)+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
+        return data['x'], data['y']
+
+def get_indices_for_drawing(freeDrawing, width, height):
+        drawingArray = svg2pixel(freeDrawing)
+        indices=np.where(drawingArray>0)
+
+        x_index = indices[1]+(freeDrawing.min_x-50)
+        y_index = indices[0]+(freeDrawing.min_y-50)
+        idx = (x_index >= 0) & (x_index < width) & (y_index >= 0) & (y_index < height)
+        #Use number from JS canvas tool enum
+        return x_index[idx], y_index[idx]
 
 def create_segmentation_neurohdf_file(request, project_id, stack_id):
     filename=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_segmentation.hdf'.format( project_id, stack_id ) )
-    componentTreeFilePath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
 
+    print >> sys.stderr, filename
     with closing(h5py.File(filename, 'w')) as hfile:
         hfile.attrs['neurohdf_version'] = '0.1'
         scaleGroup = hfile.create_group("scale")
@@ -666,7 +694,7 @@ def create_segmentation_neurohdf_file(request, project_id, stack_id):
         stack_info = get_stack_info( project_id, stack_id, request.user )
 
         width=stack_info['dimension']['x']
-        height=stack_info['dimension']['x']
+        height=stack_info['dimension']['y']
 
         stack = get_object_or_404(Stack, pk=stack_id)
         project = get_object_or_404(Project, pk=project_id)
@@ -674,74 +702,77 @@ def create_segmentation_neurohdf_file(request, project_id, stack_id):
         whitelist = range( int(stack_info['dimension']['z']) )
         [whitelist.remove( int(k) ) for k,v in stack_info['broken_slices'].items()]
 
+        # retrieve all skeletons that have a component associated with it in order
+        # to define a globally consistent colormap from skeleton_id to color
+        all_components_with_skeletons = Component.objects.filter(
+            project = project,
+            stack = stack,
+            skeleton_id__isnull=False
+        ).distinct('skeleton_id')
+        all_skeletons = [ele.skeleton_id for ele in all_components_with_skeletons]
+        # TODO: check that no colors are duplicate
+        colors = np.random.randint (0,256, (len(all_skeletons),3) )
+        colormap = dict(zip(all_skeletons, colors))
+
         for z in whitelist:
             section = sectionGroup.create_group(str(z))
-
             shape=(height,width)
 
-            componentIdsPixelArray=np.zeros(shape, dtype=np.long)
             skeletonIdsPixelArray=np.zeros(shape, dtype=np.long)
-            componentDrawingIdsPixelArray=np.zeros(shape, dtype=np.long)
+            skeletonIdsPixelArrayRGB=np.zeros( (height,width, 3), dtype=np.uint8 )
 
-            # retrieve all the components belonging to the skeleton
+            ### Write all the components
             all_components = Component.objects.filter(
                 project = project,
                 stack = stack,
                 z=z
-            ).all()
+            ).order_by('creation_time').all()
+
             for comp in all_components:
 
-                with closing(h5py.File(componentTreeFilePath, 'r')) as componenthfile:
-                    componentPixelStart=componenthfile['connected_components/'+str(z)+'/begin_indices'].value[comp.component_id].copy()
-                    componentPixelEnd=componenthfile['connected_components/'+str(z)+'/end_indices'].value[comp.component_id].copy()
+                x,y = get_pixellist_for_component(project_id, stack_id, z, comp.component_id)
 
-                    data=componenthfile['connected_components/'+str(z)+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
-                    skeletonIdsPixelArray[data['y'],data['x']] =comp.skeleton_id
-                    componentIdsPixelArray[data['y'],data['x']] =comp.component_id
+                skeletonIdsPixelArray[y,x] = comp.skeleton_id
+                skeletonIdsPixelArrayRGB[y,x,:] = colormap[comp.skeleton_id]
 
-            #store arrays to hdf file
-            section.create_dataset("components", data=componentIdsPixelArray, compression='gzip', compression_opts=1)
-            section.create_dataset("skeletons", data=skeletonIdsPixelArray, compression='gzip', compression_opts=1)
-            section.create_dataset("component_drawings", data=componentDrawingIdsPixelArray, compression='gzip', compression_opts=1)
-
-            #generate arrays
-            drawingTypeArrays={}
-            for drawingType in DrawingTypes:
-                drawingTypeArrays[DrawingTypes[drawingType]['value']]=np.zeros(shape, dtype=np.long)
-
-            #Get all drawings without skeleton id
-            all_free_drawings = Drawing.objects.filter(stack=stack,
+            all_free_drawings = Drawing.objects.filter(
+                stack=stack,
                 project=project,
                 z = z).exclude(component_id__isnull=False).all()
 
             for freeDrawing in all_free_drawings:
-                drawingArray = svg2pixel(freeDrawing,freeDrawing.id)
-                indices=np.where(drawingArray>0)
+                typename = DrawingTypesId[freeDrawing.type]
+                print >> sys.stderr, 'freedrawing type', freeDrawing.type, typename
 
-                x_index = indices[1]+(freeDrawing.min_x-50)
-                y_index = indices[0]+(freeDrawing.min_y-50)
-                idx = (x_index >= 0) & (x_index < width) & (y_index >= 0) & (y_index < height)
-                #Use number from JS canvas tool enum
-                drawingTypeArrays[freeDrawing.type][y_index[idx],x_index[idx]]=freeDrawing.id
+                x, y = get_indices_for_drawing(freeDrawing, width, height)
 
-            #store arrays to hdf file
-            for drawingArrayId in drawingTypeArrays:
-                match=None
-                for drawingType in DrawingTypes:
-                    if DrawingTypes[drawingType]['value']==drawingArrayId:
-                        match=drawingType
-                        break
-                section.create_dataset(match, data=drawingTypeArrays[drawingArrayId], compression='gzip', compression_opts=1)
+                # TODO: erasor should only delete pixels of its corresponding skeleton_id
 
-    return
+                if freeDrawing.type == DrawingTypes['soma']['value']:
+                    skeletonIdsPixelArray[y,x] = freeDrawing.skeleton_id
+                    skeletonIdsPixelArrayRGB[y,x,:] = colormap[freeDrawing.skeleton_id]
+                else:
+                    skeletonIdsPixelArray[y,x] = DrawingTypes[typename]['value']
+                    skeletonIdsPixelArrayRGB[y,x,:] = DrawingTypesColormap[typename]
+
+            ### Write out
+            section.create_dataset("skeletons", data=skeletonIdsPixelArray, compression='gzip', compression_opts=1)
+            # map to color
+            section.create_dataset("skeletons_rgb", data=skeletonIdsPixelArrayRGB, compression='gzip', compression_opts=1)
+
+        return
 
 
-
-def svg2pixel(drawing, id, maxwidth=0, maxheight=0):
+def svg2pixel(drawing, maxwidth=0, maxheight=0):
     #Converts drawings into pixel array. Be careful,50px offset are added to the drawing!!!
 
     nopos=find_between(drawing.svg,">","transform=")+'transform="translate(50 50)" />'
     data='<svg>'+nopos+'</svg>'
+
+    # TODO: in database:
+    # <g transform="translate(804 383.5)"><path width="36" height="67" d="M 14 .. 18" style="stroke: rgb(50,50,255); stroke-width: 15; fill: none; opacity: 1;" transform="translate(-18 -33.5)" /></g>
+    # does rsvg deal with rounded strokes?
+    # http://stackoverflow.com/questions/10177985/svg-rounded-corner
 
     #data='<svg>'+drawing.svg.replace("L","C")+'</svg>'
 
@@ -795,10 +826,41 @@ def find_between( s, first, last ):
 
 
 def get_segmentation_tile(project_id, stack_id,scale,height,width,x,y,z,type):
-    print 'segmentation tile'
+
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_segmentation.hdf'.format( project_id, stack_id ) )
-    print fpath
+
+    if int(scale) < 0:
+        scale = 0
+
     with closing(h5py.File(fpath, 'r')) as hfile:
+
+        #hdfpath = 'scale/' + str(int(scale)) + '/section/'+ str(z)+'/skeletons_rgb'
+        hdfpath = 'scale/' + str(int(scale)) + '/section/'+ str(z)+'/skeletons_rgb'
+        image_data=hfile[hdfpath].value
+        data=image_data[y:y+height,x:x+width,:]
+
+        #data=image_data[y:y+height,x:x+width]
+        # create membrane labeling
+        #data[data == 700] = 0
+        #data[data == 600] = 0
+        #data[data == 800] = 0
+        #data[data > 0] = 255
+        #data = data.astype( np.uint8 )
+
+        #data[data != 300] = 0
+        #data[data == 300] = 255
+        #data = data.astype( np.uint8 )
+
+        #pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
+
+        #pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','RGBA',0,1)
+
+        pilImage = Image.fromarray(data)
+        response = HttpResponse(mimetype="image/png")
+        pilImage.save(response, "PNG")
+        #pilImage.save('segmentation_tile_'+str(x)+'_'+str(y), "PNG")
+        return response
+
 
         if type == 'all':
             hdfpath = 'scale/' + str(int(scale)) + '/section/'+ str(z)+'/mitochondria'

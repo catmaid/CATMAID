@@ -1302,6 +1302,80 @@ CREATE INDEX skeleton_id_treenode_index ON treenode USING btree (skeleton_id);
 '
 ),
 
+	'2012-10-30T20:00:02' => new Migration(
+            'Add data view tables',
+            "
+CREATE TABLE data_view (
+id integer NOT NULL,
+title text NOT NULL,
+data_view_type_id integer NOT NULL,
+config text NOT NULL,
+is_default boolean DEFAULT false NOT NULL,
+position integer DEFAULT 0 NOT NULL,
+comment text);
+CREATE TABLE data_view_type (
+id integer NOT NULL,
+title text NOT NULL,
+code_type text NOT NULL,
+comment text);
+CREATE SEQUENCE data_view_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+CREATE SEQUENCE data_view_type_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+ALTER SEQUENCE data_view_id_seq OWNED BY data_view.id;
+ALTER SEQUENCE data_view_type_id_seq OWNED BY data_view_type.id;
+ALTER TABLE data_view ALTER COLUMN id SET DEFAULT nextval('data_view_id_seq'::regclass);
+ALTER TABLE data_view ALTER COLUMN config SET DEFAULT '{}';
+ALTER TABLE data_view_type ALTER COLUMN id SET DEFAULT nextval('data_view_type_id_seq'::regclass);
+ALTER TABLE ONLY data_view
+    ADD CONSTRAINT data_view_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY data_view_type
+    ADD CONSTRAINT data_view_type_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY data_view
+    ADD CONSTRAINT data_view_type_id_fkey FOREIGN KEY (data_view_type_id) REFERENCES data_view_type(id);
+"
+),
+
+    '2012-10-30T21:44:44' => new Migration(
+            'Add two list data view types',
+            "
+INSERT INTO data_view_type
+(title, code_type, comment)
+VALUES ( 'Legacy project list view', 'legacy_project_list_data_view', 'A simple list of all projects and their stacks. It is rendered in the browser with the help of JavaScript and it does not support any configuration options. The config field of a data view is therefore likely to read only {}.' );
+INSERT INTO data_view_type
+(title, code_type, comment)
+VALUES ( 'Project list view', 'project_list_data_view', 'A simple adjustable list of all projects and their stacks. This view is rendered server side and supports the display of sample images. The following options are available: \"sample_images\": [true|false], \"sample_stack\": [\"first\"|\"last\"], \"sample_slice\": [slice number|\"first\"|\"center\"|\"last\"]. By default projects are sorted. Use \"sort\":false to turn this off. Thus, a valid sample configuration could look like: {\"sample_images\":true,\"sample_stack\":\"last\",\"sample_slice\":\"center\"}' );
+"
+),
+    '2012-10-30T22:01:00' => new Migration(
+            'Add a table data view type',
+            "
+INSERT INTO data_view_type
+(title, code_type, comment)
+VALUES ( 'Tabular project view', 'project_table_data_view', 'A simple table of all projects and their stacks. This view is rendered server side and supports the display of sample images instead of stack names. The following options are available: \"sample_images\": [true|false], \"sample_slice\": [slice number|\"first\"|\"center\"|\"last\"], \"sort\": [true|false]. By default projects are sorted and displayed without images. A valid configuration could look like: {\"sample_images\":true,\"sample_slice\":\"center\"}' );
+"
+),
+
+    '2012-11-05T16:11:11' => new Migration(
+            'Add two data views and make one default',
+            "
+INSERT INTO data_view
+(title, data_view_type_id, config, is_default, position, comment)
+VALUES ('Project list', (SELECT id FROM data_view_type dvt WHERE dvt.code_type='project_list_data_view'), '{}', false, 0, '');
+INSERT INTO data_view
+(title, data_view_type_id, config, is_default, position, comment)
+VALUES ('Project table with images', (SELECT id FROM data_view_type dvt WHERE dvt.code_type='project_table_data_view'), '{\"sample_images\":true}', true, 1, '');
+"
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

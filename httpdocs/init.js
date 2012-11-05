@@ -29,6 +29,8 @@ var project_view;
 var projects_available;
 var projects_available_ready = false;
 
+var dataview_menu;
+
 var project_menu;
 var project_menu_open;
 var project_menu_current;
@@ -271,9 +273,11 @@ function handle_updateProjects(status, text, xml) {
       project_menu_open.update();
       alert(e.error);
     } else {
-      $('#project_filter_form').show();
       cachedProjectsInfo = e;
-      updateProjectListFromCache();
+      // update internal project data structure
+      recreateProjectStructureFromCache();
+      // recreate the project data view
+      load_default_dataview();
     }
     if (project) {
       if (keep_project_alive) project.setEditable(keep_project_editable);
@@ -298,6 +302,8 @@ function updateProjectListMessage(text) {
 var cacheLoadingTimeout = null;
 function updateProjectListFromCacheDelayed()
 {
+  // the filter form can already be displayed
+  $('#project_filter_form').show();
   // indicate active filtered loading of the projects
   var indicator = document.getElementById("project_filter_indicator");
   window.setTimeout( function() { indicator.className = "filtering"; }, 1);
@@ -309,10 +315,40 @@ function updateProjectListFromCacheDelayed()
   }
   cacheLoadingTimeout = window.setTimeout(
     function() {
+      recreateProjectStructureFromCache();
       updateProjectListFromCache();
       // indicate finish of filtered loading of the projects
       indicator.className = "";
     }, 500);
+}
+
+/**
+ * A structure of the available projects and their stacks is
+ * maintained. This method recreates this structure, based on
+ * the cached content.
+ */
+function recreateProjectStructureFromCache() {
+  // clear project data structure
+  projects_available_ready = false;
+  if (projects_available)
+  {
+    delete projects_available;
+  }
+  projects_available = new Array();
+  // recreate it
+  for (i in cachedProjectsInfo) {
+    p = cachedProjectsInfo[i];
+    // add project
+    projects_available[p.pid] = new Array();
+    // add linked stacks
+    for (j in p.action) {
+      projects_available[p.pid][j] =
+          { title : p.action[j].title,
+            action : p.action[j].action,
+            note : p.action[j].comment};
+    }
+  }
+  projects_available_ready = true;
 }
 
 /**
@@ -335,13 +371,6 @@ function updateProjectListFromCache() {
   // remove all the projects
   while (pp.firstChild) pp.removeChild(pp.firstChild);
   updateProjectListMessage('');
-  // maintain a list of projects/sessions available
-  projects_available_ready = false;
-  if (projects_available)
-  {
-    delete projects_available;
-  }
-  projects_available = new Array();
   // add new projects according to filter
   for (i in cachedProjectsInfo) {
     p = cachedProjectsInfo[i];
@@ -364,14 +393,11 @@ function updateProjectListFromCache() {
     document.getElementById("project_filter_form").style.display = "block";
     toappend.push(dt);
 
-    projects_available[ p.pid ] = new Array();
     // add a link for every action (e.g. a stack link)
     for (j in p.action) {
       var sid_title = p.action[j].title;
       var sid_action = p.action[j].action;
       var sid_note = p.action[j].comment;
-      projects_available[p.pid][j] =
-          { title : sid_title, action : sid_action, note : sid_note };
       dd = document.createElement("dd");
       a = document.createElement("a");
       ddc = document.createElement("dd");
@@ -409,7 +435,6 @@ function updateProjectListFromCache() {
   } else if (matchingProjects === 0) {
     updateProjectListMessage("No projects matched '"+searchString+"'");
   }
-  projects_available_ready = true;
   project_menu_open.update(cachedProjectsInfo);
 }
 
@@ -701,6 +726,137 @@ function read_message(id) {
   return;
 }
 
+/**
+ * Look for data views.
+ */
+function dataviews() {
+	requestQueue.register(django_url + 'dataviews/list', 'GET', undefined, handle_dataviews);
+	return;
+}
+
+function handle_dataviews(status, text, xml) {
+	if ( status == 200 && text )
+	{
+		var e = eval( "(" + text + ")" );
+		if ( e.error )
+		{
+			alert( e.error );
+		}
+		else
+		{
+			// a function for creating data view menu handlers
+			create_handler = function( id, code_type ) {
+				return function() {
+				   switch_dataview( id, code_type );
+				}
+			};
+			/* As we want to handle a data view change in JS,
+			 * a function is added as action for all the menu
+			 * elements.
+			 */
+			for ( var i in e )
+			{
+				e[i].action = create_handler( e[i].id,
+					e[i].code_type );
+			}
+
+			dataview_menu.update( e );
+		}
+	}
+
+	return;
+}
+
+function switch_dataview( view_id, view_type ) {
+	/* Every view change, for now, requires the closing of all open
+	 * projects.
+	 */
+	rootWindow.closeAllChildren();
+
+	/* Some views are dynamic, e.g. the plain list view offers a
+	 * live filter of projects. Therefore we treat different types
+	 * of dataviews differently.
+	 */
+	if ( view_type == "legacy_project_list_data_view" ) {
+		// Show the standard plain list data view
+		document.getElementById("data_view").style.display = "none";
+		document.getElementById("clientside_data_view").style.display = "block";
+		updateProjectListFromCache();
+	} else {
+		// let Django render the requested view and display it
+		document.getElementById("clientside_data_view").style.display = "none";
+		document.getElementById("data_view").style.display = "block";
+		load_dataview( view_id )
+	}
+}
+
+/**
+ * Load the default data view.
+ */
+function load_default_dataview() {
+	requestQueue.register(django_url + 'dataviews/default',
+		'GET', undefined, handle_load_default_dataview);
+	return;
+}
+
+function handle_load_default_dataview(status, text, xml) {
+	if ( status == 200 && text )
+	{
+		var e = eval( "(" + text + ")" );
+		if ( e.error )
+		{
+			alert( e.error );
+		}
+		else
+		{
+		    switch_dataview( e.id, e.code_type );
+		}
+	}
+}
+
+/**
+ * Load a specific data view.
+ */
+function load_dataview( view_id ) {
+	requestQueue.register(django_url + 'dataviews/show/' + view_id,
+		'GET', undefined, handle_load_dataview);
+	return;
+}
+
+function handle_load_dataview(status, text, xml) {
+	var data_view_container = document.getElementById("data_view");
+
+	if ( !( typeof data_view_container == "undefined" || data_view_container == null ) )
+	{
+		//! remove old content
+		while ( data_view_container.firstChild )
+		{
+			data_view_container.removeChild( data_view_container.firstChild );
+		}
+
+		// put content into data view div
+		if ( status == 200 && text )
+		{
+			//! add new content
+			data_view_container.innerHTML = text;
+		} else {
+			// create error message
+			var error_paragraph = document.createElement( "p" );
+			data_view_container.appendChild( error_paragraph );
+			error_paragraph.appendChild( document.createTextNode(
+				"Sorry, there was a problem loading the requested data view." ) );
+			// create new error iframe
+			var error_iframe = document.createElement( "iframe" );
+			error_iframe.style.width = "100%";
+			error_iframe.style.height = "400px";
+			data_view_container.appendChild( error_iframe );
+			error_iframe.contentDocument.write( text );
+		}
+	}
+
+	return;
+}
+
 /*
  * resize the view and its content on window.onresize event
  */
@@ -849,6 +1005,10 @@ var realInit = function()
 	
 	document.getElementById( "account" ).onkeydown = login_oninputreturn;
 	document.getElementById( "password" ).onkeydown = login_oninputreturn;
+
+	dataview_menu = new Menu();
+	document.getElementById( "dataview_menu" ).appendChild( dataview_menu.getView() );
+	dataviews();
 	
 	project_menu = new Menu();
 	project_menu.update(

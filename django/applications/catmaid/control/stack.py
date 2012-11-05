@@ -87,7 +87,6 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
 
     return result
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stack_info(request, project_id=None, stack_id=None):
     result=get_stack_info(project_id, stack_id, request.user)
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")

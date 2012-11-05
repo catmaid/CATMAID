@@ -311,10 +311,40 @@ function updateProjectListFromCacheDelayed()
   }
   cacheLoadingTimeout = window.setTimeout(
     function() {
+      recreateProjectStructureFromCache();
       updateProjectListFromCache();
       // indicate finish of filtered loading of the projects
       indicator.className = "";
     }, 500);
+}
+
+/**
+ * A structure of the available projects and their stacks is
+ * maintained. This method recreates this structure, based on
+ * the cached content.
+ */
+function recreateProjectStructureFromCache() {
+  // clear project data structure
+  projects_available_ready = false;
+  if (projects_available)
+  {
+    delete projects_available;
+  }
+  projects_available = new Array();
+  // recreate it
+  for (i in cachedProjectsInfo) {
+    p = cachedProjectsInfo[i];
+    // add project
+    projects_available[p.pid] = new Array();
+    // add linked stacks
+    for (j in p.action) {
+      projects_available[p.pid][j] =
+          { title : p.action[j].title,
+            action : p.action[j].action,
+            note : p.action[j].comment};
+    }
+  }
+  projects_available_ready = true;
 }
 
 /**
@@ -337,13 +367,6 @@ function updateProjectListFromCache() {
   // remove all the projects
   while (pp.firstChild) pp.removeChild(pp.firstChild);
   updateProjectListMessage('');
-  // maintain a list of projects/sessions available
-  projects_available_ready = false;
-  if (projects_available)
-  {
-    delete projects_available;
-  }
-  projects_available = new Array();
   // add new projects according to filter
   for (i in cachedProjectsInfo) {
     p = cachedProjectsInfo[i];
@@ -366,14 +389,11 @@ function updateProjectListFromCache() {
     document.getElementById("project_filter_form").style.display = "block";
     toappend.push(dt);
 
-    projects_available[ p.pid ] = new Array();
     // add a link for every action (e.g. a stack link)
     for (j in p.action) {
       var sid_title = p.action[j].title;
       var sid_action = p.action[j].action;
       var sid_note = p.action[j].comment;
-      projects_available[p.pid][j] =
-          { title : sid_title, action : sid_action, note : sid_note };
       dd = document.createElement("dd");
       a = document.createElement("a");
       ddc = document.createElement("dd");
@@ -411,7 +431,6 @@ function updateProjectListFromCache() {
   } else if (matchingProjects === 0) {
     updateProjectListMessage("No projects matched '"+searchString+"'");
   }
-  projects_available_ready = true;
   project_menu_open.update(cachedProjectsInfo);
 }
 

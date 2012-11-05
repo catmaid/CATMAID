@@ -230,6 +230,33 @@ var WebGLApp = new function () {
   var Skeleton = function( skeleton_data )
   {
     var self = this;
+    var type, from_vector, to_vector, labelspheregeometry = new THREE.SphereGeometry( 130 * scale, 32, 32, 1);
+
+    this.line_material = new Object();
+    this.actorColor = [255, 255, 0];
+    this.visible = true;
+    this.id = skeleton_data.id;
+    this.baseName = skeleton_data.baseName;
+    this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
+    this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } );
+    this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } );
+
+    this.setActorVisibility = function( vis ) {
+      console.log('actor visibility');
+      self.visible = vis;
+      self.visiblityCompositeActor( 0, vis );
+      self.visiblityCompositeActor( 1, vis );
+      self.visiblityCompositeActor( 2, vis );
+    };
+
+    this.setPreVisibility = function( vis ) {
+      self.visiblityCompositeActor( 1, vis );
+    };
+
+    this.setPostVisibility = function( vis ) {
+      self.visiblityCompositeActor( 2, vis );
+    };
+
     this.translate = function( dx, dy, dz )
     {
       for ( var i=0; i<connectivity_types.length; ++i ) {
@@ -246,6 +273,7 @@ var WebGLApp = new function () {
     }
 
     this.updateSkeletonColor = function() {
+      console.log('update color', this.actorColor );
       this.actor[connectivity_types[0]].material.color.setRGB( this.actorColor[0]/255., this.actorColor[1]/255., this.actorColor[2]/255. );
       for ( var k in this.otherSpheres ) {
         this.otherSpheres[k].material.color.setRGB( this.actorColor[0]/255., this.actorColor[1]/255., this.actorColor[2]/255. );
@@ -257,14 +285,6 @@ var WebGLApp = new function () {
       this.actorColor = value;
       this.updateSkeletonColor();
       $('#skeletonaction-changecolor-' + self.id).css("background-color", rgb2hex( 'rgb('+value[0]+','+value[1]+','+value[2]+')' ) );
-    }
-
-    this.updateCompositeActor = function()
-    {
-      for ( var i=0; i<connectivity_types.length; ++i ) {
-        this.actor[connectivity_types[i]] = new THREE.Line( this.geometry[connectivity_types[i]],
-            this.line_material[connectivity_types[i]], THREE.LinePieces );
-      }
     }
 
     this.removeActorFromScene = function()
@@ -289,9 +309,7 @@ var WebGLApp = new function () {
 
     this.visiblityCompositeActor = function( type_index, visible )
     {
-      self.visible = visible;
       this.actor[connectivity_types[type_index]].visible = visible;
-
       if( type_index === 0 ) {
           for ( var k in this.labelSphere ) {
               this.labelSphere[k].visible = visible;
@@ -312,117 +330,122 @@ var WebGLApp = new function () {
         this.actorColor[2]+')' ), 16);
     };
 
-    var type, from_vector, to_vector;
-
-    this.line_material = new Object();
-    this.geometry = new Object();
-    this.actor = new Object();
-    this.actorColor = [255, 255, 0];
-    this.visible = true;
-    
-    this.geometry[connectivity_types[0]] = new THREE.Geometry();
-    this.geometry[connectivity_types[1]] = new THREE.Geometry();
-    this.geometry[connectivity_types[2]] = new THREE.Geometry();
-
-    this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
-    this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } )
-    this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } )
-
-    this.original_vertices = skeleton_data.vertices;
-    this.original_connectivity = skeleton_data.connectivity;
-    this.id = skeleton_data.id;
-    this.baseName = skeleton_data.baseName;
-
-    this.labelSphere = new Object();
-    var labelspheregeometry = new THREE.SphereGeometry( 130 * scale, 32, 32, 1);
-    this.otherSpheres = new Object();
-
-    for (var fromkey in this.original_connectivity) {
-      var to = this.original_connectivity[fromkey];
-      for (var tokey in to) {
-
-        type = connectivity_types[connectivity_types.indexOf(this.original_connectivity[fromkey][tokey]['type'])];
-        var fv=transform_coordinates([
-                 this.original_vertices[fromkey]['x'],
-                 this.original_vertices[fromkey]['y'],
-                 this.original_vertices[fromkey]['z']
-            ]);
-        from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
-
-        // transform
-        from_vector.multiplyScalar( scale );
-
-        this.geometry[type].vertices.push( new THREE.Vertex( from_vector ) );
-
-        var tv=transform_coordinates([
-                 this.original_vertices[tokey]['x'],
-                 this.original_vertices[tokey]['y'],
-                 this.original_vertices[tokey]['z']
-            ]);
-        to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
-
-        // transform
-        // to_vector.add( translate_x, translate_y, translate_z );
-        to_vector.multiplyScalar( scale );
-
-        this.geometry[type].vertices.push( new THREE.Vertex( to_vector ) );
-
-        // check if either from or to key vertex has a sphere associated with it
-        var radiusFrom = parseFloat( this.original_vertices[fromkey]['radius'] );
-        if( !(fromkey in this.otherSpheres) && radiusFrom > 0 ) {
-          var radiusSphere = new THREE.SphereGeometry( radiusFrom * scale, 32, 32, 1);
-          this.otherSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
-          this.otherSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
-          scene.add( this.otherSpheres[fromkey] );
-        }
-
-        var radiusTo = parseFloat( this.original_vertices[tokey]['radius'] );
-        if( !(tokey in this.otherSpheres) && radiusTo > 0 ) {
-          var radiusSphere = new THREE.SphereGeometry( radiusTo * scale, 32, 32, 1);
-          this.otherSpheres[tokey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
-          this.otherSpheres[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
-          scene.add( this.otherSpheres[tokey] );
-        }
-
-        // if either from or to have a relevant label, and they are not yet
-        // created, create one
-        if( ($.inArray( "uncertain", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
-            this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff8000, opacity:0.6, transparent:true  } ) );
-            this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
-            scene.add( this.labelSphere[fromkey] );
-        }
-        if( ($.inArray( "uncertain", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
-            this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff8000, opacity:0.6, transparent:true  } ) );
-            this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
-            scene.add( this.labelSphere[tokey] );
-        }
-        if( ($.inArray( "todo", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
-            this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:true  } ) );
-            this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
-            scene.add( this.labelSphere[fromkey] );
-        }
-        if( ($.inArray( "todo", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
-            this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:true  } ) );
-            this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
-            scene.add( this.labelSphere[tokey] );
-        }
-        if( ($.inArray( "soma", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
-            this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00 } ) );
-            this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
-            this.labelSphere[fromkey].scale.set( 2, 2, 2 );
-            scene.add( this.labelSphere[fromkey] );
-        }
-        if( ($.inArray( "soma", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
-            this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00  } ) );
-            this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
-            this.labelSphere[tokey].scale.set( 2, 2, 2 );
-            scene.add( this.labelSphere[tokey] );
-        }
-
+    this.initialize_objects = function()
+    {
+      this.original_vertices = null;
+      this.original_connectivity = null;
+      this.geometry = new Object();
+      this.actor = new Object();
+      this.geometry[connectivity_types[0]] = new THREE.Geometry();
+      this.geometry[connectivity_types[1]] = new THREE.Geometry();
+      this.geometry[connectivity_types[2]] = new THREE.Geometry();
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        this.actor[connectivity_types[i]] = new THREE.Line( this.geometry[connectivity_types[i]],
+          this.line_material[connectivity_types[i]], THREE.LinePieces );
       }
+      this.labelSphere = new Object();
+      this.otherSpheres = new Object();
     }
 
-    this.updateCompositeActor();
+    this.reinit_actor = function ( skeleton_data )
+    {
+      if( this.actor !== undefined  ) {
+        self.removeActorFromScene();
+      }
+      self.initialize_objects();
+
+      this.original_vertices = skeleton_data.vertices;
+      this.original_connectivity = skeleton_data.connectivity;
+
+      for (var fromkey in this.original_connectivity) {
+        var to = this.original_connectivity[fromkey];
+        for (var tokey in to) {
+
+          type = connectivity_types[connectivity_types.indexOf(this.original_connectivity[fromkey][tokey]['type'])];
+          var fv=transform_coordinates([
+                   this.original_vertices[fromkey]['x'],
+                   this.original_vertices[fromkey]['y'],
+                   this.original_vertices[fromkey]['z']
+              ]);
+          from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
+
+          // transform
+          from_vector.multiplyScalar( scale );
+
+          this.geometry[type].vertices.push( new THREE.Vertex( from_vector ) );
+
+          var tv=transform_coordinates([
+                   this.original_vertices[tokey]['x'],
+                   this.original_vertices[tokey]['y'],
+                   this.original_vertices[tokey]['z']
+              ]);
+          to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
+
+          // transform
+          // to_vector.add( translate_x, translate_y, translate_z );
+          to_vector.multiplyScalar( scale );
+
+          this.geometry[type].vertices.push( new THREE.Vertex( to_vector ) );
+
+          // check if either from or to key vertex has a sphere associated with it
+          var radiusFrom = parseFloat( this.original_vertices[fromkey]['radius'] );
+          if( !(fromkey in this.otherSpheres) && radiusFrom > 0 ) {
+            var radiusSphere = new THREE.SphereGeometry( radiusFrom * scale, 32, 32, 1);
+            this.otherSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+            this.otherSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
+            scene.add( this.otherSpheres[fromkey] );
+          }
+
+          var radiusTo = parseFloat( this.original_vertices[tokey]['radius'] );
+          if( !(tokey in this.otherSpheres) && radiusTo > 0 ) {
+            var radiusSphere = new THREE.SphereGeometry( radiusTo * scale, 32, 32, 1);
+            this.otherSpheres[tokey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+            this.otherSpheres[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
+            scene.add( this.otherSpheres[tokey] );
+          }
+
+          // if either from or to have a relevant label, and they are not yet
+          // created, create one
+          if( ($.inArray( "uncertain", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
+              this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff8000, opacity:0.6, transparent:true  } ) );
+              this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
+              scene.add( this.labelSphere[fromkey] );
+          }
+          if( ($.inArray( "uncertain", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
+              this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff8000, opacity:0.6, transparent:true  } ) );
+              this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
+              scene.add( this.labelSphere[tokey] );
+          }
+          if( ($.inArray( "todo", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
+              this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:true  } ) );
+              this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
+              scene.add( this.labelSphere[fromkey] );
+          }
+          if( ($.inArray( "todo", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
+              this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:true  } ) );
+              this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
+              scene.add( this.labelSphere[tokey] );
+          }
+          if( ($.inArray( "soma", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
+              this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00 } ) );
+              this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
+              this.labelSphere[fromkey].scale.set( 2, 2, 2 );
+              scene.add( this.labelSphere[fromkey] );
+          }
+          if( ($.inArray( "soma", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
+              this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00  } ) );
+              this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
+              this.labelSphere[tokey].scale.set( 2, 2, 2 );
+              scene.add( this.labelSphere[tokey] );
+          }
+
+        }
+      }
+      this.updateSkeletonColor();
+      this.addCompositeActorToScene();
+    }
+
+    self.reinit_actor( skeleton_data );
 
   }
 
@@ -567,16 +590,13 @@ var WebGLApp = new function () {
   this.addSkeleton = function( skeleton_id, skeleton_data )
   {
     if( skeletons.hasOwnProperty(skeleton_id) ){
-      self.removeSkeleton( skeleton_id );
-      // remove skeleton and refetch
-      /*
-      skeletons[skeleton_id].removeActorFromScene();
-      delete skeletons[skeleton_id];*/
+      // skeleton already in the list, just reinitialize
+      skeletons[skeleton_id].reinit_actor( skeleton_data );
+      } else {
+      skeleton_data['id'] = skeleton_id;
+      skeletons[skeleton_id] = new Skeleton( skeleton_data );
+      self.addSkeletonToTable( skeletons[skeleton_id] );
     }
-
-    skeleton_data['id'] = skeleton_id;
-    skeletons[skeleton_id] = new Skeleton( skeleton_data );
-    self.addSkeletonToTable( skeletons[skeleton_id] );
     return true;
   }
 
@@ -848,9 +868,8 @@ var WebGLApp = new function () {
           .click( function( event )
           {
             var vis = $('#skeletonshow-' + skeleton.id).is(':checked');
-            skeletons[skeleton.id].visiblityCompositeActor( 0, vis);
-            skeletons[skeleton.id].visiblityCompositeActor( 1, vis);
-            skeletons[skeleton.id].visiblityCompositeActor( 2, vis);
+            skeletons[skeleton.id].setActorVisibility( vis );
+            self.render();
           } )
     ));
 
@@ -866,7 +885,8 @@ var WebGLApp = new function () {
           })
           .click( function( event )
           {
-            skeletons[skeleton.id].visiblityCompositeActor( 1, $('#skeletonpre-' + skeleton.id).is(':checked') );
+            skeletons[skeleton.id].setPreVisibility( $('#skeletonpre-' + skeleton.id).is(':checked') );
+            self.render();
           } )
     ));
 
@@ -882,7 +902,8 @@ var WebGLApp = new function () {
           })
           .click( function( event )
           {
-            skeletons[skeleton.id].visiblityCompositeActor( 2, $('#skeletonpost-' + skeleton.id).is(':checked') );
+            skeletons[skeleton.id].setPostVisibility( $('#skeletonpost-' + skeleton.id).is(':checked') );
+            self.render();
           } )
     ));
 
@@ -940,8 +961,6 @@ var WebGLApp = new function () {
     rowElement.append(
       $(document.createElement("td")).text( skeleton.baseName + ' (SkeletonID: ' + skeleton.id + ')' )
     );
-
-    skeleton.addCompositeActorToScene();
 
   }
 

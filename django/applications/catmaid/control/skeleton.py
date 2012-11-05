@@ -178,7 +178,10 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
     ''' % (skeleton_id, relation_id_1, relation_id_2))
     repeated_skids = [row[0] for row in cursor.fetchall()]
 
-    # Sum the number of synapses that each upstream skeleton does onto the skeleton
+    if not repeated_skids:
+        return partners
+
+    # Sum the number of synapses that each skeleton does onto the skeleton
     for skid in repeated_skids:
         d = partners.get(skid)
         if d:
@@ -187,7 +190,8 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
         partners[skid] = {'skeleton_id': skid, 'synaptic_count': 1}
 
     # Obtain a string with unique skeletons
-    skids_string = ','.join(str(x) for x in set(repeated_skids))
+    unique_skids = set(repeated_skids)
+    skids_string = ','.join(str(x) for x in unique_skids)
 
     # Count nodes of each skeleton
     cursor.execute('''
@@ -210,6 +214,11 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
     for row in cursor.fetchall():
         d = partners[row[0]]
         d['percentage_reviewed'] = int(100.0 * (1 - float(row[1]) / d['node_count']))
+    # If 100%, it will not be there, so add it
+    for skid in unique_skids:
+        d = partners[skid]
+        if 'percentage_reviewed' not in d:
+            d['percentage_reviewed'] = 100
 
     # Obtain name of each skeleton's neuron
     cursor.execute('''

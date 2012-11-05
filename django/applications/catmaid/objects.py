@@ -177,7 +177,10 @@ class Skeleton(object):
 
     def percentage_reviewed(self):
         """ Measure the percent of nodes that have been reviewed. """
-        node_count_reviewed = len([k for k,v in self.graph.nodes(data=True) if v['reviewer_id'] != -1])
+        node_count_reviewed = 0
+        for k,v in self.graph.nodes(data=True):
+            if v['reviewer_id'] != -1:
+                node_count_reviewed += 1
         if node_count_reviewed:
             return 100.0 * node_count_reviewed / self.node_count()
         else:

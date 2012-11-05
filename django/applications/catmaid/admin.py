@@ -31,6 +31,10 @@ class DataViewAdminForm(forms.ModelForm):
         # Since we want to add additional information to the data view
         # configuration widget, we decorate it
         self.fields['config'].widget = DataViewConfigWidget(attrs={'class':'vLargeTextField'})
+        # The positioning should be handled by a choice field
+        num_data_views = DataView.objects.count()
+        position_choices = ( (x,str(x)) for x in range(num_data_views) )
+        self.fields['position'] = forms.ChoiceField(choices = position_choices)
 
     def clean_config(self):
         """ Custom validation for tha data view's config field.

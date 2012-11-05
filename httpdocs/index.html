@@ -123,10 +123,10 @@
 			*******************************************************************
 			-->
 			<div id="toolbar_login" class="toolbar">
-				<div id="menu_box" class="box">
-					<div class="menu_item" style="float:left"><p>
-						<a href="" onclick="rootWindow.closeAllChildren(); return false;">Home</a>
-					</p></div>
+				<div id="home_box" class="box">
+					<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';">
+						<p><a href="" onclick="rootWindow.closeAllChildren(); return false;">Home</a></p>
+						<div class="pulldown" id="dataview_menu"></div></div>
 				</div>
 				<div id="menu_box" class="box">
 					<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p><a>Projects</a></p>
@@ -261,18 +261,21 @@
 		***********************************************************************
 		-->
 		<div id="content">
-			<h1>CATMAID v0.24</h1>
-		
-			<div id="project_list">
-				<p>Please feel free to open one of the public projects or log in with your account and password.</p>
-		
-				<h2 id="projects_h">Projects</h2>
-				<form id="project_filter_form" display="none">Filter projects:
-					<input id="project_filter_text" type="text" onkeyup="updateProjectListFromCacheDelayed();">
-					<span id="project_filter_indicator"></span>
-				</form>
-				<dl id="projects_dl"><dt></dt><dd></dd></dl>
-				<p id="project_list_message"></p>
+			<div id="data_view"></div>
+			<div id="clientside_data_view">
+				<h1>CATMAID v0.24</h1>
+				<div id="project_list">
+
+					<p>Please feel free to open one of the public projects or log in with your account and password.</p>
+
+					<h2 id="projects_h">Projects</h2>
+					<form id="project_filter_form" display="none">Filter projects:
+						<input id="project_filter_text" type="text" onkeyup="updateProjectListFromCacheDelayed();">
+						<span id="project_filter_indicator"></span>
+					</form>
+					<dl id="projects_dl"><dt></dt><dd></dd></dl>
+					<p id="project_list_message"></p>
+				</div>
 			</div>
 
 			<div id="new_project_dialog" class="form">

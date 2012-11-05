@@ -1,4 +1,6 @@
 import json
+import datetime
+from datetime import timedelta
 
 from django.http import HttpResponse
 from django.db.models import Count
@@ -12,28 +14,40 @@ from catmaid.transaction import *
 @login_required
 def stats(request, project_id=None):
     qs = Treenode.objects.filter(project=project_id)
-    qs = qs.values('user__name').annotate(count=Count('user__name'))
+    qs = qs.values('user__username').annotate(count=Count('user__username'))
     result = {'users': [],
               'values': []}
     for d in qs:
         result['values'].append(d['count'])
-        user_name = '%s (%d)' % (d['user__name'], d['count'])
+        user_name = '%s (%d)' % (d['user__username'], d['count'])
         result['users'].append(user_name)
     return HttpResponse(json.dumps(result), mimetype='text/json')
 
 @login_required
 def stats_summary(request, project_id=None):
+    startdate = datetime.today()
     result = {
-        'proj_users': User.objects.filter(project=project_id).count(),
-        'proj_treenodes': Treenode.objects.filter(project=project_id).count(),
-        'proj_textlabels': Textlabel.objects.filter(project=project_id).count()}
-    for key, class_name in [('proj_neurons', 'neuron'),
-        ('proj_synapses', 'synapse'),
-        ('proj_skeletons', 'skeleton'),
-        ('proj_presyn', 'presynaptic terminal'),
-        ('proj_postsyn', 'postsynaptic terminal'),
-        ('proj_tags', 'label')]:
+        'treenodes_created': Treenode.objects.filter(
+            project=project_id,
+            user=request.user.id,
+            creation_time__year=startdate.year,
+            creation_time__month=startdate.month,
+            creation_time__day=startdate.day).count(),
+        'connectors_created': Connector.objects.filter(project=project_id,
+            user=request.user.id,
+            creation_time__year=startdate.year,
+            creation_time__month=startdate.month,
+            creation_time__day=startdate.day
+            ).count(),
+    }
+    for key, class_name in [
+        ('skeletons_created', 'skeleton')
+        ]:
         result[key] = ClassInstance.objects.filter(
             project=project_id,
+            user=request.user.id,
+            creation_time__year=startdate.year,
+            creation_time__month=startdate.month,
+            creation_time__day=startdate.day,
             class_column__class_name=class_name).count()
     return HttpResponse(json.dumps(result), mimetype='text/json')

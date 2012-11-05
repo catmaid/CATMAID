@@ -975,43 +975,31 @@ var WindowMaker = new function()
       '<br clear="all" />' +
 			'<!-- piechart -->' +
       '<div class="project-stats">' +
-				'<h3>Overall Statistics</h3>' +
+				'<h3>Daily Statistics</h3>' +
         '<table cellpadding="0" cellspacing="0" border="0" class="project-stats" id="project_stats_table">' +
           '<tr>' +
-            '<td >#users</td>' +
-            '<td id="proj_users"></td>' +
+            '<td >#skeletons created</td>' +
+            '<td id="skeletons_created"></td>' +
             '</td>' +
           '</tr>' +
           '<tr>' +
-            '<td >#neurons</td>' +
-            '<td id="proj_neurons"></td>' +
+            '<td >#treenodes_created</td>' +
+            '<td id="treenodes_created"></td>' +
           '</tr>' +
           '<tr>' +
-            '<td >#treenodes</td>' +
-            '<td id="proj_treenodes"></td>' +
-          '</tr>' +
-          '<tr>' +
-            '<td >#skeletons</td>' +
-            '<td id="proj_skeletons"></td>' +
-          '</tr>' +
-          '<tr>' +
-            '<td >#textlabels</td>' +
-            '<td id="proj_textlabels"></td>' +
-          '</tr>' +
-          '<tr>' +
-            '<td >#tags</td>' +
-            '<td id="proj_tags"></td>' +
+            '<td >#connectors_created</td>' +
+            '<td id="connectors_created"></td>' +
           '</tr>' +
         '</table>' +
-      '</div>' +
+      '</div><br clear="all" />' +
 			'<div class="piechart">' + 
 				'<h3>Annotation User Contribution</h3>' +
 				'<div id="piechart_treenode_holder"></div>' +
-			'</div>' + 
+			'</div><br clear="all" />' +
       '<div class="annotation-history">' + 
 				'<h3 style="text-align: center">Annotation History</h3>' +
 				'<div id="linechart_treenode_holder"></div>' + 
-			'</div>';
+			'</div><br clear="all" />';
 
     addListener(win, container);
 

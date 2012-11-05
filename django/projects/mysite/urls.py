@@ -155,7 +155,9 @@ urlpatterns += patterns('',
 # Data views
 urlpatterns += patterns('',
     (r'^dataviews/list$', 'catmaid.control.get_available_data_views'),
+    (r'^dataviews/default$', 'catmaid.control.get_default_properties'),
     (r'^dataviews/show/(?P<data_view_id>\d+)$', 'catmaid.control.get_data_view'),
+    (r'^dataviews/show/default$', 'catmaid.control.get_default_data_view'),
     (r'^dataviews/type/comment$', 'catmaid.control.get_data_view_type_comment'),
     )
 

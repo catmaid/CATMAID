@@ -26,22 +26,40 @@ def get_data_view_type_comment( request ):
     result = { 'comment':text }
     return HttpResponse(json.dumps(result), mimetype="text/json")
 
+def dataview_to_dict( dataview ):
+    """ Creates a dicitonary of the dataviews' properties.
+    """
+    return {
+        'id': dataview.id,
+        'title': dataview.title,
+        'code_type': dataview.data_view_type.code_type,
+        'config': dataview.config,
+        'note': dataview.comment
+    }
+
 def get_available_data_views( request ):
     """ Returns a list of all available data views.
     """
-    def dataview_to_dict( dataview ):
-        return {
-            'id': dataview.id,
-            'title': dataview.title,
-            'code_type': dataview.data_view_type.code_type,
-            'config': dataview.config,
-            'note': dataview.comment
-        }
-
     all_views = DataView.objects.order_by("position")
     dataviews = map(dataview_to_dict, all_views)
 
     return HttpResponse(json.dumps(makeJSON_legacy_list(dataviews)), mimetype="text/json")
+
+def get_default_properties( request ):
+    """ Return the properies of the default data view.
+    """
+    default = DataView.objects.filter(is_default=True)[0]
+    default = dataview_to_dict( default )
+
+    return HttpResponse(json.dumps(default), mimetype="text/json")
+
+def get_default_data_view( request ):
+    """ Return the data view that is marked as the default. If there
+    is more than one view marked as default, the first one is returned.
+    """
+    default = DataView.objects.filter(is_default=True)[0]
+
+    return get_data_view( request, default.id )
 
 def natural_sort(l, field):
     """ Natural sorting of a list wrt. to its 'title' attribute.

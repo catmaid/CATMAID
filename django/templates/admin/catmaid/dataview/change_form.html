@@ -1,0 +1,26 @@
+{% extends "admin/guardian/model/change_form.html" %}
+{% load i18n  %}
+
+{% block extrahead %}
+<script src="{{ catmaid_url }}libs/jquery/jquery.js" type="text/javascript"></script>
+<script type="text/javascript">
+	$(document).ready(function() {
+		// update the data view type comment according to selection
+		update_data_view_comment = function() {
+			$.ajax({
+				type: 'POST',
+				url: "{% url catmaid.control.get_data_view_type_comment %}",
+				data: {'data_view_type_id': $('#id_data_view_type').val()},
+				success: function(data, status) {
+					$('#data_view_config_help').text(data.comment);
+				},
+				datatype: "json"
+				});
+		};
+		// Update config comment on data view type change
+		$('#id_data_view_type').change(update_data_view_comment);
+		// Do an initial update
+		update_data_view_comment();
+	});
+</script>
+{% endblock %}

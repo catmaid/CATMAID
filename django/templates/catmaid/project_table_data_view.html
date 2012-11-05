@@ -1,0 +1,37 @@
+{% load data_view_config %}
+{% include "catmaid/common_data_view_header.html" %}
+
+{% with sample_images=config|get_or_none:"sample_images"|default_if_none:0 %}
+{% with sample_slice=config|get_or_none:"sample_slice"|default_if_none:"center" %}
+
+<table>
+{% for p in projects %}
+	{% if p.stacks.all|length > 0 %}
+	<tr>
+		<td class="projectname">{{ p.title }}</td>
+		{% for s in p.stacks.all %}
+			{% if sample_images %}
+				<td class="stackimage">
+				{# Get the wanted slice #}
+				{% with slice=s|get_slice:sample_slice %}
+				{% if slice|is_none %}
+					Couldn't find requested slice: {{ sample_slice }}
+				{% else %}
+					<a href="#" onclick="openProjectStack({{p.id}}, {{s.id}})">
+						<img src="{{ s.image_base }}{{ slice }}/small.{{ s.file_extension }}"
+							alt="Sample image for {{ s.title }} on slice {{ slice }}" />
+					</a>
+				{% endif %}
+				{% endwith %}
+				</td>
+			{% else %}
+				<td class="stackname"><a href="#" onclick="openProjectStack({{p.id}}, {{s.id}})">{{ s.title }}</a></td>
+			{% endif %}
+		{% endfor %}
+	</tr>
+	{% endif %}
+{% endfor %}
+</table>
+
+{% endwith %}
+{% endwith %}

@@ -6,6 +6,7 @@
 {% with sample_slice=config|get_or_none:"sample_slice"|default_if_none:"center" %}
 <table>
 {% for p in projects %}
+    {% if p.stacks.all|length > 0 %}
     <tr>
         {# Add a sample image if requested #}
         {% if sample_images %}
@@ -37,6 +38,7 @@
             </dl>
         </td>
     </tr>
+    {% endif %}
 {% endfor %}
 </table>
 {% endwith %}

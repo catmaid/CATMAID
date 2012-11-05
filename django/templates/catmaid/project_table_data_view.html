@@ -6,6 +6,7 @@
 
 <table>
 {% for p in projects %}
+	{% if p.stacks.all|length > 0 %}
 	<tr>
 		<td class="projectname">{{ p.title }}</td>
 		{% for s in p.stacks.all %}
@@ -28,6 +29,7 @@
 			{% endif %}
 		{% endfor %}
 	</tr>
+	{% endif %}
 {% endfor %}
 </table>
 

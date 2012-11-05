@@ -1364,6 +1364,18 @@ VALUES ( 'Tabular project view', 'project_table_data_view', 'A simple table of a
 "
 ),
 
+    '2012-11-05T16:11:11' => new Migration(
+            'Add two data views and make one default',
+            "
+INSERT INTO data_view
+(title, data_view_type_id, config, is_default, position, comment)
+VALUES ('Project list', (SELECT id FROM data_view_type dvt WHERE dvt.code_type='project_list_data_view'), '{}', false, 0, '');
+INSERT INTO data_view
+(title, data_view_type_id, config, is_default, position, comment)
+VALUES ('Project table with images', (SELECT id FROM data_view_type dvt WHERE dvt.code_type='project_table_data_view'), '{\"sample_images\":true}', true, 1, '');
+"
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

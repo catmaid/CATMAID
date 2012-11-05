@@ -289,6 +289,7 @@ var WebGLApp = new function () {
 
     this.visiblityCompositeActor = function( type_index, visible )
     {
+      self.visible = visible;
       this.actor[connectivity_types[type_index]].visible = visible;
 
       if( type_index === 0 ) {
@@ -317,6 +318,7 @@ var WebGLApp = new function () {
     this.geometry = new Object();
     this.actor = new Object();
     this.actorColor = [255, 255, 0];
+    this.visible = true;
     
     this.geometry[connectivity_types[0]] = new THREE.Geometry();
     this.geometry[connectivity_types[1]] = new THREE.Geometry();
@@ -973,12 +975,17 @@ var WebGLApp = new function () {
     }
   };
 
-  self.getListOfSkeletonIDs = function() {
+  self.getListOfSkeletonIDs = function(only_visible) {
     var keys = [];
     for( var skeleton_id in skeletons)
     {
         if( skeletons.hasOwnProperty(skeleton_id) ) {
+          if(only_visible) {
+            if(skeletons[skeleton_id].visible)
+              keys.push( parseInt(skeleton_id) );
+          } else {
             keys.push( parseInt(skeleton_id) );
+          }
         }
     }
     return keys;

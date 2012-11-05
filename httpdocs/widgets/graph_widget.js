@@ -86,7 +86,7 @@ var GraphWidget = new function()
       url: "dj/" + project.id + "/skeletongroup/skeletonlist_subgraph",
       type: "POST",
       dataType: "json",
-      data: { skeleton_list: WebGLApp.getListOfSkeletonIDs() },
+      data: { skeleton_list: WebGLApp.getListOfSkeletonIDs(true) },
       success: function (data) {
         self.updateGraph( data );
       }

@@ -696,3 +696,33 @@ class DataView(models.Model):
     position = models.IntegerField(default=0)
     comment = models.TextField(default="",blank=True)
 
+    def save(self, *args, **kwargs):
+        """ Does a post-save action: Make sure (only) one data view
+        is the default.
+        """
+        super(DataView, self).save(*args, **kwargs)
+        # We need to declare a default view if there is none. Also if
+        # there is more than one default, reduce this to one. If the
+        # current data view is marked default, this will be the one.
+        # If there is exactly one default, nothing needs to be touched.
+        default_views = DataView.objects.filter(is_default=True)
+        if len(default_views) == 0:
+            # Make the first data view the default one
+            dv = DataView.objects.all()[0]
+            dv.is_default = True
+            dv.save()
+        elif len(default_views) > 1 and self.is_default:
+            # Have only the current data view as default
+            for dv in default_views:
+                if dv.id == self.id:
+                    continue
+                dv.is_default = False
+                dv.save()
+        elif len(default_views) > 1:
+            # Mark all except the first one as not default
+            for n,dv in enumerate(default_views):
+                if n == 0:
+                    continue
+                dv.is_default = False
+                dv.save()
+

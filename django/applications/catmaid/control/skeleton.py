@@ -9,7 +9,7 @@ from catmaid.control.common import *
 from catmaid.transaction import *
 
 import json
-import sys
+from operator import itemgetter
 try:
     import networkx as nx
 except:
@@ -163,9 +163,113 @@ def skeleton_ancestry(request, project_id=None):
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))
 
+def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id, cursor):
+    partners = {}
+
+    # Obtain the list of potentially repeated IDs of partner skeletons
+    cursor.execute('''
+    SELECT t2.skeleton_id
+    FROM treenode_connector t1,
+         treenode_connector t2
+    WHERE t1.skeleton_id = %s
+      AND t1.relation_id = %s
+      AND t1.connector_id = t2.connector_id
+      AND t2.relation_id = %s
+    ''' % (skeleton_id, relation_id_1, relation_id_2))
+    repeated_skids = [row[0] for row in cursor.fetchall()]
+
+    # Sum the number of synapses that each upstream skeleton does onto the skeleton
+    for skid in repeated_skids:
+        d = partners.get(skid)
+        if d:
+            d['synaptic_count'] += 1
+            continue
+        partners[skid] = {'skeleton_id': skid, 'synaptic_count': 1}
+
+    # Obtain a string with unique skeletons
+    skids_string = ','.join(str(x) for x in set(repeated_skids))
+
+    # Count nodes of each skeleton
+    cursor.execute('''
+    SELECT skeleton_id, count(skeleton_id)
+    FROM treenode
+    WHERE skeleton_id IN (%s)
+    GROUP BY skeleton_id
+    ''' % skids_string)
+    for row in cursor.fetchall():
+        partners[row[0]]['node_count'] = row[1]
+
+    # Count reviewed nodes of each skeleton
+    cursor.execute('''
+    SELECT skeleton_id, count(skeleton_id)
+    FROM treenode
+    WHERE skeleton_id IN (%s)
+      AND reviewer_id=-1
+    GROUP BY skeleton_id
+    ''' % skids_string)
+    for row in cursor.fetchall():
+        d = partners[row[0]]
+        d['percentage_reviewed'] = int(100.0 * (1 - float(row[1]) / d['node_count']))
+
+    # Obtain name of each skeleton's neuron
+    cursor.execute('''
+    SELECT class_instance_class_instance.class_instance_a,
+           class_instance.name
+    FROM class_instance_class_instance,
+         class_instance
+    WHERE class_instance_class_instance.relation_id=%s
+      AND class_instance_class_instance.class_instance_a IN (%s)
+      AND class_instance.id=class_instance_class_instance.class_instance_b
+    ''' % (model_of_id, skids_string))
+    for row in cursor.fetchall():
+        partners[row[0]]['name'] = '%s / skeleton %s' % (row[1], row[0])
+
+    # TODO: fix Skeleton class to address issue with connectors making more than one synapse onto the same skeleton
+
+    return partners
+
+
+@login_required
+def skeleton_info_raw(request, project_id=None, skeleton_id=None):
+    # sanitize arguments
+    skeleton_id = int(skeleton_id)
+    project_id = int(project_id)
+    #
+    cursor = connection.cursor()
+    # Obtain the list of nodes of the current skeleton
+    cursor.execute('SELECT id FROM treenode WHERE skeleton_id=%s' % skeleton_id)
+    sk_nodes = [row[0] for row in cursor.fetchall()]
+    # Obtain the IDs of the 'presynaptic_to', 'postsynaptic_to' and 'model_of' relations
+    cursor.execute('''
+    SELECT relation_name,
+           id
+    FROM relation
+    WHERE project_id=%s
+      AND (relation_name='presynaptic_to'
+        OR relation_name='postsynaptic_to'
+        OR relation_name='model_of')''' % project_id)
+    relation_ids = dict(row for row in cursor.fetchall())
+    # Obtain partner skeletons and their info
+    incoming = _connected_skeletons(skeleton_id, relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'], relation_ids['model_of'], cursor)
+    outgoing = _connected_skeletons(skeleton_id, relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'], relation_ids['model_of'], cursor)
+    # Sort by number of connections
+    result = {
+        'incoming': list(reversed(sorted(incoming.values(), key=itemgetter('synaptic_count')))),
+        'outgoing': list(reversed(sorted(outgoing.values(), key=itemgetter('synaptic_count'))))
+    }
+    json_return = json.dumps(result, sort_keys=True, indent=4)
+    return HttpResponse(json_return, mimetype='text/json')
+
 
 @login_required
 def skeleton_info(request, project_id=None, skeleton_id=None):
+    # This function can take as much as 15 seconds for a mid-sized arbor
+    # Problems in the generated SQL:
+    # 1. Many repetitions of the query: SELECT ...  FROM "relation" WHERE "relation"."project_id" = 4. Originates in one call per connected skeleton, in Skeleton._fetch_upstream_skeletons and _fetch_downstream_skeletons
+    # 2. Usage of WHERE project_id = 4, despite IDs being unique. Everywhere.
+    # 3. Lots of calls to queries similar to: SELECT ...  FROM "class_instance" WHERE "class_instance"."id" = 17054183
+
+
     p = get_object_or_404(Project, pk=project_id)
 
     synaptic_count_high_pass = int( request.POST.get( 'threshold', 10 ) )
@@ -200,7 +304,6 @@ def skeleton_info(request, project_id=None, skeleton_id=None):
                 'name': '{0} / skeleton {1}'.format( tmp_skeleton.neuron.name, skeleton_id_downstream)
             }
 
-    from operator import itemgetter
     result = {
         'incoming': list(reversed(sorted(data['incoming'].values(), key=itemgetter('synaptic_count')))),
         'outgoing': list(reversed(sorted(data['outgoing'].values(), key=itemgetter('synaptic_count'))))

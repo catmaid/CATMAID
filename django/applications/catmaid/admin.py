@@ -50,6 +50,7 @@ class DataViewAdminForm(forms.ModelForm):
 
 class DataViewAdmin(GuardedModelAdmin):
     list_display = ('title', 'data_view_type', 'position', 'is_default', 'comment')
+    list_editable = ('position',)
     # Add the custom form which does validation of the view
     # configuration
     form = DataViewAdminForm

@@ -685,6 +685,7 @@ class DataView(models.Model):
     class Meta:
         db_table = "data_view"
         managed = False
+        ordering = ('position',)
         permissions = (
             ("can_administer", "Can administer data views"),
             ("can_browse", "Can browse data views")

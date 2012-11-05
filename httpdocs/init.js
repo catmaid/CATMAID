@@ -273,9 +273,11 @@ function handle_updateProjects(status, text, xml) {
       project_menu_open.update();
       alert(e.error);
     } else {
-      $('#project_filter_form').show();
       cachedProjectsInfo = e;
-      updateProjectListFromCache();
+      // update internal project data structure
+      recreateProjectStructureFromCache();
+      // recreate the project data view
+      load_default_dataview();
     }
     if (project) {
       if (keep_project_alive) project.setEditable(keep_project_editable);
@@ -300,6 +302,8 @@ function updateProjectListMessage(text) {
 var cacheLoadingTimeout = null;
 function updateProjectListFromCacheDelayed()
 {
+  // the filter form can already be displayed
+  $('#project_filter_form').show();
   // indicate active filtered loading of the projects
   var indicator = document.getElementById("project_filter_indicator");
   window.setTimeout( function() { indicator.className = "filtering"; }, 1);
@@ -783,6 +787,30 @@ function switch_dataview( view_id, view_type ) {
 		document.getElementById("clientside_data_view").style.display = "none";
 		document.getElementById("data_view").style.display = "block";
 		load_dataview( view_id )
+	}
+}
+
+/**
+ * Load the default data view.
+ */
+function load_default_dataview() {
+	requestQueue.register(django_url + 'dataviews/default',
+		'GET', undefined, handle_load_default_dataview);
+	return;
+}
+
+function handle_load_default_dataview(status, text, xml) {
+	if ( status == 200 && text )
+	{
+		var e = eval( "(" + text + ")" );
+		if ( e.error )
+		{
+			alert( e.error );
+		}
+		else
+		{
+		    switch_dataview( e.id, e.code_type );
+		}
 	}
 }
 

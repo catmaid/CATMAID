@@ -11,4 +11,4 @@ Developer Documentation
    djangounittest
    celeryinstall
    catmaid_aws
-   data_view_types.rst
+   data_view_types

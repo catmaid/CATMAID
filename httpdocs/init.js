@@ -114,12 +114,22 @@ function login(
 	if ( msg_timeout ) window.clearTimeout( msg_timeout );
 	
 	ui.catchEvents( "wait" );
-	if ( account || password )
+	if ( account || password ) {
+		// Attempt to login.
 		requestQueue.register(
-            django_url + 'accounts/login',
+			django_url + 'accounts/login',
 			'POST',
 			{ name : account, pwd : password },
 			loginCompletion );
+	}
+	else {
+		// Check if the user is logged in.
+		requestQueue.register(
+			django_url + 'accounts/login',
+			'GET',
+			undefined,
+			loginCompletion );
+	}
 	return;
 }
 
@@ -1054,7 +1064,7 @@ var realInit = function()
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
 
-    updateProjects();
+    login();
 
 	if ( pid && sids.length > 0 )
 	{

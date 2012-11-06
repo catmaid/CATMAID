@@ -30,21 +30,30 @@ def login_vnc(request):
 
 
 def login_user(request):
-    username = request.POST.get('name', 0)
-    password = request.POST.get('pwd', 0)
-    user = authenticate(username=username, password=password)
-    if user is not None:
-        if user.is_active:
-            # Redirect to a success page.
-            request.session['user_id'] = user.id
-            login(request, user)
-            return HttpResponse(json.dumps({'id': request.session.session_key, 'longname': user.get_full_name() } ))
+    if request.method == 'POST':
+        # Try to log the user into the system.
+        username = request.POST.get('name', 0)
+        password = request.POST.get('pwd', 0)
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            if user.is_active:
+                # Redirect to a success page.
+                request.session['user_id'] = user.id
+                login(request, user)
+                return HttpResponse(json.dumps({'id': request.session.session_key, 'longname': user.get_full_name() } ))
+            else:
+               # Return a 'disabled account' error message
+               return HttpResponse(json.dumps({'error': ' Disabled account'}))
         else:
-           # Return a 'disabled account' error message
-           return HttpResponse(json.dumps({'error': ' Disabled account'}))
-    else:
-        # Return an 'invalid login' error message.
-        return HttpResponse(json.dumps({'error': ' Invalid login'}))
+            # Return an 'invalid login' error message.
+            return HttpResponse(json.dumps({'error': ' Invalid login'}))
+    else:   # request.method == 'GET'
+        # Check if the user is logged in.
+        if request.user.is_authenticated():
+            return HttpResponse(json.dumps({'id': request.session.session_key, 'longname': request.user.get_full_name() } ))
+        else:
+            # Return a 'not logged in' warning message.
+            return HttpResponse(json.dumps({'warning': ' Not logged in'}))
 
 
 def logout_user(request):

@@ -6,6 +6,7 @@ User Documentation
 
    introduction
    screenshots
+   data_views
    tracing_neurons
    tools
    othertools

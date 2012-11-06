@@ -1,0 +1,52 @@
+# Absolute path to the root folder of your CATMAID fork without trailing slash
+# e.g. /home/alice/dev/CATMAID
+
+abs_catmaid_path = ''
+
+# Absolute path to the site-packages folder of your virtual Python environment without trailing slash
+# e.g. /home/alice/dev/CATMAID/django/env/lib/PYTHON_VERSION/site-packages
+
+abs_virtualenv_python_library_path = ''
+
+# CATMAID database configuration
+catmaid_database_name = ''
+catmaid_database_username = ''
+catmaid_database_password = ''
+
+# Make this unique, and don't share it with anybody.
+# (You can generate a key with:
+# >>> from random import choice
+# >>> ''.join([choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)])
+# '@er^vm3$w#9n$)z3avny*hh+l^#ezv+sx*(72qwp0c%%cg1$i+'
+
+catmaid_secret_key = ''
+
+# Define a temporary folder. This is e.g. used to store cropped
+# microstacks for two weeks. Make sure that the folder is writable
+# by the user running the webserver and Celery.
+
+catmaid_tmp_path = ''
+
+
+# Local time zone for this installation. Choices can be found here:
+# http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
+# although not all choices may be available on all operating systems.
+# If running in a Windows environment this must be set to the same as your
+# system time zone.
+# e.g.: Europe/Zurich
+
+catmaid_timezone = ''
+
+
+# Writable, subdirectory of the django/static folder to store automatically generated
+# files that are publicly visible, e.g. used by by the NeuroHDF # export script.
+# e.g. neurohdf
+# The writable folder then must be /home/alice/dev/CATMAID/django/static/neurohdf
+
+catmaid_writable_subdir = ''
+
+
+# The domain name (server name) which hosts the CATMAID installation
+# e.g.: localhost
+
+catmaid_servername = ''

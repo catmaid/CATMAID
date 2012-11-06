@@ -8,9 +8,9 @@ import djcelery
 DATABASES = {
     'default': {
         'ENGINE': 'custom_postgresql_psycopg2', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'catmaid_database_name',      # Or path to database file if using sqlite3.
-        'USER': 'catmaid_user',               # Not used with sqlite3.
-        'PASSWORD': 'catmaid_user_password',  # Not used with sqlite3.
+        'NAME': 'CATMAID_DATABASE_NAME',      # Or path to database file if using sqlite3.
+        'USER': 'CATMAID_DATABASE_USERNAME',  # Not used with sqlite3.
+        'PASSWORD': 'CATMAID_DATABASE_PASSWORD',  # Not used with sqlite3.
         'HOST': '',                           # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '',                           # Set to empty string for default. Not used with sqlite3.
     }
@@ -22,19 +22,19 @@ DATABASES = {
 # >>> ''.join([choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)])
 # '@er^vm3$w#9n$)z3avny*hh+l^#ezv+sx*(72qwp0c%%cg1$i+'
 # ... which is how "django-admin startproject" does it.)
-SECRET_KEY = ''
+SECRET_KEY = 'CATMAID_SECRET_KEY'
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    '/home/$USERNAME/$CATMAID_PATH/django/templates'
+    'CATMAIDPATH/django/templates'
 )
 
 # Define a temporary folder. This is e.g. used to store cropped
 # microstacks for two weeks. Make sure that the folder is writable
 # by the user running the webserver and Celery.
-TMP_DIR = '/home/$USERNAME/$CATMAID_PATH/tmp'
+TMP_DIR = 'CATMAID_TMP_PATH'
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -44,7 +44,7 @@ TEMPLATE_DEBUG = DEBUG
 # although not all choices may be available on all operating systems.
 # If running in a Windows environment this must be set to the same as your
 # system time zone.
-TIME_ZONE = 'Europe/Zurich'
+TIME_ZONE = 'CATMAID_TIMEZONE'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
@@ -66,18 +66,18 @@ FORCE_SCRIPT_NAME = '/catmaid/dj'
 CATMAID_URL = '/'
 STATICFILES_URL = '/static/'
 
-STATICFILES_LOCAL = '/home/$USERNAME/$CATMAID_PATH/django/static/'
+STATICFILES_LOCAL = 'CATMAIDPATH/django/static/'
 # Static path to store generated NeuroHDF files (needs to be writable)
 # as subdirectory of STATICFILES_LOCAL
-STATICFILES_HDF5_SUBDIRECTORY = 'neurohdf'
+STATICFILES_HDF5_SUBDIRECTORY = 'CATMAID_WRITABLE_SUBDIR'
 
 # Local path to store HDF5 files
 # File name convention: {projectid}_{stackid}.hdf
-HDF5_STORAGE_PATH = '/home/$USERNAME/$CATMAID_PATH/django/hdf5/'
+HDF5_STORAGE_PATH = 'CATMAIDPATH/django/hdf5/'
 
 # Define the URL of your CATMAIDs Django instance as it should appear in
 # front of all Django related URLs.
-CATMAID_DJANGO_URL = 'http://$CATMAID_URL/catmaid/dj/'
+CATMAID_DJANGO_URL = 'http://CATMAID_SERVERNAME/catmaid/dj/'
 
 ## Celery configuration
 djcelery.setup_loader()
@@ -94,4 +94,4 @@ for subdirectory in ('projects', 'applications', 'lib'):
 # Serving admin static files
 # http://stackoverflow.com/questions/9959875/how-to-serve-admin-static-files-with-django-contrib-staticfiles-in-django-1-4-u
 STATIC_URL = '/static/'
-STATIC_ROOT =  '/home/$USERNAME/$CATMAID_PATH/django/static-admin'
+STATIC_ROOT =  'CATMAIDPATH/django/static-admin'

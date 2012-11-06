@@ -1,6 +1,28 @@
 Django unit tests for CATMAID
 =============================
 
+If you want to be able to run the unit tests, you will need to allow
+the catmaid database user (catmaid_user by default) to create new
+databases.
+
+Start a postgres shell with::
+
+   sudo -u postgres psql
+
+You can change the role  with::
+
+   postgres=# ALTER USER catmaid_user CREATEDB;
+   ALTER ROLE
+
+... and you should also add this line at the top of
+*/etc/postgresql/XversionX/main/pg_hba.conf* ::
+
+    local test_catmaid catmaid_user md5
+
+... and then restart PostgreSQL::
+
+    sudo /etc/init.d/postgresql restart
+
 Running tests
 -------------
 

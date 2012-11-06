@@ -4,9 +4,9 @@
 
 import os
 import sys
-sys.path.append('/home/USERNAME/CATMAID_PATH/django/lib/')
-sys.path.append('/home/USERNAME/CATMAID_PATH/django/applications/')
-sys.path.append('/home/USERNAME/CATMAID_PATH/django/projects/')
+sys.path.append('CATMAIDPATH/django/lib/')
+sys.path.append('CATMAIDPATH/django/applications/')
+sys.path.append('CATMAIDPATH/django/projects/')
 
 # ------------------------------------------------------------------------
 # This section is to make sure that the virtualenv is
@@ -14,7 +14,7 @@ sys.path.append('/home/USERNAME/CATMAID_PATH/django/projects/')
 # taken from:
 #   http://code.google.com/p/modwsgi/wiki/VirtualEnvironments
 
-ALLDIRS = ['/home/USERNAME/CATMAID_PATH/django/env/lib/PYTHON_VERSION/site-packages']
+ALLDIRS = ['PYTHONLIBPATH']
 
 import sys 
 import site 

@@ -91,8 +91,17 @@ var GraphWidget = new function()
         self.updateGraph( data );
       }
     });
-
-    
   }
 
+  this.exportGraphML = function() {
+    if (vis) {
+      console.log( vis.graphml() );
+      var d = window.open().document;
+      var pre = d.createElement("pre");
+      pre.innerHTML = vis.graphml().replace(/>/g,'&gt;').replace(/</g,'&lt;');
+      d.body.appendChild(pre);
+    } else {
+      alert("No graph present!");
+    }
+  };
 };

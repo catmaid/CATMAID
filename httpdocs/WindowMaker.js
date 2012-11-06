@@ -367,6 +367,13 @@ var WindowMaker = new function()
     add.onclick = GraphWidget.updateGraphFrom3DViewer;
     contentbutton.appendChild(add);
 
+    var exp = document.createElement('input');
+    exp.setAttribute("type", "button");
+    exp.setAttribute("id", "export_graphml");
+    exp.setAttribute("value", "Export GraphML");
+    exp.onclick = GraphWidget.exportGraphML;
+    contentbutton.appendChild(exp);
+
     content.appendChild( contentbutton );
 
     var container = createContainer("graph_widget");

@@ -164,6 +164,13 @@ var WindowMaker = new function()
     container.appendChild(rand);
 
     var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
+    rand.setAttribute("id", "toggle_connector");
+    rand.setAttribute("value", "Toggle connector");
+    rand.onclick = WebGLApp.toggleConnector;
+    container.appendChild(rand);
+
+    var rand = document.createElement('input');
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "enable_z_plane");
     rand.setAttribute("value", "Enable z-plane");
@@ -249,6 +256,7 @@ var WindowMaker = new function()
             '<th>post</th>' +
             '<th>action</th>' +
             '<th>name</th>' +
+            '<th>property</th>' +
           '</tr>' +
         '</thead>' +
         '<tbody>' +

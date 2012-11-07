@@ -1361,7 +1361,7 @@ VALUES ( 'Project list view', 'project_list_data_view', 'A simple adjustable lis
 INSERT INTO data_view_type
 (title, code_type, comment)
 VALUES ( 'Tabular project view', 'project_table_data_view', 'A simple table of all projects and their stacks. This view is rendered server side and supports the display of sample images instead of stack names. The following options are available: \"sample_images\": [true|false], \"sample_slice\": [slice number|\"first\"|\"center\"|\"last\"], \"sort\": [true|false]. By default projects are sorted and displayed without images. A valid configuration could look like: {\"sample_images\":true,\"sample_slice\":\"center\"}' );
-"
+"   
 ),
 
     '2012-11-05T16:11:11' => new Migration(
@@ -1374,6 +1374,13 @@ INSERT INTO data_view
 (title, data_view_type_id, config, is_default, position, comment)
 VALUES ('Project table with images', (SELECT id FROM data_view_type dvt WHERE dvt.code_type='project_table_data_view'), '{\"sample_images\":true}', true, 1, '');
 "
+),
+
+	'2012-11-06T22:25:29' => new Migration(
+		'Add index for relation_id column in cici table',
+		'
+CREATE INDEX relation_id_cici_index ON class_instance_class_instance USING btree (relation_id);
+'
 ),
 
 		'2012-11-06T22:24:00' => new Migration(

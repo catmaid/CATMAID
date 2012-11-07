@@ -58,3 +58,11 @@ def skeletonlist_subgraph(request, project_id=None):
     }
 
     return HttpResponse(json.dumps(data, sort_keys=True, indent=4), mimetype='text/json')
+
+@login_required
+def all_shared_connectors(request, project_id=None):
+    skeletonlist = request.POST.getlist('skeletonlist[]')
+    skeletonlist = map(int, skeletonlist)
+    p = get_object_or_404(Project, pk=project_id)
+    skelgroup = SkeletonGroup( skeletonlist, p.id )
+    return HttpResponse(json.dumps(dict.fromkeys(skelgroup.all_shared_connectors()) ), mimetype='text/json')

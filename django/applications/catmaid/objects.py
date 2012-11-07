@@ -80,7 +80,7 @@ class Skeleton(object):
         results = {}
 
         for tc in qs_tc:
-            if not tc.skeleton_id in results:
+            if not tc.connector_id in results:
                 results[tc.connector_id] = {
                     'presynaptic_to': [],
                     'postsynaptic_to': [],
@@ -218,11 +218,16 @@ class SkeletonGroup(object):
                     connectors[connector_id] = {
                         'pre': [], 'post': []
                     }
-                if len(v['presynaptic_to']) != 0:
-                    connectors[connector_id]['pre'].append( skeleton.skeleton_id )
 
-                if len(v['postsynaptic_to']) != 0:
-                    connectors[connector_id]['post'].append( skeleton.skeleton_id )
+                if len(v['presynaptic_to']):
+                    # add the skeleton id for each treenode that is in v['presynaptic_to']
+                    # This can duplicate skeleton id entries which is correct
+                    for e in v['presynaptic_to']:
+                        connectors[connector_id]['pre'].append( skeleton.skeleton_id )
+
+                if len(v['postsynaptic_to']):
+                    for e in v['postsynaptic_to']:
+                        connectors[connector_id]['post'].append( skeleton.skeleton_id )
 
         # merge connectors into graph
         for connector_id, v in connectors.items():
@@ -230,8 +235,17 @@ class SkeletonGroup(object):
                 for to_skeleton in v['post']:
 
                     if not graph.has_edge( from_skeleton, to_skeleton ):
-                        graph.add_edge( from_skeleton, to_skeleton, {'count': 0} )
+                        graph.add_edge( from_skeleton, to_skeleton, {'count': 0, 'connector_ids': set() } )
 
                     graph.edge[from_skeleton][to_skeleton]['count'] += 1
+                    graph.edge[from_skeleton][to_skeleton]['connector_ids'].add( connector_id )
 
         return graph
+
+    def all_shared_connectors(self):
+        """ Returns a set of connector ids that connect skeletons in the group
+        """
+        resulting_connectors=set()
+        for u,v,d in self.graph.edges_iter(data=True):
+            resulting_connectors.update(d['connector_ids'])
+        return resulting_connectors

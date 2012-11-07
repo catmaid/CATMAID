@@ -429,8 +429,10 @@ class ClassClass(models.Model):
     project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
     # Now new columns:
-    class_a = models.ForeignKey(Class, related_name='classes_a')
-    class_b = models.ForeignKey(Class, related_name='classes_b')
+    class_a = models.ForeignKey(Class, related_name='classes_a',
+                                db_column='class_a')
+    class_b = models.ForeignKey(Class, related_name='classes_b',
+                                db_column='class_b')
 
 class Message(models.Model):
     class Meta:

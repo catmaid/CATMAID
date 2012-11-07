@@ -925,6 +925,10 @@ var SkeletonAnnotations = new function()
               nn.draw();
               var active_node_z = atn.z;
               self.activateNode(nn); // will alter atn
+              console.log(jso);
+              if (jso.refresh) {
+                ObjectTree.refresh();
+              }
               // ALREADY DONE by activate node // refreshAllWidgets();
 
               // Check whether the Z coordinate of the new node is beyond one section away

@@ -5,11 +5,81 @@ from django.http import HttpResponse
 
 from django.db import connection, transaction
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ObjectDoesNotExist
 
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
+
+
+def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id):
+    relation = ClassInstanceClassInstance()
+    relation.user = user
+    relation.project_id = project_id
+    relation.relation_id = relation_id
+    relation.class_instance_a_id = instance_a_id
+    relation.class_instance_b_id = instance_b_id
+    relation.save()
+    return relation
+
+
+def _fetch_targetgroup(user, project_id, params, class_map, relation_map):
+    """ Depending upon the value of params['targetgroup'], will get or create
+    the staging folder for the user, or the Isolated synaptic terminals folder.
+    """
+    is_new = False
+    if 'Fragments' == params['targetgroup']:
+        # Get the general staging folder
+        try:
+            staging_group = ClassInstance.objects.get(project=project_id, name='Staging')
+        except ObjectDoesNotExist as e:
+            # Doesn't exist, create it:
+            staging_group = ClassInstance()
+            staging_group.user = user # TODO should be an admin, but doesn't matter
+            staging_group.project_id = project_id
+            staging_group.class_column_id = class_map['group']
+            staging_group.name = 'Staging'
+            staging_group.save()
+            root = ClassInstance.objects.get(project=project_id, class_column=class_map['root'])
+
+            _create_relation(user, project_id, relation_map['part_of'], staging_group.id, root.id)
+
+        # Get the staging folder for the user doing the request
+        name = user.first_name + ' ' + user.last_name + ' (' + user.username + ')'
+        try:
+            group = ClassInstance.objects.get(project=project_id, name=name)
+        except ObjectDoesNotExist as e:
+            # Group does not exist: create it
+            group = ClassInstance()
+            group.user = user
+            group.project_id = project_id
+            group.class_column_id = class_map['group']
+            group.name = name
+            group.save()
+            _create_relation(user, project_id, relation_map['part_of'], group.id, staging_group.id)
+            is_new = True
+
+        return group, is_new
+    elif 'Isolated synaptic terminals' == params['targetgroup']:
+        # Get the group
+        try:
+            ist_group = ClassInstance.objects.get(project=project_id, name='Isolated synaptic terminals')
+        except ObjectDoesNotExist as e:
+            # Doesn't exist, create it:
+            ist_group = ClassInstance()
+            ist_group.user = user # TODO should be an admin, but doesn't matter
+            ist_group.project_id = project_id
+            ist_group.class_column_id = class_map['group']
+            ist_group.name = 'Staging'
+            ist_group.save()
+            root = ClassInstance.objects.get(project=project_id, class_column=class_map['root'])
+
+            _create_relation(user, project_id, relation_map['part_of'], staging_group.id, root.id)
+            is_new = True
+        return ist_group, is_new
+
+
 
 @requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
@@ -26,8 +96,6 @@ def create_treenode(request, project_id=None):
 
     If a neuron id is given, use that one to create the skeleton as a model of it.
     """
-
-    #print >> sys.stderr, 'creating a new tree node '
 
     params = {}
     float_values = {
@@ -65,18 +133,8 @@ def create_treenode(request, project_id=None):
         new_treenode.save()
         return new_treenode
 
-    def create_relation(relation_id, instance_a_id, instance_b_id):
-        neuron_relation = ClassInstanceClassInstance()
-        neuron_relation.user = request.user
-        neuron_relation.project_id = project_id
-        neuron_relation.relation_id = relation_id
-        neuron_relation.class_instance_a_id = instance_a_id
-        neuron_relation.class_instance_b_id = instance_b_id
-        neuron_relation.save()
-        return neuron_relation
-
     def relate_neuron_to_skeleton(neuron, skeleton):
-        return create_relation(relation_map['model_of'], skeleton, neuron)
+        return _create_relation(request.user, project_id, relation_map['model_of'], skeleton, neuron)
 
     response_on_error = ''
     try:
@@ -115,7 +173,13 @@ def create_treenode(request, project_id=None):
                     'neuron_id': params['useneuron']}))
             else:
                 # A neuron does not exist, therefore we put the new skeleton
-                # into a new neuron, and put the new neuron into the fragments group.
+                # into a new neuron, and put the new neuron into a group.
+                # Instead of placing the new neuron in the Fragments group,
+                # place the new neuron in the staging area of the user.
+
+                # Fetch the parent group: can be the user staging group
+                # or the Isolated synaptic terminals group
+                parent_group, is_new = _fetch_targetgroup(request.user, project_id, params, class_map, relation_map)
                 response_on_error = 'Failed to insert new instance of a neuron.'
                 new_neuron = ClassInstance()
                 new_neuron.user = request.user
@@ -129,31 +193,9 @@ def create_treenode(request, project_id=None):
                 response_on_error = 'Could not relate the neuron model to the new skeleton!'
                 relate_neuron_to_skeleton(new_neuron.id, new_skeleton.id)
 
-                # Add neuron to fragments
-                try:
-                    fragment_group = ClassInstance.objects.filter(
-                            name=params['targetgroup'],
-                            project=project_id)[0]
-                except IndexError:
-                    # If the fragments group does not exist yet, must create it and add it:
-                    response_on_error = 'Failed to insert new instance of group.'
-                    fragment_group = ClassInstance()
-                    fragment_group.user = request.user
-                    fragment_group.project_id = project_id
-                    fragment_group.class_column_id = class_map['group']
-                    fragment_group.name = params['targetgroup']
-                    fragment_group.save()
-
-                    response_on_error = 'Failed to retrieve root.'
-                    root = ClassInstance.objects.filter(
-                            project=project_id,
-                            class_column=class_map['root'])[0]
-
-                    response_on_error = 'Failed to insert part_of relation between root node and fragments group.'
-                    create_relation(relation_map['part_of'], fragment_group.id, root.id)
-
+                # Add neuron to the group
                 response_on_error = 'Failed to insert part_of relation between neuron id and fragments group.'
-                create_relation(relation_map['part_of'], new_neuron.id, fragment_group.id)
+                _create_relation(request.user, project_id, relation_map['part_of'], new_neuron.id, parent_group.id)
 
                 response_on_error = 'Failed to insert instance of treenode.'
                 new_treenode = insert_new_treenode(None, new_skeleton)
@@ -164,8 +206,7 @@ def create_treenode(request, project_id=None):
                 return HttpResponse(json.dumps({
                     'treenode_id': new_treenode.id,
                     'skeleton_id': new_skeleton.id,
-                    'neuron_id': new_neuron.id,
-                    'fragmentgroup_id': fragment_group.id
+                    'refresh': is_new
                     }))
 
     except Exception as e:

@@ -9,7 +9,7 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
 
-
+from guardian.shortcuts import get_objects_for_user
 
 def projects(request):
     # This is somewhat ridiculous - four queries where one could be
@@ -40,6 +40,14 @@ def projects(request):
     # Find all the projects that are editable:
     catalogueable_projects = set(x.project.id for x in Class.objects.filter(class_name='driver_line').select_related('project'))
 
+    # Create sets of projects that are administrable and annotatable
+    # by the current user and unify them to one set
+    administrable_projects = set(get_objects_for_user(request.user, 'can_administer', Project))
+    annotatable_projects = set(get_objects_for_user(request.user, 'can_annotate', Project))
+    administrable_projects.union(annotatable_projects)
+    # Just for readabilty, have another reference to the union
+    editable_projects = administrable_projects
+
     # Create a dictionary with those results that we can output as JSON:
     result = []
     for p in projects:
@@ -52,7 +60,7 @@ def projects(request):
                 'comment': s.comment,
                 'note': '',
                 'action': 'javascript:openProjectStack(%d,%d)' % (p.id, s.id)}
-        editable = request.user.is_superuser or request.user.has_perm('can_administer', p) or request.user.has_perm('can_annotate', p)
+        editable = request.user.is_superuser or p in editable_projects
         result.append( {
             'pid': p.id,
             'title': p.title,

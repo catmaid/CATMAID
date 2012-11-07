@@ -307,45 +307,31 @@ def node_list_tuples(request, project_id=None):
           treenodes.append(row)
           treenode_ids.add(row[0])
 
-        # Ensure that the parents and children of all nodes of
-        # the selected skeleton are added
-        # (Doing it for all visible nodes in the section is far too expensive.)
+        # Ensure that the parents and children of all visible nodes are loaded
         ids = set() # ids of nodes within visible section
-        parent_ids = set() # ids of not yet fetched parents
         z1 = z0 + zres
-        skeleton_id = params['as']
+        # Collect node ids within visible section
         for row in treenodes:
-            if row[8] == skeleton_id and z0 <= row[4] < z1:
-                # Collect node ids within visible section
+            if z0 <= row[4] < z1:
                 ids.add(row[0])
-                # Check if the parent is loaded
-                if row[1] and row[1] not in treenode_ids:
-                    parent_ids.add(row[1])
         if ids: # There can only be parent_ids if there are ids
             # Select nodes whose Z is smaller than z0 or larger or equal than z1,
             # and whose parent is in ids or itself is in parent_ids
             # No need to specify the project_id
             query = '''
             SELECT
-                id,
-                parent_id,
-                (location).x AS x,
-                (location).y AS y,
-                (location).z AS z,
-                confidence,
-                user_id,
-                radius,
-                skeleton_id
-            FROM treenode
-            WHERE
-                skeleton_id = %s
-                AND ''' % skeleton_id
-            if parent_ids:
-                query += "(id IN (%s) OR parent_id IN (%s))" %\
-                    (','.join(str(x) for x in parent_ids), # tuple(missing_ids) would add numbers as 456L (notice the L), which fails in SQL
-                     ','.join(str(x) for x in ids))
-            else: # not parent_ids
-                query += "parent_id IN (%s)" % ','.join(str(x) for x in ids)
+                t2.id,
+                t2.parent_id,
+                (t2.location).x AS x,
+                (t2.location).y AS y,
+                (t2.location).z AS z,
+                t2.confidence,
+                t2.user_id,
+                t2.radius,
+                t2.skeleton_id
+            FROM treenode t1
+                 INNER JOIN treenode t2 ON (t1.id IN (%s) AND (t1.id = t2.parent_id OR t1.parent_id = t2.id))
+            ''' % ','.join(str(x) for x in ids)
 
             cursor.execute(query)
             for row in cursor.fetchall():

@@ -1383,6 +1383,13 @@ CREATE INDEX relation_id_cici_index ON class_instance_class_instance USING btree
 '
 ),
 
+		'2012-11-06T22:24:00' => new Migration(
+				'Make treenode.parent_id an index',
+				'
+CREATE INDEX treenode_parent_id_index ON treenode USING btree (parent_id);
+'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

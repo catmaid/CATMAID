@@ -1,15 +1,13 @@
-
 var camera;
-
 var WebGLApp = new function () {
 
   self = this;
   self.neurons = [];
 
-  var scene, renderer, grid_lines, scale, controls, light, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
-  var project_id, stack_id, resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false,
+  var scene, renderer, scale, controls, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
+  var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false,
       bbmesh, floormesh, black_bg = true, debugax;
-	var is_mouse_down = false;
+	var is_mouse_down = false, connector_filter = false;
 
   this.init = function( divID ) {
 
@@ -242,7 +240,6 @@ var WebGLApp = new function () {
     this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } );
 
     this.setActorVisibility = function( vis ) {
-      console.log('actor visibility');
       self.visible = vis;
       self.visiblityCompositeActor( 0, vis );
       self.visiblityCompositeActor( 1, vis );
@@ -273,7 +270,6 @@ var WebGLApp = new function () {
     }
 
     this.updateSkeletonColor = function() {
-      console.log('update color', this.actorColor );
       this.actor[connectivity_types[0]].material.color.setRGB( this.actorColor[0]/255., this.actorColor[1]/255., this.actorColor[2]/255. );
       for ( var k in this.otherSpheres ) {
         this.otherSpheres[k].material.color.setRGB( this.actorColor[0]/255., this.actorColor[1]/255., this.actorColor[2]/255. );
@@ -289,6 +285,10 @@ var WebGLApp = new function () {
 
     this.removeActorFromScene = function()
     {
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        scene.removeObject( this.actor[connectivity_types[i]] );
+      }
+      this.remove_connector_selection();
       for ( var i=0; i<connectivity_types.length; ++i ) {
         scene.removeObject( this.actor[connectivity_types[i]] );
       }
@@ -345,6 +345,79 @@ var WebGLApp = new function () {
       }
       this.labelSphere = new Object();
       this.otherSpheres = new Object();
+    }
+
+    this.remove_connector_selection = function()
+    {
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
+          if( this.connectoractor[connectivity_types[i]] )
+            scene.removeObject( this.connectoractor[connectivity_types[i]] );
+        }
+      }
+    }
+
+
+    this.create_connector_selection = function( connector_data )
+    {
+      this.connectoractor = new Object();
+      this.connectorgeometry = new Object();
+      this.connectorgeometry[connectivity_types[0]] = new THREE.Geometry();
+      this.connectorgeometry[connectivity_types[1]] = new THREE.Geometry();
+      this.connectorgeometry[connectivity_types[2]] = new THREE.Geometry();
+
+      for (var fromkey in this.original_connectivity) {
+        var to = this.original_connectivity[fromkey];
+        for (var tokey in to) {
+
+          // check if fromkey or tokey point to the correct connector type, otherwise skip
+          if( this.original_vertices[fromkey]['type'] !== 'connector' &&
+            this.original_vertices[tokey]['type'] !== 'connector') {
+            continue;
+          }
+
+          // check if connector is in selection list
+          if( !(parseInt(fromkey) in connector_data) && !(parseInt(tokey) in connector_data) ) {
+            continue;
+          }
+
+          type = connectivity_types[connectivity_types.indexOf(this.original_connectivity[fromkey][tokey]['type'])];
+
+          var fv=transform_coordinates([
+            this.original_vertices[fromkey]['x'],
+            this.original_vertices[fromkey]['y'],
+            this.original_vertices[fromkey]['z']
+          ]);
+          from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
+
+          // transform
+          from_vector.multiplyScalar( scale );
+
+          this.connectorgeometry[type].vertices.push( new THREE.Vertex( from_vector ) );
+
+          var tv=transform_coordinates([
+            this.original_vertices[tokey]['x'],
+            this.original_vertices[tokey]['y'],
+            this.original_vertices[tokey]['z']
+          ]);
+          to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
+
+          // transform
+          // to_vector.add( translate_x, translate_y, translate_z );
+          to_vector.multiplyScalar( scale );
+
+          this.connectorgeometry[type].vertices.push( new THREE.Vertex( to_vector ) );
+
+        }
+      }
+
+    for ( var i=0; i<connectivity_types.length; ++i ) {
+      if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
+        this.connectoractor[connectivity_types[i]] = new THREE.Line( this.connectorgeometry[connectivity_types[i]], this.line_material[connectivity_types[i]], THREE.LinePieces );
+        scene.add( this.connectoractor[connectivity_types[i]] );
+      }
+    }
+
     }
 
     this.reinit_actor = function ( skeleton_data )
@@ -909,6 +982,16 @@ var WebGLApp = new function () {
 
     var td = $(document.createElement("td"));
     td.append( $(document.createElement("img")).attr({
+      id:    'skeletonaction-activate-' + skeleton.id,
+      value: 'Nearest node'
+    })
+      .click( function( event )
+      {
+        TracingTool.goToNearestInNeuron( 'skeleton', skeleton.id );
+      })
+      .attr('src','widgets/themes/kde/activate.gif')
+    );
+    td.append( $(document.createElement("img")).attr({
           id:    'skeletonaction-remove-' + skeleton.id,
           value: 'Remove'
           })
@@ -919,31 +1002,28 @@ var WebGLApp = new function () {
           .attr('src','widgets/themes/kde/delete.png')
           .text('Remove!')
     );
+    rowElement.append( td );
+
+    rowElement.append(
+      $(document.createElement("td")).text( skeleton.baseName + ' (SkeletonID: ' + skeleton.id + ')' )
+    );
+
+    var td = $(document.createElement("td"));
     td.append(
-        $(document.createElement("button")).attr({
-          id:    'skeletonaction-changecolor-' + skeleton.id,
-          value: 'Change color'
-          })
-          .click( function( event )
-          {
-            $('#color-wheel-' + skeleton.id).toggle();
-          })
-          .text('Change color')
-      );
+      $(document.createElement("button")).attr({
+        id:    'skeletonaction-changecolor-' + skeleton.id,
+        value: 'Change color'
+      })
+        .click( function( event )
+        {
+          $('#color-wheel-' + skeleton.id).toggle();
+        })
+        .text('Change color')
+    );
     td.append(
       $('<div id="color-wheel-' +
         skeleton.id + '"><div class="colorwheel'+
         skeleton.id + '"></div></div>')
-    );
-    td.append( $(document.createElement("img")).attr({
-      id:    'skeletonaction-activate-' + skeleton.id,
-      value: 'Remove'
-    })
-      .click( function( event )
-      {
-          TracingTool.goToNearestInNeuron( 'skeleton', skeleton.id );
-      })
-      .attr('src','widgets/themes/kde/activate.gif')
     );
     rowElement.append( td );
 
@@ -957,10 +1037,6 @@ var WebGLApp = new function () {
     })
 
     $('#color-wheel-' + skeleton.id).hide();
-
-    rowElement.append(
-      $(document.createElement("td")).text( skeleton.baseName + ' (SkeletonID: ' + skeleton.id + ')' )
-    );
 
   }
 
@@ -1040,4 +1116,43 @@ var WebGLApp = new function () {
     });
   }
 
+  self.toggleConnector = function() {
+    if( connector_filter ) {
+      connector_filter = false;
+
+    } else {
+      connector_filter = true;
+    }
+    for( var skeleton_id in skeletons)
+    {
+      if( skeletons.hasOwnProperty(skeleton_id) ) {
+        skeletons[skeleton_id].setPreVisibility( !connector_filter );
+        skeletons[skeleton_id].setPostVisibility( !connector_filter );
+        $('#skeletonpre-' + skeleton_id).attr('checked', !connector_filter );
+        $('#skeletonpost-' + skeleton_id).attr('checked', !connector_filter );
+
+      }
+    }
+    // call magic
+    jQuery.ajax({
+      url: django_url + project.id + '/skeletongroup/all_shared_connectors',
+      data: { skeletonlist: self.getListOfSkeletonIDs(true) },
+      type: "POST",
+      dataType: "json",
+      success: function ( data ) {
+        for( var skeleton_id in skeletons)
+        {
+          if( skeletons.hasOwnProperty(skeleton_id) ) {
+            if( connector_filter ) {
+              skeletons[skeleton_id].create_connector_selection( data );
+            } else {
+              skeletons[skeleton_id].remove_connector_selection();
+            }
+
+          }
+        }
+        self.render();
+      }
+    });
+  }
 }

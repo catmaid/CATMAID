@@ -1066,7 +1066,9 @@ var SkeletonAnnotations = new function()
         var zdiff = Math.floor(parseFloat(jso[i].z_diff) / stack.resolution.z);
         var skeleton_id = null;
         if (jso[i].type === "treenode") {
-          rad = parseFloat(jso[i].radius);
+          // rad = parseFloat(jso[i].radius);
+          // ignore radius for display
+          rad = 8;
         } else {
           rad = 8; // default radius for locations
         }

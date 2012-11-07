@@ -383,7 +383,7 @@ def node_list_tuples(request, project_id=None):
                 # Collect relations between connectors and treenodes
                 # row[0]: connector id (cid above)
                 # row[6]: treenode_relation_id
-                # tow[7]: treenode_id (tnid above)
+                # row[7]: treenode_id (tnid above)
                 # row[8]: tc_confidence
                 if row[6] == relation_map['presynaptic_to']:
                     pre[cid].append((tnid, row[8]))

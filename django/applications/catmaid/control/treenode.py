@@ -431,3 +431,58 @@ def join_skeletons_interpolated(request, project_id=None):
                                     'toid': params['to_id']}))
 
 
+@requires_user_role(UserRole.Annotate)
+@transaction_reportable_commit_on_success
+def move_terminal_to_staging(request, project_id=None):
+    """ Given a skeleton ID, determine whereas it is a model_of a neuron
+    that is currently a part_of the Isolated synaptic terminals group,
+    and if so, move the neuron to the user's staging group."""
+    skeleton_id = int(request.POST['skeleton_id'])
+    if skeleton_id < 1:
+        return HttpResponse(json.dumps({"error": "Bad skeleton ID of -1"}))
+    # Find the ID of the neuron (cc2.class_instance_a) for which the skeleton is a model_of
+    # and the ID of the cici (cc2.id) that declares the neuron to be a part_of Isolated synaptic terminals.
+    # If the neuron is not a part of Isolated synaptic terminals, then it will return zero rows.
+    cursor = connection.cursor();
+    cursor.execute('''
+    SELECT
+        cc2.class_instance_a,
+        cc2.id,
+        r2.id
+    FROM
+        class_instance_class_instance cc1,
+        class_instance_class_instance cc2,
+        class_instance,
+        relation r1,
+        relation r2
+    WHERE
+          cc1.class_instance_a = %s
+      AND cc1.relation_id = r1.id
+      AND r1.relation_name = 'model_of'
+      AND cc1.class_instance_b = cc2.class_instance_a
+      AND cc2.relation_id = r2.id
+      AND r2.relation_name = 'part_of'
+      AND class_instance.id = cc2.class_instance_b
+      AND class_instance.name = 'Isolated synaptic terminals'
+    ''' % skeleton_id)
+    rows = [row for row in cursor.fetchall()]
+    if not rows:
+        return HttpResponse(json.dumps({'neuron_id': -1}))
+
+    neuron_id = rows[0][0]
+    cici_id = rows[0][1]
+    part_of_id = rows[0][2]
+
+    # Remove the neuron from the group 'Isolated synaptic terminals'
+    cursor.execute('''
+    DELETE FROM class_instance_class_instance WHERE id=%s
+    ''' % cici_id)
+
+    # Obtain the user's staging group
+    group, is_new = _fetch_targetgroup(request.user, project_id, 'Fragments', part_of_id, get_class_to_id_map(project_id))
+
+    # Add the neuron to the user's staging group
+    _create_relation(request.user, project_id, part_of_id, neuron_id, group.id)
+
+    return HttpResponse(json.dumps({'neuron_id': neuron_id}))
+

@@ -817,6 +817,8 @@ var SkeletonAnnotations = new function()
             if (e.error) {
               alert(e.error);
             } else {
+              // If it is a single node in Isolated Synaptic Terminals, move it to the user's staging group
+              maybeMoveISTNeuronToStagingGroup(atn_id);
               self.updateNodes(function () {
                 // Active the node if it hasn't been changed by a new request
                 if (atn && atn_id === atn.id) {
@@ -875,6 +877,65 @@ var SkeletonAnnotations = new function()
       return;
     }
 
+    /** Look up the neuron for the given skeleton_id
+     * and move it to the user's staging group if it belongs
+     * to the Isolated synaptic terminals group
+     *
+     */
+    var moveISTNeuronToStagingGroup = function(skeleton_id) {
+      requestQueue.register(django_url + project.id + '/skeleton/move-terminal-to-staging', 'POST', {skeleton_id: skeleton_id}, function(status, text) {
+        if (200 === status) {
+          var jso = $.parseJSON(text);
+          if (jso.error) {
+            alert(jso.error);
+          } else {
+            if (-1 === jso.neuron_id) {
+              // Neuron does not belong to Isolated synaptic terminals
+              // Do nothing
+              return false;
+            }
+            //
+            $('#growl-alert').growlAlert({
+              autoShow: true,
+              content: "Moved neuron #" + jso.neuron_id  + " with skeleton #" + skeleton_id + " to your staging area",
+              title: 'Moved neuron',
+              position: 'top-right',
+              delayTime: 2000,
+              onComplete: function() { g.remove(); } // TODO what is g?
+            });
+            return true;
+          }
+        }
+      });
+    };
+
+    /** If a neuron belongs to the Isolated Synaptic Terminals,
+     * move it to the staging group of the user.
+     * To void checking every single time, only skeletons of a single node
+     * will be moved. */
+    var maybeMoveISTNeuronToStagingGroup = function(parent_id) {
+      // Check if the neuron has to be moved from 'Isolated synaptic terminals' to the user's staging group.
+      var parent_node = nodes[parent_id];
+      if (parent_node && !parent_node.parent) {
+        // The parent node of the newly created node existed and was root.
+        // Now check if it has any child
+        var n_children = 0;
+        for (var node in nodes) {
+          if (nodes.hasOwnProperty(node)) {
+            if (parent_node.id === node.parent_id) {
+              n_children += 1;
+            }
+          }
+        }
+        if (0 === n_children) {
+          // The new node will be the only child node, and the parent was root.
+          // So ask the server to move the neuron to the user's staging area
+          // if the single-node neuron was a part_of the 'Isolated synaptic terminals' group.
+          moveISTNeuronToStagingGroup(parent_node.skeleton_id);
+        }
+      }
+    };
+
     // Create a node and activate it
     var createNode = function (parentID, skeletonID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
     {
@@ -884,8 +945,6 @@ var SkeletonAnnotations = new function()
         parentID = -1;
         skeletonID = -1;
       }
-
-      console.log("parentID, skeletonID: ", parentID, skeletonID);
 
       // check if we want the newly create node to be
       // a model of a neuron
@@ -915,6 +974,8 @@ var SkeletonAnnotations = new function()
             if (e.error) {
               alert(e.error);
             } else {
+              // If it is a single node in Isolated Synaptic Terminals, move it to the user's staging group
+              maybeMoveISTNeuronToStagingGroup(parentID);
               // add treenode to the display and update it
               var jso = $.parseJSON(text);
               nid = parseInt(jso.treenode_id);
@@ -925,10 +986,10 @@ var SkeletonAnnotations = new function()
               nn.draw();
               var active_node_z = atn.z;
               self.activateNode(nn); // will alter atn
-              console.log(jso);
               if (jso.refresh) {
                 ObjectTree.refresh();
               }
+
               // ALREADY DONE by activate node // refreshAllWidgets();
 
               // Check whether the Z coordinate of the new node is beyond one section away

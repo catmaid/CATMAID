@@ -83,6 +83,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/skeleton/join$', 'catmaid.control.join_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/join_interpolated$', 'catmaid.control.join_skeletons_interpolated'),
     (r'^(?P<project_id>\d+)/skeleton/reroot$', 'catmaid.control.reroot_skeleton'),
+    (r'^(?P<project_id>\d+)/skeleton/move-terminal-to-staging$', 'catmaid.control.move_terminal_to_staging'),
 
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', 'catmaid.control.get_all_skeletons_of_neuron'),
 

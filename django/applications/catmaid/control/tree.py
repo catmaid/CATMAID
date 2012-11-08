@@ -223,8 +223,19 @@ def tree_object_expand(request, project_id=None):
                 class_instance_a=path[-1],
                 relation=relation_map['part_of']).values(
                 'class_instance_b',
-                'class_instance_b__class_column__class_name')[0]
+                'class_instance_b__class_column__class_name',
+                'class_instance_b__name')[0]
+
             path.append(parent['class_instance_b'])
+
+            # The 'Isolated synaptic terminals' is a special group:
+            # 1. Its contained elements are never listed by default.
+            # 2. If a treenode is selected that belongs to it, the neuron of the skeleton of that node
+            #    is listed alone.
+            # Here, interrupt the chain at the group level
+            if 'Isolated synaptic terminals' == parent['class_instance_b__name']:
+                break
+
             if 'root' == parent['class_instance_b__class_column__class_name']:
                 break
 
@@ -386,91 +397,26 @@ def tree_object_list(request, project_id=None):
         if 'Isolated synaptic terminals' in parent_name:
             response_on_error = 'Failed to find children of the Isolated synaptic terminals'
             c = connection.cursor()
+
+            if not expand_request:
+                return HttpResponse(json.dumps([]))
+
+            neuron_id = expand_request[-2]
+
             c.execute('''
-                    SELECT count(tci.id) as treenodes,
-                            ci.id,
-                            ci.name,
-                            ci.class_id, cici.relation_id,
-                            cici.class_instance_b AS parent,
-                            sk.id AS skeleton_id,
-                            u.username AS username,
-                            cl.class_name
-                    FROM class_instance ci,
-                        class cl,
-                        class_instance_class_instance cici,
-                        class_instance_class_instance modof,
-                        class_instance sk,
-                        treenode_class_instance tci,
-                        "auth_user" u
-                    WHERE cici.class_instance_b = %s AND
-                        cici.class_instance_a = ci.id AND
-                        cl.id = ci.class_id AND
-                        modof.class_instance_b = cici.class_instance_a AND
-                        modof.relation_id = %s AND
-                        sk.id = modof.class_instance_a AND
-                        tci.class_instance_id = sk.id AND
-                        tci.relation_id = %s AND
-                        u.id = ci.user_id AND
-                        ci.project_id = %s
-                    GROUP BY ci.id,
-                            ci.name,
-                            ci.class_id,
-                            cici.relation_id,
-                            cici.class_instance_b,
-                            skeleton_id,
-                            u.username,
-                            cl.class_name
-                    HAVING count(tci.id) > 1
-            ''', [parent_id, relation_map['model_of'], relation_map['element_of'], project_id])
-            res = cursor_fetch_dictionary(c)
+                    SELECT class_instance.name
+                    FROM class_instance
+                    WHERE class_instance.id = %s
+                    ''' % neuron_id)
 
-            # If this list is part of an expansion caused by selecting a
-            # particular skeleton that is part of a neuron that is in the
-            # 'Isolated synaptic terminals', add that to the results.
+            row = c.fetchone()
 
-            if parent_id not in expand_request:
-                print >> sys.stderr, 'got isolated_group_index '
-                print >> sys.stderr, 'got len(expand_request) %s' % len(expand_request)
-            else:
-                isolated_group_index = expand_request.index(parent_id)
-                print >> sys.stderr, 'got isolated_group_index %s' % isolated_group_index
-                print >> sys.stderr, 'got len(expand_request) %s' % len(expand_request)
+            return HttpResponse(json.dumps([{
+                'data': {'title': row[0]},
+                'attr': {'id': 'node_%s' % neuron_id, 'rel': 'neuron'},
+                'state': 'closed'}]))
 
-                response_on_error = 'Failed to find the requested neuron.'
-                neuron_id = expand_request[isolated_group_index + 1]
 
-                c.execute('''
-                        SELECT ci.id,
-                                ci.name,
-                                ci.class_id,
-                                u.username AS username,
-                                cici.relation_id,
-                                cici.class_instance_b AS parent,
-                                cl.class_name
-                        FROM class_instance AS ci
-                        INNER JOIN class_instance_class_instance AS cici
-                            ON ci.id = cici.class_instance_a
-                        INNER JOIN class AS cl
-                            ON ci.class_id = cl.id
-                        INNER JOIN "auth_user" AS u
-                            ON ci.user_id = u.id
-                        WHERE ci.id = %s AND
-                            ci.project_id = %s AND
-                            cici.class_instance_b = %s AND
-                            (cici.relation_id = %s
-                                OR cici.relation_id = %s)
-                        ORDER BY ci.name
-                        LIMIT %s''', [
-                    neuron_id,
-                    project_id,
-                    parent_id,
-                    relation_map['model_of'],
-                    relation_map['part_of'],
-                    max_nodes])
-                extra_res = cursor_fetch_dictionary(c)
-                print >> sys.stderr, pprint.pformat(extra_res)
-
-                res += extra_res
 
         # parent_name is not 'Isolated synaptic terminals'
         response_on_error = 'Could not retrieve child nodes.'
@@ -495,12 +441,12 @@ def tree_object_list(request, project_id=None):
                         (cici.relation_id = %s
                         OR cici.relation_id = %s)
                 ORDER BY ci.name ASC
-                LIMIT %s''', [
+                LIMIT %s''', (
             project_id,
             parent_id,
             relation_map['model_of'],
             relation_map['part_of'],
-            max_nodes])
+            max_nodes))
         res = cursor_fetch_dictionary(c)
 
         output = []

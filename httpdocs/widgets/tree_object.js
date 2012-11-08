@@ -730,6 +730,7 @@ var ObjectTree = new function()
     if ($('#node_' + treenode.skeleton_id + ' a').hasClass('jstree-clicked')) {
       return;
     }
+
     // Else, highlight it:
     $.ajax({
       async: true,

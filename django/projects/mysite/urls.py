@@ -156,6 +156,16 @@ urlpatterns += patterns('',
     url(r'^admin/', include(admin.site.urls))
     )
 
+# Tagging
+urlpatterns += patterns('',
+    (r'^(?P<project_id>\d+)/tags/list$', 'catmaid.control.list_project_tags'),
+    (r'^(?P<project_id>\d+)/tags/clear$', 'catmaid.control.update_project_tags'),
+    (r'^(?P<project_id>\d+)/tags/(?P<tags>.*)/update$', 'catmaid.control.update_project_tags'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tags/list$', 'catmaid.control.list_stack_tags'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tags/clear$', 'catmaid.control.update_stack_tags'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tags/(?P<tags>.*)/update$', 'catmaid.control.update_stack_tags'),
+    )
+
 # Data views
 urlpatterns += patterns('',
     (r'^dataviews/list$', 'catmaid.control.get_available_data_views'),

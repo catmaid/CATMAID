@@ -1007,6 +1007,7 @@ var realInit = function()
 
 	document.getElementById( "toolbar_nav" ).style.display = "none";
 	document.getElementById( "toolbar_text" ).style.display = "none";
+	document.getElementById( "toolbar_tags" ).style.display = "none";
 	document.getElementById( "toolbar_crop" ).style.display = "none";
 	document.getElementById( "toolbox_project" ).style.display = "none";
 	document.getElementById( "toolbox_edit" ).style.display = "none";

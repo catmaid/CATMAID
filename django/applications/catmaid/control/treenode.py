@@ -24,12 +24,12 @@ def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id
     return relation
 
 
-def _fetch_targetgroup(user, project_id, params, class_map, relation_map):
-    """ Depending upon the value of params['targetgroup'], will get or create
+def _fetch_targetgroup(user, project_id, targetgroup, part_of_id, class_map):
+    """ Depending upon the value of targetgroup, will get or create
     the staging folder for the user, or the Isolated synaptic terminals folder.
     """
     is_new = False
-    if 'Fragments' == params['targetgroup']:
+    if 'Fragments' == targetgroup:
         # Get the general staging folder
         try:
             staging_group = ClassInstance.objects.get(project=project_id, name='Staging')
@@ -43,7 +43,7 @@ def _fetch_targetgroup(user, project_id, params, class_map, relation_map):
             staging_group.save()
             root = ClassInstance.objects.get(project=project_id, class_column=class_map['root'])
 
-            _create_relation(user, project_id, relation_map['part_of'], staging_group.id, root.id)
+            _create_relation(user, project_id, part_of_id, staging_group.id, root.id)
 
         # Get the staging folder for the user doing the request
         name = user.first_name + ' ' + user.last_name + ' (' + user.username + ')'
@@ -57,11 +57,11 @@ def _fetch_targetgroup(user, project_id, params, class_map, relation_map):
             group.class_column_id = class_map['group']
             group.name = name
             group.save()
-            _create_relation(user, project_id, relation_map['part_of'], group.id, staging_group.id)
+            _create_relation(user, project_id, part_of_id, group.id, staging_group.id)
             is_new = True
 
         return group, is_new
-    elif 'Isolated synaptic terminals' == params['targetgroup']:
+    elif 'Isolated synaptic terminals' == targetgroup:
         # Get the group
         try:
             ist_group = ClassInstance.objects.get(project=project_id, name='Isolated synaptic terminals')
@@ -75,7 +75,7 @@ def _fetch_targetgroup(user, project_id, params, class_map, relation_map):
             ist_group.save()
             root = ClassInstance.objects.get(project=project_id, class_column=class_map['root'])
 
-            _create_relation(user, project_id, relation_map['part_of'], staging_group.id, root.id)
+            _create_relation(user, project_id, part_of_id, staging_group.id, root.id)
             is_new = True
         return ist_group, is_new
 
@@ -179,7 +179,7 @@ def create_treenode(request, project_id=None):
 
                 # Fetch the parent group: can be the user staging group
                 # or the Isolated synaptic terminals group
-                parent_group, is_new = _fetch_targetgroup(request.user, project_id, params, class_map, relation_map)
+                parent_group, is_new = _fetch_targetgroup(request.user, project_id, params['targetgroup'], relation_map['part_of'], class_map)
                 response_on_error = 'Failed to insert new instance of a neuron.'
                 new_neuron = ClassInstance()
                 new_neuron.user = request.user

@@ -231,7 +231,7 @@ def create_connector(request, project_id=None):
         query_parameters[p] = request.POST.get(p, default_values[p])
 
     parsed_confidence = int(query_parameters['confidence'])
-    if (parsed_confidence not in range(1, 6)):
+    if parsed_confidence < 1 or parsed_confidence > 5:
         return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
 
     location = Double3D(x=float(query_parameters['x']), y=float(query_parameters['y']), z=float(query_parameters['z']))

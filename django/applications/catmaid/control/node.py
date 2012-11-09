@@ -13,214 +13,11 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
 
+import sys
 try:
     import networkx as nx
 except:
     pass
-
-@login_required
-@transaction_reportable_commit_on_success
-def node_list(request, project_id=None):
-    # TODO This function is used very often and Catmaid would benefit from its
-    # optimization. The following things should have big effects, ordered by
-    # expected efficienct gain VS effort to implement.
-
-    # - Stop using cursor_fetch_dictionary, dictionary creation requires an
-    # entire iteration over each query result list. Instead access each
-    # selected column directly.
-
-    # - Do not use the two separate dictionaries treenodes_by_id and
-    # connectors_by_id. Instead, just append newly queries data onto a result
-    # list. This will require manually keeping track of connectors and their
-    # places in the list when collecting their relation properties.
-
-    # - Remove a connector's top level relation properties when it is first
-    # encountered (when implementing the optimization above), instead of doing
-    # so in a separate iteration over the result list/dictionary.
-
-    params = {}
-    # z: the section index in calibrated units.
-    # width: the width of the field of view in calibrated units.
-    # height: the height of the field of view in calibrated units.
-    # zres: the resolution in the Z axis, used to determine the thickness of a section.
-    # as: the ID of the active skeleton
-    for p in ('z', 'width', 'height', 'zres', 'as'):
-        params[p] = int(request.POST.get(p, 0))
-    for p in ('top', 'left'):
-        params[p] = float(request.POST.get(p, 0))
-    params['limit'] = 2000  # Limit the number of retrieved treenodes.
-    params['zbound'] = 1.0  # The scale factor to volume bound the query in z-direction based on the z-resolution.
-    params['project_id'] = project_id
-    
-    relation_map = get_relation_to_id_map(project_id)
-    class_map = get_class_to_id_map(project_id)
-
-    if 'skeleton' not in class_map:
-        raise CatmaidException('Can not find "skeleton" class for this project')
-
-    for relation in ['presynaptic_to', 'postsynaptic_to', 'model_of']:
-        if relation not in relation_map:
-            raise CatmaidException('Can not find "%s" relation for this project' % relation)
-
-    response_on_error = ''
-    try:
-        c = connection.cursor()
-        # Fetch treenodes which are in the bounding box:
-        response_on_error = 'Failed to query treenodes'
-        c.execute('''
-        SELECT treenode.id AS id,
-            treenode.parent_id AS parentid,
-            (treenode.location).x AS x,
-            (treenode.location).y AS y,
-            (treenode.location).z AS z,
-            treenode.confidence AS confidence,
-            treenode.user_id AS user_id,
-            treenode.radius AS radius,
-            ((treenode.location).z - %(z)s) AS z_diff,
-            skeleton_id,
-            'treenode' AS type
-        FROM treenode
-        WHERE
-            treenode.project_id = %(project_id)s
-            AND (treenode.location).x >= %(left)s
-            AND (treenode.location).x <= (%(left)s + %(width)s)
-            AND (treenode.location).y >= %(top)s
-            AND (treenode.location).y <= (%(top)s + %(height)s)
-            AND (treenode.location).z >= (%(z)s - %(zbound)s * %(zres)s)
-            AND (treenode.location).z <= (%(z)s + %(zbound)s * %(zres)s)
-        LIMIT %(limit)s
-        ''', params)
-
-        treenodes_by_id = {}
-        for tn in cursor_fetch_dictionary(c):
-            treenodes_by_id[tn['id']] = tn
-
-        # Now, if an ID for the active skeleton was supplied, make sure
-        # that all treenodes for that skeleton are added:
-        if 0 != params['as']:
-            response_on_error = "Failed to query active skeleton's (id %s) treenodes" % params['as']
-            c.execute('''
-            SELECT treenode.id AS id,
-                treenode.parent_id AS parentid,
-                (treenode.location).x AS x,
-                (treenode.location).y AS y,
-                (treenode.location).z AS z,
-                treenode.confidence AS confidence,
-                treenode.user_id AS user_id,
-                treenode.radius AS radius,
-                ((treenode.location).z - %(z)s) AS z_diff,
-                skeleton_id,
-                'treenode' AS type
-            FROM treenode
-            WHERE
-                skeleton_id = %(as)s
-            ''', params)
-            active_skeleton_treenodes = cursor_fetch_dictionary(c)
-
-            for tn in active_skeleton_treenodes:
-                treenodes_by_id[tn['id']] = tn
-
-        params['zbound'] = 4.1
-        # Retrieve connectors that are synapses - do a LEFT OUTER JOIN with
-        # the treenode_connector table, so that we get entries even if the
-        # connector is not connected to any treenodes
-        response_on_error = 'Failed to query connector locations.'
-        c.execute('''
-        SELECT connector.id AS id,
-            (connector.location).x AS x,
-            (connector.location).y AS y,
-            (connector.location).z AS z,
-            connector.confidence AS confidence,
-            connector.user_id AS user_id,
-            ((connector.location).z - %(z)s) AS z_diff,
-            treenode_connector.relation_id AS treenode_relation_id,
-            treenode_connector.treenode_id AS tnid,
-            treenode_connector.confidence AS tc_confidence,
-            'connector' AS type
-        FROM connector LEFT OUTER JOIN treenode_connector
-            ON treenode_connector.connector_id = connector.id
-        WHERE connector.project_id = %(project_id)s AND
-            (connector.location).x >= %(left)s AND
-            (connector.location).x <= (%(left)s + %(width)s) AND
-            (connector.location).y >= %(top)s AND
-            (connector.location).y <= (%(top)s + %(height)s) AND
-            (connector.location).z >= (%(z)s - %(zbound)s * %(zres)s) AND
-            (connector.location).z <= (%(z)s + %(zbound)s * %(zres)s)
-        ORDER BY id, z_diff LIMIT %(limit)s
-        ''', params)
-        connector_relations = cursor_fetch_dictionary(c)
-
-        # Check for any treenodes that those connectors are linked to that
-        # weren't either in the active skeleton or in the bounding box.
-        # This is so that we can draw arrows from any displayed connector
-        # to all of its connected treenodes, even if one is several slices
-        # below.
-
-        missing_treenode_ids = set()
-        for cn in connector_relations:
-            if cn['tnid'] is not None and cn['tnid'] not in treenodes_by_id:
-                missing_treenode_ids.add(cn['tnid'])
-
-        if len(missing_treenode_ids) > 0:
-            params_z = float(params['z'])
-            response_on_error = 'Failed to query treenodes from connectors'
-            tnds = Treenode.objects.filter(
-                id__in = missing_treenode_ids
-            ).select_related('parent')
-            for tn in tnds:
-                treenodes_by_id[tn.id] = {
-                    'id': tn.id,
-                    'parentid': tn.parent_id,
-                    'x': tn.location.x,
-                    'y': tn.location.y,
-                    'z': tn.location.z,
-                    'confidence': tn.confidence,
-                    'radius': tn.radius,
-                    'z_diff': tn.location.z - params_z,
-                    'skeleton_id': tn.skeleton_id,
-                    'type': 'treenode'
-                }
-
-        # For each connector, collect its relation properties.
-        connectors_by_id = {}
-        for cn in connector_relations:
-            cn_id = 'con_%s' % cn['id']
-
-            # Enter a connector only once, and update the existing entry when
-            # we encounter new connector entries with the same id (but other
-            # relations) so that all relations are collected in one entry.
-            if cn_id not in connectors_by_id:
-                connectors_by_id[cn_id] = cn
-
-            cn_entry = connectors_by_id[cn_id]
-
-            if cn['tnid'] is not None:  # We have a relationship to add to the connector.
-                tnid = cn['tnid']
-                if cn['treenode_relation_id'] == relation_map['presynaptic_to']:
-                    relationship = 'pre'
-                else:
-                    relationship = 'post'
-                tc_confidence = cn['tc_confidence']
-
-                # Ensure there is an array to hold relationships of this type.
-                if relationship not in cn_entry:
-                    cn_entry[relationship] = []
-
-                cn_entry[relationship].append({
-                    'tnid': tnid,
-                    'confidence': tc_confidence})
-
-        # Clean out connector relation info from the top level of each
-        # connector, as it has been added to relationship arrays at this point.
-        for cn in connectors_by_id.values():
-            for key in ('tnid', 'treenode_relation_id', 'tc_confidence'):
-                if key in cn:
-                    del(cn[key])
-
-        return HttpResponse(json.dumps(treenodes_by_id.values() + connectors_by_id.values()))
-
-    except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
 
 
 @login_required
@@ -325,6 +122,11 @@ def node_list_tuples(request, project_id=None):
           if t2id not in treenode_ids:
               treenode_ids.add(t2id)
               treenodes.append(row[9:])
+
+        if len(treenodes) >= params['limit']:
+            print >> sys.stderr, "LIMIT of %s nodes reached! Retrieved: %s nodes" % (params['limit'], len(treenodes))
+        else:
+            print >> sys.stderr, "Retrieved %s nodes" % len(treenodes)
 
         # Retrieve connectors that are synapses - do a LEFT OUTER JOIN with
         # the treenode_connector table, so that we get entries even if the

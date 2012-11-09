@@ -317,7 +317,7 @@ var SkeletonAnnotations = new function()
       self.recolorAllNodes();
       // if displayed in 3d viewer, update position
       if( $( "#view_in_3d_webgl_widget").length ) {
-        if( $('#enable_active_node').attr('checked') != undefined ) {
+        if( $('#enable_active_node').attr('checked') !== undefined ) {
           WebGLApp.updateActiveNode();
         }
       }
@@ -895,6 +895,7 @@ var SkeletonAnnotations = new function()
               return false;
             }
             //
+            ObjectTree.refresh();
             $('#growl-alert').growlAlert({
               autoShow: true,
               content: "Moved neuron #" + jso.neuron_id  + " with skeleton #" + skeleton_id + " to your staging area",
@@ -986,9 +987,6 @@ var SkeletonAnnotations = new function()
               nn.draw();
               var active_node_z = atn.z;
               self.activateNode(nn); // will alter atn
-              if (jso.refresh) {
-                ObjectTree.refresh();
-              }
 
               // ALREADY DONE by activate node // refreshAllWidgets();
 

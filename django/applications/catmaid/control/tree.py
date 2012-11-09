@@ -339,7 +339,7 @@ def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None)
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@transaction_reportable_commit_on_success
+@report_error
 def tree_object_list(request, project_id=None):
     parent_id = int(request.GET.get('parentid', 0))
     parent_name = request.GET.get('parentname', '')
@@ -364,13 +364,13 @@ def tree_object_list(request, project_id=None):
 
     response_on_error = ''
     try:
-        if parent_id == 0:
+        if 0 == parent_id:
             response_on_error = 'Could not select the id of the root node.'
             root_node_q = ClassInstance.objects.filter(
                 project=project_id,
                 class_column=class_map['root'])
 
-            if root_node_q.count() == 0:
+            if 0 == root_node_q.count():
                 root_id = 0
                 root_name = 'noname'
             else:

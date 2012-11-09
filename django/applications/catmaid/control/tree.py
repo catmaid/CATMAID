@@ -21,22 +21,14 @@ from catmaid.transaction import *
 @transaction_reportable_commit_on_success
 def instance_operation(request, project_id=None):
     params = {}
-    default_values = {
-            'operation': 0,
-            'title': 0,
-            'id': 0,
-            'src': 0,
-            'ref': 0,
-            'rel': 0,
-            'classname': 0,
-            'relationname': 0,
-            'objname': 0,
-            'parentid': 0,
-            'targetname': 0,
-            'relationnr': 0}
-    for p in default_values.keys():
-        params[p] = request.POST.get(p, default_values[p])
-
+    int_keys = ('id', 'src', 'ref', 'parentid', 'relationnr')
+    str_keys = ('title', 'operation', 'title', 'rel', 'classname', 'relationname', 'objname', 'targetname')
+    for k in int_keys:
+        params[k] = int(request.POST.get(k, 0))
+    for k in str_keys:
+        # TODO sanitize
+        params[k] = request.POST.get(k, 0)
+            
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
 
@@ -76,15 +68,15 @@ def instance_operation(request, project_id=None):
 
     def remove_node():
         # Check if node is a skeleton. If so, we have to remove its treenodes as well!
-        if params['rel'] == None:
+        if 0 == params['rel']:
             CatmaidException('No relation given!')
 
-        elif params['rel'] == 'skeleton':
+        elif 'skeleton' == params['rel']:
             remove_skeletons([params['id']])
             insert_into_log(project_id, request.user.id, 'remove_skeleton', None, 'Removed skeleton with ID %s and name %s' % (params['id'], params['title']))
             return HttpResponse(json.dumps({'status': 1, 'message': 'Removed skeleton successfully.'}))
 
-        elif params['rel'] == 'neuron':
+        elif 'neuron' == params['rel']:
             instance_operation.res_on_err = 'Failed to retrieve node skeleton relations.'
             skeleton_relations = ClassInstanceClassInstance.objects.filter(
                     project=project_id,
@@ -123,7 +115,7 @@ def instance_operation(request, project_id=None):
 
         # We need to connect the node to its parent, or to root if no valid parent is given.
         node_parent_id = params['parentid']
-        if params['parentid'] == 0:
+        if 0 == params['parentid']:
             # Find root element
             instance_operation.res_on_err = 'Failed to select root.'
             node_parent_id = ClassInstance.objects.filter(
@@ -145,11 +137,11 @@ def instance_operation(request, project_id=None):
         return HttpResponse(json.dumps({'class_instance_id': node.id}))
 
     def move_node():
-        if params['src'] == 0 or params['ref'] == 0:
+        if 0 == params['src'] or 0 == params['ref']:
             CatmaidException('src (%s) or ref (%s) not set.' % (params['src'], params['ref']))
 
         relation_type = 'part_of'
-        if params['classname'] == 'skeleton':  # Special case for model_of relationship
+        if 'skeleton' == params['classname']:  # Special case for model_of relationship
             relation_type = 'model_of'
 
         instance_operation.res_on_err = 'Failed to update %s relation.' % relation_type
@@ -196,7 +188,7 @@ def tree_object_expand(request, project_id=None):
     if skeleton_id is None:
         raise CatmaidException('A skeleton id has not been provided!')
     else:
-        skeleton_id = int(skeleton_id)
+        skeleton_id = int(skeleton_id) # sanitize by casting to int
 
     relation_map = get_relation_to_id_map(project_id)
 
@@ -246,12 +238,12 @@ def tree_object_expand(request, project_id=None):
         raise CatmaidException(response_on_error + ':' + str(e))
 
 @login_required
-@transaction_reportable_commit_on_success
+@report_error
 def objecttree_get_all_skeletons(request, project_id=None, node_id=None):
     """ Retrieve all skeleton ids for a given node in the object tree. """
     g = get_annotation_graph( project_id )
     potential_skeletons = nx.bfs_tree(g, int(node_id)).nodes()
-    result = (nid for nid in potential_skeletons if 'skeleton' == g.node[nid]['class'])
+    result = tuple(nid for nid in potential_skeletons if 'skeleton' == g.node[nid]['class'])
     json_return = json.dumps({'skeletons': result}, sort_keys=True, indent=4)
     return HttpResponse(json_return, mimetype='text/json')
 
@@ -268,7 +260,7 @@ def _collect_neuron_ids(node_id, node_type=None):
         FROM class, class_instance
         WHERE class.id = class_instance.class_id
           AND class_instance.id = %s
-        ''' % node_id)
+        ''', [node_id])
         row = cursor.fetchone()
         if row:
             node_type = row[0]
@@ -299,7 +291,7 @@ def _collect_neuron_ids(node_id, node_type=None):
             AND class_instance_class_instance.class_instance_b = %s
             AND class_instance_class_instance.class_instance_a = class_instance.id
             AND class_instance.class_id = class.id
-        ''' % nid)
+        ''', [nid])
         for row in cursor.fetchall():
             # row[0] is the class_instance.id that is part_of nid
             # row[1] is the class.class_name
@@ -317,7 +309,7 @@ def collect_neuron_ids(request, project_id=None, node_id=None, node_type=None):
     """ Retrieve all neuron IDs under a given group or neuron node of the Object Tree,
     recursively."""
     try:
-        return HttpResponse(json.dumps(list(str(x) for x in _collect_neuron_ids(node_id, node_type))))
+        return HttpResponse(json.dumps(_collect_neuron_ids(node_id, node_type)))
     except Exception as e:
         raise CatmaidException('Failed to obtain a list of neuron IDs:' + str(e))
 
@@ -339,10 +331,10 @@ def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None)
             WHERE relation.relation_name = 'model_of'
               AND class_instance_class_instance.relation_id = relation.id
               AND class_instance_class_instance.class_instance_b IN (%s)
-            ''' % ','.join(str(x) for x in neuron_ids))
-            skeleton_ids = [row[0] for row in cursor.fetchall()]
+            ''', [','.join(str(x) for x in neuron_ids)])
+            skeleton_ids = tuple(row[0] for row in cursor.fetchall())
         else:
-            skeleton_ids = []
+            skeleton_ids = tuple()
 
         return HttpResponse(json.dumps(skeleton_ids))
     except Exception as e:
@@ -356,9 +348,10 @@ def tree_object_list(request, project_id=None):
     parent_name = request.GET.get('parentname', '')
     expand_request = request.GET.get('expandtarget', None)
     if expand_request is None:
-        expand_request = []
+        expand_request = tuple()
     else:
-        expand_request = expand_request.split(',')
+        # Parse to int to sanitize
+        expand_request = tuple(int(x) for x in expand_request.split(','))
 
     max_nodes = 5000  # Limit number of nodes retrievable.
 
@@ -407,7 +400,7 @@ def tree_object_list(request, project_id=None):
                     SELECT class_instance.name
                     FROM class_instance
                     WHERE class_instance.id = %s
-                    ''' % neuron_id)
+                    ''', [neuron_id])
 
             row = c.fetchone()
 
@@ -417,18 +410,16 @@ def tree_object_list(request, project_id=None):
                 'state': 'closed'}]))
 
 
-
         # parent_name is not 'Isolated synaptic terminals'
         response_on_error = 'Could not retrieve child nodes.'
         c = connection.cursor()
+        # Must select the user as well because the user who created the skeleton may be differen
+        # than the user who puts the request for the listing in the Object Tree.
         c.execute('''
                 SELECT ci.id,
-                        ci.name,
-                        ci.class_id,
-                        "auth_user".username AS username,
-                        cici.relation_id,
-                        cici.class_instance_b AS parent,
-                        cl.class_name
+                       ci.name,
+                       "auth_user".username AS username,
+                       cl.class_name
                 FROM class_instance AS ci
                     INNER JOIN class_instance_class_instance AS cici
                     ON ci.id = cici.class_instance_a
@@ -436,35 +427,21 @@ def tree_object_list(request, project_id=None):
                     ON ci.class_id = cl.id
                     INNER JOIN "auth_user"
                     ON ci.user_id = "auth_user".id
-                WHERE ci.project_id = %s AND
-                        cici.class_instance_b = %s AND
-                        (cici.relation_id = %s
-                        OR cici.relation_id = %s)
+                WHERE cici.class_instance_b = %s
+                  AND (cici.relation_id = %s
+                       OR cici.relation_id = %s)
                 ORDER BY ci.name ASC
                 LIMIT %s''', (
-            project_id,
             parent_id,
             relation_map['model_of'],
             relation_map['part_of'],
             max_nodes))
-        res = cursor_fetch_dictionary(c)
 
-        output = []
-        for row in res:
-            formatted_row = {
-                'data': {'title': row['name']},
-                'attr': {
-                    'id': 'node_%s' % row['id'],
-                    # Replace whitespace because of tree object types.
-                    'rel': string.replace(row['class_name'], ' ', '')},
-                'state': 'closed'}
-
-            if row['class_name'] == 'skeleton':
-                formatted_row['data']['title'] += ' (%s)' % row['username']
-
-            output.append(formatted_row)
-
-        return HttpResponse(json.dumps(output))
+        return HttpResponse(json.dumps(
+                    tuple({'data': {'title': row[1] if not 'skeleton' == row[1] else '%s (%s)' % (row[1], row[2])},
+                           'attr': {'id': 'node_%s' % row[0],
+                                    'rel': string.replace(row[3], ' ', '')},
+                           'state': 'closed'} for row in c.fetchall())))
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))

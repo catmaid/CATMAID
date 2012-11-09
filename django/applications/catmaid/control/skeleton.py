@@ -175,7 +175,7 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
       AND t1.relation_id = %s
       AND t1.connector_id = t2.connector_id
       AND t2.relation_id = %s
-    ''' % (skeleton_id, relation_id_1, relation_id_2))
+    ''', (skeleton_id, relation_id_1, relation_id_2))
     repeated_skids = [row[0] for row in cursor.fetchall()]
 
     if not repeated_skids:
@@ -199,7 +199,7 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
     FROM treenode
     WHERE skeleton_id IN (%s)
     GROUP BY skeleton_id
-    ''' % skids_string)
+    ''' % skids_string) # no need to sanitize
     for row in cursor.fetchall():
         partners[row[0]]['node_count'] = row[1]
 
@@ -210,7 +210,7 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
     WHERE skeleton_id IN (%s)
       AND reviewer_id=-1
     GROUP BY skeleton_id
-    ''' % skids_string)
+    ''' % skids_string) # no need to sanitize
     for row in cursor.fetchall():
         d = partners[row[0]]
         d['percentage_reviewed'] = int(100.0 * (1 - float(row[1]) / d['node_count']))
@@ -229,7 +229,7 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
     WHERE class_instance_class_instance.relation_id=%s
       AND class_instance_class_instance.class_instance_a IN (%s)
       AND class_instance.id=class_instance_class_instance.class_instance_b
-    ''' % (model_of_id, skids_string))
+    ''', (model_of_id, skids_string))
     for row in cursor.fetchall():
         partners[row[0]]['name'] = '%s / skeleton %s' % (row[1], row[0])
 
@@ -256,7 +256,7 @@ def skeleton_info_raw(request, project_id=None, skeleton_id=None):
     WHERE project_id=%s
       AND (relation_name='presynaptic_to'
         OR relation_name='postsynaptic_to'
-        OR relation_name='model_of')''' % project_id)
+        OR relation_name='model_of')''', [project_id])
     relation_ids = dict(row for row in cursor.fetchall())
     # Obtain partner skeletons and their info
     incoming = _connected_skeletons(skeleton_id, relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'], relation_ids['model_of'], cursor)

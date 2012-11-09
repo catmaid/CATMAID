@@ -249,6 +249,7 @@ def create_connector(request, project_id=None):
 @transaction_reportable_commit_on_success
 def delete_connector(request, project_id=None):
     connector_id = int(request.POST.get("connector_id", 0))
+    can_edit_or_fail(request.user, connector_id, 'connector')
     Connector.objects.filter(id=connector_id).delete()
     return HttpResponse(json.dumps({
         'message': 'Removed connector and class_instances',

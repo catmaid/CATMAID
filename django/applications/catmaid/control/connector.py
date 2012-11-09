@@ -246,7 +246,7 @@ def create_connector(request, project_id=None):
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction.commit_on_success
+@transaction_reportable_commit_on_success
 def delete_connector(request, project_id=None):
     connector_id = int(request.POST.get("connector_id", 0))
     Connector.objects.filter(id=connector_id).delete()

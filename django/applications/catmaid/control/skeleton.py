@@ -87,7 +87,7 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None):
     tn = Treenode.objects.get(
         project=project_id,
         parent__isnull=True,
-        treenodeclassinstance__class_instance__id=skeleton_id)
+        skeleton_id=skeleton_id)
     return HttpResponse(json.dumps({
         'root_id': tn.id,
         'x': tn.location.x,

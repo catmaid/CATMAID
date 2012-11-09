@@ -92,13 +92,12 @@ def list_treenode_table(request, project_id=None):
             sorting_cols = map(lambda i: fields[i], sorting_index)
 
         response_on_error = 'Could not get the list of treenodes.'
-        t = TreenodeClassInstance.objects.filter(
-            project=project_id,
-            class_instance__in=skeleton_ids).extra(
-            tables=['auth_user', 'treenode'],
+        t = Treenode.objects.filter(
+            project = project_id,
+            skeleton_id__in = skeleton_ids).extra(
+            tables=['auth_user'],
             where=[
-                '"treenode_class_instance"."treenode_id" = "treenode"."id"',
-                '"treenode_class_instance"."user_id" = "auth_user"."id"'],
+                '"treenode"."user_id" = "auth_user"."id"'],
             select={
                 'tid': '"treenode"."id"',
                 'radius': '"treenode"."radius"',
@@ -166,7 +165,7 @@ def list_treenode_table(request, project_id=None):
         response_on_error = 'Could not retrieve treenode parents.'
         child_count_query = Treenode.objects.filter(
             project=project_id,
-            treenodeclassinstance__class_instance__in=skeleton_ids).annotate(
+            skeleton_id__in=skeleton_ids).annotate(
             child_count=Count('children'))
         child_count = {}
         for treenode in child_count_query:

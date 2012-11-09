@@ -127,7 +127,7 @@ def get_objects_and_perms_for_user(user, codenames, klass, use_groups=True, any_
     # of a model.
     if user.is_superuser:
         # Get all permissions for the model
-        perms = get_perms_for_model(klaas)
+        perms = get_perms_for_model(klass)
         permNames = set(perm.codename for perm in perms)
         pk_dict = {}
         for p in queryset:

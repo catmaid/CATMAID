@@ -467,7 +467,7 @@ def _skeleton_as_graph(skeleton_id):
     cursor.execute('''
         SELECT id, parent_id
         FROM treenode
-        WHERE skeleton_id=%s''' % skeleton_id)
+        WHERE skeleton_id=%s''', [skeleton_id])
     # Create a directed graph of the skeleton
     graph = nx.DiGraph()
     for row in cursor.fetchall():
@@ -488,13 +488,13 @@ def _fetch_location(treenode_id):
           (location).y AS y,
           (location).z AS z
         FROM treenode
-        WHERE id=%s''' % treenode_id)
+        WHERE id=%s''', [treenode_id])
     return cursor.fetchone()
 
 @login_required
 def get_location(request, project_id=None):
     try:
-        tnid = request.POST['tnid']
+        tnid = int(request.POST['tnid'])
         return HttpResponse(json.dumps(_fetch_location(tnid)))
     except Exception as e:
         raise CatmaidException('Could not obtain the location of node with id #%s' % tnid)
@@ -503,7 +503,7 @@ def get_location(request, project_id=None):
 def find_previous_branchnode_or_root(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])
-        graph = _skeleton_as_graph(request.POST['skid'])
+        graph = _skeleton_as_graph(int(request.POST['skid']))
         # Travel upstream until finding a parent node with more than one child 
         # or reaching the root node
         while True:

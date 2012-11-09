@@ -329,7 +329,7 @@ def delete_treenode(request, project_id=None):
             # This treenode is root.
 
             response_on_error = 'Could not retrieve children'
-            cursor.execute("SELECT count(id) FROM treenode WHERE parent_id=%s" % treenode_id)
+            cursor.execute("SELECT count(id) FROM treenode WHERE parent_id=%s", [treenode_id])
             n_children = cursor.fetchone()[0]
             if n_children > 0:
                 # TODO yes you can, the new root is the first of the children, and other children become independent skeletons
@@ -338,17 +338,17 @@ def delete_treenode(request, project_id=None):
             # Remove original skeleton.
             response_on_error = 'Could not delete skeleton.'
             cursor = connection.cursor()
-            cursor.execute("DELETE FROM class_instance WHERE id=%s" % skeleton_id)
+            cursor.execute("DELETE FROM class_instance WHERE id=%s", [skeleton_id])
 
         else:
             # Treenode is not root, it has a parent and children.
             # Reconnect all the children to the parent.
             response_on_error = 'Could not update parent id of children nodes'
-            cursor.execute("UPDATE treenode SET parent_id=%s WHERE parent_id=%s" % (parent_id, treenode_id))
+            cursor.execute("UPDATE treenode SET parent_id=%s WHERE parent_id=%s", (parent_id, treenode_id))
 
         # Remove treenode
         response_on_error = 'Could not delete treenode.'
-        cursor.execute("DELETE FROM treenode WHERE id=%s" % treenode_id)
+        cursor.execute("DELETE FROM treenode WHERE id=%s", [treenode_id])
 
         return HttpResponse(json.dumps({'success': 'Removed treenode successfully.'}))
 
@@ -464,7 +464,7 @@ def move_terminal_to_staging(request, project_id=None):
       AND r2.relation_name = 'part_of'
       AND class_instance.id = cc2.class_instance_b
       AND class_instance.name = 'Isolated synaptic terminals'
-    ''' % skeleton_id)
+    ''', [skeleton_id])
     rows = [row for row in cursor.fetchall()]
     if not rows:
         return HttpResponse(json.dumps({'neuron_id': -1}))
@@ -476,7 +476,7 @@ def move_terminal_to_staging(request, project_id=None):
     # Remove the neuron from the group 'Isolated synaptic terminals'
     cursor.execute('''
     DELETE FROM class_instance_class_instance WHERE id=%s
-    ''' % cici_id)
+    ''', [cici_id])
 
     # Obtain the user's staging group
     group, is_new = _fetch_targetgroup(request.user, project_id, 'Fragments', part_of_id, get_class_to_id_map(project_id))

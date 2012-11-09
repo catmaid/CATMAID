@@ -11,7 +11,7 @@ from catmaid.control.common import *
 from catmaid.transaction import *
 
 @login_required
-@transaction_reportable_commit_on_success
+@report_error
 def list_connector(request, project_id=None):
     skeleton_id = request.POST.get('skeleton_id', None)
     if skeleton_id is None:

@@ -186,3 +186,24 @@ def user_project_permissions(request):
                 result[permName][project_id] = permName in userPerms
 
     return HttpResponse(json.dumps(result))
+
+
+def can_edit_or_fail(user, ob_id, table_name):
+    """ Returns true if the user owns the object or if the user is a superuser.
+    Raises an Exception if the user cannot edit the object
+    or if the object does not exist."""
+    # Sanitize arguments -- can't give them to django to sanitize,
+    # for django will quote the table name
+    ob_id = int(ob_id)
+    if not re.match('^[a-z_]+$', table_name):
+        raise Exception('Invalid table name: %s' % table_name)
+
+    cursor = connection.cursor()
+    cursor.execute("SELECT user_id FROM %s WHERE id=%s" % (table_name, ob_id))
+    rows = cursor.fetchall()
+    if rows:
+        if rows[0] == user.id or user.is_superuser:
+            return True
+        raise Exception('User %s cannot edit object #%s from table %s' % (user.username, ob_id, table_name))
+    raise Exception('Object #%s not found in table %s' % (ob_id, table_name))
+

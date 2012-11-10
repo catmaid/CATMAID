@@ -371,10 +371,12 @@ def node_update(request, project_id=None):
 
         try:
             if node['type'] == 'treenode':
+                can_edit_or_fail(request.user, node['node_id'], 'treenode')
                 Treenode.objects.filter(id=node['node_id']).update(
                     user=request.user,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
             elif node['type'] == 'connector':
+                can_edit_or_fail(request.user, node['node_id'], 'treenode')
                 Location.objects.filter(id=node['node_id']).update(
                     user=request.user,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
@@ -382,7 +384,7 @@ def node_update(request, project_id=None):
                 raise CatmaidException('Unknown node type: %s' % node['type'])
         except:
             raise CatmaidException('Failed to update treenode: %s' % node['node_id'])
-    
+
     return HttpResponse(json.dumps({'updated': len(nodes)}))
 
 

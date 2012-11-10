@@ -202,8 +202,30 @@ def can_edit_or_fail(user, ob_id, table_name):
     cursor.execute("SELECT user_id FROM %s WHERE id=%s" % (table_name, ob_id))
     rows = cursor.fetchall()
     if rows:
-        if rows[0] == user.id or user.is_superuser:
+        if rows[0][0] == user.id or user.is_superuser:
             return True
-        raise Exception('User %s cannot edit object #%s from table %s' % (user.username, ob_id, table_name))
+        raise Exception('User %s with id #%s cannot edit object #%s (from user #%s) from table %s' % (user.username, user.id, ob_id, rows[0][0], table_name))
     raise Exception('Object #%s not found in table %s' % (ob_id, table_name))
+
+def can_edit_all_or_fail(user, ob_ids, table_name):
+    """ Returns true if the user owns all the objects or if the user is a superuser.
+    Raises an Exception if the user cannot edit the object
+    or if the object does not exist."""
+    # Sanitize arguments -- can't give them to django to sanitize,
+    # for django will quote the table name
+    ob_ids = set(ob_ids)
+    str_ob_ids = ','.join(str(int(x)) for x in ob_ids)
+    if not re.match('^[a-z_]+$', table_name):
+        raise Exception('Invalid table name: %s' % table_name)
+
+    cursor = connection.cursor()
+    cursor.execute("SELECT user_id, count(user_id) FROM %s WHERE id IN (%s)" % (table_name, str_ob_ids))
+    rows = cursor.fetchall()
+    if rows:
+        if rows[0] == user.id or user.is_superuser:
+            if rows[1] != len(ob_ids):
+                raise Exception('Missing %s out of %s objects to edit in table %s' % (len(ob_ids) - row[1], len(ob_ids), table_name))
+            return True
+        raise Exception('User %s cannot edit all of the %s unique objects from table %s' % (user.username, len(ob_ids), table_name))
+    raise Exception('None of the %s unique objects were found in table %s' % (len(ob_ids), table_name))
 

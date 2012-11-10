@@ -28,7 +28,7 @@ def instance_operation(request, project_id=None):
     for k in str_keys:
         # TODO sanitize
         params[k] = request.POST.get(k, 0)
-            
+ 
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
 
@@ -37,21 +37,51 @@ def instance_operation(request, project_id=None):
     instance_operation.res_on_err = ''
 
     def remove_skeletons(skeleton_id_list):
-        instance_operation.res_on_err = 'Failed to delete in treenode for skeletons #%s' % skeleton_id_list
-        Treenode.objects.filter(
-                project=project_id,
-                skeleton__in=skeleton_id_list).delete()
+        if request.user.is_superuser:
+            instance_operation.res_on_err = 'Failed to delete in treenode for skeletons #%s' % skeleton_id_list
+            Treenode.objects.filter(
+                    project=project_id,
+                    skeleton__in=skeleton_id_list).delete()
 
-        instance_operation.res_on_err = 'Failed to delete in treenode_connector for skeletons #%s' % skeleton_id_list
-        TreenodeConnector.objects.filter(
-                project=project_id,
-                skeleton__in=skeleton_id_list).delete()
+            instance_operation.res_on_err = 'Failed to delete in treenode_connector for skeletons #%s' % skeleton_id_list
+            TreenodeConnector.objects.filter(
+                    project=project_id,
+                    skeleton__in=skeleton_id_list).delete()
 
-        instance_operation.res_on_err = 'Failed to delete in class_instance for skeletons #%s' % skeleton_id_list
-        ClassInstance.objects.filter(
-                id__in=skeleton_id_list).delete()
+            instance_operation.res_on_err = 'Failed to delete in class_instance for skeletons #%s' % skeleton_id_list
+            ClassInstance.objects.filter(
+                    id__in=skeleton_id_list).delete()
+        else:
+            # Cannot delete the skeleton if at least one node does not belong to the user
+            cursor = connection.cursor()
+            for skid in skeleton_id_list:
+                cursor.execute('''
+                SELECT user_id, count(user_id) FROM treenode WHERE skeleton_id=%s GROUP BY user_id
+                ''', [skid])
+                rows = tuple(row for row in cursor.fetchall())
+                if 1 == len(rows) and rows[0][0] == request.user.id:
+                    instance_operation.res_on_err = 'Failed to delete in treenode for skeletons #%s' % skeleton_id_list
+                    Treenode.objects.filter(
+                            project=project_id,
+                            skeleton=skid).delete()
+
+                    instance_operation.res_on_err = 'Failed to delete in treenode_connector for skeletons #%s' % skeleton_id_list
+                    TreenodeConnector.objects.filter(
+                            project=project_id,
+                            skeleton=skid).delete()
+
+                    instance_operation.res_on_err = 'Failed to delete in class_instance for skeletons #%s' % skeleton_id_list
+                    ClassInstance.objects.filter(pk=skid).delete()
+                else:
+                    cursor.execute('SELECT first_name, last_name FROM "auth_user" WHERE id IN (%s)', [row[0] for row in rows if row[0] != request.user.id])
+                    users = [a[0] + ' ' + a[1] for a in cursor.fetchall()]
+                    raise Exception('Cannot delete skeleton #%s: %s of %s nodes belong to user(s) %s' % (sum(row[1] for row in rows if row[0] != request.user.id),
+              sum(row[1] for row in rows),
+              ", ".join(a[0] + ' ' + a[1] for a in cursor.fetchall())))
+
 
     def rename_node():
+        can_edit_or_fail(request.user, params['id'], 'class_instance')
         # Do not allow '|' in name because it is used as string separator in NeuroHDF export
         if '|' in params['title']:
             raise CatmaidException('Name should not contain pipe character!')
@@ -67,6 +97,8 @@ def instance_operation(request, project_id=None):
             raise CatmaidException('Could not find any node with ID %s' % params['id'])
 
     def remove_node():
+        # Can only remove the node if the user owns it or the user is a superuser
+        can_edit_or_fail(request.user, params['id'], 'class_instance')
         # Check if node is a skeleton. If so, we have to remove its treenodes as well!
         if 0 == params['rel']:
             CatmaidException('No relation given!')
@@ -102,6 +134,13 @@ def instance_operation(request, project_id=None):
                 raise CatmaidException('Could not find any node with ID %s' % params['id'])
 
     def create_node():
+        # Can only create a node if the parent node is owned by the user
+        # or the user is a superuser
+        # Given that the parentid is 0 to signal root (but root has a non-zero id),
+        # this implies that regular non-superusers cannot create nodes under root,
+        # but only in their staging area.
+        can_edit_or_fail(request.user, params['parentid'], 'class_instance')
+
         if params['classname'] not in class_map:
             raise CatmaidException('Failed to select class.')
         instance_operation.res_on_err = 'Failed to insert instance of class.'
@@ -137,8 +176,13 @@ def instance_operation(request, project_id=None):
         return HttpResponse(json.dumps({'class_instance_id': node.id}))
 
     def move_node():
+        # Can only move the node if the user owns the node and the target node,
+        # or the user is a superuser
+        can_edit_or_fail(request.user, params['src'], 'class_instance') # node to move
+        can_edit_or_fail(request.user, params['ref'], 'class_instance') # new parent node
+        #
         if 0 == params['src'] or 0 == params['ref']:
-            CatmaidException('src (%s) or ref (%s) not set.' % (params['src'], params['ref']))
+            raise CatmaidException('src (%s) or ref (%s) not set.' % (params['src'], params['ref']))
 
         relation_type = 'part_of'
         if 'skeleton' == params['classname']:  # Special case for model_of relationship

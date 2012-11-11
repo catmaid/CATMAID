@@ -51,7 +51,7 @@ def list_connector(request, project_id=None):
             SELECT
             connector.id AS connector_id,
             tn_other.user_id AS connector_user_id,
-            treenode_user.name AS connector_username,
+            treenode_user.username AS connector_username,
             (connector.location).x AS connector_x,
             (connector.location).y AS connector_y,
             (connector.location).z AS connector_z,
@@ -72,8 +72,7 @@ def list_connector(request, project_id=None):
             connector,
             "auth_user" treenode_user,
             treenode_connector tc_this,
-            treenode tn_this,
-            treenode_class_instance tci_this
+            treenode tn_this
             WHERE
             treenode_user.id = tn_other.user_id AND
             tn_other.id = tc_other.treenode_id AND
@@ -81,13 +80,11 @@ def list_connector(request, project_id=None):
             tc_other.relation_id = %s AND
             tc_this.connector_id = connector.id AND
             tn_this.id = tc_this.treenode_id AND
-            tc_this.relation_id = %s AND
-            tci_this.treenode_id = tn_this.id AND
-            tci_this.relation_id = %s AND
-            tci_this.class_instance_id = %s
+            tn_this.skeleton_id = %s AND
+            tc_this.relation_id = %s
             ORDER BY
             connector_id, other_treenode_id, this_treenode_id
-            ''',  [inverse_relation_type_id, relation_type_id, relation_map['element_of'], skeleton_id])
+            ''',  [inverse_relation_type_id, skeleton_id, relation_type_id])
 
         connectors = cursor_fetch_dictionary(cursor)
         connected_skeletons = map(lambda con: con['other_skeleton_id'], connectors)
@@ -112,7 +109,7 @@ def list_connector(request, project_id=None):
             SELECT
             connector.id AS connector_id,
             connector.user_id AS connector_user_id,
-            connector_user.name AS connector_username,
+            connector_user.username AS connector_username,
             (connector.location).x AS connector_x,
             (connector.location).y AS connector_y,
             (connector.location).z AS connector_z,
@@ -122,19 +119,16 @@ def list_connector(request, project_id=None):
             connector,
             "auth_user" connector_user,
             treenode_connector tc_this,
-            treenode tn_this,
-            treenode_class_instance tci_this
+            treenode tn_this
             WHERE
             connector_user.id = connector.user_id AND
             tc_this.connector_id = connector.id AND
             tn_this.id = tc_this.treenode_id AND
-            tc_this.relation_id = %s AND
-            tci_this.treenode_id = tn_this.id AND
-            tci_this.relation_id = %s AND
-            tci_this.class_instance_id = %s
+            tn_this.skeleton_id = %s AND
+            tc_this.relation_id = %s
             ORDER BY
             connector_id, this_treenode_id
-            ''',  [relation_type_id, relation_map['element_of'], skeleton_id])
+            ''',  [skeleton_id, relation_type_id])
         for row in cursor_fetch_dictionary(cursor):
             connector_id = row['connector_id']
             if connector_id not in connector_ids:

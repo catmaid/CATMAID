@@ -1,5 +1,4 @@
 from django.shortcuts import get_object_or_404
-from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -87,9 +86,12 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
 
     return result
 
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stack_info(request, project_id=None, stack_id=None):
     result=get_stack_info(project_id, stack_id, request.user)
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stack_models(request, project_id=None, stack_id=None):

@@ -8,7 +8,6 @@ except ImportError:
     pass
 
 from django.http import HttpResponse
-from django.contrib.auth.decorators import login_required
 
 from catmaid.control.object import get_annotation_graph
 
@@ -16,6 +15,7 @@ from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
+
 
 @requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
@@ -181,7 +181,7 @@ def instance_operation(request, project_id=None):
         raise CatmaidException(instance_operation.res_on_err + '\n' + str(e))
 
 
-@login_required
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 @report_error
 def tree_object_expand(request, project_id=None):
     skeleton_id = request.POST.get('skeleton_id', None)
@@ -237,7 +237,8 @@ def tree_object_expand(request, project_id=None):
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 @report_error
 def objecttree_get_all_skeletons(request, project_id=None, node_id=None):
     """ Retrieve all skeleton ids for a given node in the object tree. """
@@ -303,7 +304,8 @@ def _collect_neuron_ids(node_id, node_type=None):
 
     return neuron_ids
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 @report_error
 def collect_neuron_ids(request, project_id=None, node_id=None, node_type=None):
     """ Retrieve all neuron IDs under a given group or neuron node of the Object Tree,
@@ -313,7 +315,8 @@ def collect_neuron_ids(request, project_id=None, node_id=None, node_type=None):
     except Exception as e:
         raise CatmaidException('Failed to obtain a list of neuron IDs:' + str(e))
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 @report_error
 def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None):
     """ Retrieve all skeleton IDs under a given group or neuron node of the Object Tree,

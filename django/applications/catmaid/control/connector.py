@@ -3,14 +3,14 @@ from string import upper
 
 from django.http import HttpResponse
 from django.db.models import Count
-from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 @transaction_reportable_commit_on_success
 def list_connector(request, project_id=None):
     skeleton_id = request.POST.get('skeleton_id', None)

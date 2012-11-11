@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 
 from catmaid.models import *
+from catmaid.control.authentication import *
 
 try:
     import networkx as nx
@@ -29,6 +30,8 @@ def get_annotation_graph(project_id=None):
         ) # the part_of/model_of edge
     return g
 
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def convert_annotations_to_networkx(request, project_id=None):
     g = get_annotation_graph( project_id )
     data = json_graph.node_link_data(g)

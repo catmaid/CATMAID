@@ -4,7 +4,6 @@ import time
 from django.conf import settings
 from django.http import HttpResponse
 
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
@@ -305,7 +304,8 @@ def create_neurohdf_file(filename, data):
 
             metadata.create_dataset('skeleton_name', data=arr )
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def microcircuit_neurohdf(request, project_id=None):
     """ Export the complete microcircuit connectivity to NeuroHDF
     """
@@ -319,7 +319,8 @@ def microcircuit_neurohdf(request, project_id=None):
     }
     return HttpResponse(json.dumps(result), mimetype="text/plain")
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_neurohdf(request, project_id=None, skeleton_id=None):
     """ Generate the NeuroHDF on the local file system with a long hash
     that is sent back to the user and which can be used (not-logged in) to

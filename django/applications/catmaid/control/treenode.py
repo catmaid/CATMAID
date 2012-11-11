@@ -319,6 +319,9 @@ def update_treenode_table(request, project_id=None):
 @transaction_reportable_commit_on_success
 def delete_treenode(request, project_id=None):
     treenode_id = int(request.POST.get('treenode_id', -1))
+    # Raise an Exception if the user doesn't own the treenode or is not superuser
+    can_edit_or_fail(request.user, treenode_id, 'treenode')
+    #
     parent_id = int(request.POST.get('parent_id', -1))
     skeleton_id = int(request.POST.get('skeleton_id', -1))
 
@@ -334,8 +337,9 @@ def delete_treenode(request, project_id=None):
             if n_children > 0:
                 # TODO yes you can, the new root is the first of the children, and other children become independent skeletons
                 raise CatmaidException("You can't delete the root node when it has children.")
-
-            # Remove original skeleton.
+            # Remove the original skeleton.
+            # It is OK to remove it if it only had one node,
+            # even if the user does not match or the user is not superuser.
             response_on_error = 'Could not delete skeleton.'
             cursor = connection.cursor()
             cursor.execute("DELETE FROM class_instance WHERE id=%s", [skeleton_id])
@@ -349,13 +353,10 @@ def delete_treenode(request, project_id=None):
         # Remove treenode
         response_on_error = 'Could not delete treenode.'
         cursor.execute("DELETE FROM treenode WHERE id=%s", [treenode_id])
-
         return HttpResponse(json.dumps({'success': 'Removed treenode successfully.'}))
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))
-
-
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

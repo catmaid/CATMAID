@@ -11,7 +11,7 @@ from catmaid.transaction import *
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@transaction_reportable_commit_on_success
+@report_error
 def list_connector(request, project_id=None):
     skeleton_id = request.POST.get('skeleton_id', None)
     if skeleton_id is None:
@@ -225,7 +225,7 @@ def create_connector(request, project_id=None):
         query_parameters[p] = request.POST.get(p, default_values[p])
 
     parsed_confidence = int(query_parameters['confidence'])
-    if (parsed_confidence not in range(1, 6)):
+    if parsed_confidence < 1 or parsed_confidence > 5:
         return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
 
     location = Double3D(x=float(query_parameters['x']), y=float(query_parameters['y']), z=float(query_parameters['z']))
@@ -240,9 +240,10 @@ def create_connector(request, project_id=None):
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction.commit_on_success
+@transaction_reportable_commit_on_success
 def delete_connector(request, project_id=None):
     connector_id = int(request.POST.get("connector_id", 0))
+    can_edit_or_fail(request.user, connector_id, 'connector')
     Connector.objects.filter(id=connector_id).delete()
     return HttpResponse(json.dumps({
         'message': 'Removed connector and class_instances',

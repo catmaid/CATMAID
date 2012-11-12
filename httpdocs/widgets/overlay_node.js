@@ -610,7 +610,6 @@ var SkeletonElements = new function()
 
     /** Here 'this' is mc, and node is the Node instance. */
     var mc_move = function(dx, dy, x, y, e) {
-      console.log("called mc_move");
       if(e.which === 2) {
         e.stopPropagation();
         return;

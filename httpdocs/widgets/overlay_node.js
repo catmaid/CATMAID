@@ -361,7 +361,6 @@ var SkeletonElements = new function()
     requestQueue.register(django_url + project.id + '/treenode/delete', "POST", {
       pid: project.id,
       treenode_id: node.id,
-      skeleton_id: node.skeleton_id,
       parent_id: parent_id
     }, function (status, text) {
       if (status !== 200) {

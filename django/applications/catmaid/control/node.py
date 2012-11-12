@@ -321,8 +321,8 @@ def update_confidence(request, project_id=None, node_id=0):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def most_recent_treenode(request, project_id=None):
-    skeleton_id = request.POST.get('skeleton_id', -1)
-    treenode_id = request.POST.get('treenode_id', -1)
+    treenode_id = int(request.POST.get('treenode_id', -1))
+    skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
 
     try:
         tn = Treenode.objects\
@@ -332,10 +332,6 @@ def most_recent_treenode(request, project_id=None):
              .extra(select={'most_recent': 'greatest(treenode.creation_time, treenode.edition_time)'})\
              .extra(order_by=['-most_recent', '-treenode.id'])[0]
     except IndexError:
-        # TODO Not sure whether this is correct. This is the only place
-        # where the treenode_id is used. Does it really have anything
-        # to do with the query? The error message doesn't make much sense
-        # either.
         return HttpResponse(json.dumps({'error': 'No skeleton and neuron found for treenode %s' % treenode_id}))
     except Exception as e:
         return HttpResponse(json.dumps({'error': str(e)}))
@@ -374,19 +370,29 @@ def node_update(request, project_id=None):
 
         try:
             if node['type'] == 'treenode':
-                can_edit_or_fail(request.user, node['node_id'], 'treenode')
+                try:
+                    can_edit_or_fail(request.user, node['node_id'], 'treenode')
+                except ObjectDoesNotExist:
+                    # Ignore deleted objects.
+                    # This can happen because of the async between the client and the server: the client may move the node in the same mouse action that triggers the deletion of the node.
+                    continue
                 Treenode.objects.filter(id=node['node_id']).update(
                     user=request.user,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
             elif node['type'] == 'connector':
-                can_edit_or_fail(request.user, node['node_id'], 'connector')
+                try:
+                    can_edit_or_fail(request.user, node['node_id'], 'connector')
+                except ObjectDoesNotExist:
+                    # Ignore deleted objects.
+                    continue
                 Location.objects.filter(id=node['node_id']).update(
                     user=request.user,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
             else:
                 raise CatmaidException('Unknown node type: %s' % node['type'])
         except:
-            raise CatmaidException('Failed to update treenode: %s' % node['node_id'])
+            import traceback
+            raise CatmaidException('Failed to update treenode: %s' % node['node_id'] + traceback.format_exc())
 
     return HttpResponse(json.dumps({'updated': len(nodes)}))
 
@@ -492,7 +498,8 @@ def _fetch_location(treenode_id):
           id,
           (location).x AS x,
           (location).y AS y,
-          (location).z AS z
+          (location).z AS z,
+          skeleton_id
         FROM treenode
         WHERE id=%s''', [treenode_id])
     return cursor.fetchone()
@@ -511,7 +518,8 @@ def get_location(request, project_id=None):
 def find_previous_branchnode_or_root(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])
-        graph = _skeleton_as_graph(int(request.POST['skid']))
+        skid = Treenode.objects.get(pk=tnid).skeleton_id
+        graph = _skeleton_as_graph(skid)
         # Travel upstream until finding a parent node with more than one child 
         # or reaching the root node
         while True:
@@ -531,7 +539,8 @@ def find_previous_branchnode_or_root(request, project_id=None):
 def find_next_branchnode_or_end(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])
-        graph = _skeleton_as_graph(request.POST['skid'])
+        skid = Treenode.objects.get(pk=tnid).skeleton_id
+        graph = _skeleton_as_graph(skid)
         # Travel downstream until finding a child node with more than one child
         # or reaching an end node
         while True:

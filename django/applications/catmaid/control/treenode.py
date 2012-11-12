@@ -106,8 +106,7 @@ def create_treenode(request, project_id=None):
     int_values = {
             'confidence': 0,
             'useneuron': -1,
-            'parent_id': -1,
-            'skeleton_id': 0}
+            'parent_id': -1}
     string_values = {
             'targetgroup': 'none'}
     for p in float_values.keys():
@@ -121,6 +120,8 @@ def create_treenode(request, project_id=None):
     class_map = get_class_to_id_map(project_id)
 
     def insert_new_treenode(parent_id=None, skeleton=None):
+        """ If the parent_id is not None and the skeleton_id of the parent does not match with the skeleton.id, then the database will throw an error given that the skeleton_id, being defined as foreign key in the treenode table, will not meet the being-foreign requirement.
+        """
         new_treenode = Treenode()
         new_treenode.user = request.user
         new_treenode.project_id = project_id
@@ -140,11 +141,11 @@ def create_treenode(request, project_id=None):
     try:
         if int(params['parent_id']) != -1:  # A root node and parent node exist
             # Retrieve skeleton of parent
-            skeleton = ClassInstance.objects.get(pk=params['skeleton_id']) # pk must stand for "primary key"
-            response_on_error = 'Could not insert new treenode ARGH!'
+            skeleton = Treenode.objects.filter(pk=params['parent_id']).select_related()[0].skeleton
+            response_on_error = 'Could not insert new treenode!'
             new_treenode = insert_new_treenode(params['parent_id'], skeleton)
 
-            return HttpResponse(json.dumps({'treenode_id': new_treenode.id, 'skeleton_id': params['skeleton_id']}))
+            return HttpResponse(json.dumps({'treenode_id': new_treenode.id, 'skeleton_id': skeleton.id}))
 
         else:
             # No parent node: We must create a new root node, which needs a
@@ -230,15 +231,14 @@ def create_interpolated_treenode(request, project_id=None):
             'radius': 0}
     int_values = {
             'parent_id': 0,
-            'skeleton_id': 0,
             'confidence': 0}
     for p in decimal_values.keys():
         params[p] = decimal.Decimal(request.POST.get(p, decimal_values[p]))
     for p in int_values.keys():
         params[p] = int(request.POST.get(p, int_values[p]))
 
-    last_treenode_id = _create_interpolated_treenode(request, params, project_id, False)
-    return HttpResponse(json.dumps({'treenode_id': last_treenode_id, 'skeleton_id': params['skeleton_id']}))
+    last_treenode_id, skeleton_id = _create_interpolated_treenode(request, params, project_id, False)
+    return HttpResponse(json.dumps({'treenode_id': last_treenode_id, 'skeleton_id': skeleton_id}))
 
 
 def _create_interpolated_treenode(request, params, project_id, skip_last):
@@ -247,7 +247,7 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
     the join_skeletons_interpolated. """
     response_on_error = 'Could not create interpolated treenode'
     try:
-        parent_skeleton_id = int(params['skeleton_id'])
+        parent_skeleton_id = Treenode.objects.get(pk=params['parent_id']).skeleton_id
 
         steps = abs((params['z'] - params['atnz']) / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
         if steps == decimal.Decimal(0):
@@ -278,7 +278,7 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
             parent_id = new_treenode.id
 
         # parent_id contains the ID of the last added node
-        return parent_id
+        return parent_id, parent_skeleton_id
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))
@@ -323,7 +323,7 @@ def delete_treenode(request, project_id=None):
     can_edit_or_fail(request.user, treenode_id, 'treenode')
     #
     parent_id = int(request.POST.get('parent_id', -1))
-    skeleton_id = int(request.POST.get('skeleton_id', -1))
+    skeleton_id = Treenode.objects.get(pk=parent_id).skeleton_id
 
     response_on_error = ''
     try:
@@ -409,7 +409,7 @@ def join_skeletons_interpolated(request, project_id=None):
     if they are separated by more than one section in the Z axis."""
     # Parse parameters
     keysDecimal = ['atnx', 'atny', 'atnz', 'x', 'y', 'z', 'resx', 'resy', 'resz']
-    keysInt = ['from_id', 'from_skid', 'to_id', 'to_skid', 'radius', 'confidence']
+    keysInt = ['from_id', 'to_id', 'radius', 'confidence']
     params = {}
     for p in keysDecimal:
         params[p] = decimal.Decimal(request.POST.get(p, 0))
@@ -417,15 +417,15 @@ def join_skeletons_interpolated(request, project_id=None):
         params[p] = int(request.POST.get(p, 0))
     # Copy of the id for _create_interpolated_treenode
     params['parent_id'] = params['from_id']
-    params['skeleton_id'] = params['from_skid']
+    params['skeleton_id'] = Treenode.objects.get(pk=params['from_id']).skeleton_id
 
     # Create interpolate nodes skipping the last one 
-    last_treenode_id = _create_interpolated_treenode(request, params, project_id, True)
+    last_treenode_id, skeleton_id = _create_interpolated_treenode(request, params, project_id, True)
 
     # Link last_treenode_id to to_id
     # TODO this is not elegant
     from skeleton import _join_skeleton
-    _join_skeleton(last_treenode_id, params['from_skid'], params['to_id'], params['to_skid'], project_id)
+    _join_skeleton(request.user, last_treenode_id, params['to_id'], project_id)
 
     return HttpResponse(json.dumps({'message': 'success',
                                     'fromid': params['from_id'],

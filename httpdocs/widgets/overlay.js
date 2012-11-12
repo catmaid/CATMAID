@@ -639,9 +639,14 @@ var SkeletonAnnotations = new function()
     // Used to join two skeletons together
     // Permissions are checked at the server side, returning an error if not allowed.
     this.createTreenodeLink = function (fromid, toid) {
+      if (fromid === toid) return;
       if( toid in nodes ) {
         var from_skid = nodes[fromid].skeleton_id;
         var to_skid = nodes[toid].skeleton_id;
+        if (from_skid === to_skid) {
+          alert("Cannot join with a node of the same skeleton!");
+          return;
+        }
         maybeExecuteIfSkeletonHasMoreThanOneNode(
             to_skid,
             "join",
@@ -834,16 +839,14 @@ var SkeletonAnnotations = new function()
     }
 
     // Interpolate and join, both
-    var createTreenodeLinkInterpolated = function (atn_id, atn_skid, atn_x, atn_y, atn_z, nearestnode_id, nearestnode_skid, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
+    var createTreenodeLinkInterpolated = function (atn_id, atn_x, atn_y, atn_z, nearestnode_id, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
     {
       // This assumes that the parentID is not null, i.e. exists
       // Creates treenodes from atn to nearestnode_id in each z section
       requestQueue.register(django_url + project.id + '/skeleton/join_interpolated', "POST", {
         pid: project.id,
         from_id: atn_id,
-        from_skid: atn_skid,
         to_id: nearestnode_id,
-        to_skid: nearestnode_skid,
         x: phys_x,
         y: phys_y,
         z: phys_z,
@@ -938,13 +941,12 @@ var SkeletonAnnotations = new function()
     };
 
     // Create a node and activate it
-    var createNode = function (parentID, skeletonID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
+    var createNode = function (parentID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
     {
       var selneuron, useneuron;
 
       if (!parentID) {
         parentID = -1;
-        skeletonID = -1;
       }
 
       // check if we want the newly create node to be
@@ -959,7 +961,6 @@ var SkeletonAnnotations = new function()
       requestQueue.register(django_url + project.id + '/treenode/create', "POST", {
         pid: project.id,
         parent_id: parentID,
-        skeleton_id: skeletonID,
         x: phys_x,
         y: phys_y,
         z: phys_z,
@@ -1370,7 +1371,7 @@ var SkeletonAnnotations = new function()
             if (null !== atn.id) {
               statusBar.replaceLast("Created new node as child of node #" + atn.id);
             }
-            createNode(atn.id, atn.skeleton_id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+            createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
             e.stopPropagation();
             return true;
           }
@@ -1596,11 +1597,11 @@ var SkeletonAnnotations = new function()
       }
     };
 
-    this.goToPreviousBranchOrRootNode = function(treenode_id, skeleton_id) {
+    this.goToPreviousBranchOrRootNode = function(treenode_id) {
       requestQueue.register(
           django_url + project.id + "/node/previous_branch_or_root",
           "POST",
-          {tnid: treenode_id, skid: skeleton_id},
+          {tnid: treenode_id},
           function(status, text) {
             console.log("status: " + status);
             if (200 === status) {
@@ -1617,7 +1618,7 @@ var SkeletonAnnotations = new function()
                 } else {
                   stack.getProject().moveTo(json[3], json[2], json[1], undefined,
                     function() {
-                      SkeletonAnnotations.staticSelectNode(json[0], skeleton_id);
+                      SkeletonAnnotations.staticSelectNode(json[0], json[4]);
                     });
                 }
               }
@@ -1629,7 +1630,7 @@ var SkeletonAnnotations = new function()
       requestQueue.register(
           django_url + project.id + "/node/next_branch_or_end",
           "POST",
-          {tnid: treenode_id, skid: skeleton_id},
+          {tnid: treenode_id},
           function(status, text) {
             if (200 === status) {
               var json = $.parseJSON(text);
@@ -1645,7 +1646,7 @@ var SkeletonAnnotations = new function()
                 } else {
                   stack.getProject().moveTo(json[3], json[2], json[1], undefined,
                     function() {
-                      SkeletonAnnotations.staticSelectNode(json[0], skeleton_id);
+                      SkeletonAnnotations.staticSelectNode(json[0], json[4]);
                     });
                 }
               }
@@ -1810,8 +1811,7 @@ var SkeletonAnnotations = new function()
           //requestQueue.register("model/last.edited.or.added.php", "POST", {
           requestQueue.register(django_url + project.id + '/node/most_recent', "POST", {
             pid: project.id,
-            treenode_id: atn.id,
-            skeleton_id: atn.skeleton_id
+            treenode_id: atn.id
           }, function (status, text, xml) {
             var nodeToActivate, skeletonToActivate;
             if (status === 200) {
@@ -1929,7 +1929,7 @@ var SkeletonAnnotations = new function()
         // get physical coordinates for node position creation
         var phys_x = self.pix2physX(pos_x);
         var phys_y = self.pix2physY(pos_y);
-        createNode(atn.id, atn.skeleton_id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+        createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
         break;
       case "createinterpolatedtreenode":
         // Check if there is already a node under the mouse
@@ -1971,7 +1971,7 @@ var SkeletonAnnotations = new function()
                     var phys_x = self.pix2physX(pos_x);
                     var phys_y = self.pix2physY(pos_y);
                     // Ask to join the two skeletons with interpolated nodes
-                    createTreenodeLinkInterpolated(atn_id, atn_skid, atn_x, atn_y, atn_z, nearestnode_id, nearestnode_skid, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+                    createTreenodeLinkInterpolated(atn_id, atn_x, atn_y, atn_z, nearestnode_id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
                   });
               return;
             } else {

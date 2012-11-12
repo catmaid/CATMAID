@@ -40,7 +40,7 @@ var SkeletonElements = new function()
     nextNodeIndex = 0;
     nextConnectorIndex = 0;
     firstDisabledNodeIndex = -1;
-  }
+  };
 
   /** Disable all cached Node instances at or beyond the cutoff index. */
   this.disableBeyond = function(nodeCuttoff, connectorCuttoff) {
@@ -68,14 +68,15 @@ var SkeletonElements = new function()
     z, // z coordinates
     zdiff, // the different from the current slices
     confidence,
-    skeleton_id) // the id of the skeleton this node is an element of
+    skeleton_id, // the id of the skeleton this node is an element of
+    can_edit)
   {
     var node;
     if (nextNodeIndex < nodePool.length) {
       node = nodePool[nextNodeIndex];
-      reuseNode(node, id, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id);
+      reuseNode(node, id, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id, can_edit);
     } else {
-      node = new this.Node(id, paper, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id);
+      node = new this.Node(id, paper, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id, can_edit);
       nodePool.push(node);
     }
     nextNodeIndex += 1;
@@ -94,7 +95,8 @@ var SkeletonElements = new function()
     z, // z coordinates
     zdiff, // the different from the current slices
     confidence,
-    skeleton_id) // the id of the skeleton this node is an element of
+    skeleton_id, // the id of the skeleton this node is an element of
+    can_edit)
   {
     this.id = id;
     this.type = TYPE_NODE;
@@ -112,6 +114,7 @@ var SkeletonElements = new function()
     this.shouldDisplay = displayTreenode;
     this.confidence = confidence;
     this.skeleton_id = skeleton_id;
+    this.can_edit = can_edit;
     this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
     this.fillcolor = inactive_skeleton_color;
     this.c = null; // The Raphael circle for drawing
@@ -167,7 +170,7 @@ var SkeletonElements = new function()
   };
 
   /** Takes an existing Node and sets all the proper members as given, and resets the children and connectors. */
-  var reuseNode = function(node, id, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id, isroot)
+  var reuseNode = function(node, id, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id, can_edit)
   {
     node.id = id;
     node.parent = parent;
@@ -183,7 +186,8 @@ var SkeletonElements = new function()
     node.shouldDisplay = displayTreenode;
     node.confidence = confidence;
     node.skeleton_id = skeleton_id;
-    node.isroot = isroot;
+    node.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
+    node.can_edit = can_edit;
 
     if (node.c) {
       if (0 !== zdiff) {
@@ -530,7 +534,8 @@ var SkeletonElements = new function()
         // zoom out
         slider_trace_s.move(1);
       }
-      this.paper.catmaidSVGOverlay.tracingCommand('goactive');
+      // TODO this myst be the most surprising feature of CATMAID. Disabled!
+      // this.paper.catmaidSVGOverlay.tracingCommand('goactive');
     };
 
     /**  Log information in the status bar when clicked on the node
@@ -539,8 +544,8 @@ var SkeletonElements = new function()
      */
     var mc_click = function(e) {
       var node = this.catmaidNode,
-        paper = this.paper,
-        wasActiveNode = false;
+          paper = this.paper,
+          wasActiveNode = false;
       if (this.paper.catmaidSVGOverlay.ensureFocused()) {
         e.stopPropagation();
         return;
@@ -548,6 +553,11 @@ var SkeletonElements = new function()
       if (e.shiftKey) {
         var atnID = SkeletonAnnotations.getActiveNodeId();
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          if (!mayEdit() || !node.can_edit) {
+            alert("You don't have permission to delete node #" + node.id);
+            e.stopPropagation();
+            return;
+          }
           // if it is active node, set active node to null
           if (node.id === atnID) {
             paper.catmaidSVGOverlay.activateNode(null);
@@ -564,11 +574,18 @@ var SkeletonElements = new function()
           // to existing treenode or connectornode
           // console.log("from source #" + atnID + " to target #" + node.id);
           if (atnType === TYPE_CONNECTORNODE) {
+            if (!mayEdit()) {
+              alert("You lack permissions to declare node #" + node.id + "as postsynaptic to connector #" + atnID);
+              e.stopPropagation();
+              return;
+            }
             // careful, atnID is a connector
             paper.catmaidSVGOverlay.createLink(node.id, atnID, "postsynaptic_to");
             // TODO check for error
             statusBar.replaceLast("Joined node #" + atnID + " to connector #" + node.id);
           } else if (atnType === TYPE_NODE) {
+            // Joining two skeletons: only possible if one owns both nodes involved
+            // or is a superuser
             if( node.skeleton_id === SkeletonAnnotations.getActiveSkeletonId() ) {
               alert('Can not join node with another node of the same skeleton!');
               return;
@@ -591,11 +608,15 @@ var SkeletonElements = new function()
       }
     };
 
-    /** Here 'this' is mc, and treenode is the Node instance. */
+    /** Here 'this' is mc, and node is the Node instance. */
     var mc_move = function(dx, dy, x, y, e) {
-      if(!mayEdit())
-        return;
       if(e.which === 2) {
+        e.stopPropagation();
+        return;
+      }
+      if (!mayEdit() || !this.catmaidNode.can_edit) {
+        statusBar.replaceLast("You don't have permission to move node #" + this.catmaidNode.id);
+        e.stopPropagation();
         return;
       }
       var node = this.catmaidNode,
@@ -621,6 +642,7 @@ var SkeletonElements = new function()
     /** Here 'this' is mc. */
     var mc_up = function(e) {
       if(e.which === 2) {
+        e.stopPropagation();
         return;
       }
       var c = this.prev;
@@ -739,14 +761,15 @@ var SkeletonElements = new function()
     y, // y coordinates
     z, // z coordinates
     zdiff, // the different from the current slices
-    confidence)
+    confidence,
+    can_edit)
   {
     var connector;
     if (nextConnectorIndex < connectorPool.length) {
       connector = connectorPool[nextConnectorIndex];
-      reuseConnectorNode(connector, id, r, x, y, z, zdiff, confidence);
+      reuseConnectorNode(connector, id, r, x, y, z, zdiff, confidence, can_edit);
     } else {
-      connector = new this.ConnectorNode(id, paper, r, x, y, z, zdiff, confidence);
+      connector = new this.ConnectorNode(id, paper, r, x, y, z, zdiff, confidence, can_edit);
       connectorPool.push(connector);
     }
     nextConnectorIndex += 1;
@@ -764,7 +787,8 @@ var SkeletonElements = new function()
     y, // y coordinates
     z, // z coordinates
     zdiff, // the different from the current slices
-    confidence)
+    confidence,
+    can_edit) // whether the logged in user has permissions to edit this node -- the server will in any case enforce permissions; this is for proper GUI flow
   {
     this.id = id;
     this.type = TYPE_CONNECTORNODE; // TODO update this name!
@@ -775,6 +799,7 @@ var SkeletonElements = new function()
     this.zdiff = zdiff;
     this.shouldDisplay = displayConnector;
     this.confidence = confidence;
+    this.can_edit = can_edit;
     this.paper = paper;
     this.pregroup = {}; // set of presynaptic treenodes
     this.postgroup = {}; // set of postsynaptic treenodes
@@ -805,7 +830,7 @@ var SkeletonElements = new function()
    * @param z
    * @param zdiff
    */
-  var reuseConnectorNode = function(c, id, r, x, y, z, zdiff, confidence)
+  var reuseConnectorNode = function(c, id, r, x, y, z, zdiff, confidence, can_edit)
   {
     c.id = id;
     c.r = r;
@@ -815,6 +840,7 @@ var SkeletonElements = new function()
     c.zdiff = zdiff;
     c.shouldDisplay = displayConnector;
     c.confidence = confidence;
+    c.can_edit = can_edit;
     c.pregroup = {};
     c.postgroup = {};
 
@@ -830,7 +856,7 @@ var SkeletonElements = new function()
     }
 
     // preLines and postLines are always removed and then recreated when calling drawEdges
-  }
+  };
 
   /**
    *
@@ -842,7 +868,7 @@ var SkeletonElements = new function()
       c.mc.hide();
     }
     removeConnectorEdges(c.preLines, c.postLines);
-  }
+  };
 
   /** Here 'this' is the connector node. */
   var connectorColorFromZDiff =  function(zdiff)

@@ -638,6 +638,7 @@ var SkeletonAnnotations = new function()
     };
 
     // Used to join two skeletons together
+    // Permissions are checked at the server side, returning an error if not allowed.
     this.createTreenodeLink = function (fromid, toid) {
       if( toid in nodes ) {
         var from_skid = nodes[fromid].skeleton_id;
@@ -1263,23 +1264,23 @@ var SkeletonAnnotations = new function()
       // Populate Nodes
       jso[0].forEach(function(a, index, array) {
         // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
-        // a[6]: user_id, a[7]: radius, a[8]: skeleton_id
+        // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[8]: user can edit or not
         nodes[a[0]] = SkeletonElements.newNode(
-          a[0], self.paper, null, a[1], a[7], phys2pixX(a[2]),
+          a[0], self.paper, null, a[1], a[6], phys2pixX(a[2]),
           phys2pixY(a[3]), phys2pixZ(a[4]),
-          (a[4] - pz) / stack.resolution.z, a[5], a[8]);
+          (a[4] - pz) / stack.resolution.z, a[5], a[7], a[8]);
       });
 
       // Populate ConnectorNodes
       jso[1].forEach(function(a, index, array) {
         // a[0]: ID, a[1]: x, a[2]: y, a[3]: z, a[4]: confidence,
-        // a[5]: user_id, a[6]: presynaptic nodes as array of arrays with treenode id
-        // and confidence, a[7]: postsynaptic nodes as array of arrays with treenode id
-        // and confidence.
+        // a[5]: presynaptic nodes as array of arrays with treenode id
+        // and confidence, a[6]: postsynaptic nodes as array of arrays with treenode id
+        // and confidence, a[7]: whether the user can edit the connector
         nodes[a[0]] = SkeletonElements.newConnectorNode(
           a[0], self.paper, 8, phys2pixX(a[1]),
           phys2pixY(a[2]), phys2pixZ(a[3]),
-          (a[3] - pz) / stack.resolution.z, a[5]);
+          (a[3] - pz) / stack.resolution.z, a[4], a[7]);
       });
 
       // Disable any unused instances
@@ -1304,8 +1305,8 @@ var SkeletonAnnotations = new function()
       jso[1].forEach(function(a, index, array) {
         // a[0] is the ID of the ConnectorNode
         var connector = nodes[a[0]];
-        // a[6]: pre relation which is an array of arrays of tnid and tc_confidence
-        a[6].forEach(function(r, i, ar) {
+        // a[5]: pre relation which is an array of arrays of tnid and tc_confidence
+        a[5].forEach(function(r, i, ar) {
           // r[0]: tnid, r[1]: tc_confidence
           var tnid = r[0];
           var node = nodes[tnid];
@@ -1315,8 +1316,8 @@ var SkeletonAnnotations = new function()
                                         'confidence': r[1]};
           }
         });
-        // a[7]: post relation which is an array of arrays of tnid and tc_confidence
-        a[7].forEach(function(r, i, ar) {
+        // a[6]: post relation which is an array of arrays of tnid and tc_confidence
+        a[6].forEach(function(r, i, ar) {
           // r[0]: tnid, r[1]: tc_confidence
           var tnid = r[0];
           var node = nodes[tnid];

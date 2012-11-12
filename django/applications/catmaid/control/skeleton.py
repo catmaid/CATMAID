@@ -15,6 +15,7 @@ except:
     pass
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
+@report_error
 def node_count(request, project_id=None, skeleton_id=None):
     p = get_object_or_404(Project, pk=project_id)
     return HttpResponse(json.dumps({

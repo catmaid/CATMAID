@@ -1,6 +1,5 @@
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -10,7 +9,7 @@ from catmaid.transaction import *
 import sys
 
 
-@login_required
+@requires_user_role(UserRole.Annotate)
 @transaction.commit_on_success
 def save_skeletonlist(request, project_id=None):
 
@@ -40,7 +39,8 @@ def save_skeletonlist(request, project_id=None):
 
     return HttpResponse(json.dumps({'success': '1'}))
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def load_skeletonlist(request, project_id=None):
 
     shortname = request.POST.get('shortname', None)

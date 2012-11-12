@@ -51,7 +51,7 @@ def create_link(request, project_id=None):
 
 @requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
-def delete_link(request, project_id=None, logged_in_user=None):
+def delete_link(request, project_id=None):
     connector_id = request.POST.get('connector_id', 0)
     treenode_id = request.POST.get('treenode_id', 0)
 

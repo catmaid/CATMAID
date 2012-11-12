@@ -4,7 +4,6 @@ from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
-from django.contrib.auth.decorators import login_required
 
 from catmaid.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
@@ -35,7 +34,8 @@ def findBrackets( aString ):
             if not open:
                 return match[:index]
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def index(request, **kwargs):
     all_neurons, search_form = get_form_and_neurons(request,
                                                     kwargs['project_id'],
@@ -45,10 +45,11 @@ def index(request, **kwargs):
                                  {'all_neurons_list': all_neurons,
                                   'project_id': kwargs['project_id'],
                                   'catmaid_url': settings.CATMAID_URL,
-                                  'user': kwargs['logged_in_user'],
+                                  'user': request.user,
                                   'search_form': search_form})
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def visual_index(request, **kwargs):
 
     all_neurons, search_form = get_form_and_neurons( request,
@@ -77,11 +78,12 @@ def visual_index(request, **kwargs):
                                   'sorted_neurons_page' : neurons,
                                   'project_id': kwargs['project_id'],
                                   'catmaid_url': settings.CATMAID_URL,
-                                  'user': kwargs['logged_in_user'],
+                                  'user': request.user,
                                   'search_form': search_form })
 
-@login_required
-def view(request, project_id=None, neuron_id=None, neuron_name=None, logged_in_user=None):
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def view(request, project_id=None, neuron_id=None, neuron_name=None):
     p = get_object_or_404(Project, pk=project_id)
     # FIXME: add the class name as well
     if neuron_id:
@@ -114,14 +116,15 @@ def view(request, project_id=None, neuron_id=None, neuron_name=None, logged_in_u
                                   'skeletons': skeletons,
                                   'project_id': project_id,
                                   'catmaid_url': settings.CATMAID_URL,
-                                  'user': logged_in_user,
+                                  'user': request.user,
                                   'cell_body_choices': CELL_BODY_CHOICES,
                                   'incoming': incoming,
                                   'outgoing': outgoing,
                                   'wiki_base_url': p.wiki_base_url } )
 
-@login_required
-def set_cell_body(request, logged_in_user=None):
+
+@requires_user_role(UserRole.Annotate)
+def set_cell_body(request):
     neuron_id = request.POST['neuron_id']
     n = get_object_or_404(ClassInstance, pk=neuron_id)
     new_location_code = request.POST['cell-body-choice']
@@ -134,8 +137,9 @@ def set_cell_body(request, logged_in_user=None):
                                         kwargs={'neuron_id':neuron_id,
                                                 'project_id':n.project.id}))
 
-@login_required
-def line(request, project_id=None, line_id=None, logged_in_user=None):
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def line(request, project_id=None, line_id=None):
     p = get_object_or_404(Project, pk=project_id)
     l = get_object_or_404(ClassInstance, pk=line_id, project=p, class_column__class_name='driver_line')
     sorted_neurons = ClassInstance.objects.filter(
@@ -146,11 +150,12 @@ def line(request, project_id=None, line_id=None, logged_in_user=None):
                                  {'line': l,
                                   'project_id': p.id,
                                   'catmaid_url': settings.CATMAID_URL,
-                                  'user': logged_in_user,
+                                  'user': request.user,
                                   'neurons': sorted_neurons})
 
-@login_required
-def lines_add(request, project_id=None, logged_in_user=None):
+
+@requires_user_role(UserRole.Annotate)
+def lines_add(request, project_id=None):
     p = Project.objects.get(pk=project_id)
     # FIXME: for the moment, just hardcode the user ID:
     user = User.objects.get(pk=3)
@@ -187,8 +192,9 @@ def lines_add(request, project_id=None, logged_in_user=None):
                                         kwargs={'neuron_id':neuron.id,
                                                 'project_id':p.id}))
 
-@login_required
-def lines_delete(request, project_id=None, logged_in_user=None):
+
+@requires_user_role(UserRole.Annotate)
+def lines_delete(request, project_id=None):
     p = Project.objects.get(pk=project_id)
     neuron = get_object_or_404(ClassInstance,
                                pk=request.POST['neuron_id'],
@@ -205,9 +211,8 @@ def lines_delete(request, project_id=None, logged_in_user=None):
                                                 'project_id':p.id}))
 
 
-
-@login_required
-def multiple_presynaptic_terminals(request, project_id=None, logged_in_user=None):
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def multiple_presynaptic_terminals(request, project_id=None):
     p = get_object_or_404(Project, pk=project_id)
 
     tcs = TreenodeConnector.objects.filter(project__id=project_id, relation__relation_name='presynaptic_to').values('connector').annotate(number=models.Count('connector')).filter(number__gt=1)
@@ -215,12 +220,13 @@ def multiple_presynaptic_terminals(request, project_id=None, logged_in_user=None
                                  'vncbrowser/multiple_presynaptic_terminals.html',
                                  {'project_id': p.id,
                                   'catmaid_url': settings.CATMAID_URL,
-                                  'user': logged_in_user,
+                                  'user': request.user,
                                   'stacks': p.stacks.all(),
                                   'connector_counts': tcs})
 
-@login_required
-def goto_connector(request, project_id=None, connector_id=None, stack_id=None, logged_in_user=None):
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def goto_connector(request, project_id=None, connector_id=None, stack_id=None):
     c = get_object_or_404(Connector, pk=connector_id)
     parameters = {"pid": project_id,
                   "zp": c.location.z,

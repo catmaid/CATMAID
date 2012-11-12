@@ -4,7 +4,6 @@ from collections import defaultdict
 
 from django.db import transaction, connection
 from django.http import HttpResponse
-from django.contrib.auth.decorators import login_required
 
 from django.shortcuts import get_object_or_404
 
@@ -20,7 +19,7 @@ except:
     pass
 
 
-@login_required
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 @transaction_reportable_commit_on_success
 def node_list_tuples(request, project_id=None):
     ''' Retrieve an JSON array with two entries:
@@ -272,8 +271,7 @@ def node_list_tuples(request, project_id=None):
         raise CatmaidException(response_on_error + ':' + str(e))
 
 
-
-@login_required
+@requires_user_role(UserRole.Annotate)
 def update_location_reviewer(request, project_id=None, node_id=None):
     """ Updates the reviewer id and review time of a node """
     p = get_object_or_404(Project, pk=project_id)
@@ -284,6 +282,7 @@ def update_location_reviewer(request, project_id=None, node_id=None):
     loc.review_time=datetime.now()
     loc.save()
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+
 
 @requires_user_role(UserRole.Annotate)
 @transaction.commit_on_success
@@ -320,7 +319,7 @@ def update_confidence(request, project_id=None, node_id=0):
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
 
-@login_required
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def most_recent_treenode(request, project_id=None):
     skeleton_id = request.POST.get('skeleton_id', -1)
     treenode_id = request.POST.get('treenode_id', -1)
@@ -392,7 +391,7 @@ def node_update(request, project_id=None):
     return HttpResponse(json.dumps({'updated': len(nodes)}))
 
 
-@login_required
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 @transaction_reportable_commit_on_success
 def node_nearest(request, project_id=None):
     params = {}
@@ -485,6 +484,7 @@ def _skeleton_as_graph(skeleton_id):
             graph.add_edge(row[1], row[0])
     return graph
 
+
 def _fetch_location(treenode_id):
     cursor = connection.cursor()
     cursor.execute('''
@@ -497,7 +497,8 @@ def _fetch_location(treenode_id):
         WHERE id=%s''', [treenode_id])
     return cursor.fetchone()
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def get_location(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])
@@ -505,7 +506,8 @@ def get_location(request, project_id=None):
     except Exception as e:
         raise CatmaidException('Could not obtain the location of node with id #%s' % tnid)
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def find_previous_branchnode_or_root(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])
@@ -524,7 +526,8 @@ def find_previous_branchnode_or_root(request, project_id=None):
     except Exception as e:
         raise CatmaidException('Could not obtain previous branch node or root:' + str(e))
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def find_next_branchnode_or_end(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])

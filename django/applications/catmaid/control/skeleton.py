@@ -1,6 +1,5 @@
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.objects import *
@@ -15,7 +14,7 @@ try:
 except:
     pass
 
-@login_required
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def node_count(request, project_id=None, skeleton_id=None):
     p = get_object_or_404(Project, pk=project_id)
     return HttpResponse(json.dumps({
@@ -23,7 +22,7 @@ def node_count(request, project_id=None, skeleton_id=None):
         mimetype='text/json')
 
 
-@login_required
+@requires_user_role(UserRole.Annotate)
 @transaction.commit_on_success
 def split_skeleton(request, project_id=None):
     treenode_id = int(request.POST['treenode_id'])
@@ -81,7 +80,7 @@ def split_skeleton(request, project_id=None):
     return HttpResponse(json.dumps({}), mimetype='text/json')
 
 
-@login_required
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def root_for_skeleton(request, project_id=None, skeleton_id=None):
     # TODO this needs an update, and also not retrieve all columns
     tn = Treenode.objects.get(
@@ -95,7 +94,7 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None):
         'z': tn.location.z}),
         mimetype='text/json')
 
-@login_required
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 @transaction_reportable_commit_on_success
 def skeleton_ancestry(request, project_id=None):
     # All of the values() things in this function can be replaced by
@@ -238,7 +237,7 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
     return partners
 
 
-@login_required
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_info_raw(request, project_id=None, skeleton_id=None):
     # sanitize arguments
     skeleton_id = int(skeleton_id)
@@ -270,7 +269,7 @@ def skeleton_info_raw(request, project_id=None, skeleton_id=None):
     return HttpResponse(json_return, mimetype='text/json')
 
 
-@login_required
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_info(request, project_id=None, skeleton_id=None):
     # This function can take as much as 15 seconds for a mid-sized arbor
     # Problems in the generated SQL:

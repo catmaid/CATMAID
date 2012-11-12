@@ -2,7 +2,6 @@ import json
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -192,17 +191,20 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
     else:
         raise Exception, "Unknown format ('%s') in export_extended_skeleton_response" % (format,)
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_swc(*args, **kwargs):
     kwargs['format'] = 'swc'
     return export_skeleton_response(*args, **kwargs)
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_json(*args, **kwargs):
     kwargs['format'] = 'json'
     return export_extended_skeleton_response(*args, **kwargs)
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def export_review_skeleton(request, project_id=None, skeleton_id=None, format=None):
     data=generate_extended_skeleton_data( project_id, skeleton_id )
     g=nx.DiGraph()

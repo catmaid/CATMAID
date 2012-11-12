@@ -4,12 +4,12 @@ from string import upper
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
-from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
+
 
 @requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
@@ -47,7 +47,8 @@ def update_treenode_table(request, project_id=None):
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 @transaction_reportable_commit_on_success
 def list_treenode_table(request, project_id=None):
     stack_id = request.POST.get('stack_id', None)

@@ -1,6 +1,5 @@
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.objects import *
@@ -16,7 +15,8 @@ except ImportError:
 
 import sys
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def adjacency_matrix(request, project_id=None):
     skeletonlist = request.POST.getlist('skeleton_list[]')
     skeletonlist = map(int, skeletonlist)
@@ -39,7 +39,7 @@ def adjacency_matrix(request, project_id=None):
     return HttpResponse(json.dumps(data, sort_keys=True, indent=4), mimetype='text/json')
 
 
-@login_required
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeletonlist_subgraph(request, project_id=None):
     skeletonlist = request.POST.getlist('skeleton_list[]')
     skeletonlist = map(int, skeletonlist)
@@ -59,7 +59,8 @@ def skeletonlist_subgraph(request, project_id=None):
 
     return HttpResponse(json.dumps(data, sort_keys=True, indent=4), mimetype='text/json')
 
-@login_required
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def all_shared_connectors(request, project_id=None):
     skeletonlist = request.POST.getlist('skeletonlist[]')
     skeletonlist = map(int, skeletonlist)

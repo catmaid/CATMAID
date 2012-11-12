@@ -1,7 +1,6 @@
 import json
 
 from django.http import HttpResponse
-from django.contrib.auth.decorators import login_required
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -9,7 +8,7 @@ from catmaid.control.common import *
 from catmaid.transaction import *
 
 
-@login_required
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 @transaction.commit_on_success
 def search(request, project_id=None):
     def format_node_data(node):

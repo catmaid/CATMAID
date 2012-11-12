@@ -169,7 +169,7 @@ var ProjectStatistics = new function()
       return true;
     });
     
-    d3.json("model/stats.treenodes.history.list.php?pid=" + project.id, update_linegraph);
+    d3.json(django_url + project.id + '/stats-history', update_linegraph);
   }
 
   this.init = function () {

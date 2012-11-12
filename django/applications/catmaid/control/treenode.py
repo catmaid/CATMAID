@@ -323,7 +323,7 @@ def delete_treenode(request, project_id=None):
     can_edit_or_fail(request.user, treenode_id, 'treenode')
     #
     parent_id = int(request.POST.get('parent_id', -1))
-    skeleton_id = Treenode.objects.get(pk=parent_id).skeleton_id
+    skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
 
     response_on_error = ''
     try:

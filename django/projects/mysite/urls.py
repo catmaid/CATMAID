@@ -120,6 +120,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/search$', 'catmaid.control.search'),
     (r'^(?P<project_id>\d+)/stats$', 'catmaid.control.stats'),
     (r'^(?P<project_id>\d+)/stats-summary$', 'catmaid.control.stats_summary'),
+    (r'^(?P<project_id>\d+)/stats-history$', 'catmaid.control.stats_history'),
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', 'catmaid.control.stack_info'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/models$', 'catmaid.control.stack_models'),

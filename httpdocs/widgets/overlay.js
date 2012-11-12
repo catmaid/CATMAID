@@ -716,7 +716,7 @@ var SkeletonAnnotations = new function()
             } else {
               // add treenode to the display and update it
               var jso = $.parseJSON(text);
-              var nn = SkeletonElements.newConnectorNode(jso.connector_id, self.paper, 8, pos_x, pos_y, pos_z, 0, 5 /* confidence */);
+              var nn = SkeletonElements.newConnectorNode(jso.connector_id, self.paper, 8, pos_x, pos_y, pos_z, 0, 5 /* confidence */, true);
               nodes[jso.connector_id] = nn;
               nn.draw();
               self.activateNode(nn);
@@ -772,7 +772,7 @@ var SkeletonAnnotations = new function()
               nid = parseInt(jso.treenode_id);
 
               // always create a new treenode which is the root of a new skeleton
-              var nn = SkeletonElements.newNode(nid, self.paper, null, null, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id));
+              var nn = SkeletonElements.newNode(nid, self.paper, null, null, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
               if (nn.line) nn.line.toBack();
 
               // add node to nodes list
@@ -982,7 +982,7 @@ var SkeletonAnnotations = new function()
               var jso = $.parseJSON(text);
               nid = parseInt(jso.treenode_id);
               // The parent will be null if there isn't one or if the parent Node object is not within the set of retrieved nodes, but the parentID will be defined.
-              var nn = SkeletonElements.newNode(nid, self.paper, nodes[parentID], parentID, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id));
+              var nn = SkeletonElements.newNode(nid, self.paper, nodes[parentID], parentID, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
 
               nodes[nid] = nn;
               nn.draw();

@@ -1296,9 +1296,10 @@ var SkeletonAnnotations = new function()
       }
       var m = ui.getMouse(e, self.view);
 
-      // TODO alert user of lack of permission?
-      if (!mayEdit())
+      if (!mayEdit()) {
+        statusBar.replaceLast("You don't have permission.");
         return;
+      }
 
       // take into account current local offset coordinates and scale
       var pos_x = m.offsetX;

@@ -379,7 +379,7 @@ def node_update(request, project_id=None):
                     user=request.user,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
             elif node['type'] == 'connector':
-                can_edit_or_fail(request.user, node['node_id'], 'treenode')
+                can_edit_or_fail(request.user, node['node_id'], 'connector')
                 Location.objects.filter(id=node['node_id']).update(
                     user=request.user,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))

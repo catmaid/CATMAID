@@ -394,6 +394,7 @@ var SkeletonElements = new function()
                           ObjectTree.refresh();
                       }
                   }
+                  node.needsync = false;
                   // Redraw everything for now
                   node.paper.catmaidSVGOverlay.updateNodes();
 
@@ -609,6 +610,7 @@ var SkeletonElements = new function()
 
     /** Here 'this' is mc, and node is the Node instance. */
     var mc_move = function(dx, dy, x, y, e) {
+      console.log("called mc_move");
       if(e.which === 2) {
         e.stopPropagation();
         return;
@@ -911,6 +913,7 @@ var SkeletonElements = new function()
               } else {
                   ov.activateNode(null);
               }
+              connectornode.needsync = false;
               // Refresh all nodes in any case, to reflect the new state of the database
               ov.updateNodes();
 

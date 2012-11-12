@@ -8,6 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import connection
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import _get_queryset
 
 from catmaid.models import Project, UserRole
@@ -206,7 +207,7 @@ def can_edit_or_fail(user, ob_id, table_name):
         if rows[0][0] == user.id or user.is_superuser:
             return True
         raise Exception('User %s with id #%s cannot edit object #%s (from user #%s) from table %s' % (user.username, user.id, ob_id, rows[0][0], table_name))
-    raise Exception('Object #%s not found in table %s' % (ob_id, table_name))
+    raise ObjectDoesNotExist('Object #%s not found in table %s' % (ob_id, table_name))
 
 def can_edit_all_or_fail(user, ob_ids, table_name):
     """ Returns true if the user owns all the objects or if the user is a superuser.
@@ -225,8 +226,8 @@ def can_edit_all_or_fail(user, ob_ids, table_name):
     if rows:
         if rows[0] == user.id or user.is_superuser:
             if rows[1] != len(ob_ids):
-                raise Exception('Missing %s out of %s objects to edit in table %s' % (len(ob_ids) - row[1], len(ob_ids), table_name))
+                raise ObjectDoesNotExist('Missing %s out of %s objects to edit in table %s' % (len(ob_ids) - row[1], len(ob_ids), table_name))
             return True
         raise Exception('User %s cannot edit all of the %s unique objects from table %s' % (user.username, len(ob_ids), table_name))
-    raise Exception('None of the %s unique objects were found in table %s' % (len(ob_ids), table_name))
+    raise ObjectDoesNotExist('None of the %s unique objects were found in table %s' % (len(ob_ids), table_name))
 

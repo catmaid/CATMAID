@@ -69,7 +69,7 @@ var SkeletonElements = new function()
     zdiff, // the different from the current slices
     confidence,
     skeleton_id, // the id of the skeleton this node is an element of
-    can_edit)
+    can_edit) // a boolean combining (is_superuser or user owns the node)
   {
     var node;
     if (nextNodeIndex < nodePool.length) {
@@ -762,7 +762,7 @@ var SkeletonElements = new function()
     z, // z coordinates
     zdiff, // the different from the current slices
     confidence,
-    can_edit)
+    can_edit) // a boolean combining (is_superuser or user owns the node)
   {
     var connector;
     if (nextConnectorIndex < connectorPool.length) {

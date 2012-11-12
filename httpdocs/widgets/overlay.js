@@ -638,6 +638,7 @@ var SkeletonAnnotations = new function()
     };
 
     // Used to join two skeletons together
+    // Permissions are checked at the server side, returning an error if not allowed.
     this.createTreenodeLink = function (fromid, toid) {
       if( toid in nodes ) {
         var from_skid = nodes[fromid].skeleton_id;
@@ -715,7 +716,7 @@ var SkeletonAnnotations = new function()
             } else {
               // add treenode to the display and update it
               var jso = $.parseJSON(text);
-              var nn = SkeletonElements.newConnectorNode(jso.connector_id, self.paper, 8, pos_x, pos_y, pos_z, 0, 5 /* confidence */);
+              var nn = SkeletonElements.newConnectorNode(jso.connector_id, self.paper, 8, pos_x, pos_y, pos_z, 0, 5 /* confidence */, true);
               nodes[jso.connector_id] = nn;
               nn.draw();
               self.activateNode(nn);
@@ -771,7 +772,7 @@ var SkeletonAnnotations = new function()
               nid = parseInt(jso.treenode_id);
 
               // always create a new treenode which is the root of a new skeleton
-              var nn = SkeletonElements.newNode(nid, self.paper, null, null, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id));
+              var nn = SkeletonElements.newNode(nid, self.paper, null, null, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
               if (nn.line) nn.line.toBack();
 
               // add node to nodes list
@@ -981,7 +982,7 @@ var SkeletonAnnotations = new function()
               var jso = $.parseJSON(text);
               nid = parseInt(jso.treenode_id);
               // The parent will be null if there isn't one or if the parent Node object is not within the set of retrieved nodes, but the parentID will be defined.
-              var nn = SkeletonElements.newNode(nid, self.paper, nodes[parentID], parentID, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id));
+              var nn = SkeletonElements.newNode(nid, self.paper, nodes[parentID], parentID, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
 
               nodes[nid] = nn;
               nn.draw();
@@ -1103,147 +1104,6 @@ var SkeletonAnnotations = new function()
     };
 */
 
-    /** Recreate all nodes (or reuse existing ones if possible).
-     *
-     * @param jso is an array of JSON objects, where each object may specify a Node or a ConnectorNode
-     * @param pz is the z of the section in calibrated coordinates
-     */
-    var refreshNodes = function (jso, pz)
-    {
-      var rad, nrtn = 0, nrcn = 0, parid, nid, nn, pn, i, j, len;
-
-      // Reset nodes and labels
-      nodes = {};
-      // remove labels, but do not hide them
-      self.removeLabels();
-
-      // Prepare existing Node and ConnectorNode instances for reuse
-      SkeletonElements.resetCache();
-
-      for (i=0; i<jso.length; ++i)
-      {
-        var id = parseInt(jso[i].id);
-        var pos_x = phys2pixX(jso[i].x);
-        var pos_y = phys2pixY(jso[i].y);
-        var pos_z = phys2pixZ(jso[i].z);
-        var zdiff = Math.floor(parseFloat(jso[i].z_diff) / stack.resolution.z);
-        var skeleton_id = null;
-        if (jso[i].type === "treenode") {
-          // rad = parseFloat(jso[i].radius);
-          // ignore radius for display
-          rad = 8;
-        } else {
-          rad = 8; // default radius for locations
-        }
-
-        if (jso[i].type === "treenode")
-        {
-          nn = SkeletonElements.newNode(id, self.paper, null, parseInt(jso[i].parentid), rad, pos_x, pos_y, pos_z, zdiff, jso[i].confidence, parseInt(jso[i].skeleton_id));
-          nrtn++;
-        }
-        else
-        {
-          nn = SkeletonElements.newConnectorNode(id, self.paper, rad, pos_x, pos_y, pos_z, zdiff, jso[i].confidence);
-          nrcn++;
-        }
-
-        nodes[id] = nn;
-      }
-
-
-
-      // Disable any unused instances
-      SkeletonElements.disableBeyond(nrtn, nrcn);
-
-      if (edgetoggle) {
-        // loop again and add correct parent objects and parent's children update
-        for (i=0; i<jso.length; ++i)
-        {
-          nid = parseInt(jso[i].id);
-          // for treenodes, make updates
-          if (jso[i].type === "treenode")
-          {
-            pn = nodes[parseInt(jso[i].parentid)];
-            if (pn)
-            {
-              nn = nodes[nid];
-              // if parent exists, update the references
-              nn.parent = pn;
-              // update the parents children
-              pn.addChildNode(nn);
-            }
-          }
-          else if (jso[i].type === "connector")
-          {
-            // FIXME: ripe for some DRY refactoring
-            //console.log("connectors retrieved, check pre and post", jso)
-            // update pregroup and postgroup
-            // loop over pregroup
-            if (jso[i].hasOwnProperty('pre')) {
-              for (j = 0; j < jso[i].pre.length; j++ ) {
-                // check if presynaptic treenode exist in nodes
-                var preloctnid = parseInt(jso[i].pre[j].tnid);
-                var confidence = parseInt(jso[i].pre[j].confidence);
-                if (preloctnid in nodes)
-                {
-                  // link it to pregroup, to connect it to the connector
-                  nodes[nid].pregroup[preloctnid] = {'treenode': nodes[preloctnid],
-                                                     'confidence': confidence};
-                  // add to pregroup of treenode
-                  nodes[preloctnid].connectors[nid] = nodes[nid];
-                }
-              }
-            }
-            // loop over postgroup
-            if (jso[i].hasOwnProperty('post')) {
-              for (j = 0; j < jso[i].post.length; j++ ) {
-                // check if postsynaptic treenode exist in nodes
-                var postloctnid = parseInt(jso[i].post[j].tnid);
-                var confidence = parseInt(jso[i].post[j].confidence);
-                if (postloctnid in nodes)
-                {
-                  // link it to postgroup, to connect it to the connector
-                  nodes[nid].postgroup[postloctnid] = {'treenode': nodes[postloctnid],
-                                                       'confidence': confidence};
-                  // add to postgroup of treenode
-                  nodes[postloctnid].connectors[nid] = nodes[nid];
-                }
-              }
-            }
-          }
-        }
-        // Draw node edges first
-        for (i in nodes) {
-          if (nodes.hasOwnProperty(i)) {
-            nodes[i].setColor();
-            nodes[i].drawEdges();
-          }
-        }
-        // Create raphael's circles on top of the edges
-        // so that the events reach the circles first
-        for (i in nodes) {
-          if (nodes.hasOwnProperty(i)) {
-            nodes[i].createCircle();
-          }
-        }
-
-      } // end speed toggle
-
-      if( self.getLabelStatus() ) {
-        self.showLabels();
-      }
-
-    // Keep active state of previous active node
-    if (atn !== null)
-    {
-        nn = nodes[atn.id];
-        if (nn) {
-            // Will recolor all nodes
-            self.activateNode(nn);
-        }
-    }
-
-    };
 
     /** Recreate all nodes (or reuse existing ones if possible).
      *
@@ -1263,23 +1123,23 @@ var SkeletonAnnotations = new function()
       // Populate Nodes
       jso[0].forEach(function(a, index, array) {
         // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
-        // a[6]: user_id, a[7]: radius, a[8]: skeleton_id
+        // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[8]: user can edit or not
         nodes[a[0]] = SkeletonElements.newNode(
-          a[0], self.paper, null, a[1], a[7], phys2pixX(a[2]),
+          a[0], self.paper, null, a[1], a[6], phys2pixX(a[2]),
           phys2pixY(a[3]), phys2pixZ(a[4]),
-          (a[4] - pz) / stack.resolution.z, a[5], a[8]);
+          (a[4] - pz) / stack.resolution.z, a[5], a[7], a[8]);
       });
 
       // Populate ConnectorNodes
       jso[1].forEach(function(a, index, array) {
         // a[0]: ID, a[1]: x, a[2]: y, a[3]: z, a[4]: confidence,
-        // a[5]: user_id, a[6]: presynaptic nodes as array of arrays with treenode id
-        // and confidence, a[7]: postsynaptic nodes as array of arrays with treenode id
-        // and confidence.
+        // a[5]: presynaptic nodes as array of arrays with treenode id
+        // and confidence, a[6]: postsynaptic nodes as array of arrays with treenode id
+        // and confidence, a[7]: whether the user can edit the connector
         nodes[a[0]] = SkeletonElements.newConnectorNode(
           a[0], self.paper, 8, phys2pixX(a[1]),
           phys2pixY(a[2]), phys2pixZ(a[3]),
-          (a[3] - pz) / stack.resolution.z, a[5]);
+          (a[3] - pz) / stack.resolution.z, a[4], a[7]);
       });
 
       // Disable any unused instances
@@ -1304,8 +1164,8 @@ var SkeletonAnnotations = new function()
       jso[1].forEach(function(a, index, array) {
         // a[0] is the ID of the ConnectorNode
         var connector = nodes[a[0]];
-        // a[6]: pre relation which is an array of arrays of tnid and tc_confidence
-        a[6].forEach(function(r, i, ar) {
+        // a[5]: pre relation which is an array of arrays of tnid and tc_confidence
+        a[5].forEach(function(r, i, ar) {
           // r[0]: tnid, r[1]: tc_confidence
           var tnid = r[0];
           var node = nodes[tnid];
@@ -1315,8 +1175,8 @@ var SkeletonAnnotations = new function()
                                         'confidence': r[1]};
           }
         });
-        // a[7]: post relation which is an array of arrays of tnid and tc_confidence
-        a[7].forEach(function(r, i, ar) {
+        // a[6]: post relation which is an array of arrays of tnid and tc_confidence
+        a[6].forEach(function(r, i, ar) {
           // r[0]: tnid, r[1]: tc_confidence
           var tnid = r[0];
           var node = nodes[tnid];
@@ -1436,9 +1296,10 @@ var SkeletonAnnotations = new function()
       }
       var m = ui.getMouse(e, self.view);
 
-      // TODO alert user of lack of permission?
-      if (!mayEdit())
+      if (!mayEdit()) {
+        statusBar.replaceLast("You don't have permission.");
         return;
+      }
 
       // take into account current local offset coordinates and scale
       var pos_x = m.offsetX;

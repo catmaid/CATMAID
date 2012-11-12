@@ -74,18 +74,18 @@ def node_list_tuples(request, project_id=None):
             (t1.location).y AS y,
             (t1.location).z AS z,
             t1.confidence,
-            t1.user_id,
             t1.radius,
             t1.skeleton_id,
+            t1.user_id,
             t2.id,
             t2.parent_id,
             (t2.location).x AS x,
             (t2.location).y AS y,
             (t2.location).z AS z,
             t2.confidence,
-            t2.user_id,
             t2.radius,
-            t2.skeleton_id
+            t2.skeleton_id,
+            t2.user_id
         FROM treenode t1
              INNER JOIN treenode t2 ON
                (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
@@ -112,15 +112,18 @@ def node_list_tuples(request, project_id=None):
         # A set of unique treenode IDs
         treenode_ids = set()
 
+        is_superuser = request.user.is_superuser
+        user_id = request.user.id
+
         for row in cursor.fetchall():
           t1id = row[0]
           if t1id not in treenode_ids:
               treenode_ids.add(t1id)
-              treenodes.append(row[:9])
+              treenodes.append(row[0:8] + (is_superuser or row[8] == user_id,))
           t2id = row[9]
           if t2id not in treenode_ids:
               treenode_ids.add(t2id)
-              treenodes.append(row[9:])
+              treenodes.append(row[9:17] + (is_superuser or row[17] == user_id,))
 
         if len(treenodes) >= params['limit']:
             print >> sys.stderr, "LIMIT of %s nodes reached! Retrieved: %s nodes" % (params['limit'], len(treenodes))
@@ -143,19 +146,19 @@ def node_list_tuples(request, project_id=None):
             (connector.location).y AS y,
             (connector.location).z AS z,
             connector.confidence AS confidence,
-            connector.user_id AS user_id,
             treenode_connector.relation_id AS treenode_relation_id,
             treenode_connector.treenode_id AS tnid,
-            treenode_connector.confidence AS tc_confidence
+            treenode_connector.confidence AS tc_confidence,
+            connector.user_id AS user_id
         FROM connector LEFT OUTER JOIN treenode_connector
             ON treenode_connector.connector_id = connector.id
         WHERE connector.project_id = %(project_id)s AND
+            (connector.location).z >= %(zlow)s AND
+            (connector.location).z <  %(zhigh)s AND
             (connector.location).x >= %(left)s AND
             (connector.location).x <= %(right)s AND
             (connector.location).y >= %(top)s AND
-            (connector.location).y <= %(bottom)s AND
-            (connector.location).z >= %(zlow)s AND
-            (connector.location).z <  %(zhigh)s
+            (connector.location).y <= %(bottom)s
         LIMIT %(limit)s
         ''', params)
 
@@ -176,22 +179,23 @@ def node_list_tuples(request, project_id=None):
         for row in cursor.fetchall():
             # Collect treeenode IDs related to connectors but not yet in treenode_ids
             # because they lay beyond adjacent sections
-            tnid = row[7] # The tnid column is index 7 (see SQL statement above)
+            tnid = row[6] # The tnid column is index 7 (see SQL statement above)
             cid = row[0] # connector ID
             if tnid is not None:
                 if tnid not in treenode_ids:
                     missing_treenode_ids.add(tnid)
                 # Collect relations between connectors and treenodes
                 # row[0]: connector id (cid above)
-                # row[6]: treenode_relation_id
-                # row[7]: treenode_id (tnid above)
-                # row[8]: tc_confidence
-                if row[6] == relation_map['presynaptic_to']:
-                    pre[cid].append((tnid, row[8]))
+                # row[5]: treenode_relation_id
+                # row[6]: treenode_id (tnid above)
+                # row[7]: tc_confidence
+                if row[5] == relation_map['presynaptic_to']:
+                    pre[cid].append((tnid, row[7]))
                 else:
-                    post[cid].append((tnid, row[8]))
+                    post[cid].append((tnid, row[7]))
 
             # Collect unique connectors
+            # r[8]: user_id
             if cid not in connector_ids:
                 connectors.append(row)
                 connector_ids.add(cid)
@@ -200,7 +204,7 @@ def node_list_tuples(request, project_id=None):
         for i in xrange(len(connectors)):
             c = connectors[i]
             cid = c[0]
-            connectors[i] = (cid, c[1], c[2], c[3], c[4], c[5], pre[cid], post[cid])
+            connectors[i] = (cid, c[1], c[2], c[3], c[4], pre[cid], post[cid], is_superuser or c[8] == user_id)
 
 
         # Fetch missing treenodes. These are related to connectors
@@ -219,15 +223,15 @@ def node_list_tuples(request, project_id=None):
                 (location).y AS y,
                 (location).z AS z,
                 confidence,
-                user_id,
                 radius,
-                skeleton_id
+                skeleton_id,
+                user_id
             FROM treenode
             WHERE id IN %(missing)s''', params)
 
             for row in cursor.fetchall():
                 treenodes.append(row)
-                treenode_ids.add(row[0])
+                treenode_ids.add(row[0:8] + (is_superuser or row[8] == user_id,))
 
         labels = defaultdict(list)
         if request.POST['labels']:
@@ -375,7 +379,7 @@ def node_update(request, project_id=None):
                     user=request.user,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
             elif node['type'] == 'connector':
-                can_edit_or_fail(request.user, node['node_id'], 'treenode')
+                can_edit_or_fail(request.user, node['node_id'], 'connector')
                 Location.objects.filter(id=node['node_id']).update(
                     user=request.user,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))

@@ -588,8 +588,7 @@ var SkeletonAnnotations = new function()
             django_url + project.id + '/skeleton/split',
             "POST", {
             pid: project.id,
-            treenode_id: atn.id,
-            skeleton_id: atn.skeleton_id
+            treenode_id: atn.id
           }, function (status, text, xml) {
             $.unblockUI();
             if (status === 200) {

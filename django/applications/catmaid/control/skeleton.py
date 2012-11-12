@@ -24,10 +24,12 @@ def node_count(request, project_id=None, skeleton_id=None):
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction.commit_on_success
+@transaction_reportable_commit_on_success
 def split_skeleton(request, project_id=None):
     treenode_id = int(request.POST['treenode_id'])
-    skeleton_id = int(request.POST['skeleton_id'])
+    can_edit_or_fail(request.user, treenode_id, 'treenode')
+    skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id:
+
     p = get_object_or_404(Project, pk=project_id)
     # retrieve neuron id of this skeleton
     sk = get_object_or_404(ClassInstance, pk=skeleton_id, project=project_id)

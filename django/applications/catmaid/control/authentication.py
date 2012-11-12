@@ -191,7 +191,8 @@ def user_project_permissions(request):
 def can_edit_or_fail(user, ob_id, table_name):
     """ Returns true if the user owns the object or if the user is a superuser.
     Raises an Exception if the user cannot edit the object
-    or if the object does not exist."""
+    or if the object does not exist.
+    Expects the ob_id to be an integer. """
     # Sanitize arguments -- can't give them to django to sanitize,
     # for django will quote the table name
     ob_id = int(ob_id)

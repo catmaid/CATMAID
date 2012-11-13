@@ -141,14 +141,15 @@ The appearance of *Project List* is very similar to the one of
 though. When a project has no stacks, it won't be visible with this view type.
 It is processed server-side and offers some configuration options:
 
-================= =========================================== ============
-Name              Options                                     Default
-================= =========================================== ============
-``sort``          ``true, false``                             ``true``
-``sample_images`` ``true, false``                             ``false``
-``sample_stack``  ``stack index, "first", "last"``            ``0``
-``sample_slice``  ``slice index, "first", "center", "last"``  ``"center"``
-================= =========================================== ============
+================== =========================================== ============
+Name               Options                                     Default
+================== =========================================== ============
+``sort``           ``true, false``                             ``true``
+``sample_images``  ``true, false``                             ``false``
+``sample_stack``   ``stack index, "first", "last"``            ``0``
+``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
+``sample_scaling`` ``scaling percentage, e.g. 50 or 75``       ``100``
+================== =========================================== ============
 
 Like said before, with the help of the ``sort`` option, one can control whether
 projects should appear in a natural sorting order. The ``sample_images`` option
@@ -161,6 +162,9 @@ defines which slice of the sample stack should be used as sample image. Again,
 ``slice index`` is an integer number and no image is shown if this is not
 within bounds. The option values ``"first"`` and ``"last"`` refer to the first
 and last slice of the stack, ``"center'`` refers to the middle slice is the stack.
+To make the sample images appear smaller or larger, the ``sample_scaling`` option
+can be used. The assigned number is treated as scaling percentage with respect
+to the original sample image size.
 
 So if you were to configure a *Project List* data view with a sample image
 which should be the middle slice of every last stack in a project, you would
@@ -185,13 +189,14 @@ stack -- replacing the stack name. Like the *Project List* type, it won't
 show a project, if it has no stacks associated. The following options are
 supported:
 
-================= =========================================== ============
-Name              Options                                     Default
-================= =========================================== ============
-``sort``          ``true, false``                             ``true``
-``sample_images`` ``true, false``                             ``false``
-``sample_slice``  ``slice index, "first", "center", "last"``  ``"center"``
-================= =========================================== ============
+================== =========================================== ============
+Name               Options                                     Default
+================== =========================================== ============
+``sort``           ``true, false``                             ``true``
+``sample_images``  ``true, false``                             ``false``
+``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
+``sample_scaling`` ``scaling percentage, e.g. 50 or 75``       ``100``
+================== =========================================== ============
 
 The ``sort`` option defines, whether the projects are ordered naturally in
 the resulting table. If images should be displayed, the ``sample_images``
@@ -202,17 +207,18 @@ selected. Again, this can be done with an integer index or one of the
 string arguments (mind the quotes!). If the numeric index is out of range,
 no image will be displayed. Like in the *Project List* view type, the
 option values ``"first"``, ``"center"`` and ``"last"`` refer to the first,
-middle and last slice of each stack.
+middle and last slice of each stack. To scale the sample image, the option
+``sample_scaling`` can be used with a scaling percentage value.
 
 If you wanted to display a text-only table, you would actually not need to
 define anything, but ``{}`` (because of the defaults) to get something like:
 
 .. image:: _static/dataviews/admin_data_views_project_table_text.png
 
-However, to get an image table with the center slice of each stack, you
-would need to define
+However, to get an image table with the center slice of each stack where
+every sample image is scaled by 65%, you would need to define
 
-  ``{"sample_images":true, "sample_slice":"center"}``
+  ``{"sample_images":true, "sample_slice":"center", "sample_scaling":65}``
 
 and you would get for example this:
 

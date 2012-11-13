@@ -1390,6 +1390,18 @@ CREATE INDEX treenode_parent_id_index ON treenode USING btree (parent_id);
 '
 ),
 
+        '2012-11-13T13:22:22' => new Migration(
+                'Extend help text of project list and project table data views',
+                "
+UPDATE data_view_type
+SET comment = 'A simple adjustable list of all projects and their stacks. This view is rendered server side and supports the display of sample images. The following options are available: \"sample_images\": [true|false], \"sample_stack\": [\"first\"|\"last\"], \"sample_slice\": [slice number|\"first\"|\"center\"|\"last\"] and \"sample_scaling\": [scaling percentage]. By default projects are sorted. Use \"sort\":false to turn this off. Thus, a valid sample configuration could look like: {\"sample_images\":true,\"sample_stack\":\"last\",\"sample_slice\":\"center\",\"sample_scaling\":75}'
+WHERE code_type = 'project_list_data_view';
+UPDATE data_view_type
+SET comment = 'A simple table of all projects and their stacks. This view is rendered server side and supports the display of sample images instead of stack names. The following options are available: \"sample_images\": [true|false], \"sample_slice\": [slice number|\"first\"|\"center\"|\"last\"], \"sample_scaling\": [scaling percentage] and  \"sort\": [true|false]. By default projects are sorted and displayed without images. A valid configuration could look like: {\"sample_images\":true,\"sample_slice\":\"center\",\"sample_scaling\":42}'
+WHERE code_type = 'project_table_data_view';
+"
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

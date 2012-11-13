@@ -13,10 +13,7 @@ try:
 except ImportError:
     pass
 
-def get_treenodes_qs(project_id=None, skeleton_id=None, treenode_id=None, with_labels=True):
-    if treenode_id and not skeleton_id:
-        t = Treenode.objects.get(pk=treenode_id)
-        skeleton_id = t.skeleton_id
+def get_treenodes_qs(project_id=None, skeleton_id=None, with_labels=True):
     treenode_qs = Treenode.objects.filter(skeleton_id=skeleton_id)
     if with_labels:
         labels_qs = TreenodeClassInstance.objects.filter(
@@ -47,8 +44,8 @@ def get_swc_string(treenodes_qs):
         result += " ".join(str(x) for x in row) + "\n"
     return result
 
-def export_skeleton_response(request, project_id=None, skeleton_id=None, treenode_id=None, format=None):
-    treenode_qs, labels_qs, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id, treenode_id)
+def export_skeleton_response(request, project_id=None, skeleton_id=None, format=None):
+    treenode_qs, labels_qs, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id)
 
     if format == 'swc':
         return HttpResponse(get_swc_string(treenode_qs), mimetype='text/plain')

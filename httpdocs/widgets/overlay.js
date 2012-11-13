@@ -810,7 +810,8 @@ var SkeletonAnnotations = new function()
         atnz: self.pix2physZ(atn_z),
         resx: stack.resolution.x,
         resy: stack.resolution.y,
-        resz: stack.resolution.z
+        resz: stack.resolution.z,
+        stack_id: project.focusedStack.id
       }, function (status, text, xml) {
         var e;
         if (status === 200) {
@@ -854,7 +855,8 @@ var SkeletonAnnotations = new function()
         atnz: self.pix2physZ(atn_z),
         resx: stack.resolution.x,
         resy: stack.resolution.y,
-        resz: stack.resolution.z
+        resz: stack.resolution.z,
+        stack_id: project.focusedStack.id
       }, function (status, text, xml) {
         var e;
         if (status === 200) {

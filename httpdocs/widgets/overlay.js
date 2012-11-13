@@ -118,10 +118,7 @@ var SkeletonAnnotations = new function()
     // retrieve SWC file of currently active treenode's skeleton
     var recipe = window.open('', 'RecipeWindow', 'width=600,height=600');
 
-    requestQueue.register(django_url + project.id + '/skeleton-for-treenode/' + atn.id + '/swc', "GET", {
-      pid: project.id,
-      tnid: atn.id
-    }, function (status, text, xml) {
+    requestQueue.register(django_url + project.id + '/skeleton/' + atn.skeleton_id + '/swc', "POST", {}, function (status, text, xml) {
       if (status === 200) {
 
         $('#recipe1').clone().appendTo('#myprintrecipe');

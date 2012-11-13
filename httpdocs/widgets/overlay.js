@@ -676,7 +676,7 @@ var SkeletonAnnotations = new function()
     };
 
     this.createLink = function (fromid, toid, link_type) {
-      //requestQueue.register("model/link.create.php", "POST", {
+      //requestQueue.register("model/link.create.php", "POST",
       requestQueue.register(django_url + project.id + '/link/create', "POST", {
         pid: project.id,
         from_id: fromid,
@@ -750,7 +750,7 @@ var SkeletonAnnotations = new function()
       // set to rootnode (no parent exists)
       var parid = -1;
 
-      //requestQueue.register("model/treenode.create.php", "POST", {
+      //requestQueue.register("model/treenode.create.php", "POST",
       requestQueue.register(django_url + project.id + '/treenode/create', "POST", {
         pid: project.id,
         parent_id: parid,
@@ -1497,7 +1497,7 @@ var SkeletonAnnotations = new function()
       
         //TODO add the padding to the range
 
-        //requestQueue.replace('model/node.list.php', 'POST', {
+        //requestQueue.replace('model/node.list.php', 'POST',
         var pz = stack.z * stack.resolution.z + stack.translation.z;
         requestQueue.replace(django_url + project.id + '/node/list', 'POST', {
           pid: stack.getProject().id,
@@ -1805,7 +1805,7 @@ var SkeletonAnnotations = new function()
           break;
         }
         self.updateNodeCoordinatesinDB(function () {
-          //requestQueue.register("model/last.edited.or.added.php", "POST", {
+          //requestQueue.register("model/last.edited.or.added.php", "POST",
           requestQueue.register(django_url + project.id + '/node/most_recent', "POST", {
             pid: project.id,
             treenode_id: atn.id
@@ -2000,5 +2000,4 @@ var SkeletonAnnotations = new function()
 
     }
   };
-
-}
+};

@@ -377,17 +377,16 @@ def treenode_info(request, project_id=None):
     FROM
         treenode,
         relation r,
-        relation r2,
         class_instance ci,
         class_instance ci2,
         class_instance_class_instance cici
     WHERE ci.project_id = %s
       AND treenode.id = %s
-      AND ci.id = treenode.skeleton_id
+      AND treenode.skeleton_id = ci.id
       AND ci.id = cici.class_instance_a
       AND ci2.id = cici.class_instance_b
-      AND cici.relation_id = r2.id
-      AND r2.relation_name = 'model_of'
+      AND cici.relation_id = r.id
+      AND r.relation_name = 'model_of'
     """, (project_id, treenode_id))
     results = [
             dict(zip([col[0] for col in c.description], row))

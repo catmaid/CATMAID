@@ -321,7 +321,7 @@ var WindowMaker = new function()
     add.setAttribute("type", "button");
     add.setAttribute("id", "add_current_to_3d_view");
     add.setAttribute("value", "Add current skeleton to 3D view");
-    add.onclick = addTo3DView; // function declared in overlay.js
+    add.onclick = Treelines.addTo3DView; // function declared in treeline.js
     container.appendChild(add);
 
     var introduction = document.createElement('p')
@@ -353,7 +353,7 @@ var WindowMaker = new function()
     addLogic(win);
 
     // Fill in with a Raphael canvas, now that the window exists in the DOM:
-    createViewerFromCATMAID(canvas.getAttribute("id"));
+    Treelines.createViewerFromCATMAID(canvas.getAttribute("id"));
 
     return win;
   };

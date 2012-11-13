@@ -1910,7 +1910,7 @@ var SkeletonAnnotations = new function()
         break;
       case "3dview":
         if (atn.id !== null) {
-          addTo3DView();
+          Treelines.addTo3DView();
         } else {
           alert('Need to activate a treenode or connector before showing them!');
         }

@@ -689,8 +689,9 @@ function TracingTool()
           'F2': [ 113 ]
       },
       run: function (e) {
-          if (!mayEdit())
+          if (!mayEdit()) {
               return false;
+          }
           ObjectTree.renameCurrentActiveNode();
           return true;
       }

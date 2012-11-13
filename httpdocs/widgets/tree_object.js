@@ -593,7 +593,7 @@ var ObjectTree = new function()
         return false;
       }
 
-          type = data.rslt.obj.attr("rel");
+      type = data.rslt.obj.attr("rel");
 
       $.post(django_url + project.id + '/object-tree/instance-operation', {
             "operation": "has_relations",
@@ -604,6 +604,11 @@ var ObjectTree = new function()
             "pid": pid
         }, function (r) {
           r = $.parseJSON(r);
+          if (r.error) {
+            alert(r.error);
+            $.jstree.rollback(treebefore);
+            return;
+          }
           if(type === "group" && r['has_relation']) {
             alert("Group node has subgroups or neurons. (Re)move them before you can delete it.");
             $.jstree.rollback(treebefore);
@@ -628,6 +633,11 @@ var ObjectTree = new function()
                   }, function (r) {
                     $.unblockUI();
                     r = $.parseJSON(r);
+                    if (r['error']) {
+                      alert(r['error']);
+                      $.jstree.rollback(treebefore);
+                      return;
+                    }
                     if(r['status']) {
                         $("#tree_object").jstree("refresh", -1);
                         project.updateTool();
@@ -639,9 +649,6 @@ var ObjectTree = new function()
                           delayTime: 2500,
                           onComplete: function() { g.remove(); }
                         });
-                    } else {
-                        if(r['error'])
-                            alert(r['error']);
                     };
               });
           }

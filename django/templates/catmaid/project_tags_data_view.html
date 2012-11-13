@@ -23,14 +23,15 @@
 		{% endfor %}
 	</tr>
 	{% for rt in row_tags %}
-		<tr>
+		<tr class="{% cycle 'even' 'odd' %}">
 			<td class="head">{{ rt }}</td>
 			{% for ct in col_tags %}
 				{% tagged_projects ct rt as tprojects sort %}
+				{% cycle 'even' 'odd' as rowtype silent %}
 				{% if sample_images %}
-					<td class="stackimage" title="There are {{ tprojects|length }} projects for the tags {{ ct }} and {{ rt }}.">
+					<td class="{{ rowtype }}-stackimage" title="There are {{ tprojects|length }} projects for the tags {{ ct }} and {{ rt }}.">
 				{% else %}
-					<td class="stackname" title="There are {{ tprojects|length }} projects for the tags {{ ct }} and {{ rt }}.">
+					<td class="{{ rowtype }}-stackname" title="There are {{ tprojects|length }} projects for the tags {{ ct }} and {{ rt }}.">
 				{% endif %}
 				{% for p in tprojects %}
 					{% with stacks=p.stacks|filter_stacks:linked_stacks %}

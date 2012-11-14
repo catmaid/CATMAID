@@ -1402,6 +1402,14 @@ WHERE code_type = 'project_table_data_view';
 "
 ),
 
+	'2012-11-14T14:36:18' => new Migration(
+		'Make broken_slice.stack_id a foreign key if stack.id',
+		'
+ALTER TABLE ONLY broken_slice
+    ADD CONSTRAINT broken_slice_stack_id_fkey FOREIGN KEY (stack_id) REFERENCES stack(id);
+'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

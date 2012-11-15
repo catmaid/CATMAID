@@ -551,3 +551,25 @@ def find_next_branchnode_or_end(request, project_id=None):
     except Exception as e:
         raise CatmaidException('Could not obtain next branch node or root:' + str(e))
 
+@requires_user_role([UserRole.Browse])
+@report_error
+def user_info(request, project_id=None):
+    treenode_id = int(request.POST['treenode_id'])
+    t = Treenode.objects.filter(pk=treenode_id).select_related('user', 'editor')[0]
+    reviewer = None
+    review_time = None
+    if -1 != t.reviewer_id:
+        reviewer = User.objects.filter(pk=t.reviewer_id).values('username', 'first_name', 'last_name')[0]
+        review_time = str(datetime.date(t.review_time))
+    return HttpResponse(json.dumps({'user': {'username': t.user.username,
+                                             'first_name': t.user.first_name,
+                                             'last_name': t.user.last_name},
+                                    'creation_time': str(datetime.date(t.creation_time)),
+                                    'editor': {'username': t.editor.username,
+                                               'first_name': t.editor.first_name,
+                                               'last_name': t.editor.last_name},
+                                    'edition_time': str(datetime.date(t.edition_time)),
+                                    'reviewer': reviewer,
+                                    'review_time': review_time}))
+
+

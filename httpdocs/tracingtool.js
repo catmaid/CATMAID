@@ -574,6 +574,19 @@ function TracingTool()
     }
   }) );
 
+  this.addAction( new Action({
+    helpText: "Retrieve information about the active node.",
+    keyShortcuts: {
+      'I': [ 73 ]
+    },
+    run: function (e) {
+      if (!mayView())
+        return false;
+      tracingLayer.svgOverlay.tracingCommand('retrievetreenodeinfo', e);
+      return true;
+    }
+  }) );
+
   /*
   this.addAction( new Action({
     helpText: "Move down 1 slice in z and click",

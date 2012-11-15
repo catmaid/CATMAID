@@ -148,6 +148,10 @@ var SkeletonAnnotations = new function()
       return show_labels;
     }
 
+    /** The original list of nodes; beware the list will change
+     * and the data of the nodes will change as they are recycled. */
+    this.getNodes = function() { return nodes; }
+
     /** This returns true if focus had to be switched; typically if
         the focus had to be switched, you should return from any event
         handling, otherwise all kinds of surprising bugs happen...  */
@@ -2001,6 +2005,32 @@ var SkeletonAnnotations = new function()
         var phys_y = self.pix2physY(pos_y);
         createInterpolatedNode(atn.id, atn.skeleton_id, atn.x, atn.y, atn.z, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
         break;
+      case 'retrievetreenodeinfo':
+        if (atn !== null) {
+          requestQueue.replace(django_url + project.id + '/node/user-info', 'POST', { treenode_id: atn.id }, function(status, text, xml) {
+            if (200 === status) {
+              var jso = $.parseJSON(text);
+              if (jso.error) {
+                alert(jso.error);
+              } else {
+                var msg =
+                  "Created by " + jso.user.first_name + " " + jso.user.last_name + " (" + jso.user.username +
+                  ") on " + jso.creation_time +
+                  ", last edited by " + jso.editor.first_name + " " + jso.editor.last_name + " (" + jso.editor.username +
+                  ") on " + jso.edition_time +
+                  ", reviewed by ";
+                if (jso.reviewer) {
+                  msg += jso.reviewer.first_name + " " + jso.reviewer.last_name + " (" + jso.reviewer.username + ") on " + jso.review_time;
+                } else {
+                  msg += "no one";
+                }
+                statusBar.replaceLast(msg);
+              }
+            }
+          }, 'retrievetreenodeinfo');
+        }
+        break;
+
       }
       return;
 

@@ -564,7 +564,7 @@ function TracingTool()
   this.addAction( new Action({
     helpText: "Create treenode with z axis interpolation",
     keyShortcuts: {
-      'I': [ 73 ]
+      'Z': [ 90 ]
     },
     run: function (e) {
       if (!mayEdit())

@@ -45,7 +45,7 @@ def node_list_tuples(request, project_id=None):
         params[p] = int(request.POST.get(p, 0))
     for p in ('top', 'left'):
         params[p] = float(request.POST.get(p, 0))
-    params['limit'] = 2000  # Limit the number of retrieved treenodes.
+    params['limit'] = 2000  # Limit the number of retrieved treenodes within the section
     params['project_id'] = project_id
     
     relation_map = get_relation_to_id_map(project_id)
@@ -115,7 +115,9 @@ def node_list_tuples(request, project_id=None):
         is_superuser = request.user.is_superuser
         user_id = request.user.id
 
+        n_retrieved_nodes = 0 # at one per row, only those within the section
         for row in cursor.fetchall():
+          n_retrieved_nodes += 1
           t1id = row[0]
           if t1id not in treenode_ids:
               treenode_ids.add(t1id)
@@ -124,11 +126,6 @@ def node_list_tuples(request, project_id=None):
           if t2id not in treenode_ids:
               treenode_ids.add(t2id)
               treenodes.append(row[9:17] + (is_superuser or row[17] == user_id,))
-
-        if len(treenodes) >= params['limit']:
-            print >> sys.stderr, "LIMIT of %s nodes reached! Retrieved: %s nodes" % (params['limit'], len(treenodes))
-        else:
-            print >> sys.stderr, "Retrieved %s nodes" % len(treenodes)
 
         # Retrieve connectors that are synapses - do a LEFT OUTER JOIN with
         # the treenode_connector table, so that we get entries even if the
@@ -265,7 +262,7 @@ def node_list_tuples(request, project_id=None):
                 for row in cursor.fetchall():
                     labels[row[0]].append(row[1])
 
-        return HttpResponse(json.dumps((treenodes, connectors, labels)))
+        return HttpResponse(json.dumps((treenodes, connectors, labels, n_retrieved_nodes == params['limit'])))
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))
@@ -353,6 +350,7 @@ def most_recent_treenode(request, project_id=None):
 def node_update(request, project_id=None):
     nodes = {}
     for key, value in request.POST.items():
+        # TODO wtf? The encoding in overlay.js/updateNodePositions is wasteful and arcane for no reason. JSON can encode javascript objects just fine.
         parsed_key = re.search('^(?P<property>[a-zA-Z_]+)(?P<node_index>[0-9]+)$', key)
         if not parsed_key:
             continue
@@ -362,7 +360,7 @@ def node_update(request, project_id=None):
             nodes[node_index] = {}
         nodes[node_index][node_property] = value
 
-    required_properties = ['node_id', 'x', 'y', 'z', 'type']
+    required_properties = {'node_id', 'x', 'y', 'z', 'type'} # set literal
     for node_index, node in nodes.items():
         for req_prop in required_properties:
             if req_prop not in node:

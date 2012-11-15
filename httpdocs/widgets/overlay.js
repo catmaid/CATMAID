@@ -1227,6 +1227,11 @@ var SkeletonAnnotations = new function()
               self.activateNode(nn);
           }
       }
+
+      // Warn about nodes not retrieved because of limit
+      if (true === jso[3]) {
+        statusBar.replaceLast("*WARNING*: did not retrieve all visible nodes--too many! Zoom in to constrain the field of view.");
+      }
     };
 
     // Initialize to the value of stack.scale at instantiation of SVGOverlay

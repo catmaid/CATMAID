@@ -584,7 +584,6 @@ var SkeletonAnnotations = new function()
             //"model/treenode.split.php",
             django_url + project.id + '/skeleton/split',
             "POST", {
-            pid: project.id,
             treenode_id: atn.id
           }, function (status, text, xml) {
             $.unblockUI();

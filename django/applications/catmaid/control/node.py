@@ -377,7 +377,7 @@ def node_update(request, project_id=None):
                     # This can happen because of the async between the client and the server: the client may move the node in the same mouse action that triggers the deletion of the node.
                     continue
                 Treenode.objects.filter(id=node['node_id']).update(
-                    user=request.user,
+                    editor=request.user,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
             elif node['type'] == 'connector':
                 try:
@@ -386,7 +386,7 @@ def node_update(request, project_id=None):
                     # Ignore deleted objects.
                     continue
                 Location.objects.filter(id=node['node_id']).update(
-                    user=request.user,
+                    editor=request.user,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
             else:
                 raise CatmaidException('Unknown node type: %s' % node['type'])

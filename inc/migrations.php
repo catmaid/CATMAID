@@ -1410,6 +1410,16 @@ ALTER TABLE ONLY broken_slice
 '
 ),
 
+	'2012-11-15T20:36:18' => new Migration(
+		'Add editor_id to location table, copying the value of user_id. Will take some time if your location table is large.',
+		'
+ALTER TABLE location ADD COLUMN editor_id integer;
+UPDATE location SET editor_id = user_id;
+ALTER TABLE location
+	ADD CONSTRAINT editor_id_fkey FOREIGN KEY (editor_id) REFERENCES "auth_user"(id);
+'
+),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

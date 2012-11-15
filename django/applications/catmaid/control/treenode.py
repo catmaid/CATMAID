@@ -124,6 +124,7 @@ def create_treenode(request, project_id=None):
         """
         new_treenode = Treenode()
         new_treenode.user = request.user
+        new_treenode.editor = request.user
         new_treenode.project_id = project_id
         new_treenode.location = Double3D(float(params['x']), float(params['y']), float(params['z']))
         new_treenode.radius = int(params['radius'])
@@ -270,6 +271,7 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
             response_on_error = 'Error while trying to insert treenode.'
             new_treenode = Treenode()
             new_treenode.user_id = request.user.id
+            new_treenode.editor_id = request.user.id
             new_treenode.project_id = project_id
             new_treenode.location = Double3D(
                     float(params['atnx'] + dx * i),

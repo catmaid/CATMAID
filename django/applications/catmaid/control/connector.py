@@ -231,6 +231,7 @@ def create_connector(request, project_id=None):
     location = Double3D(x=float(query_parameters['x']), y=float(query_parameters['y']), z=float(query_parameters['z']))
     new_connector = Connector(
         user=request.user,
+        editor=request.user,
         project=Project.objects.get(id=project_id),
         location=location,
         confidence=parsed_confidence)

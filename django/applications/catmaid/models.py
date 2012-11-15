@@ -510,7 +510,7 @@ class Location(UserFocusedModel):
         db_table = "location"
         managed = False
     creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    editor = models.ForeignKey(User, related_name='location_editor', db_column='editor_id')
     location = Double3DField()
     reviewer_id = models.IntegerField(default=-1)
     review_time = models.DateTimeField()
@@ -521,6 +521,7 @@ class Treenode(UserFocusedModel):
         managed = False
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
+    editor = models.ForeignKey(User, related_name='treenode_editor', db_column='editor_id')
     location = Double3DField()
     parent = models.ForeignKey('self', null=True, related_name='children')
     radius = models.FloatField()
@@ -536,6 +537,7 @@ class Connector(UserFocusedModel):
         managed = False
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
+    editor = models.ForeignKey(User, related_name='connector_editor', db_column='editor_id')
     location = Double3DField()
     confidence = models.IntegerField(default=5)
     reviewer_id = models.IntegerField(default=-1)

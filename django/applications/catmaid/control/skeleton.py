@@ -28,58 +28,61 @@ def node_count(request, project_id=None, skeleton_id=None):
 def split_skeleton(request, project_id=None):
     treenode_id = int(request.POST['treenode_id'])
     can_edit_or_fail(request.user, treenode_id, 'treenode')
-    skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
+    treenode = Treenode.objects.get(pk=treenode_id)
+    skeleton_id = treenode.skeleton_id
+    project_id=int(project_id)
 
-    p = get_object_or_404(Project, pk=project_id)
-    # retrieve neuron id of this skeleton
-    sk = get_object_or_404(ClassInstance, pk=skeleton_id, project=project_id)
-    neuron = ClassInstance.objects.filter(
-        project=p,
+    # retrieve neuron of this skeleton
+    neuron = ClassInstance.objects.get(
         cici_via_b__relation__relation_name='model_of',
-        cici_via_b__class_instance_a=sk)
-    # retrieve all nodes of the skeleton
-    treenode_qs = Treenode.objects.filter(skeleton_id=skeleton_id)
+        cici_via_b__class_instance_a_id=skeleton_id)
+    # retrieve the id, parent_id of all nodes in the skeleton
+    # with minimal ceremony
+    cursor = connection.cursor()
+    cursor.execute('''
+    SELECT id, parent_id FROM treenode WHERE skeleton_id=%s
+    ''' % skeleton_id) # no need to sanitize
     # build the networkx graph from it
     graph = nx.DiGraph()
-    for e in treenode_qs:
-        graph.add_node( e.id )
-        if e.parent_id:
-            graph.add_edge( e.parent_id, e.id )
-        # find downstream nodes starting from target treenode_id
-    # generate id list from it
-    change_list = nx.bfs_tree(graph, int(treenode_id)).nodes()
+    for row in cursor.fetchall():
+        graph.add_node( row[0] )
+        if row[1]:
+            # edge from parent_id to id
+            graph.add_edge( row[1], row[0] )
+    # find downstream nodes starting from target treenode_id
+    # and generate the list of IDs to change, starting at treenode_id (inclusive)
+    change_list = nx.bfs_tree(graph, treenode_id).nodes()
     # create a new skeleton
     new_skeleton = ClassInstance()
     new_skeleton.name = 'Skeleton'
-    new_skeleton.project = p
+    new_skeleton.project_id = project_id
     new_skeleton.user = request.user
-    new_skeleton.class_column = Class.objects.get(class_name='skeleton', project=p)
+    new_skeleton.class_column = Class.objects.get(class_name='skeleton', project_id=project_id)
     new_skeleton.save()
-    new_skeleton.name = 'Skeleton {0}'.format( new_skeleton.id )
+    new_skeleton.name = 'Skeleton {0}'.format( new_skeleton.id ) # This could be done with a trigger in the database
     new_skeleton.save()
-    r = Relation.objects.get(relation_name='model_of', project=p)
+    # Assign the skeleton to the same neuron
+    r = Relation.objects.get(relation_name='model_of', project_id=project_id)
     cici = ClassInstanceClassInstance()
     cici.class_instance_a = new_skeleton
-    cici.class_instance_b = neuron[0]
+    cici.class_instance_b = neuron
     cici.relation = r
     cici.user = request.user
-    cici.project = p
+    cici.project_id = project_id
     cici.save()
     # update skeleton_id of list in treenode table
+    # This creates a lazy QuerySet that, upon calling update, returns a new QuerySet
+    # that is then executed. It does NOT create an update SQL query for every treenode.
     tns = Treenode.objects.filter(id__in=change_list).update(skeleton=new_skeleton)
-    # update connectors
+    # update the skeleton_id value of the treenode_connector table
     tc = TreenodeConnector.objects.filter(
-        project=project_id,
         relation__relation_name__endswith = 'synaptic_to',
         treenode__in=change_list,
     ).update(skeleton=new_skeleton)
-    # setting parent of target treenode to null
+    # setting new root treenode's parent to null
     Treenode.objects.filter(id=treenode_id).update(parent=None)
-    # Obtain the location of the node at which the split as done
-    locations = Location.objects.filter(id=treenode_id)
-    if len(locations) > 0:
-        location = locations[0].location
-    insert_into_log( project_id, request.user.id, "split_skeleton", location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron[0].name ) )
+    # Log the location of the node at which the split was done
+    insert_into_log( project_id, request.user.id, "split_skeleton", treenode.location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
     return HttpResponse(json.dumps({}), mimetype='text/json')
 
 

@@ -118,6 +118,26 @@ another one -- within the same pair of curly braces:
 
   ``{"name1":opt1, "name2:opt2, ...}``
 
+Like already mentioned, there are options that are supported by all the
+different data view types. The only exception to this is the *Legacy Project
+List* type, which doesn't support such general options. All the other types
+respect the following general options:
+
+=============== =========================================== ============
+Name            Options                                     Default
+=============== =========================================== ============
+``sort``        ``true, false``                             ``true``
+``filter_tags`` ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
+=============== =========================================== ============
+
+With the help of the ``sort`` option one can make sure the list of projects
+a data view deals with is sorted (or that it is not). The ``filter_tags``
+option allows to define a list of tags that have to be assigned to all
+projects looked at. If a data view should get a unsorted list of projects
+that are tagged with ``Test`` and ``CNS`` the configuration would look like:
+
+  ``{"sort":false, "filter_tags":["Test", "CNS"]}``
+
 The remainder of this section will briefly discuss the different data view
 types available.
 
@@ -145,14 +165,15 @@ It is processed server-side and offers some configuration options:
 Name               Options                                     Default
 ================== =========================================== ============
 ``sort``           ``true, false``                             ``true``
+``filter_tags``    ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
 ``sample_images``  ``true, false``                             ``false``
 ``sample_stack``   ``stack index, "first", "last"``            ``0``
 ``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
 ``sample_scaling`` ``scaling percentage, e.g. 50 or 75``       ``100``
 ================== =========================================== ============
 
-Like said before, with the help of the ``sort`` option, one can control whether
-projects should appear in a natural sorting order. The ``sample_images`` option
+Please refer to the introduction to this section for an explanation of the
+``sort`` and ``filter_tags`` options. The ``sample_images`` option
 defines whether there should be a sample image displayed to the left of each
 project entry. If an image is displayed, the ``sample_stack`` option defines
 from which stack of the current project the image should be taken. The
@@ -193,13 +214,14 @@ supported:
 Name               Options                                     Default
 ================== =========================================== ============
 ``sort``           ``true, false``                             ``true``
+``filter_tags``    ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
 ``sample_images``  ``true, false``                             ``false``
 ``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
 ``sample_scaling`` ``scaling percentage, e.g. 50 or 75``       ``100``
 ================== =========================================== ============
 
-The ``sort`` option defines, whether the projects are ordered naturally in
-the resulting table. If images should be displayed, the ``sample_images``
+Have a look to this section's introduction for an explanation of the ``sort``
+and ``filter_tags`` options. If images should be displayed, the ``sample_images``
 option should be set to ``true``. Since there is one image per stack, an
 option like ``sample_stack`` in the *Project list* type, isn't needed.
 However, with the help of the ``sample_slice`` option a slice can be

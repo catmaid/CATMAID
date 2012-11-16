@@ -2,6 +2,7 @@
 {% include "catmaid/common_data_view_header.html" %}
 
 {% with sort=config|get_or_none:"sort"|default_if_none:1 %}
+{% with filter_tags=config|get_or_none:"filter_tags"|default_if_none:0 %}
 {% with row_tags=config|get_or_none:"row_tags"|default_if_none:0 %}
 {% with col_tags=config|get_or_none:"col_tags"|default_if_none:0 %}
 {% with linked_stacks=config|get_or_none:"linked_stacks"|default_if_none:"all" %}
@@ -26,7 +27,7 @@
 		<tr class="{% cycle 'even' 'odd' %}">
 			<td class="head">{{ rt }}</td>
 			{% for ct in col_tags %}
-				{% tagged_projects ct rt as tprojects sort %}
+				{% tagged_projects ct rt filter_tags as tprojects sort %}
 				{% cycle 'even' 'odd' as rowtype silent %}
 				{% if sample_images %}
 					<td class="{{ rowtype }}-stackimage" title="There are {{ tprojects|length }} projects for the tags {{ ct }} and {{ rt }}.">
@@ -72,6 +73,7 @@
 	</table>
 {% endif %}
 
+{% endwith %}
 {% endwith %}
 {% endwith %}
 {% endwith %}

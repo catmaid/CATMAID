@@ -234,7 +234,7 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
     WHERE class_instance_class_instance.relation_id=%s
       AND class_instance_class_instance.class_instance_a IN (%s)
       AND class_instance.id=class_instance_class_instance.class_instance_b
-    ''', (model_of_id, skids_string))
+    ''' % (model_of_id, skids_string)) # No need to sanitize, and would quote skids_string
     for row in cursor.fetchall():
         partners[row[0]]['name'] = '%s / skeleton %s' % (row[1], row[0])
 

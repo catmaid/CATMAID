@@ -238,8 +238,6 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
     for row in cursor.fetchall():
         partners[row[0]]['name'] = '%s / skeleton %s' % (row[1], row[0])
 
-    # TODO: fix Skeleton class to address issue with connectors making more than one synapse onto the same skeleton
-
     return partners
 
 

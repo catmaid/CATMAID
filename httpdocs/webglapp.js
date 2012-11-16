@@ -900,6 +900,7 @@ var WebGLApp = new function () {
 	}
 	function onMouseUp(event) {
 		is_mouse_down = false;
+		self.render(); // May need another render on occasions
 	}
 
 	/** To execute every time the mouse is moved. */
@@ -911,7 +912,7 @@ var WebGLApp = new function () {
 		}
   }
 
-	/** To execute every time the mouse is moved. */
+	/** To execute every time the mouse wheel turns. */
 	function onMouseWheel(event) {
 		self.render();
 	}

@@ -9,6 +9,7 @@ Prerequisites
 1. PostgreSQL >= 9.0
 2. Apache2 Webserver
 3. PHP >= 5.2
+4. Python 2.7
 
 You can install these main dependencies with::
 
@@ -18,6 +19,10 @@ To use the Python-based helper scripts, you should also install
 the following packages::
 
     sudo apt-get install python-psycopg2 python-yaml python-tz
+
+We recommend the use of Python 2.7. CATMAID is likely to run with
+Python 2.6 as well, however Python 2.7 is used for development and
+testing.
 
 Installation on Ubuntu 12.04
 ----------------------------

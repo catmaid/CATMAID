@@ -80,7 +80,7 @@ def get_data_view( request, data_view_id ):
     config = json.loads( dv.config )
     projects = Project.objects.all()
     # Sort by default
-    if "sort" not in config or config[sort] == True:
+    if "sort" not in config or config["sort"] == True:
         projects = natural_sort( projects, "title" )
 
     context = Context({

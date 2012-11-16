@@ -101,9 +101,9 @@ Options in help texts usually have the following notation:
 An option name has to be quoted and the value has to be delimited by a colon.
 However, also values might need quoting if they are strings other than
 ``true`` or ``false`` (and no numbers). Alternative values are separated by
-a logical *or*/pipe symbol (``|``) and only one of them can be used. Let's have a look at
-the *sort* option as an example: All data view types, except the
-*Legacy Project List* type, support the option
+a logical *or*/pipe symbol (``|``) and only one of them can be used. Let's
+have a look at the *sort* option as an example: All data view types, except
+the *Legacy Project List* type, support the option
 
   ``"sort":[true|false]``.
  

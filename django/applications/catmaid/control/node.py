@@ -360,7 +360,7 @@ def node_update(request, project_id=None):
             nodes[node_index] = {}
         nodes[node_index][node_property] = value
 
-    required_properties = {'node_id', 'x', 'y', 'z', 'type'} # set literal
+    required_properties = set( ['node_id', 'x', 'y', 'z', 'type'] ) # set literal
     for node_index, node in nodes.items():
         for req_prop in required_properties:
             if req_prop not in node:

@@ -351,8 +351,9 @@ var WebGLApp = new function () {
     {
       for ( var i=0; i<connectivity_types.length; ++i ) {
         if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
-          if( this.connectoractor[connectivity_types[i]] )
+          if( this.connectoractor && this.connectoractor[connectivity_types[i]] ) {
             scene.removeObject( this.connectoractor[connectivity_types[i]] );
+					}
         }
       }
     }
@@ -648,6 +649,7 @@ var WebGLApp = new function () {
         self.removeSkeleton( skeleton_id );
       }
     }
+		console.log("removeAllSkeleons");
 		self.render();
   }
 

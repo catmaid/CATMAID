@@ -226,9 +226,9 @@ var SkeletonAnnotations = new function()
           node = nodes[id];
           if ("connector" === node.type) {
             if (node.pregroup.hasOwnProperty(node_id)) {
-              pre.push(id);
+              pre.push(parseInt(id));
             } else if (node.postgroup.hasOwnProperty(node_id)) {
-              post.push(id);
+              post.push(parseInt(id));
             }
           }
         }

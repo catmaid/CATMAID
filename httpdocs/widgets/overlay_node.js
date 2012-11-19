@@ -1,6 +1,7 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
+// TODO connectors are screwed up when zooming in/out
 // TODO check all other TODOS
 
 /** Namespace where Node instances are created and edited. */
@@ -745,7 +746,10 @@ var SkeletonElements = new function()
 
   // Also, there shouldn't be a "needsync" flag. Instead, push the node to an array named "needSyncWithDB". Will avoid looping.
 
-  // Regarding the nodes map: it is an array of keys over objects stored in a a cache of nodes that are already inserted into the DOM and that can be reused.
+  // Regarding the nodes map: it should be an array of keys over objects stored in a a cache of nodes that are already inserted into the DOM
+  // and that can be reused.
+  // Regarding children and connectors: any reason not to make them plain arrays? Given that they are always small,
+  // using a filter to find a node with a specific id would be enough.
 
   /** Surrogate cosntructor for ConnectorNode.
    * See "newNode" for explanations. */

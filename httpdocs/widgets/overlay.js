@@ -2018,5 +2018,74 @@ var SkeletonAnnotations = new function()
       var phys_y = self.pix2physY(pos_y);
       createInterpolatedNode(atn.id, atn.skeleton_id, atn.x, atn.y, atn.z, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
     };
+
+
+    /** If you select a pre- or post-synaptic terminal, then run
+        this command, the active node will be switched to its
+        connector (if one uniquely exists).  If you then run the
+        command again, it will switch back to the terminal. */
+    this.switchBetweenTerminalAndConnector = function() {
+      if (null === atn.id) {
+        growlAlert("A terminal must be select in order to switch to its connector");
+        return;
+      }
+      var ob = nodes[atn.id];
+      if ("connector" === ob.type) {
+        if (switchingConnectorID === ob.id) {
+          // Switch back to the terminal
+          self.moveToAndSelectNode(nodes[switchingTreenodeID]);
+        } else {
+          // Go to the postsynaptic terminal if there is only one
+          if (1 === countProperties(ob.postgroup)) {
+            self.moveToAndSelectNode(nodes[Object.keys(ob.postgroup)[0]]);
+          // Otherwise, go to the presynaptic terminal if there is only one
+          } else if (1 === countProperties(ob.pregroup)) {
+            self.moveToAndSelectNode(nodes[Object.keys(ob.pregroup)[0]]);
+          } else {
+            growlAlert("Oops", "Don't know which terminal to switch to");
+            switchingTreenodeID = null;
+            switchingConnectorID = null;
+            return;
+          }
+        }
+      } else if ("treenode" === ob.type) {
+        if (switchingTreenodeID === ob.id) {
+          // Switch back to the connector
+          self.moveToAndSelectNode(nodes[switchingConnectorID]);
+        } else {
+          // Find a connector for the treenode 'ob'
+          var cs = self.findConnectors(ob.id);
+          var preIDs = cs[0];
+          var postIDs = cs[1];
+          if (1 === postIDs.length) {
+            switchingTreenodeID = ob.id;
+            switchingConnectorID = postIDs[0];
+          } else if (1 === preIDs.length) {
+            switchingTreenodeID = ob.id;
+            switchingConnectorID = preIDs[0];
+          } else {
+            growlAlert("Oops", "Don't know which connector to switch to");
+            switchingTreenodeID = null;
+            switchingConnectorID = null;
+            return;
+          }
+          self.moveToAndSelectNode(nodes[switchingConnectorID]);
+        }
+      } else {
+        alert("ERROR: unknown node type: " + ob.type);
+      }
+    };
   };
+
+};
+
+var growlAlert = function(title, message) {
+  $('#growl-alert').growlAlert({
+    autoShow: true,
+    content: message,
+    title: title,
+    position: 'top-right',
+    delayTime: 2500,
+    onComplete: function() { g.remove(); }
+  });
 };

@@ -208,8 +208,9 @@ var SkeletonAnnotations = new function()
       in the current retrieved set of nodes
      */
     this.selectNode = function (id) {
-      if (nodes[id]) {
-        self.activateNode(nodes[id]);
+      var node = nodes[id];
+      if (node) {
+        self.activateNode(node);
       }
     };
 

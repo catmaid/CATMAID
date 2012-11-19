@@ -492,7 +492,7 @@ function TracingTool()
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('exportswc');
+      SkeletonAnnotations.exportSWC();
       return true;
     }
   }) );

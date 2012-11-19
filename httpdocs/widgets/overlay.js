@@ -1915,13 +1915,6 @@ var SkeletonAnnotations = new function()
           self.activateNearestNode(lastX, lastY, project.coordinates.z);
         }
         break;
-      case "exportswc":
-        if (atn.id !== null) {
-          SkeletonAnnotations.exportSWC();
-        } else {
-          alert('Need to activate a treenode before exporting to SWC!');
-        }
-        break;
       case "3dview":
         if (atn.id !== null) {
           Treelines.addTo3DView();

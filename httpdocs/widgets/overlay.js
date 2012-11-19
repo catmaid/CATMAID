@@ -1640,7 +1640,7 @@ var SkeletonAnnotations = new function()
           });
     };
 
-    this.goToNextBranchOrEndNode = function(treenode_id, skeleton_id) {
+    this.goToNextBranchOrEndNode = function(treenode_id) {
       requestQueue.register(
           django_url + project.id + "/node/next_branch_or_end",
           "POST",
@@ -1850,12 +1850,12 @@ var SkeletonAnnotations = new function()
         break;
       case "gonextbranch":
         if (atn.id !== null) {
-          self.goToNextBranchOrEndNode(atn.id, atn.skeleton_id);
+          self.goToNextBranchOrEndNode(atn.id);
         }
         break;
       case "goprevbranch":
         if (atn.id !== null) {
-          self.goToPreviousBranchOrRootNode(atn.id, atn.skeleton_id);
+          self.goToPreviousBranchOrRootNode(atn.id);
         }
         break;
       case "skelsplitting":

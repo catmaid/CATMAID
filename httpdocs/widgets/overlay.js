@@ -1941,73 +1941,6 @@ var SkeletonAnnotations = new function()
         var phys_y = self.pix2physY(pos_y);
         createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
         break;
-      case "createinterpolatedtreenode":
-        // Check if there is already a node under the mouse
-        // and if so, then activate it
-        if (lastX !== null && lastY !== null) {
-          // Radius of 7 pixels, in physical coordinates
-          var phys_radius = (7.0 / stack.scale) * Math.max(stack.resolution.x, stack.resolution.y);
-          var nearestnode = self.findNodeWithinRadius(lastX, lastY, project.coordinates.z, phys_radius);
-
-          if (nearestnode !== null) {
-            // TODO the tracingCommand function should be broken down into many functions, each accepting the event as argument.
-            if (null !== arguments[1] && arguments[1].shiftKey) {
-              // Shift down: interpolate and join
-              if (null === atn.id) { return; }
-              if (nearestnode.skeleton_id === atn.skeleton_id) {
-                self.activateNode(nearestnode);
-                return;
-              }
-              // If the target skeleton has more than one node, ask for confirmation
-              var nearestnode_id = nearestnode.id;
-              var nearestnode_skid = nearestnode.skeleton_id;
-              var atn_id = atn.id;
-              var atn_skid = atn.skeleton_id;
-              var atn_x = atn.x;
-              var atn_y = atn.y;
-              var atn_z = atn.z;
-              maybeExecuteIfSkeletonHasMoreThanOneNode(
-                  nearestnode.skeleton_id,
-                  "join",
-                  function() {
-                    // Take into account current local offset coordinates and scale
-                    var pos_x = self.phys2pixX(self.offsetXPhysical);
-                    var pos_y = self.phys2pixY(self.offsetYPhysical);
-                    // At this point of the execution
-                    // project.coordinates.z is not on the new z index, thus simulate it here
-                    var pos_z = self.phys2pixZ(project.coordinates.z);
-                    var phys_z = self.pix2physZ(pos_z);
-                    // Get physical coordinates for node position creation
-                    var phys_x = self.pix2physX(pos_x);
-                    var phys_y = self.pix2physY(pos_y);
-                    // Ask to join the two skeletons with interpolated nodes
-                    createTreenodeLinkInterpolated(atn_id, atn_x, atn_y, atn_z, nearestnode_id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
-                  });
-              return;
-            } else {
-              // If shift is not down, just select the node:
-              self.activateNode(nearestnode);
-              return;
-            }
-          }
-        }
-        // Else, check that there is a node activated
-        if (atn.id === null) {
-          alert('Need to activate a treenode first!');
-          return;
-        }
-        // Take into account current local offset coordinates and scale
-        var pos_x = self.phys2pixX(self.offsetXPhysical);
-        var pos_y = self.phys2pixY(self.offsetYPhysical);
-        // At this point of the execution
-        // project.coordinates.z is not on the new z index, thus simulate it here
-        var pos_z = self.phys2pixZ(project.coordinates.z);
-        var phys_z = self.pix2physZ(pos_z);
-        // Get physical coordinates for node position creation
-        var phys_x = self.pix2physX(pos_x);
-        var phys_y = self.pix2physY(pos_y);
-        createInterpolatedNode(atn.id, atn.skeleton_id, atn.x, atn.y, atn.z, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
-        break;
       case 'retrievetreenodeinfo':
         if (atn !== null) {
           requestQueue.replace(django_url + project.id + '/node/user-info', 'POST', { treenode_id: atn.id }, function(status, text, xml) {
@@ -2037,6 +1970,75 @@ var SkeletonAnnotations = new function()
       }
       return;
 
-    }
+    };
+
+
+    /** @param e The mouse event, to read out whether shift is down. */
+    this.createInterpolatedTreenode = function(e) {
+      // Check if there is already a node under the mouse
+      // and if so, then activate it
+      if (lastX !== null && lastY !== null) {
+        // Radius of 7 pixels, in physical coordinates
+        var phys_radius = (7.0 / stack.scale) * Math.max(stack.resolution.x, stack.resolution.y);
+        var nearestnode = self.findNodeWithinRadius(lastX, lastY, project.coordinates.z, phys_radius);
+
+        if (nearestnode !== null) {
+          if (e && e.shiftKey) {
+            // Shift down: interpolate and join
+            if (null === atn.id) { return; }
+            if (nearestnode.skeleton_id === atn.skeleton_id) {
+              self.activateNode(nearestnode);
+              return;
+            }
+            // If the target skeleton has more than one node, ask for confirmation
+            var nearestnode_id = nearestnode.id;
+            var nearestnode_skid = nearestnode.skeleton_id;
+            var atn_id = atn.id;
+            var atn_skid = atn.skeleton_id;
+            var atn_x = atn.x;
+            var atn_y = atn.y;
+            var atn_z = atn.z;
+            maybeExecuteIfSkeletonHasMoreThanOneNode(
+                nearestnode.skeleton_id,
+                "join",
+                function() {
+                  // Take into account current local offset coordinates and scale
+                  var pos_x = self.phys2pixX(self.offsetXPhysical);
+                  var pos_y = self.phys2pixY(self.offsetYPhysical);
+                  // At this point of the execution
+                  // project.coordinates.z is not on the new z index, thus simulate it here
+                  var pos_z = self.phys2pixZ(project.coordinates.z);
+                  var phys_z = self.pix2physZ(pos_z);
+                  // Get physical coordinates for node position creation
+                  var phys_x = self.pix2physX(pos_x);
+                  var phys_y = self.pix2physY(pos_y);
+                  // Ask to join the two skeletons with interpolated nodes
+                  createTreenodeLinkInterpolated(atn_id, atn_x, atn_y, atn_z, nearestnode_id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+                });
+            return;
+          } else {
+            // If shift is not down, just select the node:
+            self.activateNode(nearestnode);
+            return;
+          }
+        }
+      }
+      // Else, check that there is a node activated
+      if (atn.id === null) {
+        alert('Need to activate a treenode first!');
+        return;
+      }
+      // Take into account current local offset coordinates and scale
+      var pos_x = self.phys2pixX(self.offsetXPhysical);
+      var pos_y = self.phys2pixY(self.offsetYPhysical);
+      // At this point of the execution
+      // project.coordinates.z is not on the new z index, thus simulate it here
+      var pos_z = self.phys2pixZ(project.coordinates.z);
+      var phys_z = self.pix2physZ(pos_z);
+      // Get physical coordinates for node position creation
+      var phys_x = self.pix2physX(pos_x);
+      var phys_y = self.pix2physY(pos_y);
+      createInterpolatedNode(atn.id, atn.skeleton_id, atn.x, atn.y, atn.z, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+    };
   };
 };

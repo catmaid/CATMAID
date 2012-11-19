@@ -1915,13 +1915,6 @@ var SkeletonAnnotations = new function()
           self.activateNearestNode(lastX, lastY, project.coordinates.z);
         }
         break;
-      case "3dview":
-        if (atn.id !== null) {
-          Treelines.addTo3DView();
-        } else {
-          alert('Need to activate a treenode or connector before showing them!');
-        }
-        break;
       case 'retrievetreenodeinfo':
         if (atn !== null) {
           requestQueue.replace(django_url + project.id + '/node/user-info', 'POST', { treenode_id: atn.id }, function(status, text, xml) {

@@ -461,7 +461,7 @@ function TracingTool()
     run: function (e) {
       if (!mayEdit())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('skelrerooting');
+      tracingLayer.svgOverlay.rerootSkeleton();
       return true;
     }
   }) );
@@ -505,7 +505,7 @@ function TracingTool()
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('switchterminalconnector');
+      tracingLayer.svgOverlay.switchBetweenTerminalAndConnector();
       return true;
     }
   }) );

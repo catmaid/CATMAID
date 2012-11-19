@@ -416,7 +416,6 @@ def join_skeleton(request, project_id=None):
     try:
         from_treenode_id = int(request.POST.get('from_id', None))
         to_treenode_id = int(request.POST.get('to_id', None))
-        can_edit_or_fail(request.user, to_treenode_id, 'treenode')
         _join_skeleton(request.user, from_treenode_id, to_treenode_id, project_id)
 
         response_on_error = 'Could not log actions.'
@@ -439,11 +438,16 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
     if from_treenode_id is None or to_treenode_id is None:
         raise CatmaidException('Missing arguments to _join_skeleton')
 
-    # Must own to_treenode_id or be superuser
-    can_edit_or_fail(user, int(to_treenode_id), 'treenode')
-
     response_on_error = ''
     try:
+        # Check if joining is allowed
+        if 0 == Treenode.objects.filter(parent_id=to_treenode_id).count() and Treenode.objects.filter(pk=to_treenode_id).values_list('parent_id')[0][0] is None:
+            # Is an isolated node, so it can be joined freely
+            pass
+        else:
+            # If the treenode is not isolated, must own to_treenode_id or be superuser
+            can_edit_or_fail(user, int(to_treenode_id), 'treenode')
+
         from_treenode_id = int(from_treenode_id)
         from_treenode = Treenode.objects.get(pk=from_treenode_id)
         from_skid = from_treenode.skeleton_id

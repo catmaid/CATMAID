@@ -80,7 +80,7 @@ def split_skeleton(request, project_id=None):
         treenode__in=change_list,
     ).update(skeleton=new_skeleton)
     # setting new root treenode's parent to null
-    Treenode.objects.filter(id=treenode_id).update(parent=None)
+    Treenode.objects.filter(id=treenode_id).update(parent=None, editor=request.user)
     # Log the location of the node at which the split was done
     insert_into_log( project_id, request.user.id, "split_skeleton", treenode.location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
     return HttpResponse(json.dumps({}), mimetype='text/json')
@@ -475,7 +475,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
 
         # Update the parent of to_treenode.
         response_on_error = 'Could not update parent of treenode with ID %s' % to_treenode_id
-        Treenode.objects.filter(id=to_treenode_id).update(parent=from_treenode_id)
+        Treenode.objects.filter(id=to_treenode_id).update(parent=from_treenode_id, editor=user)
 
         insert_into_log(project_id, user.id, 'join_skeleton', from_treenode.location, 'Joined skeleton with ID %s into skeleton with ID %s' % (to_skid, from_skid))
 

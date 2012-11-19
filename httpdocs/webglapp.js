@@ -649,7 +649,6 @@ var WebGLApp = new function () {
         self.removeSkeleton( skeleton_id );
       }
     }
-		console.log("removeAllSkeleons");
 		self.render();
   }
 

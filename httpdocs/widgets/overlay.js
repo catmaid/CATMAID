@@ -144,9 +144,10 @@ var SkeletonAnnotations = new function()
     var labels = {};
     var show_labels = false;
 
+    /* Variables keeping state for toggling between a terminal and its connector. */
     var switchingConnectorID = null;
     var switchingTreenodeID = null;
-    var switchingTreenodeSkeletonID = null;
+
 
     this.getLabelStatus = function() {
       return show_labels;
@@ -1766,61 +1767,6 @@ var SkeletonAnnotations = new function()
             self.pix2physZ(activeNodePosition.z),
             self.pix2physY(activeNodePosition.y),
             self.pix2physX(activeNodePosition.x));
-        }
-        break;
-      case 'switchterminalconnector':
-        /* If you select a pre- or post-synaptic terminal, then run
-           this command, the active node will be switched to its
-           connector (if one uniquely exists).  If you then run the
-           command again, it will switch back to the terminal. */
-        if (null === atn.id) {
-          alert("A terminal must be select in order to switch to its connector");
-          break;
-        }
-        /* Find the terminal or connector in the nodes list */
-        for (nodeID in nodes) {
-          if (nodes.hasOwnProperty(nodeID)) {
-            nodeID = parseInt(nodeID);
-            if (nodeID === atn.id) {
-              node = nodes[nodeID];
-              if (node.type === "connector") {
-                connector = node;
-                if (connector.id === switchingConnectorID) {
-                  // Then move back to the terminal:
-                  self.moveToAndSelectNode(nodes[switchingTreenodeID]);
-                } else {
-                  alert("Don't know which terminal to switch to");
-                  switchingTreenodeID = null;
-                  switchingTreenodeSkeletonID = null;
-                  switchingConnectorID = null;
-                }
-
-
-              } else if (node.type === "treenode") {
-                n = countProperties(node.connectors);
-                if (n === 0) {
-                  alert("The active node isn't connected to a (loaded) connector");
-                } else {
-                  if (n > 1) {
-                    alert("The terminal was connected to more than one connector; will abitrarily pick one");
-                  }
-                  for (connectorID in node.connectors) {
-                    if (node.connectors.hasOwnProperty(connectorID)) {
-                      connectorID = parseInt(connectorID);
-                      switchingTreenodeSkeletonID = node.skeleton_id;
-                      switchingTreenodeID = node.id;
-                      switchingConnectorID = connectorID;
-                      self.moveToAndSelectNode(node.connectors[connectorID]);
-                      break;
-                    }
-                  }
-                }
-              } else {
-                alert("BUG: unknown node type '"+node.type+"'");
-              }
-              break;
-            }
-          }
         }
         break;
       case "golastedited":

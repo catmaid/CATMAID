@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-// TODO connectors are screwed up when zooming in/out
 // TODO check all other TODOS
 
 /** Namespace where Node instances are created and edited. */
@@ -105,7 +104,6 @@ var SkeletonElements = new function()
     this.parent_id = parent_id;
     this.children = {};
     this.numberOfChildren = 0;
-    this.connectors = {};
     this.r = r < 0 ? 3 : 3; // not use radius size on overlay display
     this.x = x;
     this.y = y;
@@ -155,7 +153,6 @@ var SkeletonElements = new function()
     node.parent = null;
     node.children = {};
     node.numberOfChildren = 0;
-    node.connectors = {};
     if (node.c) {
       node.c.hide();
       node.mc.hide();
@@ -169,7 +166,7 @@ var SkeletonElements = new function()
     }
   };
 
-  /** Takes an existing Node and sets all the proper members as given, and resets the children and connectors. */
+  /** Takes an existing Node and sets all the proper members as given, and resets its children. */
   var reuseNode = function(node, id, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id, can_edit)
   {
     node.id = id;
@@ -177,7 +174,6 @@ var SkeletonElements = new function()
     node.parent_id = parent_id;
     node.children = {};
     node.numberOfChildren = 0;
-    node.connectors = {};
     node.r = r < 0 ? 3 : r;
     node.x = x;
     node.y = y;
@@ -214,7 +210,6 @@ var SkeletonElements = new function()
   var nodeDrawEdges = function(toChildren) {
     var ID,
         children = this.children,
-        connectors = this.connectors,
         child;
 
     if (toChildren) {
@@ -227,11 +222,6 @@ var SkeletonElements = new function()
       }
     }
 
-    for (ID in connectors) {
-      if (connectors.hasOwnProperty(ID)) {
-        connectors[ID].drawEdges();
-      }
-    }
     if (displayBetweenNodes(this, this.parent)) {
       drawLineToParent(this);
     }
@@ -397,9 +387,6 @@ var SkeletonElements = new function()
                   node.needsync = false;
                   // Redraw everything for now
                   node.paper.catmaidSVGOverlay.updateNodes();
-
-                  // TODO something is wrong, in that upon deleting a node updateNodes() is called like 10 times in a row.
-                  // TODO   but cannot reproduce it always.
               }
           }
       }
@@ -746,10 +733,7 @@ var SkeletonElements = new function()
 
   // Also, there shouldn't be a "needsync" flag. Instead, push the node to an array named "needSyncWithDB". Will avoid looping.
 
-  // Regarding the nodes map: it should be an array of keys over objects stored in a a cache of nodes that are already inserted into the DOM
-  // and that can be reused.
-  // Regarding children and connectors: any reason not to make them plain arrays? Given that they are always small,
-  // using a filter to find a node with a specific id would be enough.
+  // Regarding the nodes map: it is an array of keys over objects stored in a a cache of nodes that are already inserted into the DOM and that can be reused.
 
   /** Surrogate cosntructor for ConnectorNode.
    * See "newNode" for explanations. */

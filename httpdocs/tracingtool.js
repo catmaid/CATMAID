@@ -587,22 +587,6 @@ function TracingTool()
     }
   }) );
 
-  /*
-  this.addAction( new Action({
-    helpText: "Move down 1 slice in z and click",
-    keyShortcuts: {
-      'N': [ 78 ]
-    },
-    run: function (e) {
-      if (!mayEdit())
-        return false;
-      tracingLayer.svgOverlay.tracingCommand('createtreenode');
-      self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
-      return true;
-    }
-  }) );
-*/
-
   this.addAction( new Action({
     helpText: "Set confidence in node link to 1",
     keyShortcuts: {

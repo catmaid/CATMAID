@@ -115,6 +115,10 @@ var SkeletonAnnotations = new function()
   }
 
   this.exportSWC = function() {
+    if (!atn || !atn.id || !atn.skeleton_id) {
+      alert('Need to activate a treenode before exporting to SWC!');
+      return;
+    }
     // retrieve SWC file of currently active treenode's skeleton
     var recipe = window.open('', 'RecipeWindow', 'width=600,height=600');
 

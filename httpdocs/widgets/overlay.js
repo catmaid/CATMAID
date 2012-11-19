@@ -1621,7 +1621,14 @@ var SkeletonAnnotations = new function()
                 // json[1], [2], [3]: x, y, z in calibrated world units
                 if (treenode_id === json[0]) {
                   // Already at the root node
-                  // TODO issue a growl
+                  $('#growl-alert').growlAlert({
+                    autoShow: true,
+                    content: "You are already at the root node",
+                    title: 'Already there',
+                    position: 'top-right',
+                    delayTime: 2000,
+                    onComplete: function() { g.remove(); }
+                  });
                 } else {
                   stack.getProject().moveTo(json[3], json[2], json[1], undefined,
                     function() {

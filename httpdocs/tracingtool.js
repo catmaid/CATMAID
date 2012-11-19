@@ -477,9 +477,9 @@ function TracingTool()
       if (!mayView())
         return false;
       if(tracingLayer.svgOverlay.getLabelStatus()) {
-        tracingLayer.svgOverlay.tracingCommand('hidelabels');
+        tracingLayer.svgOverlay.hideLabels();
       } else {
-        tracingLayer.svgOverlay.tracingCommand('showlabels');
+        tracingLayer.svgOverlay.showLabels();
       }
       return true;
     }

@@ -379,7 +379,9 @@ var SkeletonAnnotations = new function()
 
     this.showLabels = function() {
       show_labels = true;
-      document.getElementById( "trace_button_togglelabels" ).className = "button_active";
+      self.updateNodes(function() {
+        document.getElementById( "trace_button_togglelabels" ).className = "button_active";
+      });
     }
 
     var tagbox = null;
@@ -1911,12 +1913,6 @@ var SkeletonAnnotations = new function()
         if (lastX !== null && lastY !== null) {
           self.activateNearestNode(lastX, lastY, project.coordinates.z);
         }
-        break;
-      case "hidelabels":
-        self.hideLabels();
-        break;
-      case "showlabels":
-        self.showLabels();
         break;
       case "exportswc":
         if (atn.id !== null) {

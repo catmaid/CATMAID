@@ -301,13 +301,14 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
         dz = (params['z'] - params['atnz']) / steps
 
         broken_slices = set(int(bs.index) for bs in BrokenSlice.objects.filter(stack=params['stack_id']))
+        sign = -1 if dz < 0 else 1
 
         # Loop the creation of treenodes in z resolution steps until target
         # section is reached
         parent_id = params['parent_id']
         atn_slice_index = (params['atnz'] / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
         for i in range(1, steps + (0 if skip_last else 1)):
-            if (atn_slice_index + i) in broken_slices:
+            if (atn_slice_index + i * sign) in broken_slices:
                 continue
             response_on_error = 'Error while trying to insert treenode.'
             new_treenode = Treenode()

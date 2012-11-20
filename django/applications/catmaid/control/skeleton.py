@@ -16,10 +16,13 @@ except:
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 @report_error
-def node_count(request, project_id=None, skeleton_id=None):
+def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
+    # Works with either the skeleton_id or the treenode_id
     p = get_object_or_404(Project, pk=project_id)
+    if not skeleton_id:
+        skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
     return HttpResponse(json.dumps({
-        'count': Skeleton(skeleton_id, p.id).node_count()}),
+        'count': Treenode.objects.filter(skeleton_id=skeleton_id).count()}),
         mimetype='text/json')
 
 

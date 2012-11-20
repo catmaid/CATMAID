@@ -361,6 +361,7 @@ def node_update(request, project_id=None):
         nodes[node_index][node_property] = value
 
     required_properties = set( ['node_id', 'x', 'y', 'z', 'type'] )
+    now = datetime.now()
     for node_index, node in nodes.items():
         for req_prop in required_properties:
             if req_prop not in node:
@@ -376,6 +377,7 @@ def node_update(request, project_id=None):
                     continue
                 Treenode.objects.filter(id=node['node_id']).update(
                     editor=request.user,
+                    edition_time=now,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
             elif node['type'] == 'connector':
                 try:
@@ -385,6 +387,7 @@ def node_update(request, project_id=None):
                     continue
                 Location.objects.filter(id=node['node_id']).update(
                     editor=request.user,
+                    edition_time=now,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
             else:
                 raise CatmaidException('Unknown node type: %s' % node['type'])

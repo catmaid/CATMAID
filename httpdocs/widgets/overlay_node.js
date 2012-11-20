@@ -601,6 +601,10 @@ var SkeletonElements = new function()
         e.stopPropagation();
         return;
       }
+      if (e.shiftKey) {
+        e.stopPropagation();
+        return;
+      }
       if (!mayEdit() || !this.catmaidNode.can_edit) {
         statusBar.replaceLast("You don't have permission to move node #" + this.catmaidNode.id);
         e.stopPropagation();

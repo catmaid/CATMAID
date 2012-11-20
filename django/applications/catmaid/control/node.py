@@ -448,9 +448,9 @@ def node_nearest(request, project_id=None):
             return nearestTreenode
 
         nearestTreenode = getNearestTreenode(
-            int(params['x']),
-            int(params['y']),
-            int(params['z']),
+            float(params['x']),
+            float(params['y']),
+            float(params['z']),
             treenodes)
         if nearestTreenode is None:
             raise CatmaidException('No treenodes were found.')

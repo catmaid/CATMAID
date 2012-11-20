@@ -625,8 +625,8 @@ var SkeletonAnnotations = new function()
      * The verb is the action to perform, as written as a question in a dialog
      * to confirm the action if the skeleton has a single node.
      */
-    var maybeExecuteIfSkeletonHasMoreThanOneNode = function(skeleton_id, verb, fn) {
-      requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/node_count', "POST", {}, function(status, text, xml) {
+    var maybeExecuteIfSkeletonHasMoreThanOneNode = function(node_id, verb, fn) {
+      requestQueue.register(django_url + project.id + '/skeleton/node/' + node_id + '/node_count', "POST", {}, function(status, text, xml) {
         if (status === 200) {
           if (text && text !== " ") {
             var r = $.parseJSON(text);
@@ -649,22 +649,14 @@ var SkeletonAnnotations = new function()
     this.createTreenodeLink = function (fromid, toid) {
       if (fromid === toid) return;
       if( toid in nodes ) {
-        var from_skid = nodes[fromid].skeleton_id;
-        var to_skid = nodes[toid].skeleton_id;
-        if (from_skid === to_skid) {
-          alert("Cannot join with a node of the same skeleton!");
-          return;
-        }
         maybeExecuteIfSkeletonHasMoreThanOneNode(
-            to_skid,
+            toid,
             "join",
             function() {
               // The call to join will reroot the target skeleton at the shift-clicked treenode
               requestQueue.register(django_url + project.id + '/skeleton/join', "POST", {
                 from_id: fromid,
-                from_skid: from_skid,
-                to_id: toid,
-                to_skid: to_skid
+                to_id: toid
               }, function (status, text, xml) {
                 if (status === 200) {
                   if (text && text !== " ") {
@@ -1923,7 +1915,7 @@ var SkeletonAnnotations = new function()
             var atn_y = atn.y;
             var atn_z = atn.z;
             maybeExecuteIfSkeletonHasMoreThanOneNode(
-                nearestnode.skeleton_id,
+                nearestnode.id,
                 "join",
                 function() {
                   // Take into account current local offset coordinates and scale

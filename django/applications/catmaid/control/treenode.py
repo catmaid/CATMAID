@@ -115,6 +115,10 @@ def create_treenode(request, project_id=None):
 
     1. Add new treenode for a given skeleton id. Parent should not be empty.
     return: new treenode id
+       If the parent's skeleton has a single node and belongs to the
+       'Isolated synaptic terminals' group, then reassign ownership
+       of the skeleton and the neuron to the user. The treenode remains
+       property of the original user who created it.
 
     2. Add new treenode (root) and create a new skeleton (maybe for a given neuron)
     return: new treenode id and skeleton id.
@@ -165,9 +169,36 @@ def create_treenode(request, project_id=None):
 
     response_on_error = ''
     try:
-        if int(params['parent_id']) != -1:  # A root node and parent node exist
-            # Retrieve skeleton of parent
-            skeleton = Treenode.objects.filter(pk=params['parent_id']).select_related()[0].skeleton
+        if -1 != int(params['parent_id']):  # A root node and parent node exist
+            parent_treenode = Treenode.objects.get(pk=params['parent_id'])
+            skeleton = ClassInstance.objects.get(pk=parent_treenode.skeleton_id)
+            if parent_treenode.parent_id is None and 1 == Treenode.objects.filter(skeleton_id=parent_treenode.skeleton_id).count():
+                # Node is isolated. If it is a part_of 'Isolated synapatic terminals',
+                # then reassign the skeleton's and neuron's user_id to the user.
+                # The treenode remains the property of the original user.
+                if _is_isolated_synaptic_terminal(parent_treenode.id):
+                    import sys
+                    print >> sys.stderr, "is IST -- RE-OWNING"
+                    # Assign skeleton to user
+                    skeleton.user = request.user
+                    skeleton.save()
+                    # Find neurons (expected one) for which the skeleton is a model_of
+                    cicis = ClassInstanceClassInstance.objects.filter(
+                            class_instance_a=skeleton.id,
+                            relation__relation_name='model_of').select_related('class_instance_b')
+                    cicis = list(cicis)
+                    # Check assumptions
+                    if 0 == len(cicis):
+                        raise Exception('Could not find a neuron for skeleton #%s for treenode #%s' % (skeleton.id, parent_treenode.id))
+                    if len(cicis) > 1:
+                        raise Exception('Found more than one class instance for which skeleton #%s is a "model_of": %s' % (skeleton.id, [c.class_instance_b.id for c in cicis]))
+                    # Assign neuron to user
+                    neuron = cicis[0].class_instance_b
+                    neuron.user = request.user
+                    neuron.save()
+                    # Assign cici to user as well, for consistency
+                    cicis[0].user = request.user
+                    cicis[0].save()
             response_on_error = 'Could not insert new treenode!'
             new_treenode = insert_new_treenode(params['parent_id'], skeleton)
 
@@ -237,7 +268,8 @@ def create_treenode(request, project_id=None):
                     }))
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        import traceback
+        raise CatmaidException(response_on_error + ':' + str(e) + str(traceback.format_exc()))
 
 
 @requires_user_role(UserRole.Annotate)

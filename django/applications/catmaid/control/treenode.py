@@ -27,6 +27,8 @@ def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id
 def _fetch_targetgroup(user, project_id, targetgroup, part_of_id, class_map):
     """ Depending upon the value of targetgroup, will get or create
     the staging folder for the user, or the Isolated synaptic terminals folder.
+    The targetgroup can hold two values: 'Fragments' and 'Isolated synaptic terminals'.
+    If 'Fragments', the staging group of the user is returned.
     """
     is_new = False
     if 'Fragments' == targetgroup:

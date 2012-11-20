@@ -634,7 +634,7 @@ var SkeletonAnnotations = new function()
               alert(r.error);
             } else {
               if (r.count > 1
-                && !confirm("Do you really want to " + verb + " skeleton #" + skeleton_id + ", which has more than one node?")) {
+                && !confirm("Do you really want to " + verb + " skeleton #" + r.skeleton_id + ", which has more than one node?")) {
                 return;
               }
               fn();

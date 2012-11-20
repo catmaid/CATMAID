@@ -22,8 +22,8 @@ def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
     if not skeleton_id:
         skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
     return HttpResponse(json.dumps({
-        'count': Treenode.objects.filter(skeleton_id=skeleton_id).count()}),
-        mimetype='text/json')
+        'count': Treenode.objects.filter(skeleton_id=skeleton_id).count(),
+        'skeleton_id': skeleton_id}), mimetype='text/json')
 
 
 @requires_user_role(UserRole.Annotate)

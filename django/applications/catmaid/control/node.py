@@ -388,8 +388,7 @@ def node_update(request, project_id=None):
             else:
                 raise CatmaidException('Unknown node type: %s' % node['type'])
         except:
-            import traceback
-            raise CatmaidException('Failed to update treenode: %s' % node['node_id'] + traceback.format_exc())
+            raise CatmaidException('Failed to update treenode: %s' % node['node_id'])
 
     return HttpResponse(json.dumps({'updated': len(nodes)}))
 

@@ -333,7 +333,7 @@ var SkeletonAnnotations = new function()
 
     this.activateNearestNode = function (x, y, z) {
       var nearestnode = this.findNodeWithinRadius(x, y, z, Number.MAX_VALUE);
-      if (nearestnode) {
+      if (nearestnode && z === nearestnode.z) {
         self.activateNode(nearestnode);
       } else {
         statusBar.replaceLast("No nodes were visible - can't activate the nearest");

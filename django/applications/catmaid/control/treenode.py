@@ -79,6 +79,31 @@ def _fetch_targetgroup(user, project_id, targetgroup, part_of_id, class_map):
             is_new = True
         return ist_group, is_new
 
+def _is_isolated_synaptic_terminal(treenode_id):
+    """ Determine if the given treenode is an isolated synaptic terminal,
+    by checking if its skeleton is a model_of a neuron that is a part_of
+    the Isolated synaptic terminals group.
+    Despite the multiple table joins this function takes ~8 ms in a laptop and ~3 ms in a large server."""
+    cursor = connection.cursor()
+    cursor.execute('''
+    SELECT count(*)
+    FROM treenode,
+         class_instance_class_instance c1,
+         class_instance_class_instance c2,
+         class_instance c,
+         relation r1,
+         relation r2
+    WHERE treenode.id = %s
+      AND c1.class_instance_a = treenode.skeleton_id
+      AND c1.relation_id = r1.id
+      AND r1.relation_name = 'model_of'
+      AND c1.class_instance_b = c2.class_instance_a
+      AND c2.relation_id = r2.id
+      AND r2.relation_name = 'part_of'
+      AND c2.class_instance_b = c.id
+      AND c.name = 'Isolated synaptic terminals'
+    ''' % int(treenode_id))
+    return cursor.fetchone()[0] > 0
 
 
 @requires_user_role(UserRole.Annotate)

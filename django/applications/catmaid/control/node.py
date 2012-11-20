@@ -418,12 +418,12 @@ def node_nearest(request, project_id=None):
     if params['skeleton_id'] > 0:
         skeletons.append(params['skeleton_id'])
 
-    message_on_error = ''
+    response_on_error = ''
     try:
         if params['neuron_id'] > 0:  # Add skeletons related to specified neuron
             # Assumes that a cici 'model_of' relationship always involves a
             # skeleton as ci_a and a neuron as ci_b.
-            message_on_error = 'Finding the skeletons failed.'
+            response_on_error = 'Finding the skeletons failed.'
             neuron_skeletons = ClassInstanceClassInstance.objects.filter(
                 class_instance_b=params['neuron_id'],
                 relation=relation_map['model_of'])
@@ -431,7 +431,7 @@ def node_nearest(request, project_id=None):
                 skeletons.append(neur_skel_relation.class_instance_a_id)
 
         # Get all treenodes connected to skeletons
-        message_on_error = 'Finding the treenodes failed.'
+        response_on_error = 'Finding the treenodes failed.'
         treenodes = Treenode.objects.filter(project=project_id, skeleton__in=skeletons)
 
         def getNearestTreenode(x, y, z, treenodes):

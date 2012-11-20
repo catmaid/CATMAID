@@ -2,6 +2,7 @@ import json
 
 import decimal
 from django.http import HttpResponse
+from datetime import datetime
 
 from django.db import connection, transaction
 from django.shortcuts import get_object_or_404
@@ -173,38 +174,19 @@ def create_treenode(request, project_id=None):
     try:
         if -1 != int(params['parent_id']):  # A root node and parent node exist
             parent_treenode = Treenode.objects.get(pk=params['parent_id'])
-            skeleton = ClassInstance.objects.get(pk=parent_treenode.skeleton_id)
+            has_changed_group = False
             if parent_treenode.parent_id is None and 1 == Treenode.objects.filter(skeleton_id=parent_treenode.skeleton_id).count():
                 # Node is isolated. If it is a part_of 'Isolated synapatic terminals',
                 # then reassign the skeleton's and neuron's user_id to the user.
                 # The treenode remains the property of the original user.
-                if _is_isolated_synaptic_terminal(parent_treenode.id):
-                    import sys
-                    print >> sys.stderr, "is IST -- RE-OWNING"
-                    # Assign skeleton to user
-                    skeleton.user = request.user
-                    skeleton.save()
-                    # Find neurons (expected one) for which the skeleton is a model_of
-                    cicis = ClassInstanceClassInstance.objects.filter(
-                            class_instance_a=skeleton.id,
-                            relation__relation_name='model_of').select_related('class_instance_b')
-                    cicis = list(cicis)
-                    # Check assumptions
-                    if 0 == len(cicis):
-                        raise Exception('Could not find a neuron for skeleton #%s for treenode #%s' % (skeleton.id, parent_treenode.id))
-                    if len(cicis) > 1:
-                        raise Exception('Found more than one class instance for which skeleton #%s is a "model_of": %s' % (skeleton.id, [c.class_instance_b.id for c in cicis]))
-                    # Assign neuron to user
-                    neuron = cicis[0].class_instance_b
-                    neuron.user = request.user
-                    neuron.save()
-                    # Assign cici to user as well, for consistency
-                    cicis[0].user = request.user
-                    cicis[0].save()
+                neuron_id, skeleton_id = _maybe_move_terminal_to_staging(request.user, project_id, parent_treenode.id)
+                has_changed_group = True
+
             response_on_error = 'Could not insert new treenode!'
+            skeleton = ClassInstance.objects.get(pk=parent_treenode.skeleton_id)
             new_treenode = insert_new_treenode(params['parent_id'], skeleton)
 
-            return HttpResponse(json.dumps({'treenode_id': new_treenode.id, 'skeleton_id': skeleton.id}))
+            return HttpResponse(json.dumps({'treenode_id': new_treenode.id, 'skeleton_id': skeleton.id, 'has_changed_group': has_changed_group}))
 
         else:
             # No parent node: We must create a new root node, which needs a
@@ -498,15 +480,15 @@ def join_skeletons_interpolated(request, project_id=None):
                                     'toid': params['to_id']}))
 
 
-@requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
-def move_terminal_to_staging(request, project_id=None):
-    """ Given a skeleton ID, determine whereas it is a model_of a neuron
+def _maybe_move_terminal_to_staging(user, project_id, treenode_id):
+    """ Given a treenode_id, determine whether its skeleton is a model_of a neuron
     that is currently a part_of the Isolated synaptic terminals group,
-    and if so, move the neuron to the user's staging group."""
-    skeleton_id = int(request.POST['skeleton_id'])
-    if skeleton_id < 1:
-        return HttpResponse(json.dumps({"error": "Bad skeleton ID of -1"}))
+    and if so, move the neuron to the user's staging group
+    and also change the ownership of the skeleton and neuron
+    to the user (realize these were just placeholders to wrap
+    the single treenode). The owner of the treenode remains the same.
+    Returns a tuple with the neuron_id, skeleton_id. """
+    treenode_id = int(treenode_id)
     # Find the ID of the neuron (cc2.class_instance_a) for which the skeleton is a model_of
     # and the ID of the cici (cc2.id) that declares the neuron to be a part_of Isolated synaptic terminals.
     # If the neuron is not a part of Isolated synaptic terminals, then it will return zero rows.
@@ -515,15 +497,18 @@ def move_terminal_to_staging(request, project_id=None):
     SELECT
         cc2.class_instance_a,
         cc2.id,
-        r2.id
+        r2.id,
+        t.skeleton_id
     FROM
         class_instance_class_instance cc1,
         class_instance_class_instance cc2,
         class_instance,
         relation r1,
-        relation r2
+        relation r2,
+        treenode t
     WHERE
-          cc1.class_instance_a = %s
+          t.id = %s
+      AND cc1.class_instance_a = t.skeleton_id
       AND cc1.relation_id = r1.id
       AND r1.relation_name = 'model_of'
       AND cc1.class_instance_b = cc2.class_instance_a
@@ -531,14 +516,18 @@ def move_terminal_to_staging(request, project_id=None):
       AND r2.relation_name = 'part_of'
       AND class_instance.id = cc2.class_instance_b
       AND class_instance.name = 'Isolated synaptic terminals'
-    ''', [skeleton_id])
+    ''', [treenode_id])
     rows = [row for row in cursor.fetchall()]
     if not rows:
-        return HttpResponse(json.dumps({'neuron_id': -1}))
+        # treenode is not an isolated synaptic terminal
+        return -1, -1
+    if 1 != len(rows):
+        raise Exception('Found more than one skeleton or neuron for treenode #%s' % treenode_id)
 
     neuron_id = rows[0][0]
     cici_id = rows[0][1]
     part_of_id = rows[0][2]
+    skeleton_id = rows[0][3]
 
     # Remove the neuron from the group 'Isolated synaptic terminals'
     cursor.execute('''
@@ -546,10 +535,17 @@ def move_terminal_to_staging(request, project_id=None):
     ''', [cici_id])
 
     # Obtain the user's staging group
-    group, is_new = _fetch_targetgroup(request.user, project_id, 'Fragments', part_of_id, get_class_to_id_map(project_id))
+    group, is_new = _fetch_targetgroup(user, project_id, 'Fragments', part_of_id, get_class_to_id_map(project_id))
 
     # Add the neuron to the user's staging group
-    _create_relation(request.user, project_id, part_of_id, neuron_id, group.id)
+    _create_relation(user, project_id, part_of_id, neuron_id, group.id)
 
-    return HttpResponse(json.dumps({'neuron_id': neuron_id}))
+    # Change ownership of the neuron and skeleton (which are placeholders) to the user
+    now = datetime.now()
+    ClassInstance.objects.filter(id__in=[skeleton_id, neuron_id]).update(
+            user=user,
+            creation_time=now,
+            edition_time=now)
+
+    return neuron_id, skeleton_id
 

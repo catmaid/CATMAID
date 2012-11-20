@@ -823,12 +823,13 @@ var SkeletonAnnotations = new function()
             if (e.error) {
               alert(e.error);
             } else {
-              // If it is a single node in Isolated Synaptic Terminals, move it to the user's staging group
-              maybeMoveISTNeuronToStagingGroup(atn_id);
               self.updateNodes(function () {
                 // Active the node if it hasn't been changed by a new request
                 if (atn && atn_id === atn.id) {
                   self.activateNode( nodes[e.treenode_id] );
+                }
+                if (e.has_changed_group) {
+                  ObjectTree.refresh();
                 }
               });
             }
@@ -882,66 +883,6 @@ var SkeletonAnnotations = new function()
       return;
     }
 
-    /** Look up the neuron for the given skeleton_id
-     * and move it to the user's staging group if it belongs
-     * to the Isolated synaptic terminals group
-     *
-     */
-    var moveISTNeuronToStagingGroup = function(skeleton_id) {
-      requestQueue.register(django_url + project.id + '/skeleton/move-terminal-to-staging', 'POST', {skeleton_id: skeleton_id}, function(status, text) {
-        if (200 === status) {
-          var jso = $.parseJSON(text);
-          if (jso.error) {
-            alert(jso.error);
-          } else {
-            if (-1 === jso.neuron_id) {
-              // Neuron does not belong to Isolated synaptic terminals
-              // Do nothing
-              return false;
-            }
-            //
-            ObjectTree.refresh();
-            $('#growl-alert').growlAlert({
-              autoShow: true,
-              content: "Moved neuron #" + jso.neuron_id  + " with skeleton #" + skeleton_id + " to your staging area",
-              title: 'Moved neuron',
-              position: 'top-right',
-              delayTime: 2000,
-              onComplete: function() { g.remove(); } // TODO what is g?
-            });
-            return true;
-          }
-        }
-      });
-    };
-
-    /** If a neuron belongs to the Isolated Synaptic Terminals,
-     * move it to the staging group of the user.
-     * To void checking every single time, only skeletons of a single node
-     * will be moved. */
-    var maybeMoveISTNeuronToStagingGroup = function(parent_id) {
-      // Check if the neuron has to be moved from 'Isolated synaptic terminals' to the user's staging group.
-      var parent_node = nodes[parent_id];
-      if (parent_node && !parent_node.parent) {
-        // The parent node of the newly created node existed and was root.
-        // Now check if it has any child
-        var n_children = 0;
-        for (var node in nodes) {
-          if (nodes.hasOwnProperty(node)) {
-            if (parent_node.id === node.parent_id) {
-              n_children += 1;
-            }
-          }
-        }
-        if (0 === n_children) {
-          // The new node will be the only child node, and the parent was root.
-          // So ask the server to move the neuron to the user's staging area
-          // if the single-node neuron was a part_of the 'Isolated synaptic terminals' group.
-          moveISTNeuronToStagingGroup(parent_node.skeleton_id);
-        }
-      }
-    };
-
     // Create a node and activate it
     var createNode = function (parentID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
     {
@@ -971,18 +912,14 @@ var SkeletonAnnotations = new function()
         targetgroup: "Fragments",
         useneuron: useneuron
       }, function (status, text, xml) {
-        var e, jso, nn, nid;
         if (status === 200) {
           if (text && text !== " ") {
-            e = $.parseJSON(text);
-            if (e.error) {
-              alert(e.error);
+            var jso = $.parseJSON(text);
+            if (jso.error) {
+              alert(jso.error);
             } else {
-              // If it is a single node in Isolated Synaptic Terminals, move it to the user's staging group
-              maybeMoveISTNeuronToStagingGroup(parentID);
               // add treenode to the display and update it
-              var jso = $.parseJSON(text);
-              nid = parseInt(jso.treenode_id);
+              var nid = parseInt(jso.treenode_id);
               // The parent will be null if there isn't one or if the parent Node object is not within the set of retrieved nodes, but the parentID will be defined.
               var nn = SkeletonElements.newNode(nid, self.paper, nodes[parentID], parentID, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
 
@@ -1006,6 +943,12 @@ var SkeletonAnnotations = new function()
                     onComplete: function() { g.remove(); }
                   });
                 }
+              }
+
+              console.log(jso, jso.has_changed_group);
+
+              if (jso.has_changed_group) {
+                ObjectTree.refresh();
               }
             }
           }

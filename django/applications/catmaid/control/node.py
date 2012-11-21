@@ -23,12 +23,14 @@ except:
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 @transaction_reportable_commit_on_success
 def node_list_tuples(request, project_id=None):
-    ''' Retrieve an JSON array with two entries:
+    ''' Retrieve an JSON array with four entries:
     [0] an array of arrays, each array representing a treenode
     [1] an array of arrays, each array representing a connector and containing
     arrays inside that specify the relations between the connector and treenodes.
     In this function tuples are used as much as possible for immutable list,
     and uses directly the tuples returned by the database cursor.
+    [2] the labels, if requested.
+    [3] a boolean which is true when the node limit has been reached.
     The returned JSON data is therefore sensitive to indices in the array,
     so care must be taken never to alter the order of the variables in the SQL
     statements without modifying the accesses to said data both in this function

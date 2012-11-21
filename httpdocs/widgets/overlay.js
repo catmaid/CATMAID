@@ -945,8 +945,6 @@ var SkeletonAnnotations = new function()
                 }
               }
 
-              console.log(jso, jso.has_changed_group);
-
               if (jso.has_changed_group) {
                 ObjectTree.refresh();
               }

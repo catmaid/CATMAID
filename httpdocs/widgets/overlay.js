@@ -1176,7 +1176,9 @@ var SkeletonAnnotations = new function()
 
       // Warn about nodes not retrieved because of limit
       if (true === jso[3]) {
-        statusBar.replaceLast("*WARNING*: did not retrieve all visible nodes--too many! Zoom in to constrain the field of view.");
+        var msg = "Did not retrieve all visible nodes--too many! Zoom in to constrain the field of view.";
+        statusBar.replaceLast("*WARNING*: " + msg);
+        growlAlert('WARNING', msg);
       }
     };
 

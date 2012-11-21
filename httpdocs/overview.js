@@ -53,6 +53,12 @@ function Overview( stack )
 	
 	this.redraw = function()
 	{
+
+    // If it is minimized, don't redraw. Avoids fetching and decoding an extra jpeg
+    if ("" === view.style.width) {
+      return;
+    }
+
 		var height = scale / stack.scale * stack.viewHeight;
 		var width = scale / stack.scale * stack.viewWidth;
 		rect.style.height = Math.floor( height ) + "px";
@@ -148,6 +154,7 @@ function Overview( stack )
         view.className = "smallMapView";
         view.style.width = width + "px";
         view.style.height = height + "px";
+        self.redraw();
     }
 	
 	var toggle = document.createElement( "div" );

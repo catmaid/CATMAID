@@ -41,7 +41,7 @@ var WebGLApp = new function () {
     self.render();
   }
 
-  ** Clean up. */
+  /** Clean up. */
   this.destroy = function() {
     renderer.domElement.removeEventListener('mousedown', onMouseDown, false);
     renderer.domElement.removeEventListener('mouseup', onMouseUp, false);

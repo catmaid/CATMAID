@@ -7,7 +7,7 @@ var WebGLApp = new function () {
   var scene, renderer, scale, controls, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
   var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false,
       bbmesh, floormesh, black_bg = true, debugax;
-	var is_mouse_down = false, connector_filter = false;
+  var is_mouse_down = false, connector_filter = false;
 
   this.init = function( divID ) {
 
@@ -38,17 +38,17 @@ var WebGLApp = new function () {
       self.createActiveNode();
     }
 
-		self.render();
+    self.render();
   }
 
-	/** Clean up. */
-	this.destroy = function() {
-		renderer.domElement.removeEventListener('mousedown', onMouseDown, false);
-		renderer.domElement.removeEventListener('mouseup', onMouseUp, false);
-		renderer.domElement.removeEventListener('mousemove', onMouseMove, false);
-	  renderer.domElement.removeEventListener('mousewheel', onMouseWheel, false);
-		self.removeAllSkeletons();
-	};
+  ** Clean up. */
+  this.destroy = function() {
+    renderer.domElement.removeEventListener('mousedown', onMouseDown, false);
+    renderer.domElement.removeEventListener('mouseup', onMouseUp, false);
+    renderer.domElement.removeEventListener('mousemove', onMouseMove, false);
+    renderer.domElement.removeEventListener('mousewheel', onMouseWheel, false);
+    self.removeAllSkeletons();
+  };
 
   var randomColors = [];
   randomColors[0] = [255, 255, 0]; // yellow
@@ -114,10 +114,10 @@ var WebGLApp = new function () {
     // THREEx.WindowResize.bind(renderer, camera);
 
     container.appendChild( renderer.domElement )
-	  renderer.domElement.addEventListener('mousedown', onMouseDown, false);
-	  renderer.domElement.addEventListener('mouseup', onMouseUp, false);
-	  renderer.domElement.addEventListener('mousemove', onMouseMove, false);
-	  renderer.domElement.addEventListener('mousewheel', onMouseWheel, false);
+    renderer.domElement.addEventListener('mousedown', onMouseDown, false);
+    renderer.domElement.addEventListener('mouseup', onMouseUp, false);
+    renderer.domElement.addEventListener('mousemove', onMouseMove, false);
+    renderer.domElement.addEventListener('mousewheel', onMouseWheel, false);
 
     var x_middle = (dimension.x*resolution.x)/2.0 + translation.x,
         y_middle = (dimension.y*resolution.y)/2.0 + translation.y,
@@ -148,7 +148,7 @@ var WebGLApp = new function () {
           camera.toOrthographic();
           ortho = true;
       }
-			self.render();
+      self.render();
   }
   self.toggleOrthographic = toggleOrthographic;
 
@@ -178,7 +178,7 @@ var WebGLApp = new function () {
     camera.position.y = pos.y;
     camera.position.z = (dim.z/2)+100+pos.z;
     camera.up.set(0, 1, 0);
-		self.render();
+    self.render();
   }
   self.XYView = XYView;
 
@@ -191,7 +191,7 @@ var WebGLApp = new function () {
     camera.position.y = (dim.y/2)+150;
     camera.position.z = pos.z;
     camera.up.set(0, 0, -1);
-		self.render();
+    self.render();
   }
   self.XZView = XZView;
 
@@ -204,7 +204,7 @@ var WebGLApp = new function () {
     camera.position.y = pos.y;
     camera.position.z = pos.z;
     camera.up.set(0, 1, 0);
-		self.render();
+    self.render();
   }
   self.YZView = YZView;
 
@@ -353,7 +353,7 @@ var WebGLApp = new function () {
         if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
           if( this.connectoractor && this.connectoractor[connectivity_types[i]] ) {
             scene.removeObject( this.connectoractor[connectivity_types[i]] );
-					}
+          }
         }
       }
     }
@@ -547,14 +547,14 @@ var WebGLApp = new function () {
         $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
         renderer.setSize( w, h );
     }
-		self.render();
+    self.render();
   }
 
   self.resizeView = function (w, h) {
     if( renderer && !THREEx.FullScreen.activated() ) {
       $('#view_in_3d_webgl_widget').css('overflowY', 'hidden');
       var canvasWidth = w,
-					canvasHeight = h;
+          canvasHeight = h;
       if( isNaN(h) && isNaN(w) ) {
         canvasHeight = 800;
         canvasWidth = 600;
@@ -566,10 +566,10 @@ var WebGLApp = new function () {
         canvasHeight = canvasHeight - 100;
         canvasWidth = canvasHeight / 3 * 4;
       }
-			if (canvasWidth < 80 || canvasHeight < 60) {
-				canvasWidth = 80;
-				canvasHeight = 60;
-			}
+      if (canvasWidth < 80 || canvasHeight < 60) {
+        canvasWidth = 80;
+        canvasHeight = 60;
+      }
       $('#viewer-3d-webgl-canvas').width(canvasWidth-20);
       $('#viewer-3d-webgl-canvas').height(canvasHeight);
       $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
@@ -631,7 +631,7 @@ var WebGLApp = new function () {
   {
     var i = 0, col;
     for( var skeleton_id in skeletons)
-		{
+    {
       if( i < randomColors.length ) {
         col = randomColors[i];
       } else {
@@ -643,7 +643,7 @@ var WebGLApp = new function () {
       i=i+1;
       skeletons[skeleton_id].changeColor( col );
     }
-		self.render();
+    self.render();
   }
 
 
@@ -654,7 +654,7 @@ var WebGLApp = new function () {
         self.removeSkeleton( skeleton_id );
       }
     }
-		self.render();
+    self.render();
   }
 
   this.getColorOfSkeleton = function( skeleton_id ) {
@@ -687,7 +687,7 @@ var WebGLApp = new function () {
     } else {
         skeletons[skeleton_id].changeColor( value );
         $('#skeletonaction-changecolor-' + skeleton_id).css("background-color",color.hex);
-				self.render();
+        self.render();
         return true;
     }
   }
@@ -709,7 +709,7 @@ var WebGLApp = new function () {
         $('#skeletonrow-' + skeleton_id).remove();
         skeletons[skeleton_id].removeActorFromScene();
         delete skeletons[skeleton_id];
-				self.render();
+        self.render();
         return true;
     }
   }
@@ -723,7 +723,7 @@ var WebGLApp = new function () {
           renderer.setClearColorHex( 0x000000, 1 );
           black_bg = true;
       }
-			self.render();
+      self.render();
   }
 
   self.toggleFloor = function()
@@ -735,7 +735,7 @@ var WebGLApp = new function () {
           // enable floor
           floormesh.visible = true;
       }
-			self.render();
+      self.render();
   }
 
   self.toggleBB = function()
@@ -749,7 +749,7 @@ var WebGLApp = new function () {
           bbmesh.visible = true;
           debugax.visible = true;
       }
-			self.render();
+      self.render();
   }
 
   function create_stackboundingbox(x, y, z, dx, dy, dz)
@@ -770,12 +770,12 @@ var WebGLApp = new function () {
     mesh.doubleSided = true;
     meshes.push( mesh );
     scene.add( mesh );
-	}
+  }
 
   function createScene( geometry, start ) {
     //addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshPhongMaterial( { ambient: 0x030303, color: 0x030303, specular: 0x990000, shininess: 30 } ) );
     addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.2 } ) ); // , transparent:true
-	}
+  }
 
   function drawmesh() {
     var loader = new THREE.JSONLoader( true );
@@ -815,7 +815,7 @@ var WebGLApp = new function () {
       drawmesh();
       show_meshes = true;
     }
-		self.render();
+    self.render();
   }
 
   self.toggleActiveNode = function() {
@@ -826,7 +826,7 @@ var WebGLApp = new function () {
       self.createActiveNode();
       show_active_node = true;
     }
-		self.render();
+    self.render();
   }
 
   self.updateZPlane = function() {
@@ -840,7 +840,7 @@ var WebGLApp = new function () {
     if( zval === -1 ) {
         scene.remove( zplane );
         zplane = null;
-				self.render();
+        self.render();
         return;
     }
     var newval;
@@ -860,11 +860,11 @@ var WebGLApp = new function () {
         zplane.doubleSided = true;
         zplane.position.z = newval;
         scene.add( zplane );
-				self.render();
+        self.render();
         return;
     }
     zplane.position.z = newval;
-		self.render();
+    self.render();
     
   }
 
@@ -891,35 +891,35 @@ var WebGLApp = new function () {
     scene.add( floormesh );
   }
 
-	/**
-	// DISABLED: causes continuous refresh at a rate of 60 fps
+  /**
+  // DISABLED: causes continuous refresh at a rate of 60 fps
   function animate() {
     requestAnimationFrame( animate );
     self.render();
   }
-	*/
+  */
 
-	function onMouseDown(event) {
-		is_mouse_down = true;
-	}
-	function onMouseUp(event) {
-		is_mouse_down = false;
-		self.render(); // May need another render on occasions
-	}
+  function onMouseDown(event) {
+    is_mouse_down = true;
+  }
+  function onMouseUp(event) {
+    is_mouse_down = false;
+    self.render(); // May need another render on occasions
+  }
 
-	/** To execute every time the mouse is moved. */
+  /** To execute every time the mouse is moved. */
   function onMouseMove(event) {
     //var mouseX = ( event.clientX - self.divWidth );
     //var mouseY = ( event.clientY - self.divHeight );
-		if (is_mouse_down) {
-		  self.render();
-		}
+    if (is_mouse_down) {
+      self.render();
+    }
   }
 
-	/** To execute every time the mouse wheel turns. */
-	function onMouseWheel(event) {
-		self.render();
-	}
+  /** To execute every time the mouse wheel turns. */
+  function onMouseWheel(event) {
+    self.render();
+  }
 
   self.render = function render() {
     controls.update();
@@ -1071,7 +1071,7 @@ var WebGLApp = new function () {
           success: function (skeleton_data) {
             skeleton_data['baseName'] = skeleton_data['neuron']['neuronname'];
             self.addSkeleton( parseInt(skeletonID), skeleton_data );
-						self.render();
+            self.render();
           }
         });
     }

@@ -253,6 +253,7 @@ function TileLayer(
 
           // prefetch tiles
           // TODO: fetch information in stack table: -2, -1, 1, 2
+					/*
           var adj = [], tmpimg = new Image(), tmptileBaseName;
           for( var jj in adj ) {
             tmptileBaseName = getTileBaseName3D( stack, pixelPos, adj[jj] );
@@ -261,6 +262,7 @@ function TileLayer(
               tmpimg.src = self.getTileURL( tmptileBaseName + r + "_" + c + "_" + zoom );
             }
           }
+					*/
 
 				}
 				tiles[ i ][ j ].style.top = t + "px";

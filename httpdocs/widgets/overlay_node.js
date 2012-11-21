@@ -438,13 +438,13 @@ var SkeletonElements = new function()
   };
 
   var displayTreenode = function () {
-    return Math.abs(this.zdiff) < 0.5;
+    return this.zdiff >= 0 && this.zdiff < 1;
   };
 
   var displayConnector = function() {
     /* Change the constant to 1.5 if you want to see the connector
        (differently coloured) in the next and previous slices too. */
-    return Math.abs(this.zdiff) < 0.5
+    return this.zdiff >= 0 && this.zdiff < 1;
   };
 
   var displayBetweenNodes = function(node_a, node_b) {

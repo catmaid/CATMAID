@@ -46,7 +46,6 @@ function getTileBaseName3D( stack, pixelPos, adjacent )
 }
 
 
-
 /**
  * 
  */
@@ -253,8 +252,8 @@ function TileLayer(
 					}
 
           // prefetch tiles
-            // TODO: fetch information in stack table: -2, -1, 1, 2
-            var adj = [], tmpimg = new Image(), tmptileBaseName;
+          // TODO: fetch information in stack table: -2, -1, 1, 2
+          var adj = [], tmpimg = new Image(), tmptileBaseName;
           for( var jj in adj ) {
             tmptileBaseName = getTileBaseName3D( stack, pixelPos, adj[jj] );
             // only prefetch for type 1
@@ -376,29 +375,24 @@ function TileLayer(
 	{
 		this.redraw = function()
 		{
-      if( tileSourceType === 1 ) {
+      if( tileSourceType === 1 || tileSourceType === 4 ) {
           img.src = baseURL + stack.z + "/small." + fileExtension;
-      }
-			return;
+			}
 		}
-		
+
 		this.unregister = function()
 		{
 			if ( img.parentNode )
 				img.parentNode.removeChild( img );
 		}
-		
-		var self = this;
 
-    if( tileSourceType === 1 ) {
+    if( tileSourceType === 1 || tileSourceType === 4 ) {
       var img = document.createElement( "img" );
       img.className = "smallMapMap";
-      img.src = baseURL + stack.z + "/small." + fileExtension;
-
+      this.redraw(); // sets the img URL
       stack.overview.getView().appendChild( img );
       stack.overview.addLayer( "tilelayer", this );
     }
-
 	}
 
 	this.setOpacity = function( val )

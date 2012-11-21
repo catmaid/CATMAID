@@ -387,7 +387,7 @@ def node_update(request, project_id=None):
                 except ObjectDoesNotExist:
                     # Ignore deleted objects.
                     continue
-                Location.objects.filter(id=node['node_id']).update(
+                Connector.objects.filter(id=node['node_id']).update(
                     editor=request.user,
                     edition_time=now,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))

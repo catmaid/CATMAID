@@ -553,7 +553,8 @@ var WebGLApp = new function () {
   self.resizeView = function (w, h) {
     if( renderer && !THREEx.FullScreen.activated() ) {
       $('#view_in_3d_webgl_widget').css('overflowY', 'hidden');
-      var canvasWidth = w, canvasHeight = h;
+      var canvasWidth = w,
+					canvasHeight = h;
       if( isNaN(h) && isNaN(w) ) {
         canvasHeight = 800;
         canvasWidth = 600;
@@ -565,6 +566,10 @@ var WebGLApp = new function () {
         canvasHeight = canvasHeight - 100;
         canvasWidth = canvasHeight / 3 * 4;
       }
+			if (canvasWidth < 80 || canvasHeight < 60) {
+				canvasWidth = 80;
+				canvasHeight = 60;
+			}
       $('#viewer-3d-webgl-canvas').width(canvasWidth-20);
       $('#viewer-3d-webgl-canvas').height(canvasHeight);
       $('#viewer-3d-webgl-canvas').css("background-color", "#000000");

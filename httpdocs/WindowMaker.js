@@ -290,7 +290,10 @@ var WindowMaker = new function()
           case CMWWindow.RESIZE:
             var frame = win.getFrame();
             container.style.height = win.getContentHeight() + "px";
-            WebGLApp.resizeView( parseInt(frame.style.width, 10), parseInt(frame.style.height, 10) )
+            container.style.width = win.getWidth() + "px";
+            WebGLApp.resizeView( parseInt(frame.style.width, 10), parseInt(frame.style.height, 10) );
+            // Update the container height to account for the table-div having been resized
+            // TODO
             break;
         }
         return true;

@@ -415,9 +415,16 @@ var WindowMaker = new function()
     var add = document.createElement('input');
     add.setAttribute("type", "button");
     add.setAttribute("id", "update_treenodetable_current_skeleton");
-    add.setAttribute("value", "Update table for active skeleton");
-    add.onclick = updateTreenodeTable; // function declared in table_treenode.js
+    add.setAttribute("value", "List active skeleton");
+    add.onclick = TreenodeTable.update; // function declared in table_treenode.js
     contentbutton.appendChild(add);
+
+    var refresh = document.createElement('input');
+    refresh.setAttribute("type", "button");
+    refresh.setAttribute("id", "refresh_treenodetable");
+    refresh.setAttribute("value", "Refresh");
+    refresh.onclick = TreenodeTable.refresh; // function declared in table_treenode.js
+    contentbutton.appendChild(refresh);
 
     var sync = document.createElement('input');
     sync.setAttribute("type", "checkbox");

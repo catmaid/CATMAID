@@ -2,36 +2,46 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
 
-function updateTreenodeTable() {
-  //TreenodeTable.init( project.getId() );
-  TreenodeTable.setSkeleton( -1 );
-  TreenodeTable.oTable.fnClearTable( 0 );
-  TreenodeTable.oTable.fnDraw();
-}
-
-function refreshTreenodeTable() {
-  TreenodeTable.oTable.fnClearTable( 0 );
-  TreenodeTable.oTable.fnDraw();
-}
-
+/** Namesapce TreenodeTable */
 var TreenodeTable = new function()
 {
   var ns = this; // reference to the namespace
   ns.oTable = null;
   var asInitVals = [];
-  var skelid = -1;
+  var skelid = -1; // Skeleton currently shown
   var last_displayed_skeletons = {};
   last_displayed_skeletons[0] = 'None';
 
   this.setSkeleton = function( skeleton_id ) {
     skelid = skeleton_id;
-  }
+  };
+
+  /** Update the table to list the nodes of the active skeleton. */
+  this.update = function() {
+    var skid = SkeletonAnnotations.getActiveSkeletonId();
+    if (skid) {
+      ns.setSkeleton( skid ); // -1 means: trigger picking the selected skeleton
+      ns.oTable.fnClearTable( 0 );
+      ns.oTable.fnDraw();
+    } else {
+      // Nothing selected, or a connector
+      alert("Select a skeleton first!");
+    }
+  };
+
+  /** Update the table to list the nodes of the skeleton currently being listed. */
+  this.refresh = function() {
+    if (ns.oTable && skelid > 0) {
+      ns.oTable.fnClearTable( 0 );
+      ns.oTable.fnDraw();
+    }
+  };
 
   this.init = function (pid)
   {
     $("#treenodetable_lastskeletons").change(function() {
       skelid = parseInt( $('#treenodetable_lastskeletons').val() );
-      refreshTreenodeTable();
+      ns.refresh();
     });
 
     ns.pid = pid;
@@ -47,7 +57,7 @@ var TreenodeTable = new function()
       "sAjaxSource": django_url + project.id + '/treenode/table/list',
       "fnServerData": function (sSource, aoData, fnCallback) {
 
-        if( skelid === -1 ) {
+        if( -1 === skelid ) {
           skelid = SkeletonAnnotations.getActiveSkeletonId();
         }
         aoData.push({
@@ -68,7 +78,7 @@ var TreenodeTable = new function()
         });
 
         if( skelid && !(skelid in last_displayed_skeletons) ) {
-          // check if skeleton id already in list, of so, do not add it
+          // check if skeleton id already in list, and if so, do not add it
           last_displayed_skeletons[ skelid ] = $('#neuronName').text();
           var new_skeletons = document.getElementById("treenodetable_lastskeletons");
           while (new_skeletons.length > 0)
@@ -100,7 +110,7 @@ var TreenodeTable = new function()
       ],
       "bJQueryUI": true,
       "fnDrawCallback": function () {
-        //$('td:eq(7)', ns.oTable.fnGetNodes()).editable('model/treenode.table.update.php', {
+        //$('td:eq(7)', ns.oTable.fnGetNodes()).editable('model/treenode.table.update.php',
         $('td:eq(7)', ns.oTable.fnGetNodes()).editable(django_url + project.id + '/treenode/table/update', {
           "submitdata": function (value, settings) {
             var aPos = ns.oTable.fnGetPosition(this);

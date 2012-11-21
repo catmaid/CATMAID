@@ -44,7 +44,7 @@ def node_list_tuples(request, project_id=None):
     # as: the ID of the active skeleton
     # top: the Y coordinate of the bounding box (field of view) in calibrated units
     # left: the X coordinate of the bounding box (field of view) in calibrated units
-    params['as'] = int(request.POST.get('as', 0))
+    atnid = int(request.POST.get('atnid', None))
     for p in ('top', 'left', 'z', 'width', 'height', 'zres'):
         params[p] = float(request.POST.get(p, 0))
     params['limit'] = 2000  # Limit the number of retrieved treenodes within the section
@@ -169,6 +169,9 @@ def node_list_tuples(request, project_id=None):
         connector_ids = set()
         # A set of missing treenode IDs
         missing_treenode_ids = set()
+        # Check if the active treenode is present; if not, load it
+        if -1 != atnid and not atnid in treenode_ids:
+            missing_treenode_ids.add(atnid)
         # The relations between connectors and treenodes, stored
         # as connector ID keys vs a list of tuples, each with the treenode id,
         # the type of relation (presynaptic_to or postsynaptic_to), and the confidence.

@@ -1447,8 +1447,10 @@ var SkeletonAnnotations = new function()
         // stack.viewWidth and .viewHeight are in screen pixels
         // so they must be scaled and then transformed to nanometers
         // and stack.x, .y are in absolute pixels, so they also must be brought to nanometers
-      
-        //TODO add the padding to the range
+        var atnid = -1; // cannot send a null
+        if (atn.id) {
+          atnid = atn.id;
+        }
 
         //requestQueue.replace('model/node.list.php', 'POST',
         var pz = stack.z * stack.resolution.z + stack.translation.z;
@@ -1461,7 +1463,7 @@ var SkeletonAnnotations = new function()
           width: (stack.viewWidth / stack.scale) * stack.resolution.x,
           height: (stack.viewHeight / stack.scale) * stack.resolution.y,
           zres: stack.resolution.z,
-          as: activeSkeleton,
+          atnid: atnid,
           labels: self.getLabelStatus()
         }, function (status, text, xml) {
           handle_updateNodes(status, text, xml, callback, pz);

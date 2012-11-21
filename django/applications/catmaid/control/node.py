@@ -235,7 +235,7 @@ def node_list_tuples(request, project_id=None):
         labels = defaultdict(list)
         if request.POST['labels']:
             # Collect treenodes visible in the current section
-            visible = ','.join(str(row[0]) for row in treenodes if z0 <= row[4] <= z1)
+            visible = ','.join(str(row[0]) for row in treenodes if row[4] == z0)
             if visible:
                 cursor.execute('''
                 SELECT treenode.id, class_instance.name
@@ -250,7 +250,7 @@ def node_list_tuples(request, project_id=None):
                     labels[row[0]].append(row[1])
 
             # Collect connectors visible in the current section
-            visible = ','.join(str(row[0]) for row in connectors if z0 <= row[3] <= z1)
+            visible = ','.join(str(row[0]) for row in connectors if row[3] == z0)
             if visible:
                 cursor.execute('''
                 SELECT connector.id, class_instance.name

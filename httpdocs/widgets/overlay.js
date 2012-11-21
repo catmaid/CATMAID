@@ -333,10 +333,13 @@ var SkeletonAnnotations = new function()
 
     this.activateNearestNode = function (x, y, z) {
       var nearestnode = this.findNodeWithinRadius(x, y, z, Number.MAX_VALUE);
-      if (nearestnode && z === self.pix2physZ(nearestnode.z)) {
-        self.activateNode(nearestnode);
-      } else {
-        statusBar.replaceLast("No nodes were visible - can't activate the nearest");
+      if (nearestnode) {
+        var physZ = self.pix2physZ(nearestnode.z);
+        if (physZ >= z && physZ < z + stack.resolution.z) {
+          self.activateNode(nearestnode);
+        } else {
+          statusBar.replaceLast("No nodes were visible in the current section - can't activate the nearest");
+        }
       }
       return nearestnode;
     };

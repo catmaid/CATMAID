@@ -426,7 +426,8 @@ var SkeletonElements = new function()
    */
   var nodeColorFromZDiff = function(zdiff, skeleton_id)
   {
-    if (zdiff > 0) {
+    // zdiff is in sections, therefore the current section is at [0, 1) -- notice 0 is inclusive and 1 is exclusive.
+    if (zdiff >= 1) {
       return inactive_skeleton_color_above;
     } else if (zdiff < 0) {
       return inactive_skeleton_color_below;
@@ -861,7 +862,8 @@ var SkeletonElements = new function()
   /** Here 'this' is the connector node. */
   var connectorColorFromZDiff =  function(zdiff)
   {
-    if (zdiff > 0) {
+    // zdiff is in sections, therefore the current section is at [0, 1) -- notice 0 is inclusive and 1 is exclusive.
+    if (zdiff >= 1) {
       return "rgb(0, 0, 255)";
     } else if (zdiff < 0) {
       return "rgb(255, 0, 0)";

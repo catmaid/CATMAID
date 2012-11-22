@@ -270,6 +270,7 @@ def create_interpolated_treenode(request, project_id=None):
             'resx': 0,
             'resy': 0,
             'resz': 0,
+            'stack_translation_z': 0,
             'radius': 0}
     int_values = {
             'parent_id': 0,
@@ -306,7 +307,7 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
         # Loop the creation of treenodes in z resolution steps until target
         # section is reached
         parent_id = params['parent_id']
-        atn_slice_index = (params['atnz'] / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
+        atn_slice_index = ((params['atnz'] - params['stack_translation_z']) / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
         for i in range(1, steps + (0 if skip_last else 1)):
             if (atn_slice_index + i * sign) in broken_slices:
                 continue
@@ -457,8 +458,8 @@ def join_skeletons_interpolated(request, project_id=None):
     """ Join two skeletons, adding nodes in between the two nodes to join
     if they are separated by more than one section in the Z axis."""
     # Parse parameters
-    keysDecimal = ['atnx', 'atny', 'atnz', 'x', 'y', 'z', 'resx', 'resy', 'resz']
-    keysInt = ['from_id', 'to_id', 'radius', 'confidence', 'stack_id']
+    keysDecimal = ('atnx', 'atny', 'atnz', 'radius', 'x', 'y', 'z', 'resx', 'resy', 'resz', 'stack_translation_z')
+    keysInt = ('from_id', 'to_id', 'confidence', 'stack_id')
     params = {}
     for p in keysDecimal:
         params[p] = decimal.Decimal(request.POST.get(p, 0))

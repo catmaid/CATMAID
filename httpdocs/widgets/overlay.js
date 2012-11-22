@@ -817,6 +817,7 @@ var SkeletonAnnotations = new function()
         resx: stack.resolution.x,
         resy: stack.resolution.y,
         resz: stack.resolution.z,
+        stack_translation_z: stack.translation.z,
         stack_id: project.focusedStack.id
       }, function (status, text, xml) {
         var e;
@@ -863,6 +864,7 @@ var SkeletonAnnotations = new function()
         resx: stack.resolution.x,
         resy: stack.resolution.y,
         resz: stack.resolution.z,
+        stack_translation_z: stack.translation.z,
         stack_id: project.focusedStack.id
       }, function (status, text, xml) {
         var e;
@@ -1558,7 +1560,6 @@ var SkeletonAnnotations = new function()
           "POST",
           {tnid: treenode_id},
           function(status, text) {
-            console.log("status: " + status);
             if (200 === status) {
               var json = $.parseJSON(text);
               if (json.error) {

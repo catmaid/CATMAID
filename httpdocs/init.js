@@ -352,10 +352,11 @@ function recreateProjectStructureFromCache() {
     projects_available[p.pid] = new Array();
     // add linked stacks
     for (j in p.action) {
-      projects_available[p.pid][j] =
+      projects_available[p.pid].push(
           { title : p.action[j].title,
             action : p.action[j].action,
-            note : p.action[j].comment};
+            note : p.action[j].comment}
+      );
     }
   }
   projects_available_ready = true;

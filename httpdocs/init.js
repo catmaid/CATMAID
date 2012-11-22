@@ -352,10 +352,12 @@ function recreateProjectStructureFromCache() {
     projects_available[p.pid] = new Array();
     // add linked stacks
     for (j in p.action) {
-      projects_available[p.pid][j] =
-          { title : p.action[j].title,
+      projects_available[p.pid].push(
+          { id : j,
+            title : p.action[j].title,
             action : p.action[j].action,
-            note : p.action[j].comment};
+            note : p.action[j].comment}
+      );
     }
   }
   projects_available_ready = true;
@@ -598,13 +600,14 @@ function handle_openProjectStack( status, text, xml )
 				var current_menu_content = new Array();
 				for (var s in stacks)
 				{
-					current_menu_content[ s ] =
+					current_menu_content.push(
 						{
 							id : s,
 							title : stacks[s].title,
 							note : stacks[s].note,
 							action : stacks[s].action
 						}
+					);
 				}
 				project_menu_current.update( current_menu_content );
 				document.getElementById( "project_menu_current" ).style.display = "block";

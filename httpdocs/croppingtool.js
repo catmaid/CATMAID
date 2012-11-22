@@ -106,7 +106,7 @@ function CroppingTool() {
 			{
 				if ( nStacks > 0 )
 					stacks += ","
-				stacks += s.toString()
+				stacks += stack.data.id.toString()
 				nStacks++;
 			}
 		}
@@ -216,9 +216,9 @@ function CroppingTool() {
 					var space_sym = unescape( "%u2002" );
 					stack_title = space_sym + space_sym + stack_title;
 				}
-				current_menu_content[ s ] =
+				current_menu_content.push(
 					{
-						id : s,
+						id : stack.data.id,
 						title : stack_title,
 						note : "", // alternative: stack.note
 						action : (function(curr_stack) { return function()
@@ -230,6 +230,7 @@ function CroppingTool() {
 							}
 						})(stack)
 					}
+				);
 			}
 			self.stacks_menu.update( current_menu_content );
 			document.getElementById( "crop_stacks_menu_box" ).style.display = "block";
@@ -580,11 +581,12 @@ function CroppingTool() {
 		for ( var s in stacks )
 		{
 			// By default, mark only the current stack to be cropped
-			self.stacks_to_crop[ s ] =
+			self.stacks_to_crop.push(
 				{
 					data : stacks[ s ],
 					marked : ( s == self.stack.getId() )
-				};
+				}
+			);
 		}
 
 		document.getElementById( "edit_button_crop" ).className = "button_active";

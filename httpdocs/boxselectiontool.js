@@ -224,18 +224,19 @@ BoxSelectionTool.prototype.register = function( parentStack )
     var stacks = projects_available[ project.id ];
     for (var s in stacks)
     {
-        var opened_stack = project.getStack( s );
-        if ( s in this.cropBoxCache )
+        var id = stacks[ s ].id
+        var opened_stack = project.getStack( id );
+        if ( id in this.cropBoxCache )
         {
             // remove the entry if the project isn't opened
             if ( !opened_stack )
-                delete this.cropBoxCache[ s ];
+                delete this.cropBoxCache[ id ];
         }
         else
         {
             // make sure it has got a cropping box container in the cache
             if ( opened_stack )
-                this.cropBoxCache[ s ] = this.initCropBox( opened_stack );
+                this.cropBoxCache[ id ] = this.initCropBox( opened_stack );
         }
     }
 

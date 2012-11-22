@@ -353,7 +353,8 @@ function recreateProjectStructureFromCache() {
     // add linked stacks
     for (j in p.action) {
       projects_available[p.pid].push(
-          { title : p.action[j].title,
+          { id : j,
+            title : p.action[j].title,
             action : p.action[j].action,
             note : p.action[j].comment}
       );

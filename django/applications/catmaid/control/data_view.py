@@ -100,7 +100,8 @@ def get_data_view( request, data_view_id ):
     context = Context({
         'data_view': dv,
         'projects': projects,
-        'config': config
+        'config': config,
+        'settings': settings
     })
 
     return HttpResponse( template.render( context ) );

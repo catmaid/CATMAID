@@ -1453,7 +1453,8 @@ var SkeletonAnnotations = new function()
         // so they must be scaled and then transformed to nanometers
         // and stack.x, .y are in absolute pixels, so they also must be brought to nanometers
         var atnid = -1; // cannot send a null
-        if (atn.id) {
+        var atntype = "";
+        if (atn.id && "treenode" === atn.type) {
           atnid = atn.id;
         }
 

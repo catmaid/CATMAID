@@ -44,7 +44,7 @@ def node_list_tuples(request, project_id=None):
     # as: the ID of the active skeleton
     # top: the Y coordinate of the bounding box (field of view) in calibrated units
     # left: the X coordinate of the bounding box (field of view) in calibrated units
-    atnid = int(request.POST.get('atnid', None))
+    atnid = int(request.POST.get('atnid', -1))
     for p in ('top', 'left', 'z', 'width', 'height', 'zres'):
         params[p] = float(request.POST.get(p, 0))
     params['limit'] = 2000  # Limit the number of retrieved treenodes within the section

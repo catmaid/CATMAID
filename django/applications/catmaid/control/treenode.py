@@ -74,11 +74,11 @@ def _fetch_targetgroup(user, project_id, targetgroup, part_of_id, class_map):
             ist_group.user = user # TODO should be an admin, but doesn't matter
             ist_group.project_id = project_id
             ist_group.class_column_id = class_map['group']
-            ist_group.name = 'Staging'
+            ist_group.name = 'Isolated synaptic terminals'
             ist_group.save()
             root = ClassInstance.objects.get(project=project_id, class_column=class_map['root'])
 
-            _create_relation(user, project_id, part_of_id, staging_group.id, root.id)
+            _create_relation(user, project_id, part_of_id, ist_group.id, root.id)
             is_new = True
         return ist_group, is_new
 

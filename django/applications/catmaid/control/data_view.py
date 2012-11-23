@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.template import Context, loader
 
 from catmaid.control.common import makeJSON_legacy_list
+from catmaid.control.project import extend_projects
 from catmaid.models import DataView, DataViewType, Project
 
 import re
@@ -88,6 +89,9 @@ def get_data_view( request, data_view_id ):
             repeat_count=Count("id") ).filter( repeat_count=len(filter_tags) )
     else:
         projects = Project.objects.all()
+
+    # Extend the project list with additional information like editabilty
+    projects = extend_projects( request, projects )
 
     # Sort by default
     if "sort" not in config or config["sort"] == True:

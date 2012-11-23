@@ -46,7 +46,7 @@ c.execute("SELECT id FROM class_instance WHERE class_id = %s AND project_id = %s
     (class_dictionary['root'], project_id))
 rows = c.fetchall()
 if len(rows) > 0:
-    print('The root node already exist!')
+    print('The root node already exists!')
 else:
     c.execute("INSERT INTO class_instance (user_id, project_id, class_id, name) "+
           "VALUES (%s, %s, %s, %s)",

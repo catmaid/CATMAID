@@ -320,6 +320,10 @@ var SkeletonAnnotations = new function()
         }
       } else {
         atn.set(null);
+        // Deselect all from Object Tree. It is necessary because the neuron ID
+        // would be used to create the next skeleton, and it would fail
+        // if the neuron doesn't exist.
+        $('#tree_object').jstree("deselect_all");
       }
       self.recolorAllNodes();
       // if displayed in 3d viewer, update position

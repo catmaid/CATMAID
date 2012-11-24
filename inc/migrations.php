@@ -533,18 +533,6 @@ CREATE SEQUENCE object_id_seq
     NO MINVALUE
     CACHE 1;
 ALTER SEQUENCE object_id_seq OWNED BY object.id;
-CREATE TABLE project (
-    id integer NOT NULL,
-    title text NOT NULL,
-    public boolean DEFAULT true NOT NULL
-);
-CREATE SEQUENCE project_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-ALTER SEQUENCE project_id_seq OWNED BY project.id;
 CREATE TABLE project_stack (
     project_id integer NOT NULL,
     stack_id integer NOT NULL,
@@ -643,7 +631,6 @@ ALTER TABLE concept ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regcla
 ALTER TABLE message ALTER COLUMN id SET DEFAULT nextval('message_id_seq'::regclass);
 ALTER TABLE object ALTER COLUMN id SET DEFAULT nextval('object_id_seq'::regclass);
 ALTER TABLE profile ALTER COLUMN id SET DEFAULT nextval('profile_id_seq'::regclass);
-ALTER TABLE project ALTER COLUMN id SET DEFAULT nextval('project_id_seq'::regclass);
 ALTER TABLE stack ALTER COLUMN id SET DEFAULT nextval('stack_id_seq'::regclass);
 ALTER TABLE textlabel ALTER COLUMN id SET DEFAULT nextval('textlabel_id_seq'::regclass);
 ALTER TABLE \"user\" ALTER COLUMN id SET DEFAULT nextval('user_id_seq'::regclass);
@@ -689,8 +676,6 @@ ALTER TABLE ONLY object
     ADD CONSTRAINT object_pkey PRIMARY KEY (class, name);
 ALTER TABLE ONLY profile
     ADD CONSTRAINT profile_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY project
-    ADD CONSTRAINT project_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY project_stack
     ADD CONSTRAINT project_stack_pkey PRIMARY KEY (project_id, stack_id);
 ALTER TABLE ONLY project_user
@@ -1104,13 +1089,6 @@ ALTER TABLE broken_slice ADD PRIMARY KEY (id);
 		 ALTER TABLE stack ALTER COLUMN metadata SET NOT NULL;"
 ),
 
-
-	'2012-04-12T15:59:28' => new Migration(
-		'Wiki base url for MediaWiki integration',
-		'
-ALTER TABLE project ADD COLUMN wiki_base_url text;
-'
-),
 
 	'2012-05-16T12:20:53' => new Migration(
 		'Invert mouse wheel direction column',

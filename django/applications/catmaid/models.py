@@ -136,7 +136,7 @@ class IntegerArrayField(ArrayFieldBase):
 class Project(models.Model):
     class Meta:
         db_table = "project"
-        managed = False
+        managed = True
         permissions = (
             ("can_administer", "Can administer projects"), 
             ("can_annotate", "Can annotate projects"), 

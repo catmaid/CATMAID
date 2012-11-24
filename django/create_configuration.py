@@ -37,7 +37,7 @@ for f in ['', '_apache']:
 
 out = """
 Alias /catmaid/dj-static/ {cmpath}/django/static/
-Alias /static/ {cmpath}/django/static-admin/
+Alias /catmaid/dj-static-admin/ {cmpath}/django/static-admin/
 
 Alias /catmaid/dj {cmpath}/django/projects/mysite/django.wsgi
 <Location /catmaid/dj>

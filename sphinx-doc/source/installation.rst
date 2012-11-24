@@ -124,42 +124,6 @@ You should then restart Apache::
 
      sudo /etc/init.d/apache2 restart
 
+Continue with the :ref:`djangoinstall` .
 
-3. Now try it out!
-##################
 
-Try to start CATMAID::
-
-     firefox http://localhost/catmaid/
-
-You will get an error to tell you that no projects are found.  If you want to
-create some example projects and stacks for testing, you should run::
-
-     scripts/database/insert-example-projects.py
-
-To create a login, you should use the `scripts/database/create-user.py`
-script, such as with::
-
-     scripts/database/create-user.py humpy "Sir Humphrey Appleby"
-
-This will prompt you for a password for this new user. A default login (user: gerhard,
-password: gerhard) is created for the example projects and tracing is enabled.
-
-4. Adding a new project
-#######################
-
-You can generate the image tiles for a stack with the
-`scripts/tiles/tile_stack` script or by exporting from TrakEM2 with
-its "Export > Flat Images" option and selecting the "Export for
-web" checkbox.
-
-Then you can create a new project with the script
-`scripts/database/create_project_stack.py`::
-
-      scripts/database/create_project_stack.py
-
-The script enables the generation of a new project or uses an
-existing project.  For a new project, it creates the classes and
-relations necessary for SVG-based annotation and associates the
-project with the users.  It enables the creation of new stacks
-associated with the project.

@@ -1,3 +1,7 @@
+.. _djangoinstall:
+
+
+
 Installation of the DJANGO backend
 ==================================
 
@@ -17,7 +21,7 @@ Make sure that you have the following packages installed::
 You first need to create a Python virtualenv. We suggest to create it
 within the django subfolder. In this directory, run::
 
-   virtualenv --no-site-packages env
+   virtualenv --no-site-packages --distribute env
 
 Then run::
 
@@ -81,11 +85,31 @@ Restart Apache::
 
     sudo /etc/init.d/apache2 restart
 
-And then you should be able to test the setup by visiting::
+Now run Django syncdb::
 
-    http://localhost/catmaid/dj/[project_id]
+    django/projects/mysite/manage.py syncdb
+
+You have to create a super user account.
+
+Try to start CATMAID::
+
+     firefox http://<CATMAID-URL>/catmaid/
+
+This runs the database migrations.
 
 If you see an "Internal Server Error", make sure that you configured and
 customized every file properly. You might also want to check the Apache log::
 
-   sudo tail -f /var/log/apache2/error.log
+     sudo tail -f /var/log/apache2/error.log
+
+Then, you can login into the Django admin interface::
+
+     firefox http://<CATMAID-URL>/dj/admin/
+
+.. warning:: 
+
+    Project/stack creation and setup for neuron tracing is not yet possible through the admin interface.
+    You have to add a project and stack with the helper script `scripts/database/create_project_stack.py`
+
+You can generate the image tiles for a stack with the `scripts/tiles/tile_stack` script or by exporting from TrakEM2 with its "Export > Flat Images" option and selecting the "Export for web" checkbox. Make the folder with the image pyramid web-accessible and use the URL as `image_base` URL for your stack.
+

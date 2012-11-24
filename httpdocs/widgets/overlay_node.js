@@ -346,12 +346,9 @@ var SkeletonElements = new function()
    */
   var nodeDelete = function (wasActiveNode) {
     var node = this;
-    var parent_id = node.parent_id;
-    if (!parent_id) { parent_id = -1; } // can't send null via post
     requestQueue.register(django_url + project.id + '/treenode/delete', "POST", {
       pid: project.id,
-      treenode_id: node.id,
-      parent_id: parent_id
+      treenode_id: node.id
     }, function (status, text) {
       if (status !== 200) {
         alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
@@ -365,8 +362,8 @@ var SkeletonElements = new function()
                   // activate parent node when deleted
                   if (wasActiveNode) {
                       var ov = node.paper.catmaidSVGOverlay;
-                      if (node.parent) {
-                          ov.selectNode(node.parent.id);
+                      if (e.parent_id) {
+                          ov.selectNode(e.parent_id);
                       } else {
                           // No parent. But if this node was postsynaptic or presynaptic
                           // to a connector, the connector must be selected:

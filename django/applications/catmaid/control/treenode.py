@@ -12,6 +12,8 @@ from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
+from catmaid.control.neuron import _in_isolated_synaptic_terminals, _delete_if_empty
+import sys
 
 
 def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id):
@@ -374,42 +376,50 @@ def update_treenode_table(request, project_id=None):
 @requires_user_role(UserRole.Annotate)
 @transaction_reportable_commit_on_success
 def delete_treenode(request, project_id=None):
+    """ If the skeleton has a single node, deletes the skeleton, and if so, if the skeleton is a model_of a neuron that was part_of group 'Isolated synaptic terminals', deletes the neuron. Returns the parent_id, if any."""
     treenode_id = int(request.POST.get('treenode_id', -1))
     # Raise an Exception if the user doesn't own the treenode or is not superuser
     can_edit_or_fail(request.user, treenode_id, 'treenode')
     #
-    parent_id = int(request.POST.get('parent_id', -1))
-    skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
+    treenode = Treenode.objects.get(pk=treenode_id)
+    parent_id = treenode.parent_id
 
     response_on_error = ''
     try:
         cursor = connection.cursor()
-        if -1 == parent_id:
+        if not parent_id:
             # This treenode is root.
-
-            response_on_error = 'Could not retrieve children'
-            cursor.execute("SELECT count(id) FROM treenode WHERE parent_id=%s", [treenode_id])
-            n_children = cursor.fetchone()[0]
+            response_on_error = 'Could not retrieve children for treenode #%s' % treenode_id
+            n_children = Treenode.objects.filter(parent=treenode).count()
             if n_children > 0:
                 # TODO yes you can, the new root is the first of the children, and other children become independent skeletons
                 raise CatmaidException("You can't delete the root node when it has children.")
             # Remove the original skeleton.
             # It is OK to remove it if it only had one node,
-            # even if the user does not match or the user is not superuser.
+            # even if the skeleton's user does not match or the user is not superuser.
+            # Fetch the neuron id, if it was a placeholder under 'Isolated synaptic terminals' group
+            neuron_id = _in_isolated_synaptic_terminals(treenode.skeleton_id)
+            # Delete the skeleton, which triggers deleting the ClassInstanceClassInstance relationship with neuron_id
             response_on_error = 'Could not delete skeleton.'
-            cursor = connection.cursor()
-            cursor.execute("DELETE FROM class_instance WHERE id=%s", [skeleton_id])
+            ClassInstance.objects.filter(pk=treenode.skeleton_id).delete()
+
+            # If the neuron was part of the 'Isolated synaptic terminals' and no other skeleton is a model_of it, delete it
+            print >> sys.stderr, "neuron_id", neuron_id
+            if neuron_id:
+                response_on_error = 'Could not delete neuron #%s' % neuron_id
+                if _delete_if_empty(neuron_id):
+                    print >> sys.stderr, "DELETED neuron %s from IST" % neuron_id
 
         else:
-            # Treenode is not root, it has a parent and children.
+            # Treenode is not root, it has a parent and perhaps children.
             # Reconnect all the children to the parent.
             response_on_error = 'Could not update parent id of children nodes'
-            cursor.execute("UPDATE treenode SET parent_id=%s WHERE parent_id=%s", (parent_id, treenode_id))
+            Treenode.objects.filter(parent=treenode).update(parent=treenode.parent)
 
         # Remove treenode
         response_on_error = 'Could not delete treenode.'
-        cursor.execute("DELETE FROM treenode WHERE id=%s", [treenode_id])
-        return HttpResponse(json.dumps({'success': 'Removed treenode successfully.'}))
+        Treenode.objects.filter(pk=treenode_id).delete()
+        return HttpResponse(json.dumps({'parent_id': parent_id}))
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))

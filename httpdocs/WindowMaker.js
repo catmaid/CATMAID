@@ -625,7 +625,7 @@ var WindowMaker = new function()
         sync.appendChild(option);
         contentbutton.appendChild(sync);
 
-        requestQueue.register('model/user.list.php', 'GET', undefined,
+        requestQueue.register(django_url + 'user-list',, 'GET', undefined,
             function (status, data, text) {
                 var e = $.parseJSON(data);
                 if (status !== 200) {

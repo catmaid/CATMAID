@@ -202,9 +202,14 @@ def create_treenode(request, project_id=None):
             new_skeleton.name = 'skeleton %d' % new_skeleton.id
             new_skeleton.save()
 
-            if int(params['useneuron']) != -1:  # A neuron already exists, so we use it
+            if -1 == params['useneuron']:
+                # Check that the neuron to use exists
+                if 0 == ClassInstance.objects.filter(pk=params['useneuron']).count():
+                    params['useneuron'] = -1
+
+            if -1 != params['useneuron']:  # A neuron already exists, so we use it
                 response_on_error = 'Could not relate the neuron model to the new skeleton!'
-                relate_neuron_to_skeleton(int(params['useneuron']), new_skeleton.id)
+                relate_neuron_to_skeleton(params['useneuron'], new_skeleton.id)
 
                 response_on_error = 'Could not insert new treenode!'
                 new_treenode = insert_new_treenode(None, new_skeleton)

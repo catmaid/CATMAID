@@ -339,7 +339,7 @@ var ObjectTree = new function()
                       // datatables grabs automatically the selected skeleton
                       var skelid = obj.attr("id").replace("node_", "");
                       TreenodeTable.setSkeleton( skelid );
-                      refreshTreenodeTable();
+                      TreenodeTable.refresh();
                     }
                   },
                   "show_connectortable": {

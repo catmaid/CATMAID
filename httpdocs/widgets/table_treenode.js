@@ -2,7 +2,7 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
 
-/** Namesapce TreenodeTable */
+/** Namespace TreenodeTable */
 var TreenodeTable = new function()
 {
   var ns = this; // reference to the namespace

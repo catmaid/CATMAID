@@ -226,6 +226,16 @@ var editToolActions = [
 	}),
 
 	new Action({
+		helpText: "Tagging tool",
+		buttonID: 'edit_button_tags',
+		buttonName: 'tags',
+		run: function (e) {
+			project.setTool( new TaggingTool() );
+			return true;
+		}
+	}),
+
+	new Action({
 		helpText: "Crop tool",
 		buttonID: 'edit_button_crop',
 		buttonName: 'crop',

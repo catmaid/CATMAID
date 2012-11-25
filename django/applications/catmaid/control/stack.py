@@ -86,6 +86,33 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
 
     return result
 
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def list_stack_tags(request, project_id=None, stack_id=None):
+    """ Return the tags associated with the stack.
+    """
+    s = get_object_or_404(Stack, pk=stack_id)
+    tags = [ str(t) for t in s.tags.all()]
+    result = {'tags':tags}
+    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def update_stack_tags(request, project_id=None, stack_id=None, tags=None):
+    """ Updates the given stack with the supplied tags. All
+    existing tags will be replaced.
+    """
+    s = get_object_or_404(Stack, pk=stack_id)
+    # Create list of single stripped tags
+    if tags is None:
+        tags = []
+    else:
+        tags = tags.split(",")
+        tags = [t.strip() for t in tags]
+
+    # Add tags to the model
+    s.tags.set(*tags)
+
+    # Return an empty closing response
+    return HttpResponse(json.dumps(""), mimetype="text/json")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stack_info(request, project_id=None, stack_id=None):

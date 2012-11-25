@@ -25,9 +25,11 @@ Currently, CATMAID comes with two pre-defined data views:
 *Project list* and *Project table with images*. The latter is used
 as the default, i.e. it is shown when CATMAID is loaded. Both views
 have different view types. They are *Project list* and *Project table*.
-There is also a third type, that is not used by one of the pre-defined
-views: *Legacy project list*. It allows the display of a project list
-used before the advent of data views. The details are described below.
+There is also two more data view types that are not used by the
+pre-defined views: *Legacy project list*. It allows the display of a
+project list used before the advent of data views. Then there is also
+the *Project tag table* which allows the construction of a table
+based on tags. The details are described below.
 
 Different use cases might require different data view types. How to
 extend CATMAID and create own data view types is explained in
@@ -101,9 +103,9 @@ Options in help texts usually have the following notation:
 An option name has to be quoted and the value has to be delimited by a colon.
 However, also values might need quoting if they are strings other than
 ``true`` or ``false`` (and no numbers). Alternative values are separated by
-a logical *or*/pipe symbol (``|``) and only one of them can be used. Let's have a look at
-the *sort* option as an example: All data view types, except the
-*Legacy Project List* type, support the option
+a logical *or*/pipe symbol (``|``) and only one of them can be used. Let's
+have a look at the *sort* option as an example: All data view types, except
+the *Legacy Project List* type, support the option
 
   ``"sort":[true|false]``.
  
@@ -117,6 +119,26 @@ When multiple options are used, each option is separated by a comma from
 another one -- within the same pair of curly braces:
 
   ``{"name1":opt1, "name2:opt2, ...}``
+
+Like already mentioned, there are options that are supported by all the
+different data view types. The only exception to this is the *Legacy Project
+List* type, which doesn't support such general options. All the other types
+respect the following general options:
+
+=============== =========================================== ============
+Name            Options                                     Default
+=============== =========================================== ============
+``sort``        ``true, false``                             ``true``
+``filter_tags`` ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
+=============== =========================================== ============
+
+With the help of the ``sort`` option one can make sure the list of projects
+a data view deals with is sorted (or that it is not). The ``filter_tags``
+option allows to define a list of tags that have to be assigned to all
+projects looked at. If a data view should get a unsorted list of projects
+that are tagged with ``Test`` and ``CNS`` the configuration would look like:
+
+  ``{"sort":false, "filter_tags":["Test", "CNS"]}``
 
 The remainder of this section will briefly discuss the different data view
 types available.
@@ -145,14 +167,15 @@ It is processed server-side and offers some configuration options:
 Name               Options                                     Default
 ================== =========================================== ============
 ``sort``           ``true, false``                             ``true``
+``filter_tags``    ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
 ``sample_images``  ``true, false``                             ``false``
 ``sample_stack``   ``stack index, "first", "last"``            ``0``
 ``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
 ``sample_scaling`` ``scaling percentage, e.g. 50 or 75``       ``100``
 ================== =========================================== ============
 
-Like said before, with the help of the ``sort`` option, one can control whether
-projects should appear in a natural sorting order. The ``sample_images`` option
+Please refer to the introduction to this section for an explanation of the
+``sort`` and ``filter_tags`` options. The ``sample_images`` option
 defines whether there should be a sample image displayed to the left of each
 project entry. If an image is displayed, the ``sample_stack`` option defines
 from which stack of the current project the image should be taken. The
@@ -193,13 +216,14 @@ supported:
 Name               Options                                     Default
 ================== =========================================== ============
 ``sort``           ``true, false``                             ``true``
+``filter_tags``    ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
 ``sample_images``  ``true, false``                             ``false``
 ``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
 ``sample_scaling`` ``scaling percentage, e.g. 50 or 75``       ``100``
 ================== =========================================== ============
 
-The ``sort`` option defines, whether the projects are ordered naturally in
-the resulting table. If images should be displayed, the ``sample_images``
+Have a look to this section's introduction for an explanation of the ``sort``
+and ``filter_tags`` options. If images should be displayed, the ``sample_images``
 option should be set to ``true``. Since there is one image per stack, an
 option like ``sample_stack`` in the *Project list* type, isn't needed.
 However, with the help of the ``sample_slice`` option a slice can be
@@ -224,3 +248,76 @@ and you would get for example this:
 
 .. image:: _static/dataviews/admin_data_views_project_table.png
 
+Project tag table
+^^^^^^^^^^^^^^^^^
+
+In CATMAID, projects and stacks can be tagged. This can be done through the
+admin interface or the tagging tool (see :ref:`tagging-tool`). Based on a
+*Project tag table* data view type, a data view can create a table where each
+cell is associated with a *row tag* and *column tag*. Which tag is linked to
+which row and which tag is linked to which columns can be configured.
+
+To understand the purpose of this data view type, let's look at an example:
+You have light microscopy image stacks of different tissues. For every tissue
+there are image stacks for multiple proteins you are interested in. To have
+the tissue and the protein associated with CATMAID projects, one could just
+use tags: Every project would be tagged with a tissue name and protein name.
+To organize the data with the help of the *Project tag table* data view type,
+one could then assign the tissue tags to the columns and the protein tags
+to the rows of the resulting table. Each cell of the table refers then to one
+column (tissue) tag and one row (protein) tag. Each project will appear in a
+table cell that refers to tags the project itself is tagged with.
+
+However, there are more options than the tags themselves that can be configured:
+
+==================== ========================================== ============
+Name                 Options                                    Default
+==================== ========================================== ============
+``sort``             ``true, false``                            ``true``
+``filter_tags``      ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
+``row_tags``         ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
+``col_tags``         ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
+``linked_stacks``    ``stack index, "first", "last", "all"``    ``"all"``
+``force_stack_list`` ``true, false``                            ``false``
+``sample_images``    ``true, false``                            ``false``
+``sample_slice``     ``slice index, "first", "center", "last"`` ``"center"``
+``sample_scaling``   ``scaling percentage, e.g. 50 or 75``      ``100``
+==================== ========================================== ============
+
+Have a look at this section's introduction for an explanation of the ``sort``
+and ``filter_tags`` options. The tags to use for the rows and columns can be
+set with the ``row_tags`` and the ``col_tags`` keywords. To control which
+stacks of a project appear in a table cell, the ``linked_stacks`` and the
+``force_stack_list`` option can be used: They define if a list of stacks is
+displayed per project (like in the *Project list* type) and which stacks should
+make it into this list. By default, a complete stack list is displayed for each
+project. In some situations, however, it is not preferable to list all stacks
+associated with a project and so you can limit this to either the ``first``
+stack, the ``last`` or one of a specific index. Is there only one stack
+(selected or at all), then the link to open it is rendered solely as the
+project title and no list is displayed. If this is not wanted, the
+``force_stack_list`` option can be set to true to get a list with one entry.
+
+Like with the other data types, one can opt for showing images instead of stack
+names. To do so, employ the ``sample_images`` option. These images will then
+form links to the actual stack display. With the help of the ``sample_slice``
+keyword, the displayed slice can be selected. Again, one can choose the
+``"first"``, ``"last"`` or ``"center"`` slice of the stack. In case the default
+size of these sample is too big or too small, the ``sample_scaling`` option can
+be used. It takes a numerical percentage value and scales the result images
+accordingly.
+
+As an example, consider the situation described above: We have image stacks
+of several tissues and with multiple protein markers. The imaged tissues are
+*CNS* and *salivary gland*. For both of them there are stacks labeled with
+markers called *Smo* and *Ptc*. The stacks have been labeled accordingly.
+Also, we only want to consider images tagged as "Valid". Additionally, we
+don't went to see all the stacks, but only the project name that links to the
+last stack of each project. A configuration might look like this::
+
+   {"filter_tags":["Valid"], "row_tags":["Smo", "Ptc"],
+   "col_tags":["CNS", "Salivary Gland"], "linked_stacks":"last" }
+
+With this, the rendered result could look like the following:
+
+.. image:: _static/dataviews/admin_data_views_project_tag_table.png

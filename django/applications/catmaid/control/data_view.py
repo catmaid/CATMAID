@@ -2,6 +2,7 @@ import json
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Count
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.template import Context, loader
@@ -78,7 +79,16 @@ def get_data_view( request, data_view_id ):
     template = loader.get_template( "catmaid/" + code_type + ".html" )
     # Get project information and pass all to the template context
     config = json.loads( dv.config )
-    projects = Project.objects.all()
+
+    # If requested, filter projects by tags. Otherwise, get all.
+    if "filter_tags" in config:
+        filter_tags = config["filter_tags"]
+        # Only get projects that have all the filter tags set
+        projects = Project.objects.filter( tags__name__in=filter_tags ).annotate(
+            repeat_count=Count("id") ).filter( repeat_count=len(filter_tags) )
+    else:
+        projects = Project.objects.all()
+
     # Sort by default
     if "sort" not in config or config["sort"] == True:
         projects = natural_sort( projects, "title" )

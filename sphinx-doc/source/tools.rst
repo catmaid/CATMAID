@@ -20,6 +20,18 @@ of these controls will redraw the current view.
 Clicking and dragging the view with the mouse can be used to move around
 on the current slice.
 
+.. _tagging-tool:
+
+Tagging
+-------
+
+Projects and stacks can be associated with tags. Tags are basically strings
+that capture some property of an object. They can contain spaces and any
+other alphanumerical character. CATMAID's tagging tool will allow you to
+view and modify the tags of an active stack and of the project it belongs
+to. Changes will only be applied when the check icon on the right is
+clicked.
+
 Cropping
 --------
 

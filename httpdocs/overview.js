@@ -10,7 +10,7 @@ function Overview( stack )
 	this.getView = function()
 	{
 		return view;
-	}
+	};
 	
 	var onmousedown =
 	{

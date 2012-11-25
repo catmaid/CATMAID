@@ -63,13 +63,21 @@ cropping tool uses GM through pgmagick and expects the libtiff and the
 libjpeg delegates to be present. So make sure your GM installation
 supports tiff (check e.g. with the help of "gm convert -list format").
 
-Now, configure all the settings in the file *configuration.py.example* in the subfolder *django*
-and copy the file to *configuration.py*. Then run::
+Now, copy the file *configuration.py.example* to *configuration.py*::
+
+    cp configuration.py.example configuration.py
+
+Configure *configuration.py* with an editor::
+
+    gedit configuration.py
+
+Then, create the necessary configuration files with::
 
     ./create_configuration.py
 
-This script will print the information you need for your Apache configuration.
-Try running the server locally, with::
+This script will print the information you need for your Apache configuration. You
+will need this information to configure Apache later. But first, we test the correctness
+of the configuration by running the server with::
 
   ./projects/mysite/manage.py runserver
 
@@ -78,16 +86,18 @@ Try running the server locally, with::
   http://localhost:8000/
 
 If that works successfully, you can edit your Apache configuration using the output
-from the *create_configuration.py* script. You find your Apache configuration in
+from the *create_configuration.py* script. Usually, you find your Apache configuration in
 */etc/apache2/sites-enabled/000-default*.
+
+    sudo gedit /etc/apache2/sites-enabled/000-default
 
 Restart Apache::
 
     sudo /etc/init.d/apache2 restart
 
-Now run Django syncdb::
+Now run Django syncdb (with activated virtual Python environment)::
 
-    django/projects/mysite/manage.py syncdb
+    ./projects/mysite/manage.py syncdb
 
 You have to create a super user account.
 

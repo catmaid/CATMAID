@@ -55,6 +55,7 @@ Here is the list of packages and version required::
     PyYAML==3.10
     python-dateutil==2.1
     django-guardian==1.0.4
+    django-taggit==0.9.3
 
 *A note on the pgmagick module:* this is a wrapper for GraphicMagick (GM).
 GM uses so-called delegates to support different file formats. Depending
@@ -67,7 +68,7 @@ Now, copy the file *configuration.py.example* to *configuration.py*::
 
     cp configuration.py.example configuration.py
 
-Configure *configuration.py* with an editor::
+Edit *configuration.py*, setting a proper configuration::
 
     gedit configuration.py
 

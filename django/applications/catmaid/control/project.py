@@ -4,6 +4,7 @@ from collections import defaultdict
 from django.contrib import auth
 from django.db import transaction, connection
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -11,6 +12,34 @@ from catmaid.control.common import *
 from catmaid.transaction import *
 
 from guardian.shortcuts import get_objects_for_user
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def list_project_tags(request, project_id=None):
+    """ Return the tags associated with the project.
+    """
+    p = get_object_or_404(Project, pk=project_id)
+    tags = [ str(t) for t in p.tags.all()]
+    result = {'tags':tags}
+    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), mimetype="text/json")
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def update_project_tags(request, project_id=None, tags=None):
+    """ Updates the given project with the supplied tags. All
+    existing tags will be replaced.
+    """
+    p = get_object_or_404(Project, pk=project_id)
+    # Create list of sigle stripped tags
+    if tags is None:
+        tags = []
+    else:
+        tags = tags.split(",")
+        tags = [t.strip() for t in tags]
+
+    # Add tags to the model
+    p.tags.set(*tags)
+
+    # Return an empty closing response
+    return HttpResponse(json.dumps(""), mimetype="text/json")
 
 def projects(request):
     # This is somewhat ridiculous - four queries where one could be

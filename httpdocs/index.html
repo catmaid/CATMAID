@@ -67,6 +67,7 @@
 		<script type="text/javascript" src="tilelayer.js"></script>
 		<script type="text/javascript" src="navigator.js"></script>
 		<script type="text/javascript" src="selector.js"></script>
+		<script type="text/javascript" src="taggingtool.js"></script>
 		<script type="text/javascript" src="boxselectiontool.js"></script>
 		<script type="text/javascript" src="croppingtool.js"></script>
 		<script type="text/javascript" src="tracingtool.js"></script>
@@ -233,6 +234,19 @@
 			*******************************************************************
 			-->
 			
+			<!-- Tagging
+			*******************************************************************
+			-->
+			<div id="toolbar_tags" class="toolbar" style="display:none">
+				<div class="box"><p>project tags&nbsp;</p><p><input type="text" id="project_tags" name="project_tags" size="35" /></p></div>
+				<div class="box"><p>stack tags&nbsp;</p><p><input type="text" id="stack_tags" name="stack_tags" size="35" /></p></div>
+				<div class="box_right"><a href="#" class="button" id="button_tags_apply" onclick="return false;"><img src="widgets/themes/kde/apply.gif" alt="apply" title="apply" /></a></div>
+				<div class="toolbar_fill"></div>
+			</div>
+			<!--
+			*******************************************************************
+			-->
+
 			<!-- Crop
 			*******************************************************************
 			-->

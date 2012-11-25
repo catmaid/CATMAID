@@ -36,17 +36,17 @@ function TracingTool()
   this.updateLayer = function()
   {
     tracingLayer.svgOverlay.updateNodes();
-  }
+  };
 
   this.deselectActiveNode = function()
   {
     tracingLayer.svgOverlay.activateNode(null);
-  }
+  };
 
   var setupSubTools = function()
   {
     var box;
-    if ( self.prototype.stack == null ) {
+    if ( self.prototype.stack === null ) {
       box = createButtonsFromActions(
         actions,
         "tracingbuttons",
@@ -160,7 +160,7 @@ function TracingTool()
     // and the annotations would disappear
     //self.prototype.unregister();
     return;
-  }
+  };
 
 	/**
 	 * unregister all project related GUI control connections and event
@@ -714,7 +714,7 @@ function TracingTool()
 
   this.getMouseHelp = function( e ) {
     var result = '<p>';
-    result += '<strong>click on a node:</strong> make that node active<br />'
+    result += '<strong>click on a node:</strong> make that node active<br />';
     result += '<strong>ctrl-click in space:</strong> deselect the active node<br />';
     result += '<strong>ctrl-shift-click on a node:</strong> delete that node<br />';
     result += '<strong>ctrl-shift-click on an arrowhead:</strong> delete that link<br />';
@@ -782,7 +782,7 @@ TracingTool.search = function()
     pid: project.id,
     substring: $('#search-box').val()
   }, function (status, text) {
-    var i, table, tbody, row, id, name, class_name, actionLink, data, neuronID;
+    var i, table, tbody, row, actionLink, data;
     if (status !== 200) {
       setSearchingMessage('Search failed with HTTP status'+status);
     } else {
@@ -801,6 +801,11 @@ TracingTool.search = function()
         tbody = $('<tbody/>');
         tbody.append('<tr><th>ID</th><th>Name</th><th>Class</th><th>Action</th></tr>');
         table.append(tbody);
+        var action =
+          function() {
+              TracingTool.goToNearestInNeuron('neuron', parseInt($(this).attr('id')));
+              return false;
+          };
         for (i = 0; i < data.length; ++i) {
           row = $('<tr/>');
           row.append($('<td/>').text(data[i].id));
@@ -810,10 +815,7 @@ TracingTool.search = function()
             actionLink = $('<a/>');
             actionLink.attr({'id': ''+data[i].id});
             actionLink.attr({'href':''});
-            actionLink.click(function() {
-              TracingTool.goToNearestInNeuron('neuron', parseInt($(this).attr('id')));
-              return false;
-            });
+            actionLink.click(action);
             actionLink.text("Go to nearest node");
             row.append($('<td/>').append(actionLink));
           } else if (data[i].class_name === 'label') {
@@ -857,4 +859,4 @@ TracingTool.search = function()
   });
 
 
-}
+};

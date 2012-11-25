@@ -322,31 +322,31 @@ def update_confidence(request, project_id=None, node_id=0):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
+@report_error
 def most_recent_treenode(request, project_id=None):
     treenode_id = int(request.POST.get('treenode_id', -1))
     skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
 
     try:
+        # Select the most recently edited node
         tn = Treenode.objects\
              .filter(project=project_id,
             skeleton=skeleton_id,
-            user=request.user)\
+            editor=request.user)\
              .extra(select={'most_recent': 'greatest(treenode.creation_time, treenode.edition_time)'})\
-             .extra(order_by=['-most_recent', '-treenode.id'])[0]
+             .extra(order_by=['-most_recent', '-treenode.id'])[0] # [0] generates a LIMIT 1
     except IndexError:
         return HttpResponse(json.dumps({'error': 'No skeleton and neuron found for treenode %s' % treenode_id}))
-    except Exception as e:
-        return HttpResponse(json.dumps({'error': str(e)}))
 
     return HttpResponse(json.dumps({
         'id': tn.id,
-        'skeleton_id': tn.skeleton.id,
+        #'skeleton_id': tn.skeleton.id,
         'x': int(tn.location.x),
         'y': int(tn.location.y),
         'z': int(tn.location.z),
-        # 'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
-        'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f'),
-        'type': 'treenode'
+        #'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
+        #'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f'),
+        #'type': 'treenode'
     }))
 
 

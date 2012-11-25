@@ -1730,14 +1730,7 @@ var SkeletonAnnotations = new function()
                 if (jso.error) {
                   alert(jso.error);
                 } else {
-                  /* The returned JSON is similar to other node
-                     objects, but actually the coordinates are world
-                     coordinates: */
-                  // TODO this is silly, moveToAndSelectNode will transform the coordinates back to phys. Could use moveTo directly.
-                  jso.x = self.phys2pixX(jso.x);
-                  jso.y = self.phys2pixY(jso.y);
-                  jso.z = self.phys2pixZ(jso.z);
-                  self.moveToAndSelectNode(jso);
+                  project.moveTo(jso.z, jso.y, jso.x, undefined, function() { self.selectNode(jso.id) });
                 }
               }
             }

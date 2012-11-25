@@ -69,31 +69,10 @@ for p in projects:
                   "(project_id, stack_id, translation) "+
                   "VALUES (%s, %s, %s)", (projects[p]['id'], s['id'], '(0,0,0)'))
 
-users = [
-    {'name': 'saalfeld',
-     'pwd': '84789cbcbd2daf359a9fa4f34350e50f',
-     'longname': 'Stephan Saalfeld'},
-    {'name': 'test',
-     'pwd': '098f6bcd4621d373cade4e832627b4f6',
-     'longname': 'Theo Test'},
-    {'name': 'gerhard',
-     'pwd': '494524b27acdc356fb3dcb9f0b108267',
-     'longname': 'Stephan Gerhard'}]
-
-for u in users:
-    insert = "INSERT INTO \"user\" (name, pwd, longname) VALUES (%(name)s, %(pwd)s, %(longname)s) RETURNING id"
-    c.execute(insert, u)
-    u['id'] = c.fetchone()[0]
-    if u['name'] == 'gerhard':
-        for p in ('Default Project', 'Focussed Ion Beam (FIB)'):
-            c.execute("INSERT INTO project_user (project_id, user_id) VALUES (%s, %s)", (projects[p]['id'], u['id']))
-    elif u['name'] == 'saalfeld':
-        for p in projects:
-            c.execute("INSERT INTO project_user (project_id, user_id) VALUES (%s, %s)", (projects[p]['id'], u['id']))
 
 # Now insert the classes and relations for neuron annotation:
 
-gerhard_id = users[2]['id']
+gerhard_id = 1
 tracing_project_id = projects['Focussed Ion Beam (FIB)']['id']
 
 db_connection.commit()

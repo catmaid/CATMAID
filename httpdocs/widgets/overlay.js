@@ -11,7 +11,7 @@ var SkeletonAnnotations = new function()
 
   this.getSVGOverlay = function ( stack ) {
     return SVGOverlays[stack];
-  }
+  };
 
   /** Select a node in any of the existing SVGOverlay instances, by its ID and its skeletonID. */
   this.staticSelectNode = function(nodeID, skeletonID)
@@ -92,7 +92,7 @@ var SkeletonAnnotations = new function()
     } else {
       return {'x': atn.x, 'y': atn.y, 'z': atn.z};
     }
-  }
+  };
 
   var openSkeletonNodeInObjectTree = function(node) {
     // Check if the Object Tree div is visible
@@ -112,7 +112,7 @@ var SkeletonAnnotations = new function()
     if ($('#treenode_table_widget').css('display') === "block" && $('#synchronize_treenodetable').attr('checked')) {
       TreenodeTable.init( project.getId() );
     }
-  }
+  };
 
   this.exportSWC = function() {
     if (!atn || !atn.id || !atn.skeleton_id) {
@@ -151,11 +151,11 @@ var SkeletonAnnotations = new function()
 
     this.getLabelStatus = function() {
       return show_labels;
-    }
+    };
 
     /** The original list of nodes; beware the list will change
      * and the data of the nodes will change as they are recycled. */
-    this.getNodes = function() { return nodes; }
+    this.getNodes = function() { return nodes; };
 
     /** This returns true if focus had to be switched; typically if
         the focus had to be switched, you should return from any event
@@ -168,7 +168,7 @@ var SkeletonAnnotations = new function()
         window.focus();
         return true;
       }
-    }
+    };
 
     var lastX = null, lastY = null;
     
@@ -379,7 +379,7 @@ var SkeletonAnnotations = new function()
       }
       labels = {};
       show_labels = false;
-    }
+    };
 
     this.removeLabels = function() {
       // remove all labels in the view
@@ -390,14 +390,14 @@ var SkeletonAnnotations = new function()
         }
       }
       labels = {};
-    }
+    };
 
     this.showLabels = function() {
       show_labels = true;
       self.updateNodes(function() {
         document.getElementById( "trace_button_togglelabels" ).className = "button_active";
       });
-    }
+    };
 
     var tagbox = null;
 
@@ -406,7 +406,7 @@ var SkeletonAnnotations = new function()
         tagbox.remove();
         tagbox = null;
       }
-    }
+    };
 
     this.tagATNwithLabel = function( label ) {
       requestQueue.register(django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update', "POST", {
@@ -443,8 +443,7 @@ var SkeletonAnnotations = new function()
           }
         }
       });
-
-    }
+    };
 
     this.tagATN = function () {
       // tagbox from
@@ -570,7 +569,7 @@ var SkeletonAnnotations = new function()
             win.focus();
           }
         });
-      }
+      };
 
     };
 
@@ -623,7 +622,6 @@ var SkeletonAnnotations = new function()
               }
             }
           });
-
       }
     };
 
@@ -642,8 +640,7 @@ var SkeletonAnnotations = new function()
             if (r.error) {
               alert(r.error);
             } else {
-              if (r.count > 1
-                && !confirm("Do you really want to " + verb + " skeleton #" + r.skeleton_id + ", which has more than one node?")) {
+              if (r.count > 1 && !confirm("Do you really want to " + verb + " skeleton #" + r.skeleton_id + ", which has more than one node?")) {
                 return;
               }
               fn();
@@ -773,16 +770,14 @@ var SkeletonAnnotations = new function()
         confidence: confidence,
         targetgroup: "Isolated synaptic terminals"
       }, function (status, text, xml) {
-        var nn, jso, e, nid;
         if (status === 200) {
           if (text && text !== " ") {
-            e = $.parseJSON(text);
-            if (e.error) {
-              alert(e.error);
+            var jso = $.parseJSON(text);
+            if (jso.error) {
+              alert(jso.error);
             } else {
               // add treenode to the display and update it
-              var jso = $.parseJSON(text);
-              nid = parseInt(jso.treenode_id);
+              var nid = parseInt(jso.treenode_id);
 
               // always create a new treenode which is the root of a new skeleton
               var nn = SkeletonElements.newNode(nid, self.paper, null, null, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
@@ -848,7 +843,7 @@ var SkeletonAnnotations = new function()
         return true;
       });
       return;
-    }
+    };
 
     // Interpolate and join, both
     var createTreenodeLinkInterpolated = function (atn_id, atn_x, atn_y, atn_z, nearestnode_id, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
@@ -892,7 +887,7 @@ var SkeletonAnnotations = new function()
         return true;
       });
       return;
-    }
+    };
 
     // Create a node and activate it
     var createNode = function (parentID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
@@ -1378,7 +1373,7 @@ var SkeletonAnnotations = new function()
         self.offsetXPhysical = worldX;
         self.offsetYPhysical = worldY;
       }
-    }
+    };
 
     this.paper = Raphael(view, Math.floor(stack.dimension.x * stack.scale), Math.floor(stack.dimension.y * stack.scale));
     this.paper.catmaidSVGOverlay = this;
@@ -1511,7 +1506,7 @@ var SkeletonAnnotations = new function()
         callback();
       }
       return;
-    }
+    };
 
 
 
@@ -1627,7 +1622,7 @@ var SkeletonAnnotations = new function()
     /** Checks first if the parent is loaded,
      * otherwise fetches its location from the database. */
     this.goToParentNode = function(treenode_id, skeleton_id) {
-      if (null === treenode_id) { return };
+      if (null === treenode_id) { return; }
       var node = nodes[treenode_id];
       if (!node) {
         alert("Could not find node with id #" + treenode_id);
@@ -1670,12 +1665,12 @@ var SkeletonAnnotations = new function()
       if (node.type === "connector") {
         afterMove = function() {
           SkeletonAnnotations.staticSelectNode(nodeIDToActivate);
-        }
+        };
       } else if (node.type === "treenode") {
         skeletonIDToActivate = node.skeleton_id;
         afterMove = function() {
           SkeletonAnnotations.staticSelectNode(nodeIDToActivate, skeletonIDToActivate);
-        }
+        };
       } else {
         alert("BUG: unknown node type '"+node.type+"'");
         return;
@@ -1686,7 +1681,7 @@ var SkeletonAnnotations = new function()
         self.pix2physX(node.x),
         undefined,
         afterMove);
-    }
+    };
 
     // Commands for the sub-buttons of the tracing tool
     this.tracingCommand = function (m) {
@@ -1731,18 +1726,18 @@ var SkeletonAnnotations = new function()
             var nodeToActivate, skeletonToActivate;
             if (status === 200) {
               if (text && text != " ") {
-                var e = eval("(" + text + ")");
-                if (e.error) {
-                  alert(e.error);
+                var jso = $.parseJSON(text);
+                if (jso.error) {
+                  alert(jso.error);
                 } else {
                   /* The returned JSON is similar to other node
                      objects, but actually the coordinates are world
                      coordinates: */
                   // TODO this is silly, moveToAndSelectNode will transform the coordinates back to phys. Could use moveTo directly.
-                  e.x = self.phys2pixX(e.x);
-                  e.y = self.phys2pixY(e.y);
-                  e.z = self.phys2pixZ(e.z);
-                  self.moveToAndSelectNode(e);
+                  jso.x = self.phys2pixX(jso.x);
+                  jso.y = self.phys2pixY(jso.y);
+                  jso.z = self.phys2pixZ(jso.z);
+                  self.moveToAndSelectNode(jso);
                 }
               }
             }
@@ -1971,7 +1966,7 @@ var SkeletonAnnotations = new function()
     };
   };
 
-};
+}();
 
 var growlAlert = function(title, message) {
   $('#growl-alert').growlAlert({

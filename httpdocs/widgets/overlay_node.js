@@ -104,7 +104,7 @@ var SkeletonElements = new function()
     this.parent_id = parent_id;
     this.children = {};
     this.numberOfChildren = 0;
-    this.r = r < 0 ? 3 : 3; // not use radius size on overlay display
+    this.r = 3; // not use radius size on overlay display
     this.x = x;
     this.y = y;
     this.z = z;
@@ -136,7 +136,7 @@ var SkeletonElements = new function()
       // Still set new node object in any case, since
       // node objects can be reused for different IDs
       this.children[childNode.id] = childNode;
-    }
+    };
 
     // Init block
     // 1. Add this node to the parent's children if it exists
@@ -282,7 +282,7 @@ var SkeletonElements = new function()
                  text: ""+confidence});
 
     return result;
-  }
+  };
 
   /** Updates the coordinates of the raphael path
    * that represents the line from the node to the parent.
@@ -431,7 +431,7 @@ var SkeletonElements = new function()
     } else if (skeleton_id === SkeletonAnnotations.getActiveSkeletonId() ) {
       return active_skeleton_color;
     }
-    return inactive_skeleton_color
+    return inactive_skeleton_color;
   };
 
   var displayTreenode = function () {
@@ -447,7 +447,7 @@ var SkeletonElements = new function()
   var displayBetweenNodes = function(node_a, node_b) {
     return (node_a && node_a.shouldDisplay()) ||
       (node_b && node_b.shouldDisplay());
-  }
+  };
 
   /** Create the Raphael circle elements if and only if the zdiff is zero, that is, if the node lays on the current section.
    * Here 'this' refers to the node.
@@ -724,7 +724,7 @@ var SkeletonElements = new function()
         // TYPE_CONNECTORNODE
         mc.click(connector_mc_click);
       }
-    }
+    };
   }();
 
 
@@ -777,7 +777,7 @@ var SkeletonElements = new function()
     can_edit) // whether the logged in user has permissions to edit this node -- the server will in any case enforce permissions; this is for proper GUI flow
   {
     this.id = id;
-    this.type = TYPE_CONNECTORNODE; // TODO update this name!
+    this.type = TYPE_CONNECTORNODE;
     this.needsync = false; // state variable; whether this node is already synchronized with the database
     this.x = x; // local screen coordinates relative to the div, in pixel coordinates
     this.y = y;
@@ -948,7 +948,7 @@ var SkeletonElements = new function()
     // re-create
     for (i in pregroup) {
       if (pregroup.hasOwnProperty(i)) {
-        treenode = pregroup[i].treenode
+        treenode = pregroup[i].treenode;
         tnid = treenode.id;
         confidence = pregroup[i].confidence;
         if (displayBetweenNodes(this, treenode))
@@ -1050,9 +1050,9 @@ var SkeletonElements = new function()
         return new ArrowLine(self.paper, self.pregroup[to_id].treenode.x, self.pregroup[to_id].treenode.y, self.x, self.y, confidence, 5, 2, "rgb(126, 57, 112)", self.id, to_id);
       } else {
         return new ArrowLine(self.paper, self.x, self.y, self.postgroup[to_id].treenode.x, self.postgroup[to_id].treenode.y, confidence, 5, 2, "rgb(67, 67, 128)", self.id, to_id);
-      };
-    }
+      }
+    };
   }();
 
 
-};
+}();

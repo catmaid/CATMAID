@@ -12,6 +12,8 @@ class ProjectAdmin(GuardedModelAdmin):
 #    def has_change_permission(self, request, obj=None):
 #        pass
 
+class StackAdmin(GuardedModelAdmin):
+    list_display = ('title', 'dimension', 'resolution', 'num_zoom_levels', 'image_base')
 
 class DataViewConfigWidget(forms.widgets.Textarea):
     def render(self, name, value, attrs=None):
@@ -80,5 +82,5 @@ class DataViewAdmin(GuardedModelAdmin):
 
 admin.site.register(Project, ProjectAdmin)
 admin.site.register(DataView, DataViewAdmin)
-admin.site.register(Stack)
+admin.site.register(Stack, StackAdmin)
 admin.site.register(ProjectStack)

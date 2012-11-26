@@ -47,6 +47,9 @@ class Integer3D(object):
         else:
             raise Exception, "Couldn't parse value from the database as an Integer3D: "+str(s)
 
+    def __unicode__(self):
+        return "(%d, %d, %d)" % (self.x, self.y, self.z)
+
 class Integer3DField(models.Field):
     __metaclass__ = models.SubfieldBase
 
@@ -87,6 +90,9 @@ class Double3D(object):
                             z=float(m.group(3)))
         else:
             raise Exception, "Couldn't parse value from the database as a Double3D: "+str(s)
+
+    def __unicode__(self):
+        return "(%.3f, %.3f, %.3f)" % (self.x, self.y, self.z)
 
 class Double3DField(models.Field):
     __metaclass__ = models.SubfieldBase
@@ -202,6 +208,9 @@ class Stack(models.Model):
     metadata = models.TextField()
     tags = TaggableManager(blank=True)
 
+    def __unicode__(self):
+        return self.title
+
 class ProjectStack(models.Model):
     class Meta:
         db_table = "project_stack"
@@ -209,6 +218,9 @@ class ProjectStack(models.Model):
     project = models.ForeignKey(Project)
     stack = models.ForeignKey(Stack)
     translation = Double3DField()
+
+    def __unicode__(self):
+        return self.project.title + " -- " + self.stack.title
 
 class Overlay(models.Model):
     class Meta:

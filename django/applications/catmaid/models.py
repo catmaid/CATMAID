@@ -10,6 +10,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 
+from fields import Double3DFormField, Integer3DFormField
+
 from guardian.shortcuts import get_objects_for_user
 
 from taggit.managers import TaggableManager
@@ -47,11 +49,19 @@ class Integer3D(object):
 
 class Integer3DField(models.Field):
     __metaclass__ = models.SubfieldBase
+
+    def formfield(self, **kwargs):
+        defaults = {'form_class': Integer3DFormField}
+        defaults.update(kwargs)
+        return super(Integer3DField, self).formfield(**defaults)
+
     def db_type(self, connection):
         return 'integer3d'
     def to_python(self, value):
         if isinstance(value, Integer3D):
             return value
+        if isinstance(value, list) and len(value) == 3:
+            return Integer3D(value[0], value[1], value[2])
         # When contructing a Location, we get the empty string
         # here; return a new Integer3D for any falsy value:
         if not value:
@@ -80,11 +90,19 @@ class Double3D(object):
 
 class Double3DField(models.Field):
     __metaclass__ = models.SubfieldBase
+
+    def formfield(self, **kwargs):
+        defaults = {'form_class': Double3DFormField}
+        defaults.update(kwargs)
+        return super(Double3DField, self).formfield(**defaults)
+
     def db_type(self, connection):
         return 'double3d'
     def to_python(self, value):
         if isinstance(value, Double3D):
             return value
+        if isinstance(value, list) and len(value) == 3:
+            return Double3D(value[0], value[1], value[2])
         # When contructing a Location, we get the empty string
         # here; return a new Double3D for any falsy value:
         if not value:

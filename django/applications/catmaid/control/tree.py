@@ -378,7 +378,7 @@ def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None)
             WHERE relation.relation_name = 'model_of'
               AND class_instance_class_instance.relation_id = relation.id
               AND class_instance_class_instance.class_instance_b IN (%s)
-            ''' % [','.join(str(x) for x in neuron_ids)]) # no need to sanitize
+            ''' % ','.join(str(x) for x in neuron_ids)) # no need to sanitize
             skeleton_ids = tuple(row[0] for row in cursor.fetchall())
         else:
             skeleton_ids = tuple()

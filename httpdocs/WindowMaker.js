@@ -27,7 +27,7 @@ var WindowMaker = new function()
       function(callingWindow, signal) {
         switch (signal) {
           case CMWWindow.CLOSE:
-            if (typeof project == undefined || project == null) {
+            if (typeof project === undefined || project === null) {
               rootWindow.close();
               document.getElementById("content").style.display = "none";
             }
@@ -67,7 +67,7 @@ var WindowMaker = new function()
       document.getElementById("content").style.display = "none";
     }
 
-    if (rootWindow.getChild() == null)
+    if (rootWindow.getChild() === null)
       rootWindow.replaceChild(win);
     else
       rootWindow.replaceChild(new CMWHSplitNode(rootWindow.getChild(), win));
@@ -241,7 +241,7 @@ var WindowMaker = new function()
     container.appendChild(canvas);
 
     var tabdiv = document.createElement('div');
-    tabdiv.setAttribute("id", "view-3d-webgl-skeleton-table-div")
+    tabdiv.setAttribute("id", "view-3d-webgl-skeleton-table-div");
     tabdiv.style.height = "150px";
     tabdiv.style.overflow = "auto";
     container.appendChild(tabdiv);
@@ -268,7 +268,7 @@ var WindowMaker = new function()
       function(callingWindow, signal) {
         switch (signal) {
           case CMWWindow.CLOSE:
-            if (typeof project == undefined || project == null) {
+            if (typeof project === undefined || project === null) {
               rootWindow.close();
               document.getElementById("content").style.display = "none";
             }
@@ -308,7 +308,7 @@ var WindowMaker = new function()
     WebGLApp.init( canvas.getAttribute("id") );
 
     return win;
-  }
+  };
 
   /** Creates and returns a new 3d window. */
   var create3dWindow = function()
@@ -327,12 +327,12 @@ var WindowMaker = new function()
     add.onclick = Treelines.addTo3DView; // function declared in treeline.js
     container.appendChild(add);
 
-    var introduction = document.createElement('p')
+    var introduction = document.createElement('p');
     introduction.setAttribute("id", "view3DIntroduction");
     container.appendChild(introduction);
 
     var list = document.createElement('ul');
-    list.setAttribute("id", "view-3d-object-list")
+    list.setAttribute("id", "view-3d-object-list");
     container.appendChild(list);
 
     var canvas = document.createElement('div');
@@ -832,7 +832,7 @@ var WindowMaker = new function()
       }
     }
     return result;
-  }
+  };
 
   this.setKeyShortcuts = function(win)
   {
@@ -878,7 +878,7 @@ var WindowMaker = new function()
 
     container.innerHTML = keysHTML;
     return container;
-  }
+  };
 
   this.setSearchWindow = function(win)
   {
@@ -904,16 +904,16 @@ var WindowMaker = new function()
     keysHTML = '<h4>Search</h4>';
     keysHTML += '<form onsubmit="TracingTool.search(); return false">';
     keysHTML += '<input type="text" id="search-box" name="search-box">';
-    keysHTML += '<input type="submit" style="display: hidden">'
+    keysHTML += '<input type="submit" style="display: hidden">';
     keysHTML += '</form>';
     keysHTML += '<div id="search-results">';
     keysHTML += '</div>';
 
     container.innerHTML = keysHTML;
     return container;
-  }
+  };
 
-   var createKeyboardShortcutsWindow = function()
+  var createKeyboardShortcutsWindow = function()
   {
     var win = new CMWWindow( "Keyboard Shortcuts" );
     var container = self.setKeyShortcuts(win);
@@ -925,7 +925,7 @@ var WindowMaker = new function()
     return win;
   };
 
-   var createSearchWindow = function()
+  var createSearchWindow = function()
   {
     var win = new CMWWindow( "Search" );
     var container = self.setSearchWindow(win);
@@ -1066,6 +1066,6 @@ var WindowMaker = new function()
     } else {
       alert("No known window with name " + name);
     }
-  }
+  };
 
-};
+}();

@@ -159,7 +159,7 @@ var WindowMaker = new function()
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
     rand.setAttribute("id", "save_image");
-    rand.setAttribute("value", "Save");
+    rand.setAttribute("value", "Screenshot");
     rand.onclick = WebGLApp.saveImage;
     container.appendChild(rand);
 

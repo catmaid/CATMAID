@@ -618,6 +618,7 @@ var WebGLApp = new function () {
             translation.z + atn_pos.z * resolution.z]
           );
           active_node.position.set( co[0]*scale, co[1]*scale, co[2]*scale );
+          self.render();
       }
     }
   }

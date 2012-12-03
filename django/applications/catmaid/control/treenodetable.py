@@ -148,7 +148,7 @@ def list_treenode_table(request, project_id=None):
                 def label_filter(treenode):
                     if treenode.id not in labels_by_treenode:
                         return False
-                    upper(filter_labels) in upper(labels_by_treenode[treenode.tid])
+                    return upper(filter_labels) in upper(' '.join(labels_by_treenode[treenode.tid]))
                 treenodes = filter(label_filter, treenodes)
 
         # Filter out irrelevant treenodes if a node type has been specified.

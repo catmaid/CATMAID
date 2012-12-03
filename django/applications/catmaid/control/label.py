@@ -1,7 +1,7 @@
 import json
 
 from collections import defaultdict
-from django.db import transaction, connection
+from django.db import connection
 from django.http import HttpResponse, Http404
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
@@ -9,7 +9,6 @@ from django.shortcuts import get_object_or_404
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -101,7 +100,6 @@ def labels_for_nodes(request, project_id=None):
     return HttpResponse(json.dumps(result), mimetype="text/plain")
 
 @requires_user_role(UserRole.Annotate)
-@transaction.commit_on_success
 def label_update(request, project_id=None, location_id=None, ntype=None):
     labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
     p = get_object_or_404(Project, pk=project_id)

@@ -8,18 +8,16 @@ from django.db.models import Count
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def update_treenode_table(request, project_id=None):
     property_name = request.POST.get('type', None)
     treenode_id = request.POST.get('id', None)
     property_value = request.POST.get('value', None)
 
     if None in [property_name, treenode_id, property_value]:
-        raise CatmaidException('Need type, treenode id and value.')
+        raise Exception('Need type, treenode id and value.')
     else:
         treenode_id = int(treenode_id)
         if property_name == 'confidence':
@@ -30,7 +28,7 @@ def update_treenode_table(request, project_id=None):
             property_value = int(property_value)
 
     if property_name not in ['confidence', 'radius']:
-        raise CatmaidException('Can only modify confidence and radius.')
+        raise Exception('Can only modify confidence and radius.')
 
     response_on_error = ''
     try:
@@ -45,11 +43,10 @@ def update_treenode_table(request, project_id=None):
         return HttpResponse(property_value)
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@transaction_reportable_commit_on_success
 def list_treenode_table(request, project_id=None):
     stack_id = request.POST.get('stack_id', None)
     specified_skeleton_count = request.POST.get('skeleton_nr', 0)
@@ -224,4 +221,4 @@ def list_treenode_table(request, project_id=None):
         return HttpResponse(json.dumps(result))
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))

@@ -119,6 +119,7 @@ var requestQueue = function()
       queue[ 0 ].method,
       queue[ 0 ].request,
       true );
+    xmlHttp.setRequestHeader( "X-Requested-With", "XMLHttpRequest");
     if ( queue[ 0 ].method == "POST" )
     {
       xmlHttp.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );

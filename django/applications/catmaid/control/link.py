@@ -6,10 +6,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def create_link(request, project_id=None):
     """ Create a link, currently only a presynaptic_to or postsynaptic_to relationship
     between a treenode and a connector.
@@ -59,7 +57,6 @@ def create_link(request, project_id=None):
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def delete_link(request, project_id=None):
     connector_id = int(request.POST.get('connector_id', 0))
     treenode_id = int(request.POST.get('treenode_id', 0))

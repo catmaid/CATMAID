@@ -14,11 +14,9 @@ from catmaid.control.object import get_annotation_graph
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def instance_operation(request, project_id=None):
     params = {}
     int_keys = ('id', 'src', 'ref', 'parentid', 'relationnr')
@@ -84,7 +82,7 @@ def instance_operation(request, project_id=None):
         can_edit_or_fail(request.user, params['id'], 'class_instance')
         # Do not allow '|' in name because it is used as string separator in NeuroHDF export
         if '|' in params['title']:
-            raise CatmaidException('Name should not contain pipe character!')
+            raise Exception('Name should not contain pipe character!')
 
         instance_operation.res_on_err = 'Failed to update class instance.'
         nodes_to_rename = ClassInstance.objects.filter(id=params['id'])
@@ -94,14 +92,15 @@ def instance_operation(request, project_id=None):
             insert_into_log(project_id, request.user.id, "rename_%s" % params['classname'], None, "Renamed %s with ID %s to %s" % (params['classname'], params['id'], params['title']))
             return HttpResponse(json.dumps({'class_instance_ids': node_ids}))
         else:
-            raise CatmaidException('Could not find any node with ID %s' % params['id'])
+            instance_operation.res_on_err = ''
+            raise Exception('Could not find any node with ID %s' % params['id'])
 
     def remove_node():
         # Can only remove the node if the user owns it or the user is a superuser
         can_edit_or_fail(request.user, params['id'], 'class_instance')
         # Check if node is a skeleton. If so, we have to remove its treenodes as well!
         if 0 == params['rel']:
-            CatmaidException('No relation given!')
+            raise Exception('No relation given!')
 
         elif 'skeleton' == params['rel']:
             remove_skeletons([params['id']])
@@ -122,7 +121,8 @@ def instance_operation(request, project_id=None):
                 insert_into_log(project_id, request.user.id, 'remove_neuron', None, 'Removed neuron with ID %s and name %s' % (params['id'], params['title']))
                 return HttpResponse(json.dumps({'status': 1, 'message': 'Removed neuron successfully.'}))
             else:
-                raise CatmaidException('Could not find any node with ID %s' % params['id'])
+                instance_operation.res_on_err = ''
+                raise Exception('Could not find any node with ID %s' % params['id'])
 
         else:
             instance_operation.res_on_err = 'Failed to delete node from instance table.'
@@ -131,7 +131,8 @@ def instance_operation(request, project_id=None):
                 node_to_delete.delete()
                 return HttpResponse(json.dumps({'status': 1, 'message': 'Removed node successfully.'}))
             else:
-                raise CatmaidException('Could not find any node with ID %s' % params['id'])
+                instance_operation.res_on_err = ''
+                raise Exception('Could not find any node with ID %s' % params['id'])
 
     def create_node():
         # Can only create a node if the parent node is owned by the user
@@ -142,7 +143,7 @@ def instance_operation(request, project_id=None):
         can_edit_or_fail(request.user, params['parentid'], 'class_instance')
 
         if params['classname'] not in class_map:
-            raise CatmaidException('Failed to select class.')
+            raise Exception('Failed to select class.')
         instance_operation.res_on_err = 'Failed to insert instance of class.'
         node = ClassInstance(
                 user=request.user,
@@ -162,7 +163,8 @@ def instance_operation(request, project_id=None):
                     class_column=class_map['root'])[0].id
 
         if params['relationname'] not in relation_map:
-            CatmaidException('Failed to select relation %s' % params['relationname'])
+            instance_operation.res_on_err = ''
+            raise Exception('Failed to select relation %s' % params['relationname'])
 
         instance_operation.res_on_err = 'Failed to insert relation.'
         cici = ClassInstanceClassInstance()
@@ -182,7 +184,7 @@ def instance_operation(request, project_id=None):
         can_edit_or_fail(request.user, params['ref'], 'class_instance') # new parent node
         #
         if 0 == params['src'] or 0 == params['ref']:
-            raise CatmaidException('src (%s) or ref (%s) not set.' % (params['src'], params['ref']))
+            raise Exception('src (%s) or ref (%s) not set.' % (params['src'], params['ref']))
 
         relation_type = 'part_of'
         if 'skeleton' == params['classname']:  # Special case for model_of relationship
@@ -216,21 +218,21 @@ def instance_operation(request, project_id=None):
     try:
         # Dispatch to operation
         if params['operation'] not in ['rename_node', 'remove_node', 'create_node', 'move_node', 'has_relations']:
-            raise CatmaidException('No operation called %s.' % params['operation'])
+            raise Exception('No operation called %s.' % params['operation'])
         return locals()[params['operation']]()
 
-    except CatmaidException:
-        raise
     except Exception as e:
-        raise CatmaidException(instance_operation.res_on_err + '\n' + str(e))
+        if instance_operation.res_on_err == '':
+            raise
+        else:
+            raise Exception(instance_operation.res_on_err + '\n' + str(e))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@report_error
 def tree_object_expand(request, project_id=None):
     skeleton_id = request.POST.get('skeleton_id', None)
     if skeleton_id is None:
-        raise CatmaidException('A skeleton id has not been provided!')
+        raise Exception('A skeleton id has not been provided!')
     else:
         skeleton_id = int(skeleton_id) # sanitize by casting to int
 
@@ -279,11 +281,10 @@ def tree_object_expand(request, project_id=None):
         return HttpResponse(json.dumps(path))
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@report_error
 def objecttree_get_all_skeletons(request, project_id=None, node_id=None):
     """ Retrieve all skeleton ids for a given node in the object tree. """
     g = get_annotation_graph( project_id )
@@ -350,18 +351,16 @@ def _collect_neuron_ids(node_id, node_type=None):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@report_error
 def collect_neuron_ids(request, project_id=None, node_id=None, node_type=None):
     """ Retrieve all neuron IDs under a given group or neuron node of the Object Tree,
     recursively."""
     try:
         return HttpResponse(json.dumps(_collect_neuron_ids(node_id, node_type)))
     except Exception as e:
-        raise CatmaidException('Failed to obtain a list of neuron IDs:' + str(e))
+        raise Exception('Failed to obtain a list of neuron IDs:' + str(e))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@report_error
 def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None):
     """ Retrieve all skeleton IDs under a given group or neuron node of the Object Tree,
     recursively."""
@@ -385,11 +384,10 @@ def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None)
 
         return HttpResponse(json.dumps(skeleton_ids))
     except Exception as e:
-        raise CatmaidException('Failed to obtain a list of skeleton IDs:' + str(e))
+        raise Exception('Failed to obtain a list of skeleton IDs:' + str(e))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@report_error
 def tree_object_list(request, project_id=None):
     parent_id = int(request.GET.get('parentid', 0))
     parent_name = request.GET.get('parentname', '')
@@ -407,11 +405,11 @@ def tree_object_list(request, project_id=None):
 
     for class_name in ['neuron', 'skeleton', 'group', 'root']:
         if class_name not in class_map:
-            raise CatmaidException('Can not find "%s" class for this project' % class_name)
+            raise Exception('Can not find "%s" class for this project' % class_name)
 
     for relation in ['model_of', 'part_of']:
         if relation not in relation_map:
-            raise CatmaidException('Can not find "%s" relation for this project' % relation)
+            raise Exception('Can not find "%s" relation for this project' % relation)
 
     response_on_error = ''
     try:
@@ -491,4 +489,4 @@ def tree_object_list(request, project_id=None):
                            'state': 'closed'} for row in c.fetchall())))
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))

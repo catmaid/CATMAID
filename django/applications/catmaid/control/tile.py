@@ -2,7 +2,6 @@
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 def get_tile(request, project_id=None, stack_id=None):
 

@@ -3,7 +3,7 @@ import json
 from collections import defaultdict
 from datetime import datetime
 
-from django.db import transaction, connection
+from django.db import connection
 from django.http import HttpResponse
 
 from django.shortcuts import get_object_or_404
@@ -11,7 +11,6 @@ from django.shortcuts import get_object_or_404
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 import sys
 try:
@@ -21,7 +20,6 @@ except:
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@transaction_reportable_commit_on_success
 def node_list_tuples(request, project_id=None):
     ''' Retrieve an JSON array with four entries:
     [0] an array of arrays, each array representing a treenode
@@ -54,11 +52,11 @@ def node_list_tuples(request, project_id=None):
     class_map = get_class_to_id_map(project_id)
 
     if 'skeleton' not in class_map:
-        raise CatmaidException('Can not find "skeleton" class for this project')
+        raise Exception('Can not find "skeleton" class for this project')
 
     for relation in ['presynaptic_to', 'postsynaptic_to', 'model_of']:
         if relation not in relation_map:
-            raise CatmaidException('Can not find "%s" relation for this project' % relation)
+            raise Exception('Can not find "%s" relation for this project' % relation)
 
     try:
         cursor = connection.cursor()
@@ -270,7 +268,7 @@ def node_list_tuples(request, project_id=None):
         return HttpResponse(json.dumps((treenodes, connectors, labels, n_retrieved_nodes == params['limit'])))
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)
@@ -287,7 +285,6 @@ def update_location_reviewer(request, project_id=None, node_id=None):
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction.commit_on_success
 def update_confidence(request, project_id=None, node_id=0):
     new_confidence = request.POST.get('new_confidence', None)
     if (new_confidence == None):
@@ -322,7 +319,6 @@ def update_confidence(request, project_id=None, node_id=0):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@report_error
 def most_recent_treenode(request, project_id=None):
     treenode_id = int(request.POST.get('treenode_id', -1))
     skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
@@ -351,7 +347,6 @@ def most_recent_treenode(request, project_id=None):
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def node_update(request, project_id=None):
     nodes = {}
     for key, value in request.POST.items():
@@ -370,7 +365,7 @@ def node_update(request, project_id=None):
     for node_index, node in nodes.items():
         for req_prop in required_properties:
             if req_prop not in node:
-                raise CatmaidException('Missing key: %s in index %s' % (req_prop, node_index))
+                raise Exception('Missing key: %s in index %s' % (req_prop, node_index))
 
         try:
             if node['type'] == 'treenode':
@@ -395,15 +390,14 @@ def node_update(request, project_id=None):
                     edition_time=now,
                     location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
             else:
-                raise CatmaidException('Unknown node type: %s' % node['type'])
+                raise Exception('Unknown node type: %s' % node['type'])
         except:
-            raise CatmaidException('Failed to update treenode: %s' % node['node_id'])
+            raise Exception('Failed to update treenode: %s' % node['node_id'])
 
     return HttpResponse(json.dumps({'updated': len(nodes)}))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@transaction_reportable_commit_on_success
 def node_nearest(request, project_id=None):
     params = {}
     param_defaults = {
@@ -417,11 +411,11 @@ def node_nearest(request, project_id=None):
     relation_map = get_relation_to_id_map(project_id)
 
     if params['skeleton_id'] < 0 and params['neuron_id'] < 0:
-        raise CatmaidException('You must specify either a skeleton or a neuron')
+        raise Exception('You must specify either a skeleton or a neuron')
 
     for rel in ['part_of', 'model_of']:
         if rel not in relation_map:
-            raise CatmaidException('Could not find required relation %s for project %s.' % (rel, project_id))
+            raise Exception('Could not find required relation %s for project %s.' % (rel, project_id))
 
     skeletons = []
     if params['skeleton_id'] > 0:
@@ -462,7 +456,7 @@ def node_nearest(request, project_id=None):
             float(params['z']),
             treenodes)
         if nearestTreenode is None:
-            raise CatmaidException('No treenodes were found.')
+            raise Exception('No treenodes were found.')
 
         # TODO Check if callers really need string data.
         # Return string data to emulate behavior of pg_fetch_assoc.
@@ -474,7 +468,7 @@ def node_nearest(request, project_id=None):
             'skeleton_id': str(nearestTreenode.skeleton_id)}))
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))
 
 
 def _skeleton_as_graph(skeleton_id):
@@ -516,7 +510,7 @@ def get_location(request, project_id=None):
         tnid = int(request.POST['tnid'])
         return HttpResponse(json.dumps(_fetch_location(tnid)))
     except Exception as e:
-        raise CatmaidException('Could not obtain the location of node with id #%s' % tnid)
+        raise Exception('Could not obtain the location of node with id #%s' % tnid)
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -537,7 +531,7 @@ def find_previous_branchnode_or_root(request, project_id=None):
                 break # Found the root node
         return HttpResponse(json.dumps(_fetch_location(tnid)))
     except Exception as e:
-        raise CatmaidException('Could not obtain previous branch node or root:' + str(e))
+        raise Exception('Could not obtain previous branch node or root:' + str(e))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -556,10 +550,9 @@ def find_next_branchnode_or_end(request, project_id=None):
                 break # Found an end node or a branch node
         return HttpResponse(json.dumps(_fetch_location(tnid)))
     except Exception as e:
-        raise CatmaidException('Could not obtain next branch node or root:' + str(e))
+        raise Exception('Could not obtain next branch node or root:' + str(e))
 
 @requires_user_role([UserRole.Browse])
-@report_error
 def user_info(request, project_id=None):
     treenode_id = int(request.POST['treenode_id'])
     ts = Treenode.objects.filter(pk=treenode_id).select_related('user', 'editor')

@@ -4,13 +4,11 @@ from django.shortcuts import get_object_or_404
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 import sys
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction.commit_on_success
 def save_skeletonlist(request, project_id=None):
 
     shortname = request.POST.get('shortname', None)
@@ -35,7 +33,7 @@ def save_skeletonlist(request, project_id=None):
         ).save()
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))
 
     return HttpResponse(json.dumps({'success': '1'}))
 

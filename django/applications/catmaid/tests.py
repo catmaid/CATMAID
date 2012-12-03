@@ -13,7 +13,6 @@ from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, Session, Log, Message, TextlabelLocation
 from models import Treenode, Connector, TreenodeConnector, User
 from models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
-from transaction import CatmaidException, transaction_reportable_commit_on_success
 from views.catmaid_replacements import get_relation_to_id_map, get_class_to_id_map
 
 
@@ -60,7 +59,6 @@ class TransactionTests(TransactionTestCase):
         remove_example_data()
 
     def test_successful_commit(self):
-        @transaction_reportable_commit_on_success
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
             return HttpResponse(json.dumps({'message': 'success'}))
@@ -74,10 +72,9 @@ class TransactionTests(TransactionTestCase):
         self.assertEqual(expected_result, parsed_response)
 
     def test_report_error_dict(self):
-        @transaction_reportable_commit_on_success
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
-            raise CatmaidException({'error': 'catch me if you can'})
+            raise Exception({'error': 'catch me if you can'})
             return HttpResponse(json.dumps({'should not': 'return this'}))
 
         User.objects.all().delete()
@@ -89,10 +86,9 @@ class TransactionTests(TransactionTestCase):
         self.assertEqual(expected_result, parsed_response)
 
     def test_report_error_string(self):
-        @transaction_reportable_commit_on_success
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
-            raise CatmaidException('catch me if you can')
+            raise Exception('catch me if you can')
             return HttpResponse(json.dumps({'should not': 'return this'}))
 
         User.objects.all().delete()
@@ -104,10 +100,9 @@ class TransactionTests(TransactionTestCase):
         self.assertEqual(expected_result, parsed_response)
 
     def test_report_error_unrecognized_argument(self):
-        @transaction_reportable_commit_on_success
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
-            raise CatmaidException(5)
+            raise Exception(5)
             return HttpResponse(json.dumps({'should not': 'return this'}))
 
         User.objects.all().delete()
@@ -119,7 +114,6 @@ class TransactionTests(TransactionTestCase):
         self.assertEqual(expected_result, parsed_response)
 
     def test_catch_404(self):
-        @transaction_reportable_commit_on_success
         def insert_user():
             get_object_or_404(User, pk=12)
             return HttpResponse(json.dumps({'should not': 'return this'}))
@@ -133,7 +127,6 @@ class TransactionTests(TransactionTestCase):
         self.assertEqual(0, User.objects.all().count())
 
     def test_fail_unexpectedly(self):
-        @transaction_reportable_commit_on_success
         def insert_user():
             User(name='matri', pwd='boop', longname='Matthieu Ricard').save()
             raise Exception()

@@ -9,7 +9,6 @@ from django.contrib.auth.decorators import login_required
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 import numpy as np
 import urllib2 as urllib

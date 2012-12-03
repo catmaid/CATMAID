@@ -7,11 +7,9 @@ from django.db.models import Count
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@report_error
 def list_connector(request, project_id=None):
     skeleton_id = request.POST.get('skeleton_id', None)
     if skeleton_id is None:
@@ -35,7 +33,7 @@ def list_connector(request, project_id=None):
         relation_map = get_relation_to_id_map(project_id)
         for rel in ['presynaptic_to', 'postsynaptic_to', 'element_of', 'labeled_as']:
             if rel not in relation_map:
-                raise CatmaidException('Failed to find the required relation %s' % rel)
+                raise Exception('Failed to find the required relation %s' % rel)
 
         if relation_type == 1:
             relation_type_id = relation_map['presynaptic_to']
@@ -213,11 +211,10 @@ def list_connector(request, project_id=None):
             'aaData': aaData_output}))
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def create_connector(request, project_id=None):
     query_parameters = {}
     default_values = {'x': 0, 'y': 0, 'z': 0, 'confidence': 5}
@@ -241,7 +238,6 @@ def create_connector(request, project_id=None):
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def delete_connector(request, project_id=None):
     connector_id = int(request.POST.get("connector_id", 0))
     can_edit_or_fail(request.user, connector_id, 'connector')

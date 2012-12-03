@@ -7,7 +7,6 @@ from django.db.models import Count
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

@@ -2,14 +2,13 @@ import json
 
 from collections import defaultdict
 from django.contrib import auth
-from django.db import transaction, connection
+from django.db import connection
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 from guardian.shortcuts import get_objects_for_user
 

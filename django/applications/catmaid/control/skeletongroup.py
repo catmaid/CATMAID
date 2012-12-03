@@ -5,7 +5,6 @@ from catmaid.models import *
 from catmaid.objects import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 try:
     import networkx as nx

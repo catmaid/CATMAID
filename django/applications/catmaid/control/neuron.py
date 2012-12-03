@@ -5,7 +5,6 @@ from django.shortcuts import get_object_or_404
 
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -65,9 +64,9 @@ def _in_isolated_synaptic_terminals(skeleton_id):
         ''' % neuron_id)
         rows = tuple(cursor.fetchone())
     except Exception as e:
-        raise CatmaidException(response_on_error + str(e))
+        raise Exception(response_on_error + str(e))
     if rows[0] > 1:
-        raise CatmaidException('Found more than one "Isolated synaptic terminals" as parent of neuron #%s containing skeleton #%s' % (neuron_id, skeleton_id))
+        raise Exception('Found more than one "Isolated synaptic terminals" as parent of neuron #%s containing skeleton #%s' % (neuron_id, skeleton_id))
     return neuron_id if 1 == rows[0] else None
 
 

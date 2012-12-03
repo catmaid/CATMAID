@@ -13,7 +13,6 @@ from catmaid.models import CELL_BODY_CHOICES, \
 
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 import urllib
 

@@ -4,14 +4,13 @@ import decimal
 from django.http import HttpResponse
 from datetime import datetime
 
-from django.db import connection, transaction
+from django.db import connection
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
 
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 from catmaid.control.neuron import _in_isolated_synaptic_terminals, _delete_if_empty
 import sys
 
@@ -112,7 +111,6 @@ def _is_isolated_synaptic_terminal(treenode_id):
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def create_treenode(request, project_id=None):
     """
     Add a new treenode to the database
@@ -260,11 +258,10 @@ def create_treenode(request, project_id=None):
 
     except Exception as e:
         import traceback
-        raise CatmaidException(response_on_error + ':' + str(e) + str(traceback.format_exc()))
+        raise Exception(response_on_error + ':' + str(e) + str(traceback.format_exc()))
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def create_interpolated_treenode(request, project_id=None):
     params = {}
     decimal_values = {
@@ -339,24 +336,23 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
         return parent_id, parent_skeleton_id
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def update_treenode_table(request, project_id=None):
     property_name = request.POST.get('type', None)
     treenode_id = request.POST.get('id', None)
     property_value = request.POST.get('value', None)
 
     if None in [property_name, treenode_id, property_value]:
-        raise CatmaidException('Need type, treenode id and value.')
+        raise Exception('Need type, treenode id and value.')
     else:
         treenode_id = int(treenode_id)
         property_value = int(property_value)
 
     if property_name not in ['confidence', 'radius']:
-        raise CatmaidException('Can only modify confidence and radius.')
+        raise Exception('Can only modify confidence and radius.')
 
     response_on_error = ''
     try:
@@ -370,11 +366,10 @@ def update_treenode_table(request, project_id=None):
         return HttpResponse(json.dumps({'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}))
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))
 
 # REMARK this function went from 1.6 seconds to 400 ms when de-modelized
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def delete_treenode(request, project_id=None):
     """ If the skeleton has a single node, deletes the skeleton, and if so, if the skeleton is a model_of a neuron that was part_of group 'Isolated synaptic terminals', deletes the neuron. Returns the parent_id, if any."""
     treenode_id = int(request.POST.get('treenode_id', -1))
@@ -393,7 +388,7 @@ def delete_treenode(request, project_id=None):
             n_children = Treenode.objects.filter(parent=treenode).count()
             if n_children > 0:
                 # TODO yes you can, the new root is the first of the children, and other children become independent skeletons
-                raise CatmaidException("You can't delete the root node when it has children.")
+                raise Exception("You can't delete the root node when it has children.")
             # Remove the original skeleton.
             # It is OK to remove it if it only had one node,
             # even if the skeleton's user does not match or the user is not superuser.
@@ -422,15 +417,14 @@ def delete_treenode(request, project_id=None):
         return HttpResponse(json.dumps({'parent_id': parent_id}))
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@report_error
 def treenode_info(request, project_id=None):
     treenode_id = int(request.POST.get('treenode_id', -1))
     if treenode_id < 0:
-        raise CatmaidException('A treenode id has not been provided!')
+        raise Exception('A treenode id has not been provided!')
 
     c = connection.cursor()
     # (use raw SQL since we are returning values from several different models)
@@ -459,16 +453,15 @@ def treenode_info(request, project_id=None):
             for row in c.fetchall()
             ]
     if (len(results) > 1):
-        raise CatmaidException('Found more than one skeleton and neuron for treenode %s' % treenode_id)
+        raise Exception('Found more than one skeleton and neuron for treenode %s' % treenode_id)
     elif (len(results) == 0):
-        raise CatmaidException('No skeleton and neuron for treenode %s' % treenode_id)
+        raise Exception('No skeleton and neuron for treenode %s' % treenode_id)
     else:
         return HttpResponse(json.dumps(results[0]))
 
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def join_skeletons_interpolated(request, project_id=None):
     """ Join two skeletons, adding nodes in between the two nodes to join
     if they are separated by more than one section in the Z axis."""

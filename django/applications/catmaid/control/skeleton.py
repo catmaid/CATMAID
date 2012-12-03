@@ -5,7 +5,6 @@ from catmaid.models import *
 from catmaid.objects import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 from catmaid.control.neuron import _in_isolated_synaptic_terminals, _delete_if_empty
 import sys
 
@@ -17,7 +16,6 @@ except:
     pass
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@report_error
 def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
     # Works with either the skeleton_id or the treenode_id
     p = get_object_or_404(Project, pk=project_id)
@@ -29,7 +27,6 @@ def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def split_skeleton(request, project_id=None):
     treenode_id = int(request.POST['treenode_id'])
     can_edit_or_fail(request.user, treenode_id, 'treenode')
@@ -106,18 +103,17 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None):
         mimetype='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@report_error
 def skeleton_ancestry(request, project_id=None):
     # All of the values() things in this function can be replaced by
     # prefetch_related when we upgrade to Django 1.4 or above
     skeleton_id = int(request.POST.get('skeleton_id', None))
     if skeleton_id is None:
-        raise CatmaidException('A skeleton id has not been provided!')
+        raise Exception('A skeleton id has not been provided!')
 
     relation_map = get_relation_to_id_map(project_id)
     for rel in ['model_of', 'part_of']:
         if rel not in relation_map:
-            raise CatmaidException(' => "Failed to find the required relation %s' % rel)
+            raise Exception(' => "Failed to find the required relation %s' % rel)
 
     response_on_error = ''
     try:
@@ -129,9 +125,9 @@ def skeleton_ancestry(request, project_id=None):
             'class_instance_b__name')
         neuron_count = neuron_rows.count()
         if neuron_count == 0:
-            raise CatmaidException('No neuron was found that the skeleton %s models' % skeleton_id)
+            raise Exception('No neuron was found that the skeleton %s models' % skeleton_id)
         elif neuron_count > 1:
-            raise CatmaidException('More than one neuron was found that the skeleton %s models' % skeleton_id)
+            raise Exception('More than one neuron was found that the skeleton %s models' % skeleton_id)
 
         parent_neuron = neuron_rows[0]
         ancestry = []
@@ -158,7 +154,7 @@ def skeleton_ancestry(request, project_id=None):
             if parent_count == 0:
                 break  # We've reached the top of the hierarchy.
             elif parent_count > 1:
-                raise CatmaidException('More than one class_instance was found that the class_instance %s is part_of.' % current_ci)
+                raise Exception('More than one class_instance was found that the class_instance %s is part_of.' % current_ci)
             else:
                 parent = parents[0]
                 ancestry.append({
@@ -171,7 +167,7 @@ def skeleton_ancestry(request, project_id=None):
         return HttpResponse(json.dumps(ancestry))
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))
 
 def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id, cursor):
     partners = {}
@@ -247,7 +243,6 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@report_error
 def skeleton_info_raw(request, project_id=None, skeleton_id=None):
     # sanitize arguments
     skeleton_id = int(skeleton_id)
@@ -280,7 +275,6 @@ def skeleton_info_raw(request, project_id=None, skeleton_id=None):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@report_error
 def skeleton_info(request, project_id=None, skeleton_id=None):
     # This function can take as much as 15 seconds for a mid-sized arbor
     # Problems in the generated SQL:
@@ -332,7 +326,6 @@ def skeleton_info(request, project_id=None, skeleton_id=None):
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def reroot_skeleton(request, project_id=None):
     """ Any user with an Annotate role can reroot any skeleton.
     """
@@ -347,14 +340,14 @@ def reroot_skeleton(request, project_id=None):
         # Else, already root
         return HttpResponse(json.dumps({'error': 'Node #%s is already root!' % treenode_id}))
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))
 
 
 def _reroot_skeleton(treenode_id, project_id):
     """ Returns the treenode instance that is now root,
     or False if the treenode was root already. """
     if treenode_id is None:
-        raise CatmaidException('A treenode id has not been provided!')
+        raise Exception('A treenode id has not been provided!')
 
     response_on_error = ''
     try:
@@ -408,11 +401,10 @@ def _reroot_skeleton(treenode_id, project_id):
         return treenode
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def join_skeleton(request, project_id=None):
     """ An user with an Annotate role can join two skeletons if he owns the child
     skeleton. A superuser can join any.
@@ -431,7 +423,7 @@ def join_skeleton(request, project_id=None):
             'toid': to_treenode_id}))
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))
 
 
 def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
@@ -441,7 +433,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
     into the skeleton of from_treenode,
     and delete the former skeleton of to_treenode."""
     if from_treenode_id is None or to_treenode_id is None:
-        raise CatmaidException('Missing arguments to _join_skeleton')
+        raise Exception('Missing arguments to _join_skeleton')
 
     response_on_error = ''
     try:
@@ -460,7 +452,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
         to_skid = Treenode.objects.get(pk=to_treenode_id).skeleton_id
 
         if from_skid == to_skid:
-            raise CatmaidException('Cannot join treenodes of the same skeleton, would introduce a loop.')
+            raise Exception('Cannot join treenodes of the same skeleton, would introduce a loop.')
 
         # Reroot to_skid at to_treenode if necessary
         response_on_error = 'Could not reroot at treenode %s' % to_treenode_id
@@ -499,4 +491,4 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
         insert_into_log(project_id, user.id, 'join_skeleton', from_treenode.location, 'Joined skeleton with ID %s into skeleton with ID %s' % (to_skid, from_skid))
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))

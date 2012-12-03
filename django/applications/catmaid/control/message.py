@@ -6,7 +6,6 @@ from django.contrib.auth.decorators import login_required
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 @login_required
 def list_messages(request, project_id=None):
@@ -35,7 +34,6 @@ def list_messages(request, project_id=None):
 
 
 @login_required
-@transaction_reportable_commit_on_success
 def read_message(request, project_id=None):
     message_id = request.GET.get('id', 0)
     message_on_error = ''

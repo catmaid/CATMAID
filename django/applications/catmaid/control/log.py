@@ -6,11 +6,9 @@ from django.http import HttpResponse
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@transaction.commit_on_success
 def list_logs(request, project_id=None):
     user_id = int(request.POST.get('user_id', -1))  # We can see logs for different users
     display_start = int(request.POST.get('iDisplayStart', 0))

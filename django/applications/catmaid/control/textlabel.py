@@ -5,10 +5,8 @@ from django.http import HttpResponse
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def update_textlabel(request, project_id=None):
     params = {}
     parameter_names = ['tid', 'pid', 'x', 'y', 'z', 'text', 'type', 'r', 'g', 'b', 'a', 'fontname', 'fontstyle', 'fontsize', 'scaling']
@@ -55,16 +53,15 @@ def update_textlabel(request, project_id=None):
         return HttpResponse(' ')
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def delete_textlabel(request, project_id=None):
     textlabel_id = request.POST.get('tid', None)
 
     if textlabel_id is None:
-        raise CatmaidException('No treenode id provided.')
+        raise Exception('No treenode id provided.')
 
     response_on_error = ''
     try:
@@ -74,13 +71,12 @@ def delete_textlabel(request, project_id=None):
         Textlabel.objects.filter(id=textlabel_id).delete()
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))
 
     return HttpResponse(json.dumps({'message': 'Success.'}))
 
 
 @requires_user_role(UserRole.Annotate)
-@transaction_reportable_commit_on_success
 def create_textlabel(request, project_id=None):
     print >> sys.stderr, 'creating text label'
     params = {}
@@ -124,7 +120,6 @@ def create_textlabel(request, project_id=None):
     return HttpResponse(json.dumps({'tid': new_label.id}))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@transaction_reportable_commit_on_success
 def textlabels(request, project_id=None):
     params = {'pid': project_id, 'uid': request.user.id}
     parameter_names = ['sid', 'z', 'top', 'left', 'width', 'height', 'scale', 'resolution']
@@ -199,4 +194,4 @@ def textlabels(request, project_id=None):
         return HttpResponse(json.dumps(makeJSON_legacy_list(textlabels)))
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ':' + str(e))

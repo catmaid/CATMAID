@@ -693,28 +693,55 @@ var WindowMaker = new function()
         var contentbutton = document.createElement('div');
         contentbutton.setAttribute("id", 'review_window_buttons');
 
-        var add = document.createElement('input');
-        add.setAttribute("type", "button");
-        add.setAttribute("id", "start_review_skeleton");
-        add.setAttribute("value", "Start to review skeleton");
-        add.onclick = ReviewSystem.startSkeletonToReview;
-        contentbutton.appendChild(add);
+        var start = document.createElement('input');
+        start.setAttribute("type", "button");
+        start.setAttribute("id", "start_review_skeleton");
+        start.setAttribute("value", "Start to review skeleton");
+        start.onclick = ReviewSystem.startSkeletonToReview;
+        contentbutton.appendChild(start);
 
-        var add = document.createElement('input');
-        add.setAttribute("type", "button");
-        add.setAttribute("id", "end_review_skeleton");
-        add.setAttribute("value", "End review");
-        add.onclick = ReviewSystem.resetReview;
-        contentbutton.appendChild(add);
+        var end = document.createElement('input');
+        end.setAttribute("type", "button");
+        end.setAttribute("id", "end_review_skeleton");
+        end.setAttribute("value", "End review");
+        end.onclick = ReviewSystem.endReview;
+        contentbutton.appendChild(end);
 
         content.appendChild( contentbutton );
 
-        var add = document.createElement('div');
-        add.setAttribute("id", "reviewing_skeleton");
-        content.appendChild(add);
+        var label = document.createElement('div');
+        label.setAttribute("id", "reviewing_skeleton");
+        content.appendChild(label);
 
-        var container = createContainer( "project_review_widget" );
-        content.appendChild( container );
+        var container = document.createElement("div");
+        container.setAttribute("id", "project_review_widget");
+        container.style.position = "relative";
+        container.style.width = "100%";
+        container.style.height = "100%";
+        container.style.overflow = "auto";
+        container.style.backgroundColor = "#ffffff";
+        content.appendChild(container);
+
+        var reset = document.createElement('input');
+        reset.setAttribute("type", "button");
+        reset.setAttribute("id", "reset_skeleton_review");
+        reset.setAttribute("value", "Reset revisions");
+        reset.onclick = ReviewSystem.resetAllRevisions;
+        contentbutton.appendChild(reset);
+
+        var resetOwns = document.createElement('input');
+        resetOwns.setAttribute("type", "button");
+        resetOwns.setAttribute("id", "reset_skeleton_review_owns");
+        resetOwns.setAttribute("value", "Reset own revisions");
+        resetOwns.onclick = ReviewSystem.resetOwnRevisions;
+        contentbutton.appendChild(resetOwns);
+
+        var resetOthers = document.createElement('input');
+        resetOthers.setAttribute("type", "button");
+        resetOthers.setAttribute("id", "reset_skeleton_review_owns");
+        resetOthers.setAttribute("value", "Reset revisions by others");
+        resetOthers.onclick = ReviewSystem.resetRevisionsByOthers;
+        contentbutton.appendChild(resetOthers);
 
         addListener(win, container, 'review_window_buttons');
 
@@ -743,6 +770,8 @@ var WindowMaker = new function()
 
         var sync = document.createElement('select');
         sync.setAttribute("id", "connectivity_count_threshold");
+
+        // TODO pulldown menu for past items. When selecting one, refresh even if it is the same as currently listed. Acts as a refresh button.
 
         for (var i = 0; i < 21; i++) {
           var option = document.createElement("option");

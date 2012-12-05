@@ -500,3 +500,55 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
 
     except Exception as e:
         raise CatmaidException(response_on_error + ':' + str(e))
+
+
+@requires_user_role(UserRole.Annotate)
+@transaction_reportable_commit_on_success
+def reset_reviewer_ids(request, project_id=None, skeleton_id=None):
+    """ Reset the reviewer_id column to -1 for all nodes of the skeleton.
+    Only a superuser can do it when all nodes are not own by the user.
+    """
+    skeleton_id = int(skeleton_id) # sanitize
+    if not request.user.is_superuser:
+        # Check that the user owns all the treenodes to edit
+        cursor = connection.cursor()
+        cursor.execute('''
+        SELECT treenode.user_id,
+               count(treenode.user_id) c,
+               "auth_user".name
+        FROM treenode,
+             "auth_user"
+        WHERE skeleton_id=%s
+          AND treenode.user_id = "auth_user".id
+        GROUP BY user_id
+        ORDER BY c DESC''' % skeleton_id)
+        rows = tuple(cursor.fetchall())
+        if rows:
+            if 1 == len(rows) and rows[0] == request.user.id:
+                pass # All skeleton nodes are owned by the user
+            else:
+                return HttpResponse(json.dumps({"error": "User %s does not own all nodes. Onwership: %s" % (request.user.username, {row[2]: row[1] for row in rows})}))
+    # Reset reviewer_id to -1
+    Treenode.objects.filter(skeleton_id=skeleton_id).update(reviewer_id=-1)
+    return HttpResponse(json.dumps({}), mimetype='text/json')
+
+@requires_user_role(UserRole.Annotate)
+@transaction_reportable_commit_on_success
+def reset_own_reviewer_ids(request, project_id=None, skeleton_id=None):
+    """ Reset the reviewer_id column to -1 for all nodes owned by the user.
+    """
+    skeleton_id = int(skeleton_id) # sanitize
+    Treenode.objects.filter(skeleton_id=skeleton_id, user=request.user).update(reviewer_id=-1)
+    return HttpResponse(json.dumps({}), mimetype='text/json')
+
+@requires_user_role(UserRole.Annotate)
+@transaction_reportable_commit_on_success
+def reset_other_reviewer_ids(request, project_id=None, skeleton_id=None):
+    """ Reset the reviewer_id column to -1 for all nodes not owned by the user.
+    """
+    skeleton_id = int(skeleton_id) # sanitize
+    if not request.user.is_superuser:
+        return HttpResponse(json.dumps({"error": "Only a superuser can do that!"}))
+    Treenode.objects.filter(skeleton_id=skeleton_id).exclude(user=request.user).update(reviewer_id=-1)
+    return HttpResponse(json.dumps({}), mimetype='text/json')
+

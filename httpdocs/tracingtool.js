@@ -562,7 +562,7 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Create treenode with z axis interpolation",
+    helpText: "Create treenode with z axis interpolation (Shift on another node: interpolate and join)",
     keyShortcuts: {
       'Z': [ 90 ]
     },
@@ -588,7 +588,7 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Set confidence in node link to 1",
+    helpText: "Set confidence in node link to 1 (Alt: with a connector)",
     keyShortcuts: {
       '1': [ 49 ]
     },
@@ -601,7 +601,7 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Set confidence in node link to 2",
+    helpText: "Set confidence in node link to 2 (Alt: with a connector)",
     keyShortcuts: {
       '2': [ 50 ]
     },
@@ -614,7 +614,7 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Set confidence in node link to 3",
+    helpText: "Set confidence in node link to 3 (Alt: with a connector)",
     keyShortcuts: {
       '3': [ 51 ]
     },
@@ -627,7 +627,7 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Set confidence in node link to 4",
+    helpText: "Set confidence in node link to 4 (Alt: with a connector)",
     keyShortcuts: {
       '4': [ 52 ]
     },
@@ -640,7 +640,7 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Set confidence in node link to 5",
+    helpText: "Set confidence in node link to 5 (Alt: with a connector)",
     keyShortcuts: {
       '5': [ 53 ]
     },
@@ -720,7 +720,7 @@ function TracingTool()
     result += '<strong>ctrl-shift-click on an arrowhead:</strong> delete that link<br />';
     result += '<strong>shift-click in space:</strong> create a synapse with the active treenode being presynaptic.<br />';
     result += '<strong>shift-alt-click in space:</strong> create a synapse with the active treenode as postsynaptic.<br />';
-    result += '<strong>shift-click in space:</strong> create a post-synaptic node (if there was an active synapse)<br />';
+    result += '<strong>shift-click in space:</strong> create a post-synaptic node (if there was an active connector)<br />';
     result += '<strong>shift-click on a treenode:</strong> join two skeletons (if there was an active treenode)<br />';
     result += '</p>';
     return result;

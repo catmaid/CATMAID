@@ -1655,7 +1655,7 @@ var SkeletonAnnotations = new function()
                   });
               }
             }
-          });
+          }, "get_location");
       }
     };
 

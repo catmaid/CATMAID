@@ -177,6 +177,9 @@ var ReviewSystem = new function()
         if (!checkSkeletonID()) {
             return;
         }
+        if (!confirm("Are you sure you want to alter the review state of skeleton #" + skeletonID + " with '" + fnName + "' ?")) {
+            return;
+        }
         requestQueue.replace(
             "dj/"+projectID+"/skeleton/" + skeletonID + "/review/" + fnName,
             "POST",

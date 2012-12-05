@@ -515,19 +515,21 @@ def reset_reviewer_ids(request, project_id=None, skeleton_id=None):
         cursor.execute('''
         SELECT treenode.user_id,
                count(treenode.user_id) c,
-               "auth_user".name
+               "auth_user".username
         FROM treenode,
              "auth_user"
         WHERE skeleton_id=%s
           AND treenode.user_id = "auth_user".id
-        GROUP BY user_id
+        GROUP BY user_id, "auth_user".username
         ORDER BY c DESC''' % skeleton_id)
         rows = tuple(cursor.fetchall())
+        print rows
         if rows:
             if 1 == len(rows) and rows[0] == request.user.id:
                 pass # All skeleton nodes are owned by the user
             else:
-                return HttpResponse(json.dumps({"error": "User %s does not own all nodes. Onwership: %s" % (request.user.username, {row[2]: row[1] for row in rows})}))
+                total = "/" + str(sum(row[1] for row in rows))
+                return HttpResponse(json.dumps({"error": "User %s does not own all nodes.\nOnwership: %s" % (request.user.username, {str(row[2]): str(row[1]) + total for row in rows})}))
     # Reset reviewer_id to -1
     Treenode.objects.filter(skeleton_id=skeleton_id).update(reviewer_id=-1)
     return HttpResponse(json.dumps({}), mimetype='text/json')

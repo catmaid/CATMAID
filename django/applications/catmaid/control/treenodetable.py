@@ -173,20 +173,18 @@ def list_treenode_table(request, project_id=None):
             child_count[treenode.id] = treenode.child_count
 
         for treenode in treenodes:
-            if treenode.parent_id == None:
-                treenode.nodetype = 'R'
-            elif treenode.tid in child_count:
-                children = child_count[treenode.tid]
-                if children == 0:
-                    treenode.nodetype = 'L'
-                elif children == 1:
-                    treenode.nodetype = 'S'
-                elif children > 1:
-                    treenode.nodetype = 'B'
-                else:
-                    treenode.nodetype = 'X'
+            if None == treenode.parent_id:
+                treenode.nodetype = 'R' # Root
+                continue
+            children = child_count.get(treenode.tid, 0)
+            if children == 1:
+                treenode.nodetype = 'S' # Slab
+            elif children == 0:
+                treenode.nodetype = 'L' # Leaf
+            elif children > 1:
+                treenode.nodetype = 'B' # Branch
             else:
-                treenode.nodetype = 'L'
+                treenode.nodetype = 'X' # Unknown, can never happen
 
 
         # Now that we've assigned node types, filter based on them:

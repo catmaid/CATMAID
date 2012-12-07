@@ -456,7 +456,7 @@ var WindowMaker = new function()
             '<th>type' +
         '' +
         '<select name="search_type" id="search_type" class="search_init">' +
-        '<option value="">Any</option><option value="R">Root</option><option value="LR">Leaf & Root</option>' +
+        '<option value="">Any</option><option value="R">Root</option><option value="LR">Leaf</option>' +
         '<option value="B">Branch</option><option value="S">Slab</option></select>' +
         '</th>' +
         // <input type="text" name="search_type" value="Search" class="search_init" />
@@ -465,11 +465,11 @@ var WindowMaker = new function()
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
-            '<th>section</th>' +
-            '<th>radius</th>' +
-            '<th>username</th>' +
+            '<th>s</th>' +
+            '<th>r</th>' +
+            '<th>user</th>' +
             '<th>last modified</th>' +
-            '<th>last reviewed</th>' +
+            '<th>reviewer</th>' +
           '</tr>' +
         '</thead>' +
         '<tfoot>' +
@@ -481,11 +481,11 @@ var WindowMaker = new function()
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
-            '<th>section</th>' +
-            '<th>radius</th>' +
-            '<th>username</th>' +
+            '<th>s</th>' +
+            '<th>r</th>' +
+            '<th>user</th>' +
             '<th>last modified</th>' +
-            '<th>last reviewed</th>' +
+            '<th>reviewer</th>' +
           '</tr>' +
         '</tfoot>' +
         '<tbody>' +

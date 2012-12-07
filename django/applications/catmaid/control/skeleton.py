@@ -551,6 +551,6 @@ def reset_other_reviewer_ids(request, project_id=None, skeleton_id=None):
     skeleton_id = int(skeleton_id) # sanitize
     if not request.user.is_superuser:
         return HttpResponse(json.dumps({"error": "Only a superuser can do that!"}))
-    Treenode.objects.filter(skeleton_id=skeleton_id).exclude(user=request.user).update(reviewer_id=-1)
+    Treenode.objects.filter(skeleton_id=skeleton_id).exclude(reviewer_id=request.user.id).update(reviewer_id=-1)
     return HttpResponse(json.dumps({}), mimetype='text/json')
 

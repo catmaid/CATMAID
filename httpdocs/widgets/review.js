@@ -163,6 +163,7 @@ var ReviewSystem = new function()
             {},
             function (status, text) {
                 if (200 !== status) { return; }
+                if ("REPLACED" === text) { return; }
                 var skeleton_data = $.parseJSON(text);
                 if (skeleton_data.error) {
                     alert( skeleton_data.error );
@@ -186,6 +187,7 @@ var ReviewSystem = new function()
             {},
             function (status, text) {
                 if (200 !== status) { return; }
+                if ("REPLACED" === text) { return; }
                 var json = $.parseJSON(text);
                 if (json.error) {
                     alert(json.error);

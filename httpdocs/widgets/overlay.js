@@ -742,6 +742,21 @@ var SkeletonAnnotations = new function()
     // Create a new postsynaptic treenode from a connector. Store new skeleton/neuron in Isolated synaptic terminals
     // We create the treenode first, then we create the link from the connector
     var createPostsynapticTreenode = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
+      createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "postsynaptic_to");
+    }
+
+    var createPresynapticTreenode = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
+      // Check that connectorID doesn't have a presynaptic treenode already
+      // (It is also checked in the server on attempting to create a link. Here, it is checked for convenience to avoid creating an isolated treenode for no reason.)
+      var connectorNode = nodes[connectorID];
+      if (Object.keys(connectorNode.pregroup).length > 0) {
+        growlAlert("WARNING", "The connector already has a presynaptic node!");
+        return;
+      }
+      createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "presynaptic_to");
+    }
+
+    var createTreenodeWithLink = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, link_type) {
       requestQueue.register(django_url + project.id + '/treenode/create', "POST", {
         pid: project.id,
         parent_id: -1,
@@ -768,8 +783,8 @@ var SkeletonAnnotations = new function()
               nodes[nid] = nn;
               nn.draw();
 
-              // create link : new atn postsynaptic_to deactivated atn.id (location)
-              self.createLink(nid, connectorID, 'postsynaptic_to');
+              // create link : new treenode postsynaptic_to or presynaptic_to deactivated connectorID
+              self.createLink(nid, connectorID, link_type);
             }
           }
         }
@@ -1255,7 +1270,7 @@ var SkeletonAnnotations = new function()
         if (null !== atn.id) {
           statusBar.replaceLast("Deactivated node #" + atn.id);
         }
-        // TODO: deactivation should be encapsulated in a seperate method,
+        // TODO: deactivation should be encapsulated in a separate method,
         // like it is partially in tracingtool's deselectActiveNode
         $('#neuronName').text('');
         ObjectTree.deselectAll();
@@ -1311,9 +1326,13 @@ var SkeletonAnnotations = new function()
               statusBar.replaceLast("Created new node as child of node #" + atn.id);
             }
             createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
-            e.stopPropagation();
-            return true;
+          } else if ("connector" === atn.type) {
+            // create new treenode (and skeleton) presynaptic to activated connector
+            // if the connector doesn't have a presynaptic node already
+            createPresynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
           }
+          e.stopPropagation();
+          return true;
         } else if (getMode() === "synapsedropping") {
           // only create single synapses/connectors
           createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5);

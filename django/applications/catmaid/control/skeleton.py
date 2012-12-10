@@ -92,6 +92,7 @@ def split_skeleton(request, project_id=None):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
+@report_error
 def root_for_skeleton(request, project_id=None, skeleton_id=None):
     # TODO this needs an update, and also not retrieve all columns
     tn = Treenode.objects.get(

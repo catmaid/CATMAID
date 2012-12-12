@@ -163,9 +163,9 @@ var ReviewSystem = new function()
             {},
             function (status, text) {
                 if (200 !== status) { return; }
-                if ("REPLACED" === text) { return; }
                 var skeleton_data = $.parseJSON(text);
                 if (skeleton_data.error) {
+                    if ("REPLACED" === skeleton_data.error) { return; }
                     alert( skeleton_data.error );
                 } else {
                     self.createReviewSkeletonTable( skeleton_data );
@@ -187,9 +187,9 @@ var ReviewSystem = new function()
             {},
             function (status, text) {
                 if (200 !== status) { return; }
-                if ("REPLACED" === text) { return; }
                 var json = $.parseJSON(text);
                 if (json.error) {
+                    if ("REPLACED" === json.error) { return; }
                     alert(json.error);
                     return;
                 }

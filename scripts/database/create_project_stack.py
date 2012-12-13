@@ -30,7 +30,7 @@ if len(sys.argv) != 1:
 c = db_connection.cursor()
 
 username = raw_input("What is your CATMAID user name: ")
-select = 'SELECT u.id FROM "user" u WHERE u.name = %s'
+select = 'SELECT u.id FROM "auth_user" u WHERE u.username = %s'
 c.execute(select, (username,) )
 row = c.fetchone()
 if not row:

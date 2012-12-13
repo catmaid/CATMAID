@@ -45,7 +45,6 @@ function getTileBaseName3D( stack, pixelPos, adjacent )
   return z + "/";
 }
 
-
 /**
  * 
  */
@@ -58,31 +57,6 @@ function TileLayer(
 		tileSourceType
 		)
 {
-	var flip = function()
-	{
-		var t;
-		if ( tilesContainer2.parentNode )
-		{
-			t = tilesContainer2.parentNode.replaceChild( tilesContainer, tilesContainer2 );
-//			alert( "yes" );
-		}
-		else
-		{
-//			alert( "no" );
-			t = tilesContainer2;
-		}
-		
-		tilesContainer2 = tilesContainer;
-		tilesContainer = t;
-		
-		t = tiles2;
-		tiles2 = tiles;
-		tiles = t;
-		
-		return;
-	}
-	
-	
 	/**
 	 * initialise the tiles array
 	 */
@@ -106,6 +80,7 @@ function TileLayer(
 				tilesContainer.appendChild( tiles[ i ][ j ] );
 			}
 		}
+
 		return;
 	}
 	
@@ -304,8 +279,6 @@ function TileLayer(
 			t += effectiveTileHeight;
 		}
 		
-
-		flip();
 		
 		if (typeof completionCallback !== "undefined") {
 			completionCallback();
@@ -448,9 +421,7 @@ function TileLayer(
 	
 	var tilesContainer = document.createElement( "div" );
 	tilesContainer.className = "sliceTiles";
-	var tilesContainer2 = document.createElement( "div" );
-	tilesContainer2.className = "sliceTiles";
-	stack.getView().appendChild( tilesContainer2 );
+	stack.getView().appendChild( tilesContainer );
 
   var overviewLayer = new OverviewLayer();
 	

@@ -64,6 +64,10 @@ cropping tool uses GM through pgmagick and expects the libtiff and the
 libjpeg delegates to be present. So make sure your GM installation
 supports tiff (check e.g. with the help of "gm convert -list format").
 
+To leave the environment, run::
+
+    deactivate
+
 Now, copy the file *configuration.py.example* to *configuration.py*::
 
     cp configuration.py.example configuration.py

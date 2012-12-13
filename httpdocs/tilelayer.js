@@ -58,6 +58,31 @@ function TileLayer(
 		tileSourceType
 		)
 {
+	var flip = function()
+	{
+		var t;
+		if ( tilesContainer2.parentNode )
+		{
+			t = tilesContainer2.parentNode.replaceChild( tilesContainer, tilesContainer2 );
+//			alert( "yes" );
+		}
+		else
+		{
+//			alert( "no" );
+			t = tilesContainer2;
+		}
+		
+		tilesContainer2 = tilesContainer;
+		tilesContainer = t;
+		
+		t = tiles2;
+		tiles2 = tiles;
+		tiles = t;
+		
+		return;
+	}
+	
+	
 	/**
 	 * initialise the tiles array
 	 */
@@ -278,7 +303,10 @@ function TileLayer(
 			l = left;
 			t += effectiveTileHeight;
 		}
+		
 
+		flip();
+		
 		if (typeof completionCallback !== "undefined") {
 			completionCallback();
 		}
@@ -416,10 +444,13 @@ function TileLayer(
 	
 	/* Contains all tiles in a 2d-array */
 	var tiles = new Array();
+	var tiles2 = new Array();
 	
 	var tilesContainer = document.createElement( "div" );
 	tilesContainer.className = "sliceTiles";
-	stack.getView().appendChild( tilesContainer );
+	var tilesContainer2 = document.createElement( "div" );
+	tilesContainer2.className = "sliceTiles";
+	stack.getView().appendChild( tilesContainer2 );
 
   var overviewLayer = new OverviewLayer();
 	

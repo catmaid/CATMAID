@@ -1,0 +1,71 @@
+<VirtualHost *:80>
+    ServerAdmin webmaster@localhost
+
+    DocumentRoot /var/www
+    <Directory />
+        Options FollowSymLinks
+        AllowOverride None
+    </Directory>
+    <Directory /var/www/>
+        Options Indexes FollowSymLinks MultiViews
+        AllowOverride None
+        Order allow,deny
+        allow from all
+    </Directory>
+
+    ScriptAlias /cgi-bin/ /usr/lib/cgi-bin/
+    <Directory "/usr/lib/cgi-bin">
+        AllowOverride None
+        Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
+        Order allow,deny
+        Allow from all
+    </Directory>
+
+    # TODO: Enable this once the APACHE_LOG_DIR envvar is properly set.
+    # ErrorLog ${APACHE_LOG_DIR}/error.log
+    ErrorLog /tmp/error.log
+
+    # Possible values include: debug, info, notice, warn, error, crit,
+    # alert, emerg.
+    LogLevel warn
+
+    # TODO: Enable this once the APACHE_LOG_DIR envvar is properly set.
+    # CustomLog ${APACHE_LOG_DIR}/access.log combined
+    CustomLog /tmp/access.log combined
+
+    Alias /doc/ "/usr/share/doc/"
+    <Directory "/usr/share/doc/">
+        Options Indexes MultiViews FollowSymLinks
+        AllowOverride None
+        Order deny,allow
+        Deny from all
+        Allow from 127.0.0.0/255.0.0.0 ::1/128
+    </Directory>
+
+    ###########################
+    # Add CATMAID configuration
+    ###########################
+
+    Alias /catmaid/dj-static/ /home/ubuntu/CATMAID/django/static/
+
+    Alias /catmaid/dj /home/ubuntu/CATMAID/django/projects/mysite/django.wsgi
+    <Location /catmaid/dj>
+            SetHandler wsgi-script
+            Options +ExecCGI
+    </Location>
+
+    Alias /catmaid/ /home/ubuntu/CATMAID/httpdocs/
+    <Directory /home/ubuntu/CATMAID/httpdocs/>
+             php_admin_value register_globals off
+             php_admin_value include_path ".:/home/ubuntu/CATMAID/inc"
+             php_admin_value session.use_only_cookies 1
+             php_admin_value error_reporting 2047
+             php_admin_value display_errors true
+
+             Options FollowSymLinks
+             AllowOverride AuthConfig Limit FileInfo
+             Order allow,deny
+             Allow from all
+    </Directory>
+
+</VirtualHost>

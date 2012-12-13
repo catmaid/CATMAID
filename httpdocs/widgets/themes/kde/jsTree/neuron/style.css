@@ -4,6 +4,7 @@
  * Supported plugins: ui (hovered, clicked), checkbox, contextmenu, search
  */
 
+/*font-family:Georgia;*/
 
 .jstree-apple > ul { background:url("bg.jpg") left top repeat; }
 .jstree-apple li, 
@@ -12,7 +13,7 @@
 font-size:15px;
 line-height:20px;
 min-height:20px;
-/*font-family:Georgia;*/
+
  }
 .jstree-apple li.jstree-last { background:transparent; }
 .jstree-apple .jstree-open > ins { background-position:-72px 0; }

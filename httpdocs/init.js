@@ -1,36 +1,41 @@
-
-var statusBar;		//!< global statusBar
-
-var slider_z;		//!< slice slider
-var slider_s;		//!< zoom slider
-var input_x;		//!< x_input
-var input_y;		//!< y_input
-var a_url;			//!< URL to this page
-
-var slider_crop_top_z;
-var slider_crop_bottom_z;
-var slider_crop_s;
-
-var button_crop_apply;
-
-var input_fontsize;				//!< fontsize input
-var input_fontcolourred;		//!< fontcolour red input
-var input_fontcolourgreen;		//!< fontcolour green input
-var input_fontcolourblue;		//!< fontcolour blue input
+/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
+/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
 
+/* It's very easy to accidentally leave in a console.log if you're
+ * working with Firebug, but this will break CATMAID for the majority
+ * of browsers.  If window.console isn't defined, create a noop
+ * version of console.log: */
+
+if (!window.console) {
+  window.console = {};
+  window.console.log = function() {}
+}
+
+var global_bottom = 34;
+var statusBar; //!< global statusBar
+var slider_trace_z;
+var slider_trace_s;
+var a_url; //!< URL to this page
+
+var input_fontsize; //!< fontsize input
+var input_fontcolourred; //!< fontcolour red input
+var input_fontcolourgreen; //!< fontcolour green input
+var input_fontcolourblue; //!< fontcolour blue input
 var ui;
 var requestQueue;
 var project;
-
 var project_view;
+var projects_available;
+var projects_available_ready = false;
+
+var dataview_menu;
 
 var project_menu;
 var project_menu_open;
+var project_menu_current;
 
 var message_menu;
-
-var message_widget;
 
 var pid;
 var sids = new Array();
@@ -38,24 +43,55 @@ var ss = new Array();
 var zp;
 var yp;
 var xp;
+var inittool;
+var init_active_skeleton;
+var init_active_node_id;
 
 var session;
 var msg_timeout;
-var MSG_TIMEOUT_INTERVAL = 60000;	//!< length of the message lookup interval in milliseconds
+var MSG_TIMEOUT_INTERVAL = 60000; //!< length of the message lookup interval in milliseconds
+var messageWindow = null;
+
+var rootWindow;
+
+var user_permissions = null;
+function checkPermission(p) {
+  return user_permissions && user_permissions[p][project.getId()];
+}
+function mayEdit() {
+  return checkPermission('can_annotate');
+}
+
+function mayView() {
+  return checkPermission('can_annotate') || checkPermission('can_browse');
+}
+
+// From: http://stackoverflow.com/q/956719/223092
+function countProperties(obj) {
+  var count = 0;
+  for(var prop in obj) {
+    if(obj.hasOwnProperty(prop))
+      ++count;
+  }
+  return count;
+}
+
+// url of the django instance relative to the CATMAID URL
+// (if any, needed e.g. by cropping tool). It is expected
+// to end with a slash.
+var django_url = "dj/"
 
 /**
  * queue a login-request on pressing return
  * to be used as onkeydown-handler in the account and password input fields
  */
-function login_oninputreturn( e )
-{
-	if ( ui.getKey( e ) == 13 )
-	{
-		login( document.getElementById( "account" ).value, document.getElementById( "password" ).value );
-		return false;
-	}
-	else
-		return true;
+
+function login_oninputreturn(e) {
+  if (ui.getKey(e) == 13) {
+    login(document.getElementById("account").value, document.getElementById("password").value);
+    return false;
+  } else
+  return true;
 }
 
 /**
@@ -65,26 +101,35 @@ function login_oninputreturn( e )
  * if account or password are set, a new session is instantiated or an error occurs
  * if account and password are not set, an existing session is tried to be recognised
  */
+
 function login(
 		account,		//!< string account
-		password		//!< string password
+		password,		//!< string password
+		completionCallback	//!< function callback
 )
 {
+	var loginCompletion = function ( status, text, xml ) {
+		handle_login( status, text, xml, completionCallback );
+	}
 	if ( msg_timeout ) window.clearTimeout( msg_timeout );
 	
 	ui.catchEvents( "wait" );
-	if ( account || password )
+	if ( account || password ) {
+		// Attempt to login.
 		requestQueue.register(
-			'model/login.php',
+			django_url + 'accounts/login',
 			'POST',
 			{ name : account, pwd : password },
-			handle_login );
-	else
+			loginCompletion );
+	}
+	else {
+		// Check if the user is logged in.
 		requestQueue.register(
-			'model/login.php',
+			django_url + 'accounts/login',
 			'GET',
 			undefined,
-			handle_login );
+			loginCompletion );
+	}
 	return;
 }
 
@@ -96,57 +141,56 @@ function login(
  *
  * free the window
  */
-function handle_login( status, text, xml )
-{
-	if ( status == 200 && text )
-	{
-		var e = eval( "(" + text + ")" );
-		
-		if ( e.id )
-		{
-			session = e;
-			document.getElementById( "account" ).value = "";
-			document.getElementById( "password" ).value = "";
-			document.getElementById( "session_longname" ).replaceChild(
-				document.createTextNode( e.longname ),
-				document.getElementById( "session_longname" ).firstChild );
-			document.getElementById( "login_box" ).style.display = "none";
-			document.getElementById( "logout_box" ).style.display = "block";
-			document.getElementById( "session_box" ).style.display = "block";
-			
-			document.getElementById( "message_box" ).style.display = "block";
 
-			document.getElementById( "project_menu_new" ).style.display = "block";
-			
-			//msg_timeout = window.setTimeout( message, MSG_TIMEOUT_INTERVAL );
-			message();
-		}
-		else if ( e.error )
-		{
-			alert( e.error );
-		}
-		updateProjects();
-	}
-	return;
+function handle_login(status, text, xml, completionCallback) {
+  if (status == 200 && text) {
+    // console.log(text);
+    var e = eval("(" + text + ")");
+
+    if (e.id) {
+      session = e;
+      document.getElementById("account").value = "";
+      document.getElementById("password").value = "";
+      document.getElementById("session_longname").replaceChild(
+      document.createTextNode(e.longname), document.getElementById("session_longname").firstChild);
+      document.getElementById("login_box").style.display = "none";
+      document.getElementById("logout_box").style.display = "block";
+      document.getElementById("session_box").style.display = "block";
+
+      document.getElementById("message_box").style.display = "block";
+
+      document.getElementById("project_menu_new").style.display = "block";
+
+      //msg_timeout = window.setTimeout( message, MSG_TIMEOUT_INTERVAL );
+      message();
+    } else if (e.error) {
+      alert(e.error);
+    }
+    updateProjects(completionCallback);
+  } else if (status != 200) {
+    // Of course, lots of non-200 errors are fine - just report
+    // all for the moment, however:
+    alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+    if ( typeof completionCallback !== "undefined" ) {
+      completionCallback();
+    }
+  }
+
+  return;
 }
-
 
 /**
  * queue a logout-request
  * freeze the window to wait for an answer
  */
-function logout()
-{
-	if ( msg_timeout ) window.clearTimeout( msg_timeout );
-	
-	ui.catchEvents( "wait" );
-	requestQueue.register(
-		'model/logout.php',
-		'GET',
-		undefined,
-		handle_logout );
-	
-	return;
+
+function logout() {
+  if (msg_timeout) window.clearTimeout(msg_timeout);
+
+  ui.catchEvents("wait");
+  requestQueue.register(django_url + 'accounts/logout', 'POST', undefined, handle_logout);
+
+  return;
 }
 
 /**
@@ -168,7 +212,7 @@ function handle_logout()
 			
 	updateProjects();
 	
-	if ( project && project.id ) project.setMode( "move" );
+	if ( project && project.id ) project.setTool( new Navigator() );
 	
 	return;
 }
@@ -179,30 +223,47 @@ function handle_logout()
  *
  * the answer depends on the session, which wa sinstantiated by setting a cookie
  */
-function updateProjects()
-{
-	//ui.catchEvents( "wait" );
-	
-	project_menu_open.update( null );
-	
-	document.getElementById( "projects_h" ).style.display = "none";
-	
-	var pp = document.getElementById( "projects_dl" );
-	
-	while ( pp.firstChild ) pp.removeChild( pp.firstChild );
-	
-	var w = document.createElement( "dd" );
-	w.className = "wait_bgwhite";
-	w.appendChild( document.createTextNode( "loading ..." ) );
-	pp.appendChild( w );
-	
-	requestQueue.register(
-		'model/project.list.php',
-		'GET',
-		undefined,
-		handle_updateProjects );
-	return;
+
+function updateProjects(completionCallback) {
+
+    // Whatever happened, get details of which projects this user (or no
+    // user) is allowed to edit:
+    $.get(django_url + 'permissions', function (data) {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            user_permissions = data;
+        }
+    }, 'json');
+
+    //ui.catchEvents( "wait" );
+  project_menu_open.update(null);
+
+  document.getElementById("projects_h").style.display = "none";
+  document.getElementById("project_filter_form").style.display = "none";
+
+  var pp = document.getElementById("projects_dl");
+
+  while (pp.firstChild) pp.removeChild(pp.firstChild);
+
+  var w = document.createElement("dd");
+  w.className = "wait_bgwhite";
+  w.appendChild(document.createTextNode("loading ..."));
+  pp.appendChild(w);
+
+  requestQueue.register(django_url + 'projects',
+                        'GET',
+                        undefined,
+                        function (status, text, xml) {
+                        handle_updateProjects(status, text, xml);
+                                if (typeof completionCallback !== "undefined") {
+                                  completionCallback();
+                                }
+			});
+  return;
 }
+
+var cachedProjectsInfo = null;
 
 /**
  * handle a project-menu-update-request answer
@@ -210,72 +271,183 @@ function updateProjects()
  *
  * free the window
  */
-function handle_updateProjects( status, text, xml )
+
+function handle_updateProjects(status, text, xml) {
+  if (status == 200 && text) {
+    var e = $.parseJSON(text);
+
+    var keep_project_alive = false;
+    var keep_project_editable = false;
+
+    if (e.error) {
+      project_menu_open.update();
+      alert(e.error);
+    } else {
+      cachedProjectsInfo = e;
+      // update internal project data structure
+      recreateProjectStructureFromCache();
+      // recreate the project data view
+      load_default_dataview();
+    }
+    if (project) {
+      if (keep_project_alive) project.setEditable(keep_project_editable);
+      else {
+        project.destroy();
+        delete project;
+      }
+    }
+  }
+  ui.releaseEvents();
+  return;
+}
+
+function updateProjectListMessage(text) {
+  $('#project_list_message').text(text);
+}
+
+/**
+ * Do a delayed call to updateProjectListFromCache() and indicate
+ * the progress.
+ */
+var cacheLoadingTimeout = null;
+function updateProjectListFromCacheDelayed()
 {
-	if ( status == 200 && text )
-	{
-		var e = eval( "(" + text + ")" );
-		
-		var keep_project_alive = false;
-		var keep_project_editable = false;
-		
-		var pp = document.getElementById( "projects_dl" );
-		while ( pp.firstChild ) pp.removeChild( pp.firstChild );
-		
-		if ( e.error )
-		{
-			project_menu_open.update();
-			alert( e.error );
-		}
-		else
-		{
-			for ( var i in e )
-			{
-				if ( project && project.id == i )
-				{
-					keep_project_alive = true;
-					keep_project_editable = e[ i ].editable;
-				}
-				
-				var dt = document.createElement( "dt" );
-				dt.appendChild( document.createTextNode( e[ i ].title ) );
-				
-				document.getElementById( "projects_h" ).style.display = "block";
-				pp.appendChild( dt );
-				
-				for ( var j in e[ i ].action )
-				{
-					var dd = document.createElement( "dd" );
-					var a = document.createElement( "a" );
-					var ddc = document.createElement( "dd" );
-					a.href = e[ i ].action[ j ].action;
-					a.appendChild( document.createTextNode( e[ i ].action[ j ].title ) );
-					dd.appendChild( a );
-					pp.appendChild( dd );
-					if ( e[ i ].action[ j ].comment )
-					{
-						var ddc = document.createElement( "dd" );
-						ddc.innerHTML = e[ i ].action[ j ].comment;
-						pp.appendChild( ddc );
-					}
-					
-				}
-			}
-			project_menu_open.update( e )
-		}
-		if ( project )
-		{
-			if ( keep_project_alive )
-				project.setEditable( keep_project_editable );
-			else
-			{
-				project.unregister();
-				delete project;
-			}
-		}
-	}
-	ui.releaseEvents();
-	return;
+  // the filter form can already be displayed
+  $('#project_filter_form').show();
+  // indicate active filtered loading of the projects
+  var indicator = document.getElementById("project_filter_indicator");
+  window.setTimeout( function() { indicator.className = "filtering"; }, 1);
+
+  // clear timeout if already present and create a new one
+  if (cacheLoadingTimeout != null)
+  {
+    clearTimeout(cacheLoadingTimeout);
+  }
+  cacheLoadingTimeout = window.setTimeout(
+    function() {
+      recreateProjectStructureFromCache();
+      updateProjectListFromCache();
+      // indicate finish of filtered loading of the projects
+      indicator.className = "";
+    }, 500);
+}
+
+/**
+ * A structure of the available projects and their stacks is
+ * maintained. This method recreates this structure, based on
+ * the cached content.
+ */
+function recreateProjectStructureFromCache() {
+  // clear project data structure
+  projects_available_ready = false;
+  if (projects_available)
+  {
+    delete projects_available;
+  }
+  projects_available = new Array();
+  // recreate it
+  for (i in cachedProjectsInfo) {
+    p = cachedProjectsInfo[i];
+    // add project
+    projects_available[p.pid] = new Array();
+    // add linked stacks
+    for (j in p.action) {
+      projects_available[p.pid].push(
+          { id : j,
+            title : p.action[j].title,
+            action : p.action[j].action,
+            note : p.action[j].comment}
+      );
+    }
+  }
+  projects_available_ready = true;
+}
+
+/**
+ * Update the displayed project list based on the cache
+ * entries. This can involve a filter in the text box
+ * "project_filter_text".
+ */
+function updateProjectListFromCache() {
+  var matchingProjects = 0,
+      searchString = $('#project_filter_text').val(),
+      display,
+      re = new RegExp(searchString, "i"),
+      title,
+      toappend,
+      i, j, k,
+      dt, dd, a, ddc,
+      p,
+      catalogueElement, catalogueElementLink,
+      pp = document.getElementById("projects_dl");
+  // remove all the projects
+  while (pp.firstChild) pp.removeChild(pp.firstChild);
+  updateProjectListMessage('');
+  // add new projects according to filter
+  for (i in cachedProjectsInfo) {
+    p = cachedProjectsInfo[i];
+    display = false;
+    toappend = [];
+    if (project && project.id == i) {
+      keep_project_alive = true;
+      keep_project_editable = p.editable;
+    }
+
+    dt = document.createElement("dt");
+
+    title = p.title;
+    if (re.test(title)) {
+      display = true;
+    }
+    dt.appendChild(document.createTextNode(p.title));
+
+    document.getElementById("projects_h").style.display = "block";
+    document.getElementById("project_filter_form").style.display = "block";
+    toappend.push(dt);
+
+    // add a link for every action (e.g. a stack link)
+    for (j in p.action) {
+      var sid_title = p.action[j].title;
+      var sid_action = p.action[j].action;
+      var sid_note = p.action[j].comment;
+      dd = document.createElement("dd");
+      a = document.createElement("a");
+      ddc = document.createElement("dd");
+      a.href = sid_action;
+      if (re.test(sid_title)) {
+        display = true;
+      }
+      a.appendChild(document.createTextNode(sid_title));
+      dd.appendChild(a);
+      toappend.push(dd);
+      if (sid_note) {
+        ddc = document.createElement("dd");
+        ddc.innerHTML = sid_note;
+        toappend.push(ddc);
+      }
+    }
+    // optionally, add a neuron catalogue link
+    if (p.catalogue) {
+      catalogueElement = document.createElement('dd');
+      catalogueElementLink = document.createElement('a');
+      catalogueElementLink.href = 'dj/' + p.pid;
+      catalogueElementLink.appendChild(document.createTextNode('Browse the Neuron Catalogue'));
+      catalogueElement.appendChild(catalogueElementLink);
+      toappend.push(catalogueElement);
+    }
+    if (display) {
+      ++ matchingProjects;
+      for (k = 0; k < toappend.length; ++k) {
+        pp.appendChild(toappend[k]);
+      }
+    }
+  }
+  if (cachedProjectsInfo.length === 0) {
+    updateProjectListMessage("No CATMAID projects have been created");
+  } else if (matchingProjects === 0) {
+    updateProjectListMessage("No projects matched '"+searchString+"'");
+  }
+  project_menu_open.update(cachedProjectsInfo);
 }
 
 /**
@@ -286,14 +458,15 @@ function openProjectStack( pid, sid )
 {
 	if ( project && project.id != pid )
 	{
-		project.unregister();
-		delete project;
+		project.destroy();
 	}
+
 	ui.catchEvents( "wait" );
 	requestQueue.register(
-		'model/project.stack.php',
+		django_url + pid + '/stack/' + sid + '/info',
 		'POST',
 		{ pid : pid, sid : sid },
+        // {},
 		handle_openProjectStack );
 	return;
 }
@@ -306,6 +479,7 @@ function openProjectStack( pid, sid )
  */
 function handle_openProjectStack( status, text, xml )
 {
+
 	if ( status == 200 && text )
 	{
 		var e = eval( "(" + text + ")" );
@@ -315,8 +489,6 @@ function handle_openProjectStack( status, text, xml )
 		}
 		else
 		{
-			//console.replaceLast( e );
-			
 			//! look if the project is already opened, otherwise open a new one
 			if ( !( project && project.id == e.pid ) )
 			{
@@ -324,8 +496,16 @@ function handle_openProjectStack( status, text, xml )
 				project_view = project.getView();
 				project.register();
 			}
-			
+
+            // TODO: need to check permission of the user to decide on what to display
+
 			project.setEditable( e.editable );
+
+			var labelupload = '';
+
+			if( e.hasOwnProperty('labelupload_url') && e.tile_source_type === 2 ) {
+				labelupload = e.labelupload_url;
+			}
 
 			var stack = new Stack(
 					project,
@@ -333,28 +513,54 @@ function handle_openProjectStack( status, text, xml )
 					e.stitle,
 					e.dimension,
 					e.resolution,
-					e.translation,
-					e.image_base,
+					e.translation,		//!< @todo replace by an affine transform
 					e.broken_slices,
-					e.trakem2_project );
-			
-			stack.registerZoomControl( slider_s );
-			stack.registerSliceControl( slider_z );
-			stack.registerXControl( input_x );
-			stack.registerYControl( input_y );
-			stack.registerCropTopSliceControl( slider_crop_top_z );
-			stack.registerCropBottomSliceControl( slider_crop_bottom_z );
-			stack.registerCropZoomControl( slider_crop_s );
-			stack.registerCropApplyControl( button_crop_apply );
-			
-			stack.register();
-			
-			document.getElementById( "toolbar_nav" ).style.display = "block";
+					e.trakem2_project,
+					e.num_zoom_levels,
+					-2,
+					e.tile_source_type,
+					labelupload, // TODO: if there is any
+					e.metadata,
+					e.inverse_mouse_wheel);
+
 			document.getElementById( "toolbox_project" ).style.display = "block";
-			document.getElementById( "toolbox_show" ).style.display = "block";
 			
+			var tilelayer = new TileLayer(
+					stack,
+					e.image_base,
+					e.tile_width,
+					e.tile_height,
+					e.file_extension,
+					e.tile_source_type);
+
+			stack.addLayer( "TileLayer", tilelayer );
+
+			$.each(e.overlay, function(key, value) {
+        console.log('add tile layer for overlay value', e, value);
+				var tilelayer2 = new TileLayer(
+								stack,
+								value.image_base,
+								value.tile_width,
+								value.tile_height,
+								value.file_extension,
+								value.tile_source_type);
+				// set default opacity internally
+				tilelayer2.setOpacity( value.default_opacity );
+				stack.addLayer( value.title, tilelayer2 );
+				stack.overviewlayer.setOpacity( value.title,  value.default_opacity );
+			});
+
+
 			project.addStack( stack );
-			
+
+			if ( inittool === 'tracingtool' ) {
+			  project.setTool( new TracingTool() );
+			} else if ( inittool === 'navigator' ) {
+			  project.setTool( new Navigator() );
+			} else if ( inittool === 'canvastool' ) {
+        project.setTool( new CanvasTool() );
+      }
+
 			//! if the stack was initialized by an URL query, move it to a given position
 			if ( pid == e.pid && sids.length > 0 )
 			{
@@ -369,13 +575,42 @@ function handle_openProjectStack( status, text, xml )
 							typeof xp == "number" )
 						{
 							project.moveTo( zp, yp, xp );
-							stack.changeScale( ss[ i ] );
+							stack.moveToPixel( stack.z, stack.y, stack.x, ss[i] );
+
 							sids.splice( i, 1 );
 							ss.splice( i, 1 );
 							break;
 						}
 					}
 				}
+			}
+
+            if( init_active_skeleton || init_active_skeleton ) {
+                window.setTimeout("SkeletonAnnotations.staticSelectNode(init_active_node_id, init_active_skeleton)", 2000);
+            }
+
+
+			/* Update the projects "current project" menu. If there is more
+			than one stack linked to the current project, a submenu for easy
+			access is generated. */
+			project_menu_current.update();
+			var stacks = projects_available[project.id];
+			if (stacks.length > 1)
+			{
+				var current_menu_content = new Array();
+				for (var s in stacks)
+				{
+					current_menu_content.push(
+						{
+							id : s,
+							title : stacks[s].title,
+							note : stacks[s].note,
+							action : stacks[s].action
+						}
+					);
+				}
+				project_menu_current.update( current_menu_content );
+				document.getElementById( "project_menu_current" ).style.display = "block";
 			}
 		}
 	}
@@ -386,14 +621,10 @@ function handle_openProjectStack( status, text, xml )
 /**
  * look for user messages
  */
-function message()
-{
-	requestQueue.register(
-		'model/message.list.php',
-		'GET',
-		undefined,
-		handle_message );
-	return;
+
+function message() {
+  requestQueue.register( django_url + 'messages/list', 'GET', undefined, handle_message);
+  return;
 }
 
 /**
@@ -413,32 +644,37 @@ function handle_message( status, text, xml )
 		}
 		else
 		{
-			//! remove old messages
 			var message_container = document.getElementById( "message_container" );
-			while ( message_container.firstChild ) message_container.removeChild( message_container.firstChild );
-			
-			var n = 0;
-			for ( var i in e )
+			if ( !( typeof message_container == "undefined" || message_container == null ) )
 			{
-				e[ i ].action = "model/message.read.php?id=" + e[ i ].id;
-				e[ i ].note = e[ i ].time_formatted;
-				++n;
-				var dt = document.createElement( "dt" );
-				dt.appendChild( document.createTextNode( e[ i ].time_formatted ) );
-				var dd1 = document.createElement( "dd" );
-				var dd1a = document.createElement( "a" );
-				dd1a.href = e[ i ].action;
-				dd1a.appendChild( document.createTextNode( e[ i ].title ) );
-				dd1.appendChild( dd1a );
-				var dd2 = document.createElement( "dd" );
-				dd2.innerHTML = e[ i ].text;
-				message_container.appendChild( dt );
-				message_container.appendChild( dd1 );
-				message_container.appendChild( dd2 );
+				//! remove old messages	
+				while ( message_container.firstChild ) message_container.removeChild( message_container.firstChild );
+				
+				//! add new messages
+				var n = 0;
+				for ( var i in e )
+				{
+					e[ i ].action = django_url + 'messages/mark_read?id=' + e[ i ].id;
+					e[ i ].note = e[ i ].time_formatted;
+					++n;
+					var dt = document.createElement( "dt" );
+					dt.appendChild( document.createTextNode( e[ i ].time_formatted ) );
+					var dd1 = document.createElement( "dd" );
+					var dd1a = document.createElement( "a" );
+					dd1a.href = e[ i ].action;
+                    dd1a.target = '_blank'; // FIXME: does not open in new window
+					dd1a.appendChild( document.createTextNode( e[ i ].title ) );
+					dd1.appendChild( dd1a );
+					var dd2 = document.createElement( "dd" );
+					dd2.innerHTML = e[ i ].text;
+					message_container.appendChild( dt );
+					message_container.appendChild( dd1 );
+					message_container.appendChild( dd2 );
+				}
+				message_menu.update( e );
+				if ( n > 0 ) document.getElementById( "message_menu_text" ).className = "alert";
+				else document.getElementById( "message_menu_text" ).className = "";
 			}
-			message_menu.update( e );
-			if ( n > 0 ) document.getElementById( "message_menu_text" ).className = "alert";
-			else document.getElementById( "message_menu_text" ).className = "";
 		}
 	}
 	
@@ -450,26 +686,68 @@ function handle_message( status, text, xml )
 /**
  * update the lists of users
  */
-function updateUsers()
-{
-	document.getElementById( "new_project_form" ).elements[ 3 ].style.display = "none";
-	document.getElementById( "new_project_owners_wait" ).style.display = "block";
-	requestQueue.register(
-		'model/user.list.php',
-		'GET',
-		undefined,
-		handle_updateUsers );
-	return;
+
+function updateUsers() {
+  document.getElementById("new_project_form").elements[3].style.display = "none";
+  document.getElementById("new_project_owners_wait").style.display = "block";
+  requestQueue.register(django_url + 'user-list', 'GET', undefined, handle_updateUsers);
+  return;
 }
 
 /**
  * handle a lists of users update response
  */
-function handle_updateUsers( status, text, xml )
-{
-	if ( !session )
-		return;
-	
+
+function handle_updateUsers(status, text, xml) {
+  if (!session) return;
+
+  if (status == 200 && text) {
+    var e = eval("(" + text + ")");
+    if (e.error) {
+      alert(e.error);
+    } else {
+      var new_project_owners = document.getElementById("new_project_form").elements[3];
+      while (new_project_owners.length > 0)
+      new_project_owners.remove(0);
+      for (var i in e) {
+        var option = document.createElement("option");
+        option.text = e[i].longname;
+        option.value = e[i].id;
+        if (e[i].id == session.id) {
+          option.selected = true;
+        }
+        new_project_owners.appendChild(option);
+      }
+      new_project_owners.size = e.length;
+
+    }
+  }
+  document.getElementById("new_project_owners_wait").style.display = "none";
+  document.getElementById("new_project_form").elements[3].style.display = "block";
+
+  return;
+}
+
+/**
+ * mark a message as read
+ */
+
+function read_message(id) {
+  requestQueue.register(django_url + 'messages/mark_read', 'POST', {
+    id: id
+  }, null);
+  return;
+}
+
+/**
+ * Look for data views.
+ */
+function dataviews() {
+	requestQueue.register(django_url + 'dataviews/list', 'GET', undefined, handle_dataviews);
+	return;
+}
+
+function handle_dataviews(status, text, xml) {
 	if ( status == 200 && text )
 	{
 		var e = eval( "(" + text + ")" );
@@ -479,40 +757,116 @@ function handle_updateUsers( status, text, xml )
 		}
 		else
 		{
-			var new_project_owners = document.getElementById( "new_project_form" ).elements[ 3 ];
-			while ( new_project_owners.length > 0 )
-				new_project_owners.remove( 0 );
+			// a function for creating data view menu handlers
+			create_handler = function( id, code_type ) {
+				return function() {
+				   switch_dataview( id, code_type );
+				}
+			};
+			/* As we want to handle a data view change in JS,
+			 * a function is added as action for all the menu
+			 * elements.
+			 */
 			for ( var i in e )
 			{
-				var option = document.createElement( "option" );
-				option.text = e[ i ].longname;
-				option.value = e[ i ].id;
-				if ( e[ i ].id == session.id )
-				{
-					option.selected = true;
-				}
-				new_project_owners.appendChild( option );
+				e[i].action = create_handler( e[i].id,
+					e[i].code_type );
 			}
-			new_project_owners.size = e.length;
 
+			dataview_menu.update( e );
 		}
 	}
-	document.getElementById( "new_project_owners_wait" ).style.display = "none";
-	document.getElementById( "new_project_form" ).elements[ 3 ].style.display = "block";
-	
+
 	return;
 }
 
+function switch_dataview( view_id, view_type ) {
+	/* Every view change, for now, requires the closing of all open
+	 * projects.
+	 */
+	rootWindow.closeAllChildren();
+
+	/* Some views are dynamic, e.g. the plain list view offers a
+	 * live filter of projects. Therefore we treat different types
+	 * of dataviews differently.
+	 */
+	if ( view_type == "legacy_project_list_data_view" ) {
+		// Show the standard plain list data view
+		document.getElementById("data_view").style.display = "none";
+		document.getElementById("clientside_data_view").style.display = "block";
+		updateProjectListFromCache();
+	} else {
+		// let Django render the requested view and display it
+		document.getElementById("clientside_data_view").style.display = "none";
+		document.getElementById("data_view").style.display = "block";
+		load_dataview( view_id )
+	}
+}
+
 /**
- * mark a message as read
+ * Load the default data view.
  */
-function read_message( id )
-{
-	requestQueue.register(
-		'model/message.read.php',
-		'POST',
-		{ id : id },
-		null );	
+function load_default_dataview() {
+	requestQueue.register(django_url + 'dataviews/default',
+		'GET', undefined, handle_load_default_dataview);
+	return;
+}
+
+function handle_load_default_dataview(status, text, xml) {
+	if ( status == 200 && text )
+	{
+		var e = eval( "(" + text + ")" );
+		if ( e.error )
+		{
+			alert( e.error );
+		}
+		else
+		{
+		    switch_dataview( e.id, e.code_type );
+		}
+	}
+}
+
+/**
+ * Load a specific data view.
+ */
+function load_dataview( view_id ) {
+	requestQueue.register(django_url + 'dataviews/show/' + view_id,
+		'GET', undefined, handle_load_dataview);
+	return;
+}
+
+function handle_load_dataview(status, text, xml) {
+	var data_view_container = document.getElementById("data_view");
+
+	if ( !( typeof data_view_container == "undefined" || data_view_container == null ) )
+	{
+		//! remove old content
+		while ( data_view_container.firstChild )
+		{
+			data_view_container.removeChild( data_view_container.firstChild );
+		}
+
+		// put content into data view div
+		if ( status == 200 && text )
+		{
+			//! add new content
+			data_view_container.innerHTML = text;
+		} else {
+			// create error message
+			var error_paragraph = document.createElement( "p" );
+			data_view_container.appendChild( error_paragraph );
+			error_paragraph.appendChild( document.createTextNode(
+				"Sorry, there was a problem loading the requested data view." ) );
+			// create new error iframe
+			var error_iframe = document.createElement( "iframe" );
+			error_iframe.style.width = "100%";
+			error_iframe.style.height = "400px";
+			data_view_container.appendChild( error_iframe );
+			error_iframe.contentDocument.write( text );
+		}
+	}
+
 	return;
 }
 
@@ -522,18 +876,9 @@ function read_message( id )
 function global_resize( e )
 {
 	var top = document.getElementById( "toolbar_container" ).offsetHeight;
-	
-	message_widget.style.top = table_widget.style.top = object_tree_widget.style.top = top + "px";
-	
-	if ( message_widget.offsetHeight ) top += message_widget.offsetHeight;
-	var bottom = 64;
-	var height = Math.max( 0, ui.getFrameHeight() - top - bottom );
+	var height = Math.max( 0, ui.getFrameHeight() - top - global_bottom );
 	var width = ui.getFrameWidth();
-	message_widget.style.width = width + "px";
-	table_widget.style.height = height + "px";
-	object_tree_widget.style.height = height + "px";
-	class_tree_widget.style.height = height + "px";
-
+	
 	var content = document.getElementById( "content" );
 	content.style.top = top + "px";
 	content.style.width = width + "px";
@@ -542,12 +887,21 @@ function global_resize( e )
 	return true;
 }
 
+function init() {
+  $.get('model/migrate-db.php', function(data) {
+    if (data.error) {
+      alert(data.error);
+    } else {
+      realInit();
+    }
+  }, 'json');
+}
 
 /**
  * initialise everything
  * to be called by the onload-handler of document.body
  */
-function init()
+var realInit = function()
 {
 	//! set some non standard attributes
 	/*
@@ -561,7 +915,7 @@ function init()
 	var y;
 	var x;
 	var s;
-	
+  
 	var account;
 	var password;
 	
@@ -577,8 +931,10 @@ function init()
 		if ( values[ "x" ] ) x = parseInt( values[ "x" ] );
 		if ( isNaN( x ) ) delete x;
 		if ( values[ "s" ] ) s = parseInt( values[ "s" ] );
-		if ( isNaN( s ) ) delete s;
-		
+        if ( isNaN( s ) ) delete s;
+        if ( values[ "active_skeleton_id" ] ) init_active_skeleton = parseInt( values[ "active_skeleton_id" ] );
+        if ( values[ "active_node_id" ] ) init_active_node_id = parseInt( values[ "active_node_id" ] );
+
 		if ( !(
 				typeof z == "undefined" ||
 				typeof y == "undefined" ||
@@ -601,6 +957,7 @@ function init()
 			if ( isNaN( y ) ) delete yp;
 			if ( values[ "xp" ] ) xp = parseInt( values[ "xp" ] );
 			if ( isNaN( x ) ) delete xp;
+			if ( values[ "tool" ] ) inittool = values[ "tool"];
 			
 			for ( var i = 0; values[ "sid" + i ]; ++i )
 			{
@@ -627,14 +984,9 @@ function init()
 	statusBar = new Console();
 	document.body.appendChild( statusBar.getView() );
 	
-	requestQueue = new RequestQueue();
 	ui = new UI();
 	
-	input_x = document.getElementById( "x" );
-	input_y = document.getElementById( "y" );
-	
 	input_fontsize = document.getElementById( "fontsize" );
-	input_y = document.getElementById( "y" );
 	
 	a_url = document.getElementById( "a_url" );
 	a_url.onmouseover = function( e )
@@ -643,116 +995,34 @@ function init()
 		return true;
 	}
 	
-	button_crop_apply = document.getElementById( "button_crop_apply" );
-	
-	slider_z = new Slider(
-			SLIDER_HORIZONTAL,
-			true,
-			1,
-			388,
-			388,
-			1,
-			function( val ){ statusBar.replaceLast( "z: " + val ); return; } );
-	
-	slider_s = new Slider(
-			SLIDER_HORIZONTAL,
-			true,
-			undefined,
-			undefined,
-			new Array(
-				0,
-				1,
-				2,
-				4,
-				8 ),
-			8,
-			function( val ){ statusBar.replaceLast( "s: " + val ); } );
-	
-	var slider_z_view = slider_z.getView();
-	slider_z_view.id = "slider_z";
-	document.getElementById( "slider_z" ).parentNode.replaceChild(
-			slider_z_view,
-			document.getElementById( "slider_z" ) );
-	document.getElementById( "slider_z" ).parentNode.replaceChild(
-			slider_z.getInputView(),
-			slider_z_view.nextSibling );
-	
-	var slider_s_view = slider_s.getView();
-	slider_s_view.id = "slider_s";
-	document.getElementById( "slider_s" ).parentNode.replaceChild(
-			slider_s_view,
-			document.getElementById( "slider_s" ) );
-	document.getElementById( "slider_s" ).parentNode.replaceChild(
-			slider_s.getInputView(),
-			slider_s_view.nextSibling );
-	
-	slider_crop_top_z = new Slider(
-			SLIDER_HORIZONTAL,
-			true,
-			1,
-			1,
-			1,
-			1,
-			function( val ){ statusBar.replaceLast( "crop top z: " + val ); return; } );
-	
-	slider_crop_bottom_z = new Slider(
-			SLIDER_HORIZONTAL,
-			true,
-			1,
-			1,
-			1,
-			1,
-			function( val ){ statusBar.replaceLast( "crop bottom z: " + val ); return; } );
-
-	slider_crop_s = new Slider(
-			SLIDER_HORIZONTAL,
-			true,
-			5,
-			0,
-			6,
-			5,
-			function( val ){ statusBar.replaceLast( "crop s: " + val ); } );
-	
-	var slider_crop_top_z_view = slider_crop_top_z.getView();
-	slider_crop_top_z_view.id = "slider_crop_top_z";
-	document.getElementById( "slider_crop_top_z" ).parentNode.replaceChild(
-			slider_crop_top_z_view,
-			document.getElementById( "slider_crop_top_z" ) );
-	document.getElementById( "slider_crop_top_z" ).parentNode.replaceChild(
-			slider_crop_top_z.getInputView(),
-			slider_crop_top_z_view.nextSibling );
-	
-	var slider_crop_bottom_z_view = slider_crop_bottom_z.getView();
-	slider_crop_bottom_z_view.id = "slider_crop_bottom_z";
-	document.getElementById( "slider_crop_bottom_z" ).parentNode.replaceChild(
-			slider_crop_bottom_z_view,
-			document.getElementById( "slider_crop_bottom_z" ) );
-	document.getElementById( "slider_crop_bottom_z" ).parentNode.replaceChild(
-			slider_crop_bottom_z.getInputView(),
-			slider_crop_bottom_z_view.nextSibling );
-
-	var slider_crop_s_view = slider_crop_s.getView();
-	slider_crop_s_view.id = "slider_crop_s";
-	document.getElementById( "slider_crop_s" ).parentNode.replaceChild(
-			slider_crop_s_view,
-			document.getElementById( "slider_crop_s" ) );
-	document.getElementById( "slider_crop_s" ).parentNode.replaceChild(
-			slider_crop_s.getInputView(),
-			slider_crop_s_view.nextSibling );
-	
 	document.getElementById( "login_box" ).style.display = "block";
 	document.getElementById( "logout_box" ).style.display = "none";
 	document.getElementById( "session_box" ).style.display = "none";
-	
+
+	// Add the toolbar buttons:
+
+	$('#toolbox_project').replaceWith(createButtonsFromActions(
+		toolActions, 'toolbox_project', ''));
+	$('#toolbox_edit').replaceWith(createButtonsFromActions(
+		editToolActions, 'toolbox_edit', ''));
+	$('#toolbox_data').replaceWith(createButtonsFromActions(
+		tracingWindowActions, 'toolbox_data', ''));
+
 	document.getElementById( "toolbar_nav" ).style.display = "none";
 	document.getElementById( "toolbar_text" ).style.display = "none";
+	document.getElementById( "toolbar_tags" ).style.display = "none";
 	document.getElementById( "toolbar_crop" ).style.display = "none";
 	document.getElementById( "toolbox_project" ).style.display = "none";
 	document.getElementById( "toolbox_edit" ).style.display = "none";
+	document.getElementById( "toolbox_data" ).style.display = "none";
 	document.getElementById( "toolbox_show" ).style.display = "none";
 	
 	document.getElementById( "account" ).onkeydown = login_oninputreturn;
 	document.getElementById( "password" ).onkeydown = login_oninputreturn;
+
+	dataview_menu = new Menu();
+	document.getElementById( "dataview_menu" ).appendChild( dataview_menu.getView() );
+	dataviews();
 	
 	project_menu = new Menu();
 	project_menu.update(
@@ -763,7 +1033,7 @@ function init()
 				id : "project_menu_new",
 				action : function()
 				{
-					if ( project ) project.unregister();
+					if ( project ) project.destroy();
 					document.getElementById( "project list" ).style.display = "none";
 					document.getElementById( "new_project_dialog" ).style.display = "block";
 					updateUsers();
@@ -777,6 +1047,13 @@ function init()
 				id : "project_menu_open",
 				action : {},
 				note : ""
+			},
+			2 :
+			{
+				title : "Current",
+				id : "project_menu_current",
+				action : {},
+				note : ""
 			}
 		}
 	);
@@ -785,42 +1062,33 @@ function init()
 	project_menu_open = project_menu.getPulldown( "Open" );
 	document.getElementById( "project_menu_new" ).style.display = "none";
 	//project_menu_open.appendChild( project_menu_open.getView() );
-	
+	project_menu_current = project_menu.getPulldown( "Current" );
+	document.getElementById( "project_menu_current" ).style.display = "none";
+
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
-	
-	message_widget = document.getElementById( "message_widget" );
-	var message_widget_resize_handle = new ResizeHandle( "v" );
-	message_widget.appendChild( message_widget_resize_handle.getView() );
-	
-	table_widget = document.getElementById( "treenode_table_widget" );
-	var table_widget_resize_handle = new ResizeHandle( "h" );
-	table_widget.appendChild( table_widget_resize_handle.getView() );
-	
-	project_stats_widget = document.getElementById( "project_stats_widget" );
-	var project_stats_widget_resize_handle = new ResizeHandle( "h" );
-	project_stats_widget.appendChild( project_stats_widget_resize_handle.getView() );
-	
-	object_tree_widget = document.getElementById( "object_tree_widget" );
-	var tree_widget_resize_handle = new ResizeHandle( "h" );
-	object_tree_widget.appendChild( tree_widget_resize_handle.getView() );
-	
-	class_tree_widget = document.getElementById( "class_tree_widget" );
-	var tree_widget_resize_handle = new ResizeHandle( "h" );
-	class_tree_widget.appendChild( tree_widget_resize_handle.getView() );
-	
-	//! auto login by url (unsafe as can be but convenient)
-	if ( account && password )
-		login( account, password );
-	else
-		login();
-	
+
+    login();
+
 	if ( pid && sids.length > 0 )
 	{
-		for ( var i = 0; i < sids.length; ++i )
+		// Make sure that the client-side project list is ready before
+		// we load the stacks.
+		var wait_for_projects = function()
 		{
-			openProjectStack( pid, sids[ i ] )
-		}
+			if ( projects_available_ready )
+			{
+				for ( var i = 0; i < sids.length; ++i )
+				{
+					openProjectStack( pid, sids[ i ] )
+				}
+			}
+			else
+			{
+				setTimeout(wait_for_projects, 10);
+			}
+		};
+		wait_for_projects();
 	}
 	
 	// the text-label toolbar
@@ -842,7 +1110,94 @@ function init()
 	*/
 	
 	ui.registerEvent( "onresize", global_resize );
-	window.onresize();
 	
+	rootWindow = new CMWRootNode();
+	ui.registerEvent( "onresize", resize );
+
+  // change global bottom bar height, hide the copyright notice
+  // and move the statusBar
+  statusBar.setBottom();
+
+	window.onresize();
+
+	$('#growl-alert').growlAlert({
+					autoShow: false
+	});
+
 	return;
+}
+
+/**
+ * resize the view and its content on window.onresize event
+ */
+var resize = function( e )
+{
+	var top = document.getElementById( "toolbar_container" ).offsetHeight;
+	var height = Math.max( 0, ui.getFrameHeight() - top - global_bottom );
+	var width = ui.getFrameWidth();
+	
+	var content = document.getElementById( "content" );
+	content.style.top = top + "px";
+	content.style.width = width + "px";
+	content.style.height = height + "px";
+	
+	rootFrame = rootWindow.getFrame();
+	rootFrame.style.top = top + "px";
+	rootFrame.style.width = UI.getFrameWidth() + "px";
+	rootFrame.style.height = height + "px";
+	
+	rootWindow.redraw();
+	
+	return true;
+}
+
+function showMessages()
+{
+	if ( !messageWindow )
+	{
+		messageWindow = new CMWWindow( "Messages" );
+		var messageContent = messageWindow.getFrame();
+		messageContent.style.backgroundColor = "#ffffff";
+		var messageContext = document.getElementById( "message_context" );
+		if ( messageContext.parentNode )
+			messageContext.parentNode.removeChild( messageContext );
+		messageContent.appendChild( messageContext );
+		
+		messageWindow.addListener(
+			function( callingWindow, signal )
+			{
+				switch ( signal )
+				{
+				case CMWWindow.CLOSE:
+					if ( messageContext.parentNode )
+						messageContext.parentNode.removeChild( messageContext );
+					document.getElementById( "dump" ).appendChild( messageContext );
+					if ( typeof project == undefined || project == null )
+					{
+						rootWindow.close();
+						document.getElementById( "content" ).style.display = "block";
+					}
+					messageWindow = null;
+					break;
+				case CMWWindow.RESIZE:
+					messageContext.style.height = messageWindow.getContentHeight() + "px";
+					break;
+				}
+				return true;
+			} );
+	
+		/* be the first window */
+		if ( rootWindow.getFrame().parentNode != document.body )
+		{
+			document.body.appendChild( rootWindow.getFrame() );
+			document.getElementById( "content" ).style.display = "none";
+		}
+		
+		if ( rootWindow.getChild() == null )
+			rootWindow.replaceChild( messageWindow );
+		else
+			rootWindow.replaceChild( new CMWVSplitNode( messageWindow, rootWindow.getChild() ) );
+	}
+			
+	messageWindow.focus();
 }

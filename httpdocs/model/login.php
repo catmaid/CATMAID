@@ -1,8 +1,6 @@
 <?php
 
-ini_set( 'error_reporting', E_ALL );
-ini_set( 'display_errors', true );
-
+include_once( 'errors.inc.php' );
 include_once( 'session.class.php' );
 include_once( 'json.inc.php' );
 
@@ -23,10 +21,10 @@ if ( !$id )
 	if ( $name || $pwd )
 	{
 		sleep( 2 );
-		echo '{ error : "Invalid account or password." }';
+		echo '{ "error" : "Invalid account or password." }';
 	}
 	else
-		echo '{ notice : "Session closed." }';
+		echo '{ "notice" : "Session closed." }';
 }
 else
 {

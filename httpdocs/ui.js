@@ -159,7 +159,7 @@ UI = function()
 		{
 			which = e.which;
 		}
-		else if ( event && event.button )
+		else if ( !( typeof event == "undefined" || event == null || event.button ) )
 		{
 			which = event.button;
 			if ( which == 2 ) which = 3;	//!< right
@@ -193,35 +193,37 @@ UI = function()
 	/**
 	 * get the mouse location absolute and relative to the element, which fired the event
 	 */
-	this.getMouse = function( e )
+	this.getMouse = function( e, relativeTo, propagate )
 	{
+		var realPagePosition = UI.getRealPagePosition(e);
+		var offset;
+		var target;
+		propagate = (typeof propagate == "undefined") ? false : propagate;
 		m = new Object();
+		m.x = realPagePosition.x;
+		m.y = realPagePosition.y;
+		if (relativeTo) {
+			offset = $(relativeTo).offset();
+			m.offsetX = m.x - offset.left;
+			m.offsetY = m.y - offset.top;
+		}
 		if ( e )
 		{
-			e.preventDefault();
-			e.stopPropagation();
-			m.x = e.screenX;
-			m.y = e.screenY;
-			if ( e.offsetX )
-				m.offsetX = e.offsetX;
-			else if ( e.layerX )
-				m.offsetX = e.layerX - 1;
-			if ( e.offsetY )
-				m.offsetY = e.offsetY;
-			else if ( e.layerY )
-				m.offsetY = e.layerY - 1;
-			
+			if (!propagate) {
+ 				e.preventDefault();
+				e.stopPropagation();
+			}
 		}
 		else if ( event )
 		{
-			event.cancelBubble = true;
-			m.x = event.clientX;
-			m.y = event.clientY;
-			m.offsetX = event.offsetX;
-			m.offsetY = event.offsetY;
+			if (!propagate) {
+				event.cancelBubble = true;
+			}
 		}
-		else
+		else {
 			m = undefined;
+		}
+		m.target = UI.getTargetElement(e || event);
 		return m;
 	}
 	
@@ -255,8 +257,8 @@ UI = function()
 			lastY = m.y;
 			
 			var r = true;
-			for ( var i = 0; i < events[ "onmousemove" ].length; ++i )
-				r = r && events[ "onmousemove" ][ i ]( e );
+			for ( var i = 0; r && i < events[ "onmousemove" ].length; ++i )
+				r = events[ "onmousemove" ][ i ]( e );
 			
 			return r;
 		}
@@ -408,6 +410,59 @@ UI.getFrameWidth = function()
 		return 0;
 	}
 	catch ( exception ) { return 0; }
+}
+
+UI.getRealPagePosition = function (e) {
+	// This function is taken from:
+	//    http://www.quirksmode.org/js/events_properties.html#position
+	var posx = 0;
+	var posy = 0;
+	if (!e)
+		var e = window.event;
+	if (e.pageX || e.pageY) {
+		posx = e.pageX;
+		posy = e.pageY;
+	} else if (e.clientX || e.clientY) {
+		posx = e.clientX + document.body.scrollLeft
+			+ document.documentElement.scrollLeft;
+		posy = e.clientY + document.body.scrollTop
+			+ document.documentElement.scrollTop;
+	}
+	// posx and posy contain the mouse position relative to the document
+	return {'x': posx, 'y': posy};
+}
+
+UI.getTargetElement = function (e) {
+	var target;
+	// This logic is from:
+	// http://www.quirksmode.org/js/events_properties.html#target
+	if (e.target)
+		target = e.target;
+	else if (e.srcElement)
+		target = e.srcElement;
+	if (target.nodeType == 3) // defeat Safari bug
+		target = target.parentNode;
+	return target;
+}
+
+UI.getRealPagePosition = function (e) {
+  // This function is taken from:
+  //    http://www.quirksmode.org/js/events_properties.html#position
+  var posx = 0;
+  var posy = 0;
+  if (!e)
+    var e = window.event;
+  if (e.pageX || e.pageY) 	{
+    posx = e.pageX;
+    posy = e.pageY;
+  } else if (e.clientX || e.clientY) 	{
+    posx = e.clientX + document.body.scrollLeft
+      + document.documentElement.scrollLeft;
+    posy = e.clientY + document.body.scrollTop
+      + document.documentElement.scrollTop;
+  }
+  // posx and posy contain the mouse position relative to the document
+  return {'x': posx, 'y': posy};
 }
 
 //var UI = new UI();

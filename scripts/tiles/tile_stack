@@ -1,0 +1,28 @@
+#!/bin/bash
+
+##
+# Generate tiled scale pyramids of a stack of images and a little overview
+# thumbnail for each slice.  Call it this way:
+#
+# tile_stack "<image file name search pattern>" <tile size> <thumbnail size>
+#
+# e.g.
+# tile_stack "*.tif" 256 192
+##
+
+s=0
+
+d=$(readlink -nf $(dirname $BASH_SOURCE))
+
+for file in `ls ${1}`;
+do
+	mkdir $s
+	cp $file $s
+	cd $s
+	file=`echo ${file} | sed "s/.*\/\([^\/]\)/\1/"`
+	"$d"/tile $file ${2} ${3}
+	rm $file
+	cd ..
+	s=$(($s+1))
+done
+

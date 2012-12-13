@@ -1,10 +1,12 @@
 <?php
 
+/* Any logged in user can see the complete list of IDs, usernames and
+   long names. */
+
+/* FIXME: Why is this here? */
 sleep( 2 );
 
-ini_set( 'error_reporting', E_ALL );
-ini_set( 'display_errors', true );
-
+include_once( 'errors.inc.php' );
 include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'json.inc.php' );

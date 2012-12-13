@@ -156,6 +156,16 @@ function CMWRootNode()
 	{
 		return "<root id\"" + id + "\">\n" + child.toXML( "\t" ) + "\n</root>";
 	}
+	
+	/**
+	 * Empty close method that can be overridden to any needs.  The method is
+	 * called by the last open window on closing.
+	 */
+	this.close = function()
+	{
+		child = null;
+		return;
+	}
 }
 
 CMWRootNode.prototype = new CMWNode();
@@ -163,11 +173,13 @@ CMWRootNode.prototype.constructor = CMWRootNode;
 
 CMWRootNode.prototype.getRootNode = function(){ return this; }
 
-/**
- * Empty close method that cna be overridden to any needs.  The method is
- * called by the last open window on closing.
- */
-CMWRootNode.prototype.close = function(){ return; }
+CMWRootNode.prototype.closeAllChildren = function()
+{
+	var windows = this.getWindows();
+	for ( var i = 0; i < windows.length; ++i )
+		windows[ i ].close();
+	return;
+}
 
 
 
@@ -536,6 +548,20 @@ function CMWWindow( title )
 	var self = this;
 	
 	/**
+	 * @return height of the window minus titlebar in pixels
+	 */
+	this.getContentHeight = function()
+	{
+		var frame = this.getFrame();
+		var h = 0;
+		if ( frame.offsetHeight )
+			h = frame.offsetHeight;
+		if ( frame.firstChild && frame.firstChild.offsetHeight )
+			h -= frame.firstChild.offsetHeight;
+		return h;
+	}
+	
+	/**
 	 * Remove this window from tree.  If this was the sole child of root,
 	 * remove the root frame from document as well.
 	 * 
@@ -546,14 +572,15 @@ function CMWWindow( title )
 	this.close = function( e )
 	{
 		if ( e ) e.stopPropagation();
-		else if ( event ) event.cancelBubble = true;
+		else if ( typeof event != "undefined" && event ) event.cancelBubble = true;
 
 		var root = self.getRootNode();
 		
 		if ( root == parent )
 		{
 			var rootFrame = root.getFrame();
-			rootFrame.parentNode.removeChild( rootFrame );
+			if ( rootFrame.parentNode )
+				rootFrame.parentNode.removeChild( rootFrame );
 			root.close();
 		}
 		else
@@ -592,13 +619,16 @@ function CMWWindow( title )
 		for ( var i = 0; i < windows.length; ++i )
 		{
 			var w = windows[ i ];
-			w.getFrame().firstChild.className = "stackInfo";
-			w.callListeners( CMWWindow.BLUR );
+      if(w.hasFocus()) {
+			  w.getFrame().firstChild.className = "stackInfo";
+			  w.callListeners( CMWWindow.BLUR );
+      }
 		}
-			
-		frame.firstChild.className = "stackInfo_selected";
-		self.callListeners( CMWWindow.FOCUS );
-		
+	  if(!self.hasFocus()) {
+      frame.firstChild.className = "stackInfo_selected";
+      self.callListeners( CMWWindow.FOCUS );
+    }
+
 		return self;
 	}
 	
@@ -663,7 +693,7 @@ function CMWWindow( title )
 	{
 		if ( self != CMWWindow.selectedWindow ) 
 		{
-			var m = ui.getMouse(e);
+			var m = ui.getMouse(e, eventCatcher);
 			var min = m.offsetY;
 			var s = "Top";
 			if ( m.offsetY > self.getHeight() / 2 ) 
@@ -730,7 +760,7 @@ function CMWWindow( title )
 		rootNode.releaseDrag();
 		CMWWindow.selectedWindow = null;
 		eventCatcher.className = "eventCatcher";
-		rootNode.redraw();
+		//rootNode.redraw();
 		
 		return false;
 	}
@@ -850,9 +880,11 @@ CMWWindow.RESIZE = 1;
 CMWWindow.FOCUS = 2;
 CMWWindow.BLUR = 3;
 
-
-
-
+CMWWindow.signalName = {};
+CMWWindow.signalName[CMWWindow.CLOSE] = 'CLOSE';
+CMWWindow.signalName[CMWWindow.RESIZE] = 'RESIZE';
+CMWWindow.signalName[CMWWindow.FOCUS] = 'FOCUS';
+CMWWindow.signalName[CMWWindow.BLUR] = 'BLUR';
 
 /**
  * a vertical or horizontal resize handle
@@ -904,7 +936,7 @@ function ResizeHandle( type, node )
 			ui.registerEvent( "onmousemove", onmousemove.h );
 			ui.registerEvent( "onmouseup", onmouseup.h );
 			ui.catchEvents( "e-resize" );
-            ui.onmousedown( e );
+			ui.onmousedown( e );
 			ui.catchFocus();
 
             return false;
@@ -914,7 +946,7 @@ function ResizeHandle( type, node )
 			ui.registerEvent( "onmousemove", onmousemove.v );
 			ui.registerEvent( "onmouseup", onmouseup.v );
 			ui.catchEvents( "s-resize" );
-            ui.onmousedown( e );
+			ui.onmousedown( e );
 			ui.catchFocus();
 
             return false;

@@ -1,12 +1,11 @@
 <?php
 
-ini_set( 'error_reporting', E_ALL );
-ini_set( 'display_errors', true );
-
+include_once( 'errors.inc.php' );
 include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'tools.inc.php' );
 include_once( 'json.inc.php' );
+include_once( 'utils.php' );
 
 $db =& getDB();
 $ses =& getSession();
@@ -23,6 +22,8 @@ $height = isset( $_REQUEST[ 'height' ] ) ? floatval( $_REQUEST[ 'height' ] ) : 0
 $scale = isset( $_REQUEST[ 'scale' ] ) ? floatval( $_REQUEST[ 'scale' ] ) : 1;
 $resolution = isset( $_REQUEST[ 'resolution' ] ) ? floatval( $_REQUEST[ 'resolution' ] ) : 1;
 
+# The user must be allowed to view annotations:
+checkPermissionsOrExit($db, $uid, $pid, $VIEW_ANY_ALLOWED);
 
 $textlabels = $db->getResult(
 	'SELECT	DISTINCT ON ( "tid" ) "textlabel"."id" AS "tid",
@@ -89,6 +90,8 @@ while ( list( $key, $val) = each( $textlabels ) )
 	$textlabels[ $key ][ 'scaling' ] = $textlabels[ $key ][ 'scaling' ] == 't';
 }
 
+// Doesn't work: bad encoding or .js side expects the bad encoding
+//echo json_encode( $textlabels );
 echo makeJSON( $textlabels );
 
 ?>

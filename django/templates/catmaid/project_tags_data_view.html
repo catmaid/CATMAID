@@ -1,0 +1,90 @@
+{% load data_view_config %}
+{% include "catmaid/common_data_view_header.html" %}
+
+{% with sort=config|get_or_none:"sort"|default_if_none:1 %}
+{% with filter_tags=config|get_or_none:"filter_tags"|default_if_none:0 %}
+{% with row_tags=config|get_or_none:"row_tags"|default_if_none:0 %}
+{% with col_tags=config|get_or_none:"col_tags"|default_if_none:0 %}
+{% with linked_stacks=config|get_or_none:"linked_stacks"|default_if_none:"all" %}
+{% with force_stack_list=config|get_or_none:"force_stack_list"|default_if_none:0 %}
+{% with catalogue_link=config|get_or_none:"catalogue_link"|default_if_none:1 %}
+{% with sample_images=config|get_or_none:"sample_images"|default_if_none:0 %}
+{% with sample_slice=config|get_or_none:"sample_slice"|default_if_none:"center" %}
+{% with sample_scaling=config|get_or_none:"sample_scaling"|default_if_none:100 %}
+
+{% if not row_tags or not col_tags %}
+	There are no row or no column tags defined. Without these, this
+  data view can't be rendered. Please adjust your configuration.
+{% else %}
+<table>
+	<tr>
+		{# Have one empty field in the upper left corner #}
+		<td></td>
+		{% for ct in col_tags %}
+			<td class="head">{{ ct }}</td>
+		{% endfor %}
+	</tr>
+	{% for rt in row_tags %}
+		<tr class="{% cycle 'even' 'odd' %}">
+			<td class="head">{{ rt }}</td>
+			{% for ct in col_tags %}
+				{% tagged_projects ct rt filter_tags as tprojects sort %}
+				{% cycle 'even' 'odd' as rowtype silent %}
+				{% if sample_images %}
+					<td class="{{ rowtype }}-stackimage" title="There are {{ tprojects|length }} projects for the tags {{ ct }} and {{ rt }}.">
+				{% else %}
+					<td class="{{ rowtype }}-stackname" title="There are {{ tprojects|length }} projects for the tags {{ ct }} and {{ rt }}.">
+				{% endif %}
+				{% for p in tprojects %}
+					{% with stacks=p.stacks|filter_stacks:linked_stacks %}
+
+					{# Make the project name a link if we are not forced to have #}
+					{# a stack list and only one stack is available. Draw a definiton #}
+					{# list otherwise. #}
+					{% if not force_stack_list and stacks|length == 1 and not sample_images %}
+						<a href="#" onclick="openProjectStack({{p.id}}, {{stacks.0.id}})">{{ p.title }}</a><br />
+					{% elif sample_images %}
+						{% for s in stacks %}
+							{% with slice=s|get_slice:sample_slice %}
+							<a href="#" onclick="openProjectStack({{p.id}}, {{s.id}})">
+								<img src="{{ s.image_base }}{{ slice }}/small.{{ s.file_extension }}"
+									alt="Sample image for {{ s.title }} on slice {{ slice }}"
+									width="{{ sample_scaling }}%" />
+							</a>
+							{% endwith %}
+						{% endfor %}
+					{% else %}
+						<dl>
+							<dt>{{ p.title }}</dt>
+							{% for s in stacks %}
+							<dd><a href="#" onclick="openProjectStack({{p.id}}, {{s.id}})">{{ s.title }}</a></dd>
+							{% endfor %}
+							{# Optionally, add the the neuron catalogue link #}
+							{% if p.is_catalogueable and catalogue_link %}
+								<dd><a href="{{ settings.CATMAID_DJANGO_URL }}{{ p.id }}">Neuron Catalogue</a></dd>
+							{% endif %}
+						</dl>
+					{% endif %}
+
+					{% endwith %}
+					{% endfor %}
+					{% if tprojects|length == 0 %}
+						-
+					{% endif %}
+				</td>
+			{% endfor %}
+		</tr>
+	{% endfor %}
+	</table>
+{% endif %}
+
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}
+{% endwith %}

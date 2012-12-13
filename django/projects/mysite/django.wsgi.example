@@ -1,0 +1,42 @@
+# If you want to use wsgi, you should copy this file
+# to django.wsgi and add a WSGIScriptAlias statement
+# that refers to that file to your Apache configuration.
+
+import os
+import sys
+sys.path.append('CATMAIDPATH/django/lib/')
+sys.path.append('CATMAIDPATH/django/applications/')
+sys.path.append('CATMAIDPATH/django/projects/')
+
+# ------------------------------------------------------------------------
+# This section is to make sure that the virtualenv is
+# set up correctly for WSGI.  This recommendation is
+# taken from:
+#   http://code.google.com/p/modwsgi/wiki/VirtualEnvironments
+
+ALLDIRS = ['PYTHONLIBPATH']
+
+import sys 
+import site 
+
+# Remember the original sys.path:
+prev_sys_path = list(sys.path)
+
+# Add each new site-packages directory:
+for directory in ALLDIRS:
+  site.addsitedir(directory)
+
+# Reorder sys.path so that the new directories are at the front:
+new_sys_path = [] 
+for item in list(sys.path): 
+    if item not in prev_sys_path: 
+        new_sys_path.append(item) 
+        sys.path.remove(item) 
+sys.path[:0] = new_sys_path 
+
+# ------------------------------------------------------------------------
+
+os.environ['DJANGO_SETTINGS_MODULE'] = 'mysite.settings_apache'
+
+import django.core.handlers.wsgi
+application = django.core.handlers.wsgi.WSGIHandler()

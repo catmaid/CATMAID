@@ -1,3 +1,4 @@
+/* -*- mode: espresso; espresso-indent-level: 8; indent-tabs-mode: t -*- */
 /**
  * project.js
  *
@@ -24,7 +25,7 @@ function Project( pid )
 	{
 		return view;
 	}
-	
+
 	/**
 	 * add a stack to the project
 	 */
@@ -43,24 +44,32 @@ function Project( pid )
 		if ( !opened )
 		{
 			stacks.push( stack );
-			view.appendChild( stack.getView() );
+			if ( rootWindow.getChild() == null )
+				rootWindow.replaceChild( stack.getWindow() );
+			else
+				rootWindow.replaceChild( new CMWHSplitNode( rootWindow.getChild(), stack.getWindow() ) );
+			
+			stack.getWindow().focus();	
 			ui.onresize();
 		}
 		if ( stacks.length > 1 )
-		{
-			var message_widget_resize_handle = new ResizeHandle( "h" );
-			stacks[ stacks.length - 2 ].getView().insertBefore( message_widget_resize_handle.getView(), stacks[ stacks.length - 2 ].getView().firstChild );
 			self.moveTo( self.coordinates.z, self.coordinates.y, self.coordinates.x );
-		}
 		else
 		{
 			var c = stack.projectCoordinates();
 			self.moveTo( c.z, c.y, c.x );
 		}
 		
-		self.setMode( mode );
+		self.setFocusedStack( stack );
 		
-		stack.focus();
+		// only set the tool for the first stack
+		if ( stacks.length == 1 )
+		{
+			if ( !tool )
+				tool = new Navigator();
+			self.setTool( tool );
+		}
+		
 		return;
 	}
 	
@@ -85,17 +94,11 @@ function Project( pid )
 		{
 			if ( stacks[ i ].id == sid )
 			{
-				stacks[ i ].unregister();
-				view.removeChild( stacks[ i ].getView() );
 				stacks.splice( i, 1 );
 				if ( stacks.length == 0 )
-					self.unregister();
+					self.destroy();
 				else
-				{
-					if ( stacks[ stacks.length - 1 ].getView().firstChild.className.match( /resize_handle/ ) )
-						stacks[ stacks.length - 1 ].getView().removeChild( stacks[ stacks.length - 1 ].getView().firstChild );
-					stacks[ ( i + 1 ) % stacks.length ].focus();
-				}
+					stacks[ ( i + 1 ) % stacks.length ].getWindow().focus();
 			}
 		}
 		ui.onresize();
@@ -103,16 +106,14 @@ function Project( pid )
 	}
 	
 	/**
-	 * focus one stack and blur the rest
+	 * focus a stack and blur the rest
 	 */
-	this.focusStack = function( stack )
+	this.setFocusedStack = function( stack )
 	{
 		self.focusedStack = stack;
-		for ( var i = 0; i < stacks.length; ++i )
-		{
-			if ( stack != stacks[ i ] )
-				stacks[ i ].blur();
-		}
+		if ( tool )
+			self.focusedStack.setTool( tool );
+		//window.onresize();
 		return;
 	}
 	
@@ -123,197 +124,60 @@ function Project( pid )
 	{
 		var i;
 		for ( i = 0; i < stacks.length; ++i )
-		{
 			if ( self.focusedStack == stacks[ i ] ) break;
-		}
-		stacks[ ( i + stacks.length + s ) % stacks.length ].focus();
+			
+		stacks[ ( i + stacks.length + s ) % stacks.length ].getWindow().focus();
 		return;
 	}
-	
-	
-	/*
-	* resize the view and its content on window.onresize event
-	*/
-	var resize = function( e )
-	{
-		var top = document.getElementById( "toolbar_container" ).offsetHeight;
-		if ( message_widget.offsetHeight ) top += message_widget.offsetHeight;
-		//var bottom = document.getElementById( 'console' ).offsetHeight;
-		var bottom = 64;
-		var height = Math.max( 0, ui.getFrameHeight() - top - bottom );
-		var left = 0;
-		var width = ui.getFrameWidth();
-		if ( table_widget.offsetWidth )
-		{
-			width -= table_widget.offsetWidth;
-			left += table_widget.offsetWidth;
-		}
-		if ( project_stats_widget.offsetWidth )
-		{
-			if ( table_widget.offsetWidth )
-				project_stats_widget.style.left = left + "px";
-			else
-				project_stats_widget.style.left = "0px";
-			width -= project_stats_widget.offsetWidth;
-			left += project_stats_widget.offsetWidth;
-		}
-		if ( object_tree_widget.offsetWidth )
-		{
-			if ( project_stats_widget.offsetWidth )
-				object_tree_widget.style.left = left + "px";
-			else
-				object_tree_widget.style.left = "0px";
-			width -= object_tree_widget.offsetWidth;
-			left += object_tree_widget.offsetWidth;
-		}
-		if ( class_tree_widget.offsetWidth )
-		{
-			if ( object_tree_widget.offsetWidth )
-				class_tree_widget.style.left = left + "px";
-			else
-				class_tree_widget.style.left = "0px";
-			width -= class_tree_widget.offsetWidth;
-			left += class_tree_widget.offsetWidth;
-		}
-		var old_width = 0;
-		for ( var i = 0; i < stacks.length; ++i )
-		{
-			old_width += stacks[ i ].getView().offsetWidth;
-		}
-		var width_ratio = width / old_width;
-		
-		//var stack_view_width = Math.floor( width / stacks.length );
-		
-		view.style.left = left + "px";
-		left = 0;
-		for ( var i = 0; i < stacks.length; ++i )
-		{
-			//stacks[ i ].resize( i * stack_view_width, 0, stack_view_width, height );
-			var stack_view_width = Math.floor( stacks[ i ].getView().offsetWidth * width_ratio );
-			stacks[ i ].resize( left, 0, stack_view_width, height );
-			left += stack_view_width;
-		}
-		
-		view.style.top = top + "px";
-		view.style.width = width + "px";
-		view.style.height = height + "px";
-	
-		return true;
-	}
-	
-	this.getMode = function()
-	{
-		return mode;
-	}
-	
 
-	/*
-	 * Shows the tree view for the loaded project
-	 */
-	this.showTreeviewWidget = function ( m )
+	//!< Associative array of selected objects
+	// in the Treenode Table and Object Tree.
+	// I.e. enables communication between the Object Tree and the Table of Nodes.
+	this.selectedObjects = {
+		'tree_object': {},
+		'table_treenode': {},
+		'selectedneuron': null,
+		'selectedskeleton': null
+	};
+
+    this.setSelectedSkeleton = function( skeleton_id ) {
+        this.selectedObjects.selectedskeleton = skeleton_id;
+
+        // depending on the chosen tool, trigger functions
+        if( self.getTool().toolname === 'canvastool' ) {
+            self.getTool().on_skeleton_id_change( this.selectedObjects.selectedskeleton );
+        }
+    }
+
+
+    this.hideToolbars = function()
 	{
-		switch ( m )
-		{
-		case "entities":
-			var tw_status = document.getElementById( 'object_tree_widget' ).style.display;
-			// check if not opened before to prevent messing up with event handlers
-			if ( tw_status != 'block' )
-			{
-				document.getElementById( 'object_tree_widget' ).style.display = 'block';
-				ui.onresize();			
-				initObjectTree( this.id );
-			}
-			break;
-		case "classes":
-			var tw_status = document.getElementById( 'class_tree_widget' ).style.display;
-			// check if not opened before to prevent messing up with event handlers
-			if ( tw_status != 'block' )
-			{
-				document.getElementById( 'class_tree_widget' ).style.display = 'block';
-				ui.onresize();			
-				initClassTree( this.id );
-			}
-			break;
-		}
-		return;
-	}
-	
-	/*
-	 * Shows the datatable for the loaded project
-	 */
-	this.showDatatableWidget = function ( m )
-	{
-		document.getElementById( 'treenode_table_widget' ).style.display = 'block';
-		ui.onresize();	
-		switch ( m )
-		{
-		case "treenode":
-			initTreenodeTable( this.id );
-			break;
-		case "presynapse":
-			initPreSynapseTable( this.id );
-			break;
-		case "postsynapse":
-			initPostSynapseTable( this.id );
-			break;
-		}
-		return;
-	}
-	
-	
-	/*
-	 * Shows the project statistics widget
-	 */
-	this.showStatisticsWidget = function (  )
-	{
-		document.getElementById( 'project_stats_widget' ).style.display = 'block';
-		ui.onresize();	
-		initProjectStats();
-		return;
-	}
-	
-	this.setMode = function( m )
-	{
-		document.getElementById( "edit_button_select" ).className = "button";
-		document.getElementById( "edit_button_move" ).className = "button";
-		document.getElementById( "edit_button_text" ).className = "button";
-		document.getElementById( "edit_button_crop" ).className = "button";
-		//document.getElementById( "edit_button_profile" ).className = "button";
 		document.getElementById( "toolbar_nav" ).style.display = "none";
 		document.getElementById( "toolbar_text" ).style.display = "none";
-		document.getElementById( "toolbar_crop" ).style.display = "none";
-		switch ( m )
-		{
-		case "select":
-			break;
-		case "move":
-			document.getElementById( "toolbar_nav" ).style.display = "block";
-			break;
-		case "text":
-			document.getElementById( "toolbar_text" ).style.display = "block";
-			if ( !show_textlabels ) self.toggleShow( "text" );
-			break;
-		case "crop":
-			document.getElementById( "toolbar_crop" ).style.display = "block";
-			break;
-		case "trace":
-           document.getElementById( "toolbar_trace" ).style.display = "block";
-           if ( !show_traces ) self.toggleShow( "trace" );
-           break;
-		}
+		document.getElementById( "toolbar_trace" ).style.display = "none";
+	}
+	
+	
+	this.setTool = function( newTool )
+	{
+		if ( tool )
+			tool.destroy();
+		tool = newTool;
 		
-		mode = m;
-		document.getElementById( "edit_button_" + mode ).className = "button_active";
+		if ( !self.focusedStack && stacks.length > 0 )
+			self.focusedStack = stacks[ 0 ];
 		
-		for ( var i = 0; i < stacks.length; ++i )
-		{
-			stacks[ i ].setMode( mode );
-			if ( stacks[ i ] != self.focusedStack )
-				stacks[ i ].blur();
-		}
-		
+		if ( self.focusedStack )
+			self.focusedStack.getWindow().focus();
+
 		window.onresize();
+		WindowMaker.setKeyShortcuts();
 		return;
+	}
+
+	this.getTool = function( )
+	{
+		return tool;
 	}
 	
 	this.toggleShow = function( m )
@@ -347,7 +211,7 @@ function Project( pid )
 		document.getElementById( "content" ).style.display = "none";
 		document.body.appendChild( view );
 		ui.registerEvent( "onresize", resize );
-		window.onresize();
+		//window.onresize();
 		
 		document.onkeydown = onkeydown;
 		
@@ -359,38 +223,32 @@ function Project( pid )
 	 *
 	 * @todo: should not the stack handle the navigation toolbar?
 	 */
-	this.unregister = function()
+	this.destroy = function()
 	{
-		//! close all stacks
-		for ( var i = 0; i < stacks.length; ++i )
-		{
-			stacks[ i ].unregister();
-			view.removeChild( stacks[ i ].getView() );
-			stacks.splice( i, 1 );
-		}
+		if ( tool ) tool.destroy();
 		
+		//! close all windows
+		//rootWindow.closeAllChildren();
+		rootWindow.close();
+			
 		ui.removeEvent( "onresize", resize );
 		try
 		{
 			document.body.removeChild( view );
-			document.getElementById( "toolbar_nav" ).style.display = "none";
-			document.getElementById( "toolbar_text" ).style.display = "none";
-			document.getElementById( "toolbox_project" ).style.display = "none";
-			document.getElementById( "toolbox_edit" ).style.display = "none";
-			document.getElementById( "toolbox_data" ).style.display = "none";
-			document.getElementById( "toolbox_show" ).style.display = "none";
-			document.getElementById( "toolbar_crop" ).style.display = "none";
-			
-			// hide data table and tree view widgets
-			// in order to reload the data for a new project
-			document.getElementById( "treenode_table_widget" ).style.display = "none";
-			document.getElementById( "tree_widget" ).style.display = "none";
-			
 		}
 		catch ( error ) {}
 		self.id = 0;
 		document.onkeydown = null;
 		document.getElementById( "content" ).style.display = "block";
+		document.getElementById( "project_menu_current" ).style.display = "none";
+        // TODO: bars should be unset by tool on unregister
+		document.getElementById("toolbox_edit").style.display = "none";
+		document.getElementById("toolbox_data").style.display = "none";
+        document.getElementById( "toolbox_project" ).style.display = "none";
+        document.getElementById( "toolbar_nav" ).style.display = "none";
+
+		project = null;
+
 		return;
 	}
 	
@@ -413,7 +271,35 @@ function Project( pid )
 		
 		return;
 	}
-	
+
+	this.moveToInStacks = function(
+		zp,
+		yp,
+		xp,
+		sp,
+		stacks,
+		completionCallback)
+	{
+		var stackToMove;
+		if (stacks.length === 0) {
+			// FIXME: do we need a callback for tool.redraw as well?
+			if ( tool && tool.redraw )
+				tool.redraw();
+			if (typeof completionCallback !== "undefined") {
+				completionCallback();
+			}
+		} else {
+			stackToMove = stacks.shift();
+			stackToMove.moveTo( zp,
+					    yp,
+					    xp,
+					    sp,
+					    function () {
+						    self.moveToInStacks( zp, yp, xp, sp, stacks, completionCallback );
+					    });
+		}
+	}
+
 	/**
 	 * move all stacks to the physical coordinates
 	 */
@@ -421,19 +307,38 @@ function Project( pid )
 		zp,
 		yp,
 		xp,
-		sp )
+		sp,
+		completionCallback)
 	{
+		var stacksToMove = [];
 		self.coordinates.x = xp;
 		self.coordinates.y = yp;
 		self.coordinates.z = zp;
+
 		
 		for ( var i = 0; i < stacks.length; ++i )
 		{
-			stacks[ i ].moveTo( zp, yp, xp, sp );
+			stacksToMove.push( stacks[ i ] );
 		}
-		return;
+
+		self.moveToInStacks( zp, yp, xp, sp, stacksToMove, completionCallback );
 	}
-	
+
+    this.updateTool = function()
+    {
+		if ( tool && tool.updateLayer )
+            tool.updateLayer();
+    }
+
+    // Need to add this "tool-specific" function
+    // to project because need to call it from the
+    // object tree widget
+    this.deselectActiveNode = function()
+    {
+		if ( tool && tool.deselectActiveNode )
+            tool.deselectActiveNode();
+    }
+
 	/**
 	 * create a URL to the current view
 	 */
@@ -445,144 +350,109 @@ function Project( pid )
 		{
 			//coords = stacks[ 0 ].projectCoordinates();		//!< @todo get this from the SELECTED stack to avoid approximation errors!
 			url += "&zp=" + self.coordinates.z + "&yp=" + self.coordinates.y + "&xp=" + self.coordinates.x;
+			url += "&tool=" + project.getTool().toolname;
+      if( project.getTool().toolname === 'tracingtool' ) {
+        var active_skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
+        if( active_skeleton_id ) {
+          url += "&active_skeleton_id=" + active_skeleton_id;
+          url += "&active_node_id=" + SkeletonAnnotations.getActiveNodeId();
+        }
+      }
 			for ( var i = 0; i < stacks.length; ++i )
 			{
-				url += "&sid" + i + "=" + stacks[ i ].id + "&s" + i + "=" + stacks[ i ].screenCoordinates().s;
+				url += "&sid" + i + "=" + stacks[ i ].id + "&s" + i + "=" + stacks[ i ].s;
 			}
 		}
 		return url;
 	}
-	
-	/**
-	 * create a textlabel on the server
-	 */
-	this.createTextlabel = function( tlx, tly, tlz, tlr, scale )
-	{
-		icon_text_apply.style.display = "block";
-		requestQueue.register(
-			'model/textlabel.create.php',
-			'POST',
-			{
-				pid : project.id,
-				x : tlx,
-				y : tly,
-				z : tlz,
-				r : parseInt( document.getElementById( "fontcolourred" ).value ) / 255,
-				g : parseInt( document.getElementById( "fontcolourgreen" ).value ) / 255,
-				b : parseInt( document.getElementById( "fontcolourblue" ).value ) / 255,
-				a : 1,
-				type : "text",
-				scaling : ( document.getElementById( "fontscaling" ).checked ? 1 : 0 ),
-				fontsize : ( document.getElementById( "fontscaling" ).checked ?
-							Math.max( 16 / scale, parseInt( document.getElementById( "fontsize" ).value ) ) :
-							parseInt( document.getElementById( "fontsize" ).value ) ) * tlr,
-				fontstyle : ( document.getElementById( "fontstylebold" ).checked ? "bold" : "" )
-			},
-			function( status, text, xml )
-			{
-				statusBar.replaceLast( text );
-				
-				if ( status == 200 )
-				{
-					icon_text_apply.style.display = "none";
-					for ( var i = 0; i < stacks.length; ++i )
-					{
-						stacks[ i ].updateTextlabels();
-					}
-					if ( text && text != " " )
-					{
-						var e = eval( "(" + text + ")" );
-						if ( e.error )
-						{
-							alert( e.error );
-						}
-						else
-						{
-						}
-					}
-				}
-				return true;
-			} );
-		return;
+
+	/** This function should return true if there was any action
+		linked to the key code, or false otherwise. */
+
+	this.handleKeyPress = function( e ) {
+		var keyAction = keyCodeToAction[e.keyCode];
+		if (keyAction) {
+			return keyAction.run(e);
+		} else {
+			return false;
+		}
 	}
-	
+
 	var onkeydown = function( e )
 	{
+		var projectKeyPress;
 		var key;
-		var target;
 		var shift;
 		var alt;
 		var ctrl;
+		var keyAction;
+
+		/* The code here used to modify 'e' and pass it
+		   on, but Firefox no longer allows this.  So, create
+		   a fake event object instead, and pass that down. */
+		var fakeEvent = {};
+
 		if ( e )
 		{
-			if ( e.keyCode ) key = e.keyCode;
-			else if ( e.charCode ) key = e.charCode;
-			else key = e.which;
-			target = e.target;
+			if ( e.keyCode ) {
+				key = e.keyCode;
+			} else if ( e.charCode ) {
+				key = e.charCode;
+			} else {
+				key = e.which;
+			}
+			fakeEvent.keyCode = key;
+			fakeEvent.shiftKey = e.shiftKey;
+			fakeEvent.altKey = e.altKey;
+			fakeEvent.ctrlKey = e.ctrlKey;
 			shift = e.shiftKey;
 			alt = e.altKey;
 			ctrl = e.ctrlKey;
 		}
 		else if ( event && event.keyCode )
 		{
-			key = event.keyCode;
-			target = event.srcElement;
+			fakeEvent.keyCode = event.keyCode;
+			fakeEvent.shiftKey = event.shiftKey;
+			fakeEvent.altKey = event.altKey;
+			fakeEvent.ctrlKey = event.ctrlKey;
 			shift = event.shiftKey;
 			alt = event.altKey;
 			ctrl = event.ctrlKey;
 		}
-		var n = target.nodeName.toLowerCase();
-		if ( !( n == "input" || n == "textarea" || n == "area" ) )		//!< @todo exclude all useful keyboard input elements e.g. contenteditable...
-		{
-			switch( key )
-			{
-			case 61:		//!< +
-			case 107:
-			case 187:		//!< for IE only---take care what this is in other platforms...
-				slider_s.move( 1 );
-				return false;
-			case 109:		//!< -
-			case 189:		//!< for IE only---take care what this is in other platforms...
-				slider_s.move( -1 );
-				return false;
-			case 188:		//!< ,
-				slider_z.move( -( shift ? 10 : 1 ) );
-				return false;
-			case 190:		//!< .
-				slider_z.move( ( shift ? 10 : 1 ) );
-				return false;
-			case 37:		//!< cursor left
-				input_x.value = parseInt( input_x.value ) - ( shift ? 100 : ( alt ? 1 : 10 ) );
-				input_x.onchange( e );
-				return false;
-			case 39:		//!< cursor right
-				input_x.value = parseInt( input_x.value ) + ( shift ? 100 : ( alt ? 1 : 10 ) );
-				input_x.onchange( e );
-				return false;
-			case 38:		//!< cursor up
-				input_y.value = parseInt( input_y.value ) - ( shift ? 100 : ( alt ? 1 : 10 ) );
-				input_y.onchange( e );
-				return false;
-			case 40:		//!< cursor down
-				input_y.value = parseInt( input_y.value ) + ( shift ? 100 : ( alt ? 1 : 10 ) );
-				input_y.onchange( e );
-				return false;
-			case 9:			//!< tab
-				if ( shift ) project.switchFocus( -1 );
-				else project.switchFocus( 1 );
-				//e.stopPropagation();
-				return false;
-			case 13:		//!< return
-				break;
-			/*
-			default:
-				alert( key );
-			*/
+		fakeEvent.target = UI.getTargetElement(e || event);
+		var n = fakeEvent.target.nodeName.toLowerCase();
+		var fromATextField = false;
+		if (n == "input") {
+			var inputType = fakeEvent.target.type.toLowerCase();
+			if (inputType == "text" || inputType == "password") {
+				fromATextField = true;
 			}
+		}
+		if (!(fromATextField || n == "textarea" || n == "area")) //!< @todo exclude all useful keyboard input elements e.g. contenteditable...
+		{
+			/* Note that there are two different
+			   conventions for return values here: the
+			   handleKeyPress() methods return true if the
+			   event has been dealt with (i.e. it should
+			   not be propagated) but the onkeydown
+			   function should only return true if the
+			   event should carry on for default
+			   processing. */
+			if (tool && tool.handleKeyPress(fakeEvent)) {
+				return false;
+			} else {
+				projectKeyPress = self.handleKeyPress(fakeEvent);
+				return ! projectKeyPress;
+			}
+		} else {
 			return true;
 		}
-		else return true;
 	}
+	
+	/**
+	 * Get project ID.
+	 */
+	this.getId = function(){ return pid; }
 	
 	// initialise
 	var self = this;
@@ -590,21 +460,10 @@ function Project( pid )
 	if ( typeof ui == "undefined" ) ui = new UI();
 	if ( typeof requestQueue == "undefined" ) requestQueue = new RequestQueue();
 	
-	var view = document.createElement( "div" );
+	var tool = null;
+	
+	var view = rootWindow.getFrame();
 	view.className = "projectView";
-	
-	var templateView = document.createElement( "div" );
-	templateView.className = "projectTemplateView";
-	
-	var dataView = document.createElement( "div" );
-	templateView.className = "projectDataView";
-	
-	var editToolbar = document.getElementById( "" );
-	
-	/*
-	view.appendChild( templateView );
-	view.appendChild( dataView );
-	*/
 	
 	this.coordinates = 
 	{
@@ -624,29 +483,16 @@ function Project( pid )
 	var show_textlabels = true;
 	
 	var icon_text_apply = document.getElementById( "icon_text_apply" );
-	
-	//!< associative array of selected objects like class_instances, treenodes etc.
-	var selectedObjects = { 'tree_object' : {},
-							'table_treenode' : {},
-						  };
-	this.selectedObjects = selectedObjects;
-	
-	// handling all the currently existing objects
-	var existingObjects = {};
-	this.existingObjects = existingObjects;
-	
-	// history of activated objects in the past
-	var history = [];
-	this.history = history;
-	
-	// currently active treenode
-	// includes id and skeleton id
-	var active_treenode = {};
-	this.active_treenode = active_treenode;
-	
-	// currently active synapse
-	// includes id
-	var active_synapse = {};
-	this.active_synapse = active_synapse;
-	
+
+	/** The only actions that should be added to Project are those
+	    that should be run regardless of the current tool, such as
+	    actions that switch tools. */
+
+	var actions = toolActions.concat(editToolActions);
+
+	this.getActions = function () {
+		return actions;
+	}
+
+	var keyCodeToAction = getKeyCodeToActionMap(actions);
 }

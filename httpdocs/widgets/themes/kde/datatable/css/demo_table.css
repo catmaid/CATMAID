@@ -268,13 +268,13 @@ tr.even {
 	text-align: center;
 }
 
-tfoot input {
+thead input {
 	margin: 0.5em 0;
 	width: 100%;
 	color: #444;
 }
 
-tfoot input.search_init {
+thead input.search_init {
 	color: #999;
 }
 
@@ -329,6 +329,30 @@ table.display tr.even.row_selected td {
 
 table.display tr.odd.row_selected td {
 	background-color: #9FAFD1;
+}
+
+table.display tr.even.highlight_active td {
+  background-color: #78ff78;
+}
+
+table.display tr.odd.highlight_active td {
+  background-color: #78ff78;
+}
+
+table.display tr.even.root_node td {
+  background-color: #ffbfbf;
+}
+
+table.display tr.odd.root_node td {
+  background-color: #ffbfbf;
+}
+
+table.display tr.even.leaf_node td {
+  background-color: #ffbfbf;
+}
+
+table.display tr.odd.leaf_node td {
+  background-color: #ffbfbf;
 }
 
 

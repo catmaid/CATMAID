@@ -2,9 +2,7 @@
 
 //sleep( 2 );
 
-ini_set( 'error_reporting', E_ALL );
-ini_set( 'display_errors', true );
-
+include_once( 'errors.inc.php' );
 include_once( 'db.pg.class.php' );
 include_once( 'session.class.php' );
 include_once( 'json.inc.php' );
@@ -31,7 +29,7 @@ if ( $uid )
 			
 			ORDER BY "time" DESC'
 	);
-	
+
 	echo makeJSON( $messages );
 }
 else

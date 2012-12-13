@@ -1,0 +1,12 @@
+User Documentation
+==================
+
+.. toctree::
+   :maxdepth: 1
+
+   introduction
+   screenshots
+   data_views
+   tracing_neurons
+   tools
+   othertools

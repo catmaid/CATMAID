@@ -1,114 +1,257 @@
-var oTable;
-var asInitVals = new Array();
+/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
+/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-initTreenodeTable = function(pid) {
-	
-	oTable = $('#treenodetable').dataTable( {
-		// http://www.datatables.net/usage/options
-		"bDestroy": true,
-		"sDom" : '<"H"lr>t<"F"ip>', // default: <"H"lfr>t<"F"ip>
-		"bProcessing": true,
-		"bServerSide": true,
-		"bAutoWidth": false,
-		"sAjaxSource": 'model/treenode.table.list.php',
-		"fnServerData": function ( sSource, aoData, fnCallback ) {
-		
-			// remove all selected elements in table
-			for(key in project.selectedObjects['table_treenode'])
-				delete project.selectedObjects['table_treenode'][key];
-			
-			// add list of skeleton ids to draw
-			// retrieve vom selected object_tree objects
-			i = 0;
-			for(key in project.selectedObjects['tree_object'])
-			{
-				if( project.selectedObjects['tree_object'][key]['type'] == 'skeleton' )
-				{
-					aoData.push( { "name" : "skeleton_" + i, "value" : key } );
-					i = i + 1;
-				}
-			}
-			aoData.push( { "name" : "skeleton_nr", "value" : i } );
-			aoData.push( { "name" : "pid", "value" : pid } );
-			$.ajax( {
-				"dataType": 'json', 
-				"type": "POST", 
-				"url": sSource, 
-				"data": aoData, 
-				"success": fnCallback
-			} );
-		},
-		"aLengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
-		"bJQueryUI": true,
-		"fnRowCallback": function( nRow, aData, iDisplayIndex ) {
-			if ( parseInt(aData[0]) in project.selectedObjects['table_treenode'])
-			{
-				$(nRow).addClass('row_selected');
-			}
-			return nRow;
-		},
-		"aoColumns": [
-		              {"sClass": "center", "bSearchable": false, "bSortable" : true}, // id
-		              {"sClass": "center", "bSearchable": false}, // x
-		              {"sClass": "center", "bSearchable": false}, // y
-		              {"sClass": "center", "bSearchable": false}, // z
-		              {"sClass": "center", "bSearchable": true, "bSortable" : false}, // type
-		              {"sClass": "center", "bSearchable": false}, // confidence
-		              {"sClass": "center", "bSearchable": false}, // radius
-		              {"bSearchable": false}, // username
-		              {"bSearchable": true, "bSortable" : false}, // labels
-		              {"bSearchable": false, "bSortable" : true}, // last modified
-		              ]
-	} );
-	
-	$("#treenodetable tfoot input").keyup( function () {
-		/* Filter on the column (the index) of this element */
-		oTable.fnFilter( this.value, $("tfoot input").index(this) );
-	} );
 
-	/*
-	 * Support functions to provide a little bit of 'user friendlyness' to the textboxes in 
-	 * the footer
-	 */
+/** Namespace TreenodeTable */
+var TreenodeTable = new function()
+{
+  var ns = this; // reference to the namespace
+  ns.oTable = null;
+  var asInitVals = [];
+  var skelid = -1; // Skeleton currently shown
+  var last_displayed_skeletons = {};
+  last_displayed_skeletons[0] = 'None';
 
-	$("#treenodetable tfoot input").each( function (i) {
-		asInitVals[i] = this.value;
-	} );
+  this.setSkeleton = function( skeleton_id ) {
+    skelid = skeleton_id;
+  };
 
-	$("#treenodetable tfoot input").focus( function () {
-		if ( this.className == "search_init" )
-		{
-			this.className = "";
-			this.value = "";
-		}
-	} );
+  /** Update the table to list the nodes of the active skeleton. */
+  this.update = function() {
+    var skid = SkeletonAnnotations.getActiveSkeletonId();
+    if (skid) {
+      ns.setSkeleton( skid ); // -1 means: trigger picking the selected skeleton
+      ns.oTable.fnClearTable( 0 );
+      ns.oTable.fnDraw();
+    } else {
+      // Nothing selected, or a connector
+      alert("Select a skeleton first!");
+    }
+  };
 
-	$("#treenodetable tfoot input").blur( function (i) {
-		if ( this.value == "" )
-		{
-			this.className = "search_init";
-			this.value = asInitVals[$("tfoot input").index(this)];
-		}
-	} );
-	
-	$('#treenodetable tbody tr').live('click', function () {
+  /** Update the table to list the nodes of the skeleton currently being listed. */
+  this.refresh = function() {
+    if (ns.oTable && skelid > 0) {
+      ns.oTable.fnClearTable( 0 );
+      ns.oTable.fnDraw();
+    }
+  };
 
-		var aData = oTable.fnGetData( this );
-		
-		var iId = parseInt(aData[0]);
-		
-		if ( iId in project.selectedObjects['table_treenode'] )
-		{
-			delete project.selectedObjects['table_treenode'][iId];
-		}
-		else
-		{
-			project.selectedObjects['table_treenode'][iId] = {'id': iId, 'tabledata':aData, 'type' : 'treenode'};
-			/**
-			for(key in project.selectedObjects['table_treenode'])
-				console.log(key);*/
-		}			
-		$(this).toggleClass('row_selected');
-	} );
-		
+  this.init = function (pid)
+  {
+    $("#treenodetable_lastskeletons").change(function() {
+      skelid = parseInt( $('#treenodetable_lastskeletons').val() );
+      ns.refresh();
+    });
+
+    ns.pid = pid;
+    ns.oTable = $('#treenodetable').dataTable({
+      // http://www.datatables.net/usage/options
+      "bDestroy": true,
+      "sDom": '<"H"lr>t<"F"ip>',
+      // default: <"H"lfr>t<"F"ip>
+      "bProcessing": true,
+      "bServerSide": true,
+      "bAutoWidth": false,
+      // "sAjaxSource": 'model/treenode.table.list.php',
+      "sAjaxSource": django_url + project.id + '/treenode/table/list',
+      "fnServerData": function (sSource, aoData, fnCallback) {
+
+        if( -1 === skelid ) {
+          skelid = SkeletonAnnotations.getActiveSkeletonId();
+        }
+        aoData.push({
+          "name": "skeleton_0",
+          "value": skelid
+        });
+        aoData.push({
+          "name": "skeleton_nr",
+          "value": 1
+        });
+        aoData.push({
+          "name": "pid",
+          "value": pid
+        });
+        aoData.push({
+          "name": "stack_id",
+          "value": project.focusedStack.id
+        });
+
+        if( skelid && !(skelid in last_displayed_skeletons) ) {
+          // check if skeleton id already in list, and if so, do not add it
+          last_displayed_skeletons[ skelid ] = $('#neuronName').text();
+          var new_skeletons = document.getElementById("treenodetable_lastskeletons");
+          while (new_skeletons.length > 0)
+              new_skeletons.remove(0);
+          for (var skid in last_displayed_skeletons) {
+            if (last_displayed_skeletons.hasOwnProperty(skid)) {
+              var option = document.createElement("option");
+              option.text = last_displayed_skeletons[ skid ];
+              option.value = skid;
+              new_skeletons.appendChild(option);
+            }
+          }
+        }
+        $('#treenodetable_lastskeletons').val( skelid );
+
+        $.ajax({
+          "dataType": 'json',
+          "type": "POST",
+          "cache": false,
+          "url": sSource,
+          "data": aoData,
+          "success": fnCallback
+        });
+      },
+      "iDisplayLength": -1,
+      "aLengthMenu": [
+        [-1, 10, 100, 200],
+        ["All", 10, 100, 200]
+      ],
+      "bJQueryUI": true,
+      "fnDrawCallback": function () {
+        //$('td:eq(7)', ns.oTable.fnGetNodes()).editable('model/treenode.table.update.php',
+        $('td:eq(7)', ns.oTable.fnGetNodes()).editable(django_url + project.id + '/treenode/table/update', {
+          "submitdata": function (value, settings) {
+            var aPos = ns.oTable.fnGetPosition(this);
+            var aData = ns.oTable.fnGetData(aPos[0]);
+            return {
+              "id": aData[0],
+              "type": "radius",
+              "pid": project.id
+            };
+          },
+          "height": "14px"
+        });
+      },
+/*      "fnRowCallback": function (nRow, aData, iDisplayIndex) {
+
+        if (aData[1] === "R") {
+          $(nRow).addClass('root_node');
+        }
+        if (aData[1] === "L") {
+          $(nRow).addClass('leaf_node');
+        }
+
+        var atnID = SkeletonAnnotations.getActiveNodeId();
+        if (atnID) {
+          if (parseInt(aData[0], 10) === atnID) {
+            // just to be sure
+            $(nRow).removeClass('root_node');
+            $(nRow).removeClass('leaf_node');
+            // highlight row of active treenode
+            $(nRow).addClass('highlight_active');
+          }
+        }
+        return nRow;
+      },*/
+      "aoColumns": [{
+        "sClass": "center",
+        "bSearchable": false,
+        "bSortable": true,
+        "bVisible": false
+      }, // id
+      {
+        "sClass": "center",
+        "bSearchable": true,
+        "bSortable": false,
+        "sWidth": "50px"
+      }, // type
+      {
+        "bSearchable": true,
+        "bSortable": false,
+        "sWidth": "150px"
+      }, // labels
+      {
+        "sClass": "center",
+        "bSearchable": false,
+        "sWidth": "50px"
+      }, // confidence
+      {
+        "sClass": "center",
+        "bSearchable": false
+      }, // x
+      {
+        "sClass": "center",
+        "bSearchable": false
+      }, // y
+      {
+        "sClass": "center",
+        "bSearchable": false
+      }, // z
+      {
+        "sClass": "center",
+        "bSearchable": false,
+        "bSortable": false
+      }, // section index
+      {
+        "sClass": "center",
+        "bSearchable": false
+      }, // radius
+      {
+        "bSearchable": false
+      }, // username
+      {
+        "bSearchable": false,
+        "bSortable": true
+      }, // last modified
+      {
+          "bSearchable": false,
+          "bSortable": true
+      } // reviewer
+      ]
+    });
+
+    // filter table
+    $.each(asInitVals, function(index, value) {
+      if(value==="Search")
+        return;
+      if(value) {
+        ns.oTable.fnFilter(value, index);
+      }
+    });
+
+    $("#treenodetable thead input").keyup(function () { /* Filter on the column (the index) of this element */
+      var i = $("thead input").index(this) + 2;
+      asInitVals[i] = this.value;
+      ns.oTable.fnFilter(this.value, i);
+    });
+
+    $("#treenodetable thead input").each(function (i) {
+      asInitVals[i+2] = this.value;
+    });
+
+    $("#treenodetable thead input").focus(function () {
+      if (this.className === "search_init") {
+        this.className = "";
+        this.value = "";
+      }
+    });
+
+    $("#treenodetable thead input").blur(function (event) {
+      if (this.value === "") {
+        this.className = "search_init";
+        this.value = asInitVals[$("thead input").index(this)+2];
+      }
+    });
+
+    $('select#search_type').change( function() {
+      ns.oTable.fnFilter( $(this).val(), 1 );
+      asInitVals[1] = $(this).val();
+    });
+
+    $("#treenodetable tbody tr").live('dblclick', function () {
+
+      var aData = ns.oTable.fnGetData(this);
+      // retrieve coordinates and moveTo
+      var x = parseFloat(aData[4]);
+      var y = parseFloat(aData[5]);
+      var z = parseFloat(aData[6]);
+      var id = parseInt(aData[0], 10);
+      project.moveTo(z, y, x, undefined,
+                     function () {
+                       SkeletonAnnotations.staticSelectNode(id);
+                     });
+    });
+  };
 }

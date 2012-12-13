@@ -8,14 +8,17 @@ div.console
 	width:100%;
 	/*height:32px;*/
 	min-height:32px;
-	background-color:#A0A0A0;
+	background-color:#F0F0F0;
 	border:none;
 	/*border-top:solid 4px #000000;*/
+	overflow-x: hidden;
 }
 div.console pre
 {
 	margin:8px;
 	font-family:monospace;
 	font-size:9px;
-	color:#FFFFFF;
+	color:#000000;
+	float: left;
+	overflow-x: hidden;
 }

@@ -1,0 +1,95 @@
+
+from settings_base import *
+import sys, os
+import djcelery
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'custom_postgresql_psycopg2', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': 'CATMAID_DATABASE_NAME',      # Or path to database file if using sqlite3.
+        'USER': 'CATMAID_DATABASE_USERNAME',  # Not used with sqlite3.
+        'PASSWORD': 'CATMAID_DATABASE_PASSWORD',  # Not used with sqlite3.
+        'HOST': '',                           # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': '',                           # Set to empty string for default. Not used with sqlite3.
+    }
+}
+
+# Make this unique, and don't share it with anybody.
+# (You can generate a key with:
+# >>> from random import choice
+# >>> ''.join([choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)])
+# '@er^vm3$w#9n$)z3avny*hh+l^#ezv+sx*(72qwp0c%%cg1$i+'
+# ... which is how "django-admin startproject" does it.)
+SECRET_KEY = 'CATMAID_SECRET_KEY'
+
+TEMPLATE_DIRS = (
+    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
+    # Always use forward slashes, even on Windows.
+    # Don't forget to use absolute paths, not relative paths.
+    'CATMAIDPATH/django/templates'
+)
+
+# Define a temporary folder. This is e.g. used to store cropped
+# microstacks for two weeks. Make sure that the folder is writable
+# by the user running the webserver and Celery.
+TMP_DIR = 'CATMAID_TMP_PATH'
+
+DEBUG = True
+TEMPLATE_DEBUG = DEBUG
+
+# Local time zone for this installation. Choices can be found here:
+# http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
+# although not all choices may be available on all operating systems.
+# If running in a Windows environment this must be set to the same as your
+# system time zone.
+TIME_ZONE = 'CATMAID_TIMEZONE'
+
+# Language code for this installation. All choices can be found here:
+# http://www.i18nguy.com/unicode/language-identifiers.html
+LANGUAGE_CODE = 'en-gb'
+
+SITE_ID = 1
+
+# Usually, CATMAID's Django back-end is not accessible on a domain's
+# root ('/'), but rather a sub-directory like 'dj'. This might even be
+# 'catmaid/dj' if catmaid is on a sub-directory as well. Django needs
+# to know about this relative path and some web and WSGI servers pass
+# this information to Django automatically (e.g. Apache + mod_wsgi).
+# However, some don't (e.g. Nginx + Gevent) and the easiest way to
+# tell Django were it lives is with the help of the FORCE_SCRIPT_NAME
+# variable. It must not have a trailing slash.
+FORCE_SCRIPT_NAME = '/catmaid/dj'
+
+# Settings relative to the Apache subfolder
+CATMAID_URL = '/catmaid/'
+STATICFILES_URL = '/catmaid/dj-static/'
+
+STATICFILES_LOCAL = 'CATMAIDPATH/django/static/'
+# Static path to store generated NeuroHDF files (needs to be writable)
+# as subdirectory of STATICFILES_LOCAL
+STATICFILES_HDF5_SUBDIRECTORY = 'CATMAID_WRITABLE_SUBDIR'
+
+# Local path to store HDF5 files
+# File name convention: {projectid}_{stackid}.hdf
+HDF5_STORAGE_PATH = 'CATMAIDPATH/django/hdf5/'
+
+# Define the URL of your CATMAIDs Django instance as it should appear in
+# front of all Django related URLs.
+CATMAID_DJANGO_URL = 'http://CATMAID_SERVERNAME/catmaid/dj/'
+
+## Celery configuration
+djcelery.setup_loader()
+CELERYD_CONCURRENCY = 1
+# Simple django-kumbo message broker
+INSTALLED_APPS += ("djkombu",)
+BROKER_BACKEND = "djkombu.transport.DatabaseTransport"
+
+PROJECT_ROOT = os.path.realpath(os.path.join(
+        os.path.dirname(__file__), '..', '..'))
+for subdirectory in ('projects', 'applications', 'lib'):
+    sys.path.insert(0, os.path.join(PROJECT_ROOT, subdirectory))
+
+# Serving admin static files
+# http://stackoverflow.com/questions/9959875/how-to-serve-admin-static-files-with-django-contrib-staticfiles-in-django-1-4-u
+STATIC_URL = '/static/'
+STATIC_ROOT =  'CATMAIDPATH/django/static-admin'

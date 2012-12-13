@@ -1,0 +1,30 @@
+<html>
+	<head>
+		<title>How user-based permissions work in CATMAID</title>
+	</head>
+	<body>
+		<h1>How user-based permissions work in CATMAID</h1>
+		<p>Author: Albert Cardona, 2012-November-12.</p>
+
+		<p>The basic concept is that a user owns the nodes and connectors created while signed in.</p>
+		<p>There are three user roles: Browse, Annotate and Admin</p>
+		<p>A <b>browsing</b> user can view everything, and edit nothing.</p>
+		<p>An <b>admin</b> user can view and edit everything.</p>
+		<p>An <b>annotator</b> user can view (and export) everything, and:<br />
+			<ul>
+				<li>Create new nodes and connectors, and therefore new skeletons.</li>
+				<li>Create a new node as a child of an existing node owned by another user.</li>
+				<li>Delete a node that the user owns.</li>
+				<li>Add a text tag to a node owned by any user. Will trigger a notification to the user that owns the node.</li>
+				<li>Remove a text tag that the user owns. Will trigger a notification if the node is owned by another user.</li>
+				<li>Join a node (and its associated skeleton) into a node owned by any user. This is conceptually equivalent to adding a new node as a child of a node owned by another user.</li>
+				<li>Split a skeleton if the node at which the split is made belongs to the user.</li>
+				<li>Reroot a skeleton. Rerooting is a no-op: no data is altered; the topological orientation of the skeleton is a matter of convenience.</li>
+				<li>Create a presynaptic_to or postsynaptic_to relationship on any node.</li>
+				<li>Delete a presynaptic_to or postsynaptic_to relationship that the user owns.</li>
+				<li>Create, delete and rename groups, neurons and skeletons owned by the user, which for an annotator user will always initially exist within the Staging group associated with the user in the Object Tree. With the exception that, if the skeleton has nodes owned by another user, that skeleton (and their parent neuron and groups) cannot be deleted by the user. An admin user may have moved skeletons, neurons and groups out of the user's Staging group, in which case the user still owns them.</li>
+				<li>Move groups, neurons and skeletons in the Object Tree to groups, neurons and skeletons owned by the user.</li>
+			</ul>
+		</p>
+	</body>
+</html>

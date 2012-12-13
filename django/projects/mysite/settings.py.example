@@ -67,8 +67,6 @@ CATMAID_URL = '/'
 STATICFILES_URL = '/static/'
 STATIC_URL = 'CATMAIDPATH/dj-static-admin/'
 
-Alias /catmaid/dj-static-admin/
-
 STATICFILES_LOCAL = 'CATMAIDPATH/django/static/'
 # Static path to store generated NeuroHDF files (needs to be writable)
 # as subdirectory of STATICFILES_LOCAL

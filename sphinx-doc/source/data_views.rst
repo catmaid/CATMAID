@@ -125,20 +125,26 @@ different data view types. The only exception to this is the *Legacy Project
 List* type, which doesn't support such general options. All the other types
 respect the following general options:
 
-=============== =========================================== ============
-Name            Options                                     Default
-=============== =========================================== ============
-``sort``        ``true, false``                             ``true``
-``filter_tags`` ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
-=============== =========================================== ============
+================== =========================================== ============
+Name               Options                                     Default
+================== =========================================== ============
+``sort``           ``true, false``                             ``true``
+``filter_tags``    ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
+``catalogue_link`` ``true, false``                             ``true``
+================== =========================================== ============
 
 With the help of the ``sort`` option one can make sure the list of projects
 a data view deals with is sorted (or that it is not). The ``filter_tags``
 option allows to define a list of tags that have to be assigned to all
-projects looked at. If a data view should get a unsorted list of projects
-that are tagged with ``Test`` and ``CNS`` the configuration would look like:
+projects looked at. If neuron annotations are used in a project, a so called
+neuron catalogue can be displayed. By default, a link to this overview is
+displayed for every project that has such annotations. This can be disabled,
+by setting the ``catalogue_link`` option to ``false``. If a data view should
+get an unsorted list of projects that are tagged with ``Test`` as well as
+``CNS`` and catalogue links should not be displayed, the configuration would
+look like:
 
-  ``{"sort":false, "filter_tags":["Test", "CNS"]}``
+  ``{"sort":false, "filter_tags":["Test", "CNS"], "catalogue_link":false}``
 
 The remainder of this section will briefly discuss the different data view
 types available.
@@ -168,6 +174,7 @@ Name               Options                                     Default
 ================== =========================================== ============
 ``sort``           ``true, false``                             ``true``
 ``filter_tags``    ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
+``catalogue_link`` ``true, false``                             ``true``
 ``sample_images``  ``true, false``                             ``false``
 ``sample_stack``   ``stack index, "first", "last"``            ``0``
 ``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
@@ -175,10 +182,10 @@ Name               Options                                     Default
 ================== =========================================== ============
 
 Please refer to the introduction to this section for an explanation of the
-``sort`` and ``filter_tags`` options. The ``sample_images`` option
-defines whether there should be a sample image displayed to the left of each
-project entry. If an image is displayed, the ``sample_stack`` option defines
-from which stack of the current project the image should be taken. The
+``sort``, ``filter_tags`` and ``catalogue_link`` options. The ``sample_images``
+option defines whether there should be a sample image displayed to the left of
+each project entry. If an image is displayed, the ``sample_stack`` option
+defines from which stack of the current project the image should be taken. The
 ``stack index`` value of it represents a single integer (e.g. 0). If this index
 is out of bounds, no image is displayed. With the option ``sample_slice`` one
 defines which slice of the sample stack should be used as sample image. Again,
@@ -217,19 +224,20 @@ Name               Options                                     Default
 ================== =========================================== ============
 ``sort``           ``true, false``                             ``true``
 ``filter_tags``    ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
+``catalogue_link`` ``true, false``                             ``true``
 ``sample_images``  ``true, false``                             ``false``
 ``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
 ``sample_scaling`` ``scaling percentage, e.g. 50 or 75``       ``100``
 ================== =========================================== ============
 
-Have a look to this section's introduction for an explanation of the ``sort``
-and ``filter_tags`` options. If images should be displayed, the ``sample_images``
-option should be set to ``true``. Since there is one image per stack, an
-option like ``sample_stack`` in the *Project list* type, isn't needed.
-However, with the help of the ``sample_slice`` option a slice can be
-selected. Again, this can be done with an integer index or one of the
-string arguments (mind the quotes!). If the numeric index is out of range,
-no image will be displayed. Like in the *Project List* view type, the
+Have a look to this section's introduction for an explanation of the ``sort``,
+``filter_tags`` and ``catalogue_link``  options. If images should be
+displayed, the ``sample_images`` option should be set to ``true``. Since there
+is one image per stack, an option like ``sample_stack`` in the *Project list*
+type, isn't needed. However, with the help of the ``sample_slice`` option a
+slice can be selected. Again, this can be done with an integer index or one
+of the string arguments (mind the quotes!). If the numeric index is out of
+range, no image will be displayed. Like in the *Project List* view type, the
 option values ``"first"``, ``"center"`` and ``"last"`` refer to the first,
 middle and last slice of each stack. To scale the sample image, the option
 ``sample_scaling`` can be used with a scaling percentage value.
@@ -275,6 +283,7 @@ Name                 Options                                    Default
 ==================== ========================================== ============
 ``sort``             ``true, false``                            ``true``
 ``filter_tags``      ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
+``catalogue_link``   ``true, false``                            ``true``
 ``row_tags``         ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
 ``col_tags``         ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
 ``linked_stacks``    ``stack index, "first", "last", "all"``    ``"all"``
@@ -284,19 +293,20 @@ Name                 Options                                    Default
 ``sample_scaling``   ``scaling percentage, e.g. 50 or 75``      ``100``
 ==================== ========================================== ============
 
-Have a look at this section's introduction for an explanation of the ``sort``
-and ``filter_tags`` options. The tags to use for the rows and columns can be
-set with the ``row_tags`` and the ``col_tags`` keywords. To control which
-stacks of a project appear in a table cell, the ``linked_stacks`` and the
-``force_stack_list`` option can be used: They define if a list of stacks is
-displayed per project (like in the *Project list* type) and which stacks should
-make it into this list. By default, a complete stack list is displayed for each
-project. In some situations, however, it is not preferable to list all stacks
-associated with a project and so you can limit this to either the ``first``
-stack, the ``last`` or one of a specific index. Is there only one stack
-(selected or at all), then the link to open it is rendered solely as the
-project title and no list is displayed. If this is not wanted, the
-``force_stack_list`` option can be set to true to get a list with one entry.
+Have a look at this section's introduction for an explanation of the ``sort``,
+``filter_tags`` and ``catalogue_link`` options. The tags to use for the rows
+and columns can be set with the ``row_tags`` and the ``col_tags`` keywords.
+To control which stacks of a project appear in a table cell, the
+``linked_stacks`` and the ``force_stack_list`` option can be used: They define
+if a list of stacks is displayed per project (like in the *Project list* type)
+and which stacks should make it into this list. By default, a complete stack
+list is displayed for each project. In some situations, however, it is not
+preferable to list all stacks associated with a project and so you can limit
+this to either the ``first`` stack, the ``last`` or one of a specific index.
+Is there only one stack (selected or at all), then the link to open it is
+rendered solely as the project title and no list is displayed. If this is not
+wanted, the ``force_stack_list`` option can be set to true to get a list with
+one entry.
 
 Like with the other data types, one can opt for showing images instead of stack
 names. To do so, employ the ``sample_images`` option. These images will then

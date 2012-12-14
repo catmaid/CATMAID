@@ -760,7 +760,7 @@ function CMWWindow( title )
 		rootNode.releaseDrag();
 		CMWWindow.selectedWindow = null;
 		eventCatcher.className = "eventCatcher";
-		//rootNode.redraw();
+		rootNode.redraw();
 		
 		return false;
 	}

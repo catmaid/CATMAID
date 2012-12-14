@@ -129,16 +129,48 @@ def node_list_tuples(request, project_id=None):
               treenode_ids.add(t2id)
               treenodes.append(row[9:17] + (is_superuser or row[17] == user_id,))
 
-        # Retrieve connectors that are synapses - do a LEFT OUTER JOIN with
-        # the treenode_connector table, so that we get entries even if the
-        # connector is not connected to any treenodes
-        # Retrieves connectors up to 4 sections below and above
-        zres = params['zres']
-        z0 = params['z']
-        z1 = z0 + zres
-        params['zlow'] = z0 - 4.0 * zres
-        params['zhigh'] =  z0 + 5.0 * zres
-        response_on_error = 'Failed to query connector locations.'
+        # Find connectors related to treenodes in the field of view
+        # TODO missing disconnected connectors simply in the field of view.
+
+        connectors = []
+        # A set of missing treenode IDs
+        missing_treenode_ids = set()
+        # Check if the active treenode is present; if not, load it
+        if -1 != atnid and not atnid in treenode_ids:
+            missing_treenode_ids.add(atnid)
+        # Connectors found attached to treenodes
+        cids = set()
+        crows = []
+
+        if treenode_ids:
+            response_on_error = 'Failed to query connector locations.'
+            cursor.execute('''
+            SELECT connector.id AS id,
+                (connector.location).x AS x,
+                (connector.location).y AS y,
+                (connector.location).z AS z,
+                connector.confidence AS confidence,
+                treenode_connector.relation_id AS treenode_relation_id,
+                treenode_connector.treenode_id AS tnid,
+                treenode_connector.confidence AS tc_confidence,
+                connector.user_id AS user_id
+            FROM treenode
+                 INNER JOIN treenode_connector ON treenode.id = treenode_connector.treenode_id
+                 INNER JOIN connector ON treenode_connector.connector_id = connector.id
+            WHERE treenode.id IN (%s)''' % ','.join(str(x) for x in treenode_ids))
+
+            for row in cursor.fetchall():
+                crows.append(row)
+                cids.add(row[0])
+        
+        if not cids:
+            # Prevent the NOT IN statement (below) from failing:
+            cids.add(0)
+
+        # Obtain connectors within the field of view that were not captured above.
+        # Uses a LEFT OUTER JOIN to include disconnected connectors,
+        # that is, connectors that aren't referenced from treenode_connector.
+        params['cids'] = tuple(cids)
         cursor.execute('''
         SELECT connector.id AS id,
             (connector.location).x AS x,
@@ -150,35 +182,30 @@ def node_list_tuples(request, project_id=None):
             treenode_connector.confidence AS tc_confidence,
             connector.user_id AS user_id
         FROM connector LEFT OUTER JOIN treenode_connector
-            ON treenode_connector.connector_id = connector.id
-        WHERE connector.project_id = %(project_id)s AND
-            (connector.location).z >= %(zlow)s AND
-            (connector.location).z <  %(zhigh)s AND
-            (connector.location).x >= %(left)s AND
-            (connector.location).x <= %(right)s AND
-            (connector.location).y >= %(top)s AND
-            (connector.location).y <= %(bottom)s
-        LIMIT %(limit)s
+                       ON connector.id = treenode_connector.connector_id
+        WHERE connector.project_id = %(project_id)s
+          AND (connector.location).z = %(z)s
+          AND connector.id NOT IN %(cids)s
+          AND (connector.location).x > %(left)s
+          AND (connector.location).x < %(right)s
+          AND (connector.location).y > %(top)s
+          AND (connector.location).y < %(bottom)s
         ''', params)
 
+        for row in cursor.fetchall():
+            crows.append(row)
 
-        # A list of tuples, each tuple containing the selected columns of each connector
-        # which could be repeated given the join with treenode_connector
-        connectors = []
         # A set of unique connector IDs
         connector_ids = set()
-        # A set of missing treenode IDs
-        missing_treenode_ids = set()
-        # Check if the active treenode is present; if not, load it
-        if -1 != atnid and not atnid in treenode_ids:
-            missing_treenode_ids.add(atnid)
         # The relations between connectors and treenodes, stored
         # as connector ID keys vs a list of tuples, each with the treenode id,
         # the type of relation (presynaptic_to or postsynaptic_to), and the confidence.
         pre = defaultdict(list)
         post = defaultdict(list)
 
-        for row in cursor.fetchall():
+        # Process crows (rows with connectors) which could have repeated connectors
+        # given the join with treenode_connector
+        for row in crows:
             # Collect treeenode IDs related to connectors but not yet in treenode_ids
             # because they lay beyond adjacent sections
             tnid = row[6] # The tnid column is index 7 (see SQL statement above)
@@ -187,7 +214,6 @@ def node_list_tuples(request, project_id=None):
                 if tnid not in treenode_ids:
                     missing_treenode_ids.add(tnid)
                 # Collect relations between connectors and treenodes
-                # row[0]: connector id (cid above)
                 # row[5]: treenode_relation_id
                 # row[6]: treenode_id (tnid above)
                 # row[7]: tc_confidence
@@ -197,7 +223,6 @@ def node_list_tuples(request, project_id=None):
                     post[cid].append((tnid, row[7]))
 
             # Collect unique connectors
-            # r[8]: user_id
             if cid not in connector_ids:
                 connectors.append(row)
                 connector_ids.add(cid)
@@ -210,7 +235,7 @@ def node_list_tuples(request, project_id=None):
 
 
         # Fetch missing treenodes. These are related to connectors
-        # but not in the bounding box or the active skeleton.
+        # but not in the bounding box of the field of view.
         # This is so that we can draw arrows from any displayed connector
         # to all of its connected treenodes, even if one is several slices
         # below.
@@ -238,6 +263,7 @@ def node_list_tuples(request, project_id=None):
         labels = defaultdict(list)
         if request.POST['labels']:
             # Collect treenodes visible in the current section
+            z0 = params['z']
             visible = ','.join(str(row[0]) for row in treenodes if row[4] == z0)
             if visible:
                 cursor.execute('''

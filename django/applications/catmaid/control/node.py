@@ -94,10 +94,10 @@ def node_list_tuples(request, project_id=None):
                 OR (t1.parent_id IS NULL AND t1.id = t2.id))
         WHERE
             (t1.location).z = %(z)s
-            AND (t1.location).x >= %(left)s
-            AND (t1.location).x <= %(right)s
-            AND (t1.location).y >= %(top)s
-            AND (t1.location).y <= %(bottom)s
+            AND (t1.location).x > %(left)s
+            AND (t1.location).x < %(right)s
+            AND (t1.location).y > %(top)s
+            AND (t1.location).y < %(bottom)s
             AND t1.project_id = %(project_id)s
         LIMIT %(limit)s
         ''', params)

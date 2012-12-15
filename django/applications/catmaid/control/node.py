@@ -139,8 +139,9 @@ def node_list_tuples(request, project_id=None):
         if -1 != atnid and not atnid in treenode_ids:
             missing_treenode_ids.add(atnid)
         # Connectors found attached to treenodes
-        cids = set()
+        cids = set() # set of IDs of connectors in the current Z and attached to treenodes
         crows = []
+        z0 = params['z']
 
         if treenode_ids:
             response_on_error = 'Failed to query connector locations.'
@@ -161,16 +162,18 @@ def node_list_tuples(request, project_id=None):
 
             for row in cursor.fetchall():
                 crows.append(row)
-                cids.add(row[0])
+                if z0 == row[3]:
+                    cids.add(row[0])
         
-        if not cids:
+        if cids:
+            params['cids'] = tuple(cids)
+        else:
             # Prevent the NOT IN statement (below) from failing:
-            cids.add(0)
-
+            params['cids'] = (0,)
+        
         # Obtain connectors within the field of view that were not captured above.
         # Uses a LEFT OUTER JOIN to include disconnected connectors,
         # that is, connectors that aren't referenced from treenode_connector.
-        params['cids'] = tuple(cids)
         cursor.execute('''
         SELECT connector.id AS id,
             (connector.location).x AS x,
@@ -263,7 +266,6 @@ def node_list_tuples(request, project_id=None):
         labels = defaultdict(list)
         if request.POST['labels']:
             # Collect treenodes visible in the current section
-            z0 = params['z']
             visible = ','.join(str(row[0]) for row in treenodes if row[4] == z0)
             if visible:
                 cursor.execute('''

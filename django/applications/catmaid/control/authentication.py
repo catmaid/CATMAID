@@ -221,7 +221,7 @@ def can_edit_all_or_fail(user, ob_ids, table_name):
         raise Exception('Invalid table name: %s' % table_name)
 
     cursor = connection.cursor()
-    cursor.execute("SELECT user_id, count(user_id) FROM %s WHERE id IN (%s)" % (table_name, str_ob_ids))
+    cursor.execute("SELECT user_id, count(user_id) FROM %s WHERE id IN (%s) GROUP BY user_id" % (table_name, str_ob_ids))
     rows = cursor.fetchall()
     if rows:
         if rows[0] == user.id or user.is_superuser:

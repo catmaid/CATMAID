@@ -45,7 +45,6 @@ function getTileBaseName3D( stack, pixelPos, adjacent )
   return z + "/";
 }
 
-
 /**
  * 
  */
@@ -81,6 +80,7 @@ function TileLayer(
 				tilesContainer.appendChild( tiles[ i ][ j ] );
 			}
 		}
+
 		return;
 	}
 	
@@ -278,7 +278,8 @@ function TileLayer(
 			l = left;
 			t += effectiveTileHeight;
 		}
-
+		
+		
 		if (typeof completionCallback !== "undefined") {
 			completionCallback();
 		}
@@ -416,6 +417,7 @@ function TileLayer(
 	
 	/* Contains all tiles in a 2d-array */
 	var tiles = new Array();
+	var tiles2 = new Array();
 	
 	var tilesContainer = document.createElement( "div" );
 	tilesContainer.className = "sliceTiles";

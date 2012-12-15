@@ -145,13 +145,10 @@ def list_treenode_table(request, project_id=None):
                 def label_filter(treenode):
                     if treenode.id not in labels_by_treenode:
                         return False
-                    upper(filter_labels) in upper(labels_by_treenode[treenode.tid])
+                    return upper(filter_labels) in upper(' '.join(labels_by_treenode[treenode.tid]))
                 treenodes = filter(label_filter, treenodes)
 
         # Filter out irrelevant treenodes if a node type has been specified.
-
-        # FIXME: there's no need to do another query to find all the parents, so
-        # long as we don't limit the treenodes fetched.
 
         # Count treenode's children to derive treenode types. The number of
         # children a treenode has determines its type. Types:
@@ -160,41 +157,51 @@ def list_treenode_table(request, project_id=None):
         # B : branch (has more than one child)
         # L : leaf (has no children)
         # X : undefined (uh oh!)
-        response_on_error = 'Could not retrieve treenode parents.'
-        child_count_query = Treenode.objects.filter(
-            project=project_id,
-            skeleton_id__in=skeleton_ids).annotate(
-            child_count=Count('children'))
-        child_count = {}
-        for treenode in child_count_query:
-            child_count[treenode.id] = treenode.child_count
+        if 0 == display_start and -1 == display_length:
+            # All nodes are loaded: determine child_count from loaded nodes
+            child_count = {}
+            for treenode in treenodes:
+                if treenode.parent is None:
+                    continue
+                n_children = child_count.get(treenode.parent_id, 0)
+                child_count[treenode.parent_id] = n_children + 1
+        else:
+            # Query for parents
+            response_on_error = 'Could not retrieve treenode parents.'
+            child_count_query = Treenode.objects.filter(
+                project=project_id,
+                skeleton_id__in=skeleton_ids).annotate(
+                child_count=Count('children'))
+            child_count = {}
+            for treenode in child_count_query:
+                child_count[treenode.id] = treenode.child_count
 
+        # Determine type
         for treenode in treenodes:
-            if treenode.parent_id == None:
-                treenode.nodetype = 'R'
-            elif treenode.tid in child_count:
-                children = child_count[treenode.tid]
-                if children == 0:
-                    treenode.nodetype = 'L'
-                elif children == 1:
-                    treenode.nodetype = 'S'
-                elif children > 1:
-                    treenode.nodetype = 'B'
-                else:
-                    treenode.nodetype = 'X'
+            if None == treenode.parent_id:
+                treenode.nodetype = 'R' # Root
+                continue
+            children = child_count.get(treenode.tid, 0)
+            if children == 1:
+                treenode.nodetype = 'S' # Slab
+            elif children == 0:
+                treenode.nodetype = 'L' # Leaf
+            elif children > 1:
+                treenode.nodetype = 'B' # Branch
             else:
-                treenode.nodetype = 'L'
-
+                treenode.nodetype = 'X' # Unknown, can never happen
 
         # Now that we've assigned node types, filter based on them:
-        if filter_nodetype is not None and not filter_nodetype == '':
-            def nodetype_filter(treenode):
-                return upper(treenode.nodetype) in upper(filter_nodetype)
-            treenodes = filter(nodetype_filter, treenodes)
+        if filter_nodetype:
+            filter_nodetype = upper(filter_nodetype)
+            treenodes = [t for t in treenodes if t.nodetype in filter_nodetype]
 
         response_on_error = 'Could not retrieve resolution and translation parameters for project.'
         resolution = get_object_or_404(Stack, id=int(stack_id)).resolution
         translation = get_object_or_404(ProjectStack, stack=int(stack_id), project=project_id).translation
+
+        users = {u[0]: u[1] for u in User.objects.filter().values_list('id', 'username')}
+        users[-1] = "None" # Rather than AnonymousUser
 
         def formatTreenode(tn):
             row = [str(tn.tid)]
@@ -211,7 +218,7 @@ def list_treenode_table(request, project_id=None):
             row.append(str(tn.radius))
             row.append(tn.username)
             row.append(tn.last_modified)
-            row.append(str(tn.last_reviewer))
+            row.append(str(users.get(tn.last_reviewer, "Unknown")))
             return row
 
         result = {'iTotalRecords': row_count, 'iTotalDisplayRecords': row_count}
@@ -222,3 +229,4 @@ def list_treenode_table(request, project_id=None):
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
+

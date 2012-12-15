@@ -519,7 +519,7 @@ var SkeletonElements = new function()
         // zoom out
         slider_trace_s.move(1);
       }
-      // TODO this myst be the most surprising feature of CATMAID. Disabled!
+      // TODO this must be the most surprising feature of CATMAID. Disabled!
       // this.paper.catmaidSVGOverlay.tracingCommand('goactive');
     };
 

@@ -322,22 +322,22 @@ function Project( pid )
 		}
 
 		self.moveToInStacks( zp, yp, xp, sp, stacksToMove, completionCallback );
-	}
+	};
 
-    this.updateTool = function()
-    {
+  this.updateTool = function()
+  {
 		if ( tool && tool.updateLayer )
-            tool.updateLayer();
-    }
+			tool.updateLayer();
+  };
 
-    // Need to add this "tool-specific" function
-    // to project because need to call it from the
-    // object tree widget
-    this.deselectActiveNode = function()
-    {
+  // Need to add this "tool-specific" function
+  // to project because need to call it from the
+  // object tree widget
+  this.deselectActiveNode = function()
+  {
 		if ( tool && tool.deselectActiveNode )
-            tool.deselectActiveNode();
-    }
+			tool.deselectActiveNode();
+  };
 
 	/**
 	 * create a URL to the current view

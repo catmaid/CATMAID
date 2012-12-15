@@ -27,7 +27,7 @@ var WindowMaker = new function()
       function(callingWindow, signal) {
         switch (signal) {
           case CMWWindow.CLOSE:
-            if (typeof project == undefined || project == null) {
+            if (typeof project === undefined || project === null) {
               rootWindow.close();
               document.getElementById("content").style.display = "none";
             }
@@ -67,7 +67,7 @@ var WindowMaker = new function()
       document.getElementById("content").style.display = "none";
     }
 
-    if (rootWindow.getChild() == null)
+    if (rootWindow.getChild() === null)
       rootWindow.replaceChild(win);
     else
       rootWindow.replaceChild(new CMWHSplitNode(rootWindow.getChild(), win));
@@ -159,7 +159,7 @@ var WindowMaker = new function()
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
     rand.setAttribute("id", "save_image");
-    rand.setAttribute("value", "Save");
+    rand.setAttribute("value", "Screenshot");
     rand.onclick = WebGLApp.saveImage;
     container.appendChild(rand);
 
@@ -241,7 +241,7 @@ var WindowMaker = new function()
     container.appendChild(canvas);
 
     var tabdiv = document.createElement('div');
-    tabdiv.setAttribute("id", "view-3d-webgl-skeleton-table-div")
+    tabdiv.setAttribute("id", "view-3d-webgl-skeleton-table-div");
     tabdiv.style.height = "150px";
     tabdiv.style.overflow = "auto";
     container.appendChild(tabdiv);
@@ -268,7 +268,7 @@ var WindowMaker = new function()
       function(callingWindow, signal) {
         switch (signal) {
           case CMWWindow.CLOSE:
-            if (typeof project == undefined || project == null) {
+            if (typeof project === undefined || project === null) {
               rootWindow.close();
               document.getElementById("content").style.display = "none";
             }
@@ -308,7 +308,7 @@ var WindowMaker = new function()
     WebGLApp.init( canvas.getAttribute("id") );
 
     return win;
-  }
+  };
 
   /** Creates and returns a new 3d window. */
   var create3dWindow = function()
@@ -327,12 +327,12 @@ var WindowMaker = new function()
     add.onclick = Treelines.addTo3DView; // function declared in treeline.js
     container.appendChild(add);
 
-    var introduction = document.createElement('p')
+    var introduction = document.createElement('p');
     introduction.setAttribute("id", "view3DIntroduction");
     container.appendChild(introduction);
 
     var list = document.createElement('ul');
-    list.setAttribute("id", "view-3d-object-list")
+    list.setAttribute("id", "view-3d-object-list");
     container.appendChild(list);
 
     var canvas = document.createElement('div');
@@ -456,7 +456,7 @@ var WindowMaker = new function()
             '<th>type' +
         '' +
         '<select name="search_type" id="search_type" class="search_init">' +
-        '<option value="">Any</option><option value="R">Root</option><option value="LR">Leaf & Root</option>' +
+        '<option value="">Any</option><option value="R">Root</option><option value="LR">Leaf</option>' +
         '<option value="B">Branch</option><option value="S">Slab</option></select>' +
         '</th>' +
         // <input type="text" name="search_type" value="Search" class="search_init" />
@@ -465,11 +465,11 @@ var WindowMaker = new function()
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
-            '<th>section</th>' +
-            '<th>radius</th>' +
-            '<th>username</th>' +
+            '<th>s</th>' +
+            '<th>r</th>' +
+            '<th>user</th>' +
             '<th>last modified</th>' +
-            '<th>last reviewed</th>' +
+            '<th>reviewer</th>' +
           '</tr>' +
         '</thead>' +
         '<tfoot>' +
@@ -481,11 +481,11 @@ var WindowMaker = new function()
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
-            '<th>section</th>' +
-            '<th>radius</th>' +
-            '<th>username</th>' +
+            '<th>s</th>' +
+            '<th>r</th>' +
+            '<th>user</th>' +
             '<th>last modified</th>' +
-            '<th>last reviewed</th>' +
+            '<th>reviewer</th>' +
           '</tr>' +
         '</tfoot>' +
         '<tbody>' +
@@ -693,28 +693,55 @@ var WindowMaker = new function()
         var contentbutton = document.createElement('div');
         contentbutton.setAttribute("id", 'review_window_buttons');
 
-        var add = document.createElement('input');
-        add.setAttribute("type", "button");
-        add.setAttribute("id", "start_review_skeleton");
-        add.setAttribute("value", "Start to review skeleton");
-        add.onclick = ReviewSystem.startSkeletonToReview;
-        contentbutton.appendChild(add);
+        var start = document.createElement('input');
+        start.setAttribute("type", "button");
+        start.setAttribute("id", "start_review_skeleton");
+        start.setAttribute("value", "Start to review skeleton");
+        start.onclick = ReviewSystem.startSkeletonToReview;
+        contentbutton.appendChild(start);
 
-        var add = document.createElement('input');
-        add.setAttribute("type", "button");
-        add.setAttribute("id", "end_review_skeleton");
-        add.setAttribute("value", "End review");
-        add.onclick = ReviewSystem.resetReview;
-        contentbutton.appendChild(add);
+        var end = document.createElement('input');
+        end.setAttribute("type", "button");
+        end.setAttribute("id", "end_review_skeleton");
+        end.setAttribute("value", "End review");
+        end.onclick = ReviewSystem.endReview;
+        contentbutton.appendChild(end);
 
         content.appendChild( contentbutton );
 
-        var add = document.createElement('div');
-        add.setAttribute("id", "reviewing_skeleton");
-        content.appendChild(add);
+        var label = document.createElement('div');
+        label.setAttribute("id", "reviewing_skeleton");
+        content.appendChild(label);
 
-        var container = createContainer( "project_review_widget" );
-        content.appendChild( container );
+        var container = document.createElement("div");
+        container.setAttribute("id", "project_review_widget");
+        container.style.position = "relative";
+        container.style.width = "100%";
+        container.style.height = "100%";
+        container.style.overflow = "auto";
+        container.style.backgroundColor = "#ffffff";
+        content.appendChild(container);
+
+        var reset = document.createElement('input');
+        reset.setAttribute("type", "button");
+        reset.setAttribute("id", "reset_skeleton_review");
+        reset.setAttribute("value", "Reset revisions");
+        reset.onclick = ReviewSystem.resetAllRevisions;
+        contentbutton.appendChild(reset);
+
+        var resetOwns = document.createElement('input');
+        resetOwns.setAttribute("type", "button");
+        resetOwns.setAttribute("id", "reset_skeleton_review_owns");
+        resetOwns.setAttribute("value", "Reset own revisions");
+        resetOwns.onclick = ReviewSystem.resetOwnRevisions;
+        contentbutton.appendChild(resetOwns);
+
+        var resetOthers = document.createElement('input');
+        resetOthers.setAttribute("type", "button");
+        resetOthers.setAttribute("id", "reset_skeleton_review_owns");
+        resetOthers.setAttribute("value", "Reset revisions by others");
+        resetOthers.onclick = ReviewSystem.resetRevisionsByOthers;
+        contentbutton.appendChild(resetOthers);
 
         addListener(win, container, 'review_window_buttons');
 
@@ -743,6 +770,8 @@ var WindowMaker = new function()
 
         var sync = document.createElement('select');
         sync.setAttribute("id", "connectivity_count_threshold");
+
+        // TODO pulldown menu for past items. When selecting one, refresh even if it is the same as currently listed. Acts as a refresh button.
 
         for (var i = 0; i < 21; i++) {
           var option = document.createElement("option");
@@ -832,7 +861,7 @@ var WindowMaker = new function()
       }
     }
     return result;
-  }
+  };
 
   this.setKeyShortcuts = function(win)
   {
@@ -878,7 +907,7 @@ var WindowMaker = new function()
 
     container.innerHTML = keysHTML;
     return container;
-  }
+  };
 
   this.setSearchWindow = function(win)
   {
@@ -904,16 +933,16 @@ var WindowMaker = new function()
     keysHTML = '<h4>Search</h4>';
     keysHTML += '<form onsubmit="TracingTool.search(); return false">';
     keysHTML += '<input type="text" id="search-box" name="search-box">';
-    keysHTML += '<input type="submit" style="display: hidden">'
+    keysHTML += '<input type="submit" style="display: hidden">';
     keysHTML += '</form>';
     keysHTML += '<div id="search-results">';
     keysHTML += '</div>';
 
     container.innerHTML = keysHTML;
     return container;
-  }
+  };
 
-   var createKeyboardShortcutsWindow = function()
+  var createKeyboardShortcutsWindow = function()
   {
     var win = new CMWWindow( "Keyboard Shortcuts" );
     var container = self.setKeyShortcuts(win);
@@ -925,7 +954,7 @@ var WindowMaker = new function()
     return win;
   };
 
-   var createSearchWindow = function()
+  var createSearchWindow = function()
   {
     var win = new CMWWindow( "Search" );
     var container = self.setSearchWindow(win);
@@ -1066,6 +1095,6 @@ var WindowMaker = new function()
     } else {
       alert("No known window with name " + name);
     }
-  }
+  };
 
-};
+}();

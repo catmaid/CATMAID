@@ -76,6 +76,9 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', 'catmaid.control.skeleton_json'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neurohdf$', 'catmaid.control.skeleton_neurohdf'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review$', 'catmaid.control.export_review_skeleton'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-all$', 'catmaid.control.reset_reviewer_ids'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-own$', 'catmaid.control.reset_own_reviewer_ids'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-others$', 'catmaid.control.reset_other_reviewer_ids'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/info$', 'catmaid.control.skeleton_info_raw'),
     (r'^(?P<project_id>\d+)/skeleton/split$', 'catmaid.control.split_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/get-root$', 'catmaid.control.root_for_skeleton'),
@@ -140,7 +143,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/treenode/table/update$', 'catmaid.control.update_treenode_table'),
 
     (r'^(?P<project_id>\d+)/connector/create$', 'catmaid.control.create_connector'),
-    (r'^(?P<project_id>\d+)/connector/delete', 'catmaid.control.delete_connector'),
+    (r'^(?P<project_id>\d+)/connector/delete$', 'catmaid.control.delete_connector'),
     (r'^(?P<project_id>\d+)/connector/table/list$', 'catmaid.control.list_connector'),
 
     )

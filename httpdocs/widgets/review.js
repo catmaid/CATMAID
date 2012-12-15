@@ -11,7 +11,7 @@ var ReviewSystem = new function()
 
     this.init = function() {
         projectID = project.id;
-    }
+    };
 
     this.validSegment = function() {
         if(self.current_segment !== null) {
@@ -19,22 +19,22 @@ var ReviewSystem = new function()
         } else {
             return false;
         }
-    }
+    };
 
-    this.resetReview = function() {
+    this.endReview = function() {
         self.skeleton_segments = null;
         self.current_segment = null;
         self.current_segment_index = 0;
         if( $('#review_segment_table').length > 0 )
             $('#review_segment_table').remove();
             $('#reviewing_skeleton').text( '' );
-    }
+    };
 
     this.initReviewSegment = function( id ) {
         self.current_segment = self.skeleton_segments[id];
         self.current_segment_index = 0;
         self.goToNodeIndexOfSegmentSequence( 0 );
-    }
+    };
 
     this.goToNodeIndexOfSegmentSequence = function( idx ) {
         if (self.skeleton_segments===null)
@@ -44,7 +44,7 @@ var ReviewSystem = new function()
          function () {
             SkeletonAnnotations.staticSelectNode( node.id );
          });
-    }
+    };
 
     this.moveNodeInSegmentBackward = function() {
         if (self.skeleton_segments===null)
@@ -56,7 +56,7 @@ var ReviewSystem = new function()
         self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index]['id'] );
         self.current_segment_index--;
         self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
-    }
+    };
 
     this.moveNodeInSegmentForward = function() {
         if (self.skeleton_segments===null)
@@ -68,24 +68,25 @@ var ReviewSystem = new function()
         self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index]['id'] );
         self.current_segment_index++;
         self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
-    }
+    };
 
     this.markAsReviewed = function( node_id, funct ) {
-        jQuery.ajax({
-                url: "dj/"+projectID+"/node/" + node_id + "/reviewed",
-            type: "GET",
-            dataType: "json",
-            success: function (data) {
-                if (data.error) {
-                    alert( data.error );
+        requestQueue.register(
+            "dj/"+projectID+"/node/" + node_id + "/reviewed",
+            "POST",
+            {},
+            function (status, text) {
+                var json = $.parseJSON(text);
+                if (json.error) {
+                    alert( json.error );
                 } else {
                     if( funct )
                         funct();
                 }
-            }
-        });
-    }
+            });
+    };
 
+    /** Clears the #review_segment_table prior to adding rows to it. */
     this.createReviewSkeletonTable = function( skeleton_data ) {
         self.skeleton_segments = skeleton_data;
         var butt, table, tbody, row;
@@ -134,10 +135,9 @@ var ReviewSystem = new function()
         table.append( $('<br /><br /><br /><br />') );
         $("#project_review_widget").append( table );
 
-    }
+    };
 
-    this.startSkeletonToReview = function( ) {
-        skeletonID = SkeletonAnnotations.getActiveSkeletonId();
+    var checkSkeletonID = function() {
         if (!skeletonID) {
             $('#growl-alert').growlAlert({
                 autoShow: true,
@@ -147,19 +147,66 @@ var ReviewSystem = new function()
                 delayTime: 2500,
                 onComplete: function() { g.remove(); }
             });
+            return false;
+        }
+        return true;
+    };
+
+    this.startSkeletonToReview = function( ) {
+        skeletonID = SkeletonAnnotations.getActiveSkeletonId();
+        if (!checkSkeletonID()) {
             return;
         }
-        jQuery.ajax({
-            url: "dj/"+projectID+"/skeleton/" + skeletonID + "/review",
-            type: "GET",
-            dataType: "json",
-            success: function (skeleton_data) {
+        requestQueue.replace(
+            "dj/"+projectID+"/skeleton/" + skeletonID + "/review",
+            "POST",
+            {},
+            function (status, text) {
+                if (200 !== status) { return; }
+                var skeleton_data = $.parseJSON(text);
                 if (skeleton_data.error) {
+                    if ("REPLACED" === skeleton_data.error) { return; }
                     alert( skeleton_data.error );
                 } else {
                     self.createReviewSkeletonTable( skeleton_data );
                 }
-            }
-        });
-    }
-}
+            },
+            "start_review_skeleton");
+    };
+
+    var resetFn = function(fnName) {
+        if (!checkSkeletonID()) {
+            return;
+        }
+        if (!confirm("Are you sure you want to alter the review state of skeleton #" + skeletonID + " with '" + fnName + "' ?")) {
+            return;
+        }
+        requestQueue.replace(
+            "dj/"+projectID+"/skeleton/" + skeletonID + "/review/" + fnName,
+            "POST",
+            {},
+            function (status, text) {
+                if (200 !== status) { return; }
+                var json = $.parseJSON(text);
+                if (json.error) {
+                    if ("REPLACED" === json.error) { return; }
+                    alert(json.error);
+                    return;
+                }
+                self.startSkeletonToReview();
+            },
+            "review_" + fnName);
+    };
+
+    this.resetAllRevisions = function() {
+        resetFn("reset-all");
+    };
+
+    this.resetOwnRevisions = function() {
+        resetFn("reset-own");
+    };
+
+    this.resetRevisionsByOthers = function() {
+        resetFn("reset-others");
+    };
+};

@@ -85,6 +85,7 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
         if tn.id in labels:
             lab = labels[tn.id]
         else:
+            # TODO this is wrong. uncertain labels are not added when the node is labeled
             if tn.confidence < 5:
                 lab = ['uncertain']
             else:
@@ -202,70 +203,60 @@ def skeleton_json(*args, **kwargs):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def export_review_skeleton(request, project_id=None, skeleton_id=None, format=None):
-    data=generate_extended_skeleton_data( project_id, skeleton_id )
-    g=nx.DiGraph()
-    for id, d in data['vertices'].items():
-        if d['type'] == 'skeleton':
-            g.add_node( id, d )
-    for from_id, to_data in data['connectivity'].items():
-        for to_id, d in to_data.items():
-            if d['type'] in ['postsynaptic_to', 'presynaptic_to']:
-                continue
-            else:
-                g.add_edge( to_id, from_id, d )
-    segments=[]
-    for n in g.nodes(): g.node[n]['node_type']='slab'
-    branchnodes=[k for k,v in g.degree().items() if v>2]
-    branchnode_neighbors = {}
-    for bid in branchnodes:
-        branchnode_neighbors[bid] = g.neighbors(bid) + g.predecessors(bid)
-    endnodes=[k for k,v in g.degree().items() if v==1]
-    for n in endnodes: g.node[n]['node_type']='end'
-    a=g.copy()
-    a.remove_nodes_from( branchnodes )
-    subg=nx.weakly_connected_component_subgraphs(a)
-    for sg in subg:
-        for k,v in sg.nodes(data=True):
-            for bid, branch_neighbors in branchnode_neighbors.items():
-                if k in branch_neighbors:
-                    extended_dictionary=g.node[bid]
-                    extended_dictionary['node_type']='branch'
-                    sg.add_node(bid,extended_dictionary)
-                    # and add edge!
-                    sg.add_edge(k, bid)
-        # extract segments from the subgraphs
-    for sug in subg:
-        # do not use sorted, but shortest path from source to target
-        sg = sug.to_undirected()
-        # retrieve end and/or branch nodes
-        terminals=[id for id,d in sg.nodes(data=True) if d['node_type'] in ['branch', 'end']]
-        assert(len(terminals)==2)
-        if nx.has_path(sg, source=terminals[0],target=terminals[1] ):
-            ordered_nodelist = nx.shortest_path(sg,source=terminals[0],target=terminals[1])
-        elif nx.has_path(sg, source=terminals[1],target=terminals[0]):
-            ordered_nodelist = nx.shortest_path(sg,source=terminals[1],target=terminals[0])
-        else:
-            json_return = json.dumps({'error': 'Cannot find path {0} to {1} {2} {3}'.format(terminals[0],
-                terminals[1], str(sg.node[terminals[0]]), str(sg.node[terminals[1]])  )}, sort_keys=True, indent=4)
-            return HttpResponse(json_return, mimetype='text/json')
-        seg=[]
-        start_and_end=[]
-        for k in ordered_nodelist:
-            v = sg.node[k]
-            v['id']=k
-            if v['node_type'] != 'slab':
-                start_and_end.append( v['node_type'] )
-            seg.append( v )
-        nr=len(seg)
-        notrevi=len([ele for ele in seg if ele['reviewer_id'] == -1])
-        segdict = {
-            'id': len(segments),
-            'sequence': seg,
-            'status': '%.2f' %( 100.*(nr-notrevi)/nr) ,
-            'type': '-'.join(start_and_end),
-            'nr_nodes': nr
-        }
-        segments.append( segdict )
+    treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values_list('id', 'location', 'parent_id', 'reviewer_id')
 
-    json_return = json.dumps(segments, sort_keys=True, indent=4)
-    return HttpResponse(json_return, mimetype='text/json')
+    g = nx.DiGraph()
+    reviewed = set()
+    for t in treenodes:
+        loc = Double3D.from_str(t[1])
+        g.add_node(t[0], {'id': t[0], 'x': loc.x, 'y': loc.y, 'z': loc.z})
+        if -1 != t[3]:
+            reviewed.add(t[0])
+        if t[2]: # if parent
+            g.add_edge(t[2], t[0]) # edge from parent to child
+
+    n_children = {nodeID: len(g.successors(nodeID)) for nodeID in g.nodes()}
+    endings = set([nodeID for nodeID, child_count in n_children.iteritems() if 0 == child_count])
+    done = set()
+    sequences = []
+    while endings:
+        nodeID = endings.pop() # last element
+        done.add(nodeID)
+        sequence = [g.node[nodeID]]
+        parents = g.predecessors(nodeID) # empty list when root
+        while parents:
+            parentID = parents[0]
+            child_count = n_children[parentID]
+            if 1 == child_count:
+                # Slab node
+                nodeID = parentID
+                sequence.append(g.node[nodeID])
+                parents = g.predecessors(nodeID) # empty list when root
+            elif child_count > 1:
+                # Branch node
+                sequence.append(g.node[parentID])
+                if parentID not in done:
+                    endings.add(parentID)
+                break
+        if len(sequence) > 1:
+            sequences.append(sequence)
+
+    def node_type(nodeID):
+        if n_children[nodeID] > 1:
+            return "branch"
+        if not g.predecessors(nodeID):
+            return "root"
+        return "end"
+
+    segments = []
+    for sequence in sorted(sequences, key=len, reverse=True):
+        segments.append({
+            'id': len(segments),
+            'sequence': sequence,
+            'status': '%.2f' % (100.0 * sum(1 for node in sequence if node['id'] in reviewed) / len(sequence)),
+            'type': node_type(sequence[0]['id']) + "-" + node_type(sequence[-1]['id']),
+            'nr_nodes': len(sequence)
+        })
+
+    return HttpResponse(json.dumps(segments))
+

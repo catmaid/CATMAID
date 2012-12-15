@@ -90,7 +90,6 @@ def split_skeleton(request, project_id=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def root_for_skeleton(request, project_id=None, skeleton_id=None):
-    # TODO this needs an update, and also not retrieve all columns
     tn = Treenode.objects.get(
         project=project_id,
         parent__isnull=True,
@@ -492,3 +491,53 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
+
+
+@requires_user_role(UserRole.Annotate)
+def reset_reviewer_ids(request, project_id=None, skeleton_id=None):
+    """ Reset the reviewer_id column to -1 for all nodes of the skeleton.
+    Only a superuser can do it when all nodes are not own by the user.
+    """
+    skeleton_id = int(skeleton_id) # sanitize
+    if not request.user.is_superuser:
+        # Check that the user owns all the treenodes to edit
+        cursor = connection.cursor()
+        cursor.execute('''
+        SELECT treenode.user_id,
+               count(treenode.user_id) c,
+               "auth_user".username
+        FROM treenode,
+             "auth_user"
+        WHERE skeleton_id=%s
+          AND treenode.user_id = "auth_user".id
+        GROUP BY user_id, "auth_user".username
+        ORDER BY c DESC''' % skeleton_id)
+        rows = tuple(cursor.fetchall())
+        print rows
+        if rows:
+            if 1 == len(rows) and rows[0] == request.user.id:
+                pass # All skeleton nodes are owned by the user
+            else:
+                total = "/" + str(sum(row[1] for row in rows))
+                return HttpResponse(json.dumps({"error": "User %s does not own all nodes.\nOnwership: %s" % (request.user.username, {str(row[2]): str(row[1]) + total for row in rows})}))
+    # Reset reviewer_id to -1
+    Treenode.objects.filter(skeleton_id=skeleton_id).update(reviewer_id=-1)
+    return HttpResponse(json.dumps({}), mimetype='text/json')
+
+@requires_user_role(UserRole.Annotate)
+def reset_own_reviewer_ids(request, project_id=None, skeleton_id=None):
+    """ Reset the reviewer_id column to -1 for all nodes owned by the user.
+    """
+    skeleton_id = int(skeleton_id) # sanitize
+    Treenode.objects.filter(skeleton_id=skeleton_id, user=request.user).update(reviewer_id=-1)
+    return HttpResponse(json.dumps({}), mimetype='text/json')
+
+@requires_user_role(UserRole.Annotate)
+def reset_other_reviewer_ids(request, project_id=None, skeleton_id=None):
+    """ Reset the reviewer_id column to -1 for all nodes not owned by the user.
+    """
+    skeleton_id = int(skeleton_id) # sanitize
+    if not request.user.is_superuser:
+        return HttpResponse(json.dumps({"error": "Only a superuser can do that!"}))
+    Treenode.objects.filter(skeleton_id=skeleton_id).exclude(reviewer_id=request.user.id).update(reviewer_id=-1)
+    return HttpResponse(json.dumps({}), mimetype='text/json')

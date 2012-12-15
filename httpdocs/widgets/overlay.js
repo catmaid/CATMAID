@@ -708,9 +708,9 @@ var SkeletonAnnotations = new function()
       return;
     };
 
+    /** If given a completionCallback function, it is invoked with one argument: the ID of the newly created connector. */
     var createSingleConnector = function (phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, completionCallback) {
-      // create a single connector with a synapse instance that is
-      // not linked to any treenode
+      // create a single connector not linked to any treenode
       requestQueue.register(django_url + project.id + '/connector/create', "POST", {
         pid: project.id,
         confidence: confval,
@@ -739,30 +739,27 @@ var SkeletonAnnotations = new function()
       }); // endfunction
     };
 
-    var createConnector = function (locidval, treenode_id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z) {
-      if (locidval === null) {
-        // need to create the target connector first
-        createSingleConnector( phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
-            function (connectorID) {
-                self.createLink(treenode_id, connectorID, 'presynaptic_to');
-            }
-        );
-      } else {
-        self.createLink(treenode_id, locidval, 'postsynaptic_to');
-      }
-      return;
-    };
-
     // Create a new postsynaptic treenode from a connector. Store new skeleton/neuron in Isolated synaptic terminals
     // We create the treenode first, then we create the link from the connector
-    var createNodeWithConnector = function (locid, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
-      // set to rootnode (no parent exists)
-      var parid = -1;
+    var createPostsynapticTreenode = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
+      createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "postsynaptic_to");
+    }
 
-      //requestQueue.register("model/treenode.create.php", "POST",
+    var createPresynapticTreenode = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z) {
+      // Check that connectorID doesn't have a presynaptic treenode already
+      // (It is also checked in the server on attempting to create a link. Here, it is checked for convenience to avoid creating an isolated treenode for no reason.)
+      var connectorNode = nodes[connectorID];
+      if (Object.keys(connectorNode.pregroup).length > 0) {
+        growlAlert("WARNING", "The connector already has a presynaptic node!");
+        return;
+      }
+      createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, "presynaptic_to");
+    }
+
+    var createTreenodeWithLink = function (connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, link_type) {
       requestQueue.register(django_url + project.id + '/treenode/create', "POST", {
         pid: project.id,
-        parent_id: parid,
+        parent_id: -1,
         x: phys_x,
         y: phys_y,
         z: phys_z,
@@ -776,7 +773,6 @@ var SkeletonAnnotations = new function()
             if (jso.error) {
               alert(jso.error);
             } else {
-              // add treenode to the display and update it
               var nid = parseInt(jso.treenode_id);
 
               // always create a new treenode which is the root of a new skeleton
@@ -787,9 +783,8 @@ var SkeletonAnnotations = new function()
               nodes[nid] = nn;
               nn.draw();
 
-              // create connector : new atn postsynaptic_to deactivated atn.id (location)
-              createConnector(locid, jso.treenode_id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
-
+              // create link : new treenode postsynaptic_to or presynaptic_to deactivated connectorID
+              self.createLink(nid, connectorID, link_type);
             }
           }
         }
@@ -1275,8 +1270,8 @@ var SkeletonAnnotations = new function()
         if (null !== atn.id) {
           statusBar.replaceLast("Deactivated node #" + atn.id);
         }
-        // TODO: deactivation should be encapsulated in a seperate method,
-        // like it is partially in tradcingtool's deselectActiveNode
+        // TODO: deactivation should be encapsulated in a separate method,
+        // like it is partially in tracingtool's deselectActiveNode
         $('#neuronName').text('');
         ObjectTree.deselectAll();
         self.activateNode(null);
@@ -1294,25 +1289,28 @@ var SkeletonAnnotations = new function()
             return true;
           }
         } else {
+          targetTreenodeID = atn.id;
           if ("treenode" === atn.type) {
             if (e.shiftKey && e.altKey) {
               statusBar.replaceLast("created connector, with postynaptic treenode id " + atn.id);
-              targetTreenodeID = atn.id;
               createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
-                                    function (connectorID) {
-                                      createConnector(connectorID, targetTreenodeID, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
-                                    });
+                  function (connectorID) {
+                    self.createLink(targetTreenodeID, connectorID, "postsynaptic_to");
+                  });
               e.stopPropagation();
             } else if (e.shiftKey) {
               statusBar.replaceLast("created connector, with presynaptic treenode id " + atn.id);
-              createConnector(null, atn.id, phys_x, phys_y, phys_z, pos_x, pos_y, pos_z);
+              createSingleConnector( phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
+                  function (connectorID) {
+                    self.createLink( targetTreenodeID, connectorID, "presynaptic_to" );
+                  });
               e.stopPropagation();
             }
             return true;
           } else if ("connector" === atn.type) {
             // create new treenode (and skeleton) postsynaptic to activated connector
             statusBar.replaceLast("created treenode with id " + atn.id + "postsynaptic to activated connector");
-            createNodeWithConnector(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+            createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
             e.stopPropagation();
             return true;
           }
@@ -1328,9 +1326,13 @@ var SkeletonAnnotations = new function()
               statusBar.replaceLast("Created new node as child of node #" + atn.id);
             }
             createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
-            e.stopPropagation();
-            return true;
+          } else if ("connector" === atn.type) {
+            // create new treenode (and skeleton) presynaptic to activated connector
+            // if the connector doesn't have a presynaptic node already
+            createPresynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
           }
+          e.stopPropagation();
+          return true;
         } else if (getMode() === "synapsedropping") {
           // only create single synapses/connectors
           createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5);
@@ -1655,7 +1657,7 @@ var SkeletonAnnotations = new function()
                   });
               }
             }
-          });
+          }, "get_location");
       }
     };
 

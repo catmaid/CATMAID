@@ -386,6 +386,7 @@ def delete_treenode(request, project_id=None):
             # This treenode is root.
             response_on_error = 'Could not retrieve children for treenode #%s' % treenode_id
             n_children = Treenode.objects.filter(parent=treenode).count()
+            response_on_error = "Can't delete root node when it has children"
             if n_children > 0:
                 # TODO yes you can, the new root is the first of the children, and other children become independent skeletons
                 raise Exception("You can't delete the root node when it has children.")
@@ -422,7 +423,7 @@ def delete_treenode(request, project_id=None):
         return HttpResponse(json.dumps({'parent_id': parent_id}))
 
     except Exception as e:
-        raise Exception(response_on_error + ':' + str(e))
+        raise Exception(response_on_error + ': ' + str(e))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

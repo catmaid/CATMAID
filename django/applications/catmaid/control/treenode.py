@@ -400,12 +400,11 @@ def delete_treenode(request, project_id=None):
             # Extra check for errors, like having two root nodes
             count = Treenode.objects.filter(skeleton_id=treenode.skeleton_id).count()
             if 1 == count:
-                ClassInstance.objects.filter(pk=treenode.skeleton_id).delete()
+                ClassInstance.objects.filter(pk=treenode.skeleton_id).delete() # deletes as well treenodes that refer to the skeleton
             else:
                 return HttpResponse(json.dumps({"error": "Can't delete isolated node: erroneously, its skeleton contains more than one treenode! Check for multiple root nodes."}))
             
             # If the neuron was part of the 'Isolated synaptic terminals' and no other skeleton is a model_of it, delete it
-            print >> sys.stderr, "neuron_id", neuron_id
             if neuron_id:
                 response_on_error = 'Could not delete neuron #%s' % neuron_id
                 if _delete_if_empty(neuron_id):

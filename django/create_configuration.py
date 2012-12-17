@@ -29,7 +29,7 @@ for f in ['', '_apache']:
     data = re.sub('CATMAID_SECRET_KEY', catmaid_secret_key, data)
     data = re.sub('CATMAID_TMP_PATH', catmaid_tmp_path, data)
     data = re.sub('CATMAID_TIMEZONE', catmaid_timezone, data)
-    data = re.sub('WRITABLE_HDF', catmaid_writable_subdir, data)
+    data = re.sub('CATMAID_WRITABLE_SUBDIR', catmaid_writable_subdir, data)
     data = re.sub('CATMAID_SERVERNAME', catmaid_servername, data)
     o.write( data )
     o.close()

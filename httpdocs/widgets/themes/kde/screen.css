@@ -168,12 +168,17 @@ div#data_view tr.even
 div#data_view td.projectname
 {
 	font-weight:bold;
+	vertical-align: top;
 }
 
-div#data_view td.odd-stackimage, div#data_view td.even-stackimage
+div#data_view td.stackimage, div#data_view td.odd-stackimage, div#data_view td.even-stackimage
 {
 	vertical-align: top;
 	text-align: right;
+}
+
+div#data_view td.odd-stackimage
+{
 	background-color: #E6E6E6;
 }
 
@@ -182,10 +187,14 @@ div#data_view td.even-stackimage
 	background-color: #E2E4FF;
 }
 
-div#data_view td.odd-stackname, div#data_view td.even-stackname
+div#data_view td.stackname, div#data_view td.odd-stackname, div#data_view td.even-stackname
 {
 	vertical-align: top;
 	text-align: left;
+}
+
+div#data_view td.odd-stackname
+{
 	background-color: #E6E6E6;
 }
 

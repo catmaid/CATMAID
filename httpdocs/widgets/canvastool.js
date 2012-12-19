@@ -23,7 +23,7 @@ function CanvasTool()
     var enumFactory=new EnumFactory();
     this.layerStore=new LayerStore();
     this.slider_z = null;
-    this.lastSkeletonId=null;
+    this.lastAssemblyId=null;
 
     if ( !ui ) ui = new UI();
 
@@ -526,16 +526,13 @@ function CanvasTool()
     //EVENTS
     //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-    this.on_skeleton_id_change = function( skeleton_id ) {
-        if(self.lastSkeletonId!=null)
-        {
-            self.putComponents(self.lastSkeletonId);
-
+    this.on_assembly_id_change = function( assembly_id ) {
+        if(self.lastAssemblyId != null) {
+            self.putComponents(self.lastAssemblyId);
         }
-        self.lastSkeletonId=skeleton_id;
-        self.layerStore=new LayerStore();
+        self.lastAssemblyId = assembly_id;
+        self.layerStore = new LayerStore();
         self.loadElements();
-
     };
 
     this.afterRender=function(event)

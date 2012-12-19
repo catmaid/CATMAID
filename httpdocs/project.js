@@ -140,15 +140,22 @@ function Project( pid )
 		'selectedskeleton': null
 	};
 
-    this.setSelectedSkeleton = function( skeleton_id ) {
-        this.selectedObjects.selectedskeleton = skeleton_id;
-
-        // depending on the chosen tool, trigger functions
-        if( self.getTool().toolname === 'canvastool' ) {
-            self.getTool().on_skeleton_id_change( this.selectedObjects.selectedskeleton );
+    this.setSelectObject = function( type, id ) {
+        this.selectedObjects.selectedneuron = null;
+        this.selectedObjects.selectedskeleton = null;
+        this.selectedObjects.selectedassembly = null;
+        if( type == "neuron" ) {
+            this.selectedObjects.selectedneuron = id;
+        } else if( type == "skeleton" ) {
+            this.selectedObjects.selectedskeleton = id;
+        } else if( type == "assembly" ) {
+            this.selectedObjects.selectedassembly = id;
+            // depending on the chosen tool, trigger functions
+            if( self.getTool().toolname === 'canvastool' ) {
+                self.getTool().on_assembly_id_change( this.selectedObjects.selectedassembly );
+            }
         }
-    }
-
+    };
 
     this.hideToolbars = function()
 	{

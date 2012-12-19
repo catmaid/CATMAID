@@ -22,7 +22,8 @@ user_id = int(sys.argv[2])
 
 c = db_connection.cursor()
 
-classes_required = [ "skeleton",
+classes_required = [ "assembly",
+                     "skeleton",
                      "neuron",
                      "group",
                      "label",

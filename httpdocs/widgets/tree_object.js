@@ -6,8 +6,7 @@ var ObjectTree = new function()
 
   this.deselectAll = function() {
     $('#tree_object').jstree("deselect_all");
-    project.setSelectedSkeleton( null );
-    project.selectedObjects.selectedneuron = null;
+    project.setSelectObject( null, null );
   }
 
   this.renameCurrentActiveNode = function() {
@@ -284,6 +283,24 @@ var ObjectTree = new function()
                 this.create(obj, "inside", att, null, true);
               }
             },*/
+
+              "create_assembly": {
+                  "separator_before": true,
+                  "separator_after": true,
+                  "label": "Create assembly",
+                  "action": function (obj) {
+                      att = {
+                          "state": "open",
+                          "data": "assembly",
+                          "attr": {
+                              "rel": "assembly",
+                              "relname": "part_of"
+                          }
+                      };
+                      this.create(obj, "inside", att, null, true);
+                  }
+                },
+
               "rename_neuron": {
                 "separator_before": true,
                 "separator_after": false,
@@ -606,7 +623,7 @@ var ObjectTree = new function()
             "icon": {
               "image": "widgets/themes/kde/jsTree/neuron/neuron.png"
             },
-            "valid_children": ["skeleton"],
+            "valid_children": ["skeleton", "assembly"],
             "start_drag": true,
             "select_node": true
           },
@@ -617,6 +634,14 @@ var ObjectTree = new function()
             "valid_children": "none",
             "start_drag": true,
             "select_node": true
+          },
+          "assembly": {
+                "icon": {
+                    "image": "widgets/themes/kde/jsTree/neuron/skeleton.png"
+                },
+                "valid_children": "none",
+                "start_drag": true,
+                "select_node": true
           },
           "modelof": {
             "icon": {
@@ -664,16 +689,7 @@ var ObjectTree = new function()
     $(object_tree_id).bind("select_node.jstree", function (event, data) {
       id = parseInt( data.rslt.obj.attr("id").replace("node_", "") );
       type = data.rslt.obj.attr("rel");
-      if (type === "neuron") {
-        project.selectedObjects.selectedneuron = id;
-        project.setSelectedSkeleton( null );
-      } else if (type === "skeleton") {
-        project.selectedObjects.selectedneuron = null;
-        project.setSelectedSkeleton( id );
-      } else {
-        project.selectedObjects.selectedneuron = null;
-        project.setSelectedSkeleton( null );
-      }
+      project.setSelectObject( type, id );
     });
 
     $(object_tree_id).bind("create.jstree", function (e, data) {

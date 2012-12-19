@@ -504,14 +504,24 @@ class Component(UserFocusedModel):
     creation_time = models.DateTimeField(default=datetime.now)
     edition_time = models.DateTimeField(default=datetime.now)
     stack = models.ForeignKey(Stack)
-    skeleton_id = models.IntegerField()
-    component_id=models.IntegerField()
+
+    assembly = models.ForeignKey(ClassInstance)
+    graphdb_id = models.IntegerField()
+    component_id = models.IntegerField()
+
+    # boundingbox (in pixel coordiantes)
     min_x = models.IntegerField()
     min_y = models.IntegerField()
     max_x = models.IntegerField()
     max_y = models.IntegerField()
+    # z slice (as index)
     z = models.IntegerField()
+
+    # distance from root node in the component tree
+    # distance_from_root =  models.IntegerField()
+
     threshold = models.FloatField()
+    # status: init, touched, selected
     status = models.IntegerField(default=0)
 
 class Drawing(UserFocusedModel):

@@ -204,7 +204,7 @@ class Stack(models.Model):
     tile_width = models.IntegerField()
     tile_height = models.IntegerField()
     tile_source_type = models.IntegerField()
-    metadata = models.TextField()
+    metadata = models.TextField(blank=True)
     tags = TaggableManager(blank=True)
 
     def __unicode__(self):

@@ -169,7 +169,6 @@ class Project(models.Model):
         )
     title = models.TextField()
     public = models.BooleanField(default=True)
-    wiki_base_url = models.TextField(blank=True)
     stacks = models.ManyToManyField("Stack",
                                     through='ProjectStack')
     tags = TaggableManager(blank=True)

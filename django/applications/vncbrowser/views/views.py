@@ -119,8 +119,7 @@ def view(request, project_id=None, neuron_id=None, neuron_name=None):
                                   'user': request.user,
                                   'cell_body_choices': CELL_BODY_CHOICES,
                                   'incoming': incoming,
-                                  'outgoing': outgoing,
-                                  'wiki_base_url': p.wiki_base_url } )
+                                  'outgoing': outgoing} )
 
 
 @requires_user_role(UserRole.Annotate)

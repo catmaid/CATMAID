@@ -145,8 +145,7 @@ SELECT pg_catalog.setval('overlay_id_seq', 1, false);
 CREATE TABLE project (
     id integer NOT NULL,
     title text NOT NULL,
-    public boolean DEFAULT true NOT NULL,
-    wiki_base_url text
+    public boolean DEFAULT true NOT NULL
 );
 CREATE SEQUENCE project_id_seq
     START WITH 1
@@ -491,10 +490,10 @@ INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (1, 
 INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (2, 3, '2011-12-20 16:46:01.360422+01', false, 'Message 2', 'Contents of message 2.', 'http://www.example.com/message2');
 INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (3, 3, '2011-12-21 16:46:01.360422+01', true, 'Message 3', 'Contents of message 3.', NULL);
 INSERT INTO message (id, user_id, "time", read, title, text, action) VALUES (4, 3, '2011-12-22 16:46:01.360422+01', true, 'Message 4', 'Contents of message 4.', NULL);
-INSERT INTO project (id, title, public, wiki_base_url) VALUES (1, 'Default Project', true, NULL);
-INSERT INTO project (id, title, public, wiki_base_url) VALUES (2, 'Evaluation data set', true, NULL);
-INSERT INTO project (id, title, public, wiki_base_url) VALUES (3, 'Focussed Ion Beam (FIB)', true, NULL);
-INSERT INTO project (id, title, public, wiki_base_url) VALUES (5, 'Private version of the FIB data set', false, NULL);
+INSERT INTO project (id, title, public) VALUES (1, 'Default Project', true);
+INSERT INTO project (id, title, public) VALUES (2, 'Evaluation data set', true);
+INSERT INTO project (id, title, public) VALUES (3, 'Focussed Ion Beam (FIB)', true);
+INSERT INTO project (id, title, public) VALUES (5, 'Private version of the FIB data set', false);
 INSERT INTO project_stack (project_id, stack_id, translation, id) VALUES (1, 1, '(0,0,0)', 1);
 INSERT INTO project_stack (project_id, stack_id, translation, id) VALUES (3, 3, '(0,0,0)', 2);
 INSERT INTO project_stack (project_id, stack_id, translation, id) VALUES (5, 5, '(0,0,0)', 3);

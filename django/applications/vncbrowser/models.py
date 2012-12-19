@@ -100,7 +100,6 @@ class Project(models.Model):
         managed = False
     title = models.TextField()
     public = models.BooleanField(default=True)
-    wiki_base_url = models.TextField()
     stacks = models.ManyToManyField("Stack",
                                     through='ProjectStack')
     users = models.ManyToManyField("User",

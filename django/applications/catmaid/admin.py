@@ -7,7 +7,7 @@ from guardian.admin import GuardedModelAdmin
 from catmaid.models import Project, DataView, Stack, ProjectStack
 
 class ProjectAdmin(GuardedModelAdmin):
-    list_display = ('title', 'public', 'wiki_base_url')
+    list_display = ('title', 'public')
     
 #    def has_change_permission(self, request, obj=None):
 #        pass

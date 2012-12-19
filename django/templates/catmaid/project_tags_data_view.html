@@ -10,7 +10,8 @@
 {% with catalogue_link=config|get_or_none:"catalogue_link"|default_if_none:1 %}
 {% with sample_images=config|get_or_none:"sample_images"|default_if_none:0 %}
 {% with sample_slice=config|get_or_none:"sample_slice"|default_if_none:"center" %}
-{% with sample_scaling=config|get_or_none:"sample_scaling"|default_if_none:100 %}
+{% with sample_width=config|get_or_none:"sample_width"|default_if_none:-1 %}
+{% with sample_height=config|get_or_none:"sample_height"|default_if_none:-1 %}
 
 {% if not row_tags or not col_tags %}
 	There are no row or no column tags defined. Without these, this
@@ -49,7 +50,8 @@
 							<a href="#" onclick="openProjectStack({{p.id}}, {{s.id}})">
 								<img src="{{ s.image_base }}{{ slice }}/small.{{ s.file_extension }}"
 									alt="Sample image for {{ s.title }} on slice {{ slice }}"
-									width="{{ sample_scaling }}%" />
+									{% if sample_width > -1 %} width="{{ sample_width }}" {% endif %}
+									{% if sample_height > -1 %} height="{{ sample_height }}" {% endif %} />
 							</a>
 							{% endwith %}
 						{% endfor %}
@@ -78,6 +80,7 @@
 	</table>
 {% endif %}
 
+{% endwith %}
 {% endwith %}
 {% endwith %}
 {% endwith %}

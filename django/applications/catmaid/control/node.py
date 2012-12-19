@@ -314,36 +314,30 @@ def update_location_reviewer(request, project_id=None, node_id=None):
 
 @requires_user_role(UserRole.Annotate)
 def update_confidence(request, project_id=None, node_id=0):
-    new_confidence = request.POST.get('new_confidence', None)
-    if (new_confidence == None):
-        return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
-    else:
-        parsed_confidence = int(new_confidence)
-        if (parsed_confidence not in range(1, 6)):
-            return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
-
     tnid = int(node_id)
+    can_edit_or_fail(request.user, tnid, 'treenode')
 
-    if (request.POST.get('to_connector', 'false') == 'true'):
-        toUpdate = TreenodeConnector.objects.filter(
-            project=project_id,
-            treenode=tnid)
+    new_confidence = int(request.POST.get('new_confidence', 0))
+    if new_confidence < 1 or new_confidence > 5:
+        return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
+    to_connector = request.POST.get('to_connector', 'false') == 'true'
+    if to_connector:
+        # Could be more than one. The GUI doesn't allow for specifying to which one.
+        rows_affected = TreenodeConnector.objects.filter(treenode=tnid).update(confidence=new_confidence)
     else:
-        toUpdate = Treenode.objects.filter(
-            project=project_id,
-            id=tnid)
+        rows_affected = Treenode.objects.filter(id=tnid).update(confidence=new_confidence,editor=request.user)
 
-    rows_affected = toUpdate.update(confidence=new_confidence)
-
-    if (rows_affected > 0):
-        location = Location.objects.filter(project=project_id, id=tnid)[0].location
+    if rows_affected > 0:
+        location = Location.objects.get(id=tnid).location
         insert_into_log(project_id, request.user.id, "change_confidence", location, "Changed to %s" % new_confidence)
-    elif (request.POST.get('to_connector', 'false') == 'true'):
-        return HttpResponse(json.dumps({'error': 'Failed to update confidence of treenode_connector between treenode %s and connector.' % tnid}))
-    else:
-        return HttpResponse(json.dumps({'error': 'Failed to update confidence of treenode_connector between treenode %s.' % tnid}))
+        return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
-    return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+    # Else, signal error
+    if to_connector:
+        return HttpResponse(json.dumps({'error': 'Failed to update confidence between treenode %s and connector.' % tnid}))
+    else:
+        return HttpResponse(json.dumps({'error': 'Failed to update confidence at treenode %s.' % tnid}))
+
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

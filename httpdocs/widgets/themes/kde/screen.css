@@ -210,3 +210,16 @@ div#data_view td.head
 	font-weight:bold;
 	background-color: #FFFFFF;
 }
+
+div#data_view figure
+{
+	margin-top: 0px;
+	margin-right: 10px;
+	margin-bottom: 11px;
+	margin-left: 10px;
+}
+
+div#data_view .comment
+{
+	font-style: italic;
+}

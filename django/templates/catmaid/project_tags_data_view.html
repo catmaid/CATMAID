@@ -50,6 +50,7 @@
 							<a href="#" onclick="openProjectStack({{p.id}}, {{s.id}})">
 								<img src="{{ s.image_base }}{{ slice }}/small.{{ s.file_extension }}"
 									alt="Sample image for {{ s.title }} on slice {{ slice }}"
+									title="{{ s.comment }}"
 									{% if sample_width > -1 %} width="{{ sample_width }}" {% endif %}
 									{% if sample_height > -1 %} height="{{ sample_height }}" {% endif %} />
 							</a>
@@ -59,7 +60,7 @@
 						<dl>
 							<dt>{{ p.title }}</dt>
 							{% for s in stacks %}
-							<dd><a href="#" onclick="openProjectStack({{p.id}}, {{s.id}})">{{ s.title }}</a></dd>
+							<dd><a href="#" onclick="openProjectStack({{p.id}}, {{s.id}})" title="{{ s.comment }}">{{ s.title }}</a></dd>
 							{% endfor %}
 							{# Optionally, add the the neuron catalogue link #}
 							{% if p.is_catalogueable and catalogue_link %}

@@ -196,6 +196,7 @@ def node_list_tuples(request, project_id=None):
 
         # Process crows (rows with connectors) which could have repeated connectors
         # given the join with treenode_connector
+        presynaptic_to = relation_map['presynaptic_to']
         for row in crows:
             # Collect treeenode IDs related to connectors but not yet in treenode_ids
             # because they lay beyond adjacent sections
@@ -208,7 +209,7 @@ def node_list_tuples(request, project_id=None):
                 # row[5]: treenode_relation_id
                 # row[6]: treenode_id (tnid above)
                 # row[7]: tc_confidence
-                if row[5] == relation_map['presynaptic_to']:
+                if row[5] == presynaptic_to:
                     pre[cid][tnid] = row[7]
                 else:
                     post[cid][tnid] = row[7]

@@ -128,7 +128,6 @@ def node_list_tuples(request, project_id=None):
               treenodes.append(row[9:17] + (is_superuser or row[17] == user_id,))
 
         # Find connectors related to treenodes in the field of view
-        # TODO missing disconnected connectors simply in the field of view.
 
         connectors = []
         # A set of missing treenode IDs
@@ -137,7 +136,6 @@ def node_list_tuples(request, project_id=None):
         if -1 != atnid and not atnid in treenode_ids:
             missing_treenode_ids.add(atnid)
         # Connectors found attached to treenodes
-        cids = set() # set of IDs of connectors in the current Z and attached to treenodes
         crows = []
         z0 = params['z']
 
@@ -160,14 +158,6 @@ def node_list_tuples(request, project_id=None):
 
             for row in cursor.fetchall():
                 crows.append(row)
-                if z0 == row[3]:
-                    cids.add(row[0])
-        
-        if cids:
-            params['cids'] = tuple(cids)
-        else:
-            # Prevent the NOT IN statement (below) from failing:
-            params['cids'] = (0,)
         
         # Obtain connectors within the field of view that were not captured above.
         # Uses a LEFT OUTER JOIN to include disconnected connectors,
@@ -186,7 +176,6 @@ def node_list_tuples(request, project_id=None):
                        ON connector.id = treenode_connector.connector_id
         WHERE connector.project_id = %(project_id)s
           AND (connector.location).z = %(z)s
-          AND connector.id NOT IN %(cids)s
           AND (connector.location).x > %(left)s
           AND (connector.location).x < %(right)s
           AND (connector.location).y > %(top)s
@@ -201,8 +190,10 @@ def node_list_tuples(request, project_id=None):
         # The relations between connectors and treenodes, stored
         # as connector ID keys vs a list of tuples, each with the treenode id,
         # the type of relation (presynaptic_to or postsynaptic_to), and the confidence.
-        pre = defaultdict(list)
-        post = defaultdict(list)
+        # The list of tuples is generated later from a dict,
+        # so that repeated tnid entries are overwritten.
+        pre = defaultdict(dict)
+        post = defaultdict(dict)
 
         # Process crows (rows with connectors) which could have repeated connectors
         # given the join with treenode_connector
@@ -219,9 +210,9 @@ def node_list_tuples(request, project_id=None):
                 # row[6]: treenode_id (tnid above)
                 # row[7]: tc_confidence
                 if row[5] == relation_map['presynaptic_to']:
-                    pre[cid].append((tnid, row[7]))
+                    pre[cid][tnid] = row[7]
                 else:
-                    post[cid].append((tnid, row[7]))
+                    post[cid][tnid] = row[7]
 
             # Collect unique connectors
             if cid not in connector_ids:
@@ -232,7 +223,10 @@ def node_list_tuples(request, project_id=None):
         for i in xrange(len(connectors)):
             c = connectors[i]
             cid = c[0]
-            connectors[i] = (cid, c[1], c[2], c[3], c[4], pre[cid], post[cid], is_superuser or c[8] == user_id)
+            connectors[i] = (cid, c[1], c[2], c[3], c[4],
+                    [kv for kv in  pre[cid].iteritems()],
+                    [kv for kv in post[cid].iteritems()],
+                    is_superuser or c[8] == user_id)
 
 
         # Fetch missing treenodes. These are related to connectors

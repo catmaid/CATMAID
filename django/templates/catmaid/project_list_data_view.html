@@ -1,3 +1,4 @@
+{% load common %}
 {% load data_view_config %}
 {% include "catmaid/common_data_view_header.html" %}
 
@@ -16,7 +17,7 @@
         {% if sample_images %}
             <td class="stackimage">
             {# Get the samlpe stack  #}
-            {% with stack=p.stacks|get_stack:sample_stack %}
+            {% with stack=p.stacks|order_by:'id'|get_stack:sample_stack %}
             {% if stack|is_none %}
                 Couldn't find requested stack: {{ sample_stack }}
             {% else %}
@@ -38,7 +39,7 @@
         <td class="stackname">
             <dl>
                 <dt>{{ p.title }}</dt>
-                {% for s in p.stacks.all %}
+                {% for s in p.stacks|order_by:"id" %}
                 <dd><a href="#" onclick="openProjectStack({{p.id}}, {{s.id}})">{{ s.title }}</a><span class="comment"> {{ s.comment }}</span></dd>
                 {% endfor %}
                 {# Optionally, add the the neuron catalogue link #}

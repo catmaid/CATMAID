@@ -1,3 +1,4 @@
+{% load common %}
 {% load data_view_config %}
 {% include "catmaid/common_data_view_header.html" %}
 
@@ -37,7 +38,7 @@
 					<td class="{{ rowtype }}-stackname" title="There are {{ tprojects|length }} projects for the tags {{ ct }} and {{ rt }}.">
 				{% endif %}
 				{% for p in tprojects %}
-					{% with stacks=p.stacks|filter_stacks:linked_stacks %}
+					{% with stacks=p.stacks|order_by:'id'|filter_stacks:linked_stacks %}
 
 					{# Make the project name a link if we are not forced to have #}
 					{# a stack list and only one stack is available. Draw a definiton #}

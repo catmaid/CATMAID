@@ -524,14 +524,17 @@ function handle_openProjectStack( status, text, xml )
 					e.inverse_mouse_wheel);
 
 			document.getElementById( "toolbox_project" ).style.display = "block";
-			
+
+			var tilesource = getTileSource( e.tile_source_type );
+
 			var tilelayer = new TileLayer(
 					stack,
 					e.image_base,
 					e.tile_width,
 					e.tile_height,
 					e.file_extension,
-					e.tile_source_type);
+					e.tile_source_type,
+					tilesource);
 
 			stack.addLayer( "TileLayer", tilelayer );
 
@@ -543,7 +546,8 @@ function handle_openProjectStack( status, text, xml )
 								value.tile_width,
 								value.tile_height,
 								value.file_extension,
-								value.tile_source_type);
+								value.tile_source_type,
+								tilesource);
 				// set default opacity internally
 				tilelayer2.setOpacity( value.default_opacity );
 				stack.addLayer( value.title, tilelayer2 );

@@ -54,7 +54,8 @@ function TileLayer(
 		tileWidth,
 		tileHeight,
 		fileExtension,
-		tileSourceType
+		tileSourceType,
+		tileSource
 		)
 {
 	/**
@@ -234,22 +235,10 @@ function TileLayer(
 				}
 				else
 				{
-					// TODO: use this for the new tile naming scheme:
-					// tiles[ i ][ j ].alt = tileBaseName + stack.s + "/" + ( fr + i ) + "/" + ( fc + j );
-					if( tileSourceType === 1 ) {
-					    tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
-					    tiles[ i ][ j ].src = self.getTileURL( tiles[ i ][ j ].alt );
-          } else if ( tileSourceType === 2 ) {
-					    tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
-					    tiles[ i ][ j ].src = self.getTileURLRequest( c * tileWidth, r * tileHeight, tileWidth, tileHeight, stack.scale, stack.z );
-          } else if ( tileSourceType === 3 ) {
-					    tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
-					    tiles[ i ][ j ].src = self.getTileHDF5Request( c * tileWidth, r * tileHeight, tileWidth, tileHeight, stack.scale, stack.z );
-					} else if ( tileSourceType === 4) {
-						  // tileBaseName includes a backslash at the end
-					    tiles[ i ][ j ].alt = tileBaseName + zoom + "/" + r + "_" + c;
-              tiles[ i ][ j ].src = self.getTileURL( tiles[ i ][ j ].alt );
-					}
+					tiles[ i ][ j ].alt = "";
+					tiles[ i ][ j ].src = self.tileSource.getTileURL( project, stack,
+						baseURL, tileBaseName, tileWidth, tileHeight, fileExtension,
+						c, r, zoom);
 
           // prefetch tiles
           // TODO: fetch information in stack table: -2, -1, 1, 2
@@ -285,50 +274,6 @@ function TileLayer(
 		}
 
 		return 2;
-	}
-
-	/**
-	 * Creates the URL for a tile in a generic way.
-     * To be used for instance for Volumina served datasources
-	 */
-    this.getTileURLRequest = function( x, y, dx, dy, scale, z ) {
-    return baseURL + "?" + $.param({
-        x: x,
-        y: y,
-        width : tileWidth,
-        height : tileHeight,
-        row : 'y',
-        col : 'x',
-        scale : scale, // defined as 1/2**zoomlevel
-        z : z});
-    }
-
-  /*
-   * Get Tile from HDF5 through Django (tiles_source_type == 3)
-   */
-  this.getTileHDF5Request = function( x, y, dx, dy, scale, z ) {
-      return django_url + project.id + '/stack/' + stack.id + '/tile?' + $.param({
-        x: x,
-        y: y,
-        width : tileWidth,
-        height : tileHeight,
-        row : 'y',
-        col : 'x',
-        scale : stack.s, // defined as 1/2**zoomlevel
-        z : z,
-        file_extension: fileExtension,
-        hdf5_path: baseURL, // image_base refers to path within HDF5 to dataset
-        type:'all'
-    });
-  }
-
-
-
-	/**
-	 * Creates the URL for a tile.
-	 */
-	this.getTileURL = function(tileId) {
-		return baseURL + tileId + "." + fileExtension;
 	}
 	
 	this.resize = function( width, height )
@@ -428,4 +373,5 @@ function TileLayer(
 	var LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
 	
 	self.baseURL = baseURL;
+	self.tileSource = tileSource;
 }

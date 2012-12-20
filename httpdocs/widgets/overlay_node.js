@@ -502,7 +502,7 @@ var SkeletonElements = new function()
   {
     /** Variables used for mouse events, which involve a single node at a time.
      * These are set at mc_start and then used at mc_move. */
-    var ox, oy;
+    var ox = null, oy = null;
 
     /** Here 'this' is mc. */
     var mc_dblclick = function(e) {
@@ -521,18 +521,19 @@ var SkeletonElements = new function()
       }
       // TODO this must be the most surprising feature of CATMAID. Disabled!
       // this.paper.catmaidSVGOverlay.tracingCommand('goactive');
+      // Else, do nothing
+      e.stopPropagation();
     };
 
-    /**  Log information in the status bar when clicked on the node
-     *
+    /** 
      * Here 'this' is mc, and treenode is the Node instance
      */
     var mc_click = function(e) {
+      e.stopPropagation();
       var node = this.catmaidNode,
           paper = this.paper,
           wasActiveNode = false;
       if (this.paper.catmaidSVGOverlay.ensureFocused()) {
-        e.stopPropagation();
         return;
       }
       if (e.shiftKey) {
@@ -540,7 +541,6 @@ var SkeletonElements = new function()
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           if (!mayEdit() || !node.can_edit) {
             alert("You don't have permission to delete node #" + node.id);
-            e.stopPropagation();
             return;
           }
           // if it is active node, set active node to null
@@ -550,7 +550,6 @@ var SkeletonElements = new function()
           }
           statusBar.replaceLast("Deleted node #" + node.id);
           node.deletenode(wasActiveNode);
-          e.stopPropagation();
           return true;
         }
         if (atnID) {
@@ -561,7 +560,6 @@ var SkeletonElements = new function()
           if (atnType === TYPE_CONNECTORNODE) {
             if (!mayEdit()) {
               alert("You lack permissions to declare node #" + node.id + "as postsynaptic to connector #" + atnID);
-              e.stopPropagation();
               return;
             }
             // careful, atnID is a connector
@@ -583,29 +581,30 @@ var SkeletonElements = new function()
         } else {
           alert("Nothing to join without an active node!");
         }
-        e.stopPropagation();
-
       } else {
         // activate this node
         paper.catmaidSVGOverlay.activateNode(node);
         // stop propagation of the event
-        e.stopPropagation();
       }
     };
 
     /** Here 'this' is mc, and node is the Node instance. */
     var mc_move = function(dx, dy, x, y, e) {
-      if(e.which === 2) {
+      if (is_middle_click(e)) {
+        // Allow middle-click panning
+        return;
+      }
+      if (!ox || !oy) {
+        // Not properly initialized with mc_start
         e.stopPropagation();
         return;
       }
+      e.stopPropagation();
       if (e.shiftKey) {
-        e.stopPropagation();
         return;
       }
       if (!mayEdit() || !this.catmaidNode.can_edit) {
         statusBar.replaceLast("You don't have permission to move node #" + this.catmaidNode.id);
-        e.stopPropagation();
         return;
       }
       var node = this.catmaidNode,
@@ -630,21 +629,22 @@ var SkeletonElements = new function()
 
     /** Here 'this' is mc. */
     var mc_up = function(e) {
-      if(e.which === 2) {
-        e.stopPropagation();
-        return;
-      }
+      ox = null;
+      oy = null;
+      e.stopPropagation();
       var c = this.prev;
       c.attr({
         opacity: 1
       });
     };
 
-    /** Here 'this' is mc, and treenode is the Node instance. */
+    /** Here 'this' is mc. */
     var mc_start = function(x, y, e) {
-      if(e.which === 2) {
+      if (is_middle_click(e)) {
+        // Allow middle-click panning
         return;
       }
+      e.stopPropagation();
       var node = this.catmaidNode,
         c = this.prev;
       ox = node.x;
@@ -655,16 +655,20 @@ var SkeletonElements = new function()
     };
 
     var mc_mousedown = function(e) {
+      if (is_middle_click(e)) {
+        // Allow middle-click panning
+        return;
+      }
       e.stopPropagation();
     };
 
     var connector_mc_click = function(e) {
+      e.stopPropagation();
       var atnID = SkeletonAnnotations.getActiveNodeId(),
           connectornode = this.catmaidNode,
           paper = this.paper,
           wasActiveNode = false;
       if (this.paper.catmaidSVGOverlay.ensureFocused()) {
-        e.stopPropagation();
         return;
       }
       // return some log information when clicked on the node
@@ -677,7 +681,6 @@ var SkeletonElements = new function()
           }
           statusBar.replaceLast("Deleted connector #" + connectornode.id);
           connectornode.deletenode(wasActiveNode);
-          e.stopPropagation();
           return true;
         }
         if (atnID) {
@@ -701,13 +704,10 @@ var SkeletonElements = new function()
             onComplete: function() { g.remove(); }
           });
         }
-        e.stopPropagation();
       } else {
         //console.log("Try to activate node");
         // activate this node
         paper.catmaidSVGOverlay.activateNode(connectornode);
-        // stop propagation of the event
-        e.stopPropagation();
       }
     };
 
@@ -737,7 +737,7 @@ var SkeletonElements = new function()
 
   // Regarding the nodes map: it is an array of keys over objects stored in a a cache of nodes that are already inserted into the DOM and that can be reused.
 
-  /** Surrogate cosntructor for ConnectorNode.
+  /** Surrogate constructor for ConnectorNode.
    * See "newNode" for explanations. */
   this.newConnectorNode = function(
     id, // unique id for the node from the database
@@ -997,6 +997,7 @@ var SkeletonElements = new function()
         "stroke": strocol
       });
       var arrow_mousedown = function(e) {
+        e.stopPropagation();
         if(!(e.shiftKey && e.ctrlKey)) {
           return;
         }
@@ -1054,5 +1055,8 @@ var SkeletonElements = new function()
     };
   }();
 
+  var is_middle_click = function(e) {
+    return 2 === e.which;
+  };
 
 }();

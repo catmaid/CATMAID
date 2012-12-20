@@ -1249,6 +1249,7 @@ var SkeletonAnnotations = new function()
 
       if (!mayEdit()) {
         statusBar.replaceLast("You don't have permission.");
+        e.stopPropagation();
         return;
       }
 
@@ -1275,6 +1276,7 @@ var SkeletonAnnotations = new function()
         $('#neuronName').text('');
         ObjectTree.deselectAll();
         self.activateNode(null);
+        e.stopPropagation();
       } else if (e.shiftKey) {
         if (null === atn.id) {
           if (getMode() === "skeletontracing") {
@@ -1286,6 +1288,7 @@ var SkeletonAnnotations = new function()
               delayTime: 2500,
               onComplete: function() { g.remove(); }
             });
+            e.stopPropagation();
             return true;
           }
         } else {
@@ -1297,15 +1300,14 @@ var SkeletonAnnotations = new function()
                   function (connectorID) {
                     self.createLink(targetTreenodeID, connectorID, "postsynaptic_to");
                   });
-              e.stopPropagation();
             } else if (e.shiftKey) {
               statusBar.replaceLast("created connector, with presynaptic treenode id " + atn.id);
               createSingleConnector( phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
                   function (connectorID) {
                     self.createLink( targetTreenodeID, connectorID, "presynaptic_to" );
                   });
-              e.stopPropagation();
             }
+            e.stopPropagation();
             return true;
           } else if ("connector" === atn.type) {
             // create new treenode (and skeleton) postsynaptic to activated connector

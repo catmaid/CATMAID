@@ -510,17 +510,6 @@ var SkeletonElements = new function()
         e.stopPropagation();
         return;
       }
-      // TODO these sliders don't exist anymore
-      if (e.altKey) {
-        // zoom in
-        slider_trace_s.move(-1);
-      }
-      else {
-        // zoom out
-        slider_trace_s.move(1);
-      }
-      // TODO this must be the most surprising feature of CATMAID. Disabled!
-      // this.paper.catmaidSVGOverlay.tracingCommand('goactive');
       // Else, do nothing
       e.stopPropagation();
     };

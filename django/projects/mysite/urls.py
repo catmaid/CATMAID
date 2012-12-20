@@ -53,6 +53,7 @@ urlpatterns += patterns(
 
 
     # Segmentation tool
+    (r'^(?P<project_id>\d+)/assembly/component-count$', 'catmaid.control.component_count'),
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/components-for-point$', 'catmaid.control.get_component_list_for_point'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/componentimage$', 'catmaid.control.get_component_image'),
@@ -67,7 +68,6 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-drawings-by-component-id$', 'catmaid.control.get_saved_drawings_by_component_id'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-drawings-by-view$', 'catmaid.control.get_saved_drawings_by_view'),
 
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/initialize_components$', 'catmaid.control.initialize_components_for_skeleton'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-drawing-enum$', 'catmaid.control.get_drawing_enum'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-mesh$', 'catmaid.control.generate_mesh'),
 

@@ -1,5 +1,6 @@
 __author__ = 'stephan'
 
+from assembly import *
 from authentication import *
 from common import *
 from connector import *

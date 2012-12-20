@@ -2,26 +2,20 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
 /**
- */
-
-/**
  * Constructor for the Canvas tool.
  */
-// var CanvasTool = new function()
 function CanvasTool()
 {
-    // this.prototype = new Navigator();
-
     var self = this;
     var canvasLayer = null;
     var controls = null;
     var controlsBackground=null;
     this.stack = null;
     this.toolname = "canvastool";
-    this.componentColor=[0,255,255,255];
-    this.lastPosition=null;
-    var enumFactory=new EnumFactory();
-    this.layerStore=new LayerStore();
+    this.componentColor = [0,255,255,255];
+    this.lastPosition = null;
+    var enumFactory = new EnumFactory();
+    this.layerStore = new LayerStore();
     this.slider_z = null;
     this.lastAssemblyId=null;
 
@@ -69,8 +63,7 @@ function CanvasTool()
     ];
     var keyCodeToAction = getKeyCodeToActionMap(actions);
 
-
-    this.stateEnum=enumFactory.defineEnum({
+    this.stateEnum = enumFactory.defineEnum({
         COMPONENTVIEW : {
             value : 1,
             string : 'componentview'
@@ -85,39 +78,9 @@ function CanvasTool()
         }
     });
 
-    this.state=this.stateEnum.COMPONENTVIEW;
-    this.drawingTypeEnum=null;
-    this.drawingType=null;
-
-    /*this.drawingTypeEnum=enumFactory.defineEnum({
-        mitochondria : {
-            value : 300,
-            string : 'mitochondria',
-            color:[50,50,255]
-        },
-        membrane : {
-            value : 400,
-            string : 'membrane',
-            color:[50,255,50]
-        },
-        soma : {
-            value : 500,
-            string : 'soma',
-            color:[255,255,0]
-        },
-        misc : {
-            value : 600,
-            string : 'misc',
-            color:[255,50,50]
-        },
-        erasor : {
-            value : 700,
-            string : 'erasor',
-            color:[255,255,255]
-        }
-
-    });*/
-
+    this.state = this.stateEnum.COMPONENTVIEW;
+    this.drawingTypeEnum = null;
+    this.drawingType = null;
 
 
     //
@@ -164,26 +127,12 @@ function CanvasTool()
             self.stack.z,
             self.changeSlice );
 
-
-
-
         return;
     };
 
 
     this.initialize=function(parentStack)
     {
-        //TODO remove debug url
-        //django_url='http://localhost:8000/';
-        /*$(document).ready(function(e) {
-            try {
-                $("body select").msDropDown();
-            } catch(e) {
-                alert(e.message + 'gugus');
-            }
-        });*/
-
-
         createCanvasLayer( parentStack );
         self.getDrawingEnum();
         createControlBox();
@@ -192,7 +141,7 @@ function CanvasTool()
         canvasLayer.canvas.observe('mouse:up',function(e){self.mouseup(e)});
         canvasLayer.canvas.observe('after:render',function(e){self.afterRender(e)});
 
-        canvasLayer.view.onmousedown=function(e) {
+        canvasLayer.view.onmousedown = function(e) {
             // if middle mouse, propagate to onmousedown
             if( e.button === 1)
             {
@@ -204,13 +153,8 @@ function CanvasTool()
         canvasLayer.canvas.freeDrawingColor ="rgb(0, 255, 255)";
         this.lastPosition=canvasLayer.getFieldOfViewParameters();
 
-
-
         self.switchToComponentMode();
-
         self.loadElements();
-
-
     };
 
     this.getDrawingEnum=function()
@@ -850,18 +794,15 @@ function CanvasTool()
             self.layerStore.componentLayers[self.stack.z]=new ComponentLayer();
         }
 
-        //Load components from DB
         if(project.selectedObjects.selectedskeleton==null||self.state!=self.stateEnum.COMPONENTVIEW )
         {
             self.showActiveElements();
             return;
         }
 
-
         var url= django_url + project.id + "/stack/" + self.stack.id + '/get-saved-components'+ "?" + $.param({
             skeleton_id:project.selectedObjects.selectedskeleton,
             z : self.stack.z});
-
 
         $.getJSON(url,function(result)
         {
@@ -983,7 +924,6 @@ function CanvasTool()
 
     };
 
-
     this.clearCanvas=function()
     {
         canvasLayer.canvas.clear();
@@ -1026,7 +966,6 @@ function CanvasTool()
         }
         self.layerStore.drawingLayers[self.stack.z]=new DrawingLayer();
 
-
     };
 
     this.switchToComponentMode=function()
@@ -1050,19 +989,16 @@ function CanvasTool()
         $('#sliders_box_brush_size').show();
     };
 
-
     //
     //
     //Saving functions
     //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
 
     this.generateMesh=function()
     {
 
         var url=  django_url+ project.id + "/stack/" + self.stack.id + '/get-mesh';
         var viewState=canvasLayer.getFieldOfViewParameters();
-
 
         $.ajax({
             url: url,

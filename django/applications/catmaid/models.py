@@ -169,7 +169,6 @@ class Project(models.Model):
         )
     title = models.TextField()
     public = models.BooleanField(default=True)
-    wiki_base_url = models.TextField(blank=True)
     stacks = models.ManyToManyField("Stack",
                                     through='ProjectStack')
     tags = TaggableManager(blank=True)
@@ -205,7 +204,7 @@ class Stack(models.Model):
     tile_width = models.IntegerField()
     tile_height = models.IntegerField()
     tile_source_type = models.IntegerField()
-    metadata = models.TextField()
+    metadata = models.TextField(blank=True)
     tags = TaggableManager(blank=True)
 
     def __unicode__(self):

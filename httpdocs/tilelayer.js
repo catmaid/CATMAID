@@ -335,7 +335,6 @@ function TileLayer(
 	{
 //		alert( "resize tileLayer of stack" + stack.getId() );
 		
-		/* TODO 2 more?  Should be 1---not?! */
 		var rows = Math.floor( height / tileHeight ) + 2;
 		var cols = Math.floor( width / tileWidth ) + 2;
 		initTiles( rows, cols );

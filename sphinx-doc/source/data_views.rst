@@ -169,17 +169,18 @@ The appearance of *Project List* is very similar to the one of
 though. When a project has no stacks, it won't be visible with this view type.
 It is processed server-side and offers some configuration options:
 
-================== =========================================== ============
+================== =========================================== ================
 Name               Options                                     Default
-================== =========================================== ============
+================== =========================================== ================
 ``sort``           ``true, false``                             ``true``
 ``filter_tags``    ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
 ``catalogue_link`` ``true, false``                             ``true``
 ``sample_images``  ``true, false``                             ``false``
 ``sample_stack``   ``stack index, "first", "last"``            ``0``
 ``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
-``sample_scaling`` ``scaling percentage, e.g. 50 or 75``       ``100``
-================== =========================================== ============
+``sample_width``   ``width in pixel, e.g. 50 or 75``           ``orig. width``
+``sample_height``  ``height in pixel, e.g. 50 or 75``          ``orig. height``
+================== =========================================== ================
 
 Please refer to the introduction to this section for an explanation of the
 ``sort``, ``filter_tags`` and ``catalogue_link`` options. The ``sample_images``
@@ -192,9 +193,9 @@ defines which slice of the sample stack should be used as sample image. Again,
 ``slice index`` is an integer number and no image is shown if this is not
 within bounds. The option values ``"first"`` and ``"last"`` refer to the first
 and last slice of the stack, ``"center'`` refers to the middle slice is the stack.
-To make the sample images appear smaller or larger, the ``sample_scaling`` option
-can be used. The assigned number is treated as scaling percentage with respect
-to the original sample image size.
+To make the sample images appear smaller or larger, the ``sample_width`` and
+``sample_height`` option can be used. The assigned number is treated as pixel
+width and height, respectively.
 
 So if you were to configure a *Project List* data view with a sample image
 which should be the middle slice of every last stack in a project, you would
@@ -219,16 +220,17 @@ stack -- replacing the stack name. Like the *Project List* type, it won't
 show a project, if it has no stacks associated. The following options are
 supported:
 
-================== =========================================== ============
+================== =========================================== ================
 Name               Options                                     Default
-================== =========================================== ============
+================== =========================================== ================
 ``sort``           ``true, false``                             ``true``
 ``filter_tags``    ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
 ``catalogue_link`` ``true, false``                             ``true``
 ``sample_images``  ``true, false``                             ``false``
 ``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
-``sample_scaling`` ``scaling percentage, e.g. 50 or 75``       ``100``
-================== =========================================== ============
+``sample_width``   ``width in pixel, e.g. 50 or 75``           ``orig. width``
+``sample_height``  ``height in pixel, e.g. 50 or 75``          ``orig. height``
+================== =========================================== ================
 
 Have a look to this section's introduction for an explanation of the ``sort``,
 ``filter_tags`` and ``catalogue_link``  options. If images should be
@@ -239,8 +241,9 @@ slice can be selected. Again, this can be done with an integer index or one
 of the string arguments (mind the quotes!). If the numeric index is out of
 range, no image will be displayed. Like in the *Project List* view type, the
 option values ``"first"``, ``"center"`` and ``"last"`` refer to the first,
-middle and last slice of each stack. To scale the sample image, the option
-``sample_scaling`` can be used with a scaling percentage value.
+middle and last slice of each stack. To adjust the (pixel) size of sample
+image, the options ``sample_width`` and ``sample_height`` can be used. If
+only one of the two is used, the images are scaled proportionally.
 
 If you wanted to display a text-only table, you would actually not need to
 define anything, but ``{}`` (because of the defaults) to get something like:
@@ -248,9 +251,9 @@ define anything, but ``{}`` (because of the defaults) to get something like:
 .. image:: _static/dataviews/admin_data_views_project_table_text.png
 
 However, to get an image table with the center slice of each stack where
-every sample image is scaled by 65%, you would need to define
+every sample image has a width of 100px, you would need to define
 
-  ``{"sample_images":true, "sample_slice":"center", "sample_scaling":65}``
+  ``{"sample_images":true, "sample_slice":"center", "sample_width":100}``
 
 and you would get for example this:
 
@@ -278,9 +281,9 @@ table cell that refers to tags the project itself is tagged with.
 
 However, there are more options than the tags themselves that can be configured:
 
-==================== ========================================== ============
+==================== ========================================== ================
 Name                 Options                                    Default
-==================== ========================================== ============
+==================== ========================================== ================
 ``sort``             ``true, false``                            ``true``
 ``filter_tags``      ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
 ``catalogue_link``   ``true, false``                            ``true``
@@ -290,8 +293,9 @@ Name                 Options                                    Default
 ``force_stack_list`` ``true, false``                            ``false``
 ``sample_images``    ``true, false``                            ``false``
 ``sample_slice``     ``slice index, "first", "center", "last"`` ``"center"``
-``sample_scaling``   ``scaling percentage, e.g. 50 or 75``      ``100``
-==================== ========================================== ============
+``sample_width``     ``width in pixel, e.g. 50 or 75``          ``orig. width``
+``sample_height``    ``height in pixel, e.g. 50 or 75``         ``orig. height``
+==================== ========================================== ================
 
 Have a look at this section's introduction for an explanation of the ``sort``,
 ``filter_tags`` and ``catalogue_link`` options. The tags to use for the rows
@@ -313,9 +317,9 @@ names. To do so, employ the ``sample_images`` option. These images will then
 form links to the actual stack display. With the help of the ``sample_slice``
 keyword, the displayed slice can be selected. Again, one can choose the
 ``"first"``, ``"last"`` or ``"center"`` slice of the stack. In case the default
-size of these sample is too big or too small, the ``sample_scaling`` option can
-be used. It takes a numerical percentage value and scales the result images
-accordingly.
+size of these sample is too big or too small, the ``sample_width`` and
+``sample_height`` options can be used. It takes a numerical pixel value and
+scales the result images accordingly.
 
 As an example, consider the situation described above: We have image stacks
 of several tissues and with multiple protein markers. The imaged tissues are

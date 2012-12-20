@@ -14,7 +14,9 @@ class Integer3DWidget(forms.MultiWidget):
         super(Integer3DWidget, self).__init__(widgets, attrs, **kwargs)
 
     def decompress(self, value):
-        return [value.x, value.y, value.z]
+        if value:
+            return [value.x, value.y, value.z]
+        return [None, None, None]
 
     def format_output(self, rendered_widgets):
         return  u'X: ' + rendered_widgets[0] + \
@@ -34,7 +36,9 @@ class Double3DWidget(forms.MultiWidget):
         super(Double3DWidget, self).__init__(widgets, attrs, **kwargs)
 
     def decompress(self, value):
-        return [value.x, value.y, value.z]
+        if value:
+            return [value.x, value.y, value.z]
+        return [None, None, None]
 
     def format_output(self, rendered_widgets):
         return  u'X: ' + rendered_widgets[0] + \

@@ -45,7 +45,7 @@ def node_list_tuples(request, project_id=None):
     atnid = int(request.POST.get('atnid', -1))
     for p in ('top', 'left', 'z', 'width', 'height', 'zres'):
         params[p] = float(request.POST.get(p, 0))
-    params['limit'] = 2000  # Limit the number of retrieved treenodes within the section
+    params['limit'] = 5000  # Limit the number of retrieved treenodes within the section
     params['project_id'] = project_id
     
     relation_map = get_relation_to_id_map(project_id)

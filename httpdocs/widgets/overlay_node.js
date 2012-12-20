@@ -322,6 +322,7 @@ var SkeletonElements = new function()
             node.confidence,
             node.paper);
         }
+        node.number_text.toBack();
       } else {
         if (node.number_text) {
           node.number_text.remove();
@@ -1022,6 +1023,7 @@ var SkeletonElements = new function()
           strocol,
           confidence,
           paper);
+        confidenceText.toBack();
       }
       // The 'this' refers to the new ArrowLine
       this.remove = function () {

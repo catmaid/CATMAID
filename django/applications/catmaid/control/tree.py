@@ -37,6 +37,7 @@ def instance_operation(request, project_id=None):
     def remove_skeletons(skeleton_id_list):
         if request.user.is_superuser:
             instance_operation.res_on_err = 'Failed to delete in treenode for skeletons #%s' % skeleton_id_list
+            # TODO this failed at least once, whereas direct deletion of a single skeleton by skeleton_id on the treenode table succeeded. Inspect!
             Treenode.objects.filter(
                     project=project_id,
                     skeleton__in=skeleton_id_list).delete()

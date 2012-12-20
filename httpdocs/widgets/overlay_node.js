@@ -679,7 +679,6 @@ var SkeletonElements = new function()
           if (atnType === TYPE_CONNECTORNODE) {
             alert("Can not join two connector nodes!");
           } else if (atnType === TYPE_NODE) {
-            console.log("from source #", atnID, "to connector #", connectornode.id);
             paper.catmaidSVGOverlay.createLink(atnID, connectornode.id, "presynaptic_to");
             statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
           }

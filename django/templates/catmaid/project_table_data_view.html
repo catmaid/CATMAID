@@ -10,7 +10,7 @@
 
 <table>
 {% for p in projects %}
-	{% if p.stacks.all|length > 0 %}
+	{% if p.stacks.count > 0 %}
 	<tr>
 		<td class="projectname">{{ p.title }}</td>
 		{% for s in p.stacks|order_by:'id' %}

@@ -42,7 +42,7 @@ var ReviewSystem = new function()
         var node = self.current_segment['sequence'][idx];
         project.moveTo(node.z, node.y, node.x, undefined,
          function () {
-            SkeletonAnnotations.staticSelectNode( node.id );
+            SkeletonAnnotations.staticSelectNode( node.id, skeletonID );
          });
     };
 

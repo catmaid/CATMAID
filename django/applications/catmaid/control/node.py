@@ -128,16 +128,8 @@ def node_list_tuples(request, project_id=None):
               treenodes.append(row[9:17] + (is_superuser or row[17] == user_id,))
 
         # Find connectors related to treenodes in the field of view
-
-        connectors = []
-        # A set of missing treenode IDs
-        missing_treenode_ids = set()
-        # Check if the active treenode is present; if not, load it
-        if -1 != atnid and not atnid in treenode_ids:
-            missing_treenode_ids.add(atnid)
         # Connectors found attached to treenodes
         crows = []
-        z0 = params['z']
 
         if treenode_ids:
             response_on_error = 'Failed to query connector locations.'
@@ -185,6 +177,13 @@ def node_list_tuples(request, project_id=None):
         for row in cursor.fetchall():
             crows.append(row)
 
+        connectors = []
+        # A set of missing treenode IDs
+        missing_treenode_ids = set()
+        # Check if the active treenode is present; if not, load it
+        if -1 != atnid and atnid not in treenode_ids:
+            # If atnid is a connector, it doesn't matter, won't be found in treenode table
+            missing_treenode_ids.add(atnid)
         # A set of unique connector IDs
         connector_ids = set()
         # The relations between connectors and treenodes, stored
@@ -257,6 +256,7 @@ def node_list_tuples(request, project_id=None):
 
         labels = defaultdict(list)
         if request.POST['labels']:
+            z0 = params['z']
             # Collect treenodes visible in the current section
             visible = ','.join(str(row[0]) for row in treenodes if row[4] == z0)
             if visible:

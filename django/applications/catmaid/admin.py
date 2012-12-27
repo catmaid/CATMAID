@@ -98,8 +98,11 @@ admin.site.register(Project, ProjectAdmin)
 admin.site.register(DataView, DataViewAdmin)
 admin.site.register(Stack, StackAdmin)
 admin.site.register(ProjectStack)
+
 # Replace the user admin view with custom view
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 # Register additional views
 admin.site.register_view('importer', importer_admin_view, 'Importer')
+admin.site.register(Overlay)
+

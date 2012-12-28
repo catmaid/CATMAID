@@ -498,31 +498,30 @@ class SkeletonlistDashboard(UserFocusedModel):
     skeleton_list = IntegerArrayField()
     description = models.TextField()
 
-class Component(UserFocusedModel):
-    class Meta:
-        db_table = "component"
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
+class Slices(UserFocusedModel):
+
+    creation_time = models.DateTimeField(default=now)
+    edition_time = models.DateTimeField(default=now)
+
     stack = models.ForeignKey(Stack)
 
-    assembly = models.ForeignKey(ClassInstance)
-    graphdb_id = models.IntegerField()
-    component_id = models.IntegerField()
+    assembly = models.ForeignKey(ClassInstance,null=True)
+    sectionindex = models.IntegerField() # index of the section
+    slice_id = models.IntegerField(db_index=True) # int id local to the section
+    node_id = models.CharField(max_length=255,db_index=True) # convention: {sectionindex}_{slide_id}
+    graphdb_node_id = models.IntegerField(null=True,db_index=True) # the id of the node in the graph db
 
     # boundingbox (in pixel coordiantes)
-    min_x = models.IntegerField()
-    min_y = models.IntegerField()
-    max_x = models.IntegerField()
-    max_y = models.IntegerField()
-    # z slice (as index)
-    z = models.IntegerField()
+    min_x = models.IntegerField(db_index=True)
+    min_y = models.IntegerField(db_index=True)
+    max_x = models.IntegerField(db_index=True)
+    max_y = models.IntegerField(db_index=True)
 
-    # distance from root node in the component tree
-    # distance_from_root =  models.IntegerField()
-
+    center_x = models.FloatField(db_index=True)
+    center_y = models.FloatField(db_index=True)
     threshold = models.FloatField()
-    # status: init, touched, selected
-    status = models.IntegerField(default=0)
+    size = models.IntegerField(db_index=True)
+    status =  models.CharField(max_length=255,default='new')
 
 class Drawing(UserFocusedModel):
     class Meta:

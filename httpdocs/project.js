@@ -137,7 +137,8 @@ function Project( pid )
 		'tree_object': {},
 		'table_treenode': {},
 		'selectedneuron': null,
-		'selectedskeleton': null
+		'selectedskeleton': null,
+        'selectedassembly': null
 	};
 
     this.setSelectObject = function( type, id ) {

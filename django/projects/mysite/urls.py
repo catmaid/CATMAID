@@ -55,21 +55,25 @@ urlpatterns += patterns(
     # Segmentation tool
     (r'^(?P<project_id>\d+)/assembly/component-count$', 'catmaid.control.component_count'),
 
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/components-for-point$', 'catmaid.control.get_component_list_for_point'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-at-location$', 'catmaid.control.slices_at_location'),
+
+
+
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/componentimage$', 'catmaid.control.get_component_image'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put-components$', 'catmaid.control.put_components'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-components$', 'catmaid.control.get_saved_components'),
+
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-of-assembly-for-section$', 'catmaid.control.slices_of_assembly_for_section'),
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/generate-segmentation-file$', 'catmaid.control.create_segmentation_file'),
-    # (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segmentation$', 'catmaid.control.get_segementation_tile'),
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put-drawing$', 'catmaid.control.put_drawing'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/delete-drawing$', 'catmaid.control.delete_drawing'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-drawings-by-component-id$', 'catmaid.control.get_saved_drawings_by_component_id'),
+
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-drawings-by-view$', 'catmaid.control.get_saved_drawings_by_view'),
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-drawing-enum$', 'catmaid.control.get_drawing_enum'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-mesh$', 'catmaid.control.generate_mesh'),
+
 
     # ------
 

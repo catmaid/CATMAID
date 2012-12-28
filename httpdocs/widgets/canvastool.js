@@ -214,14 +214,6 @@ function CanvasTool()
             self.initSkeleton();
         });
 
-        $('#button_init_hdf').click(function() {
-            self.generateSegmentationFile();
-        });
-        $('#button_mesh').click(function() {
-            self.generateMesh();
-        });
-
-
 
 
         self.removeElement("div_color_wheel_box");
@@ -265,9 +257,9 @@ function CanvasTool()
 
         $('#button_drawing_mode').click(function() {
 
-            if(project.selectedObjects.selectedskeleton==null)
+            if(null===project.selectedObjects.selectedassembly)
             {
-                window.alert('Please select a skeleton!');
+                window.alert('Please select an assembly!');
                 return
             }
 
@@ -492,26 +484,6 @@ function CanvasTool()
 
     };
 
-    this.generateSegmentationFile=function()
-    {
-        var url=  django_url+ project.id + "/stack/" + self.stack.id + '/generate-segmentation-file';
-
-        $.ajax({
-            url: url,
-            type: "POST",
-            data: {skeleton_id:project.selectedObjects.selectedskeleton },
-            dataType: "json",
-            beforeSend: function(x)
-            {
-                //Log before send
-            },
-            success: function(result)
-            {
-
-            }
-        });
-
-    };
 
     this.resize = function( width, height )
     {
@@ -523,7 +495,7 @@ function CanvasTool()
 
     this.mousewheel=function(e)
     {
-        if(project.selectedObjects.selectedskeleton==null||self.state!=self.stateEnum.COMPONENTVIEW || self.layerStore.componentLayers.length==0)
+        if(project.selectedObjects.selectedassembly==null||self.state!=self.stateEnum.COMPONENTVIEW || self.layerStore.componentLayers.length==0)
         {
             return;
         }
@@ -575,7 +547,7 @@ function CanvasTool()
         drawing.maxX=drawing.minX+path.width;
         drawing.maxY= drawing.minY+path.height;
         drawing.drawingObject=path;
-        drawing.skeletonId=project.selectedObjects.selectedskeleton;
+        drawing.assemblyId=project.selectedObjects.selectedassembly;
         canvasLayer.canvas.bringToFront(path);
 
         var currentComponentLayer=self.layerStore.componentLayers[self.stack.z];
@@ -631,9 +603,11 @@ function CanvasTool()
             return;
         }
 
-        if(self.state==self.stateEnum.COMPONENTVIEW && project.selectedObjects.selectedskeleton==null)
+        if(self.state==self.stateEnum.COMPONENTVIEW && project.selectedObjects.selectedassembly==null)
         {
-            window.alert('Please select a skeleton!');
+            // window.alert('Please select an assembly!');
+            // TODO: remove
+            project.setSelectObject('assembly', 64);
             return
         }
 
@@ -720,8 +694,12 @@ function CanvasTool()
 
     this.changeSlice = function( val )
     {
+        console.log('change slice');
+        // TODO find directionality
+
         if(self.stack.z==val)
-        {return;}
+            {return;}
+
         //Save current component groups & drawings
         self.putComponents();
 
@@ -789,26 +767,37 @@ function CanvasTool()
 
     this.loadComponents=function()
     {
-        if(self.layerStore.componentLayers[self.stack.z]==undefined)
-        {
-            self.layerStore.componentLayers[self.stack.z]=new ComponentLayer();
-        }
+        console.log('load components for an assembly from previous selections');
 
-        if(project.selectedObjects.selectedskeleton==null||self.state!=self.stateEnum.COMPONENTVIEW )
+        // check if there exists already a component store for this layer
+        // if not, create it
+        if(undefined === self.layerStore.componentLayers[self.stack.z])
+        {
+            self.layerStore.componentLayers[self.stack.z] = new ComponentLayer();
+        }
+        var currentComponentGroups=self.layerStore.componentLayers[self.stack.z].componentGroups;
+
+        // a layer store has component layers for each z-index
+        // a component layer has component groups
+        // a component group has components
+        // a component can have 0,1,2 slices
+
+        // does what?
+        if(project.selectedObjects.selectedassembly==null||self.state!=self.stateEnum.COMPONENTVIEW )
         {
             self.showActiveElements();
             return;
         }
 
-        var url= django_url + project.id + "/stack/" + self.stack.id + '/get-saved-components'+ "?" + $.param({
-            skeleton_id:project.selectedObjects.selectedskeleton,
-            z : self.stack.z});
+        var url= django_url + project.id + "/stack/" + self.stack.id + '/slices-of-assembly-for-section'+ "?" + $.param({
+            assembly_id: project.selectedObjects.selectedassembly,
+            sectionindex : self.stack.z});
 
-        $.getJSON(url,function(result)
+        $.getJSON(url, function(result)
         {
             //TODO: Load only not already loaded components!!!
-            self.layerStore.componentLayers[self.stack.z]=new ComponentLayer();
-            var currentComponentGroups=self.layerStore.componentLayers[self.stack.z].componentGroups;
+            console.log('found', result);
+            return;
 
             for (var componentResultId in result)
             {
@@ -858,15 +847,14 @@ function CanvasTool()
     {
 
         var url= django_url + project.id + "/stack/" + self.stack.id + '/get-saved-drawings-by-component-id'+ "?" + $.param({
-            z : self.stack.z,
-            skeleton_id:project.selectedObjects.selectedskeleton,
+            z: self.stack.z,
+            assembly_id: project.selectedObjects.selectedassembly,
             component_id: componentId});
 
         $.getJSON(url,function(result)
         {
             self.parseDrawingList(result,false);
             self.showDrawingsByComponentId(componentId,false);
-
         });
     };
 
@@ -994,31 +982,6 @@ function CanvasTool()
     //Saving functions
     //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-    this.generateMesh=function()
-    {
-
-        var url=  django_url+ project.id + "/stack/" + self.stack.id + '/get-mesh';
-        var viewState=canvasLayer.getFieldOfViewParameters();
-
-        $.ajax({
-            url: url,
-            type: "POST",
-            data: {skeleton_id:project.selectedObjects.selectedskeleton,z:self.stack.z,x:viewState.x,y:viewState.y,width:viewState.width,height:viewState.height },
-            dataType: "json",
-            beforeSend: function(x)
-            {
-                //Log before send
-            },
-            success: function(result)
-            {
-
-
-            }
-        });
-
-    };
-
-
     this.putDrawing=function(drawing)
     {
         var url=  django_url+ project.id + "/stack/" + self.stack.id + '/put-drawing';
@@ -1029,7 +992,7 @@ function CanvasTool()
         $.ajax({
             url: url,
             type: "POST",
-            data: {skeleton_id:project.selectedObjects.selectedskeleton,z:self.stack.z,x:viewState.x,y:viewState.y,width:viewState.width,height:viewState.height,drawing: JSON.stringify(drawingToJson) },
+            data: {assembly_id:project.selectedObjects.selectedassembly,z:self.stack.z,x:viewState.x,y:viewState.y,width:viewState.width,height:viewState.height,drawing: JSON.stringify(drawingToJson) },
             dataType: "json",
             beforeSend: function(x)
             {
@@ -1045,15 +1008,15 @@ function CanvasTool()
     };
 
 
-    this.putComponents=function(skeletonID)
+    this.putComponents=function(assemblyID)
     {
-        if(project.selectedObjects.selectedskeleton==null||!(self.state==self.stateEnum.COMPONENTVIEW||self.state==self.stateEnum.COMPONENTDRAW) || self.layerStore.componentLayers.length==0)
+        if(project.selectedObjects.selectedassembly==null||!(self.state==self.stateEnum.COMPONENTVIEW||self.state==self.stateEnum.COMPONENTDRAW) || self.layerStore.componentLayers.length==0)
         {
             return 0;
         }
-        if(skeletonID==undefined || skeletonID==null)
+        if(assemblyID==undefined || assemblyID==null)
         {
-            skeletonID=project.selectedObjects.selectedskeleton;
+            assemblyID=project.selectedObjects.selectedassembly;
         }
 
         //TODO:remove debug url
@@ -1078,7 +1041,7 @@ function CanvasTool()
         $.ajax({
             url: url,
             type: "POST",
-            data: {skeleton_id:skeletonID,z:self.stack.z,x:viewstate.x,y:viewstate.y,width:viewstate.width,height:viewstate.height,components: JSON.stringify(jsonObjects) },
+            data: {assembly_id:assemblyID,z:self.stack.z,x:viewstate.x,y:viewstate.y,width:viewstate.width,height:viewstate.height,components: JSON.stringify(jsonObjects) },
             dataType: "json",
             beforeSend: function(x) {
                 //Log before send
@@ -1099,15 +1062,14 @@ function CanvasTool()
 
     this.initSkeleton=function()
     {
-        if(project.selectedObjects.selectedskeleton==null){return;}
+        if(project.selectedObjects.selectedassembly==null){return;}
 
-
-        $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Initializing skeleton. Just a moment...</h2>' });
+        $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Initializing assembly. Just a moment...</h2>' });
         requestQueue.register(
 
             django_url + project.id + "/stack/" + self.stack.id + '/initialize_components',
             "POST", {
-                skeleton_id:project.selectedObjects.selectedskeleton
+                assembly_id:project.selectedObjects.selectedassembly
             }, function (status, text, xml) {
                 $.unblockUI();
                 if (status === 200) {
@@ -1158,6 +1120,8 @@ function CanvasTool()
 
     this.showUnassociatedDrawings=function(updatePosition)
     {
+        console.log('show unassociated drawings skipped');
+        return;
         for (var drawingId in self.layerStore.drawingLayers[self.stack.z].drawings)
         {
             if(self.layerStore.drawingLayers[self.stack.z].drawings.hasOwnProperty(drawingId))
@@ -1180,7 +1144,7 @@ function CanvasTool()
 
     this.showActiveComponents=function(updatePosition)
     {
-        if(project.selectedObjects.selectedskeleton==null ||self.layerStore.componentLayers[self.stack.z]==undefined)
+        if(project.selectedObjects.selectedassembly==null ||self.layerStore.componentLayers[self.stack.z]==undefined)
         {
             return;
         }
@@ -1470,24 +1434,57 @@ function CanvasTool()
     };
 
 
-    this.getComponents= function(x,y,activeGroupIndex)
+    this.getComponents = function(x,y,activeGroupIndex)
     {
-        if(self.state!=self.stateEnum.COMPONENTVIEW)
+        if(self.state != self.stateEnum.COMPONENTVIEW)
         {
             return 0;
         }
         var fieldOfView=canvasLayer.getFieldOfViewParameters();
 
-        var url= django_url + project.id + "/stack/" + self.stack.id + '/components-for-point'+ "?" + $.param({
+        var url= django_url + project.id + "/stack/" + self.stack.id + '/slices-at-location'+ "?" + $.param({
             x: self.getStackXFromCanvasX(x),
             y: self.getStackYFromCanvasY(y),
             scale : 0.5, // defined as 1/2**zoomlevel
             z : self.stack.z});
 
+        console.log('url', url);
 
-        $.getJSON(url,function(result){
+        $.getJSON(url, function(result){
 
-            var currentComponentGroups=self.layerStore.componentLayers[self.stack.z].componentGroups;
+            console.log('found slices', result);
+            for (var sidx in result) {
+
+                var slice = result[sidx];
+                console.log('slice', slice);
+
+                var url = 'http://localhost/slices/';
+                // convert slice id to path
+                url += slice.sectionindex + '';
+                var sliceid_string = slice.slice_id + '';
+                for ( var i = 0; i < sliceid_string.length-1; i++ )
+                {
+                    url += '/' + sliceid_string.charAt(i);
+                }
+                url += '/' + sliceid_string.charAt(sliceid_string.length-1) + '.png';
+                // TODO: remove again
+                fabric.Image.fromURL(url, function(img)
+                {
+                    var centerx = Math.round(slice.min_x+(slice.max_x-slice.min_x)/2);
+                    var centery = Math.round(slice.min_y+(slice.max_y-slice.min_y)/2);
+                    console.log(img, centerx, centery)
+                    img.set({
+                        left: self.getCanvasXFromStackX(centerx),
+                        top: self.getCanvasYFromStackY(centery),
+                        angle: 0,
+                        clipTo: img }).scale(1);
+                    canvasLayer.canvas.add( img );
+                });
+            }
+
+            return;
+
+            var currentComponentGroups = self.layerStore.componentLayers[self.stack.z].componentGroups;
 
             var componentGroupIdNew=currentComponentGroups.length;
             var componentGroupNew=null;
@@ -1584,9 +1581,7 @@ function CanvasTool()
                     }
                 }
 
-
             }
-
 
         });
 
@@ -1613,11 +1608,19 @@ function CanvasTool()
                     alpha:self.componentColor[3]
                     });
 
+        // TODO: write fabric.js filter
+
+        // TODO: generate URL from sectionindex and sliceid
+
         component.visible=visible;
 
         fabric.Image.fromURL(url, function(img)
         {
-            component.image = img.set({ left: self.getCanvasXFromStackX(component.centerX()), top: self.getCanvasYFromStackY(component.centerY()), angle: 0,clipTo:img }).scale(1);
+            component.image = img.set({
+                left: self.getCanvasXFromStackX(component.centerX()),
+                top: self.getCanvasYFromStackY(component.centerY()),
+                angle: 0,
+                clipTo:img }).scale(1);
             if(visible)
             {
                 canvasLayer.canvas.add(component.image);
@@ -1641,24 +1644,22 @@ function CanvasTool()
     //Helper functions
     //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-    this.getCanvasXFromStackX=function(stackX)
+    this.getCanvasXFromStackX = function(stackX)
     {
-
         return stackX-canvasLayer.getFieldOfViewParameters().x;
-
     };
 
-    this.getCanvasYFromStackY=function(stackY)
+    this.getCanvasYFromStackY = function(stackY)
     {
         return stackY-canvasLayer.getFieldOfViewParameters().y;
     };
 
-    this.getStackYFromCanvasY=function(canvasY)
+    this.getStackYFromCanvasY = function(canvasY)
     {
         return canvasLayer.getFieldOfViewParameters().y+canvasY;
     };
 
-    this.getStackXFromCanvasX=function(canvasX)
+    this.getStackXFromCanvasX = function(canvasX)
     {
         return canvasLayer.getFieldOfViewParameters().x+canvasX;
     };
@@ -1667,22 +1668,23 @@ function CanvasTool()
         canvasLayer.canvas.freeDrawingColor = color;
     };
 
-    this.rgbToHex=function(R,G,B) {return self.toHex(R)+self.toHex(G)+self.toHex(B)}
-    this.toHex=function(n) {
+    this.rgbToHex = function(R,G,B) { return self.toHex(R)+self.toHex(G)+self.toHex(B) }
+
+    this.toHex = function(n) {
         n = parseInt(n,10);
         if (isNaN(n)) return "00";
         n = Math.max(0,Math.min(n,255));
         return "0123456789ABCDEF".charAt((n-n%16)/16)
             + "0123456789ABCDEF".charAt(n%16);
-    }
+    };
 
     this.rgbArrayToRgbString=function(array,invert){
         if(invert) {
             //return "rgb("+(255-array[0]).toString()+","+(255-array[1]).toString()+","+(255-array[2]).toString()+")"
             return "rgb("+(0).toString()+","+(255).toString()+","+(0).toString()+")"
         };
-        return "rgb("+array[0]+","+array[1]+","+array[2]+")"};
-
+        return "rgb("+array[0]+","+array[1]+","+array[2]+")"
+    };
 
 }
 
@@ -1765,7 +1767,6 @@ function LayerStore()
     this.componentLayers=[];
     this.drawingLayers=[];
 }
-
 
 function EnumFactory()
 {

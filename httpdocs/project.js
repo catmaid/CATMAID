@@ -151,11 +151,13 @@ function Project( pid )
             this.selectedObjects.selectedskeleton = id;
         } else if( type == "assembly" ) {
             this.selectedObjects.selectedassembly = id;
-            // depending on the chosen tool, trigger functions
-            if( self.getTool().toolname === 'canvastool' ) {
-                self.getTool().on_assembly_id_change( this.selectedObjects.selectedassembly );
-            }
         }
+        // if the segmentation tool is select, we need to update
+        // the assembly id
+        if( self.getTool().toolname === 'segmentationtool' ) {
+            self.getTool().on_assembly_id_change( this.selectedObjects.selectedassembly );
+        }
+
     };
 
     this.hideToolbars = function()

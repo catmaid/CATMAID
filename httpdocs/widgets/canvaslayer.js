@@ -158,7 +158,7 @@ function CanvasLayer( stack )
     view.id = "canvasOverlayId";
     view.style.zIndex = 5;
     view.style.opacity = 0.5;
-    //view.style.border = "solid red 1px";
+    view.style.border = "solid red 1px";
     //view.style.position = 'absolute';
     self.view = view;
 

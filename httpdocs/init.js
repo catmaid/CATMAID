@@ -558,7 +558,10 @@ function handle_openProjectStack( status, text, xml )
 			  project.setTool( new Navigator() );
 			} else if ( inittool === 'canvastool' ) {
         project.setTool( new CanvasTool() );
+      } else if ( inittool === 'segmentationtool' ) {
+        project.setTool( new SegmentationTool() );
       }
+
 
 			//! if the stack was initialized by an URL query, move it to a given position
 			if ( pid == e.pid && sids.length > 0 )

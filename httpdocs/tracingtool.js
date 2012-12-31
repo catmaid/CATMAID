@@ -108,6 +108,8 @@ function TracingTool()
 	 */
 	this.register = function( parentStack )
   {
+    console.log('tracing register');
+    console.trace();
     setupSubTools();
 
     if (tracingLayer && stack) {

@@ -246,7 +246,7 @@ var editToolActions = [
 	}),
 
     new Action({
-       helpText: "Segmentation Tool",
+       helpText: "Canvas Tool",
        buttonID: 'edit_button_canvas',
        buttonName: 'canvas',
        keyShortcuts: {
@@ -261,6 +261,25 @@ var editToolActions = [
           project.setTool( new CanvasTool() );
        }
     }),
+
+  new Action({
+     helpText: "Segmentation Tool",
+     buttonID: 'edit_button_segmentation',
+     buttonName: 'canvas',
+     keyShortcuts: {
+
+     },
+     run: function (e) {
+        // TODO: change to set zoom level for segmentation
+        // check if zoom level 0 active
+        if( project.focusedStack.s !== 0 ) {
+          alert('Segmentation Tool only works on zoom-level 0!');
+          return;
+        }
+        project.setTool( new SegmentationTool() );
+     }
+  }),
+
 
 	new Action({
 		helpText: "Tracing tool",

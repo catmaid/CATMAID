@@ -63,7 +63,7 @@
 		<script type="text/javascript" src="action.js"></script>
 		<script type="text/javascript" src="project.js"></script>
 		<script type="text/javascript" src="overview.js"></script>
-    <script type="text/javascript" src="overviewlayer.js"></script>
+		<script type="text/javascript" src="overviewlayer.js"></script>
 		<script type="text/javascript" src="stack.js"></script>
 		<script type="text/javascript" src="tilesource.js"></script>
 		<script type="text/javascript" src="tilelayer.js"></script>
@@ -74,8 +74,9 @@
 		<script type="text/javascript" src="croppingtool.js"></script>
 		<script type="text/javascript" src="tracingtool.js"></script>
 		<script type="text/javascript" src="tracinglayer.js"></script>
-    <script type="text/javascript" src="widgets/canvastool.js"></script>
-    <script type="text/javascript" src="widgets/canvaslayer.js"></script>
+		<script type="text/javascript" src="segmentationtool.js"></script>
+		<script type="text/javascript" src="widgets/canvastool.js"></script>
+		<script type="text/javascript" src="widgets/canvaslayer.js"></script>
 		<!--[if gte IE 5]>
 		<script type="text/javascript" src="libs/excanvas/excanvas.js"></script>
 		<script type="text/javascript">var IE = true;</script>
@@ -216,9 +217,13 @@
 				<div class="toolbar_fill"></div>
 			</div>
 
-			<!--
+			<!-- Segmentation Tool
 			*******************************************************************
 			-->
+			<div id="toolbar_segmentation" class="toolbar" style="display:none;">
+				<div id="sliders_box_segmentation"></div>
+				<div class="toolbar_fill"></div>
+			</div>
 			
 			<!-- Textlabels
 			*******************************************************************

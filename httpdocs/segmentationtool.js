@@ -18,6 +18,10 @@ function SegmentationTool()
     // the canvas layer using fabric.js
     var canvasLayer = null;
 
+    // base url for slices, filename ending
+    var slice_base_url = 'http://localhost/slices/',
+        slice_filename_extension = '.png';
+
     if (!ui) ui = new UI();
 
     this.on_assembly_id_change = function( assembly_id ) {
@@ -51,6 +55,9 @@ function SegmentationTool()
         self.unregister();
 
         self.destroyToolbar();
+
+        // remove the view element from the DOM
+        canvasLayer.unregister();
 
         self.stack.removeLayer( "CanvasLayer" );
 
@@ -136,6 +143,25 @@ function SegmentationTool()
         canvasLayer = new CanvasLayer( self.stack );
         canvasLayer.canvas.interactive = false;
         canvasLayer.canvas.selection = false;
+
+        canvasLayer.canvas.on({
+          'object:selected': function(e) {
+            console.log('object selected');
+            // TODO:
+            // fetch segments for selected slice
+            // e.target.slice.fetch_segments();
+            // - global variable of active slice: setActiveSlice
+            // - change slice appareance with a filter
+          },
+          'object:moving': function(e) {
+            console.log('object moving', e);
+            e.target.opacity = 0.5;
+          },
+          'object:modified': function(e) {
+            console.log('object modified');
+            e.target.opacity = 1;
+          }
+        });
 
         // add the layer to the stack, and implicitly
         // add the view element to the DOM
@@ -338,57 +364,146 @@ function SegmentationTool()
 
         console.log('url', url);
 
-
         $.getJSON(url, function(result){
             console.log('found slices', result);
+            result = [{
+            'sectionindex':0,
+            'imageurl':'http://localhost/ladybug1.png',
+            'min_x': 10,
+            'max_x': 400,
+            'min_y': 10,
+            'max_y': 300
+            }]
             for (var sidx in result) {
-
                 var slice = result[sidx];
                 console.log('slice', slice);
 
-                var url = 'http://localhost/slices/';
-
-                // convert slice id to path
-                //url += self.generate_path_for_slice( slice.sectionindex, slice.slice_id ) + '.png';
-                url += self.generate_path_for_slice( 0, 23434 ) + '.png';
-
-                /*
+                // TODO: 
+                // - init Slice object
+                // - add to global Slice container
+                // - generate iterator over slices
+                //    -> need a slice array, keyed by current active, visible slice
+                //       which is then also used to select it
+                
                 fabric.Image.fromURL(url, function(img)
                 {
                     var centerx = Math.round(slice.min_x+(slice.max_x-slice.min_x)/2);
                     var centery = Math.round(slice.min_y+(slice.max_y-slice.min_y)/2);
-                    console.log(img, centerx, centery)
+                    console.log(img, centerx, centery, self.getCanvasXFromStackX(centerx),
+                        self.getCanvasYFromStackY(centery))
                     img.set({
                         left: self.getCanvasXFromStackX(centerx),
                         top: self.getCanvasYFromStackY(centery),
                         angle: 0,
                         clipTo: img }).scale(1);
+
+                    img.perPixelTargetFind = true;
+                    img.targetFindTolerance = 4;
+                    img.hasControls = img.hasBorders = false;
+                    img.slice = slice;
                     canvasLayer.canvas.add( img );
-                }); */
+                });
             }
         });
 
         return;
     }
 
-    this.getCanvasXFromStackX = function(stackX)
+    this.getCanvasXFromStackX = function( stackX )
     {
         return stackX - canvasLayer.getFieldOfViewParameters().x;
     };
 
-    this.getCanvasYFromStackY = function(stackY)
+    this.getCanvasYFromStackY = function( stackY )
     {
         return stackY - canvasLayer.getFieldOfViewParameters().y;
     };
 
-    this.getStackYFromCanvasY = function(canvasY)
+    this.getStackYFromCanvasY = function( canvasY )
     {
         return canvasLayer.getFieldOfViewParameters().y + canvasY;
     };
 
-    this.getStackXFromCanvasX = function(canvasX)
+    this.getStackXFromCanvasX = function( canvasX )
     {
         return canvasLayer.getFieldOfViewParameters().x + canvasX;
     };
+
+    function Segment()
+    {
+        this.id = null;
+    }
+
+    function Slice()
+    {
+        this.id = null;
+        this.assembly_id = null;
+        this.sectionindex = null;
+        this.slice_id = null; // int id local to the section
+        this.node_id = null; // convention: {sectionindex}_{slide_id}
+        this.graphdb_node_id = null; // the id of the node in the graph db
+   
+        this.min_x = null
+        this.min_y = null
+        this.max_x = null;
+        this.max_y = null;
+    
+        this.center_x = null;
+        this.center_y = null;
+        this.threshold = null;
+        this.size = null;
+        this.status = null;
+
+        this.img = null;
+
+        this.segments_left = new Object();
+        this.selected_segment_left = null;
+
+        this.segments_right = new Object();
+        this.selected_segment_right = null;
+
+        this.visible = false;
+
+        this.show = function() {
+            this.img.visible = true;
+            this.visible = true;
+        };
+
+        this.hide = function() {
+            this.img.visible = false;
+            this.visible = false;
+        };
+
+        /*
+        ** Fetch connected segments of this slices
+        ** and initialize segments_{left|right} object
+        */
+        this.fetch_segments = function () {
+            // TODO
+        };
+
+        /*
+        ** Generate the absolute URL to the slice image
+        ** using the sectionindex and slice id convention
+        */
+        this.get_slice_image_url = function() {
+            return slice_base_url + 
+                self.generate_path_for_slice( this.sectionindex, this.slice_id ) +
+                slice_filename_extension;
+        };
+
+        this.width = function() {
+            return this.max_x - this.min_x; };
+
+        this.height = function() {
+            return this.max_y - this.min_y; };
+
+        this.centerX = function() {
+            return Math.round(this.min_x + (this.max_x - this.min_x) / 2); };
+
+        this.centerY = function() {
+            return Math.round(this.min_y + (this.max_y - this.min_y) / 2); };
+
+    }
 
 }

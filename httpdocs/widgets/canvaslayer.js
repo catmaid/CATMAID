@@ -176,21 +176,6 @@ function CanvasLayer( stack )
     self.canvas = canvas;
     self.setFieldOfView();
 
-/*    canvas.add(
-        new fabric.Rect({ top: 50, left: 50, width: 50, height: 50, fill: '#f55' })
-    );
-
-
-    var rect = new fabric.Rect({
-        top: 100,
-        left: 100,
-        width: 60,
-        height: 70,
-        fill: 'red'
-    });
-    canvas.add(rect);
-*/
-
     this.unregister = function()
     {
         stack.getView().removeChild( view );

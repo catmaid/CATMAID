@@ -32,8 +32,6 @@ function CanvasLayer( stack )
         // TODO: Resize is called too much
         //this.setFieldOfView();
         self.redraw();
-
-
         return;
     }
 
@@ -118,7 +116,7 @@ function CanvasLayer( stack )
                 height = fv.stackDivHeight - Math.abs(fv.worldTopC) ;
             }
         }
-
+        //console.log('new canvas dimension',canvasleft, canvastop,width, height )
         self.updateCanvasLeftTop( canvasleft, canvastop );
         self.updateCanvasWidthHeight( width, height );
     }
@@ -158,7 +156,7 @@ function CanvasLayer( stack )
     view.id = "canvasOverlayId";
     view.style.zIndex = 5;
     view.style.opacity = 0.5;
-    view.style.border = "solid red 1px";
+    //view.style.border = "solid red 4px";
     //view.style.position = 'absolute';
     self.view = view;
 

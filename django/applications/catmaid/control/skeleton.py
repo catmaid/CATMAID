@@ -54,6 +54,11 @@ def split_skeleton(request, project_id=None):
     # find downstream nodes starting from target treenode_id
     # and generate the list of IDs to change, starting at treenode_id (inclusive)
     change_list = nx.bfs_tree(graph, treenode_id).nodes()
+    if not change_list:
+        # When splitting an end node, the bfs_tree doesn't return any nodes,
+        # which is surprising, because when the splitted tree has 2 or more nodes
+        # the node at which the split is made is included in the list.
+        change_list.append(treenode_id)
     # create a new skeleton
     new_skeleton = ClassInstance()
     new_skeleton.name = 'Skeleton'

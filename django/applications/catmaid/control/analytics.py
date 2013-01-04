@@ -2,7 +2,7 @@ from django.db import connection
 from django.http import HttpResponse
 from catmaid.control.authentication import requires_user_role
 from catmaid.models import UserRole
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 import json
 
 @requires_user_role(UserRole.Annotate)
@@ -14,7 +14,8 @@ def analyze_skeletons(request, project_id=None):
     types = {0: "Two or more times postsynaptic to the same connector",
              1: "Autapse",
              2: "Connector without postsynaptic targets",
-             3: "Connector without presynaptic skeleton"}
+             3: "Connector without presynaptic skeleton",
+             4: "End node without a tag"}
 
     return HttpResponse(json.dumps(types, issues))
 
@@ -106,5 +107,24 @@ def _analyze_skeleton(project_id, skeleton_id):
     ''' % (",".join(str(connector_id) for connector_id in post), str(relations[PRE])))
     for connector_id in post.difference(set(row[0] for row in cursor.fetchall())):
         issues.append((3, connector_id))
+
+    # Type 4: end node without a tag
+    cursor.execute('''
+    SELECT treenode.id,
+           treenode.parent_id,
+           treenode_class_instance.class_instance_id
+    FROM treenode LEFT OUTER JOIN treenode_class_instance ON treenode.id = treenode_class_instance.treenode_id,
+         relation
+    WHERE treenode.skeleton_id = %s
+      AND treenode_class_instance.relation_id = relation.id
+      AND relation.name = 'labeled_as'
+    ''' % skeleton_id)
+    rows = tuple(cursor.fetchall())
+    parents = set(row[1] for row in rows)
+    for row in rows:
+        if row[0] not in parents and not row[2]:
+            # node is a leaf without a tag
+            issues.append((4, row[0]))
+
 
     return issues

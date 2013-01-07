@@ -1,14 +1,14 @@
 /**
  * Creates a new tile source, based on a source type.
  */
-function getTileSource( tileSourceType, fileExtension )
+function getTileSource( tileSourceType, baseURL, fileExtension )
 {
     var tileSources = [DefaultTileSource, RequestTileSource,
         HDF5TileSource, BackslashTileSource];
 
     if (tileSourceType > 0 && tileSourceType <= tileSources.length)
     {
-        return new tileSources[tileSourceType - 1]( fileExtension );
+        return new tileSources[tileSourceType - 1]( baseURL, fileExtension );
     }
     else
     {
@@ -21,13 +21,13 @@ function getTileSource( tileSourceType, fileExtension )
  *
  * Source type: 1
  */
-function DefaultTileSource( fileExtension )
+function DefaultTileSource( baseURL, fileExtension )
 {
     /**
      * Return the URL of a single tile, defined by it grid position
      * (x, y), ...
      */
-    this.getTileURL = function( project, stack, baseURL, baseName,
+    this.getTileURL = function( project, stack, baseName,
         tileWidth, tileHeight, col, row, zoom_level )
     {
         return baseURL + baseName + row + "_" + col + "_" + zoom_level + "." + fileExtension;
@@ -35,7 +35,7 @@ function DefaultTileSource( fileExtension )
 
     this.getOverviewLayer = function( layer )
     {
-        return new GenericOverviewLayer( layer, fileExtension );
+        return new GenericOverviewLayer( layer, baseURL, fileExtension );
     }
 }
 
@@ -45,9 +45,9 @@ function DefaultTileSource( fileExtension )
  *
  * Source type: 2
  */
-function RequestTileSource( fileExtension )
+function RequestTileSource( baseURL, fileExtension )
 {
-    this.getTileURL = function( project, stack, baseURL, baseName,
+    this.getTileURL = function( project, stack, baseName,
         tileWidth, tileHeight, col, row, zoom_level )
     {
         return baseURL + "?" + $.param({
@@ -72,9 +72,9 @@ function RequestTileSource( fileExtension )
 *
 * Source type: 3
 */
-function HDF5TileSource( fileExtension )
+function HDF5TileSource( baseURL, fileExtension )
 {
-    this.getTileURL = function( project, stack, baseURL, baseName,
+    this.getTileURL = function( project, stack, baseName,
         tileWidth, tileHeight, col, row, zoom_level )
     {
         return django_url + project.id + '/stack/' + stack.id + '/tile?' + $.param({
@@ -104,13 +104,13 @@ function HDF5TileSource( fileExtension )
  *
  * Source type: 4
  */
-function BackslashTileSource( fileExtension )
+function BackslashTileSource( baseURL, fileExtension )
 {
     /**
      * Return the URL of a single tile, defined by it grid position
      * (x, y), ...
      */
-    this.getTileURL = function( project, stack, baseURL, baseName,
+    this.getTileURL = function( project, stack, baseName,
         tileWidth, tileHeight, col, row, zoom_level )
     {
         return baseURL + baseName + zoom_level + "/" + row + "_" + col + "." + fileExtension;
@@ -118,7 +118,7 @@ function BackslashTileSource( fileExtension )
 
     this.getOverviewLayer = function( layer )
     {
-        return new GenericOverviewLayer( layer, fileExtension );
+        return new GenericOverviewLayer( layer, baseURL, fileExtension );
     }
 }
 
@@ -140,11 +140,11 @@ function DummyOverviewLayer()
  * This is an overviewlayer that displays a small overview
  * map.
  */
-function GenericOverviewLayer( layer, fileExtension )
+function GenericOverviewLayer( layer, baseURL, fileExtension )
 {
     this.redraw = function()
     {
-        img.src = layer.baseURL + stack.z + "/small." + fileExtension;
+        img.src = baseURL + stack.z + "/small." + fileExtension;
     }
 
     this.unregister = function()

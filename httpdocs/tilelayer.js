@@ -50,7 +50,6 @@ function getTileBaseName3D( stack, pixelPos, adjacent )
  */
 function TileLayer(
 		stack,						//!< reference to the parent stack
-		baseURL,					//!< base URL for image tiles
 		tileWidth,
 		tileHeight,
 		tileSource
@@ -235,7 +234,7 @@ function TileLayer(
 				{
 					tiles[ i ][ j ].alt = "";
 					tiles[ i ][ j ].src = self.tileSource.getTileURL( project, stack,
-						baseURL, tileBaseName, tileWidth, tileHeight, c, r, zoom);
+						tileBaseName, tileWidth, tileHeight, c, r, zoom);
 
           // prefetch tiles
           // TODO: fetch information in stack table: -2, -1, 1, 2
@@ -343,7 +342,6 @@ function TileLayer(
 	var LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
 	var LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
 
-	self.baseURL = baseURL;
 	self.tileSource = tileSource;
 
 	var overviewLayer = tileSource.getOverviewLayer( this );

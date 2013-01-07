@@ -53,8 +53,6 @@ function TileLayer(
 		baseURL,					//!< base URL for image tiles
 		tileWidth,
 		tileHeight,
-		fileExtension,
-		tileSourceType,
 		tileSource
 		)
 {
@@ -237,8 +235,7 @@ function TileLayer(
 				{
 					tiles[ i ][ j ].alt = "";
 					tiles[ i ][ j ].src = self.tileSource.getTileURL( project, stack,
-						baseURL, tileBaseName, tileWidth, tileHeight, fileExtension,
-						c, r, zoom);
+						baseURL, tileBaseName, tileWidth, tileHeight, c, r, zoom);
 
           // prefetch tiles
           // TODO: fetch information in stack table: -2, -1, 1, 2
@@ -318,30 +315,6 @@ function TileLayer(
 	 */
 	this.getStack = function(){ return stack; }
 
-	var OverviewLayer = function()
-	{
-		this.redraw = function()
-		{
-      if( tileSourceType === 1 || tileSourceType === 4 ) {
-          img.src = baseURL + stack.z + "/small." + fileExtension;
-			}
-		}
-
-		this.unregister = function()
-		{
-			if ( img.parentNode )
-				img.parentNode.removeChild( img );
-		}
-
-    if( tileSourceType === 1 || tileSourceType === 4 ) {
-      var img = document.createElement( "img" );
-      img.className = "smallMapMap";
-      this.redraw(); // sets the img URL
-      stack.overview.getView().appendChild( img );
-      stack.overview.addLayer( "tilelayer", this );
-    }
-	}
-
 	this.setOpacity = function( val )
 	{
 		tilesContainer.style.opacity = val+"";
@@ -366,12 +339,12 @@ function TileLayer(
 	var tilesContainer = document.createElement( "div" );
 	tilesContainer.className = "sliceTiles";
 	stack.getView().appendChild( tilesContainer );
-
-  var overviewLayer = new OverviewLayer();
 	
 	var LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
 	var LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
-	
+
 	self.baseURL = baseURL;
 	self.tileSource = tileSource;
+
+	var overviewLayer = tileSource.getOverviewLayer( this );
 }

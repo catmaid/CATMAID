@@ -1049,6 +1049,8 @@ var WindowMaker = new function()
 			'<div class="piechart">' + 
 				'<h3>Annotation User Contribution</h3>' +
 				'<div id="piechart_treenode_holder"></div>' +
+        '<div id="piechart_editor_holder"></div>' +
+        '<div id="piechart_reviewer_holder"></div>' +
 			'</div><br clear="all" />' +
       '<div class="annotation-history">' + 
 				'<h3 style="text-align: center">Annotation History</h3>' +

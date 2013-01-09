@@ -122,6 +122,8 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/logs/list$', 'catmaid.control.list_logs'),
     (r'^(?P<project_id>\d+)/search$', 'catmaid.control.search'),
     (r'^(?P<project_id>\d+)/stats$', 'catmaid.control.stats'),
+    (r'^(?P<project_id>\d+)/stats-editor$', 'catmaid.control.stats_editor'),
+    (r'^(?P<project_id>\d+)/stats-reviewer$', 'catmaid.control.stats_reviewer'),
     (r'^(?P<project_id>\d+)/stats-summary$', 'catmaid.control.stats_summary'),
     (r'^(?P<project_id>\d+)/stats-history$', 'catmaid.control.stats_history'),
 

@@ -568,6 +568,7 @@ var WindowMaker = new function()
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
+            '<th>s</ht>' +
             '<th>tags</th>' +
             '<th id="connector_nr_nodes_top"># nodes for target(s)</th>' +
             '<th>username</th>' +
@@ -581,6 +582,7 @@ var WindowMaker = new function()
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
+            '<th>s</ht>' +
             '<th>tags</th>' +
             '<th id="connector_nr_nodes_bottom"># nodes for target(s)</th>' +
             '<th>username</th>' +

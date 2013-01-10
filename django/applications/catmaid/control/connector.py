@@ -24,8 +24,7 @@ def list_connector(request, project_id=None):
     display_start = int(request.POST.get('iDisplayStart', None))
     display_length = int(request.POST.get('iDisplayLength', None))
     sorting_column = int(request.POST.get('iSortCol_0', 0))
-    sorting_direction = request.POST.get('sSortDir_0', 'DESC')
-    sort_descending = upper(sorting_direction) != 'ASC'
+    sort_descending = upper(request.POST.get('sSortDir_0', 'DESC')) != 'ASC'
 
     response_on_error = ''
     try:
@@ -183,24 +182,31 @@ def list_connector(request, project_id=None):
                 labels = ''
 
             row = []
-            row.append(str(c['connector_id']))
-            row.append(str(c['other_skeleton_id']))
-            row.append(str('%.2f' % c['other_treenode_x']))
-            row.append(str('%.2f' % c['other_treenode_y']))
-            row.append(str('%.2f' % c['other_treenode_z']))
+            row.append(c['connector_id'])
+            row.append(c['other_skeleton_id'])
+            row.append(c['other_treenode_x']) #('%.2f' % )
+            row.append(c['other_treenode_y'])
+            z = c['other_treenode_z']
+            row.append(z)
             row.append(labels)
-            row.append(str(connected_skeleton_treenode_count))
-            row.append(str(c['connector_username']))
-            row.append(str(c['other_treenode_id']))
+            row.append(connected_skeleton_treenode_count)
+            row.append(c['connector_username'])
+            row.append(c['other_treenode_id'])
             aaData_output.append(row)
 
         # Sort output
         def fetch_value_for_sorting(row):
             value = row[sorting_column]
             if isinstance(value, str) or isinstance(value, unicode):
-                value = upper(value)
+                return upper(value)
             return value
         aaData_output.sort(key=fetch_value_for_sorting)
+
+        # Fix excessive decimal precision in coordinates
+        for row in aaData_output:
+            row[2] = float('%.2f' % row[2])
+            row[3] = float('%.2f' % row[3])
+            row[4] = float('%.2f' % row[4])
 
         if sort_descending:
             aaData_output.reverse()

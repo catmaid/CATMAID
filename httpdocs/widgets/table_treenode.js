@@ -183,7 +183,7 @@ var TreenodeTable = new function()
         "sClass": "center",
         "bSearchable": false,
         "bSortable": false
-      }, // section index
+      }, // section index: not sortable due to the index being computed after sorting
       {
         "sClass": "center",
         "bSearchable": false

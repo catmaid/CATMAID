@@ -3,6 +3,7 @@ from string import upper
 
 from django.http import HttpResponse
 from django.db.models import Count
+from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -11,6 +12,7 @@ from catmaid.control.common import *
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_connector(request, project_id=None):
+    stack_id = request.POST.get('stack_id', None)
     skeleton_id = request.POST.get('skeleton_id', None)
     if skeleton_id is None:
         return HttpResponse(json.dumps({
@@ -40,6 +42,10 @@ def list_connector(request, project_id=None):
         else:
             relation_type_id = relation_map['postsynaptic_to']
             inverse_relation_type_id = relation_map['presynaptic_to']
+
+        response_on_error = 'Could not retrieve resolution and translation parameters for project.'
+        resolution = get_object_or_404(Stack, id=int(stack_id)).resolution
+        translation = get_object_or_404(ProjectStack, stack=int(stack_id), project=project_id).translation
 
         response_on_error = 'Failed to select connectors.'
         cursor = connection.cursor()
@@ -188,6 +194,7 @@ def list_connector(request, project_id=None):
             row.append(c['other_treenode_y'])
             z = c['other_treenode_z']
             row.append(z)
+            row.append(int((z - translation.z) / resolution.z))
             row.append(labels)
             row.append(connected_skeleton_treenode_count)
             row.append(c['connector_username'])

@@ -108,7 +108,7 @@ var ObjectTree = new function()
                 "separator_after": false,
                 "label": "Create group",
                 "action": function (obj) {
-                  att = {
+                  var att = {
                     "state": "open",
                     "data": "group",
                     "attr": {
@@ -136,7 +136,7 @@ var ObjectTree = new function()
                 "separator_after": false,
                 "label": "Create group",
                 "action": function (obj) {
-                  att = {
+                  var att = {
                     "state": "open",
                     "data": "group",
                     "attr": {
@@ -152,7 +152,7 @@ var ObjectTree = new function()
                 "separator_after": false,
                 "label": "Create neuron",
                 "action": function (obj) {
-                  att = {
+                  var att = {
                     "state": "open",
                     "data": "neuron",
                     "attr": {
@@ -225,7 +225,7 @@ var ObjectTree = new function()
               "separator_after"	: false,
               "label"				: "Create skeleton",
               "action"			: function (obj) {
-                att = { "state": "open",
+                var att = { "state": "open",
                     "data": "skeleton",
                     "attr" : {"rel" : "skeleton", "relname" : "model_of" }
                   };

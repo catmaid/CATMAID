@@ -302,14 +302,14 @@ var ObjectTree = new function()
                     }
                     dialog.appendChild(choice);
 
-                    $("#object-tree-widget").append(dialog);
-
-                    // Show the dialog
+                    // The dialog is inserted into the document and shown by the following call:
                     $(dialog).dialog({
                       height: 140,
                       modal: true,
                       buttons: {
-                        "Cancel": function() { $(this).dialog("close"); },
+                        "Cancel": function() {
+                          $(this).dialog("close");
+                        },
                         "OK": function() {
                           $(this).dialog("close");
                           var target_user_id = $(choice).val();

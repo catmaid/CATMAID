@@ -312,8 +312,8 @@ var ObjectTree = new function()
                         },
                         "OK": function() {
                           $(this).dialog("close");
-                          var target_user_id = $(choice).val();
-                          var target_username = $('#object-tree-user-choice option:selected').text();
+                          var target_user_id = choice.value;
+                          var target_username = choice.options[choice.selectedIndex].text;
                           var neuron_id = id_of_node.replace("node_", "");
                           if (!confirm('Do you really want to give neuron "' + obj.context.innerText.replace(/^\s\s*/, '') + '" with ID #' + neuron_id + ' to user ' + target_username + ' with ID #' + target_user_id + "?")) {
                             return;

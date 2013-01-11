@@ -101,6 +101,10 @@ def give_neuron_to_other_user(request, project_id=None, neuron_id=None):
     skeletons = defaultdict(list) # user_id vs list of owned skeletons
     for row in qs:
         skeletons[row[0]].append(row[1])
+
+    if not skeletons:
+        return HttpResponse(json.dumps({'error': 'The neuron does not contain any skeletons!'}))
+
     sks = {k:v[:] for k,v in skeletons.iteritems()} # deep copy
     if request.user.id in sks:
         del sks[request.user.id]

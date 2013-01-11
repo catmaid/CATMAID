@@ -231,3 +231,13 @@ def can_edit_all_or_fail(user, ob_ids, table_name):
         raise Exception('User %s cannot edit all of the %s unique objects from table %s' % (user.username, len(ob_ids), table_name))
     raise ObjectDoesNotExist('None of the %s unique objects were found in table %s' % (len(ob_ids), table_name))
 
+
+@requires_user_role([UserRole.Annotate])
+def all_usernames(request, project_id=None):
+    """ Return an ordered list of all usernames. """
+    cursor = connection.cursor()
+    cursor.execute('''
+    SELECT id, username FROM auth_user WHERE id != -1 ORDER BY username DESC
+    ''')
+    return HttpResponse(json.dumps(cursor.fetchall()))
+ 

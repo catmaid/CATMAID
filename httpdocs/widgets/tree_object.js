@@ -267,6 +267,76 @@ var ObjectTree = new function()
                                 this.paste(obj);
                               }
               },
+              "give": {
+                "separator_before": true,
+                "icon": false,
+                "separator_after": false,
+                "label": "Give neuron to user...",
+                "action": function(obj) {
+                  // 1. Fetch names of all possible users
+                  requestQueue.register(django_url + '/accounts/' + project.id + '/all-usernames', "POST", {}, function(status, text) {
+                    // 2. Offer to choose one
+                    if (200 !== status) return;
+                    var json = $.parseJSON(text);
+                    if (json.error) {
+                      alert(json.error);
+                      return;
+                    }
+                    var dialog = document.createElement('div');
+                    dialog.setAttribute("id", "dialog-confirm");
+                    dialog.setAttribute("title", "Choose a user");
+
+                    var msg = document.createElement('p');
+                    msg.innerHTML = "Choose a user to give the neuron to:";
+                    dialog.appendChild(msg);
+
+                    var choice = document.createElement('select');
+                    choice.setAttribute("id", "object-tree-user-choice");
+                    var i = 0;
+                    var option = null;
+                    for (i=0; i<json.length; ++i) {
+                      option = document.createElement('option');
+                      option.text = json[i][1]; // the username
+                      option.value = json[i][0]; // the id
+                      choice.add(option);
+                    }
+                    dialog.appendChild(choice);
+
+                    $("#object-tree-widget").append(dialog);
+
+                    // Show the dialog
+                    $(dialog).dialog({
+                      height: 140,
+                      modal: true,
+                      buttons: {
+                        "Cancel": function() { $(this).dialog("close"); },
+                        "OK": function() {
+                          $(this).dialog("close");
+                          var target_user_id = $(choice).val();
+                          var target_username = $('#object-tree-user-choice option:selected').text();
+                          var neuron_id = id_of_node.replace("node_", "");
+                          if (!confirm('Do you really want to give neuron "' + obj.context.innerText.replace(/^\s\s*/, '') + '" with ID #' + neuron_id + ' to user ' + target_username + ' with ID #' + target_user_id + "?")) {
+                            return;
+                          }
+                          // 3. Move the neuron to the staging area of the chosen user
+                          //    and change the user_id of the neuron, the skeleton,
+                          //    and the class_instance_class_instance relations
+                          //    to that of the user.
+                          requestQueue.register(django_url + project.id + '/neuron/' + neuron_id + '/give-to-user', "POST", {target_user_id: target_user_id}, function(status, text) {
+                            if (200 !== status) return;
+                            var json = $.parseJSON(text);
+                            if (json.error) {
+                              alert(json.error);
+                              return;
+                            }
+                            ObjectTree.refresh();
+                          });
+                        }
+                      }
+                    });
+                  });
+                }
+              },
               "ccp": false
             };
           } else if (type_of_node === "skeleton") {

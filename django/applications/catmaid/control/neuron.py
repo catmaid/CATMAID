@@ -2,9 +2,13 @@ import json
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.db import connection
 
 from catmaid.control.authentication import *
 from catmaid.control.common import *
+
+import operator
+from collections import defaultdict
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -79,4 +83,52 @@ def _delete_if_empty(neuron_id):
         ClassInstance.objects.filter(pk=neuron_id).delete()
         return True
     return False
+
+@requires_user_role(UserRole.Annotate)
+def give_neuron_to_other_user(request, project_id=None, neuron_id=None):
+    neuron_id = int(neuron_id)
+    target_user = User.objects.get(pk=int(request.POST['target_user_id']))
+
+    # 1. Check that the request.user is superuser
+    #    or owns the neuron and the skeletons under it
+    neuron = ClassInstance.objects.get(pk=neuron_id)
+    if not request.user.is_superuser and neuron.user.id != request.user.id:
+        return HttpResponse(json.dumps({'error': 'You don\'t own the neuron!'}))
+
+    qs = ClassInstanceClassInstance.objects.filter(
+            class_instance_b=neuron_id,
+            relation__relation_name='model_of').values_list('class_instance_a__user_id', 'class_instance_a')
+    skeletons = defaultdict(list) # user_id vs list of owned skeletons
+    for row in qs:
+        skeletons[row[0]].append(row[1])
+    sks = {k:v[:] for k,v in skeletons.iteritems()} # deep copy
+    if request.user.id in sks:
+        del sks[request.user.id]
+    if not request.user.is_superuser and sks:
+        return HttpResponse(json.dumps({'error': 'You don\'t own: %s' % reduce(operator.add, sks.values())}))
+
+    # 2. Change neuron's and skeleton's and class_instance_class_instance relationship owner to target_user
+
+    # Update user_id of the relation 'model_of' between any skeletons and the chosen neuron
+    ClassInstanceClassInstance.objects.filter(
+        relation__relation_name='model_of',
+        class_instance_b=neuron_id).update(user=target_user)
+
+    # Update user_id of the neuron
+    ClassInstance.objects.filter(pk=neuron_id).update(user=target_user)
+
+    # Update user_id of the skeleton(s)
+    ClassInstance.objects.filter(pk__in=reduce(operator.add, skeletons.values())).update(user=target_user)
+
+    # 3. Move neuron from its current group to the target user's staging area
+    relation_map = get_relation_to_id_map(project_id)
+    class_map = get_class_to_id_map(project_id)
+    from treenode import _fetch_targetgroup
+    staging_group, is_new = _fetch_targetgroup(target_user, project_id, "Fragments", relation_map['part_of'], class_map)
+    ClassInstanceClassInstance.objects.filter(
+        class_instance_a=neuron_id,
+        relation__relation_name='part_of').update(class_instance_b=staging_group.id)
+
+    return HttpResponse(json.dumps({'success':'Moved neuron #%s to %s staging area.'}))
+
 

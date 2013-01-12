@@ -733,10 +733,13 @@ function TracingTool()
 
 }
 
-TracingTool.goToNearestInNeuron = function(type, objectID) {
+/* Works as well for skeletons.
+ * @param type A 'neuron' or a 'skeleton'.
+ * @param objectID the ID of a neuron or a skeleton.
+ */
+TracingTool.goToNearestInNeuronOrSkeleton = function(type, objectID) {
   var projectCoordinates = project.focusedStack.projectCoordinates();
   var parameters = {
-    pid: project.id,
     x: projectCoordinates.x,
     y: projectCoordinates.y,
     z: projectCoordinates.z
@@ -801,21 +804,22 @@ TracingTool.search = function()
         tbody = $('<tbody/>');
         tbody.append('<tr><th>ID</th><th>Name</th><th>Class</th><th>Action</th></tr>');
         table.append(tbody);
-        var action =
-          function() {
-              TracingTool.goToNearestInNeuron('neuron', parseInt($(this).attr('id')));
+        var action = function(type) {
+          return function() {
+              TracingTool.goToNearestInNeuronOrSkeleton(type, parseInt($(this).attr('id')));
               return false;
           };
+        };
         for (i = 0; i < data.length; ++i) {
           row = $('<tr/>');
           row.append($('<td/>').text(data[i].id));
           row.append($('<td/>').text(data[i].name));
           row.append($('<td/>').text(data[i].class_name));
-          if (data[i].class_name === 'neuron') {
+          if (data[i].class_name === 'neuron' || data[i].class_name === 'skeleton') {
             actionLink = $('<a/>');
             actionLink.attr({'id': ''+data[i].id});
             actionLink.attr({'href':''});
-            actionLink.click(action);
+            actionLink.click(action(data[i].class_name));
             actionLink.text("Go to nearest node");
             row.append($('<td/>').append(actionLink));
           } else if (data[i].class_name === 'label') {

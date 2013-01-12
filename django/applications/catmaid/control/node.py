@@ -424,7 +424,7 @@ def node_nearest(request, project_id=None):
         'skeleton_id': -1,
         'neuron_id': -1}
     for p in param_defaults.keys():
-        params[p] = request.POST.get(p, param_defaults[p])
+        params[p] = int(request.POST.get(p, param_defaults[p]))
     relation_map = get_relation_to_id_map(project_id)
 
     if params['skeleton_id'] < 0 and params['neuron_id'] < 0:
@@ -473,7 +473,7 @@ def node_nearest(request, project_id=None):
             float(params['z']),
             treenodes)
         if nearestTreenode is None:
-            raise Exception('No treenodes were found.')
+            raise Exception('No treenodes were found for skeletons in %s' % skeletons)
 
         # TODO Check if callers really need string data.
         # Return string data to emulate behavior of pg_fetch_assoc.

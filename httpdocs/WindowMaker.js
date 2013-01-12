@@ -520,17 +520,17 @@ var WindowMaker = new function()
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
-    add.setAttribute("id", "refresh_connectortable_current_skeleton");
-    add.setAttribute("value", "Refresh");
-    add.onclick = ConnectorTable.refreshConnectorTable;
-      contentbutton.appendChild(add);
+    add.setAttribute("id", "update_connectortable_current_skeleton");
+    add.setAttribute("value", "List current skeleton");
+    add.onclick = ConnectorTable.updateConnectorTable;
+    contentbutton.appendChild(add);
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
-    add.setAttribute("id", "update_connectortable_current_skeleton");
-    add.setAttribute("value", "Current skeleton");
-    add.onclick = ConnectorTable.updateConnectorTable;
-      contentbutton.appendChild(add);
+    add.setAttribute("id", "refresh_connectortable_current_skeleton");
+    add.setAttribute("value", "Refresh");
+    add.onclick = ConnectorTable.refreshConnectorTable;
+    contentbutton.appendChild(add);
 
     var sync = document.createElement('select');
     sync.setAttribute("id", "connector_relation_type");
@@ -543,7 +543,7 @@ var WindowMaker = new function()
     objOption2.value = "1";
     objOption2.selected = "selected";
     sync.appendChild(objOption2);
-      contentbutton.appendChild(sync);
+    contentbutton.appendChild(sync);
 
     var rand = document.createTextNode('Synchronize');
     contentbutton.appendChild(rand);
@@ -776,6 +776,13 @@ var WindowMaker = new function()
         add.setAttribute("value", "Get connectivity");
         add.onclick = SkeletonConnectivity.fetchConnectivityForSkeleton;
         contentbutton.appendChild(add);
+
+        var refresh = document.createElement('input');
+        refresh.setAttribute("type", "button");
+        refresh.setAttribute("id", "refresh_connectivity");
+        refresh.setAttribute("value", "Refresh");
+        refresh.onclick = SkeletonConnectivity.refresh;
+        contentbutton.appendChild(refresh);
 
         var sync = document.createElement('select');
         sync.setAttribute("id", "connectivity_count_threshold");

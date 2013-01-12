@@ -1005,7 +1005,7 @@ var WebGLApp = new function () {
     })
       .click( function( event )
       {
-        TracingTool.goToNearestInNeuron( 'skeleton', skeleton.id );
+        TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton.id );
       })
       .attr('src','widgets/themes/kde/activate.gif')
     );

@@ -27,11 +27,32 @@ def search(request, project_id=None):
 
     search_string = request.GET.get('substring', "")
 
+    ids = set()
+
+    # 1. Query ClassInstance objects, where the name contains the search string.
+    # This retrieves neurons, skeletons and groups by name.
     row_query = ClassInstance.objects.values('id', 'name', 'class_column__class_name').filter(
         name__icontains=search_string,
         project=project_id).order_by('class_column__class_name', 'name')
     rows = list(row_query)
+    for row in rows:
+        ids.add(row['id'])
 
+    # 2. Query skeletons and neurons by ID, if the search string is a number
+    try:
+        oid = int(search_string)
+        oid_query = ClassInstance.objects.filter(
+                pk=int(oid),
+                class_column__class_name__in=('neuron', 'skeleton')
+                ).values('id', 'name', 'class_column__class_name')
+        for row in oid_query:
+            if row['id'] not in ids:
+                rows.append(row)
+    except ValueError:
+        pass
+
+    # 3. Query labels in treenodes. First get a list of matching labels,
+    # and then find a list of treenodes for each label.
     relation_map = get_relation_to_id_map(project_id)
     label_rows = {}
     for row in rows:
@@ -52,7 +73,6 @@ def search(request, project_id=None):
         'treenode__skeleton',
         'class_instance__name')
 
-    # Insert nodes into their rows
     for node in node_query:
         row_with_node = label_rows[node['class_instance__name']]
         nodes = row_with_node.get('nodes', None)

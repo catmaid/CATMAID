@@ -99,6 +99,13 @@ var WindowMaker = new function()
     add.onclick = WebGLApp.addActiveSkeletonToView;
     container.appendChild(add);
 
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
+    add.setAttribute("id", "center_active_node");
+    add.setAttribute("value", "Center active");
+    add.onclick = WebGLApp.look_at_active_node;
+    container.appendChild(add);
+
     var fulls = document.createElement('input');
     fulls.setAttribute("type", "button");
     fulls.setAttribute("id", "fullscreen_webgl_view");

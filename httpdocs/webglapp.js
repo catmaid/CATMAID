@@ -586,6 +586,16 @@ var WebGLApp = new function () {
     }
   }
 
+  self.look_at_active_node = function()
+  {
+    if( active_node ) {
+      controls.target = new THREE.Vector3(active_node.position.x,
+        active_node.position.y,
+        active_node.position.z);
+      self.render();      
+    }
+  }
+
   self.createActiveNode = function()
   {
     if( !SkeletonAnnotations.getActiveNodeId() ) {

@@ -476,7 +476,7 @@ def tree_object_list(request, project_id=None):
                 WHERE cici.class_instance_b = %s
                   AND (cici.relation_id = %s
                        OR cici.relation_id = %s)
-                ORDER BY ci.name ASC
+                ORDER BY ci.class_id DESC, ci.name ASC
                 LIMIT %s''', (
             parent_id,
             relation_map['model_of'],

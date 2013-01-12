@@ -23,18 +23,22 @@ var SkeletonConnectivity = new function()
 
     this.refresh = function() {
         if (!skeletonID) { return };
-        jQuery.ajax({
-            url: "dj/" + project.id + "/skeleton/" + skeletonID + '/info',
-            type: "POST",
-            dataType: "json",
-            data : {
-              'threshold': $('#connectivity_count_threshold').val()
-            },
-            success: self.createConnectivityTable
-        });
+        requestQueue.replace(
+                django_url + project.id + '/skeleton/' + skeletonID + '/info',
+                'POST',
+                {'threshold': $('#connectivity_count_threshold').val()},
+                self.createConnectivityTable,
+                'update_cnnectivity_table');
     };
 
-    this.createConnectivityTable = function( data ) {
+    this.createConnectivityTable = function( status, text ) {
+
+        if (200 !== status) { return; }
+        var data = $.parseJSON(text);
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
 
         var bigtable, table, thead, tbody, row;
         if( $('#connectivity_table').length > 0 ) {

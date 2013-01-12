@@ -770,6 +770,13 @@ var WindowMaker = new function()
         add.onclick = SkeletonConnectivity.fetchConnectivityForSkeleton;
         contentbutton.appendChild(add);
 
+        var refresh = document.createElement('input');
+        refresh.setAttribute("type", "button");
+        refresh.setAttribute("id", "refresh_connectivity");
+        refresh.setAttribute("value", "Refresh");
+        refresh.onclick = SkeletonConnectivity.refresh;
+        contentbutton.appendChild(refresh);
+
         var sync = document.createElement('select');
         sync.setAttribute("id", "connectivity_count_threshold");
 

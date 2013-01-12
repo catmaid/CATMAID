@@ -3,35 +3,40 @@
 
 var SkeletonConnectivity = new function()
 {
-    var projectID, skeletonID;
+    var projectID, skeletonID, skeletonTitle;
     var self = this;
 
     this.init = function() {
         projectID = project.id;
-    }
+    };
 
     this.fetchConnectivityForSkeleton = function() {
         // current neuron id
         var skeletonid = project.selectedObjects.selectedskeleton;
 
         if( skeletonid ) {
-            jQuery.ajax({
-                url: "dj/" + project.id + "/skeleton/" + skeletonid + '/info',
-                type: "POST",
-                dataType: "json",
-                data : {
-                  'threshold': $('#connectivity_count_threshold').val()
-                },
-                success: function (data) {
-                    self.createConnectivityTable( data )
-                }
-            });
+            skeletonID = skeletonid;
+            skeletonTitle = $('#neuronName').text();
+            self.refresh();
         }
-    }
+    };
+
+    this.refresh = function() {
+        if (!skeletonID) { return };
+        jQuery.ajax({
+            url: "dj/" + project.id + "/skeleton/" + skeletonID + '/info',
+            type: "POST",
+            dataType: "json",
+            data : {
+              'threshold': $('#connectivity_count_threshold').val()
+            },
+            success: self.createConnectivityTable
+        });
+    };
 
     this.createConnectivityTable = function( data ) {
 
-        var bigtable, table, tbody, row;
+        var bigtable, table, thead, tbody, row;
         if( $('#connectivity_table').length > 0 ) {
             $('#connectivity_table').remove();
         }
@@ -145,8 +150,6 @@ var SkeletonConnectivity = new function()
         table.append( $('<br /><br /><br /><br />') );
         outgoing.append( table );
 
-        $("#connectivity_table").prepend( $(document.createTextNode( $('#neuronName').text() )) );
-
-    }
-
-}
+        $("#connectivity_table").prepend( $(document.createTextNode( skeletonTitle )) );
+    };
+};

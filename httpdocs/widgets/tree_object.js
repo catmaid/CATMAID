@@ -14,6 +14,12 @@ var ObjectTree = new function()
     $('#tree_object').jstree("rename");
   }
 
+  var goToNearestNodeFn = function(type) {
+    return function(obj) {
+      TracingTool.goToNearestInNeuronOrSkeleton(type, obj.attr("id").replace("node_", ""));
+    };
+  };
+
   this.init = function (pid) {
     // id of object tree
     var object_tree_id = "#tree_object";
@@ -206,10 +212,7 @@ var ObjectTree = new function()
                 "separator_before": false,
                 "separator_after": false,
                 "label": "Select nearest node",
-                "action": function (obj) {
-                  var neuronid = obj.attr("id").replace("node_", "");
-                  TracingTool.goToNearestInNeuron('neuron', neuronid);
-                }
+                "action": goToNearestNodeFn(type_of_node)
               },
 /*              "show_in_catalog": {
                     "separator_before": true,
@@ -387,10 +390,7 @@ var ObjectTree = new function()
                 "separator_before": false,
                 "separator_after": false,
                 "label": "Select nearest node",
-                "action": function (obj) {
-                  var skelid = obj.attr("id").replace("node_", "");
-                  TracingTool.goToNearestInNeuron('skeleton', skelid);
-                }
+                "action": goToNearestNodeFn(type_of_node)
               },
               "show": {
                 "label": "Show",

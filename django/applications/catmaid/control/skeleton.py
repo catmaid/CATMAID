@@ -408,6 +408,88 @@ def _reroot_skeleton(treenode_id, project_id):
         raise Exception(response_on_error + ':' + str(e))
 
 
+def _root_as_parent(oid):
+    """ Returns True if the parent group of the given element ID is the root group. """
+    cursor = connection.cursor()
+    # Try to select the parent group of the parent group;
+    # if none, then the parent group is the root group.
+    cursor.execute('''
+    SELECT count(*)
+    FROM class_instance_class_instance cici1,
+         class_instance_class_instance cici2,
+         relation r
+    WHERE cici1.class_instance_a = %s
+      AND cici1.class_instance_b = cici2.class_instance_a
+      AND cici1.relation_id = r.id
+      AND r.relation_name = 'part_of'
+      AND cici2.class_instance_a = cici1.class_instance_b
+      AND cici2.relation_id = r.id
+    ''' % int(oid))
+    return 0 == cursor.fetchone()[0]
+
+def _under_fragments(skeleton_id):
+    """ Returns True if the skeleton_id is a model_of a neuron that is part_of
+    a group that is or is within the hierarchy downstream of the "Fragments" group
+    or the "Isolated synaptic terminals" group.
+    """
+    cursor = connection.cursor()
+    # Find the ID and name of the group for which the neuron is a part_of,
+    # where the skeleton is a model_of that neuron
+    cursor.execute('''
+    SELECT ci.id, ci.name
+    FROM class_instance_class_instance cici1,
+         class_instance_class_instance cici2,
+         class_instance ci,
+         relation r1,
+         relation r2
+    WHERE cici1.class_instance_a = %s
+      AND cici1.relation_id = r1.id
+      AND r1.relation_name = 'model_of'
+      AND cici1.class_instance_b = cici2.class_instance_a
+      AND cici2.relation_id = r2.id
+      AND r2.relation_name = 'part_of'
+      AND cici2.class_instance_b = ci.id
+    ''' % int(skeleton_id))
+    group_id, group_name = cursor.fetchone()
+
+    fragment_groups = set(['Fragments', 'Isolated synaptic terminals'])
+
+    # To prevent issues with similarly named folders, check that
+    # the fragment folders are under the root group.
+    if group_name in fragment_groups and _root_as_parent(group_id):
+        return True
+
+    # Else, check the parent group until reaching the root (a group without parent)
+    # or reaching a group that has already been seen (an accidental circular relationship)
+    seen = set([group_id])
+    while True:
+        cursor.execute('''
+        SELECT ci.id, ci.name
+        FROM class_instance_class_instance cici,
+             class_instance ci,
+             relation r
+        WHERE cici.class_instance_a = %s
+          AND cici.class_instance_b = ci.id
+          AND cici.relation_id = r.id
+          AND r.relation_name = 'part_of'
+        ''' % group_id)
+        rows = list(cursor.fetchall())
+        if not rows:
+            # Reached root: no parent group
+            return False
+        #
+        group_id, group_name = rows[0]
+        if group_id in seen:
+            # Error: circular reference
+            raise Exception('Circular reference for group "%s" with id #%s was found when trying to determine if skeleton #%s is part of "Fragments" or "Isolated synaptic terminals"' % (group_name, group_id, skeleton_id))
+        #
+        if group_name in fragment_groups and _root_as_parent(group_id):
+            return True
+        # Else, keep climbing up the group relations
+        seen.add(group_id)
+
+
+
 @requires_user_role(UserRole.Annotate)
 def join_skeleton(request, project_id=None):
     """ An user with an Annotate role can join two skeletons if he owns the child
@@ -460,6 +542,10 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
             pass
         # If the treenode is not isolated, must own the skeleton or be superuser
         elif user.is_superuser or user.id == to_skeleton_user_id:
+            pass
+        # If the skeleton is a model_of a neuron that is part_of the 'Fragments' group
+        # or the 'Isolated synaptic terminals' group, then it can be joined
+        elif _under_fragments(to_skid):
             pass
         # Else, if the user owns the node (but not the skeleton), the join is possible only if all other nodes also belong to the user (such a situation occurs when the user ows both skeletons to join, or when part of a skeleton is split away from a larger one that belongs to someone else)
         elif user.id == to_treenode_user_id and 0 == Treenode.objects.filter(skeleton_id=to_skid).exclude(user=user).count():

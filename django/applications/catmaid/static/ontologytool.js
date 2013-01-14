@@ -43,6 +43,17 @@ function OntologyTool()
         }
     }));
 
+    this.addAction( new Action({
+        helpText: "Show clustering widget",
+        buttonName: 'clustering_widget',
+        buttonID: "clustering_button",
+        run: function (e) {
+            WindowMaker.show('clustering-widget');
+            self.update_workspace_in_widgets();
+            return true;
+        }
+    }));
+
     /**
      * Adds tools to the ontology tool box.
      */

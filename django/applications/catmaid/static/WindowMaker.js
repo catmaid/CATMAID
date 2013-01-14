@@ -1409,6 +1409,24 @@ var WindowMaker = new function()
     return win;
   };
 
+  var createClusteringWidget = function()
+  {
+    var win = new CMWWindow( "Clustering" );
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer( "clustering_widget" );
+    content.appendChild( container );
+
+    container.innerHTML = '<div id="clustering_content"></div>';
+
+    addListener(win, container);
+
+    addLogic(win);
+
+    return win;
+  };
+
   var getHelpForActions = function(actions)
   {
     var action, keys, i, k, result = '';
@@ -1682,7 +1700,8 @@ var WindowMaker = new function()
     "skeleton-analytics-widget": createSkeletonAnalyticsWindow,
     "ontology-editor": createOntologyWidget,
     "classification-editor": createClassificationWidget,
-    "notifications": createNotificationsWindow
+    "notifications": createNotificationsWindow,
+    "clustering-widget": createClusteringWidget,
   };
 
   /** If the window for the given name is already showing, just focus it.

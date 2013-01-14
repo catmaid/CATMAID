@@ -6,6 +6,7 @@ Developer Documentation
 
    installation
    djangoinstall
+   administration
    dbmigration
    faq
    djangounittest

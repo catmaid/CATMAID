@@ -3,35 +3,44 @@
 
 var SkeletonConnectivity = new function()
 {
-    var projectID, skeletonID;
+    var projectID, skeletonID, skeletonTitle;
     var self = this;
 
     this.init = function() {
         projectID = project.id;
-    }
+    };
 
     this.fetchConnectivityForSkeleton = function() {
         // current neuron id
         var skeletonid = project.selectedObjects.selectedskeleton;
 
         if( skeletonid ) {
-            jQuery.ajax({
-                url: "dj/" + project.id + "/skeleton/" + skeletonid + '/info',
-                type: "POST",
-                dataType: "json",
-                data : {
-                  'threshold': $('#connectivity_count_threshold').val()
-                },
-                success: function (data) {
-                    self.createConnectivityTable( data )
-                }
-            });
+            skeletonID = skeletonid;
+            skeletonTitle = $('#neuronName').text();
+            self.refresh();
         }
-    }
+    };
 
-    this.createConnectivityTable = function( data ) {
+    this.refresh = function() {
+        if (!skeletonID) { return };
+        requestQueue.replace(
+                django_url + project.id + '/skeleton/' + skeletonID + '/info',
+                'POST',
+                {'threshold': $('#connectivity_count_threshold').val()},
+                self.createConnectivityTable,
+                'update_cnnectivity_table');
+    };
 
-        var bigtable, table, tbody, row;
+    this.createConnectivityTable = function( status, text ) {
+
+        if (200 !== status) { return; }
+        var data = $.parseJSON(text);
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        var bigtable, table, thead, tbody, row;
         if( $('#connectivity_table').length > 0 ) {
             $('#connectivity_table').remove();
         }
@@ -62,7 +71,7 @@ var SkeletonConnectivity = new function()
         for(var e in data['incoming'] ) {
             var skeleton_id = data['incoming'][e]['skeleton_id'];
             row = $('<tr />');
-            row.append( $('<td />').text( data['incoming'][e]['name'] ) );
+            row.append( $('<td />').html( '<a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\', ' + skeleton_id + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['incoming'][e]['name'] + '</a>') );
             row.append( $('<td />').text( data['incoming'][e]['synaptic_count'] ) );
             row.append( $('<td />').text( data['incoming'][e]['percentage_reviewed'] ) );
             row.append( $('<td />').text( data['incoming'][e]['node_count'] ) );
@@ -112,7 +121,7 @@ var SkeletonConnectivity = new function()
         for(var e in data['outgoing'] ) {
             var skeleton_id = data['outgoing'][e]['skeleton_id'];
             row = $('<tr />');
-            row.append( $('<td />').text( data['outgoing'][e]['name'] ) );
+            row.append( $('<td />').html( '<a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\', ' + skeleton_id + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['outgoing'][e]['name'] + '</a>') );
             row.append( $('<td />').text( data['outgoing'][e]['synaptic_count'] ) );
             row.append( $('<td />').text( data['outgoing'][e]['percentage_reviewed'] ) );
             row.append( $('<td />').text( data['outgoing'][e]['node_count'] ) );
@@ -145,8 +154,6 @@ var SkeletonConnectivity = new function()
         table.append( $('<br /><br /><br /><br />') );
         outgoing.append( table );
 
-        $("#connectivity_table").prepend( $(document.createTextNode( $('#neuronName').text() )) );
-
-    }
-
-}
+        $("#connectivity_table").prepend( $(document.createTextNode( skeletonTitle )) );
+    };
+};

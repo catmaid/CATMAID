@@ -94,12 +94,12 @@ var ReviewSystem = new function()
             $('#review_segment_table').remove();
         }
         $('#reviewing_skeleton').text( 'Skeleton ID under review: ' + skeletonID );
-        table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('width', '420').attr('id', 'review_segment_table').attr('border', '0');
+        table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('id', 'review_segment_table').attr('border', '0');
         // create header
         thead = $('<thead />');
         table.append( thead );
         row = $('<tr />')
-        row.append( $('<td />').text("SegmentID") );
+        row.append( $('<td />').text("") );
         row.append( $('<td />').text( "Start-End") );
         row.append( $('<td />').text("Status") );
         row.append( $('<td />').text("# nodes") );
@@ -113,7 +113,7 @@ var ReviewSystem = new function()
             row.append( $('<td />').text( skeleton_data[e]['type'] ) );
             var status = $('<td />').text( skeleton_data[e]['status']+'%' );
             row.append( status );
-            row.append( $('<td />').text( skeleton_data[e]['nr_nodes'] ) );
+            row.append( $('<td align="right" />').text( skeleton_data[e]['nr_nodes'] ) );
             if( parseInt( skeleton_data[e]['status']) === 0 ) {
                 status.css('background-color', '#ff8c8c');
             } else if( parseInt( skeleton_data[e]['status']) === 100 ) {

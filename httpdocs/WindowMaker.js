@@ -99,6 +99,13 @@ var WindowMaker = new function()
     add.onclick = WebGLApp.addActiveSkeletonToView;
     container.appendChild(add);
 
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
+    add.setAttribute("id", "center_active_node");
+    add.setAttribute("value", "Center active");
+    add.onclick = WebGLApp.look_at_active_node;
+    container.appendChild(add);
+
     var fulls = document.createElement('input');
     fulls.setAttribute("type", "button");
     fulls.setAttribute("id", "fullscreen_webgl_view");
@@ -513,17 +520,17 @@ var WindowMaker = new function()
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
-    add.setAttribute("id", "refresh_connectortable_current_skeleton");
-    add.setAttribute("value", "Refresh");
-    add.onclick = ConnectorTable.refreshConnectorTable;
-      contentbutton.appendChild(add);
+    add.setAttribute("id", "update_connectortable_current_skeleton");
+    add.setAttribute("value", "List current skeleton");
+    add.onclick = ConnectorTable.updateConnectorTable;
+    contentbutton.appendChild(add);
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
-    add.setAttribute("id", "update_connectortable_current_skeleton");
-    add.setAttribute("value", "Current skeleton");
-    add.onclick = ConnectorTable.updateConnectorTable;
-      contentbutton.appendChild(add);
+    add.setAttribute("id", "refresh_connectortable_current_skeleton");
+    add.setAttribute("value", "Refresh");
+    add.onclick = ConnectorTable.refreshConnectorTable;
+    contentbutton.appendChild(add);
 
     var sync = document.createElement('select');
     sync.setAttribute("id", "connector_relation_type");
@@ -536,7 +543,7 @@ var WindowMaker = new function()
     objOption2.value = "1";
     objOption2.selected = "selected";
     sync.appendChild(objOption2);
-      contentbutton.appendChild(sync);
+    contentbutton.appendChild(sync);
 
     var rand = document.createTextNode('Synchronize');
     contentbutton.appendChild(rand);
@@ -568,6 +575,7 @@ var WindowMaker = new function()
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
+            '<th>s</ht>' +
             '<th>tags</th>' +
             '<th id="connector_nr_nodes_top"># nodes for target(s)</th>' +
             '<th>username</th>' +
@@ -581,6 +589,7 @@ var WindowMaker = new function()
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
+            '<th>s</ht>' +
             '<th>tags</th>' +
             '<th id="connector_nr_nodes_bottom"># nodes for target(s)</th>' +
             '<th>username</th>' +
@@ -767,6 +776,13 @@ var WindowMaker = new function()
         add.setAttribute("value", "Get connectivity");
         add.onclick = SkeletonConnectivity.fetchConnectivityForSkeleton;
         contentbutton.appendChild(add);
+
+        var refresh = document.createElement('input');
+        refresh.setAttribute("type", "button");
+        refresh.setAttribute("id", "refresh_connectivity");
+        refresh.setAttribute("value", "Refresh");
+        refresh.onclick = SkeletonConnectivity.refresh;
+        contentbutton.appendChild(refresh);
 
         var sync = document.createElement('select');
         sync.setAttribute("id", "connectivity_count_threshold");
@@ -1049,6 +1065,8 @@ var WindowMaker = new function()
 			'<div class="piechart">' + 
 				'<h3>Annotation User Contribution</h3>' +
 				'<div id="piechart_treenode_holder"></div>' +
+        '<div id="piechart_editor_holder"></div>' +
+        '<div id="piechart_reviewer_holder"></div>' +
 			'</div><br clear="all" />' +
       '<div class="annotation-history">' + 
 				'<h3 style="text-align: center">Annotation History</h3>' +

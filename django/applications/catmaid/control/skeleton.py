@@ -54,6 +54,11 @@ def split_skeleton(request, project_id=None):
     # find downstream nodes starting from target treenode_id
     # and generate the list of IDs to change, starting at treenode_id (inclusive)
     change_list = nx.bfs_tree(graph, treenode_id).nodes()
+    if not change_list:
+        # When splitting an end node, the bfs_tree doesn't return any nodes,
+        # which is surprising, because when the splitted tree has 2 or more nodes
+        # the node at which the split is made is included in the list.
+        change_list.append(treenode_id)
     # create a new skeleton
     new_skeleton = ClassInstance()
     new_skeleton.name = 'Skeleton'
@@ -436,19 +441,35 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
 
     response_on_error = ''
     try:
+        to_treenode_id = int(to_treenode_id)
+        cursor = connection.cursor()
+        cursor.execute('''
+        SELECT class_instance.user_id,
+               treenode.skeleton_id,
+               treenode.user_id
+        FROM class_instance,
+             treenode
+        WHERE treenode.id = %s
+          AND treenode.skeleton_id = class_instance.id
+        ''' % to_treenode_id)
+        to_skeleton_user_id, to_skid, to_treenode_user_id = cursor.fetchone()
+
         # Check if joining is allowed
         if 0 == Treenode.objects.filter(parent_id=to_treenode_id).count() and Treenode.objects.filter(pk=to_treenode_id).values_list('parent_id')[0][0] is None:
             # Is an isolated node, so it can be joined freely
             pass
+        # If the treenode is not isolated, must own the skeleton or be superuser
+        elif user.is_superuser or user.id == to_skeleton_user_id:
+            pass
+        # Else, if the user owns the node (but not the skeleton), the join is possible only if all other nodes also belong to the user (such a situation occurs when the user ows both skeletons to join, or when part of a skeleton is split away from a larger one that belongs to someone else)
+        elif user.id == to_treenode_user_id and 0 == Treenode.objects.filter(skeleton_id=to_skid).exclude(user=user).count():
+            pass
         else:
-            # If the treenode is not isolated, must own to_treenode_id or be superuser
-            can_edit_or_fail(user, int(to_treenode_id), 'treenode')
+            raise Exception("User %s with id #%s cannot join skeleton #%s, because the user doesn't own the skeleton or the skeleton contains nodes that belong to someone else." % (user.username, user.id, to_skid))
 
         from_treenode_id = int(from_treenode_id)
         from_treenode = Treenode.objects.get(pk=from_treenode_id)
         from_skid = from_treenode.skeleton_id
-        to_treenode_id = int(to_treenode_id)
-        to_skid = Treenode.objects.get(pk=to_treenode_id).skeleton_id
 
         if from_skid == to_skid:
             raise Exception('Cannot join treenodes of the same skeleton, would introduce a loop.')

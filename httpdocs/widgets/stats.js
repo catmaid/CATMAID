@@ -9,9 +9,9 @@ var ProjectStatistics = new function()
     $("#connectors_created").text(data.connectors_created);
   }
 
-  var update_piechart = function(data) {
-    $("#piechart_treenode_holder").empty();
-    var rpie = Raphael("piechart_treenode_holder", 300, 200);
+  var update_piechart = function(data, chart_name) {
+    $(chart_name).empty();
+    var rpie = Raphael(chart_name, 300, 200);
     var pie = rpie.g.piechart(90, 100, 80, data.values, { legend: data.users, legendpos: "east", colors:['red', 'blue', 'green', 'yellow', 'orange', 'black', 'gray']});
     pie.hover(function () {
       this.sector.stop();
@@ -151,7 +151,6 @@ var ProjectStatistics = new function()
       return true;
     });
 
-    //requestQueue.register("model/stats.treenodes.list.php", "POST", {
     requestQueue.register(django_url + project.id + '/stats', "POST", {
       "pid": project.id
     }, function (status, text, xml) {
@@ -160,9 +159,40 @@ var ProjectStatistics = new function()
           var jso = $.parseJSON(text);
           if (jso.error) {
             alert(jso.error);
+          } else {
+            update_piechart(jso, "piechart_treenode_holder");
           }
-          else {
-            update_piechart(jso);
+        }
+      }
+      return true;
+    });
+
+    requestQueue.register(django_url + project.id + '/stats-editor', "POST", {
+      "pid": project.id
+    }, function (status, text, xml) {
+      if (status == 200) {
+        if (text && text != " ") {
+          var jso = $.parseJSON(text);
+          if (jso.error) {
+            alert(jso.error);
+          } else {
+            update_piechart(jso, "piechart_editor_holder");
+          }
+        }
+      }
+      return true;
+    });
+
+    requestQueue.register(django_url + project.id + '/stats-reviewer', "POST", {
+      "pid": project.id
+    }, function (status, text, xml) {
+      if (status == 200) {
+        if (text && text != " ") {
+          var jso = $.parseJSON(text);
+          if (jso.error) {
+            alert(jso.error);
+          } else {
+            update_piechart(jso, "piechart_reviewer_holder");
           }
         }
       }

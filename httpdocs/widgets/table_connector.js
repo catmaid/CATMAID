@@ -82,6 +82,10 @@ var ConnectorTable = new function()
             "name" : "skeleton_id",
             "value" : skeletonID
           });
+          aoData.push({
+            "name": "stack_id",
+            "value": project.focusedStack.id
+          });
 
           if( skeletonID && !(skeletonID in last_displayed_skeletons) ) {
             // check if skeleton id already in list, of so, do not add it
@@ -119,43 +123,40 @@ var ConnectorTable = new function()
           {
             "bSearchable": false,
             "bSortable": true
-          },
-          // connector id
+          }, // connector id
           {
             "sClass": "center",
             "bSearchable": false
-          },
-          // other skeleton id
+          }, // other skeleton id
           {
             "sClass": "center",
             "bSearchable": false
-          },
-          // x
+          }, // x
           {
             "sClass": "center",
             "bSearchable": false
-          },
-          // y
+          }, // y
           {
             "sClass": "center",
             "bSearchable": false
-          },
-          // z
+          }, // z
+          {
+            "sClass": "center",
+            "bSearchable": false,
+            "bSortable": true
+          }, // section index
           {
             "bSearchable": false,
             "bSortable": true
-          },
-          // connectortags
+          }, // connectortags
           {
             "bSearchable": false,
             "bSortable": true
-          },
-          // number of nodes
+          }, // number of nodes
           {
             "bVisible": true,
             "bSortable": true
-          },
-          // username
+          }, // username
           {
             "bSearchable": false,
             "bSortable": true,

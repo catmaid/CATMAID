@@ -3,6 +3,7 @@ from datetime import timedelta, datetime, date
 
 from django.http import HttpResponse
 from django.db.models import Count
+from django.db import connection
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -21,6 +22,37 @@ def stats(request, project_id=None):
         result['users'].append(user_name)
     return HttpResponse(json.dumps(result), mimetype='text/json')
 
+def _process(query, minus1name):
+    cursor = connection.cursor()
+    cursor.execute(query)
+    result = {'users': [],
+              'values': []}
+    for row in cursor.fetchall():
+        result['values'].append(row[1])
+        s = row if "AnonymousUser" != row[0] else (minus1name, row[1])
+        result['users'].append('%s (%d)' % s)
+    return HttpResponse(json.dumps(result), mimetype='text/json')
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def stats_reviewer(request, project_id=None):
+    # Can't reuse stats function with 'reviewer_username' because the Treenode
+    # class doesn't contain a revier as a model of a User, but directly a reviewer_id
+    # given that it can be -1, meaning no one rather than the anonymous user.
+    # In any case the direct SQL command is arguably clearer.
+    return _process('''
+    SELECT username, count(reviewer_id) FROM treenode, auth_user WHERE project_id=%s AND reviewer_id=auth_user.id GROUP BY username
+    ''' % int(project_id), "*unreviewed*")
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def stats_editor(request, project_id=None):
+    return _process('''
+    SELECT username, count(editor_id)
+    FROM treenode, auth_user
+    WHERE project_id=%s
+      AND editor_id != user_id
+      AND editor_id=auth_user.id
+    GROUP BY username
+    ''' % int(project_id), "*unedited*")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stats_summary(request, project_id=None):

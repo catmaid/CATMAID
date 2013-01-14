@@ -417,14 +417,17 @@ def node_update(request, project_id=None):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def node_nearest(request, project_id=None):
     params = {}
-    param_defaults = {
+    param_float_defaults = {
         'x': 0,
         'y': 0,
-        'z': 0,
+        'z': 0}
+    param_int_defaults = {
         'skeleton_id': -1,
         'neuron_id': -1}
-    for p in param_defaults.keys():
-        params[p] = request.POST.get(p, param_defaults[p])
+    for p in param_float_defaults.keys():
+        params[p] = float(request.POST.get(p, param_float_defaults[p]))
+    for p in param_int_defaults.keys():
+        params[p] = int(request.POST.get(p, param_int_defaults[p]))
     relation_map = get_relation_to_id_map(project_id)
 
     if params['skeleton_id'] < 0 and params['neuron_id'] < 0:
@@ -468,21 +471,19 @@ def node_nearest(request, project_id=None):
             return nearestTreenode
 
         nearestTreenode = getNearestTreenode(
-            float(params['x']),
-            float(params['y']),
-            float(params['z']),
+            params['x'],
+            params['y'],
+            params['z'],
             treenodes)
         if nearestTreenode is None:
-            raise Exception('No treenodes were found.')
+            raise Exception('No treenodes were found for skeletons in %s' % skeletons)
 
-        # TODO Check if callers really need string data.
-        # Return string data to emulate behavior of pg_fetch_assoc.
         return HttpResponse(json.dumps({
-            'treenode_id': str(nearestTreenode.id),
-            'x': str(int(nearestTreenode.location.x)),
-            'y': str(int(nearestTreenode.location.y)),
-            'z': str(int(nearestTreenode.location.z)),
-            'skeleton_id': str(nearestTreenode.skeleton_id)}))
+            'treenode_id': nearestTreenode.id,
+            'x': int(nearestTreenode.location.x),
+            'y': int(nearestTreenode.location.y),
+            'z': int(nearestTreenode.location.z),
+            'skeleton_id': nearestTreenode.skeleton_id}))
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))

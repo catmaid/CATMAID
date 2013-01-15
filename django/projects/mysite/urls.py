@@ -113,6 +113,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/(?P<node_type>\w+)/get-skeletons', 'catmaid.control.collect_skeleton_ids'),
     (r'^(?P<project_id>\d+)/object-tree/instance-operation$', 'catmaid.control.instance_operation'),
     (r'^(?P<project_id>\d+)/object-tree/group/(?P<group_id>\d+)/remove-empty-neurons$', 'catmaid.control.remove_empty_neurons'),
+    (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/(?P<node_type>\w+)/send-to-fragments-group', 'catmaid.control.send_to_fragments_group'),
 
     (r'^(?P<project_id>\d+)/link/create$', 'catmaid.control.create_link'),
     (r'^(?P<project_id>\d+)/link/delete$', 'catmaid.control.delete_link'),

@@ -562,4 +562,74 @@ def remove_empty_neurons(request, project_id=None, group_id=None):
 
     return HttpResponse(json.dumps({'message': message}))
 
+@requires_user_role(UserRole.Annotate)
+def send_to_fragments_group(request, project_id, node_id, node_type):
+    """ Anybody can send an owned neuron or group to the 'Fragments' group
+    """
+    can_edit_or_fail(request.user, node_id, 'class_instance')
+    
+    cursor = connection.cursor()
+    classes = dict(Class.objects.values_list('class_name', 'id').filter(project_id=project_id, class_name__in=('root', 'group', 'neuron', 'skeleton')))
+    relations = dict(Relation.objects.values_list('relation_name', 'id').filter(project_id=project_id, relation_name__in=('model_of', 'part_of')))
+    from treenode import _create_relation
+
+    # Obtain the ID of the group named 'Fragments' under the root group
+    cursor.execute('''
+    SELECT fragments.id
+    FROM class_instance root,
+         class_instance fragments,
+         class_instance_class_instance cici,
+         class,
+         relation r
+    WHERE fragments.project_id = %s
+      AND fragments.name = 'Fragments'
+      AND cici.class_instance_a = fragments.id
+      AND cici.relation_id = r.id
+      AND r.relation_name = 'part_of'
+      AND cici.class_instance_b = root.id
+      AND root.class_id = class.id
+      AND class.class_name = 'root'
+    ''' % project_id)
+    rows = cursor.fetchall()
+    if rows:
+        fragments_id = rows[0][0]
+    else:
+        # If none, create a 'Fragments' group
+        fragments = ClassInstance()
+        fragments.user = request.user # TODO should be an admin, but doesn't matter
+        fragments.project_id = project_id
+        fragments.class_column_id = classes['group']
+        fragments.name = 'Fragments'
+        fragments.save()
+        root = ClassInstance.objects.get(project=project_id, class_column=classes['root'])
+        _create_relation(request.user, project_id, relations['part_of'], fragments.id, root.id)
+        fragments_id = fragments.id
+
+    # Check whether the node_id corresponds to a skeleton,
+    # and wrap it in a neuron if so:
+    if 'skeleton' == node_type:
+        q = ClassInstance.objects.filter(pk=node_id).values_list('class_column')
+        if q[0][0] != classes['skeleton']:
+            raise Exception('The id #%s does not correspond to a skeleton!' % node_id)
+
+        # Create a neuron first
+        neuron = ClassInstance()
+        neuron.user = request.user
+        neuron.project_id = project_id
+        neuron.class_column_id = classes['neuron']
+        neuron.name = 'neuron'
+        neuron.save()
+
+        # Put the skeleton into the new neuron by rewriting the relation to the prior neuron
+        # (Assumes all skeletons always exist under a neuron.)
+        ClassInstanceClassInstance.objects.filter(class_instance_a=node_id, relation=relations['model_of']).update(class_instance_b=neuron.id)
+
+        # Put the new neuron in the Fragments group
+        _create_relation(request.user, project_id, relations['part_of'], neuron.id, fragments_id)
+
+    else:
+        # Move the neuron or group to Fragments group
+        ClassInstanceClassInstance.objects.filter(class_instance_a=node_id, relation=relations['part_of']).update(class_instance_b=fragments_id)
+
+    return HttpResponse(json.dumps({'message': 'OK'}))
 

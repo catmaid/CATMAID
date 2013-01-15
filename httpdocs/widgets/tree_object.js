@@ -20,6 +20,25 @@ var ObjectTree = new function()
     };
   };
 
+  var sendToFragmentsFn = function(type) {
+    return function(obj) {
+      var title = document.getElementById(obj.attr("id")).childNodes[1].innerText;
+      if (!confirm('Send ' + type + ' "' + title + '" to Fragments?')) {
+        return;
+      }
+      requestQueue.register(django_url + project.id + '/object-tree/' + obj.attr("id").replace("node_", "") + '/' + type + '/send-to-fragments-group', 'POST', {}, function (status, text) {
+        if (200 !== status) return;
+        var json = $.parseJSON(text);
+        if (json.error) {
+          alert(json.error);
+          return;
+        }
+        ObjectTree.refresh();
+        growlAlert('Moved to Fragments', 'Successfully moved ' + type + ' "' + title + '" to Fragments');
+      });
+    };
+  };
+
   this.init = function (pid) {
     // id of object tree
     var object_tree_id = "#tree_object";
@@ -208,6 +227,13 @@ var ObjectTree = new function()
                   });
                 }
               },
+              "sendToFragments": {
+                "separator_before": false,
+                "icon": false,
+                "separator_after": false,
+                "label": "Send to fragments",
+                "action": sendToFragmentsFn(type_of_node)
+              },
               "cut": {
                               "separator_before": true,
                               "icon": false,
@@ -362,6 +388,13 @@ var ObjectTree = new function()
                   });
                 }
               },
+              "sendToFragments": {
+                "separator_before": true,
+                "icon": false,
+                "separator_after": false,
+                "label": "Send to fragments",
+                "action": sendToFragmentsFn(type_of_node)
+              },
               "ccp": false
             };
           } else if (type_of_node === "skeleton") {
@@ -469,6 +502,13 @@ var ObjectTree = new function()
                 "action": function (obj) {
                   this.remove(obj);
                 }
+              },
+              "sendToFragments": {
+                "separator_before": true,
+                "icon": false,
+                "separator_after": false,
+                "label": "Send to fragments",
+                "action": sendToFragmentsFn(type_of_node)
               },
                 "cut": {
                     "separator_before": true,

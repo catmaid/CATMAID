@@ -36,6 +36,7 @@ def _fetch_targetgroup(user, project_id, targetgroup, part_of_id, class_map):
     if 'Fragments' == targetgroup:
         # Get the general staging folder
         try:
+            # TODO this is fragile, should check the parent group chain.
             staging_group = ClassInstance.objects.get(project=project_id, name='Staging')
         except ObjectDoesNotExist as e:
             # Doesn't exist, create it:
@@ -52,6 +53,7 @@ def _fetch_targetgroup(user, project_id, targetgroup, part_of_id, class_map):
         # Get the staging folder for the user doing the request
         name = user.first_name + ' ' + user.last_name + ' (' + user.username + ')'
         try:
+            # TODO this is fragile, should check the parent group chain.
             group = ClassInstance.objects.get(project=project_id, name=name)
         except ObjectDoesNotExist as e:
             # Group does not exist: create it

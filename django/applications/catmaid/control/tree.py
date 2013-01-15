@@ -491,3 +491,75 @@ def tree_object_list(request, project_id=None):
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
+
+
+@requires_user_role(UserRole.Annotate)
+def remove_empty_neurons(request, project_id=None, group_id=None):
+    """ Recursively visit the groups and neurons under group_id,
+    and delete neurons that for which no skeleton is a model_of.
+    """
+    group_id = int(group_id) # sanitize
+    cursor = connection.cursor()
+
+    classes = dict(Class.objects.values_list('class_name', 'id').filter(project_id=project_id, class_name__in=('neuron', 'group')))
+    relations = dict(Relation.objects.values_list('relation_name', 'id').filter(project_id=project_id, relation_name__in=('model_of', 'part_of')))
+
+    # Check that group_id is the ID of a group
+    cursor.execute('''
+    SELECT count(*)
+    FROM class_instance
+    WHERE id = %s
+      AND class_id = %s
+    ''' % (group_id, classes['group']))
+    if 1 != cursor.fetchone()[0]:
+        raise Exception('The given ID #%s does not correspond to a group!' % group_id)
+
+    # Obtain sets of neurons and groups under the group with group_id, recursively
+    group_ids = set([group_id])
+    neurons = set()
+    skipped = 0
+    while group_ids:
+        cursor.execute('''
+        SELECT ci.id, ci.class_id, ci.user_id
+        FROM class_instance_class_instance cici,
+             class_instance ci
+        WHERE cici.class_instance_b = %s
+          AND cici.relation_id = %s
+          AND cici.class_instance_a = ci.id
+          AND (ci.class_id = %s OR ci.class_id = %s)
+        ''' % (int(group_ids.pop()), relations['part_of'], classes['neuron'], classes['group']))
+        for row in cursor.fetchall():
+            if row[1] == classes['group']:
+                group_ids.add(row[0])
+            elif row[1] == classes['neuron']:
+                # A user can only delete owned neurons
+                if request.user.is_superuser or request.user.id == row[2]:
+                    neurons.add(row[0])
+                else:
+                    skipped += 1
+
+    # Select neurons that are modeled by skeletons
+    cursor.execute('''
+    SELECT cici.class_instance_b
+    FROM class_instance_class_instance cici,
+         class,
+         class_instance ci
+    WHERE cici.class_instance_b IN (%s)
+      AND cici.relation_id = %s
+      AND cici.class_instance_a = ci.id
+      AND ci.class_id = class.id
+      AND class.class_name = 'skeleton'
+    ''' % (",".join(str(nid) for nid in neurons), relations['model_of']))
+    # Filter out neurons modeled by skeletons
+    empty_neurons = neurons - set(row[0] for row in cursor.fetchall())
+    if empty_neurons:
+        ClassInstance.objects.filter(id__in=empty_neurons, user=request.user).delete()
+        message = 'Deleted %s empty neuron%s%s' % (len(empty_neurons), '' if 1 == len(empty_neurons) else 's', '' if 0 == skipped else ', skipped %s neurons not owned by you.' % skipped)
+    elif skipped > 0:
+        message = "All %s empty neurons found are not owned by you" % skipped
+    else:
+        message = 'No empty neurons found.'
+
+    return HttpResponse(json.dumps({'message': message}))
+
+

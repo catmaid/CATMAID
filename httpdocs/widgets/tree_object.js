@@ -186,6 +186,28 @@ var ObjectTree = new function()
                   this.remove(obj);
                 }
               },
+              "remove_empty_neurons": {
+                "separator_before": true,
+                "icon": false,
+                "separator_after": false,
+                "label": "Remove empty neurons",
+                "action": function (obj) {
+                  requestQueue.register(django_url + project.id + '/object-tree/group/' + obj.attr('id').replace("node_", "") + '/remove-empty-neurons', 'POST', {}, function(status, text) {
+                    if (200 !== status) return;
+                    var json = $.parseJSON(text);
+                    if (json.error) {
+                      alert(json.error);
+                      return;
+                    }
+                    if (json.message) {
+                      growlAlert('Deleting empty neurons', json.message);
+                    } else {
+                      alert('An error occurred while attempting to delete empty neurons');
+                    }
+                    ObjectTree.refresh();
+                  });
+                }
+              },
               "cut": {
                               "separator_before": true,
                               "icon": false,

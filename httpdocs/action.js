@@ -276,6 +276,7 @@ var editToolActions = [
           alert('Segmentation Tool only works on zoom-level 0!');
           return;
         }
+        WindowMaker.show('cytograph-widget');
         project.setTool( new SegmentationTool() );
      }
   }),
@@ -386,6 +387,17 @@ var tracingWindowActions = [
           return true;
       }
   }),
+
+  new Action({
+      helpText: "Segmentation Graph widget",
+      buttonID: "data_button_segmentation_graph_widget",
+      buttonName: 'graph_widget',
+      run: function (e) {
+          WindowMaker.show('cytograph-widget');
+          return true;
+      }
+  }),
+
 
   new Action({
     helpText: "Show object tree",

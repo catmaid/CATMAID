@@ -32,6 +32,6 @@ def slices_of_assembly_for_section(request, project_id=None, stack_id=None):
         project = p,
         assembly_id = assembly_id,
         sectionindex = sectionindex).all().values('assembly_id', 'sectionindex', 'slice_id',
-        'node_id', 'graphdb_node_id', 'min_x', 'min_y', 'max_x', 'max_y', 'center_x', 'center_y', 'threshold', 'size', 'status')
+        'node_id', 'min_x', 'min_y', 'max_x', 'max_y', 'center_x', 'center_y', 'threshold', 'size', 'status')
 
     return HttpResponse(json.dumps(list(all_slices)), mimetype="text/json")

@@ -28,18 +28,50 @@ def slices_at_location(request, project_id=None, stack_id=None):
     p = get_object_or_404(Project, pk=project_id)
 
     # fetch all the components for the given skeleton and z section
+    #slices = Slices.objects.filter(
+    #    stack = stack,
+    #    project = p,
+    #    min_x__lt = x,
+    #   max_x__gt = x,
+    #    min_y__lt = y,
+    #    max_y__gt = y,
+    #    sectionindex = z).all().values('assembly_id', 'sectionindex', 'slice_id',
+    #    'node_id', 'min_x', 'min_y', 'max_x', 'max_y', 'center_x',
+    #    'center_y', 'threshold', 'size', 'status').order_by('size')
+
     slices = Slices.objects.filter(
         stack = stack,
         project = p,
-        min_x__lt = x,
-        max_x__gt = x,
-        min_y__lt = y,
-        max_y__gt = y,
+        center_x__lt = x + 20,
+        center_x__gt = x - 20,
+        center_y__lt = y + 20,
+        center_y__gt = y - 20,
         sectionindex = z).all().values('assembly_id', 'sectionindex', 'slice_id',
-        'node_id', 'graphdb_node_id', 'min_x', 'min_y', 'max_x', 'max_y', 'center_x',
-        'center_y', 'threshold', 'size', 'status')
+        'node_id', 'min_x', 'min_y', 'max_x', 'max_y', 'center_x',
+        'center_y', 'threshold', 'size', 'status').order_by('threshold')
 
     return HttpResponse(json.dumps(list(slices)), mimetype="text/json")
+
+def segments_for_slice(request, project_id=None, stack_id=None):
+    
+    sliceid = int(request.GET.get('sliceid', '0'))
+    sectionindex = int(request.GET.get('sectionindex', '0'))
+    
+    # which directionality?
+
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+    segments = Segments.objects.filter(
+        stack = stack,
+        project = p,
+        origin_slice_id = sliceid,
+        origin_section = sectionindex
+    ).all().values('segmentid','segmenttype','origin_section','origin_slice_id','target1_section',
+    'target1_slice_id','target2_section','target2_slice_id','cost','direction','center_distance','set_difference')
+
+    return HttpResponse(json.dumps(list(segments)), mimetype="text/json")
+
 
 def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=10):
     componentIds = {}

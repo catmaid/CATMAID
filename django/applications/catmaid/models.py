@@ -498,7 +498,7 @@ class SkeletonlistDashboard(UserFocusedModel):
     skeleton_list = IntegerArrayField()
     description = models.TextField()
 
-class Slices(UserFocusedModel):
+class Segments(UserFocusedModel):
 
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
@@ -506,10 +506,64 @@ class Slices(UserFocusedModel):
     stack = models.ForeignKey(Stack)
 
     assembly = models.ForeignKey(ClassInstance,null=True)
-    sectionindex = models.IntegerField() # index of the section
+
+    segmentid = models.IntegerField(db_index=True)
+    segmenttype = models.IntegerField(db_index=True)
+    origin_section = models.IntegerField(db_index=True)
+    origin_slice_id = models.IntegerField(db_index=True)
+    target1_section = models.IntegerField(db_index=True,null=True)
+    target1_slice_id = models.IntegerField(db_index=True,null=True)
+    target2_section = models.IntegerField(db_index=True,null=True)
+    target2_slice_id = models.IntegerField(db_index=True,null=True)
+    cost = models.FloatField()
+    direction = models.BooleanField() # 0:LR if origin_section< target_section / 1:RL as boolean, otherwise
+
+    center_distance = models.FloatField()
+    set_difference = models.FloatField()
+    set_difference_ratio = models.FloatField()
+    aligned_set_difference = models.FloatField()
+    aligned_set_difference_ratio = models.FloatField()
+    size = models.FloatField()
+    overlap = models.FloatField()
+    overlap_ratio = models.FloatField()
+    aligned_overlap = models.FloatField()
+    aligned_overlap_ratio = models.FloatField()
+    average_slice_distance = models.FloatField()
+    max_slice_distance = models.FloatField()
+    aligned_average_slice_distance = models.FloatField()
+    aligned_max_slice_distance = models.FloatField()
+    histogram_0 = models.FloatField()
+    histogram_1 = models.FloatField()
+    histogram_2 = models.FloatField()
+    histogram_3 = models.FloatField()
+    histogram_4 = models.FloatField()
+    histogram_5 = models.FloatField()
+    histogram_6 = models.FloatField()
+    histogram_7 = models.FloatField()
+    histogram_8 = models.FloatField()
+    histogram_9 = models.FloatField()
+    normalized_histogram_0 = models.FloatField()
+    normalized_histogram_1 = models.FloatField()
+    normalized_histogram_2 = models.FloatField()
+    normalized_histogram_3 = models.FloatField()
+    normalized_histogram_4 = models.FloatField()
+    normalized_histogram_5 = models.FloatField()
+    normalized_histogram_6 = models.FloatField()
+    normalized_histogram_7 = models.FloatField()
+    normalized_histogram_8 = models.FloatField()
+    normalized_histogram_9 = models.FloatField()
+
+
+class Slices(UserFocusedModel):
+
+    creation_time = models.DateTimeField(default=now)
+    edition_time = models.DateTimeField(default=now)
+    stack = models.ForeignKey(Stack)
+
+    assembly = models.ForeignKey(ClassInstance,null=True,db_index=True)
+    sectionindex = models.IntegerField(db_index=True) # index of the section
     slice_id = models.IntegerField(db_index=True) # int id local to the section
     node_id = models.CharField(max_length=255,db_index=True) # convention: {sectionindex}_{slide_id}
-    graphdb_node_id = models.IntegerField(null=True,db_index=True) # the id of the node in the graph db
 
     # boundingbox (in pixel coordiantes)
     min_x = models.IntegerField(db_index=True)

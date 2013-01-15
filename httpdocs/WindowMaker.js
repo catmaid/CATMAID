@@ -385,6 +385,25 @@ var WindowMaker = new function()
     return win;
   };
 
+  var createCytoscapeGraphWindow = function()
+  {
+    var win = new CMWWindow("Cytoscape Graph Widget");
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer("cytoscape_graph_widget");
+    content.appendChild(container);
+
+    var graph = document.createElement('div');
+    graph.setAttribute("id", "cyto");
+    graph.style.height = "100%";
+    graph.style.width = "100%";
+    container.appendChild(graph);
+
+    addLogic(win);
+
+    return win;
+  };
 
   var createGraphWindow = function()
   {
@@ -1109,6 +1128,7 @@ var WindowMaker = new function()
     "log-table": createLogTableWindow,
     "export-widget": createExportWidget,
     "graph-widget": createGraphWindow,
+    "cytograph-widget": createCytoscapeGraphWindow,
     "object-tree": createObjectTreeWindow,
     "statistics": createStatisticsWindow,
     "disclaimer": createDisclaimerWindow,

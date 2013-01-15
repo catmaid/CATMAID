@@ -26,8 +26,10 @@ function SegmentationTool()
 
     // slices information
     var current_active_slice = null;
-    
 
+    // cytoscape graph object
+    var cy;
+    
     if (!ui) ui = new UI();
 
     this.on_assembly_id_change = function( assembly_id ) {
@@ -104,6 +106,9 @@ function SegmentationTool()
             self.createCanvasLayer( parentStack );
         }
         self.createToolbar();
+        // TODO: assume graph widget open
+        $("#cyto").cytoscape({ zoom: 1});
+        cy = $("#cyto").cytoscape("get");
     }
 
     /*
@@ -383,6 +388,17 @@ function SegmentationTool()
         }
     }) );
 
+    this.addAction( new Action({
+        helpText: "Fetch segments for active slice",
+        keyShortcuts: {
+            'J': [ 74 ]
+        },
+        run: function (e) {
+            self.fetch_segments_for_active_slice();
+            return true;
+        }
+    }) );
+
     var keyCodeToAction = getKeyCodeToActionMap(actions);
 
     /** This function should return true if there was any action
@@ -409,6 +425,11 @@ function SegmentationTool()
         result += '/' + sliceid_string.charAt(sliceid_string.length-1);
         return result;
     }
+
+    this.fetch_segments_for_active_slice = function() {
+        console.log('fetch segments for active slice')
+        allslices[ current_active_slice ].fetch_segments();
+    };
 
     this.delete_active_slice_group = function() {
         // but leave the loaded in memory
@@ -474,6 +495,10 @@ function SegmentationTool()
         add_slice_to_canvas( new_active_slice );
     }
 
+    var get_current_stack_id = function() {
+        return self.stack.id;
+    }
+
     this.clickXY = function( e ) {
 
         // TODO: enable again
@@ -529,8 +554,46 @@ function SegmentationTool()
 
     var add_slice_to_canvas = function( node_id ) {
         allslices[ node_id ].img.setActive( true );
+        allslices[ node_id ].center_on_canvas();
         canvasLayer.canvas.add( allslices[ node_id ].img );
     };
+
+    var update_graph_widget_for_slice = function( node_id ) {
+        console.log('update graph widget for slice');
+        
+        var demoNodes = [];
+        var demoEdges = [];
+
+        for(var idx in allslices[ node_id ].segments) {
+            var seg = allslices[ node_id ].segments[idx];
+            if( seg.segmenttype == 2 ) {
+                console.log('add continuation')
+                    demoNodes.push({
+                    data: {
+                        id: "n" + seg.target1_section + "_" + seg.target1_slice_id,
+                        position: { x: 100+idx*60, y: 100+idx*60 }
+                    },
+                });
+            }
+        }
+        console.log(demoNodes);
+
+        cy.style()
+            .selector("node")
+                .css({
+                    "content": "data(id)",
+                    "shape": "data(shape)",
+                    "border-width": 3,
+                    "background-color": "#DDD",
+                    "border-color": "#555"
+                });
+
+        cy.add({
+            nodes: demoNodes,
+            //edges: demoEdges
+        });
+        //cy.add({ group: "nodes", data: { id: "n0" } });
+    }
 
     var remove_slice_from_canvas = function( node_id ) {
         canvasLayer.canvas.remove( allslices[ node_id ].img );
@@ -569,7 +632,6 @@ function SegmentationTool()
         this.sectionindex = slice.sectionindex;
         this.slice_id = slice.slice_id; // int id local to the section
         this.node_id = slice.node_id; // convention: {sectionindex}_{slide_id}
-        this.graphdb_node_id = slice.graphdb_node_id; // the id of the node in the graph db
    
         this.min_x = slice.min_x;
         this.min_y = slice.min_y;
@@ -589,6 +651,8 @@ function SegmentationTool()
         this.img = null;
 
         // TODO: do i need a reference to the currently selected?
+        this.segments = new Object();
+
         this.segments_left = new Object();
         this.selected_segment_left = null;
 
@@ -610,6 +674,12 @@ function SegmentationTool()
 */
 
         this.center_on_canvas = function() {
+            console.log('center on canvas. sliceid', self.node_id)
+            
+            console.log('bounding box computed centers', bb_center_x, bb_center_y )
+            console.log('center of slice', self.center_x, self.center_y )
+            console.log('get canvas coordinates relative', getCanvasXFromStackX(bb_center_x), getCanvasYFromStackY(bb_center_y) )
+            console.log('minx/y', self.min_x, self.min_y)
             self.img.set({
                 left: getCanvasXFromStackX(bb_center_x),
                 top: getCanvasYFromStackY(bb_center_y)
@@ -622,15 +692,16 @@ function SegmentationTool()
                 // TODO: ask if this is the way to keep store the reference
                 // in the callback
                 self.img = img;
-                self.img.set({
+                /*self.img.set({
                     left: getCanvasXFromStackX(bb_center_x),
                     top: getCanvasYFromStackY(bb_center_y),
                     angle: 0,
                     clipTo: self.img }).scale(1);
-                //self.img.perPixelTargetFind = true;
-                //self.img.targetFindTolerance = 4;
+*/
+                self.img.perPixelTargetFind = true;
+                self.img.targetFindTolerance = 4;
                 self.img.hasControls = false;
-                self.img.hasBorders = true;
+                self.img.hasBorders = false;
                 self.img.lockMovementX = self.img.lockMovementY = true;
                 // store a reference from the img to the slice
                 self.img.slice = self;
@@ -645,7 +716,16 @@ function SegmentationTool()
         ** and initialize segments_{left|right} object
         */
         this.fetch_segments = function () {
-            // TODO
+            var url = django_url + project.id + "/stack/" + get_current_stack_id() + '/segments-at-location'+ "?" + $.param({
+                sliceid: self.slice_id,
+                sectionindex: self.sectionindex
+            });
+
+            $.getJSON(url, function(result) {
+                console.log('found segments', result);
+                self.segments = result;
+                update_graph_widget_for_slice( self.node_id )
+            });
         };
 
         /*

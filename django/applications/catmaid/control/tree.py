@@ -562,18 +562,12 @@ def remove_empty_neurons(request, project_id=None, group_id=None):
 
     return HttpResponse(json.dumps({'message': message}))
 
-@requires_user_role(UserRole.Annotate)
-def send_to_fragments_group(request, project_id, node_id, node_type):
-    """ Anybody can send an owned neuron or group to the 'Fragments' group
-    """
-    can_edit_or_fail(request.user, node_id, 'class_instance')
-    
-    cursor = connection.cursor()
-    classes = dict(Class.objects.values_list('class_name', 'id').filter(project_id=project_id, class_name__in=('root', 'group', 'neuron', 'skeleton')))
-    relations = dict(Relation.objects.values_list('relation_name', 'id').filter(project_id=project_id, relation_name__in=('model_of', 'part_of')))
-    from treenode import _create_relation
 
-    # Obtain the ID of the group named 'Fragments' under the root group
+def _fragments_group_id(request, project_id, class_root_id, relation_part_of_id):
+    """ Returns the ID of the 'Fragments' group.
+    Creates the Fragments group if it doesn't exist.
+    """
+    cursor = connection.cursor()
     cursor.execute('''
     SELECT fragments.id
     FROM class_instance root,
@@ -592,7 +586,7 @@ def send_to_fragments_group(request, project_id, node_id, node_type):
     ''' % project_id)
     rows = cursor.fetchall()
     if rows:
-        fragments_id = rows[0][0]
+        return rows[0][0]
     else:
         # If none, create a 'Fragments' group
         fragments = ClassInstance()
@@ -601,9 +595,23 @@ def send_to_fragments_group(request, project_id, node_id, node_type):
         fragments.class_column_id = classes['group']
         fragments.name = 'Fragments'
         fragments.save()
-        root = ClassInstance.objects.get(project=project_id, class_column=classes['root'])
-        _create_relation(request.user, project_id, relations['part_of'], fragments.id, root.id)
-        fragments_id = fragments.id
+        root = ClassInstance.objects.get(project=project_id, class_column=class_root_id)
+        _create_relation(request.user, project_id, relation_part_of_id, fragments.id, root.id)
+        return fragments.id
+
+
+@requires_user_role(UserRole.Annotate)
+def send_to_fragments_group(request, project_id, node_id, node_type):
+    """ Anybody can send an owned neuron or group to the 'Fragments' group
+    """
+    can_edit_or_fail(request.user, node_id, 'class_instance')
+    
+    classes = dict(Class.objects.values_list('class_name', 'id').filter(project_id=project_id, class_name__in=('root', 'group', 'neuron', 'skeleton')))
+    relations = dict(Relation.objects.values_list('relation_name', 'id').filter(project_id=project_id, relation_name__in=('model_of', 'part_of')))
+    from treenode import _create_relation
+
+    # Obtain the ID of the group named 'Fragments' under the root group
+    fragments_id = _fragments_group_id(request, project_id, classes['root'], relations['part_of'])
 
     # Check whether the node_id corresponds to a skeleton,
     # and wrap it in a neuron if so:

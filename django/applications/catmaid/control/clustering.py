@@ -1,0 +1,261 @@
+import json
+import string
+
+from django import forms
+from django.forms.widgets import CheckboxSelectMultiple
+from django.shortcuts import render_to_response
+from django.contrib.formtools.wizard.views import SessionWizardView
+from django.http import HttpResponse
+
+from catmaid.models import Class, ClassInstance, ClassClass, ClassInstanceClassInstance
+from catmaid.control.classification import ClassProxy
+from catmaid.control.classification import get_root_classes_qs, get_classification_links_qs
+
+metrics = (
+    ('JC', 'Jaccard'),
+)
+
+linkages = (
+    ('MIN', 'Single-linkage'),
+    ('MAX', 'Complete-linkage'),
+    ('AVG', 'Average-linkage'),
+)
+
+class ClassInstanceProxy(ClassInstance):
+    """ A proxy class to allow custom labeling of class instances in
+    model forms.
+    """
+    class Meta:
+        proxy=True
+
+    def __unicode__(self):
+        return "{0} ({1})".format(self.name, str(self.id))
+
+def create_ontology_selection_form( workspace_pid, class_ids=None ):
+    """ Creates a new SelectOntologyForm class with an up-to-date
+    class queryset.
+    """
+    if not class_ids:
+        class_ids = get_root_classes_qs(workspace_pid)
+
+    class SelectOntologyForm(forms.Form):
+        """ A simple form to select classification ontologies. A choice
+        field allows to select a single class that 'is_a' 'classification_root'.
+        """
+        ontologies = forms.ModelMultipleChoiceField(
+            queryset=Class.objects.filter(id__in=class_ids),
+            widget=CheckboxSelectMultiple())
+
+    return SelectOntologyForm
+
+class ClusteringSetupGraphs(forms.Form):
+    classification_graphs = forms.ModelMultipleChoiceField(
+        queryset=ClassInstanceProxy.objects.all(),
+        widget=CheckboxSelectMultiple())
+
+class ClusteringSetupMath(forms.Form):
+    metric = forms.ChoiceField(choices=metrics)
+    linkage = forms.ChoiceField(choices=linkages)
+    pass
+
+class ClusteringWizard(SessionWizardView):
+    template_name = "catmaid/clustering/setup.html"
+    workspace_pid = None
+
+    def get_form(self, step=None, data=None, files=None):
+        form = super(ClusteringWizard, self).get_form(step, data, files)
+        current_step = step or self.steps.current
+        if current_step == 'classifications':
+            # Select root nodes of graphs that are instances of the
+            # selected ontologies
+            ontologies = self.get_cleaned_data_for_step('ontologies')['ontologies']
+            root_ci_qs = ClassInstanceProxy.objects.filter( class_column__in=ontologies )
+            form.fields['classification_graphs'].queryset = root_ci_qs
+
+        return form
+
+    def get_context_data(self, form, **kwargs):
+        context = super(ClusteringWizard, self).get_context_data(form=form, **kwargs)
+        if self.steps.current == 'ontologies':
+            desc = 'Please select all the ontologies that you want to see ' \
+                   'considered for feature selection.'
+        elif self.steps.current == 'classifications':
+            desc = 'Below are all classification graphs shown, that are based ' \
+                   'on the previeously selected ontologies. Please select those ' \
+                   'you want to be considered in the clustering.'
+        else:
+            desc = "Please adjust the clustering settings to your liking."
+
+        context.update({
+            'description': desc,
+            'workspace_pid': self.workspace_pid})
+
+        return context
+
+    def done(self, form_list, **kwargs):
+        cleaned_data = [form.cleaned_data for form in form_list]
+        ontologies = cleaned_data[0].get('ontologies')
+        graphs = cleaned_data[1].get('classification_graphs')
+        metric = cleaned_data[2].get('metric')
+        linkage = cleaned_data[2].get('linkage')
+
+        # Featurs are abstract concepts (classes) and graphs will be
+        # checked which classes they have instanciated.
+        features = []
+        # TODO: Only consider features that are instantiated
+        for o in ontologies:
+            features = features + get_features( o )
+
+        bin_matrix = create_binary_matrix(graphs, features)
+        dst_matrix = create_distance_matrix(graphs, metric)
+        clustering = create_clustering(graphs, metric, linkage)
+
+        # Create a binary_matrix with names for display
+        num_graphs = len(graphs)
+        named_bin_matrix = []
+        for i in range( num_graphs ):
+            row = [ "Graph " + str(i) ] + bin_matrix[i]
+            named_bin_matrix.append( row )
+
+        return render_to_response('catmaid/clustering/display.html', {
+            'ontologies': ontologies,
+            'features': features,
+            'named_bin_matrix': named_bin_matrix,
+        })
+
+class FeatureLink:
+    def __init__(self, class_a, class_b, relation, super_class = None):
+        self.class_a = class_a
+        self.class_b = class_b
+        self.relation = relation
+        self.super_class = super_class
+
+class Feature:
+    """ A small container to keep a list of class-class links.
+    """
+    def __init__(self, class_class_links):
+        self.links = class_class_links
+        self.name = ",".join(
+            [l.class_a.class_name for l in self.links] )
+    def __str__(self):
+        return self.name
+    def __len__(self):
+        return len(self.links)
+
+def get_features( ontology ):
+    """ Return a list of Feature instances which represent paths
+    to leafs of the ontology.
+    """
+    feature_lists = get_feature_paths( ontology )
+    return [ Feature(fl) for fl in feature_lists ]
+
+def get_feature_paths( ontology, depth=0, max_depth=100 ):
+    """ Returns all root-leaf paths of the passed ontology. It respects
+    is_a relationships.
+    """
+    features = []
+    # Get all links, but exclude 'is_a' relationships
+    links_q = ClassClass.objects.filter(class_b_id=ontology.id).exclude(
+        relation__relation_name='is_a')
+    # Check if this link is followed by an 'is_a' relatiship. If so
+    # use the classes below.
+    feature_links = []
+    for link in links_q:
+        is_a_links_q = ClassClass.objects.filter(class_b_id=link.class_a.id,
+            relation__relation_name='is_a')
+        # Add all sub-classes instead of the root if there is at least one.
+        if is_a_links_q.count() > 0:
+            for is_a_link in is_a_links_q:
+                fl = FeatureLink(is_a_link.class_a, link.class_b, link.relation, link.class_a)
+                feature_links.append(fl)
+        else:
+            fl = FeatureLink(link.class_a, link.class_b, link.relation)
+            feature_links.append(fl)
+
+    # Look at the feature link paths
+    for flink in feature_links:
+        add_single_link = False
+
+        if depth < max_depth:
+            # Get features of the current feature's class a
+            child_features = get_feature_paths( flink.class_a, depth+1 )
+            # If there is a super class, get the children in addition
+            # to the children of the current class.
+            if flink.super_class:
+                child_features = child_features + \
+                    get_feature_paths( flink.super_class, depth+1 )
+            if len(child_features) == 0:
+                add_single_link = True
+            else:
+                for cf in child_features:
+                    features.append( [flink] + cf )
+        else:
+            # Add current node if we reached the maximum depth
+            # and don't recurse any further.
+            add_single_link = True
+
+        # Add single link if no more children are found/wanted
+        if add_single_link:
+            features.append( [flink] )
+
+    return features
+
+def setup_clustering(request, workspace_pid=None):
+    workspace_pid = int(workspace_pid)
+    select_ontology_form = create_ontology_selection_form(workspace_pid)
+    forms = [('ontologies', select_ontology_form),
+             ('classifications', ClusteringSetupGraphs),
+             ('clustering', ClusteringSetupMath)]
+    view = ClusteringWizard.as_view(forms, workspace_pid=workspace_pid)
+    return view(request)
+
+def graph_instances_feature(graph, feature, idx=0):
+    """ Traverses a class instance graph, starting from the passed node.
+    It recurses into child graphs and tests on every class instance if it
+    is linked to an ontology node. If it does, the function returns true.
+    """
+    # An empty feature is always true
+    num_features = len(feature)
+    if num_features == idx:
+        return True
+    f_head = feature.links[idx]
+
+    # Check for a link to the first feature component
+    link_q = ClassInstanceClassInstance.objects.filter(
+        class_instance_b=graph, class_instance_a__class_column=f_head.class_a,
+        relation=f_head.relation)
+    num_links = link_q.count()
+    # Make sure there is the expected child link
+    if num_links == 0:
+        return False
+    elif num_links > 1:
+        # More than one?
+        raise Exception('Found more than one ontology node link of one class instance.')
+
+    # Continue with checking children, if any
+    return graph_instances_feature(link_q[0].class_instance_a, feature, idx+1)
+
+def create_binary_matrix(graphs, features):
+    """ Creates a binary matrix for the graphs passed."""
+    num_features = len(features)
+    num_graphs = len(graphs)
+    # Fill matrix with zeros
+    matrix = [ [ 0 for j in range(num_features)] for i in range(num_graphs) ]
+    # Put a one at each position where the tree has
+    # a feature defined
+    for i in range(num_graphs):
+        graph = graphs[i]
+        for j in range(num_features):
+            feature = features[j]
+            # Check if a feature (root-leaf path in graph) is part of the
+            # current graph
+            if graph_instances_feature(graph, feature):
+                matrix[i][j] = 1
+
+    return matrix
+
+def create_distance_matrix(graphs, metric):
+    return []
+
+def create_clustering(graphs, metric, linkage):
+    return []

@@ -94,9 +94,11 @@ function OntologyTool()
           if (self.workspace_mode === "classification") {
               OntologyEditor.change_workspace(-1, true);
               ClassificationEditor.change_workspace(-1, true);
+              ClusteringWidget.change_workspace(-1, true);
           } else {
               OntologyEditor.change_workspace(project.id, true);
               ClassificationEditor.change_workspace(project.id, true);
+              ClusteringWidget.change_workspace(project.id, true);
           }
     };
 

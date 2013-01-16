@@ -288,3 +288,11 @@ div#classification_graph_object img.roiimage {
     display: none;
     color: #fff;
 }
+
+#clustering_content .indented {
+    margin: 1.5em 16px 0.5em 20px;
+}
+
+#clustering_content p.title {
+	font-weight:bold;
+}

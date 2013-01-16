@@ -1,0 +1,28 @@
+{% load i18n %}
+
+<p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+<p>{{ description }}</p>
+<form method="post" id="clustering-setup-form"
+      action="{% url clustering_setup workspace_pid %}">
+{% csrf_token %}
+{{ wizard.management_form }}
+{% if wizard.form.forms %}
+    {{ wizard.form.management_form }}
+    {% for form in wizard.form.forms %}
+        {{ form.as_p }}
+    {% endfor %}
+{% else %}
+    {{ wizard.form.as_p }}
+{% endif %}
+<p>
+{% if wizard.steps.prev %}
+<button class="button" name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}">{% trans "first step" %}</button>
+<button class="button" name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}">{% trans "prev step" %}</button>
+{% endif %}
+{% if wizard.steps.step1 == wizard.steps.count %}
+    <input class="button" name="next_step" type="submit" value="{% trans "submit" %}"/>
+{% else %}
+    <input class="button" name="next_step" type="submit" value="{% trans "next step" %}"/>
+{% endif %}
+</p>
+</form>

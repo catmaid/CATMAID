@@ -250,7 +250,7 @@ var TreenodeTable = new function()
       var id = parseInt(aData[0], 10);
       project.moveTo(z, y, x, undefined,
                      function () {
-                       SkeletonAnnotations.staticSelectNode(id);
+                       SkeletonAnnotations.staticSelectNode(id, skelid);
                      });
     });
   };

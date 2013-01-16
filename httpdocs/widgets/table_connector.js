@@ -201,8 +201,8 @@ var ConnectorTable = new function()
 
       // If there is a partner treenode, activate that - otherwise
       // activate the connector itself:
-      if (aData[8])
-        idToActivate = parseInt(aData[8], 10);
+      if (aData[9])
+        idToActivate = parseInt(aData[9], 10);
       else
         idToActivate = parseInt(aData[0], 10);
 

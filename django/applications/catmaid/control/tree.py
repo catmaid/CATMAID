@@ -385,11 +385,11 @@ def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None,
             skeleton_ids = tuple()
 
         # Skip skeletons with less than threshold+1 nodes
-        if skeleton_ids:
+        if skeleton_ids and threshold > 0:
             cursor = connection.cursor()
             cursor.execute('''
-            SELECT skeleton_id FROM treenode WHERE skeleton_id IN (%s) GROUP BY skeleton_id HAVING count(*) > 1
-            ''' % ",".join(str(skid) for skid in skeleton_ids))
+            SELECT skeleton_id FROM treenode WHERE skeleton_id IN (%s) GROUP BY skeleton_id HAVING count(*) > %s
+            ''' % (",".join(str(skid) for skid in skeleton_ids), threshold))
             skeleton_ids = tuple(row[0] for row in cursor.fetchall())
 
         return HttpResponse(json.dumps(skeleton_ids))

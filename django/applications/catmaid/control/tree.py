@@ -362,9 +362,10 @@ def collect_neuron_ids(request, project_id=None, node_id=None, node_type=None):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None):
+def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None, threshold=1):
     """ Retrieve all skeleton IDs under a given group or neuron node of the Object Tree,
-    recursively."""
+    recursively.
+    Limits the collection to skeletons with more treenodes than the threshold."""
     try:
         neuron_ids = _collect_neuron_ids(node_id, node_type)
         if neuron_ids:
@@ -382,6 +383,14 @@ def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None)
             skeleton_ids = tuple(row[0] for row in cursor.fetchall())
         else:
             skeleton_ids = tuple()
+
+        # Skip skeletons with less than threshold+1 nodes
+        if skeleton_ids:
+            cursor = connection.cursor()
+            cursor.execute('''
+            SELECT skeleton_id FROM treenode WHERE skeleton_id IN (%s) GROUP BY skeleton_id HAVING count(*) > 1
+            ''' % ",".join(str(skid) for skid in skeleton_ids))
+            skeleton_ids = tuple(row[0] for row in cursor.fetchall())
 
         return HttpResponse(json.dumps(skeleton_ids))
     except Exception as e:

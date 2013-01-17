@@ -13,7 +13,7 @@ var SkeletonAnnotations = new function()
     return SVGOverlays[stack];
   };
 
-  /** Select a node in any of the existing SVGOverlay instances, by its ID and its skeletonID. */
+  /** Select a node in any of the existing SVGOverlay instances, by its ID and its skeletonID. If it is a connector node, it expects a null skeletonID. */
   this.staticSelectNode = function(nodeID, skeletonID)
   {
     var stack, s;
@@ -25,7 +25,7 @@ var SkeletonAnnotations = new function()
           return;
         } else {
           // Should never happen
-          s.selectNode(null);
+          s.activateNode(null); // deselect: there's a mismatch between node and skeleton
         }
       }
     }
@@ -1668,7 +1668,7 @@ var SkeletonAnnotations = new function()
       nodeIDToActivate = node.id;
       if (node.type === "connector") {
         afterMove = function() {
-          SkeletonAnnotations.staticSelectNode(nodeIDToActivate);
+          SkeletonAnnotations.staticSelectNode(nodeIDToActivate, null);
         };
       } else if (node.type === "treenode") {
         skeletonIDToActivate = node.skeleton_id;

@@ -14,6 +14,31 @@ var ObjectTree = new function()
     $('#tree_object').jstree("rename");
   }
 
+  var goToNearestNodeFn = function(type) {
+    return function(obj) {
+      TracingTool.goToNearestInNeuronOrSkeleton(type, obj.attr("id").replace("node_", ""));
+    };
+  };
+
+  var sendToFragmentsFn = function(type) {
+    return function(obj) {
+      var title = document.getElementById(obj.attr("id")).childNodes[1].innerText;
+      if (!confirm('Send ' + type + ' "' + title + '" to Fragments?')) {
+        return;
+      }
+      requestQueue.register(django_url + project.id + '/object-tree/' + obj.attr("id").replace("node_", "") + '/' + type + '/send-to-fragments-group', 'POST', {}, function (status, text) {
+        if (200 !== status) return;
+        var json = $.parseJSON(text);
+        if (json.error) {
+          alert(json.error);
+          return;
+        }
+        ObjectTree.refresh();
+        growlAlert('Moved to Fragments', 'Successfully moved ' + type + ' "' + title + '" to Fragments');
+      });
+    };
+  };
+
   this.init = function (pid) {
     // id of object tree
     var object_tree_id = "#tree_object";
@@ -180,6 +205,35 @@ var ObjectTree = new function()
                   this.remove(obj);
                 }
               },
+              "remove_empty_neurons": {
+                "separator_before": true,
+                "icon": false,
+                "separator_after": false,
+                "label": "Remove empty neurons",
+                "action": function (obj) {
+                  requestQueue.register(django_url + project.id + '/object-tree/group/' + obj.attr('id').replace("node_", "") + '/remove-empty-neurons', 'POST', {}, function(status, text) {
+                    if (200 !== status) return;
+                    var json = $.parseJSON(text);
+                    if (json.error) {
+                      alert(json.error);
+                      return;
+                    }
+                    if (json.message) {
+                      growlAlert('Deleting empty neurons', json.message);
+                    } else {
+                      alert('An error occurred while attempting to delete empty neurons');
+                    }
+                    ObjectTree.refresh();
+                  });
+                }
+              },
+              "sendToFragments": {
+                "separator_before": false,
+                "icon": false,
+                "separator_after": false,
+                "label": "Send to fragments",
+                "action": sendToFragmentsFn(type_of_node)
+              },
               "cut": {
                               "separator_before": true,
                               "icon": false,
@@ -206,10 +260,7 @@ var ObjectTree = new function()
                 "separator_before": false,
                 "separator_after": false,
                 "label": "Select nearest node",
-                "action": function (obj) {
-                  var neuronid = obj.attr("id").replace("node_", "");
-                  TracingTool.goToNearestInNeuron('neuron', neuronid);
-                }
+                "action": goToNearestNodeFn(type_of_node)
               },
 /*              "show_in_catalog": {
                     "separator_before": true,
@@ -337,6 +388,13 @@ var ObjectTree = new function()
                   });
                 }
               },
+              "sendToFragments": {
+                "separator_before": true,
+                "icon": false,
+                "separator_after": false,
+                "label": "Send to fragments",
+                "action": sendToFragmentsFn(type_of_node)
+              },
               "ccp": false
             };
           } else if (type_of_node === "skeleton") {
@@ -387,10 +445,7 @@ var ObjectTree = new function()
                 "separator_before": false,
                 "separator_after": false,
                 "label": "Select nearest node",
-                "action": function (obj) {
-                  var skelid = obj.attr("id").replace("node_", "");
-                  TracingTool.goToNearestInNeuron('skeleton', skelid);
-                }
+                "action": goToNearestNodeFn(type_of_node)
               },
               "show": {
                 "label": "Show",
@@ -447,6 +502,13 @@ var ObjectTree = new function()
                 "action": function (obj) {
                   this.remove(obj);
                 }
+              },
+              "sendToFragments": {
+                "separator_before": true,
+                "icon": false,
+                "separator_after": false,
+                "label": "Send to fragments",
+                "action": sendToFragmentsFn(type_of_node)
               },
                 "cut": {
                     "separator_before": true,

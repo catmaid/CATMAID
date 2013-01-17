@@ -192,7 +192,7 @@ var ConnectorTable = new function()
     });
 
     $(tableid + " tbody tr").live('dblclick', function () {
-      var idToActivate;
+      var idToActivate, skeletonID;
       var aData = self.connectorTable.fnGetData(this);
       // retrieve coordinates and moveTo
       var x = parseFloat(aData[2]);
@@ -201,14 +201,17 @@ var ConnectorTable = new function()
 
       // If there is a partner treenode, activate that - otherwise
       // activate the connector itself:
-      if (aData[8])
-        idToActivate = parseInt(aData[8], 10);
-      else
+      if (aData[9]) {
+        idToActivate = parseInt(aData[9], 10);
+        skeletonID = parseInt(aData[1], 10);
+      } else {
         idToActivate = parseInt(aData[0], 10);
+        skeletonID = null;
+      }
 
       project.moveTo(z, y, x, undefined,
                      function () {
-                       SkeletonAnnotations.staticSelectNode(idToActivate);
+                       SkeletonAnnotations.staticSelectNode(idToActivate, skeletonID);
                      });
     });
 

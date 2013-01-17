@@ -222,12 +222,12 @@ function SegmentationTool()
 
     var onmousewheel = function( e )
     {
-        console.log('onmousewheel', e);
+        //console.log('onmousewheel', e);
     }
 
     var onmousemove = function( e )
     {
-        console.log('onmousemove');
+        //console.log('onmousemove');
         self.lastX = self.stack.x + ui.diffX; // TODO - or + ?
         self.lastY = self.stack.y + ui.diffY;
         self.stack.moveToPixel(
@@ -247,7 +247,7 @@ function SegmentationTool()
 
     var onmouseup = function( e )
     {
-        console.log('onmouseup');
+        //console.log('onmouseup');
         ui.releaseEvents();
         ui.removeEvent( "onmousemove", onmousemove );
         ui.removeEvent( "onmouseup", onmouseup );
@@ -256,7 +256,7 @@ function SegmentationTool()
 
     var onmousedown = function( e )
     {
-        console.log('onmousedown');
+        //console.log('onmousedown');
         ui.registerEvent( "onmousemove", onmousemove );
         ui.registerEvent( "onmouseup", onmouseup );
         ui.catchEvents( "move" );
@@ -443,35 +443,29 @@ function SegmentationTool()
     };
 
     this.fetch_slices_from_segments_for_active_slice = function() {
-        console.log('fetch slices');
+        // console.log('fetch slices');
         if( current_active_slice ) {
             
-            console.log('current section', self.stack.z, allslices[ current_active_slice ].sectionindex )
+            // console.log('current section', self.stack.z, allslices[ current_active_slice ].sectionindex )
             if( self.stack.z - allslices[ current_active_slice ].sectionindex > 0 ) {
                 // go down (higher section index) into the stack, i.e. 
                 // SOPNET's right direction, i.e. true
                 var current_segment = allslices[ current_active_slice ].get_current_right_segment();
-                console.log('current active', current_active_slice, allslices[ current_active_slice ]);
-                console.log('current segment', current_segment);
+                // console.log('current active', current_active_slice, allslices[ current_active_slice ]);
+                // console.log('current segment', current_segment);
                 if( current_segment.segmenttype == 1 ) {
                     // end segment
                     console.log('end segment');
                 } else if( current_segment.segmenttype == 2 ) {
                     console.log('continuation');
                     // fetch target1 slice
-                    var node_id = current_segment.target1_section + '_' + current_segment.target1_slice_id;
-                    console.log('target node_id', node_id);
-
                     var url = django_url + project.id + "/stack/" + self.stack.id + '/slice'+ "?" + $.param({
                         sectionindex: current_segment.target1_section,
                         sliceid: current_segment.target1_slice_id
                     });
-
                     $.getJSON(url, function(result){
-                        self.add_slices_and_activate_first( result, true );
+                        self.add_slices( result, true, true );
                     });
-
-
                 } else if( current_segment.segmenttype == 3 ) {
                     console.log('branch');
                 }
@@ -479,7 +473,7 @@ function SegmentationTool()
                 // go up, i.e. left
                 var current_segment = allslices[ current_active_slice ].get_current_left_segment();
 
-            } else {
+            }  {
                 console.log('current active slice in current section');
             }
         }
@@ -490,9 +484,11 @@ function SegmentationTool()
 
     this.delete_active_slice_group = function() {
         // but leave the loaded in memory
-        remove_slice_from_canvas( current_active_slice );
-        delete slices_grouping[ current_active_slice ];
-        activate_slice( null );
+        if( current_active_slice in allslices ) {
+            remove_slice_from_canvas( current_active_slice );
+            delete slices_grouping[ current_active_slice ];
+            activate_slice( null );            
+        }
     };
 
     this.previous_slice = function() {
@@ -556,8 +552,8 @@ function SegmentationTool()
         return self.stack;
     }
 
-    this.add_slices_and_activate_first = function( result, add_to_canvas )  {
-        console.log('add to convas is', add_to_canvas);
+    this.add_slices = function( result, add_to_canvas, make_current_active )  {
+        //console.log('add to canvas is', add_to_canvas, 'current active', make_current_active);
         var prototype_slice = null;
         for (var sidx in result) {
 
@@ -576,13 +572,16 @@ function SegmentationTool()
             
             //console.log('slice', slice);
             if( ! allslices.hasOwnProperty( slice.node_id ) ) {
-                console.log('add result slice to allslies', slice.node_id)
+                //console.log('add result slice to allslices', slice.node_id)
                 allslices[ slice.node_id ] = slice;
             } else {
                 console.log('slice already in allslices. do not add', slice);
             }
 
-            slice.fetch_image( ( add_to_canvas || (current_active_slice === slice.node_id) ) );
+            slice.fetch_segments();
+
+            slice.fetch_image( ( add_to_canvas || (current_active_slice === slice.node_id) ),
+                 ( make_current_active || (current_active_slice === slice.node_id)) );
 
         }
     }
@@ -607,7 +606,7 @@ function SegmentationTool()
 
         $.getJSON(url, function(result){
             // console.log('found slices', result);
-            self.add_slices_and_activate_first( result );
+            self.add_slices( result, true, true );
         });
 
         return;
@@ -615,6 +614,7 @@ function SegmentationTool()
 
     var activate_slice = function( node_id ) {
         current_active_slice = node_id;
+        // TODO: do i need to add it to slice groupings?
     };
 
     var add_slice_to_canvas = function( node_id ) {
@@ -739,20 +739,20 @@ function SegmentationTool()
 */
 
         this.center_on_canvas = function() {
-            console.log('center on canvas. sliceid', self.node_id)
-            
-            console.log('bounding box computed centers', bb_center_x, bb_center_y )
+            //console.log('center on canvas. sliceid', self.node_id)
+            /*console.log('bounding box computed centers', bb_center_x, bb_center_y )
             console.log('center of slice', self.center_x, self.center_y )
             console.log('get canvas coordinates relative', getCanvasXFromStackX(bb_center_x), getCanvasYFromStackY(bb_center_y) )
             console.log('minx/y', self.min_x, self.min_y)
+            */
             self.img.set({
                 left: getCanvasXFromStackX(bb_center_x),
                 top: getCanvasYFromStackY(bb_center_y)
             });
         };
 
-        this.fetch_image = function( add_to_canvas ) {       
-            console.log('fetch image: addtocanvase', add_to_canvas )     ;
+        this.fetch_image = function( add_to_canvas, make_current_active ) {       
+            // console.log('fetch image: addtocanvase', add_to_canvas )     ;
             fabric.Image.fromURL(self.get_slice_image_url(), function(img)
             {
                 // TODO: ask if this is the way to keep store the reference
@@ -772,8 +772,11 @@ function SegmentationTool()
                 // store a reference from the img to the slice
                 self.img.slice = self;
                 if( add_to_canvas ) {
-                    console.log('add slice to canvas (fetch image)');
+                    //console.log('add slice to canvas (in  fetch image)');
                     add_slice_to_canvas( self.node_id );
+                }
+                if( make_current_active ) {
+                    activate_slice( self.node_id );
                 }
             });
         };
@@ -783,12 +786,19 @@ function SegmentationTool()
         ** and initialize segments_{left|right} object
         */
         this.fetch_segments = function () {
+
+            // do not fetch segments if already fetched
+            if(self.segments_right.length > 0 || self.segments_left.length > 0) {
+                console.log('already existing segments');
+                return;
+            }
+
             var url = django_url + project.id + "/stack/" + get_current_stack().id + '/segments-at-location'+ "?" + $.param({
                 sliceid: self.slice_id,
                 sectionindex: self.sectionindex
             });
             $.getJSON(url, function(result) {
-                console.log('found segments', result);
+                // console.log('found segments', result);
                 for(var idx in result) {
                     if( !result[idx].direction ) {
                         self.segments_left.push( result[idx] );
@@ -802,8 +812,8 @@ function SegmentationTool()
                         }
                     }
                 }
-                console.log('segments right', self.segments_right);
-                console.log('segments left', self.segments_left);
+                // console.log('segments right', self.segments_right);
+                // console.log('segments left', self.segments_left);
                 // self.segments = result;
                 // update_graph_widget_for_slice( self.node_id );
             });

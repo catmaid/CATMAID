@@ -399,6 +399,17 @@ function SegmentationTool()
         }
     }) );
 
+    this.addAction( new Action({
+        helpText: "Retrieve slice(s) from segments of the current active slice",
+        keyShortcuts: {
+            'H': [ 72 ]
+        },
+        run: function (e) {
+            self.fetch_slices_from_segments_for_active_slice();
+            return true;
+        }
+    }) );
+
     var keyCodeToAction = getKeyCodeToActionMap(actions);
 
     /** This function should return true if there was any action
@@ -430,6 +441,52 @@ function SegmentationTool()
         console.log('fetch segments for active slice')
         allslices[ current_active_slice ].fetch_segments();
     };
+
+    this.fetch_slices_from_segments_for_active_slice = function() {
+        console.log('fetch slices');
+        if( current_active_slice ) {
+            
+            console.log('current section', self.stack.z, allslices[ current_active_slice ].sectionindex )
+            if( self.stack.z - allslices[ current_active_slice ].sectionindex > 0 ) {
+                // go down (higher section index) into the stack, i.e. 
+                // SOPNET's right direction, i.e. true
+                var current_segment = allslices[ current_active_slice ].get_current_right_segment();
+                console.log('current active', current_active_slice, allslices[ current_active_slice ]);
+                console.log('current segment', current_segment);
+                if( current_segment.segmenttype == 1 ) {
+                    // end segment
+                    console.log('end segment');
+                } else if( current_segment.segmenttype == 2 ) {
+                    console.log('continuation');
+                    // fetch target1 slice
+                    var node_id = current_segment.target1_section + '_' + current_segment.target1_slice_id;
+                    console.log('target node_id', node_id);
+
+                    var url = django_url + project.id + "/stack/" + self.stack.id + '/slice'+ "?" + $.param({
+                        sectionindex: current_segment.target1_section,
+                        sliceid: current_segment.target1_slice_id
+                    });
+
+                    $.getJSON(url, function(result){
+                        self.add_slices_and_activate_first( result, true );
+                    });
+
+
+                } else if( current_segment.segmenttype == 3 ) {
+                    console.log('branch');
+                }
+            } else if( self.stack.z - allslices[ current_active_slice ].sectionindex < 0 ) {
+                // go up, i.e. left
+                var current_segment = allslices[ current_active_slice ].get_current_left_segment();
+
+            } else {
+                console.log('current active slice in current section');
+            }
+        }
+        
+    }
+
+
 
     this.delete_active_slice_group = function() {
         // but leave the loaded in memory
@@ -495,8 +552,39 @@ function SegmentationTool()
         add_slice_to_canvas( new_active_slice );
     }
 
-    var get_current_stack_id = function() {
-        return self.stack.id;
+    var get_current_stack = function() {
+        return self.stack;
+    }
+
+    this.add_slices_and_activate_first = function( result, add_to_canvas )  {
+        console.log('add to convas is', add_to_canvas);
+        var prototype_slice = null;
+        for (var sidx in result) {
+
+            var slice = new Slice( result[sidx] );
+            if( sidx == 0 ) {
+                // make first slice from the group the currently active
+                prototype_slice = slice.node_id;
+                activate_slice( slice.node_id );
+                slices_grouping[ prototype_slice ] = {};
+                slices_grouping[ prototype_slice ]['slicelist'] = [];
+                slices_grouping[ prototype_slice ]['sliceindex'] = 0;
+                slices_grouping[ prototype_slice ]['slicelist'].push ( prototype_slice );
+            } else {
+                slices_grouping[ prototype_slice ]['slicelist'].push ( slice.node_id );
+            }
+            
+            //console.log('slice', slice);
+            if( ! allslices.hasOwnProperty( slice.node_id ) ) {
+                console.log('add result slice to allslies', slice.node_id)
+                allslices[ slice.node_id ] = slice;
+            } else {
+                console.log('slice already in allslices. do not add', slice);
+            }
+
+            slice.fetch_image( ( add_to_canvas || (current_active_slice === slice.node_id) ) );
+
+        }
     }
 
     this.clickXY = function( e ) {
@@ -519,30 +607,7 @@ function SegmentationTool()
 
         $.getJSON(url, function(result){
             // console.log('found slices', result);
-            var prototype_slice = null;
-            for (var sidx in result) {
-
-                var slice = new Slice( result[sidx] );
-                if( sidx == 0 ) {
-                    prototype_slice = slice.node_id;
-                    current_active_slice = slice.node_id;
-                    slices_grouping[ prototype_slice ] = {};
-                    slices_grouping[ prototype_slice ]['slicelist'] = [];
-                    slices_grouping[ prototype_slice ]['sliceindex'] = 0;
-                    slices_grouping[ prototype_slice ]['slicelist'].push ( prototype_slice );
-                } else {
-                    slices_grouping[ prototype_slice ]['slicelist'].push ( slice.node_id );
-                }
-                
-                //console.log('slice', slice);
-                if( ! allslices.hasOwnProperty( slice.node_id ) ) {
-                    allslices[ slice.node_id ] = slice;
-                } else {
-                    console.log('slice already in allslices. do not add', slice);
-                }
-
-                slice.fetch_image();
-            }
+            self.add_slices_and_activate_first( result );
         });
 
         return;
@@ -653,10 +718,10 @@ function SegmentationTool()
         // TODO: do i need a reference to the currently selected?
         this.segments = new Object();
 
-        this.segments_left = new Object();
+        this.segments_left = new Array();
         this.selected_segment_left = null;
 
-        this.segments_right = new Object();
+        this.segments_right = new Array();
         this.selected_segment_right = null;
 
 /*
@@ -686,7 +751,8 @@ function SegmentationTool()
             });
         };
 
-        this.fetch_image = function() {            
+        this.fetch_image = function( add_to_canvas ) {       
+            console.log('fetch image: addtocanvase', add_to_canvas )     ;
             fabric.Image.fromURL(self.get_slice_image_url(), function(img)
             {
                 // TODO: ask if this is the way to keep store the reference
@@ -705,7 +771,8 @@ function SegmentationTool()
                 self.img.lockMovementX = self.img.lockMovementY = true;
                 // store a reference from the img to the slice
                 self.img.slice = self;
-                if( current_active_slice === self.node_id ) {
+                if( add_to_canvas ) {
+                    console.log('add slice to canvas (fetch image)');
                     add_slice_to_canvas( self.node_id );
                 }
             });
@@ -716,17 +783,43 @@ function SegmentationTool()
         ** and initialize segments_{left|right} object
         */
         this.fetch_segments = function () {
-            var url = django_url + project.id + "/stack/" + get_current_stack_id() + '/segments-at-location'+ "?" + $.param({
+            var url = django_url + project.id + "/stack/" + get_current_stack().id + '/segments-at-location'+ "?" + $.param({
                 sliceid: self.slice_id,
                 sectionindex: self.sectionindex
             });
-
             $.getJSON(url, function(result) {
                 console.log('found segments', result);
-                self.segments = result;
-                update_graph_widget_for_slice( self.node_id )
+                for(var idx in result) {
+                    if( !result[idx].direction ) {
+                        self.segments_left.push( result[idx] );
+                        if( !self.selected_segment_left ) {
+                            self.selected_segment_left = 0;
+                        }
+                    } else {
+                        self.segments_right.push( result[idx] );
+                        if( !self.selected_segment_right ) {
+                            self.selected_segment_right = 0;
+                        }
+                    }
+                }
+                console.log('segments right', self.segments_right);
+                console.log('segments left', self.segments_left);
+                // self.segments = result;
+                // update_graph_widget_for_slice( self.node_id );
             });
         };
+
+        this.next_left_segment = function() {
+            // TODO
+        }
+
+        this.get_current_right_segment = function() {
+            return self.segments_right[ self.selected_segment_right ]
+        }
+
+        this.get_current_left_segment = function() {
+            return self.segments_left[ self.selected_segment_left ]
+        }
 
         /*
         ** Generate the absolute URL to the slice image

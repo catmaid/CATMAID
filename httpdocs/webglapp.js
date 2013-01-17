@@ -682,7 +682,7 @@ var WebGLApp = new function () {
     if( skeletons.hasOwnProperty(skeleton_id) ){
       // skeleton already in the list, just reinitialize
       skeletons[skeleton_id].reinit_actor( skeleton_data );
-      } else {
+    } else {
       skeleton_data['id'] = skeleton_id;
       skeletons[skeleton_id] = new Skeleton( skeleton_data );
       self.addSkeletonToTable( skeletons[skeleton_id] );

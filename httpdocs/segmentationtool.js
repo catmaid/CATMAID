@@ -6,6 +6,11 @@
  *
  */
 var allslices = new Object(), slices_grouping = new Object();
+
+    // all selected slices per section
+    var allvisible_slices = new Object();
+    var current_active_slice = null;
+
 function SegmentationTool()
 {
     var self = this;
@@ -25,10 +30,12 @@ function SegmentationTool()
     // slices container
 
     // slices information
-    var current_active_slice = null;
+
 
     // cytoscape graph object
     var cy;
+
+    var current_section = 0;
     
     if (!ui) ui = new UI();
 
@@ -107,8 +114,13 @@ function SegmentationTool()
         }
         self.createToolbar();
         // TODO: assume graph widget open
-        $("#cyto").cytoscape({ zoom: 1});
-        cy = $("#cyto").cytoscape("get");
+        // $("#cyto").cytoscape({ zoom: 1});
+        // cy = $("#cyto").cytoscape("get");
+        // TODO: this needs to be called after fetching for an
+        // assembly id from the database
+        for(var i = 0; i < self.stack.slices.length; i++) {
+            allvisible_slices[ self.stack.slices[i] ] = new Object();
+        };
     }
 
     /*
@@ -116,6 +128,7 @@ function SegmentationTool()
     */
     this.createToolbar = function ()
     {
+        console.log('create toolbar')
         // enable button and toolbar
         document.getElementById( "edit_button_segmentation" ).className = "button_active";
         document.getElementById( "toolbar_segmentation" ).style.display = "block";
@@ -157,18 +170,19 @@ function SegmentationTool()
 
         canvasLayer.canvas.on({
           'object:selected': function(e) {
-            // console.log('object selected',e);
+            //console.log('object selected',e);
             // TODO:
-            // fetch segments for selected slice
-            // e.target.slice.fetch_segments();
             // - global variable of active slice: setActiveSlice
             // - change slice appareance with a filter
             activate_slice( e.target.slice.node_id );
-            
+            update();
             e.e.stopPropagation();
             e.e.preventDefault();
             return false;
           },
+          'mouse:move': function(e) {
+            //console.log('mouse move on canvas', e);
+          }
           /*'object:moving': function(e) {
             console.log('object moving', e);
             e.target.opacity = 0.5;
@@ -227,7 +241,6 @@ function SegmentationTool()
 
     var onmousemove = function( e )
     {
-        //console.log('onmousemove');
         self.lastX = self.stack.x + ui.diffX; // TODO - or + ?
         self.lastY = self.stack.y + ui.diffY;
         self.stack.moveToPixel(
@@ -235,13 +248,7 @@ function SegmentationTool()
             self.stack.y - ui.diffY / self.stack.scale,
             self.stack.x - ui.diffX / self.stack.scale,
             self.stack.s );
-        // loop over all visible slices and update their left,top coordinates
-        for( var node_id in slices_grouping ) {
-            if( slices_grouping.hasOwnProperty( node_id ) ) {
-                allslices[ node_id ].center_on_canvas();
-            }
-        }
-
+        update();
         return true;
     };
 
@@ -300,6 +307,7 @@ function SegmentationTool()
     
     this.changeSliceDelayed = function( val )
     {
+        current_section = val;
         if ( changeSliceDelayedTimer ) window.clearTimeout( changeSliceDelayedTimer );
         changeSliceDelayedParam = { z : val };
         changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 100 );
@@ -314,13 +322,13 @@ function SegmentationTool()
     this.move_up = function( e ) {
         canvasLayer.canvas.clear();
         self.slider_z.move(-(e.shiftKey ? 10 : 1));
-        // TODO: readd existing slices
+        update();
     };
     
     this.move_down = function( e ) {
         canvasLayer.canvas.clear();
         self.slider_z.move((e.shiftKey ? 10 : 1));
-        // TODO: readd existing slices
+        update();
     };
 
     var actions = [];
@@ -383,18 +391,7 @@ function SegmentationTool()
             'B': [ 66 ]
         },
         run: function (e) {
-            self.delete_active_slice_group();
-            return true;
-        }
-    }) );
-
-    this.addAction( new Action({
-        helpText: "Fetch segments for active slice",
-        keyShortcuts: {
-            'J': [ 74 ]
-        },
-        run: function (e) {
-            self.fetch_segments_for_active_slice();
+            self.delete_active_slice();
             return true;
         }
     }) );
@@ -424,6 +421,8 @@ function SegmentationTool()
         }
     }
 
+    // ----------------------------------------------------------------
+
     var generate_path_for_slice = function( sectionindex, slice_id )
     {
         var result = '';
@@ -437,17 +436,34 @@ function SegmentationTool()
         return result;
     }
 
-    this.fetch_segments_for_active_slice = function() {
-        console.log('fetch segments for active slice')
-        allslices[ current_active_slice ].fetch_segments();
-    };
+
+    // clears the canvas and adds selected slices in the section
+    // and eventually activates the current active slice
+    var update = function() {
+        canvasLayer.canvas.clear();
+        for (var node_id in allvisible_slices[current_section]) {
+            if( allslices[ node_id ].img.filters.length > 0) {
+                allslices[ node_id ].img.filters = new Array();
+                allslices[ node_id ].img.applyFilters(canvasLayer.canvas.renderAll.bind(canvasLayer.canvas));
+            }
+            allslices[ node_id ].center_on_canvas();
+            canvasLayer.canvas.add( allslices[ node_id ].img );
+        }
+        if( current_active_slice ) {
+            allslices[ current_active_slice ].img.filters[0] = new fabric.Image.filters.Sepia2();
+            allslices[ current_active_slice ].img.applyFilters(canvasLayer.canvas.renderAll.bind(canvasLayer.canvas));
+        }
+    }
+
 
     this.fetch_slices_from_segments_for_active_slice = function() {
         // console.log('fetch slices');
         if( current_active_slice ) {
             
+            // TODO: continue. get-slice-set from the segments list, and add it to the grouping
+            
             // console.log('current section', self.stack.z, allslices[ current_active_slice ].sectionindex )
-            if( self.stack.z - allslices[ current_active_slice ].sectionindex > 0 ) {
+            if( current_section - allslices[ current_active_slice ].sectionindex > 0 ) {
                 // go down (higher section index) into the stack, i.e. 
                 // SOPNET's right direction, i.e. true
                 var current_segment = allslices[ current_active_slice ].get_current_right_segment();
@@ -456,6 +472,7 @@ function SegmentationTool()
                 if( current_segment.segmenttype == 1 ) {
                     // end segment
                     console.log('end segment');
+
                 } else if( current_segment.segmenttype == 2 ) {
                     console.log('continuation');
                     // fetch target1 slice
@@ -464,7 +481,7 @@ function SegmentationTool()
                         sliceid: current_segment.target1_slice_id
                     });
                     $.getJSON(url, function(result){
-                        self.add_slices( result, true, true );
+                        self.add_slices_group( result, true, true );
                     });
                 } else if( current_segment.segmenttype == 3 ) {
                     console.log('branch');
@@ -477,18 +494,16 @@ function SegmentationTool()
                 console.log('current active slice in current section');
             }
         }
-        
     }
 
-
-
-    this.delete_active_slice_group = function() {
+    this.delete_active_slice = function() {
+        //console.log('delete active slice', current_active_slice)
         // but leave the loaded in memory
-        if( current_active_slice in allslices ) {
-            remove_slice_from_canvas( current_active_slice );
-            delete slices_grouping[ current_active_slice ];
-            activate_slice( null );            
+        if( current_active_slice ) {
+            self.remove_slice( current_active_slice );
+            activate_slice( null );
         }
+        update();
     };
 
     this.previous_slice = function() {
@@ -497,26 +512,32 @@ function SegmentationTool()
             return;
         }
 
-        if( slices_grouping[ current_active_slice ].slicelist.length == 1 ) {
+        if( slices_grouping[ current_active_slice ].sliceset.length == 1 ) {
             console.log('slice group only contains one element');
             return;
         }
-
         // increment the iterator index of the group
         var index = slices_grouping[ current_active_slice ].sliceindex;
         index--;
-
+        var count = 0;
+        for (k in slices_grouping[ current_active_slice ].sliceset) {
+          if (slices_grouping[ current_active_slice ].sliceset.hasOwnProperty(k)) count++;  
+        } 
         if( index < 0 ) {
-            index = slices_grouping[ current_active_slice ].slicelist.length-1;
+            index = 0;
+            return;
         };
-        var new_active_slice = slices_grouping[ current_active_slice ].slicelist[ index ];
-        slices_grouping[ new_active_slice ] = slices_grouping[ current_active_slice ];
-        delete slices_grouping[ current_active_slice ];
-        remove_slice_from_canvas( current_active_slice );
-
-        current_active_slice = new_active_slice;
-        slices_grouping[ current_active_slice ].sliceindex = index;
-        add_slice_to_canvas( new_active_slice );
+        make_invisible( current_active_slice );
+        for(var idx in slices_grouping[ current_active_slice ].sliceset[ index ]) {
+            var new_active_slice = slices_grouping[ current_active_slice ].sliceset[ index ][idx];
+            slices_grouping[ new_active_slice ] = slices_grouping[ current_active_slice ];
+            delete slices_grouping[ current_active_slice ];
+            current_active_slice = new_active_slice;
+            slices_grouping[ current_active_slice ].sliceindex = index;
+        }
+        make_visible( new_active_slice );
+        activate_slice( new_active_slice );
+        update();
     };
 
     this.next_slice = function() {
@@ -526,7 +547,7 @@ function SegmentationTool()
             return;
         }
 
-        if( slices_grouping[ current_active_slice ].slicelist.length == 1 ) {
+        if( slices_grouping[ current_active_slice ].sliceset.length == 1 ) {
             console.log('slice group only contains one element');
             return;
         }
@@ -534,55 +555,106 @@ function SegmentationTool()
         // increment the iterator index of the group
         var index = slices_grouping[ current_active_slice ].sliceindex;
         index++;
-
-        if( index > slices_grouping[ current_active_slice ].slicelist.length-1 ) {
-            index = 0;
+        
+        var count = 0;
+        for (k in slices_grouping[ current_active_slice ].sliceset) {
+          if (slices_grouping[ current_active_slice ].sliceset.hasOwnProperty(k)) count++;  
+        } 
+        if( index > count-1 ) {
+            index = count;
+            return;
         };
-        var new_active_slice = slices_grouping[ current_active_slice ].slicelist[ index ];
-        slices_grouping[ new_active_slice ] = slices_grouping[ current_active_slice ];
-        delete slices_grouping[ current_active_slice ];
-        remove_slice_from_canvas( current_active_slice );
-
-        current_active_slice = new_active_slice;
-        slices_grouping[ current_active_slice ].sliceindex = index;
-        add_slice_to_canvas( new_active_slice );
+        make_invisible( current_active_slice );
+        for(var idx in slices_grouping[ current_active_slice ].sliceset[ index ]) {
+            var new_active_slice = slices_grouping[ current_active_slice ].sliceset[ index ];
+            slices_grouping[ new_active_slice ] = slices_grouping[ current_active_slice ];
+            delete slices_grouping[ current_active_slice ];
+            current_active_slice = new_active_slice;
+            slices_grouping[ current_active_slice ].sliceindex = index;
+        }
+        make_visible( new_active_slice );
+        activate_slice( new_active_slice );
+        update();
     }
 
     var get_current_stack = function() {
         return self.stack;
     }
 
-    this.add_slices = function( result, add_to_canvas, make_current_active )  {
-        //console.log('add to canvas is', add_to_canvas, 'current active', make_current_active);
+    this.add_slice = function( slice, is_visible, trigger_update ) {
+
+        var slice = new Slice( slice );
+
+        if( ! allslices.hasOwnProperty( slice.node_id ) ) {
+            allslices[ slice.node_id ] = slice;
+        } else {
+            console.log('Slice already in allslices. do not add', slice);
+        };
+
+        if( is_visible ) {
+            if( ! allvisible_slices[ current_section ].hasOwnProperty( slice.node_id ) ) {
+                allvisible_slices[ current_section ][ slice.node_id ] = null;
+            } else {
+                console.log('Slice already in allvisible_slices. do not add', slice);
+            };            
+        }
+
+        slice.fetch_image( trigger_update )
+
+        slice.fetch_segments();
+    }
+
+    var make_visible = function( node_id ) {
+        if( allslices.hasOwnProperty( node_id ) ) {
+            if( ! allvisible_slices[ current_section ].hasOwnProperty( node_id ) ) {
+                allvisible_slices[ current_section ][ node_id ] = null;
+            } else {
+                console.log('Slice already in allvisible_slices. do not add', slice);
+            };            
+        }
+    }
+
+    var make_invisible = function( node_id ) {
+        if( allslices.hasOwnProperty( node_id ) ) {
+            delete allvisible_slices[ current_section ][ node_id ];
+        }
+    }
+
+
+    this.remove_slice = function( node_id ) {
+
+        // remove from allslices
+        if( allslices.hasOwnProperty( node_id ) ) {
+            delete allslices[ node_id ];
+        } 
+
+        // remove from allvisible_slices if existing
+        for( var idx in allvisible_slices ) {
+            if( allvisible_slices[ idx ].hasOwnProperty( node_id ) ) {
+                delete allvisible_slices[ idx ][ node_id ];
+            }             
+        }
+
+        if( slices_grouping.hasOwnProperty( node_id ) ) {
+            delete slices_grouping[ node_id ];
+        }
+    }
+
+    this.add_slices_group = function( result ) {
         var prototype_slice = null;
         for (var sidx in result) {
-
-            var slice = new Slice( result[sidx] );
             if( sidx == 0 ) {
-                // make first slice from the group the currently active
-                prototype_slice = slice.node_id;
-                activate_slice( slice.node_id );
+                self.add_slice( result[sidx], true, true );
+                activate_slice( result[sidx].node_id );
+                prototype_slice = result[sidx].node_id;
                 slices_grouping[ prototype_slice ] = {};
-                slices_grouping[ prototype_slice ]['slicelist'] = [];
+                slices_grouping[ prototype_slice ]['sliceset'] = new Object();
                 slices_grouping[ prototype_slice ]['sliceindex'] = 0;
-                slices_grouping[ prototype_slice ]['slicelist'].push ( prototype_slice );
+                slices_grouping[ prototype_slice ]['sliceset'][0] = [ prototype_slice ];
             } else {
-                slices_grouping[ prototype_slice ]['slicelist'].push ( slice.node_id );
+                self.add_slice( result[sidx], false, false );
+                slices_grouping[ prototype_slice ]['sliceset'][sidx] = [ result[sidx].node_id ];
             }
-            
-            //console.log('slice', slice);
-            if( ! allslices.hasOwnProperty( slice.node_id ) ) {
-                //console.log('add result slice to allslices', slice.node_id)
-                allslices[ slice.node_id ] = slice;
-            } else {
-                console.log('slice already in allslices. do not add', slice);
-            }
-
-            slice.fetch_segments();
-
-            slice.fetch_image( ( add_to_canvas || (current_active_slice === slice.node_id) ),
-                 ( make_current_active || (current_active_slice === slice.node_id)) );
-
         }
     }
 
@@ -605,14 +677,15 @@ function SegmentationTool()
             z : self.stack.z});
 
         $.getJSON(url, function(result){
-            // console.log('found slices', result);
-            self.add_slices( result, true, true );
+            console.log('clickXY: found slices', result);
+            self.add_slices_group( result );
         });
 
         return;
     }
 
     var activate_slice = function( node_id ) {
+        // console.log('activate slice', node_id);
         current_active_slice = node_id;
         // TODO: do i need to add it to slice groupings?
     };
@@ -751,32 +824,24 @@ function SegmentationTool()
             });
         };
 
-        this.fetch_image = function( add_to_canvas, make_current_active ) {       
-            // console.log('fetch image: addtocanvase', add_to_canvas )     ;
+        this.fetch_image = function( trigger_update ) {
+            // console.log('fetch image', trigger_update)
             fabric.Image.fromURL(self.get_slice_image_url(), function(img)
             {
-                // TODO: ask if this is the way to keep store the reference
-                // in the callback
                 self.img = img;
-                /*self.img.set({
-                    left: getCanvasXFromStackX(bb_center_x),
-                    top: getCanvasYFromStackY(bb_center_y),
-                    angle: 0,
-                    clipTo: self.img }).scale(1);
-*/
-                self.img.perPixelTargetFind = true;
-                self.img.targetFindTolerance = 4;
+                // TODO: does not work
+                //self.img.perPixelTargetFind = true;
+                //self.img.targetFindTolerance = 4;
                 self.img.hasControls = false;
                 self.img.hasBorders = false;
+                self.img.set('selectable', true)
                 self.img.lockMovementX = self.img.lockMovementY = true;
                 // store a reference from the img to the slice
                 self.img.slice = self;
-                if( add_to_canvas ) {
-                    //console.log('add slice to canvas (in  fetch image)');
-                    add_slice_to_canvas( self.node_id );
-                }
-                if( make_current_active ) {
-                    activate_slice( self.node_id );
+  
+                if( trigger_update ) {
+                    //console.log('trigger update for slice', self.node_id);
+                    update();
                 }
             });
         };

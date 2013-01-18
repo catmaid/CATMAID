@@ -52,7 +52,13 @@ function TileLayer(
 		stack,						//!< reference to the parent stack
 		tileWidth,
 		tileHeight,
+<<<<<<< HEAD
 		tileSource
+=======
+		fileExtension,
+		tileSourceType,
+		isOverlayLayer
+>>>>>>> Refactor the segmentation tool backend functions
 		)
 {
 	/**
@@ -314,6 +320,33 @@ function TileLayer(
 	 */
 	this.getStack = function(){ return stack; }
 
+<<<<<<< HEAD
+=======
+	var OverviewLayer = function()
+	{
+		this.redraw = function()
+		{
+      if( tileSourceType === 1 || tileSourceType === 4 ) {
+          img.src = baseURL + stack.z + "/small." + fileExtension;
+			}
+		}
+
+		this.unregister = function()
+		{
+			if ( img.parentNode )
+				img.parentNode.removeChild( img );
+		}
+
+    if( !isOverlayLayer && (tileSourceType === 1 || tileSourceType === 4) ) {
+      var img = document.createElement( "img" );
+      img.className = "smallMapMap";
+      this.redraw(); // sets the img URL
+      stack.overview.getView().appendChild( img );
+      stack.overview.addLayer( "tilelayer", this );
+    }
+	}
+
+>>>>>>> Refactor the segmentation tool backend functions
 	this.setOpacity = function( val )
 	{
 		tilesContainer.style.opacity = val+"";

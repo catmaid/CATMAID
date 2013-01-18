@@ -276,7 +276,7 @@ var editToolActions = [
           alert('Segmentation Tool only works on zoom-level 0!');
           return;
         }
-        WindowMaker.show('cytograph-widget');
+        //WindowMaker.show('cytograph-widget');
         project.setTool( new SegmentationTool() );
      }
   }),

@@ -169,7 +169,11 @@ function CanvasLayer( stack )
     self.view.appendChild( canvashtml );
 
     // CURSOR: "url(widgets/themes/kde/svg-circle.cur) 15 15, crosshair"
-    var canvas = new fabric.Canvas( 'myCanvas' , {'interactive':true, CURSOR:'crosshair'} );
+    var canvas = new fabric.Canvas( 'myCanvas' , 
+        {interactive: true,
+         defaultcursor: 'pointer',
+         hoverCursor: 'crosshair' });
+
     canvas.isDrawingMode = false;
     self.canvas = canvas;
     self.setFieldOfView();

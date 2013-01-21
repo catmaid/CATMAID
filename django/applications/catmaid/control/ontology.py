@@ -107,6 +107,7 @@ def list_ontology(request, project_id=None):
                 tuple({'data' : {'title': '%s (%d)' % (r.relation_name, r.id) },
                        'attr' : {'id': 'node_%s' % r.id,
                                  'rel': 'relation',
+                                 'name': r.relation_name,
                                  'classbid': parent_id},
                        'state': 'closed'} for r in relations)))
 
@@ -116,3 +117,54 @@ def list_ontology(request, project_id=None):
 
     except Exception as e:
         raise CatmaidException(response_on_error + ': ' + str(e))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def add_relation_to_ontology(request, project_id=None):
+    name = request.POST.get('relname', None)
+    uri = request.POST.get('uri', '')
+    description = request.POST.get('description', None)
+    isreciprocal = bool(request.POST.get('isreciprocal', False))
+
+    if name is None:
+        raise CatmaidException("Couldn't find name for new relation.")
+
+    r = Relation.objects.create(user=request.user,
+        project_id = project_id, relation_name = name, uri = uri,
+        description = description, isreciprocal = isreciprocal)
+
+    return HttpResponse(json.dumps({'relation_id': r.id}))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def add_class_to_ontology(request, project_id=None):
+    name = request.POST.get('classname', None)
+    description = request.POST.get('description', None)
+
+    if name is None:
+        raise CatmaidException("Couldn't find name for new class.")
+
+    c = Class.objects.create(user=request.user,
+        project_id = project_id, class_name = name,
+        description = description)
+
+    return HttpResponse(json.dumps({'class_id': c.id}))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def add_link_to_ontology(request, project_id=None):
+    """ Creates a new class-class link.
+    """
+    classaid = int(request.POST.get('classaid', -1))
+    classbid = int(request.POST.get('classbid', -1))
+    relationid = int(request.POST.get('relid', -1))
+
+    if classaid == -1:
+        raise CatmaidException("Couldn't find ID of class a.")
+    if classbid == -1:
+        raise CatmaidException("Couldn't find ID of class b.")
+    if relationid == -1:
+        raise CatmaidException("Couldn't find relation ID.")
+
+    cc = ClassClass.objects.create(user=request.user,
+        project_id = project_id, class_a_id = classaid,
+        class_b_id = classbid, relation_id = relationid)
+
+    return HttpResponse(json.dumps({'class_class_id': cc.id}))

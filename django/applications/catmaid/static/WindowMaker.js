@@ -1108,7 +1108,11 @@ var WindowMaker = new function()
     var container = createContainer( "ontology_editor_widget" );
     content.appendChild( container );
 
-    container.innerHTML = '<div id="ontology_content"></div>';
+    container.innerHTML =
+      '<input type="button" id="refresh_ontology_tree" value="refresh" style="display:block; float:left;" />' +
+      '&nbsp; Synchronize <input type="checkbox" id="synchronize_ontology_tree" checked="yes" />' +
+      '<br clear="all" />' +
+      '<div id="ontology_tree_object"></div>';
 
     addListener(win, container);
 

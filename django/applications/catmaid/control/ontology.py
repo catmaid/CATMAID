@@ -1,7 +1,6 @@
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 # A dummy project is referenced by all the classes and class instances.
 # This is due to the fact, that one classification tree instance should

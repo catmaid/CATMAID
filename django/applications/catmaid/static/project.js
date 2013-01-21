@@ -271,6 +271,7 @@ function Project( pid )
 		document.getElementById( "project_menu_current" ).style.display = "none";
         // TODO: bars should be unset by tool on unregister
 		document.getElementById("toolbox_edit").style.display = "none";
+		document.getElementById("toolbox_ontology").style.display = "none";
 		document.getElementById("toolbox_data").style.display = "none";
 		document.getElementById("toolbox_segmentation").style.display = "none";
         document.getElementById( "toolbox_project" ).style.display = "none";
@@ -291,12 +292,16 @@ function Project( pid )
 			document.getElementById("toolbox_edit").style.display = "block";
 			//document.getElementById("toolbox_data").style.display = "block";
 			//document.getElementById("toolbox_segmentation").style.display = "block";
+			document.getElementById("toolbox_ontology").style.display = "block";
+			document.getElementById("toolbox_data").style.display = "block";
 		}
 		else 
 		{
 			document.getElementById("toolbox_edit").style.display = "none";
 			//document.getElementById("toolbox_data").style.display = "none";
 			//document.getElementById("toolbox_segmentation").style.display = "none";
+			document.getElementById("toolbox_ontology").style.display = "none";
+			document.getElementById("toolbox_data").style.display = "none";
 		}
 		window.onresize();
 		

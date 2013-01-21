@@ -352,6 +352,20 @@ var segmentationWindowActions = [
 
 ];
 
+var ontologyToolActions = [
+
+  new Action({
+    helpText: "Show ontology editor",
+    buttonID: "ontology_editor_button",
+    buttonName: 'ontology_editor',
+    run: function (e) {
+      WindowMaker.show('ontology-editor');
+      return true;
+    }
+  }),
+
+];
+
 var tracingWindowActions = [
 
   new Action({

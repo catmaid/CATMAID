@@ -1026,6 +1026,8 @@ var realInit = function()
 		editToolActions, 'toolbox_edit', ''));
   $('#toolbox_segmentation').replaceWith(createButtonsFromActions(
     segmentationWindowActions, 'toolbox_segmentation', ''));
+	$('#toolbox_ontology').replaceWith(createButtonsFromActions(
+		ontologyToolActions, 'toolbox_ontology', ''));
 	$('#toolbox_data').replaceWith(createButtonsFromActions(
 		tracingWindowActions, 'toolbox_data', ''));
 
@@ -1036,6 +1038,7 @@ var realInit = function()
 	document.getElementById( "toolbar_crop" ).style.display = "none";
 	document.getElementById( "toolbox_project" ).style.display = "none";
 	document.getElementById( "toolbox_edit" ).style.display = "none";
+	document.getElementById( "toolbox_ontology" ).style.display = "none";
 	document.getElementById( "toolbox_data" ).style.display = "none";
   document.getElementById( "toolbox_segmentation" ).style.display = "none";
 	document.getElementById( "toolbox_show" ).style.display = "none";

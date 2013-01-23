@@ -32,6 +32,10 @@ def split_skeleton(request, project_id=None):
     can_edit_or_fail(request.user, treenode_id, 'treenode')
     treenode = Treenode.objects.get(pk=treenode_id)
     skeleton_id = treenode.skeleton_id
+    # Check if the treenode is root!
+    if not treenode.parent:
+        return HttpResponse(json.dumps({'error': 'Can\'t split at the root node: it doesn\'t have a parent.'}))
+
     project_id=int(project_id)
 
     # retrieve neuron of this skeleton

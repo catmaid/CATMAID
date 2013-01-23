@@ -2,6 +2,8 @@ from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 
+from django.shortcuts import get_object_or_404
+
 # A dummy project is referenced by all the classes and class instances.
 # This is due to the fact, that one classification tree instance should
 # be referencey by multiple projects.
@@ -185,6 +187,57 @@ def add_relation_to_ontology(request, project_id=None):
         description = description, isreciprocal = isreciprocal)
 
     return HttpResponse(json.dumps({'relation_id': r.id}))
+
+def get_number_of_inverse_links( obj ):
+    """ Returns the number of links that other model objects
+    have to the passed object. It seems to be alright to do it like this:
+    http://mail.python.org/pipermail//centraloh/2012-December/001492.html
+    """
+    count = 0
+    for r in obj._meta.get_all_related_objects():
+        count += r.model.objects.filter(
+            **{r.field.name + '__exact': obj.id}).count()
+    return count
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def remove_relation_from_ontology(request, project_id=None):
+    relid = int(request.POST.get('relid', -1))
+    force = bool(int(request.POST.get('force', 0)))
+    relation = get_object_or_404(Relation, id=relid)
+    if not force:
+        # Check whether this relation is used somewhere
+        nr_links = get_number_of_inverse_links( relation )
+        if nr_links > 0:
+            raise CatmaidException("The relation to delete is still referenced by others. If enforced, all related objects get deleted, too.")
+
+    # Delete, if not used
+    relation.delete()
+    return HttpResponse(json.dumps({'deleted_relation': relid}))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def remove_all_relations_from_ontology(request, project_id=None):
+    force = bool(request.POST.get('force', False))
+    deleted_ids = []
+    not_deleted_ids = []
+
+    if force:
+        rel_q = Relation.objects.filter(project=project_id)
+        deleted_ids = [r.id for r in rel_q]
+        rel_q.delete()
+    else:
+        # Check whether this relation is used somewhere
+        rel_q = Relation.objects.filter(project=project_id)
+        for r in rel_q:
+            nr_links = get_number_of_inverse_links( r )
+            if nr_links == 0:
+                deleted_ids.append(r.id)
+                r.delete()
+            else:
+                not_deleted_ids.append(r.id)
+
+    return HttpResponse(json.dumps(
+        {'deleted_relations': deleted_ids,
+         'not_deleted_relations': not_deleted_ids}))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def add_class_to_ontology(request, project_id=None):

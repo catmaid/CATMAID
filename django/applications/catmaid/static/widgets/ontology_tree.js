@@ -248,7 +248,10 @@ var OntologyTree = new function()
                         "separator_after": false,
                         "label": "Remove all relations",
                         "action": function (obj) {
-                            return OntologyTree.create_relation_handler(pid);
+                            // assure that this was on purpose
+                            if (confirm("Are you sure you want to remove all classification relations?")) {
+                                return OntologyTree.remove_all_relations_handler(pid);
+                            }
                          }
                     }
                     }
@@ -267,7 +270,11 @@ var OntologyTree = new function()
                         "separator_after": false,
                         "label": "Remove relation",
                         "action": function (obj) {
-                            return OntologyTree.remove_relation_handler(pid);
+                            // assure that this was on purpose
+                            if (confirm("Are you sure you want to remove this relation?")) {
+                                var rel_id = obj.attr('id').replace("node_", "")
+                                return OntologyTree.remove_relation_handler(pid, rel_id);
+                            }
                          }
                     }
                     }
@@ -467,22 +474,37 @@ var OntologyTree = new function()
      * Handles the removal of a relation.
      */
     this.remove_relation_handler = function (pid, relation_id) {
-        // assure that this was on purpose
-        if (confirm("Are you sure you want to remove this relation?")) {
-            // add relation with Ajax call
-            requestQueue.register(django_url + pid + '/ontology/relations/remove',
-                'POST', { "relid": relation_id },
-                function(status, data, text) {
-                    if (status !== 200) {
-                        OntologyTree.show_error_msg( status, text );
-                        return
-                    }
-                    // refresh tree
-                    var ontology_tree_id = "#classification_relations_tree";
-                    $(ontology_tree_id).jstree("refresh", -1);
-                });
-        }
+        // make relation with Ajax call
+        requestQueue.register(django_url + pid + '/ontology/relations/remove',
+            'POST', { "relid": relation_id },
+            function(status, data, text) {
+                if (status !== 200) {
+                    OntologyTree.show_error_msg( status, text );
+                    return
+                }
+                // refresh tree
+                var ontology_tree_id = "#classification_relations_tree";
+                $(ontology_tree_id).jstree("refresh", -1);
+            });
     };
+
+    /**
+     * Handles the removal of all relations in a project.
+     */
+    this.remove_all_relations_handler = function(pid) {
+        // make relation with Ajax call
+        requestQueue.register(django_url + pid + '/ontology/relations/removeall',
+            'GET', null,
+            function(status, data, text) {
+                if (status !== 200) {
+                    OntologyTree.show_error_msg( status, text );
+                    return
+                }
+                // refresh tree
+                var ontology_tree_id = "#classification_relations_tree";
+                $(ontology_tree_id).jstree("refresh", -1);
+            });
+    }
 
     /**
      * Handles the creation of a class out of the tree's context menu.

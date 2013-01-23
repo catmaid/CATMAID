@@ -8,9 +8,9 @@ var OntologyTree = new function()
     this.init = function( pid )
     {
         pid = -1;
-        OntologyTree.update_relations_display( pid )
-        OntologyTree.update_classes_display( pid )
+        OntologyTree.update_classes_display( pid );
         OntologyTree.load_classification_tree( pid );
+        OntologyTree.load_classification_relations_tree( pid );
     };
 
     this.load_classification_tree = function( pid )
@@ -168,9 +168,159 @@ var OntologyTree = new function()
     };
 
     /**
+     * Creates a jsTree that displays all available relations for
+     * a particular project.
+     */
+    this.load_classification_relations_tree = function( pid )
+    {
+        var tree_id = "#classification_relations_tree";
+        var tree = $(tree_id);
+
+        $("#refresh_ontology_tree").off("click").on("click",
+        function () {
+          tree.jstree("refresh", -1);
+        });
+
+        tree.bind("reload_nodes.jstree",
+           function (event, data) {
+             if (OntologyTree.currentExpandRequest) {
+               openTreePath($('#ontology_tree_object'), OntologyTree.currentExpandRequest);
+             }
+           });
+
+        tree.jstree({
+          "core": {
+            "html_titles": false
+          },
+          "plugins": ["themes", "json_data", "ui", "crrm", "types", "dnd", "contextmenu"],
+          "json_data": {
+            "ajax": {
+              "url": django_url + pid + '/ontology/relations/list',
+              "data": function (n) {
+                var expandRequest, parentName, parameters;
+                // depending on which type of node it is, display those
+                // the result is fed to the AJAX request `data` option
+                parameters = {
+                  "pid": pid,
+                  "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
+                };
+                if (ObjectTree.currentExpandRequest) {
+                  parameters['expandtarget'] = ObjectTree.currentExpandRequest.join(',');
+                }
+                return parameters;
+              },
+              "success": function (e) {
+                if (e.error) {
+                  alert(e.error);
+                }
+              }
+            },
+            "progressive_render": true
+          },
+          "ui": {
+            "select_limit": 1,
+            "select_multiple_modifier": "ctrl",
+            "selected_parent_close": "deselect"
+          },
+
+          "themes": {
+            "theme": "classic",
+            "url": "widgets/themes/kde/jsTree/classic/style.css",
+            "dots": true,
+            "icons": true
+          },
+          "contextmenu": {
+            "items": function (obj) {
+                var type_of_node = obj.attr("rel");
+                var menu = {};
+                if (type_of_node === "root") {
+                    menu = {
+                    "add_relation": {
+                        "separator_before": false,
+                        "separator_after": false,
+                        "label": "Add new relation",
+                        "action": function (obj) {
+                            return OntologyTree.create_relation_handler(pid);
+                         }
+                    },
+                    "remove_all_relations": {
+                        "separator_before": true,
+                        "separator_after": false,
+                        "label": "Remove all relations",
+                        "action": function (obj) {
+                            return OntologyTree.create_relation_handler(pid);
+                         }
+                    }
+                    }
+                } else if (type_of_node === "relation") {
+                    menu = {
+                    "add_relation": {
+                        "separator_before": false,
+                        "separator_after": false,
+                        "label": "Add new relation",
+                        "action": function (obj) {
+                            return OntologyTree.create_relation_handler(pid);
+                         }
+                    },
+                    "remove_relation": {
+                        "separator_before": false,
+                        "separator_after": false,
+                        "label": "Remove relation",
+                        "action": function (obj) {
+                            return OntologyTree.remove_relation_handler(pid);
+                         }
+                    }
+                    }
+                }
+                return menu;
+            }
+          },
+          "crrm": {},
+          "types": {
+            "types": {
+                "root": {
+                    "icon": {
+                        "image": "widgets/themes/kde/jsTree/ontology/root.png"
+                    },
+                },
+                "relation": {
+                    "icon": {
+                        "image": "widgets/themes/kde/jsTree/ontology/relation.png"
+                    },
+                }
+            }
+          }
+        });
+
+        // handlers
+        //	"inst" : /* the actual tree instance */,
+        //	"args" : /* arguments passed to the function */,
+        //	"rslt" : /* any data the function passed to the event */,
+        //	"rlbk" : /* an optional rollback object - it is not always present */
+
+        // create a node
+        tree.bind("create.jstree", function (e, data) {
+          var mynode = data.rslt.obj;
+          var myparent = data.rslt.parent;
+          // check what type of node has been created
+          alert("yes");
+          data = {
+            "operation": "create_node",
+            "parentid": data.rslt.parent.attr("id").replace("node_", ""),
+            "template_node_id": data.rslt.obj.attr("template_node_id"),
+            "classname": data.rslt.obj.attr("classname"),
+            "relationname": data.rslt.obj.attr("relname"),
+            "objname": data.rslt.name,
+            "pid": pid
+          };
+
+        });
+    };
+
+    /**
      * Handles the creation of a relation out of the tree's context menu.
      */
-    this.create_relation_handler = function (pid, obj) {
+    this.create_relation_handler = function (pid) {
         $('#ontology_add_dialog #cancel').off("click").on("click",
         function() {
             $.unblockUI();
@@ -200,6 +350,27 @@ var OntologyTree = new function()
         $('#ontology_add_dialog #select_class').css("display", "none");
         // show dialog
         $.blockUI({ message: $('#ontology_add_dialog') });
+    };
+
+    /**
+     * Handles the removal of a relation.
+     */
+    this.remove_relation_handler = function (pid, relation_id) {
+        // assure that this was on purpose
+        if (confirm("Are you sure you want to remove this relation?")) {
+            // add relation with Ajax call
+            requestQueue.register(django_url + pid + '/ontology/relations/remove',
+                'POST', { "relid": relation_id },
+                function(status, data, text) {
+                    if (status !== 200) {
+                        OntologyTree.show_error_msg( status, text );
+                        return
+                    }
+                    // refresh tree
+                    var ontology_tree_id = "#classification_relations_tree";
+                    $(ontology_tree_id).jstree("refresh", -1);
+                });
+        }
     };
 
     /**
@@ -371,35 +542,6 @@ var OntologyTree = new function()
                     // show dialog
                     $.blockUI({ message: $('#ontology_add_dialog') });
                 }
-            });
-    };
-
-    /**
-     * Fetches all available relation names/IDs from the backend
-     * and displays it in a container.
-     */
-    this.update_relations_display = function( pid )
-    {
-        requestQueue.register(django_url + pid + '/ontology/relations',
-            'GET', undefined,
-            function(status, data, text) {
-                if (status !== 200) {
-                    OntologyTree.show_error_msg( status, text );
-                    return
-                }
-                var relations = JSON.parse(data);
-                var text = ""
-                var added_first = false;
-                for (r in relations) {
-                    if (added_first) {
-                        text += ", " + r + "(" + relations[r] + ")"
-                    } else {
-                        added_first = true;
-                        text += r + "(" + relations[r] + ")"
-                    }
-                }
-                var container = document.getElementById('ontology_relations');
-                container.innerHTML = text;
             });
     };
 

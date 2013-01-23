@@ -44,13 +44,36 @@ def get_children( parent_id, max_nodes = 5000 ):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def get_available_relations(request, project_id=None):
+    """ Returns a simple list of all relations available available
+    for the given project."""
     relation_map = get_relation_to_id_map(project_id)
     return HttpResponse(json.dumps(relation_map))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def get_available_classes(request, project_id=None):
+    """ Returns a simple list of all classes available available
+    for the given project."""
     class_map = get_class_to_id_map(project_id)
     return HttpResponse(json.dumps(class_map))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def list_available_relations(request, project_id=None):
+    """ Returns an object of all relations available available
+    for the given project, prepared to work with a jsTree."""
+    parent_id = int(request.GET.get('parentid', 0))
+    if 0 == parent_id:
+        return HttpResponse(json.dumps([{
+            'data': {'title': 'Relations' },
+            'attr': {'id': 'node_1', 'rel': 'root'},
+            'state': 'closed'}]))
+
+    relations = Relation.objects.filter(project=project_id)
+
+    return HttpResponse(json.dumps(
+        tuple({'data' : {'title': '%s (%d)' % (r.relation_name, r.id) },
+               'attr' : {'id': 'node_%s' % r.id,
+                         'rel': 'relation',
+                         'name': r.relation_name}} for r in relations)))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_ontology(request, project_id=None):

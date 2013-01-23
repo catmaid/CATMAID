@@ -28,7 +28,7 @@ def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
 
 @requires_user_role(UserRole.Annotate)
 def split_skeleton(request, project_id=None):
-    """ The split is only possible if the user owns the treenode or the skeleton, or is superuser.
+    """ The split is only possible if the user owns the treenode or the skeleton, or is superuser, or the skeleton is under Fragments.
     """
     treenode_id = int(request.POST['treenode_id'])
     treenode = Treenode.objects.get(pk=treenode_id)
@@ -39,11 +39,11 @@ def split_skeleton(request, project_id=None):
     if not treenode.parent:
         return HttpResponse(json.dumps({'error': 'Can\'t split at the root node: it doesn\'t have a parent.'}))
 
+    skeleton = ClassInstance.objects.select_related('user').get(pk=skeleton_id)
     # The split is only possible if the user owns the treenode or the skeleton
     if not request.user.is_superuser:
-        skeleton_user_id = ClassInstance.objects.filter(pk=skeleton_id).values_list('user_id')[0][0]
-        if request.user.id != skeleton_user_id and request.user.id != treenode.user.id:
-            cursor.execute('SELECT username FROM auth_user WHERE id=%s' % skeleton_user_id)
+        if request.user.id != skeleton.user.id and request.user.id != treenode.user.id and not _under_fragments(skeleton_id):
+            cursor.execute('SELECT username FROM auth_user WHERE id=%s' % skeleton.user.id)
             return HttpResponse(json.dumps({'error': 'User %s doesn\'t own neither the treenode #%s nor the skeleton #%s.\nThe treenode owner is %s, and the skeleton owner is %s.' % (request.user.username, treenode_id, skeleton_id, treenode.user.username, cursor.fetchone()[0])}))
 
     project_id=int(project_id)
@@ -76,18 +76,17 @@ def split_skeleton(request, project_id=None):
     new_skeleton = ClassInstance()
     new_skeleton.name = 'Skeleton'
     new_skeleton.project_id = project_id
-    new_skeleton.user = request.user
+    new_skeleton.user = skeleton.user # The same user that owned the skeleton to split
     new_skeleton.class_column = Class.objects.get(class_name='skeleton', project_id=project_id)
     new_skeleton.save()
     new_skeleton.name = 'Skeleton {0}'.format( new_skeleton.id ) # This could be done with a trigger in the database
     new_skeleton.save()
     # Assign the skeleton to the same neuron
-    r = Relation.objects.get(relation_name='model_of', project_id=project_id)
     cici = ClassInstanceClassInstance()
     cici.class_instance_a = new_skeleton
     cici.class_instance_b = neuron
-    cici.relation = r
-    cici.user = request.user
+    cici.relation = Relation.objects.get(relation_name='model_of', project_id=project_id)
+    cici.user = skeleton.user # The same user that owned the skeleton to split
     cici.project_id = project_id
     cici.save()
     # update skeleton_id of list in treenode table

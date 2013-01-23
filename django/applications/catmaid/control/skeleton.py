@@ -28,7 +28,7 @@ def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
 
 @requires_user_role(UserRole.Annotate)
 def split_skeleton(request, project_id=None):
-    """ The split is only possible if the user owns the treenode or the skeleton.
+    """ The split is only possible if the user owns the treenode or the skeleton, or is superuser.
     """
     treenode_id = int(request.POST['treenode_id'])
     treenode = Treenode.objects.get(pk=treenode_id)
@@ -40,10 +40,11 @@ def split_skeleton(request, project_id=None):
         return HttpResponse(json.dumps({'error': 'Can\'t split at the root node: it doesn\'t have a parent.'}))
 
     # The split is only possible if the user owns the treenode or the skeleton
-    skeleton_user_id = ClassInstance.objects.filter(pk=skeleton_id).values_list('user_id')[0][0]
-    if request.user.id != skeleton_user_id and request.user.id != treenode.user.id:
-        cursor.execute('SELECT username FROM auth_user WHERE id=%s' % skeleton_user_id)
-        return HttpResponse(json.dumps({'error': 'User %s doesn\'t own neither the treenode #%s nor the skeleton #%s.\nThe treenode owner is %s, and the skeleton owner is %s.' % (request.user.username, treenode_id, skeleton_id, treenode.user.username, cursor.fetchone()[0])}))
+    if not request.user.is_superuser:
+        skeleton_user_id = ClassInstance.objects.filter(pk=skeleton_id).values_list('user_id')[0][0]
+        if request.user.id != skeleton_user_id and request.user.id != treenode.user.id:
+            cursor.execute('SELECT username FROM auth_user WHERE id=%s' % skeleton_user_id)
+            return HttpResponse(json.dumps({'error': 'User %s doesn\'t own neither the treenode #%s nor the skeleton #%s.\nThe treenode owner is %s, and the skeleton owner is %s.' % (request.user.username, treenode_id, skeleton_id, treenode.user.username, cursor.fetchone()[0])}))
 
     project_id=int(project_id)
 

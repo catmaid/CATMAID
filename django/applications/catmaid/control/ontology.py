@@ -43,12 +43,12 @@ def get_children( parent_id, max_nodes = 5000 ):
     return child_nodes
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def list_available_relations(request, project_id=None):
+def get_available_relations(request, project_id=None):
     relation_map = get_relation_to_id_map(project_id)
     return HttpResponse(json.dumps(relation_map))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def list_available_classes(request, project_id=None):
+def get_available_classes(request, project_id=None):
     class_map = get_class_to_id_map(project_id)
     return HttpResponse(json.dumps(class_map))
 

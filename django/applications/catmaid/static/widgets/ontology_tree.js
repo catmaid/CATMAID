@@ -1,3 +1,8 @@
+/**
+ * The OntologyTree is a widget that shows information about the
+ * semantic space, linked to a project. It also allows creation and
+ * removal of relations, classes and class-class links.
+ */
 var OntologyTree = new function()
 {
     this.init = function( pid )

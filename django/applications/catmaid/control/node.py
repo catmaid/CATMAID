@@ -575,7 +575,9 @@ def user_info(request, project_id=None):
     treenode_id = int(request.POST['treenode_id'])
     ts = Treenode.objects.filter(pk=treenode_id).select_related('user', 'editor')
     if not ts:
-        return HttpResponse(json.dumps({'error': 'Object #%s is not a treenode' % treenode_id}))
+        ts = Connector.objects.filter(pk=treenode_id).select_related('user', 'editor')
+        if not ts:
+            return HttpResponse(json.dumps({'error': 'Object #%s is not a treenode or a connector' % treenode_id}))
     t = ts[0]
     reviewer = None
     review_time = None

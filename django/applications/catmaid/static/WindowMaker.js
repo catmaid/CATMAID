@@ -1116,8 +1116,8 @@ var WindowMaker = new function()
       '<div id="ontology_tree_object"></div></div>' +
       '<div id="classification_relations"><h4>Classification relations</h4>' +
       '<div id="classification_relations_tree"></div></div>' +
-      '<hr />' +
-      '<p><em>Available classes:</em> <span id="ontology_classes">-</span></p>' +
+      '<div id="classification_classes"><h4>Classification classes</h4>' +
+      '<div id="classification_classes_tree"></div></div>' +
       '<div id="ontology_add_dialog" style="display:none; cursor:default">' +
       '<p><div id="input_rel">New relation name: <input type="text" id="relname" /></div>' +
       '<div id="select_rel">Available relation: <select id="relid"></select></div>' +

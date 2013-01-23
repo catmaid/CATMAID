@@ -76,6 +76,25 @@ def list_available_relations(request, project_id=None):
                          'name': r.relation_name}} for r in relations)))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
+def list_available_classes(request, project_id=None):
+    """ Returns an object of all classes available available
+    for the given project, prepared to work with a jsTree."""
+    parent_id = int(request.GET.get('parentid', 0))
+    if 0 == parent_id:
+        return HttpResponse(json.dumps([{
+            'data': {'title': 'Classes' },
+            'attr': {'id': 'node_1', 'rel': 'root'},
+            'state': 'closed'}]))
+
+    classes = Class.objects.filter(project=project_id)
+
+    return HttpResponse(json.dumps(
+        tuple({'data' : {'title': '%s (%d)' % (c.class_name, c.id) },
+               'attr' : {'id': 'node_%s' % c.id,
+                         'rel': 'class',
+                         'name': c.class_name}} for c in classes)))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_ontology(request, project_id=None):
     parent_id = int(request.GET.get('parentid', 0))
     parent_name = request.GET.get('parentname', '')

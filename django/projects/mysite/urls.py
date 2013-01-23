@@ -224,6 +224,7 @@ urlpatterns += patterns('',
     (r'^(?P<project_id>%s)/ontology/relations/list$' % (integer), 'catmaid.control.list_available_relations'),
     (r'^(?P<project_id>%s)/ontology/classes$' % (integer), 'catmaid.control.get_available_classes'),
     (r'^(?P<project_id>%s)/ontology/classes/add$' % (integer), 'catmaid.control.add_class_to_ontology'),
+    (r'^(?P<project_id>%s)/ontology/classes/list$' % (integer), 'catmaid.control.list_available_classes'),
     (r'^(?P<project_id>%s)/ontology/links/add$' % (integer), 'catmaid.control.add_link_to_ontology'),
     )
 

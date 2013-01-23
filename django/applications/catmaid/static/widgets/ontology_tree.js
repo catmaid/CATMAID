@@ -7,10 +7,10 @@ var OntologyTree = new function()
 {
     this.init = function( pid )
     {
-        pid = -1;
-        OntologyTree.update_classes_display( pid );
-        OntologyTree.load_classification_tree( pid );
-        OntologyTree.load_classification_relations_tree( pid );
+        cls_pid = -1;
+        OntologyTree.load_classification_tree( cls_pid );
+        OntologyTree.load_classification_relations_tree( cls_pid );
+        OntologyTree.load_classification_classes_tree( cls_pid );
     };
 
     this.load_classification_tree = function( pid )
@@ -314,6 +314,117 @@ var OntologyTree = new function()
             "pid": pid
           };
 
+        });
+    };
+
+    /**
+     * Creates a jsTree that displays all available classes for
+     * a particular project.
+     */
+    this.load_classification_classes_tree = function( pid )
+    {
+        var tree_id = "#classification_classes_tree";
+        var tree = $(tree_id);
+
+        $("#refresh_ontology_tree").off("click").on("click",
+        function () {
+          tree.jstree("refresh", -1);
+        });
+
+        tree.bind("reload_nodes.jstree",
+           function (event, data) {
+             if (OntologyTree.currentExpandRequest) {
+               openTreePath($('#ontology_tree_object'), OntologyTree.currentExpandRequest);
+             }
+           });
+
+        tree.jstree({
+          "core": {
+            "html_titles": false
+          },
+          "plugins": ["themes", "json_data", "ui", "crrm", "types", "dnd", "contextmenu"],
+          "json_data": {
+            "ajax": {
+              "url": django_url + pid + '/ontology/classes/list',
+              "data": function (n) {
+                var expandRequest, parentName, parameters;
+                // depending on which type of node it is, display those
+                // the result is fed to the AJAX request `data` option
+                parameters = {
+                  "pid": pid,
+                  "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
+                };
+                if (ObjectTree.currentExpandRequest) {
+                  parameters['expandtarget'] = ObjectTree.currentExpandRequest.join(',');
+                }
+                return parameters;
+              },
+              "success": function (e) {
+                if (e.error) {
+                  alert(e.error);
+                }
+              }
+            },
+            "progressive_render": true
+          },
+          "ui": {
+            "select_limit": 1,
+            "select_multiple_modifier": "ctrl",
+            "selected_parent_close": "deselect"
+          },
+
+          "themes": {
+            "theme": "classic",
+            "url": "widgets/themes/kde/jsTree/classic/style.css",
+            "dots": true,
+            "icons": true
+          },
+          "contextmenu": {
+            "items": function (obj) {
+                var id_of_node = obj.attr("id");
+                var type_of_node = obj.attr("rel");
+                var menu = {};
+                if (type_of_node === "root") {
+                    menu = {
+                    "add_relation": {
+                        "separator_before": false,
+                        "separator_after": false,
+                        "label": "Add new relation",
+                        "action": function (obj) {
+                            return OntologyTree.create_relation_handler(pid);
+                         }
+                    }
+                    }
+                } else if (type_of_node === "relation") {
+                    menu = {
+                    "add_class": {
+                        "separator_before": false,
+                        "separator_after": false,
+                        "label": "Add new class",
+                        "action": function (obj) {
+                            return OntologyTree.create_class_handler(pid, obj);
+                         }
+                    }
+                    }
+                }
+                return menu;
+            }
+          },
+          "crrm": {},
+          "types": {
+            "types": {
+                "root": {
+                    "icon": {
+                        "image": "widgets/themes/kde/jsTree/ontology/root.png"
+                    },
+                },
+                "class": {
+                    "icon": {
+                        "image": "widgets/themes/kde/jsTree/ontology/class.png"
+                    },
+                }
+            }
+          }
         });
     };
 

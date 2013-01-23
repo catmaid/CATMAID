@@ -379,7 +379,7 @@ var OntologyTree = new function()
             'GET', undefined,
             function(status, data, text) {
                 if (status !== 200) {
-                    alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+                    OntologyTree.show_error_msg( status, text );
                     return
                 }
                 var relations = JSON.parse(data);
@@ -408,7 +408,7 @@ var OntologyTree = new function()
             'GET', undefined,
             function(status, data, text) {
                 if (status !== 200) {
-                    alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+                    OntologyTree.show_error_msg( status, text );
                     return
                 }
                 var classes = JSON.parse(data);
@@ -425,5 +425,10 @@ var OntologyTree = new function()
                 var container = document.getElementById('ontology_classes');
                 container.innerHTML = text;
             });
+    };
+
+    this.show_error_msg = function( status, text )
+    {
+        alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
     };
 };

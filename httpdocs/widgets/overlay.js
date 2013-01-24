@@ -157,7 +157,8 @@ var SkeletonAnnotations = new function()
       return show_labels;
     };
 
-    /** The original list of nodes; beware the list will change
+    /** The original list of nodes; beware the instance of the list will change,
+     * the contents of any one instance may change,
      * and the data of the nodes will change as they are recycled. */
     this.getNodes = function() { return nodes; };
 
@@ -830,10 +831,7 @@ var SkeletonAnnotations = new function()
               alert(e.error);
             } else {
               self.updateNodes(function () {
-                // Active the node if it hasn't been changed by a new request
-                if (atn && atn_id === atn.id) {
-                  self.activateNode( nodes[e.treenode_id] );
-                }
+                self.selectNode(e.treenode_id);
                 if (e.has_changed_group) {
                   ObjectTree.refresh();
                 }

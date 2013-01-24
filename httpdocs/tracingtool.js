@@ -381,7 +381,7 @@ function TracingTool()
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('gonextbranch');
+      tracingLayer.svgOverlay.tracingCommand('gonextbranch', e);
       return true;
     }
   } ) );

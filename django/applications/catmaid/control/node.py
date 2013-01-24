@@ -556,8 +556,22 @@ def find_previous_branchnode_or_root(request, project_id=None):
 def find_next_branchnode_or_end(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])
+        shift = 1 == int(request.POST['shift'])
         skid = Treenode.objects.get(pk=tnid).skeleton_id
         graph = _skeleton_as_graph(skid)
+
+        children = graph.successors(tnid)
+        if len(children) > 1:
+            # Choose one of the children:
+            # The closest to 0,0,0 or the furthest if shift is down
+            sqDist = 0 if shift else float('inf')
+            for t in Treenode.objects.filter(parent_id=tnid):
+                p = t.location
+                d = pow(p.x, 2) + pow(p.y, 2) + pow(p.z, 2)
+                if (shift and d > sqDist) or (not shift and d < sqDist):
+                    sqDist = d
+                    tnid = t.id
+
         # Travel downstream until finding a child node with more than one child
         # or reaching an end node
         while True:

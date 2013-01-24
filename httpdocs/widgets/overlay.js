@@ -94,6 +94,10 @@ var SkeletonAnnotations = new function()
     }
   };
 
+  /**
+   * Open the skeleton node in the Object Tree if the Object Tree is visible
+   * and if the Object Tree synchronize_object_tree checkbox is checked.
+   */
   var openSkeletonNodeInObjectTree = function(node) {
     // Check if the Object Tree div is visible
     if ($('#object_tree_widget').css('display') === "none" || ! $('#synchronize_object_tree').attr('checked')) {
@@ -258,56 +262,57 @@ var SkeletonAnnotations = new function()
     {
       if (node)
       {
+        // Check if the node is already selected/activated
         if (node.id === atn.id && node.skeleton_id === atn.skeleton_id) {
           // Update coordinates
           atn.set(node);
-          return; // Already active
+          return;
         }
-        // Update statusBar
+        // Else, select the node
         if ("treenode" === node.type) {
+          // Update statusBar
           statusBar.replaceLast("Activated treenode with id " + node.id + " and skeleton id " + node.skeleton_id);
-          if (atn.skeleton_id !== node.skeleton_id) {
-            // if we switched the skeleton, we need to reopen the object tree
+          // If changing skeletons:
+          var changing_skeletons = atn.skeleton_id !== node.skeleton_id;
+          if (changing_skeletons) {
+            // 1. Open the object tree node if synchronizing:
             openSkeletonNodeInObjectTree(node);
-            // also update the status with the ancestry of that skeleton:
+            // 2. Update the status with the ancestry of that skeleton:
             requestQueue.register(django_url + project.id + '/skeleton/ancestry', "POST", {
               pid: project.id,
               skeleton_id: node.skeleton_id
             }, function (status, text) {
-              var data = $.parseJSON(text), message, i, d, neuronid;
+              var json = $.parseJSON(text), message, i, d, neuronid;
               if (status === 200) {
-                if ('error' in data) {
-                  $('#growl-alert').growlAlert({
-                    autoShow: true,
-                    content: "There was an error fetching the ancestry of skeleton "+node.skeleton_id+":\n"+data.error,
-                    title: 'Skeleton ancestry',
-                    position: 'top-right',
-                    delayTime: 2000,
-                    onComplete: function() { g.remove(); }
-                  });
+                if (json.error) {
+                  growlAlert('Skeleton ancestry', "There was an error fetching the ancestry of skeleton "+node.skeleton_id+":\n" + json.error);
                 } else {
                   message = "Activated treenode with id " + node.id + " and skeleton id " + node.skeleton_id;
-                for (i = 0; i < data.length; ++i) {
-                  d = data[i];
-                  message += " <i>part_of</i> [<strong>"+d.name+"</strong>]";
-                }
-                statusBar.replaceLastHTML(message);
-                neuronid = data[0].id;
-                $('#neuronName').text(data[0].name + ' (Skeleton ID: '+ node.skeleton_id+')');
-
-                project.selectedObjects.selectedneuron = neuronid;
-                project.selectedObjects.selectedskeleton = parseInt(node.skeleton_id);
-
+                  for (i = 0; i < json.length; ++i) {
+                    d = json[i];
+                    message += " <i>part_of</i> [<strong>"+d.name+"</strong>]";
+                  }
+                  statusBar.replaceLastHTML(message);
+                  neuronid = json[0].id;
+                  $('#neuronName').text(json[0].name + ' (Skeleton ID: '+ node.skeleton_id+')');
+                  project.selectedObjects.selectedneuron = neuronid;
+                  project.selectedObjects.selectedskeleton = parseInt(node.skeleton_id);
                 }
               } else {
                 alert("Getting the ancestry of the skeleton "+node.skeleton_id+" failed with HTTP status code "+status);
               }
             });
-            // And fetch new nodes from the database, since we now
-            // fetch all the nodes in the active skeleton
-            self.updateNodes();
+            // 3. Refresh the nodes with info from the database
+            self.updateNodes(); // recolors nodes when recreating them
           }
+
           atn.set(node);
+
+          if (!changing_skeletons) {
+            // Nodes didn't change, but the active state has
+            self.recolorAllNodes();
+          }
+
           // refresh all widgets except for the object tree
           // the reason is that calling a refresh just after a request to open tree path
           // prevents the opening of the tree path. thus, the opening of the treepath
@@ -317,8 +322,10 @@ var SkeletonAnnotations = new function()
         } else {
           statusBar.replaceLast("Activated connector node #" + node.id);
           atn.set(node);
+          self.recolorAllNodes();
         }
       } else {
+        // Deselect
         atn.set(null);
         // Deselect all from Object Tree. It is necessary because the neuron ID
         // would be used to create the next skeleton, and it would fail
@@ -326,14 +333,11 @@ var SkeletonAnnotations = new function()
         project.selectedObjects.selectedneuron = null;
         project.setSelectedSkeleton(null);
         $('#tree_object').jstree("deselect_all");
+        self.recolorAllNodes();
       }
-      self.recolorAllNodes();
+
       // if displayed in 3d viewer, update position
-      if( $( "#view_in_3d_webgl_widget").length ) {
-        if( $('#enable_active_node').attr('checked') !== undefined ) {
-          WebGLApp.updateActiveNode();
-        }
-      }
+      WebGLApp.updateActiveNode();
 
     };
 

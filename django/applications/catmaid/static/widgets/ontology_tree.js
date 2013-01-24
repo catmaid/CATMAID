@@ -532,9 +532,7 @@ var OntologyTree = new function()
                     OntologyTree.hide_wait_message();
                     OntologyTree.handle_operation_response(status, data, text,
                         function() {
-                            // refresh tree
-                            var ontology_tree_id = "#classification_relations_tree";
-                            $(ontology_tree_id).jstree("refresh", -1);
+                            OntologyTree.refresh_cls_relations_tree();
                             OntologyTree.show_error_status( "Success", "A new relation has been created." );
                         });
                 });
@@ -560,10 +558,8 @@ var OntologyTree = new function()
                 OntologyTree.hide_wait_message();
                 OntologyTree.handle_operation_response(status, data, text,
                     function() {
-                        // refresh tree
-                        var ontology_tree_id = "#classification_relations_tree";
-                        $(ontology_tree_id).jstree("refresh", -1);
-                            OntologyTree.show_error_status( "Success", "The relation has been removed." );
+                        OntologyTree.refresh_cls_relations_tree();
+                        OntologyTree.show_error_status( "Success", "The relation has been removed." );
                     });
             });
     };
@@ -596,8 +592,7 @@ var OntologyTree = new function()
                         }
                         // refresh tree
                         if (refresh) {
-                            var ontology_tree_id = "#classification_relations_tree";
-                            $(ontology_tree_id).jstree("refresh", -1);
+                            OntologyTree.refresh_cls_relations_tree();
                         }
                     });
             });
@@ -624,9 +619,7 @@ var OntologyTree = new function()
                     OntologyTree.hide_wait_message();
                     OntologyTree.handle_operation_response(status, data, text,
                         function() {
-                            // refresh tree
-                            var tree_id = "#classification_classes_tree";
-                            $(tree_id).jstree("refresh", -1);
+                            OntologyTree.refresh_cls_classes_tree();
                             OntologyTree.show_error_status( "Success", "A new class has been created." );
                         });
                 });
@@ -652,9 +645,7 @@ var OntologyTree = new function()
                 OntologyTree.hide_wait_message();
                 OntologyTree.handle_operation_response(status, data, text,
                     function() {
-                        // refresh tree
-                        var tree_id = "#classification_classes_tree";
-                        $(tree_id).jstree("refresh", -1);
+                        OntologyTree.refresh_cls_classes_tree();
                         OntologyTree.show_error_status( "Success", "The class has been removed." );
                     });
                 });
@@ -688,8 +679,7 @@ var OntologyTree = new function()
                         }
                         // refresh tree
                         if (refresh) {
-                            var tree_id = "#classification_classes_tree";
-                            $(tree_id).jstree("refresh", -1);
+                            OntologyTree.refresh_cls_classes_tree();
                         }
                     });
                 });
@@ -729,6 +719,7 @@ var OntologyTree = new function()
                     var url = django_url + pid + '/ontology/relations/add';
                     var res = sync_request( url, "POST", { "relname": relname } );
                     var relation = JSON.parse(res);
+                    OntologyTree.refresh_cls_relations_tree();
                     if (!relation["relation_id"]) {
                         OntologyTree.hide_wait_message();
                         alert("The server returned an unexpected result:\n" + res);
@@ -746,6 +737,7 @@ var OntologyTree = new function()
                 var url = django_url + pid + '/ontology/classes/add';
                 var res = sync_request( url, "POST", { "classname": classname } );
                 var added_class = JSON.parse(res);
+                OntologyTree.refresh_cls_classes_tree();
                 if (!added_class["class_id"]) {
                     OntologyTree.hide_wait_message();
                     alert("The server returned an unexpected result:\n" + res);
@@ -770,9 +762,7 @@ var OntologyTree = new function()
                                 alert( "Can't understand server response: " + data )
                                 return
                             }
-                            // refresh tree
-                            var ontology_tree_id = "#ontology_tree_object";
-                            $(ontology_tree_id).jstree("refresh", -1);
+                            OntologyTree.refresh_cls_link_tree();
                         });
                 });
             //caller.create(obj, "inside", att, null, true);
@@ -841,9 +831,7 @@ var OntologyTree = new function()
                 OntologyTree.hide_wait_message();
                 OntologyTree.handle_operation_response(status, data, text,
                     function( jsonData ) {
-                        // refresh tree
-                        var tree_id = "#ontology_tree_object";
-                        $(tree_id).jstree("refresh", -1);
+                        OntologyTree.refresh_cls_link_tree();
                         // give out some information
                         if (jsonData.deleted_link == link_id) {
                             OntologyTree.show_error_status( "Success", "The class-class link has been removed." );
@@ -870,9 +858,7 @@ var OntologyTree = new function()
                 OntologyTree.hide_wait_message();
                 OntologyTree.handle_operation_response(status, data, text,
                     function( jsonData ) {
-                        // refresh tree
-                        var tree_id = "#ontology_tree_object";
-                        $(tree_id).jstree("refresh", -1);
+                        OntologyTree.refresh_cls_link_tree();
                         // give out some information
                         var num_deleted_links = jsonData.deleted_links.length
                         var msg = num_deleted_links + " class-class link(s) have been removed."
@@ -893,9 +879,7 @@ var OntologyTree = new function()
                 OntologyTree.hide_wait_message();
                 OntologyTree.handle_operation_response(status, data, text,
                     function( jsonData ) {
-                        // refresh tree
-                        var tree_id = "#ontology_tree_object";
-                        $(tree_id).jstree("refresh", -1);
+                        OntologyTree.refresh_cls_link_tree();
                         // give out some information
                         var num_deleted_links = jsonData.deleted_links.length
                         var msg = num_deleted_links + " class-class link(s) have been removed."
@@ -918,6 +902,30 @@ var OntologyTree = new function()
         } else {
             handler( jsonData );
         }
+    };
+
+    /**
+     * Refreshes the classification relation tree.
+     */
+    this.refresh_cls_relations_tree = function() {
+        var tree_id = "#classification_relations_tree";
+        $(tree_id).jstree("refresh", -1);
+    };
+
+    /**
+     * Refreshes the classification class tree.
+     */
+    this.refresh_cls_classes_tree = function() {
+        var tree_id = "#classification_classes_tree";
+        $(tree_id).jstree("refresh", -1);
+    };
+
+    /**
+     * Refreshes the classification class-class link tree.
+     */
+    this.refresh_cls_link_tree = function() {
+        var ontology_tree_id = "#ontology_tree_object";
+        $(ontology_tree_id).jstree("refresh", -1);
     };
 
     /**

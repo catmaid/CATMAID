@@ -144,7 +144,8 @@ def list_ontology(request, project_id=None):
                 return HttpResponse(json.dumps(
                     tuple({'data' : {'title': '%s (%d)' % (cc.class_a.class_name, cc.class_a.id)},
                            'attr' : {'id': 'node_%s' % cc.class_a.id,
-                                     'rel': 'class'},
+                                     'rel': 'class',
+                                     'ccid': cc.id},
                            'state': 'closed'} for cc in cc_q)))
         elif parent_type in ["class", "root"]:
             # A relation is wanted
@@ -317,3 +318,47 @@ def add_link_to_ontology(request, project_id=None):
         class_b_id = classbid, relation_id = relationid)
 
     return HttpResponse(json.dumps({'class_class_id': cc.id}))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def remove_link_from_ontology(request, project_id=None):
+    """ Removes one class-class link for a given project. Which link
+    gets removed is determined by the ID passed in the POST data.
+    """
+    ccid = int(request.POST.get('ccid', -1))
+    link = get_object_or_404(ClassClass, id=ccid)
+    link.delete()
+    return HttpResponse(json.dumps({'deleted_link': ccid}))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def remove_selected_links_from_ontology(request, project_id=None):
+    """ Removes all class-class links for a given project
+    that have a particular class_b and a particular relation.
+    """
+    relid = int(request.POST.get('relid', -1))
+    classbid = int(request.POST.get('classbid', -1))
+    relation = get_object_or_404(Relation, id=relid)
+
+    cc_q = ClassClass.objects.filter(user=request.user,
+        project_id = project_id, class_b_id = classbid,
+        relation = relation)
+
+    removed_links = []
+    for cc in cc_q:
+        removed_links.append(cc.id)
+        cc.delete()
+
+    return HttpResponse(json.dumps({'deleted_links': removed_links}))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def remove_all_links_from_ontology(request, project_id=None):
+    """ Removes all class-class links for a given project.
+    """
+    cc_q = ClassClass.objects.filter(user=request.user,
+        project_id = project_id)
+
+    removed_links = []
+    for cc in cc_q:
+        removed_links.append(cc.id)
+    cc_q.delete()
+
+    return HttpResponse(json.dumps({'deleted_links': removed_links}))

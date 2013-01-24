@@ -230,6 +230,9 @@ urlpatterns += patterns('',
     (r'^(?P<project_id>%s)/ontology/classes/removeall$' % (integer), 'catmaid.control.remove_all_classes_from_ontology'),
     (r'^(?P<project_id>%s)/ontology/classes/list$' % (integer), 'catmaid.control.list_available_classes'),
     (r'^(?P<project_id>%s)/ontology/links/add$' % (integer), 'catmaid.control.add_link_to_ontology'),
+    (r'^(?P<project_id>%s)/ontology/links/remove$' % (integer), 'catmaid.control.remove_link_from_ontology'),
+    (r'^(?P<project_id>%s)/ontology/links/removeselected$' % (integer), 'catmaid.control.remove_selected_links_from_ontology'),
+    (r'^(?P<project_id>%s)/ontology/links/removeall$' % (integer), 'catmaid.control.remove_all_links_from_ontology'),
     )
 
 if settings.DEBUG:

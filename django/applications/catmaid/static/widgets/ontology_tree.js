@@ -85,14 +85,22 @@ var OntologyTree = new function()
                 var menu = {};
                 if (type_of_node === "root") {
                     menu = {
-                    "remove_all_links": {
+                    "add_class_with_relation": {
                         "separator_before": false,
+                        "separator_after": false,
+                        "label": "Relate a class to this one",
+                        "action": function (obj) {
+                            return OntologyTree.create_link_handler(this, pid, obj);
+                         }
+                    },
+                    "remove_all_links": {
+                        "separator_before": true,
                         "separator_after": false,
                         "label": "Remove all class-class links",
                         "action": function (obj) {
                             // assure that this was on purpose
                             if (confirm("Are you sure you want to remove all classification class-class links?")) {
-                                //return OntologyTree.create_relation_handler(pid);
+                                return OntologyTree.remove_all_links_handler(pid);
                             }
                          }
                     }
@@ -110,9 +118,21 @@ var OntologyTree = new function()
                     "add_class_with_relation": {
                         "separator_before": false,
                         "separator_after": false,
-                        "label": "Relate (new) class to this",
+                        "label": "Relate a class to this one",
                         "action": function (obj) {
                             return OntologyTree.create_link_handler(this, pid, obj);
+                         }
+                    },
+                    "remove_parent_links": {
+                        "separator_before": true,
+                        "separator_after": false,
+                        "label": "Remove parent relation link",
+                        "action": function (obj) {
+                            // assure that this was on purpose
+                            if (confirm("Are you sure you want to remove the class-class link between this class and the class connected with the parent relation?")) {
+                                var cc_id = obj.attr('ccid')
+                                return OntologyTree.remove_link_handler(pid, cc_id);
+                            }
                          }
                     }
                     }
@@ -121,7 +141,7 @@ var OntologyTree = new function()
                     "add_class_with_relation": {
                         "separator_before": false,
                         "separator_after": false,
-                        "label": "Relate (new) class",
+                        "label": "Relate a class with this relation",
                         "action": function (obj) {
                             return OntologyTree.create_link_handler(this, pid, obj);
                          }
@@ -132,6 +152,19 @@ var OntologyTree = new function()
                         "label": "Add new class",
                         "action": function (obj) {
                             return OntologyTree.create_class_handler(pid);
+                         }
+                    },
+                    "remove_all_links": {
+                        "separator_before": true,
+                        "separator_after": false,
+                        "label": "Remove all links with this relation",
+                        "action": function (obj) {
+                            // assure that this was on purpose
+                            if (confirm("Are you sure you want to remove all classification class-class links that use this relation?")) {
+                                var rel_id = obj.attr('id').replace("node_", "")
+                                var class_b_id = obj.attr('classbid')
+                                return OntologyTree.remove_selected_links_handler(pid, rel_id, class_b_id);
+                            }
                          }
                     }
                     }
@@ -793,6 +826,81 @@ var OntologyTree = new function()
                     $.blockUI({ message: $('#ontology_add_dialog') });
                 }
             });
+    };
+
+    /**
+     * Removes a class-class link.
+     */
+    this.remove_link_handler = function(pid, link_id) {
+        OntologyTree.display_wait_message("Removing class-class link. Just a moment...");
+        // remove class with Ajax call
+        requestQueue.register(django_url + pid + '/ontology/links/remove',
+            'POST', { "ccid": link_id },
+            function(status, data, text) {
+                OntologyTree.hide_wait_message();
+                OntologyTree.handle_operation_response(status, data, text,
+                    function( jsonData ) {
+                        // refresh tree
+                        var tree_id = "#ontology_tree_object";
+                        $(tree_id).jstree("refresh", -1);
+                        // give out some information
+                        if (jsonData.deleted_link == link_id) {
+                            OntologyTree.show_error_status( "Success", "The class-class link has been removed." );
+                        } else {
+                            var msg = "Something went wrong: Should have removed link " + link_id + ", but server says link " + jsonData.deleted_link + " got removed.";
+                            OntologyTree.show_error_status( "Problem", msg );
+                        }
+                    });
+                });
+    };
+
+    /**
+     * Removes all class-class links that match a certain class_b and a
+     * particular relation.
+     */
+    this.remove_selected_links_handler = function(pid, rel_id, class_b_id) {
+        OntologyTree.display_wait_message("Removing selected class-class links. Just a moment...");
+        // remove class with Ajax call
+        requestQueue.register(django_url + pid + '/ontology/links/removeselected',
+            'POST', {
+                 "relid": rel_id,
+                 "classbid": class_b_id },
+            function(status, data, text) {
+                OntologyTree.hide_wait_message();
+                OntologyTree.handle_operation_response(status, data, text,
+                    function( jsonData ) {
+                        // refresh tree
+                        var tree_id = "#ontology_tree_object";
+                        $(tree_id).jstree("refresh", -1);
+                        // give out some information
+                        var num_deleted_links = jsonData.deleted_links.length
+                        var msg = num_deleted_links + " class-class link(s) have been removed."
+                        OntologyTree.show_error_status( "Success", msg );
+                    });
+                });
+    };
+
+    /**
+     * Removes all class-class links that match of a project.
+     */
+    this.remove_all_links_handler = function(pid) {
+        OntologyTree.display_wait_message("Removing all class-class links. Just a moment...");
+        // remove class with Ajax call
+        requestQueue.register(django_url + pid + '/ontology/links/removeall',
+            'POST', null,
+            function(status, data, text) {
+                OntologyTree.hide_wait_message();
+                OntologyTree.handle_operation_response(status, data, text,
+                    function( jsonData ) {
+                        // refresh tree
+                        var tree_id = "#ontology_tree_object";
+                        $(tree_id).jstree("refresh", -1);
+                        // give out some information
+                        var num_deleted_links = jsonData.deleted_links.length
+                        var msg = num_deleted_links + " class-class link(s) have been removed."
+                        OntologyTree.show_error_status( "Success", msg );
+                    });
+                });
     };
 
     /**

@@ -326,21 +326,54 @@ function TracingTool()
         }
     } ) );
 
+
+    /** Return a function that attempts to tag the active treenode or connector,
+     * and display an alert when no node is active.
+     */
+    var tagFn = function(tag) {
+      return function(e) {
+        if (!mayEdit()) return false;
+        var modifier = e.ctrlKey || e.metaKey || e.shiftKey;
+        if (null === SkeletonAnnotations.getActiveNodeId()) {
+          alert('Must activate a treenode or connector before '
+              + (modifier ? 'removing the tag' : 'tagging with') + ' "' + tag + '"!');
+          return false;
+        }
+        // If any modifier key is pressed, remove all tags
+        return tracingLayer.svgOverlay.tagATNwithLabel( modifier ? '' : tag);
+      };
+    };
+
   this.addAction( new Action({
     helpText: "Add ends Tag (Shift: Remove) for the active node",
     keyShortcuts: {
       "K": [ 75 ]
     },
-      run: function (e) {
-          if (!mayEdit())
-              return false;
-          if (e.ctrlKey || e.metaKey || e.shiftKey) {
-              tracingLayer.svgOverlay.tracingCommand('tagENDSremove');
-          } else {
-              tracingLayer.svgOverlay.tracingCommand('tagENDS');
-          }
-          return true;
-      }
+      run: tagFn('ends')
+  } ) );
+
+  this.addAction( new Action({
+    helpText: "Add 'uncertain end' Tag (Shift: Remove) for the active node",
+    keyShortcuts: {
+      "U": [ 85 ]
+    },
+      run: tagFn('uncertain end')
+  } ) );
+
+  this.addAction( new Action({
+    helpText: "Add 'not a branch' Tag (Shift: Remove) for the active node",
+    keyShortcuts: {
+      "N": [ 78 ]
+    },
+      run: tagFn('not a branch')
+  } ) );
+
+  this.addAction( new Action({
+    helpText: "Add 'soma' Tag (Shift: Remove) for the active node",
+    keyShortcuts: {
+      "M": [ 77 ]
+    },
+      run: tagFn('not a branch')
   } ) );
 
   this.addAction( new Action({
@@ -532,16 +565,7 @@ function TracingTool()
     keyShortcuts: {
       "L": [ 76 ]
     },
-    run: function (e) {
-      if (!mayEdit())
-        return false;
-      if (e.ctrlKey || e.metaKey || e.shiftKey) {
-        tracingLayer.svgOverlay.tracingCommand('tagTODOremove');
-      } else {
-        tracingLayer.svgOverlay.tracingCommand('tagTODO');
-      }
-      return true;
-    }
+    run: tagFn('TODO')
   }) );
 
   this.addAction( new Action({

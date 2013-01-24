@@ -439,8 +439,10 @@ var SkeletonAnnotations = new function()
                 });
             }
               self.updateNodes();
+              return true;
             }
           }
+          return false;
         }
       });
     };
@@ -1771,34 +1773,6 @@ var SkeletonAnnotations = new function()
           self.tagATN();
         } else {
           alert('Need to activate a treenode or connector before tagging!');
-        }
-        break;
-      case "tagENDS":
-          if (atn.id !== null) {
-              self.tagATNwithLabel( 'ends' );
-          } else {
-              alert('Need to activate a treenode or connector before tagging with ends!');
-          }
-          break;
-      case "tagENDSremove":
-          if (atn.id !== null) {
-              self.tagATNwithLabel( '' );
-          } else {
-              alert('Need to activate a treenode or connector before removing ends tag!');
-          }
-          break;
-      case "tagTODO":
-        if (atn.id !== null) {
-          self.tagATNwithLabel( 'TODO' );
-        } else {
-          alert('Need to activate a treenode or connector before tagging with TODO!');
-        }
-        break;
-      case "tagTODOremove":
-        if (atn.id !== null) {
-          self.tagATNwithLabel( '' );
-        } else {
-          alert('Need to activate a treenode or connector before removing TODO tag!');
         }
         break;
       case "selectnearestnode":

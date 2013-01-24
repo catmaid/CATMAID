@@ -83,7 +83,21 @@ var OntologyTree = new function()
                 var id_of_node = obj.attr("id");
                 var type_of_node = obj.attr("rel");
                 var menu = {};
-                if (type_of_node === "class") {
+                if (type_of_node === "root") {
+                    menu = {
+                    "remove_all_links": {
+                        "separator_before": false,
+                        "separator_after": false,
+                        "label": "Remove all class-class links",
+                        "action": function (obj) {
+                            // assure that this was on purpose
+                            if (confirm("Are you sure you want to remove all classification class-class links?")) {
+                                //return OntologyTree.create_relation_handler(pid);
+                            }
+                         }
+                    }
+                    }
+                } else if (type_of_node === "class") {
                     menu = {
                     "add_relation": {
                         "separator_before": false,
@@ -128,6 +142,11 @@ var OntologyTree = new function()
           "crrm": {},
           "types": {
             "types": {
+                "root": {
+                    "icon": {
+                        "image": "widgets/themes/kde/jsTree/ontology/root.png"
+                    },
+                },
                 "class": {
                     "icon": {
                         "image": "widgets/themes/kde/jsTree/ontology/class.png"

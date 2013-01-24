@@ -133,7 +133,7 @@ def list_ontology(request, project_id=None):
 
                 return HttpResponse(json.dumps([{
                     'data': {'title': '%s (%d)' % (root_name, root_id) },
-                    'attr': {'id': 'node_%s' % root_id, 'rel': 'class'},
+                    'attr': {'id': 'node_%s' % root_id, 'rel': 'root'},
                     'state': 'closed'}]))
             else:
                 response_on_error = 'Could not retrieve child nodes.'
@@ -146,7 +146,7 @@ def list_ontology(request, project_id=None):
                            'attr' : {'id': 'node_%s' % cc.class_a.id,
                                      'rel': 'class'},
                            'state': 'closed'} for cc in cc_q)))
-        elif parent_type == "class":
+        elif parent_type in ["class", "root"]:
             # A relation is wanted
             cc_q = ClassClass.objects.filter(
                 project=project_id, class_b_id=parent_id)

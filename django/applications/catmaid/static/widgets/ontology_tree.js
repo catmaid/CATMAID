@@ -482,6 +482,7 @@ var OntologyTree = new function()
                             // refresh tree
                             var ontology_tree_id = "#classification_relations_tree";
                             $(ontology_tree_id).jstree("refresh", -1);
+                            OntologyTree.show_error_status( "Success", "A new relation has been created." );
                         });
                 });
         });
@@ -509,6 +510,7 @@ var OntologyTree = new function()
                         // refresh tree
                         var ontology_tree_id = "#classification_relations_tree";
                         $(ontology_tree_id).jstree("refresh", -1);
+                            OntologyTree.show_error_status( "Success", "The relation has been removed." );
                     });
             });
     };
@@ -524,10 +526,26 @@ var OntologyTree = new function()
             function(status, data, text) {
                 OntologyTree.hide_wait_message();
                 OntologyTree.handle_operation_response(status, data, text,
-                    function() {
+                    function( jsonData ) {
+                        var refresh = true;
+                        // output some status
+                        var deleted = jsonData['deleted_relations'].length;
+                        var not_deleted = jsonData['not_deleted_relations'].length;
+                        if (not_deleted == 0) {
+                            OntologyTree.show_error_status( "Success", "All " + deleted + " relations have been removed." );
+                        } else if (deleted == 0) {
+                            refresh = false;
+                            OntologyTree.show_error_status( "No success", "No relation could be removed due to their use by in some class links." );
+                        } else {
+                            var total = deleted + not_deleted;
+                            var msg = not_deleted + " of " + total + " relations could not be removed due to their use in some class links.";
+                            OntologyTree.show_error_status( "Partial success", msg );
+                        }
                         // refresh tree
-                        var ontology_tree_id = "#classification_relations_tree";
-                        $(ontology_tree_id).jstree("refresh", -1);
+                        if (refresh) {
+                            var ontology_tree_id = "#classification_relations_tree";
+                            $(ontology_tree_id).jstree("refresh", -1);
+                        }
                     });
             });
     }
@@ -556,6 +574,7 @@ var OntologyTree = new function()
                             // refresh tree
                             var tree_id = "#classification_classes_tree";
                             $(tree_id).jstree("refresh", -1);
+                            OntologyTree.show_error_status( "Success", "A new class has been created." );
                         });
                 });
         });

@@ -361,6 +361,14 @@ function TracingTool()
   } ) );
 
   this.addAction( new Action({
+    helpText: "Add 'uncertain continuation' Tag (Shift: Remove) for the active node",
+    keyShortcuts: {
+      "C": [ 67 ]
+    },
+      run: tagFn('uncertain continuation')
+  } ) );
+
+  this.addAction( new Action({
     helpText: "Add 'not a branch' Tag (Shift: Remove) for the active node",
     keyShortcuts: {
       "N": [ 78 ]

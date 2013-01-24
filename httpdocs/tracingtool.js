@@ -337,10 +337,11 @@ function TracingTool()
         if (null === SkeletonAnnotations.getActiveNodeId()) {
           alert('Must activate a treenode or connector before '
               + (modifier ? 'removing the tag' : 'tagging with') + ' "' + tag + '"!');
-          return false;
+          return true;
         }
         // If any modifier key is pressed, remove all tags
-        return tracingLayer.svgOverlay.tagATNwithLabel( modifier ? '' : tag);
+        tracingLayer.svgOverlay.tagATNwithLabel( modifier ? '' : tag);
+        return true;
       };
     };
 

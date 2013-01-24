@@ -411,6 +411,7 @@ var OntologyTree = new function()
                 // the result is fed to the AJAX request `data` option
                 parameters = {
                   "pid": pid,
+                  "roots": 0, // show root classes (0 or 1)?
                   "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
                 };
                 if (ObjectTree.currentExpandRequest) {

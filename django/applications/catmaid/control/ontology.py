@@ -8,6 +8,9 @@ from django.shortcuts import get_object_or_404
 # This is due to the fact, that one classification tree instance should
 # be referencey by multiple projects.
 dummy_pid = -1
+# Root classes can be seen as namespaces in the semantic space. Different
+# tools use different root classes.
+root_classes = ['classification_root', 'root']
 
 class ClassElement:
     def __init__(self, id, name):
@@ -82,13 +85,17 @@ def list_available_classes(request, project_id=None):
     """ Returns an object of all classes available available
     for the given project, prepared to work with a jsTree."""
     parent_id = int(request.GET.get('parentid', 0))
+    include_roots = bool(int(request.GET.get('roots', 0)))
     if 0 == parent_id:
         return HttpResponse(json.dumps([{
             'data': {'title': 'Classes' },
             'attr': {'id': 'node_1', 'rel': 'root'},
             'state': 'closed'}]))
 
-    classes = Class.objects.filter(project=project_id)
+    if include_roots:
+        classes = Class.objects.filter(project=project_id)
+    else:
+        classes = Class.objects.filter(project=project_id).exclude(class_name__in=root_classes)
 
     return HttpResponse(json.dumps(
         tuple({'data' : {'title': '%s (%d)' % (c.class_name, c.id) },
@@ -256,9 +263,17 @@ def add_class_to_ontology(request, project_id=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_class_from_ontology(request, project_id=None):
+    """ Removes a class from the ontology of a particular project.
+    The root classes will be excluded from this and can't be removed
+    with this method
+    """
     classid = int(request.POST.get('classid', -1))
     force = bool(int(request.POST.get('force', 0)))
     class_instance = get_object_or_404(Class, id=classid)
+
+    if class_instance.class_name in root_classes:
+        raise CatmaidException("A root class can't be removed with this method.")
+
     if not force:
         # Check whether this relation is used somewhere
         nr_links = get_number_of_inverse_links( class_instance )
@@ -280,12 +295,12 @@ def remove_all_classes_from_ontology(request, project_id=None):
     not_deleted_ids = []
 
     if force:
-        rel_q = Class.objects.filter(project=project_id)
+        rel_q = Class.objects.filter(project=project_id).exclude(class_name__in=root_classes)
         deleted_ids = [r.id for r in rel_q]
         rel_q.delete()
     else:
         # Check whether a class is used somewhere
-        rel_q = Class.objects.filter(project=project_id)
+        rel_q = Class.objects.filter(project=project_id).exclude(class_name__in=root_classes)
         for r in rel_q:
             nr_links = get_number_of_inverse_links( r )
             if nr_links == 0:

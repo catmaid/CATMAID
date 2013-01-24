@@ -470,18 +470,19 @@ var OntologyTree = new function()
         $('#ontology_add_dialog #add').off("click").on("click",
         function() {
             $.unblockUI();
+            OntologyTree.display_wait_message("Creating relation. Just a moment...");
             var relname= $('#ontology_add_dialog #relname').val();
             // add relation with Ajax call
             requestQueue.register(django_url + pid + '/ontology/relations/add',
                 'POST', { "relname": relname },
                 function(status, data, text) {
-                    if (status !== 200) {
-                        OntologyTree.show_error_msg( status, text );
-                        return
-                    }
-                    // refresh tree
-                    var ontology_tree_id = "#classification_relations_tree";
-                    $(ontology_tree_id).jstree("refresh", -1);
+                    OntologyTree.hide_wait_message();
+                    OntologyTree.handle_operation_response(status, data, text,
+                        function() {
+                            // refresh tree
+                            var ontology_tree_id = "#classification_relations_tree";
+                            $(ontology_tree_id).jstree("refresh", -1);
+                        });
                 });
         });
         // show only relation field
@@ -497,17 +498,18 @@ var OntologyTree = new function()
      * Handles the removal of a relation.
      */
     this.remove_relation_handler = function (pid, relation_id) {
+        OntologyTree.display_wait_message("Removing relation. Just a moment...");
         // make relation with Ajax call
         requestQueue.register(django_url + pid + '/ontology/relations/remove',
             'POST', { "relid": relation_id },
             function(status, data, text) {
-                if (status !== 200) {
-                    OntologyTree.show_error_msg( status, text );
-                    return
-                }
-                // refresh tree
-                var ontology_tree_id = "#classification_relations_tree";
-                $(ontology_tree_id).jstree("refresh", -1);
+                OntologyTree.hide_wait_message();
+                OntologyTree.handle_operation_response(status, data, text,
+                    function() {
+                        // refresh tree
+                        var ontology_tree_id = "#classification_relations_tree";
+                        $(ontology_tree_id).jstree("refresh", -1);
+                    });
             });
     };
 
@@ -515,17 +517,18 @@ var OntologyTree = new function()
      * Handles the removal of all relations in a project.
      */
     this.remove_all_relations_handler = function(pid) {
+        OntologyTree.display_wait_message("Removing all relations. Just a moment...");
         // make relation with Ajax call
         requestQueue.register(django_url + pid + '/ontology/relations/removeall',
             'GET', null,
             function(status, data, text) {
-                if (status !== 200) {
-                    OntologyTree.show_error_msg( status, text );
-                    return
-                }
-                // refresh tree
-                var ontology_tree_id = "#classification_relations_tree";
-                $(ontology_tree_id).jstree("refresh", -1);
+                OntologyTree.hide_wait_message();
+                OntologyTree.handle_operation_response(status, data, text,
+                    function() {
+                        // refresh tree
+                        var ontology_tree_id = "#classification_relations_tree";
+                        $(ontology_tree_id).jstree("refresh", -1);
+                    });
             });
     }
 
@@ -541,18 +544,19 @@ var OntologyTree = new function()
         $('#ontology_add_dialog #add').off("click").on("click",
         function() {
             $.unblockUI();
+            OntologyTree.display_wait_message("Adding class. Just a moment...");
             var classname= $('#ontology_add_dialog #classname').val();
             // add class with Ajax call
             requestQueue.register(django_url + pid + '/ontology/classes/add',
                 'POST', { "classname": classname },
                 function(status, data, text) {
-                    if (status !== 200) {
-                        OntologyTree.show_error_msg( status, text );
-                        return
-                    }
-                    // refresh tree
-                    var tree_id = "#classification_classes_tree";
-                    $(tree_id).jstree("refresh", -1);
+                    OntologyTree.hide_wait_message();
+                    OntologyTree.handle_operation_response(status, data, text,
+                        function() {
+                            // refresh tree
+                            var tree_id = "#classification_classes_tree";
+                            $(tree_id).jstree("refresh", -1);
+                        });
                 });
         });
         // show only class field
@@ -568,18 +572,20 @@ var OntologyTree = new function()
      * Handles the removal of a class.
      */
     this.remove_class_handler = function (pid, class_id) {
+        OntologyTree.display_wait_message("Removing class. Just a moment...");
         // remove class with Ajax call
         requestQueue.register(django_url + pid + '/ontology/classes/remove',
             'POST', { "classid": class_id },
             function(status, data, text) {
-                if (status !== 200) {
-                    OntologyTree.show_error_msg( status, text );
-                    return
-                }
-                // refresh tree
-                var tree_id = "#classification_classes_tree";
-                $(tree_id).jstree("refresh", -1);
-            });
+                OntologyTree.hide_wait_message();
+                OntologyTree.handle_operation_response(status, data, text,
+                    function() {
+                        // refresh tree
+                        var tree_id = "#classification_classes_tree";
+                        $(tree_id).jstree("refresh", -1);
+                        OntologyTree.show_error_status( "Success", "The class has been removed." );
+                    });
+                });
     };
 
     /**
@@ -596,13 +602,16 @@ var OntologyTree = new function()
                     function( jsonData ) {
                         var refresh = true;
                         // output some status
-                        if (jsonData['not_deleted_classes'] == 0) {
-                            OntologyTree.show_error_status( "Success", "All classes have been removed." );
-                        } else if (jsonData['deleted_classes'] == 0) {
+                        var deleted = jsonData['deleted_classes'].length;
+                        var not_deleted = jsonData['not_deleted_classes'].length;
+                        if (not_deleted == 0) {
+                            OntologyTree.show_error_status( "Success", "All " + deleted + " classes have been removed." );
+                        } else if (deleted == 0) {
                             refresh = false;
                             OntologyTree.show_error_status( "No success", "No class could be removed due to relations to other classes." );
                         } else {
-                            var msg = jsonData['not_deleted_classes'] + " classes could not be removed due to relations to other classes.";
+                            var total = deleted + not_deleted;
+                            var msg = not_deleted + " of " + total + " classes could not be removed due to relations to other classes.";
                             OntologyTree.show_error_status( "Partial success", msg );
                         }
                         // refresh tree
@@ -629,6 +638,7 @@ var OntologyTree = new function()
         $('#ontology_add_dialog #add').off("click").on("click",
         function() {
             $.unblockUI();
+            OntologyTree.display_wait_message("Creating link. Just a moment...");
             // get relation ID and class b ID
             var relid = -1;
             var classbid = -1;
@@ -648,6 +658,7 @@ var OntologyTree = new function()
                     var res = sync_request( url, "POST", { "relname": relname } );
                     var relation = JSON.parse(res);
                     if (!relation["relation_id"]) {
+                        OntologyTree.hide_wait_message();
                         alert("The server returned an unexpected result:\n" + res);
                         return;
                     }
@@ -664,6 +675,7 @@ var OntologyTree = new function()
                 var res = sync_request( url, "POST", { "classname": classname } );
                 var added_class = JSON.parse(res);
                 if (!added_class["class_id"]) {
+                    OntologyTree.hide_wait_message();
                     alert("The server returned an unexpected result:\n" + res);
                     return;
                 }
@@ -678,19 +690,18 @@ var OntologyTree = new function()
             requestQueue.register(django_url + pid + '/ontology/links/add',
                 'POST', postdata,
                 function(status, data, text) {
-                    if (status !== 200) {
-                        OntologyTree.show_error_msg( status, text );
-                        return
-                    }
-                    var relation = JSON.parse(data);
-                    if (!relation['class_class_id'])
-                    {
-                        alert( "Can't understand server response: " + data )
-                        return
-                    }
-                    // refresh tree
-                    var ontology_tree_id = "#ontology_tree_object";
-                    $(ontology_tree_id).jstree("refresh", -1);
+                    OntologyTree.hide_wait_message();
+                    OntologyTree.handle_operation_response(status, data, text,
+                        function( jsonData ) {
+                            if (!jsonData['class_class_id'])
+                            {
+                                alert( "Can't understand server response: " + data )
+                                return
+                            }
+                            // refresh tree
+                            var ontology_tree_id = "#ontology_tree_object";
+                            $(ontology_tree_id).jstree("refresh", -1);
+                        });
                 });
             //caller.create(obj, "inside", att, null, true);
         });
@@ -746,8 +757,52 @@ var OntologyTree = new function()
             });
     };
 
+    /**
+     * Simplifies response handling for most instance operations.
+     */
+    this.handle_operation_response = function(status, data, text, handler) {
+        if (status !== 200) {
+            OntologyTree.show_error_msg( status, text );
+            return
+        }
+        var jsonData = $.parseJSON(data);
+        if (jsonData.error) {
+            OntologyTree.show_error_status( "Error", jsonData.error, 5000 );
+        } else {
+            handler( jsonData );
+        }
+    };
+
+    /**
+     * Shows a JavaScript alert box with text about a request
+     * status error.
+     */
     this.show_error_msg = function( status, text )
     {
         alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+    };
+
+    /**
+     * Shows a growl error message in the top right corner.
+     */
+    this.show_error_status = function( title, message, delaytime ) {
+            if (!delaytime)
+                delaytime = 2500;
+            $('#growl-alert').growlAlert({
+              autoShow: true,
+              content: message,
+              title: title,
+              position: 'top-right',
+              delayTime: delaytime,
+              onComplete: function() { g.remove(); }
+            });
+    };
+
+    this.display_wait_message = function( message ) {
+        $.blockUI({ message: '<h2><img src="widgets/busy.gif" />' + message + '</h2>' });
+    };
+
+    this.hide_wait_message = function() {
+        $.unblockUI();
     };
 };

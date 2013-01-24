@@ -1167,16 +1167,6 @@ var SkeletonAnnotations = new function()
         }
       }
 
-      // Keep active state of previous active node
-      if (atn !== null)
-      {
-          var nn = nodes[atn.id];
-          if (nn) {
-              // Will recolor all nodes
-              self.activateNode(nn);
-          }
-      }
-
       // Warn about nodes not retrieved because of limit
       if (true === jso[3]) {
         var msg = "Did not retrieve all visible nodes--too many! Zoom in to constrain the field of view.";

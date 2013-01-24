@@ -801,92 +801,103 @@ var SkeletonAnnotations = new function()
 
     };
 
-    var createInterpolatedNode = function (atn_id, atn_skeleton_id, atn_x, atn_y, atn_z, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
-    {
-      // This assumes that the parentID is not null, i.e. exists
-      // Creates treenodes from atn to new node in each z section
-      requestQueue.register(django_url + project.id + '/treenode/create/interpolated', "POST", {
-        pid: project.id,
-        parent_id: atn_id,
-        skeleton_id: atn_skeleton_id,
-        x: phys_x,
-        y: phys_y,
-        z: phys_z,
-        radius: radius,
-        confidence: confidence,
-        atnx: self.pix2physX(atn_x),
-        atny: self.pix2physY(atn_y),
-        atnz: self.pix2physZ(atn_z),
-        resx: stack.resolution.x,
-        resy: stack.resolution.y,
-        resz: stack.resolution.z,
-        stack_translation_z: stack.translation.z,
-        stack_id: project.focusedStack.id
-      }, function (status, text, xml) {
-        var e;
-        if (status === 200) {
-          if (text && text !== " ") {
-            e = $.parseJSON(text);
-            if (e.error) {
-              alert(e.error);
+
+    /** Caters both to the createInterpolatedNode and createTreenodeLinkInterpolated functions, which are almost identical. */
+    var createInterpolatedNodeFn = function () {
+      // Javascript is not multithreaded.
+      // The only pseudo-threadedness occurs in the code execution between the AJAX request and the execution of the callback; that is, no concurrency, but continuations. Therefore altering the queue array is always safe.
+
+      // Accumulate invocations of the createInterpolatedNode function
+      var queue = [];
+
+      // Function to handle the callback
+      var handler = function (status, text, xml) {
+        if (status !== 200) {
+          queue.length = 0; // reset
+          return false;
+        }
+        if (text && text !== " ") {
+          var json = $.parseJSON(text);
+          if (json.error) {
+            alert(json.error);
+            queue.length = 0; // reset
+          } else {
+            // Check if any calls have accumulated
+            if (queue.length > 1) {
+              // Remove this call
+              queue.shift();
+              // Invoke the oldest of any accumulated calls
+              requester(json.treenode_id, queue[0]);
             } else {
+              // Start a new continuation to update the nodes
               self.updateNodes(function () {
-                self.selectNode(e.treenode_id);
-                if (e.has_changed_group) {
-                  ObjectTree.refresh();
+                self.selectNode(json.treenode_id);
+                // Remove this call now that the active node is set properly
+                queue.shift();
+                // Invoke the oldest of any accumulated calls
+                if (queue.length > 0) {
+                  requester(json.treenode_id, queue[0]);
                 }
               });
+            }
+            if (json.has_changed_group) {
+              ObjectTree.refresh();
             }
           }
         }
         return true;
-      });
-      return;
+      };
+
+      // Function to request interpolated nodes
+      var requester = function(parent_id, q) {
+        // Creates treenodes from atn to new node in each z section
+        var post = {
+            pid: project.id,
+            x: q.phys_x,
+            y: q.phys_y,
+            z: q.phys_z,
+            resx: stack.resolution.x,
+            resy: stack.resolution.y,
+            resz: stack.resolution.z,
+            stack_translation_z: stack.translation.z,
+            stack_id: project.focusedStack.id
+        };
+        var url;
+        if (q.nearestnode_id) {
+          url = '/skeleton/join_interpolated';
+          post['from_id'] = parent_id;
+          post['to_id'] = q.nearestnode_id;
+        } else {
+          url = '/treenode/create/interpolated';
+          post['parent_id'] = parent_id;
+        }
+        console.log(post);
+        requestQueue.register(django_url + project.id + url, "POST", post, handler);
+      };
+
+      return function (phys_x, phys_y, phys_z, nearestnode_id) {
+        queue.push({phys_x: phys_x,
+                    phys_y: phys_y,
+                    phys_z: phys_z,
+                    nearestnode_id: nearestnode_id});
+
+        if (queue.length > 1) {
+          return; // will be handled by the callback
+        }
+
+        if (!atn.id) {
+            growlAlert("WARNING", "No node selected!");
+            return;
+        }
+        requester(atn.id, queue[0]);
+      }
     };
 
+    var createInterpolatedNode = createInterpolatedNodeFn();
+
     // Interpolate and join, both
-    var createTreenodeLinkInterpolated = function (atn_id, atn_x, atn_y, atn_z, nearestnode_id, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
-    {
-      // This assumes that the parentID is not null, i.e. exists
-      // Creates treenodes from atn to nearestnode_id in each z section
-      requestQueue.register(django_url + project.id + '/skeleton/join_interpolated', "POST", {
-        pid: project.id,
-        from_id: atn_id,
-        to_id: nearestnode_id,
-        x: phys_x,
-        y: phys_y,
-        z: phys_z,
-        radius: radius,
-        confidence: confidence,
-        atnx: self.pix2physX(atn_x),
-        atny: self.pix2physY(atn_y),
-        atnz: self.pix2physZ(atn_z),
-        resx: stack.resolution.x,
-        resy: stack.resolution.y,
-        resz: stack.resolution.z,
-        stack_translation_z: stack.translation.z,
-        stack_id: project.focusedStack.id
-      }, function (status, text, xml) {
-        var e;
-        if (status === 200) {
-          if (text && text !== " ") {
-            e = $.parseJSON(text);
-            if (e.error) {
-              alert(e.error);
-            } else {
-              self.updateNodes(function () {
-                // Activate the node if it hasn't been changed by a new request
-                if (atn && atn_id === atn.id) {
-                  self.activateNode( nodes[e.toid] );
-                }
-              });
-            }
-          }
-        }
-        return true;
-      });
-      return;
-    };
+    var createTreenodeLinkInterpolated = createInterpolatedNodeFn();
+
 
     // Create a node and activate it
     var createNode = function (parentID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
@@ -1844,7 +1855,7 @@ var SkeletonAnnotations = new function()
                   var phys_x = self.pix2physX(pos_x);
                   var phys_y = self.pix2physY(pos_y);
                   // Ask to join the two skeletons with interpolated nodes
-                  createTreenodeLinkInterpolated(atn_id, atn_x, atn_y, atn_z, nearestnode_id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+                  createTreenodeLinkInterpolated(phys_x, phys_y, phys_z, nearestnode_id);
                 });
             return;
           } else {
@@ -1859,6 +1870,10 @@ var SkeletonAnnotations = new function()
         alert('Need to activate a treenode first!');
         return;
       }
+      // TODO this needs revision: (same above)
+      //  * the self.offsetXPhysical is converted to pixels and then back to physical coordinates
+      //  * the self.offsetXPhysical reads like the 'x' of the mouse, rather than the stack offset.
+      //
       // Take into account current local offset coordinates and scale
       var pos_x = self.phys2pixX(self.offsetXPhysical);
       var pos_y = self.phys2pixY(self.offsetYPhysical);
@@ -1869,7 +1884,7 @@ var SkeletonAnnotations = new function()
       // Get physical coordinates for node position creation
       var phys_x = self.pix2physX(pos_x);
       var phys_y = self.pix2physY(pos_y);
-      createInterpolatedNode(atn.id, atn.skeleton_id, atn.x, atn.y, atn.z, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+      createInterpolatedNode(phys_x, phys_y, phys_z, null);
     };
 
 

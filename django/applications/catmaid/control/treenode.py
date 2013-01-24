@@ -270,18 +270,15 @@ def create_interpolated_treenode(request, project_id=None):
             'x': 0,
             'y': 0,
             'z': 0,
-            'atnx': 0,
-            'atny': 0,
-            'atnz': 0,
             'resx': 0,
             'resy': 0,
             'resz': 0,
             'stack_translation_z': 0,
-            'radius': 0}
+            'radius': -1}
     int_values = {
             'parent_id': 0,
             'stack_id': 0,
-            'confidence': 0}
+            'confidence': 5}
     for p in decimal_values.keys():
         params[p] = decimal.Decimal(request.POST.get(p, decimal_values[p]))
     for p in int_values.keys():
@@ -297,15 +294,20 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
     the join_skeletons_interpolated. """
     response_on_error = 'Could not create interpolated treenode'
     try:
-        parent_skeleton_id = Treenode.objects.get(pk=params['parent_id']).skeleton_id
+        parent = Treenode.objects.get(pk=params['parent_id'])
+        parent_skeleton_id = parent.skeleton_id
+        loc = parent.location
+        parent_x = decimal.Decimal(loc.x)
+        parent_y = decimal.Decimal(loc.y)
+        parent_z = decimal.Decimal(loc.z)
 
-        steps = abs((params['z'] - params['atnz']) / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
+        steps = abs((params['z'] - parent_z) / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
         if steps == decimal.Decimal(0):
             steps = decimal.Decimal(1)
 
-        dx = (params['x'] - params['atnx']) / steps
-        dy = (params['y'] - params['atny']) / steps
-        dz = (params['z'] - params['atnz']) / steps
+        dx = (params['x'] - parent_x) / steps
+        dy = (params['y'] - parent_y) / steps
+        dz = (params['z'] - parent_z) / steps
 
         broken_slices = set(int(bs.index) for bs in BrokenSlice.objects.filter(stack=params['stack_id']))
         sign = -1 if dz < 0 else 1
@@ -313,7 +315,7 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
         # Loop the creation of treenodes in z resolution steps until target
         # section is reached
         parent_id = params['parent_id']
-        atn_slice_index = ((params['atnz'] - params['stack_translation_z']) / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
+        atn_slice_index = ((parent_z - params['stack_translation_z']) / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
         for i in range(1, steps + (0 if skip_last else 1)):
             if (atn_slice_index + i * sign) in broken_slices:
                 continue
@@ -323,9 +325,9 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
             new_treenode.editor_id = request.user.id
             new_treenode.project_id = project_id
             new_treenode.location = Double3D(
-                    float(params['atnx'] + dx * i),
-                    float(params['atny'] + dy * i),
-                    float(params['atnz'] + dz * i))
+                    float(parent_x + dx * i),
+                    float(parent_y + dy * i),
+                    float(parent_z + dz * i))
             new_treenode.radius = params['radius']
             new_treenode.skeleton_id = parent_skeleton_id
             new_treenode.confidence = params['confidence']
@@ -473,13 +475,25 @@ def join_skeletons_interpolated(request, project_id=None):
     """ Join two skeletons, adding nodes in between the two nodes to join
     if they are separated by more than one section in the Z axis."""
     # Parse parameters
-    keysDecimal = ('atnx', 'atny', 'atnz', 'radius', 'x', 'y', 'z', 'resx', 'resy', 'resz', 'stack_translation_z')
-    keysInt = ('from_id', 'to_id', 'confidence', 'stack_id')
+    decimal_values = {
+            'x': 0,
+            'y': 0,
+            'z': 0,
+            'resx': 0,
+            'resy': 0,
+            'resz': 0,
+            'stack_translation_z': 0,
+            'radius': -1}
+    int_values = {
+            'from_id': 0,
+            'to_id': 0,
+            'stack_id': 0,
+            'confidence': 5}
     params = {}
-    for p in keysDecimal:
-        params[p] = decimal.Decimal(request.POST.get(p, 0))
-    for p in keysInt:
-        params[p] = int(request.POST.get(p, 0))
+    for p in decimal_values.keys():
+        params[p] = decimal.Decimal(request.POST.get(p, decimal_values[p]))
+    for p in int_values.keys():
+        params[p] = int(request.POST.get(p, int_values[p]))
     # Copy of the id for _create_interpolated_treenode
     params['parent_id'] = params['from_id']
     params['skeleton_id'] = Treenode.objects.get(pk=params['from_id']).skeleton_id

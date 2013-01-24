@@ -393,23 +393,46 @@ var OntologyTree = new function()
                 var menu = {};
                 if (type_of_node === "root") {
                     menu = {
-                    "add_relation": {
+                    "add_class": {
                         "separator_before": false,
                         "separator_after": false,
-                        "label": "Add new relation",
+                        "label": "Add new class",
                         "action": function (obj) {
-                            return OntologyTree.create_relation_handler(pid);
+                            return OntologyTree.create_class_handler(pid);
+                         }
+                    },
+                    "remove_all_classes": {
+                        "separator_before": true,
+                        "separator_after": false,
+                        "label": "Remove all classes",
+                        "action": function (obj) {
+                            // assure that this was on purpose
+                            if (confirm("Are you sure you want to remove all classification classes?")) {
+                                return OntologyTree.remove_all_classes_handler(pid);
+                            }
                          }
                     }
                     }
-                } else if (type_of_node === "relation") {
+                } else if (type_of_node === "class") {
                     menu = {
                     "add_class": {
                         "separator_before": false,
                         "separator_after": false,
                         "label": "Add new class",
                         "action": function (obj) {
-                            return OntologyTree.create_class_handler(pid, obj);
+                            return OntologyTree.create_class_handler(pid);
+                         }
+                    },
+                    "remove_class": {
+                        "separator_before": false,
+                        "separator_after": false,
+                        "label": "Remove class",
+                        "action": function (obj) {
+                            // assure that this was on purpose
+                            if (confirm("Are you sure you want to remove this class?")) {
+                                var class_id = obj.attr('id').replace("node_", "")
+                                return OntologyTree.remove_class_handler(pid, class_id);
+                            }
                          }
                     }
                     }
@@ -519,13 +542,6 @@ var OntologyTree = new function()
         function() {
             $.unblockUI();
             var classname= $('#ontology_add_dialog #classname').val();
-            att = {
-              "state": "open",
-              "data": classname,
-              "attr": {
-                "rel": "class"
-              }
-            }
             // add class with Ajax call
             requestQueue.register(django_url + pid + '/ontology/classes/add',
                 'POST', { "classname": classname },
@@ -534,16 +550,68 @@ var OntologyTree = new function()
                         OntologyTree.show_error_msg( status, text );
                         return
                     }
-                    OntologyTree.update_classes_display( pid )
+                    // refresh tree
+                    var tree_id = "#classification_classes_tree";
+                    $(tree_id).jstree("refresh", -1);
                 });
         });
         // show only class field
         $('#ontology_add_dialog #input_rel').css("display", "none");
         $('#ontology_add_dialog #select_rel').css("display", "none");
         $('#ontology_add_dialog #input_class').css("display", "block");
-        $('#ontology_add_dialog #select_class').css("display", "block");
+        $('#ontology_add_dialog #select_class').css("display", "none");
         // show dialog
         $.blockUI({ message: $('#ontology_add_dialog') });
+    };
+
+    /**
+     * Handles the removal of a class.
+     */
+    this.remove_class_handler = function (pid, class_id) {
+        // remove class with Ajax call
+        requestQueue.register(django_url + pid + '/ontology/classes/remove',
+            'POST', { "classid": class_id },
+            function(status, data, text) {
+                if (status !== 200) {
+                    OntologyTree.show_error_msg( status, text );
+                    return
+                }
+                // refresh tree
+                var tree_id = "#classification_classes_tree";
+                $(tree_id).jstree("refresh", -1);
+            });
+    };
+
+    /**
+     * Handles the removal of all classes.
+     */
+    this.remove_all_classes_handler = function (pid, class_id) {
+        OntologyTree.display_wait_message("Removing all classes. Just a moment...");
+        // remove classes with Ajax call
+        requestQueue.register(django_url + pid + '/ontology/classes/removeall',
+            'POST', null,
+            function(status, data, text) {
+                OntologyTree.hide_wait_message();
+                OntologyTree.handle_operation_response(status, data, text,
+                    function( jsonData ) {
+                        var refresh = true;
+                        // output some status
+                        if (jsonData['not_deleted_classes'] == 0) {
+                            OntologyTree.show_error_status( "Success", "All classes have been removed." );
+                        } else if (jsonData['deleted_classes'] == 0) {
+                            refresh = false;
+                            OntologyTree.show_error_status( "No success", "No class could be removed due to relations to other classes." );
+                        } else {
+                            var msg = jsonData['not_deleted_classes'] + " classes could not be removed due to relations to other classes.";
+                            OntologyTree.show_error_status( "Partial success", msg );
+                        }
+                        // refresh tree
+                        if (refresh) {
+                            var tree_id = "#classification_classes_tree";
+                            $(tree_id).jstree("refresh", -1);
+                        }
+                    });
+                });
     };
 
     /**
@@ -675,35 +743,6 @@ var OntologyTree = new function()
                     // show dialog
                     $.blockUI({ message: $('#ontology_add_dialog') });
                 }
-            });
-    };
-
-    /**
-     * Fetches all available class names/IDs from the backend
-     * and displays it in a container.
-     */
-    this.update_classes_display = function( pid )
-    {
-        requestQueue.register(django_url + pid + '/ontology/classes',
-            'GET', undefined,
-            function(status, data, text) {
-                if (status !== 200) {
-                    OntologyTree.show_error_msg( status, text );
-                    return
-                }
-                var classes = JSON.parse(data);
-                var text = ""
-                var added_first = false;
-                for (c in classes) {
-                    if (added_first) {
-                        text += ", " + c + "(" + classes[c] + ")"
-                    } else {
-                        added_first = true;
-                        text += c + "(" + classes[c] + ")"
-                    }
-                }
-                var container = document.getElementById('ontology_classes');
-                container.innerHTML = text;
             });
     };
 

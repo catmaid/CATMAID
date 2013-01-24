@@ -216,7 +216,7 @@ def remove_relation_from_ontology(request, project_id=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_all_relations_from_ontology(request, project_id=None):
-    force = bool(request.POST.get('force', False))
+    force = bool(int(request.POST.get('force', 0)))
     deleted_ids = []
     not_deleted_ids = []
 
@@ -252,6 +252,50 @@ def add_class_to_ontology(request, project_id=None):
         description = description)
 
     return HttpResponse(json.dumps({'class_id': c.id}))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def remove_class_from_ontology(request, project_id=None):
+    classid = int(request.POST.get('classid', -1))
+    force = bool(int(request.POST.get('force', 0)))
+    class_instance = get_object_or_404(Class, id=classid)
+    if not force:
+        # Check whether this relation is used somewhere
+        nr_links = get_number_of_inverse_links( class_instance )
+        if nr_links > 0:
+            raise CatmaidException("The class to delete is still referenced by others. If enforced, all related objects get deleted, too.")
+
+    # Delete, if not used
+    class_instance.delete()
+    return HttpResponse(json.dumps({'deleted_class': classid}))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def remove_all_classes_from_ontology(request, project_id=None):
+    """ Removes all classes from the ontology of a particular project.
+    The root classes will be excluded from this and can't be removed
+    with this method
+    """
+    force = bool(int(request.POST.get('force', 0)))
+    deleted_ids = []
+    not_deleted_ids = []
+
+    if force:
+        rel_q = Class.objects.filter(project=project_id)
+        deleted_ids = [r.id for r in rel_q]
+        rel_q.delete()
+    else:
+        # Check whether a class is used somewhere
+        rel_q = Class.objects.filter(project=project_id)
+        for r in rel_q:
+            nr_links = get_number_of_inverse_links( r )
+            if nr_links == 0:
+                deleted_ids.append(r.id)
+                r.delete()
+            else:
+                not_deleted_ids.append(r.id)
+
+    return HttpResponse(json.dumps(
+        {'deleted_classes': deleted_ids,
+         'not_deleted_classes': not_deleted_ids}))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def add_link_to_ontology(request, project_id=None):

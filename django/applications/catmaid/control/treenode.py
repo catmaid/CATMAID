@@ -285,7 +285,7 @@ def create_interpolated_treenode(request, project_id=None):
         params[p] = int(request.POST.get(p, int_values[p]))
 
     last_treenode_id, skeleton_id = _create_interpolated_treenode(request, params, project_id, False)
-    return HttpResponse(json.dumps({'treenode_id': last_treenode_id, 'skeleton_id': skeleton_id}))
+    return HttpResponse(json.dumps({'treenode_id': last_treenode_id}))
 
 
 def _create_interpolated_treenode(request, params, project_id, skip_last):
@@ -506,9 +506,7 @@ def join_skeletons_interpolated(request, project_id=None):
     from skeleton import _join_skeleton
     _join_skeleton(request.user, last_treenode_id, params['to_id'], project_id)
 
-    return HttpResponse(json.dumps({'message': 'success',
-                                    'fromid': params['from_id'],
-                                    'toid': params['to_id']}))
+    return HttpResponse(json.dumps({'treenode_id': params['to_id']}))
 
 
 def _maybe_move_terminal_to_staging(user, project_id, treenode_id):

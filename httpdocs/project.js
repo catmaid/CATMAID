@@ -60,7 +60,7 @@ function Project( pid )
 			self.moveTo( c.z, c.y, c.x );
 		}
 		
-		self.setFocusedStack( stack );
+		// self.setFocusedStack( stack );
 		
 		// only set the tool for the first stack
 		if ( stacks.length == 1 )
@@ -68,6 +68,8 @@ function Project( pid )
 			if ( !tool )
 				tool = new Navigator();
 			self.setTool( tool );
+			// self.focusedStack.setTool( tool );
+
 		}
 		
 		return;
@@ -113,7 +115,7 @@ function Project( pid )
 		self.focusedStack = stack;
 		if ( tool )
 			self.focusedStack.setTool( tool );
-		//window.onresize();
+		window.onresize();
 		return;
 	}
 	
@@ -174,13 +176,17 @@ function Project( pid )
 			tool.destroy();
 		tool = newTool;
 		
-		if ( !self.focusedStack && stacks.length > 0 )
-			self.focusedStack = stacks[ 0 ];
-		
-		if ( self.focusedStack )
-			self.focusedStack.getWindow().focus();
+		if ( !self.focusedStack && stacks.length > 0 ) {
+			self.setFocusedStack( stacks[ 0 ] )
+		} 
 
-		window.onresize();
+		self.focusedStack.setTool( tool )
+
+		if ( self.focusedStack ) {
+			if (!self.focusedStack.getWindow().hasFocus())
+				self.focusedStack.getWindow().focus();
+		}
+		//window.onresize();
 		WindowMaker.setKeyShortcuts();
 		return;
 	}

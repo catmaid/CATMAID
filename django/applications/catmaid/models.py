@@ -575,7 +575,7 @@ class Slices(UserFocusedModel):
     center_y = models.FloatField(db_index=True)
     threshold = models.FloatField()
     size = models.IntegerField(db_index=True)
-    status =  models.CharField(max_length=255,default='new')
+    status = models.IntegerField(db_index=True, default=0)
 
 class Drawing(UserFocusedModel):
     class Meta:

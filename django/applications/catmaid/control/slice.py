@@ -1,5 +1,6 @@
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils.simplejson.encoder import JSONEncoder
 
 import json
 
@@ -34,7 +35,7 @@ def get_slice(request, project_id=None, stack_id=None):
         'node_id', 'min_x', 'min_y', 'max_x', 'max_y', 'center_x',
         'center_y', 'threshold', 'size', 'status')
 
-    return HttpResponse(json.dumps(list(slices)), mimetype="text/json")
+    return HttpResponse(JSONEncoder().encode(list(slices)), mimetype="text/json")
 
 def slices_at_location(request, project_id=None, stack_id=None):
     """ Takes a stack location and returns slices at this location
@@ -58,18 +59,20 @@ def slices_at_location(request, project_id=None, stack_id=None):
     #    'node_id', 'min_x', 'min_y', 'max_x', 'max_y', 'center_x',
     #    'center_y', 'threshold', 'size', 'status').order_by('size')
 
+    size = 20
+
     slices = Slices.objects.filter(
         stack = stack,
         project = p,
-        center_x__lt = x + 20,
-        center_x__gt = x - 20,
-        center_y__lt = y + 20,
-        center_y__gt = y - 20,
+        center_x__lt = x + size,
+        center_x__gt = x - size,
+        center_y__lt = y + size,
+        center_y__gt = y - size,
         sectionindex = z).all().values('assembly_id', 'sectionindex', 'slice_id',
         'node_id', 'min_x', 'min_y', 'max_x', 'max_y', 'center_x',
         'center_y', 'threshold', 'size', 'status').order_by('threshold')
 
-    return HttpResponse(json.dumps(list(slices)), mimetype="text/json")
+    return HttpResponse(JSONEncoder().encode(list(slices)), mimetype="text/json")
 
 def segments_for_slice(request, project_id=None, stack_id=None):
     
@@ -85,11 +88,12 @@ def segments_for_slice(request, project_id=None, stack_id=None):
         stack = stack,
         project = p,
         origin_slice_id = sliceid,
-        origin_section = sectionindex
+        origin_section = sectionindex,
+        segmenttype__gt = 1
     ).all().values('segmentid','segmenttype','origin_section','origin_slice_id','target1_section',
-    'target1_slice_id','target2_section','target2_slice_id','cost','direction','center_distance','set_difference').order_by('cost')
+    'target1_slice_id','target2_section','target2_slice_id','direction','center_distance','set_difference').order_by('cost')
 
-    return HttpResponse(json.dumps(list(segments)), mimetype="text/json")
+    return HttpResponse(JSONEncoder().encode(list(segments)), mimetype="text/json")
 
 
 def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=10):

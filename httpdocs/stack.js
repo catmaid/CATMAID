@@ -472,7 +472,7 @@ function Stack(
 				// treenode table. setting the focus to a dummy
 				// href element does not work
 				$('#search_labels').blur();
-				project.setFocusedStack( self );
+				//project.setFocusedStack( self );
 				break;
 			case CMWWindow.BLUR:
 				self.overview.getView().style.zIndex = "5";

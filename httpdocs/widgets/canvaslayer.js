@@ -154,7 +154,7 @@ function CanvasLayer( stack )
     var view = document.createElement("div");
     view.className = "canvasOverlay";
     view.id = "canvasOverlayId";
-    view.style.zIndex = 5;
+    // view.style.zIndex = 5;
     view.style.opacity = 0.5;
     //view.style.border = "solid red 4px";
     //view.style.position = 'absolute';

@@ -1,0 +1,78 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrahead %}
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url admin:index %}">Home</a> &rsaquo; {{ title }}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div id="content-main">
+    <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+    {% if not_readable %}
+        {% if folders %}
+            <p>Unfortunately, no project folder could be read successfully.
+        {% else %}
+            <p>Not all project folders found could be read successfully.
+        {% endif %}
+        The following info files could not be parsed:
+        <ul>
+            {% for infofile, error in not_readable %}
+                <li>File: {{ infofile }}<br />Error: {{ error }}</li>
+            {% endfor %}
+        </ul>
+        </p>
+    {% endif %}
+
+    {% if folders %}
+        <form method="post" id="path-setup-form"
+              action="">
+        {% csrf_token %}
+        <p>The list below shows all the folders (projects) that fit your
+        configuration. Please continue with the next step without any (or
+        all) projects selected if you want to use all projects.
+        Alternatively, you can select a subset of projects you would like
+        to import. If you want to add one or more tags to the imported
+        projects, please insert them in the field below.</p>
+        <p>
+        <table>
+        {{ wizard.management_form }}
+        {% if wizard.form.forms %}
+            {{ wizard.form.management_form }}
+            {% for form in wizard.form.forms %}
+                {{ form.as_table }}
+            {% endfor %}
+        {% else %}
+            {{ wizard.form.as_table }}
+        {% endif %}
+        </table>
+        </p>
+        <p>
+        {% if wizard.steps.prev %}
+            <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}" class="button small">{% trans "first step" %}</button>
+            <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}" class="button small">{% trans "prev step" %}</button>
+        {% endif %}
+        <input type="submit" value="next step"/>
+        </p>
+        </form>
+      {% else %}
+        <form method="post" id="path-setup-form"
+              action="">
+            {% csrf_token %}
+            <p>No project info files have been found. Please return to the last step to adjust your settings and/or make sure that there is actually data accessible.</p>
+        {% if wizard.steps.prev %}
+            <p>
+            <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}" class="button small">{% trans "first step" %}</button>
+            <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}" class="button small">{% trans "prev step" %}</button>
+            </p>
+        {% endif %}
+        </form>
+      {% endif %}
+    </p>
+  </div>
+{% endblock %}
+

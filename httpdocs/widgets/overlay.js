@@ -895,8 +895,8 @@ var SkeletonAnnotations = new function()
 
     var createInterpolatedNode = createInterpolatedNodeFn();
 
-    // Interpolate and join, both
-    var createTreenodeLinkInterpolated = createInterpolatedNodeFn();
+    // Interpolate and join, both: uses same function as createInterpolatedNode
+    var createTreenodeLinkInterpolated = createInterpolatedNode;
 
 
     // Create a node and activate it

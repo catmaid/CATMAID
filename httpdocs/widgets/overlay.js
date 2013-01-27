@@ -871,7 +871,6 @@ var SkeletonAnnotations = new function()
           url = '/treenode/create/interpolated';
           post['parent_id'] = parent_id;
         }
-        console.log(post);
         requestQueue.register(django_url + project.id + url, "POST", post, handler);
       };
 

@@ -1637,7 +1637,7 @@ var SkeletonAnnotations = new function()
         alert("Could not find node with id #" + treenode_id);
         return;
       }
-      if (!node.parent) {
+      if (-1 === node.parent_id) {
         alert("This is the root node - can't move to its parent");
         return;
       }

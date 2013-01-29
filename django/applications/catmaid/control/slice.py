@@ -91,7 +91,10 @@ def segments_for_slice(request, project_id=None, stack_id=None):
         origin_section = sectionindex,
         segmenttype__gt = 1
     ).all().values('segmentid','segmenttype','origin_section','origin_slice_id','target1_section',
-    'target1_slice_id','target2_section','target2_slice_id','direction','center_distance','set_difference').order_by('cost')
+    'target1_slice_id','target2_section','target2_slice_id','direction',
+    'center_distance','set_difference','cost','set_difference','set_difference_ratio',
+    'aligned_set_difference','aligned_set_difference_ratio',
+    'size','overlap','overlap_ratio','aligned_overlap','aligned_overlap_ratio').order_by('cost')
 
     return HttpResponse(JSONEncoder().encode(list(segments)), mimetype="text/json")
 

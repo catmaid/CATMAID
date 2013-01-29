@@ -405,6 +405,35 @@ var WindowMaker = new function()
     return win;
   };
 
+  var createSegmentsTablesWindow = function()
+  {
+    var win = new CMWWindow("Segments Table Widget");
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    /*
+    var container = createContainer("segments_table_widget");
+    content.appendChild(container);
+
+    
+    var graph = document.createElement('div');
+    graph.setAttribute("id", "segmentstable-div");
+    graph.style.height = "100%";
+    graph.style.width = "100%";
+    container.appendChild(graph);
+    */
+
+    var container = createContainer("segmentstable-container");
+    content.appendChild( container );
+
+    container.innerHTML =
+      '<table cellpadding="0" cellspacing="2" border="0" class="display" id="segmentstable"></table>';
+
+    addLogic(win);
+
+    return win;
+  };
+
   var createGraphWindow = function()
   {
     var win = new CMWWindow("Graph Widget");
@@ -1129,6 +1158,7 @@ var WindowMaker = new function()
     "export-widget": createExportWidget,
     "graph-widget": createGraphWindow,
     "cytograph-widget": createCytoscapeGraphWindow,
+    "segmentstable-widget": createSegmentsTablesWindow,
     "object-tree": createObjectTreeWindow,
     "statistics": createStatisticsWindow,
     "disclaimer": createDisclaimerWindow,

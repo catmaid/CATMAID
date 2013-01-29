@@ -3,7 +3,7 @@
  */
 
 
-function CanvasLayer( stack )
+function CanvasLayer( stack, tool )
 {
     // define the x,y location and width and height of the
     // current field of view of the canvas in bitmap pixel
@@ -32,6 +32,10 @@ function CanvasLayer( stack )
         // TODO: Resize is called too much
         //this.setFieldOfView();
         self.redraw();
+        if( tool ) {
+            tool.update();
+        }
+            
         return;
     }
 

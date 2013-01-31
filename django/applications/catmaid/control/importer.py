@@ -167,6 +167,8 @@ class ImportingWizard(SessionWizardView):
                 filter_term = "*"
             folders, projects, not_readable = find_project_folders(
                 base_url, data_dir, filter_term, only_unknown)
+            # Sort the folders (wrt. short name) to be better readable
+            folders = sorted(folders, key=lambda folder: folder[1])
             # Save these settings in the form
             form.folders = folders
             form.not_readable = not_readable

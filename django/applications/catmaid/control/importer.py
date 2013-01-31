@@ -173,8 +173,9 @@ class ImportingWizard(SessionWizardView):
             form.folders = folders
             form.not_readable = not_readable
             self.projects = projects
-            # Update the folder list
+            # Update the folder list and select all by default
             form.fields['projects'].choices = folders
+            form.fields['projects'].initial = [f[0] for f in folders]
             # Get the available permissions and update the list
             group_permissions = get_group_permissions(Project)
             form.group_permissions = group_permissions
@@ -348,7 +349,7 @@ class ProjectSelectionForm(forms.Form):
     """
     # A checkbox for each project, checked by default
     projects = forms.MultipleChoiceField(required=False,
-        widget=forms.CheckboxSelectMultiple(attrs={'checked':''}),
+        widget=forms.CheckboxSelectMultiple(),
         help_text="Only selected projects will be imported.")
     tags = forms.CharField(initial="", required=False,
         help_text="A comma separated list of unquoted tags.")

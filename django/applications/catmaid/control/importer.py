@@ -28,7 +28,7 @@ datafolder_setting = "CATMAID_IMPORT_PATH"
 base_url_setting = "CATMAID_IMPORT_URL"
 
 class PreStack:
-    def __init__(self, info_object, project_url, data_folder):
+    def __init__(self, info_object, project_url, data_folder, only_unknown):
         self.name = info_object['name']
         self.folder = info_object['folder']
         self.dimension = info_object['dimension']
@@ -38,6 +38,10 @@ class PreStack:
         # Make sure the image base has a trailing slash, because this is expected
         if self.image_base[-1] != '/':
             self.image_base = self.image_base + '/'
+        # Test if this stack is already known
+        if only_unknown:
+            num_same_image_base = Stack.objects.filter(image_base=self.image_base).count()
+            self.already_known = (num_same_image_base > 0)
         # Find file extension and zoom levels
         file_ext, zoom_levels = find_zoom_levels_and_file_ext(
             data_folder, self.folder )
@@ -45,7 +49,7 @@ class PreStack:
         self.file_extension = file_ext
 
 class PreProject:
-    def __init__(self, info_file, project_url, data_folder):
+    def __init__(self, info_file, project_url, data_folder, only_unknown):
         self.info_file = info_file
         info = yaml.load(open(info_file))
         p = info['project']
@@ -54,7 +58,14 @@ class PreProject:
         self.has_been_imported = False
         self.import_status = None
         for s in p['stacks']:
-            self.stacks.append( PreStack( s, project_url, data_folder ) )
+            self.stacks.append( PreStack( s, project_url, data_folder, only_unknown ) )
+        if only_unknown:
+            # Mark this project as already known if all stacks are already known
+            already_known_stacks = 0
+            for s in self.stacks:
+                if s.already_known:
+                    already_known_stacks = already_known_stacks + 1
+            self.already_known = (already_known_stacks == len(self.stacks))
 
 def find_zoom_levels_and_file_ext( base_folder, stack_folder ):
     """ Looks at the first file of the first zoom level and
@@ -94,7 +105,7 @@ def find_zoom_levels_and_file_ext( base_folder, stack_folder ):
             break
     return (file_ext, zoom_level)
 
-def find_project_folders(image_base, path, filter_term, depth=1):
+def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):
     """ Finds projects in a folder structure by testing for the precense of an
     info/project YAML file.
     """
@@ -116,10 +127,13 @@ def find_project_folders(image_base, path, filter_term, depth=1):
                     if os.sep != '/':
                         url_dir = url_dir.replace("\\", "/")
                     project_url = urljoin(image_base, url_dir)
-                    project = PreProject( info_file, project_url, short_name )
-                    projects[current_file] = project
-                    # Remember this project
-                    dirs.append( (current_file, short_name) )
+                    project = PreProject( info_file, project_url, short_name, only_unknown )
+                    if only_unknown and project.already_known:
+                        continue
+                    else:
+                        projects[current_file] = project
+                        # Remember this project if it isn't available yet
+                        dirs.append( (current_file, short_name) )
                 except Exception as e:
                     not_readable.append( (info_file, e) )
             elif depth > 1:
@@ -152,7 +166,7 @@ class ImportingWizard(SessionWizardView):
             if len(filter_term) == "":
                 filter_term = "*"
             folders, projects, not_readable = find_project_folders(
-                base_url, data_dir, filter_term)
+                base_url, data_dir, filter_term, only_unknown)
             # Save these settings in the form
             form.folders = folders
             form.not_readable = not_readable

@@ -1471,6 +1471,12 @@ WHERE code_type = 'project_tags_data_view';
 
         '2013-02-01T13:01:10' => new CreateUserProfilesForDjangoAuthUsers(),
 
+        '2013-02-01T13:53:00' => new Migration(
+                'Remove project_user table as permissions are now taken care of by Guardian',
+                '
+DROP TABLE "project_user" CASCADE;
+'),
+
 	// INSERT NEW MIGRATIONS HERE
 	// (Don't remove the previous line, or inserting migration templates
 	// won't work.)

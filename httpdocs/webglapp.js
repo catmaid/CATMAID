@@ -125,6 +125,7 @@ var WebGLApp = new function () {
     renderer = new THREE.WebGLRenderer({ antialias: true });
     //renderer = new THREE.CanvasRenderer();
     renderer.setSize( self.divWidth, self.divHeight );
+    //renderer.sortObjects = false;
 
     // Follow size
     // THREEx.WindowResize.bind(renderer, camera);
@@ -239,6 +240,110 @@ var WebGLApp = new function () {
       return ("0" + parseInt(x).toString(16)).slice(-2);
     }
     return "0x" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
+  }
+
+  var Assembly = function( assembly_data )
+  {
+
+    var self = this;
+    self.assembly_id = assembly_data.assembly_id;
+    self.assembly_slices = assembly_data.slices;
+    var planes = [], contours = [];
+
+    var ProcessSlice = function( index ) {
+      console.log('index', index, self.assembly_slices.length, self.assembly_slices)
+      if( index === self.assembly_slices.length ) {
+        console.log('return;', index)
+        return;
+      } 
+      var slice = assembly_data.slices[ index ];
+      console.log('register', index);
+      requestQueue.register(django_url + project.id + "/stack/" + project.focusedStack.id + '/slice/contour', "GET", {
+          nodeid: self.assembly_slices[ index ].node_id
+      }, function (status, text, xml) {
+              if (status === 200) {
+                  if (text && text !== " ") {
+                      var e = $.parseJSON(text);
+                      if (e.error) {
+                          alert(e.error);
+                      } else {
+                          for (var i=0; i<e.length; i++) {
+                            var contourPoints = [];
+                            for (var j=0; j<e[i].length; j = j + 2) {
+                              contourPoints.push( new THREE.Vector2 ( e[i][j]*resolution.x*scale, 
+                                -e[i][j+1]*resolution.y*scale+dimension.y*resolution.y*scale ) );
+                            }
+                            console.log('contour points', contourPoints)
+                            self.addContour( contourPoints, slice.bb_center_x, slice.bb_center_y, slice.sectionindex );
+                            index++;
+                            ProcessSlice( index );
+                          }
+                      }
+                  }
+              }
+      });
+    }
+
+    ProcessSlice( 0 );
+
+/*
+    for(var node_id in assembly_data.slices ) {
+      if( assembly_data.slices.hasOwnProperty( node_id ) ) {
+        var slice = assembly_data.slices[ node_id ];
+        console.log('process slice', node_id, slice)
+
+        var img = new THREE.MeshBasicMaterial({
+            map:THREE.ImageUtils.loadTexture(slice.url)
+        });
+        img.map.needsUpdate = true;
+        img.transparent = true;
+
+        var plane = new THREE.Mesh(new THREE.PlaneGeometry(slice.bbwidth*resolution.x*scale, slice.bbheight*resolution.y*scale),img);
+        plane.overdraw = true;
+        plane.doubleSided = true;
+        // return [point[0],-point[1]+dimension.y,-point[2] ];
+        plane.position.x = slice.bb_center_x*resolution.x*scale;
+        plane.position.y = -slice.bb_center_y*resolution.y*scale+dimension.y*resolution.y*scale;
+        plane.position.z = -slice.sectionindex*resolution.z*scale;
+        planes.push( plane );
+        */
+
+
+
+    this.addContour = function( contourPoints, bb_center_x, bb_center_y, sectionindex ) {
+        console.log('add contours for slice', contourPoints, bb_center_x, bb_center_y, sectionindex)
+        var extrusionSettings = {
+          size: 10, height: 4, curveSegments: 3, amount:5,
+          //bevelThickness: 0.5, bevelSize: 0.5, bevelEnabled: false,
+          bevelThickness:1,
+          material: 0, extrudeMaterial: 1
+        };
+
+        var contourShape = new THREE.Shape( contourPoints );
+        var contourGeometry = new THREE.ExtrudeGeometry( contourShape, extrusionSettings );
+        
+        var materialFront = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+        var materialSide = new THREE.MeshBasicMaterial( { color: 0xff8800 } );
+        var materialArray = [ materialFront, materialSide ];
+        contourGeometry.materials = materialArray;
+        
+        var contour = new THREE.Mesh( contourGeometry, new THREE.MeshFaceMaterial() );
+
+        contour.position.x = bb_center_x*resolution.x*scale;
+        contour.position.y = -bb_center_y*resolution.y*scale+dimension.y*resolution.y*scale;
+        contour.position.z = -sectionindex*resolution.z*scale;
+        contours.push( contour );
+
+    }
+
+    // TODO: use extrusion
+    // http://stemkoski.github.com/Three.js/Extrusion.html
+    this.add_to_scene = function() {
+      for(var i = 0; i<contours.length; i++) {
+        console.log('add contour to scene', contours[i])
+        scene.add( contours[i] );
+      }
+    }
   }
 
   var Skeleton = function( skeleton_data )
@@ -597,6 +702,9 @@ var WebGLApp = new function () {
   // array of skeletons
   var skeletons = new Object();
 
+  // all assemblies
+  var assemblies = {};
+
   // active node geometry
   var active_node;
 
@@ -705,8 +813,28 @@ var WebGLApp = new function () {
   }
 
   this.saveImage = function() {
+
+      // self.render();
+      // window.open(renderer.domElement.toDataURL("image/png"));
+      for(var idx in assemblies) {
+        if(assemblies.hasOwnProperty(idx) ) {
+          console.log('add assembly to scene', idx);
+          assemblies[idx].add_to_scene();
+        }
+      }
       self.render();
-      window.open(renderer.domElement.toDataURL("image/png"));
+  }
+
+  this.addAssembly = function( assembly_data )
+  {
+    
+    if( !assemblies.hasOwnProperty( assembly_data.assembly_id ) ) {
+      console.log('add assembly', assembly_data);
+      assemblies[ assembly_data.assembly_id ] = new Assembly( assembly_data );
+    } else {
+      console.log('assembly already existed')
+    }
+    return true;
   }
 
   this.randomizeColors = function()
@@ -1098,11 +1226,12 @@ var WebGLApp = new function () {
     self.render();
   }
 
-  self.render = function render() {
+  var render = function render() {
     controls.update();
     renderer.clear();
     renderer.render( scene, camera );
   }
+  self.render = render;
 
   self.addSkeletonToTable = function ( skeleton ) {
 

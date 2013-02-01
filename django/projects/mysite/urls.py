@@ -53,10 +53,11 @@ urlpatterns += patterns(
 
 
     # Segmentation tool
-    (r'^(?P<project_id>\d+)/assembly/component-count$', 'catmaid.control.component_count'),
+    (r'^(?P<project_id>\d+)/assembly/create-assembly-and-neuron$', 'catmaid.control.create_assembly_and_neuron'),
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-at-location$', 'catmaid.control.slices_at_location'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice$', 'catmaid.control.get_slice'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/contour$', 'catmaid.control.slice_contour'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segments-for-slice$', 'catmaid.control.segments_for_slice'),
     
 

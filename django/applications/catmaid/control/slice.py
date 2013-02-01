@@ -84,84 +84,32 @@ def segments_for_slice(request, project_id=None, stack_id=None):
     stack = get_object_or_404(Stack, pk=stack_id)
     p = get_object_or_404(Project, pk=project_id)
 
-    segments = Segments.objects.filter(
+    # TODO: optimize with one query!
+
+    segments_right = Segments.objects.filter(
         stack = stack,
         project = p,
         origin_slice_id = sliceid,
         origin_section = sectionindex,
         segmenttype__gt = 1
-    ).all().values('segmentid','segmenttype','origin_section','origin_slice_id','target1_section',
-    'target1_slice_id','target2_section','target2_slice_id','direction',
+    ).all().values('segmentid','segmenttype','origin_section','origin_slice_id','target_section',
+    'target1_slice_id','target2_slice_id','direction',
     'center_distance','set_difference','cost','set_difference','set_difference_ratio',
     'aligned_set_difference','aligned_set_difference_ratio',
     'size','overlap','overlap_ratio','aligned_overlap','aligned_overlap_ratio').order_by('cost')
 
-    return HttpResponse(JSONEncoder().encode(list(segments)), mimetype="text/json")
+    return HttpResponse(JSONEncoder().encode(list(segments_right)), mimetype="text/json")
 
+def slice_contour(request, project_id=None, stack_id=None):
+    
+    node_id = str(request.GET.get('nodeid', '0'))
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
 
-def retrieve_components_for_location(project_id, stack_id, x, y, z, limit=10):
-    componentIds = {}
-    fpath = os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_componenttree.hdf'.format( project_id, stack_id ) )
-    with closing(h5py.File(fpath, 'r')) as hfile:
+    cnt = SliceContours.objects.filter(
+        stack = stack,
+        project = p,
+        node_id = node_id
+        )
 
-        image_data = hfile['connected_components/'+z+'/pixel_list_ids']
-        componentMinX = hfile['connected_components/'+z+'/min_x']
-        componentMinY = hfile['connected_components/'+z+'/min_y']
-        componentMaxX = hfile['connected_components/'+z+'/max_x']
-        componentMaxY = hfile['connected_components/'+z+'/max_y']
-        thresholdTable = hfile['connected_components/'+z+'/values']
-
-        length=image_data.len()
-
-        print >> sys.stderr, "extract components ...."
-        start = time.time()
-
-        #Merge all data into single array
-        #TODO:ID instead of length
-        merge=np.dstack((np.arange(length),componentMinX.value,componentMinY.value,componentMaxX.value,componentMaxY.value,thresholdTable.value))
-        # FIXME: use np.where instead of merging into a new array
-        selectionMinXMaxXMinYMaxY=None
-
-        selectionMinX = merge[merge[...,1]<=x]
-        if len(selectionMinX):
-            selectionMinXMaxX = selectionMinX[selectionMinX[...,3]>=x]
-            if len(selectionMinXMaxX):
-                selectionMinXMaxXMinY = selectionMinXMaxX[selectionMinXMaxX[...,2]<=y]
-                if len(selectionMinXMaxXMinY):
-                    selectionMinXMaxXMinYMaxY = selectionMinXMaxXMinY[selectionMinXMaxXMinY[...,4]>=y]
-
-        delta = time.time() - start
-        print >> sys.stderr, "took", delta
-
-        print >> sys.stderr, "create components ...."
-        start = time.time()
-
-        if selectionMinXMaxXMinYMaxY is not None:
-
-            idx = np.argsort(selectionMinXMaxXMinYMaxY[:,5])
-            limit_counter = 0
-            for i in idx:
-                if limit_counter >= limit:
-                    break
-                row = selectionMinXMaxXMinYMaxY[i,:]
-                componentPixelStart=hfile['connected_components/'+z+'/begin_indices'].value[row[0]].copy()
-                componentPixelEnd=hfile['connected_components/'+z+'/end_indices'].value[row[0]].copy()
-                data=hfile['connected_components/'+z+'/pixel_list_0'].value[componentPixelStart:componentPixelEnd].copy()
-
-                # check containment of the pixel in the component
-                if not len(np.where((data['x'] == x) & (data['y'] == y))[0]):
-                    continue
-
-                componentIds[int(row[0])]={
-                    'minX': int(row[1]),
-                    'minY': int(row[2]),
-                    'maxX': int(row[3]),
-                    'maxY': int(row[4]),
-                    'threshold': row[5]
-                }
-                limit_counter += 1
-
-        delta = time.time() - start
-        print >> sys.stderr, "took", delta
-
-    return componentIds
+    return HttpResponse(json.dumps([c.coordinates for c in cnt]), mimetype="text/json")

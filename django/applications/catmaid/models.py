@@ -498,6 +498,14 @@ class SkeletonlistDashboard(UserFocusedModel):
     skeleton_list = IntegerArrayField()
     description = models.TextField()
 
+class SliceContours(UserFocusedModel):
+
+    coordinates = IntegerArrayField()
+
+    stack = models.ForeignKey(Stack)
+    node_id = models.CharField(max_length=255,db_index=True) # convention: {sectionindex}_{slide_id}
+    length = models.FloatField(null=True)
+
 class Segments(UserFocusedModel):
 
     creation_time = models.DateTimeField(default=now)
@@ -511,9 +519,8 @@ class Segments(UserFocusedModel):
     segmenttype = models.IntegerField(db_index=True)
     origin_section = models.IntegerField(db_index=True)
     origin_slice_id = models.IntegerField(db_index=True)
-    target1_section = models.IntegerField(db_index=True,null=True)
+    target_section = models.IntegerField(db_index=True,null=True)
     target1_slice_id = models.IntegerField(db_index=True,null=True)
-    target2_section = models.IntegerField(db_index=True,null=True)
     target2_slice_id = models.IntegerField(db_index=True,null=True)
     cost = models.FloatField()
     direction = models.BooleanField() # 0:LR if origin_section< target_section / 1:RL as boolean, otherwise

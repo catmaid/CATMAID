@@ -164,7 +164,7 @@ function CanvasLayer( stack, tool )
     //view.style.position = 'absolute';
     self.view = view;
 
-    // XXX: add it here to DOM?
+    // XXX: add it here to DOM
     stack.getView().appendChild( view );
 
     var canvashtml = document.createElement("canvas");
@@ -184,7 +184,7 @@ function CanvasLayer( stack, tool )
 
     this.unregister = function()
     {
-        stack.getView().removeChild( view );
+        //self.stack.getView().removeChild( view );
     };
 
 }

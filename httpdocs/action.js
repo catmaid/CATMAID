@@ -276,7 +276,6 @@ var editToolActions = [
           alert('Segmentation Tool only works on zoom-level 0!');
           return;
         }
-        WindowMaker.show('segmentstable-widget');
         project.setTool( new SegmentationTool() );
      }
   }),
@@ -317,6 +316,24 @@ var segmentationWindowActions = [
     }
   }),
 
+  new Action({
+    helpText: "Show 3D WebGL view",
+    buttonID: "view_3d_webgl_button",
+    buttonName: '3d-view-webgl',
+    run: function (e) {
+      WindowMaker.show('3d-webgl-view');
+    }
+  }),
+
+  new Action({
+    helpText: "Show object tree",
+    buttonID: "data_button_tree",
+    buttonName: 'tree',
+    run: function (e) {
+      WindowMaker.show('object-tree');
+      return true;
+    }
+  }),
 
 ];
 

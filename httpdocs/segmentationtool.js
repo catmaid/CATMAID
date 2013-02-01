@@ -22,6 +22,8 @@ function SegmentationTool()
 
     // the canvas layer using fabric.js
     
+    var automatic_propagation = false, propagation_counter = 20;
+    // more criteria, e.g. min_overlap_ratio_threshold=0.8
 
     // base url for slices, filename ending
     var slice_base_url = 'http://localhost/slices/',
@@ -72,9 +74,11 @@ function SegmentationTool()
         self.destroyToolbar();
 
         // remove the view element from the DOM
-        canvasLayer.unregister();
+        // canvasLayer.unregister();
 
         self.stack.removeLayer( "CanvasLayer" );
+
+        canvasLayer;
 
         self.stack = null;
     }
@@ -102,16 +106,9 @@ function SegmentationTool()
      */
     this.register = function( parentStack )
     {
-        console.log('SegmentationTool register');
+        console.log('SegmentationTool register', parentStack);
         self.stack = parentStack;
-        if (canvasLayer && self.stack) {
-            if (self.stack !== parentStack) {
-                self.stack.removeLayer( canvasLayer );
-                self.createCanvasLayer();
-            }
-        } else {
-            self.createCanvasLayer();
-        }
+        self.createCanvasLayer();
         self.createToolbar();
         // TODO: assume graph widget open
         // $("#cyto").cytoscape({ zoom: 1});
@@ -407,6 +404,39 @@ function SegmentationTool()
     }) );
 
     this.addAction( new Action({
+        helpText: "Visualize assembly",
+        keyShortcuts: {
+            'U': [ 85 ]
+        },
+        run: function (e) {
+            self.visualize_assembly();
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Reset propagation counter",
+        keyShortcuts: {
+            'R': [ 82 ]
+        },
+        run: function (e) {
+            propagation_counter = 20;
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Toggle propagation",
+        keyShortcuts: {
+            'T': [ 84 ]
+        },
+        run: function (e) {
+            automatic_propagation = !automatic_propagation;
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
         helpText: "Delete slice group",
         keyShortcuts: {
             'B': [ 66 ]
@@ -501,12 +531,16 @@ function SegmentationTool()
         canvasLayer.canvas.clear();
         for (var node_id in allvisible_slices[current_section]) {
             if( allvisible_slices[current_section].hasOwnProperty(node_id) ) {
-                if( allslices[ node_id ].img.filters.length > 0) {
-                    allslices[ node_id ].img.filters = new Array();
-                    allslices[ node_id ].img.applyFilters(canvasLayer.canvas.renderAll.bind(canvasLayer.canvas));
+                if( allslices.hasOwnProperty( node_id) ) {
+                    if( allslices[ node_id ].img.filters.length > 0) {
+                        allslices[ node_id ].img.filters = new Array();
+                        allslices[ node_id ].img.applyFilters(canvasLayer.canvas.renderAll.bind(canvasLayer.canvas));
+                    }
+                    allslices[ node_id ].center_on_canvas();
+                    canvasLayer.canvas.add( allslices[ node_id ].img );                    
+                } else {
+                    console.log('console log can not update slice', node_id, ' but it should be visible');
                 }
-                allslices[ node_id ].center_on_canvas();
-                canvasLayer.canvas.add( allslices[ node_id ].img );
             }
         }
         if( current_active_slice ) {
@@ -532,42 +566,42 @@ function SegmentationTool()
 
         $('#segmentstable').empty();
         var right_segments = allslices[ node_id ].segments_right;
-            $('#segmentstable').append('<tr>'+
-                '<td>segmentid</td>' +
-                '<td>t</td>' +
-                '<td>target ids</td>' +
-                '<td>cost</td>' +
-                '<td>center_distance</td>' +
-                '<td>set_difference</td>' +
-                '<td>set_difference_ratio</td>' +
-                '<td>al_set_difference</td>' +
-                '<td>al_set_difference_ratio</td>' +
-                '<td>size</td>' +
-                '<td>overlap</td>' +
-                '<td>overlap_ratio</td>' +
-                '<td>al_overlap</td>' +
-                '<td>al_overlap_ratio</td>' +
-                '</tr>');
+        $('#segmentstable').append('<tr>'+
+            '<td>segments right</td>' +
+            '<td>t</td>' +
+            '<td>target ids</td>' +
+            '<td>cost</td>' +
+            '<td>center_distance</td>' +
+            '<td>set_difference</td>' +
+            '<td>set_difference_ratio</td>' +
+            '<td>al_set_difference</td>' +
+            '<td>al_set_difference_ratio</td>' +
+            '<td>size</td>' +
+            '<td>overlap</td>' +
+            '<td>overlap_ratio</td>' +
+            '<td>al_overlap</td>' +
+            '<td>al_overlap_ratio</td>' +
+            '</tr>');
         for(var i=0; i<right_segments.length; i++ ) {
             // only for continuations
             var sliceimage = '';
             if( right_segments[i].segmenttype === 2 ) {
                  sliceimage = '<img style="width: 100%;" src="' +
-                    get_slice_image_url_from_section_and_slice( right_segments[i].target1_section,
+                    get_slice_image_url_from_section_and_slice( right_segments[i].target_section,
                         right_segments[i].target1_slice_id) + '" >';
             } else if( right_segments[i].segmenttype === 3 ) {
                  sliceimage = '<img style="width: 100%;" src="' +
-                    get_slice_image_url_from_section_and_slice( right_segments[i].target1_section,
+                    get_slice_image_url_from_section_and_slice( right_segments[i].target_section,
                         right_segments[i].target1_slice_id) + '" ><br />' +
                     '<img style="width: 100%;" src="' +
-                    get_slice_image_url_from_section_and_slice( right_segments[i].target2_section,
+                    get_slice_image_url_from_section_and_slice( right_segments[i].target_section,
                         right_segments[i].target2_slice_id) + '" >';
             }
             $('#segmentstable').append('<tr>'+
                 //'<td>'+right_segments[i].segmentid+'</td>' +
                 '<td style="background-color:#000000">'+sliceimage+'</td>' +
                 '<td>'+right_segments[i].segmenttype+'</td>' +
-                '<td>'+right_segments[i].target1_section+'//'+right_segments[i].target1_slice_id+','+right_segments[i].target2_slice_id+'</td>' +
+                '<td>'+right_segments[i].target_section+'//'+right_segments[i].target1_slice_id+','+right_segments[i].target2_slice_id+'</td>' +
                 '<td>'+right_segments[i].cost+'</td>' +
                 '<td>'+right_segments[i].center_distance+'</td>' +
                 '<td>'+right_segments[i].set_difference+'</td>' +
@@ -581,6 +615,97 @@ function SegmentationTool()
                 '<td>'+right_segments[i].aligned_overlap_ratio+'</td>' +
                 '</tr>');
         }
+
+        var left_segments = allslices[ node_id ].segments_left;
+        $('#segmentstable').append('<tr>'+
+            '<td>segments left</td>' +
+            '<td>t</td>' +
+            '<td>target ids</td>' +
+            '<td>cost</td>' +
+            '<td>center_distance</td>' +
+            '<td>set_difference</td>' +
+            '<td>set_difference_ratio</td>' +
+            '<td>al_set_difference</td>' +
+            '<td>al_set_difference_ratio</td>' +
+            '<td>size</td>' +
+            '<td>overlap</td>' +
+            '<td>overlap_ratio</td>' +
+            '<td>al_overlap</td>' +
+            '<td>al_overlap_ratio</td>' +
+            '</tr>');
+        for(var i=0; i<left_segments.length; i++ ) {
+            // only for continuations
+            var sliceimage = '';
+            if( left_segments[i].segmenttype === 2 ) {
+                 sliceimage = '<img style="width: 100%;" src="' +
+                    get_slice_image_url_from_section_and_slice( left_segments[i].target_section,
+                        left_segments[i].target1_slice_id) + '" >';
+            } else if( left_segments[i].segmenttype === 3 ) {
+                 sliceimage = '<img style="width: 100%;" src="' +
+                    get_slice_image_url_from_section_and_slice( left_segments[i].target_section,
+                        left_segments[i].target1_slice_id) + '" ><br />' +
+                    '<img style="width: 100%;" src="' +
+                    get_slice_image_url_from_section_and_slice( left_segments[i].target_section,
+                        left_segments[i].target2_slice_id) + '" >';
+            }
+            $('#segmentstable').append('<tr>'+
+                //'<td>'+left_segments[i].segmentid+'</td>' +
+                '<td style="background-color:#000000">'+sliceimage+'</td>' +
+                '<td>'+left_segments[i].segmenttype+'</td>' +
+                '<td>'+left_segments[i].target_section+'//'+left_segments[i].target1_slice_id+','+left_segments[i].target2_slice_id+'</td>' +
+                '<td>'+left_segments[i].cost+'</td>' +
+                '<td>'+left_segments[i].center_distance+'</td>' +
+                '<td>'+left_segments[i].set_difference+'</td>' +
+                '<td>'+left_segments[i].set_difference_ratio+'</td>' +
+                '<td>'+left_segments[i].aligned_set_difference+'</td>' +
+                '<td>'+left_segments[i].aligned_set_difference_ratio+'</td>' +
+                '<td>'+left_segments[i].size+'</td>' +
+                '<td>'+left_segments[i].overlap+'</td>' +
+                '<td>'+left_segments[i].overlap_ratio+'</td>' +
+                '<td>'+left_segments[i].aligned_overlap+'</td>' +
+                '<td>'+left_segments[i].aligned_overlap_ratio+'</td>' +
+                '</tr>');
+        }
+
+    }
+
+    this.visualize_assembly = function() {
+        // need open 3d context
+
+        if( !self.current_active_assembly ) {
+            alert('Need to have an active assembly to visualize');
+            return;
+        }
+
+        // generate assembly data structure to add
+        var assembly_data = {
+            assembly_id: self.current_active_assembly,
+            slices: []
+        }
+        // loop through all sections to collect all visible slices
+        // use slices_grouping
+        var slice;
+        for(var idx in slices_grouping) {
+            if( slices_grouping.hasOwnProperty( idx ) ) {
+                slice = allslices[ idx ];
+                assembly_data.slices.push({
+                    node_id: slice.node_id,
+                    min_x: slice.min_x,
+                    max_x: slice.max_x,
+                    min_y: slice.min_y,
+                    max_y: slice.max_y,
+                    bb_center_x: slice.bb_center_x,
+                    bb_center_y: slice.bb_center_y,
+                    sectionindex: slice.sectionindex,
+                    bbwidth: slice.max_x-slice.min_x,
+                    bbheight: slice.max_y-slice.min_y,
+                    url: slice.get_slice_image_url()
+                })
+            }
+        }
+
+        // pass it to webgl app (which adds the assembly to the scene)
+        WebGLApp.addAssembly( assembly_data );
     }
 
     this.delete_active_slice = function() {
@@ -716,10 +841,7 @@ function SegmentationTool()
             };            
         }
 
-        slice.fetch_image( trigger_update )
-
-        if( fetch_segments_for_slice )
-            slice.fetch_segments( fetch_segments_for_slice )
+        slice.fetch_image( trigger_update, fetch_segments_for_slice )
     }
 
     var make_visible = function( node_id ) {
@@ -804,7 +926,7 @@ function SegmentationTool()
 
 
     var add_slices_group_from_segments = function( segments, selected_segment_index ) {
-        var prototype_slice = cc_slice(segments[ selected_segment_index ].target1_section,
+        var prototype_slice = cc_slice(segments[ selected_segment_index ].target_section,
                 segments[ selected_segment_index ].target1_slice_id);
         slices_grouping[ prototype_slice ] = {};
         slices_grouping[ prototype_slice ]['slicelist'] = [];
@@ -815,10 +937,10 @@ function SegmentationTool()
             if( sidx !== selected_segment_index ) {
                 sslice = segments[ sidx ];
                 if( segments[ sidx ].segmenttype === 2) {
-                    slices_grouping[ prototype_slice ]['slicelist'].push( [ cc_slice( sslice.target1_section, sslice.target1_slice_id) ] );
+                    slices_grouping[ prototype_slice ]['slicelist'].push( [ cc_slice( sslice.target_section, sslice.target1_slice_id) ] );
                 } else if( segments[ sidx ].segmenttype === 3) {
-                    slices_grouping[ prototype_slice ]['slicelist'].push( [ cc_slice( sslice.target1_section, sslice.target1_slice_id),
-                     cc_slice( sslice.target2_section, sslice.target2_slice_id) ] );
+                    slices_grouping[ prototype_slice ]['slicelist'].push( [ cc_slice( sslice.target_section, sslice.target1_slice_id),
+                     cc_slice( sslice.target_section, sslice.target2_slice_id) ] );
                 }
             } 
         }
@@ -845,33 +967,55 @@ function SegmentationTool()
     }
 
     this.clickXY = function( e ) {
-        // TODO: enable again
-        // require a number as assembly id
-        /*if (!self.current_active_assembly || !parseInt(self.current_active_assembly, 10) > 0) {
-            alert('Please select an assembly!');
-            return;
-        }*/
-        var fieldOfView = canvasLayer.getFieldOfViewParameters(),
-            x = e.offsetX,
-            y = e.offsetY;
-
-        requestQueue.register(django_url + project.id + "/stack/" + self.stack.id + '/slices-at-location', "GET", {
-            x: getStackXFromCanvasX(x),
-            y: getStackYFromCanvasY(y),
-            scale : 0.5, // defined as 1/2**zoomlevel
-            z : self.stack.z}, function (status, text, xml) {
-                if (status === 200) {
-                    if (text && text !== " ") {
-                        var e = $.parseJSON(text);
-                        if (e.error) {
-                            alert(e.error);
-                        } else {
-                            add_slices_group( e );
+        // TODO: should in fact create one new assembly only if in the retrieved set of
+        // slices, none has an assembly ID
+        self.current_active_assembly = 80;
+        if (!self.current_active_assembly || !parseInt(self.current_active_assembly, 10) > 0) {
+            requestQueue.register(django_url + project.id + '/assembly/create-assembly-and-neuron', "GET", {},
+                function (status, text, xml) {
+                    if (status === 200) {
+                        if (text && text !== " ") {
+                            var e = $.parseJSON(text);
+                            if (e.error) {
+                                alert(e.error);
+                            } else {
+                                $('#growl-alert').growlAlert({
+                                    autoShow: true,
+                                    content: "Created a new assembly and neuron" + e.assembly_id,
+                                    title: 'Warning',
+                                    position: 'top-right',
+                                    delayTime: 2000,
+                                    onComplete: function() {  }
+                                });
+                                self.current_active_assembly = e.assembly_id;
+                                console.log('new assembly', self.current_active_assembly);
+                            }
                         }
                     }
-                }
-        });
+            });
+        } else {
+            console.log('use current assembly', self.current_active_assembly);
+            var fieldOfView = canvasLayer.getFieldOfViewParameters(),
+                x = e.offsetX,
+                y = e.offsetY;
 
+            requestQueue.register(django_url + project.id + "/stack/" + self.stack.id + '/slices-at-location', "GET", {
+                x: getStackXFromCanvasX(x),
+                y: getStackYFromCanvasY(y),
+                scale : 0.5, // defined as 1/2**zoomlevel
+                z : self.stack.z}, function (status, text, xml) {
+                    if (status === 200) {
+                        if (text && text !== " ") {
+                            var e = $.parseJSON(text);
+                            if (e.error) {
+                                alert(e.error);
+                            } else {
+                                add_slices_group( e );
+                            }
+                        }
+                    }
+            });
+        }
         return;
     }
 
@@ -904,7 +1048,7 @@ function SegmentationTool()
                 console.log('add continuation')
                     demoNodes.push({
                     data: {
-                        id: "n" + seg.target1_section + "_" + seg.target1_slice_id,
+                        id: "n" + seg.target_section + "_" + seg.target1_slice_id,
                         position: { x: 100+idx*60, y: 100+idx*60 }
                     },
                 });
@@ -974,8 +1118,8 @@ function SegmentationTool()
         this.center_x = slice.center_x;
         this.center_y = slice.center_y;
         // bb center
-        var bb_center_x = Math.round(self.min_x+(self.max_x-self.min_x)/2);
-        var bb_center_y = Math.round(self.min_y+(self.max_y-self.min_y)/2);
+        this.bb_center_x = Math.round(self.min_x+(self.max_x-self.min_x)/2);
+        this.bb_center_y = Math.round(self.min_y+(self.max_y-self.min_y)/2);
 
         this.threshold = slice.threshold;
         this.size = slice.threshold;
@@ -1014,13 +1158,13 @@ function SegmentationTool()
             console.log('minx/y', self.min_x, self.min_y)
             */
             self.img.set({
-                left: getCanvasXFromStackX(bb_center_x),
-                top: getCanvasYFromStackY(bb_center_y)
+                left: getCanvasXFromStackX(self.bb_center_x),
+                top: getCanvasYFromStackY(self.bb_center_y)
             });
         };
 
-        this.fetch_image = function( trigger_update ) {
-            // console.log('fetch image', trigger_update, self)
+        this.fetch_image = function( trigger_update, fetch_segments_for_slice ) {
+             console.log('fetch image', trigger_update, fetch_segments_for_slice)
             fabric.Image.fromURL(self.get_slice_image_url(), function(img)
             {
                 //console.log('image fetched!', img)
@@ -1048,6 +1192,11 @@ function SegmentationTool()
                 if ( trigger_update ) {
                     update();
                 }
+
+                if( fetch_segments_for_slice ) {
+                    self.fetch_segments( fetch_segments_for_slice )   
+                }
+                 
                     
             });
         };
@@ -1088,6 +1237,15 @@ function SegmentationTool()
                                         }
                                     }
                                 }
+
+                                // if automated fetching is on and conditions hold, move to the next!
+                                if( automatic_propagation && propagation_counter > 0 ) {
+                                    propagation_counter--;
+                                    console.log('propgation counter', propagation_counter, 'go with next!')
+                                    self.fetch_slices_for_selected_segment( true );
+                                    
+                                }
+
 
                             }
                         }
@@ -1158,6 +1316,11 @@ function SegmentationTool()
         this.get_slice_image_url = function() {
             return slice_base_url + 
                 generate_path_for_slice( this.sectionindex, this.slice_id ) +
+                slice_filename_extension;
+        };
+
+        this.get_slice_relative_image_url = function() {
+            return generate_path_for_slice( this.sectionindex, this.slice_id ) +
                 slice_filename_extension;
         };
 

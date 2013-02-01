@@ -169,12 +169,24 @@ function Project( pid )
 		document.getElementById( "toolbar_trace" ).style.display = "none";
 	}
 	
+    this.hideToolboxes = function()
+	{
+		document.getElementById( "toolbox_segmentation" ).style.display = "none";
+		document.getElementById( "toolbox_data" ).style.display = "none";
+	}
 	
 	this.setTool = function( newTool )
 	{
 		if ( tool )
 			tool.destroy();
 		tool = newTool;
+		
+		self.hideToolboxes();
+        if( self.getTool().toolname === 'segmentationtool' ) {
+            document.getElementById( "toolbox_segmentation" ).style.display = "block";
+        } else if( self.getTool().toolname === 'tracingtool' ) {
+        	document.getElementById( "toolbox_data" ).style.display = "block";
+        }
 		
 		if ( !self.focusedStack && stacks.length > 0 ) {
 			self.setFocusedStack( stacks[ 0 ] )
@@ -277,14 +289,14 @@ function Project( pid )
 		editable = bool;
 		if (editable) {
 			document.getElementById("toolbox_edit").style.display = "block";
-			document.getElementById("toolbox_data").style.display = "block";
-			document.getElementById("toolbox_segmentation").style.display = "block";
+			//document.getElementById("toolbox_data").style.display = "block";
+			//document.getElementById("toolbox_segmentation").style.display = "block";
 		}
 		else 
 		{
 			document.getElementById("toolbox_edit").style.display = "none";
-			document.getElementById("toolbox_data").style.display = "none";
-			document.getElementById("toolbox_segmentation").style.display = "none";
+			//document.getElementById("toolbox_data").style.display = "none";
+			//document.getElementById("toolbox_segmentation").style.display = "none";
 		}
 		window.onresize();
 		

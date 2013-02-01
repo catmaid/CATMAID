@@ -8,12 +8,14 @@ from catmaid.models import Project, DataView, Stack, ProjectStack
 
 class ProjectAdmin(GuardedModelAdmin):
     list_display = ('title', 'public')
+    search_fields = ['title']
     
 #    def has_change_permission(self, request, obj=None):
 #        pass
 
 class StackAdmin(GuardedModelAdmin):
     list_display = ('title', 'dimension', 'resolution', 'num_zoom_levels', 'image_base')
+    search_fields = ['title', 'image_base']
 
 class DataViewConfigWidget(forms.widgets.Textarea):
     def render(self, name, value, attrs=None):

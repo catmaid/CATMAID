@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from catmaid.models import CELL_BODY_CHOICES, \
     ClassInstanceClassInstance, Relation, Class, ClassInstance, \
     Project, User, Treenode, TreenodeConnector, Connector, Stack, ProjectStack, \
-    TreenodeClassInstance, ConnectorClassInstance, Location, ProjectUser, Overlay, \
+    TreenodeClassInstance, ConnectorClassInstance, Location, Overlay, \
     BrokenSlice
 
 from catmaid.control.authentication import *

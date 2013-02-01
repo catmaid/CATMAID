@@ -177,19 +177,6 @@ class Project(models.Model):
     def __unicode__(self):
         return self.title
 
-
-class ProjectUser(models.Model):
-    #class Meta:
-    #    db_table = "project_user"
-    #    managed = False
-    project = models.ForeignKey(Project)
-    user = models.ForeignKey(User)
-
-    can_edit_any = models.BooleanField(default=True)
-    can_view_any = models.BooleanField(default=True)
-    inverse_mouse_wheel = models.BooleanField(default=False)
-
-
 class Stack(models.Model):
     class Meta:
         db_table = "stack"

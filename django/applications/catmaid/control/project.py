@@ -61,7 +61,7 @@ def extend_projects(request, projects):
     """ Adds the properties is_editable and is_catalogueable to all
     projects passed.
     """
-    # Mark projects that are editable according to the project_user table:
+    # Mark projects that are editable (administerable)
     if request.user.is_authenticated():
         # Create sets of projects that are administrable and annotatable
         # by the current user and unify them to one set. This will only

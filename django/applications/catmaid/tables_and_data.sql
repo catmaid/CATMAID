@@ -169,13 +169,6 @@ CREATE TABLE project_stack (
     id integer DEFAULT nextval('project_stack_id_seq'::regclass) NOT NULL
 );
 COMMENT ON COLUMN project_stack.translation IS 'nanometer';
-CREATE TABLE project_user (
-    project_id integer NOT NULL,
-    user_id integer NOT NULL,
-    can_edit_any boolean DEFAULT false,
-    can_view_any boolean DEFAULT false,
-    inverse_mouse_wheel boolean DEFAULT false
-);
 CREATE TABLE relation (
     relation_name character varying(255) NOT NULL,
     uri text,
@@ -498,12 +491,6 @@ INSERT INTO project_stack (project_id, stack_id, translation, id) VALUES (1, 1, 
 INSERT INTO project_stack (project_id, stack_id, translation, id) VALUES (3, 3, '(0,0,0)', 2);
 INSERT INTO project_stack (project_id, stack_id, translation, id) VALUES (5, 5, '(0,0,0)', 3);
 INSERT INTO project_stack (project_id, stack_id, translation, id) VALUES (5, 6, '(0,0,0)', 4);
-INSERT INTO project_user (project_id, user_id, can_edit_any, can_view_any, inverse_mouse_wheel) VALUES (1, 1, true, true, false);
-INSERT INTO project_user (project_id, user_id, can_edit_any, can_view_any, inverse_mouse_wheel) VALUES (1, 3, true, true, false);
-INSERT INTO project_user (project_id, user_id, can_edit_any, can_view_any, inverse_mouse_wheel) VALUES (2, 3, true, true, false);
-INSERT INTO project_user (project_id, user_id, can_edit_any, can_view_any, inverse_mouse_wheel) VALUES (3, 1, true, true, false);
-INSERT INTO project_user (project_id, user_id, can_edit_any, can_view_any, inverse_mouse_wheel) VALUES (3, 3, true, true, false);
-INSERT INTO project_user (project_id, user_id, can_edit_any, can_view_any, inverse_mouse_wheel) VALUES (5, 3, true, true, false);
 INSERT INTO relation (id, user_id, creation_time, edition_time, project_id, relation_name, uri, description, isreciprocal) VALUES (8, 1, '2010-08-26 19:08:19.488588+02', '2010-08-26 19:08:19.488588+02', 3, 'is_a', NULL, NULL, false);
 INSERT INTO relation (id, user_id, creation_time, edition_time, project_id, relation_name, uri, description, isreciprocal) VALUES (9, 1, '2010-08-26 19:15:22.408939+02', '2010-08-26 19:15:22.408939+02', 3, 'part_of', NULL, NULL, false);
 INSERT INTO relation (id, user_id, creation_time, edition_time, project_id, relation_name, uri, description, isreciprocal) VALUES (10, 1, '2010-08-26 19:15:31.939089+02', '2010-08-26 19:15:31.939089+02', 3, 'model_of', NULL, NULL, false);
@@ -775,8 +762,6 @@ ALTER TABLE ONLY project
     ADD CONSTRAINT project_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY project_stack
     ADD CONSTRAINT project_stack_pkey PRIMARY KEY (id);
-ALTER TABLE ONLY project_user
-    ADD CONSTRAINT project_user_pkey PRIMARY KEY (project_id, user_id);
 ALTER TABLE ONLY relation
     ADD CONSTRAINT relation_id_key UNIQUE (id);
 ALTER TABLE ONLY relation_instance
@@ -870,10 +855,6 @@ ALTER TABLE ONLY project_stack
     ADD CONSTRAINT project_stack_project_id_fkey FOREIGN KEY (project_id) REFERENCES project(id);
 ALTER TABLE ONLY project_stack
     ADD CONSTRAINT project_stack_stack_id_fkey FOREIGN KEY (stack_id) REFERENCES stack(id);
-ALTER TABLE ONLY project_user
-    ADD CONSTRAINT project_user_project_id_fkey FOREIGN KEY (project_id) REFERENCES project(id);
-ALTER TABLE ONLY project_user
-    ADD CONSTRAINT project_user_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
 ALTER TABLE ONLY relation_instance
     ADD CONSTRAINT relation_instance_user_id_fkey FOREIGN KEY (user_id) REFERENCES "user"(id);
 ALTER TABLE ONLY relation

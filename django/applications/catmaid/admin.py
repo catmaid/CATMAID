@@ -2,9 +2,11 @@ from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
 from guardian.admin import GuardedModelAdmin
-from catmaid.models import Project, DataView, Stack, ProjectStack
+from catmaid.models import Project, DataView, Stack, ProjectStack, UserProfile
 
 class ProjectAdmin(GuardedModelAdmin):
     list_display = ('title', 'public')
@@ -82,7 +84,19 @@ class DataViewAdmin(GuardedModelAdmin):
         return super(DataViewAdmin, self).change_view(request, object_id,
             form_url, extra_context=extra_context)
 
+class ProfileInline(admin.StackedInline):
+    model = UserProfile
+    fk_name = 'user'
+    max_num = 1
+
+class CustomUserAdmin(UserAdmin):
+    inlines = [ProfileInline,]
+
+# Add model admin views
 admin.site.register(Project, ProjectAdmin)
 admin.site.register(DataView, DataViewAdmin)
 admin.site.register(Stack, StackAdmin)
 admin.site.register(ProjectStack)
+# Replace the user admin view with custom view
+admin.site.unregister(User)
+admin.site.register(User, CustomUserAdmin)

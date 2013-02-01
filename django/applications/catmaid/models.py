@@ -1,6 +1,7 @@
 from django import forms
 from django.db import models
 from django.db.models import Q
+from django.db.models.signals import post_save
 from datetime import datetime
 import sys
 import re
@@ -764,3 +765,24 @@ class DataView(models.Model):
                 dv.is_default = False
                 dv.save()
 
+class UserProfile(models.Model):
+    """ A class that stores a set of custom user preferences.
+    See: http://digitaldreamer.net/blog/2010/12/8/custom-user-profile-and-extend-user-admin-django/
+    """
+    user = models.OneToOneField(User)
+    inverse_mouse_wheel = models.BooleanField(default=False)
+
+    def __unicode__(self):
+        return self.user.username
+
+def create_user_profile(sender, instance, created, **kwargs):
+    """ Create the UserProfile when a new User is saved.
+    """
+    if created:
+        profile = UserProfile()
+        profile.user = instance
+        profile.save()
+
+# Connect the a User object's post save signal to the profile
+# creation
+post_save.connect(create_user_profile, sender=User)

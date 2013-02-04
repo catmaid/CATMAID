@@ -10,7 +10,7 @@ var allslices = new Object(), slices_grouping = new Object();
 // all selected slices per section
 var allvisible_slices = new Object();
 var current_active_slice = null;
-var canvasLayer = null;
+
 function SegmentationTool()
 {
     var self = this;
@@ -33,6 +33,7 @@ function SegmentationTool()
 
     // slices information
 
+    var canvasLayer = null;
 
     // cytoscape graph object
     var cy;
@@ -514,16 +515,20 @@ function SegmentationTool()
         return result;
     }
 
-    var goto_active_slice = function( ) {
-        if ( current_active_slice === null )
+    var goto_slice = function( node_id ) {
+        if ( !allslices.hasOwnProperty( node_id ) ) {
+            console.log('can not go to slice', node_id);
             return;
+        }
+
         self.stack.moveToPixel(
-            allslices[ current_active_slice ].sectionindex,
-            self.stack.y,
-            self.stack.x,
+            allslices[ node_id ].sectionindex,
+            allslices[ node_id ].center_y, //self.stack.y,
+            allslices[ node_id ].center_x, //self.stack.x,
             self.stack.s );
         update();
     }
+    this.goto_slice = goto_slice;
 
     // clears the canvas and adds selected slices in the section
     // and eventually activates the current active slice
@@ -1186,7 +1191,7 @@ function SegmentationTool()
                 if( self.node_id == current_active_slice ) {
                     current_section = self.sectionindex;
                     updateControls();
-                    goto_active_slice();
+                    goto_slice( current_active_slice );
                 }
 
                 if ( trigger_update ) {
@@ -1336,6 +1341,25 @@ function SegmentationTool()
         this.centerY = function() {
             return Math.round(this.min_y + (this.max_y - this.min_y) / 2); };
 
+    }
+
+}
+
+var SegmentationAnnotations = new function()
+{
+    var fabricOverlays = {};
+
+    this.goto_slice = function( node_id ) {
+        console.log('gotoslice', node_id );
+        SegmentationTool.goto_slice( node_id );
+
+        var stack, s;
+        for (stack in fabricOverlays) {
+          if (fabricOverlays.hasOwnProperty(stack)) {
+            s = fabricOverlays[stack];
+            s.goto_slice( node_id );
+          }
+        }
     }
 
 }

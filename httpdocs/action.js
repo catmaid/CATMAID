@@ -245,7 +245,7 @@ var editToolActions = [
 		}
 	}),
 
-    new Action({
+/*    new Action({
        helpText: "Canvas Tool",
        buttonID: 'edit_button_canvas',
        buttonName: 'canvas',
@@ -260,7 +260,7 @@ var editToolActions = [
           }
           project.setTool( new CanvasTool() );
        }
-    }),
+    }), */
 
   new Action({
      helpText: "Segmentation Tool",

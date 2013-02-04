@@ -62,7 +62,6 @@ urlpatterns += patterns(
     
 
 
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/componentimage$', 'catmaid.control.get_component_image'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put-components$', 'catmaid.control.put_components'),
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-of-assembly-for-section$', 'catmaid.control.slices_of_assembly_for_section'),

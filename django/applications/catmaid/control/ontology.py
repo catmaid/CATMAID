@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 
 # Root classes can be seen as namespaces in the semantic space. Different
 # tools use different root classes.
-root_classes = ['root']
+root_classes = ['root', 'classification_root']
 
 # Root classes can be treated special if wanted. If set to True root
 # classes won't appear an the class overview and can't be deleted

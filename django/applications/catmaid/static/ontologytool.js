@@ -17,7 +17,7 @@ function OntologyTool()
     };
 
     this.addAction( new Action({
-        helpText: "Open the ontology editor for the current project",
+        helpText: "Open the ontology editor",
         buttonName: "editor",
         buttonID: "ontology_button_editor",
         run: function(e) {
@@ -31,6 +31,7 @@ function OntologyTool()
      */
     var setupSubTools = function()
     {
+        // setup tool box
         var box = createButtonsFromActions(
             actions,
             "toolbox_ontology",
@@ -48,6 +49,16 @@ function OntologyTool()
       $("#edit_button_ontology").removeClass("button");
       setupSubTools();
       $("#toolbox_ontology").show();
+      $("#toolbar_ontology").show();
+
+      // Assign a function to the workspace radio buttons
+      $("input[name='ontology_space']").change( function() {
+          if ($(this).val() === "classification") {
+              OntologyEditor.change_workspace(-1);
+          } else {
+              OntologyEditor.change_workspace(OntologyEditor.original_pid);
+          }
+      });
     };
 
 	/**
@@ -65,6 +76,7 @@ function OntologyTool()
 	this.destroy = function()
 	{
         $("#toolbox_ontology").hide();
+        $("#toolbar_ontology").hide();
         $("#edit_button_ontology").removeClass("button_active");
         $("#edit_button_ontology").addClass("button");
     }

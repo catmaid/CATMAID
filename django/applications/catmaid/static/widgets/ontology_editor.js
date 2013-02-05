@@ -5,8 +5,14 @@
  */
 var OntologyEditor = new function()
 {
+    this.original_pid;
+    this.workspace_pid;
+
     this.init = function( pid )
     {
+        // save the pid
+        OntologyEditor.original_pid = pid;
+
         // display the known root class names
         $.getJSON(django_url + 'ontology/knownroots',
                 function(data) {
@@ -18,17 +24,12 @@ var OntologyEditor = new function()
                     $("span#known_root_names").append(text);
                 })
 
-        // displad the trees
-        OntologyEditor.load_ontology_tree( pid,
-            "#ontology_tree_object" );
-        OntologyEditor.load_ontology_relations_tree( pid,
-            "#ontology_relations_tree" );
-        OntologyEditor.load_ontology_classes_tree( pid,
-            "#ontology_classes_tree" );
-
         // Assign a function to the refresh button
         $("#refresh_ontology_editor").off("click").on("click",
             OntologyEditor.refresh_trees);
+
+        // change to standard workspace
+        OntologyEditor.change_workspace(pid, true);
     };
 
     this.trees = new Array();
@@ -492,7 +493,7 @@ var OntologyEditor = new function()
                 // the result is fed to the AJAX request `data` option
                 parameters = {
                   "pid": pid,
-                  "roots": 1, // show root classes (0 or 1)?
+                  "roots": 0, // show root classes (0 or 1)?
                   "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
                 };
                 if (ObjectTree.currentExpandRequest) {
@@ -1096,6 +1097,26 @@ var OntologyEditor = new function()
             var tree_id = OntologyEditor.trees[i];
             var tree = $(tree_id);
             tree.jstree("refresh", -1);
+        }
+    };
+
+    /**
+     * Changes the workspace according to the value of the radio
+     * buttons
+     */
+    this.change_workspace = function(pid, force)
+    {
+        if (pid != OntologyEditor.workspace_pid || force) {
+            OntologyEditor.workspace_pid = pid;
+
+            // show the classification space instead of the project
+            // related ontology
+            OntologyEditor.load_ontology_tree( pid,
+                "#ontology_tree_object" );
+            OntologyEditor.load_ontology_relations_tree( pid,
+                "#ontology_relations_tree" );
+            OntologyEditor.load_ontology_classes_tree( pid,
+                "#ontology_classes_tree" );
         }
     };
 

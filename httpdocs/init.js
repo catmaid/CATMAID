@@ -543,7 +543,6 @@ function handle_openProjectStack( status, text, xml )
 								stack,
 								value.tile_width,
 								value.tile_height,
-								value.file_extension,
 								tilesource2);
 				// set default opacity internally
 				tilelayer2.setOpacity( value.default_opacity );

@@ -23,7 +23,6 @@ function CanvasLayer( stack, tool )
     this.redraw = function()
     {
         self.setFieldOfView();
-
         return;
     }
 
@@ -32,9 +31,10 @@ function CanvasLayer( stack, tool )
         // TODO: Resize is called too much
         //this.setFieldOfView();
         self.redraw();
-        if( tool ) {
+
+        /*if( tool ) {
             tool.update();
-        }
+        }*/
             
         return;
     }

@@ -157,7 +157,7 @@ function Project( pid )
         // if the segmentation tool is select, we need to update
         // the assembly id
         if( self.getTool().toolname === 'segmentationtool' ) {
-            self.getTool().on_assembly_id_change( this.selectedObjects.selectedassembly );
+            SegmentationAnnotations.set_current_assembly_id( this.selectedObjects.selectedassembly );
         }
 
     };

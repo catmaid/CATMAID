@@ -8,6 +8,31 @@ from catmaid.control.common import *
 from catmaid.control.common import _create_relation
 from catmaid.transaction import *
 
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@report_error
+def save_assembly(request, project_id=None, stack_id=None):
+    assemblyid = int(request.POST.get('assemblyid', None))
+    sliceslist = request.POST.get('slices')
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+    # TODO: set assemblyid to null for all slices with this
+    # assembly id, or set to null when deleting (better)
+    if not assemblyid is None:
+        i = 0
+        slices = sliceslist.split(',')
+        for node_id in slices:
+            i += 1
+            Slices.objects.filter(
+                stack = stack,
+                project = p,
+                node_id = node_id
+                ).update(assembly=assemblyid)
+
+    return HttpResponse(json.dumps({'message': 'Updated {0} slices of assembly {1}'.format(
+        i, assemblyid)}))
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 @report_error
 def create_assembly_and_neuron(request, project_id=None, stack_id=None):
@@ -95,5 +120,25 @@ def slices_of_assembly_for_section(request, project_id=None, stack_id=None):
         assembly_id = assembly_id,
         sectionindex = sectionindex).all().values('assembly_id', 'sectionindex', 'slice_id',
         'node_id', 'min_x', 'min_y', 'max_x', 'max_y', 'center_x', 'center_y', 'threshold', 'size', 'status')
+
+    return HttpResponse(json.dumps(list(all_slices)), mimetype="text/json")
+
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@report_error
+def slices_of_assembly(request, project_id=None, stack_id=None):
+
+    assembly_id = int(request.GET['assemblyid'])
+
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+    # fetch all the components for the given skeleton and z section
+    all_slices = Slices.objects.filter(
+        stack = stack,
+        project = p,
+        assembly_id = assembly_id).all().values('assembly_id', 'sectionindex', 'slice_id',
+        'node_id', 'min_x', 'min_y', 'max_x', 'max_y', 'center_x',
+        'center_y', 'threshold', 'size', 'status')
 
     return HttpResponse(json.dumps(list(all_slices)), mimetype="text/json")

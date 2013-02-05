@@ -163,12 +163,23 @@ def list_ontology(request, project_id=None):
                 cc_q = ClassClass.objects.filter(class_b=class_b_id,
                     relation=parent_id, project=project_id)
 
-                return HttpResponse(json.dumps(
-                    tuple({'data' : {'title': '%s (%d)' % (cc.class_a.class_name, cc.class_a.id)},
-                           'attr' : {'id': 'node_%s' % cc.class_a.id,
-                                     'rel': 'class',
-                                     'ccid': cc.id},
-                           'state': 'closed'} for cc in cc_q)))
+                links = []
+                for cc in cc_q:
+                    # Collect standard jSTree data
+                    data = {'data' : {'title': '%s (%d)' % (cc.class_a.class_name, cc.class_a.id)},
+                            'attr' : {'id': 'node_%s' % cc.class_a.id,
+                                      'rel': 'class',
+                                      'ccid': cc.id}}
+                    # Only add a 'state' field if this node has children
+                    # (i.e. relations where it is class_b).
+                    num_children = ClassClass.objects.filter(
+                        class_b=cc.class_a.id, project=project_id).count()
+                    if num_children > 0:
+                        data['state'] = 'closed'
+                    # Add this class-class link to the list
+                    links.append(data)
+
+                return HttpResponse(json.dumps(tuple(l for l in links)))
         elif parent_type in ["class", "root"]:
             # A relation is wanted
             cc_q = ClassClass.objects.filter(

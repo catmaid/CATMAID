@@ -7,16 +7,15 @@ var OntologyTree = new function()
 {
     this.init = function( pid )
     {
-        cls_pid = -1;
-        OntologyTree.load_ontology_tree( cls_pid,
-            "#ontology_tree_object" );
-        OntologyTree.load_ontology_relations_tree( cls_pid,
+        OntologyTree.load_ontology_tree( pid,
+            "#ontology_tree_object", "root" );
+        OntologyTree.load_ontology_relations_tree( pid,
             "#ontology_relations_tree" );
-        OntologyTree.load_ontology_classes_tree( cls_pid,
+        OntologyTree.load_ontology_classes_tree( pid,
             "#ontology_classes_tree" );
     };
 
-    this.load_ontology_tree = function( pid, tree_id )
+    this.load_ontology_tree = function( pid, tree_id, root_class )
     {
         var tree = $(tree_id);
 
@@ -46,6 +45,7 @@ var OntologyTree = new function()
                 // the result is fed to the AJAX request `data` option
                 parameters = {
                   "pid": pid,
+                  "rootclass": root_class,
                   "parenttype": n.attr ? n.attr("rel") : "relation",
                   "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
                 };

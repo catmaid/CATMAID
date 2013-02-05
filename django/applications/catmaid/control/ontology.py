@@ -111,6 +111,7 @@ def list_available_classes(request, project_id=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_ontology(request, project_id=None):
+    root_class = request.GET.get('rootclass', 'root')
     parent_id = int(request.GET.get('parentid', 0))
     parent_name = request.GET.get('parentname', '')
     expand_request = request.GET.get('expandtarget', None)
@@ -130,10 +131,11 @@ def list_ontology(request, project_id=None):
         if parent_type == "relation":
             # A class is wanted
             if 0 == parent_id:
-                response_on_error = 'Could not select the id of the ontology root node.'
-                # For now, restrict this on classification roots
+                response_on_error = 'Could not select the id of the ontology root node'
+                if root_class not in class_map:
+                    raise CatmaidException('Root class "{0}" not found'.format( root_class ))
                 root_node_q = Class.objects.filter(
-                    id=class_map['classification_root'],
+                    id=class_map[root_class],
                     project=project_id)
 
                 if 0 == root_node_q.count():

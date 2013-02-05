@@ -1110,7 +1110,6 @@ var WindowMaker = new function()
 
     container.innerHTML =
       '<input type="button" id="refresh_ontology_tree" value="refresh" style="display:block; float:left;" />' +
-      '&nbsp; Synchronize <input type="checkbox" id="synchronize_ontology_tree" checked="yes" />' +
       '<br clear="all" />' +
       '<div id="ontology_tree_name"><h4>Ontology</h4>' +
       '<div id="ontology_tree_object"></div></div>' +

@@ -50,11 +50,9 @@ function getTileBaseName3D( stack, pixelPos, adjacent )
  */
 function TileLayer(
 		stack,						//!< reference to the parent stack
-		baseURL,					//!< base URL for image tiles
 		tileWidth,
 		tileHeight,
-		fileExtension,
-		tileSourceType
+		tileSource
 		)
 {
 	/**
@@ -234,22 +232,9 @@ function TileLayer(
 				}
 				else
 				{
-					// TODO: use this for the new tile naming scheme:
-					// tiles[ i ][ j ].alt = tileBaseName + stack.s + "/" + ( fr + i ) + "/" + ( fc + j );
-					if( tileSourceType === 1 ) {
-					    tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
-					    tiles[ i ][ j ].src = self.getTileURL( tiles[ i ][ j ].alt );
-          } else if ( tileSourceType === 2 ) {
-					    tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
-					    tiles[ i ][ j ].src = self.getTileURLRequest( c * tileWidth, r * tileHeight, tileWidth, tileHeight, stack.scale, stack.z );
-          } else if ( tileSourceType === 3 ) {
-					    tiles[ i ][ j ].alt = tileBaseName + r + "_" + c + "_" + zoom;
-					    tiles[ i ][ j ].src = self.getTileHDF5Request( c * tileWidth, r * tileHeight, tileWidth, tileHeight, stack.scale, stack.z );
-					} else if ( tileSourceType === 4) {
-						  // tileBaseName includes a backslash at the end
-					    tiles[ i ][ j ].alt = tileBaseName + zoom + "/" + r + "_" + c;
-              tiles[ i ][ j ].src = self.getTileURL( tiles[ i ][ j ].alt );
-					}
+					tiles[ i ][ j ].alt = "";
+					tiles[ i ][ j ].src = self.tileSource.getTileURL( project, stack,
+						tileBaseName, tileWidth, tileHeight, c, r, zoom);
 
           // prefetch tiles
           // TODO: fetch information in stack table: -2, -1, 1, 2
@@ -285,50 +270,6 @@ function TileLayer(
 		}
 
 		return 2;
-	}
-
-	/**
-	 * Creates the URL for a tile in a generic way.
-     * To be used for instance for Volumina served datasources
-	 */
-    this.getTileURLRequest = function( x, y, dx, dy, scale, z ) {
-    return baseURL + "?" + $.param({
-        x: x,
-        y: y,
-        width : tileWidth,
-        height : tileHeight,
-        row : 'y',
-        col : 'x',
-        scale : scale, // defined as 1/2**zoomlevel
-        z : z});
-    }
-
-  /*
-   * Get Tile from HDF5 through Django (tiles_source_type == 3)
-   */
-  this.getTileHDF5Request = function( x, y, dx, dy, scale, z ) {
-      return django_url + project.id + '/stack/' + stack.id + '/tile?' + $.param({
-        x: x,
-        y: y,
-        width : tileWidth,
-        height : tileHeight,
-        row : 'y',
-        col : 'x',
-        scale : stack.s, // defined as 1/2**zoomlevel
-        z : z,
-        file_extension: fileExtension,
-        hdf5_path: baseURL, // image_base refers to path within HDF5 to dataset
-        type:'all'
-    });
-  }
-
-
-
-	/**
-	 * Creates the URL for a tile.
-	 */
-	this.getTileURL = function(tileId) {
-		return baseURL + tileId + "." + fileExtension;
 	}
 	
 	this.resize = function( width, height )
@@ -373,30 +314,6 @@ function TileLayer(
 	 */
 	this.getStack = function(){ return stack; }
 
-	var OverviewLayer = function()
-	{
-		this.redraw = function()
-		{
-      if( tileSourceType === 1 || tileSourceType === 4 ) {
-          img.src = baseURL + stack.z + "/small." + fileExtension;
-			}
-		}
-
-		this.unregister = function()
-		{
-			if ( img.parentNode )
-				img.parentNode.removeChild( img );
-		}
-
-    if( tileSourceType === 1 || tileSourceType === 4 ) {
-      var img = document.createElement( "img" );
-      img.className = "smallMapMap";
-      this.redraw(); // sets the img URL
-      stack.overview.getView().appendChild( img );
-      stack.overview.addLayer( "tilelayer", this );
-    }
-	}
-
 	this.setOpacity = function( val )
 	{
 		tilesContainer.style.opacity = val+"";
@@ -421,11 +338,11 @@ function TileLayer(
 	var tilesContainer = document.createElement( "div" );
 	tilesContainer.className = "sliceTiles";
 	stack.getView().appendChild( tilesContainer );
-
-  var overviewLayer = new OverviewLayer();
 	
 	var LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
 	var LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
-	
-	self.baseURL = baseURL;
+
+	self.tileSource = tileSource;
+
+	var overviewLayer = tileSource.getOverviewLayer( this );
 }

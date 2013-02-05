@@ -524,26 +524,26 @@ function handle_openProjectStack( status, text, xml )
 					e.inverse_mouse_wheel);
 
 			document.getElementById( "toolbox_project" ).style.display = "block";
-			
+
+			var tilesource = getTileSource( e.tile_source_type, e.image_base,
+					e.file_extension );
 			var tilelayer = new TileLayer(
 					stack,
-					e.image_base,
 					e.tile_width,
 					e.tile_height,
-					e.file_extension,
-					e.tile_source_type);
+					tilesource);
 
 			stack.addLayer( "TileLayer", tilelayer );
 
 			$.each(e.overlay, function(key, value) {
         console.log('add tile layer for overlay value', e, value);
+				var tilesource2 = getTileSource( value.tile_source_type,
+					value.image_base, value.file_extension );
 				var tilelayer2 = new TileLayer(
 								stack,
-								value.image_base,
 								value.tile_width,
 								value.tile_height,
-								value.file_extension,
-								value.tile_source_type);
+								tilesource2);
 				// set default opacity internally
 				tilelayer2.setOpacity( value.default_opacity );
 				stack.addLayer( value.title, tilelayer2 );

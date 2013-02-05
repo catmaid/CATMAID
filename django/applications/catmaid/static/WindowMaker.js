@@ -1112,12 +1112,12 @@ var WindowMaker = new function()
       '<input type="button" id="refresh_ontology_tree" value="refresh" style="display:block; float:left;" />' +
       '&nbsp; Synchronize <input type="checkbox" id="synchronize_ontology_tree" checked="yes" />' +
       '<br clear="all" />' +
-      '<div id="classification_ontology"><h4>Classification ontology</h4>' +
+      '<div id="ontology_tree_name"><h4>Ontology</h4>' +
       '<div id="ontology_tree_object"></div></div>' +
-      '<div id="classification_relations"><h4>Classification relations</h4>' +
-      '<div id="classification_relations_tree"></div></div>' +
-      '<div id="classification_classes"><h4>Classification classes</h4>' +
-      '<div id="classification_classes_tree"></div></div>' +
+      '<div id="ontology_relations_name"><h4>Relations</h4>' +
+      '<div id="ontology_relations_tree"></div></div>' +
+      '<div id="ontology_classes_name"><h4>Classes</h4>' +
+      '<div id="ontology_classes_tree"></div></div>' +
       '<div id="ontology_add_dialog" style="display:none; cursor:default">' +
       '<p><div id="input_rel">New relation name: <input type="text" id="relname" /></div>' +
       '<div id="select_rel">Available relation: <select id="relid"></select></div>' +

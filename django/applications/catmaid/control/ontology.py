@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404
 dummy_pid = -1
 # Root classes can be seen as namespaces in the semantic space. Different
 # tools use different root classes.
-root_classes = ['classification_root', 'root']
+root_classes = ['root']
 
 class ClassElement:
     def __init__(self, id, name):

@@ -8,14 +8,16 @@ var OntologyTree = new function()
     this.init = function( pid )
     {
         cls_pid = -1;
-        OntologyTree.load_ontology_tree( cls_pid );
-        OntologyTree.load_ontology_relations_tree( cls_pid );
-        OntologyTree.load_ontology_classes_tree( cls_pid );
+        OntologyTree.load_ontology_tree( cls_pid,
+            "#ontology_tree_object" );
+        OntologyTree.load_ontology_relations_tree( cls_pid,
+            "#ontology_relations_tree" );
+        OntologyTree.load_ontology_classes_tree( cls_pid,
+            "#ontology_classes_tree" );
     };
 
-    this.load_ontology_tree = function( pid )
+    this.load_ontology_tree = function( pid, tree_id )
     {
-        var tree_id = "#ontology_tree_object";
         var tree = $(tree_id);
 
         $("#refresh_ontology_tree").off("click").on("click",
@@ -223,9 +225,8 @@ var OntologyTree = new function()
      * Creates a jsTree that displays all available relations for
      * a particular project.
      */
-    this.load_ontology_relations_tree = function( pid )
+    this.load_ontology_relations_tree = function( pid, tree_id )
     {
-        var tree_id = "#ontology_relations_tree";
         var tree = $(tree_id);
 
         $("#refresh_ontology_tree").off("click").on("click",
@@ -380,9 +381,8 @@ var OntologyTree = new function()
      * Creates a jsTree that displays all available classes for
      * a particular project.
      */
-    this.load_ontology_classes_tree = function( pid )
+    this.load_ontology_classes_tree = function( pid, tree_id )
     {
-        var tree_id = "#ontology_classes_tree";
         var tree = $(tree_id);
 
         $("#refresh_ontology_tree").off("click").on("click",

@@ -4,10 +4,6 @@ from catmaid.control.common import *
 
 from django.shortcuts import get_object_or_404
 
-# A dummy project is referenced by all the classes and class instances.
-# This is due to the fact, that one classification tree instance should
-# be referencey by multiple projects.
-dummy_pid = -1
 # Root classes can be seen as namespaces in the semantic space. Different
 # tools use different root classes.
 root_classes = ['root']

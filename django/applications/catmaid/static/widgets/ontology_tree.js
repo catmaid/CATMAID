@@ -13,16 +13,23 @@ var OntologyTree = new function()
             "#ontology_relations_tree" );
         OntologyTree.load_ontology_classes_tree( pid,
             "#ontology_classes_tree" );
+
+        // Assign a function to the refresh button
+        $("#refresh_ontology_tree").off("click").on("click",
+            OntologyTree.refresh_trees);
+    };
+
+    this.trees = new Array();
+    this.register_tree = function(tree_id)
+    {
+        OntologyTree.trees.push(tree_id);
     };
 
     this.load_ontology_tree = function( pid, tree_id, root_class )
     {
         var tree = $(tree_id);
 
-        $("#refresh_ontology_tree").off("click").on("click",
-        function () {
-          tree.jstree("refresh", -1);
-        });
+        OntologyTree.register_tree( tree_id );
 
         tree.bind("reload_nodes.jstree",
            function (event, data) {
@@ -229,10 +236,7 @@ var OntologyTree = new function()
     {
         var tree = $(tree_id);
 
-        $("#refresh_ontology_tree").off("click").on("click",
-        function () {
-          tree.jstree("refresh", -1);
-        });
+        OntologyTree.register_tree( tree_id );
 
         tree.bind("reload_nodes.jstree",
            function (event, data) {
@@ -385,10 +389,7 @@ var OntologyTree = new function()
     {
         var tree = $(tree_id);
 
-        $("#refresh_ontology_tree").off("click").on("click",
-        function () {
-          tree.jstree("refresh", -1);
-        });
+        OntologyTree.register_tree( tree_id );
 
         tree.bind("reload_nodes.jstree",
            function (event, data) {
@@ -719,7 +720,6 @@ var OntologyTree = new function()
                     var url = django_url + pid + '/ontology/relations/add';
                     var res = sync_request( url, "POST", { "relname": relname } );
                     var relation = JSON.parse(res);
-                    OntologyTree.refresh_tree(tree_id);
                     if (!relation["relation_id"]) {
                         OntologyTree.hide_wait_message();
                         alert("The server returned an unexpected result:\n" + res);
@@ -737,7 +737,6 @@ var OntologyTree = new function()
                 var url = django_url + pid + '/ontology/classes/add';
                 var res = sync_request( url, "POST", { "classname": classname } );
                 var added_class = JSON.parse(res);
-                OntologyTree.refresh_tree(tree_id);
                 if (!added_class["class_id"]) {
                     OntologyTree.hide_wait_message();
                     alert("The server returned an unexpected result:\n" + res);
@@ -760,9 +759,8 @@ var OntologyTree = new function()
                             if (!jsonData['class_class_id'])
                             {
                                 alert( "Can't understand server response: " + data )
-                                return
                             }
-                            OntologyTree.refresh_tree(tree_id);
+                            OntologyTree.refresh_trees();
                         });
                 });
             //caller.create(obj, "inside", att, null, true);
@@ -909,6 +907,20 @@ var OntologyTree = new function()
      */
     this.refresh_tree = function(tree_id) {
         $(tree_id).jstree("refresh", -1);
+    };
+
+    /**
+     * Refresh all trees that are stored in trees
+     * array.
+     */
+    this.refresh_trees = function()
+    {
+        for (var i=0; i<OntologyTree.trees.length; i++)
+        {
+            var tree_id = OntologyTree.trees[i];
+            var tree = $(tree_id);
+            tree.jstree("refresh", -1);
+        }
     };
 
     /**

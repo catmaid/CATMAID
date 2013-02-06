@@ -50,6 +50,14 @@ file and could look like this for the example above::
            metadata: "PMT Offset: 10, Laser Power: 0.5, PMT Voltage: 550"
            dimension: "(3886,3893,55)"
            resolution: "(138.0,138.0,1.0)"
+           overlays:
+             - name: "Channel 2 overlay"
+               folder: "stack2"
+               defaultopacity: 50
+               fileextension: "jpg"
+             - name: "Remote overlay"
+               url: "http://my.other.server.net/overlaystack/"
+               fileextension: "jpg"
          - folder: "stack2"
            name: "Channel 2"
            metadata: "PMT Offset: 10, Laser Power: 0.7, PMT Voltage: 500"
@@ -95,6 +103,18 @@ setting. This setting *requires* to also use the ``zoomlevel`` and the
 to get an idea about the file extension and the number of zoom levels.
 Like done for the folder based stacks, a url based stack needs the
 ``resolution`` and ``dimension`` fields, too.
+
+A stack can also have *overlays*. To add one or more of them, please
+use the ``overlays`` field in a stack. Like visible in the example, an
+overlay needs at least a ``name`` and a data source, which can be
+either ``folder`` or ``url`` based. The implications of using one or
+the other are similar to the ones for stacks: When using a URL, a
+``fileextension`` field needs to be present, but zoom level information
+is not needed for overlays. For folder based overlays, you can, but
+don't need to, provide a ``fileextension``. If you don't, the import
+tries to find it on its own. Besides that, a default opacity for
+displaying an overlay can be provided, by using the ``defaultopacity``
+key word. If not provided, it defaults to zero.
 
 Also, it wouldn't confuse the tool if there is more YAML data in the
 project file than needed. It only uses what is depicted in the sample

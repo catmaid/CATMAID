@@ -15,7 +15,7 @@ from django.utils.datastructures import SortedDict
 from guardian.models import Permission, User, Group
 from guardian.shortcuts import get_perms_for_model, assign
 
-from catmaid.models import Project, Stack, ProjectStack, Double3D
+from catmaid.models import Project, Stack, ProjectStack, Overlay, Double3D
 
 from catmaid.control.common import urljoin
 
@@ -27,15 +27,17 @@ info_file_name = "project.yaml"
 datafolder_setting = "CATMAID_IMPORT_PATH"
 base_url_setting = "CATMAID_IMPORT_URL"
 
-class PreStack:
-    def __init__(self, info_object, project_url, data_folder, only_unknown):
-        self.name = info_object['name']
-        # Favor a URL field, if there is one. A URL field, however,
-        # also requires the existence of the 'fileextension' and and
-        #'zoomlevels' field
+class ImageBaseMixin:
+    def set_image_fields(self, info_object, project_url, data_folder, needs_zoom):
+        """ Sets the image_base, num_zoom_levels, file_extension fields
+        of the calling object. Favor a URL field, if there is one. A URL
+        field, however, also requires the existence of the
+        'fileextension' and and 'zoomlevels' field.
+        """
         if 'url' in info_object:
             self.image_base = info_object['url']
-            self.num_zoom_levels = info_object['zoomlevels']
+            if needs_zoom:
+                self.num_zoom_levels = info_object['zoomlevels']
             self.file_extension = info_object['fileextension']
         else:
             # The image base of a stack is the combination of the
@@ -47,17 +49,17 @@ class PreStack:
             # fields are not present.
             zoom_available = 'zoomlevels' in info_object
             ext_available = 'fileextension' in info_object
-            if zoom_available:
+            if zoom_available and needs_zoom:
                 self.num_zoom_levels = info_object['zoomlevels']
             if ext_available:
                 self.file_extension = info_object['fileextension']
             # Only retrieve file extension and zoom level if one of
             # them is not available in the stack definition.
-            if not zoom_available or not ext_available:
+            if (not zoom_available and needs_zoom) or not ext_available:
                 file_ext, zoom_levels = find_zoom_levels_and_file_ext(
-                    data_folder, folder )
+                    data_folder, folder, needs_zoom )
                 # If there is no zoom level provided, use the found one
-                if not zoom_available:
+                if not zoom_available and needs_zoom:
                     self.num_zoom_levels = zoom_levels
                 # If there is no file extension level provided, use the
                 # found one
@@ -66,11 +68,34 @@ class PreStack:
         # Make sure the image base has a trailing slash, because this is expected
         if self.image_base[-1] != '/':
             self.image_base = self.image_base + '/'
+
+class PreOverlay(ImageBaseMixin):
+    def __init__(self, info_object, project_url, data_folder):
+        self.name = info_object['name']
+        # Set default opacity, if available, defaulting to 0
+        if 'defaultopacity' in info_object:
+            self.default_opacity = info_object['defaultopacity']
+        else:
+            self.default_opacity = 0
+        # Set 'image_base', 'num_zoom_levels' and 'fileextension'
+        self.set_image_fields(info_object, project_url, data_folder, False)
+
+class PreStack(ImageBaseMixin):
+    def __init__(self, info_object, project_url, data_folder, only_unknown):
+        self.name = info_object['name']
+        # Set 'image_base', 'num_zoom_levels' and 'fileextension'
+        self.set_image_fields(info_object, project_url, data_folder, True)
         # The 'dimension', 'resolution' and 'metadata' fields should
         # have every stack.
         self.dimension = info_object['dimension']
         self.resolution = info_object['resolution']
         self.metadata = info_object['metadata'] if 'metadata' in info_object else ""
+        # Add overlays to the stack, if those are declared
+        self.overlays = []
+        if 'overlays' in info_object:
+            for overlay in info_object['overlays']:
+                self.overlays.append(PreOverlay(overlay, project_url, data_folder))
+
         # Test if this stack is already known
         if only_unknown:
             num_same_image_base = Stack.objects.filter(image_base=self.image_base).count()
@@ -95,7 +120,7 @@ class PreProject:
                     already_known_stacks = already_known_stacks + 1
             self.already_known = (already_known_stacks == len(self.stacks))
 
-def find_zoom_levels_and_file_ext( base_folder, stack_folder ):
+def find_zoom_levels_and_file_ext( base_folder, stack_folder, needs_zoom=True ):
     """ Looks at the first file of the first zoom level and
     finds out what the file extension as well as the maximum
     zoom level is.
@@ -123,14 +148,15 @@ def find_zoom_levels_and_file_ext( base_folder, stack_folder ):
     file_ext = os.path.splitext(found_file)[1][1:]
     # Look for zoom levels
     zoom_level = 1
-    while True:
-        file_name = "0_0_" + str(zoom_level) + "." + file_ext
-        path = os.path.join(slice_zero_path, file_name)
-        if os.path.exists(path):
-            zoom_level = zoom_level + 1
-        else:
-            zoom_level = zoom_level - 1
-            break
+    if needs_zoom:
+        while True:
+            file_name = "0_0_" + str(zoom_level) + "." + file_ext
+            path = os.path.join(slice_zero_path, file_name)
+            if os.path.exists(path):
+                zoom_level = zoom_level + 1
+            else:
+                zoom_level = zoom_level - 1
+                break
     return (file_ext, zoom_level)
 
 def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):
@@ -423,6 +449,17 @@ def import_projects( pre_projects, make_public, tags, permissions,
                     tile_source_type=tile_source_type,
                     metadata=s.metadata)
                 stacks.append( stack )
+                # Add overlays of this stack
+                for o in s.overlays:
+                    Overlay.objects.create(
+                        title=o.name,
+                        stack=stack,
+                        image_base=o.image_base,
+                        default_opacity=o.default_opacity,
+                        file_extension=o.file_extension,
+                        tile_width=tile_width,
+                        tile_height=tile_height,
+                        tile_source_type=tile_source_type)
             # Create new project
             p = Project.objects.create(
                 title=pp.name,

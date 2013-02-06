@@ -46,6 +46,17 @@
                   <td>{{ s.image_base }}</td>
                   <td>{{ s.metadata }}</td>
                 </tr>
+                {% for o in s.overlays %}
+                  <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td colspan="2"><em>Overlay:</em> {{ o.name }}</td>
+                    <td>{{ o.file_extension }}</td>
+                    <td>{{ o.image_base }}</td>
+                    <td>Default opacity: {{ o.default_opacity }}</td>
+                  </tr>
+                {% endfor %}
               {% endfor %}
             {% else %}
               <tr>

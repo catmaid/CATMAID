@@ -26,6 +26,16 @@ function OntologyTool()
         }
     }));
 
+    this.addAction( new Action({
+        helpText: "Show classification editor",
+        buttonName: 'classification_editor',
+        buttonID: "classification_editor_button",
+        run: function (e) {
+          WindowMaker.show('classification-editor');
+          return true;
+        }
+    }));
+
     /**
      * Adds tools to the ontology tool box.
      */

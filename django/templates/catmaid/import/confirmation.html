@@ -1,0 +1,116 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% load common %}
+
+{% block extrahead %}
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url admin:index %}">Home</a> &rsaquo; {{ title }}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div id="content-main">
+    <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+
+    <p>The following projects have been selected to be imported together with
+    the settings listed. Please confirm this selection to do the actual import.
+    Alternatively, you can go back and change settings.</p>
+    <p><table>
+        <tr>
+            <th>Project</th>
+            <th>Stack Dimension</th>
+            <th>Stack Resolution</th>
+            <th>Stack Name</th>
+            <th>Stack Zoom Levels</th>
+            <th>Stack Extension</th>
+            <th>Stack Image Base</th>
+            <th>Stack Metadata</th>
+        <tr>
+        {% for p in projects %}
+            {% if p.stacks %}
+              {% for s in p.stacks %}
+                <tr>
+                  {% if forloop.first %}
+                    <td>{{ p.name }}</td>
+                  {% else %}
+                    <td></td>
+                  {% endif %}
+                  <td>{{ s.dimension }}</td>
+                  <td>{{ s.resolution }}</td>
+                  <td>{{ s.name }}</td>
+                  <td>{{ s.num_zoom_levels }}</td>
+                  <td>{{ s.file_extension }}</td>
+                  <td>{{ s.image_base }}</td>
+                  <td>{{ s.metadata }}</td>
+                </tr>
+                {% for o in s.overlays %}
+                  <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td colspan="2"><em>Overlay:</em> {{ o.name }}</td>
+                    <td>{{ o.file_extension }}</td>
+                    <td>{{ o.image_base }}</td>
+                    <td>Default opacity: {{ o.default_opacity }}</td>
+                  </tr>
+                {% endfor %}
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td>{{ p.name }}</td>
+                <td>{{ p.dimension }}</td>
+                <td>{{ p.resolution }}</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+              <tr>
+            {% endif %}
+        {% endfor %}
+    </table></p>
+
+    <p>Also, all projects share some options:</p>
+    <p><table>
+        <tr>
+            <th>Tags</th>
+            <th>Group Permissions</th>
+            <th>Tile width</th>
+            <th>Tile height</th>
+        </tr>
+        <tr>
+            <td>
+            {% if tags %}
+                {% for tag in tags %}
+                    {{ tag }}<br />
+                {% endfor %}
+            {% else %}
+                <em>(None)</em>
+            {% endif %}
+            </td>
+            <td>
+            {% for group, perm in group_permissions %}
+                {{ group.name }} | {{ perm.name }}<br />
+            {% endfor %}
+            </ul>
+            <td>{{ tile_width }}</td>
+            <td>{{ tile_height }}</td>
+        </tr>
+    </table></p>
+    
+    <p>
+      <form method="post" id="confirmation-form"
+            action="">
+      {% csrf_token %}
+      {{ wizard.management_form }}
+      {% if wizard.steps.prev %}
+          <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}" class="button small">{% trans "first step" %}</button>
+          <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}" class="button small">{% trans "prev step" %}</button>
+      {% endif %}
+      <input type="submit" value="submit"/>
+    </form>
+    </p>
+  </div>
+{% endblock %}

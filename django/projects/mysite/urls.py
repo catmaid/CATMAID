@@ -3,6 +3,8 @@ from django.conf import settings
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
+from adminplus import AdminSitePlus
+admin.site = AdminSitePlus()
 admin.autodiscover()
 
 # A regular expression matching floating point and integer numbers

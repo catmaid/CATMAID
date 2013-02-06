@@ -55,16 +55,46 @@ file and could look like this for the example above::
            metadata: "PMT Offset: 10, Laser Power: 0.7, PMT Voltage: 500"
            dimension: "(3886,3893,55)"
            resolution: "(138.0,138.0,1.0)"
+           zoomlevels: 2
+           fileextension: "jpg"
+         - url: "http://my.other.server.net/examplestack/"
+           dimension: "(3886,3893,55)"
+           resolution: "(138.0,138.0,1.0)"
+           zoomlevels: 3
+           fileextension: "png"
 
 As can be seen, a project has only two properties: a name and a set of
-stacks. A stack, however, needs more information. The ``folder``
-property names the image data folder for this stack, relative to the
-project file. The name of stack is stored in the ``name`` field and
-metadata (which is shown when a stack is displayed) can be added with
-the ``metadata`` property. A stack also needs ``dimensions`` and
-``resolution`` information. Dimensions are the stacks X, Y and Z extent
-in *pixel*. The resolution should be in in *nanometers per pixel*, in
-X, Y and Z.
+stacks. A stack, however, needs more information. In general, there are
+two ways to specify the data source for a folder: 1. a folder, than can
+be read relative to the project file and 2. a URL which is used as is
+as a stack's image base.
+
+The first stack in the example above is based on a folder in the same
+directory as the project file. The ``folder`` property names this image
+data folder for this stack, relative to the project file. The name of
+stack is stored in the ``name`` field and metadata (which is shown when
+a stack is displayed) can be added with the ``metadata`` property. A
+stack also needs ``dimensions`` and ``resolution`` information.
+Dimensions are the stacks X, Y and Z extent in *pixel*. The resolution
+should be in in *nanometers per pixel*, in X, Y and Z.
+
+Additionally to the folder information, the second stack above uses the
+``zoomlevels`` setting to declare the number of zoom levels. It also
+specifies the file extension of the image files with the
+``fileextension`` setting. If these settings are not used, the importer
+will look at the folder to find out the information on its own. Such a
+search is only started if one of those settings is missing and only a
+missing setting is set to the values found. These settings can therefore
+be used to have more explicit project files, avoid file system look-ups
+or to use custom values (e.g. to only use two of four zoom levels).
+
+The last stack in the example above *doesn't* use a local stack folder,
+but declares the stack's image base explicitly by using the ``url``
+setting. This setting *requires* to also use the ``zoomlevel`` and the
+``fileextension`` fields, because the importer won't try different URLs
+to get an idea about the file extension and the number of zoom levels.
+Like done for the folder based stacks, a url based stack needs the
+``resolution`` and ``dimension`` fields, too.
 
 Also, it wouldn't confuse the tool if there is more YAML data in the
 project file than needed. It only uses what is depicted in the sample
@@ -78,9 +108,10 @@ File and Folder Layout
 The importing tool expects a certain file any folder layout to work with.
 It assumes that there is one data folder per CATMAID instance that is
 accessible from the outside world and is somehow referred to within
-a stack's image base. As an example, let's say a link named *data* has
-been placed in CATMAID's httpdocs directory. This link links to your
-actual data storage and has a layout like the following::
+a stack's image base (if referring to folders in the project file). As
+an example, let's say a link named *data* has been placed in CATMAID's
+httpdocs directory. This link links to your actual data storage and has
+a layout like the following::
 
     data/
       project1/

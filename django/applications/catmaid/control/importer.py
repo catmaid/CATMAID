@@ -30,23 +30,51 @@ base_url_setting = "CATMAID_IMPORT_URL"
 class PreStack:
     def __init__(self, info_object, project_url, data_folder, only_unknown):
         self.name = info_object['name']
-        self.folder = info_object['folder']
-        self.dimension = info_object['dimension']
-        self.resolution = info_object['resolution']
-        self.metadata = info_object['metadata'] if 'metadata' in info_object else ""
-        self.image_base = urljoin(project_url, self.folder)
+        # Favor a URL field, if there is one. A URL field, however,
+        # also requires the existence of the 'fileextension' and and
+        #'zoomlevels' field
+        if 'url' in info_object:
+            self.image_base = info_object['url']
+            self.num_zoom_levels = info_object['zoomlevels']
+            self.file_extension = info_object['fileextension']
+        else:
+            # The image base of a stack is the combination of the
+            # project URL and the stack's folder name.
+            folder = info_object['folder']
+            self.image_base = urljoin(project_url, folder)
+            # Favor 'zoomlevel' and 'fileextension' fields, if
+            # available, but try to find this information if thosa
+            # fields are not present.
+            zoom_available = 'zoomlevels' in info_object
+            ext_available = 'fileextension' in info_object
+            if zoom_available:
+                self.num_zoom_levels = info_object['zoomlevels']
+            if ext_available:
+                self.file_extension = info_object['fileextension']
+            # Only retrieve file extension and zoom level if one of
+            # them is not available in the stack definition.
+            if not zoom_available or not ext_available:
+                file_ext, zoom_levels = find_zoom_levels_and_file_ext(
+                    data_folder, folder )
+                # If there is no zoom level provided, use the found one
+                if not zoom_available:
+                    self.num_zoom_levels = zoom_levels
+                # If there is no file extension level provided, use the
+                # found one
+                if not ext_available:
+                    self.file_extension = file_ext
         # Make sure the image base has a trailing slash, because this is expected
         if self.image_base[-1] != '/':
             self.image_base = self.image_base + '/'
+        # The 'dimension', 'resolution' and 'metadata' fields should
+        # have every stack.
+        self.dimension = info_object['dimension']
+        self.resolution = info_object['resolution']
+        self.metadata = info_object['metadata'] if 'metadata' in info_object else ""
         # Test if this stack is already known
         if only_unknown:
             num_same_image_base = Stack.objects.filter(image_base=self.image_base).count()
             self.already_known = (num_same_image_base > 0)
-        # Find file extension and zoom levels
-        file_ext, zoom_levels = find_zoom_levels_and_file_ext(
-            data_folder, self.folder )
-        self.num_zoom_levels = zoom_levels
-        self.file_extension = file_ext
 
 class PreProject:
     def __init__(self, info_file, project_url, data_folder, only_unknown):

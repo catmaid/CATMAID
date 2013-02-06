@@ -197,6 +197,12 @@ def get_class_to_id_map(project_id):
         result[r.class_name] = r.id
     return result
 
-
-
-
+def urljoin(a, b):
+    """ Joins to URL parts a and b while making sure this
+    exactly one slash inbetween.
+    """
+    if a[-1] != '/':
+        a = a + '/'
+    if b[0] == '/':
+        b = b[1:]
+    return a + b

@@ -77,6 +77,14 @@ HDF5_STORAGE_PATH = 'CATMAIDPATH/django/hdf5/'
 # front of all Django related URLs.
 CATMAID_DJANGO_URL = 'http://CATMAID_SERVERNAME/catmaid/dj/'
 
+# Importer settings
+# If you want to use the importer, please adjust these settings. The
+# CATMAID_IMPORT_PATH in (and below) the importer should look for new
+# data. The CATMAID_IMPORT_URL refers is the URL as seen from outside
+# that gives read access to the CATMAID_IMPORT_PATH.
+CATMAID_IMPORT_PATH = 'CATMAIDPATH/httpdocs/data'
+CATMAID_IMPORT_URL = 'CATMAIDURL/data'
+
 ## Celery configuration
 djcelery.setup_loader()
 CELERYD_CONCURRENCY = 1

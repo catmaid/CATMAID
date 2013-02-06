@@ -51,6 +51,7 @@ INSTALLED_APPS = (
     'devserver',
     'djcelery',
     'taggit',
+    'adminplus',
     'catmaid',
     'guardian'
 )

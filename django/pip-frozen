@@ -15,3 +15,4 @@ PyYAML==3.10
 python-dateutil==2.1
 django-guardian==1.0.4
 django-taggit==0.9.3
+django-adminplus==0.1.7

@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
 from guardian.admin import GuardedModelAdmin
 from catmaid.models import Project, DataView, Stack, ProjectStack, UserProfile
+from catmaid.control.importer import importer_admin_view
 
 class ProjectAdmin(GuardedModelAdmin):
     list_display = ('title', 'public')
@@ -100,3 +101,5 @@ admin.site.register(ProjectStack)
 # Replace the user admin view with custom view
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
+# Register additional views
+admin.site.register_view('importer', importer_admin_view, 'Importer')

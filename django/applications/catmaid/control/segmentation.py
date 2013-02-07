@@ -888,7 +888,7 @@ def get_segmentation_tile(project_id, stack_id,scale,height,width,x,y,z,type):
         #pilImage.save('segmentation_tile_'+str(x)+'_'+str(y), "PNG")
         return response
 
-
+"""
 def get_tile(request, project_id=None, stack_id=None):
     scale = float(request.GET.get('scale', '0'))
     height = int(request.GET.get('height', '0'))
@@ -926,7 +926,7 @@ def get_tile(request, project_id=None, stack_id=None):
         return response
 
 def put_tile(request, project_id=None, stack_id=None):
-    """ Store labels to HDF5 """
+
     #print >> sys.stderr, 'put tile', request.POST
 
     scale = float(request.POST.get('scale', '0'))
@@ -951,7 +951,7 @@ def put_tile(request, project_id=None, stack_id=None):
 
     return HttpResponse("Image pushed to HDF5.", mimetype="plain/text")
 
-"""
+
 class dataImporterFromNumpy(vtk.vtkImageImport):
     def __init__(self, structVol):
         # For VTK to be able to use the data, it must be stored as a VTK-image. This can be done by the vtkImageImport-class which

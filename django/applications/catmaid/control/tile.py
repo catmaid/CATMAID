@@ -1,9 +1,15 @@
+import os
+from contextlib import closing
+import h5py
+from PIL import Image
+import json
 
 from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 
 def get_tile(request, project_id=None, stack_id=None):
+    import sys
 
     scale = float(request.GET.get('scale', '0'))
     height = int(request.GET.get('height', '0'))
@@ -14,38 +20,28 @@ def get_tile(request, project_id=None, stack_id=None):
     col = request.GET.get('col', 'y')
     row = request.GET.get('row', 'x')
     file_extension = request.GET.get('file_extension', 'png')
-    hdf5_path = request.GET.get('hdf5_path', '/')
+    basename = request.GET.get('basename', 'raw')
 
-    fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}.hdf'.format( project_id, stack_id ) )
+    # need to know the stack name
+    fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_{2}.hdf'.format( project_id, stack_id, basename ) )
 
-    #print 'exists', os.path.exists(fpath)
+    if not os.path.exists( fpath ):
+        return HttpResponse(json.dumps({'error': 'HDF5 file does not exists: {0}'.format(fpath)}))
 
     with closing(h5py.File(fpath, 'r')) as hfile:
         #import math
         #zoomlevel = math.log(int(scale), 2)
-        hdfpath = hdf5_path + '/scale/' + str(int(scale)) + '/data'
-        image_data=hfile[hdfpath].value
-        data=image_data[y:y+height,x:x+width,z].copy()
-        # without copy, would yield expected string or buffer exception
-        # XXX: should directly index into the memmapped hdf5 array
-        #print >> sys.stderr, 'hdf5 path', hdfpath, image_data, data,
-        # data.shape
+        hdfpath = '/' + str(int(scale)) + '/' + str(z) + '/data'
+        if not str(int(scale)) in hfile['/'].keys():
+            return HttpResponse(json.dumps({'error': 'HDF5 file does not contain scale: {0}'.format(str(int(scale)))}))
 
+        image_data=hfile[hdfpath]
+        data=image_data[y:y+height,x:x+width].copy()
         pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
         response = HttpResponse(mimetype="image/png")
         pilImage.save(response, "PNG")
         return response
 
-
-    w,h=1000,800
-    # img = np.empty((width,height), np.uint32)
-    #img.shape=height,width
-    img = np.random.random_integers(0, 150, (height,width) ).astype(np.uint8)
-    #img[0,0]=0x800000FF
-    # img[:400,:400]=0xFFFF0000
-    pilImage = Image.frombuffer('RGBA',(width,height),img,'raw','L',0,1)
-    response = HttpResponse(mimetype="image/png")
-    pilImage.save(response, "PNG")
     return response
 
 def put_tile(request, project_id=None, stack_id=None):

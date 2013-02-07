@@ -58,7 +58,7 @@ function RequestTileSource( baseURL, fileExtension )
             row : 'y',
             col : 'x',
             scale : stack.scale, // defined as 1/2**zoomlevel
-            z : stack.z});
+            z : stack.z });
     }
 
     this.getOverviewLayer = function( layer )
@@ -87,7 +87,7 @@ function HDF5TileSource( baseURL, fileExtension )
             scale : stack.s, // defined as 1/2**zoomlevel
             z : stack.z,
             file_extension: fileExtension,
-            hdf5_path: baseURL, // image_base refers to path within HDF5 to dataset
+            basename: baseURL,
             type:'all'
         });
     }

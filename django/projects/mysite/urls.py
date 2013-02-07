@@ -264,6 +264,14 @@ urlpatterns += patterns('',
         'catmaid.control.get_restriction_types'),
     )
 
+# Classification
+urlpatterns += patterns('',
+    (r'^(?P<project_id>%s)/classification/number$' % (integer), 'catmaid.control.get_classification_number'),
+    (r'^(?P<project_id>%s)/classification/show$' % (integer), 'catmaid.control.show_classification_editor'),
+    (r'^(?P<project_id>%s)/classification/show/(?P<link_id>\d+)$' % (integer), 'catmaid.control.show_classification_editor'),
+    (r'^(?P<project_id>%s)/classification/setup/test$' % (integer), 'catmaid.control.check_classification_setup_view'),
+    )
+
 if settings.DEBUG:
     urlpatterns += patterns('',
         (r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.STATIC_ROOT}),

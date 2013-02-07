@@ -232,9 +232,12 @@ function TileLayer(
 				}
 				else
 				{
-					tiles[ i ][ j ].alt = "";
-					tiles[ i ][ j ].src = self.tileSource.getTileURL( project, stack,
-						tileBaseName, tileWidth, tileHeight, c, r, zoom);
+
+					if( opacity > 0.01) {
+						tiles[ i ][ j ].alt = "";
+						tiles[ i ][ j ].src = self.tileSource.getTileURL( project, stack,
+							tileBaseName, tileWidth, tileHeight, c, r, zoom);
+					}
 
           // prefetch tiles
           // TODO: fetch information in stack table: -2, -1, 1, 2

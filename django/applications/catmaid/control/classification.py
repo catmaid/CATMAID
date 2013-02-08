@@ -8,6 +8,7 @@ from django.shortcuts import render_to_response
 from django.template import Context
 
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
+from catmaid.control.ajax_templates import *
 from catmaid.control.ontology import get_classes
 from catmaid.models import Class, ClassInstance, ClassInstanceClassInstance, Relation
 from catmaid.models import UserRole
@@ -260,7 +261,12 @@ def show_classification_editor( request, project_id=None, link_id=None):
             #context['select_tree_form'] = form()
             template_name = "catmaid/classification/select_graph.html"
 
-    return render_to_response( template_name, {}, context )
+    if request.is_ajax():
+        rendered_block = render_block_to_string( template_name,
+            'classification-content', {}, context )
+        return HttpResponse( json.dumps( {'content': rendered_block} ) )
+    else:
+        return render_to_response( template_name, {}, context )
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def add_classification_graph(request, project_id=None):

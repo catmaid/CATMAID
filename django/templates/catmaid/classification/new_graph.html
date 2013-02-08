@@ -1,5 +1,8 @@
 {% load url from future %}
+<html>
 
+<body>
+{% block classification-content %}
 {% if num_graphs == 0 %}
     <p>There is currently no classification graph associated with this
     project. Feel free to create a new one.</p>
@@ -30,3 +33,7 @@ and click "Link".</p>
     </p>
 </form>
 {% endcomment %}
+{% endblock %}
+
+</body>
+</html>

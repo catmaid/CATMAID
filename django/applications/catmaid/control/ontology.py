@@ -137,7 +137,7 @@ def list_ontology(request, project_id=None):
             if 0 == parent_id:
                 response_on_error = 'Could not select the id of the ontology root node'
                 if root_class not in class_map:
-                    raise CatmaidException('Root class "{0}" not found'.format( root_class ))
+                    raise Exception('Root class "{0}" not found'.format( root_class ))
                 root_node_q = Class.objects.filter(
                     id=class_map[root_class],
                     project=project_id)
@@ -205,10 +205,10 @@ def list_ontology(request, project_id=None):
 
         else:
             response_on_error = 'Unknown parent type'
-            raise CatmaidException(parent_type)
+            raise Exception(parent_type)
 
     except Exception as e:
-        raise CatmaidException(response_on_error + ': ' + str(e))
+        raise Exception(response_on_error + ': ' + str(e))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def add_relation_to_ontology(request, project_id=None):
@@ -218,7 +218,7 @@ def add_relation_to_ontology(request, project_id=None):
     isreciprocal = bool(request.POST.get('isreciprocal', False))
 
     if name is None:
-        raise CatmaidException("Couldn't find name for new relation.")
+        raise Exception("Couldn't find name for new relation.")
 
     r = Relation.objects.create(user=request.user,
         project_id = project_id, relation_name = name, uri = uri,
@@ -246,7 +246,7 @@ def remove_relation_from_ontology(request, project_id=None):
         # Check whether this relation is used somewhere
         nr_links = get_number_of_inverse_links( relation )
         if nr_links > 0:
-            raise CatmaidException("The relation to delete is still referenced by others. If enforced, all related objects get deleted, too.")
+            raise Exception("The relation to delete is still referenced by others. If enforced, all related objects get deleted, too.")
 
     # Delete, if not used
     relation.delete()
@@ -283,7 +283,7 @@ def add_class_to_ontology(request, project_id=None):
     description = request.POST.get('description', None)
 
     if name is None:
-        raise CatmaidException("Couldn't find name for new class.")
+        raise Exception("Couldn't find name for new class.")
 
     c = Class.objects.create(user=request.user,
         project_id = project_id, class_name = name,
@@ -302,13 +302,13 @@ def remove_class_from_ontology(request, project_id=None):
     class_instance = get_object_or_404(Class, id=classid)
 
     if class_instance.class_name in root_classes and guard_root_classes:
-        raise CatmaidException("A root class can't be removed with this method.")
+        raise Exception("A root class can't be removed with this method.")
 
     if not force:
         # Check whether this relation is used somewhere
         nr_links = get_number_of_inverse_links( class_instance )
         if nr_links > 0:
-            raise CatmaidException("The class to delete is still referenced by others. If enforced, all related objects get deleted, too.")
+            raise Exception("The class to delete is still referenced by others. If enforced, all related objects get deleted, too.")
 
     # Delete, if not used
     class_instance.delete()
@@ -353,11 +353,11 @@ def add_link_to_ontology(request, project_id=None):
     relationid = int(request.POST.get('relid', -1))
 
     if classaid == -1:
-        raise CatmaidException("Couldn't find ID of class a.")
+        raise Exception("Couldn't find ID of class a.")
     if classbid == -1:
-        raise CatmaidException("Couldn't find ID of class b.")
+        raise Exception("Couldn't find ID of class b.")
     if relationid == -1:
-        raise CatmaidException("Couldn't find relation ID.")
+        raise Exception("Couldn't find relation ID.")
 
     cc = ClassClass.objects.create(user=request.user,
         project_id = project_id, class_a_id = classaid,

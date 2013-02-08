@@ -8,6 +8,10 @@ from django.shortcuts import get_object_or_404
 # tools use different root classes.
 root_classes = ['root']
 
+# Root classes can be treated special if wanted. If set to True root
+# classes won't appear an the class overview and can't be deleted
+guard_root_classes = False
+
 class ClassElement:
     def __init__(self, id, name):
         self.id = id
@@ -86,7 +90,7 @@ def list_available_classes(request, project_id=None):
     """ Returns an object of all classes available available
     for the given project, prepared to work with a jsTree."""
     parent_id = int(request.GET.get('parentid', 0))
-    include_roots = bool(int(request.GET.get('roots', 0)))
+    include_roots = bool(int(request.GET.get('roots', int(guard_root_classes))))
 
     # Get the classes queryset
     if include_roots:
@@ -297,7 +301,7 @@ def remove_class_from_ontology(request, project_id=None):
     force = bool(int(request.POST.get('force', 0)))
     class_instance = get_object_or_404(Class, id=classid)
 
-    if class_instance.class_name in root_classes:
+    if class_instance.class_name in root_classes and guard_root_classes:
         raise CatmaidException("A root class can't be removed with this method.")
 
     if not force:
@@ -319,14 +323,15 @@ def remove_all_classes_from_ontology(request, project_id=None):
     force = bool(int(request.POST.get('force', 0)))
     deleted_ids = []
     not_deleted_ids = []
+    exclude_list = root_classes if guard_root_classes else []
 
     if force:
-        rel_q = Class.objects.filter(project=project_id).exclude(class_name__in=root_classes)
+        rel_q = Class.objects.filter(project=project_id).exclude(class_name__in=exclude_list)
         deleted_ids = [r.id for r in rel_q]
         rel_q.delete()
     else:
         # Check whether a class is used somewhere
-        rel_q = Class.objects.filter(project=project_id).exclude(class_name__in=root_classes)
+        rel_q = Class.objects.filter(project=project_id).exclude(class_name__in=exclude_list)
         for r in rel_q:
             nr_links = get_number_of_inverse_links( r )
             if nr_links == 0:

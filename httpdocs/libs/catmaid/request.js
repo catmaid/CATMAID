@@ -126,6 +126,7 @@ var requestQueue = function()
       // xmlHttp.setRequestHeader( "Content-length", queue[ 0 ].data.length );
       // xmlHttp.setRequestHeader( "Connection", "close" );
     }
+    xmlHttp.setRequestHeader( "X-Requested-With", "XMLHttpRequest" );
     xmlHttp.onreadystatechange = callback;
     xmlHttp.send( queue[ 0 ].data );
     

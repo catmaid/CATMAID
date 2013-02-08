@@ -1,0 +1,32 @@
+{% load url from future %}
+
+{% if num_graphs == 0 %}
+    <p>There is currently no classification graph associated with this
+    project. Feel free to create a new one.</p>
+{% endif %}
+
+<p>To create a new classification graph, please select an ontology
+that you would like the new graph to be based on and click on
+"Create".</p>
+
+<form method="post" id="add-new-classification-form"
+      action="{% url 'add_classification_graph' project_id %}">
+    <p>
+    {{ new_tree_form }}
+    <input type="submit" value="Create" />
+    </p>
+</form>
+
+{% comment %}
+<p>Alternatively, you can link an existing classification tree to
+this project. If you want to do so, please select the tree below
+and click "Link".</p>
+
+<form method="post" id="link-classification-form"
+      action="{% url 'link_classification_graph' project_id %}">
+    <p>
+    {{ link_tree_form }}
+    <input type="submit" value="Link" />
+    </p>
+</form>
+{% endcomment %}

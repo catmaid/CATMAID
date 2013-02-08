@@ -3,6 +3,7 @@ from contextlib import closing
 import h5py
 from PIL import Image
 import json
+import numpy as np
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -26,14 +27,24 @@ def get_tile(request, project_id=None, stack_id=None):
     fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_{2}.hdf'.format( project_id, stack_id, basename ) )
 
     if not os.path.exists( fpath ):
-        return HttpResponse(json.dumps({'error': 'HDF5 file does not exists: {0}'.format(fpath)}))
+        data=np.zeros( (height, width) )
+        pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
+        response = HttpResponse(mimetype="image/png")
+        pilImage.save(response, "PNG")
+        return response
+        # return HttpResponse(json.dumps({'error': 'HDF5 file does not exists: {0}'.format(fpath)}))
 
     with closing(h5py.File(fpath, 'r')) as hfile:
         #import math
         #zoomlevel = math.log(int(scale), 2)
         hdfpath = '/' + str(int(scale)) + '/' + str(z) + '/data'
         if not str(int(scale)) in hfile['/'].keys():
-            return HttpResponse(json.dumps({'error': 'HDF5 file does not contain scale: {0}'.format(str(int(scale)))}))
+            data=np.zeros( (height, width) )
+            pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
+            response = HttpResponse(mimetype="image/png")
+            pilImage.save(response, "PNG")
+            return response            
+            # return HttpResponse(json.dumps({'error': 'HDF5 file does not contain scale: {0}'.format(str(int(scale)))}))
         image_data=hfile[hdfpath]
         data=image_data[y:y+height,x:x+width]
         pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)

@@ -535,7 +535,6 @@ function handle_openProjectStack( status, text, xml )
 			stack.addLayer( "TileLayer", tilelayer );
 
 			$.each(e.overlay, function(key, value) {
-        console.log('add tile layer for overlay value', e, value);
 				var tilesource2 = getTileSource( value.tile_source_type,
 					value.image_base, value.file_extension );
 				var tilelayer2 = new TileLayer(

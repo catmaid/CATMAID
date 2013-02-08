@@ -262,19 +262,24 @@ def show_classification_editor( request, project_id=None, link_id=None):
             #link_form = create_link_form(project_id)
             #context['link_tree_form'] = link_form()
             template_name = "catmaid/classification/new_graph.html"
+            page_type = 'new_graph'
         elif num_roots == 1:
             selected_graph = roots[0]
             context['graph_id'] = selected_graph.id
             template_name = "catmaid/classification/show_graph.html"
+            page_type = 'show_graph'
         else:
             #form = create_classification_form( project_id )
             #context['select_tree_form'] = form()
             template_name = "catmaid/classification/select_graph.html"
+            page_type = 'select_graph'
 
     if request.is_ajax():
         rendered_block = render_block_to_string( template_name,
             'classification-content', {}, context )
-        return HttpResponse( json.dumps( {'content': rendered_block} ) )
+        return HttpResponse(json.dumps({
+            'content': rendered_block,
+            'page': page_type}))
     else:
         return render_to_response( template_name, {}, context )
 

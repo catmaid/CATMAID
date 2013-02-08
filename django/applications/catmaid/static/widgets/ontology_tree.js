@@ -620,7 +620,7 @@ var OntologyTree = new function()
                     OntologyTree.hide_wait_message();
                     OntologyTree.handle_operation_response(status, data, text,
                         function() {
-                            OntologyTree.refresh_tree(tree_id);
+                            OntologyTree.refresh_trees();
                             OntologyTree.show_error_status( "Success", "A new class has been created." );
                         });
                 });
@@ -646,7 +646,7 @@ var OntologyTree = new function()
                 OntologyTree.hide_wait_message();
                 OntologyTree.handle_operation_response(status, data, text,
                     function() {
-                        OntologyTree.refresh_tree(tree_id);
+                        OntologyTree.refresh_trees();
                         OntologyTree.show_error_status( "Success", "The class has been removed." );
                     });
                 });
@@ -680,7 +680,7 @@ var OntologyTree = new function()
                         }
                         // refresh tree
                         if (refresh) {
-                            OntologyTree.refresh_tree(tree_id);
+                            OntologyTree.refresh_trees();
                         }
                     });
                 });

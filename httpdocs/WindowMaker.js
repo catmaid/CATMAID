@@ -204,14 +204,14 @@ var WindowMaker = new function()
     var rand = document.createTextNode('Enable active node');
     container.appendChild(rand);
 
-    var rand = document.createElement('input');
+    /*var rand = document.createElement('input');
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "toggle_ortho");
     rand.setAttribute("value", "Toggle Ortho");
     rand.onclick = WebGLApp.toggleOrthographic;
     container.appendChild(rand);
     var rand = document.createTextNode('Toggle Ortho');
-    container.appendChild(rand);
+    container.appendChild(rand);*/
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "checkbox");
@@ -258,9 +258,10 @@ var WindowMaker = new function()
     tab.innerHTML =
         '<thead>' +
           '<tr>' +
-            '<th>show</th>' +
+            '<th id="webgl-show">show</th>' +
             '<th>pre</th>' +
             '<th>post</th>' +
+            '<th>text</th>' +
             '<th>action</th>' +
             '<th>name</th>' +
             '<th>property</th>' +

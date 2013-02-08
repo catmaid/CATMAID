@@ -6,7 +6,7 @@ var WebGLApp = new function () {
 
   var scene, renderer, scale, controls, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
   var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false,
-      bbmesh, floormesh, black_bg = true, debugax;
+      bbmesh, floormesh, black_bg = true, debugax, togglevisibleall = true;
   var is_mouse_down = false, connector_filter = false;
 
   this.init = function( divID ) {
@@ -37,6 +37,18 @@ var WebGLApp = new function () {
       $('#enable_active_node').attr('checked', true);
       self.createActiveNode();
     }
+
+    $('#webgl-show').click(function() {
+      for( var skeleton_id in skeletons)
+      {
+        if( skeletons.hasOwnProperty(skeleton_id) ) {
+          $('#skeletonshow-' + skeleton_id).attr('checked', togglevisibleall);
+          skeletons[skeleton_id].setActorVisibility( togglevisibleall );
+        }
+      }
+      togglevisibleall = !togglevisibleall;
+      self.render();
+    })
 
     self.render();
   }
@@ -244,6 +256,11 @@ var WebGLApp = new function () {
       self.visiblityCompositeActor( 0, vis );
       self.visiblityCompositeActor( 1, vis );
       self.visiblityCompositeActor( 2, vis );
+      for( var idx in self.textlabels ) {
+        if( self.textlabels.hasOwnProperty( idx )) {
+          self.textlabels[ idx ].visible = vis;
+        }
+      }
     };
 
     this.setPreVisibility = function( vis ) {
@@ -252,6 +269,14 @@ var WebGLApp = new function () {
 
     this.setPostVisibility = function( vis ) {
       self.visiblityCompositeActor( 2, vis );
+    };
+
+    this.setTextVisibility = function( vis ) {
+      for( var idx in self.textlabels ) {
+        if( self.textlabels.hasOwnProperty( idx )) {
+          self.textlabels[ idx ].visible = vis;
+        }
+      }
     };
 
     this.translate = function( dx, dy, dz )
@@ -345,6 +370,7 @@ var WebGLApp = new function () {
       }
       this.labelSphere = new Object();
       this.otherSpheres = new Object();
+      this.textlabels = new Object();
     }
 
     this.remove_connector_selection = function()
@@ -476,6 +502,29 @@ var WebGLApp = new function () {
             this.otherSpheres[tokey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
             this.otherSpheres[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
             scene.add( this.otherSpheres[tokey] );
+          }
+
+          // text labels
+          if( this.original_vertices[fromkey]['labels'].length > 0) {
+
+            var theText = this.original_vertices[fromkey]['labels'].join();
+            var text3d = new THREE.TextGeometry( theText, {
+              size: 5,
+              height: 1,
+              curveSegments: 1,
+              font: "helvetiker"
+            });
+            text3d.computeBoundingBox();
+            var centerOffset = -0.5 * ( text3d.boundingBox.max.x - text3d.boundingBox.min.x );
+
+            var textMaterial = new THREE.MeshNormalMaterial( { color: 0xffffff, overdraw: true } );
+            text = new THREE.Mesh( text3d, textMaterial );
+            text.position.x = from_vector.x + 3;
+            text.position.y = from_vector.y + 3;
+            text.position.z = from_vector.z;
+
+            this.textlabels[ fromkey ] = text;
+            scene.add( text );
           }
 
           // if either from or to have a relevant label, and they are not yet
@@ -998,6 +1047,22 @@ var WebGLApp = new function () {
           } )
     ));
 
+    rowElement.append(
+      $(document.createElement("td")).append(
+        $(document.createElement("input")).attr({
+                  id:    'skeletontext-' + skeleton.id,
+                  name:  skeleton.baseName,
+                  value: skeleton.id,
+                  type:  'checkbox',
+                  checked:true
+          })
+          .click( function( event )
+          {
+            skeletons[skeleton.id].setTextVisibility( $('#skeletontext-' + skeleton.id).is(':checked') );
+            self.render();
+          } )
+    ));
+
     var td = $(document.createElement("td"));
     td.append( $(document.createElement("img")).attr({
       id:    'skeletonaction-activate-' + skeleton.id,
@@ -1137,7 +1202,6 @@ var WebGLApp = new function () {
   self.toggleConnector = function() {
     if( connector_filter ) {
       connector_filter = false;
-
     } else {
       connector_filter = true;
     }

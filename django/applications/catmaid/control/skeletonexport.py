@@ -55,7 +55,7 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
 
 def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
 
-    treenode_qs, labels_as, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id, with_labels=False)
+    treenode_qs, labels_as, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id, with_labels=True)
 
     labels={}
     for tn in labels_as:
@@ -66,8 +66,6 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
             labels[tn.treenode_id] = [ lab ]
             # whenever the word uncertain is in the tag, add it
         # here. this is used in the 3d webgl viewer
-        if 'uncertain' in lab or tn.treenode.confidence < 5:
-            labels[tn.treenode_id].append( 'uncertain' )
     for cn in labelconnector_qs:
         lab = str(cn.class_instance.name).lower()
         if cn.connector_id in labels:
@@ -76,8 +74,7 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
             labels[cn.connector_id] = [ lab ]
             # whenever the word uncertain is in the tag, add it
         # here. this is used in the 3d webgl viewer
-        if 'uncertain' in lab:
-            labels[cn.connector_id].append( 'uncertain' )
+
 
     # represent the skeleton as JSON
     vertices={}; connectivity={}
@@ -97,7 +94,7 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
             'radius': max(tn.radius, 0),
             'type': 'skeleton',
             'labels': lab,
-            'reviewer_id': tn.reviewer_id,
+            # 'reviewer_id': tn.reviewer_id,
             # 'review_time': tn.review_time
             # To submit the review time, we would need to encode the datetime as string
             # http://stackoverflow.com/questions/455580/json-datetime-between-python-and-javascript

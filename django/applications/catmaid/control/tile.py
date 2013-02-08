@@ -34,9 +34,8 @@ def get_tile(request, project_id=None, stack_id=None):
         hdfpath = '/' + str(int(scale)) + '/' + str(z) + '/data'
         if not str(int(scale)) in hfile['/'].keys():
             return HttpResponse(json.dumps({'error': 'HDF5 file does not contain scale: {0}'.format(str(int(scale)))}))
-
         image_data=hfile[hdfpath]
-        data=image_data[y:y+height,x:x+width].copy()
+        data=image_data[y:y+height,x:x+width]
         pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
         response = HttpResponse(mimetype="image/png")
         pilImage.save(response, "PNG")

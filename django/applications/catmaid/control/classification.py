@@ -5,10 +5,10 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.views.generic import TemplateView
 from django.shortcuts import render_to_response
+from django.template import Context
 
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
 from catmaid.control.ontology import get_classes
-from catmaid.control.ajax_templates import *
 from catmaid.models import Class, ClassInstance, ClassInstanceClassInstance, Relation
 from catmaid.models import UserRole
 from catmaid.control.authentication import requires_user_role
@@ -31,6 +31,15 @@ needed_classes = {
 needed_relations = {
     'is_a': "A basic is_a relation",
     'classified_by': "Link a classification to something"}
+
+class ClassProxy(Class):
+    """ A proxy class to allow custom labeling of class in model forms.
+    """
+    class Meta:
+        proxy=True
+
+    def __unicode__(self):
+        return "{0} ({1})".format(self.class_name, str(self.id))
 
 def get_root_classes_qs():
     """ Return a queryset that will get all root classes.
@@ -194,5 +203,83 @@ class NewGraphView(TemplateView):
     """
     template_name = 'catmaid/classification/new_graph.html'
 
+    #ontologies =
+
+class NewGraphForm(forms.Form):
+    """ A simple form to select classification ontologies. A choice
+    field allows to select a single class that 'is_a' 'classification_root'.
+    """
+    ontology = forms.ModelChoiceField(
+        queryset=ClassProxy.objects.filter(id__in=get_root_classes_qs()))
+
 def show_classification_editor( request, project_id=None, link_id=None):
-    pass
+    """ Selects the right view to show, based on the provided project.
+    """
+    if link_id is not None:
+        num_trees = 1
+
+        selected_tree = ClassInstanceClassInstance.objects.filter(
+            id=link_id, project=dummy_pid)
+        # Make sure we actually got a tree:
+        if selected_tree.count() != 1:
+            raise CatmaidException("Couldn't select requested tree.")
+        else:
+            selected_tree = selected_tree[0]
+
+        context = Context({
+            'num_trees': 1,
+            'tree_id': link_id,
+            'project_id': project_id,
+            'settings': settings
+        })
+
+        template = loader.get_template("catmaid/classification/show_tree.html")
+    else:
+        # First, check how many trees there are.
+        roots = get_classification_roots( project_id )
+        num_roots = len(roots)
+
+        context = Context({
+            'num_graphs': num_roots,
+            #'template_trees': template_trees,
+            'project_id': project_id,
+            'CATMAID_URL': settings.CATMAID_URL
+        })
+
+        if num_roots == 0:
+            context['new_tree_form'] = NewGraphForm()
+            #link_form = create_link_form(project_id)
+            #context['link_tree_form'] = link_form()
+            template_name = "catmaid/classification/new_graph.html"
+        elif num_roots == 1:
+            selected_graph = roots[0]
+            context['graph_id'] = selected_graph.id
+            template_name = "catmaid/classification/show_graph.html"
+        else:
+            #form = create_classification_form( project_id )
+            #context['select_tree_form'] = form()
+            template_name = "catmaid/classification/select_graph.html"
+
+    return render_to_response( template_name, {}, context )
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def add_classification_graph(request, project_id=None):
+    # Has the form been submitted?
+    if request.method == 'POST':
+        form = NewGraphForm(request.POST)
+        if form.is_valid():
+            # Create the new classification tree
+            project = get_object_or_404(Project, pk=project_id)
+            ontology = form.cleaned_data['ontology']
+            init_classification( request.user, project, ontology )
+            return HttpResponse('A new tree has been initalized.')
+    else:
+        new_tree_form = NewGraphForm()
+        #link_form = create_link_form( project_id )
+        #link_tree_form = link_form()
+
+        return render_to_response("catmaid/new_classification_tree.html", {
+            "project_id": project_id,
+            "new_tree_form": new_tree_form,
+            #"link_tree_form": link_tree_form,
+        })

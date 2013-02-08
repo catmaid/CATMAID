@@ -4,14 +4,14 @@ from django import forms
 from django.conf import settings
 from django.http import HttpResponse
 from django.views.generic import TemplateView
-from django.shortcuts import render_to_response
+from django.shortcuts import get_object_or_404, render_to_response
 from django.template import Context
 
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
 from catmaid.control.ajax_templates import *
 from catmaid.control.ontology import get_classes
 from catmaid.models import Class, ClassInstance, ClassInstanceClassInstance, Relation
-from catmaid.models import UserRole
+from catmaid.models import UserRole, Project
 from catmaid.control.authentication import requires_user_role
 
 # A dummy project is referenced by all the classes and class instances.
@@ -123,7 +123,7 @@ def create_new_classification( project_id ):
     # Get the classification project class
     class_map = get_class_to_id_map(dummy_pid)
     if 'classification_project' not in class_map:
-        raise CatmaidException("Couldn't find 'classification_project' class")
+        raise Exception("Couldn't find 'classification_project' class")
 
     # Create new classification
     cls_graph = None
@@ -232,7 +232,7 @@ def show_classification_editor( request, project_id=None, link_id=None):
             id=link_id, project=dummy_pid)
         # Make sure we actually got a tree:
         if selected_tree.count() != 1:
-            raise CatmaidException("Couldn't select requested tree.")
+            raise Exception("Couldn't select requested tree.")
         else:
             selected_tree = selected_tree[0]
 
@@ -293,7 +293,7 @@ def add_classification_graph(request, project_id=None):
             # Create the new classification tree
             project = get_object_or_404(Project, pk=project_id)
             ontology = form.cleaned_data['ontology']
-            init_classification( request.user, project, ontology )
+            init_new_classification( request.user, project, ontology )
             return HttpResponse('A new tree has been initalized.')
     else:
         new_tree_form = new_graph_form_class()
@@ -305,3 +305,48 @@ def add_classification_graph(request, project_id=None):
             "new_tree_form": new_tree_form,
             #"link_tree_form": link_tree_form,
         })
+
+def init_new_classification( user, project, ontology ):
+    """ Intializes a new classification graph which is automatically
+    linked to the provided project. This graph is based on the passed
+    ontology (a root class in the semantic space). To do this, an instance
+    of the ontology root is created and placed in classification space.
+    The project's 'classification_project' class instance is fetched (or
+    created if not present) and linked to the root class instance. The
+    relation used for this is 'classified_by'.
+    """
+    # Create a new ontology root instance
+    ontology_root_ci = ClassInstance.objects.create(
+        user = user, project_id = dummy_pid, class_column = ontology)
+    # Try to fetch the project's 'classification_project' class instance
+    cp_c_q = Class.objects.filter(
+        project_id = dummy_pid, class_name = 'classification_project')
+    if cp_c_q.count() == 0:
+        raise Exception("Could not find class 'classification_project'. \
+            The classification system appears to be not set up correctly.")
+    cp_ci_q = ClassInstance.objects.filter(
+        project = project, class_column__in=cp_c_q)
+    # Get the 'classified_by' relation
+    clsby_rel_q = Relation.objects.filter(
+        project_id = dummy_pid, relation_name = 'classified_by')
+    if clsby_rel_q.count() == 0:
+        raise Exception("Could not find relation 'classified_by'. \
+            The classification system appears to be not set up correctly.")
+
+    # Create a new 'classification_project' instance for the current project
+    # or use an already presont one (if any).
+    if cp_ci_q.count() == 0:
+        cp_ci = ClassInstance.objects.create(
+            user = user,
+            project = project,
+            class_column = cp_c_q[0])
+    else:
+        cp_ci = cp_ci_q[0]
+
+    # Link both, the ontology root CI and the classification project CI
+    link = ClassInstanceClassInstance.objects.create(
+        user = user,
+        project_id = dummy_pid,
+        relation = clsby_rel_q[0],
+        class_instance_a = cp_ci,
+        class_instance_b = ontology_root_ci)

@@ -1,3 +1,4 @@
+{% block classification-content %}
 <input type="hidden" id="link_id" value="{{ tree_id  }}" />
 <input type="button" id="refresh_classification_graph" value="refresh" style="display:block; float:left;" />
 &nbsp; Synchronize <input type="checkbox" id="synchronize_classification_graph" checked="yes" />
@@ -5,3 +6,4 @@
 &nbsp; <a id="add_classification_link" href="{{ CATMAID_URL}}{{ project_id }}/class-tree/new">Add/Link new tree</a>
 <br clear="all" />
 <div id="classification_graph_object"></div>
+{% endblock %}

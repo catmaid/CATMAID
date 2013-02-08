@@ -206,12 +206,21 @@ class NewGraphView(TemplateView):
 
     #ontologies =
 
-class NewGraphForm(forms.Form):
-    """ A simple form to select classification ontologies. A choice
-    field allows to select a single class that 'is_a' 'classification_root'.
+def create_new_graph_form( class_ids=None ):
+    """ Creates a new NewGraphForm python class withan up-to-date
+    class queryset.
     """
-    ontology = forms.ModelChoiceField(
-        queryset=ClassProxy.objects.filter(id__in=get_root_classes_qs()))
+    if not class_ids:
+        class_ids = get_root_classes_qs()
+
+    class NewGraphForm(forms.Form):
+        """ A simple form to select classification ontologies. A choice
+        field allows to select a single class that 'is_a' 'classification_root'.
+        """
+        ontology = forms.ModelChoiceField(
+            queryset=ClassProxy.objects.filter(id__in=class_ids))
+
+    return NewGraphForm
 
 def show_classification_editor( request, project_id=None, link_id=None):
     """ Selects the right view to show, based on the provided project.
@@ -248,7 +257,8 @@ def show_classification_editor( request, project_id=None, link_id=None):
         })
 
         if num_roots == 0:
-            context['new_tree_form'] = NewGraphForm()
+            new_graph_form_class = create_new_graph_form()
+            context['new_tree_form'] = new_graph_form_class()
             #link_form = create_link_form(project_id)
             #context['link_tree_form'] = link_form()
             template_name = "catmaid/classification/new_graph.html"
@@ -271,8 +281,9 @@ def show_classification_editor( request, project_id=None, link_id=None):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def add_classification_graph(request, project_id=None):
     # Has the form been submitted?
+    new_graph_form_class = create_new_graph_form()
     if request.method == 'POST':
-        form = NewGraphForm(request.POST)
+        form = new_graph_form_class(request.POST)
         if form.is_valid():
             # Create the new classification tree
             project = get_object_or_404(Project, pk=project_id)
@@ -280,7 +291,7 @@ def add_classification_graph(request, project_id=None):
             init_classification( request.user, project, ontology )
             return HttpResponse('A new tree has been initalized.')
     else:
-        new_tree_form = NewGraphForm()
+        new_tree_form = new_graph_form_class()
         #link_form = create_link_form( project_id )
         #link_tree_form = link_form()
 

@@ -258,9 +258,10 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
     return partners
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+#@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_info_raw(request, project_id=None, skeleton_id=None):
     # sanitize arguments
+    synaptic_count_high_pass = int( request.POST.get( 'threshold', 0 ) )
     skeleton_id = int(skeleton_id)
     project_id = int(project_id)
     #
@@ -283,8 +284,8 @@ def skeleton_info_raw(request, project_id=None, skeleton_id=None):
     outgoing = _connected_skeletons(skeleton_id, relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'], relation_ids['model_of'], cursor)
     # Sort by number of connections
     result = {
-        'incoming': list(reversed(sorted(incoming.values(), key=itemgetter('synaptic_count')))),
-        'outgoing': list(reversed(sorted(outgoing.values(), key=itemgetter('synaptic_count'))))
+        'incoming': [e for e in list(reversed(sorted(incoming.values(), key=itemgetter('synaptic_count')))) if e['synaptic_count'] >= synaptic_count_high_pass],
+        'outgoing': [e for e in list(reversed(sorted(outgoing.values(), key=itemgetter('synaptic_count'))))if e['synaptic_count'] >= synaptic_count_high_pass]
     }
     json_return = json.dumps(result, sort_keys=True, indent=4)
     return HttpResponse(json_return, mimetype='text/json')

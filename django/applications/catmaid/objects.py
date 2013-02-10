@@ -135,11 +135,10 @@ class Skeleton(object):
                 'reviewer_id': e.reviewer_id,
                 'review_time': e.review_time,
                 'radius': e.radius,
-                'confidence': e.confidence
                 # TODO: labels!
             }
             if e.parent_id:
-                graph.add_edge( e.parent_id, e.id )
+                graph.add_edge( e.parent_id, e.id, {'confidence': e.confidence} )
         return graph
 
     def cable_length(self):
@@ -206,6 +205,7 @@ class SkeletonGroup(object):
             graph.add_node( skeleton_id, {
                 'baseName': '%s (SkeletonID: %s)' % (self.skeletons[skeleton_id].neuron.name, str(skeleton_id) ),
                 'neuronname': self.skeletons[skeleton_id].neuron.name,
+                'skeletonid': str(skeleton_id),
                 'node_count': str( self.skeletons[skeleton_id].node_count() ),
                 'percentage_reviewed': str( self.skeletons[skeleton_id].percentage_reviewed() ),
                 'cable_length': str( self.skeletons[skeleton_id].cable_length() )
@@ -249,3 +249,76 @@ class SkeletonGroup(object):
         for u,v,d in self.graph.edges_iter(data=True):
             resulting_connectors.update(d['connector_ids'])
         return resulting_connectors
+
+
+def compartmentalize_skeletongroup_by_confidence( skeleton_id_list, project_id, confidence_threshold = 5):
+    """ Splits all skeleton edges lower than the threshold into compartments 
+    and returns a graph """
+
+    skelgroup = SkeletonGroup( skeleton_id_list, project_id )
+
+    compartment_graph_of_skeletons = {}
+    resultgraph = nx.DiGraph()
+
+    for skeleton_id, skeleton in skelgroup.skeletons.items():
+        for u,v,d in skeleton.graph.edges_iter(data=True):
+            if d['confidence'] < confidence_threshold:
+                print 'skeletonid', skeleton_id, 'remove', u,v
+                skeleton.graph.remove_edge( u, v )
+
+        subgraphs = nx.weakly_connected_component_subgraphs( skeleton.graph )
+        compartment_graph_of_skeletons[ skeleton_id ] = subgraphs
+
+        for i,subg in enumerate(subgraphs):
+            for nodeid, d in subg.nodes_iter(data=True):
+                d['compartment_index'] = i
+                skeleton.graph.node[nodeid]['compartment_index'] = i
+
+            resultgraph.add_node( '{0}_{1}'.format(skeleton_id, i), {
+                    'neuronname': skeleton.neuron.name,
+                    'skeletonid': str(skeleton_id),
+                    'compartment_index': i,
+                    'node_count': subg.number_of_nodes(),
+                })
+
+
+    connectors = {}
+    for skeleton_id, skeleton in skelgroup.skeletons.items():
+        for connector_id, v in skeleton.connected_connectors.items():
+            if not connectors.has_key(connector_id):
+                connectors[connector_id] = {
+                    'pre': [], 'post': []
+                }
+
+            if len(v['presynaptic_to']):
+                # add the skeleton id for each treenode that is in v['presynaptic_to']
+                # This can duplicate skeleton id entries which is correct
+                for e in v['presynaptic_to']:
+                    skeleton_compartment_id = '{0}_{1}'.format(
+                        skeleton_id,
+                        skeleton.graph.node[e]['compartment_index'])
+                    connectors[connector_id]['pre'].append( skeleton_compartment_id )
+
+            if len(v['postsynaptic_to']):
+                for e in v['postsynaptic_to']:
+                    skeleton_compartment_id = '{0}_{1}'.format(
+                        skeleton_id,
+                        skeleton.graph.node[e]['compartment_index'])
+                    connectors[connector_id]['post'].append( skeleton_compartment_id )
+
+    # merge connectors into graph
+    for connector_id, v in connectors.items():
+        for from_skeleton in v['pre']:
+            for to_skeleton in v['post']:
+
+                if not resultgraph.has_edge( from_skeleton, to_skeleton ):
+                    resultgraph.add_edge( from_skeleton, to_skeleton, {'count': 0, 'connector_ids': set() } )
+
+                resultgraph.edge[from_skeleton][to_skeleton]['count'] += 1
+                resultgraph.edge[from_skeleton][to_skeleton]['connector_ids'].add( connector_id )
+
+
+    return resultgraph
+
+from catmaid.objects import *
+# compartmentalize_skeletongroup_by_confidence( [70,99], 6, 4)

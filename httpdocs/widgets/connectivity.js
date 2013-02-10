@@ -28,7 +28,7 @@ var SkeletonConnectivity = new function()
                 'POST',
                 {'threshold': $('#connectivity_count_threshold').val()},
                 self.createConnectivityTable,
-                'update_cnnectivity_table');
+                'update_connectivity_table');
     };
 
     this.createConnectivityTable = function( status, text ) {

@@ -439,6 +439,54 @@ var WindowMaker = new function()
     return win;
   };
 
+  var createCompartmentGraphWindow = function()
+  {
+    var win = new CMWWindow("Compartment Graph Widget");
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var contentbutton = document.createElement('div');
+    contentbutton.setAttribute("id", 'compartment_graph_window_buttons');
+
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
+    add.setAttribute("id", "compartment_show_neurons_from_3d_view");
+    add.setAttribute("value", "Show graph of selected 3D viewer neuron(s)");
+    add.onclick = CompartmentGraphWidget.updateGraphFrom3DViewer;
+    contentbutton.appendChild(add);
+
+    var sync = document.createElement('select');
+    sync.setAttribute("id", "confidence_threshold");
+    for (var i = 1; i < 6; i++) {
+      var option = document.createElement("option");
+      option.text = i.toString();
+      option.value = i;
+      sync.appendChild(option);
+    }
+
+    contentbutton.appendChild(sync);
+
+    content.appendChild( contentbutton );
+
+    var container = createContainer("compartment_graph_widget");
+    content.appendChild(container);
+
+    var graph = document.createElement('div');
+    graph.setAttribute("id", "cyelement");
+    graph.style.width = "100%";
+    graph.style.height = "100%";
+    graph.style.backgroundColor = "#FFFFF0";
+    container.appendChild(graph);
+
+    addListener(win, container, 'compartment_graph_window_buttons');
+
+    addLogic(win);
+
+    CompartmentGraphWidget.init();
+
+    return win;
+  };
+
   var createGraphWindow = function()
   {
     var win = new CMWWindow("Graph Widget");
@@ -1164,6 +1212,7 @@ var WindowMaker = new function()
     "graph-widget": createGraphWindow,
     "cytograph-widget": createCytoscapeGraphWindow,
     "segmentstable-widget": createSegmentsTablesWindow,
+    "compartment-graph-widget": createCompartmentGraphWindow,
     "object-tree": createObjectTreeWindow,
     "statistics": createStatisticsWindow,
     "disclaimer": createDisclaimerWindow,

@@ -45,7 +45,7 @@ def read_message(request, project_id=None):
         message.save()
 
         if message.action is not None and message.action != '':
-            redirect = 'location.replace(%s)' % message.action
+            redirect = 'location.replace("%s")' % message.action
             redir_link = message.action
         else:
             redirect = 'history.back()'

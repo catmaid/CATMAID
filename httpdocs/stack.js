@@ -318,6 +318,7 @@ function Stack(
 		
 		return;
 	}
+	this.resize = resize
 	
 	/**
 	 * Get the stack window.

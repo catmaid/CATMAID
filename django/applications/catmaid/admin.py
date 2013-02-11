@@ -6,7 +6,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
 from guardian.admin import GuardedModelAdmin
-from catmaid.models import Project, DataView, Stack, ProjectStack, UserProfile, Overlay
+from catmaid.models import Project, DataView, Stack, ProjectStack, UserProfile, Overlay, StackSliceInfo
 from catmaid.control.importer import importer_admin_view
 
 class ProjectAdmin(GuardedModelAdmin):
@@ -105,4 +105,4 @@ admin.site.register(User, CustomUserAdmin)
 # Register additional views
 admin.site.register_view('importer', importer_admin_view, 'Importer')
 admin.site.register(Overlay)
-
+admin.site.register(StackSliceInfo)

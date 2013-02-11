@@ -15,24 +15,29 @@ var SegmentationAnnotations = new function()
     // more criteria, e.g. min_overlap_ratio_threshold=0.8
 
     // base url for slices, filename ending
-    var slice_base_url = 'http://localhost/slices/',
+    var slice_base_url = 'http://localhost/slicesbig/',
         slice_filename_extension = '.png';
 
-    // slices container
-
-    // slices information
-    // cytoscape graph object
-    var cy;
-
-    //var current_section = 0;
 
     this.set_stack = function( parentStack ) {
-        console.log('SET STACK', parentStack );
+        // console.log('SET STACK', parentStack );
         self.stack = parentStack;
 
-        // TODO: assume graph widget open
-        // $("#cyto").cytoscape({ zoom: 1});
-        // cy = $("#cyto").cytoscape("get");
+        requestQueue.register(django_url + project.id + '/stack/' + get_current_stack().id + '/slice-info', "POST", {},
+         function (status, text, xml) {
+                if (status === 200) {
+                    if (text && text !== " ") {
+                        var e = $.parseJSON(text);
+                        if (e.error) {
+                            alert(e.error);
+                        } else {
+                            console.log('return ',e)
+                            slice_base_url = e.slice_base_url;
+                            slice_filename_extension = e.slice_filename_extension;
+                        }
+                    }
+                }
+        });
 
         // TODO: this needs to be called after fetching for an
         // assembly id from the database
@@ -206,7 +211,7 @@ var SegmentationAnnotations = new function()
 
     var get_slice_image_url_from_section_and_slice = function( sectionindex, slice_id ) {
         return slice_base_url + 
-            generate_path_for_slice( sectionindex, slice_id ) +
+            generate_path_for_slice( sectionindex, slice_id ) + '.' +
             slice_filename_extension;
     };
 
@@ -860,12 +865,12 @@ var SegmentationAnnotations = new function()
         */
         this.get_slice_image_url = function() {
             return slice_base_url + 
-                generate_path_for_slice( this.sectionindex, this.slice_id ) +
+                generate_path_for_slice( this.sectionindex, this.slice_id ) + '.' +
                 slice_filename_extension;
         };
 
         this.get_slice_relative_image_url = function() {
-            return generate_path_for_slice( this.sectionindex, this.slice_id ) +
+            return generate_path_for_slice( this.sectionindex, this.slice_id ) + '.' +
                 slice_filename_extension;
         };
 

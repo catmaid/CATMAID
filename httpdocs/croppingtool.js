@@ -149,7 +149,7 @@ function CroppingTool() {
 	 */
 	var handle_crop = function( status, text, xml )
 	{
-		if ( status = 200 )
+		if ( status == 200 )
 		{
 			var e = $.parseJSON(text);
 
@@ -162,6 +162,8 @@ function CroppingTool() {
 				statusBar.replaceLast( text );
 				alert( "Cropping the microstack...\nThis operation may take some time, you will be notified as soon as the cropped stack is ready." );
 			}
+		} else {
+			alert( "The server returned an unexpected response (status: " + status + "):\n" + text );
 		}
 		return;
 	}

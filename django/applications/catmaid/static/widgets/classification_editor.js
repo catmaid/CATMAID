@@ -68,4 +68,45 @@ var ClassificationEditor = new function()
 
     return found;
   };
+
+  this.overrideRemoveTreeLink = function(container, pid) {
+    var remove_link = $("#remove_classification_link");
+    var found = remove_link.length !== 0;
+    if (found) {
+         remove_link.click(function(){
+             if (confirm("Are you sure you want to remove the whole classification tree?")) {
+                 $.ajax({
+                     type: "POST",
+                     url: remove_link.attr('href'),
+                     success: function(data, textStatus) {
+                         container.innerHTML = "<p>" + data + "</p><p>Reloading in a few seconds.</p>";
+                         setTimeout("ClassificationEditor.init(" + pid + ")", 3000);
+                     }
+                 });
+             }
+             return false;
+         });
+    }
+
+    return found;
+  }
+
+  this.overrideAddTreeLink = function(container, pid) {
+    var remove_link = $("#add_classification_link");
+    var found = remove_link.length !== 0;
+    if (found) {
+         remove_link.click(function(){
+             $.ajax({
+                 type: "POST",
+                 url: remove_link.attr('href'),
+                 success: function(data, textStatus) {
+                     container.innerHTML = data;
+                 }
+             });
+             return false;
+         });
+    }
+
+    return found;
+  }
 }

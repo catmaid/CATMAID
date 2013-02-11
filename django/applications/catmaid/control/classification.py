@@ -10,8 +10,8 @@ from django.template import Context
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
 from catmaid.control.ajax_templates import *
 from catmaid.control.ontology import get_classes
-from catmaid.models import Class, ClassInstance, ClassInstanceClassInstance, Relation
-from catmaid.models import UserRole, Project
+from catmaid.models import Class, ClassClass, ClassInstance, ClassInstanceClassInstance
+from catmaid.models import Relation, UserRole, Project
 from catmaid.control.authentication import requires_user_role
 
 # A dummy project is referenced by all the classes and class instances.
@@ -99,6 +99,46 @@ def get_classification_number( project_id ):
     """
     roots = get_classification_roots(project_id)
     return len(roots)
+
+class Child:
+    """ Keeps the class instance ID, title, node type and
+    template id as well as template childs of a node.
+    """
+    def __init__(self, class_instance, title, class_name, node_type="element" ):
+        self.class_instance = class_instance
+        self.title = title
+        self.class_name = class_name
+        self.node_type = node_type
+        self.child_nodes = {}
+        self.template_node_id = -1
+        self.template_node_name = ""
+        self.template_node_alt = []
+
+def get_children( parent_ci ):
+    """ Returns all children of a node with id <parent_id>. The result
+    is limited to a maximum ef <max_nodes> nodes.
+    """
+    # Get al a query set for all children that are linked to a parent
+    # that is not linked by a relation named 'classified_by'.
+    cici_q = ClassInstanceClassInstance.objects.filter(
+        class_instance_b=parent_ci).exclude(
+            relation__relation_name='classified_by')
+    children = [cici.class_instance_a for cici in cici_q]
+
+    # Collect all child node class instances
+    #children = []
+    #for c in cici_q:
+    #    child = Child(r, row[1], row[3])
+    #    children.append( child )
+
+    return children
+
+def get_possibble_children( parent_ci ):
+    """ Returns a dictionary of all possible children.
+    """
+    # Find possible alternative types. These are classes that have
+    # the same parent as <parent_ci>.
+    return []
 
 def link_to_classification( project_id, cls_graph ):
     """ Links a project to a classification graph by creating a
@@ -350,3 +390,128 @@ def init_new_classification( user, project, ontology ):
         relation = clsby_rel_q[0],
         class_instance_a = cp_ci,
         class_instance_b = ontology_root_ci)
+
+def get_child_classes( parent_class ):
+    # Get all possible child classes (semantic space)
+    cc_q = ClassClass.objects.filter(class_b=parent_class)
+    child_classes = [ (cc.class_a, cc.relation) for cc in cc_q ]
+    # Create a dictionary where all classes are assigned to a class which
+    # is used as a generalization (if possible). The generalization of a
+    # class is linked to it with an 'is_a' relation.
+    child_types = {}
+    def add_class( key, c, rel ):
+        cdata = { 'id': c.id, 'name': c.class_name, 'exclusive': False,
+            'relname': rel.relation_name, 'relid': rel.id }
+        if key not in child_types:
+            child_types[key] = []
+        child_types[key].append(cdata)
+
+    for c, r in child_classes:
+        # Test if the current child class has sub-types
+        sub_classes = get_classes( dummy_pid, 'is_a', c )
+        if len(sub_classes) == 0:
+            # Add class to generic 'Element' group
+            add_class( 'Elememt', c, r )
+        else:
+            # On entry for each 'is_a' link (usually one)
+            for sc in sub_classes:
+                add_class( c.class_name, sc, r )
+    return child_types
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def list_classification_graph(request, project_id=None, link_id=None):
+    """ Produces a data structure for each node of a classification graph
+    that is undetstood by jsTree.
+    """
+    parent_id = int(request.GET.get('parentid', 0))
+    parent_name = request.GET.get('parentname', '')
+    expand_request = request.GET.get('expandtarget', None)
+    if expand_request is None:
+        expand_request = tuple()
+    else:
+        # Parse to int to sanitize
+        expand_request = tuple(int(x) for x in expand_request.split(','))
+
+    max_nodes = 5000  # Limit number of nodes retrievable.
+
+    if link_id is None:
+        # Get all links
+        links_q = get_classification_links_qs( project_id )
+        # Return valid roots
+        roots = [ cici.class_instance_b for cici in links_q ]
+        num_roots = len(roots)
+
+        # Get classification instance
+        if num_roots == 0:
+            raise Exception("No classification graph was found for this project.")
+        if num_roots > 1:
+            raise Exception("There is more than one classification graph and none was selected.")
+        else:
+            # Select the only root available for this project
+            cls_graph = roots[0]
+    else:
+        # The link passed is a CICI link which links a project to a
+        # certain classification root.
+        cici_q = ClassInstanceClassInstance.objects.filter(id=link_id,
+            relation__relation_name='classified_by')
+        if cici_q.count() == 0:
+            raise Exception("The specified link was not found.")
+        cls_link = cici_q[0]
+        cls_prj = cls_link.class_instance_a
+        if cls_prj.project_id != project_id:
+            raise Exception("The link was found, but belongs to another project.")
+        cls_graph = cls_link.class_instance_b
+
+    response_on_error = ''
+    try:
+        if 0 == parent_id:
+            response_on_error = 'Could not select the id of the classification root node.'
+
+            # Collect all child node class instances
+            #child = Child( root_id, root_name, "classification_root", 'root')
+            #add_template_fields( [child] )
+            child_types = get_child_classes( cls_graph.class_column )
+
+            # Create JSTree data structure
+            data = {'data': {'title': cls_graph.class_column.class_name},
+                'attr': {'id': 'node_%s' % cls_graph.id,
+                         'rel': 'root',
+                         'child_groups': json.dumps(child_types)}}
+            # Test if there are children links present and mark
+            # node as leaf if there are none.
+            child_nodes = get_children( cls_graph )
+            if len(child_nodes) > 0:
+                data['state'] = 'closed'
+
+            return HttpResponse(json.dumps([data]))
+        else:
+            # Get parent class instance
+            parent_q = ClassInstance.objects.filter(id=parent_id)
+            if parent_q.count() == 0:
+                raise Exception("Couldn't select parent class instance with ID %s." % parent_id)
+            parent_ci = parent_q[0]
+            # Get all to root linked class instances
+            child_nodes = get_children( parent_ci )
+
+            response_on_error = 'Could not retrieve child nodes.'
+            #add_template_fields( child_nodes )
+
+            child_data = []
+            for child in child_nodes:
+                child_types = get_child_classes( child.class_column )
+                data = {'data': {'title': child.class_column.class_name },
+                    'attr': {'id': 'node_%s' % child.id,
+                             'rel': 'element',
+                             'child_groups': json.dumps(child_types)}}
+
+                # Test if there are children links present and mark
+                # node as leaf if there are none.
+                sub_children = get_children( child )
+                if len(sub_children) > 0:
+                    data['state'] = 'closed'
+
+                child_data.append(data)
+
+            return HttpResponse(json.dumps(tuple(cd for cd in child_data)))
+    except Exception as e:
+        raise Exception(response_on_error + ':' + str(e))

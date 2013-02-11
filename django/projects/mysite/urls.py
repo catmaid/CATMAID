@@ -276,6 +276,10 @@ urlpatterns += patterns('',
         'catmaid.control.check_classification_setup_view', name='test_classification_setup'),
     url(r'^(?P<project_id>%s)/classification/new$' % (integer),
         'catmaid.control.add_classification_graph', name='add_classification_graph'),
+    url(r'^(?P<project_id>%s)/classification/list$' % (integer),
+        'catmaid.control.list_classification_graph', name='list_classification_graph'),
+    url(r'^(?P<project_id>%s)/classification/list/(?P<link_id>\d+)$' % (integer),
+        'catmaid.control.list_classification_graph', name='list_classification_graph'),
     )
 
 if settings.DEBUG:

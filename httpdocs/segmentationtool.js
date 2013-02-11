@@ -123,19 +123,11 @@ function SegmentationTool()
     this.createCanvasLayer = function ()
     {
         canvasLayer = new CanvasLayer( self.stack, self );
-        canvasLayer.canvas.interactive = false;
-        canvasLayer.canvas.selection = false;
 
         canvasLayer.canvas.on({
           'mouse:down': function(e) {
-            // console.log('-----on mouse down on canvas', e)
-            //console.log('mouse move on canvas', e);
-            //console.log('next');
-            
             var target = canvasLayer.canvas.findTarget( e.e );
-            // console.log('target', target);
             if( target ) {
-                // console.log('actiavte', target.slice.node_id )
                 SegmentationAnnotations.activate_slice( target.slice )
                 self.redraw();
                 // not propagate to view
@@ -143,7 +135,7 @@ function SegmentationTool()
                 e.e.preventDefault();
                 return false;
             } else {
-                self.clickXY( e.e );    
+                self.clickXY( e.e );
             }
             return true;
           },
@@ -164,6 +156,18 @@ function SegmentationTool()
         // add the layer to the stack, and implicitly
         // add the view element to the DOM
         self.stack.addLayer( "CanvasLayer", canvasLayer );
+
+        self.stack.resize();
+
+
+        /*canvasLayer.canvas.findTarget = (function(originalFn) {
+          return function() {
+            // console.log('in find targets', this, arguments, arguments[0].offsetY, arguments[0].clientY)
+            var target = originalFn.apply(this, arguments);
+            return target;
+          };
+        })(canvasLayer.canvas.findTarget);*/
+
 
         // register mouse events
         canvasLayer.view.onmousedown = function( e ) {
@@ -479,21 +483,10 @@ function SegmentationTool()
     }
 
     this.clickXY = function( e ) {
-        // TODO: should in fact create one new assembly only if in the retrieved set of
-        // slices, none has an assembly ID
-
-        /* if (!self.current_active_assembly || !parseInt(self.current_active_assembly, 10) > 0) {
-            
-        } */
-
-        // console.log('use current assembly', self.current_active_assembly);
-        var fieldOfView = canvasLayer.getFieldOfViewParameters(),
-            x = e.offsetX,
-            y = e.offsetY;
-
+        var wc = self.stack.getFieldOfViewInPixel();
         requestQueue.register(django_url + project.id + "/stack/" + self.stack.id + '/slices-at-location', "GET", {
-            x: getStackXFromCanvasX(x),
-            y: getStackYFromCanvasY(y),
+            x: wc.worldLeftC + e.offsetX,
+            y: wc.worldTopC + e.offsetY,
             scale : 0.5, // defined as 1/2**zoomlevel
             z : self.stack.z}, function (status, text, xml) {
                 if (status === 200) {
@@ -561,8 +554,8 @@ function SegmentationTool()
         // console.log('add slice', node_id, slice.bb_center_x)
         slice.img.setActive( true );
         slice.img.set({
-                left: getCanvasXFromStackX(slice.bb_center_x),
-                top: getCanvasYFromStackY(slice.bb_center_y)
+                left: slice.bb_center_x - self.stack.getFieldOfViewInPixel().worldLeftC,
+                top: slice.bb_center_y - self.stack.getFieldOfViewInPixel().worldTopC,
             });
         canvasLayer.canvas.add( slice.img );
     };
@@ -570,26 +563,6 @@ function SegmentationTool()
     var remove_slice_from_canvas = function( node_id ) {
         var slice = SegmentationAnnotations.get_slice( node_id );
         canvasLayer.canvas.remove( slice.img );
-    };
-
-    var getCanvasXFromStackX = function( stackX )
-    {
-        return stackX - canvasLayer.getFieldOfViewParameters().x;
-    };
-
-    var getCanvasYFromStackY = function( stackY )
-    {
-        return stackY - canvasLayer.getFieldOfViewParameters().y;
-    };
-
-    var getStackYFromCanvasY = function( canvasY )
-    {
-        return canvasLayer.getFieldOfViewParameters().y + canvasY;
-    };
-
-    var getStackXFromCanvasX = function( canvasX )
-    {
-        return canvasLayer.getFieldOfViewParameters().x + canvasX;
     };
 
     this.redraw = function() {

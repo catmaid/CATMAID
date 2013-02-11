@@ -717,8 +717,8 @@ var SegmentationAnnotations = new function()
                 //console.log('image fetched!', img)
                 self.img = img;
                 // TODO: does not work
-                //self.img.perPixelTargetFind = true;
-                //self.img.targetFindTolerance = 40;
+                self.img.perPixelTargetFind = true;
+                self.img.targetFindTolerance = 4;
 
                 self.img.hasControls = false;
                 self.img.hasBorders = false;

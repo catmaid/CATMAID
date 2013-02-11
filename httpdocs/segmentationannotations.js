@@ -15,9 +15,7 @@ var SegmentationAnnotations = new function()
     // more criteria, e.g. min_overlap_ratio_threshold=0.8
 
     // base url for slices, filename ending
-    var slice_base_url = 'http://localhost/slicesbig/',
-        slice_filename_extension = '.png';
-
+    var slice_base_url, slice_filename_extension;
 
     this.set_stack = function( parentStack ) {
         // console.log('SET STACK', parentStack );

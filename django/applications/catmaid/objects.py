@@ -169,7 +169,7 @@ class Skeleton(object):
         """
         sum = 0
         for ID_from, ID_to, d  in self.graph.edges(data=True):
-            print d['delta_creation_time'].seconds
+            # print d['delta_creation_time'].seconds
             if d['delta_creation_time'].seconds > threshold:
                 sum += d['delta_creation_time'].seconds
         return sum
@@ -250,10 +250,72 @@ class SkeletonGroup(object):
             resulting_connectors.update(d['connector_ids'])
         return resulting_connectors
 
+def confidence_filtering( skeleton, confidence_threshold ):
+    for u,v,d in skeleton.graph.edges_iter(data=True):
+        if d['confidence'] <= confidence_threshold:
+            # print 'skeletonid', skeleton_id, 'remove', u,v
+            skeleton.graph.remove_edge( u, v )
 
-def compartmentalize_skeletongroup_by_confidence( skeleton_id_list, project_id, confidence_threshold = 5):
+def edgecount_filtering( skeleton, edgecount ):
+    graph = skeleton.graph
+    keep = set()
+
+    # init edge count (and compute distance) on the edges
+    for ID_from, ID_to in graph.edges(data=False):
+        # graph.edge[ID_from][ID_to]['distance'] = np.linalg.norm(graph.node[ID_to]['location'] - graph.node[ID_from]['location'])
+        graph.edge[ID_from][ID_to]['edgecount'] = 1
+
+    # list of nodes which are either pre or postsynaptic
+    for connector_id, di in skeleton.connected_connectors.items():
+        keep.update( di['presynaptic_to'] )
+        keep.update( di['postsynaptic_to'] )
+
+    # add nodes that are either branch (deg>2) or leaf (deg==1)
+    for nodeid, value in nx.degree(graph).items():
+        if value == 1 or value > 2:
+            keep.add( nodeid )
+
+    # while loop to collapse nodes with deg==2 not in the set and add physical distances
+    # until none is changing anymore
+    ends = False
+    while not ends:
+        ends = True
+        for nodeid, d in graph.nodes_iter(data=True):
+            if nodeid in keep:
+                continue
+            fromnode = graph.predecessors(nodeid)[0]
+            tonode = graph.successors(nodeid)[0]
+            #newdistance = graph.edge[fromnode][nodeid]['distance'] + graph.edge[nodeid][tonode]['distance']
+            newedgecount = graph.edge[fromnode][nodeid]['edgecount'] + graph.edge[nodeid][tonode]['edgecount']
+            graph.add_edge(fromnode, tonode, {'edgecount': newedgecount}) # 'distance': newdistance, 
+            graph.remove_edge( fromnode, nodeid )
+            graph.remove_edge( nodeid, tonode )
+            graph.remove_node( nodeid )
+            ends = False
+            break
+
+    for u,v,d in graph.edges_iter(data=True):
+        if d['edgecount'] >= edgecount:
+            skeleton.graph.remove_edge( u, v )
+
+def compartmentalize_skeletongroup_by_confidence( skeleton_id_list, project_id, confidence_threshold = 4):
     """ Splits all skeleton edges lower than the threshold into compartments 
     and returns a graph """
+
+    return compartmentalize_skeletongroup( skeleton_id_list, project_id, confidence_threshold = confidence_threshold )
+
+def compartmentalize_skeletongroup_by_edgecount( skeleton_id_list, project_id, edgecount = 10):
+    """ Collapses all skeleton edges between leaf, branch and pre- and postsynaptic nodes. Then cut the resulting
+    skeleton at edges which have a count of collapsed edges strictly bigger than the edgecount parameters.
+
+    This allows to compartmentalize a skeleton based on 'uninteresting' cable without synaptic sites or branch
+    characteristics. """
+    # TODO: add XY or XZ projection planes to position the compartment clusters with a proxy of its
+    # physical location in the stack
+
+    return compartmentalize_skeletongroup( skeleton_id_list, project_id, edgecount = edgecount )
+
+def compartmentalize_skeletongroup( skeleton_id_list, project_id, **kwargs ):
 
     skelgroup = SkeletonGroup( skeleton_id_list, project_id )
 
@@ -261,10 +323,10 @@ def compartmentalize_skeletongroup_by_confidence( skeleton_id_list, project_id, 
     resultgraph = nx.DiGraph()
 
     for skeleton_id, skeleton in skelgroup.skeletons.items():
-        for u,v,d in skeleton.graph.edges_iter(data=True):
-            if d['confidence'] < confidence_threshold:
-                print 'skeletonid', skeleton_id, 'remove', u,v
-                skeleton.graph.remove_edge( u, v )
+        if kwargs.has_key('confidence_threshold'):
+            confidence_filtering( skeleton, kwargs['confidence_threshold'] )
+        elif kwargs.has_key('edgecount'):
+            edgecount_filtering( skeleton, kwargs['edgecount'] )
 
         subgraphs = nx.weakly_connected_component_subgraphs( skeleton.graph )
         compartment_graph_of_skeletons[ skeleton_id ] = subgraphs
@@ -274,13 +336,17 @@ def compartmentalize_skeletongroup_by_confidence( skeleton_id_list, project_id, 
                 d['compartment_index'] = i
                 skeleton.graph.node[nodeid]['compartment_index'] = i
 
+            if len(skeleton.neuron.name) > 30:
+                neuronname = skeleton.neuron.name[:30] + '...' + ' [{0}]'.format(i)
+            else:
+                neuronname = skeleton.neuron.name + ' [{0}]'.format(i)
+
             resultgraph.add_node( '{0}_{1}'.format(skeleton_id, i), {
-                    'neuronname': skeleton.neuron.name,
+                    'neuronname': neuronname,
                     'skeletonid': str(skeleton_id),
                     'compartment_index': i,
                     'node_count': subg.number_of_nodes(),
                 })
-
 
     connectors = {}
     for skeleton_id, skeleton in skelgroup.skeletons.items():
@@ -319,6 +385,3 @@ def compartmentalize_skeletongroup_by_confidence( skeleton_id_list, project_id, 
 
 
     return resultgraph
-
-from catmaid.objects import *
-# compartmentalize_skeletongroup_by_confidence( [70,99], 6, 4)

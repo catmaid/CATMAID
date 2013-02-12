@@ -450,21 +450,44 @@ var WindowMaker = new function()
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
-    add.setAttribute("id", "compartment_show_neurons_from_3d_view");
-    add.setAttribute("value", "Show graph of selected 3D viewer neuron(s)");
-    add.onclick = CompartmentGraphWidget.updateGraphFrom3DViewer;
+    add.setAttribute("id", "confidence_compartment_show_neurons_from_3d_view");
+    add.setAttribute("value", "Show graph");
+    add.onclick = CompartmentGraphWidget.updateConfidenceGraphFrom3DViewer;
     contentbutton.appendChild(add);
+
+    var label = document.createTextNode('Split at edges with confidence');
+    contentbutton.appendChild(label);
 
     var sync = document.createElement('select');
     sync.setAttribute("id", "confidence_threshold");
-    for (var i = 1; i < 6; i++) {
+    for (var i = 1; i < 5; i++) {
       var option = document.createElement("option");
       option.text = i.toString();
       option.value = i;
       sync.appendChild(option);
     }
-
     contentbutton.appendChild(sync);
+
+    var label = document.createTextNode('or lower. | ');
+    contentbutton.appendChild(label);
+
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
+    add.setAttribute("id", "edgecount_compartment_show_neurons_from_3d_view");
+    add.setAttribute("value", "Show graph");
+    add.onclick = CompartmentGraphWidget.updateEdgecountGraphFrom3DViewer;
+    contentbutton.appendChild(add);
+
+    var label = document.createTextNode('split at edges with more than');
+    contentbutton.appendChild(label);
+
+    var sync = document.createElement('input');
+    sync.setAttribute("id", "edgecount_threshold");
+    sync.setAttribute("value", 10);
+    contentbutton.appendChild(sync);
+
+    var label = document.createTextNode('edges.');
+    contentbutton.appendChild(label);
 
     content.appendChild( contentbutton );
 

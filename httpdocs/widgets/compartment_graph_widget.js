@@ -10,12 +10,19 @@ var CompartmentGraphWidget = new function()
 
   this.init = function()
   {
+
+      $("#edgecount_threshold").bind("keyup paste", function(){
+          setTimeout(jQuery.proxy(function() {
+              this.val(this.val().replace(/[^0-9]/g, ''));
+          }, $(this)), 0);
+      });
+
       // id of Cytoscape Web container div
       var div_id = "#cyelement";
 
       var options = {
         ready: function(){
-          console.log('cytoscape ready')
+          // console.log('cytoscape ready')
         },
         style: cytoscape.stylesheet()
           .selector("node")
@@ -25,8 +32,8 @@ var CompartmentGraphWidget = new function()
                 "border-width": 1,
                 "background-color": "data(color)", //#DDD",
                 "border-color": "#555",
-                "width": "mapData(node_count, 0, 2000, 5, 50)", //"data(node_count)",
-                "height": "mapData(node_count, 0, 2000, 5, 50)"   // "data(node_count)"
+                "width": "mapData(node_count, 10, 2000, 10, 50)", //"data(node_count)",
+                "height": "mapData(node_count, 10, 2000, 10, 50)"   // "data(node_count)"
               })
             .selector("edge")
               .css({
@@ -106,7 +113,6 @@ var CompartmentGraphWidget = new function()
     cy.elements("node").remove();
 
     cy.add( data );
-    console.log('data', data);
 
     // force arbor, does not work
     var options = {
@@ -163,9 +169,9 @@ var CompartmentGraphWidget = new function()
 
   }
 
-  this.updateGraphFrom3DViewer = function() {
+  this.updateConfidenceGraphFrom3DViewer = function() {
     jQuery.ajax({
-      url: "dj/" + project.id + "/skeletongroup/skeletonlist_compartment_subgraph",
+      url: "dj/" + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
       type: "POST",
       dataType: "json",
       data: { 
@@ -173,9 +179,22 @@ var CompartmentGraphWidget = new function()
         confidence_threshold: $('#confidence_threshold').val()
          },
       success: function (data) {
-        console.log('received data', data);
         self.updateGraph( data );
+      }
+    });
+  }
 
+  this.updateEdgecountGraphFrom3DViewer = function() {
+    jQuery.ajax({
+      url: "dj/" + project.id + "/skeletongroup/skeletonlist_edgecount_compartment_subgraph",
+      type: "POST",
+      dataType: "json",
+      data: { 
+        skeleton_list: WebGLApp.getListOfSkeletonIDs(true),
+        edgecount: parseInt( $('#edgecount_threshold').val(), 10)
+         },
+      success: function (data) {
+        self.updateGraph( data );
       }
     });
   }

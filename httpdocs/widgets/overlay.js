@@ -601,7 +601,7 @@ var SkeletonAnnotations = new function()
     };
 
     this.splitSkeleton = function () {
-        if( nodes[atn.id].parent === null ) {
+        if( -1 === nodes[atn.id].parent_id ) {
             alert('Can not split at root node!');
             return;
         }

@@ -1753,7 +1753,7 @@ var SkeletonAnnotations = new function()
         break;
       case "goprevbranch":
         if (atn.id !== null) {
-          self.goToPreviousBranchOrRootNode(atn.id);
+          self.goToPreviousBranchOrRootNode(atn.id, arguments[1]);
         }
         break;
       case "skelsplitting":

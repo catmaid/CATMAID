@@ -555,7 +555,7 @@ function SegmentationTool()
         slice.img.setActive( true );
         slice.img.set({
                 left: slice.bb_center_x - self.stack.getFieldOfViewInPixel().worldLeftC,
-                top: slice.bb_center_y - self.stack.getFieldOfViewInPixel().worldTopC,
+                top: slice.bb_center_y - self.stack.getFieldOfViewInPixel().worldTopC - 1,
             });
         canvasLayer.canvas.add( slice.img );
     };

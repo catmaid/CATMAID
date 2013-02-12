@@ -1,3 +1,4 @@
+var g;
 var SegmentationAnnotations = new function()
 {
     var self = this;
@@ -16,6 +17,47 @@ var SegmentationAnnotations = new function()
 
     // base url for slices, filename ending
     var slice_base_url, slice_filename_extension;
+
+    var cygraph;
+    
+    this.test_graph = function() {
+
+        var obj = new Object();
+        obj.me = 'he';
+        cygraph.add([
+          { group: "nodes", data: { id: "n0", slice: obj, blub:{test:123} }, position: { x: 100, y: 100 } },
+          { group: "nodes", data: { id: "n1" }, position: { x: 200, y: 200 } },
+          { group: "nodes", data: { id: "n2" }, position: { x: 200, y: 200 } },
+          { group: "edges", data: { id: "e0", source: "n0", target: "n1" } },
+          { group: "edges", data: { id: "e1", source: "n0", target: "n2" } }
+        ]);
+        // cygraph.elements("node[id = 'n0']")
+        /*
+        var n = SegmentationAnnotations.cygraph.nodes("[id = 'n0']")
+        n.data()
+        var e = g.edges("[source='n0']");
+        $.each(e, function(id, element){
+            console.log('id', id, element.data() );
+        });
+
+        */
+        console.log( cygraph.nodes() )
+    }
+
+    this.init_graph = function() {
+        console.log($('#cytograph'))
+        var options = {
+            ready: function(){
+              console.log('cytoscape ready')
+            },
+        }
+        $('#cytograph').cytoscape(options);
+        cygraph = $('#cytograph').cytoscape("get");
+        console.log('cygraph', cygraph)
+        self.cygraph = cygraph;
+        g = cygraph;
+        self.test_graph();
+    }
 
     this.set_stack = function( parentStack ) {
         // console.log('SET STACK', parentStack );

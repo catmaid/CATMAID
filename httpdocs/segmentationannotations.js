@@ -625,39 +625,6 @@ var SegmentationAnnotations = new function()
     };
     self.activate_slice = activate_slice;
 
-    var update_graph_widget_for_slice = function( node_id ) {
-        var demoNodes = [];
-        var demoEdges = [];
-
-        for(var idx in allslices[ node_id ].segments) {
-            var seg = allslices[ node_id ].segments[idx];
-            if( seg.segmenttype == 2 ) {
-                console.log('add continuation')
-                    demoNodes.push({
-                    data: {
-                        id: "n" + seg.target_section + "_" + seg.target1_slice_id,
-                        position: { x: 100+idx*60, y: 100+idx*60 }
-                    },
-                });
-            }
-        }
-
-        cy.style()
-            .selector("node")
-                .css({
-                    "content": "data(id)",
-                    "shape": "data(shape)",
-                    "border-width": 3,
-                    "background-color": "#DDD",
-                    "border-color": "#555"
-                });
-
-        cy.add({
-            nodes: demoNodes,
-            //edges: demoEdges
-        });
-        //cy.add({ group: "nodes", data: { id: "n0" } });
-    }
 
     function Segment()
     {

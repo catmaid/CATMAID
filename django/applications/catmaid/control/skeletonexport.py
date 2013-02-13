@@ -197,6 +197,31 @@ def skeleton_json(*args, **kwargs):
     kwargs['format'] = 'json'
     return export_extended_skeleton_response(*args, **kwargs)
 
+def _rootID(graph):
+    """ Search and return the first node that has zero predecessors.
+    Will be the root node in directed graphs.
+    Avoids one database lookup. """
+    for nodeID in graph.nodes():
+        if 0 == len(graph.predecessors(nodeID)):
+            return nodeID
+
+def _edgeCountToRoot(graph):
+    """ Return a map of nodeID vs number of edges from the first node that lacks predecessors. """
+    distances = {}
+    count = 1
+    current_level = [_rootID(graph)]
+    next_level = []
+    while current_level:
+        # Consume all elements in current_level
+        while current_level:
+            nodeID = current_level.pop()
+            distances[nodeID] = count
+            next_level.extend(graph.successors(nodeID)) # successors is the empty list when none
+        # Rotate lists (current_level is now empty)
+        current_level, next_level = next_level, current_level
+        count += 1
+    return distances
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def export_review_skeleton(request, project_id=None, skeleton_id=None, format=None):

@@ -100,7 +100,6 @@ var ReviewSystem = new function()
         table.append( thead );
         row = $('<tr />')
         row.append( $('<td />').text("") );
-        row.append( $('<td />').text( "Start-End") );
         row.append( $('<td />').text("Status") );
         row.append( $('<td />').text("# nodes") );
         thead.append( row );
@@ -110,7 +109,6 @@ var ReviewSystem = new function()
         for(var e in skeleton_data ) {
             row = $('<tr />');
             row.append( $('<td />').text( skeleton_data[e]['id'] ) );
-            row.append( $('<td />').text( skeleton_data[e]['type'] ) );
             var status = $('<td />').text( skeleton_data[e]['status']+'%' );
             row.append( status );
             row.append( $('<td align="right" />').text( skeleton_data[e]['nr_nodes'] ) );

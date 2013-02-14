@@ -531,22 +531,68 @@ def get_location(request, project_id=None):
         raise Exception('Could not obtain the location of node with id #%s' % tnid)
 
 
+def _find_first_interesting_node(sequence):
+    """ Find the first node that:
+    1. Has confidence lower than 5
+    2. Has a tag
+    3. Receives a synapse
+    4. Makes a synapse
+    Otherwise return the last node.
+    """
+    if not sequence:
+        raise Exception('No nodes ahead!')
+
+    if 1 == len(sequence):
+        return sequence[0]
+
+    cursor = connection.cursor()
+    cursor.execute('''
+    SELECT t.id, t.confidence, tc.relation_id, tci.relation_id
+    FROM treenode t
+         LEFT OUTER JOIN treenode_connector tc ON (tc.treenode_id = t.id)
+         LEFT OUTER JOIN treenode_class_instance tci ON (tci.treenode_id = t.id)
+    WHERE t.id IN (%s)
+    ''' % ",".join(str(x) for x in sequence))
+
+    nodes = {row[0]: row for row in cursor.fetchall()}
+    for nodeID in sequence:
+        if nodeID in nodes:
+            props = nodes[nodeID]
+            # [1]: confidence
+            # [2]: a treenode_connector.relation_id, e.g. presynaptic_to or postsynaptic_to
+            # [3]: a treenode_class_instance.relation_id, e.g. labeled_as
+            # 2 and 3 may be None
+            if props[1] < 5 or props[2] or props[3]:
+                return nodeID
+        else:
+            raise Exception('Nodes of this skeleton changed while inspecting them.')
+
+    return sequence[-1]
+
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def find_previous_branchnode_or_root(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])
+        alt = 1 == int(request.POST['alt'])
         skid = Treenode.objects.get(pk=tnid).skeleton_id
         graph = _skeleton_as_graph(skid)
         # Travel upstream until finding a parent node with more than one child 
         # or reaching the root node
+        seq = [] # Does not include the starting node tnid
         while True:
             parents = graph.predecessors(tnid)
             if parents: # list of parents is not empty
                 tnid = parents[0] # Can ony have one parent
+                seq.append(tnid)
                 if 1 != len(graph.successors(tnid)):
                     break # Found a branch node
             else:
                 break # Found the root node
+
+        if seq and alt:
+            tnid = _find_first_interesting_node(seq)
+
         return HttpResponse(json.dumps(_fetch_location(tnid)))
     except Exception as e:
         raise Exception('Could not obtain previous branch node or root:' + str(e))
@@ -557,6 +603,7 @@ def find_next_branchnode_or_end(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])
         shift = 1 == int(request.POST['shift'])
+        alt = 1 == int(request.POST['alt'])
         skid = Treenode.objects.get(pk=tnid).skeleton_id
         graph = _skeleton_as_graph(skid)
 
@@ -574,12 +621,18 @@ def find_next_branchnode_or_end(request, project_id=None):
 
         # Travel downstream until finding a child node with more than one child
         # or reaching an end node
+        seq = [] # Does not include the starting node tnid
         while True:
             children = graph.successors(tnid)
             if 1 == len(children):
                 tnid = children[0]
+                seq.append(tnid)
             else:
                 break # Found an end node or a branch node
+
+        if seq and alt:
+            tnid = _find_first_interesting_node(seq)
+
         return HttpResponse(json.dumps(_fetch_location(tnid)))
     except Exception as e:
         raise Exception('Could not obtain next branch node or root:' + str(e))

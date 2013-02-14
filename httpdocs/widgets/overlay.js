@@ -1564,11 +1564,12 @@ var SkeletonAnnotations = new function()
       }
     };
 
-    this.goToPreviousBranchOrRootNode = function(treenode_id) {
+    this.goToPreviousBranchOrRootNode = function(treenode_id, e) {
       requestQueue.register(
           django_url + project.id + "/node/previous_branch_or_root",
           "POST",
-          {tnid: treenode_id},
+          {tnid: treenode_id,
+           alt: e.altKey ? 1 : 0},
           function(status, text) {
             if (200 === status) {
               var json = $.parseJSON(text);
@@ -1604,7 +1605,8 @@ var SkeletonAnnotations = new function()
           django_url + project.id + "/node/next_branch_or_end",
           "POST",
           {tnid: treenode_id,
-           shift: e.shiftKey ? 1 : 0},
+           shift: e.shiftKey ? 1 : 0,
+           alt: e.altKey ? 1 : 0},
           function(status, text) {
             if (200 === status) {
               var json = $.parseJSON(text);

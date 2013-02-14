@@ -436,7 +436,7 @@ function TracingTool()
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('goprevbranch');
+      tracingLayer.svgOverlay.tracingCommand('goprevbranch', e);
       return true;
     }
   } ) );

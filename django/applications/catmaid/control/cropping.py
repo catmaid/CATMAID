@@ -27,8 +27,6 @@ from pgmagick import CompositeOperator as co, ResolutionType
 
 from celery.task import task
 
-# The tile size in pixel
-tile_size = int(256)
 # Prefix for stored microstacks
 file_prefix = "crop_"
 # File extension of the stored microstacks
@@ -238,11 +236,13 @@ def extract_substack( job ):
     # Iterate over all slices
     for z in range( px_z_min, px_z_max + 1):
         for stack in job.stacks:
+            tile_width = stack.tile_width
+            tile_height = stack.tile_height
             # Get indices for bounding tiles (0 indexed)
-            tile_x_min = int(px_x_min / tile_size)
-            tile_x_max = int(px_x_max / tile_size)
-            tile_y_min = int(px_y_min / tile_size)
-            tile_y_max = int(px_y_max / tile_size)
+            tile_x_min = int(px_x_min / tile_width)
+            tile_x_max = int(px_x_max / tile_width)
+            tile_y_min = int(px_y_min / tile_height)
+            tile_y_max = int(px_y_max / tile_height)
             # Get the number of needed tiles for each direction
             num_x_tiles = tile_x_max - tile_x_min + 1
             num_y_tiles = tile_y_max - tile_y_min + 1
@@ -252,15 +252,21 @@ def extract_substack( job ):
             for nx, x in enumerate( range(tile_x_min, tile_x_max + 1) ):
                 # The min x,y for the image part in the current tile are 0
                 # for all tiles except the first one.
-                cur_px_x_min = 0 if nx > 0 else px_x_min - x * tile_size
+                cur_px_x_min = 0 if nx > 0 else px_x_min - x * tile_width
                 # The max x,y for the image part of current tile are the tile
                 # size minus one except for the last one.
-                cur_px_x_max = tile_size - 1 if nx < (num_x_tiles - 1) else px_x_max - x * tile_size
+                if nx < (num_x_tiles - 1):
+                    cur_px_x_max = tile_width - 1
+                else:
+                    cur_px_x_max = px_x_max - x * tile_width
                 # Reset y destination component
                 y_dst = px_y_offset
                 for ny, y in enumerate( range(tile_y_min, tile_y_max + 1) ):
-                    cur_px_y_min = 0 if ny > 0 else px_y_min - y * tile_size
-                    cur_px_y_max = tile_size - 1 if ny < (num_y_tiles - 1) else px_y_max - y * tile_size
+                    cur_px_y_min = 0 if ny > 0 else px_y_min - y * tile_height
+                    if ny < (num_y_tiles - 1):
+                        cur_px_y_max = tile_height - 1
+                    else:
+                        cur_px_y_max = px_y_max - y * tile_height
                     # Create an image part definition
                     path = get_tile_path(job, stack, [x, y, z])
                     try:

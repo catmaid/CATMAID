@@ -18,15 +18,14 @@ import os.path
 import glob
 from time import time
 
-try:
-    # The libuuid import is a workaround for a bug with GraphicsMagick
-    # which expects the library to be loaded already. Therefore, it
-    # has to be loaded before pgmagick.
-    import libuuid
-    from pgmagick import Blob, Image, ImageList, Geometry, Color, CompositeOperator as co, ResolutionType
-    from celery.task import task
-except ImportError:
-    pass
+# The libuuid import is a workaround for a bug with GraphicsMagick
+# which expects the library to be loaded already. Therefore, it
+# has to be loaded before pgmagick.
+import libuuid
+from pgmagick import Blob, Image, ImageList, Geometry, Color
+from pgmagick import CompositeOperator as co, ResolutionType
+
+from celery.task import task
 
 # The tile size in pixel
 tile_size = int(256)

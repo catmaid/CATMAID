@@ -304,7 +304,7 @@ def update_location_reviewer(request, project_id=None, node_id=None):
     loc.reviewer_id=request.user.id
     loc.review_time=datetime.now()
     loc.save()
-    return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+    return HttpResponse(json.dumps({'reviewer_id': request.user.id}), mimetype='text/json')
 
 
 @requires_user_role(UserRole.Annotate)

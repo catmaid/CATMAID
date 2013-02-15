@@ -50,10 +50,10 @@ var ReviewSystem = new function()
         if (self.skeleton_segments===null)
             return;
         if( self.current_segment_index == 0 ) {
-            self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index]['id'], self.startSkeletonToReview );
+            self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index], self.startSkeletonToReview );
             return;
         }
-        self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index]['id'] );
+        self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
         self.current_segment_index--;
         self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
     };
@@ -62,11 +62,11 @@ var ReviewSystem = new function()
         if (self.skeleton_segments===null)
             return;
         if( self.current_segment_index === self.current_segment['sequence'].length - 1  ) {
-            self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index]['id'], self.startSkeletonToReview );
+            self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index], self.startSkeletonToReview );
             return;
         }
 
-        self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index]['id'] );
+        self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
         self.current_segment_index++;
 
         if (evt.shiftKey) {
@@ -84,12 +84,31 @@ var ReviewSystem = new function()
             }
         }
 
+        if (self.current_segment_index < self.current_segment['sequence'].length -1) {
+            // Check if the remainder of the segment was complete at an earlier time
+            // and perhaps now the whole segment is done:
+            var i = self.current_segment_index;
+            var seq = self.current_segment['sequence'];
+            var len = seq.length;
+            while (i < len && -1 !== seq[i].rid) {
+                i += 1;
+            }
+            if (i === len) {
+                growlAlert('DONE', 'Segment fully reviewed: ' + self.current_segment['nr_nodes'] + ' nodes');
+                var cell = $('#rev-status-cell-' + self.current_segment['id']);
+                cell.text('100.00%');
+                cell.css('background-color', '#6fff5c');
+                // Don't startSkeletonToReview, because self.current_segment_index
+                // would be lost, losing state for q/w navigation.
+            }
+        }
+
         self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
     };
 
-    this.markAsReviewed = function( node_id, funct ) {
+    this.markAsReviewed = function( node_ob, funct ) {
         requestQueue.register(
-            "dj/"+projectID+"/node/" + node_id + "/reviewed",
+            "dj/"+projectID+"/node/" + node_ob['id'] + "/reviewed",
             "POST",
             {},
             function (status, text) {
@@ -97,6 +116,9 @@ var ReviewSystem = new function()
                 if (json.error) {
                     alert( json.error );
                 } else {
+                    // Mark locally as reviewed
+                    node_ob['rid'] = json.reviewer_id;
+                    // Execute continuation if any
                     if( funct )
                         funct();
                 }
@@ -126,7 +148,7 @@ var ReviewSystem = new function()
         for(var e in skeleton_data ) {
             row = $('<tr />');
             row.append( $('<td />').text( skeleton_data[e]['id'] ) );
-            var status = $('<td />').text( skeleton_data[e]['status']+'%' );
+            var status = $('<td id="rev-status-cell-' + skeleton_data[e]['id'] + '" />').text( skeleton_data[e]['status']+'%' );
             row.append( status );
             row.append( $('<td align="right" />').text( skeleton_data[e]['nr_nodes'] ) );
             if( parseInt( skeleton_data[e]['status']) === 0 ) {

@@ -256,11 +256,11 @@ var WebGLApp = new function () {
       self.visiblityCompositeActor( 0, vis );
       self.visiblityCompositeActor( 1, vis );
       self.visiblityCompositeActor( 2, vis );
-      for( var idx in self.textlabels ) {
+      /*for( var idx in self.textlabels ) {
         if( self.textlabels.hasOwnProperty( idx )) {
           self.textlabels[ idx ].visible = vis;
         }
-      }
+      }*/
     };
 
     this.setPreVisibility = function( vis ) {
@@ -505,7 +505,7 @@ var WebGLApp = new function () {
           }
 
           // text labels
-          if( this.original_vertices[fromkey]['labels'].length > 0) {
+         /* if( this.original_vertices[fromkey]['labels'].length > 0) {
 
             var theText = this.original_vertices[fromkey]['labels'].join();
             var text3d = new THREE.TextGeometry( theText, {
@@ -525,7 +525,7 @@ var WebGLApp = new function () {
 
             this.textlabels[ fromkey ] = text;
             scene.add( text );
-          }
+          }*/
 
           // if either from or to have a relevant label, and they are not yet
           // created, create one
@@ -1058,8 +1058,8 @@ var WebGLApp = new function () {
           })
           .click( function( event )
           {
-            skeletons[skeleton.id].setTextVisibility( $('#skeletontext-' + skeleton.id).is(':checked') );
-            self.render();
+            /*skeletons[skeleton.id].setTextVisibility( $('#skeletontext-' + skeleton.id).is(':checked') );
+            self.render();*/
           } )
     ));
 

@@ -231,7 +231,9 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, format=No
     reviewed = set()
     for t in treenodes:
         loc = Double3D.from_str(t[1])
-        g.add_node(t[0], {'id': t[0], 'x': loc.x, 'y': loc.y, 'z': loc.z})
+        # While at it, send the reviewer ID, which is useful to iterate fwd
+        # to the first unreviewed node in the segment.
+        g.add_node(t[0], {'id': t[0], 'x': loc.x, 'y': loc.y, 'z': loc.z, 'rid': t[3]})
         if -1 != t[3]:
             reviewed.add(t[0])
         if t[2]: # if parent

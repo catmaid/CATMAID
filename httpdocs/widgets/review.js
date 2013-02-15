@@ -58,15 +58,32 @@ var ReviewSystem = new function()
         self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
     };
 
-    this.moveNodeInSegmentForward = function() {
+    this.moveNodeInSegmentForward = function(evt) {
         if (self.skeleton_segments===null)
             return;
         if( self.current_segment_index === self.current_segment['sequence'].length - 1  ) {
             self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index]['id'], self.startSkeletonToReview );
             return;
         }
+
         self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index]['id'] );
         self.current_segment_index++;
+
+        if (evt.shiftKey) {
+            // Advance current_segment_index to the first node that is not reviewed
+            // which is a node with rid (reviewer id) of -1.
+            var i = self.current_segment_index;
+            var seq = self.current_segment['sequence'];
+            var len = seq.length;
+            while (i < len) {
+                if (-1 === seq[i].rid) {
+                    self.current_segment_index = i;
+                    break;
+                }
+                i += 1;
+            }
+        }
+
         self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
     };
 

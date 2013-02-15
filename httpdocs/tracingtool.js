@@ -708,7 +708,7 @@ function TracingTool()
           if (!mayEdit())
               return false;
           if (ReviewSystem.validSegment())
-              ReviewSystem.moveNodeInSegmentForward();
+              ReviewSystem.moveNodeInSegmentForward(e);
           return true;
       }
   }) );

@@ -139,7 +139,10 @@ function CroppingTool() {
 	var crop = function()
 	{
 		var url = self.get_crop_url();
-		requestQueue.register(url, 'GET', {}, handle_crop );
+		if (url)
+		{
+			requestQueue.register(url, 'GET', {}, handle_crop );
+		}
 		return false;
 	}
 

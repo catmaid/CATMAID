@@ -85,6 +85,9 @@ function CroppingTool() {
 	this.stacks_menu = new Menu();
 	this.stacks_to_crop = null;
 
+	//! RGB slices/single channel checkbox
+	this.check_rgb_slices = document.getElementById( "check_crop_rgb_slices" );
+
 	this.button_crop_apply = document.getElementById( "button_crop_apply" );
 
 	//! mouse catcher
@@ -121,6 +124,7 @@ function CroppingTool() {
 		var z_min = self.slider_crop_top_z.val * stack.resolution.z + stack.translation.z;
 		var z_max = self.slider_crop_bottom_z.val * stack.resolution.z + stack.translation.z;
 		var zoom_level = self.slider_crop_s.val;
+		var single_channels = self.check_rgb_slices.val ? 0 : 1;
 
 		var str = "The generated stack will have " + nStacks + " channel(s) with " + numSections + " section(s) each.\n";
 		str += "Each section will have a size of " + pixelWidth + "x" + pixelHeight + "px.\n";
@@ -128,7 +132,7 @@ function CroppingTool() {
 
 		if ( !window.confirm( str ) ) return false;
 
-		var url = django_url + project.id + '/stack/' + stacks + '/crop/' + cb.left + "," + cb.right + "/" + cb.top + "," + cb.bottom + "/" + z_min + "," + z_max + '/' + zoom_level + '/';
+		var url = django_url + project.id + '/stack/' + stacks + '/crop/' + cb.left + "," + cb.right + "/" + cb.top + "," + cb.bottom + "/" + z_min + "," + z_max + '/' + zoom_level + '/' + single_channels + '/';
 		return url;
 	}
 

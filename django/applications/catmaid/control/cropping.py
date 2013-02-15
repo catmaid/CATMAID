@@ -23,7 +23,7 @@ from time import time
 # has to be loaded before pgmagick.
 import libuuid
 from pgmagick import Blob, Image, ImageList, Geometry, Color
-from pgmagick import CompositeOperator as co, ResolutionType
+from pgmagick import CompositeOperator as co, ResolutionType, ChannelType
 
 from celery.task import task
 
@@ -38,7 +38,7 @@ class CropJob:
     integers. If no output_path is given, a random one (based on the
     settings) is generated.
     """
-    def __init__(self, user, project_id, stack_ids, x_min, x_max, y_min, y_max, z_min, z_max, zoom_level, output_path=None):
+    def __init__(self, user, project_id, stack_ids, x_min, x_max, y_min, y_max, z_min, z_max, zoom_level, single_channel=False, output_path=None):
         self.user = user
         self.project_id = int(project_id)
         self.project = get_object_or_404(Project, pk=project_id)
@@ -63,6 +63,7 @@ class CropJob:
         if output_path is None:
             file_name = file_prefix + id_generator() + "." + file_extension
             output_path = os.path.join(settings.TMP_DIR, file_name)
+        self.single_channel = single_channel
         self.output_path = output_path
 
 class ImagePart:
@@ -290,6 +291,9 @@ def extract_substack( job ):
                 cropped_slice.composite( image, ip.x_dst, ip.y_dst, co.OverCompositeOp )
                 # Delete tile image - it's not needed anymore
                 del image
+            # Optionally, use only a single channel
+            if job.single_channel:
+                cropped_slice.channel( ChannelType.RedChannel )
             # Add the imag to the cropped stack
             cropped_stack.append( cropped_slice )
 
@@ -383,7 +387,7 @@ def sanity_check( job ):
     return errors
 
 @login_required
-def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min=None, y_max=None, z_min=None, z_max=None, zoom_level=None):
+def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min=None, y_max=None, z_min=None, z_max=None, zoom_level=None, single_channel=None):
     """ Crops out the specified region of the stack. The region is expected to
     be given in terms of real world units (e.g. nm).
     """
@@ -398,8 +402,13 @@ def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min
     string_list = stack_ids.split(",")
     stack_ids = [int( x ) for x in string_list]
 
+    # Should an output slice contain all channels of the source tiles
+    # or only a single (the red) one?
+    single_channel = bool(single_channel)
+
     # Crate a new cropping job
-    job = CropJob(request.user, project_id, stack_ids, x_min, x_max, y_min, y_max, z_min, z_max, zoom_level)
+    job = CropJob(request.user, project_id, stack_ids, x_min, x_max,
+        y_min, y_max, z_min, z_max, zoom_level, single_channel)
 
     # Parameter check
     errors = sanity_check( job )

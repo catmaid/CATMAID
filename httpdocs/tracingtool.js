@@ -416,7 +416,7 @@ function TracingTool()
   } ) );
 
   this.addAction( new Action({
-    helpText: "Go to next branch or end point",
+    helpText: "Go to next branch or end point (with alt, stop earlier at node with tag, synapse or low confidence; with shift and at a branch node, move down the other branch)",
     keyShortcuts: {
       "V": [ 86 ]
     },
@@ -429,7 +429,7 @@ function TracingTool()
   } ) );
 
   this.addAction( new Action({
-    helpText: "Go to previous branch or end point",
+    helpText: "Go to previous branch or end node (with alt, stop earlier at node with tag, synapse or low confidence)",
     keyShortcuts: {
       "B": [ 66 ]
     },
@@ -700,7 +700,7 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-      helpText: "Move to next node in segment for review",
+      helpText: "Move to next node in segment for review (with shift, move to next unreviewed node in the segment)",
       keyShortcuts: {
           'W': [ 87 ]
       },

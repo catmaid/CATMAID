@@ -225,6 +225,10 @@ def _edgeCountToRoot(graph):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def export_review_skeleton(request, project_id=None, skeleton_id=None, format=None):
+    """
+    Export the skeleton as a list of sequences of entries, each entry containing
+    an id, a sequence of nodes, the percent of reviewed nodes, and the node count.
+    """
     treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values_list('id', 'location', 'parent_id', 'reviewer_id')
 
     g = nx.DiGraph()

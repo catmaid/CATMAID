@@ -126,13 +126,34 @@ var ReviewSystem = new function()
     };
 
     /** Clears the #review_segment_table prior to adding rows to it. */
-    this.createReviewSkeletonTable = function( skeleton_data ) {
+    this.createReviewSkeletonTable = function( skeleton_data, users ) {
         self.skeleton_segments = skeleton_data;
         var butt, table, tbody, row;
         if( $('#review_segment_table').length > 0 ) {
             $('#review_segment_table').remove();
         }
-        $('#reviewing_skeleton').text( 'Skeleton ID under review: ' + skeletonID );
+        
+        // Count which user reviewed how many nodes
+        // Map of user ID vs object containing name and count:
+        var users = users.reduce(function(map, u) {
+            map[u[0]] = {name: u[1], count: 0};
+            return map;
+        }, {});
+        users[-1] = {name: 'unreviewed', count: 0};
+        // Fill in the users count:
+        skeleton_data.forEach(function(segment) {
+            segment['sequence'].forEach(function(node) {
+                users[node['rid']].count += 1;
+            });
+        }, skeleton_data);
+        // Create string with user's reviewed counts:
+        var user_revisions = Object.keys(users).reduce(function(s, u) {
+            u = users[u];
+            if (u.count > 0) { s += u.name + ": " + u.count + "; "; }
+            return s;
+        }, "");
+
+        $('#reviewing_skeleton').text( 'Skeleton ID under review: ' + skeletonID + " -- " + user_revisions );
         table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('id', 'review_segment_table').attr('border', '0');
         // create header
         thead = $('<thead />');
@@ -205,7 +226,16 @@ var ReviewSystem = new function()
                     if ("REPLACED" === skeleton_data.error) { return; }
                     alert( skeleton_data.error );
                 } else {
-                    self.createReviewSkeletonTable( skeleton_data );
+                    requestQueue.register("dj" + "/accounts/" + projectID + "/all-usernames", "POST", {},
+                        function(status, text) {
+                            if (200 !== status) { return; }
+                            var usernames = $.parseJSON(text);
+                            if (usernames.error) {
+                                alert(usernames.error);
+                            } else {
+                                self.createReviewSkeletonTable( skeleton_data, usernames );
+                            }
+                        });
                 }
             },
             "start_review_skeleton");

@@ -845,7 +845,7 @@ var WebGLApp = new function () {
 
   this.addAssembly = function( assembly_data )
   {
-    
+    console.log('add assembly', assembly_data);
     if( !assemblies.hasOwnProperty( assembly_data.assembly_id ) ) {
       // console.log('add assembly', assembly_data);
       assemblies[ assembly_data.assembly_id ] = new Assembly( assembly_data );

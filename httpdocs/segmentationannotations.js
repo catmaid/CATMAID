@@ -189,11 +189,13 @@ var SegmentationAnnotations = new function()
     }
 
     self.set_propagation_counter = function( counter ) {
-        self.propagation_counter = counter;
+        console.log('reset counter', counter)
+        propagation_counter = counter;
     }
 
     self.toggle_automatic_propagation = function() {
         automatic_propagation = !automatic_propagation;
+        console.log('automatic propagation', automatic_propagation)
     }
 
     self.create_segments_table_for_current_active = function() {

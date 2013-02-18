@@ -47,13 +47,14 @@ def get_root_classes_qs():
     """
     return[ c.id for c in get_classes(dummy_pid, 'is_a', 'classification_root') ]
 
-def get_classification_roots( project_id ):
-    """ Returns a list of classification graph roots, linked to a
-    project. The classification system uses a dummy project with ID -1
-    to store its ontologies and class instances. Each project using a
-    particular classification graph instance creates a class instance
+def get_classification_links_qs( project_id ):
+    """ Returns a list of CICI links that link a classification graph
+    with a project. The classification system uses a dummy project with
+    ID -1 to store its ontologies and class instances. Each project using
+    a particular classification graph instance creates a class instance
     with its PID of class classification_project (which lives in dummy
-    project -1). Those class instances will be returned.
+    project -1) and links to a classification root. A query set for those
+    links will be returned.
     """
     # Expect the classification system to be set up and expect one
     # single 'classification_project' class.
@@ -90,8 +91,21 @@ def get_classification_roots( project_id ):
     cici_q = ClassInstanceClassInstance.objects.filter(project_id=dummy_pid,
         relation__in=classified_by_rel, class_instance_b__in=root_class_instances,
         class_instance_a__in=classification_project_ci_q)
+
+    return cici_q
+
+def get_classification_roots( project_id ):
+    """ Returns a list of classification graph roots, linked to a
+    project. The classification system uses a dummy project with ID -1
+    to store its ontologies and class instances. Each project using a
+    particular classification graph instance creates a class instance
+    with its PID of class classification_project (which lives in dummy
+    project -1). Those class instances will be returned.
+    """
+    # Get all links
+    links_q = get_classification_links_qs( project_id )
     # Return valid roots
-    return [ cici.class_instance_a for cici in cici_q ]
+    return [ cici.class_instance_a for cici in links_q ]
 
 def get_classification_number( project_id ):
     """ Returns the number of classification graphs, linked to a

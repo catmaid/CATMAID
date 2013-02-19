@@ -133,20 +133,21 @@ var ClassificationEditor = new function()
                               "_disabled": disabled,
                               "label": subchild.name,
                               // the action function has to be created wth. of a closure
-                              "action": (function(name, id) { return function (obj) {
-                                att = {
-                                  "state": "open",
-                                  "data": name,
-                                  "attr": {
-                                      "classid": id,
-                                      "classname": name,
-                                      "relname": 'todo'
-                                      "relid": 'todo'
-                                      //"rel": type_of_node,
-                                  }
-                                };
-                                this.create(obj, "inside", att, null, true);
-                              }})(subchild.name, subchild.id)
+                              "action": (function(cname, cid, rname, rid) {
+                                  return function (obj) {
+                                    att = {
+                                      "state": "open",
+                                      "data": cname,
+                                      "attr": {
+                                          "classid": cid,
+                                          "classname": cname,
+                                          "relid": rid,
+                                          "relname": rname
+                                          //"rel": type_of_node,
+                                      }
+                                    };
+                                    this.create(obj, "inside", att, null, true);
+                                  }})(subchild.name, subchild.id, subchild.relname, subchild.relid)
                             }
                         }
                         // add complete contextmenu
@@ -178,6 +179,45 @@ var ClassificationEditor = new function()
 
             }
         });
+
+        // handlers
+        //	"inst" : /* the actual tree instance */,
+        //	"args" : /* arguments passed to the function */,
+        //	"rslt" : /* any data the function passed to the event */,
+        //	"rlbk" : /* an optional rollback object - it is not always present */
+
+        // create a node
+        tree.bind("create.jstree", function (e, data) {
+          var mynode = data.rslt.obj;
+          var myparent = data.rslt.parent;
+          data = {
+            "operation": "create_node",
+            "parentid": myparent.attr("id").replace("node_", ""),
+            "classid": mynode.attr("classid"),
+            "relationid": mynode.attr("relid"),
+            "objname": data.rslt.name,
+            "pid": pid
+          };
+
+          $.ajax({
+            async: false,
+            cache: false,
+            type: 'POST',
+            url: django_url + project.id + '/classification/instance-operation',
+            data: data,
+            dataType: 'json',
+            success: function (data2) {
+              // update node id
+              mynode.attr("id", "node_" + data2.class_instance_id);
+              // reload the node
+              //tree.jstree("refresh", myparent);
+              //tree.jstree("load_node", myparent, function() {}, function() {});
+              // TODO: Refresh only the sub tree, startins from parent
+              tree.jstree("refresh", -1);
+            }
+          });
+    });
+
     };
 
     this.create_error_aware_callback = function( fx )

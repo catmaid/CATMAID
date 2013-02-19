@@ -536,7 +536,7 @@ def get_restriction_types(request, project_id=None, restriction=None):
     else:
         raise Exception("Unsupported restriction type encountered: " + restriction)
 
-def get_classes( project_id, rel_name, class_name ):
+def get_classes( project_id, rel_name, class_name, class_is_b=True ):
     """ Returns a list of all classes, that have a certain relationship
     to a particular class in a project's semantic space.
     """
@@ -544,10 +544,14 @@ def get_classes( project_id, rel_name, class_name ):
         project_id=project_id)
     other_class = Class.objects.filter(class_name=class_name,
         project_id=project_id)
-    # Get all classes with the given raltion to the given class
+    # Get all classes with the given relation to the given class
     # (if present).
-    cici_q = ClassClass.objects.filter(project_id=project_id,
-        relation__in=relation, class_b__in=other_class)
+    if class_is_b:
+        cici_q = ClassClass.objects.filter(project_id=project_id,
+            relation__in=relation, class_b__in=other_class)
+    else:
+        cici_q = ClassClass.objects.filter(project_id=project_id,
+            relation__in=relation, class_a__in=other_class)
     if cici_q.count() == 0:
         # Return empty list if nothing has been found
         return []

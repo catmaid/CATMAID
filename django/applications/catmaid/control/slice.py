@@ -96,7 +96,13 @@ def segments_for_slice(request, project_id=None, stack_id=None):
     'target1_slice_id','target2_slice_id','direction',
     'center_distance','set_difference','cost','set_difference','set_difference_ratio',
     'aligned_set_difference','aligned_set_difference_ratio',
-    'size','overlap','overlap_ratio','aligned_overlap','aligned_overlap_ratio').order_by('cost')
+    'size','overlap','overlap_ratio','aligned_overlap','aligned_overlap_ratio',
+    'average_slice_distance', 'max_slice_distance',
+    'aligned_average_slice_distance', 'aligned_max_slice_distance',
+    'histogram_0', 'histogram_1', 'histogram_2', 'histogram_3', 'histogram_4', 'histogram_5',
+    'histogram_6', 'histogram_7', 'histogram_8', 'histogram_9', 'normalized_histogram_0',
+    'normalized_histogram_1', 'normalized_histogram_2', 'normalized_histogram_3', 'normalized_histogram_4', 'normalized_histogram_5',
+    'normalized_histogram_6', 'normalized_histogram_7', 'normalized_histogram_8', 'normalized_histogram_9').order_by('cost')
 
     return HttpResponse(JSONEncoder().encode(list(segments_right)), mimetype="text/json")
 

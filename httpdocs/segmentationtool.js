@@ -5,11 +5,6 @@
  *   tools.js
  *
  */
-var allslices = new Object(), slices_grouping = new Object();
-
-// all selected slices per section
-var allvisible_slices = new Object();
-var current_active_slice = null;
 
 function SegmentationTool()
 {
@@ -424,6 +419,18 @@ function SegmentationTool()
         }
     }) );
 
+
+    this.addAction( new Action({
+        helpText: "Fetch slices group for selected segments to the right",
+        keyShortcuts: {
+            'Y': [ 89 ]
+        },
+        run: function (e) {
+            SegmentationAnnotations.fetch_slicegroup_from_selected_segment_current_slice_right();
+            return true;
+        }
+    }) );
+
     this.addAction( new Action({
         helpText: "Fetch slices for segments right",
         keyShortcuts: {
@@ -476,6 +483,18 @@ function SegmentationTool()
         },
         run: function (e) {
             SegmentationAnnotations.create_segments_table_for_current_active();
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Reset all data",
+        keyShortcuts: {
+            'W': [ 87 ]
+        },
+        run: function (e) {
+            canvasLayer.canvas.clear();
+            SegmentationAnnotations.reset_all();
             return true;
         }
     }) );

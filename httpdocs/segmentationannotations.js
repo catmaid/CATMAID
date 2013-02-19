@@ -1,3 +1,9 @@
+var allslices = new Object(), slices_grouping = new Object();
+
+// all selected slices per section
+var allvisible_slices = new Object();
+var current_active_slice = null;
+
 var g;
 var SegmentationAnnotations = new function()
 {
@@ -7,8 +13,6 @@ var SegmentationAnnotations = new function()
 
     // assembly information
     self.current_active_assembly = null;
-
-    var current_active_slice;
 
     // the canvas layer using fabric.js
     
@@ -20,6 +24,17 @@ var SegmentationAnnotations = new function()
 
     var cygraph;
     
+    this.reset_all = function() {
+        self.init_graph();
+        self.current_active_assembly = null
+        allslices = new Object();
+        slices_grouping = new Object();
+        allvisible_slices = new Object();
+        current_active_slice = null;
+        self.init_allvisible_slices();
+
+    }
+
     this.test_graph = function() {
 
         var obj = new Object();
@@ -59,6 +74,14 @@ var SegmentationAnnotations = new function()
         self.test_graph();
     }
 
+    this.init_allvisible_slices = function() {
+        // TODO: this needs to be called after fetching for an
+        // assembly id from the database
+        for(var i = 0; i < self.stack.slices.length; i++) {
+            allvisible_slices[ self.stack.slices[i] ] = new Object();
+        };
+    }
+
     this.set_stack = function( parentStack ) {
         // console.log('SET STACK', parentStack );
         self.stack = parentStack;
@@ -79,11 +102,7 @@ var SegmentationAnnotations = new function()
                 }
         });
 
-        // TODO: this needs to be called after fetching for an
-        // assembly id from the database
-        for(var i = 0; i < self.stack.slices.length; i++) {
-            allvisible_slices[ self.stack.slices[i] ] = new Object();
-        };
+        self.init_allvisible_slices();
     }
 
     var get_current_stack = function() {
@@ -203,7 +222,13 @@ var SegmentationAnnotations = new function()
     }
 
     self.fetch_segments_right = function() {
-        allslices[ current_active_slice ].fetch_slices_for_selected_segment( true );
+        console.log('fetch segments right');
+        //allslices[ current_active_slice ].fetch_slices_for_selected_segment( true );
+        allslices[ current_active_slice ].fetch_segments( true );
+    }
+
+    self.fetch_slicegroup_from_selected_segment_current_slice_right = function() {
+        allslices[ current_active_slice ].add_slicesgroup_for_selected_segment( true );
     }
 
     self.fetch_segments_left = function() {
@@ -257,12 +282,16 @@ var SegmentationAnnotations = new function()
             slice_filename_extension;
     };
 
+    var get_segment_from_segmentid = function( segmentid ) {
+        return cygraph.nodes("[id = '"+segmentid+"']").data().segment;
+    }
+
     var create_segments_table_for_slice = function( node_id ) {
         if( !allslices.hasOwnProperty( node_id ) ) {
             alert('Can not create segments table for slice. Not fetch slice!')
             return;
         }
-
+        /// TODO fetch right segments of a slice from the graph
         $('#segmentstable').empty();
         var right_segments = allslices[ node_id ].segments_right;
         $('#segmentstable').append('<tr>'+
@@ -273,45 +302,97 @@ var SegmentationAnnotations = new function()
             '<td>center_distance</td>' +
             '<td>set_difference</td>' +
             '<td>set_difference_ratio</td>' +
-            '<td>al_set_difference</td>' +
-            '<td>al_set_difference_ratio</td>' +
+            '<td>aligned_set_difference</td>' +
+            '<td>aligned_set_difference_ratio</td>' +
             '<td>size</td>' +
             '<td>overlap</td>' +
             '<td>overlap_ratio</td>' +
-            '<td>al_overlap</td>' +
-            '<td>al_overlap_ratio</td>' +
+            '<td>aligned_overlap</td>' +
+            '<td>aligned_overlap_ratio</td>' +
+            '<td>average_slice_distance</td>' +
+            '<td>max_slice_distance</td>' +
+            '<td>aligned_average_slice_distance</td>' +
+            '<td>aligned_max_slice_distance</td>' +
+            '<td>histogram_0</td>' +
+            '<td>histogram_1</td>' +
+            '<td>histogram_2</td>' +
+            '<td>histogram_3</td>' +
+            '<td>histogram_4</td>' +
+            '<td>histogram_5</td>' +
+            '<td>histogram_6</td>' +
+            '<td>histogram_7</td>' +
+            '<td>histogram_8</td>' +
+            '<td>histogram_9</td>' +
+            '<td>normalized_histogram_0</td>' +
+            '<td>normalized_histogram_1</td>' +
+            '<td>normalized_histogram_2</td>' +
+            '<td>normalized_histogram_3</td>' +
+            '<td>normalized_histogram_4</td>' +
+            '<td>normalized_histogram_5</td>' +
+            '<td>normalized_histogram_6</td>' +
+            '<td>normalized_histogram_7</td>' +
+            '<td>normalized_histogram_8</td>' +
+            '<td>normalized_histogram_9</td>' +
             '</tr>');
+
         for(var i=0; i<right_segments.length; i++ ) {
             // only for continuations
             var sliceimage = '';
-            if( right_segments[i].segmenttype === 2 ) {
+            var segment = get_segment_from_segmentid( right_segments[i] );
+            console.log('segment data from cygraph', segment, right_segments[i]);
+
+            if( segment.segmenttype === 2 ) {
                  sliceimage = '<img style="width: 100%;" src="' +
-                    get_slice_image_url_from_section_and_slice( right_segments[i].target_section,
-                        right_segments[i].target1_slice_id) + '" >';
-            } else if( right_segments[i].segmenttype === 3 ) {
+                    get_slice_image_url_from_section_and_slice( segment.target_section,
+                        segment.target1_slice_id) + '" >';
+            } else if( segment.segmenttype === 3 ) {
                  sliceimage = '<img style="width: 100%;" src="' +
-                    get_slice_image_url_from_section_and_slice( right_segments[i].target_section,
-                        right_segments[i].target1_slice_id) + '" ><br />' +
+                    get_slice_image_url_from_section_and_slice( segment.target_section,
+                        segment.target1_slice_id) + '" ><br />' +
                     '<img style="width: 100%;" src="' +
-                    get_slice_image_url_from_section_and_slice( right_segments[i].target_section,
-                        right_segments[i].target2_slice_id) + '" >';
+                    get_slice_image_url_from_section_and_slice( segment.target_section,
+                        segment.target2_slice_id) + '" >';
             }
             $('#segmentstable').append('<tr>'+
-                //'<td>'+right_segments[i].segmentid+'</td>' +
+                //'<td>'+segment.segmentid+'</td>' +
                 '<td style="background-color:#000000">'+sliceimage+'</td>' +
-                '<td>'+right_segments[i].segmenttype+'</td>' +
-                '<td>'+right_segments[i].target_section+'//'+right_segments[i].target1_slice_id+','+right_segments[i].target2_slice_id+'</td>' +
-                '<td>'+right_segments[i].cost+'</td>' +
-                '<td>'+right_segments[i].center_distance+'</td>' +
-                '<td>'+right_segments[i].set_difference+'</td>' +
-                '<td>'+right_segments[i].set_difference_ratio+'</td>' +
-                '<td>'+right_segments[i].aligned_set_difference+'</td>' +
-                '<td>'+right_segments[i].aligned_set_difference_ratio+'</td>' +
-                '<td>'+right_segments[i].size+'</td>' +
-                '<td>'+right_segments[i].overlap+'</td>' +
-                '<td>'+right_segments[i].overlap_ratio+'</td>' +
-                '<td>'+right_segments[i].aligned_overlap+'</td>' +
-                '<td>'+right_segments[i].aligned_overlap_ratio+'</td>' +
+                '<td>'+segment.segmenttype+'</td>' +
+                '<td>'+segment.target_section+'//'+segment.target1_slice_id+','+segment.target2_slice_id+'</td>' +
+                '<td>'+segment.cost+'</td>' +
+                '<td>'+segment.center_distance+'</td>' +
+                '<td>'+segment.set_difference+'</td>' +
+                '<td>'+segment.set_difference_ratio+'</td>' +
+                '<td>'+segment.aligned_set_difference+'</td>' +
+                '<td>'+segment.aligned_set_difference_ratio+'</td>' +
+                '<td>'+segment.size+'</td>' +
+                '<td>'+segment.overlap+'</td>' +
+                '<td>'+segment.overlap_ratio+'</td>' +
+                '<td>'+segment.aligned_overlap+'</td>' +
+                '<td>'+segment.aligned_overlap_ratio+'</td>' +
+                '<td>'+segment.average_slice_distance+'</td>' +
+                '<td>'+segment.max_slice_distance+'</td>' +
+                '<td>'+segment.aligned_average_slice_distance+'</td>' +
+                '<td>'+segment.aligned_max_slice_distance+'</td>' +
+                '<td>'+segment.histogram_0+'</td>' +
+                '<td>'+segment.histogram_1+'</td>' +
+                '<td>'+segment.histogram_2+'</td>' +
+                '<td>'+segment.histogram_3+'</td>' +
+                '<td>'+segment.histogram_4+'</td>' +
+                '<td>'+segment.histogram_5+'</td>' +
+                '<td>'+segment.histogram_6+'</td>' +
+                '<td>'+segment.histogram_7+'</td>' +
+                '<td>'+segment.histogram_8+'</td>' +
+                '<td>'+segment.histogram_9+'</td>' +
+                '<td>'+segment.normalized_histogram_0+'</td>' +
+                '<td>'+segment.normalized_histogram_1+'</td>' +
+                '<td>'+segment.normalized_histogram_2+'</td>' +
+                '<td>'+segment.normalized_histogram_3+'</td>' +
+                '<td>'+segment.normalized_histogram_4+'</td>' +
+                '<td>'+segment.normalized_histogram_5+'</td>' +
+                '<td>'+segment.normalized_histogram_6+'</td>' +
+                '<td>'+segment.normalized_histogram_7+'</td>' +
+                '<td>'+segment.normalized_histogram_8+'</td>' +
+                '<td>'+segment.normalized_histogram_9+'</td>' +
                 '</tr>');
         }
 
@@ -324,45 +405,95 @@ var SegmentationAnnotations = new function()
             '<td>center_distance</td>' +
             '<td>set_difference</td>' +
             '<td>set_difference_ratio</td>' +
-            '<td>al_set_difference</td>' +
-            '<td>al_set_difference_ratio</td>' +
+            '<td>aligned_set_difference</td>' +
+            '<td>aligned_set_difference_ratio</td>' +
             '<td>size</td>' +
             '<td>overlap</td>' +
             '<td>overlap_ratio</td>' +
-            '<td>al_overlap</td>' +
-            '<td>al_overlap_ratio</td>' +
+            '<td>aligned_overlap</td>' +
+            '<td>aligned_overlap_ratio</td>' +
+            '<td>average_slice_distance</td>' +
+            '<td>max_slice_distance</td>' +
+            '<td>aligned_average_slice_distance</td>' +
+            '<td>aligned_max_slice_distance</td>' +
+            '<td>histogram_0</td>' +
+            '<td>histogram_1</td>' +
+            '<td>histogram_2</td>' +
+            '<td>histogram_3</td>' +
+            '<td>histogram_4</td>' +
+            '<td>histogram_5</td>' +
+            '<td>histogram_6</td>' +
+            '<td>histogram_7</td>' +
+            '<td>histogram_8</td>' +
+            '<td>histogram_9</td>' +
+            '<td>normalized_histogram_0</td>' +
+            '<td>normalized_histogram_1</td>' +
+            '<td>normalized_histogram_2</td>' +
+            '<td>normalized_histogram_3</td>' +
+            '<td>normalized_histogram_4</td>' +
+            '<td>normalized_histogram_5</td>' +
+            '<td>normalized_histogram_6</td>' +
+            '<td>normalized_histogram_7</td>' +
+            '<td>normalized_histogram_8</td>' +
+            '<td>normalized_histogram_9</td>' +
             '</tr>');
         for(var i=0; i<left_segments.length; i++ ) {
             // only for continuations
             var sliceimage = '';
-            if( left_segments[i].segmenttype === 2 ) {
+            var segment = get_segment_from_segmentid( left_segments[i] );
+
+            if( segment.segmenttype === 2 ) {
                  sliceimage = '<img style="width: 100%;" src="' +
-                    get_slice_image_url_from_section_and_slice( left_segments[i].target_section,
-                        left_segments[i].target1_slice_id) + '" >';
-            } else if( left_segments[i].segmenttype === 3 ) {
+                    get_slice_image_url_from_section_and_slice( segment.target_section,
+                        segment.target1_slice_id) + '" >';
+            } else if( segment.segmenttype === 3 ) {
                  sliceimage = '<img style="width: 100%;" src="' +
-                    get_slice_image_url_from_section_and_slice( left_segments[i].target_section,
-                        left_segments[i].target1_slice_id) + '" ><br />' +
+                    get_slice_image_url_from_section_and_slice( segment.target_section,
+                        segment.target1_slice_id) + '" ><br />' +
                     '<img style="width: 100%;" src="' +
-                    get_slice_image_url_from_section_and_slice( left_segments[i].target_section,
-                        left_segments[i].target2_slice_id) + '" >';
+                    get_slice_image_url_from_section_and_slice( segment.target_section,
+                        segment.target2_slice_id) + '" >';
             }
             $('#segmentstable').append('<tr>'+
-                //'<td>'+left_segments[i].segmentid+'</td>' +
+                //'<td>'+segment.segmentid+'</td>' +
                 '<td style="background-color:#000000">'+sliceimage+'</td>' +
-                '<td>'+left_segments[i].segmenttype+'</td>' +
-                '<td>'+left_segments[i].target_section+'//'+left_segments[i].target1_slice_id+','+left_segments[i].target2_slice_id+'</td>' +
-                '<td>'+left_segments[i].cost+'</td>' +
-                '<td>'+left_segments[i].center_distance+'</td>' +
-                '<td>'+left_segments[i].set_difference+'</td>' +
-                '<td>'+left_segments[i].set_difference_ratio+'</td>' +
-                '<td>'+left_segments[i].aligned_set_difference+'</td>' +
-                '<td>'+left_segments[i].aligned_set_difference_ratio+'</td>' +
-                '<td>'+left_segments[i].size+'</td>' +
-                '<td>'+left_segments[i].overlap+'</td>' +
-                '<td>'+left_segments[i].overlap_ratio+'</td>' +
-                '<td>'+left_segments[i].aligned_overlap+'</td>' +
-                '<td>'+left_segments[i].aligned_overlap_ratio+'</td>' +
+                '<td>'+segment.segmenttype+'</td>' +
+                '<td>'+segment.target_section+'//'+segment.target1_slice_id+','+segment.target2_slice_id+'</td>' +
+                '<td>'+segment.cost+'</td>' +
+                '<td>'+segment.center_distance+'</td>' +
+                '<td>'+segment.set_difference+'</td>' +
+                '<td>'+segment.set_difference_ratio+'</td>' +
+                '<td>'+segment.aligned_set_difference+'</td>' +
+                '<td>'+segment.aligned_set_difference_ratio+'</td>' +
+                '<td>'+segment.size+'</td>' +
+                '<td>'+segment.overlap+'</td>' +
+                '<td>'+segment.overlap_ratio+'</td>' +
+                '<td>'+segment.aligned_overlap+'</td>' +
+                '<td>'+segment.aligned_overlap_ratio+'</td>' +
+                '<td>'+segment.average_slice_distance+'</td>' +
+                '<td>'+segment.max_slice_distance+'</td>' +
+                '<td>'+segment.aligned_average_slice_distance+'</td>' +
+                '<td>'+segment.aligned_max_slice_distance+'</td>' +
+                '<td>'+segment.histogram_0+'</td>' +
+                '<td>'+segment.histogram_1+'</td>' +
+                '<td>'+segment.histogram_2+'</td>' +
+                '<td>'+segment.histogram_3+'</td>' +
+                '<td>'+segment.histogram_4+'</td>' +
+                '<td>'+segment.histogram_5+'</td>' +
+                '<td>'+segment.histogram_6+'</td>' +
+                '<td>'+segment.histogram_7+'</td>' +
+                '<td>'+segment.histogram_8+'</td>' +
+                '<td>'+segment.histogram_9+'</td>' +
+                '<td>'+segment.normalized_histogram_0+'</td>' +
+                '<td>'+segment.normalized_histogram_1+'</td>' +
+                '<td>'+segment.normalized_histogram_2+'</td>' +
+                '<td>'+segment.normalized_histogram_3+'</td>' +
+                '<td>'+segment.normalized_histogram_4+'</td>' +
+                '<td>'+segment.normalized_histogram_5+'</td>' +
+                '<td>'+segment.normalized_histogram_6+'</td>' +
+                '<td>'+segment.normalized_histogram_7+'</td>' +
+                '<td>'+segment.normalized_histogram_8+'</td>' +
+                '<td>'+segment.normalized_histogram_9+'</td>' +
                 '</tr>');
         }
 
@@ -462,6 +593,7 @@ var SegmentationAnnotations = new function()
 
         activate_slice( new_active_slice );
         make_visible( new_active_slice, true );
+        //allslices[ new_active_slice ].fetch_all_segments();
         update_stack();
     };
 
@@ -499,8 +631,10 @@ var SegmentationAnnotations = new function()
 
         // define the set of new slices visible
         nr_elements = slices_grouping[ current_active_slice ].slicelist[ index ].length;
+        console.log('slicesgrouping for current slice. try to make it visible', slices_grouping[ current_active_slice ].slicelist[ index ]);
         for(var idx = 0; idx < nr_elements; idx++) {
             var new_active_slice = slices_grouping[ current_active_slice ].slicelist[ index ][ idx ];
+            // FIXME: this fails for branch nodes
             make_visible( new_active_slice, false );
         }
 
@@ -513,11 +647,12 @@ var SegmentationAnnotations = new function()
 
         activate_slice( new_active_slice );
         make_visible( new_active_slice, true );
+        //allslices[ new_active_slice ].fetch_all_segments();
         update_stack();
     }
 
     var add_slice = function( slice, is_visible, trigger_update, fetch_segments_for_slice, do_goto_slice ) {
-        //console.log('add_slice', slice, is_visible, trigger_update, fetch_segments_for_slice, do_goto_slice);
+        console.log('add_slice', slice, is_visible, trigger_update, fetch_segments_for_slice, do_goto_slice);
         var slice = new Slice( slice );
 
         if( ! allslices.hasOwnProperty( slice.node_id ) ) {
@@ -525,6 +660,11 @@ var SegmentationAnnotations = new function()
         } else {
             console.log('Slice already in allslices. do not add', slice);
         };
+
+        // add node to graph, TODO: only add if it does not exist?
+        cygraph.add([
+          { group: "nodes", data: { id: slice.node_id, slice: slice, type: "SliceNode" } }
+        ]);
 
         slice.fetch_image( trigger_update, fetch_segments_for_slice, is_visible, do_goto_slice )
     }
@@ -558,7 +698,7 @@ var SegmentationAnnotations = new function()
                                     alert('Should only have fetched one slice, but it fetched multiple.');
                                     return false;
                                 }
-                                self.add_slice( e[ 0 ], true, true, true );
+                                self.add_slice( e[ 0 ], true, true, false, false );
                             }
                         }
                     }
@@ -612,6 +752,31 @@ var SegmentationAnnotations = new function()
             sliceid: parseInt(nodesplit[1]) };
     }
 
+    var add_slices_group_from_segments_new = function( segments, selected_segment_index ) {
+        var selected_segment = get_segment_from_segmentid( segments[ selected_segment_index ] );
+        var prototype_slice = selected_segment.target1_node_id;
+        console.log('is it equal?', prototype_slice, cc_slice(selected_segment.target_section,selected_segment.target1_slice_id) )
+        // TODO: also add the corresponding edges
+        slices_grouping[ prototype_slice ] = {};
+        slices_grouping[ prototype_slice ]['slicelist'] = [];
+        slices_grouping[ prototype_slice ]['sliceindex'] = 0;
+        slices_grouping[ prototype_slice ]['slicelist'].push( [ prototype_slice ] );
+        var tmp_segment;
+        for (var sidx = 0; sidx < segments.length; sidx++) {
+            if( sidx !== selected_segment_index ) {
+                tmp_segment = get_segment_from_segmentid( segments[ sidx ] )
+                console.log('add slices to group for segment', tmp_segment);
+                if( tmp_segment.segmenttype === 2) {
+                    slices_grouping[ prototype_slice ]['slicelist'].push( [ tmp_segment.target1_node_id ] );
+                } else if( tmp_segment.segmenttype === 3) {
+                    slices_grouping[ prototype_slice ]['slicelist'].push( [ tmp_segment.target1_node_id, tmp_segment.target2_node_id ] );
+                } else {
+                    console.log('unknown segment type');
+                }
+            } 
+        }
+        return prototype_slice;
+    }
 
     var add_slices_group_from_segments = function( segments, selected_segment_index ) {
         var prototype_slice = cc_slice(segments[ selected_segment_index ].target_section,
@@ -640,7 +805,7 @@ var SegmentationAnnotations = new function()
         for (var sidx in result) {
             if( sidx == 0 ) {
                 // is_visible = trigger_update = fetch_segments = true
-                self.add_slice( result[sidx], true, true, true );
+                self.add_slice( result[sidx], true, true, true, false );
                 activate_slice( result[sidx] );
                 prototype_slice = result[sidx].node_id;
                 slices_grouping[ prototype_slice ] = {};
@@ -648,7 +813,7 @@ var SegmentationAnnotations = new function()
                 slices_grouping[ prototype_slice ]['sliceindex'] = 0;
                 slices_grouping[ prototype_slice ]['slicelist'].push( [ prototype_slice ] );
             } else {
-                self.add_slice( result[sidx], false, false, true );
+                self.add_slice( result[sidx], false, false, false, false );
                 slices_grouping[ prototype_slice ]['slicelist'].push( [ result[sidx].node_id ] );
             }
         }
@@ -670,9 +835,63 @@ var SegmentationAnnotations = new function()
     self.activate_slice = activate_slice;
 
 
-    function Segment()
+    function Segment( segment )
     {
-        this.id = null;
+        var self = this;
+
+        this.segment_id = segment.segmentid;
+        this.node_id = ""+segment.origin_section+"_"+segment.target_section+"-"+segment.segmentid;
+        this.origin_node_id = ""+segment.origin_section+"_"+segment.origin_slice_id;
+        this.target1_node_id = ""+segment.target_section+"_"+segment.target1_slice_id;
+        if( segment.target2_slice_id )
+            this.target2_node_id = ""+segment.target_section+"_"+segment.target2_slice_id;
+        this.assembly_id = segment.assembly_id;
+        this.segmenttype = segment.segmenttype;
+        this.origin_section = segment.origin_section;
+        this.origin_slice_id = segment.origin_slice_id;
+        this.target_section = segment.target_section;
+        this.target1_slice_id = segment.target1_slice_id;
+        this.target2_slice_id = segment.target2_slice_id;
+        this.direction = segment.direction;
+
+        // TODO: simplify with a for loop
+        this.cost= segment.cost;
+        this.center_distance= segment.center_distance;
+        this.set_difference= segment.set_difference;
+        this.set_difference_ratio= segment.set_difference_ratio;
+        this.aligned_set_difference= segment.aligned_set_difference;
+        this.aligned_set_difference_ratio= segment.aligned_set_difference_ratio;
+        this.size= segment.size;
+        this.overlap= segment.overlap;
+        this.overlap_ratio= segment.overlap_ratio;
+        this.aligned_overlap= segment.aligned_overlap;
+        this.aligned_overlap_ratio= segment.aligned_overlap_ratio;
+        this.average_slice_distance= segment.average_slice_distance;
+        this.max_slice_distance= segment.max_slice_distance;
+        this.aligned_average_slice_distance= segment.aligned_average_slice_distance;
+        this.aligned_max_slice_distance= segment.aligned_max_slice_distance;
+        this.histogram_0= segment.histogram_0;
+        this.histogram_1= segment.histogram_1;
+        this.histogram_2= segment.histogram_2;
+        this.histogram_3= segment.histogram_3;
+        this.histogram_4= segment.histogram_4;
+        this.histogram_5= segment.histogram_5;
+        this.histogram_6= segment.histogram_6;
+        this.histogram_7= segment.histogram_7;
+        this.histogram_8= segment.histogram_8;
+        this.histogram_9= segment.histogram_9;
+        this.normalized_histogram_0= segment.normalized_histogram_0;
+        this.normalized_histogram_1= segment.normalized_histogram_1;
+        this.normalized_histogram_2= segment.normalized_histogram_2;
+        this.normalized_histogram_3= segment.normalized_histogram_3;
+        this.normalized_histogram_4= segment.normalized_histogram_4;
+        this.normalized_histogram_5= segment.normalized_histogram_5;
+        this.normalized_histogram_6= segment.normalized_histogram_5;
+        this.normalized_histogram_7= segment.normalized_histogram_6;
+        this.normalized_histogram_8= segment.normalized_histogram_7;
+        this.normalized_histogram_9= segment.normalized_histogram_8;
+
+
     }
 
     function Slice( slice )
@@ -760,15 +979,21 @@ var SegmentationAnnotations = new function()
             });
         };
 
+        this.fetch_all_segments = function() {
+            console.log('fetch all segments!');
+            self.fetch_segments( true );
+            self.fetch_segments( false );
+        }
+
         /*
         ** Fetch connected segments of this slices
         ** and initialize segments_{left|right} object
         */
         this.fetch_segments = function ( for_right ) {
-            // console.log('fetch segments. trigger fetchingin slices for segment?', trigger_fetch_segment );
+            console.log('fetch segments. for slice id', self.node_id );
             // do not fetch segments if already fetched
             if(self.segments_right.length > 0 || self.segments_left.length > 0) {
-                console.log('already existing segments');
+                console.log('already existing segments', self.segments_right, self.selected_segment_right, self.segments_left, self.selected_segment_left);
                 return;
             }
 
@@ -782,19 +1007,50 @@ var SegmentationAnnotations = new function()
                             if (e.error) {
                                 alert(e.error);
                             } else {
-                                //console.log('found segments', e);
+                                console.log('found segments', e);
+                                if( e.length == 0 ) {
+                                    console.log('no segments found, mark it as such');
+                                    self.selected_segment_left = -2;
+                                    self.selected_segment_right = -2;
+                                }
                                 for(var idx in e) {
-                                    if( !e[idx].direction ) {
-                                        self.segments_left.push( e[idx] );
-                                        if( !self.selected_segment_left ) {
+
+                                    var newsegment = new Segment( e[idx] );
+                                    console.log('new segment', newsegment);
+
+                                    if( !newsegment.direction ) {
+                                        self.segments_left.push( newsegment.node_id );
+                                        if( !self.selected_segment_left )
                                             self.selected_segment_left = 0;
-                                        }
                                     } else {
-                                        self.segments_right.push( e[idx] );
-                                        if( !self.selected_segment_right ) {
+                                        self.segments_right.push( newsegment.node_id );
+                                        if( !self.selected_segment_right )
                                             self.selected_segment_right = 0;
-                                        }
                                     }
+
+                                    cygraph.add([
+                                      { group: "nodes", data: { id: newsegment.node_id, segment: newsegment, type: "SegmentNode" } },
+                                    ]);
+
+                                    // if continuation
+                                    if( newsegment.segmenttype == 2 ) {
+                                        console.log('continuation segment. direction', newsegment.direction, 'from', newsegment.origin_node_id, 'to', newsegment.node_id);
+
+                                        cygraph.add([
+                                          { group: "edges", data: { id: "segin"+newsegment.node_id, source: newsegment.origin_node_id, target: newsegment.node_id } },
+                                          // { group: "edges", data: { id: "segout"+newsegment.node_id, source: newsegment.node_id, target: newsegment.target1 } },
+                                        ]);
+                                    } else if( newsegment.segmenttype == 3 ) {
+                                        console.log('branch segment. direction', newsegment.direction)
+                                        cygraph.add([
+                                          { group: "edges", data: { id: "segin"+newsegment.node_id, source: newsegment.origin_node_id, target: newsegment.node_id } },
+                                          // { group: "edges", data: { id: "segout"+newsegment.node_id, source: newsegment.node_id, target: newsegment.target1 } },
+                                          // { group: "edges", data: { id: "segout"+newsegment.node_id, source: newsegment.node_id, target: newsegment.target2 } },
+                                        ]);
+                                    } else {
+                                        console.log('Unknown segment type fetched!');
+                                    }
+
                                 }
 
                                 // if automated fetching is on and conditions hold, move to the next!
@@ -802,7 +1058,6 @@ var SegmentationAnnotations = new function()
                                     propagation_counter--;
                                     console.log('propgation counter', propagation_counter, 'go with next!')
                                     self.fetch_slices_for_selected_segment( true );
-                                    
                                 }
 
 
@@ -812,7 +1067,42 @@ var SegmentationAnnotations = new function()
             });
         };
 
+        this.add_slicesgroup_for_selected_segment = function( for_right ) {
+            console.log('add slicesgroup for selected segment');
+
+            var proto_node_id;
+            if ( for_right ) {
+                if( self.selected_segment_right === null ) {
+                    console.log('no segment selected to the right. press h to fetch or press e to mark as end to the right');
+                    return;
+                } else if( self.selected_segment_right === -2 ) {
+                    console.log('no segment exist to the right. add a new slice or press e to mark as end to the right');
+                    return;
+                }
+
+                proto_node_id = add_slices_group_from_segments_new( self.segments_right, self.selected_segment_right );
+
+            } else {
+                if( !self.selected_segment_left ) {
+                    console.log('no segment selected to the left.');
+                    return;
+                }
+
+            }
+            console.log('new prototype slice', proto_node_id);
+
+            // we want to go directly to the newly fetched proto slice,
+            // so we need to make it current first in order to
+            // go to it after the fetch_image ajax call has returned
+            activate_slice( proto_node_id );
+            make_visible( proto_node_id, true );
+            
+        }
+
         this.fetch_slices_for_selected_segment = function( for_right ) {
+            console.log('fetch segments for selected slice', for_right);
+            // TODO: add new slices and edges from segment
+
             var current_segment, proto_node_id;
             if ( for_right ) {
                 if (self.segments_right.length == 0) {
@@ -854,10 +1144,6 @@ var SegmentationAnnotations = new function()
             activate_slice( proto_node_id );
             make_visible( proto_node_id, true );
 
-        }
-
-        this.next_left_segment = function() {
-            // TODO
         }
 
         this.get_current_right_segment = function() {

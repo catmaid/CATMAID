@@ -8,11 +8,12 @@ from django.shortcuts import get_object_or_404, render_to_response
 from django.template import Context
 
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
+from catmaid.control.common import insert_into_log
 from catmaid.control.ajax_templates import *
 from catmaid.control.ontology import get_classes
 from catmaid.models import Class, ClassClass, ClassInstance, ClassInstanceClassInstance
 from catmaid.models import Relation, UserRole, Project
-from catmaid.control.authentication import requires_user_role
+from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 
 # A dummy project is referenced by all the classes and class instances.
 # This is due to the fact, that one classification tree instance should
@@ -529,3 +530,83 @@ def list_classification_graph(request, project_id=None, link_id=None):
             return HttpResponse(json.dumps(tuple(cd for cd in child_data)))
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
+
+@requires_user_role(UserRole.Annotate)
+def classification_instance_operation(request, project_id=None):
+    params = {}
+    int_keys = ('id', 'parentid', 'relationid', 'classid')
+    str_keys = ('operation', 'title', 'rel', 'objname')
+    for k in int_keys:
+        params[k] = int(request.POST.get(k, 0))
+    for k in str_keys:
+        # TODO sanitize
+        params[k] = request.POST.get(k, 0)
+
+    relation_map = get_relation_to_id_map(dummy_pid)
+    class_map = get_class_to_id_map(dummy_pid)
+
+    # We avoid many try/except clauses by setting this string to be the
+    # response we return if an exception is thrown.
+    classification_instance_operation.res_on_err = ''
+
+    def create_node():
+        """ Creates a new node.
+        """
+        # Can only create a node if the parent node is owned by the user
+        # or the user is a superuser.
+        # Given that the parentid is 0 to signal root (but root has a non-zero id),
+        # this implies that regular non-superusers cannot create nodes under root,
+        # but only in their staging area.
+        can_edit_or_fail(request.user, params['parentid'], 'class_instance')
+
+        # TODO: Test if class and parent class instance exist
+        # if params['classid'] not in class_map:
+        #    raise CatmaidException('Failed to select class.')
+
+        classification_instance_operation.res_on_err = 'Failed to insert instance of class.'
+        node = ClassInstance(
+                user=request.user,
+                name=params['objname'])
+        node.project_id = dummy_pid
+        node.class_column_id = params['classid']
+        node.save()
+        class_name = node.class_column.class_name
+        insert_into_log(project_id, request.user.id, "create_%s" % class_name,
+            None, "Created %s with ID %s" % (class_name, params['id']))
+
+        # We need to connect the node to its parent, or to root if no valid parent is given.
+        node_parent_id = params['parentid']
+        # TODO: Test if tis parent exists
+
+        #if 0 == params['parentid']:
+        #    # Find root element
+        #    classification_instance_operation.res_on_err = 'Failed to select classification root.'
+        #    node_parent_id = ClassInstance.objects.filter(
+        #            project=dummy_pid,
+        #            class_column=class_map['classification_root'])[0].id
+
+        #Relation.objects.filter(id=params['relationid'])
+        #if params['relationname'] not in relation_map:
+        #    raise CatmaidException('Failed to select relation %s' % params['relationname'])
+
+        classification_instance_operation.res_on_err = 'Failed to insert CICI-link.'
+        cici = ClassInstanceClassInstance()
+        cici.user = request.user
+        cici.project_id = dummy_pid
+        cici.relation_id = params['relationid']
+        cici.class_instance_a_id = node.id
+        cici.class_instance_b_id = node_parent_id
+        cici.save()
+
+        return HttpResponse(json.dumps({'class_instance_id': node.id}))
+
+    try:
+        # Dispatch to operation
+        if params['operation'] not in ['create_node']:
+            raise Exception('No operation called %s.' % params['operation'])
+        return locals()[params['operation']]()
+    except Exception as e:
+        if classification_instance_operation.res_on_err == '':
+            raise
+        else:
+            raise Exception(classification_instance_operation.res_on_err + '\n' + str(e))

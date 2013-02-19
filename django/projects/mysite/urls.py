@@ -280,6 +280,9 @@ urlpatterns += patterns('',
         'catmaid.control.list_classification_graph', name='list_classification_graph'),
     url(r'^(?P<project_id>%s)/classification/list/(?P<link_id>\d+)$' % (integer),
         'catmaid.control.list_classification_graph', name='list_classification_graph'),
+    url(r'^(?P<project_id>\d+)/classification/instance-operation$',
+        'catmaid.control.classification_instance_operation',
+        name='classification_instance_operation'),
     )
 
 if settings.DEBUG:

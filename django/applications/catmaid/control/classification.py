@@ -283,17 +283,17 @@ def show_classification_editor( request, project_id=None, link_id=None):
     if link_id is not None:
         num_trees = 1
 
-        selected_tree = ClassInstanceClassInstance.objects.filter(
+        selected_graph = ClassInstanceClassInstance.objects.filter(
             id=link_id, project=dummy_pid)
         # Make sure we actually got a tree:
-        if selected_tree.count() != 1:
-            raise Exception("Couldn't select requested tree.")
+        if selected_graph.count() != 1:
+            raise Exception("Couldn't select requested classification graph.")
         else:
-            selected_tree = selected_tree[0]
+            selected_graph = selected_graph[0]
 
         context = Context({
-            'num_trees': 1,
-            'tree_id': link_id,
+            'num_graphs': 1,
+            'graph_id': link_id,
             'project_id': project_id,
             'settings': settings
         })

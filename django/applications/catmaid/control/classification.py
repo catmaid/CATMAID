@@ -129,16 +129,16 @@ class Child:
         self.template_node_name = ""
         self.template_node_alt = []
 
-def get_children( parent_ci ):
-    """ Returns all children of a node with id <parent_id>. The result
-    is limited to a maximum ef <max_nodes> nodes.
+def get_child_links( parent_ci ):
+    """ Returns all links to children of a node with id <parent_id>. The
+    result is limited to a maximum ef <max_nodes> nodes.
     """
     # Get al a query set for all children that are linked to a parent
     # that is not linked by a relation named 'classified_by'.
     cici_q = ClassInstanceClassInstance.objects.filter(
         class_instance_b=parent_ci).exclude(
             relation__relation_name='classified_by')
-    children = [cici.class_instance_a for cici in cici_q]
+    children = [cici for cici in cici_q]
 
     # Collect all child node class instances
     #children = []
@@ -453,8 +453,8 @@ def list_classification_graph(request, project_id=None, link_id=None):
         # Get all links
         links_q = get_classification_links_qs( project_id )
         # Return valid roots
-        roots = [ cici.class_instance_b for cici in links_q ]
-        num_roots = len(roots)
+        root_links = [ cici for cici in links_q ]
+        num_roots = len(root_links)
 
         # Get classification instance
         if num_roots == 0:
@@ -463,7 +463,7 @@ def list_classification_graph(request, project_id=None, link_id=None):
             raise Exception("There is more than one classification graph and none was selected.")
         else:
             # Select the only root available for this project
-            cls_graph = roots[0]
+            root_link = root_links[0]
     else:
         # The link passed is a CICI link which links a project to a
         # certain classification root.
@@ -471,15 +471,15 @@ def list_classification_graph(request, project_id=None, link_id=None):
             relation__relation_name='classified_by')
         if cici_q.count() == 0:
             raise Exception("The specified link was not found.")
-        cls_link = cici_q[0]
-        cls_prj = cls_link.class_instance_a
+        root_link = cici_q[0]
+        cls_prj = root_link.class_instance_a
         if cls_prj.project_id != project_id:
             raise Exception("The link was found, but belongs to another project.")
-        cls_graph = cls_link.class_instance_b
 
     response_on_error = ''
     try:
         if 0 == parent_id:
+            cls_graph = root_link.class_instance_b
             response_on_error = 'Could not select the id of the classification root node.'
 
             # Collect all child node class instances
@@ -490,12 +490,13 @@ def list_classification_graph(request, project_id=None, link_id=None):
             # Create JSTree data structure
             data = {'data': {'title': cls_graph.class_column.class_name},
                 'attr': {'id': 'node_%s' % cls_graph.id,
+                         'linkid': root_link.id,
                          'rel': 'root',
                          'child_groups': json.dumps(child_types)}}
             # Test if there are children links present and mark
             # node as leaf if there are none.
-            child_nodes = get_children( cls_graph )
-            if len(child_nodes) > 0:
+            child_links = get_child_links( cls_graph )
+            if len(child_links) > 0:
                 data['state'] = 'closed'
 
             return HttpResponse(json.dumps([data]))
@@ -506,23 +507,25 @@ def list_classification_graph(request, project_id=None, link_id=None):
                 raise Exception("Couldn't select parent class instance with ID %s." % parent_id)
             parent_ci = parent_q[0]
             # Get all to root linked class instances
-            child_nodes = get_children( parent_ci )
+            child_links = get_child_links( parent_ci )
 
             response_on_error = 'Could not retrieve child nodes.'
             #add_template_fields( child_nodes )
 
             child_data = []
-            for child in child_nodes:
+            for child_link in child_links:
+                child = child_link.class_instance_a
                 child_types = get_child_classes( child.class_column )
                 data = {'data': {'title': child.class_column.class_name },
                     'attr': {'id': 'node_%s' % child.id,
+                             'linkid': child_link.id,
                              'rel': 'element',
                              'child_groups': json.dumps(child_types)}}
 
                 # Test if there are children links present and mark
                 # node as leaf if there are none.
-                sub_children = get_children( child )
-                if len(sub_children) > 0:
+                sub_child_links = get_child_links( child )
+                if len(sub_child_links) > 0:
                     data['state'] = 'closed'
 
                 child_data.append(data)

@@ -202,7 +202,7 @@ def add_relation(rel_user, rel_name, rel_desc, is_reciprocal=False):
         isreciprocal = is_reciprocal)
     return new_rel
 
-def check_classification_setup_view(request):
+def check_classification_setup_view(request, project_id=None):
     all_good = check_classification_setup()
     return HttpResponse(json.dumps({'all_good': all_good}))
 

@@ -26,7 +26,9 @@ needed_classes = {
     'classification_root':
          "The root node class for classification graphs",
     'classification_project':
-         "A project represention to link to classification graphs"}
+         "A project represention to link to classification graphs",
+    'classification_exclusive':
+         "When linked with 'is_a' to this, a class is marked as exclusive."}
 
 # All needed relations by the classification system alongside their
 # descriptions.
@@ -521,7 +523,13 @@ def get_child_classes( parent_class ):
     # class is linked to it with an 'is_a' relation.
     child_types = {}
     def add_class( key, c, rel ):
-        cdata = { 'id': c.id, 'name': c.class_name, 'exclusive': False,
+        # Test if this class is an exclusive class
+        num_exclusive_links = ClassClass.objects.filter(class_a=c,
+            class_b__class_name='classification_exclusive',
+            relation__relation_name='is_a').count()
+        exclusive = (num_exclusive_links > 0)
+        # Create class data structure
+        cdata = { 'id': c.id, 'name': c.class_name, 'exclusive': exclusive,
             'relname': rel.relation_name, 'relid': rel.id }
         if key not in child_types:
             child_types[key] = []

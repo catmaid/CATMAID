@@ -170,7 +170,15 @@ var ClassificationEditor = new function()
                             }
                           };
                     } else if (node_type === "element") {
-
+                        // Add removing entry
+                        menu["remove_element"] = {
+                            "separator_before": true,
+                            "separator_after": false,
+                            "label": "Remove",
+                            "action": function (obj) {
+                                this.remove(obj);
+                            }
+                        };
                     }
                     return menu;
                 },
@@ -216,8 +224,49 @@ var ClassificationEditor = new function()
               tree.jstree("refresh", -1);
             }
           });
-    });
+        });
 
+        // remove a node
+        tree.bind("remove.jstree", function (e, data) {
+            var treebefore = data.rlbk;
+            var mynode = data.rslt.obj;
+            var friendly_name = mynode.text().trim();
+            if (!confirm("Are you sure you want to remove '" + friendly_name + "' and anything it contains?")) {
+                $.jstree.rollback(treebefore);
+                return false;
+            }
+
+            $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Removing classification tree node. Just a moment...</h2>' });
+            // Remove classes
+            $.post(django_url + project.id + '/classification/instance-operation', {
+                "operation": "remove_node",
+                "id": mynode.attr("id").replace("node_", ""),
+                "linkid": mynode.attr("linkid"),
+                "title": data.rslt.new_name,
+                "pid": pid,
+                "rel": mynode.attr("rel")
+              }, function (r) {
+                $.unblockUI();
+                r = $.parseJSON(r);
+                if (r['error']) {
+                  alert(r['error']);
+                  $.jstree.rollback(treebefore);
+                  return;
+                }
+                if(r['status']) {
+                    $("#annotation_tree_object").jstree("refresh", -1);
+                    project.updateTool();
+                    $('#growl-alert').growlAlert({
+                      autoShow: true,
+                      content: 'Classification tree element "' + friendly_name + '" removed.',
+                      title: 'SUCCESS',
+                      position: 'top-right',
+                      delayTime: 2500,
+                      onComplete: function() { g.remove(); }
+                    });
+                };
+            });
+        });
     };
 
     this.create_error_aware_callback = function( fx )

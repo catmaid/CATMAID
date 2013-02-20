@@ -537,7 +537,7 @@ def list_classification_graph(request, project_id=None, link_id=None):
 @requires_user_role(UserRole.Annotate)
 def classification_instance_operation(request, project_id=None):
     params = {}
-    int_keys = ('id', 'parentid', 'relationid', 'classid')
+    int_keys = ('id', 'parentid', 'relationid', 'classid', 'linkid')
     str_keys = ('operation', 'title', 'rel', 'objname')
     for k in int_keys:
         params[k] = int(request.POST.get(k, 0))
@@ -603,9 +603,59 @@ def classification_instance_operation(request, project_id=None):
 
         return HttpResponse(json.dumps({'class_instance_id': node.id}))
 
+    def remove_node():
+        """ Will remove a node.
+        """
+        # Can only remove the node if the user owns it or the user is a superuser
+        can_edit_or_fail(request.user, params['id'], 'class_instance')
+        # A class instance can be linked to different other class instances. This
+        # operation will remove a complete class instance and thus *all* links to
+        # other class instances.
+        if 0 == params['rel']:
+            raise Exception('No node type given!')
+        elif 'element' == params['rel']:
+            # Delete a standard non-root element and its sub-tree.
+
+            def delete_node( node ):
+                # Find and delete children
+                classification_instance_operation.res_on_err \
+                    = 'Failed to delete relation from instance table.'
+                cici = ClassInstanceClassInstance.objects.filter(class_instance_b=node.id)
+                for rel in cici:
+                    # Delete children
+                    delete_node( rel.class_instance_a )
+
+                # Delete class instance
+                node.delete()
+
+                # Log
+                insert_into_log(project_id, request.user.id, 'remove_element', None,
+                    'Removed classification with ID %s and name %s' % (params['id'],
+                        params['title']))
+
+            classification_instance_operation.res_on_err \
+                = 'Failed to select node from instance table.'
+            node_to_delete = ClassInstance.objects.filter(id=params['id'])
+            if node_to_delete.count() == 0:
+                raise Exception('Could not find any node with ID %s' % params['id'])
+            else:
+                delete_node( node_to_delete[0] )
+                response = {'status': 1, 'message': 'Removed node %s successfully.' % params['id']}
+                return HttpResponse(json.dumps(response))
+        else:
+            classification_instance_operation.res_on_err \
+                = 'Failed to delete node from instance table.'
+            node_to_delete = ClassInstance.objects.filter(id=params['id'])
+            if node_to_delete.count() == 0:
+                raise Exception('Could not find any node with ID %s' % params['id'])
+            else:
+                node_to_delete.delete()
+                response = {'status': 1, 'message': 'Removed node %s successfully.' % params['id']}
+                return HttpResponse(json.dumps(response))
+
     try:
         # Dispatch to operation
-        if params['operation'] not in ['create_node']:
+        if params['operation'] not in ['create_node', 'remove_node']:
             raise Exception('No operation called %s.' % params['operation'])
         return locals()[params['operation']]()
     except Exception as e:

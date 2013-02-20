@@ -360,6 +360,82 @@ def add_classification_graph(request, project_id=None):
             #"link_tree_form": link_tree_form,
         })
 
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def remove_classification_graph(request, project_id=None, link_id=None):
+    """ Removes the link between a project and a classification graph. If
+    no other project links to the graph anymore, the graph is removed as
+    well.
+    """
+    project_id = int(project_id)
+    selected_graph = ClassInstanceClassInstance.objects.filter(
+        id=link_id, project=dummy_pid)
+    # Make sure we actually got a tree:
+    if selected_graph.count() != 1:
+        raise Exception("Couldn't select requested tree with ID %s." % link_id)
+    else:
+        selected_graph = selected_graph[0]
+
+    # Do some sanity checks
+    project_ci = selected_graph.class_instance_a
+    graph_ci = selected_graph.class_instance_b
+    links_project = (project_ci.project_id == project_id)
+    if not links_project:
+        raise Exception("The link to remove doesn't link to the current project.")
+    has_correct_prj_class = (project_ci.class_column.class_name == "classification_project")
+    if not has_correct_prj_class:
+        raise Exception("The link provided doesn't refer to a 'classification_project' instance.")
+    has_correct_relation = (selected_graph.relation.relation_name == 'classified_by')
+    if not has_correct_relation:
+        raise Exception("The link to remove doesn't use a 'classified_by' relation and therefore isn't recognized as a proper classification graph.")
+    root_links_q = ClassClass.objects.filter(class_a=graph_ci.class_column,
+        relation__relation_name='is_a', class_b__class_name='classification_root')
+    if root_links_q.count() == 0:
+        raise Exception("The link provided doesn't refer to a 'classification_root' derived instance.")
+
+    # Collect some statistics
+    num_removed_links = 0
+    num_removed_ci = 0
+    num_total_refs = 0
+
+    # Delete the link
+    selected_graph.delete()
+    num_removed_links = num_removed_links + 1
+    # Find number of other projects that are linked to the
+    # classification graph that should get deleted
+    num_extra_links = ClassInstanceClassInstance.objects.filter(
+        project=dummy_pid, class_instance_b=selected_graph.class_instance_b).count()
+    num_total_refs = num_total_refs + num_extra_links
+    # If there are no other links to a classification graph, its class
+    # instances get removed
+    if num_extra_links == 0:
+        def delete_node(node):
+            # TODO: Delete only if a node is not linked to another class
+            # instance that lives outside of the graph.
+            node.delete()
+        # Walk over all class instances
+        traverse_class_instances(selected_graph.class_instance_b, delete_node)
+        num_removed_ci = num_removed_ci + 1
+
+    #get_classification_links_qs
+
+    if num_removed_links == 0:
+        msg = 'The requested link couldn\'t get removed.'
+    elif num_removed_ci == 0:
+        msg = 'All links from this project to the classifiation graph have been removed. There are still ' + str(num_total_refs) + ' link(s) to this classification graph present.'
+    else:
+        msg = 'The classification graph has been removed, along with its ' + str(num_removed_ci) + ' class instances.'
+
+    return HttpResponse(msg)
+
+def traverse_class_instances(node, func):
+    """ Traverses a class instance graph, starting from the passed node.
+    It recurses into child trees and calls the passed function on each
+    node."""
+    children = ClassInstance.objects.filter(cici_via_a__class_instance_b=node)
+    for c in children:
+        traverse_class_instances(c, func)
+    func(node)
+
 def init_new_classification( user, project, ontology ):
     """ Intializes a new classification graph which is automatically
     linked to the provided project. This graph is based on the passed

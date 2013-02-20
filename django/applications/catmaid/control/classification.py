@@ -225,6 +225,11 @@ def check_classification_setup():
 
     return all_good
 
+def rebuild_classification_setup_view(request, project_id=None):
+    setup_classification(request.user)
+    all_good = check_classification_setup()
+    return HttpResponse(json.dumps({'all_good': all_good}))
+
 def setup_classification(user):
     """ Tests which of the needed classes and relations is missing
     from the dummy project''s semantic space and adds those.

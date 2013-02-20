@@ -184,7 +184,33 @@ var ClassificationEditor = new function()
                 },
             },
             "types": {
-
+                // disable max root nodes checking
+                "max_children": -2,
+                // disable max depth checking
+                "max_depth": -2,
+                // allow all childres
+                "valid_children": "all",
+                "types": {
+                  // the default type
+                  "default": {
+                    "valid_children": "all",
+                  },
+                  "root": {
+                    "icon": {
+                      "image": "widgets/themes/kde/jsTree/ontology/root.png"
+                    },
+                    "valid_children": "all",
+                    "start_drag": false,
+                    "delete_node": false,
+                    "remove": false
+                  },
+                  "element": {
+                    "icon": {
+                      "image": "widgets/themes/kde/jsTree/ontology/class_instance.png"
+                    },
+                    "valid_children": "all",
+                  },
+                }
             }
         });
 

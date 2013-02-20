@@ -301,12 +301,11 @@ def show_classification_editor( request, project_id=None, link_id=None):
         template = loader.get_template("catmaid/classification/show_tree.html")
     else:
         # First, check how many trees there are.
-        roots = get_classification_roots( project_id )
-        num_roots = len(roots)
+        root_links_q = get_classification_links_qs( project_id )
+        num_roots = len(root_links_q)
 
         context = Context({
             'num_graphs': num_roots,
-            #'template_trees': template_trees,
             'project_id': project_id,
             'CATMAID_URL': settings.CATMAID_URL
         })
@@ -319,7 +318,7 @@ def show_classification_editor( request, project_id=None, link_id=None):
             template_name = "catmaid/classification/new_graph.html"
             page_type = 'new_graph'
         elif num_roots == 1:
-            selected_graph = roots[0]
+            selected_graph = root_links_q[0]
             context['graph_id'] = selected_graph.id
             template_name = "catmaid/classification/show_graph.html"
             page_type = 'show_graph'

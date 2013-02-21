@@ -511,6 +511,15 @@ def collect_reachable_classes( parent_class):
 
     return available_links
 
+def is_exclusive( klass ):
+    """ Returns if a class is inheriting from the class
+    'classification_exclusive' and thereby is exclusive.
+    """
+    num_exclusive_links = ClassClass.objects.filter(class_a=klass,
+        class_b__class_name='classification_exclusive',
+        relation__relation_name='is_a').count()
+    return (num_exclusive_links > 0)
+
 def get_child_classes( parent_class ):
     """ Gets all possible child classes out of the linked ontology in
     the semantic space.
@@ -523,11 +532,7 @@ def get_child_classes( parent_class ):
     # class is linked to it with an 'is_a' relation.
     child_types = {}
     def add_class( key, c, rel ):
-        # Test if this class is an exclusive class
-        num_exclusive_links = ClassClass.objects.filter(class_a=c,
-            class_b__class_name='classification_exclusive',
-            relation__relation_name='is_a').count()
-        exclusive = (num_exclusive_links > 0)
+        exclusive = is_exclusive( c )
         # Create class data structure
         cdata = { 'id': c.id, 'name': c.class_name, 'exclusive': exclusive,
             'relname': rel.relation_name, 'relid': rel.id }

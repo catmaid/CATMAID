@@ -518,7 +518,7 @@ var WebGLApp = new function () {
 
             var theText = this.original_vertices[fromkey]['labels'].join();
             var text3d = new THREE.TextGeometry( theText, {
-              size: 5,
+              size: 100 * scale,
               height: 1,
               curveSegments: 1,
               font: "helvetiker"
@@ -528,8 +528,8 @@ var WebGLApp = new function () {
 
             var textMaterial = new THREE.MeshNormalMaterial( { color: 0xffffff, overdraw: true } );
             text = new THREE.Mesh( text3d, textMaterial );
-            text.position.x = from_vector.x + 3;
-            text.position.y = from_vector.y + 3;
+            text.position.x = from_vector.x;
+            text.position.y = from_vector.y;
             text.position.z = from_vector.z;
 
             this.textlabels[ fromkey ] = text;

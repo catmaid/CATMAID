@@ -34,7 +34,7 @@ function SegmentationTool()
 
         self.destroyToolbar();
 
-        $('#cytograph').remove();
+        // $('#cytograph').remove();
 
         // remove the view element from the DOM
         // canvasLayer.unregister();
@@ -75,14 +75,14 @@ function SegmentationTool()
         self.createToolbar();
 
         // add a dummy div to hold the graph
-        var graph = document.createElement("div");
+        /*var graph = document.createElement("div");
         graph.id = "cytograph";
         graph.style.width = "0px";
         graph.style.height = "0px";
         graph.style.display = "none";
-        self.stack.getView().appendChild( graph );
+        self.stack.getView().appendChild( graph );*/
 
-        SegmentationAnnotations.set_stack( parentStack );
+        SegmentationAnnotations.set_stack_and_layer( parentStack, canvasLayer.canvas );
 
         SegmentationAnnotations.init_graph( );
 
@@ -488,13 +488,12 @@ function SegmentationTool()
     }) );
 
     this.addAction( new Action({
-        helpText: "Reset all data",
+        helpText: "Toggle slices centers",
         keyShortcuts: {
-            'W': [ 87 ]
+            'P': [ 80 ]
         },
         run: function (e) {
-            canvasLayer.canvas.clear();
-            SegmentationAnnotations.reset_all();
+            SegmentationAnnotations.show_slices_cogs();
             return true;
         }
     }) );

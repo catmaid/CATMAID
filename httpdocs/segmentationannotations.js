@@ -23,6 +23,11 @@ var SegmentationAnnotations = new function()
     var slice_base_url, slice_filename_extension;
 
     var cygraph;
+
+    var canvas;
+
+    // slices centers
+    var cogs = new Array();
     
     this.reset_all = function() {
         self.init_graph();
@@ -34,7 +39,7 @@ var SegmentationAnnotations = new function()
         self.init_allvisible_slices();
 
     }
-
+/*
     this.test_graph = function() {
 
         var obj = new Object();
@@ -55,9 +60,9 @@ var SegmentationAnnotations = new function()
             console.log('id', id, element.data() );
         });
 
-        */
+        
         console.log( cygraph.nodes() )
-    }
+    }*/
 
     this.init_graph = function() {
         console.log($('#cytograph'))
@@ -65,13 +70,40 @@ var SegmentationAnnotations = new function()
             ready: function(){
               console.log('cytoscape ready')
             },
+            style: cytoscape.stylesheet()
+              .selector("node")
+                  .css({
+                    "content": "data(label)",
+                    "shape": "data(shape)",
+                    "border-width": 1,
+                    "background-color": "data(color)", //#DDD",
+                    "border-color": "#555",
+                  })
+                .selector("edge")
+                  .css({
+                    "content": "data(label)",
+                    "width": "data(weight)", //mapData(weight, 0, 100, 10, 50)",
+                    "target-arrow-shape": "triangle",
+                    // "source-arrow-shape": "circle",
+                    "line-color": "#444",
+                    "opacity": 0.4,
+                    
+                  })
+                .selector(":selected")
+                  .css({
+                    "background-color": "#000",
+                    "line-color": "#000",
+                    "source-arrow-color": "#000",
+                    "target-arrow-color": "#000",
+                    "text-opacity": 1.0
+                  })
         }
         $('#cytograph').cytoscape(options);
         cygraph = $('#cytograph').cytoscape("get");
         console.log('cygraph', cygraph)
         self.cygraph = cygraph;
         g = cygraph;
-        self.test_graph();
+        //self.test_graph();
     }
 
     this.init_allvisible_slices = function() {
@@ -82,9 +114,10 @@ var SegmentationAnnotations = new function()
         };
     }
 
-    this.set_stack = function( parentStack ) {
-        // console.log('SET STACK', parentStack );
+    this.set_stack_and_layer = function( parentStack, canvas ) {
+        console.log('SET STACK', parentStack, canvas );
         self.stack = parentStack;
+        self.canvas = canvas;
 
         requestQueue.register(django_url + project.id + '/stack/' + get_current_stack().id + '/slice-info', "POST", {},
          function (status, text, xml) {
@@ -103,6 +136,40 @@ var SegmentationAnnotations = new function()
         });
 
         self.init_allvisible_slices();
+    }
+
+    this.show_slices_cogs = function() {
+
+        self.canvas.clear();
+        cogs = new Array();
+
+        console.log('add dots');
+        requestQueue.register(django_url + project.id + '/stack/' + get_current_stack().id + '/slices-cog', "GET", {
+            z: get_current_stack().z,
+        },
+         function (status, text, xml) {
+                if (status === 200) {
+                    if (text && text !== " ") {
+                        var e = $.parseJSON(text);
+                        if (e.error) {
+                            alert(e.error);
+                        } else {
+                            for(var i = 0; i < e.length; i++) {
+                                var circ = new fabric.Circle({ 
+                                    top: e[i].center_y - self.stack.getFieldOfViewInPixel().worldTopC, 
+                                    left: e[i].center_x - self.stack.getFieldOfViewInPixel().worldLeftC, radius: 5, fill: 'green' })
+                                circ.hasControls = false;
+                                circ.hasBorders = false;
+                                circ.set('selectable', false)
+                                circ.lockMovementX = circ.lockMovementY = true;
+                                self.canvas.add( circ );
+                                cogs.push( e[i] );
+                            }
+
+                        }
+                    }
+                }
+        });
     }
 
     var get_current_stack = function() {
@@ -232,7 +299,8 @@ var SegmentationAnnotations = new function()
     }
 
     self.fetch_segments_left = function() {
-        allslices[ current_active_slice ].fetch_slices_for_selected_segment( false );
+        allslices[ current_active_slice ].fetch_segments( left );
+        //allslices[ current_active_slice ].fetch_slices_for_selected_segment( false );
     }
 
     // ----------------------------------------------------------------
@@ -291,11 +359,11 @@ var SegmentationAnnotations = new function()
             alert('Can not create segments table for slice. Not fetch slice!')
             return;
         }
-        /// TODO fetch right segments of a slice from the graph
         $('#segmentstable').empty();
         var right_segments = allslices[ node_id ].segments_right;
         $('#segmentstable').append('<tr>'+
             '<td>segments right</td>' +
+            '<td>id</td>' +
             '<td>t</td>' +
             '<td>target ids</td>' +
             '<td>cost</td>' +
@@ -356,6 +424,7 @@ var SegmentationAnnotations = new function()
             $('#segmentstable').append('<tr>'+
                 //'<td>'+segment.segmentid+'</td>' +
                 '<td style="background-color:#000000">'+sliceimage+'</td>' +
+                '<td>'+segment.segment_id+'</td>' +
                 '<td>'+segment.segmenttype+'</td>' +
                 '<td>'+segment.target_section+'//'+segment.target1_slice_id+','+segment.target2_slice_id+'</td>' +
                 '<td>'+segment.cost+'</td>' +
@@ -399,6 +468,7 @@ var SegmentationAnnotations = new function()
         var left_segments = allslices[ node_id ].segments_left;
         $('#segmentstable').append('<tr>'+
             '<td>segments left</td>' +
+            '<td>id</td>' +
             '<td>t</td>' +
             '<td>target ids</td>' +
             '<td>cost</td>' +
@@ -457,6 +527,7 @@ var SegmentationAnnotations = new function()
             $('#segmentstable').append('<tr>'+
                 //'<td>'+segment.segmentid+'</td>' +
                 '<td style="background-color:#000000">'+sliceimage+'</td>' +
+                '<td>'+segment.segment_id+'</td>' +
                 '<td>'+segment.segmenttype+'</td>' +
                 '<td>'+segment.target_section+'//'+segment.target1_slice_id+','+segment.target2_slice_id+'</td>' +
                 '<td>'+segment.cost+'</td>' +
@@ -582,7 +653,7 @@ var SegmentationAnnotations = new function()
         nr_elements = slices_grouping[ current_active_slice ].slicelist[ index ].length;
         for(var idx = 0; idx < nr_elements; idx++) {
             var new_active_slice = slices_grouping[ current_active_slice ].slicelist[ index ][ idx ];
-            make_visible( new_active_slice, false );
+            make_visible( new_active_slice, false, false );
         }
 
         // make the first one active and use it as prototype key for the grouping
@@ -592,7 +663,7 @@ var SegmentationAnnotations = new function()
         delete slices_grouping[ current_active_slice ];
 
         activate_slice( new_active_slice );
-        make_visible( new_active_slice, true );
+        make_visible( new_active_slice, true, true );
         //allslices[ new_active_slice ].fetch_all_segments();
         update_stack();
     };
@@ -635,7 +706,7 @@ var SegmentationAnnotations = new function()
         for(var idx = 0; idx < nr_elements; idx++) {
             var new_active_slice = slices_grouping[ current_active_slice ].slicelist[ index ][ idx ];
             // FIXME: this fails for branch nodes
-            make_visible( new_active_slice, false );
+            make_visible( new_active_slice, false, false );
         }
 
 
@@ -646,7 +717,7 @@ var SegmentationAnnotations = new function()
         delete slices_grouping[ current_active_slice ];
 
         activate_slice( new_active_slice );
-        make_visible( new_active_slice, true );
+        make_visible( new_active_slice, true, true );
         //allslices[ new_active_slice ].fetch_all_segments();
         update_stack();
     }
@@ -663,14 +734,17 @@ var SegmentationAnnotations = new function()
 
         // add node to graph, TODO: only add if it does not exist?
         cygraph.add([
-          { group: "nodes", data: { id: slice.node_id, slice: slice, type: "SliceNode" } }
+          { group: "nodes", data: { id: slice.node_id, slice: slice, type: "SliceNode" },
+              position: { x: slice.bb_center_x, y: slice.sectionindex*5+10 },
+              selectable: true, locked: false, grabbable: true }
         ]);
 
         slice.fetch_image( trigger_update, fetch_segments_for_slice, is_visible, do_goto_slice )
     }
     self.add_slice = add_slice;
 
-    var make_visible = function( node_id, do_goto_slice ) {
+    var make_visible = function( node_id, do_goto_slice, fetch_segments_for_slice ) {
+        console.log('make visible', node_id, 'gotoslice', do_goto_slice, 'fetch segments for slice', fetch_segments_for_slice);
         var nodeidsplit = inv_cc_slice( node_id );
         if( allslices.hasOwnProperty( node_id ) ) {
             if( ! allvisible_slices[ nodeidsplit.sectionindex ].hasOwnProperty( node_id ) ) {
@@ -698,7 +772,7 @@ var SegmentationAnnotations = new function()
                                     alert('Should only have fetched one slice, but it fetched multiple.');
                                     return false;
                                 }
-                                self.add_slice( e[ 0 ], true, true, false, false );
+                                self.add_slice( e[ 0 ], true, true, fetch_segments_for_slice, do_goto_slice );
                             }
                         }
                     }
@@ -755,7 +829,7 @@ var SegmentationAnnotations = new function()
     var add_slices_group_from_segments_new = function( segments, selected_segment_index ) {
         var selected_segment = get_segment_from_segmentid( segments[ selected_segment_index ] );
         var prototype_slice = selected_segment.target1_node_id;
-        console.log('is it equal?', prototype_slice, cc_slice(selected_segment.target_section,selected_segment.target1_slice_id) )
+        // console.log('is it equal?', prototype_slice, cc_slice(selected_segment.target_section,selected_segment.target1_slice_id) )
         // TODO: also add the corresponding edges
         slices_grouping[ prototype_slice ] = {};
         slices_grouping[ prototype_slice ]['slicelist'] = [];
@@ -944,7 +1018,7 @@ var SegmentationAnnotations = new function()
 */
 
         this.fetch_image = function( trigger_update, fetch_segments_for_slice, is_visible, do_goto_slice ) {
-            // console.log('fetch image', trigger_update, fetch_segments_for_slice)
+            console.log('fetch image: trigger_update, fetch_segments_for_slice, is_visible, do_goto_slice',trigger_update, fetch_segments_for_slice, is_visible, do_goto_slice)
             fabric.Image.fromURL(self.get_slice_image_url(), function(img)
             {
                 //console.log('image fetched!', img)
@@ -964,7 +1038,7 @@ var SegmentationAnnotations = new function()
                     //callback();
 
                 if( is_visible ) {
-                    make_visible( slice.node_id, do_goto_slice );
+                    make_visible( slice.node_id, do_goto_slice, false );
                 }
 
                 if ( trigger_update ) {
@@ -1013,6 +1087,7 @@ var SegmentationAnnotations = new function()
                                     self.selected_segment_left = -2;
                                     self.selected_segment_right = -2;
                                 }
+                                var selected_segment_instance_right;
                                 for(var idx in e) {
 
                                     var newsegment = new Segment( e[idx] );
@@ -1024,12 +1099,15 @@ var SegmentationAnnotations = new function()
                                             self.selected_segment_left = 0;
                                     } else {
                                         self.segments_right.push( newsegment.node_id );
-                                        if( !self.selected_segment_right )
+                                        if( !self.selected_segment_right ) {
                                             self.selected_segment_right = 0;
+                                        }
+                                            
                                     }
-
+                                    // TODO: segment node position?
                                     cygraph.add([
-                                      { group: "nodes", data: { id: newsegment.node_id, segment: newsegment, type: "SegmentNode" } },
+                                      { group: "nodes", data: { id: newsegment.node_id, segment: newsegment, type: "SegmentNode" },
+                                                    selectable: true, locked: false, grabbable: true  },
                                     ]);
 
                                     // if continuation
@@ -1054,12 +1132,18 @@ var SegmentationAnnotations = new function()
                                 }
 
                                 // if automated fetching is on and conditions hold, move to the next!
-                                if( automatic_propagation && propagation_counter > 0 ) {
+                                console.log('fetching segments done .... propagte?')
+                                if( automatic_propagation && propagation_counter > 0 && self.selected_segment_right ) {
+                                    var seg = get_segment_from_segmentid( self.segments_right[ self.selected_segment_right ] );
+                                    console.log('choosen segment to propagate to right is', seg );
                                     propagation_counter--;
-                                    console.log('propgation counter', propagation_counter, 'go with next!')
-                                    self.fetch_slices_for_selected_segment( true );
+                                    console.log('propgation counter', propagation_counter, 'go with next!', seg.cost)
+                                    // self.fetch_slices_for_selected_segment( true );
+                                    if( seg.cost < 10 ) {
+                                        console.log('add slice group');
+                                        self.add_slicesgroup_for_selected_segment( true );
+                                    }
                                 }
-
 
                             }
                         }
@@ -1095,11 +1179,11 @@ var SegmentationAnnotations = new function()
             // so we need to make it current first in order to
             // go to it after the fetch_image ajax call has returned
             activate_slice( proto_node_id );
-            make_visible( proto_node_id, true );
+            make_visible( proto_node_id, true, true ); // move to it and also fetch segments
             
         }
 
-        this.fetch_slices_for_selected_segment = function( for_right ) {
+        /*this.fetch_slices_for_selected_segment = function( for_right ) {
             console.log('fetch segments for selected slice', for_right);
             // TODO: add new slices and edges from segment
 
@@ -1144,7 +1228,7 @@ var SegmentationAnnotations = new function()
             activate_slice( proto_node_id );
             make_visible( proto_node_id, true );
 
-        }
+        }*/
 
         this.get_current_right_segment = function() {
             return self.segments_right[ self.selected_segment_right ]

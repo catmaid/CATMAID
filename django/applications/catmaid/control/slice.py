@@ -37,6 +37,23 @@ def get_slice(request, project_id=None, stack_id=None):
 
     return HttpResponse(JSONEncoder().encode(list(slices)), mimetype="text/json")
 
+def slices_cog(request, project_id=None, stack_id=None):
+    """ Return all slice centers """
+
+    z = str(request.GET.get('z', '0'))
+
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+    slices = Slices.objects.filter(
+        stack = stack,
+        project = p,
+        sectionindex = z).all().values('assembly_id', 'sectionindex', 'slice_id',
+        'node_id', 'center_x', 'center_y', 'threshold', 'size')
+
+    return HttpResponse(JSONEncoder().encode(list(slices)), mimetype="text/json")
+
+
 def slices_at_location(request, project_id=None, stack_id=None):
     """ Takes a stack location and returns slices at this location
     """
@@ -91,7 +108,8 @@ def segments_for_slice(request, project_id=None, stack_id=None):
         project = p,
         origin_slice_id = sliceid,
         origin_section = sectionindex,
-        segmenttype__gt = 1
+        segmenttype__gt = 1,
+        cost__lt = 100
     ).all().values('segmentid','segmenttype','origin_section','origin_slice_id','target_section',
     'target1_slice_id','target2_slice_id','direction',
     'center_distance','set_difference','cost','set_difference','set_difference_ratio',

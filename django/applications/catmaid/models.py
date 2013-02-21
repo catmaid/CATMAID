@@ -590,6 +590,10 @@ class Slices(UserFocusedModel):
     size = models.IntegerField(db_index=True)
     status = models.IntegerField(db_index=True, default=0)
 
+    # 0: default, 1: ends, 2: continuation with no segment, 3: branch with no segment
+    flag_left = models.IntegerField(db_index=True)
+    flag_right = models.IntegerField(db_index=True)
+
 class Drawing(UserFocusedModel):
     class Meta:
         db_table = "drawing"

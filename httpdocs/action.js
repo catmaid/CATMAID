@@ -278,6 +278,7 @@ var editToolActions = [
         }
         // WindowMaker.show('3d-webgl-view');
         WindowMaker.show('segmentstable-widget');
+        WindowMaker.show('assemblygraph-widget');
         project.setTool( new SegmentationTool() );
      }
   }),
@@ -314,6 +315,16 @@ var segmentationWindowActions = [
     buttonName: 'table_segments',
     run: function (e) {
       WindowMaker.show('segmentstable-widget');
+      return true;
+    }
+  }),
+
+  new Action({
+    helpText: "Show assembly graph",
+    buttonID: "assembly_graph_button",
+    buttonName: 'table_segments',
+    run: function (e) {
+      WindowMaker.show('assemblygraph-widget');
       return true;
     }
   }),

@@ -197,53 +197,71 @@ def skeleton_json(*args, **kwargs):
     kwargs['format'] = 'json'
     return export_extended_skeleton_response(*args, **kwargs)
 
+def _rootID(graph):
+    """ Search and return the first node that has zero predecessors.
+    Will be the root node in directed graphs.
+    Avoids one database lookup. """
+    for nodeID in graph.nodes():
+        if 0 == len(graph.predecessors(nodeID)):
+            return nodeID
+
+def _edgeCountToRoot(graph):
+    """ Return a map of nodeID vs number of edges from the first node that lacks predecessors. """
+    distances = {}
+    count = 1
+    current_level = [_rootID(graph)]
+    next_level = []
+    while current_level:
+        # Consume all elements in current_level
+        while current_level:
+            nodeID = current_level.pop()
+            distances[nodeID] = count
+            next_level.extend(graph.successors(nodeID)) # successors is the empty list when none
+        # Rotate lists (current_level is now empty)
+        current_level, next_level = next_level, current_level
+        count += 1
+    return distances
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def export_review_skeleton(request, project_id=None, skeleton_id=None, format=None):
+    """
+    Export the skeleton as a list of sequences of entries, each entry containing
+    an id, a sequence of nodes, the percent of reviewed nodes, and the node count.
+    """
     treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values_list('id', 'location', 'parent_id', 'reviewer_id')
 
     g = nx.DiGraph()
     reviewed = set()
     for t in treenodes:
         loc = Double3D.from_str(t[1])
-        g.add_node(t[0], {'id': t[0], 'x': loc.x, 'y': loc.y, 'z': loc.z})
+        # While at it, send the reviewer ID, which is useful to iterate fwd
+        # to the first unreviewed node in the segment.
+        g.add_node(t[0], {'id': t[0], 'x': loc.x, 'y': loc.y, 'z': loc.z, 'rid': t[3]})
         if -1 != t[3]:
             reviewed.add(t[0])
         if t[2]: # if parent
             g.add_edge(t[2], t[0]) # edge from parent to child
 
-    n_children = {nodeID: len(g.successors(nodeID)) for nodeID in g.nodes()}
-    endings = set([nodeID for nodeID, child_count in n_children.iteritems() if 0 == child_count])
-    done = set()
+    # Create all sequences, as long as possible and always from end towards root
+    distances = _edgeCountToRoot(g) # distance in number of edges from root
+    seen = set()
     sequences = []
-    while endings:
-        nodeID = endings.pop() # last element
-        done.add(nodeID)
+    # Iterate end nodes sorted from highest to lowest distance to root
+    endNodeIDs = (nID for nID in g.nodes() if 0 == len(g.successors(nID)))
+    for nodeID in sorted(endNodeIDs, key=distances.get, reverse=True):
         sequence = [g.node[nodeID]]
-        parents = g.predecessors(nodeID) # empty list when root
+        parents = g.predecessors(nodeID)
         while parents:
             parentID = parents[0]
-            child_count = n_children[parentID]
-            if 1 == child_count:
-                # Slab node
-                nodeID = parentID
-                sequence.append(g.node[nodeID])
-                parents = g.predecessors(nodeID) # empty list when root
-            elif child_count > 1:
-                # Branch node
-                sequence.append(g.node[parentID])
-                if parentID not in done:
-                    endings.add(parentID)
+            sequence.append(g.node[parentID])
+            if parentID in seen:
                 break
+            seen.add(parentID)
+            parents = g.predecessors(parentID)
+
         if len(sequence) > 1:
             sequences.append(sequence)
-
-    def node_type(nodeID):
-        if n_children[nodeID] > 1:
-            return "branch"
-        if not g.predecessors(nodeID):
-            return "root"
-        return "end"
 
     segments = []
     for sequence in sorted(sequences, key=len, reverse=True):
@@ -251,7 +269,6 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, format=No
             'id': len(segments),
             'sequence': sequence,
             'status': '%.2f' % (100.0 * sum(1 for node in sequence if node['id'] in reviewed) / len(sequence)),
-            'type': node_type(sequence[0]['id']) + "-" + node_type(sequence[-1]['id']),
             'nr_nodes': len(sequence)
         })
 

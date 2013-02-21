@@ -50,29 +50,65 @@ var ReviewSystem = new function()
         if (self.skeleton_segments===null)
             return;
         if( self.current_segment_index == 0 ) {
-            self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index]['id'], self.startSkeletonToReview );
+            self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index], self.startSkeletonToReview );
             return;
         }
-        self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index]['id'] );
+        self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
         self.current_segment_index--;
         self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
     };
 
-    this.moveNodeInSegmentForward = function() {
+    this.moveNodeInSegmentForward = function(evt) {
         if (self.skeleton_segments===null)
             return;
         if( self.current_segment_index === self.current_segment['sequence'].length - 1  ) {
-            self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index]['id'], self.startSkeletonToReview );
+            self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index], self.startSkeletonToReview );
             return;
         }
-        self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index]['id'] );
+
+        self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
         self.current_segment_index++;
+
+        if (evt.shiftKey) {
+            // Advance current_segment_index to the first node that is not reviewed
+            // which is a node with rid (reviewer id) of -1.
+            var i = self.current_segment_index;
+            var seq = self.current_segment['sequence'];
+            var len = seq.length;
+            while (i < len) {
+                if (-1 === seq[i].rid) {
+                    self.current_segment_index = i;
+                    break;
+                }
+                i += 1;
+            }
+        }
+
+        if (self.current_segment_index < self.current_segment['sequence'].length -1) {
+            // Check if the remainder of the segment was complete at an earlier time
+            // and perhaps now the whole segment is done:
+            var i = self.current_segment_index;
+            var seq = self.current_segment['sequence'];
+            var len = seq.length;
+            while (i < len && -1 !== seq[i].rid) {
+                i += 1;
+            }
+            if (i === len) {
+                growlAlert('DONE', 'Segment fully reviewed: ' + self.current_segment['nr_nodes'] + ' nodes');
+                var cell = $('#rev-status-cell-' + self.current_segment['id']);
+                cell.text('100.00%');
+                cell.css('background-color', '#6fff5c');
+                // Don't startSkeletonToReview, because self.current_segment_index
+                // would be lost, losing state for q/w navigation.
+            }
+        }
+
         self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
     };
 
-    this.markAsReviewed = function( node_id, funct ) {
+    this.markAsReviewed = function( node_ob, funct ) {
         requestQueue.register(
-            "dj/"+projectID+"/node/" + node_id + "/reviewed",
+            "dj/"+projectID+"/node/" + node_ob['id'] + "/reviewed",
             "POST",
             {},
             function (status, text) {
@@ -80,6 +116,9 @@ var ReviewSystem = new function()
                 if (json.error) {
                     alert( json.error );
                 } else {
+                    // Mark locally as reviewed
+                    node_ob['rid'] = json.reviewer_id;
+                    // Execute continuation if any
                     if( funct )
                         funct();
                 }
@@ -87,20 +126,40 @@ var ReviewSystem = new function()
     };
 
     /** Clears the #review_segment_table prior to adding rows to it. */
-    this.createReviewSkeletonTable = function( skeleton_data ) {
+    this.createReviewSkeletonTable = function( skeleton_data, users ) {
         self.skeleton_segments = skeleton_data;
         var butt, table, tbody, row;
         if( $('#review_segment_table').length > 0 ) {
             $('#review_segment_table').remove();
         }
-        $('#reviewing_skeleton').text( 'Skeleton ID under review: ' + skeletonID );
+        
+        // Count which user reviewed how many nodes
+        // Map of user ID vs object containing name and count:
+        var users = users.reduce(function(map, u) {
+            map[u[0]] = {name: u[1], count: 0};
+            return map;
+        }, {});
+        users[-1] = {name: 'unreviewed', count: 0};
+        // Fill in the users count:
+        skeleton_data.forEach(function(segment) {
+            segment['sequence'].forEach(function(node) {
+                users[node['rid']].count += 1;
+            });
+        }, skeleton_data);
+        // Create string with user's reviewed counts:
+        var user_revisions = Object.keys(users).reduce(function(s, u) {
+            u = users[u];
+            if (u.count > 0) { s += u.name + ": " + u.count + "; "; }
+            return s;
+        }, "");
+
+        $('#reviewing_skeleton').text( 'Skeleton ID under review: ' + skeletonID + " -- " + user_revisions );
         table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('id', 'review_segment_table').attr('border', '0');
         // create header
         thead = $('<thead />');
         table.append( thead );
         row = $('<tr />')
         row.append( $('<td />').text("") );
-        row.append( $('<td />').text( "Start-End") );
         row.append( $('<td />').text("Status") );
         row.append( $('<td />').text("# nodes") );
         thead.append( row );
@@ -110,8 +169,7 @@ var ReviewSystem = new function()
         for(var e in skeleton_data ) {
             row = $('<tr />');
             row.append( $('<td />').text( skeleton_data[e]['id'] ) );
-            row.append( $('<td />').text( skeleton_data[e]['type'] ) );
-            var status = $('<td />').text( skeleton_data[e]['status']+'%' );
+            var status = $('<td id="rev-status-cell-' + skeleton_data[e]['id'] + '" />').text( skeleton_data[e]['status']+'%' );
             row.append( status );
             row.append( $('<td align="right" />').text( skeleton_data[e]['nr_nodes'] ) );
             if( parseInt( skeleton_data[e]['status']) === 0 ) {
@@ -168,7 +226,16 @@ var ReviewSystem = new function()
                     if ("REPLACED" === skeleton_data.error) { return; }
                     alert( skeleton_data.error );
                 } else {
-                    self.createReviewSkeletonTable( skeleton_data );
+                    requestQueue.register("dj" + "/accounts/" + projectID + "/all-usernames", "POST", {},
+                        function(status, text) {
+                            if (200 !== status) { return; }
+                            var usernames = $.parseJSON(text);
+                            if (usernames.error) {
+                                alert(usernames.error);
+                            } else {
+                                self.createReviewSkeletonTable( skeleton_data, usernames );
+                            }
+                        });
                 }
             },
             "start_review_skeleton");

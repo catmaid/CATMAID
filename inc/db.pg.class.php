@@ -740,7 +740,7 @@ class DB
 				$this->getResult("CREATE TABLE settings (key text PRIMARY KEY, value text)");
 			} catch (Exception $e) {
 				$this->getResult("ROLLBACK TO SAVEPOINT create_settings_table");
-				error_log("The table already exists");
+				error_log("The settings table already exists");
 			}
 
 			// This is some legacy code from the previous migrations

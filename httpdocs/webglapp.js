@@ -42,14 +42,16 @@ var WebGLApp = new function () {
       for( var skeleton_id in skeletons)
       {
         if( skeletons.hasOwnProperty(skeleton_id) ) {
-          $('#skeletonshow-' + skeleton_id).attr('checked', togglevisibleall);
-          skeletons[skeleton_id].setActorVisibility( togglevisibleall );
+          skeletons[ skeleton_id ].setCompleteActorVisibility( togglevisibleall );
+          $('#skeletonshow-' + skeleton_id).attr('checked', togglevisibleall );
+          $('#skeletonpre-' + skeleton_id).attr('checked', togglevisibleall );
+          $('#skeletonpost-' + skeleton_id).attr('checked', togglevisibleall );
         }
       }
       togglevisibleall = !togglevisibleall;
       self.render();
     })
-
+    
     self.render();
   }
 
@@ -251,16 +253,28 @@ var WebGLApp = new function () {
     this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } );
     this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } );
 
+    this.setCompleteActorVisibility = function( vis ) {
+      self.visible = vis;
+      self.setActorVisibility( vis );
+      self.setPreVisibility( vis );
+      self.setPostVisibility( vis );
+    };
+
     this.setActorVisibility = function( vis ) {
       self.visible = vis;
       self.visiblityCompositeActor( 0, vis );
-      self.visiblityCompositeActor( 1, vis );
-      self.visiblityCompositeActor( 2, vis );
-      for( var idx in self.textlabels ) {
-        if( self.textlabels.hasOwnProperty( idx )) {
-          self.textlabels[ idx ].visible = vis;
+      // also show and hide spheres
+      for( var idx in self.otherSpheres ) {
+        if( self.otherSpheres.hasOwnProperty( idx )) {
+          self.otherSpheres[ idx ].visible = vis;
         }
       }
+      for( var idx in self.labelSphere ) {
+        if( self.textlabels.hasOwnProperty( idx )) {
+          self.labelSphere[ idx ].visible = vis;
+        }
+      }
+      
     };
 
     this.setPreVisibility = function( vis ) {
@@ -335,11 +349,6 @@ var WebGLApp = new function () {
     this.visiblityCompositeActor = function( type_index, visible )
     {
       this.actor[connectivity_types[type_index]].visible = visible;
-      if( type_index === 0 ) {
-          for ( var k in this.labelSphere ) {
-              this.labelSphere[k].visible = visible;
-          }
-      }
     }
 
     this.getActorColorAsHTMLHex = function () {
@@ -524,6 +533,7 @@ var WebGLApp = new function () {
             text.position.z = from_vector.z;
 
             this.textlabels[ fromkey ] = text;
+            text.visible = false;
             scene.add( text );
           }
 
@@ -1003,12 +1013,16 @@ var WebGLApp = new function () {
                   name:  skeleton.baseName,
                   value: skeleton.id,
                   type:  'checkbox',
-                  checked:true
+                  checked: true
           })
           .click( function( event )
           {
             var vis = $('#skeletonshow-' + skeleton.id).is(':checked');
             skeletons[skeleton.id].setActorVisibility( vis );
+            skeletons[skeleton.id].setPreVisibility( vis );
+            $('#skeletonpre-' + skeleton.id).attr('checked', vis );
+            skeletons[skeleton.id].setPostVisibility( vis );
+            $('#skeletonpost-' + skeleton.id).attr('checked', vis );
             self.render();
           } )
     ));
@@ -1054,7 +1068,7 @@ var WebGLApp = new function () {
                   name:  skeleton.baseName,
                   value: skeleton.id,
                   type:  'checkbox',
-                  checked:true
+                  checked:false
           })
           .click( function( event )
           {

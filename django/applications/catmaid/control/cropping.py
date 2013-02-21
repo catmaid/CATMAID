@@ -18,14 +18,15 @@ import os.path
 import glob
 from time import time
 
-try:
-    from pgmagick import Blob, Image, ImageList, Geometry, Color, CompositeOperator as co, ResolutionType
-    from celery.task import task
-except ImportError:
-    pass
+# The libuuid import is a workaround for a bug with GraphicsMagick
+# which expects the library to be loaded already. Therefore, it
+# has to be loaded before pgmagick.
+import libuuid
+from pgmagick import Blob, Image, ImageList, Geometry, Color
+from pgmagick import CompositeOperator as co, ResolutionType, ChannelType
 
-# The tile size in pixel
-tile_size = int(256)
+from celery.task import task
+
 # Prefix for stored microstacks
 file_prefix = "crop_"
 # File extension of the stored microstacks
@@ -37,7 +38,7 @@ class CropJob:
     integers. If no output_path is given, a random one (based on the
     settings) is generated.
     """
-    def __init__(self, user, project_id, stack_ids, x_min, x_max, y_min, y_max, z_min, z_max, zoom_level, output_path=None):
+    def __init__(self, user, project_id, stack_ids, x_min, x_max, y_min, y_max, z_min, z_max, zoom_level, single_channel=False, output_path=None):
         self.user = user
         self.project_id = int(project_id)
         self.project = get_object_or_404(Project, pk=project_id)
@@ -62,6 +63,7 @@ class CropJob:
         if output_path is None:
             file_name = file_prefix + id_generator() + "." + file_extension
             output_path = os.path.join(settings.TMP_DIR, file_name)
+        self.single_channel = single_channel
         self.output_path = output_path
 
 class ImagePart:
@@ -235,11 +237,13 @@ def extract_substack( job ):
     # Iterate over all slices
     for z in range( px_z_min, px_z_max + 1):
         for stack in job.stacks:
+            tile_width = stack.tile_width
+            tile_height = stack.tile_height
             # Get indices for bounding tiles (0 indexed)
-            tile_x_min = int(px_x_min / tile_size)
-            tile_x_max = int(px_x_max / tile_size)
-            tile_y_min = int(px_y_min / tile_size)
-            tile_y_max = int(px_y_max / tile_size)
+            tile_x_min = int(px_x_min / tile_width)
+            tile_x_max = int(px_x_max / tile_width)
+            tile_y_min = int(px_y_min / tile_height)
+            tile_y_max = int(px_y_max / tile_height)
             # Get the number of needed tiles for each direction
             num_x_tiles = tile_x_max - tile_x_min + 1
             num_y_tiles = tile_y_max - tile_y_min + 1
@@ -249,15 +253,21 @@ def extract_substack( job ):
             for nx, x in enumerate( range(tile_x_min, tile_x_max + 1) ):
                 # The min x,y for the image part in the current tile are 0
                 # for all tiles except the first one.
-                cur_px_x_min = 0 if nx > 0 else px_x_min - x * tile_size
+                cur_px_x_min = 0 if nx > 0 else px_x_min - x * tile_width
                 # The max x,y for the image part of current tile are the tile
                 # size minus one except for the last one.
-                cur_px_x_max = tile_size - 1 if nx < (num_x_tiles - 1) else px_x_max - x * tile_size
+                if nx < (num_x_tiles - 1):
+                    cur_px_x_max = tile_width - 1
+                else:
+                    cur_px_x_max = px_x_max - x * tile_width
                 # Reset y destination component
                 y_dst = px_y_offset
                 for ny, y in enumerate( range(tile_y_min, tile_y_max + 1) ):
-                    cur_px_y_min = 0 if ny > 0 else px_y_min - y * tile_size
-                    cur_px_y_max = tile_size - 1 if ny < (num_y_tiles - 1) else px_y_max - y * tile_size
+                    cur_px_y_min = 0 if ny > 0 else px_y_min - y * tile_height
+                    if ny < (num_y_tiles - 1):
+                        cur_px_y_max = tile_height - 1
+                    else:
+                        cur_px_y_max = px_y_max - y * tile_height
                     # Create an image part definition
                     path = get_tile_path(job, stack, [x, y, z])
                     try:
@@ -281,6 +291,9 @@ def extract_substack( job ):
                 cropped_slice.composite( image, ip.x_dst, ip.y_dst, co.OverCompositeOp )
                 # Delete tile image - it's not needed anymore
                 del image
+            # Optionally, use only a single channel
+            if job.single_channel:
+                cropped_slice.channel( ChannelType.RedChannel )
             # Add the imag to the cropped stack
             cropped_stack.append( cropped_slice )
 
@@ -374,7 +387,7 @@ def sanity_check( job ):
     return errors
 
 @login_required
-def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min=None, y_max=None, z_min=None, z_max=None, zoom_level=None):
+def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min=None, y_max=None, z_min=None, z_max=None, zoom_level=None, single_channel=None):
     """ Crops out the specified region of the stack. The region is expected to
     be given in terms of real world units (e.g. nm).
     """
@@ -389,8 +402,13 @@ def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min
     string_list = stack_ids.split(",")
     stack_ids = [int( x ) for x in string_list]
 
+    # Should an output slice contain all channels of the source tiles
+    # or only a single (the red) one?
+    single_channel = bool(single_channel)
+
     # Crate a new cropping job
-    job = CropJob(request.user, project_id, stack_ids, x_min, x_max, y_min, y_max, z_min, z_max, zoom_level)
+    job = CropJob(request.user, project_id, stack_ids, x_min, x_max,
+        y_min, y_max, z_min, z_max, zoom_level, single_channel)
 
     # Parameter check
     errors = sanity_check( job )

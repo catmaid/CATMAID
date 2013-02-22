@@ -470,6 +470,17 @@ class Restriction(models.Model):
     restricted_link = models.ForeignKey(ClassClass)
 
 class CardinalityRestriction(models.Model):
+    """ A restriction that guards the number of class instances
+    reffering explicitely to a relation in the semantic space.
+    Different types are supported:
+
+    0: The exact number of class instances is defined
+    1: A maximum number of class instances is defined
+    2: A minimum number of class instances is defined
+    3: The exact number of class instances for each sub-type is defined
+    4: The maximum number of class instances for each sub-type is defined
+    5: The minimum number of class instances for each sub-type is defined
+    """
     class Meta:
         db_table = "cardinality_restriction"
     # Repeat the columns inherited from 'restriction'
@@ -482,6 +493,104 @@ class CardinalityRestriction(models.Model):
     # Now new columns:
     cardinality_type = models.IntegerField();
     value = models.IntegerField();
+
+    @staticmethod
+    def get_supported_types():
+        return {
+            0: "Exactly n instances of any sub-type",
+            1: "Maximum of n instances of any sub-type",
+            2: "Minimum of n instances of any sub-type",
+            3: "Exactly n instances of each sub-type",
+            4: "Maximum n instances of each sub-type",
+            5: "Minimum n instances of each sub-type"}
+
+    def get_num_class_instances(self, ci, ctype=None):
+        """ Returns the number of class instances, guarded by this
+        restriction.
+        """
+        if ctype is None:
+            return ClassInstanceClassInstance.objects.filter(class_instance_b=ci,
+                relation=self.restricted_link.relation).count()
+        else:
+            return ClassInstanceClassInstance.objects.filter(class_instance_b=ci,
+                relation=self.restricted_link.relation,
+                class_instance_a__class_column=ctype).count()
+
+    def would_violate(self, ci, c):
+        """ Test if it would violate this restriction if a new instance
+        of <c> is linked to <ci> with the guarded link. Note: This will
+        return *false as well* if adding a new class instance would bring
+        the restriction closer to being not violated. E.g.: if exactly 3
+        elements are needed, this method would return false for the firs
+        three new class instances.
+        """
+        if self.cardinality_type == 0 or self.cardinality_type == 1:
+            # Type 0 and type 1: exactly <value> number of class instances
+            # can be instantiated. A new instance violates if there are
+            # already <value> or more instances.
+            num_linked_ci = self.get_num_class_instances(ci)
+            too_much_items = num_linked_ci >= self.value
+            return too_much_items
+        elif self.cardinality_type == 2:
+            # Type 2: at least <value> number of class instances can be
+            # instantiated. A new instance violates never.
+            return False
+        elif self.cardinality_type == 3 or self.cardinality_type == 4:
+            # Type 3 and type 4: exactly <value> number of class instances are
+            # allowed for each sub-type. A new instance violates if there are
+            # already <value> or more instances of a certain type.
+            num_linked_ci = self.get_num_class_instances(ci, c)
+            too_much_items = num_linked_ci >= self.value
+            return too_much_items
+        elif self.cardinality_type == 5:
+            # Type 5: at maximum <value> number of class instances are allowed
+            # for each sub-type. A new insatnce violates never.
+            return False
+        else:
+            raise Exception("Unsupported cardinality type.")
+
+    def is_violated(self, ci):
+        """ Test if a restriction is currently violated.
+        """
+        def get_subclass_links_qs():
+            # Get all sub-types of c
+            return ClassClass.objects.filter(
+                project_id=ci.project_id, class_b=ci.class_column,
+                relation__relation_name='is_a')
+
+        if self.cardinality_type == 0:
+            num_linked_ci = self.get_num_class_instances(ci)
+            return num_linked_ci != self.value
+        elif self.cardinality_type == 1:
+            num_linked_ci = self.get_num_class_instances(ci)
+            return num_linked_ci > self.value
+        elif self.cardinality_type == 2:
+            num_linked_ci = self.get_num_class_instances(ci)
+            return num_linked_ci < self.value
+        elif self.cardinality_type == 3:
+            # Exactly n for each sub type
+            subclass_links_q = get_subclass_links()
+            for link in subclass_links_q:
+                num_linked_ci = self.get_num_class_instances(ci, link.class_a)
+                if num_linked_ci != self.value:
+                    return True
+        elif self.cardinality_type == 4:
+            # Max n for each sub type
+            subclass_links_q = get_subclass_links()
+            for link in subclass_links_q:
+                num_linked_ci = self.get_num_class_instances(ci, link.class_a)
+                if num_linked_ci > self.value:
+                    return True
+        elif self.cardinality_type == 5:
+            # Min n for each sub type
+            subclass_links_q = get_subclass_links()
+            for link in subclass_links_q:
+                num_linked_ci = self.get_num_class_instances(ci, link.class_a)
+                if num_linked_ci < self.value:
+                    return True
+            return False
+        else:
+            raise Exception("Unsupported cardinality type.")
 
 #class Session(models.Model):
 #    class Meta:

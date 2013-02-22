@@ -494,14 +494,17 @@ def add_restriction(request, project_id=None):
     if constraint == "cardinality":
         # Get cardinality constraint properties
         cardinality = int(request.POST.get('cardinality', -1))
+        cardinality_type = int(request.POST.get('cardinalitytype', -1))
         if cardinality == -1:
             raise Exception("Couldn't find cardinality property.")
+        if cardinality_type == -1:
+            raise Exception("Couldn't find cardinalitytype property.")
         # Add cardinality restriction
         new_restriction = CardinalityRestriction.objects.create(
             user = request.user,
             project_id = project_id,
             restricted_link = cc_link,
-            cardinality_type = 0,
+            cardinality_type = cardinality_type,
             value = cardinality)
     else:
         raise Exception("Unsupported restriction type encountered: " + constraint)
@@ -522,3 +525,13 @@ def remove_restriction(request, project_id=None):
     restriction.delete()
 
     return HttpResponse(json.dumps({'removed_restriction': rid}))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def get_restriction_types(request, project_id=None, restriction=None):
+    """ Get a list of type IDs and names for a particular restriction.
+    """
+    if restriction == "cardinality":
+        types = CardinalityRestriction.get_supported_types()
+        return HttpResponse(json.dumps({'types': types}))
+    else:
+        raise Exception("Unsupported restriction type encountered: " + restriction)

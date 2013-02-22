@@ -145,7 +145,7 @@ var OntologyEditor = new function()
                             "separator_after": false,
                             "label": "Cardinality",
                             "action": function (obj) {
-                                return OntologyTree.create_cardinality_restriction(pid, obj);
+                                return OntologyEditor.create_cardinality_restriction(pid, obj);
                              }
                         },
                         "add_exclusivity_restriction": {
@@ -155,7 +155,7 @@ var OntologyEditor = new function()
                             "action": function (obj) {
                                 // A exclusivity constraint is a cardinality constraint
                                 // that restricts to exactly one value.
-                                return OntologyTree.create_cardinality_restriction(pid, obj, 1);
+                                return OntologyEditor.create_cardinality_restriction(pid, obj, 1);
                              }
                         }
                     }
@@ -188,7 +188,7 @@ var OntologyEditor = new function()
                             restriction = restrictions[r];
                             var r_name = "";
                             if (r_type == 'cardinality') {
-                                r_name = "Cardinality with value " + restriction.value;
+                                r_name = "Type " + restriction.type + " cardinality with value " + restriction.value;
                             } else {
                                 r_name = r_type;
                             }
@@ -198,9 +198,10 @@ var OntologyEditor = new function()
                                 "separator_before": false,
                                 "separator_after": false,
                                 "label": r_name,
+                                "_class": "wider-context-menu",
                                 "action": function(rid) {
                                     return function (obj) {
-                                        return OntologyTree.remove_restriction(pid, obj, rid);
+                                        return OntologyEditor.remove_restriction(pid, obj, rid);
                                     }}(restriction.id)
                                 }
                         }
@@ -981,23 +982,78 @@ var OntologyEditor = new function()
     this.create_cardinality_restriction = function( pid, obj, cardinality ) {
         if (!cardinality) {
             // ask user for cardinality and type
-            OntologyTree.show_error_status( "To be implemented",
-                "Creating custom cardinal restrictions isn't supported, yet." );
+            $('#cardinality_restriction_dialog #cancel').off("click").on("click",
+            function() {
+                $.unblockUI();
+                return false;
+            });
+            $('#cardinality_restriction_dialog #add').off("click").on("click",
+            function() {
+                $.unblockUI();
+                OntologyEditor.display_wait_message("Creating restriction. Just a moment...");
+                // create restriction
+                var postdata = {
+                     "linkid": obj.attr("ccid"),
+                     "cardinality": $('#cardinality_val').val(),
+                     "cardinalitytype": $('#cardinality_type').val(),
+                     "restriction": "cardinality"};
+                requestQueue.register(django_url + pid + '/ontology/restrictions/add',
+                    'POST', postdata,
+                    function(status, data, text) {
+                        OntologyEditor.hide_wait_message();
+                        OntologyEditor.handle_operation_response(status, data, text,
+                            function( jsonData ) {
+                                if (!jsonData['new_restriction'])
+                                {
+                                    alert( "Can't understand server response: " + data )
+                                } else {
+                                    var r_id = jsonData.new_restriction;
+                                    var msg = "A new restriction with ID " + r_id + " has been created.";
+                                    OntologyEditor.show_error_status( "Success", msg );
+                                }
+                                OntologyEditor.refresh_trees();
+                            });
+                    });
+            });
+            // get currently available cardinality restriction types for type select box
+            requestQueue.register(django_url + pid + '/ontology/restrictions/cardinality/types',
+                'GET', undefined,
+                function(status, data, text) {
+                    if (status !== 200) {
+                        OntologyEditor.show_error_msg( status, text );
+                        return
+                    }
+                    var json_data = JSON.parse(data);
+                    var types = json_data.types;
+                    // populate type select box
+                    var type_select = $('#cardinality_restriction_dialog #cardinality_type');
+                    type_select.empty();
+                    type_select.append($('<option></option>').attr("value", "-1").text("(None)"));
+                    $.each(types, function (key, value) {
+                        type_select.append($('<option></option>').attr("value", key).text(key + " (" + value + ")"));
+                    });
+                    // show class selection
+                    $('#cardinality_restriction_dialog #select_type').css("display", "block");
+                    $('#cardinality_restriction_dialog #input_value').css("display", "block");
+                    // show dialog
+                    $.blockUI({ message: $('#cardinality_restriction_dialog') });
+                });
         } else {
             // add restriction with Ajax call
             requestQueue.register(django_url + pid + '/ontology/restrictions/add',
                 'POST', {
                      "linkid": obj.attr("ccid"),
                      "cardinality": cardinality,
+                     "cardinalitytype": 0,
                      "restriction": "cardinality" },
                 function(status, data, text) {
-                    OntologyTree.handle_operation_response(status, data, text,
+                    OntologyEditor.handle_operation_response(status, data, text,
                         function( jsonData ) {
-                            OntologyTree.refresh_trees();
+                            OntologyEditor.refresh_trees();
                             // give out some information
                             var r_id = jsonData.new_restriction;
                             var msg = "A new restriction with ID " + r_id + " has been created.";
-                            OntologyTree.show_error_status( "Success", msg );
+                            OntologyEditor.show_error_status( "Success", msg );
                         });
                     });
         }
@@ -1011,13 +1067,13 @@ var OntologyEditor = new function()
         requestQueue.register(django_url + pid + '/ontology/restrictions/remove',
             'POST', { 'restrictionid': rid },
             function(status, data, text) {
-                OntologyTree.handle_operation_response(status, data, text,
+                OntologyEditor.handle_operation_response(status, data, text,
                     function( jsonData ) {
-                        OntologyTree.refresh_trees();
+                        OntologyEditor.refresh_trees();
                         // give out some information
                         var r_id = jsonData.removed_restriction;
                         var msg = "The restriction with ID " + r_id + " has been removed.";
-                        OntologyTree.show_error_status( "Success", msg );
+                        OntologyEditor.show_error_status( "Success", msg );
                     });
                 });
     }

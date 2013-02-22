@@ -195,12 +195,17 @@ def list_ontology(request, project_id=None):
                 links = []
                 for cc in cc_q:
                     # Get known restrictions
-                    restrictions = json.dumps( get_restrictions( cc ) )
+                    restrictions = get_restrictions( cc )
+                    restrictions_json = json.dumps( restrictions )
+                    # Create name, mark restrictin availability with *
+                    node_name = "%s (%d)" % (cc.class_a.class_name, cc.class_a.id)
+                    if len(restrictions) > 0:
+                        node_name = node_name + "*"
                     # Collect standard jSTree data
-                    data = {'data' : {'title': '%s (%d)' % (cc.class_a.class_name, cc.class_a.id)},
+                    data = {'data' : {'title': node_name},
                             'attr' : {'id': 'node_%s' % cc.class_a.id,
                                       'rel': 'class',
-                                      'restrictions': restrictions,
+                                      'restrictions': restrictions_json,
                                       'cname': cc.class_a.class_name,
                                       'ccid': cc.id}}
                     # Only add a 'state' field if this node has children

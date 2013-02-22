@@ -829,7 +829,10 @@ var SkeletonAnnotations = new function()
               // Invoke the oldest of any accumulated calls
               requester(json.treenode_id, queue[0]);
             } else {
-              // Start a new continuation to update the nodes
+              // Start a new continuation to update the nodes,
+              // ensuring that the desired active node will be loaded
+              // (Could not be loaded if the user scrolled away between
+              // the creation of the node and its activation)
               self.updateNodes(function () {
                 self.selectNode(json.treenode_id);
                 // Remove this call now that the active node is set properly
@@ -838,7 +841,7 @@ var SkeletonAnnotations = new function()
                 if (queue.length > 0) {
                   requester(json.treenode_id, queue[0]);
                 }
-              });
+              }, json.treenode_id);
             }
             if (json.has_changed_group) {
               ObjectTree.refresh();
@@ -1450,7 +1453,7 @@ var SkeletonAnnotations = new function()
      * update treeline nodes by querying them from the server
      * with a bounding volume dependant on the current view
      */
-    this.updateNodes = function (callback)
+    this.updateNodes = function (callback, future_active_node_id)
     {
       var activeSkeleton = SkeletonAnnotations.getActiveSkeletonId();
       if (!activeSkeleton) {
@@ -1464,7 +1467,11 @@ var SkeletonAnnotations = new function()
         var atnid = -1; // cannot send a null
         var atntype = "";
         if (atn.id && "treenode" === atn.type) {
-          atnid = atn.id;
+          if (future_active_node_id) {
+            atnid = future_active_node_id;
+          } else {
+            atnid = atn.id;
+          }
         }
 
         //requestQueue.replace('model/node.list.php', 'POST',

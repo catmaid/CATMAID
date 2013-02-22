@@ -177,6 +177,45 @@ var OntologyEditor = new function()
                         "submenu": add_restriction_submenu
                     }};
 
+                    // if there are restrictions present, offer to remove them
+                    var has_restrictions = false;
+                    var rem_restriction_submenu = {};
+
+                    for (r_type in restriction_types) {
+                        has_restrictions = true;
+                        restrictions = restriction_types[r_type];
+                        for (var r=0; r<restrictions.length; r++) {
+                            restriction = restrictions[r];
+                            var r_name = "";
+                            if (r_type == 'cardinality') {
+                                r_name = "Cardinality with value " + restriction.value;
+                            } else {
+                                r_name = r_type;
+                            }
+                            // add ID
+                            r_name = r_name + " (" + restriction.id + ")";
+                            rem_restriction_submenu['rem_restriction_' + restriction.id] = {
+                                "separator_before": false,
+                                "separator_after": false,
+                                "label": r_name,
+                                "action": function(rid) {
+                                    return function (obj) {
+                                        return OntologyTree.remove_restriction(pid, obj, rid);
+                                    }}(restriction.id)
+                                }
+                        }
+                    }
+
+                    if (has_restrictions) {
+                        menu["remove_restriction"] = {
+                            "separator_before": false,
+                            "separator_after": false,
+                            "_disabled": false,
+                            "label": "Remove restriction",
+                            "submenu": rem_restriction_submenu
+                        }
+                    }
+
                     // add remove parent-link entry
                     menu["remove_parent_links"] = {
                         "separator_before": true,
@@ -962,6 +1001,25 @@ var OntologyEditor = new function()
                         });
                     });
         }
+    }
+
+    /**
+     * Removes a restriction
+     */
+    this.remove_restriction = function( pid, obj, rid ) {
+        // add restriction with Ajax call
+        requestQueue.register(django_url + pid + '/ontology/restrictions/remove',
+            'POST', { 'restrictionid': rid },
+            function(status, data, text) {
+                OntologyTree.handle_operation_response(status, data, text,
+                    function( jsonData ) {
+                        OntologyTree.refresh_trees();
+                        // give out some information
+                        var r_id = jsonData.removed_restriction;
+                        var msg = "The restriction with ID " + r_id + " has been removed.";
+                        OntologyTree.show_error_status( "Success", msg );
+                    });
+                });
     }
 
     /**

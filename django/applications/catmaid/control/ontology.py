@@ -504,3 +504,16 @@ def add_restriction(request, project_id=None):
     relationid = int(request.POST.get('relid', -1))
 
     return HttpResponse(json.dumps({'new_restriction': new_restriction.id}))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def remove_restriction(request, project_id=None):
+    """ Removes a particular restriction.
+    """
+    rid = int(request.POST.get('restrictionid', -1))
+    if rid == -1:
+        raise Exception("Couldn't find restriction ID.")
+    # Get the restriction that should get deleted
+    restriction = get_object_or_404(Restriction, id=rid)
+    restriction.delete()
+
+    return HttpResponse(json.dumps({'removed_restriction': rid}))

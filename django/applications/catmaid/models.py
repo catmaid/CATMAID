@@ -528,7 +528,9 @@ class Segments(UserFocusedModel):
     target_section = models.IntegerField(db_index=True,null=True)
     target1_slice_id = models.IntegerField(db_index=True,null=True)
     target2_slice_id = models.IntegerField(db_index=True,null=True)
-    cost = models.FloatField()
+    cost = models.FloatField(db_index=True)
+    randomforest_cost = models.FloatField()
+    segmentation_cost = models.FloatField()
     direction = models.BooleanField() # 0:LR if origin_section< target_section / 1:RL as boolean, otherwise
 
     center_distance = models.FloatField()
@@ -593,6 +595,22 @@ class Slices(UserFocusedModel):
     # 0: default, 1: ends, 2: continuation with no segment, 3: branch with no segment
     flag_left = models.IntegerField(db_index=True)
     flag_right = models.IntegerField(db_index=True)
+
+class ConstraintsToSegmentMap(models.Model):
+    project = models.ForeignKey(Project)
+    stack = models.ForeignKey(Stack)
+    origin_section = models.IntegerField(db_index=True)
+    target_section = models.IntegerField(db_index=True)
+    segments = IntegerArrayField()
+
+class SegmentToConstraintMap(models.Model):
+    project = models.ForeignKey(Project)
+    stack = models.ForeignKey(Stack)
+    segmentid = models.IntegerField(db_index=True)
+    origin_section = models.IntegerField(db_index=True)
+    target_section = models.IntegerField(db_index=True)
+    segment_node_id = models.CharField(db_index=True,max_length=128)
+    constraint = models.ForeignKey(ConstraintsToSegmentMap)
 
 class Drawing(UserFocusedModel):
     class Meta:

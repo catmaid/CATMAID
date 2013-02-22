@@ -519,7 +519,7 @@ var WebGLApp = new function () {
             var theText = this.original_vertices[fromkey]['labels'].join();
             var text3d = new THREE.TextGeometry( theText, {
               size: 100 * scale,
-              height: 1,
+              height: 20 * scale,
               curveSegments: 1,
               font: "helvetiker"
             });

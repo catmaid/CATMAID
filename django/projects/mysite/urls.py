@@ -64,6 +64,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice$', 'catmaid.control.get_slice'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/contour$', 'catmaid.control.slice_contour'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segments-for-slice$', 'catmaid.control.segments_for_slice'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/constraint/constraintset-for-segment$', 'catmaid.control.constraintset_for_segment'),
     
 
 

@@ -74,6 +74,7 @@ function SegmentationTool()
         self.createCanvasLayer();
         self.createToolbar();
 
+
         // add a dummy div to hold the graph
         /*var graph = document.createElement("div");
         graph.id = "cytograph";
@@ -83,8 +84,9 @@ function SegmentationTool()
         self.stack.getView().appendChild( graph );*/
 
         SegmentationAnnotations.set_stack_and_layer( parentStack, canvasLayer.canvas );
-
-        SegmentationAnnotations.init_graph( );
+        $(document).bind('keyup keydown', function(e){
+            SegmentationAnnotations.set_automatic_propagation( e.shiftKey );
+        });
 
     }
 
@@ -136,6 +138,7 @@ function SegmentationTool()
             var target = canvasLayer.canvas.findTarget( e.e );
             if( target ) {
                 SegmentationAnnotations.activate_slice( target.slice )
+
                 self.redraw();
                 // not propagate to view
                 e.e.stopPropagation();
@@ -419,6 +422,18 @@ function SegmentationTool()
         }
     }) );
 
+    this.addAction( new Action({
+        helpText: "Constraint set for selected segment",
+        keyShortcuts: {
+            'Z': [ 90 ]
+        },
+        run: function (e) {
+            console.log('coinstraints')
+            SegmentationAnnotations.constraints_for_selected_segment_of_active_slice();
+            return true;
+        }
+    }) );
+
 
     this.addAction( new Action({
         helpText: "Fetch slices group for selected segments to the right",
@@ -426,7 +441,7 @@ function SegmentationTool()
             'Y': [ 89 ]
         },
         run: function (e) {
-            SegmentationAnnotations.fetch_slicegroup_from_selected_segment_current_slice_right();
+            SegmentationAnnotations.fetch_slicegroup_from_selected_segment_current_slice_right( e.shiftKey );
             return true;
         }
     }) );
@@ -437,7 +452,7 @@ function SegmentationTool()
             'H': [ 72 ]
         },
         run: function (e) {
-            SegmentationAnnotations.fetch_segments_right();
+            SegmentationAnnotations.fetch_segments_right( );
             return true;
         }
     }) );
@@ -599,7 +614,7 @@ function SegmentationTool()
         updateControls();
         canvasLayer.canvas.clear();
 
-        var allvisible = SegmentationAnnotations.get_visible_slices( self.stack.z ),
+        var allvisible = SegmentationAnnotations.get_all_visible_slices( self.stack.z ),
             current_active_slice = SegmentationAnnotations.get_current_active_slice();
 
         for (var node_id in allvisible) {

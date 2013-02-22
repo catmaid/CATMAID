@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.simplejson.encoder import JSONEncoder
 
 import json
+import numpy as np
 
 from catmaid.models import *
 from catmaid.objects import *
@@ -88,6 +89,12 @@ def slices_at_location(request, project_id=None, stack_id=None):
         sectionindex = z).all().values('assembly_id', 'sectionindex', 'slice_id',
         'node_id', 'min_x', 'min_y', 'max_x', 'max_y', 'center_x',
         'center_y', 'threshold', 'size', 'status').order_by('threshold')
+
+    # compute the shortest distance from the mouse pointer to the slice center of gravity
+    def dist(xx):
+        return np.linalg.norm(np.array([xx['center_x'], xx['center_y']]) - np.array([x,y]) )
+    slices = list(slices)
+    slices.sort(key=dist, reverse=True)
 
     return HttpResponse(JSONEncoder().encode(list(slices)), mimetype="text/json")
 

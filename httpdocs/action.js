@@ -278,7 +278,6 @@ var editToolActions = [
         }
         // WindowMaker.show('3d-webgl-view');
         WindowMaker.show('segmentstable-widget');
-        WindowMaker.show('assemblygraph-widget');
         project.setTool( new SegmentationTool() );
      }
   }),

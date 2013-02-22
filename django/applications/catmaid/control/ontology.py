@@ -468,3 +468,39 @@ def remove_all_links_from_ontology(request, project_id=None):
     cc_q.delete()
 
     return HttpResponse(json.dumps({'deleted_links': removed_links}))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def add_restriction(request, project_id=None):
+    """ Add a constraint to a class. A constraint is just represented as
+    another class which is linked to the class to be constrained with a
+    'constrains' relation.
+    """
+    linkid = int(request.POST.get('linkid', -1))
+    constraint = request.POST.get('restriction', "")
+    if linkid == -1:
+        raise Exception("Couldn't find ID of class-class link.")
+    if constraint == "":
+        raise Exception("Couldn't find restriction name.")
+    # Get the link that should get restricted
+    cc_link = get_object_or_404(ClassClass, id=linkid)
+
+    # Depending on the type of the constraint, different parameters
+    # are expected.
+    if constraint == "cardinality":
+        # Get cardinality constraint properties
+        cardinality = int(request.POST.get('cardinality', -1))
+        if cardinality == -1:
+            raise Exception("Couldn't find cardinality property.")
+        # Add cardinality restriction
+        new_restriction = CardinalityRestriction.objects.create(
+            user = request.user,
+            project_id = project_id,
+            restricted_link = cc_link,
+            cardinality_type = 0,
+            value = cardinality)
+    else:
+        raise Exception("Unsupported restriction type encountered: " + constraint)
+
+    relationid = int(request.POST.get('relid', -1))
+
+    return HttpResponse(json.dumps({'new_restriction': new_restriction.id}))

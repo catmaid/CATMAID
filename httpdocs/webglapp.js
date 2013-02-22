@@ -337,6 +337,10 @@ var WebGLApp = new function () {
       for ( var k in this.otherSpheres ) {
         scene.removeObject( this.otherSpheres[k] );
       }
+      for ( var k in this.textlabels ) {
+        if( self.textlabels.hasOwnProperty)
+        scene.removeObject( this.textlabels[k] );
+      }
     }
 
     this.addCompositeActorToScene = function()
@@ -532,9 +536,11 @@ var WebGLApp = new function () {
             text.position.y = from_vector.y;
             text.position.z = from_vector.z;
 
-            this.textlabels[ fromkey ] = text;
-            text.visible = false;
-            scene.add( text );
+            if( !this.textlabels.hasOwnProperty( fromkey )) {
+              this.textlabels[ fromkey ] = text;
+              scene.add( text );
+            }
+            
           }
 
           // if either from or to have a relevant label, and they are not yet

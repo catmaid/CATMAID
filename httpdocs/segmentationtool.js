@@ -509,12 +509,12 @@ function SegmentationTool()
     }) );
 
     this.addAction( new Action({
-        helpText: "Toggle slices centers",
+        helpText: "Show slices overlay",
         keyShortcuts: {
-            'P': [ 80 ]
+            'O': [ 79 ]
         },
         run: function (e) {
-            SegmentationAnnotations.show_slices_cogs();
+            SegmentationAnnotations.show_slices_tiles();
             return true;
         }
     }) );

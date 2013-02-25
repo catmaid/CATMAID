@@ -28,6 +28,9 @@ function CanvasLayer( stack, tool )
 
     this.resize = function( width, height )
     {
+        width = width;
+        height = height;
+
         view.style.width = width + "px";
         view.style.height = height + "px";
 
@@ -78,6 +81,14 @@ function CanvasLayer( stack, tool )
         defaultcursor: 'pointer',
         hoverCursor: 'crosshair'});
     self.canvas = canvas;
+
+    this.getHeight = function() {
+        return height;
+    }
+
+    this.getWidth = function() {
+        return width;
+    }
 
     this.unregister = function()
     {

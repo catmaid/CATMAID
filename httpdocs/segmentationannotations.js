@@ -62,7 +62,6 @@ function DiGraph() {
 
 }
 
-var g;
 var SegmentationAnnotations = new function()
 {
     var self = this;
@@ -88,7 +87,6 @@ var SegmentationAnnotations = new function()
     var cogs = new Array();
     
     this.reset_all = function() {
-        // self.init_graph();
         self.current_active_assembly = null
         allslices = new Object();
         slices_grouping = new Object();
@@ -197,6 +195,32 @@ var SegmentationAnnotations = new function()
         });
 
         self.init_allvisible_slices();
+    }
+
+    this.show_slices_tiles = function() {
+        var wc = self.stack.getFieldOfViewInPixel();
+        var newx = wc.worldLeftC < 0 ? 0 : wc.worldLeftC,
+            newy = wc.worldTopC < 0 ? 0 : wc.worldTopC,
+            newwidth = self.canvas.width > self.stack.dimension.x ? self.stack.dimension.x : self.canvas.width,
+            newheight = self.canvas.height > self.stack.dimension.y ? self.stack.dimension.y : self.canvas.height;
+        self.canvas.clear();        
+        var fetchurl = django_url + project.id + '/stack/' + get_current_stack().id + '/slices-tiles?' + $.param({
+            sectionindex: get_current_stack().z,
+            x: newx,
+            y: newy,
+            width: newwidth,
+            height: newheight
+        });
+        fabric.Image.fromURL(fetchurl, function(img)
+        {
+            img.left = (newx + newwidth)/2 - self.stack.getFieldOfViewInPixel().worldLeftC;
+            img.top = (newy + newheight)/2 - self.stack.getFieldOfViewInPixel().worldTopC - 1;
+            img.hasControls = false;
+            img.hasBorders = false;
+            img.set('selectable', false)
+            img.lockMovementX = img.lockMovementY = true;
+            self.canvas.add( img );
+        });
     }
 
     this.show_slices_cogs = function() {

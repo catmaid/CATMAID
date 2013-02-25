@@ -2,6 +2,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.simplejson.encoder import JSONEncoder
 
+import os.path
 import json
 import numpy as np
 
@@ -10,6 +11,47 @@ from catmaid.objects import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.transaction import *
+
+try:
+    from PIL import Image
+except:
+    pass
+
+def get_slices_tiles(request, project_id=None, stack_id=None):
+    height = int(request.GET.get('height', '0'))
+    width = int(request.GET.get('width', '0'))
+    x = int(request.GET.get('x', '0'))
+    y = int(request.GET.get('y', '0'))
+    sectionindex = int(request.GET.get('sectionindex', '0'))
+
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+    
+    slices = Slices.objects.filter(
+        stack = stack,
+        project = p,
+        sectionindex = sectionindex,
+        center_x__lt = x + width,
+        center_x__gt = x,
+        center_y__lt = y + height,
+        center_y__gt = y,
+        assembly__isnull = False
+        ).all().values('assembly_id', 'sectionindex', 'slice_id',
+        'node_id', 'min_x', 'min_y', 'max_x', 'max_y', 'center_x',
+        'center_y', 'threshold', 'size', 'status')
+    # sliceinfo = StackSliceInfo.objects.get(stack=stack)
+    data = np.zeros( (height, width), dtype = np.uint8 )
+    for slice in slices:
+        # print >> sys.stderr, 'slice', slice['slice_id']
+        data[slice['min_y']:slice['max_y'], slice['min_x']:slice['max_x']] = 255
+        #pic = Image.open(os.path.join(sliceinfo.slice_base_path, '0', '1.png'))
+        #arr = np.array( pic.getdata() ).reshape(pic.size[0], pic.size[1], 2)
+
+    pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
+    response = HttpResponse(mimetype="image/png")
+    pilImage.save(response, "PNG")
+    return response
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 @report_error

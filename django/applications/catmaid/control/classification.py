@@ -10,7 +10,7 @@ from django.template import Context
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
 from catmaid.control.common import insert_into_log
 from catmaid.control.ajax_templates import *
-from catmaid.control.ontology import get_classes
+from catmaid.control.ontology import get_class_links_qs
 from catmaid.models import Class, ClassClass, ClassInstance, ClassInstanceClassInstance
 from catmaid.models import Relation, UserRole, Project, Restriction
 from catmaid.models import CardinalityRestriction
@@ -47,7 +47,7 @@ class ClassProxy(Class):
 def get_root_classes_qs():
     """ Return a queryset that will get all root classes.
     """
-    return[ c.id for c in get_classes(dummy_pid, 'is_a', 'classification_root') ]
+    return[ c.class_a.id for c in get_class_links_qs(dummy_pid, 'is_a', 'classification_root') ]
 
 def get_classification_links_qs( project_id ):
     """ Returns a list of CICI links that link a classification graph
@@ -79,7 +79,8 @@ def get_classification_links_qs( project_id ):
 
     # Get a list of all classification root classes and return an empty
     # list if teher are none
-    root_classes = get_classes(dummy_pid, 'is_a', 'classification_root')
+    root_class_links = get_class_links_qs(dummy_pid, 'is_a', 'classification_root')
+    root_classes = [cc.class_a for cc in root_class_links]
     if not root_classes:
         return []
     # Query to get all root class instances
@@ -522,16 +523,21 @@ def get_child_classes( parent_ci ):
     # is used as a generalization (if possible). The generalization of a
     # class is linked to it with an 'is_a' relation.
     child_types = {}
-    def add_class( key, link, c, rel ):
-        # Test if there are restrictions at all on the current link
-        restrictions_q = Restriction.objects.filter(restricted_link=link)
-        if restrictions_q.count() == 0:
+    def add_class( key, links, c, rel ):
+        restrictions = []
+        # Iterate all links that might be relevant for this element
+        for link in links:
+            # Get all restrictions for the current link
+            restrictions_q = Restriction.objects.filter(restricted_link=link)
+            restrictions = restrictions + [ r for r in restrictions_q]
+
+        if len(restrictions) == 0:
             disabled = False
         else:
             # If there are restrictions, test if they would be violated
             # by adding the current class
             disabled = False
-            for r in restrictions_q:
+            for r in restrictions:
                 # Find out type of the restriction
                 cr_q = CardinalityRestriction.objects.filter(id=r.id)
                 if cr_q.count() > 0:
@@ -552,14 +558,14 @@ def get_child_classes( parent_ci ):
         c = cc.class_a
         r = cc.relation
         # Test if the current child class has sub-types
-        sub_classes = get_classes( dummy_pid, 'is_a', c )
-        if len(sub_classes) == 0:
+        sub_class_links = get_class_links_qs( dummy_pid, 'is_a', c )
+        if sub_class_links.count() == 0:
             # Add class to generic 'Element' group
-            add_class( 'Elememt', cc, c, r )
+            add_class( 'Elememt', [cc], c, r )
         else:
             # On entry for each 'is_a' link (usually one)
-            for sc in sub_classes:
-                add_class( c.class_name, cc, sc, r )
+            for scc in sub_class_links:
+                add_class( c.class_name, [cc, scc], scc.class_a, r )
 
     return child_types
 

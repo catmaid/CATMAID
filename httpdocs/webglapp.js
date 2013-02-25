@@ -46,6 +46,8 @@ var WebGLApp = new function () {
           $('#skeletonshow-' + skeleton_id).attr('checked', togglevisibleall );
           $('#skeletonpre-' + skeleton_id).attr('checked', togglevisibleall );
           $('#skeletonpost-' + skeleton_id).attr('checked', togglevisibleall );
+          if( togglevisibleall === false )
+            $('#skeletontext-' + skeleton_id).attr('checked', togglevisibleall );
         }
       }
       togglevisibleall = !togglevisibleall;
@@ -258,6 +260,8 @@ var WebGLApp = new function () {
       self.setActorVisibility( vis );
       self.setPreVisibility( vis );
       self.setPostVisibility( vis );
+      if( vis ===  false)
+        self.setTextVisibility( vis );
     };
 
     this.setActorVisibility = function( vis ) {
@@ -1031,6 +1035,11 @@ var WebGLApp = new function () {
             $('#skeletonpre-' + skeleton.id).attr('checked', vis );
             skeletons[skeleton.id].setPostVisibility( vis );
             $('#skeletonpost-' + skeleton.id).attr('checked', vis );
+            if( vis === false) {
+              skeletons[skeleton.id].setTextVisibility( vis );
+              $('#skeletontext-' + skeleton.id).attr('checked', vis );
+            }
+              
             self.render();
           } )
     ));

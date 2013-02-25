@@ -276,13 +276,14 @@ var WebGLApp = new function () {
     return "0x" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
   }
 
-  var Assembly = function( assembly_data )
+  var Assembly = function( assembly_data, high_res )
   {
 
     var self = this;
     self.assembly_id = assembly_data.assembly_id;
     self.assembly_slices = assembly_data.slices;
     var contours = [];
+    var high_res = high_res;
 
     var ProcessSlice = function( index ) {
       //console.log('index', index, self.assembly_slices.length, self.assembly_slices)
@@ -292,8 +293,12 @@ var WebGLApp = new function () {
         return;
       } 
       var slice = assembly_data.slices[ index ];
-      // console.log('register', index);
-      requestQueue.register(django_url + project.id + "/stack/" + project.focusedStack.id + '/slice/contour', "GET", {
+      var fetchurl;
+      if( high_res )
+        fetchurl = django_url + project.id + "/stack/" + project.focusedStack.id + '/slice/contour-highres';
+      else
+        fetchurl = django_url + project.id + "/stack/" + project.focusedStack.id + '/slice/contour';
+      requestQueue.register(fetchurl, "GET", {
           nodeid: self.assembly_slices[ index ].node_id
       }, function (status, text, xml) {
               if (status === 200) {
@@ -843,17 +848,17 @@ var WebGLApp = new function () {
       window.open(renderer.domElement.toDataURL("image/png"));
   }
 
-  this.addAssembly = function( assembly_data )
+  this.addAssembly = function( assembly_data, high_res )
   {
-    console.log('add assembly', assembly_data);
+    // console.log('add assembly', assembly_data);
     if( !assemblies.hasOwnProperty( assembly_data.assembly_id ) ) {
       // console.log('add assembly', assembly_data);
-      assemblies[ assembly_data.assembly_id ] = new Assembly( assembly_data );
+      assemblies[ assembly_data.assembly_id ] = new Assembly( assembly_data, high_res );
     } else {
-      console.log('assembly already exists. Remove and add new')
+      // console.log('assembly already exists. Remove and add new')
       assemblies[ assembly_data.assembly_id ].remove_from_scene();
       delete assemblies[ assembly_data.assembly_id ];
-      assemblies[ assembly_data.assembly_id ] = new Assembly( assembly_data );
+      assemblies[ assembly_data.assembly_id ] = new Assembly( assembly_data, high_res );
     }
     return true;
   }

@@ -54,6 +54,30 @@ def slices_cog(request, project_id=None, stack_id=None):
 
     return HttpResponse(JSONEncoder().encode(list(slices)), mimetype="text/json")
 
+def update_assembly(request, project_id=None, stack_id=None):
+    """ Update assembly id """
+
+    sectionindex = int(request.GET.get('sectionindex', '0'))
+    sliceid = int(request.GET.get('sliceid', '0'))
+    assemblyid = int(request.GET.get('assemblyid', '0'))
+
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+    if assemblyid == 0:
+        assemblyid_update = None
+    else:
+        assemblyid_update = assemblyid
+
+    slices = Slices.objects.filter(
+        stack = stack,
+        project = p,
+        sectionindex = sectionindex,
+        slice_id = sliceid).update(assembly=assemblyid_update)
+
+    return HttpResponse(JSONEncoder().encode({'message': "Successfully updated slice " + str(sliceid) +
+        " in section " + str(sectionindex) + " with assembly id " + str(assemblyid_update) }), mimetype="text/json")
+
 
 def slices_at_location(request, project_id=None, stack_id=None):
     """ Takes a stack location and returns slices at this location
@@ -79,6 +103,8 @@ def slices_at_location(request, project_id=None, stack_id=None):
 
     size = 20
 
+    # TODO: filter based on status flag
+
     slices = Slices.objects.filter(
         stack = stack,
         project = p,
@@ -91,31 +117,29 @@ def slices_at_location(request, project_id=None, stack_id=None):
         'center_y', 'threshold', 'size', 'status').order_by('threshold')
 
     # compute the shortest distance from the mouse pointer to the slice center of gravity
-    def dist(xx):
-        return np.linalg.norm(np.array([xx['center_x'], xx['center_y']]) - np.array([x,y]) )
-    slices = list(slices)
-    slices.sort(key=dist, reverse=True)
+    #def dist(xx):
+    #    return np.linalg.norm(np.array([xx['center_x'], xx['center_y']]) - np.array([x,y]) )
+    #slices = list(slices)
+    #slices.sort(key=dist, reverse=True)
 
     return HttpResponse(JSONEncoder().encode(list(slices)), mimetype="text/json")
 
-def segments_for_slice(request, project_id=None, stack_id=None):
+def segments_for_slice_right(request, project_id=None, stack_id=None):
     
     sliceid = int(request.GET.get('sliceid', '0'))
     sectionindex = int(request.GET.get('sectionindex', '0'))
-    
-    # which directionality?
 
     stack = get_object_or_404(Stack, pk=stack_id)
     p = get_object_or_404(Project, pk=project_id)
 
-    # TODO: optimize with one query!
-
+    # TODO: filter based on status flag
     segments_right = Segments.objects.filter(
         stack = stack,
         project = p,
         origin_slice_id = sliceid,
         origin_section = sectionindex,
         segmenttype__gt = 1,
+        direction = True,
         cost__lt = 100
     ).all().values('segmentid','segmenttype','origin_section','origin_slice_id','target_section',
     'target1_slice_id','target2_slice_id','direction',
@@ -131,6 +155,57 @@ def segments_for_slice(request, project_id=None, stack_id=None):
 
     return HttpResponse(JSONEncoder().encode(list(segments_right)), mimetype="text/json")
 
+def segments_for_slice_left(request, project_id=None, stack_id=None):
+    
+    sliceid = int(request.GET.get('sliceid', '0'))
+    sectionindex = int(request.GET.get('sectionindex', '0'))
+    
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+    # TODO: filter based on status flag
+    segments_left = Segments.objects.filter(
+        stack = stack,
+        project = p,
+        target1_slice_id = sliceid,
+        target_section = sectionindex,
+        segmenttype = 2,
+        direction = True,
+        cost__lt = 100
+    ).all().values('segmentid','segmenttype','origin_section','origin_slice_id','target_section',
+    'target1_slice_id','target2_slice_id','direction',
+    'center_distance','set_difference','cost','set_difference','set_difference_ratio',
+    'aligned_set_difference','aligned_set_difference_ratio',
+    'size','overlap','overlap_ratio','aligned_overlap','aligned_overlap_ratio',
+    'average_slice_distance', 'max_slice_distance',
+    'aligned_average_slice_distance', 'aligned_max_slice_distance',
+    'histogram_0', 'histogram_1', 'histogram_2', 'histogram_3', 'histogram_4', 'histogram_5',
+    'histogram_6', 'histogram_7', 'histogram_8', 'histogram_9', 'normalized_histogram_0',
+    'normalized_histogram_1', 'normalized_histogram_2', 'normalized_histogram_3', 'normalized_histogram_4', 'normalized_histogram_5',
+    'normalized_histogram_6', 'normalized_histogram_7', 'normalized_histogram_8', 'normalized_histogram_9').order_by('cost')
+
+    segments_left_branch = Segments.objects.filter(
+        stack = stack,
+        project = p,
+        origin_slice_id = sliceid,
+        origin_section = sectionindex,
+        segmenttype = 3,
+        direction = False,
+        cost__lt = 100
+    ).all().values('segmentid','segmenttype','origin_section','origin_slice_id','target_section',
+    'target1_slice_id','target2_slice_id','direction',
+    'center_distance','set_difference','cost','set_difference','set_difference_ratio',
+    'aligned_set_difference','aligned_set_difference_ratio',
+    'size','overlap','overlap_ratio','aligned_overlap','aligned_overlap_ratio',
+    'average_slice_distance', 'max_slice_distance',
+    'aligned_average_slice_distance', 'aligned_max_slice_distance',
+    'histogram_0', 'histogram_1', 'histogram_2', 'histogram_3', 'histogram_4', 'histogram_5',
+    'histogram_6', 'histogram_7', 'histogram_8', 'histogram_9', 'normalized_histogram_0',
+    'normalized_histogram_1', 'normalized_histogram_2', 'normalized_histogram_3', 'normalized_histogram_4', 'normalized_histogram_5',
+    'normalized_histogram_6', 'normalized_histogram_7', 'normalized_histogram_8', 'normalized_histogram_9').order_by('cost')
+
+    return HttpResponse(JSONEncoder().encode(list(segments_left)+list(segments_left_branch)), mimetype="text/json")
+
 def slice_contour(request, project_id=None, stack_id=None):
     
     node_id = str(request.GET.get('nodeid', '0'))
@@ -138,6 +213,20 @@ def slice_contour(request, project_id=None, stack_id=None):
     p = get_object_or_404(Project, pk=project_id)
 
     cnt = SliceContours.objects.filter(
+        stack = stack,
+        project = p,
+        node_id = node_id
+        )
+
+    return HttpResponse(json.dumps([c.coordinates for c in cnt]), mimetype="text/json")
+
+def slice_contour_highres(request, project_id=None, stack_id=None):
+    
+    node_id = str(request.GET.get('nodeid', '0'))
+    stack = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, pk=project_id)
+
+    cnt = SliceContoursHighres.objects.filter(
         stack = stack,
         project = p,
         node_id = node_id

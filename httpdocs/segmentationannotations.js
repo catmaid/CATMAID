@@ -375,6 +375,12 @@ var SegmentationAnnotations = new function()
         allslices[ current_active_slice ].fetch_segments( true );
     }
 
+    var fetch_allsegments_current = function() {
+        console.log('fetch segments right and left');
+        fetch_all_segments( current_active_slice );
+    }
+    self.fetch_allsegments_current = fetch_allsegments_current;
+
     self.fetch_slicegroup_from_selected_segment_current_slice_right = function( ) {
         allslices[ current_active_slice ].add_slicesgroup_for_selected_segment( true );
     }
@@ -449,10 +455,11 @@ var SegmentationAnnotations = new function()
     this.goto_slice = goto_slice;
 
 
-    var fetch_all_segments = function( node_id, to_right ) {
+    var fetch_all_segments = function( node_id ) {
         if( have_slice(node_id) ) {
             console.log('fetch all segments of slice', node_id);
-            allslices[ node_id ].fetch_segments( to_right );
+            allslices[ node_id ].fetch_segments( true );
+            allslices[ node_id ].fetch_segments( false );
         }
     }
 
@@ -503,8 +510,10 @@ var SegmentationAnnotations = new function()
         var right_segments = allslices[ node_id ].segments_right;
         $('#segmentstable').append('<tr>'+
             '<td>segments right</td>' +
+            '<td>origin</td>' +
             '<td>id</td>' +
             '<td>t</td>' +
+            '<td>dir</td>' +
             '<td>target ids</td>' +
             '<td>cost</td>' +
             '<td>center_distance</td>' +
@@ -562,8 +571,10 @@ var SegmentationAnnotations = new function()
             $('#segmentstable').append('<tr>'+
                 //'<td>'+segment.segmentid+'</td>' +
                 '<td style="background-color:#000000">'+sliceimage+'</td>' +
+                '<td>'+segment.origin_section+'//'+segment.origin_slice_id+'</td>' +
                 '<td>'+segment.segmentid+'</td>' +
                 '<td>'+segment.segmenttype+'</td>' +
+                '<td>'+segment.direction+'</td>' +
                 '<td>'+segment.target_section+'//'+segment.target1_slice_id+','+segment.target2_slice_id+'</td>' +
                 '<td>'+segment.cost+'</td>' +
                 '<td>'+segment.center_distance+'</td>' +
@@ -606,8 +617,10 @@ var SegmentationAnnotations = new function()
         var left_segments = allslices[ node_id ].segments_left;
         $('#segmentstable').append('<tr>'+
             '<td>segments left</td>' +
+            '<td>origin_section</td>' +
             '<td>id</td>' +
             '<td>t</td>' +
+            '<td>dir</td>' +
             '<td>target ids</td>' +
             '<td>cost</td>' +
             '<td>center_distance</td>' +
@@ -665,8 +678,10 @@ var SegmentationAnnotations = new function()
             $('#segmentstable').append('<tr>'+
                 //'<td>'+segment.segmentid+'</td>' +
                 '<td style="background-color:#000000">'+sliceimage+'</td>' +
+                '<td>'+segment.origin_section+'//'+segment.origin_slice_id+'</td>' +
                 '<td>'+segment.segmentid+'</td>' +
                 '<td>'+segment.segmenttype+'</td>' +
+                '<td>'+segment.direction+'</td>' +
                 '<td>'+segment.target_section+'//'+segment.target1_slice_id+','+segment.target2_slice_id+'</td>' +
                 '<td>'+segment.cost+'</td>' +
                 '<td>'+segment.center_distance+'</td>' +
@@ -708,9 +723,8 @@ var SegmentationAnnotations = new function()
 
     }
 
-    this.visualize_assembly = function() {
+    this.visualize_assembly = function( high_res ) {
         // need open 3d context
-
         if( !self.current_active_assembly ) {
             alert('Need to have an active assembly to visualize');
             return;
@@ -744,17 +758,43 @@ var SegmentationAnnotations = new function()
         }
 
         // pass it to webgl app (which adds the assembly to the scene)
-        WebGLApp.addAssembly( assembly_data );
+        WebGLApp.addAssembly( assembly_data, high_res );
     }
 
     this.delete_active_slice = function() {
         //console.log('delete active slice', current_active_slice)
         // but leave the loaded in memory
-        if( current_active_slice ) {
-            self.remove_slice( current_active_slice );
-            activate_slice( null );
+        var current_active = self.get_current_active_slice();
+        if( !current_active ) {
+            console.log('No current active slice to delete');
+            return;
         }
-        update_stack();
+        // TODO: update assembly id of associated segments?
+        requestQueue.register(django_url + project.id + "/stack/" + get_current_stack().id + '/slice/update-assembly', "GET", {
+            sectionindex: current_active.sectionindex,
+            sliceid: current_active.slice_id,
+            assemblyid: 0
+        }, function (status, text, xml) {
+                if (status === 200) {
+                    if (text && text !== " ") {
+                        var e = $.parseJSON(text);
+                        if (e.error) {
+                            alert(e.error);
+                        } else {
+
+                            if (e.error) {
+                                alert(e.error);
+                            } else {
+                                if( current_active_slice ) {
+                                    self.remove_slice( current_active_slice );
+                                    activate_slice( null );
+                                }
+                                update_stack();
+                            }
+                        }
+                    }
+                }
+        });
     };
 
     this.previous_slice = function() {
@@ -1183,7 +1223,8 @@ var SegmentationAnnotations = new function()
                 }
 
                 if( fetch_segments_for_slice ) {
-                    self.fetch_segments( fetch_segments_for_slice )   
+                    fetch_allsegments_current( self.slice_id );
+                    //self.fetch_segments(  )   
                 }
                  
                     
@@ -1201,8 +1242,12 @@ var SegmentationAnnotations = new function()
                 console.log('already existing segments', self.segments_right, self.selected_segment_right, self.segments_left, self.selected_segment_left);
                 return;
             }
-
-            requestQueue.register(django_url + project.id + "/stack/" + get_current_stack().id + '/segments-for-slice', "GET", {
+            var fetchurl;
+            if( for_right )
+                fetchurl = django_url + project.id + "/stack/" + get_current_stack().id + '/segments-for-slice-right';
+            else
+                fetchurl = django_url + project.id + "/stack/" + get_current_stack().id + '/segments-for-slice-left';
+            requestQueue.register(fetchurl, "GET", {
                 sliceid: self.slice_id,
                 sectionindex: self.sectionindex
             }, function (status, text, xml) {
@@ -1215,31 +1260,34 @@ var SegmentationAnnotations = new function()
                                 console.log('found segments', e);
                                 if( e.length == 0 ) {
                                     console.log('no segments found, mark it as such');
-                                    self.selected_segment_left = -2;
-                                    self.selected_segment_right = -2;
+                                    if( for_right )
+                                        self.selected_segment_right = -2;
+                                    else
+                                        self.selected_segment_left = -2;
                                 }
-                                var selected_segment_instance_right;
                                 for(var idx in e) {
 
                                     var newsegment = new Segment( e[idx] );
                                     add_segment_instance( newsegment );
 
-                                    if( !newsegment.direction ) {
-                                        self.segments_left.push( newsegment.node_id );
-                                        if( !self.selected_segment_left )
-                                            self.selected_segment_left = 0;
-                                    } else {
+                                    if( for_right ) {
+                                        console.log('push to right', newsegment.node_id )
                                         self.segments_right.push( newsegment.node_id );
                                         if( !self.selected_segment_right ) {
                                             self.selected_segment_right = 0;
-                                        }
-                                            
+                                        }                                            
+                                    } else {
+                                        console.log('push to left', newsegment.node_id )
+                                        self.segments_left.push( newsegment.node_id );
+                                        if( !self.selected_segment_left )
+                                            self.selected_segment_left = 0;                                        
                                     }
+
                                 }
 
                                 // if automated fetching is on and conditions hold, move to the next!
                                 console.log('fetching segments done .... need to propagate?', automatic_propagation, propagation_counter, self.selected_segment_right)
-                                if( automatic_propagation && propagation_counter > 0 && self.selected_segment_right !== null ) {
+                                if( automatic_propagation && propagation_counter > 0 && self.selected_segment_right !== null && for_right ) {
                                     var seg = get_segment( self.segments_right[ self.selected_segment_right ] );
                                     if( seg !== undefined ) {
                                         console.log('choosen segment to propagate to right is', seg );

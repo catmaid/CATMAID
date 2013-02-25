@@ -512,6 +512,14 @@ class SliceContours(UserFocusedModel):
     node_id = models.CharField(max_length=255,db_index=True) # convention: {sectionindex}_{slide_id}
     length = models.FloatField(null=True)
 
+class SliceContoursHighres(UserFocusedModel):
+
+    coordinates = IntegerArrayField()
+
+    stack = models.ForeignKey(Stack)
+    node_id = models.CharField(max_length=255,db_index=True) # convention: {sectionindex}_{slide_id}
+    length = models.FloatField(null=True)
+
 class Segments(UserFocusedModel):
 
     creation_time = models.DateTimeField(default=now)
@@ -532,6 +540,7 @@ class Segments(UserFocusedModel):
     randomforest_cost = models.FloatField()
     segmentation_cost = models.FloatField()
     direction = models.BooleanField() # 0:LR if origin_section< target_section / 1:RL as boolean, otherwise
+    status = models.IntegerField(db_index=True, default=1)
 
     center_distance = models.FloatField()
     set_difference = models.FloatField()
@@ -590,7 +599,7 @@ class Slices(UserFocusedModel):
     center_y = models.FloatField(db_index=True)
     threshold = models.FloatField()
     size = models.IntegerField(db_index=True)
-    status = models.IntegerField(db_index=True, default=0)
+    status = models.IntegerField(db_index=True, default=1)
 
     # 0: default, 1: ends, 2: continuation with no segment, 3: branch with no segment
     flag_left = models.IntegerField(db_index=True)

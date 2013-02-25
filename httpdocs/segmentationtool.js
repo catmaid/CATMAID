@@ -215,13 +215,18 @@ function SegmentationTool()
             e.stopPropagation();
             return;*/
         };
-        // canvasLayer.view.onmousewheel = onmousewheel; // function(e){self.mousewheel(e);};
+        canvasLayer.view.onmousewheel = onmousewheel; // function(e){self.mousewheel(e);};
         
     }
 
     var onmousewheel = function( e )
     {
-        //console.log('onmousewheel', e);
+        var w = ui.getMouseWheel( e );
+        if( w > 0) {
+            SegmentationAnnotations.next_slice();
+        } else {
+            SegmentationAnnotations.previous_slice();
+        }
     }
 
     var onmousemove = function( e )
@@ -384,7 +389,7 @@ function SegmentationTool()
             'U': [ 85 ]
         },
         run: function (e) {
-            SegmentationAnnotations.visualize_assembly();
+            SegmentationAnnotations.visualize_assembly( e.shiftKey );
             return true;
         }
     }) );
@@ -452,7 +457,8 @@ function SegmentationTool()
             'H': [ 72 ]
         },
         run: function (e) {
-            SegmentationAnnotations.fetch_segments_right( );
+            // SegmentationAnnotations.fetch_segments_right( );
+            SegmentationAnnotations.fetch_allsegments_current();
             return true;
         }
     }) );

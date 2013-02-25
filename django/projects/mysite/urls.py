@@ -62,8 +62,11 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-cog$', 'catmaid.control.slices_cog'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-at-location$', 'catmaid.control.slices_at_location'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice$', 'catmaid.control.get_slice'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/update-assembly$', 'catmaid.control.update_assembly'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/contour$', 'catmaid.control.slice_contour'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segments-for-slice$', 'catmaid.control.segments_for_slice'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/contour-highres$', 'catmaid.control.slice_contour_highres'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segments-for-slice-right$', 'catmaid.control.segments_for_slice_right'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segments-for-slice-left$', 'catmaid.control.segments_for_slice_left'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/constraint/constraintset-for-segment$', 'catmaid.control.constraintset_for_segment'),
     
 

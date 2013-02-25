@@ -124,9 +124,10 @@ var ClassificationEditor = new function()
                             submenu = menu[menu_id]['submenu'];
                         }
                         var child_classes = child_groups[group_name];
+                        var only_disabled_items = true;
                         for (i=0; i<child_classes.length; i++) {
                             var subchild = child_classes[i];
-                            var disabled = false;
+                            only_disabled_items = (only_disabled_items && subchild.disabled);
                             submenu['add_child_' + group_name + '_sub_' + i] = {
                               "separator_before": false,
                               "separator_after": false,
@@ -155,6 +156,7 @@ var ClassificationEditor = new function()
                           "separator_before": false,
                           "separator_after": false,
                           "label": 'Add ' + group_name,
+                          "_disabled": only_disabled_items,
                           "submenu": submenu,
                         };
                     }

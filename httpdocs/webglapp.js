@@ -469,6 +469,7 @@ var WebGLApp = new function () {
 
       this.original_vertices = skeleton_data.vertices;
       this.original_connectivity = skeleton_data.connectivity;
+      var textlabel_visibility = $('#skeletontext-' + self.id).is(':checked');
 
       for (var fromkey in this.original_connectivity) {
         var to = this.original_connectivity[fromkey];
@@ -535,6 +536,7 @@ var WebGLApp = new function () {
             text.position.x = from_vector.x;
             text.position.y = from_vector.y;
             text.position.z = from_vector.z;
+            text.visible = textlabel_visibility;
 
             if( !this.textlabels.hasOwnProperty( fromkey )) {
               this.textlabels[ fromkey ] = text;

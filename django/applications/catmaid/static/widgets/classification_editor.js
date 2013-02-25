@@ -130,7 +130,7 @@ var ClassificationEditor = new function()
                             submenu['add_child_' + group_name + '_sub_' + i] = {
                               "separator_before": false,
                               "separator_after": false,
-                              "_disabled": disabled,
+                              "_disabled": subchild.disabled,
                               "label": subchild.name,
                               // the action function has to be created wth. of a closure
                               "action": (function(cname, cid, rname, rid) {

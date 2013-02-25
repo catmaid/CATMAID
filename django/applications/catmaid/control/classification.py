@@ -12,7 +12,8 @@ from catmaid.control.common import insert_into_log
 from catmaid.control.ajax_templates import *
 from catmaid.control.ontology import get_classes
 from catmaid.models import Class, ClassClass, ClassInstance, ClassInstanceClassInstance
-from catmaid.models import Relation, UserRole, Project
+from catmaid.models import Relation, UserRole, Project, Restriction
+from catmaid.models import CardinalityRestriction
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 
 # A dummy project is referenced by all the classes and class instances.
@@ -26,9 +27,7 @@ needed_classes = {
     'classification_root':
          "The root node class for classification graphs",
     'classification_project':
-         "A project represention to link to classification graphs",
-    'classification_exclusive':
-         "When linked with 'is_a' to this, a class is marked as exclusive."}
+         "A project represention to link to classification graphs"}
 
 # All needed relations by the classification system alongside their
 # descriptions.
@@ -511,45 +510,57 @@ def collect_reachable_classes( parent_class):
 
     return available_links
 
-def is_exclusive( klass ):
-    """ Returns if a class is inheriting from the class
-    'classification_exclusive' and thereby is exclusive.
-    """
-    num_exclusive_links = ClassClass.objects.filter(class_a=klass,
-        class_b__class_name='classification_exclusive',
-        relation__relation_name='is_a').count()
-    return (num_exclusive_links > 0)
-
-def get_child_classes( parent_class ):
+def get_child_classes( parent_ci ):
     """ Gets all possible child classes out of the linked ontology in
-    the semantic space.
+    the semantic space. If the addition of a child-class woult violate
+    a restriction, it isn't used.
     """
+    parent_class = parent_ci.class_column
     # Get all possible child classes
     available_links = collect_reachable_classes( parent_class )
-    child_classes = [ (cc.class_a, cc.relation) for cc in available_links ]
     # Create a dictionary where all classes are assigned to a class which
     # is used as a generalization (if possible). The generalization of a
     # class is linked to it with an 'is_a' relation.
     child_types = {}
-    def add_class( key, c, rel ):
-        exclusive = is_exclusive( c )
+    def add_class( key, link, c, rel ):
+        # Test if there are restrictions at all on the current link
+        restrictions_q = Restriction.objects.filter(restricted_link=link)
+        if restrictions_q.count() == 0:
+            disabled = False
+        else:
+            # If there are restrictions, test if they would be violated
+            # by adding the current class
+            disabled = False
+            for r in restrictions_q:
+                # Find out type of the restriction
+                cr_q = CardinalityRestriction.objects.filter(id=r.id)
+                if cr_q.count() > 0:
+                    # It is a cardinality restriction
+                    disabled = cr_q[0].would_violate( parent_ci, c )
+                else:
+                    # Unknown restriction
+                    raise Exception("Couldn't identify the restriction with ID %d." % (r.id))
+
         # Create class data structure
-        cdata = { 'id': c.id, 'name': c.class_name, 'exclusive': exclusive,
+        cdata = { 'id': c.id, 'name': c.class_name, 'disabled': disabled,
             'relname': rel.relation_name, 'relid': rel.id }
         if key not in child_types:
             child_types[key] = []
         child_types[key].append(cdata)
 
-    for c, r in child_classes:
+    for cc in available_links:
+        c = cc.class_a
+        r = cc.relation
         # Test if the current child class has sub-types
         sub_classes = get_classes( dummy_pid, 'is_a', c )
         if len(sub_classes) == 0:
             # Add class to generic 'Element' group
-            add_class( 'Elememt', c, r )
+            add_class( 'Elememt', cc, c, r )
         else:
             # On entry for each 'is_a' link (usually one)
             for sc in sub_classes:
-                add_class( c.class_name, sc, r )
+                add_class( c.class_name, cc, sc, r )
+
     return child_types
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -604,7 +615,7 @@ def list_classification_graph(request, project_id=None, link_id=None):
             # Collect all child node class instances
             #child = Child( root_id, root_name, "classification_root", 'root')
             #add_template_fields( [child] )
-            child_types = get_child_classes( cls_graph.class_column )
+            child_types = get_child_classes( cls_graph )
 
             # Create JSTree data structure
             data = {'data': {'title': cls_graph.class_column.class_name},
@@ -634,7 +645,7 @@ def list_classification_graph(request, project_id=None, link_id=None):
             child_data = []
             for child_link in child_links:
                 child = child_link.class_instance_a
-                child_types = get_child_classes( child.class_column )
+                child_types = get_child_classes( child )
                 data = {'data': {'title': child.class_column.class_name },
                     'attr': {'id': 'node_%s' % child.id,
                              'linkid': child_link.id,

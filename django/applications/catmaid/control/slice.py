@@ -43,7 +43,7 @@ def get_slices_tiles(request, project_id=None, stack_id=None):
     data = np.zeros( (height, width), dtype = np.uint8 )
     for slice in slices:
         # print >> sys.stderr, 'slice', slice['slice_id']
-        data[slice['min_y']:slice['max_y'], slice['min_x']:slice['max_x']] = 255
+        data[slice['min_y']-y:slice['max_y']-y, slice['min_x']-x:slice['max_x']-x] = 255
         #pic = Image.open(os.path.join(sliceinfo.slice_base_path, '0', '1.png'))
         #arr = np.array( pic.getdata() ).reshape(pic.size[0], pic.size[1], 2)
 
@@ -82,7 +82,10 @@ def get_slice(request, project_id=None, stack_id=None):
 
 def slices_cog(request, project_id=None, stack_id=None):
     """ Return all slice centers """
-
+    height = int(request.GET.get('height', '0'))
+    width = int(request.GET.get('width', '0'))
+    x = int(request.GET.get('x', '0'))
+    y = int(request.GET.get('y', '0'))
     z = str(request.GET.get('z', '0'))
 
     stack = get_object_or_404(Stack, pk=stack_id)
@@ -91,6 +94,10 @@ def slices_cog(request, project_id=None, stack_id=None):
     slices = Slices.objects.filter(
         stack = stack,
         project = p,
+        center_x__lt = x + width,
+        center_x__gt = x,
+        center_y__lt = y + height,
+        center_y__gt = y,
         sectionindex = z).all().values('assembly_id', 'sectionindex', 'slice_id',
         'node_id', 'center_x', 'center_y', 'threshold', 'size')
 

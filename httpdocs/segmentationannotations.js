@@ -199,22 +199,18 @@ var SegmentationAnnotations = new function()
 
     this.show_slices_tiles = function() {
         var wc = self.stack.getFieldOfViewInPixel();
-        var newx = wc.worldLeftC < 0 ? 0 : wc.worldLeftC,
-            newy = wc.worldTopC < 0 ? 0 : wc.worldTopC,
-            newwidth = self.canvas.width > self.stack.dimension.x ? self.stack.dimension.x : self.canvas.width,
-            newheight = self.canvas.height > self.stack.dimension.y ? self.stack.dimension.y : self.canvas.height;
         self.canvas.clear();        
         var fetchurl = django_url + project.id + '/stack/' + get_current_stack().id + '/slices-tiles?' + $.param({
             sectionindex: get_current_stack().z,
-            x: newx,
-            y: newy,
-            width: newwidth,
-            height: newheight
+            x: wc.worldLeftC,
+            y: wc.worldTopC,
+            width: self.canvas.width,
+            height: self.canvas.height
         });
         fabric.Image.fromURL(fetchurl, function(img)
         {
-            img.left = (newx + newwidth)/2 - self.stack.getFieldOfViewInPixel().worldLeftC;
-            img.top = (newy + newheight)/2 - self.stack.getFieldOfViewInPixel().worldTopC - 1;
+            img.left = self.canvas.width/2.;
+            img.top = self.canvas.height/2.;
             img.hasControls = false;
             img.hasBorders = false;
             img.set('selectable', false)
@@ -224,13 +220,15 @@ var SegmentationAnnotations = new function()
     }
 
     this.show_slices_cogs = function() {
-
+        var wc = self.stack.getFieldOfViewInPixel();
         self.canvas.clear();
         cogs = new Array();
-
-        console.log('add dots');
         requestQueue.register(django_url + project.id + '/stack/' + get_current_stack().id + '/slices-cog', "GET", {
             z: get_current_stack().z,
+            x: wc.worldLeftC,
+            y: wc.worldTopC,
+            width: self.canvas.width,
+            height: self.canvas.height
         },
          function (status, text, xml) {
                 if (status === 200) {

@@ -405,16 +405,16 @@ function SegmentationTool()
         }
     }) );
 
-    /*this.addAction( new Action({
-        helpText: "Toggle propagation",
+    this.addAction( new Action({
+        helpText: "Show center of gravity of slices",
         keyShortcuts: {
-            'A': [ 65 ]
+            'P': [ 80 ]
         },
         run: function (e) {
-            SegmentationAnnotations.toggle_automatic_propagation();
+            SegmentationAnnotations.show_slices_cogs();
             return true;
         }
-    }) );*/
+    }) );
 
     this.addAction( new Action({
         helpText: "Delete slice group",

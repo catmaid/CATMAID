@@ -577,6 +577,7 @@ def list_classification_graph(request, project_id=None, link_id=None):
     parent_id = int(request.GET.get('parentid', 0))
     parent_name = request.GET.get('parentname', '')
     expand_request = request.GET.get('expandtarget', None)
+    superclass_in_name = bool(int(request.GET.get('superclassnames', 0)))
     if expand_request is None:
         expand_request = tuple()
     else:
@@ -614,6 +615,18 @@ def list_classification_graph(request, project_id=None, link_id=None):
 
     response_on_error = ''
     try:
+        def get_class_name( klass ):
+            if superclass_in_name:
+                super_class_links_q = get_class_links_qs( dummy_pid,
+                    'is_a', klass, False )
+                if super_class_links_q.count() > 0:
+                    cname = super_class_links_q[0].class_b.class_name
+                    return "%s: %s" % (cname, klass.class_name)
+                else:
+                    return klass.class_name
+            else:
+                return klass.class_name
+
         if 0 == parent_id:
             cls_graph = root_link.class_instance_b
             response_on_error = 'Could not select the id of the classification root node.'
@@ -624,7 +637,7 @@ def list_classification_graph(request, project_id=None, link_id=None):
             child_types = get_child_classes( cls_graph )
 
             # Create JSTree data structure
-            data = {'data': {'title': "%s (%d)" % (cls_graph.class_column.class_name, cls_graph.id)},
+            data = {'data': {'title': cls_graph.class_column.class_name},
                 'attr': {'id': 'node_%s' % cls_graph.id,
                          'linkid': root_link.id,
                          'rel': 'root',
@@ -652,7 +665,7 @@ def list_classification_graph(request, project_id=None, link_id=None):
             for child_link in child_links:
                 child = child_link.class_instance_a
                 child_types = get_child_classes( child )
-                data = {'data': {'title': "%s (%d)" % (child.class_column.class_name, child.id) },
+                data = {'data': {'title': get_class_name(child.class_column)},
                     'attr': {'id': 'node_%s' % child.id,
                              'linkid': child_link.id,
                              'rel': 'element',

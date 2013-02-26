@@ -1,6 +1,7 @@
 var ClassificationEditor = new function()
 {
     var self = this;
+    var display_superclass_names = false;
 
     /**
      * Initialization of the window.
@@ -53,6 +54,15 @@ var ClassificationEditor = new function()
             tree.jstree("refresh", -1);
         });
 
+        $("#display_super_classes").click(function () {
+            if ($("#display_super_classes").attr('checked')) {
+                display_superclass_names = true;
+            } else {
+                display_superclass_names = false;
+            }
+            tree.jstree("refresh", -1);
+        });
+
         tree.bind("reload_nodes.jstree",
             function (event, data) {
                 if (self.currentExpandRequest) {
@@ -80,7 +90,8 @@ var ClassificationEditor = new function()
                   // the result is fed to the AJAX request `data` option
                   parameters = {
                     "pid": pid,
-                    "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
+                    "parentid": n.attr ? n.attr("id").replace("node_", "") : 0,
+                    "superclassnames": display_superclass_names ? 1 : 0
                   };
                   if (self.currentExpandRequest) {
                     parameters['expandtarget'] = self.currentExpandRequest.join(',');

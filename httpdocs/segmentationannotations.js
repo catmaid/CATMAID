@@ -380,6 +380,14 @@ var SegmentationAnnotations = new function()
         allvisible_slices[ nodeidsplit.sectionindex ][ node_id ] = null;
     }
 
+    self.mark_as_end_for_current = function( to_right ) {
+        if( to_right ) {
+            allslices[ current_active_slice ].flag_right = 1;
+        } else {
+            allslices[ current_active_slice ].flag_left = 1;
+        }
+    }
+
     self.set_propagation_counter = function( counter ) {
         console.log('reset counter', counter)
         propagation_counter = counter;
@@ -405,13 +413,118 @@ var SegmentationAnnotations = new function()
     }
     self.fetch_allsegments_current = fetch_allsegments_current;
 
-    self.fetch_slicegroup_from_selected_segment_current_slice_right = function( ) {
-        allslices[ current_active_slice ].add_slicesgroup_for_selected_segment( true );
+
+    self.fetch_slicegroup_from_selected_segment_current_slice = function( to_right ) {
+        allslices[ current_active_slice ].add_slicesgroup_for_selected_segment( to_right, 0 );
     }
 
     self.fetch_segments_left = function() {
         allslices[ current_active_slice ].fetch_segments( false );
         //allslices[ current_active_slice ].fetch_slices_for_selected_segment( false );
+    }
+
+    self.find_loose_ends = function() {
+        var tmp_allsegments = {}
+        for(var idx in allsegments) {
+            if( allsegments.hasOwnProperty( idx )) {
+                
+                var orig = allsegments[ idx ].origin_section,
+                    target = allsegments[ idx ].target_section;
+                if(!tmp_allsegments.hasOwnProperty( orig )) {
+                    tmp_allsegments[ orig ] = {};
+                    tmp_allsegments[ orig ][ target ] = {};
+                }
+                if(!tmp_allsegments[ orig ].hasOwnProperty( target )) {
+                    tmp_allsegments[ orig ][ target ] = {};
+                }
+                tmp_allsegments[ orig ][ target ][ idx ] = allsegments;
+            }
+        }
+        var tmp_segment;
+        // loop through all the visible sections
+        // for each slice, print out left and right selected segments and left/right flags
+        var result_slices = {}, result_segments = {}, slices_to_check = {};
+
+        for( var idx in allvisible_slices ) {
+            if( allvisible_slices.hasOwnProperty( idx ) ) {
+                for( var node_id in allvisible_slices[ idx ]) {
+                    if( allvisible_slices[ idx ].hasOwnProperty( node_id )) {
+                        result_slices[ node_id ] = allslices[ node_id ];
+                    }
+                }
+            }
+        };
+
+        for( var idx in allvisible_slices ) {
+            if( allvisible_slices.hasOwnProperty( idx ) ) {
+                for( var node_id in allvisible_slices[ idx ]) {
+                    if( allvisible_slices[ idx ].hasOwnProperty( node_id )) {
+                        
+                        var slice = allslices[ node_id ];
+
+                        tmp_segment = allsegments[ slice.get_current_right_segment() ];
+                        var proper_right_termination = false;
+                        if( tmp_segment !== undefined ) {
+                            if( tmp_segment.segmenttype == 2) {
+                                // console.log( tmp_segment.target1_node_id, 'in ', allvisible_slices[ tmp_segment.target_section ])
+                                if( tmp_segment.origin_node_id in result_slices && tmp_segment.target1_node_id in result_slices ) {
+                                    // console.log('valid continuation segment to right', tmp_segment);
+                                    result_segments[ tmp_segment.node_id ] = tmp_segment;
+                                    slice.flag_right = 5;
+                                    proper_right_termination = true;
+                                } 
+                            } else if( tmp_segment.segmenttype == 3) {
+
+                                if( tmp_segment.origin_node_id in result_slices && tmp_segment.target1_node_id in result_slices &&
+                                 tmp_segment.target2_node_id in result_slices ) {
+                                    result_segments[ tmp_segment.node_id ] = tmp_segment;
+                                    slice.flag_right = 5;
+                                    proper_right_termination = true;
+                                    // console.log('valid branch segment to right', tmp_segment);
+                                }
+                            }
+                            if( !proper_right_termination && (slice.flag_right !== 5) ) {
+                                slices_to_check[ slice.node_id ] = slice;
+                            }
+                        }
+
+
+                        tmp_segment = allsegments[ slice.get_current_left_segment() ];
+                        var proper_left_termination = false;
+                        if( tmp_segment !== undefined ) {
+                            if( tmp_segment.segmenttype == 2) {
+                                // console.log( tmp_segment.target1_node_id, 'in ', allvisible_slices[ tmp_segment.target_section ])
+                                if( tmp_segment.origin_node_id in result_slices && tmp_segment.target1_node_id in result_slices ) {
+                                    // console.log('valid continuation segment to left', tmp_segment);
+                                    result_segments[ tmp_segment.node_id ] = tmp_segment;
+                                    slice.flag_left = 5;
+                                    proper_left_termination = true;
+                                } 
+                            } else if( tmp_segment.segmenttype == 3) {
+                                
+                                if( tmp_segment.origin_node_id in result_slices && tmp_segment.target1_node_id in result_slices &&
+                                 tmp_segment.target2_node_id in result_slices ) {
+                                    result_segments[ tmp_segment.node_id ] = tmp_segment;
+                                    slice.flag_left = 5;
+                                    proper_left_termination = true;
+                                    // console.log('valid branch segment to left', tmp_segment);
+                                }
+                            }
+                            if( !proper_left_termination  && (slice.flag_left !== 5) ) {
+                                slices_to_check[ slice.node_id ] = slice;
+                            }
+                        }
+
+
+
+                    }
+                }
+                
+            }             
+        }
+        console.log('result slices', result_slices, result_segments);
+        console.log('result segments', result_segments);
+        console.log('slices to check', slices_to_check);
     }
 
     self.constraints_for_selected_segment_of_active_slice = function() {
@@ -689,8 +802,8 @@ var SegmentationAnnotations = new function()
 
             if( segment.segmenttype === 2 ) {
                  sliceimage = '<img style="width: 100%;" src="' +
-                    get_slice_image_url_from_section_and_slice( segment.target_section,
-                        segment.target1_slice_id) + '" >';
+                    get_slice_image_url_from_section_and_slice( segment.origin_section,
+                        segment.origin_slice_id) + '" >';
             } else if( segment.segmenttype === 3 ) {
                  sliceimage = '<img style="width: 100%;" src="' +
                     get_slice_image_url_from_section_and_slice( segment.target_section,
@@ -874,7 +987,7 @@ var SegmentationAnnotations = new function()
     };
 
     this.next_slice = function() {
-
+        console.log('-->next slice')
         if( current_active_slice === null ) {
             console.log('currently no active slice.return');
             return;
@@ -1027,30 +1140,61 @@ var SegmentationAnnotations = new function()
             sliceid: parseInt(nodesplit[1]) };
     }
 
-    var add_slices_group_from_segments_new = function( segments, selected_segment_index ) {
+    var add_slices_group_from_segments_new = function( segments, selected_segment_index, to_right ) {
         var selected_segment = get_segment( segments[ selected_segment_index ] );
-        var prototype_slice = selected_segment.target1_node_id;
+        var prototype_slice, slices_to_add;
+        if( to_right ) {
+            prototype_slice = selected_segment.target1_node_id;
+            if( selected_segment.segmenttype == 2 ) {
+                slices_to_add = [ prototype_slice ];
+            } else {
+                slices_to_add = [ selected_segment.target1_node_id, selected_segment.target2_node_id ];
+            }
+            
+        } else {
+            console.log('!!!slices group is to the left. type is', selected_segment.segmenttype, selected_segment);
+            if( selected_segment.segmenttype == 2 ) {
+                prototype_slice = selected_segment.origin_node_id;
+                slices_to_add = [ prototype_slice ]
+            } else {
+                // it is a branch segment that has the origin section lower than target section
+                prototype_slice = selected_segment.target1_node_id;
+                slices_to_add = [ selected_segment.target1_node_id, selected_segment.target2_node_id ];
+            }
+            
+        }
         // console.log('is it equal?', prototype_slice, cc_slice(selected_segment.target_section,selected_segment.target1_slice_id) )
         // TODO: also add the corresponding edges
         slices_grouping[ prototype_slice ] = {};
         slices_grouping[ prototype_slice ]['slicelist'] = [];
         slices_grouping[ prototype_slice ]['sliceindex'] = 0;
-        slices_grouping[ prototype_slice ]['slicelist'].push( [ prototype_slice ] );
+        slices_grouping[ prototype_slice ]['slicelist'].push( slices_to_add );
         var tmp_segment;
         for (var sidx = 0; sidx < segments.length; sidx++) {
             if( sidx !== selected_segment_index ) {
                 tmp_segment = get_segment( segments[ sidx ] )
-                console.log('add slices to group for segment', tmp_segment);
-                if( tmp_segment.segmenttype === 2) {
-                    slices_grouping[ prototype_slice ]['slicelist'].push( [ tmp_segment.target1_node_id ] );
-                } else if( tmp_segment.segmenttype === 3) {
-                    slices_grouping[ prototype_slice ]['slicelist'].push( [ tmp_segment.target1_node_id, tmp_segment.target2_node_id ] );
+                if( to_right ) {
+                    console.log('add slices to group for segment', tmp_segment);
+                    if( tmp_segment.segmenttype === 2) {
+                        slices_grouping[ prototype_slice ]['slicelist'].push( [ tmp_segment.target1_node_id ] );
+                    } else if( tmp_segment.segmenttype === 3) {
+                        slices_grouping[ prototype_slice ]['slicelist'].push( [ tmp_segment.target1_node_id, tmp_segment.target2_node_id ] );
+                    } else {
+                        console.log('unknown segment type');
+                    }
                 } else {
-                    console.log('unknown segment type');
+                    console.log('treatement TO THE LEFT')
+                    if( tmp_segment.segmenttype === 2) {
+                        slices_grouping[ prototype_slice ]['slicelist'].push( [ tmp_segment.origin_node_id ] );
+                    } else if( tmp_segment.segmenttype === 3) {
+                        slices_grouping[ prototype_slice ]['slicelist'].push( [ tmp_segment.target1_node_id, tmp_segment.target2_node_id ] );
+                    } else {
+                        console.log('unknown segment type');
+                    }
                 }
             } 
         }
-        return prototype_slice;
+        return slices_to_add;
     }
 
     var add_slices_group_from_segments = function( segments, selected_segment_index ) {
@@ -1192,11 +1336,10 @@ var SegmentationAnnotations = new function()
         this.threshold = slice.threshold;
         this.size = slice.threshold;
         this.status = slice.status;
+        this.flag_left = slice.flag_left;
+        this.flag_right = slice.flag_right;
 
         this.img = null;
-
-        // TODO: do i need a reference to the currently selected?
-        this.segments = new Object();
 
         this.segments_left = new Array();
         this.selected_segment_left = null;
@@ -1204,19 +1347,6 @@ var SegmentationAnnotations = new function()
         this.segments_right = new Array();
         this.selected_segment_right = null;
 
-/*
-        this.visible = false;
-
-        this.show = function() {
-            this.img.visible = true;
-            this.visible = true;
-        };
-
-        this.hide = function() {
-            this.img.visible = false;
-            this.visible = false;
-        };
-*/
 
         this.fetch_image = function( trigger_update, fetch_segments_for_slice, is_visible, do_goto_slice ) {
             console.log('fetch image: trigger_update, fetch_segments_for_slice, is_visible, do_goto_slice',trigger_update, fetch_segments_for_slice, is_visible, do_goto_slice)
@@ -1247,23 +1377,46 @@ var SegmentationAnnotations = new function()
                 }
 
                 if( fetch_segments_for_slice ) {
-                    fetch_allsegments_current( self.slice_id );
-                    //self.fetch_segments(  )   
+                    fetch_all_segments( self.node_id );
                 }
                  
                     
             });
         };
 
+        this.automatic_propagate = function( for_right ) {
+                // if automated fetching is on and conditions hold, move to the next!
+                console.log(automatic_propagation, propagation_counter > 0, self.segments_right.length > 0, for_right, self.selected_segment_right)
+                if( self.segments_right.length > 0) {
+                    self.selected_segment_right = 0;
+                }
+                if( automatic_propagation && propagation_counter > 0 && self.segments_right.length > 0 && for_right ) {
+                    console.log('automatic propagation!')
+                    var seg = get_segment( self.get_current_right_segment() );
+                    console.log('SEG: seg', seg)
+                    if( seg !== undefined ) {
+                        console.log('choosen segment to propagate to right is', seg );
+                        propagation_counter--;
+                        console.log('propgation counter', propagation_counter, 'go with next!')
+                        // self.fetch_slices_for_selected_segment( true );
+                        if( seg.cost < 10 ) {
+                            console.log('add slice group');
+                            self.add_slicesgroup_for_selected_segment( true, 0 );
+                        }                                        
+                    }
+                }
+        }
+
         /*
         ** Fetch connected segments of this slices
         ** and initialize segments_{left|right} object
         */
         this.fetch_segments = function ( for_right ) {
-            console.log('fetch segments. for slice id', self.node_id );
+            // console.log('fetch segments. for slice id', self.node_id );
             // do not fetch segments if already fetched
             if(self.segments_right.length > 0 || self.segments_left.length > 0) {
                 console.log('already existing segments', self.segments_right, self.selected_segment_right, self.segments_left, self.selected_segment_left);
+
                 return;
             }
             var fetchurl;
@@ -1285,9 +1438,9 @@ var SegmentationAnnotations = new function()
                                 if( e.length == 0 ) {
                                     console.log('no segments found, mark it as such');
                                     if( for_right )
-                                        self.selected_segment_right = -2;
+                                        self.flag_right = 2;
                                     else
-                                        self.selected_segment_left = -2;
+                                        self.flag_left = 2;
                                 }
                                 for(var idx in e) {
 
@@ -1297,33 +1450,20 @@ var SegmentationAnnotations = new function()
                                     if( for_right ) {
                                         console.log('push to right', newsegment.node_id )
                                         self.segments_right.push( newsegment.node_id );
-                                        if( !self.selected_segment_right ) {
+                                        // not automatically select segmetn
+                                        /*if( !self.selected_segment_right ) {
                                             self.selected_segment_right = 0;
-                                        }                                            
+                                        } */                                           
                                     } else {
                                         console.log('push to left', newsegment.node_id )
                                         self.segments_left.push( newsegment.node_id );
-                                        if( !self.selected_segment_left )
-                                            self.selected_segment_left = 0;                                        
-                                    }
-
-                                }
-
-                                // if automated fetching is on and conditions hold, move to the next!
-                                console.log('fetching segments done .... need to propagate?', automatic_propagation, propagation_counter, self.selected_segment_right)
-                                if( automatic_propagation && propagation_counter > 0 && self.selected_segment_right !== null && for_right ) {
-                                    var seg = get_segment( self.segments_right[ self.selected_segment_right ] );
-                                    if( seg !== undefined ) {
-                                        console.log('choosen segment to propagate to right is', seg );
-                                        propagation_counter--;
-                                        console.log('propgation counter', propagation_counter, 'go with next!')
-                                        // self.fetch_slices_for_selected_segment( true );
-                                        if( seg.cost < 10 ) {
-                                            console.log('add slice group');
-                                            self.add_slicesgroup_for_selected_segment( true, true );
-                                        }                                        
+                                        /*if( !self.selected_segment_left )
+                                            self.selected_segment_left = 0;*/
                                     }
                                 }
+
+                                console.log('automatic propagate');
+                                self.automatic_propagate( for_right );
 
                             }
                         }
@@ -1331,30 +1471,34 @@ var SegmentationAnnotations = new function()
             });
         };
 
-        this.add_slicesgroup_for_selected_segment = function( for_right ) {
+        this.add_slicesgroup_for_selected_segment = function( for_right, selected_segment ) {
             console.log('add slicesgroup for selected segment', for_right);
             var proto_node_id;
             if ( for_right ) {
-                if( self.selected_segment_right === null ) {
-                    console.log('no segment selected to the right. press h to fetch or press e to mark as end to the right');
-                    return;
-                } else if( self.selected_segment_right === -2 ) {
-                    console.log('no segment exist to the right. add a new slice or press e to mark as end to the right');
+                if( self.flag_right === 2 ) {
+                    console.log('no segment exist to the right. press "e" (added continuation/branch TODO) to mark as end to the right and add a new slice');
                     return;
                 }
-
-                proto_node_id = add_slices_group_from_segments_new( self.segments_right, self.selected_segment_right );
+                // select the segment
+                self.selected_segment_right = selected_segment;
+                slices_to_add = add_slices_group_from_segments_new( self.segments_right, selected_segment, true );
 
             } else {
-                if( !self.selected_segment_left ) {
-                    console.log('no segment selected to the left.');
+                if( self.flag_left === 2 ) {
+                    console.log('no segment exist to the left. press "w" (added continuation/branch TODO) to mark as end to the left and add a new slice');
                     return;
                 }
+                self.selected_segment_left = selected_segment;
+                slices_to_add = add_slices_group_from_segments_new( self.segments_left, selected_segment, false );
 
             }
-            console.log('new prototype slice', proto_node_id);
-
-            fetch_slice( proto_node_id, true, true); // goto and fetch segments
+            if( slices_to_add.length == 1 ) {
+                fetch_slice( slices_to_add[0], true, true); // goto and fetch segments
+            } else {
+                // if a branch segment is the continuation
+                fetch_slice( slices_to_add[0], true, true); // goto and fetch segments
+                fetch_slice( slices_to_add[1], false, true); // goto and fetch segments
+            }            
             
         }
 

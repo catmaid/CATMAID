@@ -76,7 +76,7 @@ def get_slice(request, project_id=None, stack_id=None):
         sectionindex = sectionindex,
         slice_id = sliceid).all().values('assembly_id', 'sectionindex', 'slice_id',
         'node_id', 'min_x', 'min_y', 'max_x', 'max_y', 'center_x',
-        'center_y', 'threshold', 'size', 'status')
+        'center_y', 'threshold', 'size', 'status', 'flag_left', 'flag_right')
 
     return HttpResponse(JSONEncoder().encode(list(slices)), mimetype="text/json")
 
@@ -156,7 +156,7 @@ def slices_at_location(request, project_id=None, stack_id=None):
         center_y__gt = y - size,
         sectionindex = z).all().values('assembly_id', 'sectionindex', 'slice_id',
         'node_id', 'min_x', 'min_y', 'max_x', 'max_y', 'center_x',
-        'center_y', 'threshold', 'size', 'status').order_by('threshold')
+        'center_y', 'threshold', 'size', 'status', 'flag_left', 'flag_right').order_by('threshold')
 
     # compute the shortest distance from the mouse pointer to the slice center of gravity
     #def dist(xx):

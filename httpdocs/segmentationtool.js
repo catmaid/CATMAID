@@ -405,16 +405,16 @@ function SegmentationTool()
         }
     }) );
 
-    this.addAction( new Action({
+    /*this.addAction( new Action({
         helpText: "Toggle propagation",
         keyShortcuts: {
-            'T': [ 84 ]
+            'A': [ 65 ]
         },
         run: function (e) {
             SegmentationAnnotations.toggle_automatic_propagation();
             return true;
         }
-    }) );
+    }) );*/
 
     this.addAction( new Action({
         helpText: "Delete slice group",
@@ -433,12 +433,47 @@ function SegmentationTool()
             'Z': [ 90 ]
         },
         run: function (e) {
-            console.log('coinstraints')
+            console.log('constraints')
             SegmentationAnnotations.constraints_for_selected_segment_of_active_slice();
             return true;
         }
     }) );
 
+    this.addAction( new Action({
+        helpText: "Mark right side as end segment for current slice",
+        keyShortcuts: {
+            'E': [ 69 ]
+        },
+        run: function (e) {
+            console.log('flag right to end')
+            SegmentationAnnotations.mark_as_end_for_current( true );
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Mark left side as end segment for current slice",
+        keyShortcuts: {
+            'W': [ 87 ]
+        },
+        run: function (e) {
+            console.log('flag left to end')
+            SegmentationAnnotations.mark_as_end_for_current( false );
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Update segments and find loose ends",
+        keyShortcuts: {
+            'X': [ 88 ]
+        },
+        run: function (e) {
+            console.log('loose ends');
+            SegmentationAnnotations.find_loose_ends();
+            return true;
+        }
+    }) );
 
     this.addAction( new Action({
         helpText: "Fetch slices group for selected segments to the right",
@@ -446,13 +481,24 @@ function SegmentationTool()
             'Y': [ 89 ]
         },
         run: function (e) {
-            SegmentationAnnotations.fetch_slicegroup_from_selected_segment_current_slice_right( e.shiftKey );
+            SegmentationAnnotations.fetch_slicegroup_from_selected_segment_current_slice( true );
             return true;
         }
     }) );
 
     this.addAction( new Action({
-        helpText: "Fetch slices for segments right",
+        helpText: "Fetch slices group for selected segments to the left",
+        keyShortcuts: {
+            'T': [ 84 ]
+        },
+        run: function (e) {
+            SegmentationAnnotations.fetch_slicegroup_from_selected_segment_current_slice( false );
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Fetch all segments for current slice",
         keyShortcuts: {
             'H': [ 72 ]
         },
@@ -626,6 +672,8 @@ function SegmentationTool()
         for (var node_id in allvisible) {
             if( allvisible.hasOwnProperty( node_id ) ) {
                     var slice = SegmentationAnnotations.get_slice( node_id );
+                    if( !slice )
+                        continue;
                     if( current_active_slice && node_id === current_active_slice.node_id) {
                         current_active_slice.img.filters[0] = new fabric.Image.filters.Sepia2();
                         current_active_slice.img.applyFilters(canvasLayer.canvas.renderAll.bind(canvasLayer.canvas));                            

@@ -32,6 +32,8 @@ var ClassificationEditor = new function()
                         self.overrideRemoveTreeLink(container, pid);
                         // Override the add link behaviour
                         self.overrideAddTreeLink(container, pid);
+                        // Override the autofill link behaviour
+                        self.overrideAutofillLink(container, pid);
                         // Show the tree
                         self.load_tree(pid);
                      }
@@ -364,6 +366,28 @@ var ClassificationEditor = new function()
                      container.innerHTML = data;
                  }
              });
+             return false;
+         });
+    }
+
+    return found;
+  }
+
+  this.overrideAutofillLink = function(container, pid) {
+    var remove_link = $("#autofill_classification_link");
+    var found = remove_link.length !== 0;
+    if (found) {
+         remove_link.click(function(){
+             if (confirm("Are you sure you want to autofill this classification tree?")) {
+                 $.ajax({
+                     type: "POST",
+                     url: remove_link.attr('href'),
+                     success: function(data, textStatus) {
+                         container.innerHTML = "<p>" + data + "</p><p>Reloading in a few seconds.</p>";
+                         setTimeout("ClassificationEditor.init(" + pid + ")", 3000);
+                     }
+                 });
+             }
              return false;
          });
     }

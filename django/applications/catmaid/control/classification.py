@@ -624,7 +624,7 @@ def list_classification_graph(request, project_id=None, link_id=None):
             child_types = get_child_classes( cls_graph )
 
             # Create JSTree data structure
-            data = {'data': {'title': cls_graph.class_column.class_name},
+            data = {'data': {'title': "%s (%d)" % (cls_graph.class_column.class_name, cls_graph.id)},
                 'attr': {'id': 'node_%s' % cls_graph.id,
                          'linkid': root_link.id,
                          'rel': 'root',
@@ -652,7 +652,7 @@ def list_classification_graph(request, project_id=None, link_id=None):
             for child_link in child_links:
                 child = child_link.class_instance_a
                 child_types = get_child_classes( child )
-                data = {'data': {'title': child.class_column.class_name },
+                data = {'data': {'title': "%s (%d)" % (child.class_column.class_name, child.id) },
                     'attr': {'id': 'node_%s' % child.id,
                              'linkid': child_link.id,
                              'rel': 'element',
@@ -799,3 +799,120 @@ def classification_instance_operation(request, project_id=None):
             raise
         else:
             raise Exception(classification_instance_operation.res_on_err + '\n' + str(e))
+
+def infer_new_instances( link, parent_ci ):
+    """ Based on a link within the semantic space and an instantiated
+    class in the classification space, new possible class intances are
+    inferred and returned as a tuple (class_to_add, relation, parent_ci)
+    """
+    instances_to_add = []
+    # Get all restrictions linked to this link
+    restrictions = Restriction.objects.filter(project_id=dummy_pid,
+        restricted_link=link)
+    # See what can be inferred from each restriction
+    for r in restrictions:
+        # Find out type of the restriction
+        cr_q = CardinalityRestriction.objects.filter(id=r.id)
+        if cr_q.count() > 0:
+            # It is a cardinality restriction.
+            cr = cr_q[0]
+            # Simple case: one instance per sub-type
+            if cr.cardinality_type == 3 and cr.value == 1:
+                print("CR: %d" % cr.id)
+                # Iterate all sub-types
+                sub_class_links = get_class_links_qs(dummy_pid, 'is_a',
+                    link.class_a)
+                for sc in sub_class_links:
+                    class_to_add = sc.class_a
+                    if not cr.would_violate(parent_ci, class_to_add):
+                        instances_to_add.append( (class_to_add, link.relation, parent_ci) )
+        else:
+            # Unknown restriction
+            raise Exception("Couldn't identify the restriction with ID %d." % (r.id))
+
+    return instances_to_add
+
+def autofill( user, parent_ci, excluded_links=[] ):
+    """ Infers new class instances based on restrictions and creates
+    them. This method returns a list of all added class instances.
+    """
+    added_nodes = []
+    # Get class-class links starting on root node and that don't use
+    # 'is_a' as relation. Also, avoid to use links twice by maintaining
+    # a list of excluded links.
+    direct_links = ClassClass.objects.filter(
+        class_b=parent_ci.class_column).exclude(
+            relation__relation_name='is_a', id__in=excluded_links)
+    # Get super-types (if any) and links starting there
+    supertypes_q = ClassClass.objects.filter(
+        class_a=parent_ci.class_column, relation__relation_name='is_a')
+    supertypes = [st.class_b for st in supertypes_q]
+    supertype_links = ClassClass.objects.filter(
+        class_b__in=supertypes).exclude(
+            relation__relation_name='is_a', id__in=excluded_links)
+
+    print("Parent: %d Class: %d" % (parent_ci.id, parent_ci.class_column.id))
+    print("Excluded links: %s" % str(excluded_links))
+
+    links = [l for l in direct_links] + [stl for stl in supertype_links]
+
+    for l in links:
+        print("Link: %d" % l.id)
+        # Add to excluded links:
+        excluded_links.append(l.id)
+        # Get new instances and add them
+        instances_to_add = infer_new_instances(l, parent_ci)
+        for node_class, node_rel, node_parent in instances_to_add:
+            node = ClassInstance.objects.create(
+                user=user,
+                project_id=dummy_pid,
+                class_column=node_class,
+                name="")
+            # Create a new link, using the base link relation,
+            # because a sub-type is added here.
+            cici = ClassInstanceClassInstance.objects.create(
+                user = user,
+                project_id = dummy_pid,
+                relation = node_rel,
+                class_instance_a_id = node.id,
+                class_instance_b_id = node_parent.id)
+            added_nodes.append(node)
+
+    # Starting at every class-instance directly linked to the parent,
+    # recursively walk links to other class instances. Collect new
+    # nodes if there are new ones created.
+    sub_instance_links_q = ClassInstanceClassInstance.objects.filter(
+        class_instance_b=parent_ci, project_id=dummy_pid);
+    all_added_nodes = added_nodes
+    for sil in sub_instance_links_q:
+        si = sil.class_instance_a
+        print("Parent: %d Sub: %d" % (parent_ci.id, si.id))
+        added_sub_nodes = autofill(user, si, excluded_links)
+        all_added_nodes = all_added_nodes + added_sub_nodes
+
+    return all_added_nodes
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def autofill_classification_graph(request, project_id=None, link_id=None):
+    """ This method tries to infer needed class instances according to
+    the restrictions in use. If there are no restrictions, nothing can
+    be inferred.
+    """
+    # Select the graph
+    selected_graph = ClassInstanceClassInstance.objects.filter(
+        id=link_id, project=dummy_pid)
+    # Make sure we actually got a result
+    if selected_graph.count() != 1:
+        raise Exception("Couldn't select requested classification graph.")
+    else:
+        selected_graph = selected_graph[0]
+
+    parent_ci = selected_graph.class_instance_b
+
+    added_nodes = autofill(request.user, parent_ci)
+
+    node_names = [ n.class_column.class_name for n in added_nodes]
+    if len(node_names) > 0:
+        return HttpResponse("Added nodes: %s" % ','.join(node_names))
+    else:
+        return HttpResponse("Couldn't infer any new class instances.")

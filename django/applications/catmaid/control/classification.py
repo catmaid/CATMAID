@@ -118,18 +118,12 @@ def get_classification_number( project_id ):
     return len(roots)
 
 class Child:
-    """ Keeps the class instance ID, title, node type and
-    template id as well as template childs of a node.
+    """ Keeps information about a potential child node.
     """
-    def __init__(self, class_instance, title, class_name, node_type="element" ):
-        self.class_instance = class_instance
-        self.title = title
-        self.class_name = class_name
-        self.node_type = node_type
-        self.child_nodes = {}
-        self.template_node_id = -1
-        self.template_node_name = ""
-        self.template_node_alt = []
+    def __init__(self, klass, rel, disabled):
+        self.klass = klass
+        self.rel = rel
+        self.disabled = disabled
 
 def get_child_links( parent_ci ):
     """ Returns all links to children of a node with id <parent_id>. The
@@ -547,12 +541,11 @@ def get_child_classes( parent_ci ):
                     # Unknown restriction
                     raise Exception("Couldn't identify the restriction with ID %d." % (r.id))
 
-        # Create class data structure
-        cdata = { 'id': c.id, 'name': c.class_name, 'disabled': disabled,
-            'relname': rel.relation_name, 'relid': rel.id }
+        # Create child class data structure
+        current_child = Child(c, rel, disabled)
         if key not in child_types:
             child_types[key] = []
-        child_types[key].append(cdata)
+        child_types[key].append(current_child)
 
     for cc in available_links:
         c = cc.class_a
@@ -568,6 +561,24 @@ def get_child_classes( parent_ci ):
                 add_class( c.class_name, [cc, scc], scc.class_a, r )
 
     return child_types
+
+def child_types_to_jstree_dict(child_types):
+    """ Converts a child type directory as created by the
+    get_child_classes function to a dictionany that can be
+    converted into JSON and consumed by jsTree.
+    """
+    json_dict = {}
+    for ct in child_types:
+        children = child_types[ct]
+        for c in children:
+            # Create class data structure
+            cdata = { 'id': c.klass.id, 'name': c.klass.class_name,
+                'disabled': c.disabled, 'relname': c.rel.relation_name,
+                'relid': c.rel.id }
+            if ct not in json_dict:
+                json_dict[ct] = []
+            json_dict[ct].append(cdata)
+    return json_dict
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_classification_graph(request, project_id=None, link_id=None):
@@ -634,14 +645,16 @@ def list_classification_graph(request, project_id=None, link_id=None):
             # Collect all child node class instances
             #child = Child( root_id, root_name, "classification_root", 'root')
             #add_template_fields( [child] )
+            response_on_error = 'Could not select child classes.'
             child_types = get_child_classes( cls_graph )
+            child_types_jstree = child_types_to_jstree_dict( child_types )
 
             # Create JSTree data structure
             data = {'data': {'title': cls_graph.class_column.class_name},
                 'attr': {'id': 'node_%s' % cls_graph.id,
                          'linkid': root_link.id,
                          'rel': 'root',
-                         'child_groups': json.dumps(child_types)}}
+                         'child_groups': json.dumps(child_types_jstree)}}
             # Test if there are children links present and mark
             # node as leaf if there are none.
             child_links = get_child_links( cls_graph )
@@ -664,12 +677,13 @@ def list_classification_graph(request, project_id=None, link_id=None):
             child_data = []
             for child_link in child_links:
                 child = child_link.class_instance_a
-                child_types = get_child_classes( child )
+                subchild_types = get_child_classes( child )
+                subchild_types_jstree = child_types_to_jstree_dict( subchild_types )
                 data = {'data': {'title': get_class_name(child.class_column)},
                     'attr': {'id': 'node_%s' % child.id,
                              'linkid': child_link.id,
                              'rel': 'element',
-                             'child_groups': json.dumps(child_types)}}
+                             'child_groups': json.dumps(subchild_types_jstree)}}
 
                 # Test if there are children links present and mark
                 # node as leaf if there are none.

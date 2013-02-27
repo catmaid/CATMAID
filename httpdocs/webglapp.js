@@ -919,7 +919,7 @@ var WebGLApp = new function () {
     geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
 
     var material = new THREE.MeshBasicMaterial( { color: 0x151349, opacity:0.6, transparent: true  } );
-    var material2 = new THREE.MeshBasicMaterial( { color: 0x00ffff, wireframe: true, wireframeLinewidth: 10  } );
+    var material2 = new THREE.MeshBasicMaterial( { color: 0x00ffff, wireframe: true, wireframeLinewidth: 5  } );
     
     var newval, msect;
     for(var i = 0; i < project.focusedStack.broken_slices.length; i++) {

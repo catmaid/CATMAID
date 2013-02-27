@@ -589,6 +589,8 @@ def list_classification_graph(request, project_id=None, link_id=None):
     parent_name = request.GET.get('parentname', '')
     expand_request = request.GET.get('expandtarget', None)
     superclass_in_name = bool(int(request.GET.get('superclassnames', 0)))
+    display_edit_tools = bool(int(request.GET.get('edittools', 0)))
+
     if expand_request is None:
         expand_request = tuple()
     else:
@@ -674,6 +676,9 @@ def list_classification_graph(request, project_id=None, link_id=None):
             response_on_error = 'Could not retrieve child nodes.'
             #add_template_fields( child_nodes )
 
+            # Get child types
+            child_types = get_child_classes( parent_ci )
+
             child_data = []
             for child_link in child_links:
                 child = child_link.class_instance_a
@@ -686,12 +691,44 @@ def list_classification_graph(request, project_id=None, link_id=None):
                              'child_groups': json.dumps(subchild_types_jstree)}}
 
                 # Test if there are children links present and mark
-                # node as leaf if there are none.
+                # node as leaf if there are none. Also, mark not as
+                # leaf if in edit mode and new nodes can be added.
                 sub_child_links = get_child_links( child )
                 if len(sub_child_links) > 0:
                     data['state'] = 'closed'
+                elif display_edit_tools and len(subchild_types) > 0:
+                    data['state'] = 'closed'
 
                 child_data.append(data)
+
+            if display_edit_tools:
+                response_on_error = 'Could not create child node menu.'
+                for child_type in child_types:
+                    options = []
+                    children = child_types[child_type]
+                    for child in children:
+                        # Only add items that are not disabled, because
+                        # only those items can actually be added.
+                        if not child.disabled:
+                            options.append( (child.klass.id, get_class_name(child.klass), child.rel.id) )
+                    # Add drop down list if there are options
+                    if len(options) > 0:
+                        menu_class = 'select_new_classification_instance'
+                        select_menu = '<div name="add_instance" class="%s" parentid="%d">' \
+                            % (menu_class, parent_ci.id)
+
+                        for k,v,rel in options:
+                            select_menu = '%s<div value="%s" relid="%d"><a href="#">%s</a></div>' \
+                                % (select_menu, k, rel, v)
+                        select_menu = select_menu + '</div>'
+
+                        select_input = '<span>(Add %s)\n%s</span>' % (child_type, select_menu)
+                        data = {'data': {'title': select_input,
+                                         'attr': {'class': 'editnode'}},
+                                'attr': {'class': 'editnode',
+                                         'rel': 'editnode'}}
+                        child_data.append(data)
+
 
             return HttpResponse(json.dumps(tuple(cd for cd in child_data)))
     except Exception as e:

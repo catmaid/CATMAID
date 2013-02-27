@@ -69,11 +69,10 @@ function SegmentationTool()
      */
     this.register = function( parentStack )
     {
-        console.log('SegmentationTool register', parentStack);
+        // console.log('SegmentationTool register', parentStack);
         self.stack = parentStack;
         self.createCanvasLayer();
         self.createToolbar();
-
 
         // add a dummy div to hold the graph
         /*var graph = document.createElement("div");
@@ -223,9 +222,9 @@ function SegmentationTool()
     {
         var w = ui.getMouseWheel( e );
         if( w > 0) {
-            SegmentationAnnotations.next_slice();
+            SegmentationAnnotations.next_slice( false );
         } else {
-            SegmentationAnnotations.previous_slice();
+            SegmentationAnnotations.next_slice( true );
         }
     }
 
@@ -532,6 +531,18 @@ function SegmentationTool()
         }
     }) );
 
+
+    this.addAction( new Action({
+        helpText: "Create new assembly",
+        keyShortcuts: {
+            'D': [ 68 ]
+        },
+        run: function (e) {
+            SegmentationAnnotations.create_new_assembly();
+            return true;
+        }
+    }) );
+
     this.addAction( new Action({
         helpText: "Fetch slices for segments left",
         keyShortcuts: {
@@ -593,24 +604,23 @@ function SegmentationTool()
                             alert(e.error);
                         } else {
                             // loop through slices and check whether one has an assembly id set
+                            console.log('found ', e.length, ' slices at this location and fetch them.', e)
                             for(var idx in e) {
                                 if(e.hasOwnProperty( idx )) {
-                                    console.log(e[idx]);
                                     if( e[idx].assembly_id ) {
-                                        console.log('found assembly id of one slcie', e[idx].assembly_id  )
-                                        SegmentationAnnotations.load_assembly( e[idx].assembly_id )
+                                        // console.log('found assembly id of one slcie', e[idx].assembly_id  )
+                                        SegmentationAnnotations.set_current_assembly_id( e[idx].assembly_id )
                                         return;
                                     }
                                 }
                             }
 
                             if( SegmentationAnnotations.has_current_assembly() ) {
-                                console.log('already have current assembly set')
+                                // console.log('already have current assembly set')
                                 SegmentationAnnotations.add_slices_group( e );
 
                             } else {
-                                console.log('need to create new assembly')
-
+                                // console.log('need to create new assembly')
                                 // no assembly found, create one
                                 requestQueue.register(django_url + project.id + '/assembly/create-assembly-and-neuron', "GET", {},
                                                 function (status, text, xml) {
@@ -628,7 +638,7 @@ function SegmentationTool()
                                                                     delayTime: 2000,
                                                                     onComplete: function() {  }
                                                                 });
-                                                                SegmentationAnnotations.set_current_assembly_id( eb.assembly_id );
+                                                                SegmentationAnnotations.current_active_assembly = eb.assembly_id;
                                                                 SegmentationAnnotations.add_slices_group( e );
                                                             }
                                                         }
@@ -651,8 +661,8 @@ function SegmentationTool()
         // console.log('add slice', node_id, slice.bb_center_x)
         slice.img.setActive( true );
         slice.img.set({
-                left: slice.bb_center_x - self.stack.getFieldOfViewInPixel().worldLeftC,
-                top: slice.bb_center_y - self.stack.getFieldOfViewInPixel().worldTopC - 1,
+                left: slice.bb_center_x() - self.stack.getFieldOfViewInPixel().worldLeftC,
+                top: slice.bb_center_y() - self.stack.getFieldOfViewInPixel().worldTopC - 1,
             });
         canvasLayer.canvas.add( slice.img );
     };

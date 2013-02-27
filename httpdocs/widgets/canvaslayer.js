@@ -22,7 +22,8 @@ function CanvasLayer( stack, tool )
 
     this.redraw = function()
     {
-        // self.setFieldOfView();
+        // hack to make the tool redraw the canvas
+        tool.redraw();
         return;
     }
 

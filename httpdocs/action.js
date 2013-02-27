@@ -276,8 +276,6 @@ var editToolActions = [
           alert('Segmentation Tool only works on zoom-level 0!');
           return;
         }
-        // WindowMaker.show('3d-webgl-view');
-        WindowMaker.show('segmentstable-widget');
         project.setTool( new SegmentationTool() );
      }
   }),
@@ -318,7 +316,7 @@ var segmentationWindowActions = [
     }
   }),
 
-  new Action({
+  /*new Action({
     helpText: "Show assembly graph",
     buttonID: "assembly_graph_button",
     buttonName: 'table_segments',
@@ -326,7 +324,7 @@ var segmentationWindowActions = [
       WindowMaker.show('assemblygraph-widget');
       return true;
     }
-  }),
+  }),*/
 
   new Action({
     helpText: "Show 3D WebGL view",

@@ -64,7 +64,7 @@ urlpatterns += patterns(
     
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-at-location$', 'catmaid.control.slices_at_location'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice$', 'catmaid.control.get_slice'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/update-assembly$', 'catmaid.control.update_assembly'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/delete-slice-from-assembly$', 'catmaid.control.delete_slice_from_assembly'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/contour$', 'catmaid.control.slice_contour'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/contour-highres$', 'catmaid.control.slice_contour_highres'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segments-for-slice-right$', 'catmaid.control.segments_for_slice_right'),

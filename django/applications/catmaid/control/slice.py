@@ -103,8 +103,8 @@ def slices_cog(request, project_id=None, stack_id=None):
 
     return HttpResponse(JSONEncoder().encode(list(slices)), mimetype="text/json")
 
-def update_assembly(request, project_id=None, stack_id=None):
-    """ Update assembly id """
+def delete_slice_from_assembly(request, project_id=None, stack_id=None):
+    """ Delete slice from assembly """
 
     sectionindex = int(request.GET.get('sectionindex', '0'))
     sliceid = int(request.GET.get('sliceid', '0'))
@@ -122,9 +122,21 @@ def update_assembly(request, project_id=None, stack_id=None):
         stack = stack,
         project = p,
         sectionindex = sectionindex,
-        slice_id = sliceid).update(assembly=assemblyid_update)
+        slice_id = sliceid)
 
-    return HttpResponse(JSONEncoder().encode({'message': "Successfully updated slice " + str(sliceid) +
+    for slice in slices:
+        if slice.assembly is None:
+            continue
+        if slice.assembly.id == assemblyid_update:
+            # only reset if it has the same
+            slice.assembly = None
+            slice.save()
+        else:
+            return HttpResponse(JSONEncoder().encode({'message': "Did not delete slice " + str(sliceid) +
+                " in section " + str(sectionindex) + " because assembly IDs are not equal: " + str(assemblyid_update) }), mimetype="text/json")
+
+
+    return HttpResponse(JSONEncoder().encode({'message': "Successfully deleted slice " + str(sliceid) +
         " in section " + str(sectionindex) + " with assembly id " + str(assemblyid_update) }), mimetype="text/json")
 
 

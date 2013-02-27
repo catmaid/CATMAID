@@ -5,8 +5,8 @@ var WebGLApp = new function () {
   self.neurons = [];
 
   var scene, renderer, scale, controls, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
-  var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false,
-      bbmesh, floormesh, black_bg = true, debugax, togglevisibleall = true;
+  var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, show_missing_sections = false,
+      bbmesh, floormesh, black_bg = true, debugax, togglevisibleall = true, missing_sections = [];
   var is_mouse_down = false, connector_filter = false;
 
   this.init = function( divID ) {
@@ -896,6 +896,55 @@ var WebGLApp = new function () {
       // add them
       drawmesh();
       show_meshes = true;
+    }
+    self.render();
+  }
+
+  self.removeMissingSections = function() {
+    for(var i = 0; i < missing_sections.length; i++) {
+      scene.removeObject( missing_sections[i] );
+    }
+    missing_sections = [];
+  }
+
+  self.createMissingSections = function() {
+
+    var geometry = new THREE.Geometry();
+    var xwidth = dimension.x*resolution.x*scale,
+        ywidth = dimension.y*resolution.y*scale;
+    geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( 0,0,0 ) ) );
+    geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( xwidth,0,0 ) ) );
+    geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( 0,ywidth,0 ) ) );
+    geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( xwidth,ywidth,0 ) ) );
+    geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
+
+    var material = new THREE.MeshBasicMaterial( { color: 0x151349, opacity:0.6, transparent: true  } );
+    var material2 = new THREE.MeshBasicMaterial( { color: 0x00ffff, wireframe: true, wireframeLinewidth: 10  } );
+    
+    var newval, msect;
+    for(var i = 0; i < project.focusedStack.broken_slices.length; i++) {
+      newval = (-project.focusedStack.broken_slices[ i ] * resolution.z - translation.z) * scale;
+      msect = new THREE.Mesh( geometry, material );
+      msect.doubleSided = true;
+      msect.position.z = newval;
+      missing_sections.push( msect );
+      scene.add( msect );  
+      msect = new THREE.Mesh( geometry, material2 );
+      msect.doubleSided = true;
+      msect.position.z = newval;
+      scene.add( msect );      
+    }
+    self.render();
+  }
+
+  self.toggleMissingSections = function() {
+    console.log('toggle')
+    if( show_missing_sections ) {
+      self.removeMissingSections();
+      show_missing_sections = false;
+    } else {
+      self.createMissingSections();
+      show_missing_sections = true;
     }
     self.render();
   }

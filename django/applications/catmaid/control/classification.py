@@ -329,14 +329,11 @@ def show_classification_editor( request, project_id=None, link_id=None):
             template_name = "catmaid/classification/select_graph.html"
             page_type = 'select_graph'
 
-    if request.is_ajax():
-        rendered_block = render_block_to_string( template_name,
-            'classification-content', {}, context )
-        return HttpResponse(json.dumps({
-            'content': rendered_block,
-            'page': page_type}))
-    else:
-        return render_to_response( template_name, {}, context )
+    rendered_block = render_block_to_string( template_name,
+        'classification-content', {}, context )
+    return HttpResponse(json.dumps({
+        'content': rendered_block,
+        'page': page_type}))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def add_classification_graph(request, project_id=None):

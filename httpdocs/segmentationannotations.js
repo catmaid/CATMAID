@@ -92,8 +92,6 @@ var SegmentationAnnotations = new function()
         slices_grouping = new Object();
         allvisible_slices = new Object();
         current_active_slice = null;
-        self.init_allvisible_slices();
-
     }
 /*
     this.test_graph = function() {
@@ -193,8 +191,6 @@ var SegmentationAnnotations = new function()
                     }
                 }
         });
-
-        self.init_allvisible_slices();
     }
 
     this.show_slices_tiles = function() {
@@ -384,10 +380,13 @@ var SegmentationAnnotations = new function()
     }
 
     self.get_all_visible_slices = function( section_index ) {
-        return allvisible_slices[section_index];
+        if( allvisible_slices.hasOwnProperty(section_index) )
+            return allvisible_slices[section_index];
     }
 
     var is_slice_visible = function( section_index, node_id ) {
+        if( !allvisible_slices.hasOwnProperty(section_index)) 
+            allvisible_slices[ section_index ] = {};
         if( ! allvisible_slices[ section_index ].hasOwnProperty( node_id ) ) {
             return false;
         } else {
@@ -406,6 +405,8 @@ var SegmentationAnnotations = new function()
 
     var make_slice_visible = function( node_id ) {
         var nodeidsplit = inv_cc_slice( node_id );
+        if( !allvisible_slices.hasOwnProperty(nodeidsplit.sectionindex)) 
+            allvisible_slices[ nodeidsplit.sectionindex ] = {};
         allvisible_slices[ nodeidsplit.sectionindex ][ node_id ] = null;
     }
 

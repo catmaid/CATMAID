@@ -933,7 +933,7 @@ var SegmentationAnnotations = new function()
         WebGLApp.addAssembly( assembly_data, high_res );
     }
 
-    this.delete_active_slice = function() {
+    this.delete_active_slice = function( status ) {
         //console.log('delete active slice', current_active_slice)
         // but leave the loaded in memory
         var current_active = self.get_current_active_slice();
@@ -945,7 +945,8 @@ var SegmentationAnnotations = new function()
         requestQueue.register(django_url + project.id + "/stack/" + get_current_stack().id + '/slice/delete-slice-from-assembly', "GET", {
             sectionindex: current_active.sectionindex,
             sliceid: current_active.slice_id,
-            assemblyid: self.current_active_assembly
+            assemblyid: self.current_active_assembly,
+            nevershow: status ? 0 : 1
         }, function (status, text, xml) {
                 if (status === 200) {
                     if (text && text !== " ") {
@@ -981,7 +982,8 @@ var SegmentationAnnotations = new function()
             return;
         }
 
-        if( slices_grouping[ current_active_slice ].slicelist.length == 1 ) {
+        var slicelistlength = slices_grouping[ current_active_slice ].slicelist.length
+        if( slicelistlength == 1 ) {
             console.log('slice group only contains one element');
             return;
         }
@@ -990,6 +992,7 @@ var SegmentationAnnotations = new function()
         var index = slices_grouping[ current_active_slice ].sliceindex;
 
         var nr_elements = slices_grouping[ current_active_slice ].slicelist[ index ].length;
+
         for(var idx = 0; idx < nr_elements; idx++) {
             make_invisible( slices_grouping[ current_active_slice ].slicelist[ index ][ idx ] );
         }
@@ -1001,8 +1004,8 @@ var SegmentationAnnotations = new function()
         if( index < 0) {
             index = 0;
             return;
-        } else if( index > nr_elements ) {
-            index = nr_elements - 1;
+        } else if( index > slicelistlength - 1 ) {
+            index = slicelistlength - 1;
             return;
         }
 
@@ -1030,7 +1033,7 @@ var SegmentationAnnotations = new function()
 
         // define the set of new slices visible
         nr_elements = slices_grouping[ current_active_slice ].slicelist[ index ].length;
-        console.log('slicesgrouping for current slice. try to make it visible', slices_grouping[ current_active_slice ].slicelist[ index ]);
+        console.log('slicesgrouping for current slice. try to make it visible', slices_grouping[ current_active_slice ], 'index', index);
         for(var idx = 0; idx < nr_elements; idx++) {
             var new_active_slice = slices_grouping[ current_active_slice ].slicelist[ index ][ idx ];
             if( idx == 0)

@@ -421,7 +421,7 @@ function SegmentationTool()
             'B': [ 66 ]
         },
         run: function (e) {
-            SegmentationAnnotations.delete_active_slice();
+            SegmentationAnnotations.delete_active_slice( e.shiftKey );
             return true;
         }
     }) );

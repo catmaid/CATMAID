@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.simplejson.encoder import JSONEncoder
+from django.db.models import Q
 
 import os.path
 import json
@@ -98,7 +99,8 @@ def slices_cog(request, project_id=None, stack_id=None):
         center_x__gt = x,
         center_y__lt = y + height,
         center_y__gt = y,
-        sectionindex = z).all().values('assembly_id', 'sectionindex', 'slice_id',
+        sectionindex = z,
+        status__gt = 0).all().values('assembly_id', 'sectionindex', 'slice_id',
         'node_id', 'center_x', 'center_y', 'threshold', 'size')
 
     return HttpResponse(JSONEncoder().encode(list(slices)), mimetype="text/json")
@@ -109,6 +111,7 @@ def delete_slice_from_assembly(request, project_id=None, stack_id=None):
     sectionindex = int(request.GET.get('sectionindex', '0'))
     sliceid = int(request.GET.get('sliceid', '0'))
     assemblyid = int(request.GET.get('assemblyid', '0'))
+    nevershow = int(request.GET.get('nevershow', '1'))
 
     stack = get_object_or_404(Stack, pk=stack_id)
     p = get_object_or_404(Project, pk=project_id)
@@ -125,6 +128,21 @@ def delete_slice_from_assembly(request, project_id=None, stack_id=None):
         slice_id = sliceid)
 
     for slice in slices:
+        slice.status = nevershow
+        slice.save()
+        if nevershow == 0: # delete all associated segments too
+            segs = Segments.objects.filter(
+            stack = stack,
+            project = p,
+            origin_section = slice.sectionindex,
+            origin_slice_id = slice.slice_id).update(status = nevershow)
+
+            segs = Segments.objects.filter(
+            Q(target1_slice_id = slice.slice_id) | Q(target2_slice_id = slice.slice_id),
+            stack = stack,
+            project = p,
+            target_section = slice.sectionindex).update(status = nevershow)
+
         if slice.assembly is None:
             continue
         if slice.assembly.id == assemblyid_update:
@@ -173,7 +191,8 @@ def slices_at_location(request, project_id=None, stack_id=None):
         center_x__gt = x - size,
         center_y__lt = y + size,
         center_y__gt = y - size,
-        sectionindex = z).all().values('assembly_id', 'sectionindex', 'slice_id',
+        sectionindex = z,
+        status__gt = 0).all().values('assembly_id', 'sectionindex', 'slice_id',
         'node_id', 'min_x', 'min_y', 'max_x', 'max_y', 'center_x',
         'center_y', 'threshold', 'size', 'status', 'flag_left', 'flag_right').order_by('threshold')
 
@@ -201,7 +220,8 @@ def segments_for_slice_right(request, project_id=None, stack_id=None):
         origin_section = sectionindex,
         segmenttype__gt = 1,
         direction = True,
-        cost__lt = 100
+        cost__lt = 100,
+        status__gt = 0
     ).all().values('segmentid','segmenttype','origin_section','origin_slice_id','target_section',
     'target1_slice_id','target2_slice_id','direction',
     'center_distance','set_difference','cost','set_difference','set_difference_ratio',
@@ -232,7 +252,8 @@ def segments_for_slice_left(request, project_id=None, stack_id=None):
         target_section = sectionindex,
         segmenttype = 2,
         direction = True,
-        cost__lt = 100
+        cost__lt = 100,
+        status__gt = 0
     ).all().values('segmentid','segmenttype','origin_section','origin_slice_id','target_section',
     'target1_slice_id','target2_slice_id','direction',
     'center_distance','set_difference','cost','set_difference','set_difference_ratio',
@@ -252,7 +273,8 @@ def segments_for_slice_left(request, project_id=None, stack_id=None):
         origin_section = sectionindex,
         segmenttype = 3,
         direction = False,
-        cost__lt = 100
+        cost__lt = 100,
+        status__gt = 0
     ).all().values('segmentid','segmenttype','origin_section','origin_slice_id','target_section',
     'target1_slice_id','target2_slice_id','direction',
     'center_distance','set_difference','cost','set_difference','set_difference_ratio',

@@ -264,34 +264,28 @@ var SegmentationAnnotations = new function()
 
     self.save_assembly = function() {
         // update all slices and segment with assembly id
-        var slices = [];
-        for(var i = 0; i < self.stack.slices.length; i++) {
-            for(var node_id in allvisible_slices[i]) {
-                if(allvisible_slices[i].hasOwnProperty(node_id)) {
-                    slices.push( node_id )
-                }
-            }
-        };
-        console.log('save', slices, django_url + project.id + '/stack/' + get_current_stack().id + '/assembly/save')
-        if( slices.length == 0)
-            return;
-        requestQueue.register(django_url + project.id + '/stack/' + get_current_stack().id + '/assembly/save', "POST", {
+        var result = self.find_loose_ends();
+        console.log('save', result)
+        /*if( slices.length == 0)
+            return;*/
+        //requestQueue.register does not encode json object properly for django backend
+        $.ajax({
+          "dataType": 'json',
+          "type": "POST",
+          "cache": false,
+          "url": django_url + project.id + '/stack/' + get_current_stack().id + '/assembly/save',
+          "data": {
             assemblyid: self.current_active_assembly,
-            slices: slices.join()
-        }, function (status, text, xml) {
-                if (status === 200) {
-                    if (text && text !== " ") {
-                        var e = $.parseJSON(text);
-                        if (e.error) {
-                            alert(e.error);
-                        } else {
-                            console.log('saved assembly!')  
-                        }
-                    }
-                }
+            // slices: slices.join()
+            slices: result['slices'],
+            segments: result['segments'],
+            slices_left_flags: result['slices_left_flags'],
+            slices_right_flags: result['slices_right_flags'],
+        },
+          "success": function(data) {
+             console.log('returned', data)
+          }
         });
-        // TODO: update segments
-        // TODO: end segments
     }
 
     self.load_assembly = function( assembly_id ) {
@@ -318,7 +312,27 @@ var SegmentationAnnotations = new function()
                                 slices_grouping[ e[ idx ].node_id ]['sliceindex'] = 0;
                                 slices_grouping[ e[ idx ].node_id ]['slicelist'].push( [ e[ idx ].node_id ] );
                             }
-                            update_stack();
+                            console.log('load segments ....')
+                            requestQueue.register(django_url + project.id + '/stack/' + get_current_stack().id + '/segments-of-assembly', "GET", {
+                                assemblyid: assembly_id
+                            }, function (status, text, xml) {
+                                    if (status === 200) {
+                                        if (text && text !== " ") {
+                                            var e = $.parseJSON(text);
+                                            if (e.error) {
+                                                alert(e.error);
+                                            } else {
+                                                for(var idx=0; idx<e.length;idx++) {
+                                                    var newsegment = new Segment( e[idx] );
+                                                    add_segment_instance( newsegment );
+                                                    // TODO: associate origin/target slice (selected slice) for existing slices
+                                                }
+                                                update_stack();
+                                            }
+                                        }
+                                    }
+                            });
+
                         }
                     }
                 }
@@ -494,7 +508,7 @@ var SegmentationAnnotations = new function()
     }
 
     self.find_loose_ends = function() {
-        var tmp_allsegments = {}
+        /*var tmp_allsegments = {}, tmp_segment;
         for(var idx in allsegments) {
             if( allsegments.hasOwnProperty( idx )) {
                 var orig = allsegments[ idx ].origin_section,
@@ -508,22 +522,31 @@ var SegmentationAnnotations = new function()
                 }
                 tmp_allsegments[ orig ][ target ][ idx ] = allsegments;
             }
-        }
-        var tmp_segment;
+        }*/
 
         // loop through all the visible sections
         // for each slice, print out left and right selected segments and left/right flags
         var result_slices = {}, result_segments = {}, slices_to_check = {};
-
         for( var idx in allvisible_slices ) {
             if( allvisible_slices.hasOwnProperty( idx ) ) {
                 for( var node_id in allvisible_slices[ idx ]) {
                     if( allvisible_slices[ idx ].hasOwnProperty( node_id )) {
-                        result_slices[ node_id ] = allslices[ node_id ];
+                        result_slices[ node_id ] = { // information i wanna save later
+                            flag_left: allslices[ node_id ].flag_left,
+                            flag_right: allslices[ node_id ].flag_right
+                        }
                     }
                 }
             }
         };
+        var flags_left = [], flags_right = [];
+        var slicelist = Object.keys( result_slices );
+        for(var idx = 0; idx < slicelist.length; idx++ ) {
+            flags_left.push( allslices[ slicelist[ idx ] ].flag_left );
+            flags_right.push( allslices[ slicelist[ idx ] ].flag_right );
+        }
+        console.log('flags', flags_left, flags_right)
+
         var result_slices_count = {};
         for(var idx in result_slices) {
             if( result_slices.hasOwnProperty( idx )) {
@@ -532,30 +555,31 @@ var SegmentationAnnotations = new function()
         }
 
         var slice, segmentnodeid, tmp_segment;
-
         for(var idx in result_slices) {
             if( result_slices.hasOwnProperty( idx )) {
-                // console.log('result slice', idx, result_slices[ idx ]);
-                slice = result_slices[ idx ];
+
+                slice = get_slice( idx );
                 if( slice.selected_segment_right !== null ) {
                     segmentnodeid = slice.get_current_right_segment()
                     tmp_segment = get_segment( segmentnodeid );
-                    result_segments[ segmentnodeid ] = tmp_segment;
+                    // info i wanna save later
+                    result_segments[ segmentnodeid ] = {}; // tmp_segment; 
                 }
 
                 if( slice.selected_segment_left !== null ) {
                     segmentnodeid = slice.get_current_left_segment()
                     tmp_segment = get_segment( segmentnodeid );
-                    result_segments[ segmentnodeid ] = tmp_segment;
+                    // info i wanna save later
+                    result_segments[ segmentnodeid ] = {}; // tmp_segment;
                 }
 
                 // increase counter if left or right flags are set
                 if( slice.flag_left > 0 && slice.selected_segment_left == null) {
-                    result_slices_count[ slice.node_id ] += 1; console.log('flag left of slice', slice.node_id)
+                    result_slices_count[ slice.node_id ] += 1;
                 }
                     
                 if( slice.flag_right > 0 && slice.selected_segment_right == null) {
-                    result_slices_count[ slice.node_id ] += 1; console.log('flag right of slice', slice.node_id)
+                    result_slices_count[ slice.node_id ] += 1;
                 }
                     
             }
@@ -563,17 +587,17 @@ var SegmentationAnnotations = new function()
 
         for(var idx in result_segments) {
             if( result_segments.hasOwnProperty( idx )) {
-                tmp_segment = result_segments[ idx ];
+                tmp_segment = get_segment( idx );
                 if( result_slices.hasOwnProperty( tmp_segment.origin_node_id ) )
-                    result_slices_count[ tmp_segment.origin_node_id ] += 1; //console.log('origin add', tmp_segment.origin_node_id)
+                    result_slices_count[ tmp_segment.origin_node_id ] += 1;
                 if( tmp_segment.segmenttype == 2 ) {
                     if( result_slices.hasOwnProperty( tmp_segment.target1_node_id ) )
-                        result_slices_count[ tmp_segment.target1_node_id ] += 1; //console.log('target1 add', tmp_segment.target1_node_id)
+                        result_slices_count[ tmp_segment.target1_node_id ] += 1;
                 } else if ( tmp_segment.segmenttype == 3 ) {
                     if( result_slices.hasOwnProperty( tmp_segment.target1_node_id ) )
-                        result_slices_count[ tmp_segment.target1_node_id ] += 1; //console.log('target1 add', tmp_segment.target1_node_id)
+                        result_slices_count[ tmp_segment.target1_node_id ] += 1;
                     if( result_slices.hasOwnProperty( tmp_segment.target2_node_id ) )
-                        result_slices_count[ tmp_segment.target2_node_id ] += 1; //console.log('target2 add', tmp_segment.target2_node_id)
+                        result_slices_count[ tmp_segment.target2_node_id ] += 1;
                 }
             }
         }
@@ -581,16 +605,21 @@ var SegmentationAnnotations = new function()
         slices_todo = [];
         for(var idx in result_slices_count) {
             if( result_slices_count.hasOwnProperty( idx )) {
-                console.log('idex', result_slices_count[idx], idx)
                 if( result_slices_count[idx] < 2) {
                     slices_todo.push( idx );
                 }
             }
         }
 
-        console.log('result slices', result_slices);
+        return {
+            'slices': slicelist,
+            'segments': Object.keys( result_segments ),
+            'slices_left_flags': flags_left,
+            'slices_right_flags': flags_right
+        }
+        /*console.log('result slices', result_slices);
         console.log('result slices count', result_slices_count, slices_todo);
-        console.log('result segments', result_segments);
+        console.log('result segments', result_segments);*/
         // console.log('slices to check', slices_to_check);
     }
 

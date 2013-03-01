@@ -1227,11 +1227,6 @@ var WindowMaker = new function()
     var container = createContainer( "classification_editor_widget" );
     content.appendChild( container );
 
-    container.innerHTML =
-      '<input type="button" id="refresh_ontology_tree" value="refresh" style="display:block; float:left;" />' +
-      '<br clear="all" />' +
-      '<div id="classification_content"></div>';
-
     addListener(win, container);
 
     addLogic(win);

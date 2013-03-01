@@ -475,6 +475,18 @@ function SegmentationTool()
     }) );
 
     this.addAction( new Action({
+        helpText: "Next in TODO queue",
+        keyShortcuts: {
+            'C': [ 67 ]
+        },
+        run: function (e) {
+            console.log('next todo slice');
+            SegmentationAnnotations.next_slice_todo();
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
         helpText: "Fetch slices group for selected segments to the right",
         keyShortcuts: {
             'Y': [ 89 ]
@@ -643,11 +655,8 @@ function SegmentationTool()
                                                             }
                                                         }
                                                     }
-                                            });
-
+                                });
                             }
-
-
                         }
                     }
                 }

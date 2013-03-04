@@ -355,22 +355,26 @@ def show_classification_editor( request, project_id=None, link_id=None):
             context['link_graph_form'] = link_form()
             template_name = "catmaid/classification/new_graph.html"
             page_type = 'new_graph'
+            link_id = -1
         elif num_roots == 1:
             selected_graph = root_links_q[0]
             context['graph_id'] = selected_graph.id
             template_name = "catmaid/classification/show_graph.html"
             page_type = 'show_graph'
+            link_id = selected_graph.id
         else:
             form = create_linked_graphs_form(project_id, False)
             context['select_graph_form'] = form()
             template_name = "catmaid/classification/select_graph.html"
             page_type = 'select_graph'
+            link_id = -1
 
     rendered_block = render_block_to_string( template_name,
         'classification-content', {}, context )
     return HttpResponse(json.dumps({
         'content': rendered_block,
-        'page': page_type}))
+        'page': page_type,
+        'link': link_id}))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def add_classification_graph(request, project_id=None):

@@ -26,14 +26,14 @@ var ClassificationEditor = new function()
                      if (e.page == 'new_graph')
                      {
                         // Override the submit behaviour if the create graph is displayed
-                        self.overrideNewTreeSubmit(container, pid);
+                        self.overrideNewGraphSubmit(container, pid);
                      }
                      else if (e.page == 'show_graph')
                      {
                         // Override the remove link behaviour
-                        self.overrideRemoveTreeLink(container, pid);
+                        self.overrideRemoveGraphLink(container, pid);
                         // Override the add link behaviour
-                        self.overrideAddTreeLink(container, pid);
+                        self.overrideAddGraphLink(container, pid);
                         // Override the autofill link behaviour
                         self.overrideAutofillLink(container, pid);
                         // Show the tree
@@ -277,7 +277,7 @@ var ClassificationEditor = new function()
                 return false;
             }
 
-            $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Removing classification tree node. Just a moment...</h2>' });
+            $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Removing classification graph node. Just a moment...</h2>' });
             // Remove classes
             $.post(django_url + project.id + '/classification/instance-operation', {
                 "operation": "remove_node",
@@ -295,11 +295,11 @@ var ClassificationEditor = new function()
                   return;
                 }
                 if(r['status']) {
-                    $("#annotation_tree_object").jstree("refresh", -1);
+                    $("#annotation_graph_object").jstree("refresh", -1);
                     project.updateTool();
                     $('#growl-alert').growlAlert({
                       autoShow: true,
-                      content: 'Classification tree element "' + friendly_name + '" removed.',
+                      content: 'Classification graph element "' + friendly_name + '" removed.',
                       title: 'SUCCESS',
                       position: 'top-right',
                       delayTime: 2500,
@@ -360,7 +360,7 @@ var ClassificationEditor = new function()
         }
     };
 
-  this.overrideNewTreeSubmit = function(container, pid) {
+  this.overrideNewGraphSubmit = function(container, pid) {
     var form = $("#add-new-classification-form");
     var found = form.length !== 0;
     if (found) {
@@ -381,7 +381,7 @@ var ClassificationEditor = new function()
     return found;
   };
 
-  this.overrideRemoveTreeLink = function(container, pid) {
+  this.overrideRemoveGraphLink = function(container, pid) {
     var remove_link = $("#remove_classification_link");
     var found = remove_link.length !== 0;
     if (found) {
@@ -403,7 +403,7 @@ var ClassificationEditor = new function()
     return found;
   }
 
-  this.overrideAddTreeLink = function(container, pid) {
+  this.overrideAddGraphLink = function(container, pid) {
     var remove_link = $("#add_classification_link");
     var found = remove_link.length !== 0;
     if (found) {

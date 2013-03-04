@@ -15,20 +15,20 @@ that you would like the new graph to be based on and click on
 <form method="post" id="add-new-classification-form"
       action="{% url 'add_classification_graph' project_id %}">
     <p>
-    {{ new_tree_form }}
+    {{ new_graph_form }}
     <input type="submit" value="Create" />
     </p>
 </form>
 
 {% comment %}
-<p>Alternatively, you can link an existing classification tree to
+<p>Alternatively, you can link an existing classification graph to
 this project. If you want to do so, please select the tree below
 and click "Link".</p>
 
 <form method="post" id="link-classification-form"
       action="{% url 'link_classification_graph' project_id %}">
     <p>
-    {{ link_tree_form }}
+    {{ link_tree_graph }}
     <input type="submit" value="Link" />
     </p>
 </form>

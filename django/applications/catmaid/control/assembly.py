@@ -170,7 +170,6 @@ def slices_of_assembly(request, project_id=None, stack_id=None):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@report_error
 def segments_of_assembly(request, project_id=None, stack_id=None):
 
     assembly_id = int(request.GET['assemblyid'])

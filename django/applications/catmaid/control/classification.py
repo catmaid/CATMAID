@@ -669,6 +669,8 @@ def list_classification_graph(request, project_id=None, link_id=None):
     """ Produces a data structure for each node of a classification graph
     that is undetstood by jsTree.
     """
+    project_id = int(project_id)
+    link_id = None if link_id is None else int(link_id)
     parent_id = int(request.GET.get('parentid', 0))
     parent_name = request.GET.get('parentname', '')
     expand_request = request.GET.get('expandtarget', None)

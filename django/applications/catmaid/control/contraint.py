@@ -8,11 +8,9 @@ from catmaid.models import *
 from catmaid.objects import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 import sys
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@report_error
 def constraintset_for_segment(request, project_id=None, stack_id=None):
     stack = get_object_or_404(Stack, pk=stack_id)
     p = get_object_or_404(Project, pk=project_id)

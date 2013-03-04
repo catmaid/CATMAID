@@ -11,7 +11,6 @@ from catmaid.models import *
 from catmaid.objects import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
-from catmaid.transaction import *
 
 try:
     from PIL import Image
@@ -55,7 +54,6 @@ def get_slices_tiles(request, project_id=None, stack_id=None):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-@report_error
 def slice_count(request, project_id=None, assembly_id=None):
     p = get_object_or_404(Project, pk=project_id)
     return HttpResponse(json.dumps({

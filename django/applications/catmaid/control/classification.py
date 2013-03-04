@@ -352,10 +352,10 @@ def add_classification_graph(request, project_id=None):
         #link_form = create_link_form( project_id )
         #link_tree_form = link_form()
 
-        return render_to_response("catmaid/new_classification_tree.html", {
-            "project_id": project_id,
-            "new_tree_form": new_tree_form,
-            #"link_tree_form": link_tree_form,
+        return render_to_response("catmaid/classification/new_graph.html", {
+            'project_id': project_id,
+            'new_tree_form': new_tree_form,
+            'CATMAID_DJANGO_URL': settings.CATMAID_DJANGO_URL
         })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

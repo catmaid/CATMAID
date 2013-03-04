@@ -283,6 +283,8 @@ urlpatterns += patterns('',
         name='classification_instance_operation'),
     url(r'^(?P<project_id>%s)/classification/(?P<link_id>\d+)/autofill$' % (integer),
         'catmaid.control.autofill_classification_graph', name='autofill_classification_graph'),
+    url(r'^(?P<project_id>%s)/classification/link$' % (integer),
+        'catmaid.control.link_classification_graph', name='link_classification_graph'),
     )
 
 if settings.DEBUG:

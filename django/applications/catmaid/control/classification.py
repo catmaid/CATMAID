@@ -44,6 +44,17 @@ class ClassProxy(Class):
     def __unicode__(self):
         return "{0} ({1})".format(self.class_name, str(self.id))
 
+class ClassInstanceProxy(ClassInstance):
+    """ A proxy class to allow custom labeling of class instance objects
+    in a model form.
+    """
+    class Meta:
+        proxy=True
+
+    def __unicode__(self):
+        return "{0} ({1})".format(
+            self.class_column.class_name, str(self.id))
+
 def get_root_classes_qs():
     """ Return a queryset that will get all root classes.
     """
@@ -285,6 +296,21 @@ def create_new_graph_form( class_ids=None ):
 
     return NewGraphForm
 
+def create_link_graph_form( project_id ):
+    """ Create a new AvailableClassificationsForm.
+    """
+    root_links = get_classification_links_qs( project_id, True )
+    root_ids = [l.class_instance_b.id for l in root_links]
+
+    class AvailableClassificationsForm(forms.Form):
+        """ A simple form to select an available classification for a
+        project, excluding the ones already linked.
+        """
+        classification_graph = forms.ModelChoiceField(
+            queryset = ClassInstanceProxy.objects.filter(id__in=root_ids))
+
+    return AvailableClassificationsForm
+
 def show_classification_editor( request, project_id=None, link_id=None):
     """ Selects the right view to show, based on the provided project.
     """
@@ -321,8 +347,8 @@ def show_classification_editor( request, project_id=None, link_id=None):
         if num_roots == 0:
             new_graph_form_class = create_new_graph_form()
             context['new_graph_form'] = new_graph_form_class()
-            #link_form = create_link_form(project_id)
-            #context['link_graph_form'] = link_form()
+            link_form = create_link_graph_form(project_id)
+            context['link_graph_form'] = link_form()
             template_name = "catmaid/classification/new_graph.html"
             page_type = 'new_graph'
         elif num_roots == 1:
@@ -331,8 +357,8 @@ def show_classification_editor( request, project_id=None, link_id=None):
             template_name = "catmaid/classification/show_graph.html"
             page_type = 'show_graph'
         else:
-            #form = create_classification_form( project_id )
-            #context['select_graph_form'] = form()
+            form = create_classification_form( project_id )
+            context['select_graph_form'] = form()
             template_name = "catmaid/classification/select_graph.html"
             page_type = 'select_graph'
 
@@ -356,13 +382,35 @@ def add_classification_graph(request, project_id=None):
             return HttpResponse('A new graph has been initalized.')
     else:
         new_graph_form = new_graph_form_class()
-        #link_form = create_link_form( project_id )
-        #link_graph_form = link_form()
+        link_form = create_link_graph_form( project_id )
+        link_graph_form = link_form()
 
         return render_to_response("catmaid/classification/new_graph.html", {
             'project_id': project_id,
             'new_graph_form': new_graph_form,
-            'CATMAID_DJANGO_URL': settings.CATMAID_DJANGO_URL
+            'link_graph_form': link_graph_form,
+            'CATMAID_URL': settings.CATMAID_URL
+        })
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def link_classification_graph(request, project_id=None):
+    link_form = create_link_graph_form( project_id )
+    # Has the form been submitted?
+    if request.method == 'POST':
+        form = link_form(request.POST)
+        if form.is_valid():
+            # Link existing classification graph
+            project = get_object_or_404(Project, pk=project_id)
+            graph_to_link = form.cleaned_data['classification_graph']
+            link_existing_classification(request.user, project_id, graph_to_link)
+            return HttpResponse('An existing graph has been linked.')
+    else:
+        form = link_form()
+
+        return render_to_response("catmaid/classification/new_graph.html", {
+            'project_id': project_id,
+            'new_graph_form': new_graph_form,
+            'CATMAID_URL': settings.CATMAID_URL
         })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -444,15 +492,20 @@ def traverse_class_instances(node, func):
 def init_new_classification( user, project, ontology ):
     """ Intializes a new classification graph which is automatically
     linked to the provided project. This graph is based on the passed
-    ontology (a root class in the semantic space). To do this, an instance
-    of the ontology root is created and placed in classification space.
-    The project's 'classification_project' class instance is fetched (or
-    created if not present) and linked to the root class instance. The
-    relation used for this is 'classified_by'.
+    ontology (a root class in the semantic space).
     """
     # Create a new ontology root instance
     ontology_root_ci = ClassInstance.objects.create(
         user = user, project_id = dummy_pid, class_column = ontology)
+    # Link this graph instance to the project
+    link_existing_classification( user, project, ontology_root_ci )
+
+def link_existing_classification( user, project, ontology_root_ci ):
+    """ Links a project to an existing graph (class instance) and places
+    it in classification space. The project's 'classification_project'
+    class instance is fetched (or created if not present) and linked to
+    the root class instance. The relation used for this is 'classified_by'.
+    """
     # Try to fetch the project's 'classification_project' class instance
     cp_c_q = Class.objects.filter(
         project_id = dummy_pid, class_name = 'classification_project')

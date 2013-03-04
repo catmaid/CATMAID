@@ -27,6 +27,8 @@ var ClassificationEditor = new function()
                      {
                         // Override the submit behaviour if the create graph is displayed
                         self.overrideNewGraphSubmit(container, pid);
+                        // Override the submit behaviour if link graph form is displayed
+                        self.overrideLinkGraphSubmit(container, pid);
                      }
                      else if (e.page == 'show_graph')
                      {
@@ -36,7 +38,7 @@ var ClassificationEditor = new function()
                         self.overrideAddGraphLink(container, pid);
                         // Override the autofill link behaviour
                         self.overrideAutofillLink(container, pid);
-                        // Show the tree
+                        // Show the graph
                         self.load_tree(pid);
                      }
                      else if (e.page == 'select_graph')
@@ -381,12 +383,33 @@ var ClassificationEditor = new function()
     return found;
   };
 
+  this.overrideLinkGraphSubmit = function(container, pid) {
+    var form = $("#link-classification-form");
+    var found = form.length !== 0;
+    if (found) {
+        form.submit(function(){
+            $.ajax({
+                type: "POST",
+                url: form.attr('action'),
+                data: form.serialize(),
+                success: function(data, textStatus) {
+                    container.innerHTML = "<p>" + data + "</p><p>Reloading in a few seconds.</p>";
+                    setTimeout("ClassificationEditor.init(" + pid + ")", 1500);
+                }
+            });
+            return false;
+        });
+    }
+
+    return found;
+  };
+
   this.overrideRemoveGraphLink = function(container, pid) {
     var remove_link = $("#remove_classification_link");
     var found = remove_link.length !== 0;
     if (found) {
          remove_link.click(function(){
-             if (confirm("Are you sure you want to remove the whole classification tree?")) {
+             if (confirm("Are you sure you want to remove the whole classification graph?")) {
                  $.ajax({
                      type: "POST",
                      url: remove_link.attr('href'),
@@ -407,16 +430,20 @@ var ClassificationEditor = new function()
     var remove_link = $("#add_classification_link");
     var found = remove_link.length !== 0;
     if (found) {
-         remove_link.click(function(){
-             $.ajax({
-                 type: "GET",
-                 url: remove_link.attr('href'),
-                 success: function(data, textStatus) {
-                     container.innerHTML = data;
-                 }
-             });
-             return false;
-         });
+        remove_link.click(function(){
+            $.ajax({
+                type: "GET",
+                url: remove_link.attr('href'),
+                success: function(data, textStatus) {
+                   container.innerHTML = data;
+                   // Override the submit behaviour if the create graph is displayed
+                   self.overrideNewGraphSubmit(container, pid);
+                   // Override the submit behaviour if link graph form is displayed
+                   self.overrideLinkGraphSubmit(container, pid);
+                }
+            });
+            return false;
+        });
     }
 
     return found;
@@ -427,7 +454,7 @@ var ClassificationEditor = new function()
     var found = remove_link.length !== 0;
     if (found) {
          remove_link.click(function(){
-             if (confirm("Are you sure you want to autofill this classification tree?")) {
+             if (confirm("Are you sure you want to autofill this classification graph?")) {
                  $.ajax({
                      type: "POST",
                      url: remove_link.attr('href'),

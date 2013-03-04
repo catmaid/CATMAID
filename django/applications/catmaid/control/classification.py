@@ -49,14 +49,16 @@ def get_root_classes_qs():
     """
     return[ c.class_a.id for c in get_class_links_qs(dummy_pid, 'is_a', 'classification_root') ]
 
-def get_classification_links_qs( project_id ):
+def get_classification_links_qs( project_id, inverse=False ):
     """ Returns a list of CICI links that link a classification graph
     with a project. The classification system uses a dummy project with
     ID -1 to store its ontologies and class instances. Each project using
     a particular classification graph instance creates a class instance
     with its PID of class classification_project (which lives in dummy
     project -1) and links to a classification root. A query set for those
-    links will be returned.
+    links will be returned. If <inverse> is set to true, only those
+    classification graph links will be returned that *don't* belong to
+    the project with <project_id>.
     """
     # Expect the classification system to be set up and expect one
     # single 'classification_project' class.
@@ -69,8 +71,13 @@ def get_classification_links_qs( project_id ):
 
     # Get the query set for the classification project instance to test
     # if there already is such an instance.
-    classification_project_ci_q = ClassInstance.objects.filter(
-        project_id = project_id, class_column_id = classification_project_c.id)
+    if inverse:
+        classification_project_ci_q = ClassInstance.objects.filter(
+            class_column_id = classification_project_c.id).exclude(
+                project_id = project_id)
+    else:
+        classification_project_ci_q = ClassInstance.objects.filter(
+            project_id = project_id, class_column_id = classification_project_c.id)
     # Return an empty list if there isn't a classification project
     # instance
     if classification_project_ci_q.count() == 0:

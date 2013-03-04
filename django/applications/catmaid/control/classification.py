@@ -17,7 +17,7 @@ from catmaid.models import CardinalityRestriction
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 
 # A dummy project is referenced by all the classes and class instances.
-# This is due to the fact, that one classification tree instance should
+# This is due to the fact, that one classification graph instance should
 # be referencey by multiple projects.
 dummy_pid = -1
 
@@ -282,11 +282,11 @@ def show_classification_editor( request, project_id=None, link_id=None):
     """ Selects the right view to show, based on the provided project.
     """
     if link_id is not None:
-        num_trees = 1
+        num_graphs = 1
 
         selected_graph = ClassInstanceClassInstance.objects.filter(
             id=link_id, project=dummy_pid)
-        # Make sure we actually got a tree:
+        # Make sure we actually got a graph:
         if selected_graph.count() != 1:
             raise Exception("Couldn't select requested classification graph.")
         else:
@@ -299,9 +299,9 @@ def show_classification_editor( request, project_id=None, link_id=None):
             'settings': settings
         })
 
-        template = loader.get_template("catmaid/classification/show_tree.html")
+        template = loader.get_template("catmaid/classification/show_graph.html")
     else:
-        # First, check how many trees there are.
+        # First, check how many graphs there are.
         root_links_q = get_classification_links_qs( project_id )
         num_roots = len(root_links_q)
 
@@ -313,9 +313,9 @@ def show_classification_editor( request, project_id=None, link_id=None):
 
         if num_roots == 0:
             new_graph_form_class = create_new_graph_form()
-            context['new_tree_form'] = new_graph_form_class()
+            context['new_graph_form'] = new_graph_form_class()
             #link_form = create_link_form(project_id)
-            #context['link_tree_form'] = link_form()
+            #context['link_graph_form'] = link_form()
             template_name = "catmaid/classification/new_graph.html"
             page_type = 'new_graph'
         elif num_roots == 1:
@@ -325,7 +325,7 @@ def show_classification_editor( request, project_id=None, link_id=None):
             page_type = 'show_graph'
         else:
             #form = create_classification_form( project_id )
-            #context['select_tree_form'] = form()
+            #context['select_graph_form'] = form()
             template_name = "catmaid/classification/select_graph.html"
             page_type = 'select_graph'
 
@@ -342,19 +342,19 @@ def add_classification_graph(request, project_id=None):
     if request.method == 'POST':
         form = new_graph_form_class(request.POST)
         if form.is_valid():
-            # Create the new classification tree
+            # Create the new classification graph
             project = get_object_or_404(Project, pk=project_id)
             ontology = form.cleaned_data['ontology']
             init_new_classification( request.user, project, ontology )
-            return HttpResponse('A new tree has been initalized.')
+            return HttpResponse('A new graph has been initalized.')
     else:
-        new_tree_form = new_graph_form_class()
+        new_graph_form = new_graph_form_class()
         #link_form = create_link_form( project_id )
-        #link_tree_form = link_form()
+        #link_graph_form = link_form()
 
         return render_to_response("catmaid/classification/new_graph.html", {
             'project_id': project_id,
-            'new_tree_form': new_tree_form,
+            'new_graph_form': new_graph_form,
             'CATMAID_DJANGO_URL': settings.CATMAID_DJANGO_URL
         })
 
@@ -367,9 +367,9 @@ def remove_classification_graph(request, project_id=None, link_id=None):
     project_id = int(project_id)
     selected_graph = ClassInstanceClassInstance.objects.filter(
         id=link_id, project=dummy_pid)
-    # Make sure we actually got a tree:
+    # Make sure we actually got a graph:
     if selected_graph.count() != 1:
-        raise Exception("Couldn't select requested tree with ID %s." % link_id)
+        raise Exception("Couldn't select requested graph with ID %s." % link_id)
     else:
         selected_graph = selected_graph[0]
 

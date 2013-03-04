@@ -60,7 +60,7 @@ SITE_ID = 1
 # However, some don't (e.g. Nginx + Gevent) and the easiest way to
 # tell Django were it lives is with the help of the FORCE_SCRIPT_NAME
 # variable. It must not have a trailing slash.
-FORCE_SCRIPT_NAME = '/catmaid/dj'
+FORCE_SCRIPT_NAME = '/CATMAID_SUBDIR/dj'
 
 # Settings relative to the Apache subfolder
 CATMAID_URL = '/'
@@ -78,7 +78,7 @@ HDF5_STORAGE_PATH = 'CATMAIDPATH/django/hdf5/'
 
 # Define the URL of your CATMAIDs Django instance as it should appear in
 # front of all Django related URLs.
-CATMAID_DJANGO_URL = 'http://CATMAID_SERVERNAME/catmaid/dj/'
+CATMAID_DJANGO_URL = 'http://CATMAID_SERVERNAME/CATMAID_SUBDIR/dj/'
 
 # Importer settings
 # If you want to use the importer, please adjust these settings. The

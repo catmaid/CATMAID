@@ -31,21 +31,22 @@ for f in ['', '_apache']:
     data = re.sub('CATMAID_TIMEZONE', catmaid_timezone, data)
     data = re.sub('CATMAID_WRITABLE_SUBDIR', catmaid_writable_subdir, data)
     data = re.sub('CATMAID_SERVERNAME', catmaid_servername, data)
+    data = re.sub('CATMAID_SUBDIR', catmaid_subdirectory, data)
     o.write( data )
     o.close()
 
 
 out = """
-Alias /catmaid/dj-static/ {cmpath}/django/static/
-Alias /catmaid/dj-static-admin/ {cmpath}/django/static-admin/
+Alias /{subdir}/dj-static/ {cmpath}/django/static/
+Alias /{subdir}/dj-static-admin/ {cmpath}/django/static-admin/
 
-Alias /catmaid/dj {cmpath}/django/projects/mysite/django.wsgi
+Alias /{subdir}/dj {cmpath}/django/projects/mysite/django.wsgi
 <Location /catmaid/dj>
 SetHandler wsgi-script
 Options +ExecCGI
 </Location>
 
-Alias /catmaid/ {cmpath}/httpdocs/
+Alias /{subdir}/ {cmpath}/httpdocs/
 <Directory {cmpath}/httpdocs/>
 
 php_admin_value register_globals off
@@ -61,7 +62,7 @@ Allow from all
 
 </Directory>
 
-""".format(cmpath = abs_catmaid_path)
+""".format(cmpath = abs_catmaid_path, subdir = catmaid_subdirectory)
 print 'Apache configuration settings'
 print '-----------------------------'
 print out

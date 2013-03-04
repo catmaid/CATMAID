@@ -58,11 +58,11 @@ SITE_ID = 1
 # However, some don't (e.g. Nginx + Gevent) and the easiest way to
 # tell Django were it lives is with the help of the FORCE_SCRIPT_NAME
 # variable. It must not have a trailing slash.
-FORCE_SCRIPT_NAME = '/catmaid/dj'
+FORCE_SCRIPT_NAME = '/CATMAID_SUBDIR/dj'
 
 # Settings relative to the Apache subfolder
-CATMAID_URL = '/catmaid/'
-STATICFILES_URL = '/catmaid/dj-static/'
+CATMAID_URL = '/CATMAID_SUBDIR/'
+STATICFILES_URL = '/CATMAID_SUBDIR/dj-static/'
 
 STATICFILES_LOCAL = 'CATMAIDPATH/django/static/'
 # Static path to store generated NeuroHDF files (needs to be writable)
@@ -75,7 +75,7 @@ HDF5_STORAGE_PATH = 'CATMAIDPATH/django/hdf5/'
 
 # Define the URL of your CATMAIDs Django instance as it should appear in
 # front of all Django related URLs.
-CATMAID_DJANGO_URL = 'http://CATMAID_SERVERNAME/catmaid/dj/'
+CATMAID_DJANGO_URL = 'http://CATMAID_SERVERNAME/CATMAID_SUBDIR/dj/'
 
 # Importer settings
 # If you want to use the importer, please adjust these settings. The
@@ -99,7 +99,7 @@ for subdirectory in ('projects', 'applications', 'lib'):
 
 # Serving admin static files
 # http://stackoverflow.com/questions/9959875/how-to-serve-admin-static-files-with-django-contrib-staticfiles-in-django-1-4-u
-STATIC_URL = '/catmaid/dj-static-admin/'
+STATIC_URL = '/CATMAID_SUBDIR/dj-static-admin/'
 STATIC_ROOT =  'CATMAIDPATH/django/static'
 # Additional locations of static files. Global files are stored in here
 STATICFILES_DIRS = (os.path.join(os.path.abspath(os.path.join(PROJECT_ROOT, 'static-admin')), ''),)

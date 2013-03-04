@@ -18,33 +18,8 @@ var ClassificationEditor = new function()
                     var container = document.getElementById(content_div_id);
                     container.innerHTML = e.content;
 
-                    /* depending on the type of the page, some rewrites need to
-                     * to be done. That is to make sure that replies on actions
-                     * taken on the current page are also rendered in this
-                     * CATMAID window.
-                     */
-                     if (e.page == 'new_graph')
-                     {
-                        // Override the submit behaviour if the create graph is displayed
-                        self.overrideNewGraphSubmit(container, pid);
-                        // Override the submit behaviour if link graph form is displayed
-                        self.overrideLinkGraphSubmit(container, pid);
-                     }
-                     else if (e.page == 'show_graph')
-                     {
-                        // Override the remove link behaviour
-                        self.overrideRemoveGraphLink(container, pid);
-                        // Override the add link behaviour
-                        self.overrideAddGraphLink(container, pid);
-                        // Override the autofill link behaviour
-                        self.overrideAutofillLink(container, pid);
-                        // Show the graph
-                        self.load_tree(pid);
-                     }
-                     else if (e.page == 'select_graph')
-                     {
+                    self.handleContent( e.page, container, pid );
 
-                     }
                 }));
     };
 
@@ -362,6 +337,37 @@ var ClassificationEditor = new function()
         }
     };
 
+    /* Depending on the type of the page, some rewrites need to
+     * to be done. That is to make sure that replies on actions
+     * taken on the current page are also rendered in this
+     * CATMAID window.
+     */
+    this.handleContent = function(page_type, container, pid, linkid) {
+         if (page_type == 'new_graph')
+         {
+            // Override the submit behaviour if the create graph is displayed
+            self.overrideNewGraphSubmit(container, pid);
+            // Override the submit behaviour if link graph form is displayed
+            self.overrideLinkGraphSubmit(container, pid);
+         }
+         else if (page_type == 'show_graph')
+         {
+            // Override the remove link behaviour
+            self.overrideRemoveGraphLink(container, pid);
+            // Override the add link behaviour
+            self.overrideAddGraphLink(container, pid);
+            // Override the autofill link behaviour
+            self.overrideAutofillLink(container, pid);
+            // Show the graph
+            self.load_tree(pid, linkid);
+         }
+         else if (page_type == 'select_graph')
+         {
+            // Override the submit behaviour if select graph form is displayed
+            self.overrideSelectGraphSubmit(container, pid);
+         }
+    }
+
   this.overrideNewGraphSubmit = function(container, pid) {
     var form = $("#add-new-classification-form");
     var found = form.length !== 0;
@@ -470,6 +476,28 @@ var ClassificationEditor = new function()
 
     return found;
   }
+
+  this.overrideSelectGraphSubmit = function(container, pid) {
+    var form = $("#select-classification-form");
+    var found = form.length !== 0;
+    if (found) {
+        form.submit(function(){
+            $.ajax({
+                type: "POST",
+                url: form.attr('action'),
+                data: form.serialize(),
+                success: function(data, textStatus) {
+                    var e = $.parseJSON(data);
+                    container.innerHTML = e.content;
+                    self.handleContent( e.page, container, pid, e.link );
+                }
+            });
+            return false;
+        });
+    }
+
+    return found;
+  };
 
     /**
      * Adds an event handler to every edit mode select box. This

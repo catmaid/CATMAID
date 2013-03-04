@@ -1,6 +1,14 @@
+{% load url from future %}
+
 {% block classification-content %}
 <p>There are {{ num_graphs }} classification graphs associated
 with this project. Please select which one you want to display.</p>
 
-Not implemented yet.
+<form method="post" id="select-classification-form"
+      action="{% url 'select_classification_graph' project_id %}">
+    <p>
+    {{ select_graph_form }}
+    <input type="submit" value="Select" />
+    </p>
+</form>
 {% endblock %}

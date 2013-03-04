@@ -20,7 +20,6 @@ that you would like the new graph to be based on and click on
     </p>
 </form>
 
-{% comment %}
 <p>Alternatively, you can link an existing classification graph to
 this project. If you want to do so, please select the tree below
 and click "Link".</p>
@@ -28,11 +27,10 @@ and click "Link".</p>
 <form method="post" id="link-classification-form"
       action="{% url 'link_classification_graph' project_id %}">
     <p>
-    {{ link_tree_graph }}
+    {{ link_graph_form }}
     <input type="submit" value="Link" />
     </p>
 </form>
-{% endcomment %}
 {% endblock %}
 
 </body>

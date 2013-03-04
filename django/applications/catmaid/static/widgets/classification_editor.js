@@ -409,7 +409,7 @@ var ClassificationEditor = new function()
     if (found) {
          remove_link.click(function(){
              $.ajax({
-                 type: "POST",
+                 type: "GET",
                  url: remove_link.attr('href'),
                  success: function(data, textStatus) {
                      container.innerHTML = data;

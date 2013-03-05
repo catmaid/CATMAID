@@ -204,6 +204,15 @@ var WindowMaker = new function()
     var rand = document.createTextNode('Enable active node');
     container.appendChild(rand);
 
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "enable_missing_sections");
+    rand.setAttribute("value", "Missing sections");
+    rand.onclick = WebGLApp.toggleMissingSections;
+    container.appendChild(rand);
+    var rand = document.createTextNode('Missing sections');
+    container.appendChild(rand);
+
     /*var rand = document.createElement('input');
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "toggle_ortho");

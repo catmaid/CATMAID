@@ -8,6 +8,7 @@ var TreenodeTable = new function()
   var ns = this; // reference to the namespace
   ns.oTable = null;
   var asInitVals = [];
+  asInitVals[1] = 'Leaf';
   var skelid = -1; // Skeleton currently shown
   var last_displayed_skeletons = {};
   last_displayed_skeletons[0] = 'None';

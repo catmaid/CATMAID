@@ -464,7 +464,7 @@ var WindowMaker = new function()
             '<th>type' +
         '' +
         '<select name="search_type" id="search_type" class="search_init">' +
-        '<option value="">Any</option><option value="R">Root</option><option value="LR">Leaf</option>' +
+        '<option value="">Any</option><option value="R">Root</option><option value="LR" selected="selected">Leaf</option>' +
         '<option value="B">Branch</option><option value="S">Slab</option></select>' +
         '</th>' +
         // <input type="text" name="search_type" value="Search" class="search_init" />

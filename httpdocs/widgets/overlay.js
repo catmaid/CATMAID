@@ -104,7 +104,8 @@ var SkeletonAnnotations = new function()
       return;
     }
     // Else, synchronize:
-    ObjectTree.requestOpenTreePath(node);
+    if( node )
+      ObjectTree.requestOpenTreePath(node.skeleton_id);
   };
 
   var refreshAllWidgets = function()

@@ -415,6 +415,45 @@ var ObjectTree = new function()
               },
               "ccp": false
             };
+          } else if (type_of_node === "assembly") {
+            menu = {
+              "rename_assembly": {
+                "separator_before": true,
+                "separator_after": false,
+                "label": "Rename assembly",
+                "action": function (obj) {
+                  this.rename(obj);
+                }
+              },
+              "remove_assembly": {
+                "separator_before": false,
+                "icon": false,
+                "separator_after": false,
+                "label": "Remove assembly",
+                "action": function (obj) {
+                  this.remove(obj);
+                }
+              },
+                "cut": {
+                    "separator_before": true,
+                    "icon": false,
+                    "separator_after": false,
+                    "label": "Cut",
+                    "action": function (obj) {
+                        this.cut(obj);
+                    }
+                },
+                "paste": {
+                    "separator_before": false,
+                    "icon": false,
+                    "separator_after": false,
+                    "label": "Paste",
+                    "action": function (obj) {
+                        this.paste(obj);
+                    }
+                }
+              };
+
           } else if (type_of_node === "skeleton") {
             menu = {
               "show_webglviewer": {
@@ -881,9 +920,9 @@ var ObjectTree = new function()
     }
   };
 
-  this.requestOpenTreePath = function(treenode) {
+  this.requestOpenTreePath = function(class_instance_id) {
     // Check if the node is already highlighted
-    if ($('#node_' + treenode.skeleton_id + ' a').hasClass('jstree-clicked')) {
+    if ($('#node_' + class_instance_id + ' a').hasClass('jstree-clicked')) {
       return;
     }
 
@@ -894,7 +933,7 @@ var ObjectTree = new function()
       type: 'POST',
       //url: "model/tree.object.expand.php",
       url: django_url + project.id + '/object-tree/expand',
-      data: { "skeleton_id" : treenode.skeleton_id,
+      data: { "class_instance_id" : class_instance_id,
               "pid" : project.id },
       success: function (r, status) {
                  r = $.parseJSON(r);

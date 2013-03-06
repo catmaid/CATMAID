@@ -381,7 +381,19 @@ var SegmentationAnnotations = new function()
             self.reset_all();
             self.current_active_assembly = assembly_id;
             self.load_assembly( self.current_active_assembly );
+            openAssemblyInObjectTree();
         }
+    };
+
+    var openAssemblyInObjectTree = function( ) {
+        console.log('try to open in object tree', self.current_active_assembly);
+        // Check if the Object Tree div is visible
+        if ($('#object_tree_widget').css('display') === "none" || ! $('#synchronize_object_tree').attr('checked')) {
+            return;
+        }
+        // Else, synchronize:
+        if( self.current_active_assembly )
+            ObjectTree.requestOpenTreePath( self.current_active_assembly );
     };
 
     var get_slice = function( node_id ) {

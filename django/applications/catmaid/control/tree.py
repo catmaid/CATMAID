@@ -231,11 +231,11 @@ def instance_operation(request, project_id=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def tree_object_expand(request, project_id=None):
-    skeleton_id = request.POST.get('skeleton_id', None)
-    if skeleton_id is None:
+    class_instance_id = request.POST.get('class_instance_id', None)
+    if class_instance_id is None:
         raise Exception('A skeleton id has not been provided!')
     else:
-        skeleton_id = int(skeleton_id) # sanitize by casting to int
+        class_instance_id = int(class_instance_id) # sanitize by casting to int
 
     relation_map = get_relation_to_id_map(project_id)
 
@@ -246,13 +246,13 @@ def tree_object_expand(request, project_id=None):
     response_on_error = ''
     try:
         # 1. Retrieve neuron id of the skeleton
-        response_on_error = 'Cannot find neuron for the skeleton with id: %s' % skeleton_id
+        response_on_error = 'Cannot find neuron for the skeleton with id: %s' % class_instance_id
         neuron_id = ClassInstanceClassInstance.objects.filter(
             project=project_id,
             relation=relation_map['model_of'],
-            class_instance_a=skeleton_id)[0].class_instance_b_id
+            class_instance_a=class_instance_id)[0].class_instance_b_id
 
-        path = [skeleton_id, neuron_id]
+        path = [class_instance_id, neuron_id]
 
         while True:
             # 2. Retrieve all the nodes of which the neuron is a part of.

@@ -7,7 +7,7 @@ var WebGLApp = new function () {
   var scene, renderer, scale, controls, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
   var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, show_missing_sections = false,
       bbmesh, floormesh, black_bg = true, debugax, togglevisibleall = true, missing_sections = [];
-  var is_mouse_down = false, connector_filter = false, missing_section_height = 20;
+  var is_mouse_down = false, connector_filter = false, missing_section_height = 20, soma_scale = 1.0;
 
   this.init = function( divID ) {
 
@@ -574,13 +574,13 @@ var WebGLApp = new function () {
           if( ($.inArray( "soma", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
               this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00 } ) );
               this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
-              this.labelSphere[fromkey].scale.set( 2, 2, 2 );
+              this.labelSphere[fromkey].scale.set( 2*soma_scale, 2*soma_scale, 2*soma_scale );
               scene.add( this.labelSphere[fromkey] );
           }
           if( ($.inArray( "soma", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
               this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00  } ) );
               this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
-              this.labelSphere[tokey].scale.set( 2, 2, 2 );
+              this.labelSphere[tokey].scale.set( 2*soma_scale, 2*soma_scale, 2*soma_scale );
               scene.add( this.labelSphere[tokey] );
           }
 
@@ -939,7 +939,6 @@ var WebGLApp = new function () {
   }
 
   self.toggleMissingSections = function() {
-    console.log('toggle')
     if( show_missing_sections ) {
       self.removeMissingSections();
       show_missing_sections = false;
@@ -973,10 +972,21 @@ var WebGLApp = new function () {
     var missingsectionheight = document.createElement('input');
     missingsectionheight.setAttribute("type", "text");
     missingsectionheight.setAttribute("id", "missing-section-height");
+    missingsectionheight.setAttribute("value", missing_section_height);
     dialog.appendChild(missingsectionheight);
 
+    var msg = document.createElement('p');
+    msg.innerHTML = "Soma sphere scale factor:";
+    dialog.appendChild(msg);
+
+    var somascale = document.createElement('input');
+    somascale.setAttribute("type", "text");
+    somascale.setAttribute("id", "soma-scale");
+    somascale.setAttribute("value", soma_scale);
+    dialog.appendChild( somascale );
+
     $(dialog).dialog({
-      height: 140,
+      height: 440,
       modal: true,
       buttons: {
         "Cancel": function() {
@@ -986,8 +996,11 @@ var WebGLApp = new function () {
           $(this).dialog("close");
           console.log($('#missing-section-height').val())
           missing_section_height = $('#missing-section-height').val();
-          self.removeMissingSections();
-          self.createMissingSections();
+          soma_scale = $('#soma-scale').val();
+          if( show_missing_sections ) {
+            self.removeMissingSections();
+            self.createMissingSections();            
+          }
         }
       }
     });

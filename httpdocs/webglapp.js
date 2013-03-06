@@ -7,7 +7,7 @@ var WebGLApp = new function () {
   var scene, renderer, scale, controls, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
   var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, show_missing_sections = false,
       bbmesh, floormesh, black_bg = true, debugax, togglevisibleall = true, missing_sections = [];
-  var is_mouse_down = false, connector_filter = false;
+  var is_mouse_down = false, connector_filter = false, missing_section_height = 20;
 
   this.init = function( divID ) {
 
@@ -911,7 +911,7 @@ var WebGLApp = new function () {
 
     var geometry = new THREE.Geometry();
     var xwidth = dimension.x*resolution.x*scale,
-        ywidth = dimension.y*resolution.y*scale;
+        ywidth = dimension.y*resolution.y*scale * missing_section_height / 100.;
     geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( 0,0,0 ) ) );
     geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( xwidth,0,0 ) ) );
     geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( 0,ywidth,0 ) ) );
@@ -932,7 +932,8 @@ var WebGLApp = new function () {
       msect = new THREE.Mesh( geometry, material2 );
       msect.doubleSided = true;
       msect.position.z = newval;
-      scene.add( msect );      
+      scene.add( msect );  
+      missing_sections.push( msect );    
     }
     self.render();
   }
@@ -958,6 +959,38 @@ var WebGLApp = new function () {
       show_active_node = true;
     }
     self.render();
+  }
+
+  self.configure_parameters = function() {
+    var dialog = document.createElement('div');
+    dialog.setAttribute("id", "dialog-confirm");
+    dialog.setAttribute("title", "Configuration");
+
+    var msg = document.createElement('p');
+    msg.innerHTML = "Missing sections height [0,100]:";
+    dialog.appendChild(msg);
+
+    var missingsectionheight = document.createElement('input');
+    missingsectionheight.setAttribute("type", "text");
+    missingsectionheight.setAttribute("id", "missing-section-height");
+    dialog.appendChild(missingsectionheight);
+
+    $(dialog).dialog({
+      height: 140,
+      modal: true,
+      buttons: {
+        "Cancel": function() {
+          $(this).dialog("close");
+        },
+        "OK": function() {
+          $(this).dialog("close");
+          console.log($('#missing-section-height').val())
+          missing_section_height = $('#missing-section-height').val();
+          self.removeMissingSections();
+          self.createMissingSections();
+        }
+      }
+    });
   }
 
   self.updateZPlane = function() {

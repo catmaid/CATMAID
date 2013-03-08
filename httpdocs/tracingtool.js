@@ -686,7 +686,7 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-      helpText: "Move to previous node in segment for review",
+      helpText: "Move to previous node in segment for review. At an end node, moves one section beyond for you to check that it really ends.",
       keyShortcuts: {
           'Q': [ 81 ]
       },
@@ -709,6 +709,20 @@ function TracingTool()
               return false;
           if (ReviewSystem.validSegment())
               ReviewSystem.moveNodeInSegmentForward(e);
+          return true;
+      }
+  }) );
+
+  this.addAction( new Action({
+      helpText: "Start reviewing the next skeleton segment.",
+      keyShortcuts: {
+          'E': [ 69 ]
+      },
+      run: function (e) {
+          if (!mayEdit())
+              return false;
+          if (ReviewSystem.validSegment())
+              ReviewSystem.selectNextSegment(e);
           return true;
       }
   }) );

@@ -30,6 +30,7 @@ var ReviewSystem = new function()
             $('#reviewing_skeleton').text( '' );
     };
 
+    /** @param id The index of the segment, 0-based. */
     this.initReviewSegment = function( id ) {
         self.current_segment = self.skeleton_segments[id];
         self.current_segment_index = 0;
@@ -51,6 +52,22 @@ var ReviewSystem = new function()
             return;
         if( self.current_segment_index == 0 ) {
             self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index], self.startSkeletonToReview );
+            // Go to 'previous' section, to check whether an end really ends
+            var segment = self.current_segment['sequence'];
+            if (segment.length > 1) {
+                var i = 1;
+                while (i < segment.length && segment[i-1].z === segment[i].z) {
+                    i += 1;
+                }
+                if (i === segment.length) {
+                    // corner case
+                    growlAlert("Can't move", "Can't decide whether to move forward or backward one section!");
+                    return; 
+                }
+                var inc = segment[i-1].z - segment[i].z;
+                // Will check stack boundaries at Stack.moveTo
+                project.moveTo(segment[0].z + inc, segment[0].y, segment[0].x);
+            }
             return;
         }
         self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
@@ -125,6 +142,33 @@ var ReviewSystem = new function()
             });
     };
 
+    this.selectNextSegment = function( ev ) {
+        if (self.skeleton_segments) {
+            // Find out the index of the current segment
+            var index = self.current_segment ? self.skeleton_segments.indexOf(self.current_segment) : -1;
+            // Define helper functions
+            var unreviewed_nodes = function (node) { return -1 === node['rid']; };
+            var unreviewed_segments = function(segment, i) {
+                if (segment['sequence'].some(unreviewed_nodes)) {
+                    // Side effect:
+                    self.initReviewSegment(i);
+                    return true;
+                }
+                return false;
+            };
+            // Find a segment with unreviewed nodes, starting after current segment
+            if (self.skeleton_segments.slice(index + 1).some(unreviewed_segments)) {
+                return;
+            }
+            // Not found after segment at index; check before:
+            if (self.skeleton_segments.slice(0, index + 1).some(unreviewed_segments)) {
+                return;
+            }
+
+            growlAlert("Done", "Done reviewing.");
+        }
+    };
+
     /** Clears the #review_segment_table prior to adding rows to it. */
     this.createReviewSkeletonTable = function( skeleton_data, users ) {
         self.skeleton_segments = skeleton_data;
@@ -139,6 +183,7 @@ var ReviewSystem = new function()
             map[u[0]] = {name: u[1], count: 0};
             return map;
         }, {});
+        // TODO count is wrong because branch points are repeated. Would have to create sets and then count the number of keys.
         users[-1] = {name: 'unreviewed', count: 0};
         // Fill in the users count:
         skeleton_data.forEach(function(segment) {

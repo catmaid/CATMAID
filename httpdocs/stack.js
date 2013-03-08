@@ -430,10 +430,13 @@ function Stack(
 	
 	//! all possible slices
 	self.slices = new Array();
+	self.broken_slices = new Array();
 	for ( var i = 0; i < dimension.z; ++i )
 	{
 		if ( !skip_planes[ i ] )
 			self.slices.push( i );
+		else
+			self.broken_slices.push( i );
 	}
 	
 	//-------------------------------------------------------------------------

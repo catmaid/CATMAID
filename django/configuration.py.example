@@ -50,3 +50,9 @@ catmaid_writable_subdir = ''
 # e.g.: localhost
 
 catmaid_servername = ''
+
+# The name of the catmaid subdirectory as seen from the outside
+# e.g. for http://localhost/catmaid/ the variable catmaid_subdirectory
+# would be 'catmaid'
+
+catmaid_subdirectory = ''

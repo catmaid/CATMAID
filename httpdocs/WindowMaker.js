@@ -178,6 +178,13 @@ var WindowMaker = new function()
     container.appendChild(rand);
 
     var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
+    rand.setAttribute("id", "configure_parameters");
+    rand.setAttribute("value", "Configure");
+    rand.onclick = WebGLApp.configure_parameters;
+    container.appendChild(rand);
+
+    var rand = document.createElement('input');
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "enable_z_plane");
     rand.setAttribute("value", "Enable z-plane");
@@ -202,6 +209,15 @@ var WindowMaker = new function()
     rand.onclick = WebGLApp.toggleActiveNode;
     container.appendChild(rand);
     var rand = document.createTextNode('Enable active node');
+    container.appendChild(rand);
+
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "enable_missing_sections");
+    rand.setAttribute("value", "Missing sections");
+    rand.onclick = WebGLApp.toggleMissingSections;
+    container.appendChild(rand);
+    var rand = document.createTextNode('Missing sections');
     container.appendChild(rand);
 
     /*var rand = document.createElement('input');
@@ -464,7 +480,7 @@ var WindowMaker = new function()
             '<th>type' +
         '' +
         '<select name="search_type" id="search_type" class="search_init">' +
-        '<option value="">Any</option><option value="R">Root</option><option value="LR">Leaf</option>' +
+        '<option value="">Any</option><option value="R">Root</option><option value="LR" selected="selected">Leaf</option>' +
         '<option value="B">Branch</option><option value="S">Slab</option></select>' +
         '</th>' +
         // <input type="text" name="search_type" value="Search" class="search_init" />

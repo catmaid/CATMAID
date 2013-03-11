@@ -1,0 +1,1111 @@
+import ij.*;
+import ij.io.*;
+import ij.process.*;
+import ij.plugin.filter.Info;
+
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+import java.lang.IllegalStateException;
+
+import loci.plugins.util.*;
+import loci.formats.*;
+import loci.formats.meta.*;
+import loci.common.services.ServiceFactory;
+import loci.formats.services.OMEXMLService;
+import ome.xml.model.primitives.PositiveFloat;
+import loci.plugins.BF;
+import loci.plugins.in.ImporterOptions;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.ArrayList;
+import mpicbg.ij.integral.*;
+
+final String fileSeperator = System.getProperty("file.separator");
+
+int tileSize = 256;
+int thumbnailSize = 192;
+String overviewName = "small";
+String inputFile = "totile.txt";
+boolean createZProjections = false;
+ArrayList channels, colors, names;
+
+public class ImageInfo {
+	public ArrayList images;
+	public String info;
+
+	public ImageInfo(ArrayList list, String info) {
+		this.images = list;
+		this.info = info;
+	}
+
+	public ImageInfo(ArrayList list) {
+		this.images = list;
+		this.info = "None";
+	}
+}
+
+/**
+ * Finds all patterns:
+ * <parent>:<whitespace-or-newline>
+ * <at-least-one-whitespace><data><newline>
+ * The last line can be there multiple times.
+ */
+Matcher createYamlRepeatMatcher( String data, String parent ) {
+	String regex = parent + ":(?:\\s*\\n)+(?:^\\s+.*$\\n?)*";
+	Pattern p = Pattern.compile( regex, Pattern.MULTILINE | Pattern.UNIX_LINES );
+	return p.matcher( data );
+}
+
+/**
+ * Finds all patterns:
+ * <whitespace><dash><anything><newline>
+ * <at-least-one-whitespace><no-dash><anything><newline>
+ * The last line can be there multiple times. The parent is currenty ignored.
+ */
+Matcher createYamlListMatcher( String data, String parent ) {
+	String extractListBlock = "(?<=" + parent + ":\\s{0,255}$\\n)(^\\s++-(?:.*$\\n(?:^\\s++[^-]+:.*$\\n))+)";
+	Pattern p = Pattern.compile( extractListBlock, Pattern.MULTILINE | Pattern.UNIX_LINES );
+	Matcher m = p.matcher( data );
+	m.find();
+	if (m.groupCount() == 0)
+		return null;
+	String listData = m.group(1);
+	String regex = "^\\s++-(.*$\\n(?:^\\s++[^-].*$\\n)*)";
+	Pattern p = Pattern.compile( regex, Pattern.MULTILINE | Pattern.UNIX_LINES );
+	return p.matcher( listData );
+}
+
+/**
+ * Finds first match of pattern:
+ * <parent>:<optional-whitespace>
+ * <at-least-one-whitespace><anything> (zero or more times)
+ * <at-least-one-whitespace><child>:<data>
+ * and extracts <data>.
+ */
+Matcher createYamlMappingMatcher( String data, String parent, String child ) {
+	String regex;
+	if (parent == null)
+		regex = "(?:^\\s+" + child + ":\\s*(.*)$)";
+	else
+		regex = parent + ":\\s*$\\n(?:^\\s++.*$\\n)*?(?:^\\s++" + child + ":\\s*(.*)$)";
+	Pattern p = Pattern.compile( regex, Pattern.MULTILINE | Pattern.UNIX_LINES );
+	return p.matcher( data );
+}
+
+/**
+ * Parses the data to find a simple YAML structure.
+ */
+String getYamlMappingData( String data, String parent, String child, String defaultValue ) {
+	Matcher m = createYamlMappingMatcher( data, parent, child );
+	// if group 1 is't available, we did not find what we were looking for
+	if (!m.find() || m.groupCount() == 0)
+		return defaultValue;
+	else
+		return m.group(1);
+}
+
+public class StackType {
+	public static String SingleChannel = "singlechannel";
+	public static String SingleChannelZProjection = "singlechannel-zproj";
+	public static String Composite = "composite";
+	public static String CompositeZProjection = "composite-zproj";
+}
+
+/**
+ * One stack of tiled images.
+ */
+public class Stack {
+	public String folder;
+	public String name;
+	public String dimension;
+	public String resolution;
+	public String rawType;
+	public String type;
+	public String metadata;
+	public int levels;
+	public ImageInfo info;
+	public ArrayList neededChannels;
+	// Path to an image that represents this stack
+	public String imagePath = null;
+
+	public Stack( String folder, String name, String dim, String res, String type, String meta, int levels ) {
+		this.folder = folder;
+		this.name = name;
+		this.rawType = type;
+		this.metadata = meta;
+		this.dimension = dim;
+		this.resolution = res;
+		this.levels = levels;
+		// parse the channels needed by this stack
+		String chIdPattern = "ch(\\d+)*";
+		Pattern p = Pattern.compile( chIdPattern );
+		Matcher m = p.matcher( rawType );
+		this.neededChannels = new ArrayList();
+		while ( m.find() ) {
+			neededChannels.add( Integer.parseInt( m.group(1) ) );
+		}
+		boolean zProj = rawType.indexOf("zproj") != -1;
+		boolean composite = neededChannels.size() > 1;
+		if ( !composite && !zProj )
+			this.type = StackType.SingleChannel;
+		else if ( !composite && zProj )
+			this.type = StackType.SingleChannelZProjection;
+		else if ( composite && !zProj )
+			this.type = StackType.Composite;
+		else if ( composite && zProj )
+			this.type = StackType.CompositeZProjection;
+	}
+
+	public String toString() {
+		return "Stack: " + name + " <dim>: " + dimension + " <res>: " + resolution + " <folder>: " + folder + " <type>: " + type + " <metadata>: " + metadata;
+	}
+}
+
+/**
+ * Encapsulates project meta data and a set of stacks.
+ */
+public class Project {
+	public String name;
+	public String machine_name;
+	public ArrayList stacks;
+	public String yamlData;
+
+	public Project( String machineName, String name, ArrayList stacks ) {
+		this.machineName = machineName;
+		this.name = name;
+		this.stacks = stacks;
+		this.yamlData = "";
+	}
+
+	public Project( String machineName, int levels, String yamlData ) {
+		this.machineName = machineName;
+		this.fromYamlContent( yamlData, levels );
+		this.yamlData = yamlData;
+	}
+
+	/**
+	 * Parse data for project information, expect it to be in
+     * a YAML like format.
+     */
+	protected void fromYamlContent( String data, int levels ) {
+		IJ.log("Parsing info file");
+		// look for project specification
+		this.name= stripQuotes( getYamlMappingData( data, "project", "name", "" ) );
+		// look for stacks
+		this.stacks = new ArrayList();
+		Matcher m = createYamlListMatcher( data, "stacks" );
+		while ( m.find() ) {
+			String stackData = m.group(1);
+			String sType = stripQuotes( getYamlMappingData( stackData, null, "type", "" ) );
+			String sDim = stripQuotes( getYamlMappingData( stackData, null, "dimension", "" ) );
+			String sRes = stripQuotes( getYamlMappingData( stackData, null, "resolution", "" ) );
+			String sName = stripQuotes( getYamlMappingData( stackData, null, "name", "" ) );
+			String sMeta = stripQuotes( getYamlMappingData( stackData, null, "metadata", "" ) );
+			if ( sType.equals("") )
+				throw new IllegalArgumentException( "Each stack needs to have a type declaration." );
+			if ( sName.equals("") )
+				throw new IllegalArgumentException( "Each stack needs to have a name declaration." );
+			String fallbackName = this.machineName + "-" + sType;
+			String sFolder = stripQuotes( getYamlMappingData( stackData, null, "folder", fallbackName ) );
+			// create and store new stack
+			stacks.add( new Stack( sFolder, sName, sDim, sRes, sType, sMeta, levels ) );
+		}
+		// if group 1 is't available, we did not find what we were looking for
+		if (!m.find() || m.groupCount() == 0)
+			return defaultValue;
+		else
+			return m.group(1);
+	}
+
+	/**
+	 * Creates a YAML string based on the objects properties.
+	 */
+	public String toYaml() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("project:\n");
+		sb.append("  name: \"" + this.name + "\"\n");
+		sb.append("  stacks:\n");
+		for ( s : this.stacks ) {
+			sb.append("    - name: \"" + s.name + "\"\n");
+			sb.append("      dimension: \"" + s.dimension + "\"\n");
+			sb.append("      resolution: \"" + s.resolution + "\"\n");
+			sb.append("      metadata: \"" + s.metadata + "\"\n");
+			sb.append("      folder: \"" + s.folder + "\"\n");
+			sb.append("      type: \"" + s.rawType + "\"\n");
+		}
+		return sb.toString();
+	}
+
+	public ArrayList getNeededChannels() {
+		ArrayList neededChannels = new ArrayList();
+		for ( s : this.stacks ) {
+			for ( ch : s.neededChannels ) {
+				if ( !neededChannels.contains( ch ) )
+					neededChannels.add( ch );
+			}
+		}
+		return neededChannels;
+	}
+
+	public String toString() {
+		String p = "Project: " + name;
+		if (stacks.size() == 0) {
+			return p + "\n\tNo stacks";
+		} else {
+			for (s : stacks) {
+				p = p + "\n\t" + s;
+			}
+			return p;
+		}
+	}
+}
+
+/**
+ * A data structure to keep information about
+ * a tiling job.
+ */
+public class TilingJobPool {
+	public ArrayList jobs = new ArrayList();
+}
+
+public class TilingJobParameters {
+
+}
+
+public class TilingJob {
+	public Project project;
+	public String projectFileName;
+	protected String originalProjectFileContent = "";
+	public String imagePath;
+	public MetadataRetrieve imageOMEMetadata;
+	public String imageStringMetadata;
+	public String outputDir;
+	public ArrayList colors;
+	public float unitConvFactor;
+	public int maxValue;
+	public boolean grayscaleSingleChannels;
+	public boolean projectFileAvailable;
+	public String generatedInfo = "";
+	public boolean useGeneratedInfo = false;
+	public int numZoomLevels;
+	/* With meta data pattern one can automatically read out meta data
+	 * frem the individual channels. To map a meta data entry to a channel
+  	 * a placeholder is used: <$Ch>. Valid entries are e.g.:
+	 * "IlluminationChannel #<$Ch> Power|Power". For channel 1 it will look
+ 	 * for an entry "IlluminationChannel #1 Power" and output it as "Power: <val>".
+	 */
+	public ArrayList metadataPatterns;
+	final public String metadataChPattern = "<$Ch>";
+
+	public TilingJob( String imagePath, projectFileName, colors, outputDir, unitConvFactor, maxValue, grayscaleSingleChannels, useGeneratedInfo, numZoomLevels, ArrayList metadataPatterns, metadataFileName ) {
+		this.imagePath = imagePath;
+		this.projectFileName = projectFileName;
+		this.colors = colors;
+		this.unitConvFactor = unitConvFactor;
+		this.maxValue = maxValue;
+		this.grayscaleSingleChannels = grayscaleSingleChannels;
+		this.useGeneratedInfo = useGeneratedInfo;
+		this.numZoomLevels = numZoomLevels;
+
+		setup( imagePath, outputDir, metadataPatterns );
+
+		if ( !sanityCheck( true ) )
+			throw new IllegalStateException( "Sanity check of new project not passed" );
+
+		// look for meta data patterns (if any) in the string meta data
+		if ( metadataPatterns.size() > 0 ) {
+			for ( String p : metadataPatterns ) {
+				// expect general project/stack structure to be present already
+				boolean hasLinkedChannel = p.indexOf( metadataChPattern ) != -1;
+				if ( hasLinkedChannel ) {
+
+				}
+			}
+			IJ.log( imageStringMetadata );
+		}
+	}
+
+	protected setup( String imagePath, String generalOutputDir, metadataPatterns ) {
+		// Path information about the input data
+		originalImg = new File( imagePath );
+		// create output folder
+		originalImageName = originalImg.getName().substring( 0, originalImg.getName().lastIndexOf('.') );
+		potentialOutputBase = generalOutputDir + originalImageName + "/";
+		potentialOutputDir = new File( potentialOutputBase );
+		// Check if the folder already exists. If so, add a counter.
+		counter = 1;
+		while ( potentialOutputDir.exists() ) {
+			counter++;
+			// rename the output folder from output to output_<n>
+			potentialOutputBase = generalOutputDir + originalImageName + "_" + counter + "/";
+			potentialOutputDir = new File( potentialOutputBase );
+		}
+		potentialOutputDir.mkdirs();
+		// remember the last try as output path
+		this.outputDir = potentialOutputBase;
+
+		// look for project file
+		originalImgDir = originalImg.getParent();
+		projectFile = new File(originalImgDir + "/" + projectFileName);
+		this.projectFileAvailable = projectFile.exists();
+		originalProjectFileContent = "";
+		// read it in if present
+		if (this.projectFileAvailable) {
+			IJ.log("Info file (" + projectFileName + ") found");
+			// read in info file
+			ifstream = new FileInputStream(projectFile);
+			iin = new DataInputStream(ifstream);
+			ibr = new BufferedReader(new InputStreamReader(iin));
+			String strLine;
+			while ((strLine = ibr.readLine()) != null) {
+				this.originalProjectFileContent += strLine + "\n";
+			}
+			iin.close();
+			String machineName = new File(originalImgDir).getName();
+			this.project = new Project( machineName, numZoomLevels, originalProjectFileContent );
+			// setup stacks if they were not specified
+		} else {
+			IJ.log("Info file (" + projectFileName + ") not found");
+		}
+
+		// read out meta data
+		imageOMEMetadata = getOMEMetaData( imagePath );
+		imageStringMetadata = getStringMetaData( imagePath );
+	}
+
+	protected boolean sanityCheck( correct_when_possible ) {
+		// check if there is a project at all
+		if (project == null) {
+			IJ.log("The project is missing.");
+			return false;
+		}
+		// check if enough colors are available
+		numChannels = project.getNeededChannels().size();
+		if (numChannels > this.colors.size()) {
+			IJ.log("Got only " + colors.length() + " colors, but would need " + numChannels);
+			return false;
+		}
+		// Make sure we only ask for channels that are available
+		numAvailableChannels = imageOMEMetadata.getChannelCount(0);
+		stacksToRemove = new ArrayList();
+		for ( s : project.stacks ) {
+			channelsToRemove = new ArrayList();
+			// look for channels that are not valid
+			for ( ch : s.neededChannels ) {
+				if ( ch > numAvailableChannels ) {
+					if (!correct_when_possible)
+						return false;
+					IJ.log("Stack: " + s.name + " -- dropping request for channel " + ch + " as it is not available in source image.");
+					channelsToRemove.add( ch );	
+				}
+			}
+			// remove dropped channels
+			for (ch : channelsToRemove)
+				s.neededChannels.remove( ch );
+
+			if ( s.neededChannels.size() == 0 )
+				stacksToRemole.add( s );
+		}
+		// remove empty stacks
+		for ( s : stacksToRemove )
+			project.stacks.remove( s );
+
+		// finds the numbers in structures like ch1, ch3+ch2, etc.
+		neededChannels = project.getNeededChannels();
+		channels = new ArrayList();
+		for ( ch : neededChannels ) {
+			// channels are one-based
+			if ( ch > numAvailableChannels ) {
+				IJ.log("Dropping request for channel " + ch + " as it is not available in source image.");
+			} else {
+				channels.add(ch);
+			}
+		}
+
+		return true;
+	}
+
+	public String toString() {
+		return "TilingJob: " + project;
+	}
+}
+
+/**
+ * Strips quotes (") before and after a string if present.
+ */
+String stripQuotes( String str) {
+	int start = 0, end = str.length();
+	if (str.startsWith("\""))
+		start = 1;
+	if (str.endsWith("\""))
+		end = str.length() - 1;
+	if (start != 0 || end != str.length())
+		return str.substring(start, end);
+	else
+		return str;
+}
+
+/**
+ * Returns the meta data in a string representation.
+ */
+String getStringMetaData( pathName )
+{
+	// open the imaga virtually to obtain meta data
+	options = new ImporterOptions();
+	options.setId( pathName );
+	options.setSplitChannels( false );
+	options.setWindowless( true );
+	options.setVirtual( true );
+	imps = BF.openImagePlus(options);
+	// Get general meta data
+	data = imps[0];
+	imgInfo = new Info();
+	info = imgInfo.getImageInfo( data, data.getChannelProcessor() );
+	data.close();
+
+	return info;
+}
+
+/**
+ * Return the meta data in an OME XML representation.
+ */
+MetadataRetrieve getOMEMetaData( pathName )
+{
+	ImageProcessorReader r = new ImageProcessorReader( new ChannelSeparator( LociPrefs.makeImageReader() ) );
+	ServiceFactory factory = new ServiceFactory();
+	OMEXMLService service = factory.getInstance(OMEXMLService.class);
+	MetadataStore store = service.createOMEXMLMetadata();
+	r.setMetadataStore( store );
+	try
+	{
+		r.setId( pathName );
+		MetadataRetrieve retrieve = service.asRetrieve( r.getMetadataStore() );
+		return retrieve;
+	}
+	catch ( FormatException exc )
+	{
+		IJ.error("FormatException: Sorry, an error occurred: " + exc.getMessage());
+	}
+	catch ( IOException exc )
+	{
+		IJ.error("IOException: Sorry, an error occurred: " + exc.getMessage());
+	}
+	return null;
+}
+
+ImagePlus openImage( pathName )
+{
+	ImageProcessorReader r = new ImageProcessorReader( new ChannelSeparator( LociPrefs.makeImageReader() ) );
+	MetadataStore store = MetadataTools.createOMEXMLMetadata();
+	r.setMetadataStore( store );
+	CompositeImage openedImage = null;
+	try
+	{
+		r.setId( pathName );
+		MetadataRetrieve retrieve = MetadataTools.asRetrieve( r.getMetadataStore() );
+
+		PositiveFloat pw = retrieve.getPixelsPhysicalSizeX( 0 );
+		pw = pw == null ? new PositiveFloat( 1.0 ) : pw;
+		PositiveFloat ph = retrieve.getPixelsPhysicalSizeY( 0 );
+		ph = ph == null ? new PositiveFloat( 1.0 ) : ph;
+		PositiveFloat pd = retrieve.getPixelsPhysicalSizeZ( 0 );
+		pd = pd == null ? new PositiveFloat( 1.0 ) : pd;
+		Double pt = retrieve.getPixelsTimeIncrement( 0 );
+		pt = pt == null ? new Double( 1.0 ) : pt;
+		
+		n = r.getImageCount();
+		w = r.getSizeX();
+		h = r.getSizeY();
+		l = r.getSizeT();
+		d = r.getSizeZ();
+		s = r.getSizeC();
+		IJ.log("Reading image with " + n + " planes, a size of " + w + "x" + h +
+			"x" + d + ", " + l + " time point(s) and " + s + " color channels");
+
+		stack = new ImageStack( w, h );
+		lookupTable = new byte[ r.getSizeC() ][][];
+		for ( int t = 0; t < l; ++t )
+			for ( int z = 0; z < d; ++z )
+				for ( int c = 0; c < s; ++c )
+				{
+					i = t * d * s + z * s + c;
+					ip = r.openProcessors( i )[ 0 ];
+					stack.addSlice( "" + ( i + 1 ), ip );
+					ci = r.getZCTCoords( i )[ 1 ];
+					lookupTable[ ci ] = r.get8BitLookupTable();
+				}
+		imp = new ImagePlus( pathName, stack );
+		calibration = imp.getCalibration();
+		calibration.pixelWidth = pw.getValue();
+		calibration.pixelHeight = ph.getValue();
+		calibration.pixelDepth = pd.getValue();
+		calibration.frameInterval = pt.doubleValue();
+		calibration.setUnit( "um" );
+		imp.setDimensions( r.getSizeC(), r.getSizeZ(), r.getSizeT() );
+		imp.setOpenAsHyperStack( true );
+		openedImage = new CompositeImage( imp );
+		openedImage.setMode( CompositeImage.COMPOSITE );
+	}
+	catch ( FormatException exc )
+	{
+		IJ.error("FormatException: Sorry, an error occurred: " + exc.getMessage());
+	}
+	catch ( IOException exc )
+	{
+		IJ.error("IOException: Sorry, an error occurred: " + exc.getMessage());
+	}
+	return openedImage;
+}
+
+/**
+ * crop a tile from a ColorProcessor.
+ *
+ * @param tileWidth    width of a tile
+ * @param tileHieght   height of a tile
+ * @param tileIndexX   grid index of the tile to crop
+ * @param tileIndexY   grid index of the tile to crop
+ */
+ColorProcessor getTile( ColorProcessor cp, int tileWidth, int tileHeight, int tileIndexX, int tileIndexY )
+{
+	int x = tileWidth * tileIndexX;
+	int y = tileHeight * tileIndexY;
+	cp.setRoi( x, y, tileWidth, tileHeight );
+	ColorProcessor cpTile = cp.crop();
+	// make sure the new tile is of the correct size
+	if (cpTile.getWidth() != tileWidth || cpTile.getHeight() != tileHeight) {
+		ColorProcessor cpTileNew = cpTile.createProcessor(tileWidth, tileHeight);
+		cpTileNew.setColor(0);
+		cpTileNew.fill();
+		cpTileNew.copyBits(cpTile, 0, 0, Blitter.COPY);
+		cpTile = cpTileNew;
+	}
+	return cpTile;
+}
+
+/**
+ * choose the number of scale levels required to fit the
+ * image height into 2*tile_size at the highest level.
+ */
+int getNumScaleLevels( int height, int tileSize )
+{
+	double s = Math.log( (double)height / (double)tileSize ) / Math.log( 2 );
+	if ( s < 1 )
+		return 1;
+	else if ( (int) s == s )
+		return (int) s;
+	else
+		return (int) s + 1;
+}
+
+void createTiles( job, stack, imp, stackDir ) {
+	int numSlices = imp.getNSlices();
+	int tileWidth = tileSize;
+	int tileHeight = tileSize;
+	if ( job.numZoomLevels == -1 )
+		job.numZoomLevels = getNumScaleLevels( imp.getHeight(), tileSize );
+
+	IJ.log( "computing tiles for " + job.numZoomLevels + " scale levels, " + numSlices + " slices" );
+
+	int lastStep = 0;
+	for ( int sliceIndex = 0; sliceIndex < numSlices; ++sliceIndex )
+	{
+		// expect a hyper stack and set slice accordingly"
+		imp.setPosition(1, sliceIndex+1, 1);
+		imp.updateImage();
+		ColorProcessor cpSlice = new ColorProcessor( imp.getImage() );
+		cpSliceScale = new Scale( cpSlice );
+
+		for ( int scaleLevel = 0; scaleLevel < job.numZoomLevels; ++scaleLevel )
+		{
+			int width = imp.getWidth() / Math.pow( 2, scaleLevel );
+			int height = imp.getHeight() / Math.pow( 2, scaleLevel );
+			ColorProcessor cp = cpSliceScale.scale( width, height );
+
+			int cols = ( width / tileWidth );
+			if ( width > cols * tileWidth )
+				++cols;
+			int rows = ( height / tileHeight );
+			if ( height > rows * tileHeight )
+				++rows;
+			
+			sliceDirName = stackDir + "/" +  sliceIndex;
+
+			// create tiles
+			for ( int tileIndexY = 0; tileIndexY < rows; ++tileIndexY )
+			{
+				for ( int tileIndexX = 0; tileIndexX < cols; ++tileIndexX )
+				{
+					cpTile = getTile( cp, tileWidth, tileHeight, tileIndexX, tileIndexY );
+					ip = new ImagePlus( "" + tileIndexY + ", " + tileIndexX, cpTile );
+					//tileDirName = sliceDirName + "/" + scaleLevel + "/" + tileIndexY;
+					//tileFileName = tileDirName + "/" + tileIndexX + ".jpg";
+					tileDirName = sliceDirName + "/";
+					tileFileName = tileDirName + tileIndexY + "_" + tileIndexX + "_" + scaleLevel + ".jpg";
+					// IJ.log( "writing " + tileFileName );
+					new File( tileDirName ).mkdirs();
+					saver = new FileSaver( ip );
+					saver.saveAsJpeg( tileFileName );
+				}
+			}
+
+			// create overview image
+			int width = imp.getWidth();
+			int height = imp.getHeight();
+			if ( width > height )
+			{
+				height = (height * thumbnailSize) / width;
+				width = thumbnailSize;
+			}
+			else
+			{
+				width = (width * thumbnailSize) / height;
+				height = thumbnailSize;
+			}
+			cpOverview = cpSliceScale.scale( width, height );
+			ip = new ImagePlus( "overview", cpOverview );
+			overviewFileName = sliceDirName + "/" + overviewName + ".jpg";
+			saver = new FileSaver( ip );
+			saver.saveAsJpeg( overviewFileName );
+		}
+
+		percent = (int) ( ((sliceIndex + 1) / (float) numSlices) * 100.0 + 0.5 );
+		diff = percent - lastStep;
+		if ( diff >= 10  || percent == 100 ) {
+			lastStep += (int)diff;
+			//lastStep = Math.min( 100, lastStep );
+			IJ.log(lastStep + "% completed");
+		}
+	}
+}
+
+void tileSingleImage( job, stack ) {
+	imgFile = new File( stack.imagePath);
+	if ( ! imgFile.exists() || ! imgFile.isFile() )
+	{
+		IJ.log( "File `" + stack.imagePath + "' not found." );
+		return;
+	}
+	imp = openImage ( stack.imagePath );
+	if ( imp == null )
+	{
+		IJ.log( "File `" + stack.imagePath + "' could not be opened." );
+		return;
+	}
+	IJ.log("Using stack image file: " + stack.imagePath);
+	// cut away the channel information
+	imgDirName = job.outputDir + stack.folder;
+	imgDir = new File(imgDirName);
+	// create folder for the new tiles
+	imgDir.mkdirs();
+	IJ.log("Using output dir: " + imgDirName);
+	createTiles( job, stack, imp, imgDirName );
+	// finally remove the image
+	imgFile = new File( stack.imagePath );
+	imgFile.delete();
+}
+
+String getChannelName(num, postfix) {
+	return "-ch" + num + postfix + ".tif";
+}
+
+/**
+ * Pre-process an image by creating an image for eack stack of the
+ * project. The project structure is then filled with information
+ * where these images can be found.
+ */
+void preProcess( job ) {
+	// remove the extension from the file name
+	imgPath = new File( job.imagePath );
+	imgFile = imgPath.getName();
+	imgFileNameBase = imgFile.substring(0, imgFile.lastIndexOf('.'));
+
+	IJ.log("Preprocessing image " + job.imagePath);
+	macro = "setBatchMode(true);\n"
+		+"run(\"Bio-Formats\", \"open=[" + job.imagePath + "] view=Hyperstack stack_order=XYCZT display_metadata=false\");\n"
+		+"originalImageID = getImageID();\n"
+		+"Stack.setDisplayMode(\"color\");\n"
+		+"Stack.getDimensions(width, height, channels, slices, frames);\n"
+		// get dimension and resolution info
+		+"getPixelSize(unit, pw, ph, pd);\n"
+		+"factor = " + job.unitConvFactor + ";\n"
+		+"dimStr = \"dimension: (\" + width + \",\" + height + \",\" + slices + \")\";\n"
+		+"resStr = \"resolution: (\" + pw*factor + \",\" + ph*factor + \",\" + pd*factor + \")\";\n"
+		+"infoStr = dimStr + \"\\n\" + resStr + \"\\n\";\n";
+
+	/* For better performance we first process all composite stacks.
+	 * After that the single channel requests will be worked on.
+	 */
+
+	compositeRequests = new ArrayList();
+	for ( stack : job.project.stacks ) {
+		if ( stack.type == StackType.Composite || stack.type == StackType.CompositeZProjection )
+			compositeRequests.add( stack );
+	}
+
+	singleChannelRequests = new ArrayList();
+	for ( stack : job.project.stacks ) {
+		if ( stack.type == StackType.SingleChannel || stack.type == StackType.SingleChannelZProjection )
+			singleChannelRequests.add( stack );
+	}
+
+	macro += "wantedChannels = newArray(channels);\n";
+
+	// iterate over the composite requests
+	for ( stack : compositeRequests ) {
+		// reset wanted channels
+		macro += "Array.fill(wantedChannels, 0);\n";
+		// set only those channels active, that are needed for this stack
+		int numChannels = stack.neededChannels.size();
+		for (int i=0; i<numChannels; ++i) {
+			ch = stack.neededChannels.get(i).intValue();
+			macro += "if (" + ch + " <= channels) {"
+				+" Stack.setChannel(" + ch  + ");\n"
+				+" setMinAndMax(0, " + job.maxValue + ");\n"
+				+" run(\"" + job.colors.get( ch ) + "\");\n"
+				+" wantedChannels[" + (ch - 1) + "]=1;\n"
+				+"}";
+		}
+
+		// create a string describing which channels to use
+		macro += "activeChannels = \"\";\n"
+			+"for (i=0; i<channels; i++) {\n"
+			+"  activeChannels = activeChannels + wantedChannels[i];\n"
+			+"}";
+
+		// Make only the channels active that we want
+		macro += "Stack.setDisplayMode(\"composite\");\n"
+			+"Stack.setActiveChannels(activeChannels);\n"
+			+"run(\"Stack to RGB\", \"slices keep\");\n";
+
+		fileName = "";
+		if ( stack.type == StackType.Composite )
+		{
+			fileName = imgFileNameBase + "-composite.tif";
+			macro += "saveAs(\"Tiff\", \"" + fileName + "\");\n";
+		}
+		else
+		{
+			fileName = imgFileNameBase + "-composite_zproj.tif";
+			macro += "run(\"Z Project...\", \"start=1 stop=\" + slices + \" projection=[Max Intensity]\");\n"
+				+"saveAs(\"Tiff\", \"" + fileName + "\");\n"
+				+"close();\n";
+		}
+		stack.imagePath = fileName;
+
+		// close the RGB image
+		macro += "close();\n";
+	}
+
+	// split the image into its channels and find out their IDs
+	macro += "run(\"Split Channels\");\n"
+			+"channelIDs = newArray( channels );\n"
+			+"nChannelsFound = 0;\n"
+			+"for (i=0; i<channels; i++) {\n"
+			+"  n = i + 1;\n"
+			+"  selectImage( n );\n"
+			+"  id = getImageID();\n"
+			+"  if (id!=originalImageID) {\n"
+			+"    channelIDs[ nChannelsFound ] = id;\n"
+			+"    nChannelsFound++;\n"
+			+"  }\n"
+			+"}\n";
+
+	// make the splitted channels 8bit and apply gray scale if wanted
+	macro += "for (i=0; i<channels; i++) {\n"
+			+"  selectImage( channelIDs[i] );\n"
+			+"  run(\"8-bit\");\n";
+	if (job.grayscaleSingleChannels)
+		macro += "  run(\"Grays\");\n";
+	macro += "};";
+
+	// iterate over the single image jobs
+	for ( stack : singleChannelRequests ) {
+		ch = stack.neededChannels.get(0).intValue();
+		// select the wanted channel, keep in mind that channels are one-based
+		macro += "selectImage( channelIDs[" + (ch - 1) + "] );\n";
+		// create a name for this channel
+		chName = "";
+		if (stack.type == StackType.SingleChannel)
+		{
+			chName = imgFileNameBase + getChannelName(ch, "");
+			macro += "saveAs(\"Tiff\", \"" + chName + "\");\n";
+		}
+		else
+		{
+			chName = imgFileNameBase + getChannelName(ch, "_zproj");
+			macro += "run(\"Z Project...\", \"start=1 stop=\" + slices + \" projection=[Average Intensity]\");\n"
+					+"saveAs(\"Tiff\", \"" + chName + "\");\n"
+					+"close();\n";
+		}
+		stack.imagePath = chName;
+	}
+
+	// close all images
+	macro += "for (i=0; i<channels; i++) {\n"
+			+"  selectImage( channelIDs[i] );\n"
+			+"  close();\n"
+			+"}\n";
+
+	if (job.useGeneratedInfo)
+		macro += "return infoStr;\n";
+
+	output = IJ.runMacro(macro);
+	if (job.useGeneratedInfo) {
+		IJ.log("Output of macro: " + output);
+		job.generatedInfo = output;
+	}
+}
+
+ArrayList getInputFiles( path )
+{
+	// look for files to tile
+	files = null;
+	f = new File( path );
+	if ( f.exists() ) {
+		in = null;
+		try {
+			// look for a list of images to work on
+			files = new ArrayList();
+			fstream = new FileInputStream(f);
+			in = new DataInputStream(fstream);
+			br = new BufferedReader(new InputStreamReader(in));
+			String strLine;
+			while ((strLine = br.readLine()) != null) {
+				// skip comments (lines starting with #)
+				if (strLine.trim().startsWith("#"))
+					continue;
+				// try to treat line as file path
+				imgFile = new File(strLine);
+				if ( imgFile.exists() ) {
+					files.add(strLine);
+					IJ.log("found file " + strLine);
+				} else {
+					IJ.log("could not find file " + strLine);
+				}
+			}
+		} catch (e) {
+			System.err.println("Error: " + e.getMessage());
+			e.printStackTrace();
+		} finally {
+			if (in != null)
+				in.close();
+		}
+	} else {
+		IJ.log( "Couldn't open input file: " + path );
+	}
+	return files;
+}
+
+void work( pool ) {
+	// make sure we got a job
+	if ( pool == null )
+			throw new IllegalArgumentException( "A pool must not be null" );
+	// work serially on the jobs
+	for (job : pool.jobs) {
+		IJ.log("Processing tiling job with channels " + channels.toString() + " (or less if less available) of an image with max. value " + job.maxValue);
+
+		if (job.useGeneratedInfo)
+			IJ.log("Will generate meta data");
+
+		try {
+			/* Pre processing: Open every image, reset the dynamic
+			 * range, create a composite and all single channel
+			 * images, save them and then tile them
+			 */
+			preProcess( job );
+
+			// tile all the images
+			for ( stack : job.project.stacks ) {
+				// tile the image
+				tileSingleImage( job, stack );
+			}
+
+			// write out info string
+			if (job.projectFileAvailable) {
+				File outputFile = new File(job.outputDir + job.projectFileName);
+				FileWriter out = new FileWriter(outputFile);
+				BufferedWriter bout = new BufferedWriter(out);
+				bout.write( job.project.toYaml() );
+				bout.close();
+			}
+		} catch (e) {
+			System.err.println("Error: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+}
+
+String stackDirName = null;
+String projectFileName = "";
+float unitConvFactor = 1000.0;
+int maxValue = 4095;
+boolean grayscaleSingleChannels = true;
+boolean useGeneratedInfo = false;
+//int numZoomLevels = -1; // ...compute from image height
+int numZoomLevels = 4;
+metadataPatterns = new ArrayList();
+ArrayList metadataPatterns;
+String metadataFileName = null;
+
+void setup( options ) {
+	// check what options are available
+
+	// help
+	if ( options.containsKey( "synopsis") || options.containsKey( "help" ) ) {
+		IJ.log( "This script tiles one or more files for the use with CATMAID" );
+		IJ.log( "You can pass the following arguments and options to the script:" );
+		IJ.log( "-ch <list of channels>   -- Define which channels to use, e.g. -ch \"1,2\"" );
+		IJ.log( "-clr <list of colors>    -- Define a list of ImageJ colors to be used for the channels, e.g. -clr \"Green, Magenta\"" );
+		IJ.log( "-max-val <value>         -- The maximum value for dynamic range adjustments, e.g. -max-val 4095" );
+		IJ.log( "-target-dir <dir>        -- Define the directory in which the result should be saved" );
+		IJ.log( "-info-file <filename>    -- The name of the info YAML file" );
+		IJ.log( "-levels <numLevels>      -- Number of zoom-out levels wrt. to the original image (-1 for auto calculation), e.g -levels 4" );
+		IJ.log( "-metadata-file <filename>-- Define the name of a file that should be used for metadata retrieval" );
+		IJ.log( "-gen-meta <identifiers>  -- Let the tool add some meta data from the file, saved in file info file, for single channels, e.g. -gen-meta \"IlluminationChannel #<$Ch> Power|Power, IlluminationChannel #<$Ch> Wavelength|Wavelength\"" );
+		IJ.log( "--gen-info               -- Let the tool generate information about resolution and size, saved in file info file" );
+		IJ.log( "--z-project              -- Let the tool do a z-projection image for each generated stack" );
+		IJ.log( "--color-single-ch        -- Create colored single channels images, intead of gray ones" );
+		System.exit(0);
+	}
+
+	// channels
+	channels = new ArrayList();
+	if( options.containsKey( "-ch" ) ) {
+		channelOption = options.get("-ch");
+		wantedChannels = channelOption.split(",");
+		for (int i=0; i < wantedChannels.length; i++)
+			channels.add( new Integer( wantedChannels[ i ].trim() ).intValue() );
+		IJ.log( "Using channels: " + channels.toString() );
+	} else {
+		// add default channels
+		IJ.log("Using default channels: [1, 2, 3, 4, 5]");
+		channels.add(1);
+		channels.add(2);
+		channels.add(3);
+		channels.add(4);
+		channels.add(5);
+		numChannels = channels.size();
+	}
+	IJ.log( "! Currently only the project definition is used !" );
+
+	// channel colors
+	colors = new ArrayList();
+	if( options.containsKey( "-clr" ) ) {
+		colorOption = options.get("-clr");
+		wantedColors = colorOption.split(",");
+		for (int i=0; i < wantedColors.length; i++)
+			colors.add( wantedColors[ i ].trim() );
+		IJ.log( "Using colors: " + colors.toString() );
+	} else {
+		// add default colors if file was not found
+		colors.add("Blue");
+		colors.add("Green");
+		colors.add("Magenta");
+		colors.add("Grays");
+		IJ.log("Using default colors: [Blue, Green, Magenta, Grays]");
+	}
+
+	metadataPatterns = new ArrayList();
+	if ( options.containsKey( "-gen-meta" ) ) {
+		metadataOption = options.get("-gen-meta");
+		wantedMetadata = metadataOption.split(",");
+		for (int i=0; i < wantedMetadata.length; i++)
+			metadataPatterns.add( wantedMetadata[ i ].trim() );
+		IJ.log( "Looking for metadata IDs: " + metadataPatterns.toString() );
+	}
+
+	// generated info YAML file -- default: false
+	useGeneratedInfo = options.containsKey( "gen-info" );
+
+	// create Z projections -- default: false
+	createZProjections = options.containsKey( "z-project" );
+
+	// gray scale for single channels -- default: true
+	grayscaleSingleChannels = ! options.containsKey( "color-single-ch" );
+
+	// max value for dynamic range adjustment -- default: 4095
+	if ( options.containsKey( "-max-val" ) ) {
+		maxValue = new Integer( options.get( "-max-val" ) ).intValue();
+	} else {
+		maxValue = 4095;
+	}
+	
+	// number of zoom-out levels (each brings 50% in size) -- default: 4
+	if ( options.containsKey( "-levels" ) ) {
+		numZoomLevels = new Integer( options.get( "-levels" ) ).intValue();
+	} else {
+		numZoomLevels = 4;
+	}
+
+	// input file -- default totile.txt
+	if ( options.containsKey( "-input" ) ) {
+		inputFile = options.get( "-input" );
+	} else {
+		inputFile = "totile.txt";
+	}
+
+	// target directory -- default: ./tile_output/
+	if ( options.containsKey( "-target-dir" ) ) {
+		stackDirName = options.get( "-target-dir" );
+	} else {
+		stackDirName = "./tile_output/";
+	}
+
+	// info file name -- default: project.yaml
+	if ( options.containsKey( "-info-file" ) ) {
+		projectFileName = options.get( "-info-file" );
+	} else {
+		projectFileName = "project.yaml";
+	}
+
+	// metadata file name -- default: none
+	if ( options.containsKey( "-metadata-file" ) ) {
+		metadataFileName = options.get( "-metadata-file" );
+	} else {
+		metadataFileName = null;
+	}
+}
+
+////////////// main ////////////////
+
+// a place to keep our options
+options = new HashMap();
+
+jobPool = new TilingJobPool();
+
+// CL argument based on: http://stackoverflow.com/questions/7341683
+for (int i; i < bsh.args.length; i++) {
+	switch (bsh.args[i].charAt(0)) {
+	case '-':
+		if (bsh.args[i].length() < 2)
+			throw new IllegalArgumentException("Not a valid argument: "+bsh.args[i]);
+		if (bsh.args[i].charAt(1) == '-') {
+				if (bsh.args[i].length() < 3)
+					throw new IllegalArgumentException("Not a valid argument: "+bsh.args[i]);
+				// --opt
+				options.put( bsh.args[i].substring(2, bsh.args[i].length() ), "" );
+			} else {
+				if (bsh.args.length - 1 == i)
+					throw new IllegalArgumentException("Expected arg after: "+bsh.args[i]);
+				// -opt
+				options.put( bsh.args[i], bsh.args[i+1] );
+				i++;
+			}
+			break;
+	}
+}
+
+// parse arguments and create jobs
+setup( options );
+files = getInputFiles( inputFile );
+for (String f : files) {
+	j = new TilingJob( f, projectFileName, colors, stackDirName, unitConvFactor, maxValue, grayscaleSingleChannels, useGeneratedInfo, numZoomLevels, metadataPatterns, metadataFileName );
+	jobPool.jobs.add( j );
+	System.out.println( "Added new job: " + j );
+}
+// start tile creation
+work( jobPool );
+// end
+IJ.log( "Done." );
+

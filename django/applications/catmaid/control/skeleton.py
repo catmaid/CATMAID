@@ -25,6 +25,16 @@ def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
         'count': Treenode.objects.filter(skeleton_id=skeleton_id).count(),
         'skeleton_id': skeleton_id}), mimetype='text/json')
 
+#@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def neuronname(request, project_id=None, skeleton_id=None):
+    p = get_object_or_404(Project, pk=project_id)
+    qs = ClassInstanceClassInstance.objects.filter(
+            relation__relation_name='model_of',
+            project=p,
+            class_instance_a=int(skeleton_id)).select_related("class_instance_b")
+    return HttpResponse(json.dumps({'neuronname': qs[0].class_instance_b.name,
+        'neuronid': qs[0].class_instance_b.id }), mimetype='text/json')
+
 
 @requires_user_role(UserRole.Annotate)
 def split_skeleton(request, project_id=None):

@@ -767,8 +767,8 @@ var ObjectTree = new function()
       }, function (r) {
           r = $.parseJSON(r);
           if(r['error']) {
-              alert(r['error']);
-              $.jstree.rollback(data.rlbk);
+            alert(r['error']);
+            $.jstree.rollback(data.rlbk);
           }
       });
     });

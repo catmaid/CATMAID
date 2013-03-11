@@ -867,6 +867,42 @@ var WindowMaker = new function()
                 }
         });
 
+        var sync = document.createElement('select');
+        sync.setAttribute("id", "logtable_operationtype");
+        var option = document.createElement("option");
+        option.text = "All";
+        option.value = -1;
+        sync.appendChild(option);
+        var operation_type_array = [
+        "rename_root",
+        "create_neuron",
+        "rename_neuron",
+        "remove_neuron",
+        "move_neuron",
+
+        "create_group",
+        "rename_group",
+        "remove_group",
+        "move_group",
+
+        "create_skeleton",
+        "rename_skeleton",
+        "remove_skeleton",
+        "move_skeleton",
+
+        "split_skeleton",
+        "join_skeleton",
+        "reroot_skeleton",
+
+        "change_confidence"
+        ];
+        for( var i = 0; i < operation_type_array.length; i++ ) {
+          var option = document.createElement("option");
+            option.text = operation_type_array[i];
+            option.value = operation_type_array[i];
+            sync.appendChild(option);            
+        }
+        contentbutton.appendChild(sync);
         content.appendChild( contentbutton );
 
         var container = createContainer("logtable_widget");
@@ -882,7 +918,7 @@ var WindowMaker = new function()
                     '<th>x</th>' +
                     '<th>y</th>' +
                     '<th>z</th>' +
-                    '<th>freetext</th>' +
+                    '<th>freetext<input type="text" name="search_freetext" id="search_freetext" value="" class="search_init" /></th>' +
                 '</tr>' +
                 '</thead>' +
                 '<tfoot>' +

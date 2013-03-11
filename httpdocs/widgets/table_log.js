@@ -41,6 +41,14 @@ var LogTable = new function()
                         "name" : "pid",
                         "value" : pid
                     });
+                    aoData.push({
+                        "name": "operation_type",
+                        "value" : $('#logtable_operationtype').val()
+                    });
+                    aoData.push({
+                        "name": "search_freetext",
+                        "value" : $('#search_freetext').val()
+                    });
                     $.ajax({
                         "dataType": 'json',
                         "cache": false,

@@ -11,10 +11,13 @@ from catmaid.control.common import *
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_logs(request, project_id=None):
     user_id = int(request.POST.get('user_id', -1))  # We can see logs for different users
+    operation_type = request.POST.get('operation_type', "-1")
+    search_freetext = request.POST.get('search_freetext', "")
+    
     display_start = int(request.POST.get('iDisplayStart', 0))
     display_length = int(request.POST.get('iDisplayLength', -1))
     if display_length < 0:
-        display_length = 200  # Default number of result rows
+        display_length = 2000  # Default number of result rows
 
     should_sort = request.POST.get('iSortCol_0', False)
     if should_sort:
@@ -29,6 +32,11 @@ def list_logs(request, project_id=None):
     log_query = Log.objects.for_user(request.user).filter(project=project_id)
     if user_id not in [-1, 0]:
         log_query = log_query.filter(user=user_id)
+    if not operation_type == "-1":
+        log_query = log_query.filter(operation_type=operation_type)
+    if not search_freetext == "":
+        log_query = log_query.filter(freetext__contains=search_freetext)
+
     log_query = log_query.extra(tables=['auth_user'], where=['"log"."user_id" = "auth_user"."id"'], select={
         'x': '("log"."location")."x"',
         'y': '("log"."location")."y"',

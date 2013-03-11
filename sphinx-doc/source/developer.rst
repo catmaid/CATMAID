@@ -13,3 +13,4 @@ Developer Documentation
    celeryinstall
    catmaid_aws
    data_view_types
+   alternative_install

@@ -35,3 +35,5 @@ from importer import *
 from slice import *
 from drawing import *
 from contraint import *
+from graph import *
+

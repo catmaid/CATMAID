@@ -8,7 +8,11 @@ var TreenodeTable = new function()
   var ns = this; // reference to the namespace
   ns.oTable = null;
   var asInitVals = [];
+<<<<<<< HEAD
   asInitVals[1] = 'Leaf';
+=======
+  asInitVals[1] = "L";
+>>>>>>> Show leaf nodes by default in skeleton table. Closes #475
   var skelid = -1; // Skeleton currently shown
   var last_displayed_skeletons = {};
   last_displayed_skeletons[0] = 'None';

@@ -62,7 +62,7 @@ following, a Nginx configuration is provided to give access to CATMAID::
       # Route all CATMAID Django WSGI requests to the Gevent WSGI server
       location /dj/ {
           proxy_pass http://catmaid-wsgi/;
-          proxy_redirect http://catmaid-wsgi/ http://$host;
+          proxy_redirect http://catmaid-wsgi/ http://$host/;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
       }
 

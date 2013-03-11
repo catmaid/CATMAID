@@ -339,9 +339,7 @@ def get_groups_with_perms_cls(cls, attach_perms=False):
     """
     ctype = ContentType.objects.get_for_model(cls)
     if not attach_perms:
-        groups = Group.objects.filter(
-            groupobjectpermission__content_type=ctype).distinct()
-        return groups
+        return Group.objects.all()
     else:
         groups = {}
         for group in get_groups_with_perms_cls(cls):

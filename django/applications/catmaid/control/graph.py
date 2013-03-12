@@ -20,27 +20,32 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold):
     ''' % skeletons_string)
     rows = tuple(cursor.fetchall())
     # Each skeleton is represented with a DiGraph
-    skeletons = defaultdict(nx.DiGraph)
+    arbors = defaultdict(nx.DiGraph)
 
     # Create a DiGraph for every skeleton
     for row in rows:
-        skeletons[row[3]].add_node(row[0])
+        arbors[row[3]].add_node(row[0])
     # Define edges, which may result in multiple subgraphs for each skeleton
     # when splitting at low-confidence edges:
     if 0 == confidence_threshold:
         # Do not split skeletons
         for row in rows:
-            skeletons[row[3]].add_edge(row[1], row[0])
+            arbors[row[3]].add_edge(row[1], row[0])
+        for skid, digraph in arbors.iteritems():
+            arbors[skid] = [digraph]
     else:
         # The DiGraph representing the skeleton may be disconnected at a low-confidence edge
+        to_split = set()
         for row in rows:
-            if row[2] >= confidence_threshold:
-                skeletons[row[3]].add_edge(row[1], row[0])
-
-    # An 'arbor' is a skeleton, or subset, whose nodes are all connected.
-    # Express the skeleton map as a map of skeleton ID vs list of arbors
-    fn = list if 0 == confidence_threshold else weakly_connected_component_subgraphs
-    arbors = {skid: fn(digraph) for skid, digraph in skeletons.iteritems()}
+            if row[2] < confidence_threshold:
+                to_split.add(row[3])
+            else:
+                arbors[row[3]].add_edge(row[1], row[0])
+        for skid, digraph in arbors.iteritems():
+            if skid in to_split:
+                arbors[skid] = weakly_connected_component_subgraphs(digraph)
+            else:
+                arbors[skid] = [digraph]
 
     # Fetch all synapses
     relations = {'presynaptic_to': -1, 'postsynaptic_to': -1}
@@ -97,7 +102,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold):
                     break
     return circuit
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+#@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_graph(request, project_id=None):
     project_id = int(project_id)
     skeleton_ids = map(int, request.POST.getlist('skeleton_list[]'))

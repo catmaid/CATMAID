@@ -72,7 +72,7 @@ class ImageBaseMixin:
             self.image_base = self.image_base + '/'
 
         # Test if the data is accessible through HTTP
-        self.accessible = check_http_accessibility( self.image_base )
+        self.accessible = check_http_accessibility( self.image_base, self.file_extension )
 
 class PreOverlay(ImageBaseMixin):
     def __init__(self, info_object, project_url, data_folder):

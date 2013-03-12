@@ -29,6 +29,26 @@ info_file_name = "project.yaml"
 datafolder_setting = "CATMAID_IMPORT_PATH"
 base_url_setting = "CATMAID_IMPORT_URL"
 
+class UserProxy(User):
+    """ A proxy class for the user model as we want to be able to call
+    get_name() on a user object and let it return the user name.
+    """
+    class Meta:
+        proxy = True
+
+    def get_name(self):
+        return self.username
+
+class GroupProxy(Group):
+    """ A proxy class for the group model as we want to be able to call
+    get_name() on a group object and let it return the group name.
+    """
+    class Meta:
+        proxy = True
+
+    def get_name(self):
+        return self.name
+
 class ImageBaseMixin:
     def set_image_fields(self, info_object, project_url, data_folder, needs_zoom):
         """ Sets the image_base, num_zoom_levels, file_extension fields
@@ -243,10 +263,15 @@ class ImportingWizard(SessionWizardView):
             # Update the folder list and select all by default
             form.fields['projects'].choices = folders
             form.fields['projects'].initial = [f[0] for f in folders]
-            # Get the available permissions and update the list
-            group_permissions = get_group_permissions(Project)
+            # Get the available user permissions and update the list
+            user_permissions = get_element_permissions(UserProxy, Project)
+            form.user_permissions = user_permissions
+            user_perm_tuples = get_element_permission_tuples(user_permissions)
+            form.fields['user_permissions'].choices = user_perm_tuples
+            # Get the available group permissions and update the list
+            group_permissions = get_element_permissions(GroupProxy, Project)
             form.group_permissions = group_permissions
-            group_perm_tuples = get_group_permission_tuples(group_permissions)
+            group_perm_tuples = get_element_permission_tuples(group_permissions)
             form.fields['group_permissions'].choices = group_perm_tuples
         return form
 
@@ -279,9 +304,12 @@ class ImportingWizard(SessionWizardView):
                 else:
                     tags = [t.strip() for t in tags.split(',')]
                 # Permissions
+                user_permissions = self.get_cleaned_data_for_step(
+                    'projectselection')['user_permissions']
+                user_permissions = get_permissions_from_selection( User, user_permissions )
                 group_permissions = self.get_cleaned_data_for_step(
                     'projectselection')['group_permissions']
-                group_permissions = get_permissions_from_selection( group_permissions )
+                group_permissions = get_permissions_from_selection( Group, group_permissions )
                 # Other settings
                 max_num_stacks = 0
                 tile_width = self.get_cleaned_data_for_step('projectselection')['tile_width']
@@ -293,6 +321,7 @@ class ImportingWizard(SessionWizardView):
                     'projects': selected_projects,
                     'max_num_stacks': max_num_stacks,
                     'tags': tags,
+                    'user_permissions': user_permissions,
                     'group_permissions': group_permissions,
                     'tile_width': tile_width,
                     'tile_height': tile_height,
@@ -312,9 +341,13 @@ class ImportingWizard(SessionWizardView):
         selected_paths = self.get_cleaned_data_for_step('projectselection')['projects']
         selected_projects = [ self.projects[p] for p in selected_paths ]
         # Get permissions
+        user_permissions = self.get_cleaned_data_for_step(
+            'projectselection')['user_permissions']
+        user_permissions = get_permissions_from_selection( User, user_permissions )
         group_permissions = self.get_cleaned_data_for_step(
             'projectselection')['group_permissions']
-        group_permissions = get_permissions_from_selection( group_permissions )
+        group_permissions = get_permissions_from_selection( Group, group_permissions )
+        permissions = user_permissions + group_permissions
         # Tags
         tags = self.get_cleaned_data_for_step('projectselection')['tags']
         tags = [t.strip() for t in tags.split(',')]
@@ -324,7 +357,7 @@ class ImportingWizard(SessionWizardView):
         tile_height = self.get_cleaned_data_for_step('projectselection')['tile_height']
         tile_source_type = 1
         imported_projects, not_imported_projects = import_projects(
-            selected_projects, make_public, tags, group_permissions,
+            selected_projects, make_public, tags, permissions,
             tile_width, tile_height, tile_source_type)
         # Show final page
         return render_to_response('catmaid/import/done.html', {
@@ -346,47 +379,47 @@ def importer_admin_view(request, *args, **kwargs):
 def importer_finish(request):
     return render_to_response('catmaid/import/done.html', {})
 
-def get_groups_with_perms_cls(cls, attach_perms=False):
+def get_elements_with_perms_cls(element, cls, attach_perms=False):
     """ This is a slightly adapted version of guardians
     group retrieval. It doesn't need an object instance.
     """
     ctype = ContentType.objects.get_for_model(cls)
     if not attach_perms:
-        return Group.objects.all()
+        return element.objects.all()
     else:
-        groups = {}
-        for group in get_groups_with_perms_cls(cls):
-            if not group in groups:
-                groups[group] = get_perms_for_model(cls)
-        return groups
+        elements = {}
+        for elem in get_elements_with_perms_cls(element, cls):
+            if not elem in elements:
+                elements[elem] = get_perms_for_model(cls)
+        return elements
 
-def get_group_permissions(cls):
-    groups_perms = get_groups_with_perms_cls(cls, True)
-    groups_perms = SortedDict(groups_perms)
-    groups_perms.keyOrder.sort(key=lambda group: group.name)
-    return groups_perms
+def get_element_permissions(element, cls):
+    elem_perms = get_elements_with_perms_cls(element, cls, True)
+    elem_perms = SortedDict(elem_perms)
+    elem_perms.keyOrder.sort(key=lambda elem: elem.get_name())
+    return elem_perms
 
-def get_group_permission_tuples(groups_perms):
-    """ Out of list of (group, [permissions] tuples, produce a
+def get_element_permission_tuples(element_perms):
+    """ Out of list of (element, [permissions] tuples, produce a
     list of tuples, each of the form
-    (<group_id>_<perm_codename>, <group_name> | <parm_name>)
+    (<element_id>_<perm_codename>, <element_name> | <parm_name>)
     """
     tuples = []
-    for g in groups_perms:
-        for p in groups_perms[g]:
-            pg_id = str(g.id) + "_" + str(p.id)
-            pg_title = g.name + " | " + p.name
+    for e in element_perms:
+        for p in element_perms[e]:
+            pg_id = str(e.id) + "_" + str(p.id)
+            pg_title = e.get_name() + " | " + p.name
             tuples.append( (pg_id, pg_title) )
     return tuples
 
-def get_permissions_from_selection(selection):
+def get_permissions_from_selection(cls, selection):
     permission_list = []
     for perm in selection:
-        group_id = perm[:perm.index('_')]
-        group = Group.objects.filter(id=group_id)[0]
+        elem_id = perm[:perm.index('_')]
+        elem = cls.objects.filter(id=elem_id)[0]
         perm_id = perm[perm.index('_')+1:]
         perm = Permission.objects.filter(id=perm_id)[0]
-        permission_list.append( (group, perm) )
+        permission_list.append( (elem, perm) )
     return permission_list
 
 class DataFileForm(forms.Form):
@@ -425,6 +458,10 @@ class ProjectSelectionForm(forms.Form):
     make_projects_public = forms.BooleanField(initial=False,
         required=False, help_text="If made public, a project \
         can be seen without being logged in.")
+    user_permissions = forms.MultipleChoiceField(required=False,
+        widget=forms.SelectMultiple(attrs={'size':'10'}),
+        help_text="The selected <em>user/permission combination</em> \
+                   will be assigned to every project.")
     group_permissions = forms.MultipleChoiceField(required=False,
         widget=forms.SelectMultiple(attrs={'size':'10'}),
         help_text="The selected <em>group/permission combination</em> \

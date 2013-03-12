@@ -94,6 +94,7 @@
     <p><table>
         <tr>
             <th>Tags</th>
+            <th>User Permissions</th>
             <th>Group Permissions</th>
             <th>Tile width</th>
             <th>Tile height</th>
@@ -107,6 +108,11 @@
             {% else %}
                 <em>(None)</em>
             {% endif %}
+            </td>
+            <td>
+            {% for user, perm in user_permissions %}
+                {{ user.username }} | {{ perm.name }}<br />
+            {% endfor %}
             </td>
             <td>
             {% for group, perm in group_permissions %}

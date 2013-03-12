@@ -13,6 +13,7 @@ from models import Project, Stack, Integer3D, Double3D, ProjectStack
 from models import ClassInstance, Session, Log, Message, TextlabelLocation
 from models import Treenode, Connector, TreenodeConnector, User
 from models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
+from .fields import Double3D
 from views.catmaid_replacements import get_relation_to_id_map, get_class_to_id_map
 
 

@@ -76,9 +76,83 @@ var WindowMaker = new function()
   };
 
 
+  var createStagingListWindow = function() {
+    var win = new CMWWindow("Neuron Staging Table");
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer("neuron_staging_table");
+    content.appendChild(container);
+
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
+    add.setAttribute("id", "add_current_to_3d_webgl_view");
+    add.setAttribute("value", "Add active skeleton");
+    add.onclick = WebGLApp.addActiveSkeletonToView;
+    container.appendChild(add);
+
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
+    rand.setAttribute("id", "store_skeleton_list");
+    rand.setAttribute("value", "Store list");
+    rand.onclick = WebGLApp.storeSkeletonList;
+    container.appendChild(rand);
+
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
+    rand.setAttribute("id", "load_skeleton_list");
+    rand.setAttribute("value", "Load list");
+    rand.onclick = WebGLApp.loadSkeletonList;
+    container.appendChild(rand);
+
+    var tabdiv = document.createElement('div');
+    tabdiv.setAttribute("id", "view-3d-webgl-skeleton-table-div");
+    tabdiv.style.height = "150px";
+    tabdiv.style.overflow = "auto";
+    container.appendChild(tabdiv);
+
+    var tab = document.createElement('table');
+    tab.setAttribute("id", "webgl-skeleton-table");
+    tab.innerHTML =
+        '<thead>' +
+          '<tr>' +
+            '<th width="100px">action</th>' +
+            '<th>name</th>' +
+            '<th>show</th>' +
+            '<th>pre</th>' +
+            '<th>post</th>' +
+            '<th>text</th>' +
+            '<th>property</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tbody>' +
+          '<tr>' +
+            '<td><button type="button" id="webgl-rmall">remove all</button></td>' +
+            '<td></td>' +
+            '<td><button type="button" id="webgl-show">hide</button></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+            '<td></td>' +
+          '</tr>' +
+        '</tbody>';
+    tabdiv.appendChild(tab);
+
+    addListener(win, container, 'neuron-staging-table');
+
+    addLogic(win);
+
+    return win;
+
+  }
+
   /** Creates and returns a new 3d webgl window */
   var create3dWebGLWindow = function()
   {
+
+    if( $( "#neuron_staging_table").length == 0 ) {
+        createStagingListWindow();
+    }
 
     if ( !Detector.webgl ) {
       alert('Your browser does not seem to support WebGL.');
@@ -91,13 +165,6 @@ var WindowMaker = new function()
 
     var container = createContainer("view_in_3d_webgl_widget");
     content.appendChild(container);
-
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "add_current_to_3d_webgl_view");
-    add.setAttribute("value", "Show active skeleton");
-    add.onclick = WebGLApp.addActiveSkeletonToView;
-    container.appendChild(add);
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
@@ -136,13 +203,6 @@ var WindowMaker = new function()
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
-    rand.setAttribute("id", "remove_all");
-    rand.setAttribute("value", "Remove all");
-    rand.onclick = WebGLApp.removeAllSkeletons;
-    container.appendChild(rand);
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
     rand.setAttribute("id", "randomize_skeleton_color");
     rand.setAttribute("value", "Randomize color");
     rand.onclick = WebGLApp.randomizeColors;
@@ -150,110 +210,9 @@ var WindowMaker = new function()
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
-
-    rand.setAttribute("id", "store_skeleton_list");
-    rand.setAttribute("value", "Store list");
-    rand.onclick = WebGLApp.storeSkeletonList;
-    container.appendChild(rand);
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "load_skeleton_list");
-    rand.setAttribute("value", "Load list");
-    rand.onclick = WebGLApp.loadSkeletonList;
-    container.appendChild(rand);
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "save_image");
-    rand.setAttribute("value", "Screenshot");
-    rand.onclick = WebGLApp.saveImage;
-    container.appendChild(rand);
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "toggle_connector");
-    rand.setAttribute("value", "Toggle connector");
-    rand.onclick = WebGLApp.toggleConnector;
-    container.appendChild(rand);
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
     rand.setAttribute("id", "configure_parameters");
-    rand.setAttribute("value", "Configure");
+    rand.setAttribute("value", "Options");
     rand.onclick = WebGLApp.configure_parameters;
-    container.appendChild(rand);
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "checkbox");
-    rand.setAttribute("id", "enable_z_plane");
-    rand.setAttribute("value", "Enable z-plane");
-    rand.onclick = WebGLApp.updateZPlane;
-    container.appendChild(rand);
-    var rand = document.createTextNode('Enable z-plane');
-    container.appendChild(rand);
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "checkbox");
-    rand.setAttribute("id", "show_meshes");
-    rand.setAttribute("value", "Show meshes");
-    rand.onclick = WebGLApp.toggleMeshes;
-    container.appendChild(rand);
-    var rand = document.createTextNode('Show meshes');
-    container.appendChild(rand);
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "checkbox");
-    rand.setAttribute("id", "enable_active_node");
-    rand.setAttribute("value", "Enable active node");
-    rand.onclick = WebGLApp.toggleActiveNode;
-    container.appendChild(rand);
-    var rand = document.createTextNode('Enable active node');
-    container.appendChild(rand);
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "checkbox");
-    rand.setAttribute("id", "enable_missing_sections");
-    rand.setAttribute("value", "Missing sections");
-    rand.onclick = WebGLApp.toggleMissingSections;
-    container.appendChild(rand);
-    var rand = document.createTextNode('Missing sections');
-    container.appendChild(rand);
-
-    /*var rand = document.createElement('input');
-    rand.setAttribute("type", "checkbox");
-    rand.setAttribute("id", "toggle_ortho");
-    rand.setAttribute("value", "Toggle Ortho");
-    rand.onclick = WebGLApp.toggleOrthographic;
-    container.appendChild(rand);
-    var rand = document.createTextNode('Toggle Ortho');
-    container.appendChild(rand);*/
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "checkbox");
-    rand.setAttribute("id", "toggle_floor");
-    rand.setAttribute("value", "Toggle Floor");
-    rand.onclick = WebGLApp.toggleFloor;
-    container.appendChild(rand);
-    var rand = document.createTextNode('Toggle floor');
-    container.appendChild(rand);
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "checkbox");
-    rand.setAttribute("id", "toggle_aabb");
-    rand.setAttribute("value", "Toggle Bounding Box");
-    rand.onclick = WebGLApp.toggleBB;
-    container.appendChild(rand);
-    var rand = document.createTextNode('Toggle Bounding Box');
-    container.appendChild(rand);
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "checkbox");
-    rand.setAttribute("id", "toggle_bgcolor");
-    rand.setAttribute("value", "Toggle Background Color");
-    rand.onclick = WebGLApp.toggleBackground;
-    container.appendChild(rand);
-    var rand = document.createTextNode('Toggle Background Color');
     container.appendChild(rand);
 
     var canvas = document.createElement('div');
@@ -263,29 +222,6 @@ var WindowMaker = new function()
     canvas.style.backgroundColor = "#000000";
     container.appendChild(canvas);
 
-    var tabdiv = document.createElement('div');
-    tabdiv.setAttribute("id", "view-3d-webgl-skeleton-table-div");
-    tabdiv.style.height = "150px";
-    tabdiv.style.overflow = "auto";
-    container.appendChild(tabdiv);
-
-    var tab = document.createElement('table');
-    tab.setAttribute("id", "webgl-skeleton-table");
-    tab.innerHTML =
-        '<thead>' +
-          '<tr>' +
-            '<th id="webgl-show">show</th>' +
-            '<th>pre</th>' +
-            '<th>post</th>' +
-            '<th>text</th>' +
-            '<th>action</th>' +
-            '<th>name</th>' +
-            '<th>property</th>' +
-          '</tr>' +
-        '</thead>' +
-        '<tbody>' +
-        '</tbody>';
-    tabdiv.appendChild(tab);
 
     //addListener(win, container);
     win.addListener(

@@ -4,9 +4,9 @@ var WebGLApp = new function () {
   self = this;
   self.neurons = [];
 
-  var scene, renderer, scale, controls, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
+  var scene, renderer, scale, controls, zplane = null, meshes = [], show_meshes = false, show_active_node = true;
   var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, projector, objects = [],
-      bbmesh, floormesh, black_bg = true, debugax, togglevisibleall = true, show_missing_sections = false, missing_sections = [], mouse = new THREE.Vector2();
+      bbmesh, floormesh, black_bg = true, debugax, togglevisibleall = false, show_missing_sections = false, missing_sections = [], mouse = new THREE.Vector2();
   var is_mouse_down = false, connector_filter = false, missing_section_height = 20, soma_scale = 1.0;
 
   this.init = function( divID ) {
@@ -29,14 +29,24 @@ var WebGLApp = new function () {
     draw_grid();
     XYView();
 
+    self.createActiveNode();
+
     // if there is an active skeleton, add it to the view
     if(SkeletonAnnotations.getActiveNodeId()) {
       self.addSkeletonFromID( self.project_id, SkeletonAnnotations.getActiveSkeletonId() );
 
       // and create active node
       $('#enable_active_node').attr('checked', true);
-      self.createActiveNode();
+      
+      show_active_node = true;
+      self.showActiveNode();
+      self.updateActiveNodePosition();
+      
     }
+
+    $('#webgl-rmall').click(function() {
+        WebGLApp.removeAllSkeletons();
+    })
 
     $('#webgl-show').click(function() {
       for( var skeleton_id in skeletons)
@@ -51,6 +61,10 @@ var WebGLApp = new function () {
         }
       }
       togglevisibleall = !togglevisibleall;
+      if( togglevisibleall )
+        $('#webgl-show').text('show');
+      else
+        $('#webgl-show').text('hide');
       self.render();
     })
     
@@ -808,38 +822,32 @@ var WebGLApp = new function () {
 
   self.createActiveNode = function()
   {
-    if( !SkeletonAnnotations.getActiveNodeId() ) {
-      // alert("You must have an active node selected to add its skeleton to the 3D WebGL View.");
-      return;
-    }
     sphere = new THREE.SphereGeometry( 160 * scale, 32, 32, 1 );
     active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
     active_node.position.set( 0,0,0 );
     scene.add( active_node );
-    self.updateActiveNode();
-    show_active_node = true;
   }
 
-  this.removeActiveNode = function() {
-    if(active_node) {
-      scene.remove( active_node );
-      active_node = null;
-    }
+  this.hideActiveNode = function() {
+    active_node.visible = false;
   }
 
-  this.updateActiveNode = function()
+  this.showActiveNode = function() {
+    active_node.visible = true;
+  }
+
+  this.updateActiveNodePosition = function()
   {
-    if(active_node) {
-      var atn_pos = SkeletonAnnotations.getActiveNodePosition();
-      if( atn_pos !== null) {
-          var co = transform_coordinates( [
-            translation.x + ((atn_pos.x) / project.focusedStack.scale) * resolution.x,
-            translation.y + ((atn_pos.y) / project.focusedStack.scale) * resolution.y,
-            translation.z + atn_pos.z * resolution.z]
-          );
-          active_node.position.set( co[0]*scale, co[1]*scale, co[2]*scale );
-          self.render();
-      }
+    var atn_pos = SkeletonAnnotations.getActiveNodePosition();
+    if( show_active_node ) {
+        self.showActiveNode();
+        var co = transform_coordinates( [
+          translation.x + ((atn_pos.x) / project.focusedStack.scale) * resolution.x,
+          translation.y + ((atn_pos.y) / project.focusedStack.scale) * resolution.y,
+          translation.z + atn_pos.z * resolution.z]
+        );
+        active_node.position.set( co[0]*scale, co[1]*scale, co[2]*scale );
+        self.render();
     }
   }
 
@@ -1003,14 +1011,13 @@ var WebGLApp = new function () {
     mesh.scale.set( scale, scale, scale );
     mesh.position.set( x, y, z );
     mesh.rotation.set( rx, ry, rz );
-    mesh.doubleSided = true;
     meshes.push( mesh );
     scene.add( mesh );
   }
 
   function createScene( geometry, start ) {
     //addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshPhongMaterial( { ambient: 0x030303, color: 0x030303, specular: 0x990000, shininess: 30 } ) );
-    addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.2 } ) ); // , transparent:true
+    addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.2, side: THREE.DoubleSide } ) ); // , transparent:true
   }
 
   function drawmesh() {
@@ -1056,7 +1063,7 @@ var WebGLApp = new function () {
 
   self.removeMissingSections = function() {
     for(var i = 0; i < missing_sections.length; i++) {
-      scene.removeObject( missing_sections[i] );
+      scene.remove( missing_sections[i] );
     }
     missing_sections = [];
   }
@@ -1072,19 +1079,17 @@ var WebGLApp = new function () {
     geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( xwidth,ywidth,0 ) ) );
     geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
 
-    var material = new THREE.MeshBasicMaterial( { color: 0x151349, opacity:0.6, transparent: true  } );
-    var material2 = new THREE.MeshBasicMaterial( { color: 0x00ffff, wireframe: true, wireframeLinewidth: 5  } );
+    var material = new THREE.MeshBasicMaterial( { color: 0x151349, opacity:0.6, transparent: true, side: THREE.DoubleSide } );
+    var material2 = new THREE.MeshBasicMaterial( { color: 0x00ffff, wireframe: true, wireframeLinewidth: 5, side: THREE.DoubleSide } );
     
     var newval, msect;
     for(var i = 0; i < project.focusedStack.broken_slices.length; i++) {
       newval = (-project.focusedStack.broken_slices[ i ] * resolution.z - translation.z) * scale;
       msect = new THREE.Mesh( geometry, material );
-      msect.doubleSided = true;
       msect.position.z = newval;
       missing_sections.push( msect );
       scene.add( msect );  
       msect = new THREE.Mesh( geometry, material2 );
-      msect.doubleSided = true;
       msect.position.z = newval;
       scene.add( msect );  
       missing_sections.push( msect );    
@@ -1105,10 +1110,10 @@ var WebGLApp = new function () {
 
   self.toggleActiveNode = function() {
     if( show_active_node ) {
-      self.removeActiveNode();
+      self.hideActiveNode();
       show_active_node = false;
     } else {
-      self.createActiveNode();
+      self.showActiveNode();
       show_active_node = true;
     }
     self.render();
@@ -1138,6 +1143,104 @@ var WebGLApp = new function () {
     somascale.setAttribute("id", "soma-scale");
     somascale.setAttribute("value", soma_scale);
     dialog.appendChild( somascale );
+    dialog.appendChild( document.createElement("br"));
+
+    /*var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
+    rand.setAttribute("id", "save_image");
+    rand.setAttribute("value", "Screenshot");
+    rand.onclick = WebGLApp.saveImage;
+    dialog.appendChild(rand);
+    dialog.appendChild( document.createElement("br"));*/
+
+    dialog.appendChild( document.createTextNode("Restrict display to shared connectors between visible skeletons") );
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
+    rand.setAttribute("id", "toggle_connector");
+    rand.setAttribute("value", "Restrict connectors");
+    rand.onclick = WebGLApp.toggleConnector;
+    dialog.appendChild(rand);
+    dialog.appendChild( document.createElement("br"));
+
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "enable_z_plane");
+    rand.setAttribute("value", "Enable z-plane");
+    rand.onclick = WebGLApp.updateZPlane;
+    dialog.appendChild(rand);
+    var rand = document.createTextNode('Enable z-plane');
+    dialog.appendChild(rand);
+    dialog.appendChild( document.createElement("br"));
+
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "show_meshes");
+    rand.setAttribute("value", "Show meshes");
+    rand.onclick = WebGLApp.toggleMeshes;
+    dialog.appendChild(rand);
+    var rand = document.createTextNode('Show meshes');
+    dialog.appendChild(rand);
+    dialog.appendChild( document.createElement("br"));
+
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "enable_active_node");
+    rand.setAttribute("value", "Enable active node");
+    rand.setAttribute("checked", "true");
+    rand.onclick = WebGLApp.toggleActiveNode;
+    dialog.appendChild(rand);
+    var rand = document.createTextNode('Enable active node');
+    dialog.appendChild(rand);
+    dialog.appendChild( document.createElement("br"));
+
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "enable_missing_sections");
+    rand.setAttribute("value", "Missing sections");
+    rand.onclick = WebGLApp.toggleMissingSections;
+    dialog.appendChild(rand);
+    var rand = document.createTextNode('Missing sections');
+    dialog.appendChild(rand);
+    dialog.appendChild( document.createElement("br"));
+
+    /*var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "toggle_ortho");
+    rand.setAttribute("value", "Toggle Ortho");
+    rand.onclick = WebGLApp.toggleOrthographic;
+    container.appendChild(rand);
+    var rand = document.createTextNode('Toggle Ortho');
+    container.appendChild(rand);*/
+
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "toggle_floor");
+    rand.setAttribute("value", "Toggle Floor");
+    rand.onclick = WebGLApp.toggleFloor;
+    dialog.appendChild(rand);
+    var rand = document.createTextNode('Toggle floor');
+    dialog.appendChild(rand);
+    dialog.appendChild( document.createElement("br"));
+
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "toggle_aabb");
+    rand.setAttribute("value", "Toggle Bounding Box");
+    rand.onclick = WebGLApp.toggleBB;
+    dialog.appendChild(rand);
+    var rand = document.createTextNode('Toggle Bounding Box');
+    dialog.appendChild(rand);
+    dialog.appendChild( document.createElement("br"));
+
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "toggle_bgcolor");
+    rand.setAttribute("value", "Toggle Background Color");
+    rand.onclick = WebGLApp.toggleBackground;
+    dialog.appendChild(rand);
+    var rand = document.createTextNode('Toggle Background Color');
+    dialog.appendChild(rand);
+    dialog.appendChild( document.createElement("br"));
 
     $(dialog).dialog({
       height: 440,
@@ -1148,7 +1251,7 @@ var WebGLApp = new function () {
         },
         "OK": function() {
           $(this).dialog("close");
-          console.log($('#missing-section-height').val())
+          // console.log($('#missing-section-height').val())
           missing_section_height = $('#missing-section-height').val();
           soma_scale = $('#soma-scale').val();
           if( show_missing_sections ) {
@@ -1186,9 +1289,9 @@ var WebGLApp = new function () {
         geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( xwidth,ywidth,0 ) ) );
         geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
 
-        var material = new THREE.MeshBasicMaterial( { color: 0x151349 } );
+        var material = new THREE.MeshBasicMaterial( { color: 0x151349,
+          side: THREE.DoubleSide } );
         zplane = new THREE.Mesh( geometry, material );
-        zplane.doubleSided = true;
         zplane.position.z = newval;
         scene.add( zplane );
         self.render();
@@ -1296,6 +1399,34 @@ var WebGLApp = new function () {
     // $('#webgl-skeleton-table > tbody:last').append( rowElement );
     $('#webgl-skeleton-table > tbody:last').append( rowElement );
     
+    var td = $(document.createElement("td"));
+    td.append( $(document.createElement("img")).attr({
+      id:    'skeletonaction-activate-' + skeleton.id,
+      value: 'Nearest node'
+    })
+      .click( function( event )
+      {
+        TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton.id );
+      })
+      .attr('src','widgets/themes/kde/activate.gif')
+    );
+    td.append( $(document.createElement("img")).attr({
+          id:    'skeletonaction-remove-' + skeleton.id,
+          value: 'Remove'
+          })
+          .click( function( event )
+          {
+            self.removeSkeleton( skeleton.id );
+          })
+          .attr('src','widgets/themes/kde/delete.png')
+          .text('Remove!')
+    );
+    rowElement.append( td );
+
+    rowElement.append(
+      $(document.createElement("td")).text( skeleton.baseName + ' (SkeletonID: ' + skeleton.id + ')' )
+    );
+
     // show skeleton
     rowElement.append(
       $(document.createElement("td")).append(
@@ -1372,34 +1503,6 @@ var WebGLApp = new function () {
             self.render();
           } )
     ));
-
-    var td = $(document.createElement("td"));
-    td.append( $(document.createElement("img")).attr({
-      id:    'skeletonaction-activate-' + skeleton.id,
-      value: 'Nearest node'
-    })
-      .click( function( event )
-      {
-        TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton.id );
-      })
-      .attr('src','widgets/themes/kde/activate.gif')
-    );
-    td.append( $(document.createElement("img")).attr({
-          id:    'skeletonaction-remove-' + skeleton.id,
-          value: 'Remove'
-          })
-          .click( function( event )
-          {
-            self.removeSkeleton( skeleton.id );
-          })
-          .attr('src','widgets/themes/kde/delete.png')
-          .text('Remove!')
-    );
-    rowElement.append( td );
-
-    rowElement.append(
-      $(document.createElement("td")).text( skeleton.baseName + ' (SkeletonID: ' + skeleton.id + ')' )
-    );
 
     var td = $(document.createElement("td"));
     td.append(

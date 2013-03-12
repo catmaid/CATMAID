@@ -341,8 +341,11 @@ var SkeletonAnnotations = new function()
         self.recolorAllNodes();
       }
 
-      // if displayed in 3d viewer, update position
-      WebGLApp.updateActiveNode();
+      if( $( "#view_in_3d_webgl_widget").length ) {
+        // if displayed in 3d viewer, update position
+        WebGLApp.showActiveNode();
+        WebGLApp.updateActiveNodePosition();
+      }
 
     };
 

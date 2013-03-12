@@ -737,6 +737,54 @@ var WindowMaker = new function()
   };
 
 
+  var createSkeletonAnalyticsWindow = function()
+  {
+    var win = new CMWWindow("Skeleton Analytics");
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var div = document.createElement('div');
+    div.setAttribute('id', 'skeleton_analytics_table');
+    content.appendChild(div);
+
+    var update = document.createElement('input');
+    update.setAttribute('type', 'button');
+    update.setAttribute('id', 'update_skeleton_analytics_table');
+    update.setAttribute('value', 'Update');
+    update.onclick = SkeletonAnalytics.update;
+    div.appendChild(update);
+
+    var container = createContainer('skeleton_analytics_widget');
+    content.appendChild(container);
+
+    container.innerHTML =
+      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="skeletonanalyticstable">' +
+        '<thead>' +
+          '<tr>' +
+            '<th>Issue</th>' +
+            '<th>Treenode ID</th>' +
+            '<th>Skeleton ID</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tfoot>' +
+          '<tr>' +
+            '<th>Issue</th>' +
+            '<th>Treenode ID</th>' +
+            '<th>Skeleton ID</th>' +
+          '</tr>' +
+        '</tfoot>' +
+        '<tbody>' +
+          '<tr><td colspan="3"></td></tr>' +
+        '</tbody>' +
+      '</table>';
+
+    addListener(win, container, 'skeleton_analytics_table');
+    addLogic(win);
+    SkeletonAnalytics.init();
+
+    return win;
+  };
+
     var createLogTableWindow = function()
     {
         var win = new CMWWindow("Log");
@@ -1268,7 +1316,8 @@ var WindowMaker = new function()
     "disclaimer": createDisclaimerWindow,
     "review-system": createReviewWindow,
     "connectivity-widget": createConnectivityWindow,
-    "adjacencymatrix-widget": createAdjacencyMatrixWindow
+    "adjacencymatrix-widget": createAdjacencyMatrixWindow,
+    "skeleton-analytics-widget": createSkeletonAnalyticsWindow
   };
 
   /** If the window for the given name is already showing, just focus it.

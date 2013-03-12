@@ -438,6 +438,16 @@ var tracingWindowActions = [
       }
   }),
 
+  new Action({ 
+      helpText: "Skeleton Analytics widget",
+      buttonID: "button_skeleton_analytics_widget",
+      buttonName: 'buh', // TODO add a new gif
+      run: function (e) {
+          WindowMaker.show('skeleton-analytics-widget');
+          return true;
+      }
+  }),
+
   new Action({
       helpText: "Compartment Graph widget",
       buttonID: "data_button_compartment_graph_widget",

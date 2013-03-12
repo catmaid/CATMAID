@@ -2,6 +2,13 @@
 {% load i18n %}
 {% load common %}
 
+{% block extrastyle %}
+<style>
+    .accessible { color: red; }
+    .not-accessible { color: green; }
+</style>
+{% endblock %}
+
 {% block extrahead %}
 {% endblock %}
 
@@ -17,7 +24,10 @@
 
     <p>The following projects have been selected to be imported together with
     the settings listed. Please confirm this selection to do the actual import.
-    Alternatively, you can go back and change settings.</p>
+    Alternatively, you can go back and change settings. If an image base of a
+    stack or an overlay is displayed in red, it means it can't be accessed
+    through HTTP. Of course, you can still import data in this situation, but
+    you are unlikely to see any images until your data can be accessed.</p>
     <p><table>
         <tr>
             <th>Project</th>
@@ -43,7 +53,11 @@
                   <td>{{ s.name }}</td>
                   <td>{{ s.num_zoom_levels }}</td>
                   <td>{{ s.file_extension }}</td>
-                  <td>{{ s.image_base }}</td>
+                  {% if s.accessible %}
+                      <td class="accessible">{{ s.image_base }}</td>
+                  {% else %}
+                      <td class="not-accessible">{{ s.image_base }}</td>
+                  {% endif %}
                   <td>{{ s.metadata }}</td>
                 </tr>
                 {% for o in s.overlays %}
@@ -53,7 +67,11 @@
                     <td></td>
                     <td colspan="2"><em>Overlay:</em> {{ o.name }}</td>
                     <td>{{ o.file_extension }}</td>
-                    <td>{{ o.image_base }}</td>
+                    {% if o.accessible %}
+                        <td class="accessible">{{ o.image_base }}</td>
+                    {% else %}
+                        <td class="not-accessible">{{ o.image_base }}</td>
+                    {% endif %}
                     <td>Default opacity: {{ o.default_opacity }}</td>
                   </tr>
                 {% endfor %}

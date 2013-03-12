@@ -15,6 +15,8 @@ from django.utils.datastructures import SortedDict
 from guardian.models import Permission, User, Group
 from guardian.shortcuts import get_perms_for_model, assign
 
+import urllib2 as urllib
+
 from catmaid.models import Project, Stack, ProjectStack, Overlay, Double3D
 
 from catmaid.control.common import urljoin
@@ -68,6 +70,9 @@ class ImageBaseMixin:
         # Make sure the image base has a trailing slash, because this is expected
         if self.image_base[-1] != '/':
             self.image_base = self.image_base + '/'
+
+        # Test if the data is accessible through HTTP
+        self.accessible = check_http_accessibility( self.image_base )
 
 class PreOverlay(ImageBaseMixin):
     def __init__(self, info_object, project_url, data_folder):
@@ -158,6 +163,13 @@ def find_zoom_levels_and_file_ext( base_folder, stack_folder, needs_zoom=True ):
                 zoom_level = zoom_level - 1
                 break
     return (file_ext, zoom_level)
+
+def check_http_accessibility( image_base, file_extension ):
+    """ Returns true if data below this image base can be accessed throug HTTP.
+    """
+    slice_zero_url = urljoin(image_base, "0")
+    first_file_url = urljoin(slice_zero_url, "0_0_0." + file_extension)
+    return urllib.urlopen(first_file_url).code == 200
 
 def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):
     """ Finds projects in a folder structure by testing for the precense of an

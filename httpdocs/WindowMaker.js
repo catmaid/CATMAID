@@ -455,12 +455,12 @@ var WindowMaker = new function()
     add.onclick = CompartmentGraphWidget.updateConfidenceGraphFrom3DViewer;
     contentbutton.appendChild(add);
 
-    var label = document.createTextNode('Split at edges with confidence');
+    var label = document.createTextNode('Keep edges with confidence');
     contentbutton.appendChild(label);
 
     var sync = document.createElement('select');
     sync.setAttribute("id", "confidence_threshold");
-    for (var i = 1; i < 5; i++) {
+    for (var i = 0; i < 6; ++i) {
       var option = document.createElement("option");
       option.text = i.toString();
       option.value = i;
@@ -468,25 +468,7 @@ var WindowMaker = new function()
     }
     contentbutton.appendChild(sync);
 
-    var label = document.createTextNode('or lower. | ');
-    contentbutton.appendChild(label);
-
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "edgecount_compartment_show_neurons_from_3d_view");
-    add.setAttribute("value", "Show graph");
-    add.onclick = CompartmentGraphWidget.updateEdgecountGraphFrom3DViewer;
-    contentbutton.appendChild(add);
-
-    var label = document.createTextNode('split at edges with more than');
-    contentbutton.appendChild(label);
-
-    var sync = document.createElement('input');
-    sync.setAttribute("id", "edgecount_threshold");
-    sync.setAttribute("value", 10);
-    contentbutton.appendChild(sync);
-
-    var label = document.createTextNode('edges.');
+    var label = document.createTextNode('or higher.');
     contentbutton.appendChild(label);
 
     content.appendChild( contentbutton );

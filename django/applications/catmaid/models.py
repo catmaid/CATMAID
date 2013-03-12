@@ -11,7 +11,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 
-from .fields import Double3DFormField, Integer3DFormField, Double3DField, Integer3DField, IntegerArrayField
+from .fields import Double3DFormField, Integer3DFormField, Double3DField, Integer3DField, IntegerArrayField, Double3D
 
 from guardian.shortcuts import get_objects_for_user
 
@@ -53,14 +53,14 @@ class Stack(models.Model):
     dimension = Integer3DField()
     resolution = Double3DField()
     image_base = models.TextField()
-    comment = models.TextField(blank=True)
-    trakem2_project = models.BooleanField()
-    num_zoom_levels = models.IntegerField()
-    file_extension = models.TextField(blank=True)
-    tile_width = models.IntegerField()
-    tile_height = models.IntegerField()
-    tile_source_type = models.IntegerField()
-    metadata = models.TextField(blank=True)
+    comment = models.TextField(blank=True, null=True)
+    trakem2_project = models.BooleanField(default=False)
+    num_zoom_levels = models.IntegerField(default=-1)
+    file_extension = models.TextField(default='jpg', blank=True)
+    tile_width = models.IntegerField(default=256)
+    tile_height = models.IntegerField(default=256)
+    tile_source_type = models.IntegerField(default=1)
+    metadata = models.TextField(default='', blank=True)
     tags = TaggableManager(blank=True)
 
     def __unicode__(self):
@@ -71,7 +71,7 @@ class ProjectStack(models.Model):
         db_table = "project_stack"
     project = models.ForeignKey(Project)
     stack = models.ForeignKey(Stack)
-    translation = Double3DField()
+    translation = Double3DField(default=Double3D(0, 0, 0))
 
     def __unicode__(self):
         return self.project.title + " -- " + self.stack.title
@@ -82,11 +82,11 @@ class Overlay(models.Model):
     title = models.TextField()
     stack = models.ForeignKey(Stack)
     image_base = models.TextField()
-    default_opacity = models.IntegerField()
-    file_extension = models.TextField(null=True)
-    tile_width = models.IntegerField()
-    tile_height = models.IntegerField()
-    tile_source_type = models.IntegerField()
+    default_opacity = models.IntegerField(default=0)
+    file_extension = models.TextField()
+    tile_width = models.IntegerField(default=512)
+    tile_height = models.IntegerField(default=512)
+    tile_source_type = models.IntegerField(default=1)
 
 class Concept(models.Model):
     class Meta:
@@ -317,10 +317,10 @@ class Message(models.Model):
         db_table = "message"
     user = models.ForeignKey(User)
     time = models.DateTimeField(default=datetime.now)
-    read = models.BooleanField()
+    read = models.BooleanField(default=False)
     title = models.TextField()
-    text = models.TextField(null=True)
-    action = models.TextField()
+    text = models.TextField(default='New message', blank=True, null=True)
+    action = models.TextField(blank=True, null=True)
 
 class Settings(models.Model):
     class Meta:
@@ -370,14 +370,14 @@ class Textlabel(models.Model):
     scaling = models.BooleanField(default=True)
     creation_time = models.DateTimeField(default=datetime.now)
     edition_time = models.DateTimeField(default=datetime.now)
-    deleted = models.BooleanField()
+    deleted = models.BooleanField(default=False)
 
 class TextlabelLocation(models.Model):
     class Meta:
         db_table = "textlabel_location"
     textlabel = models.ForeignKey(Textlabel)
     location = Double3DField()
-    deleted = models.BooleanField()
+    deleted = models.BooleanField(default=False)
 
 class Location(UserFocusedModel):
     class Meta:
@@ -543,7 +543,7 @@ class DataViewType(models.Model):
         db_table = "data_view_type"
     title = models.TextField()
     code_type = models.TextField()
-    comment = models.TextField()
+    comment = models.TextField(blank=True, null=True)
 
     def __unicode__(self):
         return self.title
@@ -561,7 +561,7 @@ class DataView(models.Model):
     config = models.TextField(default="{}")
     is_default = models.BooleanField(default=False)
     position = models.IntegerField(default=0)
-    comment = models.TextField(default="",blank=True)
+    comment = models.TextField(default="",blank=True,null=True)
 
     def save(self, *args, **kwargs):
         """ Does a post-save action: Make sure (only) one data view

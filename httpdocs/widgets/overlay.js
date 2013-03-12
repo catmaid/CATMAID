@@ -1762,10 +1762,21 @@ var SkeletonAnnotations = new function()
         if (activeNodePosition === null) {
           alert("No active node to go to!");
         } else {
-          project.moveTo(
-            self.pix2physZ(activeNodePosition.z),
-            self.pix2physY(activeNodePosition.y),
-            self.pix2physX(activeNodePosition.x));
+          requestQueue.register(django_url + project.id + '/node/get_location', "POST", {
+            pid: project.id,
+            tnid: atn.id
+          }, function (status, text, xml) {
+            if (status === 200) {
+              if (text && text != " ") {
+                var jso = $.parseJSON(text);
+                if (jso.error) {
+                  alert(jso.error);
+                } else {
+                  project.moveTo(jso[3], jso[2], jso[1], undefined, function() { });
+                }
+              }
+            }
+          });
         }
         break;
       case "golastedited":

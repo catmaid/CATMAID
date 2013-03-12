@@ -489,8 +489,6 @@ var WindowMaker = new function()
 
     CompartmentGraphWidget.init();
 
-<<<<<<< HEAD
-=======
     return win;
   };
 
@@ -527,7 +525,6 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-
     return win;
   };
 
@@ -561,7 +558,6 @@ var WindowMaker = new function()
 
     addLogic(win);
 
->>>>>>> Fix merge issues
     return win;
   };
 
@@ -1324,15 +1320,9 @@ var WindowMaker = new function()
     "log-table": createLogTableWindow,
     "export-widget": createExportWidget,
     "graph-widget": createGraphWindow,
-<<<<<<< HEAD
-    "cytograph-widget": createCytoscapeGraphWindow,
-    "segmentstable-widget": createSegmentsTablesWindow,
-    "compartment-graph-widget": createCompartmentGraphWindow,
-=======
     "compartment-graph-widget": createCompartmentGraphWindow,
     "assemblygraph-widget": createAssemblyGraphWindow,
     "segmentstable-widget": createSegmentsTablesWindow,
->>>>>>> Fix merge issues
     "object-tree": createObjectTreeWindow,
     "statistics": createStatisticsWindow,
     "disclaimer": createDisclaimerWindow,

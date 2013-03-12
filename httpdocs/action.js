@@ -430,27 +430,15 @@ var tracingWindowActions = [
   }),
 
   new Action({
-<<<<<<< HEAD
-      helpText: "Segmentation Graph widget",
-      buttonID: "data_button_segmentation_graph_widget",
-      buttonName: 'graph_widget',
-      run: function (e) {
-          WindowMaker.show('cytograph-widget');
-=======
       helpText: "Compartment Graph widget",
       buttonID: "data_button_compartment_graph_widget",
       buttonName: 'graph_widget',
       run: function (e) {
           WindowMaker.show('compartment-graph-widget');
->>>>>>> Added Widget to show connection graph with skeleton compartments segregated using the confidence value
           return true;
       }
   }),
 
-<<<<<<< HEAD
-
-=======
->>>>>>> Added Widget to show connection graph with skeleton compartments segregated using the confidence value
   new Action({
     helpText: "Show object tree",
     buttonID: "data_button_tree",

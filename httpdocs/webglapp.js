@@ -6,7 +6,7 @@ var WebGLApp = new function () {
 
   var scene, renderer, scale, controls, zplane = null, meshes = [], show_meshes = false, show_active_node = false;
   var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, projector, objects = [],
-      bbmesh, floormesh, black_bg = true, debugax, togglevisibleall = true, missing_sections = [], mouse = new THREE.Vector2();
+      bbmesh, floormesh, black_bg = true, debugax, togglevisibleall = true, show_missing_sections = false, missing_sections = [], mouse = new THREE.Vector2();
   var is_mouse_down = false, connector_filter = false, missing_section_height = 20, soma_scale = 1.0;
 
   this.init = function( divID ) {
@@ -479,7 +479,7 @@ var WebGLApp = new function () {
       }
       for ( var k in this.textlabels ) {
         if( self.textlabels.hasOwnProperty)
-        scene.removeObject( this.textlabels[k] );
+        scene.remove( this.textlabels[k] );
       }
     }
 
@@ -1208,7 +1208,7 @@ var WebGLApp = new function () {
 
   function draw_grid() {
     // Grid
-    var line_material = new THREE.LineBasicMaterial( { color: 0xffffff, opacity: 0.2 } ),
+    var line_material = new THREE.LineBasicMaterial( { color: 0x535353 } ),
       geometry = new THREE.Geometry(),
       floor = 0, step = 25;
     for ( var i = 0; i <= 40; i ++ ) {

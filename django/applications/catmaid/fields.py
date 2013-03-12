@@ -12,7 +12,7 @@ class Integer3D(object):
     def __init__(self, x=0, y=0, z=0):
         self.x, self.y, self.z = x, y, z
     integer_re = '[-+0-9]+'
-    tuple_pattern = re.compile('^\((%s),(%s),(%s)\)$'%((integer_re,)*3))
+    tuple_pattern = re.compile('^\((%s),\s*(%s),\s*(%s)\)$'%((integer_re,)*3))
     @classmethod
     def from_str(cls, s):
         m = cls.tuple_pattern.match(s)
@@ -59,7 +59,7 @@ class Double3D(object):
     def __init__(self, x=0, y=0, z=0):
         self.x, self.y, self.z = x, y, z
     double_re = '[-+0-9\.Ee]+'
-    tuple_pattern = re.compile('^\((%s),(%s),(%s)\)$'%((double_re,)*3))
+    tuple_pattern = re.compile('^\((%s),\s*(%s),\s*(%s)\)$'%((double_re,)*3))
     @classmethod
     def from_str(cls, s):
         m = cls.tuple_pattern.match(s)

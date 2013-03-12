@@ -102,7 +102,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold):
                     break
     return circuit
 
-#@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_graph(request, project_id=None):
     project_id = int(project_id)
     skeleton_ids = map(int, request.POST.getlist('skeleton_list[]'))

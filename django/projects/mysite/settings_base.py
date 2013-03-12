@@ -1,3 +1,5 @@
+import django.conf.global_settings as DEFAULT_SETTINGS
+
 # Django settings for mysite project.
 
 ADMINS = (
@@ -56,8 +58,11 @@ INSTALLED_APPS = (
     'guardian'
 )
 
-TEMPLATE_CONTEXT_PROCESSORS = ('mysite.context_processors.staticfiles',
-                               'django.contrib.auth.context_processors.auth')
+# Use the default template context processors. If custom ones should be
+# added, please append it to the tuple to make sure the default processors
+# are still available. See this page for further detail:
+# http://blog.madpython.com/2010/04/07/django-context-processors-best-practice/
+TEMPLATE_CONTEXT_PROCESSORS = DEFAULT_SETTINGS.TEMPLATE_CONTEXT_PROCESSORS
 
 URL_PREFIX = '/'
 LOGIN_REDIRECT_URL = '/'

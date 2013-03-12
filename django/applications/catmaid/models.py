@@ -17,6 +17,8 @@ from guardian.shortcuts import get_objects_for_user
 
 from taggit.managers import TaggableManager
 
+from south.modelsinspector import add_introspection_rules
+
 def now():
     return datetime.now()
 
@@ -74,6 +76,9 @@ class Integer3DField(models.Field):
     def get_db_prep_value(self, value, connection, prepared=False):
         return "(%d,%d,%d)" % (value.x, value.y, value.z)
 
+add_introspection_rules([([Integer3DField], [], {})],
+                        ["^catmaid\.models\.Integer3DField"])
+
 # ------------------------------------------------------------------------
 # Classes to support the integer3d compound type:
 
@@ -117,6 +122,9 @@ class Double3DField(models.Field):
         return Double3D.from_str(value)
     def get_db_prep_value(self, value, connection, prepared=False):
         return "(%f,%f,%f)" % (value.x, value.y, value.z)
+
+add_introspection_rules([([Double3DField], [], {})],
+                        ["^catmaid\.models\.Double3DField"])
 
 # ------------------------------------------------------------------------
 

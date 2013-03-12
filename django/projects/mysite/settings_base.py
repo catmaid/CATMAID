@@ -53,7 +53,8 @@ INSTALLED_APPS = (
     'taggit',
     'adminplus',
     'catmaid',
-    'guardian'
+    'guardian',
+    'south',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = ('mysite.context_processors.staticfiles',
@@ -68,3 +69,5 @@ AUTHENTICATION_BACKENDS = (
     'guardian.backends.ObjectPermissionBackend',
 )
 ANONYMOUS_USER_ID = -1
+
+SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}

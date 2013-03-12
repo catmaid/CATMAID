@@ -424,7 +424,7 @@ class ProjectSelectionForm(forms.Form):
     make_projects_public = forms.BooleanField(initial=False,
         required=False, help_text="If made public, a project \
         can be seen without being logged in.")
-    group_permissions = forms.MultipleChoiceField(
+    group_permissions = forms.MultipleChoiceField(required=False,
         widget=forms.SelectMultiple(attrs={'size':'10'}),
         help_text="The selected <em>group/permission combination</em> \
                    will be assigned to every project.")

@@ -4,6 +4,7 @@ from datetime import timedelta, datetime, date
 from django.http import HttpResponse
 from django.db.models import Count
 from django.db import connection
+from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
 from catmaid.control.authentication import *
@@ -104,4 +105,74 @@ def stats_history(request, project_id=None):
     stats = [{'name':stat['user__username'], 'date':stat['date'], 'count':stat['count']} for stat in stats]
     
     return HttpResponse(json.dumps(stats), mimetype='text/json')
+    
+def stats_user_history(request, project_id=None):
+
+    relation_map = get_relation_to_id_map(project_id)
+    last_x_days = 10
+    # Get the start and end dates for the query, defaulting to the last 30 days.
+    # start_date = request.GET.get('start_date', datetime.now() - timedelta(last_x_days))
+    # end_date = request.GET.get('end_date', datetime.now())
+    start_date = datetime.now() - timedelta(last_x_days)
+    end_date = datetime.now()
+    all_users = User.objects.filter().values('username', 'id')
+    map_userid_to_name = {}
+    for user in all_users:
+        map_userid_to_name[user['id']] = user['username']
+    days = []
+    for i in range(last_x_days+1):
+        tmp_date = start_date + timedelta(days=i)
+        days.append( tmp_date.strftime("%Y%m%d") )
+    stats_table = {}
+    for userid in map_userid_to_name.keys():
+        if userid == -1:
+            continue
+        stats_table[ map_userid_to_name[userid] ] = {}
+        for i in range(last_x_days+1):
+            tmp_date = start_date + timedelta(days=i)
+            stats_table[ map_userid_to_name[userid] ][ tmp_date.strftime("%Y%m%d") ] = {}
+
+    # Look up all tree nodes for the project in the given date range.
+    # Also add a computed field which is just the day of the last edited date/time.
+    tree_nodes = Treenode.objects.filter(
+        project = project_id, 
+        edition_time__range = (start_date, end_date)).extra(select={ 'date' : 'to_char("treenode"."edition_time", \'YYYYMMDD\')' }).order_by('user', 'date')
+    # Get the count of tree nodes for each user/day combination.
+    treenode_stats = tree_nodes.values('user__username', 'date', 'user__id').annotate(count = Count('id'))
+    # Change the 'user__username' field name to just 'name'.
+    # (If <https://code.djangoproject.com/ticket/12222> ever gets implemented then this wouldn't be necessary.)
+    treenode_stats = [{'username':stat['user__username'], 'userid': stat['user__id'], 'date':stat['date'], 'count':stat['count']} for stat in treenode_stats]
+    
+    connector_nodes = Connector.objects.filter(
+    project = project_id, 
+    edition_time__range = (start_date, end_date)).extra(select={ 'date' : 'to_char("connector"."edition_time", \'YYYYMMDD\')' }).order_by('user', 'date')
+    connector_stats = connector_nodes.values('user__username', 'date', 'user__id').annotate(count = Count('id'))
+    connector_stats = [{'username':stat['user__username'], 'userid': stat['user__id'], 'date':stat['date'], 'count':stat['count']} for stat in connector_stats]
+
+    tree_reviewed_nodes = Treenode.objects.filter(
+        project = project_id,
+        edition_time__range = (start_date, end_date)).exclude(reviewer_id=-1).extra(select={ 'date' : 'to_char("treenode"."review_time", \'YYYYMMDD\')' }).order_by('user', 'date')
+    treenode_reviewed_stats = tree_reviewed_nodes.values('reviewer_id', 'date').annotate(count = Count('id'))
+    treenode_reviewed_stats = [{'userid':stat['reviewer_id'], 'date':stat['date'], 'count':stat['count']} for stat in treenode_reviewed_stats]
+    
+    labeled_nodes = TreenodeClassInstance.objects.filter(
+        project = project_id,
+        relation = relation_map['labeled_as'],
+        edition_time__range = (start_date, end_date)).extra(select={ 'date' : 'to_char("treenode_class_instance"."edition_time", \'YYYYMMDD\')' }).order_by('user', 'date')
+    labeled_nodes_stats = labeled_nodes.values('user__username', 'user__id', 'date').annotate(count = Count('id'))
+    labeled_nodes_stats = [{'username':stat['user__username'], 'userid':stat['user__id'], 'date':stat['date'], 'count':stat['count']} for stat in labeled_nodes_stats]
+
+    for di in treenode_stats:
+        stats_table[ di['username'] ][ di['date'] ]['new_treenodes'] = di['count']
+
+    for di in connector_stats:
+        stats_table[ di['username'] ][ di['date'] ]['new_connectors'] = di['count']
+
+    for di in treenode_reviewed_stats:
+        stats_table[ map_userid_to_name[di['userid']] ][ di['date'] ]['new_reviewed_nodes'] = di['count']
+
+    for di in labeled_nodes_stats:
+        stats_table[ di['username'] ][ di['date'] ]['new_tags'] = di['count']
+
+    return HttpResponse(json.dumps({ 'stats_table': stats_table, 'days': days}), sort_keys=True, mimetype='text/json')
     

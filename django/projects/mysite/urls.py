@@ -151,7 +151,8 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/stats-reviewer$', 'catmaid.control.stats_reviewer'),
     (r'^(?P<project_id>\d+)/stats-summary$', 'catmaid.control.stats_summary'),
     (r'^(?P<project_id>\d+)/stats-history$', 'catmaid.control.stats_history'),
-
+    (r'^(?P<project_id>\d+)/stats-user-history$', 'catmaid.control.stats_user_history'),
+    
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', 'catmaid.control.stack_info'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/models$', 'catmaid.control.stack_models'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tile$', 'catmaid.control.get_tile'),

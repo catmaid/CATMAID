@@ -51,7 +51,6 @@ class Project(models.Model):
 class Stack(models.Model):
     class Meta:
         db_table = "stack"
-        managed = False
     title = models.TextField()
     dimension = Integer3DField()
     resolution = Double3DField()
@@ -72,7 +71,6 @@ class Stack(models.Model):
 class ProjectStack(models.Model):
     class Meta:
         db_table = "project_stack"
-        managed = False
     project = models.ForeignKey(Project)
     stack = models.ForeignKey(Stack)
     translation = Double3DField()
@@ -83,7 +81,6 @@ class ProjectStack(models.Model):
 class Overlay(models.Model):
     class Meta:
         db_table = "overlay"
-        managed = False
     title = models.TextField()
     stack = models.ForeignKey(Stack)
     image_base = models.TextField()
@@ -96,7 +93,6 @@ class Overlay(models.Model):
 class Concept(models.Model):
     class Meta:
         db_table = "concept"
-        managed = False
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
@@ -105,7 +101,6 @@ class Concept(models.Model):
 class Class(models.Model):
     class Meta:
         db_table = "class"
-        managed = False
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
@@ -122,7 +117,6 @@ class ConnectivityDirection:
 class ClassInstance(models.Model):
     class Meta:
         db_table = "class_instance"
-        managed = False
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
@@ -260,7 +254,6 @@ class ClassInstance(models.Model):
 class Relation(models.Model):
     class Meta:
         db_table = "relation"
-        managed = False
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
@@ -275,7 +268,6 @@ class Relation(models.Model):
 class RelationInstance(models.Model):
     class Meta:
         db_table = "relation_instance"
-        managed = False
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
@@ -287,7 +279,6 @@ class RelationInstance(models.Model):
 class ClassInstanceClassInstance(models.Model):
     class Meta:
         db_table = "class_instance_class_instance"
-        managed = False
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
@@ -305,14 +296,12 @@ class ClassInstanceClassInstance(models.Model):
 class BrokenSlice(models.Model):
     class Meta:
         db_table = "broken_slice"
-        managed = False
     stack = models.ForeignKey(Stack)
     index = models.IntegerField()
 
 class ClassClass(models.Model):
     class Meta:
         db_table = "class_class"
-        managed = False
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=now)
@@ -328,7 +317,6 @@ class ClassClass(models.Model):
 class Message(models.Model):
     class Meta:
         db_table = "message"
-        managed = False
     user = models.ForeignKey(User)
     time = models.DateTimeField(default=now)
     read = models.BooleanField()
@@ -339,7 +327,6 @@ class Message(models.Model):
 class Settings(models.Model):
     class Meta:
         db_table = "settings"
-        managed = False
     key = models.TextField()
     value = models.TextField(null=True)
 
@@ -375,7 +362,6 @@ class UserFocusedModel(models.Model):
 class Textlabel(models.Model):
     class Meta:
         db_table = "textlabel"
-        managed = False
     type = models.CharField(max_length=32)
     text = models.TextField(default="Edit this text ...")
     # colour is of type rgba, can't represent that yet
@@ -391,7 +377,6 @@ class Textlabel(models.Model):
 class TextlabelLocation(models.Model):
     class Meta:
         db_table = "textlabel_location"
-        managed = False
     textlabel = models.ForeignKey(Textlabel)
     location = Double3DField()
     deleted = models.BooleanField()
@@ -399,7 +384,6 @@ class TextlabelLocation(models.Model):
 class Location(UserFocusedModel):
     class Meta:
         db_table = "location"
-        managed = False
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
     editor = models.ForeignKey(User, related_name='location_editor', db_column='editor_id')
@@ -410,7 +394,6 @@ class Location(UserFocusedModel):
 class Treenode(UserFocusedModel):
     class Meta:
         db_table = "treenode"
-        managed = False
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
     editor = models.ForeignKey(User, related_name='treenode_editor', db_column='editor_id')
@@ -426,7 +409,6 @@ class Treenode(UserFocusedModel):
 class Connector(UserFocusedModel):
     class Meta:
         db_table = "connector"
-        managed = False
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
     editor = models.ForeignKey(User, related_name='connector_editor', db_column='editor_id')
@@ -439,7 +421,6 @@ class Connector(UserFocusedModel):
 class TreenodeClassInstance(UserFocusedModel):
     class Meta:
         db_table = "treenode_class_instance"
-        managed = False
     # Repeat the columns inherited from 'relation_instance'
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
@@ -451,7 +432,6 @@ class TreenodeClassInstance(UserFocusedModel):
 class ConnectorClassInstance(UserFocusedModel):
     class Meta:
         db_table = "connector_class_instance"
-        managed = False
     # Repeat the columns inherited from 'relation_instance'
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
@@ -463,7 +443,6 @@ class ConnectorClassInstance(UserFocusedModel):
 class TreenodeConnector(UserFocusedModel):
     class Meta:
         db_table = "treenode_connector"
-        managed = False
     # Repeat the columns inherited from 'relation_instance'
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
@@ -477,7 +456,6 @@ class TreenodeConnector(UserFocusedModel):
 #class Session(models.Model):
 #    class Meta:
 #        db_table = "sessions"
-#        managed = False
 #    session_id = models.CharField(max_length=26)
 #    data = models.TextField(default='')
 #    last_accessed = models.DateTimeField(default=now)
@@ -516,7 +494,6 @@ class ApiKey(models.Model):
 class Log(UserFocusedModel):
     class Meta:
         db_table = "log"
-        managed = False
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
     operation_type = models.CharField(max_length=255)
@@ -526,7 +503,6 @@ class Log(UserFocusedModel):
 class SkeletonlistDashboard(UserFocusedModel):
     class Meta:
         db_table = "skeletonlist_dashboard"
-        managed = False
     shortname = models.CharField(max_length=255)
     skeleton_list = IntegerArrayField()
     description = models.TextField()
@@ -534,7 +510,6 @@ class SkeletonlistDashboard(UserFocusedModel):
 class Component(UserFocusedModel):
     class Meta:
         db_table = "component"
-        managed = False
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
     stack = models.ForeignKey(Stack)
@@ -551,7 +526,6 @@ class Component(UserFocusedModel):
 class Drawing(UserFocusedModel):
     class Meta:
         db_table = "drawing"
-        managed = False
     creation_time = models.DateTimeField(default=now)
     edition_time = models.DateTimeField(default=now)
     stack = models.ForeignKey(Stack)
@@ -569,7 +543,6 @@ class Drawing(UserFocusedModel):
 class DataViewType(models.Model):
     class Meta:
         db_table = "data_view_type"
-        managed = False
     title = models.TextField()
     code_type = models.TextField()
     comment = models.TextField()
@@ -580,7 +553,6 @@ class DataViewType(models.Model):
 class DataView(models.Model):
     class Meta:
         db_table = "data_view"
-        managed = False
         ordering = ('position',)
         permissions = (
             ("can_administer", "Can administer data views"),

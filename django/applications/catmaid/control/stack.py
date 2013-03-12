@@ -93,9 +93,12 @@ def slice_info(request, project_id=None, stack_id=None):
     """ Return the infos about slices for the stack.
     """
     s = get_object_or_404(Stack, pk=stack_id)
-    sliceinfo = StackSliceInfo.objects.get(stack=s)
-    return HttpResponse(json.dumps({'slice_base_url': sliceinfo.slice_base_url,
-        'slice_filename_extension': sliceinfo.file_extension}, sort_keys=True, indent=4), mimetype="text/json")
+    sliceinfo = StackSliceInfo.objects.filter(stack=s)
+    if len(sliceinfo) == 0:
+        return HttpResponse(json.dumps({'error': 'This tool is not setup for this stack ID %i.'%s.id}))
+    else:
+        return HttpResponse(json.dumps({'slice_base_url': sliceinfo[0].slice_base_url,
+            'slice_filename_extension': sliceinfo[0].file_extension}))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_stack_tags(request, project_id=None, stack_id=None):

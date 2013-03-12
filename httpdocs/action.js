@@ -267,16 +267,25 @@ var editToolActions = [
      buttonID: 'edit_button_segmentation',
      buttonName: 'canvas',
      keyShortcuts: {
-
      },
      run: function (e) {
-        // TODO: change to set zoom level for segmentation
-        // check if zoom level 0 active
-        if( project.focusedStack.s !== 0 ) {
-          alert('Segmentation Tool only works on zoom-level 0!');
-          return;
-        }
-        project.setTool( new SegmentationTool() );
+        requestQueue.register(django_url + project.id + '/stack/' + project.focusedStack.id + '/slice-info', "POST", {},
+         function (status, text, xml) {
+                if (status === 200) {
+                    if (text && text !== " ") {
+                        var e = $.parseJSON(text);
+                        if (e.error) {
+                            alert(e.error);
+                        } else {
+                            if( project.focusedStack.s !== 0 ) {
+                              alert('Segmentation Tool only works on zoom-level 0!');
+                              return;
+                            }
+                            project.setTool( new SegmentationTool() );
+                        }
+                    }
+                }
+        });
      }
   }),
 

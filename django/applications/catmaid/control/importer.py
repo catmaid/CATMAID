@@ -15,7 +15,7 @@ from django.utils.datastructures import SortedDict
 from guardian.models import Permission, User, Group
 from guardian.shortcuts import get_perms_for_model, assign
 
-import urllib2 as urllib
+import urllib
 
 from catmaid.models import Project, Stack, ProjectStack, Overlay, Double3D
 
@@ -169,7 +169,8 @@ def check_http_accessibility( image_base, file_extension ):
     """
     slice_zero_url = urljoin(image_base, "0")
     first_file_url = urljoin(slice_zero_url, "0_0_0." + file_extension)
-    return urllib.urlopen(first_file_url).code == 200
+    code = urllib.urlopen(first_file_url).getcode()
+    return code == 200
 
 def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):
     """ Finds projects in a folder structure by testing for the presence of an

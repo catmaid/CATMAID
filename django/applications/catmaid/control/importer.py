@@ -165,14 +165,14 @@ def find_zoom_levels_and_file_ext( base_folder, stack_folder, needs_zoom=True ):
     return (file_ext, zoom_level)
 
 def check_http_accessibility( image_base, file_extension ):
-    """ Returns true if data below this image base can be accessed throug HTTP.
+    """ Returns true if data below this image base can be accessed through HTTP.
     """
     slice_zero_url = urljoin(image_base, "0")
     first_file_url = urljoin(slice_zero_url, "0_0_0." + file_extension)
     return urllib.urlopen(first_file_url).code == 200
 
 def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):
-    """ Finds projects in a folder structure by testing for the precense of an
+    """ Finds projects in a folder structure by testing for the presence of an
     info/project YAML file.
     """
     dirs = []
@@ -333,7 +333,7 @@ class ImportingWizard(SessionWizardView):
         })
 
 def importer_admin_view(request, *args, **kwargs):
-    """ Wrapps the class based ImportingWizard view in a
+    """ Wraps the class based ImportingWizard view in a
     function based view.
     """
     forms = [("pathsettings", DataFileForm),
@@ -346,7 +346,7 @@ def importer_finish(request):
     return render_to_response('catmaid/import/done.html', {})
 
 def get_groups_with_perms_cls(cls, attach_perms=False):
-    """ This is a stightly adapted version of guardians
+    """ This is a slightly adapted version of guardians
     group retrieval. It doesn't need an object instance.
     """
     ctype = ContentType.objects.get_for_model(cls)

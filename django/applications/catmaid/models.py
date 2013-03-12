@@ -17,9 +17,6 @@ from guardian.shortcuts import get_objects_for_user
 
 from taggit.managers import TaggableManager
 
-def now():
-    return datetime.now()
-
 CELL_BODY_CHOICES = (
     ('u', 'Unknown'),
     ('l', 'Local'),
@@ -94,8 +91,8 @@ class Concept(models.Model):
     class Meta:
         db_table = "concept"
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
 
 class Class(models.Model):
@@ -103,8 +100,8 @@ class Class(models.Model):
         db_table = "class"
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
     # Now new columns:
     class_name = models.CharField(max_length=255)
@@ -119,8 +116,8 @@ class ClassInstance(models.Model):
         db_table = "class_instance"
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
     # Now new columns:
     class_column = models.ForeignKey(Class, db_column="class_id") # underscore since class is a keyword
@@ -256,8 +253,8 @@ class Relation(models.Model):
         db_table = "relation"
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
     # Now new columns:
     relation_name = models.CharField(max_length=255)
@@ -270,8 +267,8 @@ class RelationInstance(models.Model):
         db_table = "relation_instance"
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
     # Now new columns:
     relation = models.ForeignKey(Relation)
@@ -281,8 +278,8 @@ class ClassInstanceClassInstance(models.Model):
         db_table = "class_instance_class_instance"
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
     # Now new columns:
@@ -304,8 +301,8 @@ class ClassClass(models.Model):
         db_table = "class_class"
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
     # Now new columns:
@@ -318,7 +315,7 @@ class Message(models.Model):
     class Meta:
         db_table = "message"
     user = models.ForeignKey(User)
-    time = models.DateTimeField(default=now)
+    time = models.DateTimeField(default=datetime.now)
     read = models.BooleanField()
     title = models.TextField()
     text = models.TextField(null=True)
@@ -370,8 +367,8 @@ class Textlabel(models.Model):
     font_size = models.FloatField(default=32)
     project = models.ForeignKey(Project)
     scaling = models.BooleanField(default=True)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     deleted = models.BooleanField()
 
 class TextlabelLocation(models.Model):
@@ -384,8 +381,8 @@ class TextlabelLocation(models.Model):
 class Location(UserFocusedModel):
     class Meta:
         db_table = "location"
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     editor = models.ForeignKey(User, related_name='location_editor', db_column='editor_id')
     location = Double3DField()
     reviewer_id = models.IntegerField(default=-1)
@@ -394,8 +391,8 @@ class Location(UserFocusedModel):
 class Treenode(UserFocusedModel):
     class Meta:
         db_table = "treenode"
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     editor = models.ForeignKey(User, related_name='treenode_editor', db_column='editor_id')
     location = Double3DField()
     parent = models.ForeignKey('self', null=True, related_name='children')
@@ -409,8 +406,8 @@ class Treenode(UserFocusedModel):
 class Connector(UserFocusedModel):
     class Meta:
         db_table = "connector"
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     editor = models.ForeignKey(User, related_name='connector_editor', db_column='editor_id')
     location = Double3DField()
     confidence = models.IntegerField(default=5)
@@ -422,8 +419,8 @@ class TreenodeClassInstance(UserFocusedModel):
     class Meta:
         db_table = "treenode_class_instance"
     # Repeat the columns inherited from 'relation_instance'
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     relation = models.ForeignKey(Relation)
     # Now new columns:
     treenode = models.ForeignKey(Treenode)
@@ -433,8 +430,8 @@ class ConnectorClassInstance(UserFocusedModel):
     class Meta:
         db_table = "connector_class_instance"
     # Repeat the columns inherited from 'relation_instance'
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     relation = models.ForeignKey(Relation)
     # Now new columns:
     connector = models.ForeignKey(Connector)
@@ -444,8 +441,8 @@ class TreenodeConnector(UserFocusedModel):
     class Meta:
         db_table = "treenode_connector"
     # Repeat the columns inherited from 'relation_instance'
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     relation = models.ForeignKey(Relation)
     # Now new columns:
     treenode = models.ForeignKey(Treenode)
@@ -458,7 +455,7 @@ class TreenodeConnector(UserFocusedModel):
 #        db_table = "sessions"
 #    session_id = models.CharField(max_length=26)
 #    data = models.TextField(default='')
-#    last_accessed = models.DateTimeField(default=now)
+#    last_accessed = models.DateTimeField(default=datetime.now)
 
 # ------------------------------------------------------------------------
 # Now the non-Django tables:
@@ -494,8 +491,8 @@ class ApiKey(models.Model):
 class Log(UserFocusedModel):
     class Meta:
         db_table = "log"
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     operation_type = models.CharField(max_length=255)
     location = Double3DField()
     freetext = models.TextField()
@@ -510,8 +507,8 @@ class SkeletonlistDashboard(UserFocusedModel):
 class Component(UserFocusedModel):
     class Meta:
         db_table = "component"
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     stack = models.ForeignKey(Stack)
     skeleton_id = models.IntegerField()
     component_id=models.IntegerField()
@@ -526,8 +523,8 @@ class Component(UserFocusedModel):
 class Drawing(UserFocusedModel):
     class Meta:
         db_table = "drawing"
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     stack = models.ForeignKey(Stack)
     skeleton_id = models.IntegerField()
     z = models.IntegerField()

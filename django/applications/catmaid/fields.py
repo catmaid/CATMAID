@@ -9,10 +9,13 @@ from south.modelsinspector import add_introspection_rules
 # Classes to support the integer3d compound type:
 
 class Integer3D(object):
+
     def __init__(self, x=0, y=0, z=0):
         self.x, self.y, self.z = x, y, z
+
     integer_re = '[-+0-9]+'
     tuple_pattern = re.compile('^\((%s),\s*(%s),\s*(%s)\)$'%((integer_re,)*3))
+
     @classmethod
     def from_str(cls, s):
         m = cls.tuple_pattern.match(s)
@@ -21,12 +24,13 @@ class Integer3D(object):
                              y=int(m.group(2), 10),
                              z=int(m.group(3), 10))
         else:
-            raise Exception, "Couldn't parse value from the database as an Integer3D: "+str(s)
+            raise Exception, "Couldn't parse value as an Integer3D: "+str(s)
 
     def __unicode__(self):
-        return "(%d, %d, %d)" % (self.x, self.y, self.z)
+        return u"(%d, %d, %d)" % (self.x, self.y, self.z)
 
 class Integer3DField(models.Field):
+
     __metaclass__ = models.SubfieldBase
 
     def formfield(self, **kwargs):
@@ -36,16 +40,18 @@ class Integer3DField(models.Field):
 
     def db_type(self, connection):
         return 'integer3d'
+
     def to_python(self, value):
         if isinstance(value, Integer3D):
             return value
-        if isinstance(value, list) and len(value) == 3:
+        elif isinstance(value, list) and len(value) == 3:
             return Integer3D(value[0], value[1], value[2])
         # When contructing a Location, we get the empty string
         # here; return a new Integer3D for any falsy value:
-        if not value:
+        elif not value:
             return Integer3D()
-        return Integer3D.from_str(value)
+        else:
+            return Integer3D.from_str(value)
     def get_db_prep_value(self, value, connection, prepared=False):
         return "(%d,%d,%d)" % (value.x, value.y, value.z)
 
@@ -56,10 +62,13 @@ add_introspection_rules([([Integer3DField], [], {})],
 # Classes to support the integer3d compound type:
 
 class Double3D(object):
+
     def __init__(self, x=0, y=0, z=0):
         self.x, self.y, self.z = x, y, z
+
     double_re = '[-+0-9\.Ee]+'
-    tuple_pattern = re.compile('^\((%s),\s*(%s),\s*(%s)\)$'%((double_re,)*3))
+    tuple_pattern = re.compile(r'^\((%s),\s*(%s),\s*(%s)\)$' % ((double_re,)*3))
+
     @classmethod
     def from_str(cls, s):
         m = cls.tuple_pattern.match(s)
@@ -68,12 +77,13 @@ class Double3D(object):
                             y=float(m.group(2)),
                             z=float(m.group(3)))
         else:
-            raise Exception, "Couldn't parse value from the database as a Double3D: "+str(s)
+            raise Exception, "Couldn't parse value from the database as a Double3D: " + str(s)
 
     def __unicode__(self):
-        return "(%.3f, %.3f, %.3f)" % (self.x, self.y, self.z)
+        return u"(%.3f, %.3f, %.3f)" % (self.x, self.y, self.z)
 
 class Double3DField(models.Field):
+
     __metaclass__ = models.SubfieldBase
 
     def formfield(self, **kwargs):
@@ -83,16 +93,19 @@ class Double3DField(models.Field):
 
     def db_type(self, connection):
         return 'double3d'
+
     def to_python(self, value):
         if isinstance(value, Double3D):
             return value
-        if isinstance(value, list) and len(value) == 3:
+        elif isinstance(value, list) and len(value) == 3:
             return Double3D(value[0], value[1], value[2])
         # When contructing a Location, we get the empty string
         # here; return a new Double3D for any falsy value:
-        if not value:
+        elif not value:
             return Double3D()
-        return Double3D.from_str(value)
+        else:
+            return Double3D.from_str(value)
+
     def get_db_prep_value(self, value, connection, prepared=False):
         return "(%f,%f,%f)" % (value.x, value.y, value.z)
 

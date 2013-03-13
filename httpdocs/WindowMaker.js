@@ -790,9 +790,10 @@ var WindowMaker = new function()
           '</tr>' +
         '</tfoot>' +
         '<tbody>' +
-          '<tr><td colspan="3"></td></tr>' +
+          '<tr><td></td><td></td><td></td><td></td></tr>' +
         '</tbody>' +
       '</table>';
+    // ABOVE, notice the table needs one dummy row
 
     addListener(win, container, 'skeleton_analytics_table');
     addLogic(win);

@@ -35,12 +35,12 @@ catmaid_crop_subdir = 'cropping'
 catmaid_timezone = ''
 
 # The domain name (server name) which hosts the CATMAID installation
-# e.g.: localhost
+# without http:// and without a trailing slash, e.g.: localhost
 
 catmaid_servername = ''
 
 # The name of the catmaid subdirectory as seen from the outside
 # e.g. for http://localhost/catmaid/ the variable catmaid_subdirectory
-# would be 'catmaid'
+# would be 'catmaid'. It should not have a leading or trailing slash.
 
 catmaid_subdirectory = ''

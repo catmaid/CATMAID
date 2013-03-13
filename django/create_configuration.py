@@ -4,10 +4,28 @@ import tempfile
 import os.path as op
 import os
 import re
+import sys
 from random import choice
 
 # Import everything from the configuration file
 from configuration import *
+
+def exit_err(msg):
+    print(msg)
+    sys.exit(1)
+
+# Make sure trailing and leading slashes are where they are expected.
+if abs_catmaid_path[-1] == '/':
+    exit_err("abs_catmaid_path should not have a trailing slash! Aborting.")
+if catmaid_servername[-1] == '/':
+    exit_err("catmaid_servername should not have a trailing slash! Aborting.")
+if catmaid_servername.startswith('http://'):
+    exit_err("catmaid_servername should not start with 'http://'! Aborting.")
+if len(catmaid_subdirectory) > 0:
+    if catmaid_subdirectory[-1] == '/':
+        exit_err("catmaid_subdirectory should not have a trailing slash! Aborting.")
+    if catmaid_subdirectory[0] == '/':
+        exit_err("catmaid_subdirectory should not have a leading slash! Aborting.")
 
 in_configfile = op.join('projects/mysite/django.wsgi.example')
 out_configfile = op.join('projects/mysite/django.wsgi')
@@ -22,9 +40,6 @@ o.close()
 # Create a secret key for Django
 alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
 catmaid_secret_key = ''.join([choice(alphabet) for i in range(50)])
-
-# Make sure trailing and leading slashes are where they are expected.
-
 
 for f in ['', '_apache']:
     in_configfile = op.join('projects/mysite/settings{0}.py.example'.format(f))

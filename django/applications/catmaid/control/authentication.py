@@ -90,16 +90,10 @@ def requires_user_role(roles):
                 for role in roles:
                     if role == UserRole.Annotate:
                         has_role = u.has_perm('can_annotate', p)
-#                         if has_role:
-#                             print >> sys.stderr, str(u) + ' has annotation role for ' + str(p)
                     elif role == UserRole.Browse:
                         has_role = u.has_perm('can_browse', p)
-#                         if has_role:
-#                             print >> sys.stderr, str(u) + ' has browse role for ' + str(p)
                     if has_role:
                         break
-#             else:
-#                 print >> sys.stderr, str(u) + ' has admin role for ' + str(p)
             
             if has_role:
                 # The user can execute the function.

@@ -91,6 +91,7 @@ var SegmentationAnnotations = new function()
     this.reset_all = function() {
         self.current_active_assembly = null
         allslices = new Object();
+        allsegemtns = new Object();
         slices_grouping = new Object();
         allvisible_slices = new Object();
         current_active_slice = null;
@@ -160,14 +161,6 @@ var SegmentationAnnotations = new function()
         self.cygraph = cygraph;
         g = cygraph;
         //self.test_graph();
-    }
-
-    this.init_allvisible_slices = function() {
-        // TODO: this needs to be called after fetching for an
-        // assembly id from the database
-        for(var i = 0; i < self.stack.slices.length; i++) {
-            allvisible_slices[ self.stack.slices[i] ] = new Object();
-        };
     }
 
     this.set_automatic_propagation = function( shiftKey ) {
@@ -266,9 +259,6 @@ var SegmentationAnnotations = new function()
         // update all slices and segment with assembly id
         var result = self.find_loose_ends();
         console.log('save', result)
-        /*if( slices.length == 0)
-            return;*/
-        //requestQueue.register does not encode json object properly for django backend
         $.ajax({
           "dataType": 'json',
           "type": "POST",
@@ -326,6 +316,31 @@ var SegmentationAnnotations = new function()
                                                     var newsegment = new Segment( e[idx] );
                                                     add_segment_instance( newsegment );
                                                     // TODO: associate origin/target slice (selected slice) for existing slices
+                                                    // console.log('origin slice', newsegment.get_origin_sliceid() )
+                                                    // console.log('target slices', newsegment.get_target1_sliceid(), newsegment.get_target2_sliceid() )
+                                                    var slice;
+
+                                                    slice = get_slice( newsegment.get_origin_sliceid() );
+                                                    if( slice !== undefined ) {
+                                                        console.log('found slice', slice);
+                                                        slice.selected_segment_right = 0
+                                                        slice.segments_right.push( newsegment.node_id );
+                                                    } else { console.log('did not find slice', newsegment.get_origin_sliceid() )}
+
+                                                    slice = get_slice( newsegment.get_target1_sliceid() );
+                                                    if( slice !== undefined ) {
+                                                        console.log('found slice', slice);
+                                                        slice.selected_segment_left = 0
+                                                        slice.segments_left.push( newsegment.node_id );
+                                                    } else { console.log('did not find slice', newsegment.get_target1_sliceid() )}
+
+                                                    slice = get_slice( newsegment.get_target2_sliceid() );
+                                                    if( slice !== undefined ) {
+                                                        console.log('found slice', slice);
+                                                        slice.selected_segment_left = 0
+                                                        slice.segments_left.push( newsegment.node_id );                                                        
+                                                    } else { console.log('did not find slice', newsegment.get_target2_sliceid() )}
+
                                                 }
                                                 update_stack();
                                             }
@@ -1383,6 +1398,21 @@ var SegmentationAnnotations = new function()
         this.normalized_histogram_8= segment.normalized_histogram_7;
         this.normalized_histogram_9= segment.normalized_histogram_8;
 
+        this.get_origin_sliceid = function() {
+            return self.origin_section + '_' + self.origin_slice_id;
+        }
+
+        this.get_target1_sliceid = function() {
+            return self.target_section + '_' + self.target1_slice_id;
+        }
+
+        this.get_target2_sliceid = function() {
+            if( self.target2_slice_id )
+                return self.target_section + '_' + self.target2_slice_id;
+            else
+                return null;
+        }
+
     }
 
     function Slice( slice )
@@ -1621,48 +1651,6 @@ var SegmentationAnnotations = new function()
             }
             return slices_to_add;
         }
-
-       /* this.add_slicesgroup_for_selected_segment = function( for_right, selected_segment ) {
-            console.log('add slicesgroup for selected segment',selected_segment, ' to right: ', for_right);
-            if( for_right ) {
-                console.log('toright call fetch segments')
-                self.fetch_segments( for_right, function() {
-                    console.log('callbackfunction after fetch segments to right');
-                })
-            } else {
-                self.fetch_segments( for_right, function() {
-                    console.log('callbackfunction after fetch segments to left');
-                })
-            }
-            return;
-            var proto_node_id;
-            if ( for_right ) {
-                if( self.flag_right === 2 ) {
-                    console.log('no segment exist to the right. press "e" (added continuation/branch TODO) to mark as end to the right and add a new slice');
-                    return;
-                }
-                // select the segment
-                self.selected_segment_right = selected_segment;
-                slices_to_add = self.add_slices_group_from_segments_new( true );
-
-            } else {
-                if( self.flag_left === 2 ) {
-                    console.log('no segment exist to the left. press "w" (added continuation/branch TODO) to mark as end to the left and add a new slice');
-                    return;
-                }
-                self.selected_segment_left = selected_segment;
-                slices_to_add = self.add_slices_group_from_segments_new( false );
-
-            }
-            if( slices_to_add.length == 1 ) {
-                fetch_slice( slices_to_add[0], true, true); // goto and fetch segments
-            } else {
-                // if a branch segment is the continuation
-                fetch_slice( slices_to_add[0], true, true); // goto and fetch segments
-                fetch_slice( slices_to_add[1], false, true); // goto and fetch segments
-            }            
-            
-        }*/
 
         this.add_slicesgroup_for_selected_segment = function( for_right ) {
             console.log('add slicesgroup for selected segment to right: ', for_right);

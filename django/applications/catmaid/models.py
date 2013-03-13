@@ -451,13 +451,6 @@ class TreenodeConnector(UserFocusedModel):
     skeleton = models.ForeignKey(ClassInstance)
     confidence = models.IntegerField(default=5)
 
-#class Session(models.Model):
-#    class Meta:
-#        db_table = "sessions"
-#    session_id = models.CharField(max_length=26)
-#    data = models.TextField(default='')
-#    last_accessed = models.DateTimeField(default=datetime.now)
-
 # ------------------------------------------------------------------------
 # Now the non-Django tables:
 
@@ -614,3 +607,20 @@ def create_user_profile(sender, instance, created, **kwargs):
 # Connect the a User object's post save signal to the profile
 # creation
 post_save.connect(create_user_profile, sender=User)
+
+# ------------------------------------------------------------------------
+
+# Include models for deprecated PHP-only tables, just so that we can
+# remove them with South in a later migration.
+
+class DeprecatedAppliedMigrations(models.Model):
+    class Meta:
+        db_table = "applied_migrations"
+    id = models.CharField(max_length=32, primary_key=True)
+
+class DeprecatedSession(models.Model):
+    class Meta:
+        db_table = "sessions"
+    session_id = models.CharField(max_length=26)
+    data = models.TextField(default='')
+    last_accessed = models.DateTimeField(default=datetime.now)

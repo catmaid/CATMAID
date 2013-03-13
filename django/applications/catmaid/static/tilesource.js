@@ -4,7 +4,7 @@
 function getTileSource( tileSourceType, baseURL, fileExtension )
 {
     var tileSources = [DefaultTileSource, RequestTileSource,
-        HDF5TileSource, BackslashTileSource];
+        HDF5TileSource, BackslashTileSource, xyztcTileSource];
 
     if (tileSourceType > 0 && tileSourceType <= tileSources.length)
     {
@@ -121,6 +121,31 @@ function BackslashTileSource( baseURL, fileExtension )
         return new GenericOverviewLayer( layer, baseURL, fileExtension );
     }
 }
+
+
+/**
+ * A tile source to find 5D information as stack1/t/c/z/x_y_s.jpg
+ *
+ * Source type: 5
+ */
+function xyztcTileSource( baseURL, fileExtension )
+{
+    /**
+     * Return the URL of a single tile, defined by it grid position
+     * (x, y), ...
+     */
+    this.getTileURL = function( project, stack, baseName,
+        tileWidth, tileHeight, col, row, zoom_level )
+    {
+        return baseURL + baseName + row + "_" + col + "_" + zoom_level + "." + fileExtension;
+    }
+
+    this.getOverviewLayer = function( layer )
+    {
+        return new GenericOverviewLayer( layer, baseURL, fileExtension );
+    }
+}
+
 
 /**
  * This is an overview layer that doesn't display anything.

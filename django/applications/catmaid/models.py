@@ -62,6 +62,8 @@ class Stack(models.Model):
     tile_source_type = models.IntegerField(default=1)
     metadata = models.TextField(default='', blank=True)
     tags = TaggableManager(blank=True)
+    t = models.IntegerField(default=0)
+    c = IntegerArrayField(default = [], blank = True)
 
     def __unicode__(self):
         return self.title

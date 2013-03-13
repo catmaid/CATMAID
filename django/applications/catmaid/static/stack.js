@@ -40,7 +40,9 @@ function Stack(
 		tile_source_type,			//!< {int} that defines the tile source type
 		labelupload_url,			//!< {String} that defines the label upload URL for labels (for tile_source_type==2)
 		metadata,					//!< {String} of arbitrary meta data
-    inverse_mouse_wheel //!< {boolean} Whether to inverse mouse wheel for changing sections
+    	inverse_mouse_wheel, //!< {boolean} Whether to inverse mouse wheel for changing sections
+    	time, 						//!< {Integer} Number of time points in the stack
+    	c 		 					//!<{Array} Number of elements per extra dimension (spectral channels, angles, etc)
 )
 {
 	var n = dimension.length;
@@ -292,8 +294,10 @@ function Stack(
 	/**
 	 * move to pixel coordinates
 	 */
-	this.moveToPixel = function( zp, yp, xp, sp )
+	this.moveToPixel = function( zp, yp, xp, sp, tp )
 	{
+		if( tp === undefined)
+			tp = 0;
 		project.moveTo(
 			zp * resolution.z + translation.z,
 			yp * resolution.y + translation.y,
@@ -411,6 +415,17 @@ function Stack(
 	self.resolution = resolution;
 	self.translation = translation;
 	self.dimension = dimension;
+	self.time = time;
+	var MAX_T = time - 1;
+
+	self.c = c;
+
+	if( c.length === 0 )//empty array
+		var MAX_C = 0;
+	else if( tile_source_type === 5 )
+	{
+		var MAX_C = c[0] - 1;
+	}
 
 	self.tile_source_type = tile_source_type;
 	self.labelupload_url = labelupload_url;
@@ -449,25 +464,35 @@ function Stack(
 	//! all possible time points
 	self.time_points = new Array();
 	self.broken_time_points = new Array();
-	for ( var i = 0; i < dimension.t; ++i )
+	for ( var i = 0; i < self.time; ++i )
 	{
+		/* TODO: adapt this in case we have missing time points
 		if ( !skip_time_points[ i ] )
 			self.time_points.push( i );
 		else
 			self.broken_time_points.push( i );
+		*/
+
+		self.time_points.push( i );
 	}
 
-	//! all possible channels
+
+	//! all possible channels: we assume it is the first dimension
 	self.channels = new Array();
 	self.broken_channels = new Array();
-	for ( var i = 0; i < dimension.c; ++i )
+	if( self.tile_source_type === 5 )
 	{
+		for ( var i = 0; i < MAX_C + 1; ++i )
+		{
+		/* TODO: adapt this in case we have missing time points
 		if ( !skip_channe[ i ] )
 			self.channels.push( i );
 		else
 			self.broken_channels.push( i );
+		*/
+			self.channels.push( i );
+		}
 	}
-
 	
 	//-------------------------------------------------------------------------
 	

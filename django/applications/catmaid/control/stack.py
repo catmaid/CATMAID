@@ -82,6 +82,8 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
             'trakem2_project': int(s.trakem2_project),
             'overlay': overlays,
             'inverse_mouse_wheel': user.userprofile.inverse_mouse_wheel,
+            'time': s.t,
+            'c' : s.c
         }
 
     return result

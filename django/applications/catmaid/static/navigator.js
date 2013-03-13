@@ -46,19 +46,19 @@ function Navigator()
 	this.slider_t = new Slider(
 			SLIDER_HORIZONTAL,
 			true,
-			0,
-			388,
-			389,
-			0,
+			1,
+			10000,
+			10000,
+			1,
 			function( val ){ statusBar.replaceLast( "t: " + val ); return; } );
 
 	this.slider_c = new Slider(
 			SLIDER_HORIZONTAL,
 			true,
-			0,
+			1,
 			388,
-			389,
-			0,
+			388,
+			1,
 			function( val ){ statusBar.replaceLast( "c: " + val ); return; } );
 	
 	this.slider_s = new Slider(
@@ -546,7 +546,10 @@ function Navigator()
 			self.changeSlice );
 		
 
-				
+		console.log('stack slices', self.stack.slices);
+		console.log('stack time points', self.stack.time_points);
+		console.log('stack channels', self.stack.channels);
+
 		if ( self.stack.time_points.length < 2 )	//!< hide the self.slider_t if there is only one time point
 		{
 			self.slider_t.getView().parentNode.style.display = "none";

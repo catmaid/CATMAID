@@ -41,7 +41,7 @@ o.close()
 alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
 catmaid_secret_key = ''.join([choice(alphabet) for i in range(50)])
 
-for f in ['', '_apache']:
+for f in ['', '_production']:
     in_configfile = op.join('projects/mysite/settings{0}.py.example'.format(f))
     out_configfile = op.join('projects/mysite/settings{0}.py'.format(f))
     o = open( out_configfile ,'w')

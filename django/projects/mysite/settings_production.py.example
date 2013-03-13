@@ -1,5 +1,5 @@
-# If you don't have settings_apache.py in this directory, you should copy
-# this file to settings_apache.py and customize it.
+# If you don't have settings_production.py in this directory, you should copy
+# this file to settings_production.py and customize it.
 
 from settings_base import *
 import sys, os

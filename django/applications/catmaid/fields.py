@@ -53,6 +53,7 @@ class Integer3DField(models.Field):
         else:
             return Integer3D.from_str(value)
     def get_db_prep_value(self, value, connection, prepared=False):
+        value = self.to_python(value)
         return "(%d,%d,%d)" % (value.x, value.y, value.z)
 
 add_introspection_rules([([Integer3DField], [], {})],
@@ -107,6 +108,7 @@ class Double3DField(models.Field):
             return Double3D.from_str(value)
 
     def get_db_prep_value(self, value, connection, prepared=False):
+        value = self.to_python(value)
         return "(%f,%f,%f)" % (value.x, value.y, value.z)
 
 add_introspection_rules([([Double3DField], [], {})],

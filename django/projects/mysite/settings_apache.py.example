@@ -29,6 +29,27 @@ TEMPLATE_DIRS = (
     'CATMAIDPATH/django/templates'
 )
 
+# Absolute path to the directory that holds user generated data
+# like cropped microstacks. Make sure this folder is writable by
+# the user running the webserver (and Celery if croppish should
+# be used).
+# Example: "/var/www/example.org/media/"
+MEDIA_ROOT = 'CATMAID_FILES_PATH'
+
+# URL that gives access to files stored in MEDIA_ROOT (managed stored
+# files). It must end in a slash if set to a non-empty value.
+# Example: "http://media.example.org/"
+MEDIA_URL = '/CATMAID_SUBDIR/files/'
+
+# Static path to store generated NeuroHDF files (needs to be writable)
+# as subdirectory of MEDIA_ROOT.
+MEDIA_HDF5_SUBDIRECTORY = 'CATMAID_WRITABLE_SUBDIR'
+
+# The URL where static files can be accessed, relative to the domain's root
+STATIC_URL = '/CATMAID_SUBDIR/dj-static/'
+# The absolute local path where the static files get collected to
+STATIC_ROOT =  'CATMAIDPATH/django/static'
+
 # Define a temporary folder. This is e.g. used to store cropped
 # microstacks for two weeks. Make sure that the folder is writable
 # by the user running the webserver and Celery.
@@ -62,12 +83,6 @@ FORCE_SCRIPT_NAME = '/CATMAID_SUBDIR/dj'
 
 # Settings relative to the Apache subfolder
 CATMAID_URL = '/CATMAID_SUBDIR/'
-STATICFILES_URL = '/CATMAID_SUBDIR/dj-static/'
-
-STATICFILES_LOCAL = 'CATMAIDPATH/django/static/'
-# Static path to store generated NeuroHDF files (needs to be writable)
-# as subdirectory of STATICFILES_LOCAL
-STATICFILES_HDF5_SUBDIRECTORY = 'CATMAID_WRITABLE_SUBDIR'
 
 # Local path to store HDF5 files
 # File name convention: {projectid}_{stackid}.hdf
@@ -99,7 +114,5 @@ for subdirectory in ('projects', 'applications', 'lib'):
 
 # Serving admin static files
 # http://stackoverflow.com/questions/9959875/how-to-serve-admin-static-files-with-django-contrib-staticfiles-in-django-1-4-u
-STATIC_URL = '/CATMAID_SUBDIR/dj-static-admin/'
-STATIC_ROOT =  'CATMAIDPATH/django/static'
 # Additional locations of static files. Global files are stored in here
 STATICFILES_DIRS = (os.path.join(os.path.abspath(os.path.join(PROJECT_ROOT, 'static-admin')), ''),)

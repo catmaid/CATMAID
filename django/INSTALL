@@ -52,8 +52,14 @@ following ways:
   * Change the absolute path in TEMPLATE_DIRS to wherever the
     templates directory in this repository.
 
-  * Change the STATICFILES_URL and STATICFILES_LOCAL variables to
-    point to the right locations.
+  * Changel the MEDIA_URL and MEDIA_ROOT variables to point to
+    right locations. Make sure MEDIA_ROOT is read- and writable by
+    the web server.
+
+  * Change the STATIC_URL and STATIC_ROOT variables to point to
+    right locations. Use STATICFILES_DIRS if additional folders
+    with static files should be respected. Use the "collectstatic"
+    management command to collect all static files into STATIC_ROOT.
 
 Try running the server locally, with:
 

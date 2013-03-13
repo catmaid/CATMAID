@@ -60,7 +60,7 @@ add_introspection_rules([([Integer3DField], [], {})],
                         [r'^catmaid\.fields\.Integer3DField'])
 
 # ------------------------------------------------------------------------
-# Classes to support the integer3d compound type:
+# Classes to support the double3d compound type:
 
 class Double3D(object):
 

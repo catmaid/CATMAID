@@ -4,6 +4,7 @@ import tempfile
 import os.path as op
 import os
 import re
+from random import choice
 
 # Import everything from the configuration file
 from configuration import *
@@ -17,6 +18,13 @@ data = re.sub('CATMAIDPATH', abs_catmaid_path, data)
 data = re.sub('PYTHONLIBPATH', abs_virtualenv_python_library_path, data)
 o.write( data )
 o.close()
+
+# Create a secret key for Django
+alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
+catmaid_secret_key = ''.join([choice(alphabet) for i in range(50)])
+
+# Make sure trailing and leading slashes are where they are expected.
+
 
 for f in ['', '_apache']:
     in_configfile = op.join('projects/mysite/settings{0}.py.example'.format(f))

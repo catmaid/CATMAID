@@ -14,6 +14,9 @@ DATABASES = {
     }
 }
 
+DEBUG = True
+TEMPLATE_DEBUG = DEBUG
+
 # Make this unique, and don't share it with anybody.
 # (You can generate a key with:
 # >>> from random import choice
@@ -54,9 +57,6 @@ STATIC_ROOT =  'CATMAIDPATH/django/static'
 # microstacks for two weeks. Make sure that the folder is writable
 # by the user running the webserver and Celery.
 TMP_DIR = 'CATMAID_TMP_PATH'
-
-DEBUG = True
-TEMPLATE_DEBUG = DEBUG
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name

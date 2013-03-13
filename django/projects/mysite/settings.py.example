@@ -112,8 +112,3 @@ PROJECT_ROOT = os.path.realpath(os.path.join(
         os.path.dirname(__file__), '..', '..'))
 for subdirectory in ('projects', 'applications', 'lib'):
     sys.path.insert(0, os.path.join(PROJECT_ROOT, subdirectory))
-
-# Serving admin static files
-# http://stackoverflow.com/questions/9959875/how-to-serve-admin-static-files-with-django-contrib-staticfiles-in-django-1-4-u
-# Additional locations of static files. Global files are stored in here
-STATICFILES_DIRS = (os.path.join(os.path.abspath(os.path.join(PROJECT_ROOT, 'static-admin')), ''),)

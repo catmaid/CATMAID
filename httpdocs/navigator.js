@@ -165,7 +165,7 @@ function Navigator()
 			var w = ui.getMouseWheel( e );
 			if ( w )
 			{
-        w = self.stack.inverse_mouse_wheel * w;
+        		w = self.stack.inverse_mouse_wheel * w;
 				if ( w > 0 )
 				{
           if( e.shiftKey ) {

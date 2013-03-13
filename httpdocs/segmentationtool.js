@@ -221,11 +221,34 @@ function SegmentationTool()
     var onmousewheel = function( e )
     {
         var w = ui.getMouseWheel( e );
-        if( w > 0) {
-            SegmentationAnnotations.next_slice( false );
-        } else {
-            SegmentationAnnotations.next_slice( true );
+        if ( w )
+        {
+            w = self.stack.inverse_mouse_wheel * w;
+            if ( w > 0 )
+            {
+                if( e.shiftKey )
+                    SegmentationAnnotations.next_slice( false );
+                else {
+                    if( e.altKey )
+                        self.slider_z.move( 10 );
+                    else
+                        self.slider_z.move( 1 );
+                }
+                    
+            }
+            else
+            {
+                if( e.shiftKey )
+                    SegmentationAnnotations.next_slice( true );
+                else {
+                    if( e.altKey )
+                        self.slider_z.move( -10 );
+                    else
+                        self.slider_z.move( -1 );
+                }
+            }
         }
+        return false;
     }
 
     var onmousemove = function( e )
@@ -416,7 +439,7 @@ function SegmentationTool()
     }) );
 
     this.addAction( new Action({
-        helpText: "Delete slice group",
+        helpText: "Delete slice group (Shift: Remove and never show again)",
         keyShortcuts: {
             'B': [ 66 ]
         },

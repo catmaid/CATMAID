@@ -1,7 +1,7 @@
 import re
 from django import forms
 from django.db import models
-from widgets import Double3DWidget, Integer3DWidget
+from widgets import Double3DWidget, Integer3DWidget, RGBAWidget
 
 from south.modelsinspector import add_introspection_rules
 
@@ -115,6 +115,62 @@ add_introspection_rules([([Double3DField], [], {})],
                         [r'^catmaid\.fields\.Double3DField'])
 
 # ------------------------------------------------------------------------
+# Classes to support the rgba compound type:
+
+class RGBA(object):
+
+    def __init__(self, r=0, g=0, b=0, a=0):
+        self.r, self.g, self.b, self.a = r, g, b, a
+
+    double_re = '[-+0-9\.Ee]+'
+    tuple_pattern = re.compile(r'^\((%s),\s*(%s),\s*(%s),\s*(%s)\)$' % ((double_re,)*4))
+
+    @classmethod
+    def from_str(cls, s):
+        m = cls.tuple_pattern.match(s)
+        if m:
+            return RGBA(r=float(m.group(1)),
+                        g=float(m.group(2)),
+                        b=float(m.group(3)),
+                        a=float(m.group(4)))
+        else:
+            raise Exception, "Couldn't parse value as an RGBA: " + str(s)
+
+    def __unicode__(self):
+        return u"(%.3f, %.3f, %.3f, %.3f)" % (self.r, self.g, self.b, self.a)
+
+class RGBAField(models.Field):
+
+    __metaclass__ = models.SubfieldBase
+
+    def formfield(self, **kwargs):
+        defaults = {'form_class': RGBAFormField}
+        defaults.update(kwargs)
+        return super(RGBAField, self).formfield(**defaults)
+
+    def db_type(self, connection):
+        return 'rgba'
+
+    def to_python(self, value):
+        if isinstance(value, RGBA):
+            return value
+        elif (isinstance(value, list) or isinstance(value, tuple)) and len(value) == 3:
+            return RGBA(value[0], value[1], value[2])
+        # When contructing a Location, we get the empty string
+        # here; return a new RGBA for any falsy value:
+        elif not value:
+            return RGBA()
+        else:
+            return RGBA.from_str(value)
+
+    def get_db_prep_value(self, value, connection, prepared=False):
+        value = self.to_python(value)
+        return "(%f,%f,%f,%f)" % (value.r, value.g, value.b, value.a)
+
+add_introspection_rules([([RGBAField], [], {})],
+                        [r'^catmaid\.fields\.RGBAField'])
+
+# ------------------------------------------------------------------------
 
 # from https://github.com/aino/django-arrayfields/blob/master/arrayfields/fields.py
 
@@ -178,6 +234,23 @@ class Double3DFormField(forms.MultiValueField):
             forms.FloatField(label='X'),
             forms.FloatField(label='Y'),
             forms.FloatField(label='Z'),
+        )
+        super(Double3DFormField, self).__init__(fields, *args, **kwargs)
+
+    def compress(self, data_list):
+        if data_list:
+            return data_list
+        return [None, None, None]
+
+class RGBAFormField(forms.MultiValueField):
+    widget = RGBAWidget
+
+    def __init__(self, *args, **kwargs):
+        fields = (
+            forms.FloatField(label='R'),
+            forms.FloatField(label='G'),
+            forms.FloatField(label='B'),
+            forms.FloatField(label='A'),
         )
         super(Double3DFormField, self).__init__(fields, *args, **kwargs)
 

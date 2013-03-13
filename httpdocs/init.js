@@ -464,9 +464,8 @@ function openProjectStack( pid, sid )
 	ui.catchEvents( "wait" );
 	requestQueue.register(
 		django_url + pid + '/stack/' + sid + '/info',
-		'POST',
-		{ pid : pid, sid : sid },
-        // {},
+		'GET',
+		{ },
 		handle_openProjectStack );
 	return;
 }

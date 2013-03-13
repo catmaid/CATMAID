@@ -34,6 +34,10 @@ for f in ['', '_apache']:
     data = re.sub('CATMAID_CROP_SUBDIR', catmaid_crop_subdir, data)
     data = re.sub('CATMAID_SERVERNAME', catmaid_servername, data)
     data = re.sub('CATMAID_SUBDIR', catmaid_subdirectory, data)
+    # If CATMAID doesn't live in a sub-directery, double-slashes can occur
+    # in the generated configurations. Remove those:
+    data = re.sub('//', '/', data)
+    # Write out the configuration
     o.write( data )
     o.close()
 

@@ -445,6 +445,29 @@ function Stack(
 		else
 			self.broken_slices.push( i );
 	}
+
+	//! all possible time points
+	self.time_points = new Array();
+	self.broken_time_points = new Array();
+	for ( var i = 0; i < dimension.t; ++i )
+	{
+		if ( !skip_time_points[ i ] )
+			self.time_points.push( i );
+		else
+			self.broken_time_points.push( i );
+	}
+
+	//! all possible channels
+	self.channels = new Array();
+	self.broken_channels = new Array();
+	for ( var i = 0; i < dimension.c; ++i )
+	{
+		if ( !skip_channe[ i ] )
+			self.channels.push( i );
+		else
+			self.broken_channels.push( i );
+	}
+
 	
 	//-------------------------------------------------------------------------
 	

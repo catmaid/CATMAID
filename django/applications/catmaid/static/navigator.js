@@ -42,6 +42,24 @@ function Navigator()
 			388,
 			1,
 			function( val ){ statusBar.replaceLast( "z: " + val ); return; } );
+
+	this.slider_t = new Slider(
+			SLIDER_HORIZONTAL,
+			true,
+			0,
+			388,
+			389,
+			0,
+			function( val ){ statusBar.replaceLast( "t: " + val ); return; } );
+
+	this.slider_c = new Slider(
+			SLIDER_HORIZONTAL,
+			true,
+			0,
+			388,
+			389,
+			0,
+			function( val ){ statusBar.replaceLast( "c: " + val ); return; } );
 	
 	this.slider_s = new Slider(
 			SLIDER_HORIZONTAL,
@@ -56,6 +74,8 @@ function Navigator()
 				8 ),
 			8,
 			function( val ){ statusBar.replaceLast( "s: " + val ); } );
+
+
 	
 	var slider_z_box = document.createElement( "div" );
 	slider_z_box.className = "box";
@@ -68,6 +88,31 @@ function Navigator()
 	
 	sliders_box.appendChild( slider_z_box );
 	
+
+	var slider_t_box = document.createElement( "div" );
+	slider_t_box.className = "box";
+	slider_t_box.id = "slider_t_box";
+	var slider_t_box_label = document.createElement( "p" );
+	slider_t_box_label.appendChild( document.createTextNode( "t-index" + "   " ) );
+    slider_t_box.appendChild( slider_t_box_label );
+	slider_t_box.appendChild( self.slider_t.getView() );
+	slider_t_box.appendChild( self.slider_t.getInputView() );
+	
+	sliders_box.appendChild( slider_t_box );
+
+	var slider_c_box = document.createElement( "div" );
+	slider_c_box.className = "box";
+	slider_c_box.id = "slider_c_box";
+	var slider_c_box_label = document.createElement( "p" );
+	slider_c_box_label.appendChild( document.createTextNode( "c-index" + "   " ) );
+    slider_c_box.appendChild( slider_c_box_label );
+	slider_c_box.appendChild( self.slider_c.getView() );
+	slider_c_box.appendChild( self.slider_c.getInputView() );
+	
+	sliders_box.appendChild( slider_c_box );
+
+
+
 	var slider_s_view = self.slider_s.getView();
 	slider_s_view.id = "slider_s";
 	document.getElementById( "slider_s" ).parentNode.replaceChild(
@@ -90,6 +135,8 @@ function Navigator()
 	{
 		self.slider_s.setByValue( self.stack.s, true );
 		self.slider_z.setByValue( self.stack.z, true );
+		self.slider_t.setByValue( self.stack.t, true );
+		self.slider_c.setByValue( self.stack.c, true );
 
 		self.input_x.value = self.stack.x;
 		self.input_y.value = self.stack.y;
@@ -498,6 +545,40 @@ function Navigator()
 			self.stack.z,
 			self.changeSlice );
 		
+
+				
+		if ( self.stack.time_points.length < 2 )	//!< hide the self.slider_t if there is only one time point
+		{
+			self.slider_t.getView().parentNode.style.display = "none";
+		}
+		else
+		{
+			self.slider_t.getView().parentNode.style.display = "block";
+		}
+		self.slider_t.update(
+			0,
+			0,
+			self.stack.time_points,
+			self.stack.t,
+			self.changeTimePoint );
+
+		if ( self.stack.channels.length < 2 )	//!< hide the self.slider_c if there is only one channel
+		{
+			self.slider_c.getView().parentNode.style.display = "none";
+		}
+		else
+		{
+			self.slider_c.getView().parentNode.style.display = "block";
+		}
+		self.slider_c.update(
+			0,
+			0,
+			self.stack.channels,
+			self.stack.c,
+			self.changeChannel );
+		
+
+
 		self.input_x.onchange = changeXByInput;
 		try
 		{
@@ -568,6 +649,20 @@ function Navigator()
 			0,
 			null );
 		
+		self.slider_t.update(
+			0,
+			1,
+			undefined,
+			0,
+			null );
+
+		self.slider_c.update(
+			0,
+			1,
+			undefined,
+			0,
+			null );
+
 		self.input_x.onchange = null;
 		try
 		{

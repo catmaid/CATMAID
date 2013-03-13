@@ -133,9 +133,7 @@ var ProjectStatistics = new function()
   }
   
   var refresh_project_statistics = function() {
-    //requestQueue.register("model/stats.list.php", "POST", {
-    requestQueue.register(django_url + project.id + '/stats-summary', "POST", {
-      "pid": project.getId()
+    requestQueue.register(django_url + project.id + '/stats-summary', "GET", {
     }, function (status, text, xml) {
       if (status == 200) {
         if (text && text != " ") {
@@ -151,8 +149,7 @@ var ProjectStatistics = new function()
       return true;
     });
 
-    requestQueue.register(django_url + project.id + '/stats', "POST", {
-      "pid": project.id
+    requestQueue.register(django_url + project.id + '/stats', "GET", {
     }, function (status, text, xml) {
       if (status == 200) {
         if (text && text != " ") {
@@ -167,8 +164,7 @@ var ProjectStatistics = new function()
       return true;
     });
 
-    requestQueue.register(django_url + project.id + '/stats-editor', "POST", {
-      "pid": project.id
+    requestQueue.register(django_url + project.id + '/stats-editor', "GET",{
     }, function (status, text, xml) {
       if (status == 200) {
         if (text && text != " ") {
@@ -183,8 +179,7 @@ var ProjectStatistics = new function()
       return true;
     });
 
-    requestQueue.register(django_url + project.id + '/stats-reviewer', "POST", {
-      "pid": project.id
+    requestQueue.register(django_url + project.id + '/stats-reviewer', "GET", {
     }, function (status, text, xml) {
       if (status == 200) {
         if (text && text != " ") {

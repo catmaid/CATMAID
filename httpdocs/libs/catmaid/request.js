@@ -178,9 +178,14 @@ var requestQueue = function()
         );
         break;
       default:
+	var request = "";
+	var encoded = encodeObject( d );
+	if (encoded != "") {
+		request = "?" + encoded;
+	}
         queue.push(
           {
-            request : r + "?" + encodeObject( d ),
+            request : r + request,
             method : m,
             data : null,
             callback : c,

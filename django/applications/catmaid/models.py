@@ -11,7 +11,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 
-from .fields import Double3DFormField, Integer3DFormField, Double3DField, Integer3DField, IntegerArrayField, Double3D
+from .fields import Double3DFormField, Integer3DFormField, Double3DField, Integer3DField, IntegerArrayField, Double3D, RGBAField
 
 from guardian.shortcuts import get_objects_for_user
 
@@ -362,7 +362,7 @@ class Textlabel(models.Model):
         db_table = "textlabel"
     type = models.CharField(max_length=32)
     text = models.TextField(default="Edit this text ...")
-    # colour is of type rgba, can't represent that yet
+    colour = RGBAField(default=(1, 0.5, 0, 1))
     font_name = models.TextField(null=True)
     font_style = models.TextField(null=True)
     font_size = models.FloatField(default=32)

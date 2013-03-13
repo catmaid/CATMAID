@@ -59,6 +59,11 @@ following, a Nginx configuration is provided to give access to CATMAID::
           index  index.html;
       }
 
+      # Give access to Django's static files
+      location /dj-static/ {
+         alias <CATMAID-path>/django/static/;
+      }
+
       # Route all CATMAID Django WSGI requests to the Gevent WSGI server
       location /dj/ {
           proxy_pass http://catmaid-wsgi/;
@@ -81,10 +86,11 @@ defines the actual web server. There you have to adjust the *<CATMAID-host>* to
 where the CATMAID instance should be available (e.g. catmaid.example.org). Next,
 the root path of your CATMAID installation needs to replace the *<CATMAID-path>*
 place-holder. The first location block defines an index page when the root of
-your *<CATMAID-host>* is requested. The next location block passes all requests
-that start with */dj/* to the WSGI server defined before. An the last location
-block allows the execution of PHP scripts. Note that you need to replace in the
-PHP block *<CATMAID-path>* as well.
+your *<CATMAID-host>* is requested. The second block gives access to Django's
+static files. The next location block passes all requests that start with */dj/*
+to the WSGI server defined before. An the last location block allows the
+execution of PHP scripts. Note that you need to replace in the PHP block
+*<CATMAID-path>* as well.
 
 Gevent run script
 #################

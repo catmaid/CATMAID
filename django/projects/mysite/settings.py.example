@@ -99,7 +99,7 @@ CATMAID_DJANGO_URL = 'http://CATMAID_SERVERNAME/CATMAID_SUBDIR/dj/'
 # data. The CATMAID_IMPORT_URL refers is the URL as seen from outside
 # that gives read access to the CATMAID_IMPORT_PATH.
 CATMAID_IMPORT_PATH = 'CATMAIDPATH/httpdocs/data'
-CATMAID_IMPORT_URL = 'CATMAIDURL/data'
+CATMAID_IMPORT_URL = 'http://CATMAID_SERVERNAME/CATMAID_SUBDIR/data'
 
 ## Celery configuration
 djcelery.setup_loader()

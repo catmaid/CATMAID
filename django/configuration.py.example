@@ -13,20 +13,17 @@ catmaid_database_name = ''
 catmaid_database_username = ''
 catmaid_database_password = ''
 
-# Make this unique, and don't share it with anybody.
-# (You can generate a key with:
-# >>> from random import choice
-# >>> ''.join([choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)])
-# '@er^vm3$w#9n$)z3avny*hh+l^#ezv+sx*(72qwp0c%%cg1$i+'
+# Writable folder to store automatically generated files that are publicly
+# visible, e.g. used by by the NeuroHDF export script and the cropping tool.
 
-catmaid_secret_key = ''
+catmaid_writable_path = ''
 
-# Define a temporary folder. This is e.g. used to store cropped
-# microstacks for two weeks. Make sure that the folder is writable
-# by the user running the webserver and Celery.
+# The HDF5 and the cropping tools write files into a subrirectory of
+# the writable path above. Make sure these folders exist there (or
+# adjust them to existing folders you like):
 
-catmaid_tmp_path = ''
-
+catmaid_hdf5_subdir = 'hdf5'
+catmaid_crop_subdir = 'cropping'
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -36,15 +33,6 @@ catmaid_tmp_path = ''
 # e.g.: Europe/Zurich
 
 catmaid_timezone = ''
-
-
-# Writable, subdirectory of the django/static folder to store automatically generated
-# files that are publicly visible, e.g. used by by the NeuroHDF # export script.
-# e.g. neurohdf
-# The writable folder then must be /home/alice/dev/CATMAID/django/static/neurohdf
-
-catmaid_writable_subdir = ''
-
 
 # The domain name (server name) which hosts the CATMAID installation
 # e.g.: localhost

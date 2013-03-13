@@ -44,7 +44,7 @@ var ProjectStatistics = new function()
     header += '<tr>';
     header += '<td>username</td>';
     for(var i = 0; i < data['days'].length; i++ ) {
-      header += '<td>'+data['days'][i]+'</td>';
+      header += '<td>'+data['daysformatted'][i]+'</td>';
     }
     header += '<td>summed points</td>';
     header += '</tr>';

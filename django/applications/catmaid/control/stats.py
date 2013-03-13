@@ -120,9 +120,11 @@ def stats_user_history(request, project_id=None):
     for user in all_users:
         map_userid_to_name[user['id']] = user['username']
     days = []
+    daysformatted = []
     for i in range(last_x_days+1):
         tmp_date = start_date + timedelta(days=i)
         days.append( tmp_date.strftime("%Y%m%d") )
+        daysformatted.append( tmp_date.strftime("%a %d, %h %Y") )
     stats_table = {}
     for userid in map_userid_to_name.keys():
         if userid == -1:
@@ -174,5 +176,5 @@ def stats_user_history(request, project_id=None):
     for di in labeled_nodes_stats:
         stats_table[ di['username'] ][ di['date'] ]['new_tags'] = di['count']
 
-    return HttpResponse(json.dumps({ 'stats_table': stats_table, 'days': days}), mimetype='text/json')
+    return HttpResponse(json.dumps({ 'stats_table': stats_table, 'days': days, 'daysformatted': daysformatted}), mimetype='text/json')
     

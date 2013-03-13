@@ -325,7 +325,7 @@ class Message(models.Model):
 class Settings(models.Model):
     class Meta:
         db_table = "settings"
-    key = models.TextField()
+    key = models.TextField(primary_key=True)
     value = models.TextField(null=True)
 
 

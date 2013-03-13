@@ -174,5 +174,5 @@ def stats_user_history(request, project_id=None):
     for di in labeled_nodes_stats:
         stats_table[ di['username'] ][ di['date'] ]['new_tags'] = di['count']
 
-    return HttpResponse(json.dumps({ 'stats_table': stats_table, 'days': days}), sort_keys=True, mimetype='text/json')
+    return HttpResponse(json.dumps({ 'stats_table': stats_table, 'days': days}), mimetype='text/json')
     

@@ -1209,6 +1209,10 @@ var WindowMaker = new function()
       '<br clear="all" />' +
 			'<!-- piechart -->' +
       '<div class="project-stats">' +
+        '<h3>Contribution Record</h3>' +
+        '(nn: new nodes, nc: new connectors, nrn: reviewed nodes, nt: new tags, pt: points)' +
+        '<table cellpadding="0" cellspacing="0" border="1" class="project-stats" id="project_stats_history_table">' +
+        '</table>' +
 				'<h3>Daily Statistics</h3>' +
         '<table cellpadding="0" cellspacing="0" border="0" class="project-stats" id="project_stats_table">' +
           '<tr>' +

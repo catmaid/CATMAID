@@ -5,7 +5,8 @@ import os.path as op
 import os
 import re
 
-execfile('configuration.py')
+# Import everything from the configuration file
+from configuration import *
 
 in_configfile = op.join('projects/mysite/django.wsgi.example')
 out_configfile = op.join('projects/mysite/django.wsgi')
@@ -64,6 +65,6 @@ Allow from all
 </Directory>
 
 """.format(cmpath = abs_catmaid_path, subdir = catmaid_subdirectory)
-print 'Apache configuration settings'
-print '-----------------------------'
-print out
+print('Apache configuration settings')
+print('-----------------------------')
+print(out)

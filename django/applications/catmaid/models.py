@@ -71,7 +71,7 @@ class ProjectStack(models.Model):
         db_table = "project_stack"
     project = models.ForeignKey(Project)
     stack = models.ForeignKey(Stack)
-    translation = Double3DField(default=Double3D(0, 0, 0))
+    translation = Double3DField(default=(0, 0, 0))
 
     def __unicode__(self):
         return self.project.title + " -- " + self.stack.title

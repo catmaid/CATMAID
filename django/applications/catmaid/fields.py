@@ -44,7 +44,7 @@ class Integer3DField(models.Field):
     def to_python(self, value):
         if isinstance(value, Integer3D):
             return value
-        elif isinstance(value, list) and len(value) == 3:
+        elif (isinstance(value, list) or isinstance(value, tuple)) and len(value) == 3:
             return Integer3D(value[0], value[1], value[2])
         # When contructing a Location, we get the empty string
         # here; return a new Integer3D for any falsy value:
@@ -97,7 +97,7 @@ class Double3DField(models.Field):
     def to_python(self, value):
         if isinstance(value, Double3D):
             return value
-        elif isinstance(value, list) and len(value) == 3:
+        elif (isinstance(value, list) or isinstance(value, tuple)) and len(value) == 3:
             return Double3D(value[0], value[1], value[2])
         # When contructing a Location, we get the empty string
         # here; return a new Double3D for any falsy value:

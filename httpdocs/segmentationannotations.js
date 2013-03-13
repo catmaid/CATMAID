@@ -363,6 +363,37 @@ var SegmentationAnnotations = new function()
                     });
     }
 
+    self.updateNeuronName = function() {
+          if( self.has_current_assembly() ) {
+            requestQueue.register(django_url + project.id + '/assembly/' + SegmentationAnnotations.current_active_assembly + '/neuronname', "POST", {}, function (status, text, xml) {
+              var e;
+              if (status === 200) {
+                if (text && text !== " ") {
+                  e = $.parseJSON(text);
+                  if (e.error) {
+                    alert(e.error);
+                  }
+                  var new_neuronname = prompt("Change neuron name (assembly ID:" + SegmentationAnnotations.current_active_assembly + ")", e['neuronname']);
+                  if (new_neuronname != '' && new_neuronname != null) {
+                      $.post(django_url + project.id + '/object-tree/instance-operation', {
+                        "operation": "rename_node",
+                        "id": e['neuronid'],
+                        "title": new_neuronname,
+                        "classname": "neuron",
+                        "pid": project.id
+                      }, function (r) {
+                          r = $.parseJSON(r);
+                          if(r['error']) {
+                              alert(r['error']);
+                          }
+                      });
+                  }
+                }
+              }
+            });
+          }
+    }
+
     self.has_current_assembly = function() {
         return (self.current_active_assembly !== null &&
             parseInt(self.current_active_assembly, 10) > 0 )
@@ -557,7 +588,6 @@ var SegmentationAnnotations = new function()
             flags_left.push( allslices[ slicelist[ idx ] ].flag_left );
             flags_right.push( allslices[ slicelist[ idx ] ].flag_right );
         }
-        console.log('flags', flags_left, flags_right)
 
         var result_slices_count = {};
         for(var idx in result_slices) {
@@ -629,10 +659,6 @@ var SegmentationAnnotations = new function()
             'slices_left_flags': flags_left,
             'slices_right_flags': flags_right
         }
-        /*console.log('result slices', result_slices);
-        console.log('result slices count', result_slices_count, slices_todo);
-        console.log('result segments', result_segments);*/
-        // console.log('slices to check', slices_to_check);
     }
 
     self.constraints_for_selected_segment_of_active_slice = function() {

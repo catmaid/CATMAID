@@ -7,6 +7,19 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control.common import _create_relation
 
+def _get_neuronname_from_assemblyid( project_id, assembly_id ):
+    p = get_object_or_404(Project, pk=project_id)
+    qs = ClassInstanceClassInstance.objects.filter(
+                relation__relation_name='model_of',
+                project=p,
+                class_instance_a=int(assembly_id)).select_related("class_instance_b")
+    return {'neuronname': qs[0].class_instance_b.name,
+        'neuronid': qs[0].class_instance_b.id }
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def update_assembly_neuronname(request, project_id=None, assembly_id=None):
+    return HttpResponse(json.dumps(_get_neuronname_from_assemblyid(project_id, assembly_id)), mimetype='text/json')
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def save_assembly(request, project_id=None, stack_id=None):
     assemblyid = int(request.POST.get('assemblyid', None))

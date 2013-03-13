@@ -1581,9 +1581,7 @@ var SkeletonAnnotations = new function()
             }
           }
         });
-
       }
-    
     };
 
     this.setConfidence = function(newConfidence, toConnector) {

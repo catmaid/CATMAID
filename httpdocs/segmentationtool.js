@@ -588,6 +588,21 @@ function SegmentationTool()
         }
     }) );
 
+    this.addAction( new Action({
+      helpText: "Rename neuron of current assembly",
+      keyShortcuts: {
+          'F2': [ 113 ]
+      },
+      run: function (e) {
+          if (!mayEdit()) {
+              return false;
+          }
+          console.log('rename neuron')
+          SegmentationAnnotations.updateNeuronName();
+          return true;
+      }
+    }) );
+
     var keyCodeToAction = getKeyCodeToActionMap(actions);
 
     /** This function should return true if there was any action

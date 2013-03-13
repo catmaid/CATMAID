@@ -736,6 +736,17 @@ var WindowMaker = new function()
     return win;
   };
 
+  var appendSelect = function(div, name, entries) {
+    var select = document.createElement('select');
+    select.setAttribute("id", div.id + "_" + name);
+    entries.forEach(function(title, i) {
+      var option = document.createElement("option");
+      option.text = title;
+      option.value = i;
+      select.appendChild(option);
+    });
+    div.appendChild(select);
+  };
 
   var createSkeletonAnalyticsWindow = function()
   {
@@ -744,8 +755,11 @@ var WindowMaker = new function()
     content.style.backgroundColor = "#ffffff";
 
     var div = document.createElement('div');
-    div.setAttribute('id', 'skeleton_analytics_table');
+    div.setAttribute('id', 'skeleton_analytics');
     content.appendChild(div);
+
+    appendSelect(div, "source", ["Active skeleton", "Selected skeletons"]);
+    appendSelect(div, "extra", ["No others", "Downstream skeletons", "Upstream skeletons", "Both upstream and downstream"]);
 
     var update = document.createElement('input');
     update.setAttribute('type', 'button');
@@ -762,6 +776,7 @@ var WindowMaker = new function()
         '<thead>' +
           '<tr>' +
             '<th>Issue</th>' +
+            '<th>Neuron ID</th>' +
             '<th>Treenode ID</th>' +
             '<th>Skeleton ID</th>' +
           '</tr>' +
@@ -769,6 +784,7 @@ var WindowMaker = new function()
         '<tfoot>' +
           '<tr>' +
             '<th>Issue</th>' +
+            '<th>Neuron ID</th>' +
             '<th>Treenode ID</th>' +
             '<th>Skeleton ID</th>' +
           '</tr>' +

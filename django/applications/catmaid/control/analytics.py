@@ -7,12 +7,58 @@ import json
 
 @requires_user_role(UserRole.Annotate)
 def analyze_skeletons(request, project_id=None):
-    issues = []
     project_id = int(project_id)
-    for skid in request.POST.getlist('skeleton_ids[]'):
-        issues.extend(_analyze_skeleton(project_id, int(skid)))
+    skids = [int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids[')]
+    s_skids = ",".join(str(skid) for skid in skids)
+    extra = int(request.POST.get('extra', 0))
 
-    blob = {'issues': issues,
+    cursor = connection.cursor()
+
+    query = '''
+        SELECT tc2.skeleton_id
+        FROM treenode_connector tc1,
+             treenode_connector tc2,
+             relation r1,
+             relation r2
+        WHERE tc1.skeleton_id IN (%s)
+          AND tc1.relation_id = r1.id
+          AND %s
+          AND tc1.connector_id = tc2.connector_id
+          AND tc2.relation_id = r2.id
+          AND %s
+        GROUP BY tc2.skeleton_id'''
+
+    if 0 == extra:
+        # Just skids
+        pass
+    elif 1 == extra:
+        # Include downstream skeletons
+        cursor.execute(query % (s_skids, "r1.relation_name = 'presynaptic_to'", "r2.relation_name = 'postsynaptic_to'"))
+        skids.extend([s[0] for s in cursor.fetchall()])
+    elif 2 == extra:
+        # Include upstream skeletons
+        cursor.execute(query % (s_skids, "r1.relation_name = 'postsynaptic_to'", "r2.relation_name = 'presynaptic_to'"))
+        skids.extend([s[0] for s in cursor.fetchall()])
+    elif 3 == extra:
+        # Include both upstream and downstream skeletons
+        cursor.execute(query % (s_skids, "(r1.relation_name = 'presynaptic_to' OR r1.relation_name = 'postsynaptic_to')", "(r2.relation_name = 'presynaptic_to' OR r2.relation_name = 'postsynaptic_to')"))
+        skids.extend([s[0] for s in cursor.fetchall()])
+
+
+    # Obtain neuron names
+    cursor.execute('''
+    SELECT cici.class_instance_a, ci.name
+    FROM class_instance_class_instance cici,
+         class_instance ci,
+         relation r
+    WHERE cici.class_instance_a IN (%s)
+      AND cici.class_instance_b = ci.id
+      AND cici.relation_id = r.id
+      AND r.relation_name = 'model_of'
+    ''' % ",".join(str(skid) for skid in skids))
+
+    blob = {'issues': tuple((skid, _analyze_skeleton(project_id, skid)) for skid in skids),
+            'names': dict(cursor.fetchall()),
             0: "Two or more times postsynaptic to the same connector",
             1: "Autapse",
             2: "Connector without postsynaptic targets",
@@ -81,37 +127,39 @@ def _analyze_skeleton(project_id, skeleton_id):
     seen = set()
     for c in synapses[POST]:
         if c.connector_id in seen:
-            issues.append((0, c.treenode_id, skeleton_id))
+            issues.append((0, c.treenode_id))
         seen.add(c.connector_id)
     seen = None
 
     # Type 1: autapse
     autapses  = pre.intersection(post)
     for connector_id in autapses:
-        issues.append((1, connector_id, skeleton_id))
+        issues.append((1, connector_id))
     autapses = None
 
     # Type 2: presynaptic connector without postsynaptic treenodes
-    cursor.execute('''
-    SELECT connector_id
-    FROM treenode_connector
-    WHERE connector_id IN (%s)
-      AND relation_id = '%s'
-    GROUP BY connector_id
-    ''' % (",".join(str(connector_id) for connector_id in pre), str(relations[POST])))
-    for connector_id in pre.difference(set(row[0] for row in cursor.fetchall())):
-        issues.append((2, connector_id, skeleton_id))
+    if pre:
+        cursor.execute('''
+        SELECT connector_id
+        FROM treenode_connector
+        WHERE connector_id IN (%s)
+          AND relation_id = '%s'
+        GROUP BY connector_id
+        ''' % (",".join(str(connector_id) for connector_id in pre), str(relations[POST])))
+        for connector_id in pre.difference(set(row[0] for row in cursor.fetchall())):
+            issues.append((2, connector_id))
 
     # Type 3: postsynaptic connector without presynaptic treenodes
-    cursor.execute('''
-    SELECT connector_id
-    FROM treenode_connector
-    WHERE connector_id in (%s)
-      AND relation_id = '%s'
-    GROUP BY connector_id
-    ''' % (",".join(str(connector_id) for connector_id in post), str(relations[PRE])))
-    for connector_id in post.difference(set(row[0] for row in cursor.fetchall())):
-        issues.append((3, connector_id, skeleton_id))
+    if post:
+        cursor.execute('''
+        SELECT connector_id
+        FROM treenode_connector
+        WHERE connector_id in (%s)
+          AND relation_id = '%s'
+        GROUP BY connector_id
+        ''' % (",".join(str(connector_id) for connector_id in post), str(relations[PRE])))
+        for connector_id in post.difference(set(row[0] for row in cursor.fetchall())):
+            issues.append((3, connector_id))
 
     # Type 4: potentially duplicated synapses (or triplicated, etc): same pre skeleton, same treenodes or parent/child (i.e. adjacent)
     cursor.execute('''
@@ -142,7 +190,7 @@ def _analyze_skeleton(project_id, skeleton_id):
     GROUP BY post1.treenode_id
     ''' % skeleton_id)
     for row in cursor.fetchall():
-        issues.append((4, row[0], skeleton_id))
+        issues.append((4, row[0]))
 
     # Type 5: end node without a tag
     # Type 6: node with a TODO tag
@@ -165,14 +213,15 @@ def _analyze_skeleton(project_id, skeleton_id):
     end_labels = set(['ends', 'not a branch', 'uncertain end', 'uncertain continuation'])
     for row in rows:
         label = row[3]
-        if row[0] not in parents and label not in end_labels:
-            # Type 5: node is a leaf without an end-node label
-            issues.append((5, row[0], skeleton_id))
+        if row[0] not in parents:
+            if label not in end_labels:
+                # Type 5: node is a leaf without an end-node label
+                issues.append((5, row[0]))
         elif label in end_labels:
             # Type 7: node is not a leaf but has an end-node label
-            issues.append((7, row[0]), skeleton_id)
+            issues.append((7, row[0]))
         if 'TODO' in label:
             # Type 6: node with a tag containing the string 'TODO'
-            issues.append((6, row[0]), skeleton_id)
+            issues.append((6, row[0]))
 
     return issues

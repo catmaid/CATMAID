@@ -31,6 +31,9 @@ from celery.task import task
 file_prefix = "crop_"
 # File extension of the stored microstacks
 file_extension = "tiff"
+# The path were cropped files get stored in
+crop_output_path = os.path.join(settings.MEDIA_ROOT,
+    settings.MEDIA_CROPPING_SUBDIRECTORY)
 
 class CropJob:
     """ A small container class to keep information about the cropping
@@ -62,7 +65,7 @@ class CropJob:
         # Create an output path if not already present
         if output_path is None:
             file_name = file_prefix + id_generator() + "." + file_extension
-            output_path = os.path.join(settings.TMP_DIR, file_name)
+            output_path = os.path.join(crop_output_path, file_name)
         self.single_channel = single_channel
         self.output_path = output_path
 
@@ -392,8 +395,9 @@ def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min
     be given in terms of real world units (e.g. nm).
     """
     # Make sure tmp dir exists and is writable
-    if not os.path.exists( settings.TMP_DIR ) or not os.access( settings.TMP_DIR, os.W_OK ):
-        err_message = "Please make sure your temporary folder (TMP_DIR in settings.py) exists and is writable."
+    if not os.path.exists( crop_output_path ) or not os.access( crop_output_path, os.W_OK ):
+        err_message = "Please make sure your output folder (MEDIA_ROOT and " \
+                "MEDIA_CROPPING_SUBDIRECTORY in settings.py) exists and is writable."
         err_response = json_error_response( err_message )
         err_response['Connection'] = 'close'
         return err_response
@@ -431,7 +435,7 @@ def cleanup( max_age=1209600 ):
     Such a stack is deleted if it is older than max_age, which
     is specified in seconds and  defaults to two weeks (1209600). 
     """ 
-    search_pattern = os.path.join(settings.TMP_DIR, file_prefix + "*." + file_extension)
+    search_pattern = os.path.join(crop_output_path, file_prefix + "*." + file_extension)
     now = time()
     files_to_remove = []
     for item in glob.glob( search_pattern ):
@@ -454,7 +458,7 @@ def download_crop(request, file_path=None):
         cleanup()
 
     # Check if the requested file exists
-    path = os.path.join(settings.TMP_DIR, file_path)
+    path = os.path.join(crop_output_path, file_path)
     if not os.path.exists(path):
         # Create error response
         err_response = HttpResponse("Sorry, the requested file (" + file_path + ") was not found.")

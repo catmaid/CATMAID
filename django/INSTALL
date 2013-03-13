@@ -126,5 +126,5 @@ virtualenv):
 
 The celery daemon should be integrated in your system to be started
 automatically. Make sure that this daemon process has the permissions to
-write to the temporary directory (TMP_DIR).
+write to the media directory (MEDIA_ROOT) and its subdirectories.
 

@@ -39,7 +39,7 @@ TEMPLATE_DIRS = (
 # the user running the webserver (and Celery if croppish should
 # be used).
 # Example: "/var/www/example.org/media/"
-MEDIA_ROOT = 'CATMAID_FILES_PATH'
+MEDIA_ROOT = 'CATMAID_WRITABLE_PATH'
 
 # URL that gives access to files stored in MEDIA_ROOT (managed stored
 # files). It must end in a slash if set to a non-empty value.
@@ -48,17 +48,16 @@ MEDIA_URL = '/CATMAID_SUBDIR/files/'
 
 # Static path to store generated NeuroHDF files (needs to be writable)
 # as subdirectory of MEDIA_ROOT.
-MEDIA_HDF5_SUBDIRECTORY = 'CATMAID_WRITABLE_SUBDIR'
+MEDIA_HDF5_SUBDIRECTORY = 'CATMAID_HDF5_SUBDIR'
+
+# Static path to store cropped (needs to be writable) as subdirectory
+# of MEDIA_ROOT.
+MEDIA_CROPPING_SUBDIRECTORY = 'CATMAID_CROP_SUBDIR'
 
 # The URL where static files can be accessed, relative to the domain's root
 STATIC_URL = '/CATMAID_SUBDIR/dj-static/'
 # The absolute local path where the static files get collected to
 STATIC_ROOT =  'CATMAIDPATH/django/static'
-
-# Define a temporary folder. This is e.g. used to store cropped
-# microstacks for two weeks. Make sure that the folder is writable
-# by the user running the webserver and Celery.
-TMP_DIR = 'CATMAID_TMP_PATH'
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name

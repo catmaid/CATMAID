@@ -135,8 +135,6 @@ def _analyze_skeleton(project_id, skeleton_id):
         return defaultdict(set)
     connectors = defaultdict(comp)
 
-    treenode_connector = defaultdict(list)
-
     # Condense rows to connectors represented by a map with two entries (PRE and POST),
     # each containing as value a set of Treenode:
     for row in cursor.fetchall():
@@ -163,15 +161,9 @@ def _analyze_skeleton(project_id, skeleton_id):
         if not post:
             # Type 2: presynaptic connector without postsynaptic treenodes
             issues.append((2, iter(pre).next().id))
-        else:
-            for t in post:
-                treenode_connector[t.id].append(connector_id)
         if not pre:
             # Type 3: postsynaptic connector without presynaptic treenode
             issues.append((3, iter(post).next().id))
-        else:
-            for t in pre:
-                treenode_connector[t.id].append(connector_id)
 
     # Type 4: potentially duplicated synapses (or triplicated, etc):
     # Check if two or more connectors share pre treenodes and post skeletons,
@@ -179,10 +171,6 @@ def _analyze_skeleton(project_id, skeleton_id):
     # considering the treenode and its parent as a group.
     Sets = namedtuple("Sets", ['pre_treenodes', 'pre_skeletons', 'post_treenodes', 'post_skeletons'])
     sets = {}
-    def find(ts):
-        for t in ts:
-            if t.skeleton_id == skeleton_id:
-                return t.id
     for connector_id, connector in connectors.iteritems():
         pre_treenodes = set()
         pre_skeletons = set()
@@ -199,19 +187,22 @@ def _analyze_skeleton(project_id, skeleton_id):
         sets[connector_id] = Sets(pre_treenodes, pre_skeletons, post_treenodes, post_skeletons)
     unique_4s = set()
     items = tuple(kv for kv in sets.iteritems())
+    def find(ts):
+        for t in ts:
+            if t.skeleton_id == skeleton_id:
+                return t
     for i, kv in enumerate(items):
         connector_id_1, s1 = kv
         for j in range(i+1, len(items)):
             connector_id_2, s2 = items[j]
             if ((s1.pre_treenodes & s2.pre_treenodes) and (s1.post_skeletons & s2.post_skeletons)) or ((s1.pre_skeletons & s2.pre_skeletons) and (s1.post_treenodes & s2.post_treenodes)):
                 # Type 4: potentially duplicated connector
-                # Find a treenode that belongs to skeleton_id and is pre or postsynaptic to connector_id_1 or connector_id_2
-                for ci in [connector_id_1, connector_id_2]:
-                    for pp in [PRE, POST]:
-                        for t in connectors[ci][pp]:
-                            if t.skeleton_id == skeleton_id:
-                                unique_4s.add(t.id)
-                                break
+                # Find a treenode_id that belongs to skeleton_id and is pre or postsynaptic to connector_id_1 or connector_id_2
+                for ts in (connectors[ci][pp] for ci in (connector_id_1, connector_id_2) for pp in (PRE, POST)):
+                    t = find(ts)
+                    if t:
+                        unique_4s.add(t.id)
+                        break
     for uid in unique_4s:
         issues.append((4, uid))
 

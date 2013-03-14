@@ -62,7 +62,7 @@ following, a Nginx configuration is provided to give access to CATMAID:
 
       # If CATMAID should live on subfolder of the domain, set this
       # here *without* a trailing slash, but *with* a leading slash.
-      # Leave it empty otherwise. E.g set $urlsubfolder = '/catmaid';
+      # Leave it empty otherwise. E.g set $urlsubfolder '/catmaid';
       set $urlsubfolder '';
 
       location $urlsubfolder/ {

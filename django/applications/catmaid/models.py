@@ -11,14 +11,11 @@ from django.contrib.auth.models import User
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 
-from fields import Double3DFormField, Integer3DFormField
+from .fields import Double3DField, Integer3DField, IntegerArrayField, RGBAField
 
 from guardian.shortcuts import get_objects_for_user
 
 from taggit.managers import TaggableManager
-
-def now():
-    return datetime.now()
 
 CELL_BODY_CHOICES = (
     ('u', 'Unknown'),
@@ -29,135 +26,6 @@ class UserRole(object):
     Admin = 'Admin'
     Annotate = 'Annotate'
     Browse = 'Browse'
-
-# ------------------------------------------------------------------------
-# Classes to support the integer3d compound type:
-
-class Integer3D(object):
-    def __init__(self, x=0, y=0, z=0):
-        self.x, self.y, self.z = x, y, z
-    integer_re = '[-+0-9]+'
-    tuple_pattern = re.compile('^\((%s),(%s),(%s)\)$'%((integer_re,)*3))
-    @classmethod
-    def from_str(cls, s):
-        m = cls.tuple_pattern.match(s)
-        if m:
-            return Integer3D(x=int(m.group(1), 10),
-                             y=int(m.group(2), 10),
-                             z=int(m.group(3), 10))
-        else:
-            raise Exception, "Couldn't parse value from the database as an Integer3D: "+str(s)
-
-    def __unicode__(self):
-        return "(%d, %d, %d)" % (self.x, self.y, self.z)
-
-class Integer3DField(models.Field):
-    __metaclass__ = models.SubfieldBase
-
-    def formfield(self, **kwargs):
-        defaults = {'form_class': Integer3DFormField}
-        defaults.update(kwargs)
-        return super(Integer3DField, self).formfield(**defaults)
-
-    def db_type(self, connection):
-        return 'integer3d'
-    def to_python(self, value):
-        if isinstance(value, Integer3D):
-            return value
-        if isinstance(value, list) and len(value) == 3:
-            return Integer3D(value[0], value[1], value[2])
-        # When contructing a Location, we get the empty string
-        # here; return a new Integer3D for any falsy value:
-        if not value:
-            return Integer3D()
-        return Integer3D.from_str(value)
-    def get_db_prep_value(self, value, connection, prepared=False):
-        return "(%d,%d,%d)" % (value.x, value.y, value.z)
-
-# ------------------------------------------------------------------------
-# Classes to support the integer3d compound type:
-
-class Double3D(object):
-    def __init__(self, x=0, y=0, z=0):
-        self.x, self.y, self.z = x, y, z
-    double_re = '[-+0-9\.Ee]+'
-    tuple_pattern = re.compile('^\((%s),(%s),(%s)\)$'%((double_re,)*3))
-    @classmethod
-    def from_str(cls, s):
-        m = cls.tuple_pattern.match(s)
-        if m:
-            return Double3D(x=float(m.group(1)),
-                            y=float(m.group(2)),
-                            z=float(m.group(3)))
-        else:
-            raise Exception, "Couldn't parse value from the database as a Double3D: "+str(s)
-
-    def __unicode__(self):
-        return "(%.3f, %.3f, %.3f)" % (self.x, self.y, self.z)
-
-class Double3DField(models.Field):
-    __metaclass__ = models.SubfieldBase
-
-    def formfield(self, **kwargs):
-        defaults = {'form_class': Double3DFormField}
-        defaults.update(kwargs)
-        return super(Double3DField, self).formfield(**defaults)
-
-    def db_type(self, connection):
-        return 'double3d'
-    def to_python(self, value):
-        if isinstance(value, Double3D):
-            return value
-        if isinstance(value, list) and len(value) == 3:
-            return Double3D(value[0], value[1], value[2])
-        # When contructing a Location, we get the empty string
-        # here; return a new Double3D for any falsy value:
-        if not value:
-            return Double3D()
-        return Double3D.from_str(value)
-    def get_db_prep_value(self, value, connection, prepared=False):
-        return "(%f,%f,%f)" % (value.x, value.y, value.z)
-
-# ------------------------------------------------------------------------
-
-# from https://github.com/aino/django-arrayfields/blob/master/arrayfields/fields.py
-
-import json
-from django.utils.translation import ugettext_lazy as _
-
-class ArrayFieldBase(models.Field):
-    def get_prep_value(self, value):
-        if value == '':
-            value = '{}'
-        return value
-
-    def value_to_string(self, obj):
-        value = self._get_val_from_obj(obj)
-        return json.dumps(value)
-
-    def to_python(self, value):
-        if isinstance(value, basestring):
-            value = json.loads(value)
-        return value
-
-    def south_field_triple(self):
-        from south.modelsinspector import introspector
-        name = '%s.%s' % (self.__class__.__module__ , self.__class__.__name__)
-        args, kwargs = introspector(self)
-        return name, args, kwargs
-
-
-class IntegerArrayField(ArrayFieldBase):
-    """
-    An integer array field for PostgreSQL
-    """
-    description = _('Integer array')
-
-    def db_type(self, connection):
-        return 'integer[]'
-
-# ------------------------------------------------------------------------
-
 
 class Project(models.Model):
     class Meta:
@@ -173,6 +41,7 @@ class Project(models.Model):
     stacks = models.ManyToManyField("Stack",
                                     through='ProjectStack')
     tags = TaggableManager(blank=True)
+    wiki_base_url = models.TextField(null=True, blank=True)
     
     def __unicode__(self):
         return self.title
@@ -180,19 +49,18 @@ class Project(models.Model):
 class Stack(models.Model):
     class Meta:
         db_table = "stack"
-        managed = False
     title = models.TextField()
     dimension = Integer3DField()
     resolution = Double3DField()
     image_base = models.TextField()
-    comment = models.TextField(blank=True)
-    trakem2_project = models.BooleanField()
-    num_zoom_levels = models.IntegerField()
-    file_extension = models.TextField(blank=True)
-    tile_width = models.IntegerField()
-    tile_height = models.IntegerField()
-    tile_source_type = models.IntegerField()
-    metadata = models.TextField(blank=True)
+    comment = models.TextField(blank=True, null=True)
+    trakem2_project = models.BooleanField(default=False)
+    num_zoom_levels = models.IntegerField(default=-1)
+    file_extension = models.TextField(default='jpg', blank=True)
+    tile_width = models.IntegerField(default=256)
+    tile_height = models.IntegerField(default=256)
+    tile_source_type = models.IntegerField(default=1)
+    metadata = models.TextField(default='', blank=True)
     tags = TaggableManager(blank=True)
 
     def __unicode__(self):
@@ -201,10 +69,9 @@ class Stack(models.Model):
 class ProjectStack(models.Model):
     class Meta:
         db_table = "project_stack"
-        managed = False
     project = models.ForeignKey(Project)
     stack = models.ForeignKey(Stack)
-    translation = Double3DField()
+    translation = Double3DField(default=(0, 0, 0))
 
     def __unicode__(self):
         return self.project.title + " -- " + self.stack.title
@@ -212,33 +79,30 @@ class ProjectStack(models.Model):
 class Overlay(models.Model):
     class Meta:
         db_table = "overlay"
-        managed = False
     title = models.TextField()
     stack = models.ForeignKey(Stack)
     image_base = models.TextField()
-    default_opacity = models.IntegerField()
-    file_extension = models.TextField(null=True)
-    tile_width = models.IntegerField()
-    tile_height = models.IntegerField()
-    tile_source_type = models.IntegerField()
+    default_opacity = models.IntegerField(default=0)
+    file_extension = models.TextField()
+    tile_width = models.IntegerField(default=512)
+    tile_height = models.IntegerField(default=512)
+    tile_source_type = models.IntegerField(default=1)
 
 class Concept(models.Model):
     class Meta:
         db_table = "concept"
-        managed = False
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
 
 class Class(models.Model):
     class Meta:
         db_table = "class"
-        managed = False
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
     # Now new columns:
     class_name = models.CharField(max_length=255)
@@ -251,11 +115,10 @@ class ConnectivityDirection:
 class ClassInstance(models.Model):
     class Meta:
         db_table = "class_instance"
-        managed = False
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
     # Now new columns:
     class_column = models.ForeignKey(Class, db_column="class_id") # underscore since class is a keyword
@@ -389,11 +252,10 @@ class ClassInstance(models.Model):
 class Relation(models.Model):
     class Meta:
         db_table = "relation"
-        managed = False
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
     # Now new columns:
     relation_name = models.CharField(max_length=255)
@@ -404,11 +266,10 @@ class Relation(models.Model):
 class RelationInstance(models.Model):
     class Meta:
         db_table = "relation_instance"
-        managed = False
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
     # Now new columns:
     relation = models.ForeignKey(Relation)
@@ -416,11 +277,10 @@ class RelationInstance(models.Model):
 class ClassInstanceClassInstance(models.Model):
     class Meta:
         db_table = "class_instance_class_instance"
-        managed = False
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
     # Now new columns:
@@ -434,18 +294,16 @@ class ClassInstanceClassInstance(models.Model):
 class BrokenSlice(models.Model):
     class Meta:
         db_table = "broken_slice"
-        managed = False
     stack = models.ForeignKey(Stack)
     index = models.IntegerField()
 
 class ClassClass(models.Model):
     class Meta:
         db_table = "class_class"
-        managed = False
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
     # Now new columns:
@@ -457,19 +315,17 @@ class ClassClass(models.Model):
 class Message(models.Model):
     class Meta:
         db_table = "message"
-        managed = False
     user = models.ForeignKey(User)
-    time = models.DateTimeField(default=now)
-    read = models.BooleanField()
+    time = models.DateTimeField(default=datetime.now)
+    read = models.BooleanField(default=False)
     title = models.TextField()
-    text = models.TextField(null=True)
-    action = models.TextField()
+    text = models.TextField(default='New message', blank=True, null=True)
+    action = models.TextField(blank=True, null=True)
 
 class Settings(models.Model):
     class Meta:
         db_table = "settings"
-        managed = False
-    key = models.TextField()
+    key = models.TextField(primary_key=True)
     value = models.TextField(null=True)
 
 
@@ -504,33 +360,30 @@ class UserFocusedModel(models.Model):
 class Textlabel(models.Model):
     class Meta:
         db_table = "textlabel"
-        managed = False
     type = models.CharField(max_length=32)
     text = models.TextField(default="Edit this text ...")
-    # colour is of type rgba, can't represent that yet
+    colour = RGBAField(default=(1, 0.5, 0, 1))
     font_name = models.TextField(null=True)
     font_style = models.TextField(null=True)
     font_size = models.FloatField(default=32)
     project = models.ForeignKey(Project)
     scaling = models.BooleanField(default=True)
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
-    deleted = models.BooleanField()
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
+    deleted = models.BooleanField(default=False)
 
 class TextlabelLocation(models.Model):
     class Meta:
         db_table = "textlabel_location"
-        managed = False
     textlabel = models.ForeignKey(Textlabel)
     location = Double3DField()
-    deleted = models.BooleanField()
+    deleted = models.BooleanField(default=False)
 
 class Location(UserFocusedModel):
     class Meta:
         db_table = "location"
-        managed = False
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     editor = models.ForeignKey(User, related_name='location_editor', db_column='editor_id')
     location = Double3DField()
     reviewer_id = models.IntegerField(default=-1)
@@ -539,9 +392,8 @@ class Location(UserFocusedModel):
 class Treenode(UserFocusedModel):
     class Meta:
         db_table = "treenode"
-        managed = False
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     editor = models.ForeignKey(User, related_name='treenode_editor', db_column='editor_id')
     location = Double3DField()
     parent = models.ForeignKey('self', null=True, related_name='children')
@@ -555,9 +407,8 @@ class Treenode(UserFocusedModel):
 class Connector(UserFocusedModel):
     class Meta:
         db_table = "connector"
-        managed = False
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     editor = models.ForeignKey(User, related_name='connector_editor', db_column='editor_id')
     location = Double3DField()
     confidence = models.IntegerField(default=5)
@@ -568,10 +419,9 @@ class Connector(UserFocusedModel):
 class TreenodeClassInstance(UserFocusedModel):
     class Meta:
         db_table = "treenode_class_instance"
-        managed = False
     # Repeat the columns inherited from 'relation_instance'
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     relation = models.ForeignKey(Relation)
     # Now new columns:
     treenode = models.ForeignKey(Treenode)
@@ -580,10 +430,9 @@ class TreenodeClassInstance(UserFocusedModel):
 class ConnectorClassInstance(UserFocusedModel):
     class Meta:
         db_table = "connector_class_instance"
-        managed = False
     # Repeat the columns inherited from 'relation_instance'
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     relation = models.ForeignKey(Relation)
     # Now new columns:
     connector = models.ForeignKey(Connector)
@@ -592,24 +441,15 @@ class ConnectorClassInstance(UserFocusedModel):
 class TreenodeConnector(UserFocusedModel):
     class Meta:
         db_table = "treenode_connector"
-        managed = False
     # Repeat the columns inherited from 'relation_instance'
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     relation = models.ForeignKey(Relation)
     # Now new columns:
     treenode = models.ForeignKey(Treenode)
     connector = models.ForeignKey(Connector)
     skeleton = models.ForeignKey(ClassInstance)
     confidence = models.IntegerField(default=5)
-
-#class Session(models.Model):
-#    class Meta:
-#        db_table = "sessions"
-#        managed = False
-#    session_id = models.CharField(max_length=26)
-#    data = models.TextField(default='')
-#    last_accessed = models.DateTimeField(default=now)
 
 # ------------------------------------------------------------------------
 # Now the non-Django tables:
@@ -645,9 +485,8 @@ class ApiKey(models.Model):
 class Log(UserFocusedModel):
     class Meta:
         db_table = "log"
-        managed = False
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     operation_type = models.CharField(max_length=255)
     location = Double3DField()
     freetext = models.TextField()
@@ -655,7 +494,6 @@ class Log(UserFocusedModel):
 class SkeletonlistDashboard(UserFocusedModel):
     class Meta:
         db_table = "skeletonlist_dashboard"
-        managed = False
     shortname = models.CharField(max_length=255)
     skeleton_list = IntegerArrayField()
     description = models.TextField()
@@ -663,9 +501,8 @@ class SkeletonlistDashboard(UserFocusedModel):
 class Component(UserFocusedModel):
     class Meta:
         db_table = "component"
-        managed = False
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     stack = models.ForeignKey(Stack)
     skeleton_id = models.IntegerField()
     component_id=models.IntegerField()
@@ -680,9 +517,8 @@ class Component(UserFocusedModel):
 class Drawing(UserFocusedModel):
     class Meta:
         db_table = "drawing"
-        managed = False
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     stack = models.ForeignKey(Stack)
     skeleton_id = models.IntegerField()
     z = models.IntegerField()
@@ -698,10 +534,9 @@ class Drawing(UserFocusedModel):
 class DataViewType(models.Model):
     class Meta:
         db_table = "data_view_type"
-        managed = False
     title = models.TextField()
     code_type = models.TextField()
-    comment = models.TextField()
+    comment = models.TextField(blank=True, null=True)
 
     def __unicode__(self):
         return self.title
@@ -709,7 +544,6 @@ class DataViewType(models.Model):
 class DataView(models.Model):
     class Meta:
         db_table = "data_view"
-        managed = False
         ordering = ('position',)
         permissions = (
             ("can_administer", "Can administer data views"),
@@ -720,7 +554,7 @@ class DataView(models.Model):
     config = models.TextField(default="{}")
     is_default = models.BooleanField(default=False)
     position = models.IntegerField(default=0)
-    comment = models.TextField(default="",blank=True)
+    comment = models.TextField(default="",blank=True,null=True)
 
     def save(self, *args, **kwargs):
         """ Does a post-save action: Make sure (only) one data view
@@ -773,3 +607,20 @@ def create_user_profile(sender, instance, created, **kwargs):
 # Connect the a User object's post save signal to the profile
 # creation
 post_save.connect(create_user_profile, sender=User)
+
+# ------------------------------------------------------------------------
+
+# Include models for deprecated PHP-only tables, just so that we can
+# remove them with South in a later migration.
+
+class DeprecatedAppliedMigrations(models.Model):
+    class Meta:
+        db_table = "applied_migrations"
+    id = models.CharField(max_length=32, primary_key=True)
+
+class DeprecatedSession(models.Model):
+    class Meta:
+        db_table = "sessions"
+    session_id = models.CharField(max_length=26)
+    data = models.TextField(default='')
+    last_accessed = models.DateTimeField(default=datetime.now)

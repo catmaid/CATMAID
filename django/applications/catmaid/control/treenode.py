@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
 
 from catmaid.models import *
+from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control.neuron import _in_isolated_synaptic_terminals, _delete_if_empty

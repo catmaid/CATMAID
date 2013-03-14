@@ -55,7 +55,8 @@ INSTALLED_APPS = (
     'taggit',
     'adminplus',
     'catmaid',
-    'guardian'
+    'guardian',
+    'south',
 )
 
 # Use the default template context processors. If custom ones should be
@@ -73,3 +74,5 @@ AUTHENTICATION_BACKENDS = (
     'guardian.backends.ObjectPermissionBackend',
 )
 ANONYMOUS_USER_ID = -1
+
+SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}

@@ -17,7 +17,8 @@ from guardian.shortcuts import get_perms_for_model, assign
 
 import urllib
 
-from catmaid.models import Project, Stack, ProjectStack, Overlay, Double3D
+from catmaid.models import Project, Stack, ProjectStack, Overlay
+from catmaid.fields import Double3D
 
 from catmaid.control.common import urljoin
 

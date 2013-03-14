@@ -6,6 +6,7 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
+from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 

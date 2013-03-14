@@ -54,13 +54,11 @@ INSTALLED_APPS = (
 # http://blog.madpython.com/2010/04/07/django-context-processors-best-practice/
 TEMPLATE_CONTEXT_PROCESSORS = DEFAULT_SETTINGS.TEMPLATE_CONTEXT_PROCESSORS
 
-URL_PREFIX = '/'
-
 # The URL requests are redirected after login
 LOGIN_REDIRECT_URL = '/'
 
 # The URL where requests are redirected after login
-LOGIN_URL = URL_PREFIX + 'accounts/login'
+LOGIN_URL = '/accounts/login'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend', # default

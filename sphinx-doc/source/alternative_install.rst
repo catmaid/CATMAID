@@ -51,30 +51,39 @@ following, a Nginx configuration is provided to give access to CATMAID::
 
   server {
       listen 80;
-      server_name <CATMAID-host>
+      server_name <CATMAID-HOST>;
 
-      root   <CATMAID-path>/httpdocs;
+      # Set CATMAID root folder *without trailing slash,
+      # e.g. set $rootfolder /srv/http/CATMAID;
+      set $rootfolder '<CATMAID-PATH>';
 
-      location / {
+      # If CATMAID should live on subfolder of the domain, set this
+      # here *without* a trailing slash, but *with* a leading slash.
+      # Leave it empty otherwise. E.g set $urlsubfolder = '/catmaid';
+      set $urlsubfolder '';
+
+      location $urlsubfolder/ {
+          alias $rootfolder/httpdocs/;
           index  index.html;
       }
 
       # Give access to Django's static files
-      location /dj-static/ {
-         alias <CATMAID-path>/django/static/;
+      location $urlsubfolder/dj-static/ {
+          alias $rootfolder/django/static/;
       }
 
       # Route all CATMAID Django WSGI requests to the Gevent WSGI server
-      location /dj/ {
+      location $urlsubfolder/dj/ {
           proxy_pass http://catmaid-wsgi/;
           proxy_redirect http://catmaid-wsgi/ http://$host/;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
       }
 
       # Let PHP-FPM deal with PHP files
-      location ~ \.php$ {
+      location ~ $urlsubfolder/(.*\.php)$ {
+          alias $rootfolder/httpdocs/$1;
           fastcgi_pass   unix:/run/php-fpm/php-fpm.sock;
-          fastcgi_param  PHP_VALUE "include_path=<CATMAID-path>/inc:.";
+          fastcgi_param  PHP_VALUE "include_path=${rootfolder}/inc:.";
           fastcgi_index  index.php;
           include        fastcgi.conf;
       }

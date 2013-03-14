@@ -59,3 +59,8 @@ AUTHENTICATION_BACKENDS = (
     'guardian.backends.ObjectPermissionBackend',
 )
 ANONYMOUS_USER_ID = -1
+
+# The current site in the django_site database table. This is used so that
+# applications can hook into specific site(s) and a single database can manage
+# content of multiple sites.
+SITE_ID = 1

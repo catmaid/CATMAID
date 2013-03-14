@@ -70,8 +70,6 @@ TIME_ZONE = 'CATMAID_TIMEZONE'
 # http://www.i18nguy.com/unicode/language-identifiers.html
 LANGUAGE_CODE = 'en-gb'
 
-SITE_ID = 1
-
 # Usually, CATMAID's Django back-end is not accessible on a domain's
 # root ('/'), but rather a sub-directory like 'dj'. This might even be
 # 'catmaid/dj' if catmaid is on a sub-directory as well. Django needs

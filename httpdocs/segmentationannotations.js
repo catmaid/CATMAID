@@ -5,63 +5,6 @@ var allvisible_slices = new Object();
 var current_active_slice = null;
 var allsegments = new Object();
 
-function DiGraph() {
-
-    var self = this;
-    self.graph = {};
-    self.node = {};
-    self.adj = {};
-    self.pred = {};
-    self.succ = self.adj;
-    self.edge=self.adj;
-
-    self.add_node = function(n, data) {
-        if( !self.succ.hasOwnProperty(n) ) {
-            self.succ[ n ] = {};
-            self.pred[ n ] = {};
-            self.node[ n ] = data;
-        } else {
-            self.node[ n ] = data;
-        }
-    }
-
-    self.remove_node = function(n) {
-        if( !self.node.hasOwnProperty(n)) {
-            console.log('Graph does not have node', n);
-        }
-        delete self.node[ n ];
-        var nbrs = self.succ[ n ];
-        for( var u in nbrs) {
-            if( nbrs.hasOwnProperty(u)) {
-                delete self.pred[u][n];
-            }
-        }
-        delete self.succ[n];
-        for( var u in self.pred[n]) {
-            if( self.pred[n].hasOwnProperty(u)) {
-                delete self.succ[u][n];
-            }
-        }
-        delete self.pred[n];
-    }
-
-    self.add_edge = function(u, v, data) {
-        if(!self.succ.hasOwnProperty(u)) {
-            self.succ[u]={};
-            self.pred[u]={};
-            self.node[u]={};
-        }
-        if(!self.succ.hasOwnProperty(v)) {
-            self.succ[v]={};
-            self.pred[v]={};
-            self.node[v]={};
-        }
-        self.succ[u][v]=data;
-        self.pred[v][u]=data;
-    }
-
-}
-
 var SegmentationAnnotations = new function()
 {
     var self = this;
@@ -86,15 +29,19 @@ var SegmentationAnnotations = new function()
     // slices centers
     var cogs = new Array();
 
-    var slices_todo = [], slices_todo_selected = null;
+    var slices_todo = [], slices_todo_selected = null, bookmarks = [], slices_bookmark_selected = null;
     
     this.reset_all = function() {
         self.current_active_assembly = null
         allslices = new Object();
-        allsegemtns = new Object();
+        allsegments = new Object();
         slices_grouping = new Object();
         allvisible_slices = new Object();
         current_active_slice = null;
+        slices_todo = [];
+        slices_todo_selected = null;
+        bookmarks = [];
+        slices_bookmark_selected = null;
     }
 /*
     this.test_graph = function() {
@@ -163,15 +110,22 @@ var SegmentationAnnotations = new function()
         //self.test_graph();
     }
 
-    this.set_automatic_propagation = function( shiftKey ) {
-        automatic_propagation = shiftKey
+    this.toggle_automatic_propagation = function( ) {
+        automatic_propagation = !automatic_propagation;
+        $('#growl-alert').growlAlert({
+            autoShow: true,
+            content: "Automatic propagation is " + automatic_propagation,
+            title: 'Info',
+            position: 'top-right',
+            delayTime: 2000,
+            onComplete: function() {  }
+        });
     }
-
+    
     this.set_stack_and_layer = function( parentStack, canvas ) {
         // console.log('SET STACK', parentStack, canvas );
         self.stack = parentStack;
         self.canvas = canvas;
-
         requestQueue.register(django_url + project.id + '/stack/' + get_current_stack().id + '/slice-info', "POST", {},
          function (status, text, xml) {
                 if (status === 200) {
@@ -496,11 +450,6 @@ var SegmentationAnnotations = new function()
         propagation_counter = counter;
     }
 
-    self.toggle_automatic_propagation = function() {
-        automatic_propagation = !automatic_propagation;
-        console.log('automatic propagation', automatic_propagation)
-    }
-
     self.create_segments_table_for_current_active = function() {
         create_segments_table_for_slice( current_active_slice );
     }
@@ -526,8 +475,67 @@ var SegmentationAnnotations = new function()
         //allslices[ current_active_slice ].fetch_slices_for_selected_segment( false );
     }
 
+    self.slice_infobox = function() {
+        console.log( 'current active slice', self.get_current_active_slice() );
+    }
+
+    self.bookmark_active_slice = function( shiftKey ) {
+        if( current_active_slice === null ) {
+            console.log('Select a slice to activate and bookmark it.');
+            return;
+        }
+        var msg;
+        // TODO: add bookmark if it is not in the list
+        if( shiftKey && bookmarks.hasOwnProperty( current_active_slice ) ) {
+            delete bookmarks[ current_active_slice ];
+            msg = "Removed bookmark from slice: " + current_active_slice
+        } else {
+            bookmarks[ current_active_slice ] = null;
+            msg = "Bookmarked slice: " + current_active_slice;
+        }
+        $('#growl-alert').growlAlert({
+            autoShow: true,
+            content: msg,
+            title: 'Info',
+            position: 'top-right',
+            delayTime: 2000,
+            onComplete: function() {  }
+        });
+    }
+
+    self.next_slice_bookmark = function() {
+        if( bookmarks.length == 0) {
+            $('#growl-alert').growlAlert({
+                autoShow: true,
+                content: "No slice bookmarked.",
+                title: 'Warning',
+                position: 'top-right',
+                delayTime: 2000,
+                onComplete: function() {  }
+            });
+            return;
+        }
+        if( slices_bookmark_selected >= bookmarks.length - 1)
+            slices_bookmark_selected = 0;
+        else {
+            slices_bookmark_selected++;
+        }
+        var slice = get_slice( bookmarks[ slices_bookmark_selected ] ), msg = null;
+        if( msg !== null ) {
+            $('#growl-alert').growlAlert({
+                autoShow: true,
+                content: "This is bookmarked slice: " + bookmarks[ slices_bookmark_selected ],
+                title: 'Info',
+                position: 'top-right',
+                delayTime: 2000,
+            });            
+        }
+        console.log('goto bookmarked slice', bookmarks[ slices_bookmark_selected ] );
+        goto_slice( bookmarks[ slices_bookmark_selected ], true);
+    }
+
     self.next_slice_todo = function() {
-        self.find_loose_ends();
+        self.find_loose_ends(); // TODO i need to execute this at all? i dont think so
         if( slices_todo.length == 0) {
             $('#growl-alert').growlAlert({
                 autoShow: true,
@@ -1507,14 +1515,14 @@ var SegmentationAnnotations = new function()
         this.fetch_segments = function ( for_right, callback ) {
             // console.log('fetch segments:', for_right, callback );
             // do not fetch segments if already fetched
-            if(self.segments_right.length > 0 || self.segments_left.length > 0) {
+            /*if(self.segments_right.length > 0 || self.segments_left.length > 0) {
                 console.log('already existing segments', self.segments_right, self.selected_segment_right, self.segments_left, self.selected_segment_left);
                 if (callback && typeof(callback) === "function") {
                     // execute the callback, passing parameters as necessary
                     callback();
                 }
                 return;
-            }
+            }*/
             var fetchurl;
             if( for_right )
                 fetchurl = django_url + project.id + "/stack/" + get_current_stack().id + '/segments-for-slice-right';
@@ -1531,16 +1539,14 @@ var SegmentationAnnotations = new function()
                                 alert(e.error);
                             } else {
                                 console.log('found segments (for right:', for_right, ') :', e);
-                                if( e.length == 0 ) {
-                                    
+                                if( e.length == 0 ) {                                    
                                     if( for_right ) {
                                         self.flag_right = 2;
-                                        console.log('flag right with 2')
+                                        console.log('flag right with 2. no segments found to the right');
                                     } else {
                                         self.flag_left = 2;
-                                        console.log('flag left with 2')
+                                        console.log('flag left with 2. no segments found to the left');
                                     }
-                                        
                                 }
                                 for(var idx in e) {
 
@@ -1581,6 +1587,7 @@ var SegmentationAnnotations = new function()
                     // if there are segments to the right, select the first one
                     self.selected_segment_right = 0;
                 }
+                //console.log('automatic propgation is ', automatic_propagation)
                 if( automatic_propagation && propagation_counter > 0 && self.segments_right.length > 0 && for_right ) {
                     console.log('automatic propagation!')
                     var seg = get_segment( self.get_current_right_segment() );
@@ -1594,7 +1601,7 @@ var SegmentationAnnotations = new function()
                         if( seg.cost < 10 ) {
                             // arbitrary tests can be incorporated here or directly in the
                             // backend functions in slice.py where we filter the fetched segments
-                            self.add_slicesgroup_for_selected_segment( true, 0 );
+                            self.add_slicesgroup_for_selected_segment( true );
                         }
                     }
                 }

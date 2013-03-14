@@ -83,10 +83,12 @@ function SegmentationTool()
         self.stack.getView().appendChild( graph );*/
 
         SegmentationAnnotations.set_stack_and_layer( parentStack, canvasLayer.canvas );
-        $(document).bind('keyup keydown', function(e){
-            SegmentationAnnotations.set_automatic_propagation( e.shiftKey );
+        // TODO: propagate automatically
+        $(document).on('keydown', function(e) { 
+            if ( e.which == 20 ) {
+                SegmentationAnnotations.toggle_automatic_propagation( );
+            } 
         });
-
     }
 
     /*
@@ -486,13 +488,34 @@ function SegmentationTool()
     }) );
 
     this.addAction( new Action({
-        helpText: "Bookmark active slice and add to the TODO list",
+        helpText: "Information about the slice",
+        keyShortcuts: {
+            'I': [ 73 ]
+        },
+        run: function (e) {
+            SegmentationAnnotations.slice_infobox();
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Bookmark active slice and add to the TODO list (Shift: Remove from bookmarks)",
         keyShortcuts: {
             'B': [ 66 ]
         },
         run: function (e) {
-            console.log('bookmark active slice');
-            //SegmentationAnnotations.find_loose_ends();
+            SegmentationAnnotations.bookmark_active_slice( e.shiftKey );
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Next in bookmark queue",
+        keyShortcuts: {
+            'V': [ 86 ]
+        },
+        run: function (e) {
+            SegmentationAnnotations.next_slice_bookmark( );
             return true;
         }
     }) );

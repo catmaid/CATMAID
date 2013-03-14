@@ -430,7 +430,7 @@ function updateProjectListFromCache() {
     if (p.catalogue) {
       catalogueElement = document.createElement('dd');
       catalogueElementLink = document.createElement('a');
-      catalogueElementLink.href = 'dj/' + p.pid;
+      catalogueElementLink.href = django_url + p.pid;
       catalogueElementLink.appendChild(document.createTextNode('Browse the Neuron Catalogue'));
       catalogueElement.appendChild(catalogueElementLink);
       toappend.push(catalogueElement);

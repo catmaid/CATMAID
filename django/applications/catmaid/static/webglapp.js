@@ -864,7 +864,7 @@ var WebGLApp = new function () {
     var s = Date.now(),
         callback = function( geometry ) { createScene( geometry, s ) };
     jQuery.ajax({
-        url: "dj/"+self.project_id+"/stack/"+self.stack_id+"/models",
+        url: django_url+self.project_id+"/stack/"+self.stack_id+"/models",
         type: "GET",
         dataType: "json",
         success: function (models) {

@@ -14,7 +14,7 @@ var AdjacencyMatrix = new function()
         // Retrieve a list of skeleton ids and call the backend to return the JSON graph
 
         jQuery.ajax({
-            url: "dj/" + project.id + "/skeletongroup/adjacency_matrix",
+            url: django_url + project.id + "/skeletongroup/adjacency_matrix",
             type: "POST",
             dataType: "json",
             data: { skeleton_list: WebGLApp.getListOfSkeletonIDs() },

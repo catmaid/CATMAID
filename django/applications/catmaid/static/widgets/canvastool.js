@@ -1124,7 +1124,7 @@ function CanvasTool()
         }
 
         //TODO:remove debug url
-        //var url= "dj/" + project.id + "/stack/" + self.stack.id + "/put-components";
+        //var url= django_url + project.id + "/stack/" + self.stack.id + "/put-components";
 
         var url= django_url + project.id + "/stack/" + self.stack.id + '/put-components';
         var jsonObjects ={};

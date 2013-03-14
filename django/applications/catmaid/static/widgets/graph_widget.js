@@ -83,7 +83,7 @@ var GraphWidget = new function()
   this.updateGraphFrom3DViewer = function() {
 
     jQuery.ajax({
-      url: "dj/" + project.id + "/skeletongroup/skeletonlist_subgraph",
+      url: django_url + project.id + "/skeletongroup/skeletonlist_subgraph",
       type: "POST",
       dataType: "json",
       data: { skeleton_list: WebGLApp.getListOfSkeletonIDs(true) },

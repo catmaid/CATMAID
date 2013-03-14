@@ -125,7 +125,7 @@ var ReviewSystem = new function()
 
     this.markAsReviewed = function( node_ob, funct ) {
         requestQueue.register(
-            "dj/"+projectID+"/node/" + node_ob['id'] + "/reviewed",
+            django_url+projectID+"/node/" + node_ob['id'] + "/reviewed",
             "POST",
             {},
             function (status, text) {
@@ -261,7 +261,7 @@ var ReviewSystem = new function()
             return;
         }
         requestQueue.replace(
-            "dj/"+projectID+"/skeleton/" + skeletonID + "/review",
+            django_url+projectID+"/skeleton/" + skeletonID + "/review",
             "POST",
             {},
             function (status, text) {
@@ -271,7 +271,7 @@ var ReviewSystem = new function()
                     if ("REPLACED" === skeleton_data.error) { return; }
                     alert( skeleton_data.error );
                 } else {
-                    requestQueue.register("dj" + "/accounts/" + projectID + "/all-usernames", "POST", {},
+                    requestQueue.register(django_url + "accounts/" + projectID + "/all-usernames", "POST", {},
                         function(status, text) {
                             if (200 !== status) { return; }
                             var usernames = $.parseJSON(text);
@@ -294,7 +294,7 @@ var ReviewSystem = new function()
             return;
         }
         requestQueue.replace(
-            "dj/"+projectID+"/skeleton/" + skeletonID + "/review/" + fnName,
+            django_url+projectID+"/skeleton/" + skeletonID + "/review/" + fnName,
             "POST",
             {},
             function (status, text) {

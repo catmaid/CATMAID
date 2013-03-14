@@ -1,30 +1,20 @@
+# General Django settings for mysite project.
+
 import django.conf.global_settings as DEFAULT_SETTINGS
 
-# Django settings for mysite project.
-
+# A list of people who get code error notifications. They will get an email
+# if DEBUG=False and a view raises an exception.
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
 )
 
+# A tuple in the same format as ADMINS of people who get broken-link
+# notifications when SEND_BROKEN_LINKS_EMAILS=True.
 MANAGERS = ADMINS
 
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
 USE_I18N = True
-
-# Absolute path to the directory that holds media.
-# Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = ''
-
-# URL that handles the media served from MEDIA_ROOT. Make sure to use a
-# trailing slash if there is a path component (optional in other cases).
-# Examples: "http://media.lawrence.com", "http://example.com/media/"
-MEDIA_URL = ''
-
-# URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
-# trailing slash.
-# Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = '/media/'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
@@ -65,14 +55,23 @@ INSTALLED_APPS = (
 # http://blog.madpython.com/2010/04/07/django-context-processors-best-practice/
 TEMPLATE_CONTEXT_PROCESSORS = DEFAULT_SETTINGS.TEMPLATE_CONTEXT_PROCESSORS
 
-URL_PREFIX = '/'
+# The URL requests are redirected after login
 LOGIN_REDIRECT_URL = '/'
-LOGIN_URL = URL_PREFIX + 'accounts/login'
+
+# The URL where requests are redirected after login
+LOGIN_URL = '/accounts/login'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend', # default
     'guardian.backends.ObjectPermissionBackend',
 )
+
+# User-ID of the anonymous (i.e. not-logged-in) user. This is usualld -1.
 ANONYMOUS_USER_ID = -1
 
 SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}
+
+# The current site in the django_site database table. This is used so that
+# applications can hook into specific site(s) and a single database can manage
+# content of multiple sites.
+SITE_ID = 1

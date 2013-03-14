@@ -48,8 +48,12 @@ var SkeletonAnalytics = new function()
         "POST",
         {tnid: tnid},
         function(status, text) {
-          if (200 !== status) return;
+          if (200 !== status || 'REPLACED' === text) return;
           var json = $.parseJSON(text);
+					if (!json) {
+						alert("Could not find node #" + tnid);
+						return;
+					}
           if (json.error) {
             alert("Could not retrieve node location: " + json.error);
             return;

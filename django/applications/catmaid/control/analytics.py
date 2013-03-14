@@ -59,8 +59,8 @@ def analyze_skeletons(request, project_id=None):
 
     blob = {'issues': tuple((skid, _analyze_skeleton(project_id, skid)) for skid in skids),
             'names': dict(cursor.fetchall()),
-            0: "Two or more times postsynaptic to the same connector",
-            1: "Autapse",
+            0: "Autapse",
+            1: "Two or more times postsynaptic to the same connector",
             2: "Connector without postsynaptic targets",
             3: "Connector without presynaptic skeleton",
             4: "Duplicated synapse?",
@@ -94,103 +94,126 @@ def _analyze_skeleton(project_id, skeleton_id):
     for row in cursor.fetchall():
         relations[row[0]] = row[1]
         relations[row[1]] = row[0]
-    
-    # Retrieve all connectors, with their associated pre- or post-synaptic treenodes.
-    # In other words, retrieve connectors that are pre- or postsynaptic to treenodes
-    # of the skeleton.
+
+    # Transform strings to integer IDs
+    PRE = relations[PRE]
+    POST = relations[POST]
+
+    # Retrieve all connectors and their associated pre- or postsynaptic treenodes,
+    # plus the parent treenodes of these.
     cursor.execute('''
-    SELECT treenode.id,
-           treenode_connector.relation_id,
-           connector.id
-    FROM treenode,
-         connector,
-         treenode_connector
-    WHERE treenode.skeleton_id = %s
-      AND treenode_connector.skeleton_id = treenode.skeleton_id
-      AND treenode_connector.treenode_id = treenode.id
-      AND treenode_connector.connector_id = connector.id
-      AND treenode_connector.relation_id IN (%s, %s)
-    ''' % (skeleton_id, str(relations[PRE]), str(relations[POST])))
+    SELECT tc1.connector_id,
+           tc1.relation_id,
+           t1.id,
+           t1.parent_id,
+           t1.skeleton_id,
+           tc2.relation_id,
+           t2.id,
+           t2.parent_id,
+           t2.skeleton_id
+    FROM treenode_connector tc1,
+         treenode_connector tc2,
+         treenode t1,
+         treenode t2
+    WHERE tc1.skeleton_id = %s
+      AND tc1.connector_id = tc2.connector_id
+      AND tc1.treenode_id = t1.id
+      AND tc2.treenode_id = t2.id
+      AND (tc1.relation_id = %s OR tc1.relation_id = %s)
+      AND (tc2.relation_id = %s OR tc2.relation_id = %s)
+    ''' % (skeleton_id,
+           str(PRE), str(POST),
+           str(PRE), str(POST)))
 
-    Connection = namedtuple('Connection', ['treenode_id', 'relation_id', 'connector_id'])
+    # t1 is always the skeleton, with t2 being the other skeleton
+    Treenode = namedtuple('Treenode', ['id', 'parent_id', 'skeleton_id'])
 
-    synapses = {PRE: [],
-                POST: []}
-    for row in cursor.fetchall():
-        synapses[relations[row[1]]].append(Connection(row[0], row[1], row[2]))
-
-    pre = set(c.connector_id for c in synapses[PRE])
-    post = set(c.connector_id for c in synapses[POST])
     issues = []
-   
-    # Type 0: two or more times postsynaptic to the same connector
-    seen = set()
-    for c in synapses[POST]:
-        if c.connector_id in seen:
-            issues.append((0, c.treenode_id))
-        seen.add(c.connector_id)
-    seen = None
 
-    # Type 1: autapse
-    autapses  = pre.intersection(post)
-    for connector_id in autapses:
-        issues.append((1, connector_id))
-    autapses = None
+    # Map of connector_id vs {pre: {Treenode, ...}, post: {Treenode, ...}}
+    def comp():
+        return defaultdict(set)
+    connectors = defaultdict(comp)
 
-    # Type 2: presynaptic connector without postsynaptic treenodes
-    if pre:
-        cursor.execute('''
-        SELECT connector_id
-        FROM treenode_connector
-        WHERE connector_id IN (%s)
-          AND relation_id = '%s'
-        GROUP BY connector_id
-        ''' % (",".join(str(connector_id) for connector_id in pre), str(relations[POST])))
-        for connector_id in pre.difference(set(row[0] for row in cursor.fetchall())):
-            issues.append((2, connector_id))
+    treenode_connector = defaultdict(list)
 
-    # Type 3: postsynaptic connector without presynaptic treenodes
-    if post:
-        cursor.execute('''
-        SELECT connector_id
-        FROM treenode_connector
-        WHERE connector_id in (%s)
-          AND relation_id = '%s'
-        GROUP BY connector_id
-        ''' % (",".join(str(connector_id) for connector_id in post), str(relations[PRE])))
-        for connector_id in post.difference(set(row[0] for row in cursor.fetchall())):
-            issues.append((3, connector_id))
-
-    # Type 4: potentially duplicated synapses (or triplicated, etc): same pre skeleton, same treenodes or parent/child (i.e. adjacent)
-    cursor.execute('''
-    SELECT post1.treenode_id, count(*)
-    FROM treenode t1,
-         treenode t2,
-         treenode_connector pre1,
-         treenode_connector pre2,
-         treenode_connector post1,
-         treenode_connector post2,
-         relation presynaptic_to,
-         relation postsynaptic_to
-    WHERE t1.id = post1.treenode_id
-      AND t2.id = post2.treenode_id
-      AND (   t1.id = t2.id
-           OR t1.parent_id = t2.id
-           OR t2.parent_id = t1.id)
-      AND pre1.skeleton_id = pre2.skeleton_id
-      AND pre1.skeleton_id = %s
-      AND pre1.connector_id = post1.connector_id
-      AND pre2.connector_id = post2.connector_id
-      AND presynaptic_to.relation_name = 'presynaptic_to'
-      AND postsynaptic_to.relation_name = 'postsynaptic_to'
-      AND pre1.relation_id = presynaptic_to.id
-      AND pre2.relation_id = presynaptic_to.id
-      AND post1.relation_id = postsynaptic_to.id
-      AND post2.relation_id = postsynaptic_to.id
-    GROUP BY post1.treenode_id
-    ''' % skeleton_id)
+    # Condense rows to connectors represented by a map with two entries (PRE and POST),
+    # each containing as value a set of Treenode:
     for row in cursor.fetchall():
-        issues.append((4, row[0]))
+        s = connectors[row[0]]
+        s[row[1]].add(Treenode(row[2], row[3], row[4]))
+        # The 'other' could be null
+        if row[5]:
+            s[row[5]].add(Treenode(row[6], row[7], row[8]))
+
+    for connector_id, connector in connectors.iteritems():
+        pre = connector[PRE]
+        post = connector[POST]
+        if pre and post:
+            for a in pre:
+                for b in post:
+                    if a.skeleton_id == b.skeleton_id:
+                        # Type 0: autapse
+                        issues.append((0, a.id if a.skeleton_id == skeleton_id else b.id))
+            if iter(pre).next().skeleton_id != skeleton_id:
+                repeats = tuple(t.id for t in post if t.skeleton_id == skeleton_id)
+                if len(repeats) > 1:
+                    # Type 1: two or more times postsynaptic to the same connector
+                    issues.append((1, repeats[0]))
+        if not post:
+            # Type 2: presynaptic connector without postsynaptic treenodes
+            issues.append((2, iter(pre).next().id))
+        else:
+            for t in post:
+                treenode_connector[t.id].append(connector_id)
+        if not pre:
+            # Type 3: postsynaptic connector without presynaptic treenode
+            issues.append((3, iter(post).next().id))
+        else:
+            for t in pre:
+                treenode_connector[t.id].append(connector_id)
+
+    # Type 4: potentially duplicated synapses (or triplicated, etc):
+    # Check if two or more connectors share pre treenodes and post skeletons,
+    # or pre skeletons and post treenodes,
+    # considering the treenode and its parent as a group.
+    Sets = namedtuple("Sets", ['pre_treenodes', 'pre_skeletons', 'post_treenodes', 'post_skeletons'])
+    sets = {}
+    def find(ts):
+        for t in ts:
+            if t.skeleton_id == skeleton_id:
+                return t.id
+    for connector_id, connector in connectors.iteritems():
+        pre_treenodes = set()
+        pre_skeletons = set()
+        for t in connector[PRE]:
+            pre_treenodes.add(t.id)
+            if t.parent_id:
+                pre_treenodes.add(t.parent_id)
+            pre_skeletons.add(t.skeleton_id)
+        post_treenodes = set()
+        post_skeletons = set()
+        for t in connector[POST]:
+            post_treenodes.add(t.id)
+            post_skeletons.add(t.skeleton_id)
+        sets[connector_id] = Sets(pre_treenodes, pre_skeletons, post_treenodes, post_skeletons)
+    unique_4s = set()
+    items = tuple(kv for kv in sets.iteritems())
+    for i, kv in enumerate(items):
+        connector_id_1, s1 = kv
+        for j in range(i+1, len(items)):
+            connector_id_2, s2 = items[j]
+            if ((s1.pre_treenodes & s2.pre_treenodes) and (s1.post_skeletons & s2.post_skeletons)) or ((s1.pre_skeletons & s2.pre_skeletons) and (s1.post_treenodes & s2.post_treenodes)):
+                # Type 4: potentially duplicated connector
+                # Find a treenode that belongs to skeleton_id and is pre or postsynaptic to connector_id_1 or connector_id_2
+                for ci in [connector_id_1, connector_id_2]:
+                    for pp in [PRE, POST]:
+                        for t in connectors[ci][pp]:
+                            if t.skeleton_id == skeleton_id:
+                                unique_4s.add(t.id)
+                                break
+    for uid in unique_4s:
+        issues.append((4, uid))
 
     # Type 5: end node without a tag
     # Type 6: node with a TODO tag

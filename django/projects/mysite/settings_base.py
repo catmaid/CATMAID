@@ -1,11 +1,15 @@
+# General Django settings for mysite project.
+
 import django.conf.global_settings as DEFAULT_SETTINGS
 
-# Django settings for mysite project.
-
+# A list of people who get code error notifications. They will get an email
+# if DEBUG=False and a view raises an exception.
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
 )
 
+# A tuple in the same format as ADMINS of people who get broken-link
+# notifications when SEND_BROKEN_LINKS_EMAILS=True.
 MANAGERS = ADMINS
 
 # If you set this to False, Django will make some optimizations so as not
@@ -51,13 +55,19 @@ INSTALLED_APPS = (
 TEMPLATE_CONTEXT_PROCESSORS = DEFAULT_SETTINGS.TEMPLATE_CONTEXT_PROCESSORS
 
 URL_PREFIX = '/'
+
+# The URL requests are redirected after login
 LOGIN_REDIRECT_URL = '/'
+
+# The URL where requests are redirected after login
 LOGIN_URL = URL_PREFIX + 'accounts/login'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend', # default
     'guardian.backends.ObjectPermissionBackend',
 )
+
+# User-ID of the anonymous (i.e. not-logged-in) user. This is usualld -1.
 ANONYMOUS_USER_ID = -1
 
 # The current site in the django_site database table. This is used so that

@@ -41,9 +41,12 @@ the web and the WSGI server.
 Nginx configuration
 ###################
 
+
 A good general introduction to Nginx configuration can be found
 `here <http://blog.martinfjordvald.com/2010/07/nginx-primer/>`_. In the
-following, a Nginx configuration is provided to give access to CATMAID::
+following, a Nginx configuration is provided to give access to CATMAID:
+
+.. code-block:: nginx
 
   upstream catmaid-wsgi {
       server 127.0.0.1:8080;

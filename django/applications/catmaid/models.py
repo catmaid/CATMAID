@@ -41,7 +41,6 @@ class Project(models.Model):
     stacks = models.ManyToManyField("Stack",
                                     through='ProjectStack')
     tags = TaggableManager(blank=True)
-    wiki_base_url = models.TextField(null=True, blank=True)
     
     def __unicode__(self):
         return self.title

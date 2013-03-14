@@ -71,12 +71,8 @@ def requires_user_role(roles):
     and has at least one of the indicated roles or admin role for the project.
     """
     
-    # TODO: should projects' public attribute still be used or can it be replaced by a new "all users" group with browse permissions?
-    
     def decorated_with_requires_user_role(f):
         def inner_decorator(request, roles=roles, *args, **kwargs):
-            if not request.user.is_authenticated():
-                return json_error_response(request.get_full_path() + " is not accessible unless you are logged in")
             p = Project.objects.get(pk=kwargs['project_id'])
             u = request.user
             

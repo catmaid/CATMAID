@@ -522,8 +522,8 @@ class SliceContoursHighres(UserFocusedModel):
 
 class Segments(UserFocusedModel):
 
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
 
     stack = models.ForeignKey(Stack)
 
@@ -580,8 +580,8 @@ class Segments(UserFocusedModel):
 
 class Slices(UserFocusedModel):
 
-    creation_time = models.DateTimeField(default=now)
-    edition_time = models.DateTimeField(default=now)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     stack = models.ForeignKey(Stack)
 
     assembly = models.ForeignKey(ClassInstance,null=True,db_index=True)

@@ -60,30 +60,25 @@ following, a Nginx configuration is provided to give access to CATMAID:
       # e.g. set $rootfolder /srv/http/CATMAID;
       set $rootfolder '<CATMAID-PATH>';
 
-      # If CATMAID should live on subfolder of the domain, set this
-      # here *without* a trailing slash, but *with* a leading slash.
-      # Leave it empty otherwise. E.g set $urlsubfolder '/catmaid';
-      set $urlsubfolder '';
-
-      location $urlsubfolder/ {
+      location /catmaid/ {
           alias $rootfolder/httpdocs/;
           index  index.html;
       }
 
       # Give access to Django's static files
-      location $urlsubfolder/dj-static/ {
+      location /catmaid/dj-static/ {
           alias $rootfolder/django/static/;
       }
 
       # Route all CATMAID Django WSGI requests to the Gevent WSGI server
-      location $urlsubfolder/dj/ {
+      location /catmaid/dj/ {
           proxy_pass http://catmaid-wsgi/;
           proxy_redirect http://catmaid-wsgi/ http://$host/;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
       }
 
       # Let PHP-FPM deal with PHP files
-      location ~ $urlsubfolder/(.*\.php)$ {
+      location ~ /catmaid/(.*\.php)$ {
           alias $rootfolder/httpdocs/$1;
           fastcgi_pass   unix:/run/php-fpm/php-fpm.sock;
           fastcgi_param  PHP_VALUE "include_path=${rootfolder}/inc:.";
@@ -103,6 +98,9 @@ static files. The next location block passes all requests that start with */dj/*
 to the WSGI server defined before. An the last location block allows the
 execution of PHP scripts. Note that you need to replace in the PHP block
 *<CATMAID-path>* as well.
+
+To use this configuration when CATMAID liles on the domain's root, just remove
+`/catmaid` from every location block.
 
 Gevent run script
 #################

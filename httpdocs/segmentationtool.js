@@ -419,7 +419,7 @@ function SegmentationTool()
     this.addAction( new Action({
         helpText: "Reset propagation counter",
         keyShortcuts: {
-            'R': [ 82 ]
+            'J': [ 74 ]
         },
         run: function (e) {
             SegmentationAnnotations.set_propagation_counter( 20 );
@@ -441,7 +441,7 @@ function SegmentationTool()
     this.addAction( new Action({
         helpText: "Delete slice group (Shift: Remove and never show again)",
         keyShortcuts: {
-            'B': [ 66 ]
+             'D': [ 68 ]
         },
         run: function (e) {
             SegmentationAnnotations.delete_active_slice( e.shiftKey );
@@ -464,7 +464,7 @@ function SegmentationTool()
     this.addAction( new Action({
         helpText: "Mark right side as end segment for current slice",
         keyShortcuts: {
-            'E': [ 69 ]
+            'R': [ 82 ]
         },
         run: function (e) {
             console.log('flag right to end')
@@ -476,7 +476,7 @@ function SegmentationTool()
     this.addAction( new Action({
         helpText: "Mark left side as end segment for current slice",
         keyShortcuts: {
-            'W': [ 87 ]
+            'Q': [ 81 ]
         },
         run: function (e) {
             console.log('flag left to end')
@@ -486,13 +486,13 @@ function SegmentationTool()
     }) );
 
     this.addAction( new Action({
-        helpText: "Update segments and find loose ends",
+        helpText: "Bookmark active slice and add to the TODO list",
         keyShortcuts: {
-            'X': [ 88 ]
+            'B': [ 66 ]
         },
         run: function (e) {
-            console.log('loose ends');
-            SegmentationAnnotations.find_loose_ends();
+            console.log('bookmark active slice');
+            //SegmentationAnnotations.find_loose_ends();
             return true;
         }
     }) );
@@ -500,7 +500,7 @@ function SegmentationTool()
     this.addAction( new Action({
         helpText: "Next in TODO queue",
         keyShortcuts: {
-            'C': [ 67 ]
+            'X': [ 88 ]
         },
         run: function (e) {
             console.log('next todo slice');
@@ -512,7 +512,7 @@ function SegmentationTool()
     this.addAction( new Action({
         helpText: "Fetch slices group for selected segments to the right",
         keyShortcuts: {
-            'Y': [ 89 ]
+            'E': [ 69 ]
         },
         run: function (e) {
             SegmentationAnnotations.fetch_slicegroup_from_selected_segment_current_slice( true );
@@ -523,7 +523,7 @@ function SegmentationTool()
     this.addAction( new Action({
         helpText: "Fetch slices group for selected segments to the left",
         keyShortcuts: {
-            'T': [ 84 ]
+            'W': [ 87 ]
         },
         run: function (e) {
             SegmentationAnnotations.fetch_slicegroup_from_selected_segment_current_slice( false );
@@ -570,7 +570,7 @@ function SegmentationTool()
     this.addAction( new Action({
         helpText: "Create new assembly",
         keyShortcuts: {
-            'D': [ 68 ]
+            'C': [ 67 ]
         },
         run: function (e) {
             SegmentationAnnotations.create_new_assembly();
@@ -578,7 +578,7 @@ function SegmentationTool()
         }
     }) );
 
-    this.addAction( new Action({
+    /*this.addAction( new Action({
         helpText: "Fetch slices for segments left",
         keyShortcuts: {
             'G': [ 71 ]
@@ -587,14 +587,18 @@ function SegmentationTool()
             SegmentationAnnotations.fetch_segments_left();
             return true;
         }
-    }) );
+    }) );*/
 
     this.addAction( new Action({
         helpText: "Show segments",
         keyShortcuts: {
-            'J': [ 74 ]
+            'G': [ 71 ]
         },
         run: function (e) {
+            console.log('segments table there?', $('#segmentstable').length)
+            if( $('#segmentstable').length == 0 ) {
+                WindowMaker.show('segmentstable-widget');
+            }
             SegmentationAnnotations.create_segments_table_for_current_active();
             return true;
         }

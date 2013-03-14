@@ -258,7 +258,6 @@ var SegmentationAnnotations = new function()
     self.save_assembly = function() {
         // update all slices and segment with assembly id
         var result = self.find_loose_ends();
-        console.log('save', result)
         $.ajax({
           "dataType": 'json',
           "type": "POST",
@@ -619,6 +618,21 @@ var SegmentationAnnotations = new function()
                 if( slice.selected_segment_right !== null ) {
                     segmentnodeid = slice.get_current_right_segment()
                     tmp_segment = get_segment( segmentnodeid );
+                    // skip right segment if it is selected from the slice
+                    // but its target slices are not in the resulting slices
+                    if( tmp_segment.origin_node_id in result_slices) {
+                        if( tmp_segment.segmenttype == 2 ) {
+                            if( !result_slices.hasOwnProperty(tmp_segment.target1_node_id) ) {
+                                continue;
+                            }
+                        } else if ( tmp_segment.segmenttype == 3 ) {
+                            if( !(result_slices.hasOwnProperty(tmp_segment.target1_node_id) && result_slices.hasOwnProperty(tmp_segment.target2_node_id) ) ) {
+                                continue;
+                            }                                
+                        }
+                    } else {
+                        continue;
+                    }
                     // info i wanna save later
                     result_segments[ segmentnodeid ] = {}; // tmp_segment; 
                 }
@@ -626,6 +640,24 @@ var SegmentationAnnotations = new function()
                 if( slice.selected_segment_left !== null ) {
                     segmentnodeid = slice.get_current_left_segment()
                     tmp_segment = get_segment( segmentnodeid );
+
+                    // skip left segment if it is selected from the slice
+                    // but its target slices are not in the resulting slices
+                    if( tmp_segment.origin_node_id in result_slices) {
+                        if( tmp_segment.segmenttype == 2 ) {
+                            if( !result_slices.hasOwnProperty(tmp_segment.target1_node_id) ) {
+                                continue;
+                            }
+                        } else if ( tmp_segment.segmenttype == 3 ) {
+                            if( !(result_slices.hasOwnProperty(tmp_segment.target1_node_id) && result_slices.hasOwnProperty(tmp_segment.target2_node_id) ) ) {
+                                continue;
+                            }                                
+                        }
+                    } else {
+                        continue;
+                    }
+
+                    // TODO: if adjacent slices are not visible, do not add segment
                     // info i wanna save later
                     result_segments[ segmentnodeid ] = {}; // tmp_segment;
                 }

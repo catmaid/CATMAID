@@ -38,7 +38,10 @@
 		<link rel="stylesheet" type="text/css" media="all" href="{{ STATIC_URL }}widgets/themes/kde/screen.ie6.css" />
 		<![endif]-->
 
-		<script type="text/javascript">var IE = false;</script>
+		<script type="text/javascript">
+			var STATIC_URL_JS = '{{ STATIC_URL|escapejs }}';
+			var IE = false;
+		</script>
 
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/js/Detector.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>

@@ -95,7 +95,7 @@ var ObjectTree = new function()
 
       "themes": {
         "theme": "classic",
-        "url": "widgets/themes/kde/jsTree/classic/style.css",
+        "url": STATIC_URL_JS + "widgets/themes/kde/jsTree/classic/style.css",
         "dots": false,
         "icons": true
       },
@@ -586,7 +586,7 @@ var ObjectTree = new function()
           },
           "root": {
             "icon": {
-              "image": "widgets/themes/kde/jsTree/neuron/root.png"
+              "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/neuron/root.png"
             },
             "valid_children": ["group"],
             "start_drag": false,
@@ -596,7 +596,7 @@ var ObjectTree = new function()
           },
           "group": {
             "icon": {
-              "image": "widgets/themes/kde/jsTree/neuron/group.png"
+              "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/neuron/group.png"
             },
             "valid_children": ["group", "neuron"],
             "start_drag": true,
@@ -604,7 +604,7 @@ var ObjectTree = new function()
           },
           "neuron": {
             "icon": {
-              "image": "widgets/themes/kde/jsTree/neuron/neuron.png"
+              "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/neuron/neuron.png"
             },
             "valid_children": ["skeleton"],
             "start_drag": true,
@@ -612,7 +612,7 @@ var ObjectTree = new function()
           },
           "skeleton": {
             "icon": {
-              "image": "widgets/themes/kde/jsTree/neuron/skeleton.png"
+              "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/neuron/skeleton.png"
             },
             "valid_children": "none",
             "start_drag": true,
@@ -620,7 +620,7 @@ var ObjectTree = new function()
           },
           "modelof": {
             "icon": {
-              "image": "widgets/themes/kde/jsTree/neuron/modelof.png"
+              "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/neuron/modelof.png"
             },
             "select_node": function () {
               return false;
@@ -630,7 +630,7 @@ var ObjectTree = new function()
           },
           "presynapticterminal": {
             "icon": {
-              "image": "widgets/themes/kde/jsTree/neuron/presynapse.png"
+              "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/neuron/presynapse.png"
             },
             "select_node": function () {
               return false;
@@ -640,7 +640,7 @@ var ObjectTree = new function()
           },
           "postsynapticterminal": {
             "icon": {
-              "image": "widgets/themes/kde/jsTree/neuron/postsynapse.png"
+              "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/neuron/postsynapse.png"
             },
             "select_node": function () {
               return false;
@@ -755,7 +755,7 @@ var ObjectTree = new function()
                   project.deselectActiveNode();
               }
 
-              $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Removing object tree node. Just a moment...</h2>' });
+              $.blockUI({ message: '<h2><img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> Removing object tree node. Just a moment...</h2>' });
               // Remove group, neuron, skeleton
               $.post(django_url + project.id + '/object-tree/instance-operation', {
                     "operation": "remove_node",

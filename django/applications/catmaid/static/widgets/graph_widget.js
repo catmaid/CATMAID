@@ -15,9 +15,9 @@ var GraphWidget = new function()
       // initialization options
       var options = {
           // where you have the Cytoscape Web SWF
-          swfPath: "libs/cytoscapeweb/swf/CytoscapeWeb",
+          swfPath: STATIC_URL_JS + "libs/cytoscapeweb/swf/CytoscapeWeb",
           // where you have the Flash installer SWF
-          flashInstallerPath: "libs/cytoscapeweb/swf/playerProductInstall"
+          flashInstallerPath: STATIC_URL_JS + "libs/cytoscapeweb/swf/playerProductInstall"
       };
 
       // init and draw

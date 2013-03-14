@@ -469,7 +469,7 @@ Slider = function(
     map.appendChild( area2 );
     
     var img = document.createElement( "img" );
-    img.src = "widgets/themes/kde/input_topdown.gif";
+    img.src = STATIC_URL_JS + "widgets/themes/kde/input_topdown.gif";
     img.alt = "";
     img.useMap = "#map_" + name;
     

@@ -44,7 +44,7 @@
 			delayTime : 1500,
 			title : 'Growl Alert Title',
 			content : 'This is the content for the growl alert test message, woo!',
-			closeIcon : 'widgets/themes/kde/growl-close-icon.gif',
+			closeIcon : STATIC_URL_JS + 'widgets/themes/kde/growl-close-icon.gif',
 			onShow: null,
 			onComplete: null,
 			position: 'top-left'

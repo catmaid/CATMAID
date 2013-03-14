@@ -73,7 +73,7 @@ function TileLayer(
 			{
 				tiles[ i ][ j ] = document.createElement( "img" );
 				tiles[ i ][ j ].alt = "empty";
-				tiles[ i ][ j ].src = "widgets/empty256.gif";
+				tiles[ i ][ j ].src = STATIC_URL_JS + "widgets/empty256.gif";
 				
 				tilesContainer.appendChild( tiles[ i ][ j ] );
 			}
@@ -129,7 +129,7 @@ function TileLayer(
 					tilesContainer.removeChild( tiles[ i ].pop() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
-					img.src = "widgets/empty256.gif";
+					img.src = STATIC_URL_JS + "widgets/empty256.gif";
 					img.style.visibility = "hidden";
 					tilesContainer.appendChild( img );
 					tiles[ i ].unshift( img );
@@ -142,7 +142,7 @@ function TileLayer(
 					tilesContainer.removeChild( tiles[ i ].shift() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
-					img.src = "widgets/empty256.gif";
+					img.src = STATIC_URL_JS + "widgets/empty256.gif";
 					img.style.visibility = "hidden";
 					tilesContainer.appendChild( img );
 					tiles[ i ].push( img );
@@ -157,7 +157,7 @@ function TileLayer(
 					tilesContainer.removeChild( old_row.pop() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
-					img.src = "widgets/empty256.gif";
+					img.src = STATIC_URL_JS + "widgets/empty256.gif";
 					img.style.visibility = "hidden";
 					tilesContainer.appendChild( img );
 					new_row.push( img );
@@ -173,7 +173,7 @@ function TileLayer(
 					tilesContainer.removeChild( old_row.pop() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
-					img.src = "widgets/empty256.gif";
+					img.src = STATIC_URL_JS + "widgets/empty256.gif";
 					img.style.visibility = "hidden";
 					tilesContainer.appendChild( img );
 					new_row.push( img );
@@ -228,7 +228,7 @@ function TileLayer(
 				if ( r < 0 || c < 0 || r > LAST_YT || c > LAST_XT )
 				{
 					tiles[ i ][ j ].alt = "";
-					tiles[ i ][ j ].src = "widgets/black.gif";
+					tiles[ i ][ j ].src = STATIC_URL_JS + "widgets/black.gif";
 				}
 				else
 				{

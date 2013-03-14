@@ -370,7 +370,7 @@ function CanvasTool()
         self.drawingTypeEnum.forEach(function(drawingType)
         {
             var option=new Option(drawingType.string, drawingType.value, false, false);
-            option.title="widgets/icons/icon_cd.gif";
+            option.title=STATIC_URL_JS+"widgets/icons/icon_cd.gif";
             option.style.backgroundColor='#'+self.rgbToHex(drawingType.color[0],drawingType.color[1],drawingType.color[2]);
 
             selectDrawing.append(option);
@@ -1169,7 +1169,7 @@ function CanvasTool()
         if(project.selectedObjects.selectedskeleton==null){return;}
 
 
-        $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Initializing skeleton. Just a moment...</h2>' });
+        $.blockUI({ message: '<h2><img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> Initializing skeleton. Just a moment...</h2>' });
         requestQueue.register(
 
             django_url + project.id + "/stack/" + self.stack.id + '/initialize_components',

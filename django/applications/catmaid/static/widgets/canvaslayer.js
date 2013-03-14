@@ -170,7 +170,7 @@ function CanvasLayer( stack )
     canvashtml.style.border = "0px";
     self.view.appendChild( canvashtml );
 
-    // CURSOR: "url(widgets/themes/kde/svg-circle.cur) 15 15, crosshair"
+    // CURSOR: "url(" + STATIC_URL_JS + "widgets/themes/kde/svg-circle.cur) 15 15, crosshair"
     var canvas = new fabric.Canvas( 'myCanvas' , {'interactive':true, CURSOR:'crosshair'} );
     canvas.isDrawingMode = false;
     self.canvas = canvas;

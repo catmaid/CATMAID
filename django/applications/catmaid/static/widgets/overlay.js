@@ -606,7 +606,7 @@ var SkeletonAnnotations = new function()
             return;
         }
         if (confirm("Do you really want to to split the skeleton?")) {
-        $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Splitting skeleton. Just a moment...</h2>' });
+        $.blockUI({ message: '<h2><img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> Splitting skeleton. Just a moment...</h2>' });
         requestQueue.register(
             //"model/treenode.split.php",
             django_url + project.id + '/skeleton/split',
@@ -1365,7 +1365,7 @@ var SkeletonAnnotations = new function()
     view.id = "sliceSVGOverlayId"+stack.getId();
     view.style.zIndex = 5;
     // Custom cursor for tracing
-    view.style.cursor ="url(widgets/themes/kde/svg-circle.cur) 15 15, crosshair";
+    view.style.cursor ="url(" + STATIC_URL_JS + "widgets/themes/kde/svg-circle.cur) 15 15, crosshair";
     // make view accessible from outside for setting additional mouse handlers
     this.view = view;
 

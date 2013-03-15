@@ -72,7 +72,7 @@ def analyze_skeletons(request, project_id=None):
 
 def _analyze_skeleton(project_id, skeleton_id):
     """ Takes a skeleton and returns a list of potentially problematic issues,
-    as a list of tuples of two values: issue type and treenode or connector ID.
+    as a list of tuples of two values: issue type and treenode ID.
     """
     project_id = int(project_id)
     skeleton_id = int(skeleton_id)
@@ -125,10 +125,7 @@ def _analyze_skeleton(project_id, skeleton_id):
            str(PRE), str(POST),
            str(PRE), str(POST)))
 
-    # t1 is always the skeleton, with t2 being the other skeleton
     Treenode = namedtuple('Treenode', ['id', 'parent_id', 'skeleton_id'])
-
-    issues = []
 
     # Map of connector_id vs {pre: {Treenode, ...}, post: {Treenode, ...}}
     def comp():
@@ -143,6 +140,8 @@ def _analyze_skeleton(project_id, skeleton_id):
         # The 'other' could be null
         if row[5]:
             s[row[5]].add(Treenode(row[6], row[7], row[8]))
+
+    issues = []
 
     for connector_id, connector in connectors.iteritems():
         pre = connector[PRE]

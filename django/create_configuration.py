@@ -66,29 +66,18 @@ for f in ['', '_production']:
 
 
 out = """
-Alias /{subdir}/dj-static/ {cmpath}/django/static/
-Alias /{subdir}/dj-static-admin/ {cmpath}/django/static-admin/
-
-Alias /{subdir}/dj {cmpath}/django/projects/mysite/django.wsgi
-<Location /catmaid/dj>
-SetHandler wsgi-script
-Options +ExecCGI
+Alias /{subdir} {cmpath}/django/projects/mysite/django.wsgi
+<Location /{subdir}>
+        SetHandler wsgi-script
+        Options +ExecCGI
 </Location>
 
-Alias /{subdir}/ {cmpath}/httpdocs/
-<Directory {cmpath}/httpdocs/>
-
-php_admin_value register_globals off
-php_admin_value include_path ".:{cmpath}/inc"
-php_admin_value session.use_only_cookies 1
-php_admin_value error_reporting 2047
-php_admin_value display_errors true
-
-Options FollowSymLinks
-AllowOverride AuthConfig Limit FileInfo
-Order deny,allow
-Allow from all
-
+Alias /{subdir}/static/ {cmpath}/django/static/
+<Directory {cmpath}/django/static/>
+    Options FollowSymLinks
+    AllowOverride AuthConfig Limit FileInfo
+    Order deny,allow
+    Allow from all
 </Directory>
 
 """.format(cmpath = abs_catmaid_path, subdir = catmaid_subdirectory)

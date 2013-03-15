@@ -55,7 +55,7 @@ MEDIA_HDF5_SUBDIRECTORY = 'CATMAID_HDF5_SUBDIR'
 MEDIA_CROPPING_SUBDIRECTORY = 'CATMAID_CROP_SUBDIR'
 
 # The URL where static files can be accessed, relative to the domain's root
-STATIC_URL = '/CATMAID_SUBDIR/dj-static/'
+STATIC_URL = '/CATMAID_SUBDIR/static/'
 # The absolute local path where the static files get collected to
 STATIC_ROOT =  'CATMAIDPATH/django/static'
 
@@ -71,14 +71,13 @@ TIME_ZONE = 'CATMAID_TIMEZONE'
 LANGUAGE_CODE = 'en-gb'
 
 # Usually, CATMAID's Django back-end is not accessible on a domain's
-# root ('/'), but rather a sub-directory like 'dj'. This might even be
-# 'catmaid/dj' if catmaid is on a sub-directory as well. Django needs
+# root ('/'), but rather a sub-directory like 'catmaid'. Django needs
 # to know about this relative path and some web and WSGI servers pass
 # this information to Django automatically (e.g. Apache + mod_wsgi).
 # However, some don't (e.g. Nginx + Gevent) and the easiest way to
 # tell Django were it lives is with the help of the FORCE_SCRIPT_NAME
 # variable. It must not have a trailing slash.
-FORCE_SCRIPT_NAME = '/CATMAID_SUBDIR/dj'
+FORCE_SCRIPT_NAME = '/CATMAID_SUBDIR'
 
 # Settings relative to the Apache subfolder
 CATMAID_URL = '/CATMAID_SUBDIR/'
@@ -89,7 +88,7 @@ HDF5_STORAGE_PATH = 'CATMAIDPATH/django/hdf5/'
 
 # Define the URL of your CATMAIDs Django instance as it should appear in
 # front of all Django related URLs.
-CATMAID_DJANGO_URL = 'http://CATMAID_SERVERNAME/CATMAID_SUBDIR/dj/'
+CATMAID_DJANGO_URL = 'http://CATMAID_SERVERNAME/CATMAID_SUBDIR/'
 
 # Importer settings
 # If you want to use the importer, please adjust these settings. The

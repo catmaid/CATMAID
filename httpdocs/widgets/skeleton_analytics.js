@@ -50,10 +50,10 @@ var SkeletonAnalytics = new function()
         function(status, text) {
           if (200 !== status || 'REPLACED' === text) return;
           var json = $.parseJSON(text);
-					if (!json) {
-						alert("Could not find node #" + tnid);
-						return;
-					}
+          if (!json) {
+            alert("Could not find node #" + tnid);
+            return;
+          }
           if (json.error) {
             alert("Could not retrieve node location: " + json.error);
             return;
@@ -77,15 +77,15 @@ var SkeletonAnalytics = new function()
         skids = WebGLApp.getListOfSkeletonIDs(true);
         break;
     }
-    console.log(skids);
-    if (!skids) {
+    if (!skids || !skids[0]) {
       growlAlert("Oops", "Select skeleton(s) first!");
       return;
     }
     // sSource is the sAjaxSource
     requestQueue.replace(django_url + project.id + '/skeleton/analytics', 'POST',
       {skeleton_ids: skids,
-       extra: $('#skeleton_analytics_extra').val()},
+       extra: $('#skeleton_analytics_extra').val(),
+       adjacents: $('#skeleton_analytics_adjacents').val()},
       function(status, text, xml) {
         if (200 !== status) return;
         var json = $.parseJSON(text);

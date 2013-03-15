@@ -760,6 +760,9 @@ var WindowMaker = new function()
 
     appendSelect(div, "source", ["Active skeleton", "Selected skeletons"]);
     appendSelect(div, "extra", ["No others", "Downstream skeletons", "Upstream skeletons", "Both upstream and downstream"]);
+    var adjacents = [];
+    for (var i=0; i<20; ++i) adjacents.push(i);
+    appendSelect(div, "adjacents", adjacents);
 
     var update = document.createElement('input');
     update.setAttribute('type', 'button');

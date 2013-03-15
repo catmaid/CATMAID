@@ -4,7 +4,7 @@
 function getTileSource( tileSourceType, baseURL, fileExtension )
 {
     var tileSources = [DefaultTileSource, RequestTileSource,
-        HDF5TileSource, BackslashTileSource];
+        HDF5TileSource, BackslashTileSource, ImglibTileSource];
 
     if (tileSourceType > 0 && tileSourceType <= tileSources.length)
     {
@@ -119,6 +119,37 @@ function BackslashTileSource( baseURL, fileExtension )
     this.getOverviewLayer = function( layer )
     {
         return new GenericOverviewLayer( layer, baseURL, fileExtension );
+    }
+}
+
+/*
+* Get tile from imglib2 backend.
+*
+* Source type: 5
+*/
+function ImglibTileSource( baseURL, fileExtension )
+{
+    this.getTileURL = function( project, stack, baseName,
+        tileWidth, tileHeight, col, row, zoom_level )
+    {
+        return "http://localhost:8010/" + project.id + '/stack/' + stack.id + '/tile?' + $.param({
+            x: col * tileWidth,
+            y: row * tileHeight,
+            width : tileWidth,
+            height : tileHeight,
+            row : 'y',
+            col : 'x',
+            scale : stack.scale, // defined as 1/2**zoomlevel
+            z : stack.z,
+            file_extension: fileExtension,
+            basename: baseURL,
+            type:'all'
+        });
+    }
+
+    this.getOverviewLayer = function( layer )
+    {
+        return new DummyOverviewLayer();
     }
 }
 

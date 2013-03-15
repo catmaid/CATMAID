@@ -79,16 +79,12 @@ LANGUAGE_CODE = 'en-gb'
 # variable. It must not have a trailing slash.
 FORCE_SCRIPT_NAME = '/CATMAID_SUBDIR'
 
-# Settings relative to the Apache subfolder
+# URL of your CATMAID's Django instance, relative to the domain root
 CATMAID_URL = '/CATMAID_SUBDIR/'
 
 # Local path to store HDF5 files
 # File name convention: {projectid}_{stackid}.hdf
 HDF5_STORAGE_PATH = 'CATMAIDPATH/django/hdf5/'
-
-# Define the URL of your CATMAIDs Django instance as it should appear in
-# front of all Django related URLs.
-CATMAID_DJANGO_URL = 'http://CATMAID_SERVERNAME/CATMAID_SUBDIR/'
 
 # Importer settings
 # If you want to use the importer, please adjust these settings. The

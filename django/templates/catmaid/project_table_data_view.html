@@ -40,7 +40,7 @@
 		{% endfor %}
 		{% if p.is_catalogueable and catalogue_link %}
 			<td class="stackname">
-				<a href="{{ settings.CATMAID_DJANGO_URL }}{{ p.id }}">Neuron Catalogue</a>
+				<a href="{{ settings.CATMAID_URL }}{{ p.id }}">Neuron Catalogue</a>
 			</td>
 		{% endif %}
 	</tr>

@@ -342,7 +342,7 @@ def process_crop_job(job):
     msg.read = False
     if no_error_occured:
         file_name = os.path.basename( job.output_path )
-        url = os.path.join( settings.CATMAID_DJANGO_URL, "crop/download/" + file_name + "/")
+        url = os.path.join( settings.CATMAID_URL, "crop/download/" + file_name + "/")
         msg.title = "Microstack finished"
         msg.text = "The requested microstack " + bb_text + " is finished. You can download it from this location: <a href='" + url + "'>" + url + "</a>"
         msg.action = url

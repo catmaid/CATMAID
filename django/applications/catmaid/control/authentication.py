@@ -71,12 +71,8 @@ def requires_user_role(roles):
     and has at least one of the indicated roles or admin role for the project.
     """
     
-    # TODO: should projects' public attribute still be used or can it be replaced by a new "all users" group with browse permissions?
-    
     def decorated_with_requires_user_role(f):
         def inner_decorator(request, roles=roles, *args, **kwargs):
-            if not request.user.is_authenticated():
-                return json_error_response(request.get_full_path() + " is not accessible unless you are logged in")
             p = Project.objects.get(pk=kwargs['project_id'])
             u = request.user
             
@@ -90,16 +86,10 @@ def requires_user_role(roles):
                 for role in roles:
                     if role == UserRole.Annotate:
                         has_role = u.has_perm('can_annotate', p)
-#                         if has_role:
-#                             print >> sys.stderr, str(u) + ' has annotation role for ' + str(p)
                     elif role == UserRole.Browse:
                         has_role = u.has_perm('can_browse', p)
-#                         if has_role:
-#                             print >> sys.stderr, str(u) + ' has browse role for ' + str(p)
                     if has_role:
                         break
-#             else:
-#                 print >> sys.stderr, str(u) + ' has admin role for ' + str(p)
             
             if has_role:
                 # The user can execute the function.

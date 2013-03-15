@@ -57,24 +57,18 @@ class ExProject:
             return getattr(self,attr)
         return getattr(self.project, attr)
 
-def extend_projects(request, projects):
+def extend_projects(user, projects):
     """ Adds the properties is_editable and is_catalogueable to all
     projects passed.
     """
-    # Mark projects that are editable (administerable)
-    if request.user.is_authenticated():
-        # Create sets of projects that are administrable and annotatable
-        # by the current user and unify them to one set. This will only
-        # work for authenticated users (i.e. not AnonymousUser)
-        user = auth.get_user(request)
-        administrable_projects = set(get_objects_for_user(user, 'can_administer', Project))
-        annotatable_projects = set(get_objects_for_user(user, 'can_annotate', Project))
-        administrable_projects.union(annotatable_projects)
-        # Just for readability, have another reference to the union
-        editable_projects = administrable_projects
-    else:
-        # An anonymous user has no editing permissions
-        editable_projects = []
+    # Create sets of projects that are administrable and annotatable
+    # by the current user and unify them to one set. This will only
+    # work for authenticated users (i.e. not AnonymousUser)
+    administrable_projects = set(get_objects_for_user(user, 'can_administer', Project))
+    annotatable_projects = set(get_objects_for_user(user, 'can_annotate', Project))
+    administrable_projects.union(annotatable_projects)
+    # Just for readability, have another reference to the union
+    editable_projects = administrable_projects
 
     # Find all the projects that are editable:
     catalogueable_projects = set(x.project.id for x in \
@@ -83,11 +77,18 @@ def extend_projects(request, projects):
     result = []
     for p in projects:
         ex_p = ExProject(p,
-            request.user.is_superuser or p in editable_projects,
+            user.is_superuser or p in editable_projects,
             p.id in catalogueable_projects)
         result.append(ex_p)
 
     return result
+
+def get_project_qs_for_user(user):
+    """ Returns the query set of projects that are adminiserable and
+    browsable by the given user.
+    """
+    perms=['can_administer', 'can_browse']
+    return get_objects_for_user(user, perms, Project, any_perm=True)
 
 def projects(request):
     # This is somewhat ridiculous - four queries where one could be
@@ -108,13 +109,11 @@ def projects(request):
     for project_id, stack_id in c.fetchall():
         project_to_stacks[project_id].append(stacks[stack_id])
 
-    # Get projects with extra editable and catalogueable info
-    if request.user.is_authenticated():
-        projects = Project.objects.all().order_by('title')
-    else:
-        projects = Project.objects.filter(public=True).order_by('title')
+    # Get all projects that are visisble for the current user
+    projects = get_project_qs_for_user(request.user).order_by('title')
 
-    projects = extend_projects(request, projects)
+    # Extend projects with extra editable and catalogueable info
+    projects = extend_projects(request.user, projects)
 
     # Create a dictionary with those results that we can output as JSON:
     result = []

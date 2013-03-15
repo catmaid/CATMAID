@@ -5,7 +5,7 @@ var WebGLApp = new function () {
   self.neurons = [];
 
   var scene, renderer, scale, controls, zplane = null, meshes = [], show_meshes = false, show_active_node = true;
-  var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, projector, objects = [],
+  var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, projector, contour_objects = [],
       bbmesh, floormesh, black_bg = true, debugax, togglevisibleall = false, show_missing_sections = false, missing_sections = [], mouse = new THREE.Vector2();
   var is_mouse_down = false, connector_filter = false, missing_section_height = 20, soma_scale = 1.0;
 
@@ -294,7 +294,8 @@ var WebGLApp = new function () {
   {
 
     var self = this;
-    self.assembly_id = assembly_data.assembly_id;
+    self.id = assembly_data.id;
+    self.baseName = assembly_data.baseName;
     self.assembly_slices = assembly_data.slices;
     var contours = [];
     var high_res = high_res;
@@ -376,7 +377,7 @@ var WebGLApp = new function () {
       for(var node_id in contours) {
         if( contours.hasOwnProperty(node_id)) {
           scene.add( contours[ node_id ] );
-          objects.push( contours[ node_id ] );
+          contour_objects.push( contours[ node_id ] );
         }
       }
     }
@@ -385,10 +386,11 @@ var WebGLApp = new function () {
       for(var node_id in contours) {
         if( contours.hasOwnProperty(node_id)) {
           scene.remove( contours[ node_id ] );
-          // TODO: remove from objects
         }
       }
+      contour_objects = []; // garbage collection should remove the objects
     }
+
   }
 
   var Skeleton = function( skeleton_data )
@@ -858,17 +860,11 @@ var WebGLApp = new function () {
 
   this.addAssembly = function( assembly_data, high_res )
   {
-    // console.log('add assembly', assembly_data);
-    if( !assemblies.hasOwnProperty( assembly_data.assembly_id ) ) {
-      // console.log('add assembly', assembly_data);
-      assemblies[ assembly_data.assembly_id ] = new Assembly( assembly_data, high_res );
-    } else {
-      // console.log('assembly already exists. Remove and add new')
-      assemblies[ assembly_data.assembly_id ].remove_from_scene();
-      delete assemblies[ assembly_data.assembly_id ];
-      assemblies[ assembly_data.assembly_id ] = new Assembly( assembly_data, high_res );
+    if( assemblies.hasOwnProperty( assembly_data.id ) ) {
+      self.removeAssembly( assembly_data.id );
     }
-    return true;
+    assemblies[ assembly_data.id ] = new Assembly( assembly_data, high_res );
+    return assemblies[ assembly_data.id ];
   }
 
   this.randomizeColors = function()
@@ -918,9 +914,8 @@ var WebGLApp = new function () {
     } else {
       skeleton_data['id'] = skeleton_id;
       skeletons[skeleton_id] = new Skeleton( skeleton_data );
-      self.addSkeletonToTable( skeletons[skeleton_id] );
     }
-    return true;
+    return skeletons[skeleton_id];
   }
 
   this.changeSkeletonColor = function( skeleton_id, value, color )
@@ -931,6 +926,27 @@ var WebGLApp = new function () {
     } else {
         skeletons[skeleton_id].changeColor( value );
         $('#skeletonaction-changecolor-' + skeleton_id).css("background-color",color.hex);
+        self.render();
+        return true;
+    }
+  }
+
+  this.removeAssembly = function( assembly_id ) {
+
+    if( !assemblies.hasOwnProperty(assembly_id) ){
+        $('#growl-alert').growlAlert({
+          autoShow: true,
+          content: "Assembly "+skeleton_id+" does not exist. Cannot remove it!",
+          title: 'Warning',
+          position: 'top-right',
+          delayTime: 2000,
+          onComplete: function() {  }
+        });
+        return;
+    } else {
+        $('#assemblyrow-' + assembly_id).remove();
+        assemblies[ assembly_id ].remove_from_scene();
+        delete assemblies[ assembly_id ];
         self.render();
         return true;
     }
@@ -1340,11 +1356,12 @@ var WebGLApp = new function () {
       projector.unprojectVector( vector, camera );
 
       var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );    
-      var intersects = raycaster.intersectObjects( objects, true );
+      var intersects = raycaster.intersectObjects( contour_objects, true );
 
       if ( intersects.length > 0 ) {
+        // console.log('found intersecting slices', intersects);
         controls.enabled = false;
-        SegmentationAnnotations.goto_slice( intersects[0].object.parent.node_id );
+        SegmentationAnnotations.goto_slice( intersects[0].object.parent.node_id, true );
         container.style.cursor = 'move';
 
       }
@@ -1390,6 +1407,113 @@ var WebGLApp = new function () {
     renderer.render( scene, camera );
   }
   self.render = render;
+
+  self.addAssemblyToTable = function ( assembly ) {
+    var rowElement = $('<tr/>').attr({
+      id: 'assemblyrow-' + assembly.id
+    });
+    // $('#webgl-assembly-table > tbody:last').append( rowElement );
+    $('#webgl-skeleton-table > tbody:last').append( rowElement );
+    
+    var td = $(document.createElement("td"));
+    /*td.append( $(document.createElement("img")).attr({
+      id:    'assemblyaction-activate-' + assembly.id,
+      value: 'Nearest node'
+    })
+      .click( function( event )
+      {
+        console.log('TODO: active assembly');
+      })
+      .attr('src','widgets/themes/kde/activate.gif')
+    );*/
+    td.append( $(document.createElement("img")).attr({
+          id:    'assemblyaction-remove-' + assembly.id,
+          value: 'Remove'
+          })
+          .click( function( event )
+          {
+            self.removeAssembly( assembly.id );
+          })
+          .attr('src','widgets/themes/kde/delete.png')
+          .text('Remove!')
+    );
+    rowElement.append( td );
+
+    rowElement.append(
+      $(document.createElement("td")).text( assembly.baseName + ' (AssemblyID: ' + assembly.id + ')' )
+    );
+
+    // show assembly
+    rowElement.append(
+      $(document.createElement("td")).append(
+        $(document.createElement("input")).attr({
+                  id:    'idshow-' + assembly.id,
+                  name:  assembly.baseName,
+                  value: assembly.id,
+                  type:  'checkbox',
+                  checked: true
+          })
+          .click( function( event )
+          {
+            // TODO: toggle show              
+            self.render();
+          } )
+    ));
+
+    // show pre
+    rowElement.append(
+      $(document.createElement("td")).append(
+        $(document.createElement("input")).attr({
+                  id:    'assemblypre-' + assembly.id,
+                  name:  assembly.baseName,
+                  value: assembly.id,
+                  type:  'checkbox',
+                  checked:true
+          })
+          .click( function( event )
+          {
+            
+            self.render();
+          } )
+    ));
+
+    // show post
+    rowElement.append(
+      $(document.createElement("td")).append(
+        $(document.createElement("input")).attr({
+                  id:    'assemblypost-' + assembly.id,
+                  name:  assembly.baseName,
+                  value: assembly.id,
+                  type:  'checkbox',
+                  checked:true
+          })
+          .click( function( event )
+          {
+            
+            self.render();
+          } )
+    ));
+
+    rowElement.append(
+      $(document.createElement("td")).append(
+        $(document.createElement("input")).attr({
+                  id:    'assemblytext-' + assembly.id,
+                  name:  assembly.baseName,
+                  value: assembly.id,
+                  type:  'checkbox',
+                  checked:false
+          })
+          .click( function( event )
+          {
+            
+            self.render();
+          } )
+    ));
+
+    var td = $(document.createElement("td"));
+    rowElement.append( td );
+
+  }
 
   self.addSkeletonToTable = function ( skeleton ) {
 
@@ -1536,6 +1660,32 @@ var WebGLApp = new function () {
 
   }
 
+  self.addActiveObjectToStagingArea = function() {
+    // add either a skeleton or an assembly based on the tool selected
+    if( project.getTool().toolname === 'segmentationtool' ) {
+      self.addActiveAssemblyToView();
+    } else if( project.getTool().toolname === 'tracingtool' ) {
+      self.addActiveSkeletonToView();
+    }
+  }
+
+  self.addActiveAssemblyToView = function() {
+    requestQueue.register(django_url + project.id + '/assembly/' + SegmentationAnnotations.current_active_assembly + '/neuronname', "POST", {}, function (status, text, xml) {
+      var e;
+      if (status === 200) {
+        if (text && text !== " ") {
+          e = $.parseJSON(text);
+          if (e.error) {
+            alert(e.error);
+            return;
+          }
+          var assembly_data = SegmentationAnnotations.get_assemblydata_to_visualize();
+          assembly_data['baseName'] = e['neuronname'];
+          var assembly = self.addAssembly( assembly_data, false ); // TODO: how to active highres?
+          self.addAssemblyToTable( assembly );
+      }}});
+  }
+
   self.addActiveSkeletonToView = function() {
     var atn_id = SkeletonAnnotations.getActiveNodeId(),
         skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
@@ -1559,7 +1709,8 @@ var WebGLApp = new function () {
           dataType: "json",
           success: function (skeleton_data) {
             skeleton_data['baseName'] = skeleton_data['neuron']['neuronname'];
-            self.addSkeleton( parseInt(skeletonID), skeleton_data );
+            var skeleton = self.addSkeleton( parseInt(skeletonID), skeleton_data );
+            self.addSkeletonToTable( skeleton );
             self.render();
           }
         });

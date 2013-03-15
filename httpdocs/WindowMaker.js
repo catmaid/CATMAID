@@ -87,8 +87,8 @@ var WindowMaker = new function()
     var add = document.createElement('input');
     add.setAttribute("type", "button");
     add.setAttribute("id", "add_current_to_3d_webgl_view");
-    add.setAttribute("value", "Add active skeleton");
-    add.onclick = WebGLApp.addActiveSkeletonToView;
+    add.setAttribute("value", "Add active object");
+    add.onclick = WebGLApp.addActiveObjectToStagingArea;
     container.appendChild(add);
 
     var rand = document.createElement('input');

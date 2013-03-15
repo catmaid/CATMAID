@@ -362,6 +362,12 @@ var SegmentationAnnotations = new function()
           }
     }
 
+    self.get_current_active_assembly = function() {
+        if( self.has_current_assembly() ) {
+            return self.current_active_assembly;
+        }
+    }
+
     self.has_current_assembly = function() {
         return (self.current_active_assembly !== null &&
             parseInt(self.current_active_assembly, 10) > 0 )
@@ -1055,7 +1061,7 @@ var SegmentationAnnotations = new function()
 
     }
 
-    this.visualize_assembly = function( high_res ) {
+    this.get_assemblydata_to_visualize = function( ) {
         // need open 3d context
         if( !self.current_active_assembly ) {
             alert('Need to have an active assembly to visualize');
@@ -1064,7 +1070,7 @@ var SegmentationAnnotations = new function()
 
         // generate assembly data structure to add
         var assembly_data = {
-            assembly_id: self.current_active_assembly,
+            id: self.current_active_assembly,
             slices: []
         }
         // loop through all sections to collect all visible slices
@@ -1088,9 +1094,7 @@ var SegmentationAnnotations = new function()
                 })
             }
         }
-
-        // pass it to webgl app (which adds the assembly to the scene)
-        WebGLApp.addAssembly( assembly_data, high_res );
+        return assembly_data
     }
 
     this.delete_active_slice = function( status ) {

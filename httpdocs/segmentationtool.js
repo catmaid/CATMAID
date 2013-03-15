@@ -413,7 +413,10 @@ function SegmentationTool()
             'U': [ 85 ]
         },
         run: function (e) {
-            SegmentationAnnotations.visualize_assembly( e.shiftKey );
+            if( $( "#neuron_staging_table").length == 0 ) {
+                WindowMaker.show('3d-webgl-view');
+            }
+            WebGLApp.addActiveObjectToStagingArea();
             return true;
         }
     }) );

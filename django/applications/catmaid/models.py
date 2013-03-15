@@ -7,6 +7,7 @@ import sys
 import re
 import urllib
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
@@ -606,6 +607,12 @@ def create_user_profile(sender, instance, created, **kwargs):
 # Connect the a User object's post save signal to the profile
 # creation
 post_save.connect(create_user_profile, sender=User)
+
+# Make sure Guardian's anonymous user has a user profile
+if UserProfile.objects.filter(\
+        user__id=settings.ANONYMOUS_USER_ID).count() == 0:
+    anonymous_user = User.objects.get(pk=settings.ANONYMOUS_USER_ID)
+    create_user_profile(User, anonymous_user, True)
 
 # ------------------------------------------------------------------------
 

@@ -107,8 +107,3 @@ CELERYD_CONCURRENCY = 1
 # Simple django-kumbo message broker
 INSTALLED_APPS += ("djkombu",)
 BROKER_BACKEND = "djkombu.transport.DatabaseTransport"
-
-PROJECT_ROOT = os.path.realpath(os.path.join(
-        os.path.dirname(__file__), '..', '..'))
-for subdirectory in ('projects', 'applications', 'lib'):
-    sys.path.insert(0, os.path.join(PROJECT_ROOT, subdirectory))

@@ -98,3 +98,11 @@ def mkdir_p(path):
             pass
         else:
             raise
+
+import sys
+from os.path import realpath
+
+PROJECT_ROOT = relative('..', '..')
+for subdirectory in ('projects', 'applications', 'lib'):
+    full_path = os.path.join(PROJECT_ROOT, subdirectory)
+    sys.path.insert(0, full_path)

@@ -27,6 +27,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'catmaid.middleware.AnonymousAuthenticationMiddleware',
     'catmaid.middleware.AjaxExceptionMiddleware', 
     'django.middleware.transaction.TransactionMiddleware',
     )

@@ -1,5 +1,6 @@
 from django.conf.urls.defaults import patterns, include, url
 from django.conf import settings
+from django.views.generic import TemplateView
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -12,8 +13,12 @@ num = r'[-+]?[0-9]*\.?[0-9]+'
 # A regular expression matching lists of integers with comma as delimiter
 intlist = r'[0-9]+(,[0-9]+)*'
 
-# Neuron Catalog
+# Add the main index.html page at the root:
 urlpatterns = patterns('',
+    (r'^$', TemplateView.as_view(template_name="index.html")))
+
+# Neuron Catalog
+urlpatterns += patterns('',
     (r'^(?P<project_id>\d+)/multiple-presynaptic-terminals$', 'vncbrowser.views.multiple_presynaptic_terminals'),
     (r'^(?P<project_id>\d+)/go-to/connector/(?P<connector_id>\d+)/stack/(?P<stack_id>\d+)$', 'vncbrowser.views.goto_connector'),
 

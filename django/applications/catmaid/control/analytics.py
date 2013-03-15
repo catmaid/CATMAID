@@ -238,7 +238,7 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
         if connector_id in pre_connector_ids:
             continue
         treenode_id = (t.id for t in c[POST] if t.skeleton_id == skeleton_id).next()
-        pre_skeletons = set(t.skeleton_id for t in c[POST])
+        pre_skeletons = set(t.skeleton_id for t in c[PRE])
         post_treenodes = set(chain.from_iterable(single_source_shortest_path(graph, treenode_id, adjacents).values()))
         post_connectors.append(Connector(connector_id, treenode_id, post_treenodes, pre_skeletons))
 

@@ -491,12 +491,12 @@ var SegmentationAnnotations = new function()
             return;
         }
         var msg;
-        // TODO: add bookmark if it is not in the list
-        if( shiftKey && bookmarks.hasOwnProperty( current_active_slice ) ) {
-            delete bookmarks[ current_active_slice ];
+        if( shiftKey && $.inArray(current_active_slice, bookmarks) > -1 ) {
+            var index = $.inArray(current_active_slice, bookmarks)
+            bookmarks.splice( index, 1 );
             msg = "Removed bookmark from slice: " + current_active_slice
         } else {
-            bookmarks[ current_active_slice ] = null;
+            bookmarks.push( current_active_slice );
             msg = "Bookmarked slice: " + current_active_slice;
         }
         $('#growl-alert').growlAlert({
@@ -527,16 +527,13 @@ var SegmentationAnnotations = new function()
             slices_bookmark_selected++;
         }
         var slice = get_slice( bookmarks[ slices_bookmark_selected ] ), msg = null;
-        if( msg !== null ) {
-            $('#growl-alert').growlAlert({
-                autoShow: true,
-                content: "This is bookmarked slice: " + bookmarks[ slices_bookmark_selected ],
-                title: 'Info',
-                position: 'top-right',
-                delayTime: 2000,
-            });            
-        }
-        console.log('goto bookmarked slice', bookmarks[ slices_bookmark_selected ] );
+        $('#growl-alert').growlAlert({
+            autoShow: true,
+            content: "This is bookmarked slice: " + bookmarks[ slices_bookmark_selected ],
+            title: 'Info',
+            position: 'top-right',
+            delayTime: 2000,
+        });            
         goto_slice( bookmarks[ slices_bookmark_selected ], true);
     }
 

@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.template import Context, loader
 
 from catmaid.control.common import makeJSON_legacy_list
-from catmaid.control.project import extend_projects
+from catmaid.control.project import get_project_qs_for_user, extend_projects
 from catmaid.models import DataView, DataViewType, Project
 
 import re
@@ -81,14 +81,15 @@ def get_data_view( request, data_view_id ):
     # Get project information and pass all to the template context
     config = json.loads( dv.config )
 
+    # Get all the projects that are visible for the current user
+    projects = get_project_qs_for_user(request.user)
+
     # If requested, filter projects by tags. Otherwise, get all.
     if "filter_tags" in config:
         filter_tags = config["filter_tags"]
         # Only get projects that have all the filter tags set
-        projects = Project.objects.filter( tags__name__in=filter_tags ).annotate(
+        projects = projects.filter( tags__name__in=filter_tags ).annotate(
             repeat_count=Count("id") ).filter( repeat_count=len(filter_tags) )
-    else:
-        projects = Project.objects.all()
 
     # Extend the project list with additional information like editabilty
     projects = extend_projects( request.user, projects )

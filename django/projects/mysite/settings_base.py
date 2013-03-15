@@ -77,6 +77,9 @@ SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}
 # content of multiple sites.
 SITE_ID = 1
 
+# Default user profile settings
+PROFILE_DEFAULT_INVERSE_MOUSE_WHEEL = False
+
 # A couple of functions useful for generating default directories to
 # be used in the settings files:
 

@@ -698,7 +698,8 @@ class UserProfile(models.Model):
     See: http://digitaldreamer.net/blog/2010/12/8/custom-user-profile-and-extend-user-admin-django/
     """
     user = models.OneToOneField(User)
-    inverse_mouse_wheel = models.BooleanField(default=False)
+    inverse_mouse_wheel = models.BooleanField(
+        default=settings.PROFILE_DEFAULT_INVERSE_MOUSE_WHEEL)
 
     def __unicode__(self):
         return self.user.username

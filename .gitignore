@@ -22,3 +22,4 @@ django/configuration.py
 *.pyc
 scripts/cloud/configuration.py
 *.swp
+django/static

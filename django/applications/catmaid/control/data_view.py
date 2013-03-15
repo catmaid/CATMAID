@@ -91,7 +91,7 @@ def get_data_view( request, data_view_id ):
         projects = Project.objects.all()
 
     # Extend the project list with additional information like editabilty
-    projects = extend_projects( request, projects )
+    projects = extend_projects( request.user, projects )
 
     # Sort by default
     if "sort" not in config or config["sort"] == True:

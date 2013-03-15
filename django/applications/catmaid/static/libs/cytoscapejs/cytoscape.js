@@ -2,7 +2,7 @@
 /* cytoscape.js */
 
 /**
- * This file is part of cytoscape.js 2.0.0beta2-github-snapshot-2013.01.15-15.32.06.
+ * This file is part of cytoscape.js 2.0.0beta2-github-snapshot-2013.03.12-10.47.36.
  * 
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -2218,6 +2218,7 @@ var cytoscape;
 			zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
 			nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
 			size: { number: true, min: 0 },
+			bgSize: { number: true, min: 0, allowPercent: true },
 			color: { color: true },
 			lineStyle: { enums: ["solid", "dotted", "dashed"] },
 			curveStyle: { enums: ["bundled", "bezier"] },
@@ -2233,6 +2234,9 @@ var cytoscape;
 			visibility: { enums: ["hidden", "visible"] },
 			valign: { enums: ["top", "center", "bottom"] },
 			halign: { enums: ["left", "center", "right"] },
+			positionx: { enums: ["left", "center", "right"], number: true, allowPercent: true },
+			positiony: { enums: ["top", "center", "bottom"], number: true, allowPercent: true },
+			bgRepeat: { enums: ["repeat", "repeat-x", "repeat-y", "no-repeat"] },
 			cursor: { enums: ["auto", "crosshair", "default", "e-resize", "n-resize", "ne-resize", "nw-resize", "pointer", "progress", "s-resize", "sw-resize", "text", "w-resize", "wait", "grab", "grabbing"] },
 			text: { string: true },
 			data: { mapping: true, regex: "^data\\s*\\(\\s*(\\w+)\\s*\\)$" },
@@ -2267,11 +2271,16 @@ var cytoscape;
 			// these are just for nodes
 			{ name: "background-color", type: t.color },
 			{ name: "background-opacity", type: t.zeroOneNumber },
+			{ name: "background-image", type: t.url },
+			{ name: "background-position-x", type: t.positionx },
+			{ name: "background-position-y", type: t.positiony },
+			{ name: "background-repeat", type: t.bgRepeat },
+			{ name: "background-size-x", type: t.bgSize },
+			{ name: "background-size-y", type: t.bgSize },
 			{ name: "border-color", type: t.color },
 			{ name: "border-opacity", type: t.zeroOneNumber },
 			{ name: "border-width", type: t.size },
 			{ name: "border-style", type: t.lineStyle },
-			{ name: "background-image", type: t.url },
 			{ name: "height", type: t.size },
 			{ name: "width", type: t.size },
 			{ name: "shape", type: t.nodeShape },
@@ -2409,6 +2418,7 @@ var cytoscape;
 		
 		name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. "property-name" not "propertyName")
 		var property = $$.style.properties[ name ];
+		var passedValue = value;
 		
 		if( !property ){ return null; } // return null on property of unknown name
 		if( value === undefined || value === null ){ return null; } // can't assign null
@@ -2501,17 +2511,41 @@ var cytoscape;
 			var units;
 			if( !type.unitless ){
 				if( valueIsString ){
-					var match = value.match( "^(" + $$.util.regex.number + ")(px|em)?" + "$" );
-					if( !match ){ return null; } // no match => not a number
+					var match = value.match( "^(" + $$.util.regex.number + ")(px|em" + (type.allowPercent ? "|\\%" : "") + ")?" + "$" );
+					
+					if( !type.enums ){
+						if( !match ){ return null; } // no match => not a number
 
-					value = match[1];
-					units = match[2] || "px";
+						value = match[1];
+						units = match[2] || "px";
+					}
 				} else {
 					units = "px"; // implicitly px if unspecified
 				}
 			}
 
 			value = parseFloat( value );
+
+			// check if this number type also accepts special keywords in place of numbers
+			// (i.e. `left`, `auto`, etc)
+			if( isNaN(value) && type.enums !== undefined ){
+				value = passedValue;
+
+				for( var i = 0; i < type.enums.length; i++ ){
+					var en = type.enums[i];
+
+					if( en === value ){
+						return {
+							name: name,
+							value: value,
+							strValue: value,
+							bypass: propIsBypass
+						};
+					}
+				}
+
+				return null; // failed on enum after failing on number
+			}
 
 			// check if value must be an integer
 			if( type.integer && !$$.is.integer(value) ){
@@ -2531,7 +2565,7 @@ var cytoscape;
 				strValue: "" + value + (units ? units : ""),
 				units: units,
 				bypass: propIsBypass,
-				pxValue: type.unitless ?
+				pxValue: type.unitless || units === "%" ?
 					undefined
 					:
 					( units === "px" || !units ? (value) : (this.getEmSizeInPixels() * value) )
@@ -3466,7 +3500,6 @@ var cytoscape;
 			}
 
 			// TODO remove timeout when chrome reports dimensions onload properly
-			// only affects when loading the html from localhost, i think...
 			if( window && window.chrome ){
 				setTimeout(function(){
 					callback();
@@ -7286,6 +7319,7 @@ var cytoscape;
 				
 				// Element dragging
 				{
+					// If something is under the cursor and it is grabbable, prepare to grab it
 					if (near && near._private.grabbable) {
 						if (near._private.group == "nodes" && near._private.selected == false) {
 							near._private.grabbed = true; near.trigger(new $$.Event(e, {type: "grab"})); 
@@ -7298,7 +7332,7 @@ var cytoscape;
 								
 								var updateStyle = false; 
 								if (popped._private.selected || popped._private.grabbed) { updateStyle = true; }
-								
+							
 								if (popped._private.selected) { popped._private.selected = false; popped.trigger(unselectEvent); }
 								if (popped._private.grabbed) { popped._private.grabbed = false; popped.trigger(ungrabEvent); }
 								
@@ -7325,14 +7359,20 @@ var cytoscape;
 								}
 							}
 						}
-								
+						
+						near.trigger(new $$.Event(e, {type: "mousedown"}));
+						
 						r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Single node moved to drag layer"); 
 						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("Single node moved to drag layer");
 						
 //						console.log(draggedElements);
+					} else if (near == null) {
+						var backgroundMouseDownEvent = new $$.Event(e, {type: "mousedown"});
+						
+						cy.trigger(backgroundMouseDownEvent);
 					}
 					
-					if (near) { near.trigger(new $$.Event(e, {type: "mousedown"})); }
+					
 					
 					r.hoverData.down = near;
 					r.hoverData.downTime = (new Date()).getTime();
@@ -7350,7 +7390,9 @@ var cytoscape;
 				
 			}
 			
-			select[0] = select[2] = pos[0]; select[1] = select[3] = pos[1];
+			// Initialize selection box coordinates
+			select[0] = select[2] = pos[0];
+			select[1] = select[3] = pos[1];
 			
 			r.redraw();
 			
@@ -7360,12 +7402,19 @@ var cytoscape;
 			
 			var cy = r.data.cy; var pos = r.projectIntoViewport(e.pageX, e.pageY); var select = r.data.select;
 			
-			var near = r.findNearestElement(pos[0], pos[1]); var last = r.hoverData.last; var down = r.hoverData.down;
-			var disp = [pos[0] - select[2], pos[1] - select[3]]; var nodes = r.getCachedNodes(); var edges = r.getCachedEdges();
+			var near = r.findNearestElement(pos[0], pos[1]);
+			var last = r.hoverData.last;
+			var down = r.hoverData.down;
+			
+			var disp = [pos[0] - select[2], pos[1] - select[3]];
+			var nodes = r.getCachedNodes();
+			var edges = r.getCachedEdges();
 		
 			var draggedElements = r.dragData.possibleDragElements;
 			
-			var capture = r.hoverData.capture; if (!capture) { 
+			var capture = r.hoverData.capture;
+			
+			if (!capture) { 
 				
 				var containerPageCoords = r.findContainerPageCoords();
 				
@@ -7377,26 +7426,25 @@ var cytoscape;
 				}
 			}
 			
-			if (r.hoverData.dragging) {
-				
-				// console.log(pos[0], select[0], r.hoverData.initialPan[0], pos[1], select[1], r.hoverData.initialPan[1]);
-				
-				cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
-				
-				// Needs reproject due to pan changing viewport
-				pos = r.projectIntoViewport(e.pageX, e.pageY);
-			
 			// Mousemove event
 			{
 				var event = new $$.Event(e, {type: "mousemove"});
 				
 				if (near != null) {
 					near.trigger(event);
+					
 				} else if (near == null) {
 					cy.trigger(event);
 				}
 			}
 			
+			// Check if we are drag panning the entire graph
+			if (r.hoverData.dragging) {
+				
+				cy.panBy({x: disp[0] * cy.zoom(), y: disp[1] * cy.zoom()});
+				
+				// Needs reproject due to pan changing viewport
+				pos = r.projectIntoViewport(e.pageX, e.pageY);
 			// Checks primary button down & out of time & mouse not moved much
 			} else if (select[4] == 1 && down == null 
 					&& (new Date()).getTime() - r.hoverData.downTime > 200 
@@ -7432,11 +7480,8 @@ var cytoscape;
 					r.data.canvasNeedsRedraw[DRAG] = true; r.data.canvasRedrawReason[DRAG].push("Nodes dragged");
 				}
 				
-				if (near) {
-					near.trigger(new $$.Event(e, {type: "mousemove"}));
-				}
-				
-				r.data.canvasNeedsRedraw[SELECT_BOX] = true; r.data.canvasRedrawReason[SELECT_BOX].push("Mouse moved, redraw selection box");
+				r.data.canvasNeedsRedraw[SELECT_BOX] = true;
+				r.data.canvasRedrawReason[SELECT_BOX].push("Mouse moved, redraw selection box");
 			}
 			
 			select[2] = pos[0]; select[3] = pos[1];
@@ -7579,34 +7624,40 @@ var cytoscape;
 			var unpos = [pos[0] * cy.zoom() + cy.pan().x,
 			              pos[1] * cy.zoom() + cy.pan().y];
 			
-//			console.log("update");
-			
 			if (r.zoomData.freeToZoom) {
 				e.preventDefault();
 				
 				var diff = e.wheelDeltaY / 1000 || e.detail / -8.4;
 				
-				console.log("old zoom: " + cy.zoom() + " mouse diff: " + diff);
-				console.log({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
-//				if (cy.zoom() )
 				cy.zoom({level: cy.zoom() * Math.pow(10, diff), position: {x: unpos[0], y: unpos[1]}});
-//				cy.zoom({level: cy.zoom() * (1 + diff), position: {x: unpos[0], y: unpos[1]}});
-//				console.log("new zoom" + cy.zoom());
-				console.log("new zoom: " + cy.zoom());
 			}
 
 		}
 		
-		// Uses old functions
+		// Functions to help with whether mouse wheel should trigger zooming
 		// --
 		r.data.container.addEventListener("mousewheel", wheelHandler, false);
 		r.data.container.addEventListener("DOMMouseScroll", wheelHandler, false);
+		
 		r.data.container.addEventListener("mousemove", function(e) { 
 			if (r.zoomData.lastPointerX && r.zoomData.lastPointerX != e.pageX && !r.zoomData.freeToZoom) 
-				{ r.zoomData.freeToZoom = true; } r.zoomData.lastPointerX = e.pageX; }, false);
+				{ r.zoomData.freeToZoom = true; } r.zoomData.lastPointerX = e.pageX; 
+		}, false);
+		
 		r.data.container.addEventListener("mouseout", function(e) { 
-			r.zoomData.freeToZoom = false; r.zoomData.lastPointerX = null }, false);
+			r.zoomData.freeToZoom = false; r.zoomData.lastPointerX = null 
+		}, false);
 		// --
+		
+		// Functions to help with handling mouseout/mouseover on the Cytoscape container
+					// Handle mouseout on Cytoscape container
+		r.data.container.addEventListener("mouseout", function(e) { 
+			cy.trigger(new $$.Event(e, {type: "mouseout"}));
+		}, false);
+		
+		r.data.container.addEventListener("mouseover", function(e) { 
+			cy.trigger(new $$.Event(e, {type: "mouseover"}));
+		}, false);
 		
 		
 		r.data.container.addEventListener("touchstart", function(e) {
@@ -7628,7 +7679,7 @@ var cytoscape;
 				
 			} else if (e.touches[0]) {
 				var near = r.findNearestElement(now[0], now[1]);
-				
+
 				if (near != null) {
 					r.touchData.start = near;
 					
@@ -7639,7 +7690,7 @@ var cytoscape;
 						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("touchdrag node start");
 						
 						var sEdges = near._private.edges;
-						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = true; }
+						for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.grabbed = true; } // TODO edges shouldn't be grabbable (see #)
 					}
 					
 					near.trigger(new $$.Event(e, {type: "touchstart"}));
@@ -7818,6 +7869,17 @@ var cytoscape;
 				// Tap event, roughly same as mouse click event for touch
 				if (r.touchData.singleTouchMoved == false) {
 					
+					// select the node on tap
+					if (start != null && start._private.selectable && start._private.selected == false) {
+						
+						// unselect whatever's already selected
+						cy.elements(':selected').unselect();
+
+						// now select the node
+						start._private.selected = true; start.trigger(new $$.Event(e, {type: "select"})); start.updateStyle(false);
+						r.data.canvasNeedsRedraw[NODE] = true; r.data.canvasRedrawReason[NODE].push("sglslct");
+					}
+
 					if (start) {
 						start.trigger(new $$.Event(e, {type: "tap"}));
 					} else {

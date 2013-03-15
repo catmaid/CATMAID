@@ -15,4 +15,3 @@ class AjaxExceptionMiddleware(object):
             response['info'] = str(exc_info)
             response['traceback'] = ''.join(traceback.format_tb(tb))
         return HttpResponse(json.dumps(response))
-    

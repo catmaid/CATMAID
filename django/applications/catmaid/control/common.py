@@ -6,6 +6,16 @@ from django.template import RequestContext
 from catmaid.models import Relation, Class, Log, NeuronSearch, CELL_BODY_CHOICES, ClassInstance, ClassInstanceClassInstance, SORT_ORDERS_DICT
 import json
 
+def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id):
+    relation = ClassInstanceClassInstance()
+    relation.user = user
+    relation.project_id = project_id
+    relation.relation_id = relation_id
+    relation.class_instance_a_id = instance_a_id
+    relation.class_instance_b_id = instance_b_id
+    relation.save()
+    return relation
+
 def insert_into_log(project_id, user_id, op_type, location=None, freetext=None):
     # valid operation types
     operation_type_array = [

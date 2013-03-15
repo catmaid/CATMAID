@@ -245,8 +245,8 @@ var editToolActions = [
 		}
 	}),
 
-    new Action({
-       helpText: "Segmentation Tool",
+/*    new Action({
+       helpText: "Canvas Tool",
        buttonID: 'edit_button_canvas',
        buttonName: 'canvas',
        keyShortcuts: {
@@ -260,7 +260,34 @@ var editToolActions = [
           }
           project.setTool( new CanvasTool() );
        }
-    }),
+    }), */
+
+  new Action({
+     helpText: "Segmentation Tool",
+     buttonID: 'edit_button_segmentation',
+     buttonName: 'canvas',
+     keyShortcuts: {
+     },
+     run: function (e) {
+        requestQueue.register(django_url + project.id + '/stack/' + project.focusedStack.id + '/slice-info', "POST", {},
+         function (status, text, xml) {
+                if (status === 200) {
+                    if (text && text !== " ") {
+                        var e = $.parseJSON(text);
+                        if (e.error) {
+                            alert(e.error);
+                        } else {
+                            if( project.focusedStack.s !== 0 ) {
+                              alert('Segmentation Tool only works on zoom-level 0!');
+                              return;
+                            }
+                            project.setTool( new SegmentationTool() );
+                        }
+                    }
+                }
+        });
+     }
+  }),
 
 	new Action({
 		helpText: "Tracing tool",
@@ -284,6 +311,49 @@ var editToolActions = [
 		}
 	})
 */
+];
+
+var segmentationWindowActions = [
+
+  new Action({
+    helpText: "Show segments table",
+    buttonID: "segmentation_button_segments_table",
+    buttonName: 'table_segments',
+    run: function (e) {
+      WindowMaker.show('segmentstable-widget');
+      return true;
+    }
+  }),
+
+  /*new Action({
+    helpText: "Show assembly graph",
+    buttonID: "assembly_graph_button",
+    buttonName: 'table_segments',
+    run: function (e) {
+      WindowMaker.show('assemblygraph-widget');
+      return true;
+    }
+  }),*/
+
+  new Action({
+    helpText: "Show 3D WebGL view",
+    buttonID: "view_3d_webgl_button",
+    buttonName: '3d-view-webgl',
+    run: function (e) {
+      WindowMaker.show('3d-webgl-view');
+    }
+  }),
+
+  new Action({
+    helpText: "Show object tree",
+    buttonID: "data_button_tree",
+    buttonName: 'tree',
+    run: function (e) {
+      WindowMaker.show('object-tree');
+      return true;
+    }
+  }),
+
 ];
 
 var tracingWindowActions = [
@@ -364,6 +434,26 @@ var tracingWindowActions = [
       buttonName: 'graph_widget',
       run: function (e) {
           WindowMaker.show('graph-widget');
+          return true;
+      }
+  }),
+
+  new Action({ 
+      helpText: "Skeleton Analytics widget",
+      buttonID: "button_skeleton_analytics_widget",
+      buttonName: 'skeleton_analytics_widget',
+      run: function (e) {
+          WindowMaker.show('skeleton-analytics-widget');
+          return true;
+      }
+  }),
+
+  new Action({
+      helpText: "Compartment Graph widget",
+      buttonID: "data_button_compartment_graph_widget",
+      buttonName: 'graph_widget',
+      run: function (e) {
+          WindowMaker.show('compartment-graph-widget');
           return true;
       }
   }),

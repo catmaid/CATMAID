@@ -9,6 +9,64 @@ var ProjectStatistics = new function()
     $("#connectors_created").text(data.connectors_created);
   }
 
+  var get_formated_entry = function(data) {
+    var entry = '', points = 0;
+    if( data.hasOwnProperty('new_treenodes') ) {
+      entry += data['new_treenodes'] + ' /';
+      points += data['new_treenodes'];
+    } else {
+      entry += '0 /';
+    };
+    if( data.hasOwnProperty('new_connectors') ) {
+      entry += ' ' + data['new_connectors'] + ' /';
+      points += 10 * data['new_connectors'];
+    } else {
+      entry += ' 0 /';
+    };
+    if( data.hasOwnProperty('new_reviewed_nodes') ) {
+      entry += ' ' + data['new_reviewed_nodes'] + ' /';
+      points += data['new_reviewed_nodes'];
+    } else {
+      entry += ' 0 /';
+    };
+    if( data.hasOwnProperty('new_tags') ) {
+      entry += ' ' + data['new_tags'] + ' /';
+    } else {
+      entry += ' 0 /';
+    };
+    entry += ' <b>' + points + '</b>';
+    return {'entry': entry, 'points': points};
+  }
+
+  var update_user_history = function(data) {
+    $('#project_stats_history_table').empty();
+    var header = '';
+    header += '<tr>';
+    header += '<td>username</td>';
+    for(var i = 0; i < data['days'].length; i++ ) {
+      header += '<td>'+data['daysformatted'][i]+'</td>';
+    }
+    header += '<td>summed points</td>';
+    header += '</tr>';
+    $('#project_stats_history_table').append( header );
+    for(var username in data['stats_table']) {
+      var row = '', weekpointcount = 0;
+      row += '<tr>';
+      if( data['stats_table'].hasOwnProperty( username ) ) {
+        row += '<td>' + username + '</td>';
+        for(var i = 0; i < data['days'].length; i++ ) {
+          var datekey = data['days'][i],
+              formated = get_formated_entry( data['stats_table'][ username ][ datekey ] );
+          row += '<td>'+ formated['entry'] +'</td>';
+          weekpointcount += formated['points'];
+        }
+      }
+      row += '<td>' + weekpointcount + '</td>';
+      row += '</tr>';
+      $('#project_stats_history_table').append( row );
+    }
+  }
+
   var update_piechart = function(data, chart_name) {
     $(chart_name).empty();
     var rpie = Raphael(chart_name, 300, 200);
@@ -188,6 +246,22 @@ var ProjectStatistics = new function()
             alert(jso.error);
           } else {
             update_piechart(jso, "piechart_reviewer_holder");
+          }
+        }
+      }
+      return true;
+    });
+
+    requestQueue.register(django_url + project.id + '/stats-user-history', "POST", {
+      "pid": project.id
+    }, function (status, text, xml) {
+      if (status == 200) {
+        if (text && text != " ") {
+          var jso = $.parseJSON(text);
+          if (jso.error) {
+            alert(jso.error);
+          } else {
+            update_user_history(jso);
           }
         }
       }

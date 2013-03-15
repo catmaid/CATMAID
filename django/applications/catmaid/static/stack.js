@@ -78,15 +78,21 @@ function Stack(
 	 */
 	var update = function( completionCallback )
 	{
+		
 		self.overview.redraw();
 		updateScaleBar();
 		
 		//statusBar.replaceLast( "[" + ( Math.round( x * 10000 * resolution.x ) / 10000 ) + ", " + ( Math.round( y * 10000 * resolution.y ) / 10000 ) + "]" );
 		
 		self.redraw(completionCallback);
+
+		if( tool ) {
+			tool.redraw();
+		}
 		
 		return
 	}
+	this.update = update;
 	
 	/**
 	 * Get stack coordinates of the current view's top left corner.
@@ -312,6 +318,7 @@ function Stack(
 		
 		return;
 	}
+	this.resize = resize
 	
 	/**
 	 * Get the stack window.
@@ -472,7 +479,7 @@ function Stack(
 				// treenode table. setting the focus to a dummy
 				// href element does not work
 				$('#search_labels').blur();
-				project.setFocusedStack( self );
+				//project.setFocusedStack( self );
 				break;
 			case CMWWindow.BLUR:
 				self.overview.getView().style.zIndex = "5";

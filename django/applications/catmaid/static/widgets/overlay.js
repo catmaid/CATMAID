@@ -104,7 +104,8 @@ var SkeletonAnnotations = new function()
       return;
     }
     // Else, synchronize:
-    ObjectTree.requestOpenTreePath(node);
+    if( node )
+      ObjectTree.requestOpenTreePath(node.skeleton_id);
   };
 
   var refreshAllWidgets = function()
@@ -259,6 +260,10 @@ var SkeletonAnnotations = new function()
       }
     };
 
+    this.setNeuronNameInTopbar = function( neuronname, skeletonid ) {
+      $('#neuronName').text(neuronname + ' (Skeleton ID: '+ skeletonid +')');
+    }
+
     this.activateNode = function(node)
     {
       if (node)
@@ -295,7 +300,7 @@ var SkeletonAnnotations = new function()
                   }
                   statusBar.replaceLastHTML(message);
                   neuronid = json[0].id;
-                  $('#neuronName').text(json[0].name + ' (Skeleton ID: '+ node.skeleton_id+')');
+                  self.setNeuronNameInTopbar(json[0].name, node.skeleton_id);
                   project.selectedObjects.selectedneuron = neuronid;
                   project.selectedObjects.selectedskeleton = parseInt(node.skeleton_id);
                 }
@@ -331,14 +336,16 @@ var SkeletonAnnotations = new function()
         // Deselect all from Object Tree. It is necessary because the neuron ID
         // would be used to create the next skeleton, and it would fail
         // if the neuron doesn't exist.
-        project.selectedObjects.selectedneuron = null;
-        project.setSelectedSkeleton(null);
+        project.setSelectObject( null, null );
         $('#tree_object').jstree("deselect_all");
         self.recolorAllNodes();
       }
 
-      // if displayed in 3d viewer, update position
-      WebGLApp.updateActiveNode();
+      if( $( "#view_in_3d_webgl_widget").length ) {
+        // if displayed in 3d viewer, update position
+        WebGLApp.showActiveNode();
+        WebGLApp.updateActiveNodePosition();
+      }
 
     };
 
@@ -1545,6 +1552,38 @@ var SkeletonAnnotations = new function()
       return currentmode;
     };
 
+    this.updateNeuronName = function() {
+      var activeSkeleton = SkeletonAnnotations.getActiveSkeletonId();
+      if( activeSkeleton ) {
+        requestQueue.register(django_url + project.id + '/skeleton/' + SkeletonAnnotations.getActiveSkeletonId() + '/neuronname', "POST", {}, function (status, text, xml) {
+          var e;
+          if (status === 200) {
+            if (text && text !== " ") {
+              e = $.parseJSON(text);
+              if (e.error) {
+                alert(e.error);
+              }
+              var new_neuronname = prompt("Change neuron name", e['neuronname']);
+              $.post(django_url + project.id + '/object-tree/instance-operation', {
+                "operation": "rename_node",
+                "id": e['neuronid'],
+                "title": new_neuronname,
+                "classname": "neuron",
+                "pid": project.id
+              }, function (r) {
+                  r = $.parseJSON(r);
+                  if(r['error']) {
+                      alert(r['error']);
+                  }
+                  self.setNeuronNameInTopbar(new_neuronname, activeSkeleton)
+                  refreshAllWidgets();
+              });
+            }
+          }
+        });
+      }
+    };
+
     this.setConfidence = function(newConfidence, toConnector) {
 
       var atn = self.getActiveNode();
@@ -1724,10 +1763,21 @@ var SkeletonAnnotations = new function()
         if (activeNodePosition === null) {
           alert("No active node to go to!");
         } else {
-          project.moveTo(
-            self.pix2physZ(activeNodePosition.z),
-            self.pix2physY(activeNodePosition.y),
-            self.pix2physX(activeNodePosition.x));
+          requestQueue.register(django_url + project.id + '/node/get_location', "POST", {
+            pid: project.id,
+            tnid: atn.id
+          }, function (status, text, xml) {
+            if (status === 200) {
+              if (text && text != " ") {
+                var jso = $.parseJSON(text);
+                if (jso.error) {
+                  alert(jso.error);
+                } else {
+                  project.moveTo(jso[3], jso[2], jso[1], undefined, function() { });
+                }
+              }
+            }
+          });
         }
         break;
       case "golastedited":

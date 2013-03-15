@@ -535,7 +535,6 @@ function handle_openProjectStack( status, text, xml )
 			stack.addLayer( "TileLayer", tilelayer );
 
 			$.each(e.overlay, function(key, value) {
-        console.log('add tile layer for overlay value', e, value);
 				var tilesource2 = getTileSource( value.tile_source_type,
 					value.image_base, value.file_extension );
 				var tilelayer2 = new TileLayer(
@@ -558,7 +557,10 @@ function handle_openProjectStack( status, text, xml )
 			  project.setTool( new Navigator() );
 			} else if ( inittool === 'canvastool' ) {
         project.setTool( new CanvasTool() );
+      } else if ( inittool === 'segmentationtool' ) {
+        project.setTool( new SegmentationTool() );
       }
+
 
 			//! if the stack was initialized by an URL query, move it to a given position
 			if ( pid == e.pid && sids.length > 0 )
@@ -994,6 +996,8 @@ var realInit = function()
 		toolActions, 'toolbox_project', ''));
 	$('#toolbox_edit').replaceWith(createButtonsFromActions(
 		editToolActions, 'toolbox_edit', ''));
+  $('#toolbox_segmentation').replaceWith(createButtonsFromActions(
+    segmentationWindowActions, 'toolbox_segmentation', ''));
 	$('#toolbox_data').replaceWith(createButtonsFromActions(
 		tracingWindowActions, 'toolbox_data', ''));
 
@@ -1004,6 +1008,7 @@ var realInit = function()
 	document.getElementById( "toolbox_project" ).style.display = "none";
 	document.getElementById( "toolbox_edit" ).style.display = "none";
 	document.getElementById( "toolbox_data" ).style.display = "none";
+  document.getElementById( "toolbox_segmentation" ).style.display = "none";
 	document.getElementById( "toolbox_show" ).style.display = "none";
 	
 	document.getElementById( "account" ).onkeydown = login_oninputreturn;

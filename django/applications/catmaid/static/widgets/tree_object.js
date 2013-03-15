@@ -6,8 +6,7 @@ var ObjectTree = new function()
 
   this.deselectAll = function() {
     $('#tree_object').jstree("deselect_all");
-    project.setSelectedSkeleton( null );
-    project.selectedObjects.selectedneuron = null;
+    project.setSelectObject( null, null );
   }
 
   this.renameCurrentActiveNode = function() {
@@ -284,6 +283,24 @@ var ObjectTree = new function()
                 this.create(obj, "inside", att, null, true);
               }
             },*/
+
+              "create_assembly": {
+                  "separator_before": true,
+                  "separator_after": true,
+                  "label": "Create assembly",
+                  "action": function (obj) {
+                      att = {
+                          "state": "open",
+                          "data": "assembly",
+                          "attr": {
+                              "rel": "assembly",
+                              "relname": "part_of"
+                          }
+                      };
+                      this.create(obj, "inside", att, null, true);
+                  }
+                },
+
               "rename_neuron": {
                 "separator_before": true,
                 "separator_after": false,
@@ -398,6 +415,45 @@ var ObjectTree = new function()
               },
               "ccp": false
             };
+          } else if (type_of_node === "assembly") {
+            menu = {
+              "rename_assembly": {
+                "separator_before": true,
+                "separator_after": false,
+                "label": "Rename assembly",
+                "action": function (obj) {
+                  this.rename(obj);
+                }
+              },
+              "remove_assembly": {
+                "separator_before": false,
+                "icon": false,
+                "separator_after": false,
+                "label": "Remove assembly",
+                "action": function (obj) {
+                  this.remove(obj);
+                }
+              },
+                "cut": {
+                    "separator_before": true,
+                    "icon": false,
+                    "separator_after": false,
+                    "label": "Cut",
+                    "action": function (obj) {
+                        this.cut(obj);
+                    }
+                },
+                "paste": {
+                    "separator_before": false,
+                    "icon": false,
+                    "separator_after": false,
+                    "label": "Paste",
+                    "action": function (obj) {
+                        this.paste(obj);
+                    }
+                }
+              };
+
           } else if (type_of_node === "skeleton") {
             menu = {
               "show_webglviewer": {
@@ -606,7 +662,7 @@ var ObjectTree = new function()
             "icon": {
               "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/neuron/neuron.png"
             },
-            "valid_children": ["skeleton"],
+            "valid_children": ["skeleton", "assembly"],
             "start_drag": true,
             "select_node": true
           },
@@ -617,6 +673,14 @@ var ObjectTree = new function()
             "valid_children": "none",
             "start_drag": true,
             "select_node": true
+          },
+          "assembly": {
+                "icon": {
+                    "image": "widgets/themes/kde/jsTree/neuron/skeleton.png"
+                },
+                "valid_children": "none",
+                "start_drag": true,
+                "select_node": true
           },
           "modelof": {
             "icon": {
@@ -664,16 +728,7 @@ var ObjectTree = new function()
     $(object_tree_id).bind("select_node.jstree", function (event, data) {
       id = parseInt( data.rslt.obj.attr("id").replace("node_", "") );
       type = data.rslt.obj.attr("rel");
-      if (type === "neuron") {
-        project.selectedObjects.selectedneuron = id;
-        project.setSelectedSkeleton( null );
-      } else if (type === "skeleton") {
-        project.selectedObjects.selectedneuron = null;
-        project.setSelectedSkeleton( id );
-      } else {
-        project.selectedObjects.selectedneuron = null;
-        project.setSelectedSkeleton( null );
-      }
+      project.setSelectObject( type, id );
     });
 
     $(object_tree_id).bind("create.jstree", function (e, data) {
@@ -712,8 +767,8 @@ var ObjectTree = new function()
       }, function (r) {
           r = $.parseJSON(r);
           if(r['error']) {
-              alert(r['error']);
-              $.jstree.rollback(data.rlbk);
+            alert(r['error']);
+            $.jstree.rollback(data.rlbk);
           }
       });
     });
@@ -865,9 +920,9 @@ var ObjectTree = new function()
     }
   };
 
-  this.requestOpenTreePath = function(treenode) {
+  this.requestOpenTreePath = function(class_instance_id) {
     // Check if the node is already highlighted
-    if ($('#node_' + treenode.skeleton_id + ' a').hasClass('jstree-clicked')) {
+    if ($('#node_' + class_instance_id + ' a').hasClass('jstree-clicked')) {
       return;
     }
 
@@ -878,7 +933,7 @@ var ObjectTree = new function()
       type: 'POST',
       //url: "model/tree.object.expand.php",
       url: django_url + project.id + '/object-tree/expand',
-      data: { "skeleton_id" : treenode.skeleton_id,
+      data: { "class_instance_id" : class_instance_id,
               "pid" : project.id },
       success: function (r, status) {
                  r = $.parseJSON(r);

@@ -25,6 +25,18 @@ def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
         'count': Treenode.objects.filter(skeleton_id=skeleton_id).count(),
         'skeleton_id': skeleton_id}), mimetype='text/json')
 
+def _get_neuronname_from_skeletonid( project_id, skeleton_id ):
+    p = get_object_or_404(Project, pk=project_id)
+    qs = ClassInstanceClassInstance.objects.filter(
+                relation__relation_name='model_of',
+                project=p,
+                class_instance_a=int(skeleton_id)).select_related("class_instance_b")
+    return {'neuronname': qs[0].class_instance_b.name,
+        'neuronid': qs[0].class_instance_b.id }
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def neuronname(request, project_id=None, skeleton_id=None):
+    return HttpResponse(json.dumps(_get_neuronname_from_skeletonid(project_id, skeleton_id)), mimetype='text/json')
 
 @requires_user_role(UserRole.Annotate)
 def split_skeleton(request, project_id=None):
@@ -258,9 +270,10 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
     return partners
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+#@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_info_raw(request, project_id=None, skeleton_id=None):
     # sanitize arguments
+    synaptic_count_high_pass = int( request.POST.get( 'threshold', 0 ) )
     skeleton_id = int(skeleton_id)
     project_id = int(project_id)
     #
@@ -283,8 +296,8 @@ def skeleton_info_raw(request, project_id=None, skeleton_id=None):
     outgoing = _connected_skeletons(skeleton_id, relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'], relation_ids['model_of'], cursor)
     # Sort by number of connections
     result = {
-        'incoming': list(reversed(sorted(incoming.values(), key=itemgetter('synaptic_count')))),
-        'outgoing': list(reversed(sorted(outgoing.values(), key=itemgetter('synaptic_count'))))
+        'incoming': [e for e in list(reversed(sorted(incoming.values(), key=itemgetter('synaptic_count')))) if e['synaptic_count'] >= synaptic_count_high_pass],
+        'outgoing': [e for e in list(reversed(sorted(outgoing.values(), key=itemgetter('synaptic_count'))))if e['synaptic_count'] >= synaptic_count_high_pass]
     }
     json_return = json.dumps(result, sort_keys=True, indent=4)
     return HttpResponse(json_return, mimetype='text/json')
@@ -570,7 +583,10 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
         from_skid = from_treenode.skeleton_id
 
         if from_skid == to_skid:
-            raise Exception('Cannot join treenodes of the same skeleton, would introduce a loop.')
+            raise Exception('Cannot join treenodes of the same skeleton, this would introduce a loop.')
+        
+        from_neuron = _get_neuronname_from_skeletonid( project_id, from_skid )
+        to_neuron = _get_neuronname_from_skeletonid( project_id, to_skid )
 
         # Reroot to_skid at to_treenode if necessary
         response_on_error = 'Could not reroot at treenode %s' % to_treenode_id
@@ -606,7 +622,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
         response_on_error = 'Could not update parent of treenode with ID %s' % to_treenode_id
         Treenode.objects.filter(id=to_treenode_id).update(parent=from_treenode_id, editor=user)
 
-        insert_into_log(project_id, user.id, 'join_skeleton', from_treenode.location, 'Joined skeleton with ID %s into skeleton with ID %s' % (to_skid, from_skid))
+        insert_into_log(project_id, user.id, 'join_skeleton', from_treenode.location, 'Joined skeleton with ID %s (neuron: %s) into skeleton with ID %s (neuron: %s)' % (to_skid, to_neuron['neuronname'], from_skid, from_neuron['neuronname']) )
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))

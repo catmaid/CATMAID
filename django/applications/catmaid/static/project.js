@@ -60,7 +60,7 @@ function Project( pid )
 			self.moveTo( c.z, c.y, c.x );
 		}
 		
-		self.setFocusedStack( stack );
+		// self.setFocusedStack( stack );
 		
 		// only set the tool for the first stack
 		if ( stacks.length == 1 )
@@ -68,6 +68,8 @@ function Project( pid )
 			if ( !tool )
 				tool = new Navigator();
 			self.setTool( tool );
+			// self.focusedStack.setTool( tool );
+
 		}
 		
 		return;
@@ -113,7 +115,7 @@ function Project( pid )
 		self.focusedStack = stack;
 		if ( tool )
 			self.focusedStack.setTool( tool );
-		//window.onresize();
+		window.onresize();
 		return;
 	}
 	
@@ -137,18 +139,28 @@ function Project( pid )
 		'tree_object': {},
 		'table_treenode': {},
 		'selectedneuron': null,
-		'selectedskeleton': null
+		'selectedskeleton': null,
+        'selectedassembly': null
 	};
 
-    this.setSelectedSkeleton = function( skeleton_id ) {
-        this.selectedObjects.selectedskeleton = skeleton_id;
-
-        // depending on the chosen tool, trigger functions
-        if( self.getTool().toolname === 'canvastool' ) {
-            self.getTool().on_skeleton_id_change( this.selectedObjects.selectedskeleton );
+    this.setSelectObject = function( type, id ) {
+        this.selectedObjects.selectedneuron = null;
+        this.selectedObjects.selectedskeleton = null;
+        this.selectedObjects.selectedassembly = null;
+        if( type == "neuron" ) {
+            this.selectedObjects.selectedneuron = id;
+        } else if( type == "skeleton" ) {
+            this.selectedObjects.selectedskeleton = id;
+        } else if( type == "assembly" ) {
+            this.selectedObjects.selectedassembly = id;
         }
-    }
+        // if the segmentation tool is select, we need to update
+        // the assembly id
+        if( self.getTool().toolname === 'segmentationtool' ) {
+            SegmentationAnnotations.set_current_assembly_id( this.selectedObjects.selectedassembly );
+        }
 
+    };
 
     this.hideToolbars = function()
 	{
@@ -157,6 +169,11 @@ function Project( pid )
 		document.getElementById( "toolbar_trace" ).style.display = "none";
 	}
 	
+    this.hideToolboxes = function()
+	{
+		document.getElementById( "toolbox_segmentation" ).style.display = "none";
+		document.getElementById( "toolbox_data" ).style.display = "none";
+	}
 	
 	this.setTool = function( newTool )
 	{
@@ -164,13 +181,24 @@ function Project( pid )
 			tool.destroy();
 		tool = newTool;
 		
-		if ( !self.focusedStack && stacks.length > 0 )
-			self.focusedStack = stacks[ 0 ];
+		self.hideToolboxes();
+        if( self.getTool().toolname === 'segmentationtool' ) {
+            document.getElementById( "toolbox_segmentation" ).style.display = "block";
+        } else if( self.getTool().toolname === 'tracingtool' ) {
+        	document.getElementById( "toolbox_data" ).style.display = "block";
+        }
 		
-		if ( self.focusedStack )
-			self.focusedStack.getWindow().focus();
+		if ( !self.focusedStack && stacks.length > 0 ) {
+			self.setFocusedStack( stacks[ 0 ] )
+		} 
 
-		window.onresize();
+		self.focusedStack.setTool( tool )
+
+		if ( self.focusedStack ) {
+			if (!self.focusedStack.getWindow().hasFocus())
+				self.focusedStack.getWindow().focus();
+		}
+		//window.onresize();
 		WindowMaker.setKeyShortcuts();
 		return;
 	}
@@ -244,6 +272,7 @@ function Project( pid )
         // TODO: bars should be unset by tool on unregister
 		document.getElementById("toolbox_edit").style.display = "none";
 		document.getElementById("toolbox_data").style.display = "none";
+		document.getElementById("toolbox_segmentation").style.display = "none";
         document.getElementById( "toolbox_project" ).style.display = "none";
         document.getElementById( "toolbar_nav" ).style.display = "none";
 
@@ -260,12 +289,14 @@ function Project( pid )
 		editable = bool;
 		if (editable) {
 			document.getElementById("toolbox_edit").style.display = "block";
-			document.getElementById("toolbox_data").style.display = "block";
+			//document.getElementById("toolbox_data").style.display = "block";
+			//document.getElementById("toolbox_segmentation").style.display = "block";
 		}
 		else 
 		{
 			document.getElementById("toolbox_edit").style.display = "none";
-			document.getElementById("toolbox_data").style.display = "none";
+			//document.getElementById("toolbox_data").style.display = "none";
+			//document.getElementById("toolbox_segmentation").style.display = "none";
 		}
 		window.onresize();
 		

@@ -259,7 +259,7 @@ function Stack(
 		} else {
 			// Otherwise do the next layer's beforeMove():
 			layerWithBeforeMove = layersWithBeforeMove.shift();
-			l.beforeMove(function () {
+			layerWithBeforeMove.beforeMove(function () {
 				self.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
 			});
 		}

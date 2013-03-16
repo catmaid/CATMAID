@@ -76,3 +76,34 @@ SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}
 # applications can hook into specific site(s) and a single database can manage
 # content of multiple sites.
 SITE_ID = 1
+
+# A couple of functions useful for generating default directories to
+# be used in the settings files:
+
+import os, errno
+
+def relative(*path_components):
+    '''Returns a path relative to the directory this file is in'''
+
+    base = os.path.abspath(os.path.dirname(__file__))
+    all_parts = [base] + list(path_components)
+    return os.path.realpath(os.path.join(*all_parts))
+
+# From: http://stackoverflow.com/q/600268/223092
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
+import sys
+from os.path import realpath
+
+PROJECT_ROOT = relative('..', '..')
+for subdirectory in ('projects', 'applications', 'lib'):
+    full_path = os.path.join(PROJECT_ROOT, subdirectory)
+    sys.path.insert(0, full_path)

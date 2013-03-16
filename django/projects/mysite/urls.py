@@ -1,5 +1,6 @@
 from django.conf.urls.defaults import patterns, include, url
 from django.conf import settings
+from django.views.generic import TemplateView
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -12,8 +13,12 @@ num = r'[-+]?[0-9]*\.?[0-9]+'
 # A regular expression matching lists of integers with comma as delimiter
 intlist = r'[0-9]+(,[0-9]+)*'
 
-# Neuron Catalog
+# Add the main index.html page at the root:
 urlpatterns = patterns('',
+    (r'^$', TemplateView.as_view(template_name="index.html")))
+
+# Neuron Catalog
+urlpatterns += patterns('',
     (r'^(?P<project_id>\d+)/multiple-presynaptic-terminals$', 'vncbrowser.views.multiple_presynaptic_terminals'),
     (r'^(?P<project_id>\d+)/go-to/connector/(?P<connector_id>\d+)/stack/(?P<stack_id>\d+)$', 'vncbrowser.views.goto_connector'),
 
@@ -49,31 +54,51 @@ urlpatterns += patterns(
 
     (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'catmaid.control.adjacency_matrix'),
     (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'catmaid.control.skeletonlist_subgraph'),
+    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'catmaid.control.skeleton_graph'),
     (r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', 'catmaid.control.all_shared_connectors'),
 
 
     # Segmentation tool
+    (r'^(?P<project_id>\d+)/assembly/create-assembly-and-neuron$', 'catmaid.control.create_assembly_and_neuron'),
+    (r'^(?P<project_id>\d+)/assembly/(?P<assembly_id>\d+)/neuronname$', 'catmaid.control.update_assembly_neuronname'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/assembly/save$', 'catmaid.control.save_assembly'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice-info$', 'catmaid.control.slice_info'),
 
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/components-for-point$', 'catmaid.control.get_component_list_for_point'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/componentimage$', 'catmaid.control.get_component_image'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-cog$', 'catmaid.control.slices_cog'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-tiles$', 'catmaid.control.get_slices_tiles'),
+    
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-at-location$', 'catmaid.control.slices_at_location'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice$', 'catmaid.control.get_slice'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/delete-slice-from-assembly$', 'catmaid.control.delete_slice_from_assembly'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/contour$', 'catmaid.control.slice_contour'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slice/contour-highres$', 'catmaid.control.slice_contour_highres'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segments-for-slice-right$', 'catmaid.control.segments_for_slice_right'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segments-for-slice-left$', 'catmaid.control.segments_for_slice_left'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/constraint/constraintset-for-segment$', 'catmaid.control.constraintset_for_segment'),
+    
+
+
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put-components$', 'catmaid.control.put_components'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-components$', 'catmaid.control.get_saved_components'),
+
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-of-assembly-for-section$', 'catmaid.control.slices_of_assembly_for_section'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/slices-of-assembly$', 'catmaid.control.slices_of_assembly'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segments-of-assembly$', 'catmaid.control.segments_of_assembly'),
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/generate-segmentation-file$', 'catmaid.control.create_segmentation_file'),
-    # (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/segmentation$', 'catmaid.control.get_segementation_tile'),
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put-drawing$', 'catmaid.control.put_drawing'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/delete-drawing$', 'catmaid.control.delete_drawing'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-drawings-by-component-id$', 'catmaid.control.get_saved_drawings_by_component_id'),
+
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-saved-drawings-by-view$', 'catmaid.control.get_saved_drawings_by_view'),
 
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/initialize_components$', 'catmaid.control.initialize_components_for_skeleton'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-drawing-enum$', 'catmaid.control.get_drawing_enum'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-mesh$', 'catmaid.control.generate_mesh'),
+
 
     # ------
 
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/node_count$', 'catmaid.control.node_count'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuronname$', 'catmaid.control.neuronname'),
     (r'^(?P<project_id>\d+)/skeleton/node/(?P<treenode_id>\d+)/node_count$', 'catmaid.control.node_count'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'catmaid.control.skeleton_swc'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', 'catmaid.control.skeleton_json'),
@@ -89,6 +114,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/skeleton/join$', 'catmaid.control.join_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/join_interpolated$', 'catmaid.control.join_skeletons_interpolated'),
     (r'^(?P<project_id>\d+)/skeleton/reroot$', 'catmaid.control.reroot_skeleton'),
+    (r'^(?P<project_id>\d+)/skeleton/analytics$', 'catmaid.control.analyze_skeletons'),
 
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', 'catmaid.control.get_all_skeletons_of_neuron'),
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', 'catmaid.control.give_neuron_to_other_user'),
@@ -132,7 +158,8 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/stats-reviewer$', 'catmaid.control.stats_reviewer'),
     (r'^(?P<project_id>\d+)/stats-summary$', 'catmaid.control.stats_summary'),
     (r'^(?P<project_id>\d+)/stats-history$', 'catmaid.control.stats_history'),
-
+    (r'^(?P<project_id>\d+)/stats-user-history$', 'catmaid.control.stats_user_history'),
+    
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', 'catmaid.control.stack_info'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/models$', 'catmaid.control.stack_models'),
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tile$', 'catmaid.control.get_tile'),

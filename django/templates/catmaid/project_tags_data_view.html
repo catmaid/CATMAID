@@ -65,7 +65,7 @@
 							{% endfor %}
 							{# Optionally, add the the neuron catalogue link #}
 							{% if p.is_catalogueable and catalogue_link %}
-								<dd><a href="{{ settings.CATMAID_DJANGO_URL }}{{ p.id }}">Neuron Catalogue</a></dd>
+								<dd><a href="{{ settings.CATMAID_URL }}{{ p.id }}">Neuron Catalogue</a></dd>
 							{% endif %}
 						</dl>
 					{% endif %}

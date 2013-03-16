@@ -56,51 +56,34 @@ following, a Nginx configuration is provided to give access to CATMAID:
       listen 80;
       server_name <CATMAID-HOST>;
 
-      # Set CATMAID root folder *without trailing slash,
-      # e.g. set $rootfolder /srv/http/CATMAID;
-      set $rootfolder '<CATMAID-PATH>';
-
-      location /catmaid/ {
-          alias $rootfolder/httpdocs/;
-          index  index.html;
-      }
-
       # Give access to Django's static files
-      location /catmaid/dj-static/ {
-          alias $rootfolder/django/static/;
+      location /catmaid/static/ {
+          alias <CATMAID-PATH>/django/static/;
       }
 
       # Route all CATMAID Django WSGI requests to the Gevent WSGI server
-      location /catmaid/dj/ {
+      location /catmaid/ {
           proxy_pass http://catmaid-wsgi/;
           proxy_redirect http://catmaid-wsgi/ http://$host/;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
       }
-
-      # Let PHP-FPM deal with PHP files
-      location ~ /catmaid/(.*\.php)$ {
-          alias $rootfolder/httpdocs/$1;
-          fastcgi_pass   unix:/run/php-fpm/php-fpm.sock;
-          fastcgi_param  PHP_VALUE "include_path=${rootfolder}/inc:.";
-          fastcgi_index  index.php;
-          include        fastcgi.conf;
-      }
   }
 
-The first block (upstream) defines where the Gevent server will be available.
-In this case, we assumed we can access it under 127.0.0.1:8080. The server block
-defines the actual web server. There you have to adjust the *<CATMAID-host>* to
-where the CATMAID instance should be available (e.g. catmaid.example.org). Next,
-the root path of your CATMAID installation needs to replace the *<CATMAID-path>*
-place-holder. The first location block defines an index page when the root of
-your *<CATMAID-host>* is requested. The second block gives access to Django's
-static files. The next location block passes all requests that start with */dj/*
-to the WSGI server defined before. An the last location block allows the
-execution of PHP scripts. Note that you need to replace in the PHP block
-*<CATMAID-path>* as well.
+This setup expects CATMAID to be accessible from a `catmaid` subdirectory
+under the domain's root. To use this configuration when CATMAID lives on
+the domain's root, just remove `/catmaid` from every location block (and
+do the same in Django's settings.py, of course).
 
-To use this configuration when CATMAID liles on the domain's root, just remove
-`/catmaid` from every location block.
+The first block (upstream) defines where the Gevent server will be available.
+In this case, we assumed we can access it under `127.0.0.1:8080`. The server
+block defines the actual web server.
+
+There you have to adjust `<CATMAID-HOST>` to where your CATMAID instance
+should be available (e.g. catmaid.example.org). The first location block
+defines from where the static files should be served. The `<CATMAID-PATH>`
+placeholder needs to be replaced with the absolute path to your CATMAID
+folder. The second location block passes all requests to the WSGI server
+defined before and allows therefore the execution of Django.
 
 Gevent run script
 #################

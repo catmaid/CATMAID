@@ -111,7 +111,10 @@ function TileLayer(
 		
 		var xd = 0;
 		var yd = 0;
-		
+
+		/* ignore this for now,
+		 * it just causes some flickering.
+		 * find a way to handle in-plane translation for affine later.
 		if ( stack.z == stack.old_z && stack.s == stack.old_s )
 		{
 			var old_fr = Math.floor( stack.old_yc / effectiveTileHeight );
@@ -181,6 +184,7 @@ function TileLayer(
 				tiles.push( new_row );
 			}
 		}
+		*/
 
 		if ( stack.s != stack.old_s)
 		{

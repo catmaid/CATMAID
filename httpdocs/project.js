@@ -280,6 +280,7 @@ function Project( pid )
 		stacks,
 		completionCallback)
 	{
+		console.log( "DEPRECATED: Project.moveToInStacks" );
 		var stackToMove;
 		if (stacks.length === 0) {
 			// FIXME: do we need a callback for tool.redraw as well?
@@ -310,11 +311,11 @@ function Project( pid )
 		sp,
 		completionCallback)
 	{
+		console.log( "DEPRECATED: Project.moveTo" );
 		var stacksToMove = [];
 		self.coordinates.x = xp;
 		self.coordinates.y = yp;
 		self.coordinates.z = zp;
-
 		
 		for ( var i = 0; i < stacks.length; ++i )
 		{
@@ -322,6 +323,45 @@ function Project( pid )
 		}
 
 		self.moveToInStacks( zp, yp, xp, sp, stacksToMove, completionCallback );
+	};
+
+	this.moveToViewInStacks = function(
+			projectToViewTransform,
+			stacks,
+			completionCallback)
+	{
+		var stackToMove;
+		if (stacks.length === 0) {
+			// FIXME: do we need a callback for tool.redraw as well?
+			if ( tool && tool.redraw )
+				tool.redraw();
+			if (typeof completionCallback !== "undefined") {
+				completionCallback();
+			}
+		} else {
+			stackToMove = stacks.shift();
+			stackToMove.moveToProjectView( projectToViewTransform,
+				    function() {
+						self.moveToViewInStacks( projectToViewTransform, stacks, completionCallback );
+					} );
+		}
+	};
+
+	/**
+	 * move all stacks to the global coordinates view
+	 */
+	this.moveToView = function(
+		projectToViewTransform,
+		completionCallback)
+	{
+		var stacksToMove = [];
+		for ( var i = 0; i < stacks.length; ++i )
+		{
+			stacksToMove.push( stacks[ i ] );
+		}
+
+		self.projectToViewTransform = projectToViewTransform;
+		self.moveToViewInStacks( projectToViewTransform, stacksToMove, completionCallback );
 	};
 
   this.updateTool = function()
@@ -465,6 +505,8 @@ function Project( pid )
 	var view = rootWindow.getFrame();
 	view.className = "projectView";
 	
+	self.projectToViewTransform = new THREE.Matrix4();
+
 	this.coordinates = 
 	{
 		x : 0,

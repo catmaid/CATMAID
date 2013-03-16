@@ -43,8 +43,6 @@ function Stack(
     inverse_mouse_wheel //!< {boolean} Whether to inverse mouse wheel for changing sections
 )
 {
-	var n = dimension.length;
-	
 	/**
 	 * update the scale bar (x-resolution) to a proper size
 	 */
@@ -169,9 +167,11 @@ function Stack(
 			}
 		}
 
-		self.yc = Math.floor( self.y * self.scale - ( self.viewHeight / 2 ) );
-		self.xc = Math.floor( self.x * self.scale - ( self.viewWidth / 2 ) );
-
+		// TODO: remove
+		{
+			self.yc = Math.floor( self.y * self.scale - ( self.viewHeight / 2 ) );
+			self.xc = Math.floor( self.x * self.scale - ( self.viewWidth / 2 ) );
+		}
 
 		// Semaphore pattern from: http://stackoverflow.com/a/3709809/223092
 		for ( var key in layers ) {
@@ -199,13 +199,16 @@ function Stack(
 		 */
 		var a = view.offsetWidth;
 
-		self.old_z = self.z;
-		self.old_y = self.y;
-		self.old_x = self.x;
-		self.old_s = self.s;
-		self.old_scale = self.scale;
-		self.old_yc = self.yc;
-		self.old_xc = self.xc;
+		// TODO: remove
+		{
+			self.old_z = self.z;
+			self.old_y = self.y;
+			self.old_x = self.x;
+			self.old_s = self.s;
+			self.old_scale = self.scale;
+			self.old_yc = self.yc;
+			self.old_xc = self.xc;
+		}
 
 		return 2;
 	}
@@ -228,6 +231,7 @@ function Stack(
 
 	this.moveToAfterBeforeMoves = function( zp, yp, xp, sp, completionCallback, layersWithBeforeMove )
 	{
+		console.log( "DEPRECATED: Stack.moveToAfterBeforeMoves" );
 		var layerWithBeforeMove;
 
 		if (layersWithBeforeMove.length == 0) {
@@ -254,6 +258,7 @@ function Stack(
 			else self.z = z2;
 			self.z = Math.max( 0, Math.min( MAX_Z, self.z ) );
 
+//			console.log( "self.x = " + self.x + ", self.y = " + self.y + ", self.z = " + self.z + ", self.s = " + self.s + ", self.scale = " + self.scale );
 			update(completionCallback);
 
 		} else {
@@ -270,6 +275,7 @@ function Stack(
 	 */
 	this.moveTo = function( zp, yp, xp, sp, completionCallback )
 	{
+		console.log( "DEPRECATED: Stack.moveTo" );
 		var layersWithBeforeMove = [];
 		for ( var key in layers ) {
 			if (layers.hasOwnProperty(key)) {
@@ -282,18 +288,77 @@ function Stack(
 
 		self.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
 	}
-	
+    
+    this.moveToProjectViewAfterBeforeMoves = function( projectToViewTransform, completionCallback, layersWithBeforeMove )
+	{
+		var layerWithBeforeMove;
+
+		if (layersWithBeforeMove.length == 0) {
+			// Then carry on to the actual move:
+
+			self.stackToViewTransform.multiplyMatrices( projectToViewTransform, self.stackToProjectTransform );
+
+			// TODO remove
+			{
+				var p = new THREE.Vector3();
+				var m = new THREE.Matrix4();
+				m.getInverse( self.stackToViewTransform );
+				p.applyMatrix4( m );
+				self.x = Math.max( 0, Math.min( MAX_X, Math.round( p.x ) ) );
+				self.y = Math.max( 0, Math.min( MAX_Y, Math.round( p.y ) ) );
+				self.z = Math.max( 0, Math.min( MAX_Z, Math.round( p.z ) ) );
+				p.getScaleFromMatrix( m );
+				self.scale = 1 / p.getComponent( 0 );
+				var sp = - Math.log( self.scale ) / Math.LN2;
+				self.s = Math.max( self.MIN_S, Math.min( self.MAX_S, Math.round( sp ) ) );
+			}
+
+//			console.log( "self.x = " + self.x + ", self.y = " + self.y + ", self.z = " + self.z + ", self.s = " + self.s + ", self.scale = " + self.scale );
+			update( completionCallback );
+
+		} else {
+			// Otherwise do the next layer's beforeMove():
+			layerWithBeforeMove = layersWithBeforeMove.shift();
+			layerWithBeforeMove.beforeMove(function () {
+				self.moveToProjectViewAfterBeforeMoves( projectToViewTransform, completionCallback, layersWithBeforeMove );
+			});
+		}
+	}
+
+    /**
+	 * move to project view
+	 */
+	this.moveToProjectView = function( projectToViewTransform, completionCallback )
+	{
+		var layersWithBeforeMove = [];
+		for ( var key in layers ) {
+			if (layers.hasOwnProperty(key)) {
+				l = layers[key];
+				if (l.beforeMove) {
+					layersWithBeforeMove.push(l);
+				}
+			}
+		}
+
+		self.moveToProjectViewAfterBeforeMoves( projectToViewTransform, completionCallback, layersWithBeforeMove );
+	}
+
 	/**
 	 * move to pixel coordinates
 	 */
 	this.moveToPixel = function( zp, yp, xp, sp )
 	{
-		project.moveTo(
-			zp * resolution.z + translation.z,
-			yp * resolution.y + translation.y,
-			xp * resolution.x + translation.x,
-			sp );
-		
+//		console.log( "stack.moveToPixel( " + zp + ", " + yp + ", " + xp + ", " + sp + " )" );
+		var p = new THREE.Vector3( xp, yp, zp );
+		p.applyMatrix4( self.stackToProjectTransform );
+		var s = 1 / ( Math.pow( 2, sp ) * self.stackToProjectTransform.elements[ 0 ] );
+		var projectToViewTransform = new THREE.Matrix4(
+				s, 0, 0, -s * p.getComponent( 0 ),
+				0, s, 0, -s * p.getComponent( 1 ),
+				0, 0, s, -s * p.getComponent( 2 ),
+				0, 0, 0,  1 );
+		project.moveToView( projectToViewTransform );
+//		project.moveTo(zp * resolution.z + translation.z, yp * resolution.y + translation.y, xp * resolution.x + translation.x, sp);	
 		return true;
 	}
 	
@@ -401,6 +466,14 @@ function Stack(
 	
 	self.id = id;
 	
+	self.stackToProjectTransform = new THREE.Matrix4(
+			resolution.x, 0, 0, translation.x,
+			0, resolution.y, 0, translation.y,
+			0, 0, resolution.z, translation.z,
+			0, 0, 0, 1 );
+
+	self.stackToViewTransform = new THREE.Matrix4();
+
 	self.resolution = resolution;
 	self.translation = translation;
 	self.dimension = dimension;

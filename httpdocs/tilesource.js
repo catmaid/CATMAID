@@ -155,7 +155,10 @@ function ImglibTileSource( baseURL, fileExtension )
 			a22: stackToTile.elements[ 10 ],
 			a03: stackToTile.elements[ 12 ],
 			a13: stackToTile.elements[ 13 ],
-			a23: stackToTile.elements[ 14 ]
+			a23: stackToTile.elements[ 14 ],
+			screenscale: 1,
+			interpolation: 'NLINEAR',
+			timepoint: 10
         });
     }
 

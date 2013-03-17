@@ -47,7 +47,7 @@ var WindowMaker = new function()
             break;
           case CMWWindow.RESIZE:
             if( button_bar !== undefined ) {
-                container.style.height = ( win.getContentHeight() - $('#' + 'table_of_connector_buttons').height() ) + "px";
+                container.style.height = ( win.getContentHeight() - $('#' + button_bar).height() ) + "px";
             } else {
                 container.style.height = ( win.getContentHeight() ) + "px";
             }

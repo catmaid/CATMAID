@@ -81,6 +81,10 @@ Alias /{subdir}/static/ {cmpath}/django/static/
 </Directory>
 
 """.format(cmpath = abs_catmaid_path, subdir = catmaid_subdirectory)
+
+# Remove any double slashes from this configuration too:
+out = re.sub('//', '/', out)
+
 print('Apache configuration settings')
 print('-----------------------------')
 print(out)

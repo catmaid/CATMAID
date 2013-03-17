@@ -1424,7 +1424,7 @@ var WebGLApp = new function () {
       {
         console.log('TODO: active assembly');
       })
-      .attr('src','widgets/themes/kde/activate.gif')
+      .attr('src',STATIC_URL_JS+'widgets/themes/kde/activate.gif')
     );*/
     td.append( $(document.createElement("img")).attr({
           id:    'assemblyaction-remove-' + assembly.id,
@@ -1434,7 +1434,7 @@ var WebGLApp = new function () {
           {
             self.removeAssembly( assembly.id );
           })
-          .attr('src','widgets/themes/kde/delete.png')
+          .attr('src', STATIC_URL_JS + 'widgets/themes/kde/delete.png')
           .text('Remove!')
     );
     rowElement.append( td );
@@ -1532,7 +1532,7 @@ var WebGLApp = new function () {
       {
         TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton.id );
       })
-      .attr('src','widgets/themes/kde/activate.gif')
+      .attr('src', STATIC_URL_JS + 'widgets/themes/kde/activate.gif')
     );
     td.append( $(document.createElement("img")).attr({
           id:    'skeletonaction-remove-' + skeleton.id,
@@ -1542,7 +1542,7 @@ var WebGLApp = new function () {
           {
             self.removeSkeleton( skeleton.id );
           })
-          .attr('src','widgets/themes/kde/delete.png')
+          .attr('src', STATIC_URL_JS + 'widgets/themes/kde/delete.png')
           .text('Remove!')
     );
     rowElement.append( td );

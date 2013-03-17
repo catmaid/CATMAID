@@ -171,7 +171,7 @@ var CompartmentGraphWidget = new function()
 
   this.updateConfidenceGraphFrom3DViewer = function() {
     jQuery.ajax({
-      url: "dj/" + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
+      url: django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
       type: "POST",
       dataType: "json",
       data: { 
@@ -186,7 +186,7 @@ var CompartmentGraphWidget = new function()
 
   this.updateEdgecountGraphFrom3DViewer = function() {
     jQuery.ajax({
-      url: "dj/" + project.id + "/skeletongroup/skeletonlist_edgecount_compartment_subgraph",
+      url: django_url + project.id + "/skeletongroup/skeletonlist_edgecount_compartment_subgraph",
       type: "POST",
       dataType: "json",
       data: { 

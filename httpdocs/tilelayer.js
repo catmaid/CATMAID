@@ -19,7 +19,7 @@
 function getTileBaseName( pixelPos )
 {
 	var n = pixelPos.length;
-	var dir = ""
+	var dir = "";
 	for ( var i = n - 1; i > 1; --i )
 	{
 		dir += pixelPos[ i ] + "/";
@@ -81,11 +81,92 @@ function TileLayer(
 
 		return;
 	}
-	
+
+	this.redraw = function( completionCallback )
+	{
+		self.redrawNew( completionCallback );
+	}
+
+
+	this.redrawNew = function(completionCallback)
+	{
+		var stackToView = new THREE.Matrix4();
+		stackToView.copy( stack.stackToViewTransform );
+
+		var stackOriginInView = new THREE.Vector3();
+		stackOriginInView.getPositionFromMatrix( stackToView );
+		var xc = stackOriginInView.getComponent( 0 );
+		var yc = stackOriginInView.getComponent( 1 );
+
+		var top;
+		var left;
+
+		if ( yc <= 0 )
+			top  = yc % tileHeight;
+		else
+			top  = ( ( yc + 1 ) % tileHeight ) - tileHeight - 1;
+		if ( xc <= 0 )
+			left = xc % tileWidth;
+		else
+			left = ( ( xc + 1 ) % tileWidth ) - tileWidth - 1;
+
+//		console.log( "xc = " + xc + ", yc = " + yc + ", left = " + left + ", top = " + top );
+
+		var viewToTile = new THREE.Matrix4(
+				1, 0, 0, stack.viewWidth / 2 - left,
+				0, 1, 0, stack.viewHeight / 2 - top,
+				0, 0, 1, 0,
+				0, 0, 0, 1 );
+
+		var stackToTile = new THREE.Matrix4();
+		stackToTile.multiplyMatrices( viewToTile, stackToView );
+
+		var t = top;
+		var l = left;
+
+		// update the images sources
+		for ( var i = 0; i < tiles.length; ++i )
+		{
+			for ( var j = 0; j < tiles[ 0 ].length; ++j )
+			{
+				viewToTile.elements[ 12 ] = stack.viewWidth / 2 - l;
+				viewToTile.elements[ 13 ] = stack.viewHeight / 2 - t;
+				stackToTile.multiplyMatrices( viewToTile, stackToView );
+
+				tiles[ i ][ j ].alt = "";
+				tiles[ i ][ j ].src = self.tileSource.getTileURL( 0, 0, 0,
+					tileWidth, tileHeight,
+					0, 0, 0,
+					stackToTile );
+
+				tiles[ i ][ j ].style.top = t + "px";
+				tiles[ i ][ j ].style.left = l + "px";
+				tiles[ i ][ j ].style.visibility = "visible";
+
+				tiles[ i ][ j ].style.width = tileWidth + "px";
+				tiles[ i ][ j ].style.height = tileHeight + "px";
+
+				console.log( tiles[i][j].src );
+
+				l += tileWidth;
+			}
+			l = left;
+			t += tileHeight;
+		}
+
+		if (typeof completionCallback !== "undefined") {
+			completionCallback();
+		}
+		return 2;
+
+		//return self.redrawOld( completionCallback );
+	}
+
+
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */
-	this.redraw = function(completionCallback)
+	this.redrawOld = function(completionCallback)
 	{
 		var pixelPos = [ stack.x, stack.y, stack.z ];
 		var tileBaseName = getTileBaseName( pixelPos );
@@ -212,6 +293,8 @@ function TileLayer(
 		else
 			left = -( ( stack.xc + 1 ) % effectiveTileWidth ) - effectiveTileWidth + 1;
 
+		var stackToTile = new THREE.Matrix4();
+
 		var t = top;
 		var l = left;
 
@@ -238,7 +321,7 @@ function TileLayer(
 				{
 					tiles[ i ][ j ].alt = "";
 					tiles[ i ][ j ].src = self.tileSource.getTileURL( project, stack,
-						tileBaseName, tileWidth, tileHeight, c, r, zoom);
+						tileBaseName, tileWidth, tileHeight, c, r, zoom, stackToTile );
 
           // prefetch tiles
           // TODO: fetch information in stack table: -2, -1, 1, 2
@@ -260,6 +343,8 @@ function TileLayer(
 
 				tiles[ i ][ j ].style.width = effectiveTileWidth + "px";
 				tiles[ i ][ j ].style.height = effectiveTileHeight + "px";
+
+				console.log( tiles[i][j].src );
 
 				l += effectiveTileWidth;
 

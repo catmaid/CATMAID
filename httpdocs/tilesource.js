@@ -130,9 +130,9 @@ function BackslashTileSource( baseURL, fileExtension )
 function ImglibTileSource( baseURL, fileExtension )
 {
     this.getTileURL = function( project, stack, baseName,
-        tileWidth, tileHeight, col, row, zoom_level )
+        tileWidth, tileHeight, col, row, zoom_level, stackToTile )
     {
-        return "http://localhost:8010/" + project.id + '/stack/' + stack.id + '/tile?' + $.param({
+        return "http://localhost:8010/tile?" + $.param({
             x: col * tileWidth,
             y: row * tileHeight,
             width : tileWidth,
@@ -143,7 +143,19 @@ function ImglibTileSource( baseURL, fileExtension )
             z : stack.z,
             file_extension: fileExtension,
             basename: baseURL,
-            type:'all'
+            type:'all',
+			a00: stackToTile.elements[ 0 ],
+			a10: stackToTile.elements[ 1 ],
+			a20: stackToTile.elements[ 2 ],
+			a01: stackToTile.elements[ 4 ],
+			a11: stackToTile.elements[ 5 ],
+			a21: stackToTile.elements[ 6 ],
+			a02: stackToTile.elements[ 8 ],
+			a12: stackToTile.elements[ 9 ],
+			a22: stackToTile.elements[ 10 ],
+			a03: stackToTile.elements[ 12 ],
+			a13: stackToTile.elements[ 13 ],
+			a23: stackToTile.elements[ 14 ]
         });
     }
 

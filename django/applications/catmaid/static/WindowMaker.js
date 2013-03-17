@@ -138,7 +138,7 @@ var WindowMaker = new function()
         '</tbody>';
     tabdiv.appendChild(tab);
 
-    addListener(win, container, 'neuron-staging-table');
+    addListener(win, container);
 
     addLogic(win);
 

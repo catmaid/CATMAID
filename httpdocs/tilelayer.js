@@ -90,13 +90,16 @@ function TileLayer(
 
 	this.redrawNew = function(completionCallback)
 	{
+		var vox = - stack.viewWidth / 2;
+		var voy = - stack.viewHeight / 2;
+
 		var stackToView = new THREE.Matrix4();
 		stackToView.copy( stack.stackToViewTransform );
 
 		var stackOriginInView = new THREE.Vector3();
 		stackOriginInView.getPositionFromMatrix( stackToView );
-		var xc = stackOriginInView.getComponent( 0 );
-		var yc = stackOriginInView.getComponent( 1 );
+		var xc = stackOriginInView.getComponent( 0 ) - vox;
+		var yc = stackOriginInView.getComponent( 1 ) - voy;
 
 		var top;
 		var left;
@@ -104,11 +107,11 @@ function TileLayer(
 		if ( yc <= 0 )
 			top  = yc % tileHeight;
 		else
-			top  = ( ( yc + 1 ) % tileHeight ) - tileHeight - 1;
+			top  = ( yc - 1 ) % tileHeight + 1 - tileHeight;
 		if ( xc <= 0 )
 			left = xc % tileWidth;
 		else
-			left = ( ( xc + 1 ) % tileWidth ) - tileWidth - 1;
+			left = ( xc - 1 ) % tileWidth + 1 - tileWidth;
 
 //		console.log( "xc = " + xc + ", yc = " + yc + ", left = " + left + ", top = " + top );
 
@@ -119,7 +122,74 @@ function TileLayer(
 				0, 0, 0, 1 );
 
 		var stackToTile = new THREE.Matrix4();
-		stackToTile.multiplyMatrices( viewToTile, stackToView );
+
+		if ( stack.z == stack.old_z && stack.s == stack.old_s )
+		{
+			xd = Math.floor( xc / tileWidth ) - Math.floor( self.old_xc / tileWidth );
+			yd = Math.floor( yc / tileHeight ) - Math.floor( self.old_yc / tileHeight );
+			self.old_xc = xc;
+			self.old_yc = yc;
+
+			// re-order the tiles array on demand
+			if ( xd < 0 )
+			{
+				for ( var i = 0; i < tiles.length; ++i )
+				{
+					tilesContainer.removeChild( tiles[ i ].pop() );
+					var img = document.createElement( "img" );
+					img.alt = "empty";
+					img.src = "widgets/empty256.gif";
+					img.style.visibility = "hidden";
+					tilesContainer.appendChild( img );
+					tiles[ i ].unshift( img );
+				}
+			}
+			else if ( xd > 0 )
+			{
+				for ( var i = 0; i < tiles.length; ++i )
+				{
+					tilesContainer.removeChild( tiles[ i ].shift() );
+					var img = document.createElement( "img" );
+					img.alt = "empty";
+					img.src = "widgets/empty256.gif";
+					img.style.visibility = "hidden";
+					tilesContainer.appendChild( img );
+					tiles[ i ].push( img );
+				}
+			}
+			else if ( yd < 0 )
+			{
+				var old_row = tiles.pop();
+				var new_row = new Array();
+				for ( var i = 0; i < tiles[ 0 ].length; ++i )
+				{
+					tilesContainer.removeChild( old_row.pop() );
+					var img = document.createElement( "img" );
+					img.alt = "empty";
+					img.src = "widgets/empty256.gif";
+					img.style.visibility = "hidden";
+					tilesContainer.appendChild( img );
+					new_row.push( img );
+				}
+				tiles.unshift( new_row );
+			}
+			else if ( yd > 0 )
+			{
+				var old_row = tiles.shift();
+				var new_row = new Array();
+				for ( var i = 0; i < tiles[ 0 ].length; ++i )
+				{
+					tilesContainer.removeChild( old_row.pop() );
+					var img = document.createElement( "img" );
+					img.alt = "empty";
+					img.src = "widgets/empty256.gif";
+					img.style.visibility = "hidden";
+					tilesContainer.appendChild( img );
+					new_row.push( img );
+				}
+				tiles.push( new_row );
+			}
+		}
 
 		var t = top;
 		var l = left;
@@ -129,8 +199,8 @@ function TileLayer(
 		{
 			for ( var j = 0; j < tiles[ 0 ].length; ++j )
 			{
-				viewToTile.elements[ 12 ] = stack.viewWidth / 2 - l;
-				viewToTile.elements[ 13 ] = stack.viewHeight / 2 - t;
+				viewToTile.elements[ 12 ] = - vox - l;
+				viewToTile.elements[ 13 ] = - voy - t;
 				stackToTile.multiplyMatrices( viewToTile, stackToView );
 
 				tiles[ i ][ j ].alt = "";

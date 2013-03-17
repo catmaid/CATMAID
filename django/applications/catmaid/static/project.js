@@ -198,7 +198,7 @@ function Project( pid )
 			if (!self.focusedStack.getWindow().hasFocus())
 				self.focusedStack.getWindow().focus();
 		}
-		//window.onresize();
+		window.onresize();
 		WindowMaker.setKeyShortcuts();
 		return;
 	}

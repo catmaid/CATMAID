@@ -698,7 +698,18 @@ class UserProfile(models.Model):
     See: http://digitaldreamer.net/blog/2010/12/8/custom-user-profile-and-extend-user-admin-django/
     """
     user = models.OneToOneField(User)
-    inverse_mouse_wheel = models.BooleanField(default=False)
+    inverse_mouse_wheel = models.BooleanField(
+        default=settings.PROFILE_DEFAULT_INVERSE_MOUSE_WHEEL)
+    show_text_label_tool = models.BooleanField(
+        default=settings.PROFILE_SHOW_TEXT_LABEL_TOOL)
+    show_tagging_tool = models.BooleanField(
+        default=settings.PROFILE_SHOW_TAGGING_TOOL)
+    show_cropping_tool = models.BooleanField(
+        default=settings.PROFILE_SHOW_CROPPING_TOOL)
+    show_segmentation_tool = models.BooleanField(
+        default=settings.PROFILE_SHOW_SEGMENTATION_TOOL)
+    show_tracing_tool = models.BooleanField(
+        default=settings.PROFILE_SHOW_TRACING_TOOL)
 
     def __unicode__(self):
         return self.user.username

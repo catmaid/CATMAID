@@ -2,6 +2,8 @@ from django.conf.urls.defaults import patterns, include, url
 from django.conf import settings
 from django.views.generic import TemplateView
 
+from catmaid.views import HomepageView
+
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
 from adminplus import AdminSitePlus
@@ -15,7 +17,7 @@ intlist = r'[0-9]+(,[0-9]+)*'
 
 # Add the main index.html page at the root:
 urlpatterns = patterns('',
-    (r'^$', TemplateView.as_view(template_name="index.html")))
+    (r'^$', HomepageView.as_view()))
 
 # Neuron Catalog
 urlpatterns += patterns('',

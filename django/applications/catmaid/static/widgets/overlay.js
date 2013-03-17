@@ -413,12 +413,17 @@ var SkeletonAnnotations = new function()
 
     var tagbox = null;
 
+    this.hasTagbox = function() {
+      return tagbox !== null;
+    }
+
     var removeTagbox = function() {
       if(tagbox) {
         tagbox.remove();
         tagbox = null;
       }
     };
+    this.removeTagbox = removeTagbox;
 
     this.tagATNwithLabel = function( label ) {
       requestQueue.register(django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update', "POST", {

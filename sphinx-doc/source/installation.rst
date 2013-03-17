@@ -213,7 +213,7 @@ You can do this with::
 
     ./manage.py createsuperuser
 
-7. Optionally add some example projects
+8. Optionally add some example projects
 #######################################
 
 If you want to have some example projects to try in your new
@@ -224,7 +224,7 @@ command::
 
 (The superuser you just created should have the user ID ``1``.)
 
-8. Try running the Django development server
+9. Try running the Django development server
 ############################################
 
 You can run the Django development server with::
@@ -234,8 +234,8 @@ You can run the Django development server with::
 You should then be able to visit your instance of catmaid at `http://localhost:8000
 <http://localhost:8000>`_
 
-9. Setting up a production webserver
-####################################
+10. Setting up a production webserver
+#####################################
 
 You have various options for setting up CATMAID with a
 production webserver - you can choose from (at least) the
@@ -246,7 +246,7 @@ following options:
 2. Nginx and either gevent, uWSGI or Gunicorn, in which case see
    :ref:`alternative-install`
 
-10. Using the admin interface
+11. Using the admin interface
 #############################
 
 You should be able to login to the CATMAID admin interface and
@@ -261,12 +261,7 @@ development server, this would be::
 
     http://myserver.example.org/catmaid/admin/
 
-.. warning::
-
-    Project/stack creation and setup for neuron tracing is not yet possible through the admin interface.
-    You have to add a project and stack with the helper script `scripts/database/create_project_stack.py`
-
-11. Creating tiles for new CATMAID stacks
+12. Creating tiles for new CATMAID stacks
 #########################################
 
 You can generate the image tiles for a stack with the

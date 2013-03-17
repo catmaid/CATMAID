@@ -715,11 +715,26 @@ def create_user_profile(sender, instance, created, **kwargs):
 # creation
 post_save.connect(create_user_profile, sender=User)
 
-# Make sure Guardian's anonymous user has a user profile
-if UserProfile.objects.filter(\
-        user__id=settings.ANONYMOUS_USER_ID).count() == 0:
-    anonymous_user = User.objects.get(pk=settings.ANONYMOUS_USER_ID)
-    create_user_profile(User, anonymous_user, True)
+# ------------------------------------------------------------------------
+
+# There is a problem in that guardian creates an anonymous user when
+# its initial migrations are run, but a corresponding UserProfile will
+# not be created.  To make sure that this happens, we monkey-patch
+# guardian.management.create_anonymous_user and do just that.
+
+from guardian.management import create_anonymous_user as old_create_anonymous_user
+
+def new_create_anonymous_user(sender, **kwargs):
+    old_create_anonymous_user(sender, **kwargs)
+
+    # Make sure Guardian's anonymous user has a user profile
+    if UserProfile.objects.filter( \
+            user__id=settings.ANONYMOUS_USER_ID).count() == 0:
+        anonymous_user = User.objects.get(pk=settings.ANONYMOUS_USER_ID)
+        create_user_profile(User, anonymous_user, True)
+
+import guardian
+guardian.management.create_anonymous_user = new_create_anonymous_user
 
 # ------------------------------------------------------------------------
 

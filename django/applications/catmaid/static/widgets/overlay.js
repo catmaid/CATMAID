@@ -523,26 +523,6 @@ var SkeletonAnnotations = new function()
           removeTagbox();
         }
       });
-
-      // add autocompletion
-      requestQueue.register(django_url + project.id + '/labels-all', "POST", {
-        pid: project.id
-      }, function (status, text, xml) {
-
-        if (status === 200) {
-          if (text && text !== " ") {
-            var e = $.parseJSON(text);
-            if (e.error) {
-              alert(e.error);
-            } else {
-              var availableTags = $.parseJSON(text);
-              $("#Tags" + atn.id).autocomplete({
-                source: availableTags
-              });
-            }
-          }
-        }
-      });
       
       requestQueue.register(django_url + project.id + '/labels-for-node/' + atn.type  + '/' + atn.id, "POST", {
         pid: project.id
@@ -561,6 +541,26 @@ var SkeletonAnnotations = new function()
                 completeOnSeparator: true
               });
               $("#Tags" + atn.id).focus();
+
+              // add autocompletion, only request after tagbox creation
+              requestQueue.register(django_url + project.id + '/labels-all', "POST", {
+                pid: project.id
+              }, function (status, text, xml) {
+
+                if (status === 200) {
+                  if (text && text !== " ") {
+                    var e = $.parseJSON(text);
+                    if (e.error) {
+                      alert(e.error);
+                    } else {
+                      var availableTags = $.parseJSON(text);
+                      $("#Tags" + atn.id).autocomplete({
+                        source: availableTags
+                      });
+                    }
+                  }
+                }
+              });
 
             }
           }

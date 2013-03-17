@@ -408,7 +408,7 @@ var tracingWindowActions = [
         }
     }),
 
-    new Action({
+/*    new Action({
         helpText: "Adjacency Matrix widget",
         buttonID: "data_button_connectivity",
         buttonName: 'adj_matrix',
@@ -436,7 +436,7 @@ var tracingWindowActions = [
           WindowMaker.show('graph-widget');
           return true;
       }
-  }),
+  }),*/
 
   new Action({ 
       helpText: "Skeleton Analytics widget",

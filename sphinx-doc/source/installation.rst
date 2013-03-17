@@ -65,7 +65,7 @@ this with::
                          libhdf5-serial-dev libboost1.48-dev \
                          libboost-python1.48-dev uuid-dev \
                          libxml2-dev libxslt1-dev libjpeg-dev \
-                         libtiff-dev build-dep virtualenvwrapper
+                         libtiff-dev virtualenvwrapper
 
 To create a new virtualenv for CATMAID's Python dependencies,
 you can do::

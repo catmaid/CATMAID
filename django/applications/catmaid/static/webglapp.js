@@ -657,12 +657,33 @@ var WebGLApp = new function () {
 
           this.geometry[type].vertices.push( new THREE.Vertex( to_vector ) );
 
+          if( type === 'presynaptic_to') {
+            var radiusSphere = new THREE.SphereGeometry( 40 * scale, 32, 32, 1);
+            this.otherSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:false  } ) );
+            this.otherSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
+            this.otherSpheres[fromkey].node_id = fromkey;
+            this.otherSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
+            this.otherSpheres[fromkey].skeleton_id = self.id;
+            scene.add( this.otherSpheres[fromkey] );
+          } else if( type === 'postsynaptic_to') {
+            var radiusSphere = new THREE.SphereGeometry( 40 * scale, 32, 32, 1);
+            this.otherSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false  } ) );
+            this.otherSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
+            this.otherSpheres[fromkey].node_id = fromkey;
+            this.otherSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
+            this.otherSpheres[fromkey].skeleton_id = self.id;
+            scene.add( this.otherSpheres[fromkey] );
+          }
+
           // check if either from or to key vertex has a sphere associated with it
           var radiusFrom = parseFloat( this.original_vertices[fromkey]['radius'] );
           if( !(fromkey in this.otherSpheres) && radiusFrom > 0 ) {
             var radiusSphere = new THREE.SphereGeometry( radiusFrom * scale, 32, 32, 1);
             this.otherSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
             this.otherSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
+            this.otherSpheres[fromkey].node_id = fromkey;
+            this.otherSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
+            this.otherSpheres[fromkey].skeleton_id = self.id;
             scene.add( this.otherSpheres[fromkey] );
           }
 
@@ -671,6 +692,8 @@ var WebGLApp = new function () {
             var radiusSphere = new THREE.SphereGeometry( radiusTo * scale, 32, 32, 1);
             this.otherSpheres[tokey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
             this.otherSpheres[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
+            this.otherSpheres[tokey].orig_coord = this.original_vertices[fromkey];
+            this.otherSpheres[tokey].skeleton_id = self.id;
             scene.add( this.otherSpheres[tokey] );
           }
 
@@ -706,33 +729,52 @@ var WebGLApp = new function () {
           if( ($.inArray( "uncertain", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
               this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff8000, opacity:0.6, transparent:true  } ) );
               this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
+              this.labelSphere[fromkey].node_id = fromkey;
+              this.labelSphere[fromkey].skeleton_id = self.id;
+              this.labelSphere[fromkey].orig_coord = this.original_vertices[fromkey];
               scene.add( this.labelSphere[fromkey] );
           }
           if( ($.inArray( "uncertain", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
               this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff8000, opacity:0.6, transparent:true  } ) );
               this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
+              this.labelSphere[tokey].node_id = fromkey;
+              this.labelSphere[tokey].skeleton_id = self.id;
+              this.labelSphere[tokey].orig_coord = this.original_vertices[fromkey];
               scene.add( this.labelSphere[tokey] );
           }
           if( ($.inArray( "todo", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
               this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:true  } ) );
               this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
+              this.labelSphere[fromkey].node_id = fromkey;
+              this.labelSphere[fromkey].skeleton_id = self.id;
+              this.labelSphere[fromkey].orig_coord = this.original_vertices[fromkey];
               scene.add( this.labelSphere[fromkey] );
           }
           if( ($.inArray( "todo", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
               this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:true  } ) );
               this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
+              this.labelSphere[tokey].node_id = fromkey;
+              this.labelSphere[tokey].skeleton_id = self.id;
+              this.labelSphere[tokey].orig_coord = this.original_vertices[fromkey];
+              this.labelSphere[tokey].skeleton_id = self.id;
               scene.add( this.labelSphere[tokey] );
           }
           if( ($.inArray( "soma", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
               this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00 } ) );
               this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
               this.labelSphere[fromkey].scale.set( 2*soma_scale, 2*soma_scale, 2*soma_scale );
+              this.labelSphere[fromkey].node_id = fromkey;
+              this.labelSphere[fromkey].orig_coord = this.original_vertices[fromkey];
+              this.labelSphere[fromkey].skeleton_id = self.id;
               scene.add( this.labelSphere[fromkey] );
           }
           if( ($.inArray( "soma", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
               this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00  } ) );
               this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
               this.labelSphere[tokey].scale.set( 2*soma_scale, 2*soma_scale, 2*soma_scale );
+              this.labelSphere[tokey].node_id = fromkey;
+              this.labelSphere[tokey].orig_coord = this.original_vertices[fromkey];
+              this.labelSphere[tokey].skeleton_id = self.id;
               scene.add( this.labelSphere[tokey] );
           }
 
@@ -1357,15 +1399,48 @@ var WebGLApp = new function () {
 
       var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );    
       var intersects = raycaster.intersectObjects( contour_objects, true );
-
       if ( intersects.length > 0 ) {
         // console.log('found intersecting slices', intersects);
         controls.enabled = false;
         SegmentationAnnotations.goto_slice( intersects[0].object.parent.node_id, true );
         container.style.cursor = 'move';
-
       }
-    }
+
+      // intersect connectors
+      var sphere_objects = [];
+      for( var skeleton_id in skeletons) {
+        if( skeletons.hasOwnProperty( skeleton_id )) {
+          if( !skeletons[skeleton_id].visible )
+            continue;
+          for(var idx in skeletons[ skeleton_id ].labelSphere) {
+            if( skeletons[ skeleton_id ].labelSphere.hasOwnProperty( idx )) {
+              sphere_objects.push( skeletons[ skeleton_id ].labelSphere[ idx ] )
+            }
+          }
+
+          for(var idx in skeletons[ skeleton_id ].otherSpheres) {
+            if( skeletons[ skeleton_id ].otherSpheres.hasOwnProperty( idx )) {
+              sphere_objects.push( skeletons[ skeleton_id ].otherSpheres[ idx ] )
+            }
+          }
+
+
+          var intersects = raycaster.intersectObjects( sphere_objects, true );
+          if ( intersects.length > 0 ) {
+            for( var i = 0; i < sphere_objects.length; i++) {
+              if( sphere_objects[i].id === intersects[0].object.id ) {
+                  var jso = sphere_objects[i];
+                  project.moveTo(jso.orig_coord.z, jso.orig_coord.y, jso.orig_coord.x, undefined, function() { 
+                    SkeletonAnnotations.staticSelectNode(parseInt(jso.node_id, 10), parseInt(jso.skeleton_id, 10)) });
+              }
+            }
+          }
+
+
+        } // has own skeleton
+      }  // end for
+
+    } // end shift key
   }
 
   function onMouseUp(event) {

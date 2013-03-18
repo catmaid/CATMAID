@@ -259,6 +259,21 @@ var createEditToolActions = function() {
       }));
   }
 
+
+if (userprofile.show_text_label_tool) {
+  editToolActions.push(
+    new Action({
+	  helpText: "Manual Volume Tracing",
+	  buttonID: "volume_tracing_button",
+	  buttonName: 'volume-tracing',
+	  run: function (e) {
+		  //alert('Manual Volume tracing powers activated!');
+          project.setTool(new VolumeTracingTool());
+		  return true;
+	  }
+  }));
+}
+
   if (userprofile.show_segmentation_tool) {
     editToolActions.push(
       new Action({
@@ -333,6 +348,7 @@ var segmentationWindowActions = [
       return true;
     }
   }),
+
 
   /*new Action({
     helpText: "Show assembly graph",

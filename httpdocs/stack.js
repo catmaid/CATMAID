@@ -361,7 +361,61 @@ function Stack(
 //		project.moveTo(zp * resolution.z + translation.z, yp * resolution.y + translation.y, xp * resolution.x + translation.x, sp);	
 		return true;
 	}
-	
+
+	/**
+	 * Helper to move to stackToViewTransform through project...
+	 * TODO: remove
+	 */
+	this.moveProjectHelper = function( stackToView )
+	{
+		var projectToStack = new THREE.Matrix4();
+		projectToStack.getInverse( self.stackToProjectTransform );
+		var projectToView = new THREE.Matrix4();
+		projectToView.multiplyMatrices( stackToView, projectToStack );
+		project.moveToView( projectToView );
+	}
+
+	/**
+	 * pan (affine transform)
+	 */
+	this.pan = function( dx, dy, dz )
+	{
+		var translate = new THREE.Matrix4(
+				1, 0, 0, dx,
+				0, 1, 0, dy,
+				0, 0, 1, dz,
+				0, 0, 0, 1 );
+		var newStackToView = new THREE.Matrix4();
+		newStackToView.multiplyMatrices( translate, self.stackToViewTransform );
+		self.moveProjectHelper( newStackToView );
+//		self.stackToViewTransform.elements[ 12 ] += dx;
+//		self.stackToViewTransform.elements[ 13 ] += dy;
+//		self.stackToViewTransform.elements[ 14 ] += dz;
+//		self.moveProjectHelper( self.stackToViewTransform );
+	}
+
+	/**
+	 * rotate (affine transform)
+	 */
+	this.rotate = function( dx, dy )
+	{
+		var step = Math.PI / 180;
+		var rotateX = new THREE.Matrix4();
+		rotateX.rotateX( -dy * step )
+		var rotateY = new THREE.Matrix4();
+		rotateY.rotateY( -dx * step )
+		var newStackToView = new THREE.Matrix4();
+		newStackToView.multiplyMatrices( rotateX, self.stackToViewTransform );
+		newStackToView.multiplyMatrices( rotateY, newStackToView );
+		self.moveProjectHelper( newStackToView );
+	}
+
+	this.setTimepoint = function( t )
+	{
+		self.timepoint = t;
+		update();
+	}
+
 	var resize = function()
 	{
 		self.viewWidth = stackWindow.getFrame().offsetWidth;
@@ -608,6 +662,9 @@ function Stack(
 	self.y = Math.floor( MAX_Y / 2 );
 	self.x = Math.floor( MAX_X / 2 );
 	self.s = self.MAX_S;
+
+	self.timepoint = 0;
+
 	
 	self.old_z = -1;
 	self.old_y = self.y;

@@ -204,7 +204,7 @@ function TileLayer(
 				stackToTile.multiplyMatrices( viewToTile, stackToView );
 
 				tiles[ i ][ j ].alt = "";
-				tiles[ i ][ j ].src = self.tileSource.getTileURL( 0, 0, 0,
+				tiles[ i ][ j ].src = self.tileSource.getTileURL( 0, stack, 0,
 					tileWidth, tileHeight,
 					0, 0, 0,
 					stackToTile );

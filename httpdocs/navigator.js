@@ -42,6 +42,15 @@ function Navigator()
 			388,
 			1,
 			function( val ){ statusBar.replaceLast( "z: " + val ); return; } );
+
+	this.slider_t = new Slider(
+			SLIDER_HORIZONTAL,
+			true,
+			0,
+			99,
+			100,
+			0,
+			function( val ){ statusBar.replaceLast( "t: " + val ); return; } );
 	
 	this.slider_s = new Slider(
 			SLIDER_HORIZONTAL,
@@ -67,6 +76,17 @@ function Navigator()
 	slider_z_box.appendChild( self.slider_z.getInputView() );
 	
 	sliders_box.appendChild( slider_z_box );
+	
+	var slider_t_box = document.createElement( "div" );
+	slider_t_box.className = "box";
+	slider_t_box.id = "slider_t_box";
+	var slider_t_box_label = document.createElement( "p" );
+	slider_t_box_label.appendChild( document.createTextNode( "t" + "   " ) );
+    slider_t_box.appendChild( slider_t_box_label );
+	slider_t_box.appendChild( self.slider_t.getView() );
+	slider_t_box.appendChild( self.slider_t.getInputView() );
+	
+	sliders_box.appendChild( slider_t_box );
 	
 	var slider_s_view = self.slider_s.getView();
 	slider_s_view.id = "slider_s";
@@ -109,29 +129,41 @@ function Navigator()
 		self.updateControls();
 	}
 	
-	var onmousemove = function( e )
+	var onmousemovePan = function( e )
 	{
-		self.lastX = self.stack.x + ui.diffX; // TODO - or + ?
+		self.stack.pan( ui.diffX, ui.diffY, 0 );
+/*		self.lastX = self.stack.x + ui.diffX; // TODO - or + ?
 		self.lastY = self.stack.y + ui.diffY;
 		self.stack.moveToPixel(
 			self.stack.z,
 			self.stack.y - ui.diffY / self.stack.scale,
 			self.stack.x - ui.diffX / self.stack.scale,
-			self.stack.s );
+			self.stack.s );*/
+		return true;
+	};
+	
+	var onmousemoveRotate = function( e )
+	{
+		self.stack.rotate( ui.diffX, ui.diffY );
 		return true;
 	};
 	
 	var onmouseup = function( e )
 	{
 		ui.releaseEvents(); 
-		ui.removeEvent( "onmousemove", onmousemove );
+		ui.removeEvent( "onmousemove", onmousemovePan );
+		ui.removeEvent( "onmousemove", onmousemoveRotate );
 		ui.removeEvent( "onmouseup", onmouseup );
 		return false;
 	};
 	
 	var onmousedown = function( e )
 	{
-		ui.registerEvent( "onmousemove", onmousemove );
+		var button = ui.getMouseButton( e );
+		if ( button == 1 )
+			ui.registerEvent( "onmousemove", onmousemoveRotate );
+		else
+			ui.registerEvent( "onmousemove", onmousemovePan );
 		ui.registerEvent( "onmouseup", onmouseup );
 		ui.catchEvents( "move" );
 		ui.onmousedown( e );
@@ -252,7 +284,7 @@ function Navigator()
 		changeSliceDelayedParam = { z : val };
 		changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 100 );
 	}
-	
+
 	this.changeSlice = function( val )
 	{
     // if 3d viewer window visible, change its z slice
@@ -261,7 +293,34 @@ function Navigator()
             WebGLApp.updateZPlane( val );
         }
     }
-		self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
+		self.stack.pan( 0, 0, self.stack.z - val );
+		//self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
+		return;
+	}
+	//--------------------------------------------------------------------------
+
+	//--------------------------------------------------------------------------
+	var changeTimepointDelayedTimer = null;
+	var changeTimepointDelayedParam = null;
+	
+	var changeTimepointDelayedAction = function()
+	{
+		window.clearTimeout( changeTimepointDelayedTimer );
+		self.changeTimepoint( changeTimepointDelayedParam.z );
+		changeTimepointDelayedParam = null;
+		return false;
+	}
+	
+	this.changeTimepointDelayed = function( val )
+	{
+		if ( changeTimepointDelayedTimer ) window.clearTimeout( changeTimepointDelayedTimer );
+		changeTimepointDelayedParam = { z : val };
+		changeTimepointDelayedTimer = window.setTimeout( changeTimepointDelayedAction, 100 );
+	}
+
+	this.changeTimepoint = function( val )
+	{
+		self.stack.setTimepoint( val );
 		return;
 	}
 	//--------------------------------------------------------------------------
@@ -502,7 +561,14 @@ function Navigator()
 			0,
 			self.stack.slices,
 			self.stack.z,
-			self.changeSlice );
+			self.changeSliceDelayed );
+		
+		self.slider_t.update(
+			0,
+			99,
+			100,
+			self.stack.timepoint,
+			self.changeTimepointDelayed );
 		
 		self.input_x.onchange = changeXByInput;
 		try

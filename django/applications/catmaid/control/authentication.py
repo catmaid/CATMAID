@@ -39,30 +39,46 @@ def login_user(request):
         username = request.POST.get('name', 0)
         password = request.POST.get('pwd', 0)
         user = authenticate(username=username, password=password)
+
         if user is not None:
+            profile_context = user.userprofile.as_dict()
             if user.is_active:
                 # Redirect to a success page.
                 request.session['user_id'] = user.id
                 login(request, user)
-                return HttpResponse(json.dumps({'id': request.session.session_key, 'longname': user.get_full_name() } ))
+                # Add some context information
+                profile_context['id'] = request.session.session_key
+                profile_context['longname'] = user.get_full_name()
+                return HttpResponse(json.dumps(profile_context))
             else:
                # Return a 'disabled account' error message
-               return HttpResponse(json.dumps({'error': ' Disabled account'}))
+               profile_context['error'] = ' Disabled account'
+               return HttpResponse(json.dumps(profile_context))
         else:
             # Return an 'invalid login' error message.
-            return HttpResponse(json.dumps({'error': ' Invalid login'}))
+            profile_context = request.user.userprofile.as_dict()
+            profile_context['error'] = ' Invalid login'
+            return HttpResponse(json.dumps(profile_context))
     else:   # request.method == 'GET'
+        profile_context = request.user.userprofile.as_dict()
         # Check if the user is logged in.
         if request.user.is_authenticated():
-            return HttpResponse(json.dumps({'id': request.session.session_key, 'longname': request.user.get_full_name() } ))
+            profile_context['id'] = request.session.session_key
+            profile_context['longname'] = request.user.get_full_name()
+            return HttpResponse(json.dumps(profile_context))
         else:
             # Return a 'not logged in' warning message.
-            return HttpResponse(json.dumps({'warning': ' Not logged in'}))
+            profile_context['warning'] = ' Not logged in'
+            return HttpResponse(json.dumps(profile_context))
 
 
 def logout_user(request):
     logout(request)
-    return HttpResponse(json.dumps({'success': True}))
+    # Return profile context of anonymous user
+    anon_user = User.objects.get(id=settings.ANONYMOUS_USER_ID)
+    profile_context = anon_user.userprofile.as_dict()
+    profile_context['success'] = True
+    return HttpResponse(json.dumps(profile_context))
 
 
 def requires_user_role(roles):

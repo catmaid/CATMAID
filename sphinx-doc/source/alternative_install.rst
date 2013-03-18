@@ -204,4 +204,12 @@ add ``post-buffering = 1`` to your uWSGI configuration file.
 Setup based on Nginx and Gunicorn
 ---------------------------------
 
-TODO: complete this section
+For using the Gunicorn WSGI server, the same Nginx configuration
+can be used as that given above for use with gevent.  (You may
+need to change the port, however.)  As an example of how to
+start Gunicorn, there is a upstart script, suitable for Ubuntu,
+in ``django/projects/mysite/gunicorn-catmaid.conf``.  You would
+copy this to ``/etc/init/``, customize it, and start Gunicorn
+with ``initctl start gunicorn-catmaid``.  (Thereafter it will be
+started on boot automatically, and can be restarted with
+``initctl restart gunicorn-catmaid``.

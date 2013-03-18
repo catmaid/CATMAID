@@ -186,6 +186,28 @@ function TracingTool()
     return;
 	};
 
+  this.prototype.changeScale = function( val )
+  {
+    if( tracingLayer.svgOverlay.hasTagbox() ) {
+      tracingLayer.svgOverlay.removeTagbox();
+    }
+    stack.moveToPixel( stack.z, stack.y, stack.x, val );
+    return;
+  }
+
+  this.prototype.changeSlice = function( val )
+  {
+    if( $( "#view_in_3d_webgl_widget").length ) {
+        if( $('#enable_z_plane').attr('checked') != undefined ) {
+            WebGLApp.updateZPlane( val );
+        }
+    }
+    if( tracingLayer.svgOverlay.hasTagbox() ) {
+      tracingLayer.svgOverlay.removeTagbox();
+    }
+    stack.moveToPixel( val, stack.y, stack.x, stack.s );
+  }
+
 
   var updateStatusBar = function( e ) {
     var m = ui.getMouse(e, tracingLayer.svgOverlay.view, true);

@@ -8,6 +8,11 @@ boxes. Most of the controls offer various ways for changing a value
 and so sliders and input boxes can be changed with the help of the mouse
 wheel, small buttons or direct input.
 
+The tools visible to a user can be set in the admin interface on a per
+user basis. See the section about :ref:`user profiles <user-profiles>` to
+learn how to modify the visible tools and how to set defaults suiting
+your use case.
+
 Navigation
 ----------
 

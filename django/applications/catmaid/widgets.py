@@ -15,7 +15,15 @@ class Integer3DWidget(forms.MultiWidget):
 
     def decompress(self, value):
         if value:
-            return [value.x, value.y, value.z]
+            if isinstance(value, str) or isinstance(value, unicode):
+                try:
+                   # Expect value to be of the form '(0,0,0)'
+                   str_list = value.replace('(', '').replace(')', '').split(',')
+                   return [float(num) for num in str_list]
+                except ValueError:
+                    pass
+            elif isinstance(value, Integer3DWidget):
+                return [value.x, value.y, value.z]
         return [None, None, None]
 
     def format_output(self, rendered_widgets):
@@ -37,7 +45,15 @@ class Double3DWidget(forms.MultiWidget):
 
     def decompress(self, value):
         if value:
-            return [value.x, value.y, value.z]
+            if isinstance(value, str) or isinstance(value, unicode):
+                try:
+                   # Expect value to be of the form '(0,0,0)'
+                   str_list = value.replace('(', '').replace(')', '').split(',')
+                   return [float(num) for num in str_list]
+                except ValueError:
+                    pass
+            elif isinstance(value, Double3DWidget):
+                return [value.x, value.y, value.z]
         return [None, None, None]
 
     def format_output(self, rendered_widgets):
@@ -60,7 +76,15 @@ class RGBAWidget(forms.MultiWidget):
 
     def decompress(self, value):
         if value:
-            return [value.r, value.g, value.b, value.a]
+            if isinstance(value, str) or isinstance(value, unicode):
+                try:
+                   # Expect value to be of the form '(0,0,0,0)'
+                   str_list = value.replace('(', '').replace(')', '').split(',')
+                   return [float(num) for num in str_list]
+                except ValueError:
+                    pass
+            elif isinstance(value, RGBAWidget):
+                return [value.r, value.g, value.b, value.a]
         return [None, None, None, None]
 
     def format_output(self, rendered_widgets):

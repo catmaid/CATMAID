@@ -6,6 +6,7 @@ Developer Documentation
 
    installation
    djangoinstall
+   userprofiles
    administration
    dbmigration
    faq

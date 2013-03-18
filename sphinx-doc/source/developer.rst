@@ -12,6 +12,6 @@ Developer Documentation
    faq
    djangounittest
    celeryinstall
-   catmaid_aws
+   ami
    data_view_types
    alternative_install

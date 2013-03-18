@@ -41,13 +41,6 @@
 		<script type="text/javascript">
 			var STATIC_URL_JS = '{{ STATIC_URL|escapejs }}';
 			var IE = false;
-			// set user profile properties
-			var userprofile = {};
-			userprofile.show_text_label_tool = {{ show_text_label_tool|lower }};
-			userprofile.show_tagging_tool = {{ show_tagging_tool|lower }};
-			userprofile.show_cropping_tool = {{ show_cropping_tool|lower }};
-			userprofile.show_segmentation_tool = {{ show_segmentation_tool|lower }};
-			userprofile.show_tracing_tool = {{ show_tracing_tool|lower }};
 		</script>
 
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/js/Detector.js"></script>

@@ -6,15 +6,19 @@ from catmaid.models import Relation
 import networkx as nx
 from networkx.algorithms import weakly_connected_component_subgraphs
 from collections import defaultdict
+from itertools import chain, ifilter
+from functools import partial
+from synapseclustering import tree_max_density
+import numpy as np
 
-def _skeleton_graph(project_id, skeleton_ids, confidence_threshold):
+def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
     """ Assumes all skeleton_ids belong to project_id. """
     skeletons_string = ",".join(str(int(x)) for x in skeleton_ids)
     cursor = connection.cursor()
 
     # Fetch all treenodes of all skeletons
     cursor.execute('''
-    SELECT id, parent_id, confidence, skeleton_id
+    SELECT id, parent_id, confidence, skeleton_id, location
     FROM treenode
     WHERE skeleton_id IN (%s)
     ''' % skeletons_string)
@@ -30,7 +34,8 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold):
     if 0 == confidence_threshold:
         # Do not split skeletons
         for row in rows:
-            arbors[row[3]].add_edge(row[1], row[0])
+            if row[1]:
+                arbors[row[3]].add_edge(row[1], row[0])
         for skid, digraph in arbors.iteritems():
             arbors[skid] = [digraph]
     else:
@@ -39,7 +44,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold):
         for row in rows:
             if row[2] < confidence_threshold:
                 to_split.add(row[3])
-            else:
+            elif row[1]:
                 arbors[row[3]].add_edge(row[1], row[0])
         for skid, digraph in arbors.iteritems():
             if skid in to_split:
@@ -56,12 +61,50 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold):
     FROM treenode_connector
     WHERE skeleton_id IN (%s)
     ''' % skeletons_string)
-    def container():
-        return defaultdict(list)
-    connectors = defaultdict(container)
+    connectors = defaultdict(partial(defaultdict, list))
     for row in cursor.fetchall():
         connectors[row[0]][row[1]].append((row[2], row[3]))
 
+
+    # Cluster by synapses
+    if bandwidth > 0:
+        locations = {row[0]: eval(row[4]) for row in rows}
+
+        treenode_connector = defaultdict(list)
+        for connector_id, pp in connectors.iteritems():
+            for treenode_id in chain.from_iterable(pp[relations['presynaptic_to']]):
+                treenode_connector[treenode_id].append((connector_id, "presynaptic_to"))
+            for treenode_id in chain.from_iterable(pp[relations['postsynaptic_to']]):
+                treenode_connector[treenode_id].append((connector_id, "postsynaptic_to"))
+
+        for skeleton_id, graphs in arbors.iteritems():
+            subdomains = []
+            for graph in graphs:
+                for parent_id, treenode_id in graph.edges():
+                    loc0 = locations[treenode_id]
+                    loc1 = locations[parent_id]
+                    graph[parent_id][treenode_id]['weight'] = np.linalg.norm(np.subtract(loc0, loc1))
+                treenode_ids = []
+                connector_ids =[]
+                relation_strings = []
+                for treenode_id in ifilter(treenode_connector.has_key, graph.nodes()):
+                    for c in treenode_connector.get(treenode_id):
+                        connector_id, relation = c
+                        treenode_ids.append(treenode_id)
+                        connector_ids.append(connector_id)
+                        relation_strings.append(relation)
+                # Invoke Casey's magic
+                print "before:", len(graph.nodes()), len(treenode_ids), len(connector_ids)
+                synapse_group = tree_max_density(graph.to_undirected(), treenode_ids, connector_ids, relation_strings, [bandwidth]).values()[0]
+                print "After:", type(synapse_group), synapse_group
+                # The list of nodes contains nodes that have connectors only
+                for domain in synapse_group.values():
+                    g = nx.DiGraph()
+                    g.add_path(domain.node_ids) # bogus graph, containing treenodes that point to connectors
+                    subdomains.append(g)
+            arbors[skeleton_id] = subdomains
+    
+    
     # Obtain neuron names
     cursor.execute('''
     SELECT cici.class_instance_a, ci.name
@@ -105,9 +148,10 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_graph(request, project_id=None):
     project_id = int(project_id)
-    skeleton_ids = map(int, request.POST.getlist('skeleton_list[]'))
+    skeleton_ids = [int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_list[')]
     confidence_threshold = int(request.POST.get('confidence_threshold', 0))
-    circuit = _skeleton_graph(project_id, skeleton_ids, confidence_threshold)
+    bandwidth = int(request.POST.get('bandwidth', 9000)) # in nanometers
+    circuit = _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth)
     package = {'nodes': [{'data': props} for digraph, props in circuit.nodes_iter(data=True)],
                'edges': []}
     edges = package['edges']

@@ -19,3 +19,4 @@ django-adminplus==0.1.7
 python-libuuid==0.9.0
 pillow==1.7.8
 south==0.7.6
+shapely==1.2.17

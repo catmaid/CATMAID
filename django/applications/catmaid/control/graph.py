@@ -9,7 +9,8 @@ from collections import defaultdict
 from itertools import chain, ifilter
 from functools import partial
 from synapseclustering import tree_max_density
-import numpy as np
+from numpy import subtract
+from numpy.linalg import norm
 
 def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
     """ Assumes all skeleton_ids belong to project_id. """
@@ -83,20 +84,18 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
                 for parent_id, treenode_id in graph.edges():
                     loc0 = locations[treenode_id]
                     loc1 = locations[parent_id]
-                    graph[parent_id][treenode_id]['weight'] = np.linalg.norm(np.subtract(loc0, loc1))
+                    graph[parent_id][treenode_id]['weight'] = norm(subtract(loc0, loc1))
                 treenode_ids = []
                 connector_ids =[]
-                relation_strings = []
+                relation_ids = []
                 for treenode_id in ifilter(treenode_connector.has_key, graph.nodes()):
                     for c in treenode_connector.get(treenode_id):
                         connector_id, relation = c
                         treenode_ids.append(treenode_id)
                         connector_ids.append(connector_id)
-                        relation_strings.append(relation)
+                        relation_ids.append(relation)
                 # Invoke Casey's magic
-                print "before:", len(graph.nodes()), len(treenode_ids), len(connector_ids)
-                synapse_group = tree_max_density(graph.to_undirected(), treenode_ids, connector_ids, relation_strings, [bandwidth]).values()[0]
-                print "After:", type(synapse_group), synapse_group
+                synapse_group = tree_max_density(graph.to_undirected(), treenode_ids, connector_ids, relation_ids, [bandwidth]).values()[0]
                 # The list of nodes contains nodes that have connectors only
                 for domain in synapse_group.values():
                     g = nx.DiGraph()

@@ -1109,7 +1109,7 @@ var WindowMaker = new function()
     content.appendChild( container );
 
     container.innerHTML =
-      '<input type="button" id="refresh_ontology_tree" value="refresh" style="display:block; float:left;" />' +
+      '<input type="button" id="refresh_ontology_editor" value="refresh" style="display:block; float:left;" />' +
       '<br clear="all" />' +
       '<div id="ontology_tree_name"><h4>Ontology</h4>' +
       '<div id="ontology_tree_object"></div></div>' +
@@ -1129,7 +1129,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    OntologyTree.init( project.getId() );
+    OntologyEditor.init( project.getId() );
 
     return win;
   };

@@ -239,6 +239,8 @@ function handle_profile_update(e) {
     userprofile.show_segmentation_tool = e.show_segmentation_tool;
   if (e.show_tracing_tool)
     userprofile.show_tracing_tool = e.show_tracing_tool;
+  if (e.show_ontology_tool)
+    userprofile.show_ontology_tool = e.show_ontology_tool;
   // update the edit tool actions and its div container
   createEditToolActions();
   new_edit_actions = createButtonsFromActions(editToolActions,
@@ -1036,6 +1038,7 @@ var realInit = function()
 	document.getElementById( "toolbar_crop" ).style.display = "none";
 	document.getElementById( "toolbox_project" ).style.display = "none";
 	document.getElementById( "toolbox_edit" ).style.display = "none";
+	document.getElementById( "toolbox_ontology" ).style.display = "none";
 	document.getElementById( "toolbox_data" ).style.display = "none";
   document.getElementById( "toolbox_segmentation" ).style.display = "none";
 	document.getElementById( "toolbox_show" ).style.display = "none";

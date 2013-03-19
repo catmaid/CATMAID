@@ -710,6 +710,8 @@ class UserProfile(models.Model):
         default=settings.PROFILE_SHOW_SEGMENTATION_TOOL)
     show_tracing_tool = models.BooleanField(
         default=settings.PROFILE_SHOW_TRACING_TOOL)
+    show_ontology_tool = models.BooleanField(
+        default=settings.PROFILE_SHOW_ONTOLOGY_TOOL)
 
     def __unicode__(self):
         return self.user.username
@@ -724,6 +726,7 @@ class UserProfile(models.Model):
         pdict['show_cropping_tool'] = self.show_cropping_tool
         pdict['show_segmentation_tool'] = self.show_segmentation_tool
         pdict['show_tracing_tool'] = self.show_tracing_tool
+        pdict['show_ontology_tool'] = self.show_ontology_tool
         return pdict
 
 def create_user_profile(sender, instance, created, **kwargs):

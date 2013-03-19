@@ -12,6 +12,7 @@ admin.autodiscover()
 
 # A regular expression matching floating point and integer numbers
 num = r'[-+]?[0-9]*\.?[0-9]+'
+integer = r'[-+]?[0-9]+'
 # A regular expression matching lists of integers with comma as delimiter
 intlist = r'[0-9]+(,[0-9]+)*'
 
@@ -213,6 +214,41 @@ urlpatterns += patterns('',
     (r'^dataviews/show/(?P<data_view_id>\d+)$', 'catmaid.control.get_data_view'),
     (r'^dataviews/show/default$', 'catmaid.control.get_default_data_view'),
     (r'^dataviews/type/comment$', 'catmaid.control.get_data_view_type_comment'),
+    )
+
+# Ontologies
+urlpatterns += patterns('',
+    (r'^ontology/knownroots$', 'catmaid.control.get_known_ontology_roots'),
+    (r'^(?P<project_id>%s)/ontology/list$' % (integer),
+        'catmaid.control.list_ontology'),
+    (r'^(?P<project_id>%s)/ontology/relations$' % (integer),
+        'catmaid.control.get_available_relations'),
+    (r'^(?P<project_id>%s)/ontology/relations/add$' % (integer),
+        'catmaid.control.add_relation_to_ontology'),
+    (r'^(?P<project_id>%s)/ontology/relations/remove$' % (integer),
+        'catmaid.control.remove_relation_from_ontology'),
+    (r'^(?P<project_id>%s)/ontology/relations/removeall$' % (integer),
+        'catmaid.control.remove_all_relations_from_ontology'),
+    (r'^(?P<project_id>%s)/ontology/relations/list$' % (integer),
+        'catmaid.control.list_available_relations'),
+    (r'^(?P<project_id>%s)/ontology/classes$' % (integer),
+        'catmaid.control.get_available_classes'),
+    (r'^(?P<project_id>%s)/ontology/classes/add$' % (integer),
+        'catmaid.control.add_class_to_ontology'),
+    (r'^(?P<project_id>%s)/ontology/classes/remove$' % (integer),
+        'catmaid.control.remove_class_from_ontology'),
+    (r'^(?P<project_id>%s)/ontology/classes/removeall$' % (integer),
+        'catmaid.control.remove_all_classes_from_ontology'),
+    (r'^(?P<project_id>%s)/ontology/classes/list$' % (integer),
+        'catmaid.control.list_available_classes'),
+    (r'^(?P<project_id>%s)/ontology/links/add$' % (integer),
+        'catmaid.control.add_link_to_ontology'),
+    (r'^(?P<project_id>%s)/ontology/links/remove$' % (integer),
+        'catmaid.control.remove_link_from_ontology'),
+    (r'^(?P<project_id>%s)/ontology/links/removeselected$' % (integer),
+        'catmaid.control.remove_selected_links_from_ontology'),
+    (r'^(?P<project_id>%s)/ontology/links/removeall$' % (integer),
+        'catmaid.control.remove_all_links_from_ontology'),
     )
 
 if settings.DEBUG:

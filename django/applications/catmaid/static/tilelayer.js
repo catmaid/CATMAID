@@ -87,8 +87,18 @@ function TileLayer(
 	 */
 	this.redraw = function(completionCallback)
 	{
-		var pixelPos = [ stack.x, stack.y, stack.z ];
+		
+		if( stack.tile_source_type === 5)
+		{
+			var pixelPos = [ stack.x, stack.y, stack.z, stack.t,  stack.c ];
+		}else{
+			var pixelPos = [ stack.x, stack.y, stack.z ];
+		}
+
 		var tileBaseName = getTileBaseName( pixelPos );
+
+		//console.log('Tile basename ',tileBaseName);
+
 
 		var zoom = stack.s;
 		var mag = 1.0;

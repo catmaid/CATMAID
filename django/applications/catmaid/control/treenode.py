@@ -141,9 +141,13 @@ def create_treenode(request, project_id=None):
     int_values = {
             'confidence': 0,
             'useneuron': -1,
-            'parent_id': -1}
+            'parent_id': -1,
+            't'        :  0,
+            'c'         : 0
+            }        
     string_values = {
             'targetgroup': 'none'}
+
     for p in float_values.keys():
         params[p] = float(request.POST.get(p, float_values[p]))
     for p in int_values.keys():
@@ -165,6 +169,11 @@ def create_treenode(request, project_id=None):
         new_treenode.radius = int(params['radius'])
         new_treenode.skeleton = skeleton
         new_treenode.confidence = int(params['confidence'])
+
+        new_treenode.location_t = int( params['t'] )
+        new_treenode.location_c = int( params['c'] )
+
+
         if parent_id:
             new_treenode.parent_id = parent_id
         new_treenode.save()

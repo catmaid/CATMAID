@@ -43,8 +43,11 @@ def node_list_tuples(request, project_id=None):
     # as: the ID of the active skeleton
     # top: the Y coordinate of the bounding box (field of view) in calibrated units
     # left: the X coordinate of the bounding box (field of view) in calibrated units
+    # back: the Time coordinate of the bounding box
+    #front: the Time coordinate of the bounding box
+    #channel: the channel coordinate in which we generate the bounding box (check overlay.js::updateNodes)
     atnid = int(request.POST.get('atnid', -1))
-    for p in ('top', 'left', 'z', 'width', 'height', 'zres'):
+    for p in ('top', 'left', 'z', 'width', 'height', 'zres', 'back', 'front', 'channel'):
         params[p] = float(request.POST.get(p, 0))
     params['limit'] = 5000  # Limit the number of retrieved treenodes within the section
     params['project_id'] = project_id
@@ -78,6 +81,8 @@ def node_list_tuples(request, project_id=None):
             t1.radius,
             t1.skeleton_id,
             t1.user_id,
+            (t1.location_t) AS t,
+            (t1.location_c) AS c,
             t2.id,
             t2.parent_id,
             (t2.location).x AS x,
@@ -86,7 +91,9 @@ def node_list_tuples(request, project_id=None):
             t2.confidence,
             t2.radius,
             t2.skeleton_id,
-            t2.user_id
+            t2.user_id,
+            (t2.location_t) AS t,
+            (t2.location_c) AS c
         FROM treenode t1
              INNER JOIN treenode t2 ON
                (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
@@ -98,6 +105,9 @@ def node_list_tuples(request, project_id=None):
             AND (t1.location).y > %(top)s
             AND (t1.location).y < %(bottom)s
             AND t1.project_id = %(project_id)s
+            AND t1.location_t >= %(back)s
+            AND t1.location_t <= %(front)s
+            AND t1.location_c = %(channel)s
         LIMIT %(limit)s
         ''', params)
 
@@ -122,11 +132,11 @@ def node_list_tuples(request, project_id=None):
           t1id = row[0]
           if t1id not in treenode_ids:
               treenode_ids.add(t1id)
-              treenodes.append(row[0:8] + (is_superuser or row[8] == user_id,))
+              treenodes.append(row[0:8] + (is_superuser or row[8] == user_id,) + row[9:11])
           t2id = row[9]
           if t2id not in treenode_ids:
               treenode_ids.add(t2id)
-              treenodes.append(row[9:17] + (is_superuser or row[17] == user_id,))
+              treenodes.append(row[11:19] + (is_superuser or row[19] == user_id,) + row[20:22])
 
         # Find connectors related to treenodes in the field of view
         # Connectors found attached to treenodes
@@ -248,13 +258,15 @@ def node_list_tuples(request, project_id=None):
                 confidence,
                 radius,
                 skeleton_id,
-                user_id
+                user_id,
+                (location_t) AS t,
+                (location_c) AS c
             FROM treenode
             WHERE id IN %(missing)s''', params)
 
             for row in cursor.fetchall():
                 treenodes.append(row)
-                treenode_ids.add(row[0:8] + (is_superuser or row[8] == user_id,))
+                treenode_ids.add(row[0:8] + (is_superuser or row[8] == user_id,) + row[9:11])
 
         labels = defaultdict(list)
         if request.POST['labels']:

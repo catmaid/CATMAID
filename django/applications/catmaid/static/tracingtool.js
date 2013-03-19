@@ -287,6 +287,30 @@ function TracingTool()
     }
   }) );
 
+
+  this.addAction( new Action({
+      helpText: "Move up 1 time point in t",
+      keyShortcuts: {
+        's': [ 83, 115 ]
+      },
+      run: function (e) {
+        self.prototype.slider_t.move(1);
+        return true;
+      }
+    }) );
+
+    this.addAction( new Action({
+      helpText: "Move down 1 time point in t ",
+      keyShortcuts: {
+        'a': [ 65, 97 ]
+      },
+      run: function (e) {
+        self.prototype.slider_t.move(-1);
+        return true;
+      }
+    }) );
+
+
   this.addAction( new Action({
     helpText: "Move left (towards negative x)",
     keyShortcuts: {
@@ -422,6 +446,8 @@ function TracingTool()
     }
   } ) );
 
+  /*
+  //deaftivated in 5D view to allow hot keys for time displacement
   this.addAction( new Action({
     helpText: "Go to active node",
     buttonName: "goactive",
@@ -436,6 +462,7 @@ function TracingTool()
       return true;
     }
   } ) );
+  */
 
   this.addAction( new Action({
     helpText: "Go to next branch or end point (with alt, stop earlier at node with tag, synapse or low confidence; with shift and at a branch node, move down the other branch)",
@@ -561,6 +588,8 @@ function TracingTool()
     }
   }) );
 
+/*
+//deaftivated in 5D view to allow hot keys for time displacement
   this.addAction( new Action({
     helpText: "Switch between a terminal and its connector",
     keyShortcuts: {
@@ -573,7 +602,7 @@ function TracingTool()
       return true;
     }
   }) );
-
+*/
   this.addAction( new Action({
     helpText: "Tag the active node",
     keyShortcuts: {

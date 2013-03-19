@@ -914,7 +914,7 @@ var SkeletonAnnotations = new function()
 
 
     // Create a node and activate it
-    var createNode = function (parentID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z)
+    var createNode = function (parentID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, phys_t, phys_c)
     {
       var selneuron, useneuron;
 
@@ -937,6 +937,8 @@ var SkeletonAnnotations = new function()
         x: phys_x,
         y: phys_y,
         z: phys_z,
+        t: phys_t,
+        c: phys_c,
         radius: radius,
         confidence: confidence,
         targetgroup: "Fragments",
@@ -951,7 +953,7 @@ var SkeletonAnnotations = new function()
               // add treenode to the display and update it
               var nid = parseInt(jso.treenode_id);
               // The parent will be null if there isn't one or if the parent Node object is not within the set of retrieved nodes, but the parentID will be defined.
-              var nn = SkeletonElements.newNode(nid, self.paper, nodes[parentID], parentID, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
+              var nn = SkeletonElements.newNode(nid, self.paper, nodes[parentID], parentID, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true, phys_t, phys_c, 0, 0);
 
               nodes[nid] = nn;
               nn.draw();
@@ -1083,8 +1085,18 @@ var SkeletonAnnotations = new function()
      * @param jso is an array of JSON objects, where each object may specify a Node or a ConnectorNode
      * @param pz is the z of the section in calibrated coordinates
      */
-    var refreshNodesFromTuples = function (jso, pz)
+    var refreshNodesFromTuples = function (jso, pz, pt, pc)
     {
+      if( pt === undefined)
+      {
+        pt = 0;
+        console.log('WARNING: at overlay::refreshNodesFromTuples: pt is nto defined. Setting it to default variable');
+      }
+      if( pc === undefined)
+      {
+        pc = 0;
+        console.log('WARNING: at overlay::refreshNodesFromTuples: pc is nto defined. Setting it to default variable');
+      }
       // Reset nodes and labels
       nodes = {};
       // remove labels, but do not hide them
@@ -1097,10 +1109,11 @@ var SkeletonAnnotations = new function()
       jso[0].forEach(function(a, index, array) {
         // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
         // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[8]: user can edit or not
+        //a[9]: time, a[10]: channel
         nodes[a[0]] = SkeletonElements.newNode(
           a[0], self.paper, null, a[1], a[6], phys2pixX(a[2]),
           phys2pixY(a[3]), phys2pixZ(a[4]),
-          (a[4] - pz) / stack.resolution.z, a[5], a[7], a[8]);
+          (a[4] - pz) / stack.resolution.z, a[5], a[7], a[8], a[9], a[10], a[9] - pt, a[10] - pc);
       });
 
       // Populate ConnectorNodes
@@ -1224,7 +1237,7 @@ var SkeletonAnnotations = new function()
       // enlarged but will have extra nodes fetched for the exposed
       // area.
 
-      var doNotUpdate = stack.old_z == stack.z && stack.old_s == stack.s;
+      var doNotUpdate = stack.old_z == stack.z && stack.old_s == stack.s && stack.old_t == stack.t && stack.old_c == stack.c;
       if ( doNotUpdate )
       {
         var sPAD = PAD / stack.scale;
@@ -1281,6 +1294,10 @@ var SkeletonAnnotations = new function()
       var phys_x = pix2physX(pos_x);
       var phys_y = pix2physY(pos_y);
       var phys_z = project.coordinates.z;
+
+      var phys_t = project.coordinates.t;
+      var phys_c = project.coordinates.c;
+
 
       var targetTreenodeID;
 
@@ -1346,7 +1363,7 @@ var SkeletonAnnotations = new function()
             if (null !== atn.id) {
               statusBar.replaceLast("Created new node as child of node #" + atn.id);
             }
-            createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+            createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z, phys_t, phys_c);
           } else if ("connector" === atn.type) {
             // create new treenode (and skeleton) presynaptic to activated connector
             // if the connector doesn't have a presynaptic node already
@@ -1488,6 +1505,8 @@ var SkeletonAnnotations = new function()
 
         //requestQueue.replace('model/node.list.php', 'POST',
         var pz = stack.z * stack.resolution.z + stack.translation.z;
+        var pt = stack.t;
+        var pc = stack.c;
         requestQueue.replace(django_url + project.id + '/node/list', 'POST', {
           pid: stack.getProject().id,
           sid: stack.getId(),
@@ -1498,9 +1517,12 @@ var SkeletonAnnotations = new function()
           height: (stack.viewHeight / stack.scale) * stack.resolution.y,
           zres: stack.resolution.z,
           atnid: atnid,
-          labels: self.getLabelStatus()
+          labels: self.getLabelStatus(),
+          back: stack.t - 1,/*only retieve nodes within +-1 of the current time point*/
+          front: stack.t + 1,
+          channel: stack.c 
         }, function (status, text, xml) {
-          handle_updateNodes(status, text, xml, callback, pz);
+          handle_updateNodes(status, text, xml, callback, pz, pt, pc);
         },
         'nodes_for_overlay_request');
       
@@ -1513,7 +1535,7 @@ var SkeletonAnnotations = new function()
      * handle an update-treelinenodes-request answer
      *
      */
-    var handle_updateNodes = function (status, text, xml, callback, pz) {
+    var handle_updateNodes = function (status, text, xml, callback, pz, pt, pc) {
       if (status == 200) {
         var jso = $.parseJSON(text);
         // There could be a genuine error (something went wrong in the server)
@@ -1525,7 +1547,7 @@ var SkeletonAnnotations = new function()
           }
         } else {
           // XXX: how much time does calling the function like this take?
-          refreshNodesFromTuples(jso, pz);
+          refreshNodesFromTuples(jso, pz, pt, pc);
           stack.redraw();
         }
       }

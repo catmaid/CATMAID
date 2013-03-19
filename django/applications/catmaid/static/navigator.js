@@ -302,9 +302,18 @@ function Navigator()
 	
 	this.changeSlice = function( val )
 	{
-		self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
+    		// if 3d viewer window visible, change its z slice
+		if( $( "#view_in_3d_webgl_widget").length ) 
+		{
+    			if( $('#enable_z_plane').attr('checked') != undefined ) 
+    			{
+    				WebGLApp.updateZPlane( val );
+    			}
+    		}
+    		self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s, self.stack.t, self.stack.c );
 		return;
 	}
+
 	//--------------------------------------------------------------------------
 	
 	//--------------------------------------------------------------------------
@@ -331,9 +340,71 @@ function Navigator()
 	
 	this.changeScale = function( val )
 	{
-		self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, val );
+		self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, val, self.stack.t, self.stack.c );
 		return;
 	}
+
+//--------------------------------------------------------------------------
+	
+	//--------------------------------------------------------------------------
+	/**
+	 * ... same as said before for time changes ...
+	 */
+	var changeTimeDelayedTimer = null;
+	var changeTimeDelayedParam = null;
+	
+	var changeTimeDelayedAction = function()
+	{
+		window.clearTimeout( changeTimeDelayedTimer );
+		self.changeTime( changeTimeDelayedParam.t );
+		changeTimeDelayedParam = null;
+		return false;
+	}
+	
+	this.changeTimeDelayed = function( val )
+	{
+		if ( changeTimeDelayedTimer ) window.clearTimeout( changeTimeDelayedTimer );
+		changeTimeDelayedParam = { t : val };
+		changeTimeDelayedTimer = window.setTimeout( changeTimeDelayedAction, 100 );
+	}
+	
+	this.changeTime = function( val )
+	{
+		self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, self.stack.s, val, self.stack.c );
+		return;
+	}
+
+
+	//--------------------------------------------------------------------------
+	
+	//--------------------------------------------------------------------------
+	/**
+	 * ... same as said before for channel changes ...
+	 */
+	var changeChannelDelayedTimer = null;
+	var changeChannelDelayedParam = null;
+	
+	var changeChannelDelayedAction = function()
+	{
+		window.clearTimeout( changeChannelDelayedTimer );
+		self.changeChannel( changeChannelDelayedParam.c );
+		changeChannelDelayedParam = null;
+		return false;
+	}
+	
+	this.changeChannelDelayed = function( val )
+	{
+		if ( changeChannelDelayedTimer ) window.clearTimeout( changeChannelDelayedTimer );
+		changeChannelDelayedParam = { c : val };
+		changeChannelDelayedTimer = window.setTimeout( changeChannelDelayedAction, 100 );
+	}
+	
+	this.changeChannel = function( val )
+	{
+		self.stack.moveToPixel( self.stack.z, self.stack.y, self.stack.x, self.stack.s, self.stack.t, val );
+		return;
+	}
+
 
 	/**
 	 * change the scale, making sure that the point keep_[xyz] stays in
@@ -444,6 +515,28 @@ function Navigator()
 		}),
 		
 		new Action({
+			helpText: "Move up 1 time point in t (or 10 with Shift held)",
+			keyShortcuts: {
+				's': [ 83, 115 ]
+			},
+			run: function (e) {
+				self.slider_t.move((1));
+				return true;
+			}
+		}),
+
+		new Action({
+			helpText: "Move down 1 time point in t (or 10 with Shift held)",
+			keyShortcuts: {
+				'a': [ 65, 97 ]
+			},
+			run: function (e) {
+				self.slider_t.move(-( 1));
+				return true;
+			}
+		}),
+
+		new Action({
 			helpText: "Move left (towards negative x, faster with Shift held)",
 			keyShortcuts: {
 				"\u2190": [ arrowKeyCodes.left ]
@@ -546,10 +639,6 @@ function Navigator()
 			self.changeSlice );
 		
 
-		console.log('stack slices', self.stack.slices);
-		console.log('stack time points', self.stack.time_points);
-		console.log('stack channels', self.stack.channels);
-
 		if ( self.stack.time_points.length < 2 )	//!< hide the self.slider_t if there is only one time point
 		{
 			self.slider_t.getView().parentNode.style.display = "none";
@@ -563,7 +652,7 @@ function Navigator()
 			0,
 			self.stack.time_points,
 			self.stack.t,
-			self.changeTimePoint );
+			self.changeTime );
 
 		if ( self.stack.channels.length < 2 )	//!< hide the self.slider_c if there is only one channel
 		{

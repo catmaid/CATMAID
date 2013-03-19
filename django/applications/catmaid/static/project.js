@@ -333,6 +333,38 @@ function Project( pid )
 		}
 	}
 
+	this.moveToInStacks5D = function(
+		zp,
+		yp,
+		xp,
+		sp,
+		tp,
+		cp,
+		stacks,
+		completionCallback)
+	{
+		var stackToMove;
+		if (stacks.length === 0) {
+			// FIXME: do we need a callback for tool.redraw as well?
+			if ( tool && tool.redraw )
+				tool.redraw();
+			if (typeof completionCallback !== "undefined") {
+				completionCallback();
+			}
+		} else {
+			stackToMove = stacks.shift();
+			stackToMove.moveTo5D( zp,
+					    yp,
+					    xp,
+					    sp,
+					    tp,
+					    cp,
+					    function () {
+						    self.moveToInStacks5D( zp, yp, xp, sp, tp, cp, stacks, completionCallback );
+					    });
+		}
+	}
+
 	/**
 	 * move all stacks to the physical coordinates
 	 */
@@ -356,6 +388,35 @@ function Project( pid )
 
 		self.moveToInStacks( zp, yp, xp, sp, stacksToMove, completionCallback );
 	};
+
+
+	/**
+	 * move all stacks to the physical coordinates
+	 */
+	this.moveTo5D = function(
+		zp,
+		yp,
+		xp,
+		sp,
+		tp,
+		cp,
+		completionCallback)
+	{
+		var stacksToMove = [];
+		self.coordinates.x = xp;
+		self.coordinates.y = yp;
+		self.coordinates.z = zp;
+		self.coordinates.t = tp;
+		self.coordinates.c = cp;
+		
+		for ( var i = 0; i < stacks.length; ++i )
+		{
+			stacksToMove.push( stacks[ i ] );
+		}
+
+		self.moveToInStacks5D( zp, yp, xp, sp, tp, cp, stacksToMove, completionCallback );
+	};
+
 
   this.updateTool = function()
   {

@@ -62,17 +62,18 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
             'translation': {
                 'x': ps.translation.x,
                 'y': ps.translation.y,
-                'z': ps.translation.z
+                'z': ps.translation.z,
             },
             'resolution': {
                 'x': float(s.resolution.x),
                 'y': float(s.resolution.y),
-                'z': float(s.resolution.z)
+                'z': float(s.resolution.z),
             },
             'dimension': {
                 'x': int(s.dimension.x),
                 'y': int(s.dimension.y),
-                'z': int(s.dimension.z)
+                'z': int(s.dimension.z),
+                't': int(s.t)
             },
             'tile_height': int(s.tile_height),
             'tile_width': int(s.tile_width),

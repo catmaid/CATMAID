@@ -68,14 +68,18 @@ var SkeletonElements = new function()
     zdiff, // the different from the current slices
     confidence,
     skeleton_id, // the id of the skeleton this node is an element of
-    can_edit) // a boolean combining (is_superuser or user owns the node)
+    can_edit,  // a boolean combining (is_superuser or user owns the node)
+    t,    //time coordinate in 5D datasets
+    ch,   //channel coordinate in 5D dtasets
+    tdiff, //the difference from current time point
+    cdiff) //the different from current channel
   {
     var node;
     if (nextNodeIndex < nodePool.length) {
       node = nodePool[nextNodeIndex];
-      reuseNode(node, id, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id, can_edit);
+      reuseNode(node, id, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id, can_edit, t, ch, tdiff, cdiff);
     } else {
-      node = new this.Node(id, paper, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id, can_edit);
+      node = new this.Node(id, paper, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id, can_edit, t, ch, tdiff, cdiff);
       nodePool.push(node);
     }
     nextNodeIndex += 1;
@@ -95,7 +99,11 @@ var SkeletonElements = new function()
     zdiff, // the different from the current slices
     confidence,
     skeleton_id, // the id of the skeleton this node is an element of
-    can_edit)
+    can_edit,
+    t,    //time coordinate in 5D datasets
+    ch,//channel coordinate in 5D dtasets
+    tdiff, //difference with respect to current time point
+    cdiff) //difference with respect to current channel
   {
     this.id = id;
     this.type = TYPE_NODE;
@@ -108,7 +116,11 @@ var SkeletonElements = new function()
     this.x = x;
     this.y = y;
     this.z = z;
+    this.t = t;
+    this.ch = ch;
     this.zdiff = zdiff;
+    this.tdiff = tdiff;
+    this.cdiff = cdiff;
     this.shouldDisplay = displayTreenode;
     this.confidence = confidence;
     this.skeleton_id = skeleton_id;
@@ -167,7 +179,7 @@ var SkeletonElements = new function()
   };
 
   /** Takes an existing Node and sets all the proper members as given, and resets its children. */
-  var reuseNode = function(node, id, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id, can_edit)
+  var reuseNode = function(node, id, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id, can_edit, t, ch, tdiff, cdiff)
   {
     node.id = id;
     node.parent = parent;
@@ -178,7 +190,11 @@ var SkeletonElements = new function()
     node.x = x;
     node.y = y;
     node.z = z;
+    node.t = t;
+    node.ch = ch;
     node.zdiff = zdiff;
+    node.tdiff = tdiff;
+    node.cdiff = cdiff;
     node.shouldDisplay = displayTreenode;
     node.confidence = confidence;
     node.skeleton_id = skeleton_id;
@@ -186,7 +202,7 @@ var SkeletonElements = new function()
     node.can_edit = can_edit;
 
     if (node.c) {
-      if (0 !== zdiff) {
+      if (0 !== zdiff || 0 != tdiff || 0 != cdiff) {
         node.c.hide();
         node.mc.hide();
       } else {
@@ -436,13 +452,33 @@ var SkeletonElements = new function()
   };
 
   var displayTreenode = function () {
-    return this.zdiff >= 0 && this.zdiff < 1;
+    if( this.tdiff === undefined )
+    {  
+      this.tdiff = 0;
+       console.log('Warning: At overlay_node::displayTreeNode: this.tdiff is undefined. Setting to default variable')
+    }
+    if( this.cdiff === undefined )
+    {  
+      this.cdiff = 0;
+       console.log('Warning: At overlay_node::displayTreeNode: this.cdiff is undefined. Setting to default variable')
+    }
+    return (this.zdiff >= 0 && this.zdiff < 1) && (this.tdiff >= 0 && this.tdiff < 1) && (this.cdiff >= 0 && this.cdiff < 1);
   };
 
   var displayConnector = function() {
+    if( this.tdiff === undefined )
+    {  
+      this.tdiff = 0;
+       console.log('Warning: At overlay_node::displayTreeNode: this.tdiff is undefined. Setting to default variable')
+    }
+    if( this.cdiff === undefined )
+    {  
+      this.cdiff = 0;
+       console.log('Warning: At overlay_node::displayTreeNode: this.cdiff is undefined. Setting to default variable')
+    }
     /* Change the constant to 1.5 if you want to see the connector
        (differently coloured) in the next and previous slices too. */
-    return this.zdiff >= 0 && this.zdiff < 1;
+    return (this.zdiff >= 0 && this.zdiff < 1) && (this.tdiff >= 0 && this.tdiff < 1) && (this.cdiff >= 0 && this.cdiff < 1);
   };
 
   var displayBetweenNodes = function(node_a, node_b) {

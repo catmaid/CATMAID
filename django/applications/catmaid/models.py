@@ -410,6 +410,8 @@ class Treenode(UserFocusedModel):
     skeleton = models.ForeignKey(ClassInstance)
     reviewer_id = models.IntegerField(default=-1)
     review_time = models.DateTimeField()
+    location_t = models.IntegerField(default=0) #added to handle annotations through time
+    location_c = models.IntegerField(default = 0) # added to handle annotations through channels (or any extra dimension)   
 
 
 class Connector(UserFocusedModel):

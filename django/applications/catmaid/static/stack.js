@@ -121,6 +121,8 @@ function Stack(
 		var l =
 		{
 			z : self.z * resolution.z + translation.z,
+			t : self.t * resolution.t + translation.t,//TODO: define a resolution t if necessary
+			c : self.c + translation.c,
 			s : self.s,
 			scale : self.scale,
 			y : self.y * resolution.y + translation.y,
@@ -210,6 +212,8 @@ function Stack(
 		self.old_z = self.z;
 		self.old_y = self.y;
 		self.old_x = self.x;
+		self.old_t = self.t;
+		self.old_c = self.c;
 		self.old_s = self.s;
 		self.old_scale = self.scale;
 		self.old_yc = self.yc;
@@ -273,6 +277,49 @@ function Stack(
 		}
 	}
 
+	this.moveToAfterBeforeMoves5D = function( zp, yp, xp, sp, tp, cp, completionCallback, layersWithBeforeMove )
+	{
+		var layerWithBeforeMove;
+
+		if (layersWithBeforeMove.length == 0) {
+			// Then carry on to the actual move:
+
+			if ( typeof sp == "number" )
+			{
+				self.s = Math.max( self.MIN_S, Math.min( self.MAX_S, Math.round( sp ) ) );
+				self.scale = 1 / Math.pow( 2, self.s );
+			}
+
+			//-----------------------addition for 5D----------------------------------------
+			self.c = Math.max(0, Math.min(MAX_C, Math.round(cp) ) );
+			self.t = Math.max(0, Math.min(MAX_T, Math.round( ( tp - translation.t ) / resolution.t ) ) );
+			//-----------------------------------------------------------
+
+			self.x = Math.max( 0, Math.min( MAX_X, Math.round( ( xp - translation.x ) / resolution.x ) ) );
+			self.y = Math.max( 0, Math.min( MAX_Y, Math.round( ( yp - translation.y ) / resolution.y ) ) );
+
+			var z1;
+			var z2;
+			z1 = z2 = Math.round( ( zp - translation.z ) / resolution.z );
+			while ( skip_planes[ z1 ] && skip_planes[ z2 ] )
+			{
+				z1 = Math.max( 0, z1 - 1 );
+				z2 = Math.min( MAX_Z, z2 + 1 );
+			}
+			if ( !skip_planes[ z1 ] ) self.z = z1;
+			else self.z = z2;
+			self.z = Math.max( 0, Math.min( MAX_Z, self.z ) );
+
+			update(completionCallback);
+
+		} else {
+			// Otherwise do the next layer's beforeMove():
+			layerWithBeforeMove = layersWithBeforeMove.shift();
+			l.beforeMove(function () {
+				self.moveToAfterBeforeMoves5D( zp, yp, xp, sp, tp, cp, completionCallback, layersWithBeforeMove );
+			});
+		}
+	}
 	/**
 	 * move to project-coordinates
 	 */
@@ -292,18 +339,43 @@ function Stack(
 	}
 	
 	/**
+	 * move to project-coordinates
+	 */
+	this.moveTo5D = function( zp, yp, xp, sp, tp, cp, completionCallback )
+	{
+		var layersWithBeforeMove = [];
+		for ( var key in layers ) {
+			if (layers.hasOwnProperty(key)) {
+				l = layers[key];
+				if (l.beforeMove) {
+					layersWithBeforeMove.push(l);
+				}
+			}
+		}
+
+		self.moveToAfterBeforeMoves5D( zp, yp, xp, sp, tp, cp, completionCallback, layersWithBeforeMove );
+	}
+
+	/**
 	 * move to pixel coordinates
 	 */
-	this.moveToPixel = function( zp, yp, xp, sp, tp )
+	this.moveToPixel = function( zp, yp, xp, sp, tp, cp )
 	{
-		if( tp === undefined)
-			tp = 0;
+		if( self.tile_source_type == 5)//5D visualization
+		{
+			project.moveTo5D(
+			zp * resolution.z + translation.z,
+			yp * resolution.y + translation.y,
+			xp * resolution.x + translation.x,
+			sp, tp * resolution.t + translation.t, cp );
+		}else{
+
 		project.moveTo(
 			zp * resolution.z + translation.z,
 			yp * resolution.y + translation.y,
 			xp * resolution.x + translation.x,
 			sp );
-		
+		}
 		return true;
 	}
 	
@@ -415,17 +487,24 @@ function Stack(
 	self.resolution = resolution;
 	self.translation = translation;
 	self.dimension = dimension;
-	self.time = time;
+	self.dimension_t = time;
 	var MAX_T = time - 1;
 
-	self.c = c;
+
+	self.translation.t = 0;//TODO: obtain this from the database
+	self.resolution.t = 1.0; 
+
+	self.channels = c;
 
 	if( c.length === 0 )//empty array
-		var MAX_C = 0;
-	else if( tile_source_type === 5 )
 	{
-		var MAX_C = c[0] - 1;
+		self.dimension_c = 1;
+	}else if( tile_source_type === 5 )
+	{
+		self.dimension_c =  c[0];	
 	}
+	var MAX_C = self.dimension_c - 1;
+
 
 	self.tile_source_type = tile_source_type;
 	self.labelupload_url = labelupload_url;
@@ -464,7 +543,7 @@ function Stack(
 	//! all possible time points
 	self.time_points = new Array();
 	self.broken_time_points = new Array();
-	for ( var i = 0; i < self.time; ++i )
+	for ( var i = 0; i < self.dimension_t; ++i )
 	{
 		/* TODO: adapt this in case we have missing time points
 		if ( !skip_time_points[ i ] )
@@ -482,7 +561,7 @@ function Stack(
 	self.broken_channels = new Array();
 	if( self.tile_source_type === 5 )
 	{
-		for ( var i = 0; i < MAX_C + 1; ++i )
+		for ( var i = 0; i < self.dimension_c; ++i )
 		{
 		/* TODO: adapt this in case we have missing time points
 		if ( !skip_channe[ i ] )
@@ -585,13 +664,17 @@ function Stack(
   view.appendChild( neuronnameDisplay );
 
 	// take care, that all values are within a proper range
-  // Declare the x,y,z,s as coordinates in pixels
+  // Declare the x,y,z,s,c,t as coordinates in pixels
 	self.z = 0;
+	self.t = 0;
+	self.c = 0;
 	self.y = Math.floor( MAX_Y / 2 );
 	self.x = Math.floor( MAX_X / 2 );
 	self.s = self.MAX_S;
 	
 	self.old_z = -1;
+	self.old_t = -1;
+	self.old_c = -1;
 	self.old_y = self.y;
 	self.old_x = self.x;
 	self.old_s = self.s;

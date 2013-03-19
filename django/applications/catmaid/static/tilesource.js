@@ -124,11 +124,11 @@ function BackslashTileSource( baseURL, fileExtension )
 
 
 /**
- * A tile source to find 5D information as stack1/t/c/z/x_y_s.jpg
+ * A tile source to find 5D information as stack1/c/t/z/x_y_s.jpg
  *
  * Source type: 5
  */
-function xyztcTileSource( baseURL, fileExtension )
+function xyztcTileSource( baseURL, fileExtension ) 
 {
     /**
      * Return the URL of a single tile, defined by it grid position
@@ -137,6 +137,7 @@ function xyztcTileSource( baseURL, fileExtension )
     this.getTileURL = function( project, stack, baseName,
         tileWidth, tileHeight, col, row, zoom_level )
     {
+        //console.log('xyztcTileSource ', baseURL, baseName);
         return baseURL + baseName + row + "_" + col + "_" + zoom_level + "." + fileExtension;
     }
 
@@ -169,7 +170,14 @@ function GenericOverviewLayer( layer, baseURL, fileExtension )
 {
     this.redraw = function()
     {
-        img.src = baseURL + stack.z + "/small." + fileExtension;
+        if( stack.tile_source_type === 5)
+        {
+            img.src = baseURL + (stack.c) + "/" + (stack.t) + "/" + stack.z + "/small." + fileExtension;
+        }else{
+            img.src = baseURL + stack.z + "/small." + fileExtension;
+        }
+
+        
     }
 
     this.unregister = function()

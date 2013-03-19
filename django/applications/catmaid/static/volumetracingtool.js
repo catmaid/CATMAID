@@ -2,20 +2,24 @@
 * Volume tracing tool
 */
 var canvasLayer;
+var traceBrushSize = 16;
+var VolumeTraceLastID = 0; 
 function VolumeTracingTool()
 {
     var self = this;
-    var lastSize = 16;
+    
     this.stack = null;
     this.toolname = "Volume Tracing Tool";
     //var canvasLayer = null;
     this.brush = null;
-    this.isDragging = false;
-    this.traceArray = new Array();
+    this.isDragging = false;    
+    this.volumeAnnotation = new VolumeTracingAnnotations();
+    this.currentTrace = null;
+    this.traces = [];
     
     this.registerToolbar = function()
     {
-        self.brush_slider = new Slider(SLIDER_HORIZONTAL, true, 1, 100, 100, lastSize,
+        self.brush_slider = new Slider(SLIDER_HORIZONTAL, true, 1, 100, 100, traceBrushSize,
             self.changeSlice);
         document.getElementById("toolbar_volseg").style.display = "block";    
         var slider_box = document.getElementById("volseg_radius_box");
@@ -57,34 +61,60 @@ function VolumeTracingTool()
         self.stack.addLayer("VolumeCanvasLayer", canvasLayer);
         self.stack.resize();
         
-        canvasLayer.canvas.on({
+        /*canvasLayer.canvas.on({
             'mouse:down' : function(e) {
                 self.isDragging = true;
             },
             'mouse:up' : function(e) {
                 self.isDragging = false;
             }
-        });
+        });*/
         
+    }
+    
+    this.getTraceByID = function(id)
+    {
+        for (var i = 0; i < self.traces.length; i++)
+        {
+            if (self.traces[i].id === id)
+            {
+                return self.traces[i];
+            }
+        }
+        return null;
     }
     
     this.destroyToolbar = function()
     {
-        lastSize = self.brush_slider.val;
+        traceBrushSize = self.brush_slider.val;
         document.getElementById("toolbar_volseg").style.display = "none";        
         self.brush_slider.update(0, 1, undefined, 0, null);
     };
+    
+    this.createNewTrace = function()
+    {
+        VolumeTraceLastID--;
+        self.currentTrace = new fabricTrace(canvasLayer, 
+            VolumeTraceLastID);
+        self.traces.push(self.currentTrace);
+    }
     
     this.register = function(parentStack)
     {
         self.stack = parentStack;
         self.registerToolbar();
         self.createCanvasLayer();
+        self.createNewTrace();
+        
         document.getElementById("toolbar_volseg").style_display = "block";        
         self.mouseCatcher.onmousemove = onmousemove.pos;
         self.mouseCatcher.onmousedown = onmousedown;
         self.mouseCatcher.onmouseup = onmouseup;
         self.stack.getView().appendChild(self.mouseCatcher);
+        self.volumeAnnotation.setStack(self.stack);
+        
+        
+        
         //alert('Registered Volume Tool');
         return;
     };
@@ -146,6 +176,8 @@ function VolumeTracingTool()
     {
         self.isDragging = false;
         statusBar.replaceLast("Mouse Up");
+        self.volumeAnnotation.pushTrace(self.currentTrace);
+        self.createNewTrace();
     }
     
     var onmousemove = 
@@ -169,8 +201,7 @@ function VolumeTracingTool()
                 if (self.isDragging)
                 {
                     var spot = self.brush.clone();
-                    self.traceArray.push(spot);
-                    canvasLayer.canvas.add(spot);
+                    self.currentTrace.addObject(spot);
                 }
                 
                 canvasLayer.canvas.renderAll();
@@ -179,5 +210,58 @@ function VolumeTracingTool()
             return false;
         }        
     };
+    
+}
+
+function fabricTrace(cl, objid)
+{
+    var self = this;
+    this.canvasLayer = cl;
+    this.objectList = []; //List of fabric.js Objects
+    
+    /**
+     * A fabricTrace's ID will be negative if it has not yet been synced
+     * with the database. If it overlaps an existing trace, it gets 
+     * erased and merged with that one. If it is nonoverlapping, it 
+     * gets an objectID from the database, which will be positive.
+     */
+    this.id = objid;
+    
+    this.addToCanvas = function()
+    {
+        var canvas = self.canvasLayer.canvas;
+        for (var i = 0; i < self.objectList.length; i++)
+        {
+            canvas.add(self.objectList[i]);
+        }
+        canvasLayer.canvas.renderAll();
+    }
+    
+    this.removeFromCanvas = function()
+    {
+        for (var i = 0; i < self.objectList.length; i++)
+        {
+            self.objectList[i].remove();
+        }
+        canvasLayer.canvas.renderAll();
+    }
+    
+    this.addObject = function(obj)
+    {
+        self.objectList.push(obj);
+        self.canvasLayer.canvas.add(obj);
+    }
+    
+    /**
+     * setObject(inObj) is called with a fabric.js object generated from
+     * server-side SVG. This replaces the current object list with a
+     * single object.
+     */
+    this.setObject = function(inObj)
+    {
+        self.removeFromCanvas();
+        self.objectList = [inObj];
+        self.addToCanvas();
+    }
     
 }

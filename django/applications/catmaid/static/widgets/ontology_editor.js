@@ -543,6 +543,8 @@ var OntologyEditor = new function()
     this.create_relation_handler = function (pid, tree_id) {
         $('#ontology_add_dialog #cancel').off("click").on("click",
         function() {
+            // clear input box
+            $('#ontology_add_dialog #relname').val("");
             $.unblockUI();
             return false;
         });
@@ -562,6 +564,8 @@ var OntologyEditor = new function()
                             OntologyEditor.show_error_status( "Success", "A new relation has been created." );
                         });
                 });
+            // clear input box
+            $('#ontology_add_dialog #relname').val("");
         });
         // show only relation field
         $('#ontology_add_dialog #input_rel').css("display", "block");
@@ -630,6 +634,8 @@ var OntologyEditor = new function()
     this.create_class_handler = function (pid, tree_id) {
         $('#ontology_add_dialog #cancel').off("click").on("click",
         function() {
+            // clear input box
+            $('#ontology_add_dialog #classname').val("");
             $.unblockUI();
             return false;
         });
@@ -649,6 +655,8 @@ var OntologyEditor = new function()
                             OntologyEditor.show_error_status( "Success", "A new class has been created." );
                         });
                 });
+            // clear input box
+            $('#ontology_add_dialog #classname').val("");
         });
         // show only class field
         $('#ontology_add_dialog #input_rel').css("display", "none");

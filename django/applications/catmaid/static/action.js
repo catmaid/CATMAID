@@ -303,10 +303,10 @@ var segmentationWindowActions = [
 
   new Action({
     helpText: "Show segments table",
-    buttonID: "segmentation_button_segments_table",
+    buttonID: "segmentation_button_sliceinfo",
     buttonName: 'table_segments',
     run: function (e) {
-      WindowMaker.show('segmentstable-widget');
+      WindowMaker.show('sliceinfo-widget');
       return true;
     }
   }),

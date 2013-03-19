@@ -83,6 +83,11 @@ var OntologyEditor = new function()
                 return parameters;
               },
               "success": function (e) {
+                if (e.warning) {
+                    $("#ontology_warnings").html("Warning: " + e.warning);
+                } else {
+                    $("#ontology_warnings").html("");
+                }
                 if (e.error) {
                   alert(e.error);
                 }

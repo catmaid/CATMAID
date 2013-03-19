@@ -149,8 +149,9 @@ def list_ontology(request, project_id=None):
                         if rc in class_map:
                             root_class_ids.append( class_map[rc] )
                     if len(root_class_ids) == 0:
-                        raise Exception('Could not find any of the known root classes. ' \
-                            'Please add at least one of them to build an ontology.')
+                        warning = {'warning': 'Could not find any of the known root classes. ' \
+                            'Please add at least one of them to build an ontology.'}
+                        return HttpResponse(json.dumps(warning))
                 else:
                     if root_class not in class_map:
                         raise Exception('Root class "{0}" not found'.format( root_class ))

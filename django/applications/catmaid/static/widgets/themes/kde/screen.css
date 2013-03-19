@@ -234,6 +234,11 @@ div#ontology_editor_widget span#known_root_names
 	font-style: italic;
 }
 
+div#ontology_editor_widget div#ontology_warnings
+{
+    color: red;
+}
+
 .wider-context-menu
 {
     min-width: 220px;

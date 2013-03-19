@@ -306,7 +306,7 @@ var createEditToolActions = function() {
     editToolActions.push(
       new Action({
         helpText: "Show ontology tools",
-        buttonID: "ontology_editor_button",
+        buttonID: "edit_button_ontology",
         buttonName: 'ontology_tools',
         run: function (e) {
           project.setTool( new OntologyTool() );

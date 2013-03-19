@@ -25,7 +25,7 @@ function VolumeTracingAnnotations()
     this.fixTrace = function(data)
     {
         console.log(data);
-        var x = data.x;
+        /*var x = data.x;
         var y = data.y;
         var id = data.i;
         
@@ -39,32 +39,21 @@ function VolumeTracingAnnotations()
         }
         
         trace.setObject(new fabric.Polygon(path,
-            {fill: 'blue', selectable:false}));
+            {fill: 'blue', selectable:false}));*/
+        var id = data.i;
+        var trace = self.removePendingTrace(id);
+        var objects = [];
         
-        /*var newX = data.x
-        var newY = data.y
-        var id = data.i
-        var nixTrace = null
-        var found = false;
-        
-        
-        for (var ii = 0; ii < pendingTraces.length && !found; i++)
-        {
-            if (pendingTraces[ii].id === id)
+        fabric.loadSVGFromString(data.svg,
+            function(obj, opt)
             {
-                nixTrace = pendingTraces.splice(ii,1)
-                found = true;
-            }
-        }
+                var widget = new fabric.PathGroup(obj, opt);
+                objects.push(widget);
+            });
         
-        if (!found)
-        {
-            return;
-        }
+        trace.setObjects(objects);
         
-      
-        return;*/
-        //TODO HERE
+        return;
     }
     
     this.setStack = function(inStack)

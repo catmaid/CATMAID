@@ -138,14 +138,6 @@ var OntologyEditor = new function()
                     }
                 } else if (type_of_node === "class") {
                     menu = {
-                    "add_relation": {
-                        "separator_before": false,
-                        "separator_after": false,
-                        "label": "Add new relation",
-                        "action": function (obj) {
-                            return OntologyEditor.create_relation_handler(pid, tree_id);
-                         }
-                    },
                     "add_class_with_relation": {
                         "separator_before": false,
                         "separator_after": false,
@@ -177,14 +169,6 @@ var OntologyEditor = new function()
                         "_class": "wider-context-menu",
                         "action": function (obj) {
                             return OntologyEditor.create_link_handler(this, pid, obj, tree_id);
-                         }
-                    },
-                    "add_class": {
-                        "separator_before": false,
-                        "separator_after": false,
-                        "label": "Add new class",
-                        "action": function (obj) {
-                            return OntologyEditor.create_class_handler(pid, tree_id);
                          }
                     },
                     "remove_all_links": {

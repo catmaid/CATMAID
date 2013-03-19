@@ -17,7 +17,7 @@ function OntologyTool()
     };
 
     this.addAction( new Action({
-        helpText: "Open the ontology editor",
+        helpText: "Open the ontology editor for the current project",
         buttonName: "editor",
         buttonID: "ontology_button_editor",
         run: function(e) {

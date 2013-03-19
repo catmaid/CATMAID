@@ -12,7 +12,7 @@ var OntologyEditor = new function()
                 function(data) {
                     text = "";
                     if (data.knownroots)
-                        text = data.knownroots.toString();
+                        text = data.knownroots.join(', ');
                     else
                         text = "(None)";
                     $("span#known_root_names").append(text);
@@ -98,7 +98,7 @@ var OntologyEditor = new function()
 
           "themes": {
             "theme": "classic",
-            "url": "widgets/themes/kde/jsTree/classic/style.css",
+            "url": STATIC_URL_JS + "widgets/themes/kde/jsTree/classic/style.css",
             "dots": true,
             "icons": true
           },
@@ -201,17 +201,17 @@ var OntologyEditor = new function()
             "types": {
                 "root": {
                     "icon": {
-                        "image": "widgets/themes/kde/jsTree/ontology/root.png"
+                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/root.png"
                     },
                 },
                 "class": {
                     "icon": {
-                        "image": "widgets/themes/kde/jsTree/ontology/class.png"
+                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/class.png"
                     },
                 },
                 "relation": {
                     "icon": {
-                        "image": "widgets/themes/kde/jsTree/ontology/relation.png"
+                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/relation.png"
                     },
                 }
             }
@@ -297,7 +297,7 @@ var OntologyEditor = new function()
 
           "themes": {
             "theme": "classic",
-            "url": "widgets/themes/kde/jsTree/classic/style.css",
+            "url": STATIC_URL_JS + "widgets/themes/kde/jsTree/classic/style.css",
             "dots": true,
             "icons": true
           },
@@ -359,12 +359,12 @@ var OntologyEditor = new function()
             "types": {
                 "root": {
                     "icon": {
-                        "image": "widgets/themes/kde/jsTree/ontology/root.png"
+                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/root.png"
                     },
                 },
                 "relation": {
                     "icon": {
-                        "image": "widgets/themes/kde/jsTree/ontology/relation.png"
+                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/relation.png"
                     },
                 }
             }
@@ -451,7 +451,7 @@ var OntologyEditor = new function()
 
           "themes": {
             "theme": "classic",
-            "url": "widgets/themes/kde/jsTree/classic/style.css",
+            "url": STATIC_URL_JS + "widgets/themes/kde/jsTree/classic/style.css",
             "dots": true,
             "icons": true
           },
@@ -514,12 +514,12 @@ var OntologyEditor = new function()
             "types": {
                 "root": {
                     "icon": {
-                        "image": "widgets/themes/kde/jsTree/ontology/root.png"
+                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/root.png"
                     },
                 },
                 "class": {
                     "icon": {
-                        "image": "widgets/themes/kde/jsTree/ontology/class.png"
+                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/class.png"
                     },
                 }
             }
@@ -964,7 +964,7 @@ var OntologyEditor = new function()
     };
 
     this.display_wait_message = function( message ) {
-        $.blockUI({ message: '<h2><img src="widgets/busy.gif" />' + message + '</h2>' });
+        $.blockUI({ message: '<h2><img src="' + STATIC_URL_JS + 'widgets/busy.gif" />' + message + '</h2>' });
     };
 
     this.hide_wait_message = function() {

@@ -113,6 +113,7 @@ var OntologyEditor = new function()
                         "separator_before": false,
                         "separator_after": false,
                         "label": "Relate a class to this one",
+                        "_class": "wider-context-menu",
                         "action": function (obj) {
                             return OntologyEditor.create_link_handler(this, pid, obj, tree_id);
                          }
@@ -121,6 +122,7 @@ var OntologyEditor = new function()
                         "separator_before": true,
                         "separator_after": false,
                         "label": "Remove all class-class links",
+                        "_class": "wider-context-menu",
                         "action": function (obj) {
                             // assure that this was on purpose
                             if (confirm("Are you sure you want to remove all ontology class-class links?")) {
@@ -150,6 +152,7 @@ var OntologyEditor = new function()
                     "remove_parent_links": {
                         "separator_before": true,
                         "separator_after": false,
+                        "_class": "wider-context-menu",
                         "label": "Remove parent relation link",
                         "action": function (obj) {
                             // assure that this was on purpose
@@ -166,6 +169,7 @@ var OntologyEditor = new function()
                         "separator_before": false,
                         "separator_after": false,
                         "label": "Relate a class with this relation",
+                        "_class": "wider-context-menu",
                         "action": function (obj) {
                             return OntologyEditor.create_link_handler(this, pid, obj, tree_id);
                          }
@@ -182,6 +186,7 @@ var OntologyEditor = new function()
                         "separator_before": true,
                         "separator_after": false,
                         "label": "Remove all links with this relation",
+                        "_class": "wider-context-menu",
                         "action": function (obj) {
                             // assure that this was on purpose
                             if (confirm("Are you sure you want to remove all ontology class-class links that use this relation?")) {

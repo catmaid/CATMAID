@@ -233,3 +233,8 @@ div#ontology_editor_widget span#known_root_names
 {
 	font-style: italic;
 }
+
+.wider-context-menu
+{
+    min-width: 220px;
+}

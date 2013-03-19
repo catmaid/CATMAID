@@ -738,37 +738,9 @@ var OntologyEditor = new function()
                 classbid = obj.attr('id').replace("node_", "")
                 // check if an available relation was selected
                 relid = $('#relid').val();
-                if (relid < 0) {
-                    // create a new relation
-                    relname = $('#ontology_add_dialog #relname').val();
-                    // do this wth. of a sync AJAX call
-                    var url = django_url + pid + '/ontology/relations/add';
-                    var res = sync_request( url, "POST", { "relname": relname } );
-                    var relation = JSON.parse(res);
-                    if (!relation["relation_id"]) {
-                        OntologyEditor.hide_wait_message();
-                        alert("The server returned an unexpected result:\n" + res);
-                        return;
-                    }
-                    relid = relation["relation_id"];
-                }
             }
             // get class a ID
             var classaid = $('#classid').val();
-            if (classaid < 0) {
-                // create a new class
-                var classname = $('#ontology_add_dialog #classname').val();
-                // do this wth. of a sync AJAX call
-                var url = django_url + pid + '/ontology/classes/add';
-                var res = sync_request( url, "POST", { "classname": classname } );
-                var added_class = JSON.parse(res);
-                if (!added_class["class_id"]) {
-                    OntologyEditor.hide_wait_message();
-                    alert("The server returned an unexpected result:\n" + res);
-                    return;
-                }
-                classaid = added_class["class_id"];
-            }
             // create class-class relation
             var postdata = {
                 'classaid': classaid,
@@ -802,17 +774,17 @@ var OntologyEditor = new function()
                 // populate class select box
                 var class_select = $('#ontology_add_dialog #classid');
                 class_select.empty();
-                class_select.append($('<option></option>').attr("value", "-1").text("(None)"));
                 $.each(classes, function (key, value) {
                     class_select.append($('<option></option>').attr("value", value).text(key + " (" + value + ")"));
                 });
-                // show class selection
-                $('#ontology_add_dialog #input_class').css("display", "block");
+                // show class dropdown
                 $('#ontology_add_dialog #select_class').css("display", "block");
 
-                // show only relation field if a class is the origin of this call
+                // don't allow free text input for new classes and relations
+                $('#ontology_add_dialog #input_rel').css("display", "none");
+                $('#ontology_add_dialog #input_class').css("display", "none");
+                // show only relation dropdown if a class is the origin of this call
                 if (is_relation) {
-                    $('#ontology_add_dialog #input_rel').css("display", "none");
                     $('#ontology_add_dialog #select_rel').css("display", "none");
                     // show dialog
                     $.blockUI({ message: $('#ontology_add_dialog') });
@@ -829,11 +801,9 @@ var OntologyEditor = new function()
                             // populate class select box
                             var relation_select = $('#ontology_add_dialog #relid');
                             relation_select.empty();
-                            relation_select.append($('<option></option>').attr("value", "-1").text("(None)"));
                             $.each(relations, function (key, value) {
                                 relation_select.append($('<option></option>').attr("value", value).text(key + " (" + value + ")"));
                             });
-                            $('#ontology_add_dialog #input_rel').css("display", "block");
                             $('#ontology_add_dialog #select_rel').css("display", "block");
                         });
                     // show dialog

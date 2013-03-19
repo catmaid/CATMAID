@@ -44,6 +44,8 @@ function OntologyTool()
 	 */
 	this.register = function( parentStack )
     {
+      $("#edit_button_ontology").addClass("button_active");
+      $("#edit_button_ontology").removeClass("button");
       setupSubTools();
       $("#toolbox_ontology").show();
     };
@@ -63,6 +65,8 @@ function OntologyTool()
 	this.destroy = function()
 	{
         $("#toolbox_ontology").hide();
+        $("#edit_button_ontology").removeClass("button_active");
+        $("#edit_button_ontology").addClass("button");
     }
 
     this.redraw = function()

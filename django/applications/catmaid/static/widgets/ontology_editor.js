@@ -569,9 +569,11 @@ var OntologyEditor = new function()
         });
         // show only relation field
         $('#ontology_add_dialog #input_rel').css("display", "block");
-        $('#ontology_add_dialog #select_rel').css("display", "none");
         $('#ontology_add_dialog #input_class').css("display", "none");
         $('#ontology_add_dialog #select_class').css("display", "none");
+        $('#ontology_add_dialog #select_rel').css("display", "none");
+        $('#ontology_add_dialog #target_rel').css("display", "none");
+        $('#ontology_add_dialog #target_object').css("display", "none");
         // show dialog
         $.blockUI({ message: $('#ontology_add_dialog') });
     };
@@ -660,9 +662,11 @@ var OntologyEditor = new function()
         });
         // show only class field
         $('#ontology_add_dialog #input_rel').css("display", "none");
-        $('#ontology_add_dialog #select_rel').css("display", "none");
         $('#ontology_add_dialog #input_class').css("display", "block");
         $('#ontology_add_dialog #select_class').css("display", "none");
+        $('#ontology_add_dialog #select_rel').css("display", "none");
+        $('#ontology_add_dialog #target_rel').css("display", "none");
+        $('#ontology_add_dialog #target_object').css("display", "none");
         // show dialog
         $.blockUI({ message: $('#ontology_add_dialog') });
     };
@@ -726,6 +730,12 @@ var OntologyEditor = new function()
     this.create_link_handler = function (caller, pid, obj, tree_id)
     {
         var is_relation = (obj.attr("rel") == "relation");
+        var classbname;
+        if (is_relation) {
+            classbname = obj.attr("classbname");
+        } else {
+            classbname = obj.attr("cname");
+        }
         $('#ontology_add_dialog #cancel').off("click").on("click",
         function() {
             $.unblockUI();
@@ -794,9 +804,12 @@ var OntologyEditor = new function()
                 // show only relation dropdown if a class is the origin of this call
                 if (is_relation) {
                     $('#ontology_add_dialog #select_rel').css("display", "none");
+                    $('#ontology_add_dialog #target_rel').css("display", "block");
+                    $('#ontology_add_dialog #target_rel #name').html(obj.attr("name"));
                     // show dialog
                     $.blockUI({ message: $('#ontology_add_dialog') });
                 } else {
+                    $('#ontology_add_dialog #target_rel').css("display", "none");
                     // request current relations
                     requestQueue.register(django_url + pid + '/ontology/relations',
                         'GET', undefined,
@@ -818,6 +831,9 @@ var OntologyEditor = new function()
                     $.blockUI({ message: $('#ontology_add_dialog') });
                 }
             });
+        // fill target object
+        $('#ontology_add_dialog #target_object').css("display", "block");
+        $('#ontology_add_dialog #target_object #name').html(classbname);
     };
 
     /**

@@ -176,7 +176,8 @@ def list_ontology(request, project_id=None):
                         class_b=root_id, project=project_id).count()
 
                     data = {'data': {'title': '%s (%d)' % (root_name, root_id) },
-                        'attr': {'id': 'node_%s' % root_id, 'rel': 'root'}}
+                        'attr': {'id': 'node_%s' % root_id, 'rel': 'root',
+                        'cname': root_name}}
                     # Test if there are links present and mark the root
                     # as leaf if there are none.
                     if num_children > 0:
@@ -197,6 +198,7 @@ def list_ontology(request, project_id=None):
                     data = {'data' : {'title': '%s (%d)' % (cc.class_a.class_name, cc.class_a.id)},
                             'attr' : {'id': 'node_%s' % cc.class_a.id,
                                       'rel': 'class',
+                                      'cname': cc.class_a.class_name,
                                       'ccid': cc.id}}
                     # Only add a 'state' field if this node has children
                     # (i.e. relations where it is class_b).
@@ -224,6 +226,7 @@ def list_ontology(request, project_id=None):
                        'attr' : {'id': 'node_%s' % r.id,
                                  'rel': 'relation',
                                  'name': r.relation_name,
+                                 'classbname': relations[r][0].class_b.class_name,
                                  'classbid': parent_id},
                        'state': 'closed'} for r in relations)))
 

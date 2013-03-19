@@ -1121,9 +1121,11 @@ var WindowMaker = new function()
       '<div id="ontology_classes_tree"></div></div>' +
       '<div id="ontology_add_dialog" style="display:none; cursor:default">' +
       '<p><div id="input_rel">New relation name: <input type="text" id="relname" /></div>' +
-      '<div id="select_rel">Available relation: <select id="relid"></select></div>' +
       '<div id="input_class">New class name: <input type="text" id="classname" /></div>' +
-      '<div id="select_class">Available class: <select id="classid"></select></div></p>' +
+      '<div id="select_class">Subject: <select id="classid"></select></div></p>' +
+      '<div id="select_rel">Relation: <select id="relid"></select></div>' +
+      '<div id="target_rel">Relation: <span id="name"></span></div>' +
+      '<div id="target_object">Object: <span id="name"></span></div>' +
       '<p><input type="button" id="cancel" value="Cancel" />' +
       '<input type="button" id="add" value="Add" /></p></div>';
 

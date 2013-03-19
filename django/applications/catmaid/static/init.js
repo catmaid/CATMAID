@@ -239,6 +239,8 @@ function handle_profile_update(e) {
     userprofile.show_segmentation_tool = e.show_segmentation_tool;
   if (e.show_tracing_tool)
     userprofile.show_tracing_tool = e.show_tracing_tool;
+  if (e.show_ontology_tool)
+    userprofile.show_ontology_tool = e.show_ontology_tool;
   // update the edit tool actions and its div container
   createEditToolActions();
   new_edit_actions = createButtonsFromActions(editToolActions,
@@ -1026,8 +1028,6 @@ var realInit = function()
 		editToolActions, 'toolbox_edit', ''));
   $('#toolbox_segmentation').replaceWith(createButtonsFromActions(
     segmentationWindowActions, 'toolbox_segmentation', ''));
-	$('#toolbox_ontology').replaceWith(createButtonsFromActions(
-		ontologyToolActions, 'toolbox_ontology', ''));
 	$('#toolbox_data').replaceWith(createButtonsFromActions(
 		tracingWindowActions, 'toolbox_data', ''));
 

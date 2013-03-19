@@ -301,6 +301,19 @@ var createEditToolActions = function() {
         }
       }));
   }
+
+  if (userprofile.show_ontology_tool) {
+    editToolActions.push(
+      new Action({
+        helpText: "Show ontology tools",
+        buttonID: "ontology_editor_button",
+        buttonName: 'ontology_tools',
+        run: function (e) {
+          project.setTool( new OntologyTool() );
+          return true;
+        }
+      }));
+  }
 }
 
 /* Edit tools are dependent on the current user. Therefore,
@@ -346,20 +359,6 @@ var segmentationWindowActions = [
     buttonName: 'tree',
     run: function (e) {
       WindowMaker.show('object-tree');
-      return true;
-    }
-  }),
-
-];
-
-var ontologyToolActions = [
-
-  new Action({
-    helpText: "Show ontology editor",
-    buttonID: "ontology_editor_button",
-    buttonName: 'ontology_editor',
-    run: function (e) {
-      WindowMaker.show('ontology-editor');
       return true;
     }
   }),

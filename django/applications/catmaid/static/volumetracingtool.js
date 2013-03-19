@@ -176,6 +176,7 @@ function VolumeTracingTool()
     {
         self.isDragging = false;
         statusBar.replaceLast("Mouse Up");
+        self.currentTrace.addObject(self.brush.clone());
         self.volumeAnnotation.pushTrace(self.currentTrace);
         self.createNewTrace();
     }
@@ -252,6 +253,7 @@ function fabricTrace(cl, objid)
         self.canvasLayer.canvas.add(obj);
     }
     
+    
     /**
      * setObject(inObj) is called with a fabric.js object generated from
      * server-side SVG. This replaces the current object list with a
@@ -259,8 +261,16 @@ function fabricTrace(cl, objid)
      */
     this.setObject = function(inObj)
     {
-        self.removeFromCanvas();
+        /*self.removeFromCanvas();
         self.objectList = [inObj];
+        self.addToCanvas();*/
+        self.setObjects([inObj]);
+    }
+    
+    this.setObjects = function(inObjList)
+    {
+        self.removeFromCanvas();
+        self.objectList = inObjList;
         self.addToCanvas();
     }
     

@@ -218,6 +218,7 @@ urlpatterns += patterns('',
 
 # Ontologies
 urlpatterns += patterns('',
+    (r'^ontology/knownroots$', 'catmaid.control.get_known_ontology_roots'),
     (r'^(?P<project_id>%s)/ontology/list$' % (integer),
         'catmaid.control.list_ontology'),
     (r'^(?P<project_id>%s)/ontology/relations$' % (integer),

@@ -223,3 +223,13 @@ div#data_view .comment
 {
 	font-style: italic;
 }
+
+div#ontology_editor_widget div#ontology_known_roots
+{
+	margin-top: 10px;
+}
+
+div#ontology_editor_widget span#known_root_names
+{
+	font-style: italic;
+}

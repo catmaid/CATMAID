@@ -17,6 +17,11 @@ class ClassElement:
         self.id = id
         self.name = name
 
+def get_known_ontology_roots(request):
+    """ Returns an array of all known root class names.
+    """
+    return HttpResponse(json.dumps({"knownroots": root_classes}))
+
 def get_children( parent_id, max_nodes = 5000 ):
     """ Returns all children of a node with id <parent_id>. The result
     is limited to a maximum ef <max_nodes> nodes.

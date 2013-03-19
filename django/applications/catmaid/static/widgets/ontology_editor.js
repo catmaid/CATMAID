@@ -7,6 +7,18 @@ var OntologyEditor = new function()
 {
     this.init = function( pid )
     {
+        // display the known root class names
+        $.getJSON(django_url + '/ontology/knownroots',
+                function(data) {
+                    text = "";
+                    if (data.knownroots)
+                        text = data.knownroots.toString();
+                    else
+                        text = "(None)";
+                    $("span#known_root_names").append(text);
+                })
+
+        // displad the trees
         OntologyEditor.load_ontology_tree( pid,
             "#ontology_tree_object" );
         OntologyEditor.load_ontology_relations_tree( pid,

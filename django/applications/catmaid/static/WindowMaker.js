@@ -1111,6 +1111,8 @@ var WindowMaker = new function()
     container.innerHTML =
       '<input type="button" id="refresh_ontology_editor" value="refresh" style="display:block; float:left;" />' +
       '<br clear="all" />' +
+      '<div id="ontology_known_roots">Known root class names: <span id="known_root_names"></span></div>' +
+      '<br clear="all" />' +
       '<div id="ontology_tree_name"><h4>Ontology</h4>' +
       '<div id="ontology_tree_object"></div></div>' +
       '<div id="ontology_relations_name"><h4>Relations</h4>' +

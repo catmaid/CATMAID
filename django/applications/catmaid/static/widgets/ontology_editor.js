@@ -8,7 +8,7 @@ var OntologyEditor = new function()
     this.init = function( pid )
     {
         OntologyEditor.load_ontology_tree( pid,
-            "#ontology_tree_object", "root" );
+            "#ontology_tree_object" );
         OntologyEditor.load_ontology_relations_tree( pid,
             "#ontology_relations_tree" );
         OntologyEditor.load_ontology_classes_tree( pid,
@@ -52,10 +52,13 @@ var OntologyEditor = new function()
                 // the result is fed to the AJAX request `data` option
                 parameters = {
                   "pid": pid,
-                  "rootclass": root_class,
                   "parenttype": n.attr ? n.attr("rel") : "relation",
                   "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
                 };
+                // if a specific root class is requested, add it to the request
+                if (root_class) {
+                  parameters["rootclass"] = root_class;
+                }
                 if (ObjectTree.currentExpandRequest) {
                   parameters['expandtarget'] = ObjectTree.currentExpandRequest.join(',');
                 }

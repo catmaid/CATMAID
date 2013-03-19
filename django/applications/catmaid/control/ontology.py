@@ -115,7 +115,7 @@ def list_available_classes(request, project_id=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_ontology(request, project_id=None):
-    root_class = request.GET.get('rootclass', 'root')
+    root_class = request.GET.get('rootclass', None)
     parent_id = int(request.GET.get('parentid', 0))
     parent_name = request.GET.get('parentname', '')
     expand_request = request.GET.get('expandtarget', None)
@@ -135,32 +135,46 @@ def list_ontology(request, project_id=None):
         if parent_type == "relation":
             # A class is wanted
             if 0 == parent_id:
-                response_on_error = 'Could not select the id of the ontology root node'
-                if root_class not in class_map:
-                    raise Exception('Root class "{0}" not found'.format( root_class ))
-                root_node_q = Class.objects.filter(
-                    id=class_map[root_class],
+                response_on_error = 'Could not select the id of any ontology root node'
+                # If the no root class is explicitely requested, return all known
+                # root classes.
+                root_class_ids = []
+                if root_class is None:
+                    for rc in root_classes:
+                        if rc in class_map:
+                            root_class_ids.append( class_map[rc] )
+                    if len(root_class_ids) == 0:
+                        raise Exception('Could not find any of the known root classes. ' \
+                            'Please add at least one of them to build an ontology.')
+                else:
+                    if root_class not in class_map:
+                        raise Exception('Root class "{0}" not found'.format( root_class ))
+                    root_class_ids = [ class_map[root_class] ]
+
+                root_node_q = Class.objects.filter(id__in=root_class_ids,
                     project=project_id)
 
+                # Make sure we actually got at least one root node
                 if 0 == root_node_q.count():
-                    root_id = 0
-                    root_name = 'noname'
-                    num_children = 0
-                else:
-                    root_node = root_node_q[0]
+                    raise Exception("Couldn't select any root node")
+
+                roots = []
+                for root_node in root_node_q:
                     root_id = root_node.id
                     root_name = root_node.class_name
                     num_children = ClassClass.objects.filter(
                         class_b=root_id, project=project_id).count()
 
-                data = {'data': {'title': '%s (%d)' % (root_name, root_id) },
-                    'attr': {'id': 'node_%s' % root_id, 'rel': 'root'}}
-                # Test if there are links present and mark the root
-                # as leaf if there are none.
-                if num_children > 0:
-                    data['state'] = 'closed'
+                    data = {'data': {'title': '%s (%d)' % (root_name, root_id) },
+                        'attr': {'id': 'node_%s' % root_id, 'rel': 'root'}}
+                    # Test if there are links present and mark the root
+                    # as leaf if there are none.
+                    if num_children > 0:
+                        data['state'] = 'closed'
+                    # Add this root node to the output list
+                    roots.append(data)
 
-                return HttpResponse(json.dumps([data]))
+                return HttpResponse(json.dumps(tuple(r for r in roots)))
             else:
                 response_on_error = 'Could not retrieve child nodes.'
                 # Select all classes that are linked with the passed relation

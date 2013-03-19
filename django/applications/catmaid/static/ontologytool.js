@@ -74,4 +74,20 @@ function OntologyTool()
 	{
         // nothing to do here currently
 	};
+
+    var keyCodeToAction = getKeyCodeToActionMap(actions);
+
+    /**
+     * This function should return true if there was any action
+     * linked to the key code, or false otherwise.
+     */
+    this.handleKeyPress = function( e )
+    {
+        var keyAction = keyCodeToAction[e.keyCode];
+        if (keyAction) {
+          return keyAction.run(e);
+        } else {
+          return false;
+        }
+    }
 }

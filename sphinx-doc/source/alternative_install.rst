@@ -136,23 +136,23 @@ Setup based on Nginx and uWSGI
 `uWSGI <http://projects.unbit.it/uwsgi/>`_ is a versatile WSGI server written in C,
 and can serve as the middle layer between Nginx and CATMAID.
 
-On Ubuntu 12.04, install nginx, uwsgi and php5-fpm::
+On Ubuntu 12.04, install nginx and uwsgi::
 
-  sudo apt-get install nginx uwsgi uwsgi-python php5-fpm 
+  sudo apt-get install nginx uwsgi uwsgi-python
 
 Here is a sample uWSGI configuration file.  On Ubuntu, this can be saved as 
-*/etc/uwsgi/apps-available/catmaid.ini*, with a soft to */etc/uwsgi/apps-enabled/catmaid.ini*::
+*/etc/uwsgi/apps-available/catmaid.ini*, with a soft link to */etc/uwsgi/apps-enabled/catmaid.ini*::
 
   ; uWSGI instance configuration for CATMAID
   [uwsgi]
   virtualenv = <CATMAID-path>/django/env
   chdir = <CATMAID-path>/django
   socket = /run/uwsgi/app/catmaid/socket
-  mount = /dj=<CATMAID-path>/django/projects/mysite/django.wsgi
-  ; manage-script-name only required if placing CATMAID in a subdirectory
+  mount = /=<CATMAID-path>/django/projects/mysite/django.wsgi
+  ; manage-script-name is required if CATMAID will be run in a subdirectory
   manage-script-name = true
 
-You now be able to start uWSGI with one of the following::
+You now be able to start uWSGI manually with one of the following::
 
    uwsgi --ini /etc/uwsgi/apps-available/catmaid.ini 
    (or)
@@ -164,32 +164,15 @@ Here is a sample nginx configuration file::
       listen 80;
       server_name <CATMAID-host>
 
-      root   <CATMAID-path>/httpdocs;
-
-      location / {
-          index  index.html;
-      }
-
       # Serve CATMAID static files directly
       location /dj-static/ {
          alias <CATMAID-path>/django/static/;
       }
-      location /dj-static-admin/ {
-         alias <CATMAID-path>/django/static-admin/;
-      }
 
       # Route all CATMAID Django WSGI requests to uWSGI
-      location /dj/ {
+      location / {
           include uwsgi_params;
           uwsgi_pass unix:///run/uwsgi/app/catmaid/socket;
-      }
-
-      # Let PHP-FPM deal with PHP files
-      location ~ \.php$ {
-          fastcgi_pass   unix:/run/php-fpm/php-fpm.sock;
-          fastcgi_param  PHP_VALUE "include_path=<CATMAID-path>/inc:.";
-          fastcgi_index  index.php;
-          include        fastcgi.conf;
       }
   }
 

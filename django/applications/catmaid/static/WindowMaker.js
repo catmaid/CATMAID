@@ -799,7 +799,7 @@ var WindowMaker = new function()
       '</table>';
     // ABOVE, notice the table needs one dummy row
 
-    addListener(win, container, 'skeleton_analytics_table');
+    addListener(win, container, 'skeleton_analytics');
     addLogic(win);
     SkeletonAnalytics.init();
 

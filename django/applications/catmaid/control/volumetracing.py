@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
 from shapely.geometry import Polygon, LineString, Point
+from shapely.ops import cascaded_union
 
 from catmaid.models import *
 from catmaid.objects import *
@@ -26,13 +27,12 @@ def path_to_svg(xy):
 def transform_volume_pts(t, w, s, x):
     return [(s * (y - t) + w/2) for y in x]
 
-def transform_shapely_xy(tx, ty, w, h, s, xy):   
-    xtr = transform_volume_pts(tx, w, s, xy[0])    
-    ytr = transform_volume_pts(ty, h, s, xy[1])
+def transform_shapely_xy(p, xy):   
+    xtr = transform_volume_pts(p['xtrans'], p['wview'], p['scale'], xy[0])    
+    ytr = transform_volume_pts(p['ytrans'], p['hview'], p['scale'], xy[1])
     return [xtr, ytr]
-
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def push_volume_trace(request, project_id=None, stack_id=None):
+    
+def shapely_polygon_to_svg(polygon, transform_params):
     svg_template = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\
 <svg\
 	xmlns:svg="http://www.w3.org/2000/svg"\
@@ -40,25 +40,80 @@ def push_volume_trace(request, project_id=None, stack_id=None):
 	version="1.1"\
 	>\
 	<g id="polygon">\
-		<path d="{}" style="stroke-width:2" fill-rule="evenodd" />\
+		<path d="{}" fill-rule="evenodd" />\
 	</g>\
 </svg>'
+    exy = polygon.exterior.xy;
+    exy = transform_shapely_xy(transform_params, exy)
+    svg_str = path_to_svg(exy)
+    for interior in polygon.interiors:
+        ixy = interior.xy
+        ixy = transform_shapely_xy(transform_params, ixy)
+        svg_str = ' '.join([svg_str, path_to_svg(ixy)])
+    return svg_template.format(svg_str)
 
-    svg_str = '';
+def request_to_transform_params(request):
+    param_names = ['xtrans', 'ytrans', 'hview', 'wview', 'scale', 'top', 'left'] 
+    transform_params = dict()
+    for param in param_names:
+        print 'param: ', param
+        print 'request for param: ', request.POST.get(param)
+        transform_params[param] = float(request.POST.get(param))
+    return transform_params
+        
+def shapely_polygon_bounds(polygon):
+    xy = polygon.exterior.xy
+    min_x = min(xy[0])
+    min_y = min(xy[1])
+    max_x = max(xy[0])
+    max_y = max(xy[1])
+    return [min_x, min_y, max_x, max_y]
+
+def coords_to_tuples(c):
+    x = c[:len(c)/2]
+    y = c[len(c)/2:]
+    return zip(x, y)
+
+def area_segments_to_shapely(seglist):
+    poly_list = []
+    for seg in seglist:
+        c = seg.coordinates
+        poly = Polygon(coords_to_tuples(seg.coordinates))
+        poly.id = seg.id
+        poly_list.append(poly)
+    return poly_list
+
+
+def get_overlapping_segments(polygon, bbox, z, project, stack):
+    qs1 = AreaSegment.objects.filter(
+        project_id = project,
+        stack_id = stack,
+        z = z,
+        type = 0).exclude(
+        min_x__gte = bbox[2],
+        min_y__gte = bbox[3],
+        max_x__lte = bbox[0],
+        max_y__lte = bbox[1])
+    #seglist = [seg for seg in qs1]
+    seglist = qs1.all()
+    shapely_polygons = area_segments_to_shapely(seglist)
+    ovlp_polygons = [p for p in shapely_polygons if p.intersects(polygon)]
+    ids = [p.id for p in ovlp_polygons]
+    return ovlp_polygons, ids
+        
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def push_volume_trace(request, project_id=None, stack_id=None):    
     x = request.POST.getlist('x[]')
     y = request.POST.getlist('y[]')
     r = float(request.POST.get('r'))
     z = float(request.POST.get('z'))
-    xtrans = float(request.POST.get('xtrans'));
-    ytrans = float(request.POST.get('ytrans'));
-    hview = float(request.POST.get('hview'));
-    wview = float(request.POST.get('wview'));
-    scale = float(request.POST.get('scale'));
     i = request.POST.get('i')
-    s = get_object_or_404(Stack, pk=stack_id)
-        
-    print z
+    transform_params = request_to_transform_params(request)
     
+    s = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, id=project_id)
+    
+    ''' Calculate the trace polygon '''
     union_polygon = None
     
     if len(x) > 1:            
@@ -68,41 +123,88 @@ def push_volume_trace(request, project_id=None, stack_id=None):
     else:
         union_polygon = Point(float(x[0]), float(y[0])).buffer(r)
     
-    ext_xy = transform_shapely_xy(xtrans, ytrans, hview, wview, scale,
-        union_polygon.exterior.xy)
-        
-   
-    svg_str = path_to_svg(ext_xy)
-    union_xy = union_polygon.exterior.xy
-    
-    min_x = min(union_xy[0]);
-    min_y = min(union_xy[1]);
-    max_x = max(union_xy[0]);
-    max_y = max(union_xy[1]);
+    ''' Trace bounding box '''
+    # min_x, min_y, max_x, max_y
+    bbox = shapely_polygon_bounds(union_polygon)
 
-    for interior in union_polygon.interiors:
-        int_xy = transform_shapely_xy(xtrans, ytrans, hview, wview,
-            scale, interior.xy);
-        svg_str = ' '.join([svg_str, path_to_svg(int_xy)])
-    
-    svg_xml = svg_template.format(svg_str);
-    
-    #coordinate_list = [int(v) for v in union_xy[0].tolist() + union_xy[1].tolist()]
-    
-    coordinate_list = union_xy[0].tolist() + union_xy[1].tolist()
-    
-    aseg = AreaSegment(
-        user=request.user,
-        project=Project.objects.get(id=project_id),
-        stack = s,
-        coordinates = coordinate_list,
-        min_x = min_x,
-        max_x = max_x,
-        min_y = min_y,
-        max_y = max_y,
-        z = z)
-    aseg.save()
-    
-    return HttpResponse(json.dumps({'x' : map(str, union_xy[0]),
-        'y' : map(str, union_xy[1]), 'i' : i, 'dbi' : aseg.id, 'svg' : svg_xml}))
+    ''' Grab overlapping polygons '''
+    overlap_segments, ids = get_overlapping_segments(union_polygon,
+        bbox, z, project = p, stack = s)
+
+    if overlap_segments is None or len(overlap_segments) == 0:
+        ''' save new polygon '''
+        coordinate_list = union_polygon.exterior.xy[0].tolist() + union_polygon.exterior.xy[1].tolist()
+        aseg = AreaSegment(
+            user=request.user,
+            project=p,
+            stack = s,
+            coordinates = coordinate_list,
+            min_x = bbox[0],
+            max_x = bbox[2],
+            min_y = bbox[1],
+            max_y = bbox[3],
+            z = z)
         
+        svg_xml = shapely_polygon_to_svg(union_polygon, transform_params)
+        
+        aseg.save()
+        ids = [i]
+        dbids = [aseg.id]
+        svglist = [svg_xml]        
+        
+    else:
+        print "Found ", len(overlap_segments), " overlapping segments"
+        print ids
+        overlap_segments.append(union_polygon)
+        union_polygon = cascaded_union(overlap_segments)
+        
+        ''' Update the merged polygon'''
+        aseg = AreaSegment.objects.get(id = ids[0])
+        aseg.coordinates = union_polygon.exterior.xy[0].tolist() + union_polygon.exterior.xy[1].tolist()
+        aseg.save()
+
+        ''' soft-delete the now-unused polygons '''
+        for id in ids[1:]:
+            delArea = AreaSegment.objects.get(id = id)
+            delArea.type = 1 #type == 1 indicates unused segments
+            delArea.save()
+        
+        ''' push empty svg for all ids that are to be deleted '''
+        svglist = [shapely_polygon_to_svg(union_polygon, transform_params)]
+        svglist += [''] * len(ids)
+        ids += [i]
+        dbids = ids
+    
+    return HttpResponse(json.dumps({'i' : ids, 'dbi' : dbids, 'svg' : svglist}))
+        
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def all_volume_traces(request, project_id=None, stack_id=None):
+    transform_params = request_to_transform_params(request)
+    #s = get_object_or_404(Stack, pk=stack_id)
+    #p = get_object_or_404(Project, id=project_id)
+    z = float(request.POST.get('z'))
+    
+    
+    d_min_x = transform_params['left']
+    d_min_y = transform_params['top']
+    d_max_x = transform_params['hview'] / transform_params['scale'] + d_min_x
+    d_max_y = transform_params['wview'] / transform_params['scale'] + d_min_y
+    
+    qs1 = AreaSegment.objects.filter(
+        project_id = project_id,
+        stack_id = stack_id,
+        z = z,
+        type = 0).exclude(
+        min_x__gte = d_max_x,
+        min_y__gte = d_max_y,
+        max_x__lte = d_min_x,
+        max_y__lte = d_min_y)
+    
+    area_segs = qs1.all()
+    
+    polygons = area_segments_to_shapely(area_segs)
+    
+    svg_list = [shapely_polygon_to_svg(polygon, transform_params) for polygon in polygons]
+    ids = [aseg.id for aseg in area_segs]
+
+    return HttpResponse(json.dumps({'i' : ids, 'svg' : svg_list}))

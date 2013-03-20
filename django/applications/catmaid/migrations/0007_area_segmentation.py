@@ -8,6 +8,28 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
+        # Adding model 'InnerPolygonPath'
+        db.create_table('catmaid_innerpolygonpath', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('coordinates', self.gf('catmaid.fields.DoublePrecisionArrayField')()),
+            ('ndim', self.gf('django.db.models.fields.IntegerField')(default=2)),
+            ('min_x', self.gf('django.db.models.fields.IntegerField')(db_index=True)),
+            ('min_y', self.gf('django.db.models.fields.IntegerField')(db_index=True)),
+            ('max_x', self.gf('django.db.models.fields.IntegerField')(db_index=True)),
+            ('max_y', self.gf('django.db.models.fields.IntegerField')(db_index=True)),
+            ('z', self.gf('django.db.models.fields.IntegerField')(db_index=True)),
+        ))
+        db.send_create_signal('catmaid', ['InnerPolygonPath'])
+
+        # Adding model 'ViewProperties'
+        db.create_table('catmaid_viewproperties', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('color', self.gf('django.db.models.fields.TextField')(default='#0000ff')),
+            ('opacity', self.gf('django.db.models.fields.FloatField')(default=0.5)),
+            ('class_instance', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['catmaid.ClassInstance'])),
+        ))
+        db.send_create_signal('catmaid', ['ViewProperties'])
+
         # Adding model 'AreaSegment'
         db.create_table('catmaid_areasegment', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
@@ -16,19 +38,28 @@ class Migration(SchemaMigration):
             ('creation_time', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
             ('edition_time', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
             ('stack', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['catmaid.Stack'])),
+            ('class_instance', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['catmaid.ClassInstance'])),
             ('z', self.gf('django.db.models.fields.IntegerField')(db_index=True)),
             ('min_x', self.gf('django.db.models.fields.IntegerField')(db_index=True)),
             ('min_y', self.gf('django.db.models.fields.IntegerField')(db_index=True)),
             ('max_x', self.gf('django.db.models.fields.IntegerField')(db_index=True)),
             ('max_y', self.gf('django.db.models.fields.IntegerField')(db_index=True)),
             ('type', self.gf('django.db.models.fields.IntegerField')(default=0)),
-            ('coordinates', self.gf('catmaid.fields.IntegerArrayField')()),
+            ('coordinates', self.gf('catmaid.fields.DoublePrecisionArrayField')()),
             ('ndim', self.gf('django.db.models.fields.IntegerField')(default=2)),
+            ('vpid', self.gf('django.db.models.fields.IntegerField')(default=0)),
+            ('inner_paths', self.gf('catmaid.fields.IntegerArrayField')()),
         ))
         db.send_create_signal('catmaid', ['AreaSegment'])
 
 
     def backwards(self, orm):
+        # Deleting model 'InnerPolygonPath'
+        db.delete_table('catmaid_innerpolygonpath')
+
+        # Deleting model 'ViewProperties'
+        db.delete_table('catmaid_viewproperties')
+
         # Deleting model 'AreaSegment'
         db.delete_table('catmaid_areasegment')
 
@@ -71,10 +102,12 @@ class Migration(SchemaMigration):
         },
         'catmaid.areasegment': {
             'Meta': {'object_name': 'AreaSegment'},
-            'coordinates': ('catmaid.fields.IntegerArrayField', [], {}),
+            'class_instance': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['catmaid.ClassInstance']"}),
+            'coordinates': ('catmaid.fields.DoublePrecisionArrayField', [], {}),
             'creation_time': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'edition_time': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'inner_paths': ('catmaid.fields.IntegerArrayField', [], {}),
             'max_x': ('django.db.models.fields.IntegerField', [], {'db_index': 'True'}),
             'max_y': ('django.db.models.fields.IntegerField', [], {'db_index': 'True'}),
             'min_x': ('django.db.models.fields.IntegerField', [], {'db_index': 'True'}),
@@ -84,6 +117,7 @@ class Migration(SchemaMigration):
             'stack': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['catmaid.Stack']"}),
             'type': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"}),
+            'vpid': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'z': ('django.db.models.fields.IntegerField', [], {'db_index': 'True'})
         },
         'catmaid.brokenslice': {
@@ -233,6 +267,17 @@ class Migration(SchemaMigration):
             'type': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"}),
             'z': ('django.db.models.fields.IntegerField', [], {})
+        },
+        'catmaid.innerpolygonpath': {
+            'Meta': {'object_name': 'InnerPolygonPath'},
+            'coordinates': ('catmaid.fields.DoublePrecisionArrayField', [], {}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'max_x': ('django.db.models.fields.IntegerField', [], {'db_index': 'True'}),
+            'max_y': ('django.db.models.fields.IntegerField', [], {'db_index': 'True'}),
+            'min_x': ('django.db.models.fields.IntegerField', [], {'db_index': 'True'}),
+            'min_y': ('django.db.models.fields.IntegerField', [], {'db_index': 'True'}),
+            'ndim': ('django.db.models.fields.IntegerField', [], {'default': '2'}),
+            'z': ('django.db.models.fields.IntegerField', [], {'db_index': 'True'})
         },
         'catmaid.location': {
             'Meta': {'object_name': 'Location', 'db_table': "'location'"},
@@ -546,6 +591,13 @@ class Migration(SchemaMigration):
             'show_text_label_tool': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'show_tracing_tool': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'user': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['auth.User']", 'unique': 'True'})
+        },
+        'catmaid.viewproperties': {
+            'Meta': {'object_name': 'ViewProperties'},
+            'class_instance': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['catmaid.ClassInstance']"}),
+            'color': ('django.db.models.fields.TextField', [], {'default': "'#0000ff'"}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'opacity': ('django.db.models.fields.FloatField', [], {'default': '0.5'})
         },
         'contenttypes.contenttype': {
             'Meta': {'ordering': "('name',)", 'unique_together': "(('app_label', 'model'),)", 'object_name': 'ContentType', 'db_table': "'django_content_type'"},

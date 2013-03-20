@@ -100,7 +100,8 @@ urlpatterns += patterns(
     # Volume Trace Tool
     
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/volumetrace/push$', 'catmaid.control.push_volume_trace'),
-    
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/volumetrace/getall$', 'catmaid.control.all_volume_traces'),
+        
     # ------
 
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/node_count$', 'catmaid.control.node_count'),

@@ -120,36 +120,17 @@ function Navigator()
 		self.navigatorbox.redraw();
 	}
 
-	var onmousemovePan = function( e )
-	{
-		self.stack.pan( ui.diffX, ui.diffY, 0 );
-/*		self.lastX = self.stack.x + ui.diffX; // TODO - or + ?
-		self.lastY = self.stack.y + ui.diffY;
-		self.stack.moveToPixel(
-			self.stack.z,
-			self.stack.y - ui.diffY / self.stack.scale,
-			self.stack.x - ui.diffX / self.stack.scale,
-			self.stack.s );*/
-		return true;
-	};
-	
-	var onmousemoveRotate = function( e )
-	{
-		self.stack.rotate( ui.diffX, ui.diffY );
-		return true;
-	};
-	
 	var onmouseup = function( e )
 	{
 		var m = ui.getMouse( e, self.stack.getView() );
 		self.navigatorbox.mouseReleased( m.offsetX, m.offsetY );
 		self.navigatorbox.redraw();
+		self.stack.setAffine( self.navigatorbox.getAffine() );
 
 		ui.releaseEvents(); 
 		ui.removeEvent( "onmousemove", onmousemove );
-		ui.removeEvent( "onmousemove", onmousemovePan );
-//		ui.removeEvent( "onmousemove", onmousemoveRotate );
 		ui.removeEvent( "onmouseup", onmouseup );
+
 		return false;
 	};
 	
@@ -158,48 +139,38 @@ function Navigator()
 		var m = ui.getMouse( e, self.stack.getView() );
 		self.navigatorbox.mouseDragged( m.offsetX, m.offsetY );
 		self.navigatorbox.redraw();
+		self.stack.setAffine( self.navigatorbox.getAffine() );
+
+		return false;
 	}
 	
 	var onmousedown = function( e )
 	{
 		var button = ui.getMouseButton( e );
-		if ( button == 1 )
-		{
-		    var m = ui.getMouse( e, self.stack.getView() );
-		    self.navigatorbox.mousePressed( m.offsetX, m.offsetY );
-	    	self.navigatorbox.redraw();
-    		ui.registerEvent( "onmousemove", onmousemove );
-        }
-//			ui.registerEvent( "onmousemove", onmousemoveRotate );
-		else
-			ui.registerEvent( "onmousemove", onmousemovePan );
+		var m = ui.getMouse( e, self.stack.getView() );
+		self.navigatorbox.mousePressed( m.offsetX, m.offsetY, button );
+		self.navigatorbox.redraw();
+
+		ui.registerEvent( "onmousemove", onmousemove );
 		ui.registerEvent( "onmouseup", onmouseup );
 		ui.catchEvents( "move" );
 		ui.onmousedown( e );
-		
 		ui.catchFocus();
-		
+
 		return false;
 	};
 	
 	var onmousewheel = function( e )
 	{
 		var w = ui.getMouseWheel( e );
-		if ( w )
-		{
-			if ( w > 0 )
-			{
-				self.slider_z.move( 1 );
-			}
-			else
-			{
-				self.slider_z.move( -1 );
-			}
-		}
+		self.navigatorbox.mouseWheelMoved( w );
+		self.navigatorbox.redraw();
+		self.stack.setAffine( self.navigatorbox.getAffine() );
+
 		return false;
 	};
 
-	var onmousewheel = 
+	var onmousewheels = 
 	{
 		zoom : function( e )
 		{
@@ -289,9 +260,10 @@ function Navigator()
 	
 	this.changeSliceDelayed = function( val )
 	{
-		if ( changeSliceDelayedTimer ) window.clearTimeout( changeSliceDelayedTimer );
+/*		if ( changeSliceDelayedTimer ) window.clearTimeout( changeSliceDelayedTimer );
 		changeSliceDelayedParam = { z : val };
 		changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 100 );
+*/
 	}
 
 	this.changeSlice = function( val )
@@ -535,15 +507,15 @@ function Navigator()
 		self.mouseCatcher.onmousedown = onmousedown;
 		try
 		{
-			self.mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel.zoom, false );
+			self.mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel, false );
 			/* Webkit takes the event but does not understand it ... */
-			self.mouseCatcher.addEventListener( "mousewheel", onmousewheel.zoom, false );
+			self.mouseCatcher.addEventListener( "mousewheel", onmousewheel, false );
 		}
 		catch ( error )
 		{
 			try
 			{
-				self.mouseCatcher.onmousewheel = onmousewheel.zoom;
+				self.mouseCatcher.onmousewheel = onmousewheel;
 			}
 			catch ( error ) {}
 		}

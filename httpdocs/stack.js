@@ -1,4 +1,3 @@
-/* -*- mode: espresso; espresso-indent-level: 8; indent-tabs-mode: t -*- */
 /**
  * stack.js
  *
@@ -40,7 +39,7 @@ function Stack(
 		tile_source_type,			//!< {int} that defines the tile source type
 		labelupload_url,			//!< {String} that defines the label upload URL for labels (for tile_source_type==2)
 		metadata,					//!< {String} of arbitrary meta data
-    inverse_mouse_wheel //!< {boolean} Whether to inverse mouse wheel for changing sections
+		inverse_mouse_wheel			//!< {boolean} Whether to inverse mouse wheel for changing sections
 )
 {
 	/**
@@ -231,34 +230,19 @@ function Stack(
 
 	this.moveToAfterBeforeMoves = function( zp, yp, xp, sp, completionCallback, layersWithBeforeMove )
 	{
-		console.log( "DEPRECATED: Stack.moveToAfterBeforeMoves" );
 		var layerWithBeforeMove;
 
 		if (layersWithBeforeMove.length == 0) {
 			// Then carry on to the actual move:
 
-			if ( typeof sp == "number" )
-			{
-				self.s = Math.max( self.MIN_S, Math.min( self.MAX_S, Math.round( sp ) ) );
-				self.scale = 1 / Math.pow( 2, self.s );
-			}
+			var o = new THREE.Vector3();
+			self.projectToView.setPosition( o );
+			o.set( xp, yp, zp );
+			o.applyMatrix4( self.projectToView );
+			o.negate();
+			self.projectToView.setPosition( o );
+			self.stackToView.multiplyMatrices( self.projectToView, self.stackToProjectTransform );
 
-			self.x = Math.max( 0, Math.min( MAX_X, Math.round( ( xp - translation.x ) / resolution.x ) ) );
-			self.y = Math.max( 0, Math.min( MAX_Y, Math.round( ( yp - translation.y ) / resolution.y ) ) );
-
-			var z1;
-			var z2;
-			z1 = z2 = Math.round( ( zp - translation.z ) / resolution.z );
-			while ( skip_planes[ z1 ] && skip_planes[ z2 ] )
-			{
-				z1 = Math.max( 0, z1 - 1 );
-				z2 = Math.min( MAX_Z, z2 + 1 );
-			}
-			if ( !skip_planes[ z1 ] ) self.z = z1;
-			else self.z = z2;
-			self.z = Math.max( 0, Math.min( MAX_Z, self.z ) );
-
-//			console.log( "self.x = " + self.x + ", self.y = " + self.y + ", self.z = " + self.z + ", self.s = " + self.s + ", self.scale = " + self.scale );
 			update(completionCallback);
 
 		} else {
@@ -272,10 +256,12 @@ function Stack(
 
 	/**
 	 * move to project-coordinates
+	 *
+	 * the current scale, orientation, and timepoint are maintained.
+	 * (sp is ignored)
 	 */
 	this.moveTo = function( zp, yp, xp, sp, completionCallback )
 	{
-		console.log( "DEPRECATED: Stack.moveTo" );
 		var layersWithBeforeMove = [];
 		for ( var key in layers ) {
 			if (layers.hasOwnProperty(key)) {
@@ -288,7 +274,8 @@ function Stack(
 
 		self.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
 	}
-    
+
+	// TODO: remove
     this.moveToProjectViewAfterBeforeMoves = function( projectToViewTransform, completionCallback, layersWithBeforeMove )
 	{
 		var layerWithBeforeMove;
@@ -325,6 +312,7 @@ function Stack(
 		}
 	}
 
+	// TODO: remove
     /**
 	 * move to project view
 	 */
@@ -361,6 +349,23 @@ function Stack(
 //		project.moveTo(zp * resolution.z + translation.z, yp * resolution.y + translation.y, xp * resolution.x + translation.x, sp);	
 		return true;
 	}
+
+	this.setAffine = function( projectToView )
+	{
+		self.projectToView.copy( projectToView );
+
+		var viewToProject = new THREE.Matrix4();
+		viewToProject.getInverse( projectToView );
+		var o = new THREE.Vector3();
+//		o.applyMatrix4( viewToProject );
+//		var xp = o.x, yp = o.y, zp = o.z;
+//		o.getScaleFromMatrix( viewToProject );
+//		var sp = o.x;
+		var xp = viewToProject.elements[12], yp = viewToProject.elements[13], zp = viewToProject.elements[14];
+		var sp = o.set( viewToProject.elements[0], viewToProject.elements[1], viewToProject.elements[2] ).length();
+		console.log( "project.moveTo( zp = "+zp+", yp = "+yp+", xp = "+xp+", sp = "+sp+" );" );
+		project.moveTo( zp, yp, xp, sp );
+	};
 
 	/**
 	 * Helper to move to stackToViewTransform through project...
@@ -414,6 +419,11 @@ function Stack(
 	{
 		self.timepoint = t;
 		update();
+	}
+
+	this.getTimepoint = function()
+	{
+		return self.timepoint;
 	}
 
 	var resize = function()
@@ -519,14 +529,17 @@ function Stack(
 	if ( !ui ) ui = new UI();
 	
 	self.id = id;
-	
+
+	// TODO rename stackToProject
 	self.stackToProjectTransform = new THREE.Matrix4(
 			resolution.x, 0, 0, translation.x,
 			0, resolution.y, 0, translation.y,
 			0, 0, resolution.z, translation.z,
 			0, 0, 0, 1 );
 
-	self.stackToViewTransform = new THREE.Matrix4();
+	self.projectToView = new THREE.Matrix4();
+
+	self.stackToView = new THREE.Matrix4();
 
 	self.resolution = resolution;
 	self.translation = translation;

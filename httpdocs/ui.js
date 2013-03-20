@@ -21,10 +21,9 @@ UI = function()
 	var shiftKeyDown = false;
 	var ctrlKeyDown = false;
 	var altKeyDown = false;
+
 	var lastX = 0;
 	var lastY = 0;
-	var x = 0;
-	var y = 0;
 	
 	var events = new Object();
 	events[ "onmousemove" ] = new Array();	//!< bound to eventCatcher

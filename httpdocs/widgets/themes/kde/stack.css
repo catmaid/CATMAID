@@ -144,6 +144,17 @@ div.OverviewLayer
     color:#FFFFFF;
 }
 
+canvas.NavigatorBoxOverlay
+{
+	position:absolute;
+	top:0px;
+	left:0px;
+	width:100%;
+	height:100%;
+	z-index:5;
+	cursor:crosshair;
+}
+
 div.sliceView div.sliceMouseCatcher
 {
 	position:absolute;

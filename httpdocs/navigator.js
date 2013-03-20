@@ -10,9 +10,6 @@
  */
 
 /**
- */
-
-/**
  * Navigator tool.  Moves the stack around 
  */
 function Navigator()
@@ -96,7 +93,7 @@ function Navigator()
 	document.getElementById( "slider_s" ).parentNode.replaceChild(
 			self.slider_s.getInputView(),
 			slider_s_view.nextSibling );
-			
+
 	//! mouse catcher
 	this.mouseCatcher = document.createElement( "div" );
 	self.mouseCatcher.className = "sliceMouseCatcher";
@@ -116,19 +113,13 @@ function Navigator()
 		
 		return;
 	}
-	
-	this.resize = function( width, height )
-	{
-		self.mouseCatcher.style.width = width + "px";
-		self.mouseCatcher.style.height = height + "px";
-		return;
-	}
-	
+
 	this.redraw = function()
 	{
 		self.updateControls();
+		self.navigatorbox.redraw();
 	}
-	
+
 	var onmousemovePan = function( e )
 	{
 		self.stack.pan( ui.diffX, ui.diffY, 0 );
@@ -150,18 +141,36 @@ function Navigator()
 	
 	var onmouseup = function( e )
 	{
+		var m = ui.getMouse( e, self.stack.getView() );
+		self.navigatorbox.mouseReleased( m.offsetX, m.offsetY );
+		self.navigatorbox.redraw();
+
 		ui.releaseEvents(); 
+		ui.removeEvent( "onmousemove", onmousemove );
 		ui.removeEvent( "onmousemove", onmousemovePan );
-		ui.removeEvent( "onmousemove", onmousemoveRotate );
+//		ui.removeEvent( "onmousemove", onmousemoveRotate );
 		ui.removeEvent( "onmouseup", onmouseup );
 		return false;
 	};
+	
+	var onmousemove = function( e )
+	{
+		var m = ui.getMouse( e, self.stack.getView() );
+		self.navigatorbox.mouseDragged( m.offsetX, m.offsetY );
+		self.navigatorbox.redraw();
+	}
 	
 	var onmousedown = function( e )
 	{
 		var button = ui.getMouseButton( e );
 		if ( button == 1 )
-			ui.registerEvent( "onmousemove", onmousemoveRotate );
+		{
+		    var m = ui.getMouse( e, self.stack.getView() );
+		    self.navigatorbox.mousePressed( m.offsetX, m.offsetY );
+	    	self.navigatorbox.redraw();
+    		ui.registerEvent( "onmousemove", onmousemove );
+        }
+//			ui.registerEvent( "onmousemove", onmousemoveRotate );
 		else
 			ui.registerEvent( "onmousemove", onmousemovePan );
 		ui.registerEvent( "onmouseup", onmouseup );
@@ -521,6 +530,7 @@ function Navigator()
 		document.getElementById( "toolbar_nav" ).style.display = "block";
 		
 		self.stack = parentStack;
+		self.navigatorbox = parentStack.getLayer( "TileLayer" ).navigatorbox;
 
 		self.mouseCatcher.onmousedown = onmousedown;
 		try
@@ -537,7 +547,7 @@ function Navigator()
 			}
 			catch ( error ) {}
 		}
-		
+
 		self.stack.getView().appendChild( self.mouseCatcher );
 
 		self.slider_s.update(

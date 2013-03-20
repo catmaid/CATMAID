@@ -12,7 +12,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 
-from .fields import Double3DField, Integer3DField, IntegerArrayField, RGBAField
+from .fields import Double3DField, Integer3DField, IntegerArrayField, RGBAField, DoublePrecisionArrayField
 
 from guardian.shortcuts import get_objects_for_user
 
@@ -785,6 +785,7 @@ class AreaSegment(UserFocusedModel):
     creation_time = models.DateTimeField(default=datetime.now)
     edition_time = models.DateTimeField(default=datetime.now)
     stack = models.ForeignKey(Stack)
+    class_instance = models.ForeignKey(ClassInstance)
     #skeleton_id = models.IntegerField()
     z = models.IntegerField(db_index=True)
     #component_id=models.IntegerField()
@@ -795,8 +796,25 @@ class AreaSegment(UserFocusedModel):
     #svg = models.TextField()
     type=models.IntegerField(default=0)
     #status = models.IntegerField(default=0)
-    coordinates = IntegerArrayField()
+    coordinates = DoublePrecisionArrayField()
     ndim = models.IntegerField(default=2)
+    vpid = models.IntegerField(default=0)
+    inner_paths = IntegerArrayField()
+    
+    
+class ViewProperties(models.Model):    
+    color = models.TextField(default='#0000ff')
+    opacity = models.FloatField(default=0.5)
+    class_instance = models.ForeignKey(ClassInstance)
+
+class InnerPolygonPath(models.Model):
+    coordinates = DoublePrecisionArrayField()
+    ndim = models.IntegerField(default = 2)
+    min_x = models.IntegerField(db_index=True)
+    min_y = models.IntegerField(db_index=True)
+    max_x = models.IntegerField(db_index=True)
+    max_y = models.IntegerField(db_index=True)
+    z = models.IntegerField(db_index=True)
 
 class DataViewType(models.Model):
     class Meta:

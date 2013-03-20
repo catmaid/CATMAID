@@ -72,11 +72,15 @@ function VolumeTracingTool()
         
     }
     
+    this.redraw = function()
+    {
+    }
+    
     this.getTraceByID = function(id)
     {
         for (var i = 0; i < self.traces.length; i++)
         {
-            if (self.traces[i].id === id)
+            if (self.traces[i].id == id)
             {
                 return self.traces[i];
             }
@@ -94,9 +98,10 @@ function VolumeTracingTool()
     this.createNewTrace = function()
     {
         VolumeTraceLastID--;
-        self.currentTrace = new fabricTrace(self.stack, canvasLayer, 
+        var trace = new fabricTrace(self.stack, canvasLayer, 
             VolumeTraceLastID, self.brush_slider.val);
-        self.traces.push(self.currentTrace);
+        self.traces.push(trace);
+        return trace;
     }
     
     this.register = function(parentStack)
@@ -112,8 +117,8 @@ function VolumeTracingTool()
         self.mouseCatcher.onmouseup = onmouseup;
         self.stack.getView().appendChild(self.mouseCatcher);
         self.volumeAnnotation.setStack(self.stack);
-        
-        
+        self.volumeAnnotation.tool = self
+        self.volumeAnnotation.retrieveAllTraces();
         
         //alert('Registered Volume Tool');
         return;
@@ -168,18 +173,16 @@ function VolumeTracingTool()
     
     var onmousedown = function(e)
     {
-        self.createNewTrace();
-        self.isDragging = true;
-        statusBar.replaceLast("Mouse Down");
+        self.currentTrace = self.createNewTrace();
+        self.isDragging = true;        
     }
     
     var onmouseup = function(e)
     {
         self.isDragging = false;
-        statusBar.replaceLast("Mouse Up");
+        
         self.currentTrace.addObject(self.brush.clone());
-        self.volumeAnnotation.pushTrace(self.currentTrace);
-       
+        self.volumeAnnotation.pushTrace(self.currentTrace);       
     }
     
     var onmousemove = 

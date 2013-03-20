@@ -207,6 +207,15 @@ class IntegerArrayField(ArrayFieldBase):
 
     def db_type(self, connection):
         return 'integer[]'
+        
+class DoublePrecisionArrayField(ArrayFieldBase):
+    """
+    A double precision array field for PostgreSQL
+    """
+    description = _('Double Precision array')
+    
+    def db_type(self, connection):
+        return 'double precision[]'
 
 # ------------------------------------------------------------------------
 

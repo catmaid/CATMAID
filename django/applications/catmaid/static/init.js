@@ -604,9 +604,15 @@ function handle_openProjectStack( status, text, xml )
 							typeof yp == "number" &&
 							typeof xp == "number" )
 						{
-							project.moveTo( zp, yp, xp );
-							stack.moveToPixel( stack.z, stack.y, stack.x, ss[i] );
 
+              if(stack.tile_source_type == 5)
+              {
+                project.moveTo5D( zp, yp, xp, tp,cp );
+                 stack.moveToPixel( stack.z, stack.y, stack.x, ss[i], stack.t, stack.c );
+              }else{
+							   project.moveTo( zp, yp, xp );
+							   stack.moveToPixel( stack.z, stack.y, stack.x, ss[i] );
+              }
 							sids.splice( i, 1 );
 							ss.splice( i, 1 );
 							break;

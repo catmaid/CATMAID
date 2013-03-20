@@ -164,7 +164,9 @@ function Navigator()
 			self.stack.z,
 			self.stack.y - ui.diffY / self.stack.scale,
 			self.stack.x - ui.diffX / self.stack.scale,
-			self.stack.s );
+			self.stack.s,
+			self.stack.t,
+			self.stack.c );
 		return true;
 	};
 	

@@ -133,17 +133,8 @@ function ImglibTileSource( baseURL, fileExtension )
         tileWidth, tileHeight, col, row, zoom_level, stackToTile )
     {
         return "http://localhost:8010/tile?" + $.param({
-            x: col * tileWidth,
-            y: row * tileHeight,
-            width : tileWidth,
-            height : tileHeight,
-            row : 'y',
-            col : 'x',
-            scale : stack.scale, // defined as 1/2**zoomlevel
-            z : stack.z,
-            file_extension: fileExtension,
-            basename: baseURL,
-            type:'all',
+			width : tileWidth,
+			height : tileHeight,
 			a00: stackToTile.elements[ 0 ],
 			a10: stackToTile.elements[ 1 ],
 			a20: stackToTile.elements[ 2 ],
@@ -156,7 +147,7 @@ function ImglibTileSource( baseURL, fileExtension )
 			a03: stackToTile.elements[ 12 ],
 			a13: stackToTile.elements[ 13 ],
 			a23: stackToTile.elements[ 14 ],
-			screenscale: 0.5,
+			screenscale: 1,
 			interpolation: 'NEARESTNEIGHBOR',
 			timepoint: stack.timepoint
         });

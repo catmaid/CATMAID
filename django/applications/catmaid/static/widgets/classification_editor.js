@@ -15,11 +15,13 @@ var ClassificationEditor = new function()
             'GET', undefined, self.create_error_aware_callback(
                 function(status, data, text) {
                     var e = $.parseJSON(data);
-                    var container = document.getElementById(content_div_id);
-                    container.innerHTML = e.content;
-
-                    self.handleContent( e.page, container, pid );
-
+                    if (e.error) {
+                        alert(e.error);
+                    } else {
+                        var container = document.getElementById(content_div_id);
+                        container.innerHTML = e.content;
+                        self.handleContent( e.page, container, pid );
+                    }
                 }));
     };
 

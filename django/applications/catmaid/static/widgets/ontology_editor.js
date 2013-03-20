@@ -198,7 +198,7 @@ var OntologyEditor = new function()
                                 "separator_before": false,
                                 "separator_after": false,
                                 "label": r_name,
-                                "_class": "wider-context-menu",
+                                "_class": "even-wider-context-menu",
                                 "action": function(rid) {
                                     return function (obj) {
                                         return OntologyEditor.remove_restriction(pid, obj, rid);

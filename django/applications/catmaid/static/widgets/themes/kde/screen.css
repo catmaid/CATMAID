@@ -243,3 +243,8 @@ div#ontology_editor_widget div#ontology_warnings
 {
     min-width: 220px;
 }
+
+.even-wider-context-menu
+{
+    min-width: 235px;
+}

@@ -94,8 +94,8 @@ function VolumeTracingTool()
     this.createNewTrace = function()
     {
         VolumeTraceLastID--;
-        self.currentTrace = new fabricTrace(canvasLayer, 
-            VolumeTraceLastID);
+        self.currentTrace = new fabricTrace(self.stack, canvasLayer, 
+            VolumeTraceLastID, self.brush_slider.val);
         self.traces.push(self.currentTrace);
     }
     
@@ -168,6 +168,7 @@ function VolumeTracingTool()
     
     var onmousedown = function(e)
     {
+        self.createNewTrace();
         self.isDragging = true;
         statusBar.replaceLast("Mouse Down");
     }
@@ -178,7 +179,7 @@ function VolumeTracingTool()
         statusBar.replaceLast("Mouse Up");
         self.currentTrace.addObject(self.brush.clone());
         self.volumeAnnotation.pushTrace(self.currentTrace);
-        self.createNewTrace();
+       
     }
     
     var onmousemove = 
@@ -195,7 +196,7 @@ function VolumeTracingTool()
                 var pos_x = xp * self.stack.resolution.x;
                 var pos_y = yp * self.stack.resolution.y;
                 statusBar.replaceLast( "[" + pos_x.toFixed( 3 ) + ", " + pos_y.toFixed( 
-                    3 ) + " nm] = [" + xp + ", " + yp + " px]" );
+                    3 ) + " nm] = [" + xp + ", " + yp + " px]" + ", mx = " + m.offsetX + ", my = " + m.offsetY);
                 
                 self.brush.set({'left': m.offsetX, 'top': m.offsetY});
                 
@@ -214,11 +215,90 @@ function VolumeTracingTool()
     
 }
 
-function fabricTrace(cl, objid)
+function displayPxToStackPxX(x, stack)
+{
+    return stack.translation.x +
+        ( stack.x + ( x - stack.viewWidth / 2 ) / stack.scale );
+}
+
+function displayPxToStackPxY(y, stack)
+{
+    return stack.translation.y +
+        ( stack.y + ( y - stack.viewHeight / 2 ) / stack.scale );
+}
+
+function displayPxToStackPxXArray(x, stack)
+{
+    for (var i = 0; i < x.length; i++)
+    {
+        x[i] = displayPxToStackPxX(x[i], stack);
+    }
+}
+
+function displayPxToStackPxYArray(y, stack)
+{
+    for (var i = 0; i < y.length; i++)
+    {
+        y[i] = displayPxToStackPxY(y[i], stack);
+    }
+}
+
+function displayPxToStackNmArrayX(x, stack)
+{
+    for (var i = 0; i < x.length; i++)
+    {
+        x[i] = displayPxToStackPxX(x[i]) * stack.resolution.x;
+    }
+}
+
+function displayPxToStackNmArrayY(y, stack)
+{
+    for (var i = 0; i < y.length; i++)
+    {
+        y[i] = displayPxToStackPxY(y[i]) * stack.resolution.y;
+    }
+}
+
+
+function stackPxToDisplayPxX(x, stack)
+{
+    return stack.scale * (x - stack.translation.x - stack.x) + 
+        stack.viewWidth / 2;
+}
+
+function stackPxToDisplayPxY(y, stack)
+{
+    return stack.scale * (y - stack.translation.y - stack.y) + 
+        stack.viewHeight / 2;
+}
+
+function stackPxToDisplayPxXArray(x, stack)
+{
+    for (var i = 0; i < x.length; i++)
+    {
+        x[i] = stackPxToDisplayPxX(x[i], stack);
+    }
+}
+
+function stackPxToDisplayPxYArray(y, stack)
+{
+    for (var i = 0; i < y.length; i++)
+    {
+        y[i] = stackPxToDisplayPxY(y[i], stack);
+    }
+}
+
+
+
+function fabricTrace(stack, cl, objid, r)
 {
     var self = this;
     this.canvasLayer = cl;
     this.objectList = []; //List of fabric.js Objects
+    this.r = r / stack.scale;
+    this.x = []; // x,y trace in stack pixel coordinates
+    this.y = [];
+    this.stack = stack;
     
     /**
      * A fabricTrace's ID will be negative if it has not yet been synced
@@ -235,7 +315,7 @@ function fabricTrace(cl, objid)
         {
             canvas.add(self.objectList[i]);
         }
-        canvasLayer.canvas.renderAll();
+        self.canvasLayer.canvas.renderAll();
     }
     
     this.removeFromCanvas = function()
@@ -251,8 +331,16 @@ function fabricTrace(cl, objid)
     {
         self.objectList.push(obj);
         self.canvasLayer.canvas.add(obj);
+        self.x.push(displayPxToStackPxX(obj.left, self.stack));
+        self.y.push(displayPxToStackPxY(obj.top, self.stack));
     }
     
+    this.clear = function()
+    {
+        self.x = [];
+        self.y = [];
+        self.objectList = [];    
+    }
     
     /**
      * setObject(inObj) is called with a fabric.js object generated from
@@ -270,7 +358,9 @@ function fabricTrace(cl, objid)
     this.setObjects = function(inObjList)
     {
         self.removeFromCanvas();
+        self.clear();
         self.objectList = inObjList;
+        
         self.addToCanvas();
     }
     

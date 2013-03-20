@@ -781,6 +781,23 @@ class Drawing(UserFocusedModel):
     type=models.IntegerField(default=0)
     status = models.IntegerField(default=0)
 
+class AreaSegment(UserFocusedModel):
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
+    stack = models.ForeignKey(Stack)
+    #skeleton_id = models.IntegerField()
+    z = models.IntegerField(db_index=True)
+    #component_id=models.IntegerField()
+    min_x = models.IntegerField(db_index=True)
+    min_y = models.IntegerField(db_index=True)
+    max_x = models.IntegerField(db_index=True)
+    max_y = models.IntegerField(db_index=True)
+    #svg = models.TextField()
+    type=models.IntegerField(default=0)
+    #status = models.IntegerField(default=0)
+    coordinates = IntegerArrayField()
+    ndim = models.IntegerField(default=2)
+
 class DataViewType(models.Model):
     class Meta:
         db_table = "data_view_type"

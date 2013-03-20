@@ -46,18 +46,19 @@ function TileLayer(
 		return;
 	}
 
+	var old_timepoint = stack.getTimepoint();
+
 	this.redraw = function( completionCallback )
 	{
 		var vox = - stack.viewWidth / 2;
 		var voy = - stack.viewHeight / 2;
 
-		var stackToView = new THREE.Matrix4();
-		stackToView.copy( stack.stackToViewTransform );
+		var stackToView = stack.stackToView;
 
 		var stackOriginInView = new THREE.Vector3();
 		stackOriginInView.getPositionFromMatrix( stackToView );
-		var xc = stackOriginInView.getComponent( 0 ) - vox;
-		var yc = stackOriginInView.getComponent( 1 ) - voy;
+		var xc = Math.round( stackOriginInView.getComponent( 0 ) - vox );
+		var yc = Math.round( stackOriginInView.getComponent( 1 ) - voy );
 
 		var top;
 		var left;
@@ -79,15 +80,24 @@ function TileLayer(
 
 		var stackToTile = new THREE.Matrix4();
 
-		if ( stack.z == stack.old_z && stack.s == stack.old_s )
+		var reorderTiles = true;
+
+		var timepoint = stack.getTimepoint();
+		reorderTiles = reorderTiles && ( timepoint == old_timepoint );
+		old_timepoint = timepoint;
+
+//		reorderTiles = false;
+		if ( reorderTiles )
 		{
-			xd = Math.floor( xc / tileWidth ) - Math.floor( self.old_xc / tileWidth );
-			yd = Math.floor( yc / tileHeight ) - Math.floor( self.old_yc / tileHeight );
-			self.old_xc = xc;
-			self.old_yc = yc;
+			xd = Math.floor( (self.old_xc - 1) / tileWidth ) - Math.floor( (xc - 1) / tileWidth );
+			yd = Math.floor( (self.old_yc - 1) / tileHeight ) - Math.floor( (yc - 1) / tileHeight );
+			if ( ! ( Math.abs( xd ) <= 2 ) )
+				xd = 0;
+			if ( ! ( Math.abs( yd ) <= 2 ) )
+				yd = 0;
 
 			// re-order the tiles array on demand
-			if ( xd < 0 )
+			while ( xd < 0 )
 			{
 				for ( var i = 0; i < tiles.length; ++i )
 				{
@@ -99,8 +109,9 @@ function TileLayer(
 					tilesContainer.appendChild( img );
 					tiles[ i ].unshift( img );
 				}
+				xd++;
 			}
-			else if ( xd > 0 )
+			while ( xd > 0 )
 			{
 				for ( var i = 0; i < tiles.length; ++i )
 				{
@@ -112,8 +123,9 @@ function TileLayer(
 					tilesContainer.appendChild( img );
 					tiles[ i ].push( img );
 				}
+				xd--;
 			}
-			else if ( yd < 0 )
+			while( yd < 0 )
 			{
 				var old_row = tiles.pop();
 				var new_row = new Array();
@@ -128,8 +140,9 @@ function TileLayer(
 					new_row.push( img );
 				}
 				tiles.unshift( new_row );
+				yd++;
 			}
-			else if ( yd > 0 )
+			while ( yd > 0 )
 			{
 				var old_row = tiles.shift();
 				var new_row = new Array();
@@ -144,8 +157,11 @@ function TileLayer(
 					new_row.push( img );
 				}
 				tiles.push( new_row );
+				yd--;
 			}
 		}
+		self.old_xc = xc;
+		self.old_yc = yc;
 
 		var t = top;
 		var l = left;
@@ -164,9 +180,6 @@ function TileLayer(
 					tileWidth, tileHeight,
 					0, 0, 0,
 					stackToTile );
-//////////////////////////////////////////////////////////
-		//		tiles[ i ][ j ].src = "widgets/black.gif";
-//////////////////////////////////////////////////////////
 
 				tiles[ i ][ j ].style.top = t + "px";
 				tiles[ i ][ j ].style.left = l + "px";
@@ -175,7 +188,7 @@ function TileLayer(
 				tiles[ i ][ j ].style.width = tileWidth + "px";
 				tiles[ i ][ j ].style.height = tileHeight + "px";
 
-				console.log( tiles[i][j].src );
+				// console.log( tiles[i][j].src );
 
 				l += tileWidth;
 			}
@@ -246,21 +259,17 @@ function TileLayer(
 
 	// internal opacity variable
 	var opacity = 100;
-	
+
+	// navigator transform handler and box overlay
+	self.navigatorbox = new NavigatorBox( stack );
+
 	/* Contains all tiles in a 2d-array */
 	var tiles = new Array();
-
-	self.navigatorbox = new NavigatorBox( stack );
 
 	var tilesContainer = document.createElement( "div" );
 	tilesContainer.className = "sliceTiles";
 	stack.getView().appendChild( tilesContainer );
 
-	var LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
-	var LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
-
 	self.tileSource = tileSource;
-
-	var overviewLayer = tileSource.getOverviewLayer( this );
 }
 

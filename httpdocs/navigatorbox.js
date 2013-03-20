@@ -17,6 +17,11 @@ function NavigatorBox( stack )
 	var incRotation = new THREE.Matrix4();
 
 	/**
+	 * Current incremental translation.
+	 */
+	var incTranslation = new THREE.Vector3();
+
+	/**
 	 * Current project to view translation.
 	 */
 	var translation = new THREE.Vector3();
@@ -36,11 +41,6 @@ function NavigatorBox( stack )
 	 * affine = scale * translation * rotation.
 	 */
 	var affine = new THREE.Matrix4();
-
-	/**
-	 * Copy of current transform when mouse dragging started.
-	 */
-	var affineDragStart = new THREE.Matrix4();
 
 	/**
 	 * Coordinates where mouse dragging started.
@@ -71,7 +71,7 @@ function NavigatorBox( stack )
 	this.setTransform =function( transform )
 	{
 		affine.copy( t );
-	}
+	};
 
 	/**
 	 * Set screen coordinates to keep fixed while zooming or rotating with the keyboard.
@@ -81,7 +81,17 @@ function NavigatorBox( stack )
 	{
 		centerX = x;
 		centerY = y;
-	}
+	};
+
+	this.getAffine = function()
+	{
+		affine.copy( rotation );
+		var tmp = new THREE.Vector3( scale, scale, scale );
+		affine.scale( tmp );
+		tmp.addVectors( translation, incTranslation );
+		affine.setPosition( tmp );
+		return affine;
+	};
 
 	/**
 	 * Return rotate/translate/scale speed resulting from modifier keys.
@@ -105,35 +115,114 @@ function NavigatorBox( stack )
 
 	var rotating = false;
 
-	this.mousePressed = function( x, y )
+	var translating = false;
+
+	this.mousePressed = function( x, y, button )
 	{
 		oX = x;
 		oY = y;
-		affineDragStart.copy( affine );
-		rotating = true;
+		if ( button == 1 )
+			rotating = true;
+		else if ( button == 2 )
+			translating = true;
 	};
 
 	this.mouseReleased = function( x, y )
 	{
-		rotating = false;
+		if ( translating )
+		{
+			translating = false;
+			translation.add( incTranslation );
+			incTranslation.set( 0, 0, 0 );
+		}
+
+		if ( rotating )
+		{
+			rotating = false;
+
+			var tc = new THREE.Vector3( centerX - oX, centerY - oY, 0 );
+
+			var t = new THREE.Vector3();
+			t.addVectors( tc, translation );
+			t.applyMatrix4( incRotation );
+			t.sub( tc );
+			translation.copy( t );
+			rotation.multiplyMatrices( incRotation, rotation );
+		}
 	};
 
 	/**
 	 * button 1   : rotate
 	 * button 2/3 : translate
 	 */
-	this.mouseDragged = function( x, y, button )
+	this.mouseDragged = function( x, y )
 	{
 		var dX = oX - x;
 		var dY = oY - y;
 
-		// rotate
-		var v = step;
-		incRotation.identity();
-		incRotation.rotateY(  dX * v );
-		incRotation.rotateX( -dY * v );
+		if ( rotating )
+		{
+			var v = step;
+			incRotation.identity();
+			incRotation.rotateY(  dX * v );
+			incRotation.rotateX( -dY * v );
+		}
+		else if ( translating )
+		{
+			// console.log( "-dX = " + (-dX) + ", -dY = " + (-dY) ); 
+			incTranslation.set( -dX, -dY, 0 );
+		}
 	};
 
+
+	this.mouseWheelMoved = function( w )
+	{
+		var v = 1;
+		// translate in Z
+		translation.z += v * w;
+	}
+
+	//--------------------------------------------------------------------------
+	/**
+	 * Slider commands for changing the slice come in too frequently, thus the
+	 * execution of the actual slice change has to be delayed slightly.  The
+	 * timer is overridden if a new action comes in before the last had time to
+	 * be executed.
+	 */
+
+	/*
+	var changeSliceDelayedTimer = null;
+	var changeSliceDelayedParam = null;
+	
+	var changeSliceDelayedAction = function()
+	{
+		window.clearTimeout( changeSliceDelayedTimer );
+		self.changeSlice( changeSliceDelayedParam.z );
+		changeSliceDelayedParam = null;
+		return false;
+	}
+	
+	this.changeSliceDelayed = function( val )
+	{
+		if ( changeSliceDelayedTimer ) window.clearTimeout( changeSliceDelayedTimer );
+		changeSliceDelayedParam = { z : val };
+		changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 100 );
+	}
+
+	this.changeSlice = function( val )
+	{
+    // if 3d viewer window visible, change its z slice
+    if( $( "#view_in_3d_webgl_widget").length ) {
+        if( $('#enable_z_plane').attr('checked') != undefined ) {
+            WebGLApp.updateZPlane( val );
+        }
+    }
+		self.stack.pan( 0, 0, self.stack.z - val );
+		//self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
+		return;
+	}
+	*/
+	//--------------------------------------------------------------------------
 
 
 	//////////// box painting /////////
@@ -160,8 +249,10 @@ function NavigatorBox( stack )
 			canvas.style.visibility = "hidden";
 			return;
 		}
+
 		canvas.style.visibility = "visible";
 		stack.getView().style.cursor = "crosshair";
+
 		var ctx = canvas.getContext( "2d" );
 		var w = canvas.width;
 		var h = canvas.height;
@@ -201,7 +292,7 @@ function NavigatorBox( stack )
 			0, s, 0, -s*oy,
 			0, 0, 1, -oz,
 			0, 0, 1, -oz );
-		projection.multiplyMatrices( projection, incRotation );
+		projection.multiply( incRotation );
 
 		p000.applyProjection( projection );
 		p100.applyProjection( projection );

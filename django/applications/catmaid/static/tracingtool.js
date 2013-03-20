@@ -507,7 +507,7 @@ function TracingTool()
   this.addAction( new Action({
     helpText: "Go to the parent of the active node",
     keyShortcuts: {
-      "P": [ 80 ]
+      "P": [ 80 ] 
     },
     run: function (e) {
       if (!mayView())
@@ -516,6 +516,20 @@ function TracingTool()
       return true;
     }
   }) );
+
+  this.addAction( new Action({
+    helpText: "Go to the child of the active node",//if there is more than one child, it shows a warning
+    keyShortcuts: {
+      "O": [ 79 ] //depending if shift is down or up it will go to left or right child
+    },
+    run: function (e) {
+      if (!mayView())
+        return false;
+      tracingLayer.svgOverlay.tracingCommand('gochild', e);
+      return true;
+    }
+  }) );
+
 
   this.addAction( new Action({
     helpText: "Go to last edited node in this skeleton",

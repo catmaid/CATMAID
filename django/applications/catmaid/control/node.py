@@ -529,7 +529,9 @@ def _fetch_location(treenode_id):
           (location).x AS x,
           (location).y AS y,
           (location).z AS z,
-          skeleton_id
+          skeleton_id,
+          location_t AS t,
+          location_c AS c
         FROM treenode
         WHERE id=%s''', [treenode_id])
     return cursor.fetchone()
@@ -609,6 +611,36 @@ def find_previous_branchnode_or_root(request, project_id=None):
         return HttpResponse(json.dumps(_fetch_location(tnid)))
     except Exception as e:
         raise Exception('Could not obtain previous branch node or root:' + str(e))
+
+
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def find_next_child(request, project_id=None):
+    try:
+        tnid = int(request.POST['tnid'])
+        shift = 1 == int(request.POST['shift'])
+        alt = 1 == int(request.POST['alt'])
+        skid = Treenode.objects.get(pk=tnid).skeleton_id
+        graph = _skeleton_as_graph(skid)
+
+        children = graph.successors(tnid)
+        
+        # Choose one of the children:
+        # The closest to 0,0,0 or the furthest if shift is down
+        sqDist = 0 if shift else float('inf')
+        for t in Treenode.objects.filter(parent_id=tnid):
+            p = t.location
+            d = pow(p.x, 2) + pow(p.y, 2) + pow(p.z, 2)
+            if (shift and d > sqDist) or (not shift and d < sqDist):
+                sqDist = d
+                tnid = t.id
+
+        #print _fetch_location(tnid): returns "(x,y,z,...)" and it is tuple
+        ff = _fetch_location(tnid)
+        ff += (len(children),)
+        return HttpResponse(json.dumps(ff) )
+    except Exception as e:
+        raise Exception('Could not obtain next branch node or root:' + str(e))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

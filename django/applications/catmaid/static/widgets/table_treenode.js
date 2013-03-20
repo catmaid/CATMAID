@@ -166,7 +166,7 @@ var TreenodeTable = new function()
       {
         "sClass": "center",
         "bSearchable": false,
-        "sWidth": "50px"
+        "sWidth": "30px"
       }, // confidence
       {
         "sClass": "center",
@@ -180,6 +180,14 @@ var TreenodeTable = new function()
         "sClass": "center",
         "bSearchable": false
       }, // z
+      {
+        "sClass": "center",
+        "bSearchable": false
+      }, // t
+      {
+        "sClass": "center",
+        "bSearchable": false
+      }, // ch
       {
         "sClass": "center",
         "bSearchable": false,
@@ -248,11 +256,24 @@ var TreenodeTable = new function()
       var x = parseFloat(aData[4]);
       var y = parseFloat(aData[5]);
       var z = parseFloat(aData[6]);
+      var t = parseFloat(aData[7]);
+      var c = parseFloat(aData[8]);
+
       var id = parseInt(aData[0], 10);
-      project.moveTo(z, y, x, undefined,
+
+      //var ss = project.getStack();
+      if( 1)//TODO: change this so we check tile_layer_source == 5 from project
+      {
+        project.moveTo5D(z, y, x, undefined, t, c,
                      function () {
                        SkeletonAnnotations.staticSelectNode(id, skelid);
                      });
+      }else{
+        project.moveTo(z, y, x, undefined,
+                     function () {
+                       SkeletonAnnotations.staticSelectNode(id, skelid);
+                     });
+      }
     });
   };
 }

@@ -288,7 +288,9 @@ def create_interpolated_treenode(request, project_id=None):
     int_values = {
             'parent_id': 0,
             'stack_id': 0,
-            'confidence': 5}
+            'confidence': 5,
+            't':          0,
+            'c':          0}
     for p in decimal_values.keys():
         params[p] = decimal.Decimal(request.POST.get(p, decimal_values[p]))
     for p in int_values.keys():
@@ -299,7 +301,7 @@ def create_interpolated_treenode(request, project_id=None):
 
 
 def _create_interpolated_treenode(request, params, project_id, skip_last):
-    """ Create interpolated treenodes between the 'parent_id' and the clicked x,y,z
+    """ Create interpolated treenodes between the 'parent_id' and the clicked x,y,z,t,c
     coordinate. The skip_last is to prevent the creation of the last node, used by
     the join_skeletons_interpolated. """
     response_on_error = 'Could not create interpolated treenode'
@@ -310,34 +312,53 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
         parent_x = decimal.Decimal(loc.x)
         parent_y = decimal.Decimal(loc.y)
         parent_z = decimal.Decimal(loc.z)
+        parent_t = decimal.Decimal( parent.location_t)
+        parent_c = decimal.Decimal( parent.location_c)
 
-        steps = abs((params['z'] - parent_z) / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
+        #steps = abs((params['z'] - parent_z) / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
+        #if steps == decimal.Decimal(0):
+        #    steps = decimal.Decimal(1)
+
+        #in the 5D visualization code t is the driving elemnt for interpolation
+        steps = abs((params['t'] - parent_t) ).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
         if steps == decimal.Decimal(0):
             steps = decimal.Decimal(1)
+
 
         dx = (params['x'] - parent_x) / steps
         dy = (params['y'] - parent_y) / steps
         dz = (params['z'] - parent_z) / steps
 
+        dt = (params['t'] - parent_t) / steps
+        dc = 0 #TODO: do we really want to inteprolate through channels? Does it really make sense?
+
         broken_slices = set(int(bs.index) for bs in BrokenSlice.objects.filter(stack=params['stack_id']))
         sign = -1 if dz < 0 else 1
+
+        #not needed yet
+        #sign_t = -1 if dt < 0 else 1  
 
         # Loop the creation of treenodes in z resolution steps until target
         # section is reached
         parent_id = params['parent_id']
         atn_slice_index = ((parent_z - params['stack_translation_z']) / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
-        for i in range(1, steps + (0 if skip_last else 1)):
-            if (atn_slice_index + i * sign) in broken_slices:
-                continue
+        for i in range(1, steps + (0 if skip_last else 1)):  
+            #if (atn_slice_index + i * sign) in broken_slices:
+            #    continue
             response_on_error = 'Error while trying to insert treenode.'
             new_treenode = Treenode()
             new_treenode.user_id = request.user.id
             new_treenode.editor_id = request.user.id
             new_treenode.project_id = project_id
+            zworld = float(parent_z + dz * i) / float(params['resz'])
+            zworld = round(zworld) * float(params['resz']) #we need integer values for slices. TODO: if translation_z != 0 this code dooes not work
+
             new_treenode.location = Double3D(
                     float(parent_x + dx * i),
                     float(parent_y + dy * i),
-                    float(parent_z + dz * i))
+                    zworld ) 
+            new_treenode.location_t = parent_t + dt * i;
+            new_treenode.location_c = parent_c + dc * i;
             new_treenode.radius = params['radius']
             new_treenode.skeleton_id = parent_skeleton_id
             new_treenode.confidence = params['confidence']
@@ -498,7 +519,9 @@ def join_skeletons_interpolated(request, project_id=None):
             'from_id': 0,
             'to_id': 0,
             'stack_id': 0,
-            'confidence': 5}
+            'confidence': 5,
+            't':        0,
+            'c':        0}
     params = {}
     for p in decimal_values.keys():
         params[p] = decimal.Decimal(request.POST.get(p, decimal_values[p]))

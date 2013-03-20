@@ -26,6 +26,7 @@ def update_treenode_table(request, project_id=None):
             property_value = float(property_value)
         else:
             property_value = int(property_value)
+    
 
     if property_name not in ['confidence', 'radius']:
         raise Exception('Can only modify confidence and radius.')
@@ -106,6 +107,8 @@ def list_treenode_table(request, project_id=None):
                 'x': '("treenode"."location")."x"',
                 'y': '("treenode"."location")."y"',
                 'z': '("treenode"."location")."z"',
+                't': '"treenode"."location_t"',
+                'ch': '"treenode"."location_c"',
                 'username': '"auth_user"."username"',
                 'last_reviewer': '"treenode"."reviewer_id"',
                 'last_modified': 'to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\')'
@@ -214,6 +217,8 @@ def list_treenode_table(request, project_id=None):
             row.append('%.2f' % tn.x)
             row.append('%.2f' % tn.y)
             row.append('%.2f' % tn.z)
+            row.append(int(tn.t))
+            row.append(int(tn.ch))
             row.append(int((tn.z - translation.z) / resolution.z))
             row.append(str(tn.radius))
             row.append(tn.username)

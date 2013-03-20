@@ -362,7 +362,9 @@ var SkeletonAnnotations = new function()
       return nearestnode;
     };
 
-    this.findNodeWithinRadius = function (x, y, z, radius) {
+    this.findNodeWithinRadius = function (x, y, z, radius, t, c) {
+
+
       var xdiff, ydiff, zdiff, distsq, mindistsq = radius * radius, nearestnode = null, node, nodeid;
       for (nodeid in nodes) {
         if (nodes.hasOwnProperty(nodeid)) {
@@ -371,6 +373,18 @@ var SkeletonAnnotations = new function()
           ydiff = y - self.pix2physY(node.y);
           zdiff = z - self.pix2physZ(node.z);
           distsq = xdiff*xdiff + ydiff*ydiff + zdiff*zdiff;
+          //discrete values for t and c
+          if( t != undefined )
+          {
+            if( t != node.t)
+              distsq = 1e32;//infinite
+          }
+          if( c != undefined )
+          {
+            if( c != node.c)
+              distsq = 1e32;//infinite
+          }
+
           if (distsq < mindistsq) {
             mindistsq = distsq;
             nearestnode = node;
@@ -875,7 +889,9 @@ var SkeletonAnnotations = new function()
             resy: stack.resolution.y,
             resz: stack.resolution.z,
             stack_translation_z: stack.translation.z,
-            stack_id: project.focusedStack.id
+            stack_id: project.focusedStack.id,
+            t: q.phys_t,
+            c: q.phys_c
         };
         var url;
         if (q.nearestnode_id) {
@@ -889,11 +905,19 @@ var SkeletonAnnotations = new function()
         requestQueue.register(django_url + project.id + url, "POST", post, handler);
       };
 
-      return function (phys_x, phys_y, phys_z, nearestnode_id) {
+      return function (phys_x, phys_y, phys_z, nearestnode_id, phys_t, phys_c) {
+
+        if( phys_t === undefined )
+            phys_t = 0;
+        if( phys_c === undefined )
+            phys_c = 0;
+
         queue.push({phys_x: phys_x,
                     phys_y: phys_y,
                     phys_z: phys_z,
-                    nearestnode_id: nearestnode_id});
+                    nearestnode_id: nearestnode_id,
+                    phys_t: phys_t,
+                    phys_c: phys_c});
 
         if (queue.length > 1) {
           return; // will be handled by the callback
@@ -1688,15 +1712,69 @@ var SkeletonAnnotations = new function()
               } else {
                 // json is a tuple:
                 // json[0]: treenode id
-                // json[1], [2], [3]: x, y, z in calibrated world units
+                //json[4]: skeleton_id
+                // json[1], [2], [3], [5], [6]: x, y, z, t, c in calibrated world units
                 if (treenode_id === json[0]) {
                   // Already at a branch or end node
                   // TODO issue a growl
                 } else {
+
+                  if( stack.tile_source_type === 5)//5D visualization
+                  {
+                    stack.getProject().moveTo5D(json[3], json[2], json[1], undefined,json[5], json[6],
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json[0], json[4]);
+                    });
+                   }else{   
                   stack.getProject().moveTo(json[3], json[2], json[1], undefined,
                     function() {
                       SkeletonAnnotations.staticSelectNode(json[0], json[4]);
                     });
+                  }
+                }
+              }
+            }
+          });
+    };
+
+
+    this.goToChildNode = function(treenode_id, e) {
+      requestQueue.register(
+          django_url + project.id + "/node/next_child",
+          "POST",
+          {tnid: treenode_id,
+           shift: e.shiftKey ? 1 : 0,
+           alt: e.altKey ? 1 : 0},
+          function(status, text) {
+            if (200 === status) {
+              var json = $.parseJSON(text);
+              if (json.error) {
+                alert("Error when trying to find next branch or end node:" + json.error);
+              } else {
+                // json is a tuple:
+                // json[0]: treenode id
+                //json[4]: skeleton_id
+                // json[1], [2], [3], [5], [6]: x, y, z, t, c in calibrated world units
+                //json[7]: number of children
+                if (treenode_id === json[0]) {
+                  // Already at a branch or end node
+                  growlAlert("WARNING", "You have reached the end of the trace");
+                } else {
+
+                  if( stack.tile_source_type === 5)//5D visualization
+                  {
+                    stack.getProject().moveTo5D(json[3], json[2], json[1], undefined,json[5], json[6],
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json[0], json[4]);
+                    });
+                   }else{   
+                  stack.getProject().moveTo(json[3], json[2], json[1], undefined,
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json[0], json[4]);
+                    });
+                  }
+                if( json[7] > 1)
+                  growlAlert("WARNING", "Node has more than one child");
                 }
               }
             }
@@ -1759,12 +1837,26 @@ var SkeletonAnnotations = new function()
         alert("BUG: unknown node type '"+node.type+"'");
         return;
       }
+
+      if( stack.tile_source_type === 5)//5D visualization
+      {
+          stack.getProject().moveTo5D(
+        self.pix2physZ(node.z),
+        self.pix2physY(node.y),
+        self.pix2physX(node.x),
+        undefined,
+        node.t,
+        node.ch,
+        afterMove);
+      }else{
+
       stack.getProject().moveTo(
         self.pix2physZ(node.z),
         self.pix2physY(node.y),
         self.pix2physX(node.x),
         undefined,
         afterMove);
+      }
     };
 
     // Commands for the sub-buttons of the tracing tool
@@ -1782,6 +1874,13 @@ var SkeletonAnnotations = new function()
         if (null !== atn.id) {
           self.goToParentNode(atn.id, atn.skeleton_id);
         } else {
+          alert('There must be a currently active node in order to move to its parent.');
+        }
+        break;
+      case "gochild":
+        if (atn.id !== null) {
+          self.goToChildNode(atn.id, arguments[1]);
+        }else {
           alert('There must be a currently active node in order to move to its parent.');
         }
         break;
@@ -1966,10 +2065,13 @@ var SkeletonAnnotations = new function()
       // project.coordinates.z is not on the new z index, thus simulate it here
       var pos_z = self.phys2pixZ(project.coordinates.z);
       var phys_z = self.pix2physZ(pos_z);
+
+      var phys_t = project.coordinates.t;
+      var phys_c = project.coordinates.c;
       // Get physical coordinates for node position creation
       var phys_x = self.pix2physX(pos_x);
       var phys_y = self.pix2physY(pos_y);
-      createInterpolatedNode(phys_x, phys_y, phys_z, null);
+      createInterpolatedNode(phys_x, phys_y, phys_z, null, phys_t, phys_c);
     };
 
 

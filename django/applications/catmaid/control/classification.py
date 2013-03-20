@@ -19,7 +19,7 @@ from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 # A dummy project is referenced by all the classes and class instances.
 # This is due to the fact, that one classification graph instance should
 # be referencey by multiple projects.
-dummy_pid = -1
+dummy_pid = settings.ONTOLOGY_DUMMY_PROJECT_ID
 
 # All needed classes by the classification system alongside their
 # descriptions.

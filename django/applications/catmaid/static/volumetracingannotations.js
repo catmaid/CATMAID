@@ -25,22 +25,9 @@ function VolumeTracingAnnotations()
     this.fixTrace = function(data)
     {
         console.log(data);
-        /*var x = data.x;
-        var y = data.y;
+        
         var id = data.i;
-        
-        var trace = self.removePendingTrace(id);
-        
-        var path = [];
-        
-        for (var i = 0; i < x.length; i++)
-        {
-            path.push({x: x[i], y: y[i]});
-        }
-        
-        trace.setObject(new fabric.Polygon(path,
-            {fill: 'blue', selectable:false}));*/
-        var id = data.i;
+        var dbid = data.dbi;
         var trace = self.removePendingTrace(id);
         var objects = [];
         
@@ -52,6 +39,11 @@ function VolumeTracingAnnotations()
             });
         
         trace.setObjects(objects);
+        
+        if (id != dbid)
+        {
+            trace.id = dbid;
+        }
         
         return;
     }
@@ -66,23 +58,23 @@ function VolumeTracingAnnotations()
         var radii = [];
         var ctrX = [];
         var ctrY = [];
-        //trace.objectList contains only Circles right now.
-        var circleList = trace.objectList;
         
         pendingTraces.push(trace);
         
-        for (var i = 0; i < circleList.length; i++)
-        {
-            c = circleList[i];
-            radii[i] = c.radius;
-            ctrX[i] = c.left;
-            ctrY[i] = c.top;
-        }
+        r = trace.r;
+        ctrX = trace.x;
+        ctrY = trace.y;
         
-        data = {'r' : radii,
+        data = {'r' : r, //r, x, y in stack coordinates
                 'x' : ctrX,
                 'y' : ctrY,
-                'i' : trace.id};
+                'z' : self.stack.z * self.stack.resolution.z + self.stack.translation.z,
+                'i' : trace.id,
+                'xtrans' : self.stack.translation.x + self.stack.x,
+                'ytrans' : self.stack.translation.y + self.stack.y,
+                'wview' : self.stack.viewWidth,
+                'hview' : self.stack.viewHeight,
+                'scale' : self.stack.scale};
 
        $.ajax({
           "dataType": 'json',

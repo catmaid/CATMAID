@@ -381,46 +381,51 @@ def add_classification_graph(request, project_id=None):
     # Has the form been submitted?
     new_graph_form_class = create_new_graph_form()
     if request.method == 'POST':
-        form = new_graph_form_class(request.POST)
-        if form.is_valid():
+        new_graph_form = new_graph_form_class(request.POST)
+        if new_graph_form.is_valid():
             # Create the new classification graph
             project = get_object_or_404(Project, pk=project_id)
-            ontology = form.cleaned_data['ontology']
+            ontology = new_graph_form.cleaned_data['ontology']
             init_new_classification( request.user, project, ontology )
             return HttpResponse('A new graph has been initalized.')
     else:
         new_graph_form = new_graph_form_class()
-        link_form = create_linked_graphs_form( project_id )
-        link_graph_form = link_form()
 
-        return render_to_response("catmaid/classification/new_graph.html", {
-            'project_id': project_id,
-            'new_graph_form': new_graph_form,
-            'link_graph_form': link_graph_form,
-            'CATMAID_URL': settings.CATMAID_URL
-        })
+    link_form = create_linked_graphs_form( project_id )
+    link_graph_form = link_form()
+
+    return render_to_response("catmaid/classification/new_graph.html", {
+        'project_id': project_id,
+        'new_graph_form': new_graph_form,
+        'link_graph_form': link_graph_form,
+        'CATMAID_URL': settings.CATMAID_URL
+    })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def link_classification_graph(request, project_id=None):
     link_form = create_linked_graphs_form( project_id )
     # Has the form been submitted?
     if request.method == 'POST':
-        form = link_form(request.POST)
-        if form.is_valid():
+        link_graph_form = link_form(request.POST)
+        if link_graph_form.is_valid():
             # Link existing classification graph
             project = get_object_or_404(Project, pk=project_id)
-            link = form.cleaned_data['classification_graph']
+            link = link_graph_form.cleaned_data['classification_graph']
             graph_to_link = link.class_instance_b
             link_existing_classification(request.user, project, graph_to_link)
             return HttpResponse('An existing graph has been linked.')
     else:
-        form = link_form()
+        link_graph_form = link_form()
 
-        return render_to_response("catmaid/classification/new_graph.html", {
-            'project_id': project_id,
-            'new_graph_form': new_graph_form,
-            'CATMAID_URL': settings.CATMAID_URL
-        })
+    new_graph_form_class = create_new_graph_form()
+    new_graph_form = new_graph_form_class()
+
+    return render_to_response("catmaid/classification/new_graph.html", {
+        'project_id': project_id,
+        'new_graph_form': new_graph_form,
+        'link_graph_form': link_graph_form,
+        'CATMAID_URL': settings.CATMAID_URL
+    })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def select_classification_graph(request, project_id=None):

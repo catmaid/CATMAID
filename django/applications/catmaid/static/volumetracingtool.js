@@ -72,6 +72,10 @@ function VolumeTracingTool()
         
     }
     
+    this.redraw = function()
+    {
+    }
+    
     this.getTraceByID = function(id)
     {
         for (var i = 0; i < self.traces.length; i++)

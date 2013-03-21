@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.views.generic import TemplateView
 
 class HomepageView(TemplateView):
@@ -8,13 +9,6 @@ class HomepageView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(self.__class__, self).get_context_data(**kwargs)
-
-        # Add user profile information to the main context
-        profile = self.request.user.userprofile
-        context['show_text_label_tool'] = profile.show_text_label_tool
-        context['show_tagging_tool'] = profile.show_tagging_tool
-        context['show_cropping_tool'] = profile.show_cropping_tool
-        context['show_segmentation_tool'] = profile.show_segmentation_tool
-        context['show_tracing_tool'] = profile.show_tracing_tool
-
-        return context
+        context['CATMAID_URL'] = settings.CATMAID_URL
+        profile_context = self.request.user.userprofile.as_dict()
+        return dict(context.items() + profile_context.items())

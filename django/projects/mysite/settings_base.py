@@ -84,6 +84,7 @@ PROFILE_SHOW_TAGGING_TOOL = False
 PROFILE_SHOW_CROPPING_TOOL = False
 PROFILE_SHOW_SEGMENTATION_TOOL = False
 PROFILE_SHOW_TRACING_TOOL = False
+PROFILE_SHOW_ONTOLOGY_TOOL = False
 
 # A couple of functions useful for generating default directories to
 # be used in the settings files:

@@ -54,6 +54,9 @@ var messageWindow = null;
 
 var rootWindow;
 
+// an object to store user profile properties
+var userprofile = {};
+
 var user_permissions = null;
 function checkPermission(p) {
   return user_permissions && user_permissions[p][project.getId()];
@@ -75,11 +78,6 @@ function countProperties(obj) {
   }
   return count;
 }
-
-// url of the django instance relative to the CATMAID URL
-// (if any, needed e.g. by cropping tool). It is expected
-// to end with a slash.
-var django_url = ""
 
 /**
  * queue a login-request on pressing return
@@ -161,6 +159,8 @@ function handle_login(status, text, xml, completionCallback) {
 
       document.getElementById("project_menu_new").style.display = "block";
 
+      handle_profile_update(e);
+
       //msg_timeout = window.setTimeout( message, MSG_TIMEOUT_INTERVAL );
       message();
     } else if (e.error) {
@@ -199,8 +199,7 @@ function logout() {
  *
  * free the window
  */
-function handle_logout()
-{
+function handle_logout(status, text, xml) {
 	session = undefined;
 	document.getElementById( "login_box" ).style.display = "block";
 	document.getElementById( "logout_box" ).style.display = "none";
@@ -209,14 +208,41 @@ function handle_logout()
 	document.getElementById( "message_box" ).style.display = "none";
 	
 	document.getElementById( "project_menu_new" ).style.display = "none";
-			
-	updateProjects();
 	
 	if ( project && project.id ) project.setTool( new Navigator() );
-	
+
+	if (status == 200 && text) {
+		var e = $.parseJSON(text);
+		handle_profile_update(e);
+	}
+
 	return;
 }
 
+/**
+ * Update profile dependend information. This is e.g. the visibility of
+ * tools in the toolbar.
+ */
+function handle_profile_update(e) {
+  if (e.show_text_label_tool)
+    userprofile.show_text_label_tool = e.show_text_label_tool;
+  if (e.show_tagging_tool)
+    userprofile.show_tagging_tool = e.show_tagging_tool;
+  if (e.show_cropping_tool)
+    userprofile.show_cropping_tool = e.show_cropping_tool
+  if (e.show_segmentation_tool)
+    userprofile.show_segmentation_tool = e.show_segmentation_tool;
+  if (e.show_tracing_tool)
+    userprofile.show_tracing_tool = e.show_tracing_tool;
+  if (e.show_ontology_tool)
+    userprofile.show_ontology_tool = e.show_ontology_tool;
+  // update the edit tool actions and its div container
+  createEditToolActions();
+  new_edit_actions = createButtonsFromActions(editToolActions,
+    'toolbox_edit', '');
+  $('#toolbox_edit').replaceWith(new_edit_actions);
+  $('#toolbox_edit').hide();
+}
 
 /**
  * queue a project-menu-update-request to the request queue
@@ -990,8 +1016,7 @@ var realInit = function()
 	document.getElementById( "logout_box" ).style.display = "none";
 	document.getElementById( "session_box" ).style.display = "none";
 
-	// Add the toolbar buttons:
-
+	// Create the toolboxes
 	$('#toolbox_project').replaceWith(createButtonsFromActions(
 		toolActions, 'toolbox_project', ''));
 	$('#toolbox_edit').replaceWith(createButtonsFromActions(
@@ -1001,12 +1026,14 @@ var realInit = function()
 	$('#toolbox_data').replaceWith(createButtonsFromActions(
 		tracingWindowActions, 'toolbox_data', ''));
 
+	// Add the toolbar buttons:
 	document.getElementById( "toolbar_nav" ).style.display = "none";
 	document.getElementById( "toolbar_text" ).style.display = "none";
 	document.getElementById( "toolbar_tags" ).style.display = "none";
 	document.getElementById( "toolbar_crop" ).style.display = "none";
 	document.getElementById( "toolbox_project" ).style.display = "none";
 	document.getElementById( "toolbox_edit" ).style.display = "none";
+	document.getElementById( "toolbox_ontology" ).style.display = "none";
 	document.getElementById( "toolbox_data" ).style.display = "none";
   document.getElementById( "toolbox_segmentation" ).style.display = "none";
 	document.getElementById( "toolbox_show" ).style.display = "none";

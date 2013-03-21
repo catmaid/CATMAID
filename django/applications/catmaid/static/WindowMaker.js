@@ -83,35 +83,34 @@ var WindowMaker = new function()
     content.style.backgroundColor = "#ffffff";
 
     var container = createContainer("neuron_staging_table");
-    content.appendChild(container);
+    
+    var buttons = document.createElement("div");
+    buttons.id = "view-3d-webgl-skeleton-buttons-div";
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
     add.setAttribute("id", "add_current_to_3d_webgl_view");
     add.setAttribute("value", "Add active object");
     add.onclick = WebGLApp.addActiveObjectToStagingArea;
-    container.appendChild(add);
+    buttons.appendChild(add);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
     rand.setAttribute("id", "store_skeleton_list");
     rand.setAttribute("value", "Store list");
     rand.onclick = WebGLApp.storeSkeletonList;
-    container.appendChild(rand);
+    buttons.appendChild(rand);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
     rand.setAttribute("id", "load_skeleton_list");
     rand.setAttribute("value", "Load list");
     rand.onclick = WebGLApp.loadSkeletonList;
-    container.appendChild(rand);
-
-    var tabdiv = document.createElement('div');
-    tabdiv.setAttribute("id", "view-3d-webgl-skeleton-table-div");
-    tabdiv.style.height = "150px";
-    tabdiv.style.overflow = "auto";
-    container.appendChild(tabdiv);
-
+    buttons.appendChild(rand);
+    
+    win.getFrame().appendChild(buttons);
+    content.appendChild(container);
+    
     var tab = document.createElement('table');
     tab.setAttribute("id", "webgl-skeleton-table");
     tab.innerHTML =
@@ -137,9 +136,9 @@ var WindowMaker = new function()
             '<td></td>' +
           '</tr>' +
         '</tbody>';
-    tabdiv.appendChild(tab);
+    container.appendChild(tab);
 
-    addListener(win, container);
+    addListener(win, container, "view-3d-webgl-skeleton-buttons-div");
 
     addLogic(win);
 
@@ -164,57 +163,61 @@ var WindowMaker = new function()
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
+    var buttons = document.createElement( "div" );
+    buttons.id = "buttons_in_3d_webgl_widget";
+    content.appendChild(buttons);
+    
     var container = createContainer("view_in_3d_webgl_widget");
     content.appendChild(container);
-
+    
     var add = document.createElement('input');
     add.setAttribute("type", "button");
     add.setAttribute("id", "center_active_node");
     add.setAttribute("value", "Center active");
     add.onclick = WebGLApp.look_at_active_node;
-    container.appendChild(add);
+    buttons.appendChild(add);
 
     var fulls = document.createElement('input');
     fulls.setAttribute("type", "button");
     fulls.setAttribute("id", "fullscreen_webgl_view");
     fulls.setAttribute("value", "Fullscreen");
     fulls.onclick = WebGLApp.fullscreenWebGL;
-    container.appendChild(fulls);
+    buttons.appendChild(fulls);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
     rand.setAttribute("id", "xy_plane");
     rand.setAttribute("value", "XY");
     rand.onclick =  WebGLApp.XYView;
-    container.appendChild(rand);
+    buttons.appendChild(rand);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
     rand.setAttribute("id", "xz_plane");
     rand.setAttribute("value", "XZ");
     rand.onclick = WebGLApp.XZView;
-    container.appendChild(rand);
+    buttons.appendChild(rand);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
     rand.setAttribute("id", "yz_plane");
     rand.setAttribute("value", "YZ");
     rand.onclick = WebGLApp.YZView;
-    container.appendChild(rand);
+    buttons.appendChild(rand);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
     rand.setAttribute("id", "randomize_skeleton_color");
     rand.setAttribute("value", "Randomize color");
     rand.onclick = WebGLApp.randomizeColors;
-    container.appendChild(rand);
+    buttons.appendChild(rand);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
     rand.setAttribute("id", "configure_parameters");
     rand.setAttribute("value", "Options");
     rand.onclick = WebGLApp.configure_parameters;
-    container.appendChild(rand);
+    buttons.appendChild(rand);
 
     var canvas = document.createElement('div');
     canvas.setAttribute("id", "viewer-3d-webgl-canvas");
@@ -250,9 +253,11 @@ var WindowMaker = new function()
             break;
           case CMWWindow.RESIZE:
             var frame = win.getFrame();
-            container.style.height = win.getContentHeight() + "px";
-            container.style.width = win.getWidth() + "px";
-            WebGLApp.resizeView( parseInt(frame.style.width, 10), parseInt(frame.style.height, 10) );
+            var w = win.getAvailableWidth();
+            var h = win.getContentHeight() - buttons.offsetHeight;
+            container.style.width = w + "px";
+            container.style.height = h + "px";
+            WebGLApp.resizeView( w, h );
             // Update the container height to account for the table-div having been resized
             // TODO
             break;
@@ -267,6 +272,7 @@ var WindowMaker = new function()
     // createWebGLViewerFromCATMAID(canvas.getAttribute("id"));
 
     WebGLApp.init( canvas.getAttribute("id") );
+    win.callListeners( CMWWindow.RESIZE );
 
     return win;
   };

@@ -796,18 +796,18 @@ var WebGLApp = new function () {
         canvasWidth = 80;
         canvasHeight = 60;
       }
-      $('#viewer-3d-webgl-canvas').width(canvasWidth-20);
+      $('#viewer-3d-webgl-canvas').width(canvasWidth);
       $('#viewer-3d-webgl-canvas').height(canvasHeight);
       $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
-      renderer.setSize( canvasWidth-20, canvasHeight );
+      renderer.setSize( canvasWidth, canvasHeight );
 
       // resize list view, needs frame height to fill it
-      var heightAvailable = $('#view_in_3d_webgl_widget').height() - canvasHeight;
-      if( heightAvailable < 150 ) {
-          $('#view-3d-webgl-skeleton-table-div').height(150);
-      } else {
-          $('#view-3d-webgl-skeleton-table-div').height(heightAvailable - 30);
-      }
+//      var heightAvailable = $('#view_in_3d_webgl_widget').height() - canvasHeight;
+//      if( heightAvailable < 150 ) {
+//          $('#view-3d-webgl-skeleton-table-div').height(150);
+//      } else {
+//          $('#view-3d-webgl-skeleton-table-div').height(heightAvailable - 30);
+//      }
       self.render();
     }
   }

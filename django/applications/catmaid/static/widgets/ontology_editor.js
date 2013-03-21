@@ -8,7 +8,7 @@ var OntologyEditor = new function()
     this.init = function( pid )
     {
         // display the known root class names
-        $.getJSON(django_url + '/ontology/knownroots',
+        $.getJSON(django_url + 'ontology/knownroots',
                 function(data) {
                     text = "";
                     if (data.knownroots)

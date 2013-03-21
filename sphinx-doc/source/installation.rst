@@ -144,7 +144,7 @@ user with, for example::
 You should now be able to access the database and see that it is
 currently empty, e.g.::
 
-    psql -U catmaid catmaid
+    psql -U catmaid_user catmaid
     Password:
     psql (9.1.8)
     Type "help" for help.

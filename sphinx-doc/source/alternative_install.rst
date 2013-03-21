@@ -1,11 +1,13 @@
 .. _alternative-install:
 
-Alternative web and WGSI server installations
-=============================================
+Setting up Nginx for CATMAID
+============================
 
 Of course, using Apache and its WSGI module (mod_wsgi) is not the only
 way to run CATMAID. There are many web and WSGI servers available.
-This section is intended to provide information on such alternatives.
+This section is intended to provide information on such
+alternatives, and in particular the use of Nginx and various
+WSGI servers.
 
 The installation instructions provided here, assume that you have set up
 the database and Django as described in the standard installation
@@ -35,12 +37,11 @@ and install Gevent by running::
 
   pip install gevent
 
-After this, Gevent is usable. In the next sections we will configure both,
+After this, Gevent is usable. In the next sections we will configure both
 the web and the WSGI server.
 
 Nginx configuration
 ###################
-
 
 A good general introduction to Nginx configuration can be found
 `here <http://blog.martinfjordvald.com/2010/07/nginx-primer/>`_. In the
@@ -183,3 +184,15 @@ A `quirk <https://code.djangoproject.com/ticket/19615>`_ in uWSGI prevents data 
 sent back to the client unless POST arguments are read.  If you are hit by this,
 add ``post-buffering = 1`` to your uWSGI configuration file.
 
+Setup based on Nginx and Gunicorn
+---------------------------------
+
+For using the Gunicorn WSGI server, the same Nginx configuration
+can be used as that given above for use with gevent.  (You may
+need to change the port, however.)  As an example of how to
+start Gunicorn, there is a upstart script, suitable for Ubuntu,
+in ``django/projects/mysite/gunicorn-catmaid.conf``.  You would
+copy this to ``/etc/init/``, customize it, and start Gunicorn
+with ``initctl start gunicorn-catmaid``.  (Thereafter it will be
+started on boot automatically, and can be restarted with
+``initctl restart gunicorn-catmaid``.

@@ -79,11 +79,6 @@ function countProperties(obj) {
   return count;
 }
 
-// url of the django instance relative to the CATMAID URL
-// (if any, needed e.g. by cropping tool). It is expected
-// to end with a slash.
-var django_url = ""
-
 /**
  * queue a login-request on pressing return
  * to be used as onkeydown-handler in the account and password input fields

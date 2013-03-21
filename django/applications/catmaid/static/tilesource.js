@@ -4,7 +4,7 @@
 function getTileSource( tileSourceType, baseURL, fileExtension )
 {
     var tileSources = [DefaultTileSource, RequestTileSource,
-        HDF5TileSource, BackslashTileSource];
+        HDF5TileSource, BackslashTileSource, SlashTileSource];
 
     if (tileSourceType > 0 && tileSourceType <= tileSources.length)
     {
@@ -114,6 +114,29 @@ function BackslashTileSource( baseURL, fileExtension )
         tileWidth, tileHeight, col, row, zoom_level )
     {
         return baseURL + baseName + zoom_level + "/" + row + "_" + col + "." + fileExtension;
+    }
+
+    this.getOverviewLayer = function( layer )
+    {
+        return new GenericOverviewLayer( layer, baseURL, fileExtension );
+    }
+}
+
+/**
+ * Creates URLs for "/" separated tile names
+ *
+ * Source type: 1
+ */
+function SlashTileSource( baseURL, fileExtension )
+{
+    /**
+     * Return the URL of a single tile, defined by it grid position
+     * (x, y), ...
+     */
+    this.getTileURL = function( project, stack, baseName,
+        tileWidth, tileHeight, col, row, zoom_level )
+    {
+        return baseURL + zoom_level + "/" + stack.z + "/" + row + "/" + col + "." + fileExtension;
     }
 
     this.getOverviewLayer = function( layer )

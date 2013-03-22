@@ -24,7 +24,7 @@ def tree_max_density(Gwud, synNodes, connector_ids, relations, h_list):
 
     D, id2index = distanceMatrix( Gwud, synNodes )
     
-    SynapseGroup = namedtuple("SynapseGroup", ['node_ids', 'connector_ids', 'relations'])
+    SynapseGroup = namedtuple("SynapseGroup", ['node_ids', 'connector_ids', 'relations', 'local_max'])
     synapseGroups = {}
 
     for h in h_list:
@@ -72,7 +72,7 @@ def tree_max_density(Gwud, synNodes, connector_ids, relations, h_list):
         synapseGroups[h] = {}
         for ind, val in enumerate(uniqueTargs):
             loc2group[val] = ind
-            synapseGroups[h][ind] = SynapseGroup([], [], [])
+            synapseGroups[h][ind] = SynapseGroup([], [], [], val)
         
         for ind, node in enumerate(synNodes):
             gi = loc2group[targLoc[node]]

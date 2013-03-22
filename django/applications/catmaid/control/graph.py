@@ -11,6 +11,8 @@ from functools import partial
 from synapseclustering import tree_max_density
 from numpy import subtract
 from numpy.linalg import norm
+from tree_util import edge_count_to_root, simplify
+from operator import attrgetter
 
 def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
     """ Assumes all skeleton_ids belong to project_id. """
@@ -68,6 +70,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
 
 
     # Cluster by synapses
+    minis = defaultdict(list) # skeleton_id vs list of minified graphs
     if bandwidth > 0:
         locations = {row[0]: eval(row[4]) for row in rows}
 
@@ -80,6 +83,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
 
         for skeleton_id, graphs in arbors.iteritems():
             subdomains = []
+            arbors[skeleton_id] = subdomains
             for graph in graphs:
                 for parent_id, treenode_id in graph.edges():
                     loc0 = locations[treenode_id]
@@ -96,14 +100,35 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
                         relation_ids.append(relation)
                 # Invoke Casey's magic
                 synapse_group = tree_max_density(graph.to_undirected(), treenode_ids, connector_ids, relation_ids, [bandwidth]).values()[0]
-                # The list of nodes contains nodes that have connectors only
+                # The list of nodes of each synapse_group contains only nodes that have connectors
+                # A local_max is the skeleton node most central to a synapse_group
+                anchors = {}
                 for domain in synapse_group.values():
                     g = nx.DiGraph()
                     g.add_path(domain.node_ids) # bogus graph, containing treenodes that point to connectors
                     subdomains.append(g)
-            arbors[skeleton_id] = subdomains
-    
-    
+                    anchors[domain.local_max] = g
+                # Define edges between domains: create a simplified graph
+                mini = simplify(graph, anchors.keys())
+                # Replace each node by the corresponding graph, or a graph of a single node
+                table = {}
+                for node in mini.nodes():
+                    g = anchors.get(node)
+                    if not g:
+                        # A branch node that was not an anchor, i.e. did not represent a synapse group
+                        g = nx.Graph()
+                        g.add_node(node)
+                        subdomains.append(g)
+                    # Associate the Graph with treenodes that have connectors
+                    # with the node in the minified tree
+                    mini.node[node]['g'] = g
+                print "MINI NODES:", mini.nodes(data=True)
+                print "MINI EDGES:", mini.edges(data=True)
+                # Put the mini into a map of skeleton_id and list of minis,
+                # to be used later for defining intra-neuron edges in the circuit graph
+                minis[skeleton_id].append(mini)
+
+
     # Obtain neuron names
     cursor.execute('''
     SELECT cici.class_instance_a, ci.name
@@ -115,7 +140,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
       AND cici.relation_id = r.id
       AND r.relation_name = 'model_of'
     ''' % skeletons_string)
-    names = {row[0]: row[1] for row in cursor.fetchall()}
+    names = dict(cursor.fetchall())
 
     # A DiGraph representing the connections between the arbors (every node is an arbor)
     circuit = nx.DiGraph()
@@ -139,10 +164,37 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
                                 if edge_props:
                                     edge_props['c'] += 1
                                 else:
-                                    circuit.add_edge(pre_arbor, post_arbor, {'c': 1})
+                                    circuit.add_edge(pre_arbor, post_arbor, {'c': 1, 'arrow': 'triangle', 'color': '#444', 'directed': True})
                                 break
                     break
+
+    print "CIRCUIT NODES:", circuit.nodes()
+    print "CIRCUIT EDGES:", circuit.edges()
+    
+    if bandwidth > 0:
+        # Add edges between circuit nodes that represent different domains of the same neuron
+        for skeleton_id, list_mini in minis.iteritems():
+            for mini in list_mini:
+                print "mini nodes:", mini.nodes(data=True)
+                for i,node in enumerate(mini.nodes()):
+                    g = mini.node[node]['g']
+                    print "g is", type(g), "g in circuit:", g in circuit
+                    if g not in circuit:
+                        # A branch node that was preserved to the minified arbor
+                        circuit.add_node(g, {'id': '%s-%s' % (skeleton_id, node),
+                                             'skeleton_id': skeleton_id,
+                                             'label': "%s [%s]" % (names[skeleton_id], node),
+                                             'node_count': 1})
+                for node1, node2 in mini.edges_iter():
+                    g1 = mini.node[node1]['g']
+                    g2 = mini.node[node2]['g']
+                    circuit.add_edge(g1, g2, {'c': 1, 'arrow': 'none', 'color': '#F00', 'directed': False})
+
+    for node in circuit.nodes(data=True):
+        print "Each node:", node
+
     return circuit
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_graph(request, project_id=None):
@@ -161,8 +213,10 @@ def skeleton_graph(request, project_id=None):
                                'source': id1,
                                'target': id2,
                                'weight': props['c'],
-                               'label': str(props['c']),
-                               'directed': True}})
+                               'label': str(props['c']) if props['directed'] else None,
+                               'directed': props['directed'],
+                               'arrow': props['arrow'],
+                               'color': props['color']}})
 
     return HttpResponse(json.dumps(package))
 

@@ -39,9 +39,9 @@ var CompartmentGraphWidget = new function()
               .css({
                 "content": "data(label)",
                 "width": "data(weight)", //mapData(weight, 0, 100, 10, 50)",
-                "target-arrow-shape": "triangle",
+                "target-arrow-shape": "data(arrow)",
                 // "source-arrow-shape": "circle",
-                "line-color": "#444",
+                "line-color": "data(color)",
                 "opacity": 0.4,
                 
               })

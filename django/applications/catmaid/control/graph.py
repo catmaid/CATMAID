@@ -117,13 +117,11 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
                     if not g:
                         # A branch node that was not an anchor, i.e. did not represent a synapse group
                         g = nx.Graph()
-                        g.add_node(node)
+                        g.add_node(node, {'branch': True})
                         subdomains.append(g)
                     # Associate the Graph with treenodes that have connectors
                     # with the node in the minified tree
                     mini.node[node]['g'] = g
-                print "MINI NODES:", mini.nodes(data=True)
-                print "MINI EDGES:", mini.edges(data=True)
                 # Put the mini into a map of skeleton_id and list of minis,
                 # to be used later for defining intra-neuron edges in the circuit graph
                 minis[skeleton_id].append(mini)
@@ -168,17 +166,12 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
                                 break
                     break
 
-    print "CIRCUIT NODES:", circuit.nodes()
-    print "CIRCUIT EDGES:", circuit.edges()
-    
     if bandwidth > 0:
         # Add edges between circuit nodes that represent different domains of the same neuron
         for skeleton_id, list_mini in minis.iteritems():
             for mini in list_mini:
-                print "mini nodes:", mini.nodes(data=True)
                 for i,node in enumerate(mini.nodes()):
                     g = mini.node[node]['g']
-                    print "g is", type(g), "g in circuit:", g in circuit
                     if g not in circuit:
                         # A branch node that was preserved to the minified arbor
                         circuit.add_node(g, {'id': '%s-%s' % (skeleton_id, node),
@@ -189,9 +182,6 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
                     g1 = mini.node[node1]['g']
                     g2 = mini.node[node2]['g']
                     circuit.add_edge(g1, g2, {'c': 1, 'arrow': 'none', 'color': '#F00', 'directed': False})
-
-    for node in circuit.nodes(data=True):
-        print "Each node:", node
 
     return circuit
 

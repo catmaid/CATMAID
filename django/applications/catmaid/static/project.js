@@ -86,6 +86,17 @@ function Project( pid )
 		}
 		return false;
 	}
+
+	/**
+	 * get one of the projects currently opened stacks (the first one)
+	 */
+	this.getStackFirst = function( )
+	{
+		if( stacks.length > 0 )
+			return stacks[0];
+		else
+			return false;
+	}
 	
 	/**
 	 * remove a stack from the list

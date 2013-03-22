@@ -498,7 +498,20 @@ var tracingWindowActions = [
       WindowMaker.show('statistics');
       return true;
     }
+  }),
+
+/*
+  //in case you want to have triviw as a separate tool . Right now we have it as part of tracint tool
+  new Action({
+    helpText: "Triview for tracing",
+    buttonID: "data_button_triview",
+    buttonName: 'triview',
+    run: function (e) {
+      project.setTool(new TriviewTool())
+      return true;
+    }
   })
+*/
 
 /*
   new Action({

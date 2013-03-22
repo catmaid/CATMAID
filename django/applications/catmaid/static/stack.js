@@ -400,6 +400,11 @@ function Stack(
 	 * Get the stack window.
 	 */
 	this.getWindow = function() { return stackWindow; }
+
+	/**
+	 * Set the stack window.
+	 */
+	this.setWindow = function(win) { stackWindow = win; }
 	
 	/**
 	 * Get the project.

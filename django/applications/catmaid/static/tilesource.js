@@ -37,6 +37,13 @@ function DefaultTileSource( baseURL, fileExtension )
     {
         return new GenericOverviewLayer( layer, baseURL, fileExtension );
     }
+
+    this.getBaseURL = function (){
+        return baseURL;
+    }
+    this.getFileExtension = function(){
+        return fileExtension;
+    }
 }
 
 /**
@@ -64,6 +71,13 @@ function RequestTileSource( baseURL, fileExtension )
     this.getOverviewLayer = function( layer )
     {
         return new DummyOverviewLayer();
+    }
+
+    this.getBaseURL = function (){
+        return baseURL;
+    }
+    this.getFileExtension = function(){
+        return fileExtension;
     }
 }
 
@@ -96,6 +110,13 @@ function HDF5TileSource( baseURL, fileExtension )
     {
         return new DummyOverviewLayer();
     }
+
+    this.getBaseURL = function (){
+        return baseURL;
+    }
+    this.getFileExtension = function(){
+        return fileExtension;
+    }
 }
 
 /**
@@ -119,6 +140,13 @@ function BackslashTileSource( baseURL, fileExtension )
     this.getOverviewLayer = function( layer )
     {
         return new GenericOverviewLayer( layer, baseURL, fileExtension );
+    }
+
+    this.getBaseURL = function (){
+        return baseURL;
+    }
+    this.getFileExtension = function(){
+        return fileExtension;
     }
 }
 
@@ -144,6 +172,13 @@ function xyztcTileSource( baseURL, fileExtension )
     this.getOverviewLayer = function( layer )
     {
         return new GenericOverviewLayer( layer, baseURL, fileExtension );
+    }
+
+    this.getBaseURL = function (){
+        return baseURL;
+    }
+    this.getFileExtension = function(){
+        return fileExtension;
     }
 }
 

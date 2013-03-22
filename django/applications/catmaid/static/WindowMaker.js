@@ -498,6 +498,40 @@ var WindowMaker = new function()
     return win;
   };
 
+  /** Creates and returns a triview window. */
+  var createTriviewWindow = function()
+  {
+    
+
+
+    var win = new CMWWindow("Triview");
+    var content = win.getFrame();
+
+    var container = createContainer("triview_widget");
+    content.appendChild(container);
+
+    //split space in two views
+    var viewXZ = createContainer("triviewXZ");
+    viewXZ.style.width = "50%";
+    viewXZ.style.float = "left";
+    container.appendChild(viewXZ);
+
+    var viewYZ = createContainer("triviewYZ");
+    viewYZ.style.width = "50%";
+    viewYZ.style.float = "right";
+    container.appendChild(viewYZ);
+
+    addListener(win, container, 'triview_buttons');
+    addLogic(win);
+
+
+    TriviewWidget.init(project.getStackFirst());
+
+    
+    return win;
+  };
+
+
   var createGraphWindow = function()
   {
     var win = new CMWWindow("Graph Widget");
@@ -1387,7 +1421,8 @@ var WindowMaker = new function()
     "connectivity-widget": createConnectivityWindow,
     "adjacencymatrix-widget": createAdjacencyMatrixWindow,
     "skeleton-analytics-widget": createSkeletonAnalyticsWindow,
-    "ontology-editor": createOntologyWidget
+    "ontology-editor": createOntologyWidget,
+    "triview": createTriviewWindow
   };
 
   /** If the window for the given name is already showing, just focus it.
@@ -1404,6 +1439,11 @@ var WindowMaker = new function()
     } else {
       alert("No known window with name " + name);
     }
+  };
+
+  this.getWindow = function(name)
+  {
+        return windows[name];
   };
 
 }();

@@ -19,7 +19,7 @@
  */
 function TracingTool()
 {
-  this.prototype = new Navigator();
+  this.prototype = new Navigator();//inherits from navigator
   var self = this;
   var tracingLayer = null;
   var stack = null;
@@ -79,7 +79,13 @@ function TracingTool()
       switch ( ui.getMouseButton( e ) )
       {
         case 1:
+          if( WindowMaker.getWindow('triview') != undefined )//triview window is open
+              TriviewWidget.updateTriviewFromTracingNode(e, tracingLayer.svgOverlay);
+
           tracingLayer.svgOverlay.whenclicked( e );
+
+          
+
           break;
         case 2:
           proto_onmousedown( e );
@@ -602,6 +608,20 @@ function TracingTool()
     }
   }) );
 
+
+  this.addAction( new Action({
+     helpText: "Triview for tracing",
+    buttonID: "data_button_triview",
+    buttonName: 'triview',
+    run: function (e) {
+      if (!mayView())
+        return false;
+      WindowMaker.show('triview');
+      //if window is active -> WindowMaker.getWindow('triview') != undefined
+      return true;
+    }
+  }) );
+
 /*
 //deaftivated in 5D view to allow hot keys for time displacement
   this.addAction( new Action({
@@ -936,7 +956,7 @@ TracingTool.search = function()
             actionLink.text("Go to nearest node");
             row.append($('<td/>').append(actionLink));
           } else if (data[i].class_name === 'label') {
-            // Create a link that will then query, when clicked, for the list of nodes
+            // Create a link that will then query, when clickableed, for the list of nodes
             // that point to the label, and show a list [1], [2], [3] ... clickable,
             // or better, insert a table below this row with x,y,z,parent skeleton, parent neuron.
             if (data[i].hasOwnProperty('nodes')) {

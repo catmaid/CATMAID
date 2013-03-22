@@ -1,0 +1,100 @@
+/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
+/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
+
+var TriviewWidget = new function()
+{
+
+  var self = this;
+  var stack = null;
+
+ this.init = function(parentStack)
+  {
+  		stack = parentStack;
+
+  		//wrapper around stack object to change the view from navigator to triviewXZ and triviewYZ
+  		function stackMyViewCons(myView) {
+  			this.getView = function(){
+  				return myView;
+  			};
+  		};
+  		stackMyViewCons.prototype = stack;
+  		stackViewXZ = new stackMyViewCons( document.getElementById("triviewXZ") );
+  		stackViewYZ = new stackMyViewCons( document.getElementById("triviewYZ") );
+
+  		var parentTileLayer = stack.getLayer("TileLayer");
+  		var tilesourceXZ = getTileSource( 5, 
+  											parentTileLayer.tileSource.getBaseURL(),
+  											parentTileLayer.tileSource.getFileExtension() );//define tile source for XZ planes
+		self.tilelayerXZ = new TileLayer(
+					stackViewXZ,
+					parentTileLayer.getTileWidth(),
+					parentTileLayer.getTileHeight(),
+					tilesourceXZ);
+		var tilesourceYZ = getTileSource( 5, 
+											parentTileLayer.tileSource.getBaseURL(),
+											parentTileLayer.tileSource.getFileExtension() );//define tile source for XZ planes
+		self.tilelayerYZ = new TileLayer(
+					stackViewYZ,
+					parentTileLayer.getTileWidth(),
+					parentTileLayer.getTileHeight(),
+					tilesourceYZ);
+  }
+
+
+  this.updateTriviewFromTracingNode = function(e, overlayParent)
+  {
+	 //get coordinates from mouse click  	
+      var m = ui.getMouse(e, overlayParent.getView());
+
+      // take into account current local offset coordinates and scale
+      var pos_x = m.offsetX;
+      var pos_y = m.offsetY;
+      var pos_z = phys2pixZ(project.coordinates.z);
+
+      // get physical coordinates for node position creation
+      var phys_x = pix2physX(pos_x);
+      var phys_y = pix2physY(pos_y);
+      var phys_z = project.coordinates.z;
+
+      var phys_t = project.coordinates.t;
+      var phys_c = project.coordinates.c;
+  		
+  	  console.log("We are updating the triview at coordinates", pos_x, pos_y, pos_z, phys_t, phys_c);
+  	  self.tilelayerXZ.resize(1000,1000);//check how to call this porperly
+  	  self.tilelayerYZ.resize(1000,1000);//check where ot initialize this properly
+  	  //self.tilelayerXZ.redraw();
+  	  //self.tilelayerYZ.redraw();
+  }
+
+
+
+  //copied from overlay.js
+  var phys2pixX = function (x) {
+      return (x - stack.translation.x) / stack.resolution.x * stack.scale;
+    };
+    
+    var phys2pixY = function (y) {
+      return (y - stack.translation.y) / stack.resolution.y * stack.scale;
+    };
+    
+    var phys2pixZ = function (z) {
+      return (z - stack.translation.z) / stack.resolution.z;
+    };
+    
+
+    var pix2physX = function (x) {
+      return stack.translation.x + ((x) / stack.scale) * stack.resolution.x;
+    };
+    var pix2physY = function (y) {
+      return stack.translation.y + ((y) / stack.scale) * stack.resolution.y;
+    };
+    this.pix2physX = function (x) {
+      return stack.translation.x + ((x) / stack.scale) * stack.resolution.x;
+    };
+    this.pix2physY = function (y) {
+      return stack.translation.y + ((y) / stack.scale) * stack.resolution.y;
+    };
+    this.pix2physZ = function (z) {
+      return z *stack.resolution.z + stack.translation.z;
+    };
+};

@@ -610,6 +610,9 @@ var SkeletonElements = new function()
       } else {
         // activate this node
         paper.catmaidSVGOverlay.activateNode(node);
+        //call triview if window is opened
+        if( WindowMaker.getWindow('triview') != undefined )//triview window is open
+              TriviewWidget.updateTriviewFromTracingNode(e, paper.catmaidSVGOverlay);
         // stop propagation of the event
       }
     };

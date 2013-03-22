@@ -1488,6 +1488,10 @@ var SkeletonAnnotations = new function()
       view.style.display = "none";
     };
 
+    this.getView = function (){
+        return view;
+    };
+
     $('input#edgetoggle').change(function () {
       if ($(this).attr("checked")) {
         //do the stuff that you would do when 'checked'

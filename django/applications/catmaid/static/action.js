@@ -269,6 +269,7 @@ if (userprofile.show_text_label_tool) {
 	  run: function (e) {
 		  //alert('Manual Volume tracing powers activated!');
           project.setTool(new VolumeTracingTool());
+          WindowMaker.show('volume-tracing');
 		  return true;
 	  }
   }));

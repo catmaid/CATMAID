@@ -282,6 +282,165 @@ function TileLayer(
 		return 2;
 	}
 	
+
+	/**
+	 * same as redraw() but for XZ plane in the tracing triview. Basically we change Y<->Z
+	 * also we need to pass some position (right now redraws after clicking with the mouse). pos_ are in pixels (not physical coordinates)
+	 * @param: triviewPlane: 1->XZ, 2->YZ
+	 */
+	this.drawTriview = function(pos_x, pos_y, pos_z, triviewPlane)
+	{
+		var pos_1 = pos_x;//XZ configuration
+		var pos_2 = pos_y;
+
+		if( triviewPlane == 2)//YZ configuration
+		{
+			pos_1 = pos_y;
+			pos_2 = pos_x;
+		}
+
+		if( stack.tile_source_type === 5)
+		{
+			var pixelPos = [ pos_1, pos_z, pos_2, stack.t,  stack.c ];
+		}else{
+			var pixelPos = [ pos_1, pos_z, pos_2 ];
+		}
+
+		var tileBaseName = getTileBaseName( pixelPos );
+
+
+		//path for triview is url/XZ/c/t/y
+		if( triviewPlane == 1)
+			tileBaseName = "XZ/" + tileBaseName;
+		else if( triviewPlane == 2)
+			tileBaseName = "YZ/" + tileBaseName;
+
+		//console.log('Tile basename ',tileBaseName);
+
+
+		var zoom = stack.s;
+		var mag = 1.0;
+		var artificialZoom = false;
+		/* If the zoom is negative we zoom in digitally. For this
+		 * we take the zero zoom level and adjust the tile properties.
+		 * This way we let the browser do the zooming work.
+		 */
+		if (zoom < 0) {
+			artificialZoom = true;
+			mag = Math.pow(2, -zoom);
+			zoom = 0;
+		}
+
+		effectiveTileWidth = tileWidth * mag;
+		effectiveTileHeight = tileHeight * mag;
+
+		var fr = Math.floor( pos_z / effectiveTileHeight );
+		var fc = Math.floor( pos_1 / effectiveTileWidth );
+
+		//recalculate all the time since we reuse this function for different triviews
+			if (artificialZoom)
+			{
+				if( triviewPlane == 1)
+					LAST_1T = Math.floor( ( stack.dimension.x - 1 ) / tileWidth );
+				else if( triviewPlane == 2)
+					LAST_1T = Math.floor( ( stack.dimension.y - 1 ) / tileWidth );
+
+				LAST_ZT = Math.floor( ( stack.dimension.z - 1 ) / tileHeight );
+			}
+			else
+			{
+				if( triviewPlane == 1)
+					LAST_1T = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
+				else if( triviewPlane == 2)
+					LAST_1T = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileWidth );
+			
+				LAST_ZT = Math.floor( ( stack.dimension.z * stack.scale - 1 ) / tileHeight );
+			}
+		
+
+
+		var top;
+		var left;
+
+		if ( pos_z >= 0 )
+			top  = -( pos_z % effectiveTileHeight );
+		else
+			top  = -( ( pos_z + 1 ) % effectiveTileHeight ) - effectiveTileHeight + 1;
+		
+		if ( pos_1 >= 0 )
+			left = -( pos_1 % effectiveTileWidth );
+		else
+			left = -( ( pos_1 + 1 ) % effectiveTileWidth ) - effectiveTileWidth + 1;
+
+		var t = top;
+		var l = left;
+
+		// update the images sources
+		for ( var i = 0; i < tiles.length; ++i )
+		{
+			var r = fr + i;
+			for ( var j = 0; j < tiles[ 0 ].length; ++j )
+			{
+				var c = fc + j;
+
+				/**
+				 * TODO Test if updating the URLs always was required to
+				 * guarantee homogeneous update speed for modulo-changing steps
+				 * and non-modulo changing steps.  Write more comments in
+				 * general.
+				 */
+				if ( r < 0 || c < 0 || r > LAST_ZT || c > LAST_1T )
+				{
+					tiles[ i ][ j ].alt = "";
+					tiles[ i ][ j ].src = "widgets/black.gif";
+				}
+				else
+				{
+					tiles[ i ][ j ].alt = "";
+					tiles[ i ][ j ].src = self.tileSource.getTileURL( project, stack,
+						tileBaseName, tileWidth, tileHeight, c, r, zoom);
+
+          // prefetch tiles
+          // TODO: fetch information in stack table: -2, -1, 1, 2
+					/*
+          var adj = [], tmpimg = new Image(), tmptileBaseName;
+          for( var jj in adj ) {
+            tmptileBaseName = getTileBaseName3D( stack, pixelPos, adj[jj] );
+            // only prefetch for type 1
+            if( tileSourceType === 1 ) {
+              tmpimg.src = self.getTileURL( tmptileBaseName + r + "_" + c + "_" + zoom );
+            }
+          }
+					*/
+
+				}
+				tiles[ i ][ j ].style.top = t + "px";
+				tiles[ i ][ j ].style.left = l + "px";
+				tiles[ i ][ j ].style.visibility = "visible";
+
+				tiles[ i ][ j ].style.width = effectiveTileWidth + "px";
+				tiles[ i ][ j ].style.height = effectiveTileHeight + "px";
+
+				l += effectiveTileWidth;
+
+			}
+			l = left;
+			t += effectiveTileHeight;
+		}
+		
+		return;
+	}
+
+	this.resizeNoRedraw = function( width, height )
+	{
+//		alert( "resize tileLayer of stack" + stack.getId() );
+		
+		var rows = Math.floor( height / tileHeight ) + 2;
+		var cols = Math.floor( width / tileWidth ) + 2;
+		initTiles( rows, cols );
+		return;
+	}
+
 	this.resize = function( width, height )
 	{
 //		alert( "resize tileLayer of stack" + stack.getId() );
@@ -351,6 +510,8 @@ function TileLayer(
 	
 	var LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
 	var LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
+	var LAST_ZT = Math.floor( ( stack.dimension.z * stack.scale - 1 ) / tileHeight );//for triview
+	var LAST_1T = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );//for triview
 
 	self.tileSource = tileSource;
 

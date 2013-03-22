@@ -22,17 +22,17 @@ var TriviewWidget = new function()
   		stackViewYZ = new stackMyViewCons( document.getElementById("triviewYZ") );
 
   		var parentTileLayer = stack.getLayer("TileLayer");
-  		var tilesourceXZ = getTileSource( 5, 
+  		var tilesourceXZ = getTileSource( stack.tile_source_type, 
   											parentTileLayer.tileSource.getBaseURL(),
-  											parentTileLayer.tileSource.getFileExtension() );//define tile source for XZ planes
+  											parentTileLayer.tileSource.getFileExtension() );
 		self.tilelayerXZ = new TileLayer(
 					stackViewXZ,
 					parentTileLayer.getTileWidth(),
 					parentTileLayer.getTileHeight(),
 					tilesourceXZ);
-		var tilesourceYZ = getTileSource( 5, 
+		var tilesourceYZ = getTileSource( stack.tile_source_type, 
 											parentTileLayer.tileSource.getBaseURL(),
-											parentTileLayer.tileSource.getFileExtension() );//define tile source for XZ planes
+											parentTileLayer.tileSource.getFileExtension() );
 		self.tilelayerYZ = new TileLayer(
 					stackViewYZ,
 					parentTileLayer.getTileWidth(),
@@ -51,6 +51,7 @@ var TriviewWidget = new function()
       var pos_y = m.offsetY;
       var pos_z = phys2pixZ(project.coordinates.z);
 
+      /*
       // get physical coordinates for node position creation
       var phys_x = pix2physX(pos_x);
       var phys_y = pix2physY(pos_y);
@@ -60,10 +61,12 @@ var TriviewWidget = new function()
       var phys_c = project.coordinates.c;
   		
   	  console.log("We are updating the triview at coordinates", pos_x, pos_y, pos_z, phys_t, phys_c);
-  	  self.tilelayerXZ.resize(1000,1000);//check how to call this porperly
-  	  self.tilelayerYZ.resize(1000,1000);//check where ot initialize this properly
-  	  //self.tilelayerXZ.redraw();
-  	  //self.tilelayerYZ.redraw();
+  	  */
+
+  	  self.tilelayerXZ.resizeNoRedraw(stackViewXZ.getView().offsetWidth, stackViewXZ.getView().offsetHeight);
+  	  self.tilelayerXZ.drawTriview(pos_x, pos_y, pos_z,1);
+  	  self.tilelayerYZ.resizeNoRedraw(stackViewYZ.getView().offsetWidth, stackViewYZ.getView().offsetHeight);
+  	  self.tilelayerYZ.drawTriview(pos_x, pos_y, pos_z,2);
   }
 
 

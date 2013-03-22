@@ -1107,6 +1107,26 @@ var WindowMaker = new function()
   };
 
 
+  var createAreaSegmentWidget = function()
+  {
+      var win = new CMWWindow( "Area Segment" );
+      var content = win.getFrame();
+      content.style.backgroundColor = "#fffff";
+      
+      var container = createContainer( "area_segment_widget" );
+      content.appendChild( container );
+      
+      container.innerHTML = 
+        '<div id="area_segment_tree"></div>';
+      addListener(win, container);
+        
+      addLogic(win);
+      
+      VolumeTracingPalette.init(project.getId());
+      
+      return win;
+  }
+
   var createOntologyWidget = function()
   {
     var win = new CMWWindow( "Ontology editor" );
@@ -1391,7 +1411,8 @@ var WindowMaker = new function()
     "connectivity-widget": createConnectivityWindow,
     "adjacencymatrix-widget": createAdjacencyMatrixWindow,
     "skeleton-analytics-widget": createSkeletonAnalyticsWindow,
-    "ontology-editor": createOntologyWidget
+    "ontology-editor": createOntologyWidget,
+    "volume-tracing" : createAreaSegmentWidget
   };
 
   /** If the window for the given name is already showing, just focus it.

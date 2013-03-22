@@ -1,6 +1,13 @@
 /**
 * Volume tracing tool
+* 
+* Note that at this early stage in development, nomenclature has not 
+* yet been settled. As such, you will find references to Volume Tracing,
+* Area Tracing and Area Segmentation, which are all subtle variations on
+* the same concept. IE, they all relate here.
 */
+
+
 var canvasLayer;
 var traceBrushSize = 16;
 var VolumeTraceLastID = 0; 
@@ -13,9 +20,10 @@ function VolumeTracingTool()
     //var canvasLayer = null;
     this.brush = null;
     this.isDragging = false;    
-    this.volumeAnnotation = new VolumeTracingAnnotations();
+    this.volumeAnnotation = VolumeTracingAnnotations;
     this.currentTrace = null;
     this.traces = [];
+    this.enabled = false;
     
     this.registerToolbar = function()
     {
@@ -72,6 +80,17 @@ function VolumeTracingTool()
         
     }
     
+    this.enable = function()
+    {
+        self.enabled = true;
+    }
+    
+    this.disable = function()
+    {
+        self.enabled = false;
+    }
+    
+    
     this.redraw = function()
     {
     }
@@ -117,7 +136,7 @@ function VolumeTracingTool()
         self.mouseCatcher.onmouseup = onmouseup;
         self.stack.getView().appendChild(self.mouseCatcher);
         self.volumeAnnotation.setStack(self.stack);
-        self.volumeAnnotation.tool = self
+        self.volumeAnnotation.tool = self;
         self.volumeAnnotation.retrieveAllTraces();
         
         //alert('Registered Volume Tool');
@@ -143,6 +162,7 @@ function VolumeTracingTool()
 
         canvasLayer = null;
 
+        self.volumeAnnotation.tool = null;
         self.stack = null;
         self.unregister();
         self.destroyToolbar();
@@ -180,9 +200,11 @@ function VolumeTracingTool()
     var onmouseup = function(e)
     {
         self.isDragging = false;
-        
-        self.currentTrace.addObject(self.brush.clone());
-        self.volumeAnnotation.pushTrace(self.currentTrace);       
+        if (self.enabled)
+        {
+            self.currentTrace.addObject(self.brush.clone());
+            self.volumeAnnotation.pushTrace(self.currentTrace);
+        }
     }
     
     var onmousemove = 
@@ -203,7 +225,7 @@ function VolumeTracingTool()
                 
                 self.brush.set({'left': m.offsetX, 'top': m.offsetY});
                 
-                if (self.isDragging)
+                if (self.isDragging && self.enabled)
                 {
                     var spot = self.brush.clone();
                     self.currentTrace.addObject(spot);
@@ -368,3 +390,4 @@ function fabricTrace(stack, cl, objid, r)
     }
     
 }
+

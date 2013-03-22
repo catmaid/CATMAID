@@ -55,9 +55,7 @@ def shapely_polygon_to_svg(polygon, transform_params):
 def request_to_transform_params(request):
     param_names = ['xtrans', 'ytrans', 'hview', 'wview', 'scale', 'top', 'left'] 
     transform_params = dict()
-    for param in param_names:
-        print 'param: ', param
-        print 'request for param: ', request.POST.get(param)
+    for param in param_names:        
         transform_params[param] = float(request.POST.get(param))
     return transform_params
         
@@ -100,7 +98,14 @@ def get_overlapping_segments(polygon, bbox, z, project, stack):
     ovlp_polygons = [p for p in shapely_polygons if p.intersects(polygon)]
     ids = [p.id for p in ovlp_polygons]
     return ovlp_polygons, ids
-        
+
+def polygon_to_coordinate_lists(polygon):
+    ext_list = polygon.exterior.xy[0].tolist() + polygon.exterior.xy[1].tolist()
+    int_lists = []
+    for interior in polygon.interiors:
+        int_lists.append(interior.xy[0].tolist() + interior.xy[1].tolist())
+    return ext_list, int_lists
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def push_volume_trace(request, project_id=None, stack_id=None):    
     x = request.POST.getlist('x[]')
@@ -108,10 +113,12 @@ def push_volume_trace(request, project_id=None, stack_id=None):
     r = float(request.POST.get('r'))
     z = float(request.POST.get('z'))
     i = request.POST.get('i')
+    instance_id = int(request.POST.get('instance_id'));
     transform_params = request_to_transform_params(request)
     
     s = get_object_or_404(Stack, pk=stack_id)
     p = get_object_or_404(Project, id=project_id)
+    ci = get_object_or_404(ClassInstance, id=instance_id)
     
     ''' Calculate the trace polygon '''
     union_polygon = None
@@ -139,6 +146,7 @@ def push_volume_trace(request, project_id=None, stack_id=None):
             project=p,
             stack = s,
             coordinates = coordinate_list,
+            class_instance = ci,
             min_x = bbox[0],
             max_x = bbox[2],
             min_y = bbox[1],
@@ -153,8 +161,6 @@ def push_volume_trace(request, project_id=None, stack_id=None):
         svglist = [svg_xml]        
         
     else:
-        print "Found ", len(overlap_segments), " overlapping segments"
-        print ids
         overlap_segments.append(union_polygon)
         union_polygon = cascaded_union(overlap_segments)
         
@@ -208,3 +214,26 @@ def all_volume_traces(request, project_id=None, stack_id=None):
     ids = [aseg.id for aseg in area_segs]
 
     return HttpResponse(json.dumps({'i' : ids, 'svg' : svg_list}))
+
+def volume_classes(request, project_id=None):
+    #print request.GET.get('parentid')
+    #print request.GET.get('pid')
+    parentId = int(request.GET.get('parentid'))
+    projectId = int(request.GET.get('pid'))
+    p = get_object_or_404(Project, id=project_id)
+    
+    if parentId <= -1:
+        classes = Class.objects.filter(project = p)
+        return HttpResponse(json.dumps(
+            tuple({'data' : {'title' : c.class_name},
+                   'state' : 'closed',
+                   'attr' : {'id': 'class_%d' % c.id,
+                             'rel': 'class',
+                             'name': c.class_name}} for c in classes.all())))
+    c= Class.objects.get(id = parentId)
+    instances = ClassInstance.objects.filter(class_column = c)
+    return HttpResponse(json.dumps(
+        tuple({'data' : {'title' : ci.name},
+               'attr' : {'id': 'instance_%d' % ci.id,
+               'rel' : 'instance',
+               'name' : ci.name}} for ci in instances.all())))

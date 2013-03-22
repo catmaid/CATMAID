@@ -59,8 +59,8 @@ def request_to_transform_params(request):
         transform_params[param] = float(request.POST.get(param))
     return transform_params
         
-def shapely_polygon_bounds(polygon):
-    xy = polygon.exterior.xy
+def shapely_ring_bounds(ring):
+    xy = ring.xy
     min_x = min(xy[0])
     min_y = min(xy[1])
     max_x = max(xy[0])
@@ -72,11 +72,17 @@ def coords_to_tuples(c):
     y = c[len(c)/2:]
     return zip(x, y)
 
+def segment_inner_shapely(seg):
+    coord_list = [InnerPolygonPath.objects.get(id=ii).coordinates
+        for ii in seg.inner_paths]
+    return [coords_to_tuples(coords) for coords in coord_list]
+
 def area_segments_to_shapely(seglist):
     poly_list = []
     for seg in seglist:
-        c = seg.coordinates
-        poly = Polygon(coords_to_tuples(seg.coordinates))
+        ext_coords = coords_to_tuples(seg.coordinates)
+        int_coord_list = segment_inner_shapely(seg)
+        poly = Polygon(ext_coords, int_coord_list)
         poly.id = seg.id
         poly_list.append(poly)
     return poly_list
@@ -132,25 +138,29 @@ def push_volume_trace(request, project_id=None, stack_id=None):
     
     ''' Trace bounding box '''
     # min_x, min_y, max_x, max_y
-    bbox = shapely_polygon_bounds(union_polygon)
+    bbox_ext = shapely_ring_bounds(union_polygon.exterior)
 
     ''' Grab overlapping polygons '''
     overlap_segments, ids = get_overlapping_segments(union_polygon,
-        bbox, z, project = p, stack = s)
+        bbox_ext, z, project = p, stack = s)
 
     if overlap_segments is None or len(overlap_segments) == 0:
         ''' save new polygon '''
-        coordinate_list = union_polygon.exterior.xy[0].tolist() + union_polygon.exterior.xy[1].tolist()
+        ext_coords, int_coord_list = polygon_to_coordinate_lists(union_polygon)
+        
+        interior_ids = create_interior_polygons(int_coord_list, z)
+        
         aseg = AreaSegment(
             user=request.user,
             project=p,
             stack = s,
-            coordinates = coordinate_list,
+            coordinates = ext_coords,
             class_instance = ci,
-            min_x = bbox[0],
-            max_x = bbox[2],
-            min_y = bbox[1],
-            max_y = bbox[3],
+            min_x = bbox_ext[0],
+            max_x = bbox_ext[2],
+            min_y = bbox_ext[1],
+            max_y = bbox_ext[3],
+            inner_paths = interior_ids,
             z = z)
         
         svg_xml = shapely_polygon_to_svg(union_polygon, transform_params)
@@ -163,17 +173,31 @@ def push_volume_trace(request, project_id=None, stack_id=None):
     else:
         overlap_segments.append(union_polygon)
         union_polygon = cascaded_union(overlap_segments)
+        bbox_ext = shapely_ring_bounds(union_polygon.exterior)
+        interior_ids = create_interior_polygons(int_coord_list, z)
         
         ''' Update the merged polygon'''
         aseg = AreaSegment.objects.get(id = ids[0])
+        old_interior_ids = aseg.inner_paths
+        
         aseg.coordinates = union_polygon.exterior.xy[0].tolist() + union_polygon.exterior.xy[1].tolist()
+        aseg.min_x = bbox_ext[0]
+        aseg.max_x = bbox_ext[2]
+        aseg.min_y = bbox_ext[1]
+        aseg.max_y = bbox_ext[3]
+        aseg.inner_paths = interior_ids
         aseg.save()
-
+        
         ''' soft-delete the now-unused polygons '''
         for id in ids[1:]:
             delArea = AreaSegment.objects.get(id = id)
+            #old_interior_ids += delArea.inner_paths
             delArea.type = 1 #type == 1 indicates unused segments
             delArea.save()
+
+        ''' delete unused inner paths '''
+        for interior_id in old_interior_ids:
+            InteriorPolygonPaths.objects.get(id = interior_id).delete()
         
         ''' push empty svg for all ids that are to be deleted '''
         svglist = [shapely_polygon_to_svg(union_polygon, transform_params)]

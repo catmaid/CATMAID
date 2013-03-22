@@ -62,7 +62,7 @@ function VolumeTracingTool()
         var h = canvasLayer.canvas.getHeight();
         var w = canvasLayer.canvas.getWidth();
         self.brush = new fabric.Circle({top: 200, left: 200, radius: self.brush_slider.val,
-            fill: 'blue'});
+            fill: '#0000ff'});
         canvasLayer.canvas.add(self.brush);
         canvasLayer.canvas.interactive = true;
         

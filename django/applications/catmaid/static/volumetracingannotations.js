@@ -156,16 +156,56 @@ var VolumeTracingAnnotations = new function ()
             "success" : self.pullTraces
         });
     }
+    
+    this.setColor = function(instance_id, color)
+    {
+        self.tool.brush.fill = color;
+        $.ajax({
+            "dataType" : 'json',
+            "type" : "POST",
+            "cache" : false,
+            "url" : django_url + project.id + '/volumetrace/settraceproperties',
+            "data" : {'color' : color,
+                      'opacity' : 0.5,
+                      'trace_id' : instance_id},
+            "success" : function(){}
+        });
+    }
+    
+    this.setBrushColor = function(color)
+    {
+        self.tool.brush.fill = color;
+    }
 }
 
 var VolumeTracingPalette = new function()
 {
     var self = this;
     this.trace_id = "";
+    this.trees = [];
     
     this.init = function(pid)
     {
         var tree = $("#area_segment_tree");
+        var color_wheel = $("#area_segment_colorwheel")[0];
+        
+        
+        
+        self.colorwheel = Raphael.colorwheel(color_wheel, 150);
+        color_wheel.style.position = 'absolute';
+        color_wheel.style.bottom = '0px';
+        color_wheel.style.right = '0px';
+        color_wheel.style.width = '60%';
+        color_wheel.style.margin = '0 auto';
+        color_wheel.hidden = true;
+        
+        self.colorwheel.onchange(function(){
+            VolumeTracingAnnotations.setBrushColor(
+                self.colorwheel.color().hex)});
+        self.colorwheel.ondrag(function(){}, 
+            function(){
+            VolumeTracingAnnotations.setColor(
+                self.trace_id, self.colorwheel.color().hex)});
         
         tree.jstree({
           "core": {
@@ -222,11 +262,11 @@ var VolumeTracingPalette = new function()
                         "separator_after": false,
                         "label": "Create New Object",
                         "action": function (obj) {
-                            return self.create_new_object(pid, tree_id);
+                            return self.create_new_object(this, pid);
                          }
                     }
                     }
-                } else if (type_of_node === "instance") {
+                } /*else if (type_of_node === "instance") {
                     menu = {
                     "edit_area_object": {
                         "separator_before": false,
@@ -237,7 +277,7 @@ var VolumeTracingPalette = new function()
                          }
                     }
                     }
-                }
+                }*/
                 return menu;
             }
           },
@@ -262,12 +302,74 @@ var VolumeTracingPalette = new function()
             {
                 self.trace_id = id.replace('instance_', '');
                 VolumeTracingAnnotations.tool.enable();
+                self.colorwheel.color(VolumeTracingAnnotations.tool.brush.fill);                
+                $('#area_segment_colorwheel')[0].hidden = false;
+                
+                $.ajax({
+                    "dataType": 'json',
+                    "type": "POST",
+                      "cache": false,
+                      "url": django_url + project.id + '/volumetrace/traceproperties',
+                      "data": {'trace_id' : self.trace_id},
+                      "success": function(data)
+                        {
+                            self.colorwheel.color(data.color);
+                            VolumeTracingAnnotations.setBrushColor(data.color);
+                        }          
+                }); 
+            }
+            else
+            {
+                $('#area_segment_colorwheel')[0].hidden = true;
+                VolumeTracingAnnotations.tool.disable();
             }
             //console.log(event);
             //console.log(data);
         }).bind("deselect_node.jstree", function (event, data){
-            VolumeTracingAnnotations.tool.enable();
+            $('#area_segment_colorwheel')[0].hidden = true;
+            VolumeTracingAnnotations.tool.disable();
         });
 
+    }
+    
+    this.create_new_object = function(n, pid)
+    {
+        $('#trace_add_dialog #trace_cancel').off("click").on("click",
+        function() {
+            // clear input box
+            $('#trace_add_dialog #traceclassname').val("");
+            $.unblockUI();
+            return false;
+        });
+        $('#trace_add_dialog #trace_add').off("click").on("click",
+        function(){
+            console.log("add clicked");
+            console.log(n);
+            var parentClass = n.get_text();
+            var traceName = $('#trace_add_dialog #tracename').val();
+            
+            $.ajax({
+                "dataType": 'json',
+                "type": "POST",
+                  "cache": false,
+                  "url": django_url + project.id + '/volumetrace/create',
+                  "data": {'parent' : n.get_text(),
+                           'pid' : pid,
+                           'trace_name' : traceName},
+                  "success": VolumeTracingPalette.refresh        
+            });
+            
+            $('#trace_add_dialog #traceclassname').val("");
+            $.unblockUI();
+            return false;
+        });
+        
+        $.blockUI({ message: $('#trace_add_dialog') });
+    }
+    
+    this.refresh = function()
+    {
+        console.log('fresh!');
+        $("#area_segment_tree").jstree("refresh", -1);
     }
 }

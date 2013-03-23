@@ -1,17 +1,35 @@
 var ClassificationEditor = new function()
 {
     var self = this;
+    var content_div_id = 'classification_editor_widget';
     var display_superclass_names = false;
     var display_edit_tools = true;
+    var original_pid;
+    var workspace_pid;
 
     /**
      * Initialization of the window.
      */
     this.init = function( pid )
     {
-        var content_div_id = 'classification_editor_widget';
-        // Check if the classification system is set up correctly
-        requestQueue.register(django_url + pid + '/classification/show',
+        // save the pid and change workspace
+        self.original_pid = pid;
+        self.change_workspace(pid, true);
+    };
+
+    /**
+     * Creates the base URL, needed for all classification requests and
+     * appends the passed string to it. The combined result is returned.
+     */
+    this.get_cls_url = function( pid, sub_url ) {
+        return django_url + pid + '/classification/' + self.workspace_pid + sub_url;
+    };
+
+    /**
+     * Load the classification data.
+     */
+    this.load_classification = function(pid) {
+        requestQueue.register(self.get_cls_url(pid, '/show'),
             'GET', undefined, self.create_error_aware_callback(
                 function(status, data, text) {
                     var e = $.parseJSON(data);
@@ -23,7 +41,7 @@ var ClassificationEditor = new function()
                         self.handleContent( e.page, container, pid );
                     }
                 }));
-    };
+    }
 
     this.load_tree = function(pid, link_id) {
         // id of object tree
@@ -59,7 +77,7 @@ var ClassificationEditor = new function()
                 }
             });
 
-        var url = django_url + pid + '/classification/list';
+        var url = self.get_cls_url(pid, '/list');
         if (link_id != null) {
             url += "/" + link_id;
         }
@@ -258,7 +276,7 @@ var ClassificationEditor = new function()
 
             $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Removing classification graph node. Just a moment...</h2>' });
             // Remove classes
-            $.post(django_url + project.id + '/classification/instance-operation', {
+            $.post(self.get_cls_url(project.id, '/instance-operation'), {
                 "operation": "remove_node",
                 "id": mynode.attr("id").replace("node_", ""),
                 "linkid": mynode.attr("linkid"),
@@ -309,7 +327,7 @@ var ClassificationEditor = new function()
         async: false,
         cache: false,
         type: 'POST',
-        url: django_url + project.id + '/classification/instance-operation',
+        url: self.get_cls_url(project.id, '/instance-operation'),
         data: data,
         dataType: 'json',
         success: function (data2) {
@@ -381,7 +399,7 @@ var ClassificationEditor = new function()
                 data: form.serialize(),
                 success: function(data, textStatus) {
                     container.innerHTML = "<p>" + data + "</p><p>Reloading in a few seconds.</p>";
-                    setTimeout("ClassificationEditor.init(" + pid + ")", 1500);
+                    setTimeout("ClassificationEditor.refresh()", 1500);
                 }
             });
             return false;
@@ -402,7 +420,7 @@ var ClassificationEditor = new function()
                 data: form.serialize(),
                 success: function(data, textStatus) {
                     container.innerHTML = "<p>" + data + "</p><p>Reloading in a few seconds.</p>";
-                    setTimeout("ClassificationEditor.init(" + pid + ")", 1500);
+                    setTimeout("ClassificationEditor.refresh()", 1500);
                 }
             });
             return false;
@@ -423,7 +441,7 @@ var ClassificationEditor = new function()
                      url: remove_link.attr('href'),
                      success: function(data, textStatus) {
                          container.innerHTML = "<p>" + data + "</p><p>Reloading in a few seconds.</p>";
-                         setTimeout("ClassificationEditor.init(" + pid + ")", 3000);
+                         setTimeout("ClassificationEditor.refresh()", 3000);
                      }
                  });
              }
@@ -468,7 +486,7 @@ var ClassificationEditor = new function()
                      url: remove_link.attr('href'),
                      success: function(data, textStatus) {
                          container.innerHTML = "<p>" + data + "</p><p>Reloading in a few seconds.</p>";
-                         setTimeout("ClassificationEditor.init(" + pid + ")", 3000);
+                         setTimeout("ClassificationEditor.refresh()", 3000);
                      }
                  });
              }
@@ -541,4 +559,21 @@ var ClassificationEditor = new function()
 
         return found;
     }
+
+    /**
+     * Changes the workspace according to the value of the radio
+     * buttons
+     */
+    this.change_workspace = function(pid, force)
+    {
+        if (pid != self.workspace_pid || force) {
+            self.workspace_pid = pid;
+            self.refresh();
+        }
+    };
+
+    this.refresh = function()
+    {
+        self.load_classification(project.id);
+    };
 }

@@ -16,11 +16,6 @@ from catmaid.models import Relation, UserRole, Project, Restriction
 from catmaid.models import CardinalityRestriction
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 
-# A dummy project is referenced by all the classes and class instances.
-# This is due to the fact, that one classification graph instance should
-# be referencey by multiple projects.
-dummy_pid = settings.ONTOLOGY_DUMMY_PROJECT_ID
-
 # All needed classes by the classification system alongside their
 # descriptions.
 needed_classes = {
@@ -55,12 +50,13 @@ class ClassInstanceClassInstanceProxy(ClassInstanceClassInstance):
         return "{0} ({1})".format(
             self.class_instance_b.class_column.class_name, str(self.id))
 
-def get_root_classes_qs():
-    """ Return a queryset that will get all root classes.
+def get_root_classes_qs(workspace_pid):
+    """ Return a queryset that will get all root classes for the
+    given workspace project.
     """
-    return[ c.class_a.id for c in get_class_links_qs(dummy_pid, 'is_a', 'classification_root') ]
+    return[ c.class_a.id for c in get_class_links_qs(workspace_pid, 'is_a', 'classification_root') ]
 
-def get_classification_links_qs( project_id, inverse=False ):
+def get_classification_links_qs( workspace_pid, project_id, inverse=False ):
     """ Returns a list of CICI links that link a classification graph
     with a project. The classification system uses a dummy project with
     ID -1 to store its ontologies and class instances. Each project using
@@ -74,7 +70,7 @@ def get_classification_links_qs( project_id, inverse=False ):
     # Expect the classification system to be set up and expect one
     # single 'classification_project' class.
     classification_project_c_q = Class.objects.filter(
-        project_id = dummy_pid, class_name = 'classification_project')
+        project_id = workspace_pid, class_name = 'classification_project')
     # Return an empty list if there isn't a classification project class
     if classification_project_c_q.count() == 0:
         return []
@@ -97,25 +93,25 @@ def get_classification_links_qs( project_id, inverse=False ):
 
     # Get a list of all classification root classes and return an empty
     # list if teher are none
-    root_class_links = get_class_links_qs(dummy_pid, 'is_a', 'classification_root')
+    root_class_links = get_class_links_qs(workspace_pid, 'is_a', 'classification_root')
     root_classes = [cc.class_a for cc in root_class_links]
     if not root_classes:
         return []
     # Query to get all root class instances
-    root_class_instances = ClassInstance.objects.filter(project_id=dummy_pid,
+    root_class_instances = ClassInstance.objects.filter(project_id=workspace_pid,
         class_column__in=root_classes)
     # Query to get the 'classified_by' relation
-    classified_by_rel = Relation.objects.filter(project_id=dummy_pid,
+    classified_by_rel = Relation.objects.filter(project_id=workspace_pid,
         relation_name='classified_by')
     # Find all 'classification_project' class instances of the current
     # project that link to those root nodes
-    cici_q = ClassInstanceClassInstance.objects.filter(project_id=dummy_pid,
+    cici_q = ClassInstanceClassInstance.objects.filter(project_id=workspace_pid,
         relation__in=classified_by_rel, class_instance_b__in=root_class_instances,
         class_instance_a__in=classification_project_ci_q)
 
     return cici_q
 
-def get_classification_roots( project_id ):
+def get_classification_roots( workspace_pid, project_id ):
     """ Returns a list of classification graph roots, linked to a
     project. The classification system uses a dummy project with ID -1
     to store its ontologies and class instances. Each project using a
@@ -124,7 +120,7 @@ def get_classification_roots( project_id ):
     project -1). Those class instances will be returned.
     """
     # Get all links
-    links_q = get_classification_links_qs( project_id )
+    links_q = get_classification_links_qs( workspace_pid, project_id )
     # Return valid roots
     return [ cici.class_instance_a for cici in links_q ]
 
@@ -183,14 +179,14 @@ def link_to_classification( project_id, cls_graph ):
     # Get classification_project class instance for a project
     pass
 
-def create_new_classification( project_id ):
+def create_new_classification( workspace_pid, project_id ):
     """ creates a new classification graph instance. This basically
     means a new class instance is created that is based on a class
     whilh has a 'is_a' relation to the class 'classification_root'.
     Such a new class instance will live in the dummy project -1.
     """
     # Get the classification project class
-    class_map = get_class_to_id_map(dummy_pid)
+    class_map = get_class_to_id_map(workspace_pid)
     if 'classification_project' not in class_map:
         raise Exception("Couldn't find 'classification_project' class")
 
@@ -199,18 +195,18 @@ def create_new_classification( project_id ):
     # Link new classification to project
     link_to_classification( project_id, cls_graph )
 
-def add_class(class_user, class_name, class_desc):
+def add_class(workspace_pid, class_user, class_name, class_desc):
     new_class = Class.objects.create(
         user = class_user,
-        project_id = dummy_pid,
+        project_id = workspace_pid,
         class_name = class_name,
         description = class_desc)
     return new_class
 
-def add_relation(rel_user, rel_name, rel_desc, is_reciprocal=False):
+def add_relation(workspace_pid, rel_user, rel_name, rel_desc, is_reciprocal=False):
     new_rel = Relation.objects.create(
         user = rel_user,
-        project_id = dummy_pid,
+        project_id = workspace_pid,
         relation_name = rel_name,
         description = rel_desc,
         isreciprocal = is_reciprocal)
@@ -220,15 +216,15 @@ def check_classification_setup_view(request, project_id=None):
     all_good = check_classification_setup()
     return HttpResponse(json.dumps({'all_good': all_good}))
 
-def check_classification_setup():
+def check_classification_setup(workspace_pid):
     """ Checks if all classes and relations needed by the
     classification system are available. Needed classes are
     'classification_root' and 'classification_project' and the
     nedded relations are 'is_a' and 'classified_by'.
     """
     # Get classification and relation data
-    class_map = get_class_to_id_map(dummy_pid)
-    relation_map = get_relation_to_id_map(dummy_pid)
+    class_map = get_class_to_id_map(workspace_pid)
+    relation_map = get_relation_to_id_map(workspace_pid)
 
     # Check if all is good
     all_good = True
@@ -239,26 +235,26 @@ def check_classification_setup():
 
     return all_good
 
-def rebuild_classification_setup_view(request, project_id=None):
-    setup_classification(request.user)
-    all_good = check_classification_setup()
+def rebuild_classification_setup_view(request, workspace_pid=None, project_id=None):
+    setup_classification(workspace_pid, request.user)
+    all_good = check_classification_setup(workspace_pid)
     return HttpResponse(json.dumps({'all_good': all_good}))
 
-def setup_classification(user):
+def setup_classification(workspace_pid, user):
     """ Tests which of the needed classes and relations is missing
     from the dummy project''s semantic space and adds those.
     """
     # Get classification and relation data
-    class_map = get_class_to_id_map(dummy_pid)
-    relation_map = get_relation_to_id_map(dummy_pid)
+    class_map = get_class_to_id_map(workspace_pid)
+    relation_map = get_relation_to_id_map(workspace_pid)
 
     # Add what is missing
     for c in needed_classes:
         if c not in class_map:
-            add_class(user, c, needed_classes[c])
+            add_class(workspace_pid, user, c, needed_classes[c])
     for r in needed_relations:
         if r not in relation_map:
-            add_relation(user, r, needed_relations[r])
+            add_relation(workspace_pid, user, r, needed_relations[r])
 
 class ClassificationGraphDisplay():
     """ This view displays the classification graph.
@@ -280,12 +276,12 @@ class NewGraphView(TemplateView):
 
     #ontologies =
 
-def create_new_graph_form( class_ids=None ):
+def create_new_graph_form( workspace_pid, class_ids=None ):
     """ Creates a new NewGraphForm python class withan up-to-date
     class queryset.
     """
     if not class_ids:
-        class_ids = get_root_classes_qs()
+        class_ids = get_root_classes_qs(workspace_pid)
 
     class NewGraphForm(forms.Form):
         """ A simple form to select classification ontologies. A choice
@@ -296,13 +292,13 @@ def create_new_graph_form( class_ids=None ):
 
     return NewGraphForm
 
-def create_linked_graphs_form( project_id, inverse=True  ):
+def create_linked_graphs_form( workspace_pid, project_id, inverse=True  ):
     """ Create a new AvailableClassificationsForm to display a set
     of classification graph root nodes. If <inverse> is True, then
     only the graphs *not* linked to tho project will be shown. If
     it is False, then only linked projects will be shown.
     """
-    root_links = get_classification_links_qs( project_id, inverse )
+    root_links = get_classification_links_qs( workspace_pid, project_id, inverse )
     root_ids = [l.id for l in root_links]
 
     class AvailableClassificationsForm(forms.Form):
@@ -314,14 +310,14 @@ def create_linked_graphs_form( project_id, inverse=True  ):
 
     return AvailableClassificationsForm
 
-def show_classification_editor( request, project_id=None, link_id=None):
+def show_classification_editor( request, workspace_pid=None, project_id=None, link_id=None):
     """ Selects the right view to show, based on the provided project.
     """
     if link_id is not None:
         num_graphs = 1
 
         selected_graph_q = ClassInstanceClassInstance.objects.filter(
-            id=link_id, project=dummy_pid)
+            id=link_id, project=workspace_pid)
         # Make sure we actually got a graph:
         if selected_graph_q.count() != 1:
             raise Exception("Couldn't select requested classification graph with ID %d." % link_id)
@@ -332,6 +328,7 @@ def show_classification_editor( request, project_id=None, link_id=None):
             'num_graphs': 1,
             'graph_id': link_id,
             'project_id': project_id,
+            'workspace_pid': workspace_pid,
             'settings': settings,
         })
 
@@ -339,19 +336,20 @@ def show_classification_editor( request, project_id=None, link_id=None):
         page_type = 'show_graph'
     else:
         # First, check how many graphs there are.
-        root_links_q = get_classification_links_qs( project_id )
+        root_links_q = get_classification_links_qs( workspace_pid, project_id )
         num_roots = len(root_links_q)
 
         context = Context({
             'num_graphs': num_roots,
             'project_id': project_id,
+            'workspace_pid': workspace_pid,
             'CATMAID_URL': settings.CATMAID_URL
         })
 
         if num_roots == 0:
-            new_graph_form_class = create_new_graph_form()
+            new_graph_form_class = create_new_graph_form(workspace_pid)
             context['new_graph_form'] = new_graph_form_class()
-            link_form = create_linked_graphs_form(project_id)
+            link_form = create_linked_graphs_form(workspace_pid, project_id)
             context['link_graph_form'] = link_form()
             template_name = "catmaid/classification/new_graph.html"
             page_type = 'new_graph'
@@ -363,7 +361,7 @@ def show_classification_editor( request, project_id=None, link_id=None):
             page_type = 'show_graph'
             link_id = selected_graph.id
         else:
-            form = create_linked_graphs_form(project_id, False)
+            form = create_linked_graphs_form(workspace_pid, project_id, False)
             context['select_graph_form'] = form()
             template_name = "catmaid/classification/select_graph.html"
             page_type = 'select_graph'
@@ -377,33 +375,36 @@ def show_classification_editor( request, project_id=None, link_id=None):
         'link': link_id}))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def add_classification_graph(request, project_id=None):
+def add_classification_graph(request, workspace_pid=None, project_id=None):
+    workspace_pid = int(workspace_pid)
+    project_id = int(project_id)
     # Has the form been submitted?
-    new_graph_form_class = create_new_graph_form()
+    new_graph_form_class = create_new_graph_form(workspace_pid)
     if request.method == 'POST':
         new_graph_form = new_graph_form_class(request.POST)
         if new_graph_form.is_valid():
             # Create the new classification graph
             project = get_object_or_404(Project, pk=project_id)
             ontology = new_graph_form.cleaned_data['ontology']
-            init_new_classification( request.user, project, ontology )
+            init_new_classification( workspace_pid, request.user, project, ontology )
             return HttpResponse('A new graph has been initalized.')
     else:
         new_graph_form = new_graph_form_class()
 
-    link_form = create_linked_graphs_form( project_id )
+    link_form = create_linked_graphs_form( workspace_pid, project_id )
     link_graph_form = link_form()
 
     return render_to_response("catmaid/classification/new_graph.html", {
         'project_id': project_id,
+        'workspace_pid': workspace_pid,
         'new_graph_form': new_graph_form,
         'link_graph_form': link_graph_form,
         'CATMAID_URL': settings.CATMAID_URL
     })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def link_classification_graph(request, project_id=None):
-    link_form = create_linked_graphs_form( project_id )
+def link_classification_graph(request, workspace_pid=None, project_id=None):
+    link_form = create_linked_graphs_form( workspace_pid, project_id )
     # Has the form been submitted?
     if request.method == 'POST':
         link_graph_form = link_form(request.POST)
@@ -412,24 +413,25 @@ def link_classification_graph(request, project_id=None):
             project = get_object_or_404(Project, pk=project_id)
             link = link_graph_form.cleaned_data['classification_graph']
             graph_to_link = link.class_instance_b
-            link_existing_classification(request.user, project, graph_to_link)
+            link_existing_classification( workspace_pid, request.user, project, graph_to_link)
             return HttpResponse('An existing graph has been linked.')
     else:
         link_graph_form = link_form()
 
-    new_graph_form_class = create_new_graph_form()
+    new_graph_form_class = create_new_graph_form(workspace_pid)
     new_graph_form = new_graph_form_class()
 
     return render_to_response("catmaid/classification/new_graph.html", {
         'project_id': project_id,
+        'workspace_pid': workspace_pid,
         'new_graph_form': new_graph_form,
         'link_graph_form': link_graph_form,
         'CATMAID_URL': settings.CATMAID_URL
     })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def select_classification_graph(request, project_id=None):
-    link_form = create_linked_graphs_form( project_id, False )
+def select_classification_graph(request, workspace_pid=None, project_id=None):
+    link_form = create_linked_graphs_form( workspace_pid, project_id, False )
     # Has the form been submitted?
     if request.method == 'POST':
         form = link_form(request.POST)
@@ -437,27 +439,29 @@ def select_classification_graph(request, project_id=None):
             # Link existing classification graph
             project = get_object_or_404(Project, pk=project_id)
             link = form.cleaned_data['classification_graph']
-            return show_classification_editor(request, project_id, link.id)
+            return show_classification_editor(request, workspace_pid, project_id, link.id)
     else:
-        root_links_q = get_classification_links_qs( project_id )
+        root_links_q = get_classification_links_qs( workspace_pid, project_id )
         num_roots = len(root_links_q)
         form = link_form()
 
         return render_to_response("catmaid/classification/select_graph.html", {
             'project_id': project_id,
+            'workspace_pid': workspace_pid,
             'select_graph_form': new_graph_form,
             'num_graphs': num_roots,
         })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def remove_classification_graph(request, project_id=None, link_id=None):
+def remove_classification_graph(request, workspace_pid, project_id=None, link_id=None):
     """ Removes the link between a project and a classification graph. If
     no other project links to the graph anymore, the graph is removed as
     well.
     """
     project_id = int(project_id)
+    workspace_pid = int(workspace_pid)
     selected_graph = ClassInstanceClassInstance.objects.filter(
-        id=link_id, project=dummy_pid)
+        id=link_id, project=workspace_pid)
     # Make sure we actually got a graph:
     if selected_graph.count() != 1:
         raise Exception("Couldn't select requested graph with ID %s." % link_id)
@@ -492,7 +496,7 @@ def remove_classification_graph(request, project_id=None, link_id=None):
     # Find number of other projects that are linked to the
     # classification graph that should get deleted
     num_extra_links = ClassInstanceClassInstance.objects.filter(
-        project=dummy_pid, class_instance_b=selected_graph.class_instance_b).count()
+        project=workspace_pid, class_instance_b=selected_graph.class_instance_b).count()
     num_total_refs = num_total_refs + num_extra_links
     # If there are no other links to a classification graph, its class
     # instances get removed
@@ -525,18 +529,18 @@ def traverse_class_instances(node, func):
         traverse_class_instances(c, func)
     func(node)
 
-def init_new_classification( user, project, ontology ):
+def init_new_classification( workspace_pid, user, project, ontology ):
     """ Intializes a new classification graph which is automatically
     linked to the provided project. This graph is based on the passed
     ontology (a root class in the semantic space).
     """
     # Create a new ontology root instance
     ontology_root_ci = ClassInstance.objects.create(
-        user = user, project_id = dummy_pid, class_column = ontology)
+        user = user, project_id = workspace_pid, class_column = ontology)
     # Link this graph instance to the project
-    link_existing_classification( user, project, ontology_root_ci )
+    link_existing_classification( workspace_pid, user, project, ontology_root_ci )
 
-def link_existing_classification( user, project, ontology_root_ci ):
+def link_existing_classification( workspace_pid, user, project, ontology_root_ci ):
     """ Links a project to an existing graph (class instance) and places
     it in classification space. The project's 'classification_project'
     class instance is fetched (or created if not present) and linked to
@@ -544,15 +548,16 @@ def link_existing_classification( user, project, ontology_root_ci ):
     """
     # Try to fetch the project's 'classification_project' class instance
     cp_c_q = Class.objects.filter(
-        project_id = dummy_pid, class_name = 'classification_project')
+        project_id = workspace_pid, class_name = 'classification_project')
     if cp_c_q.count() == 0:
-        raise Exception("Could not find class 'classification_project'. \
-            The classification system appears to be not set up correctly.")
+        raise Exception("Could not find class 'classification_project'. " \
+            "The classification system appears to be not set up correctly " \
+            "for workspace/project %d." % workspace_pid)
     cp_ci_q = ClassInstance.objects.filter(
         project = project, class_column__in=cp_c_q)
     # Get the 'classified_by' relation
     clsby_rel_q = Relation.objects.filter(
-        project_id = dummy_pid, relation_name = 'classified_by')
+        project_id = workspace_pid, relation_name = 'classified_by')
     if clsby_rel_q.count() == 0:
         raise Exception("Could not find relation 'classified_by'. \
             The classification system appears to be not set up correctly.")
@@ -570,7 +575,7 @@ def link_existing_classification( user, project, ontology_root_ci ):
     # Link both, the ontology root CI and the classification project CI
     link = ClassInstanceClassInstance.objects.create(
         user = user,
-        project_id = dummy_pid,
+        project_id = workspace_pid,
         relation = clsby_rel_q[0],
         class_instance_a = cp_ci,
         class_instance_b = ontology_root_ci)
@@ -598,7 +603,7 @@ def collect_reachable_classes( parent_class):
 
     return available_links
 
-def get_child_classes( parent_ci ):
+def get_child_classes( workspace_pid, parent_ci ):
     """ Gets all possible child classes out of the linked ontology in
     the semantic space. If the addition of a child-class woult violate
     a restriction, it isn't used.
@@ -644,7 +649,7 @@ def get_child_classes( parent_ci ):
         c = cc.class_a
         r = cc.relation
         # Test if the current child class has sub-types
-        sub_class_links = get_class_links_qs( dummy_pid, 'is_a', c )
+        sub_class_links = get_class_links_qs( workspace_pid, 'is_a', c )
         if sub_class_links.count() == 0:
             # Add class to generic 'Element' group
             add_class( 'Elememt', [cc], c, r )
@@ -674,11 +679,12 @@ def child_types_to_jstree_dict(child_types):
     return json_dict
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def list_classification_graph(request, project_id=None, link_id=None):
+def list_classification_graph(request, workspace_pid, project_id=None, link_id=None):
     """ Produces a data structure for each node of a classification graph
     that is undetstood by jsTree.
     """
     project_id = int(project_id)
+    workspace_pid = int(workspace_pid)
     link_id = None if link_id is None else int(link_id)
     parent_id = int(request.GET.get('parentid', 0))
     parent_name = request.GET.get('parentname', '')
@@ -696,7 +702,7 @@ def list_classification_graph(request, project_id=None, link_id=None):
 
     if link_id is None:
         # Get all links
-        links_q = get_classification_links_qs( project_id )
+        links_q = get_classification_links_qs( workspace_pid, project_id )
         # Return valid roots
         root_links = [ cici for cici in links_q ]
         num_roots = len(root_links)
@@ -725,7 +731,7 @@ def list_classification_graph(request, project_id=None, link_id=None):
     try:
         def get_class_name( klass ):
             if superclass_in_name:
-                super_class_links_q = get_class_links_qs( dummy_pid,
+                super_class_links_q = get_class_links_qs( workspace_pid,
                     'is_a', klass, False )
                 if super_class_links_q.count() > 0:
                     cname = super_class_links_q[0].class_b.class_name
@@ -743,7 +749,7 @@ def list_classification_graph(request, project_id=None, link_id=None):
             #child = Child( root_id, root_name, "classification_root", 'root')
             #add_template_fields( [child] )
             response_on_error = 'Could not select child classes.'
-            child_types = get_child_classes( cls_graph )
+            child_types = get_child_classes( workspace_pid, cls_graph )
             child_types_jstree = child_types_to_jstree_dict( child_types )
 
             # Create JSTree data structure
@@ -772,12 +778,12 @@ def list_classification_graph(request, project_id=None, link_id=None):
             #add_template_fields( child_nodes )
 
             # Get child types
-            child_types = get_child_classes( parent_ci )
+            child_types = get_child_classes( workspace_pid, parent_ci )
 
             child_data = []
             for child_link in child_links:
                 child = child_link.class_instance_a
-                subchild_types = get_child_classes( child )
+                subchild_types = get_child_classes( workspace_pid, child )
                 subchild_types_jstree = child_types_to_jstree_dict( subchild_types )
                 data = {'data': {'title': get_class_name(child.class_column)},
                     'attr': {'id': 'node_%s' % child.id,
@@ -830,7 +836,8 @@ def list_classification_graph(request, project_id=None, link_id=None):
         raise Exception(response_on_error + ':' + str(e))
 
 @requires_user_role(UserRole.Annotate)
-def classification_instance_operation(request, project_id=None):
+def classification_instance_operation(request, workspace_pid=None, project_id=None):
+    workspace_pid = int(workspace_pid)
     params = {}
     int_keys = ('id', 'parentid', 'relationid', 'classid', 'linkid')
     str_keys = ('operation', 'title', 'rel', 'objname')
@@ -840,8 +847,8 @@ def classification_instance_operation(request, project_id=None):
         # TODO sanitize
         params[k] = request.POST.get(k, 0)
 
-    relation_map = get_relation_to_id_map(dummy_pid)
-    class_map = get_class_to_id_map(dummy_pid)
+    relation_map = get_relation_to_id_map(workspace_pid)
+    class_map = get_class_to_id_map(workspace_pid)
 
     # We avoid many try/except clauses by setting this string to be the
     # response we return if an exception is thrown.
@@ -865,7 +872,7 @@ def classification_instance_operation(request, project_id=None):
         node = ClassInstance(
                 user=request.user,
                 name=params['objname'])
-        node.project_id = dummy_pid
+        node.project_id = workspace_pid
         node.class_column_id = params['classid']
         node.save()
         class_name = node.class_column.class_name
@@ -880,7 +887,7 @@ def classification_instance_operation(request, project_id=None):
         #    # Find root element
         #    classification_instance_operation.res_on_err = 'Failed to select classification root.'
         #    node_parent_id = ClassInstance.objects.filter(
-        #            project=dummy_pid,
+        #            project=workspace_pid,
         #            class_column=class_map['classification_root'])[0].id
 
         #Relation.objects.filter(id=params['relationid'])
@@ -890,7 +897,7 @@ def classification_instance_operation(request, project_id=None):
         classification_instance_operation.res_on_err = 'Failed to insert CICI-link.'
         cici = ClassInstanceClassInstance()
         cici.user = request.user
-        cici.project_id = dummy_pid
+        cici.project_id = workspace_pid
         cici.relation_id = params['relationid']
         cici.class_instance_a_id = node.id
         cici.class_instance_b_id = node_parent_id
@@ -959,14 +966,14 @@ def classification_instance_operation(request, project_id=None):
         else:
             raise Exception(classification_instance_operation.res_on_err + '\n' + str(e))
 
-def infer_new_instances( link, parent_ci ):
+def infer_new_instances( workspace_pid, link, parent_ci ):
     """ Based on a link within the semantic space and an instantiated
     class in the classification space, new possible class intances are
     inferred and returned as a tuple (class_to_add, relation, parent_ci)
     """
     instances_to_add = []
     # Get all restrictions linked to this link
-    restrictions = Restriction.objects.filter(project_id=dummy_pid,
+    restrictions = Restriction.objects.filter(project_id=workspace_pid,
         restricted_link=link)
     # See what can be inferred from each restriction
     for r in restrictions:
@@ -979,7 +986,7 @@ def infer_new_instances( link, parent_ci ):
             if cr.cardinality_type == 3 and cr.value == 1:
                 print("CR: %d" % cr.id)
                 # Iterate all sub-types
-                sub_class_links = get_class_links_qs(dummy_pid, 'is_a',
+                sub_class_links = get_class_links_qs(workspace_pid, 'is_a',
                     link.class_a)
                 for sc in sub_class_links:
                     class_to_add = sc.class_a
@@ -991,7 +998,7 @@ def infer_new_instances( link, parent_ci ):
 
     return instances_to_add
 
-def autofill( user, parent_ci, excluded_links=[] ):
+def autofill( workspace_pid, user, parent_ci, excluded_links=[] ):
     """ Infers new class instances based on restrictions and creates
     them. This method returns a list of all added class instances.
     """
@@ -1020,18 +1027,18 @@ def autofill( user, parent_ci, excluded_links=[] ):
         # Add to excluded links:
         excluded_links.append(l.id)
         # Get new instances and add them
-        instances_to_add = infer_new_instances(l, parent_ci)
+        instances_to_add = infer_new_instances(workspace_pid, l, parent_ci)
         for node_class, node_rel, node_parent in instances_to_add:
             node = ClassInstance.objects.create(
                 user=user,
-                project_id=dummy_pid,
+                project_id=workspace_pid,
                 class_column=node_class,
                 name="")
             # Create a new link, using the base link relation,
             # because a sub-type is added here.
             cici = ClassInstanceClassInstance.objects.create(
                 user = user,
-                project_id = dummy_pid,
+                project_id = workspace_pid,
                 relation = node_rel,
                 class_instance_a_id = node.id,
                 class_instance_b_id = node_parent.id)
@@ -1041,25 +1048,25 @@ def autofill( user, parent_ci, excluded_links=[] ):
     # recursively walk links to other class instances. Collect new
     # nodes if there are new ones created.
     sub_instance_links_q = ClassInstanceClassInstance.objects.filter(
-        class_instance_b=parent_ci, project_id=dummy_pid);
+        class_instance_b=parent_ci, project_id=workspace_pid);
     all_added_nodes = added_nodes
     for sil in sub_instance_links_q:
         si = sil.class_instance_a
         print("Parent: %d Sub: %d" % (parent_ci.id, si.id))
-        added_sub_nodes = autofill(user, si, excluded_links)
+        added_sub_nodes = autofill(workspace_pid, user, si, excluded_links)
         all_added_nodes = all_added_nodes + added_sub_nodes
 
     return all_added_nodes
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def autofill_classification_graph(request, project_id=None, link_id=None):
+def autofill_classification_graph(request, workspace_pid, project_id=None, link_id=None):
     """ This method tries to infer needed class instances according to
     the restrictions in use. If there are no restrictions, nothing can
     be inferred.
     """
     # Select the graph
     selected_graph = ClassInstanceClassInstance.objects.filter(
-        id=link_id, project=dummy_pid)
+        id=link_id, project=workspace_pid)
     # Make sure we actually got a result
     if selected_graph.count() != 1:
         raise Exception("Couldn't select requested classification graph.")
@@ -1068,7 +1075,7 @@ def autofill_classification_graph(request, project_id=None, link_id=None):
 
     parent_ci = selected_graph.class_instance_b
 
-    added_nodes = autofill(request.user, parent_ci)
+    added_nodes = autofill(workspace_pid, request.user, parent_ci)
 
     node_names = [ n.class_column.class_name for n in added_nodes]
     if len(node_names) > 0:

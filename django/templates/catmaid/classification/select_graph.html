@@ -5,7 +5,7 @@
 with this project. Please select which one you want to display.</p>
 
 <form method="post" id="select-classification-form"
-      action="{% url 'select_classification_graph' project_id %}">
+      action="{% url 'select_classification_graph' project_id workspace_pid %}">
     <p>
     {{ select_graph_form }}
     <input type="submit" value="Select" />

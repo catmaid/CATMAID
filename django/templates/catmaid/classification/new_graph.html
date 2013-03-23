@@ -13,7 +13,7 @@ that you would like the new graph to be based on and click on
 "Create".</p>
 
 <form method="post" id="add-new-classification-form"
-      action="{% url 'add_classification_graph' project_id %}">
+      action="{% url 'add_classification_graph' project_id workspace_pid %}">
     <p>
     {{ new_graph_form }}
     <input type="submit" value="Create" />
@@ -25,7 +25,7 @@ this project. If you want to do so, please select the tree below
 and click "Link".</p>
 
 <form method="post" id="link-classification-form"
-      action="{% url 'link_classification_graph' project_id %}">
+      action="{% url 'link_classification_graph' project_id workspace_pid %}">
     <p>
     {{ link_graph_form }}
     <input type="submit" value="Link" />

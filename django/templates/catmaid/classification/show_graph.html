@@ -4,9 +4,9 @@
 &nbsp; Synchronize <input type="checkbox" id="synchronize_classification_graph" checked="yes" />
 &nbsp; Display super-classes <input type="checkbox" id="display_super_classes" />
 &nbsp; Edit tools <input type="checkbox" id="display_edit_tools" checked="yes" />
-&nbsp; <a id="remove_classification_link" href="{% url remove_classification_graph project_id graph_id %}">Remove this graph</a>
-&nbsp; <a id="add_classification_link" href="{% url add_classification_graph project_id %}">Add/Link new graph</a>
-&nbsp; <a id="autofill_classification_link" href="{% url autofill_classification_graph project_id graph_id %}">Auto fill this graph</a>
+&nbsp; <a id="remove_classification_link" href="{% url remove_classification_graph project_id workspace_pid graph_id %}">Remove this graph</a>
+&nbsp; <a id="add_classification_link" href="{% url add_classification_graph project_id workspace_pid %}">Add/Link new graph</a>
+&nbsp; <a id="autofill_classification_link" href="{% url autofill_classification_graph project_id workspace_pid graph_id %}">Auto fill this graph</a>
 <br clear="all" />
 <div id="classification_graph_object"></div>
 {% endblock %}

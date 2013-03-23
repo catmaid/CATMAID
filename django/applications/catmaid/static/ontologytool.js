@@ -65,8 +65,10 @@ function OntologyTool()
       $("input[name='ontology_space']").change( function() {
           if ($(this).val() === "classification") {
               OntologyEditor.change_workspace(-1);
+              ClassificationEditor.change_workspace(-1);
           } else {
               OntologyEditor.change_workspace(OntologyEditor.original_pid);
+              ClassificationEditor.change_workspace(ClassificationEditor.original_pid);
           }
       });
     };

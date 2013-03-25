@@ -4,7 +4,7 @@
 function getTileSource( tileSourceType, baseURL, fileExtension )
 {
     var tileSources = [DefaultTileSource, RequestTileSource,
-        HDF5TileSource, BackslashTileSource];
+        HDF5TileSource, BackslashTileSource, LargeDataTileSource];
 
     if (tileSourceType > 0 && tileSourceType <= tileSources.length)
     {
@@ -121,6 +121,31 @@ function BackslashTileSource( baseURL, fileExtension )
         return new GenericOverviewLayer( layer, baseURL, fileExtension );
     }
 }
+
+/**
+ * A tile source for large datasets where the scale and rows are encoded as folders
+ *
+ * Source type: 5
+ */
+function LargeDataTileSource( baseURL, fileExtension )
+{
+    /**
+     * Return the URL of a single tile, defined by it grid position
+     * (x, y), ...
+     */
+    this.getTileURL = function( project, stack, baseName,
+        tileWidth, tileHeight, col, row, zoom_level )
+    {
+        //console.log('tile source 5: ', baseURL, baseName, zoom_level, "/", row, "_", col, ".", fileExtension)
+        return baseURL + zoom_level + "/" + baseName + "/" + row + "/" +  col + "." + fileExtension;
+    }
+
+    this.getOverviewLayer = function( layer )
+    {
+        return new GenericOverviewLayer( layer, baseURL, fileExtension );
+    }
+}
+
 
 /**
  * This is an overview layer that doesn't display anything.

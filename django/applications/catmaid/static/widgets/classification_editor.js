@@ -125,7 +125,7 @@ var ClassificationEditor = new function()
             },
             "themes": {
               "theme": "classic",
-              "url": "widgets/themes/kde/jsTree/classic/style.css",
+              "url": STATIC_URL_JS + "widgets/themes/kde/jsTree/classic/style.css",
               "dots": false,
               "icons": true
             },
@@ -224,7 +224,7 @@ var ClassificationEditor = new function()
                   },
                   "root": {
                     "icon": {
-                      "image": "widgets/themes/kde/jsTree/ontology/root.png"
+                      "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/root.png"
                     },
                     "valid_children": "all",
                     "start_drag": false,
@@ -233,13 +233,13 @@ var ClassificationEditor = new function()
                   },
                   "editnode": {
                     "icon": {
-                      "image": "widgets/themes/kde/jsTree/ontology/edit.png"
+                      "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/edit.png"
                     },
                     "valid_children": "all",
                   },
                   "element": {
                     "icon": {
-                      "image": "widgets/themes/kde/jsTree/ontology/class_instance.png"
+                      "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/class_instance.png"
                     },
                     "valid_children": "all",
                   },
@@ -274,7 +274,7 @@ var ClassificationEditor = new function()
                 return false;
             }
 
-            $.blockUI({ message: '<h2><img src="widgets/busy.gif" /> Removing classification graph node. Just a moment...</h2>' });
+            $.blockUI({ message: '<h2><img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> Removing classification graph node. Just a moment...</h2>' });
             // Remove classes
             $.post(self.get_cls_url(project.id, '/instance-operation'), {
                 "operation": "remove_node",

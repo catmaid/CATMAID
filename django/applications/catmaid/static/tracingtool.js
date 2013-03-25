@@ -197,7 +197,7 @@ function TracingTool()
     if( tracingLayer.svgOverlay.hasTagbox() ) {
       tracingLayer.svgOverlay.removeTagbox();
     }
-    stack.moveToPixel( stack.z, stack.y, stack.x, val );
+    stack.moveToPixel( stack.z, stack.y, stack.x, val, stack.t, stack.c );
     return;
   }
 
@@ -211,7 +211,7 @@ function TracingTool()
     if( tracingLayer.svgOverlay.hasTagbox() ) {
       tracingLayer.svgOverlay.removeTagbox();
     }
-    stack.moveToPixel( val, stack.y, stack.x, stack.s );
+    stack.moveToPixel( val, stack.y, stack.x, stack.s, stack.t, stack.c  );
   }
 
 

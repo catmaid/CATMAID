@@ -51,6 +51,12 @@ var TriviewWidget = new function()
       var pos_y = m.offsetY;
       var pos_z = phys2pixZ(project.coordinates.z);
 
+      //compensate for scale in X and Y
+      var pos_s = project.getStackFirst().s;
+      var mag = Math.pow(2,pos_s);
+      pos_x *= mag;
+      pos_y *= mag;
+
       /*
       // get physical coordinates for node position creation
       var phys_x = pix2physX(pos_x);

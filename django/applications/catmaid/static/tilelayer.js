@@ -290,13 +290,13 @@ function TileLayer(
 	 */
 	this.drawTriview = function(pos_x, pos_y, pos_z, triviewPlane)
 	{
-		var pos_1 = pos_x;//XZ configuration
-		var pos_2 = pos_y;
+		var pos_1 = Math.round(pos_x);//XZ configuration
+		var pos_2 = Math.round(pos_y);
 
 		if( triviewPlane == 2)//YZ configuration
 		{
-			pos_1 = pos_y;
-			pos_2 = pos_x;
+			pos_1 = Math.round(pos_y);
+			pos_2 = Math.round(pos_x);
 		}
 
 		if( stack.tile_source_type === 5)
@@ -334,27 +334,27 @@ function TileLayer(
 		effectiveTileWidth = tileWidth * mag;
 		effectiveTileHeight = tileHeight * mag;
 
-		var fr = Math.floor( pos_z / effectiveTileHeight );
-		var fc = Math.floor( pos_1 / effectiveTileWidth );
+		var fr = Math.floor( pos_1 / effectiveTileHeight );
+		var fc = Math.floor( pos_z / effectiveTileWidth );
 
 		//recalculate all the time since we reuse this function for different triviews
 			if (artificialZoom)
 			{
 				if( triviewPlane == 1)
-					LAST_1T = Math.floor( ( stack.dimension.x - 1 ) / tileWidth );
+					LAST_1T = Math.floor( ( stack.dimension.x - 1 ) / tileHeight );
 				else if( triviewPlane == 2)
-					LAST_1T = Math.floor( ( stack.dimension.y - 1 ) / tileWidth );
+					LAST_1T = Math.floor( ( stack.dimension.y - 1 ) / tileHeight );
 
-				LAST_ZT = Math.floor( ( stack.dimension.z - 1 ) / tileHeight );
+				LAST_ZT = Math.floor( ( stack.dimension.z - 1 ) / tileWidth );
 			}
 			else
 			{
 				if( triviewPlane == 1)
-					LAST_1T = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
+					LAST_1T = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileHeight );
 				else if( triviewPlane == 2)
-					LAST_1T = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileWidth );
+					LAST_1T = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
 			
-				LAST_ZT = Math.floor( ( stack.dimension.z * stack.scale - 1 ) / tileHeight );
+				LAST_ZT = Math.floor( ( stack.dimension.z * stack.scale - 1 ) / tileWidth );
 			}
 		
 
@@ -362,15 +362,15 @@ function TileLayer(
 		var top;
 		var left;
 
-		if ( pos_z >= 0 )
-			top  = -( pos_z % effectiveTileHeight );
-		else
-			top  = -( ( pos_z + 1 ) % effectiveTileHeight ) - effectiveTileHeight + 1;
-		
 		if ( pos_1 >= 0 )
-			left = -( pos_1 % effectiveTileWidth );
+			top  = -( pos_1 % effectiveTileHeight );
 		else
-			left = -( ( pos_1 + 1 ) % effectiveTileWidth ) - effectiveTileWidth + 1;
+			top  = -( ( pos_1 + 1 ) % effectiveTileHeight ) - effectiveTileHeight + 1;
+		
+		if ( pos_z >= 0 )
+			left = -( pos_z % effectiveTileWidth );
+		else
+			left = -( ( pos_z + 1 ) % effectiveTileWidth ) - effectiveTileWidth + 1;
 
 		var t = top;
 		var l = left;
@@ -389,10 +389,10 @@ function TileLayer(
 				 * and non-modulo changing steps.  Write more comments in
 				 * general.
 				 */
-				if ( r < 0 || c < 0 || r > LAST_ZT || c > LAST_1T )
+				if ( r < 0 || c < 0 || r > LAST_1T || c > LAST_ZT )
 				{
 					tiles[ i ][ j ].alt = "";
-					tiles[ i ][ j ].src = "widgets/black.gif";
+					tiles[ i ][ j ].src = STATIC_URL_JS + "widgets/black.gif";
 				}
 				else
 				{

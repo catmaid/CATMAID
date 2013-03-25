@@ -136,7 +136,6 @@ function LargeDataTileSource( baseURL, fileExtension )
     this.getTileURL = function( project, stack, baseName,
         tileWidth, tileHeight, col, row, zoom_level )
     {
-        //console.log('tile source 5: ', baseURL, baseName, zoom_level, "/", row, "_", col, ".", fileExtension)
         return baseURL + zoom_level + "/" + baseName + "/" + row + "/" +  col + "." + fileExtension;
     }
 

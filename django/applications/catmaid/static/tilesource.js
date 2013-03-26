@@ -165,7 +165,7 @@ function xyztcTileSource( baseURL, fileExtension )
     this.getTileURL = function( project, stack, baseName,
         tileWidth, tileHeight, col, row, zoom_level )
     {
-        console.log('xyztcTileSource', baseURL, baseName);
+        //console.log('xyztcTileSource', baseURL, baseName);
         return baseURL + baseName + row + "_" + col + "_" + zoom_level + "." + fileExtension;
     }
 

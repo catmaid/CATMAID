@@ -41,9 +41,10 @@ var TriviewWidget = new function()
   }
 
 
+  //use this function when calling it after a clicking event. It can detect the correct coordinates automatically
   this.updateTriviewFromTracingNode = function(e, overlayParent)
   {
-	 //get coordinates from mouse click  	
+   //get coordinates from mouse click   
       var m = ui.getMouse(e, overlayParent.getView());
 
       // take into account current local offset coordinates and scale
@@ -51,7 +52,12 @@ var TriviewWidget = new function()
       var pos_y = m.offsetY;
       var pos_z = phys2pixZ(project.coordinates.z);
 
-      //compensate for scale in X and Y
+      self.updateTriviewFromXYZ(pos_x, pos_y, pos_z);
+  }  
+
+  this.updateTriviewFromXYZ = function(pos_x, pos_y, pos_z)
+  {
+	    //compensate for scale in X and Y
       var pos_s = project.getStackFirst().s;
       var mag = Math.pow(2,pos_s);
       pos_x *= mag;

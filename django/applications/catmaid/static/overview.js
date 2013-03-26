@@ -39,7 +39,7 @@ function Overview( stack )
 	
 	var onmousemove = function( e )
 	{
-		stack.moveToPixel( stack.z, stack.y + ui.diffY / scale, stack.x + ui.diffX / scale, stack.s );
+		stack.moveToPixel( stack.z, stack.y + ui.diffY / scale, stack.x + ui.diffX / scale, stack.s, stack.t, stack.c );
 		return false;
 	};
 	

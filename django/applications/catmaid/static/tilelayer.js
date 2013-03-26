@@ -287,23 +287,26 @@ function TileLayer(
 	 * same as redraw() but for XZ plane in the tracing triview. Basically we change Y<->Z
 	 * also we need to pass some position (right now redraws after clicking with the mouse). pos_ are in pixels (not physical coordinates)
 	 * @param: triviewPlane: 1->XZ, 2->YZ
+	 * @param: pos_x: coordinates in pixels (not in physical coordinates) with no scaling
 	 */
 	this.drawTriview = function(pos_x, pos_y, pos_z, triviewPlane)
 	{
-		var pos_1 = Math.round(pos_x);//XZ configuration
-		var pos_2 = Math.round(pos_y);
+		var pos_c = Math.round(pos_x);//XZ configuration
+		var pos_r = Math.round(pos_z);
+		var pos_slice = Math.round(pos_y);
 
 		if( triviewPlane == 2)//YZ configuration
 		{
-			pos_1 = Math.round(pos_y);
-			pos_2 = Math.round(pos_x);
+			pos_c = Math.round(pos_z);
+			pos_r = Math.round(pos_y);
+			pos_slice = Math.round(pos_x);
 		}
 
 		if( stack.tile_source_type === 5)
 		{
-			var pixelPos = [ pos_1, pos_z, pos_2, stack.t,  stack.c ];
+			var pixelPos = [ pos_r, pos_c, pos_slice, stack.t,  stack.c ];//the first two are ignored
 		}else{
-			var pixelPos = [ pos_1, pos_z, pos_2 ];
+			var pixelPos = [ pos_r, pos_c, pos_slice ];
 		}
 
 		var tileBaseName = getTileBaseName( pixelPos );
@@ -334,27 +337,53 @@ function TileLayer(
 		effectiveTileWidth = tileWidth * mag;
 		effectiveTileHeight = tileHeight * mag;
 
-		var fr = Math.floor( pos_1 / effectiveTileHeight );
-		var fc = Math.floor( pos_z / effectiveTileWidth );
+		//we need scale to adjust translation in the centering
+		var pos_s = stack.s;
+      	var tileScale = Math.pow(2,pos_s);
+      	//pos_x *= mag;
+      	//pos_y *= mag;
+
+
+		var centerc = tilesContainer.parentElement.clientWidth / 2.0;
+		var centerr = tilesContainer.parentElement.clientHeight / 2.0;
+
+		//center triview with respect to windows size
+		pos_r /= tileScale;
+		pos_c /=tileScale;
+
+		pos_r -=centerr;
+		pos_c -=centerc;
+
+
+
+		var fr = Math.floor( pos_r / effectiveTileHeight );
+		var fc = Math.floor( pos_c / effectiveTileWidth );
 
 		//recalculate all the time since we reuse this function for different triviews
 			if (artificialZoom)
 			{
 				if( triviewPlane == 1)
-					LAST_1T = Math.floor( ( stack.dimension.x - 1 ) / tileHeight );
-				else if( triviewPlane == 2)
-					LAST_1T = Math.floor( ( stack.dimension.y - 1 ) / tileHeight );
-
-				LAST_ZT = Math.floor( ( stack.dimension.z - 1 ) / tileWidth );
+				{
+					LAST_RT = Math.floor( ( stack.dimension.z - 1 ) / tileHeight );
+					LAST_CT = Math.floor( ( stack.dimension.x - 1 ) / tileWidth );
+				}else if( triviewPlane == 2){
+					LAST_RT = Math.floor( ( stack.dimension.y - 1 ) / tileHeight );
+					LAST_CT = Math.floor( ( stack.dimension.z - 1 ) / tileWidth );
+				}
 			}
 			else
 			{
 				if( triviewPlane == 1)
-					LAST_1T = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileHeight );
+				{
+					LAST_RT = Math.floor( ( stack.dimension.z * stack.scale - 1 ) / tileHeight );
+					LAST_CT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
+				}
 				else if( triviewPlane == 2)
-					LAST_1T = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
-			
-				LAST_ZT = Math.floor( ( stack.dimension.z * stack.scale - 1 ) / tileWidth );
+				{
+					LAST_RT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
+					LAST_CT = Math.floor( ( stack.dimension.z * stack.scale - 1 ) / tileWidth );
+				}
+				
 			}
 		
 
@@ -362,15 +391,15 @@ function TileLayer(
 		var top;
 		var left;
 
-		if ( pos_1 >= 0 )
-			top  = -( pos_1 % effectiveTileHeight );
+		if ( pos_r >= 0 )
+			top  = -( pos_r % effectiveTileHeight ) ;
 		else
-			top  = -( ( pos_1 + 1 ) % effectiveTileHeight ) - effectiveTileHeight + 1;
+			top  = -( ( pos_r + 1 ) % effectiveTileHeight ) - effectiveTileHeight + 1;
 		
-		if ( pos_z >= 0 )
-			left = -( pos_z % effectiveTileWidth );
+		if ( pos_c >= 0 )
+			left = -( pos_c % effectiveTileWidth );
 		else
-			left = -( ( pos_z + 1 ) % effectiveTileWidth ) - effectiveTileWidth + 1;
+			left = -( ( pos_c + 1 ) % effectiveTileWidth ) - effectiveTileWidth + 1;
 
 		var t = top;
 		var l = left;
@@ -389,7 +418,7 @@ function TileLayer(
 				 * and non-modulo changing steps.  Write more comments in
 				 * general.
 				 */
-				if ( r < 0 || c < 0 || r > LAST_1T || c > LAST_ZT )
+				if ( r < 0 || c < 0 || r > LAST_RT || c > LAST_CT )
 				{
 					tiles[ i ][ j ].alt = "";
 					tiles[ i ][ j ].src = STATIC_URL_JS + "widgets/black.gif";
@@ -428,6 +457,33 @@ function TileLayer(
 			t += effectiveTileHeight;
 		}
 		
+
+		//show marker in clicked point
+		if( marker != null )
+		{
+			stack.getView().removeChild( marker );
+		}
+			//here we can define markers to overlay on top of images for specific locations
+			marker = document.createElement( "div" );
+			marker.className = "markerTag";
+			marker.style.position ="absolute";
+			marker.style.left = (centerc -1 - 27) + "px";//to compensate for size of the box. Depends on markerText.size
+			marker.style.top = (centerr -1 - 19) + "px";
+			marker.style.visibility = "visible";
+			marker.appendChild( document.createElement( "p" ) );
+			markerSpan = document.createElement( "span" );
+			markerSpan.style.color = "green";
+
+			markerText = document.createElement("font");
+			markerText.size = "5";
+			markerText.innerHTML ="+";
+			markerSpan.appendChild(markerText);
+
+			marker.firstChild.appendChild( markerSpan );
+			//marker.firstChild.firstChild.appendChild( document.createTextNode( "+" ) );
+			stack.getView().appendChild( marker );
+		
+
 		return;
 	}
 
@@ -507,11 +563,17 @@ function TileLayer(
 	var tilesContainer = document.createElement( "div" );
 	tilesContainer.className = "sliceTiles";
 	stack.getView().appendChild( tilesContainer );
+
+
+	//to indicate center in triview
+	var marker = null;
 	
+
 	var LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
 	var LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
-	var LAST_ZT = Math.floor( ( stack.dimension.z * stack.scale - 1 ) / tileHeight );//for triview
-	var LAST_1T = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );//for triview
+
+	var LAST_RT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileHeight );//for triview
+	var LAST_CT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );//for triview
 
 	self.tileSource = tileSource;
 

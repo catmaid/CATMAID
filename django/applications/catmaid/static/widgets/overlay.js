@@ -268,6 +268,11 @@ var SkeletonAnnotations = new function()
     {
       if (node)
       {
+
+
+       //call triview if window is opened
+        if( WindowMaker.getWindow('triview') != undefined )//triview window is open
+              TriviewWidget.updateTriviewFromXYZ(node.x, node.y, node.z);
         // Check if the node is already selected/activated
         if (node.id === atn.id && node.skeleton_id === atn.skeleton_id) {
           // Update coordinates

@@ -276,8 +276,8 @@ var createEditToolActions = function() {
                             if (e.error) {
                                 alert(e.error);
                             } else {
-                                if( project.focusedStack.s !== 0 ) {
-                                  alert('Segmentation Tool only works on zoom-level 0!');
+                                if( project.focusedStack.s !== 1 ) {
+                                  alert('Segmentation Tool only works on zoom-level 1!');
                                   return;
                                 }
                                 project.setTool( new SegmentationTool() );

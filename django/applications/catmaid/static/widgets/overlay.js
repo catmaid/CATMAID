@@ -1769,8 +1769,8 @@ var SkeletonAnnotations = new function()
           alert("No active node to go to!");
         } else {
           requestQueue.register(django_url + project.id + '/node/get_location', "POST", {
-            pid: project.id,
-            tnid: atn.id
+            tnid: atn.id,
+            type: atn.type
           }, function (status, text, xml) {
             if (status === 200) {
               if (text && text != " ") {

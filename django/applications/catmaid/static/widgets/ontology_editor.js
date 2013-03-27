@@ -6,6 +6,7 @@
 var OntologyEditor = new function()
 {
     this.workspace_pid;
+    var content_div_id = "ontology_editor_widget";
 
     this.init = function( pid )
     {
@@ -1103,16 +1104,17 @@ var OntologyEditor = new function()
     this.change_workspace = function(pid, force)
     {
         if (pid != OntologyEditor.workspace_pid || force) {
-            OntologyEditor.workspace_pid = pid;
-
-            // show the classification space instead of the project
-            // related ontology
-            OntologyEditor.load_ontology_tree( pid,
-                "#ontology_tree_object" );
-            OntologyEditor.load_ontology_relations_tree( pid,
-                "#ontology_relations_tree" );
-            OntologyEditor.load_ontology_classes_tree( pid,
-                "#ontology_classes_tree" );
+            // Do a quick check that all the containers are available
+            // and only load the trees if they are.
+            if ($('#' + content_div_id).length > 0) {
+                OntologyEditor.workspace_pid = pid;
+                OntologyEditor.load_ontology_tree( pid,
+                    "#ontology_tree_object" );
+                OntologyEditor.load_ontology_relations_tree( pid,
+                    "#ontology_relations_tree" );
+                OntologyEditor.load_ontology_classes_tree( pid,
+                    "#ontology_classes_tree" );
+            }
         }
     };
 

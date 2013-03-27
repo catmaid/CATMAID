@@ -567,8 +567,12 @@ var ClassificationEditor = new function()
     this.change_workspace = function(pid, force)
     {
         if (pid != self.workspace_pid || force) {
-            self.workspace_pid = pid;
-            self.refresh();
+            // Check if the container is available and only load
+            // the data if it is.
+            if ($('#' + content_div_id).length > 0) {
+                self.workspace_pid = pid;
+                self.refresh();
+            }
         }
     };
 

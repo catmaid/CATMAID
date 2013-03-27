@@ -25,8 +25,10 @@ var OntologyEditor = new function()
         $("#refresh_ontology_editor").off("click").on("click",
             OntologyEditor.refresh_trees);
 
-        // change to standard workspace
-        OntologyEditor.change_workspace(pid, true);
+        // change to pid workspace if pid was passed
+        if (pid) {
+            OntologyEditor.change_workspace(pid, true);
+        }
     };
 
     this.trees = new Array();

@@ -4,7 +4,6 @@ var ClassificationEditor = new function()
     var content_div_id = 'classification_editor_widget';
     var display_superclass_names = false;
     var display_edit_tools = true;
-    var original_pid;
     var workspace_pid;
 
     /**
@@ -12,9 +11,10 @@ var ClassificationEditor = new function()
      */
     this.init = function( pid )
     {
-        // save the pid and change workspace
-        self.original_pid = pid;
-        self.change_workspace(pid, true);
+        // change to pid workspace if pid was passed
+        if (pid) {
+            self.change_workspace(pid, true);
+        }
     };
 
     /**

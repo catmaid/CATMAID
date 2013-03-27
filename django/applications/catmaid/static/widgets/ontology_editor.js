@@ -5,14 +5,10 @@
  */
 var OntologyEditor = new function()
 {
-    this.original_pid;
     this.workspace_pid;
 
     this.init = function( pid )
     {
-        // save the pid
-        OntologyEditor.original_pid = pid;
-
         // display the known root class names
         $.getJSON(django_url + 'ontology/knownroots',
                 function(data) {

@@ -108,8 +108,7 @@ var WindowMaker = new function()
 
     var tabdiv = document.createElement('div');
     tabdiv.setAttribute("id", "view-3d-webgl-skeleton-table-div");
-    tabdiv.style.height = "150px";
-    tabdiv.style.overflow = "auto";
+    // tabdiv.style.overflow = "auto";
     container.appendChild(tabdiv);
 
     var tab = document.createElement('table');

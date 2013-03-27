@@ -1569,6 +1569,9 @@ var SkeletonAnnotations = new function()
                 alert(e.error);
               }
               var new_neuronname = prompt("Change neuron name", e['neuronname']);
+              if( new_neuronname === null ) {
+                return;
+              }
               $.post(django_url + project.id + '/object-tree/instance-operation', {
                 "operation": "rename_node",
                 "id": e['neuronid'],

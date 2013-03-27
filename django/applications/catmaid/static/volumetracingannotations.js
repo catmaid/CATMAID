@@ -21,46 +21,7 @@ var VolumeTracingAnnotations = new function ()
         }
         return trace;
     }*/
-    this.populateTrace = function(trace, svg)
-    {
-        if (svg == '')
-        {
-            trace.setObjects([]);
-        }
-        else
-        {
-            var objects = [];
-            fabric.loadSVGFromString(svg,
-                function(obj, opt)
-                {
-                    var widget = new fabric.PathGroup(obj, opt);
-                    objects.push(widget);
-                });
-            
-            trace.setObjects(objects);
-        }
-    }
-    
-    this.pullTraces = function(data)
-    {
-        //console.log(data);
-        
-        for (var ii = 0; ii < data.i.length; ii++)
-        {
-            var id = data.i[ii];
-            var trace = self.tool.getTraceByID(id);
-            var objects = [];
-            var svg = data.svg[ii];
-            
-            if (trace == null)
-            {
-                trace = self.tool.createNewTrace();
-                trace.id = id;
-            }
-            
-            self.populateTrace(trace, svg);
-        }
-    }
+
     
     this.fixTrace = function(data)
     {
@@ -80,7 +41,8 @@ var VolumeTracingAnnotations = new function ()
             }
             else
             {
-                self.populateTrace(trace, svg);
+                trace.populateSVG(svg);
+                                
                 if (id != dbid)
                 {
                     trace.id = dbid;
@@ -134,7 +96,7 @@ var VolumeTracingAnnotations = new function ()
         }); 
     }
     
-    this.retrieveAllTraces = function()
+    this.retrieveAllTraces = function(callback)
     {
         screenPos = self.stack.screenPosition();
         
@@ -153,7 +115,7 @@ var VolumeTracingAnnotations = new function ()
             "cache" : false,
             "url" : django_url + project.id + '/stack/' + self.stack.id + '/volumetrace/getall',
             "data" : data,
-            "success" : self.pullTraces
+            "success" : callback
         });
     }
     

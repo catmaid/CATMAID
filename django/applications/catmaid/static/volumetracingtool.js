@@ -8,12 +8,16 @@
 */
 
 
-var canvasLayer;
+
+var canvasLayer = null;
 var traceBrushSize = 16;
 var VolumeTraceLastID = 0; 
 function VolumeTracingTool()
 {
+    this.prototype = new Navigator();
+    
     var self = this;
+    
     
     this.stack = null;
     this.toolname = "Volume Tracing Tool";
@@ -24,6 +28,11 @@ function VolumeTracingTool()
     this.currentTrace = null;
     this.traces = [];
     this.enabled = false;
+    this.lastPos = null;
+    this.lastScale = 1;
+    this.lastZ = 0;
+    
+    this.proto_mouseup = null;
     
     this.registerToolbar = function()
     {
@@ -47,38 +56,12 @@ function VolumeTracingTool()
         slider_b_box.appendChild(self.brush_slider.getInputView());
         slider_box.appendChild(slider_b_box);
         
-        self.mouseCatcher = document.createElement("div");
-        self.mouseCatcher.className = "sliceMouseCatcher";
-        self.mouseCatcher.style.cursor = "default";
+        /*self.mouseCatcher = document.createElement("div");
+        self.mouseCatcher.className = "volumeTraceMouseCatcher";
+        self.mouseCatcher.style.cursor = "default";*/
     };
     
-     /*
-    ** Create the canvas layer using fabric.js
-    */
-    this.createCanvasLayer = function ()
-    {
-        canvasLayer = new CanvasLayer( self.stack, self );
-        
-        var h = canvasLayer.canvas.getHeight();
-        var w = canvasLayer.canvas.getWidth();
-        self.brush = new fabric.Circle({top: 200, left: 200, radius: self.brush_slider.val,
-            fill: '#0000ff'});
-        canvasLayer.canvas.add(self.brush);
-        canvasLayer.canvas.interactive = true;
-        
-        self.stack.addLayer("VolumeCanvasLayer", canvasLayer);
-        self.stack.resize();
-        
-        /*canvasLayer.canvas.on({
-            'mouse:down' : function(e) {
-                self.isDragging = true;
-            },
-            'mouse:up' : function(e) {
-                self.isDragging = false;
-            }
-        });*/
-        
-    }
+
     
     this.enable = function()
     {
@@ -93,6 +76,75 @@ function VolumeTracingTool()
     
     this.redraw = function()
     {
+        var currPos = self.stack.screenPosition();
+        var scale = self.stack.scale;
+        var lastScale = self.lastScale;
+        var lastPos = self.lastPos;
+        var lastZ = self.lastZ;
+        var currZ = self.currentZ();
+        
+        self.cacheScreen();
+        
+        if (scale == lastScale && lastZ == currZ)
+        {
+            for (var i = 0; i < self.traces.length; i++)
+            {
+                self.traces[i].translate(currPos, lastPos, scale);
+            }
+            canvasLayer.canvas.renderAll();
+            //self.volumeAnnotation.refreshTraces
+            //canvasLayer.canvas.calcOffset();
+            //self.volumeAnnotation.retrieveAllTraces(self.pullNewTraces);
+        }
+        else
+        {
+            if (lastZ != currZ)
+            {
+                self.clearTraces();
+            }
+            self.cacheScreen();
+            self.volumeAnnotation.retrieveAllTraces(self.pullTraces);
+        }
+        
+    }
+    
+    this.pullTraces = function(data)
+    {
+        //console.log(data);
+        
+        for (var ii = 0; ii < data.i.length; ii++)
+        {
+            var id = data.i[ii];
+            var trace = self.getTraceByID(id);
+            var objects = [];
+            var svg = data.svg[ii];
+            
+            if (trace == null)
+            {
+                trace = self.createNewTrace();
+                trace.id = id;
+            }
+            
+            trace.populateSVG(svg);
+        }
+    }
+    
+    this.pullNewTraces = function(data)
+    {
+        for (var ii = 0; ii < data.i.length; ii++)
+        {
+            var id = data.i[ii];
+            var trace = self.getTraceByID(id);
+            var objects = [];
+            var svg = data.svg[ii];
+            
+            if (trace == null)
+            {
+                trace = self.createNewTrace();
+                trace.id = id;
+                trace.populateSVG(svg);
+            }
+        }
     }
     
     this.getTraceByID = function(id)
@@ -123,87 +175,69 @@ function VolumeTracingTool()
         return trace;
     }
     
-    this.register = function(parentStack)
+    this.clearTraces = function()
     {
-        self.stack = parentStack;
-        self.registerToolbar();
-        self.createCanvasLayer();
-        self.createNewTrace();
-        
-        document.getElementById("toolbar_volseg").style_display = "block";        
-        self.mouseCatcher.onmousemove = onmousemove.pos;
-        self.mouseCatcher.onmousedown = onmousedown;
-        self.mouseCatcher.onmouseup = onmouseup;
-        self.stack.getView().appendChild(self.mouseCatcher);
-        self.volumeAnnotation.setStack(self.stack);
-        self.volumeAnnotation.tool = self;
-        self.volumeAnnotation.retrieveAllTraces();
-        
-        //alert('Registered Volume Tool');
-        return;
-    };
-    
-    this.unregister = function()
-    {
-        
-        if (self.stack && self.mouseCatcher.parentNode == self.stack.getView())
+        for (var i = 0; i < self.traces.length; i++)
         {
-            self.stack.getView().removeChild(self.mouseCatcher);
+            self.traces[i].setObjects([]);            
         }
-        //alert('Unregistered Volume Tool');
-        return;
-    };
+        self.traces = [];
+    }
     
-    this.destroy = function()
+    this.cacheScreen = function()
     {
-        document.getElementById("toolbar_volseg").style.display = "none";  
-        self.stack.removeLayer( "VolumeCanvasLayer" );
-        canvasLayer.canvas.clear();
-
-        canvasLayer = null;
-
-        self.volumeAnnotation.tool = null;
-        self.stack = null;
-        self.unregister();
-        self.destroyToolbar();
-        //alert('Destroyed Volume Tool');
-        return;
-    };
-
-    this.handleKeyPress = function(e)
-    {
-        return false;
-    };
+        self.lastPos = self.stack.screenPosition();
+        self.lastScale = self.stack.scale;
+        self.lastZ = self.currentZ();
+    }
     
-    this.changeSlice = function(val)
+    this.currentZ = function()
     {
-        statusBar.replaceLast("VRad: " + val);
-        self.brush.set({'radius': val});
-        canvasLayer.canvas.renderAll();
-        //self.brush.setCoords();
-        return;
-    };
+        return self.stack.z * self.stack.resolution.z + self.stack.translation.z;
+    }
     
-    this.resize = function(width, height)
+    /**
+     * Create the canvas layer using fabric.js
+     */
+    this.createCanvasLayer = function ()
     {
-        self.mouseCatcher.style.width = width + "px";
-        self.mouseCatcher.style.height = height + "px";
-        return;
-    };
-    
-    var onmousedown = function(e)
-    {
-        self.currentTrace = self.createNewTrace();
-        self.isDragging = true;        
+        canvasLayer = new CanvasLayer( self.stack, self );
+        
+        var h = canvasLayer.canvas.getHeight();
+        var w = canvasLayer.canvas.getWidth();
+        self.brush = new fabric.Circle({top: 200, left: 200, radius: self.brush_slider.val,
+            fill: '#0000ff'});
+        canvasLayer.canvas.add(self.brush);
+        canvasLayer.canvas.interactive = true;
+        
+        self.stack.addLayer("VolumeCanvasLayer", canvasLayer);
+        self.stack.resize();
+        
+        /*canvasLayer.canvas.on({
+            'mouse:down' : function(e) {
+                self.isDragging = true;
+            },
+            'mouse:up' : function(e) {
+                self.isDragging = false;
+            }
+        });*/
+        
     }
     
     var onmouseup = function(e)
-    {
-        self.isDragging = false;
-        if (self.enabled)
+    {        
+        if (self.isDragging)
         {
-            self.currentTrace.addObject(self.brush.clone());
-            self.volumeAnnotation.pushTrace(self.currentTrace);
+            self.isDragging = false;
+            if (self.enabled)
+            {
+                self.currentTrace.addObject(self.brush.clone());
+                self.volumeAnnotation.pushTrace(self.currentTrace);
+            }
+        }
+        else
+        {
+            self.proto_mouseup(e);
         }
     }
     
@@ -238,6 +272,251 @@ function VolumeTracingTool()
         }        
     };
     
+    var onmousedown = function(e)
+    {
+        self.currentTrace = self.createNewTrace();
+        self.isDragging = true;        
+    }
+    
+    var onmousewheel = function(e)
+    {
+        var w = ui.getMouseWheel( e );
+        if ( w )
+        {
+            w = self.stack.inverse_mouse_wheel * w;
+            if ( w > 0 )
+            {
+                if( e.shiftKey ) {
+                    self.prototype.slider_z.move( 10 );
+                } else {
+                    self.prototype.slider_z.move( 1 );
+                }
+            }
+            else
+            {
+                if( e.shiftKey ) {
+                    self.prototype.slider_z.move( -10 );
+                } else {
+                    self.prototype.slider_z.move( -1 );
+                }
+
+            }
+        }
+        
+        self.redraw();
+        
+        return false;
+    }
+    
+    this.register = function(parentStack)
+    {
+        self.stack = parentStack;
+        self.registerToolbar();
+        self.createCanvasLayer();
+        
+        
+        document.getElementById("toolbar_volseg").style_display = "block";
+        
+        self.prototype.setMouseCatcher( canvasLayer.view );
+        self.prototype.register( parentStack, "volume_tracing_button" );
+        
+        var proto_mousedown = canvasLayer.view.onmousedown;
+        self.proto_mouseup = canvasLayer.view.onmouseup;
+        //self.proto_mousewheel = self.prototype.onmousewheel.zoom;        
+        
+        canvasLayer.view.onmousemove = onmousemove.pos;
+        canvasLayer.view.onmousedown = function(e)
+        {
+            switch (ui.getMouseButton(e))
+            {
+                case 1:
+                    onmousedown(e);                    
+                    break;
+                case 2:
+                    proto_mousedown(e);
+                    break;
+            }
+            return ;
+        }
+        canvasLayer.view.onmouseup = onmouseup;
+        
+        /*try
+		{
+			self.prototype.mouseCatcher.addEventListener( "DOMMouseScroll", self.redraw, false );*/
+			/* Webkit takes the event but does not understand it ... */
+			/*self.prototype.mouseCatcher.addEventListener( "mousewheel", self.redraw, false );
+		}
+		catch ( error )
+		{
+			try
+			{
+				self.prototype.mouseCatcher.onmousewheel = onmousewheel;
+			}
+			catch ( error ) {}
+		}*/
+        
+        
+        self.createNewTrace();
+        
+        self.stack.getView().appendChild(canvasLayer.view);
+        self.volumeAnnotation.setStack(self.stack);
+        self.volumeAnnotation.tool = self;
+        
+        self.volumeAnnotation.retrieveAllTraces(self.pullTraces);
+        self.cacheScreen();
+        
+        //alert('Registered Volume Tool');
+        return;
+    };
+    
+    this.unregister = function()
+    {
+        
+        if (self.stack && canvasLayer.view.parentNode == self.stack.getView())
+        {
+            self.stack.getView().removeChild(canvasLayer.view);
+        }
+        //alert('Unregistered Volume Tool');
+        return;
+    };
+    
+    this.destroy = function()
+    {
+        document.getElementById("toolbar_volseg").style.display = "none";  
+        self.stack.removeLayer( "VolumeCanvasLayer" );
+        self.prototype.destroy( "volume_tracing_button" );
+        canvasLayer.canvas.clear();
+
+        canvasLayer = null;
+
+        self.volumeAnnotation.tool = null;
+        self.stack = null;
+        self.unregister();
+        self.destroyToolbar();
+        //alert('Destroyed Volume Tool');
+        return;
+    };
+
+    this.handleKeyPress = function(e)
+    {
+        return false;
+    };
+    
+    this.changeSlice = function(val)
+    {
+        statusBar.replaceLast("VRad: " + val);
+        self.brush.set({'radius': val});
+        canvasLayer.canvas.renderAll();
+        //self.brush.setCoords();
+        return;
+    };
+    
+    this.resize = function(width, height)
+    {
+        canvasLayer.view.style.width = width + "px";
+        canvasLayer.view.style.height = height + "px";
+        return;
+    };
+    
+    
+    
+    var actions = [];
+
+    this.addAction = function ( action ) {
+        actions.push( action );
+    };
+
+    this.getActions = function () {
+        return actions;
+    };
+
+    var arrowKeyCodes = {
+        left: 37,
+        up: 38,
+        right: 39,
+        down: 40
+    };
+
+    this.addAction(
+        new Action({helpText: "Zoom in",
+                    keyShortcuts: {'+': [ 43, 107, 61, 187 ]},
+                    run: function (e) {self.prototype.slider_s.move(1); return true;}
+                    }));
+
+    this.addAction( new Action({helpText: "Zoom out",
+                                keyShortcuts: {'-': [ 45, 109, 189 ]},
+                                run: function (e) { self.prototype.slider_s.move(-1); return true;}
+                                }));
+
+    this.addAction( new Action({
+        helpText: "Move up 1 slice in z (or 10 with Shift held)",
+        keyShortcuts: {
+            ',': [ 44, 188 ]
+        },
+        run: function (e) {
+            self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Move down 1 slice in z (or 10 with Shift held)",
+        keyShortcuts: {
+            '.': [ 46, 190 ]
+        },
+        run: function (e) {
+            self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Move left (towards negative x)",
+        keyShortcuts: {
+            "\u2190": [ arrowKeyCodes.left ]
+        },
+        run: function (e) {
+            self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+            self.prototype.input_x.onchange(e);
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Move right (towards positive x)",
+        keyShortcuts: {
+            "\u2192": [ arrowKeyCodes.right ]
+        },
+        run: function (e) {
+            self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+            self.prototype.input_x.onchange(e);
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Move up (towards negative y)",
+        keyShortcuts: {
+            "\u2191": [ arrowKeyCodes.up ]
+        },
+        run: function (e) {
+            self.prototype.input_y.value = parseInt(self.prototype.input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+            self.prototype.input_y.onchange(e);
+            return true;
+        }
+    }) );
+
+    this.addAction( new Action({
+        helpText: "Move down (towards positive y)",
+        keyShortcuts: {
+            "\u2193": [ arrowKeyCodes.down ]
+        },
+        run: function (e) {
+            self.prototype.input_y.value = parseInt(self.prototype.input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+            self.prototype.input_y.onchange(e);
+            return true;
+        }
+    }) );
 }
 
 function displayPxToStackPxX(x, stack)
@@ -389,5 +668,39 @@ function fabricTrace(stack, cl, objid, r)
         self.addToCanvas();
     }
     
+    this.translate = function(currPos, lastPos, scale)
+    {
+        dLeft = (currPos.left - lastPos.left) * scale;
+        dTop = (currPos.top - lastPos.top) * scale;
+        var l = null;
+        var t = null;
+        for (var i = 0; i < self.objectList.length; i++)
+        {
+            l = self.objectList[i].left;
+            t = self.objectList[i].top;
+            self.objectList[i].set({'top' : t - dTop, 'left' : l - dLeft});
+        }
+    }
+    
+    this.populateSVG = function(svg)
+    {
+        if (svg == '')
+        {
+            self.setObjects([]);
+        }
+        else
+        {
+            var objects = [];
+            fabric.loadSVGFromString(svg,
+                function(obj, opt)
+                {
+                    var widget = new fabric.PathGroup(obj, opt);
+                    objects.push(widget);
+                });
+            
+            self.setObjects(objects);
+        }
+    }   
 }
 
+	

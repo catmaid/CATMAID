@@ -1231,7 +1231,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    ClassificationEditor.init( project.getId() );
+    ClassificationEditor.init();
 
     return win;
   };

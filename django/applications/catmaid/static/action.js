@@ -266,10 +266,9 @@ if (userprofile.show_text_label_tool) {
 	  helpText: "Manual Volume Tracing",
 	  buttonID: "volume_tracing_button",
 	  buttonName: 'volume-tracing',
-	  run: function (e) {
-		  //alert('Manual Volume tracing powers activated!');
-          project.setTool(new VolumeTracingTool());
+	  run: function (e) {		  
           WindowMaker.show('volume-tracing');
+          project.setTool(new VolumeTracingTool());          
 		  return true;
 	  }
   }));

@@ -8,6 +8,8 @@ from django.utils.safestring import mark_safe
 from guardian.admin import GuardedModelAdmin
 from catmaid.models import Project, DataView, Stack, ProjectStack, UserProfile, Overlay, StackSliceInfo
 from catmaid.control.importer import importer_admin_view
+from catmaid.control.TGMMimporter import TGMMimporter_admin_view
+
 
 class ProjectAdmin(GuardedModelAdmin):
     list_display = ('title', 'public')
@@ -104,5 +106,11 @@ admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 # Register additional views
 admin.site.register_view('importer', importer_admin_view, 'Importer')
+
+# Register additional views
+admin.site.register_view('TGMMimporter', TGMMimporter_admin_view, 'TGMM Importer')
+
 admin.site.register(Overlay)
 admin.site.register(StackSliceInfo)
+
+

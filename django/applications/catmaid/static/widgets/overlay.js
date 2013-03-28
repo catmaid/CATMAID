@@ -139,6 +139,7 @@ var SkeletonAnnotations = new function()
     }); // endfunction
   };
 
+
   /** The constructor for SVGOverlay. */
   this.SVGOverlay = function ( stack )
   {

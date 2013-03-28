@@ -32,6 +32,7 @@ from segmentation import *
 from data_view import *
 from analytics import *
 from importer import *
+from TGMMimporter import *
 from slice import *
 from drawing import *
 from contraint import *

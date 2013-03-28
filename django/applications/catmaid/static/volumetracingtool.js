@@ -374,7 +374,13 @@ function VolumeTracingTool()
 
     this.handleKeyPress = function(e)
     {
-        return false;
+        var keyAction = keyCodeToAction[e.keyCode];
+        if (keyAction) {
+            //tracingLayer.svgOverlay.ensureFocused();
+            return keyAction.run(e);
+        } else {
+            return false;
+        }
     };
     
     this.changeSlice = function(val)
@@ -385,16 +391,14 @@ function VolumeTracingTool()
         //self.brush.setCoords();
         return;
     };
-    
+
     this.resize = function(width, height)
     {
         canvasLayer.view.style.width = width + "px";
         canvasLayer.view.style.height = height + "px";
         return;
     };
-    
-    
-    
+        
     var actions = [];
 
     this.addAction = function ( action ) {
@@ -502,6 +506,8 @@ function VolumeTracingTool()
             return true;
         }
     }) );
+    
+    var keyCodeToAction = getKeyCodeToActionMap(actions);
 }
 
 function displayPxToStackPxX(x, stack)
@@ -682,10 +688,10 @@ function fabricTrace(stack, cl, objid, r)
                     var widget = new fabric.PathGroup(obj, opt);
                     objects.push(widget);
                 });
-            
+
             self.setObjects(objects);
         }
-    }   
+    }
 }
 
 	

@@ -38,6 +38,8 @@ function VolumeTracingTool()
     {
         self.brush_slider = new Slider(SLIDER_HORIZONTAL, true, 1, 100, 100, traceBrushSize,
             self.changeSlice);
+        var nav = self.prototype;
+
         //document.getElementById("toolbar_volseg").style.display = "block";
         $("#toolbar_volseg")[0].style.display = "block";
         //var slider_box = document.getElementById("volseg_radius_box");
@@ -57,7 +59,6 @@ function VolumeTracingTool()
         slider_b_box.appendChild(self.brush_slider.getView());
         slider_b_box.appendChild(self.brush_slider.getInputView());
         slider_box.appendChild(slider_b_box);
-        
     };
     
 
@@ -269,7 +270,7 @@ function VolumeTracingTool()
         self.currentTrace = self.createNewTrace();
         self.isDragging = true;        
     }
-    
+
     var onmousewheel = function(e)
     {
         var w = ui.getMouseWheel( e );
@@ -279,7 +280,7 @@ function VolumeTracingTool()
             if ( w > 0 )
             {
                 if( e.shiftKey ) {
-                    self.prototype.slider_z.move( 10 );
+                    self.brush_slider.move(1);
                 } else {
                     self.prototype.slider_z.move( 1 );
                 }
@@ -287,18 +288,17 @@ function VolumeTracingTool()
             else
             {
                 if( e.shiftKey ) {
-                    self.prototype.slider_z.move( -10 );
+                    self.brush_slider.move(-1);
                 } else {
                     self.prototype.slider_z.move( -1 );
                 }
 
             }
         }
-        
-        self.redraw();
-        
         return false;
     }
+    
+    this.prototype.onmousewheel.zoom = onmousewheel;
     
     this.register = function(parentStack)
     {

@@ -38,8 +38,10 @@ function VolumeTracingTool()
     {
         self.brush_slider = new Slider(SLIDER_HORIZONTAL, true, 1, 100, 100, traceBrushSize,
             self.changeSlice);
-        document.getElementById("toolbar_volseg").style.display = "block";    
-        var slider_box = document.getElementById("volseg_radius_box");
+        //document.getElementById("toolbar_volseg").style.display = "block";
+        $("#toolbar_volseg")[0].style.display = "block";
+        //var slider_box = document.getElementById("volseg_radius_box");
+        var slider_box = $("#volseg_radius_box")[0];
         
         while (slider_box.firstChild)
         {
@@ -56,9 +58,6 @@ function VolumeTracingTool()
         slider_b_box.appendChild(self.brush_slider.getInputView());
         slider_box.appendChild(slider_b_box);
         
-        /*self.mouseCatcher = document.createElement("div");
-        self.mouseCatcher.className = "volumeTraceMouseCatcher";
-        self.mouseCatcher.style.cursor = "default";*/
     };
     
 
@@ -80,32 +79,43 @@ function VolumeTracingTool()
         var scale = self.stack.scale;
         var lastScale = self.lastScale;
         var lastPos = self.lastPos;
-        var lastZ = self.lastZ;
-        var currZ = self.currentZ();
+        var dZ = self.currentZ() - self.lastZ;
+
         
         self.cacheScreen();
         
-        if (scale == lastScale && lastZ == currZ)
+        if (scale == lastScale && dZ == 0)
         {
             for (var i = 0; i < self.traces.length; i++)
             {
                 self.traces[i].translate(currPos, lastPos, scale);
             }
-            canvasLayer.canvas.renderAll();
-            //self.volumeAnnotation.refreshTraces
-            //canvasLayer.canvas.calcOffset();
-            //self.volumeAnnotation.retrieveAllTraces(self.pullNewTraces);
         }
         else
         {
-            if (lastZ != currZ)
+            var oldTraces = self.traces;
+            // If we switched sections, remove the old traces after adding the new ones, to avoid
+            // flickering.
+            var callfun = dZ ? 
+                function(data){
+                    self.pullTraces(data);
+                    for (var i = 0; i < oldTraces.length; i++)
+                    {
+                            oldTraces[i].setObjects([]);
+                    }
+                } : self.pullTraces;
+            
+            if (dZ)
             {
-                self.clearTraces();
+                self.traces = [];            
             }
+            
             self.cacheScreen();
-            self.volumeAnnotation.retrieveAllTraces(self.pullTraces);
+            self.volumeAnnotation.retrieveAllTraces(callfun);
+                     
         }
         
+        canvasLayer.canvas.renderAll();        
     }
     
     this.pullTraces = function(data)
@@ -162,7 +172,8 @@ function VolumeTracingTool()
     this.destroyToolbar = function()
     {
         traceBrushSize = self.brush_slider.val;
-        document.getElementById("toolbar_volseg").style.display = "none";        
+        //document.getElementById("toolbar_volseg").style.display = "none";        
+        $("#toolbar_volseg")[0].style.display = "none";
         self.brush_slider.update(0, 1, undefined, 0, null);
     };
     
@@ -173,15 +184,6 @@ function VolumeTracingTool()
             VolumeTraceLastID, self.brush_slider.val);
         self.traces.push(trace);
         return trace;
-    }
-    
-    this.clearTraces = function()
-    {
-        for (var i = 0; i < self.traces.length; i++)
-        {
-            self.traces[i].setObjects([]);            
-        }
-        self.traces = [];
     }
     
     this.cacheScreen = function()
@@ -212,16 +214,6 @@ function VolumeTracingTool()
         
         self.stack.addLayer("VolumeCanvasLayer", canvasLayer);
         self.stack.resize();
-        
-        /*canvasLayer.canvas.on({
-            'mouse:down' : function(e) {
-                self.isDragging = true;
-            },
-            'mouse:up' : function(e) {
-                self.isDragging = false;
-            }
-        });*/
-        
     }
     
     var onmouseup = function(e)
@@ -314,15 +306,14 @@ function VolumeTracingTool()
         self.registerToolbar();
         self.createCanvasLayer();
         
-        
-        document.getElementById("toolbar_volseg").style_display = "block";
+        //document.getElementById("toolbar_volseg").style_display = "block";
+        $("#toolbar_volseg")[0].style_display = "block";
         
         self.prototype.setMouseCatcher( canvasLayer.view );
         self.prototype.register( parentStack, "volume_tracing_button" );
         
         var proto_mousedown = canvasLayer.view.onmousedown;
         self.proto_mouseup = canvasLayer.view.onmouseup;
-        //self.proto_mousewheel = self.prototype.onmousewheel.zoom;        
         
         canvasLayer.view.onmousemove = onmousemove.pos;
         canvasLayer.view.onmousedown = function(e)
@@ -340,22 +331,6 @@ function VolumeTracingTool()
         }
         canvasLayer.view.onmouseup = onmouseup;
         
-        /*try
-		{
-			self.prototype.mouseCatcher.addEventListener( "DOMMouseScroll", self.redraw, false );*/
-			/* Webkit takes the event but does not understand it ... */
-			/*self.prototype.mouseCatcher.addEventListener( "mousewheel", self.redraw, false );
-		}
-		catch ( error )
-		{
-			try
-			{
-				self.prototype.mouseCatcher.onmousewheel = onmousewheel;
-			}
-			catch ( error ) {}
-		}*/
-        
-        
         self.createNewTrace();
         
         self.stack.getView().appendChild(canvasLayer.view);
@@ -365,7 +340,6 @@ function VolumeTracingTool()
         self.volumeAnnotation.retrieveAllTraces(self.pullTraces);
         self.cacheScreen();
         
-        //alert('Registered Volume Tool');
         return;
     };
     
@@ -382,7 +356,8 @@ function VolumeTracingTool()
     
     this.destroy = function()
     {
-        document.getElementById("toolbar_volseg").style.display = "none";  
+        //document.getElementById("toolbar_volseg").style.display = "none";  
+        $("#toolbar_volseg")[0].style.display = "none";
         self.stack.removeLayer( "VolumeCanvasLayer" );
         self.prototype.destroy( "volume_tracing_button" );
         canvasLayer.canvas.clear();
@@ -429,6 +404,16 @@ function VolumeTracingTool()
     this.getActions = function () {
         return actions;
     };
+
+    
+    var clearTraces = function(traceList)
+    {
+        for (var i = 0; i < traceList; i++)
+        {
+            self.traces[i].setObjects([]);            
+        }        
+    }
+
 
     var arrowKeyCodes = {
         left: 37,

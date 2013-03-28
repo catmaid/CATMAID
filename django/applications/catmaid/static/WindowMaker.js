@@ -1117,6 +1117,10 @@ var WindowMaker = new function()
       content.appendChild( container );
       
       container.innerHTML = 
+        '<div id="toolbar_volseg" class="toolbar" style="display:none;">' +
+        '<div id="volseg_radius_box"></div>' +
+        '<div class="toolbar_fill"></div>' +
+        '</div>' +
         '<div id="area_segment_tree"></div>'+
         '<div id="area_segment_colorwheel">Select a Color</div>'+
         '<div id="trace_add_dialog" style="display:none; cursor:default">' +

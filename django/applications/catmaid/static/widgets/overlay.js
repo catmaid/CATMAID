@@ -464,21 +464,7 @@ var SkeletonAnnotations = new function()
       });
     };
 
-    this.tagATN = function () {
-      // tagbox from
-      // http://blog.crazybeavers.se/wp-content/Demos/jquery.tag.editor/
-
-      if(tagbox) {
-        $('#growl-alert').growlAlert({
-          autoShow: true,
-          content: 'Close tagbox first before you tag another node!',
-          title: 'BEWARE',
-          position: 'top-right',
-          delayTime: 2500,
-          onComplete: function() { g.remove(); }
-        });
-        return;
-      }
+    var handle_tagbox = function( atn ) {
 
       var e = $("<div class='tagBox' id='tagBoxId" + atn.id + "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: " + atn.x + "px; top: " + atn.y + "px;'>" +
       "Tag: <input id='Tags" + atn.id + "' name='Tags' type='text' value='' /><div style='color:#949494'>(Save&Close: Enter)</div>" );
@@ -589,6 +575,52 @@ var SkeletonAnnotations = new function()
           }
         });
       };
+
+    }
+
+    this.tagATN = function () {
+      // tagbox from
+      // http://blog.crazybeavers.se/wp-content/Demos/jquery.tag.editor/
+
+      if(tagbox) {
+        $('#growl-alert').growlAlert({
+          autoShow: true,
+          content: 'Close tagbox first before you tag another node!',
+          title: 'BEWARE',
+          position: 'top-right',
+          delayTime: 2500,
+          onComplete: function() { g.remove(); }
+        });
+        return;
+      }
+
+      var activeNodePosition = SkeletonAnnotations.getActiveNodePosition();
+      if (activeNodePosition === null) {
+        alert("No active node to go to!");
+      } else {
+        requestQueue.register(django_url + project.id + '/node/get_location', "POST", {
+          tnid: atn.id,
+          type: atn.type
+        }, function (status, text, xml) {
+          if (status === 200) {
+            if (text && text != " ") {
+              var jso = $.parseJSON(text);
+              if (jso.error) {
+                alert(jso.error);
+              } else {
+                handle_tagbox( {
+                  'id': atn.id,
+                  'type': atn.type,
+                  'x':  phys2pixX(jso[1]),
+                  'y':  phys2pixY(jso[2]),
+                  'z':  phys2pixZ(jso[3])
+                } )
+              }
+            }
+          }
+        });
+      }
+
 
     };
 

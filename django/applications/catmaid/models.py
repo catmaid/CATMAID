@@ -714,6 +714,18 @@ class UserProfile(models.Model):
     def __unicode__(self):
         return self.user.username
 
+    def as_dict(self):
+        """ Return a dictionary containing a user's profile information.
+        """
+        pdict = {}
+        pdict['inverse_mouse_wheel'] = self.inverse_mouse_wheel
+        pdict['show_text_label_tool'] = self.show_text_label_tool
+        pdict['show_tagging_tool'] = self.show_tagging_tool
+        pdict['show_cropping_tool'] = self.show_cropping_tool
+        pdict['show_segmentation_tool'] = self.show_segmentation_tool
+        pdict['show_tracing_tool'] = self.show_tracing_tool
+        return pdict
+
 def create_user_profile(sender, instance, created, **kwargs):
     """ Create the UserProfile when a new User is saved.
     """

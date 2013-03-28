@@ -49,6 +49,32 @@ CMWNode.prototype.getHeight = function()
 }
 
 /**
+ * @return available width of the node in pixels (without resize handle or alike structures)
+ */
+CMWNode.prototype.getAvailableWidth = function()
+{
+	var parent = this.getParent();
+	var w = this.getWidth();
+	if ( parent.getResizeHandleView && parent.getLeftChild && parent.getLeftChild() == this )
+		return w - parent.getResizeHandleView().offsetWidth;
+	else
+		return w - parent.getWidth() + parent.getAvailableWidth();
+}
+
+/**
+ * @return available height of the node in pixels (without resize handle or alike structures)
+ */
+CMWNode.prototype.getAvailableHeight = function()
+{
+	var parent = this.getParent();
+	var h = this.getHeight();
+	if ( parent.getResizeHandleView && parent.getTopChild && parent.getTopChild() == this )
+		return h - parent.getResizeHandleView().offsetHeight;
+	else
+		return h - parent.getHeight() + parent.getAvailableHeight();
+}
+
+/**
  * @return left position of the node in pixels
  */
 CMWNode.prototype.getLeft = function()
@@ -81,22 +107,22 @@ CMWNode.prototype.getTop = function()
 function CMWRootNode()
 {
 	var self = this;
-	
+
 	var child = null;
-	
+
 	var id = this.uniqueId();
-	
+
 	var frame = document.createElement( "div" );
 	frame.style.position = "absolute";
 	frame.id = "CMW" + id;
 	frame.style.top = "0px";
-	
+
 	this.getId = function(){ return id; }
-	
+
 	this.getFrame = function(){ return frame; }
-	
+
 	this.getChild = function(){ return child; }
-	
+
 	this.getChildren = function()
 	{
 		var children = new Array();
@@ -107,7 +133,7 @@ function CMWRootNode()
 		}
 		return children;
 	}
-	
+
 	this.getWindows = function()
 	{
 		if ( child != null )
@@ -115,7 +141,7 @@ function CMWRootNode()
 		else	
 			return [];
 	}
-	
+
 	this.replaceChild = function( newChild )
 	{
 		child = newChild;
@@ -125,7 +151,7 @@ function CMWRootNode()
 		child.setParent( self );
 		self.redraw();
 	}
-	
+
 	/**
 	 * @return {CMWRootNode} this (allows chains of calls like myRootNode.redraw().show())
 	 */
@@ -137,6 +163,16 @@ function CMWRootNode()
 		return self;
 	}
 	
+	this.getAvailableWidth = function()
+	{
+		return this.getWidth();
+	}
+
+	this.getAvailableHeight = function()
+	{
+		return this.getHeight();
+	}
+
 	this.catchDrag = function()
 	{
 		ui.catchFocus();
@@ -242,6 +278,16 @@ function CMWHSplitNode( child1, child2 )
 	
 	this.getRootNode = function(){ return parent.getRootNode(); }
 	
+	this.getLeftChild = function()
+	{
+		return child1;
+	}
+
+	this.getRightChild = function()
+	{
+		return child2;
+	}
+
 	this.getChildren = function()
 	{
 		return [ child1, child2 ].concat( child1.getChildren() ).concat( child2.getChildren() );
@@ -336,6 +382,11 @@ function CMWHSplitNode( child1, child2 )
 			return null;
 	}
 	
+	this.getResizeHandleView = function()
+	{
+		return resizeHandle.getView();
+	}
+
 	this.catchDrag = function()
 	{
 		child1.catchDrag();
@@ -421,6 +472,16 @@ function CMWVSplitNode( child1, child2 )
 	
 	this.getRootNode = function(){ return parent.getRootNode(); }
 	
+	this.getTopChild = function()
+	{
+		return child1;
+	}
+
+	this.getBottomChild = function()
+	{
+		return child2;
+	}
+
 	this.getChildren = function()
 	{
 		return [ child1, child2 ].concat( child1.getChildren() ).concat( child2.getChildren() );
@@ -515,6 +576,11 @@ function CMWVSplitNode( child1, child2 )
 			return null;
 	}
 	
+	this.getResizeHandleView = function()
+	{
+		return resizeHandle.getView();
+	}
+
 	this.catchDrag = function()
 	{
 		child1.catchDrag();
@@ -553,9 +619,7 @@ function CMWWindow( title )
 	this.getContentHeight = function()
 	{
 		var frame = this.getFrame();
-		var h = 0;
-		if ( frame.offsetHeight )
-			h = frame.offsetHeight;
+		var h = this.getAvailableHeight();
 		if ( frame.firstChild && frame.firstChild.offsetHeight )
 			h -= frame.firstChild.offsetHeight;
 		return h;

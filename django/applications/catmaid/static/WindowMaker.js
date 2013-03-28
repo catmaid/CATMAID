@@ -51,6 +51,7 @@ var WindowMaker = new function()
             } else {
                 container.style.height = ( win.getContentHeight() ) + "px";
             }
+            container.style.width = ( win.getAvailableWidth() + "px" );
 
             break;
         }
@@ -138,7 +139,7 @@ var WindowMaker = new function()
         '</tbody>';
     tabdiv.appendChild(tab);
 
-    addListener(win, container, 'neuron-staging-table');
+    addListener(win, container);
 
     addLogic(win);
 

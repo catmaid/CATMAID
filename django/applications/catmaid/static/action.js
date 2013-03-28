@@ -213,91 +213,101 @@ var toolActions = [
 
 ];
 
-var editToolActions = [];
+/**
+ * Craete edit actions depending on tool visibility settings.
+ */
+var createEditToolActions = function() {
+  // re-create the whole array
+  editToolActions = new Array();
 
-// Add actions depending on tool visibility settings
+  if (userprofile.show_text_label_tool) {
+    editToolActions.push(
+      new Action({
+        helpText: "Text label tool",
+        buttonID: 'edit_button_text',
+        buttonName: 'text',
+        run: function (e) {
+          project.setTool( new TextlabelTool() );
+          return true;
+        }
+      }));
+  }
 
-if (userprofile.show_text_label_tool) {
-  editToolActions.push(
-    new Action({
-      helpText: "Text label tool",
-      buttonID: 'edit_button_text',
-      buttonName: 'text',
-      run: function (e) {
-        project.setTool( new TextlabelTool() );
-        return true;
-      }
-    }));
+  if (userprofile.show_tagging_tool) {
+    editToolActions.push(
+      new Action({
+        helpText: "Tagging tool",
+        buttonID: 'edit_button_tags',
+        buttonName: 'tags',
+        run: function (e) {
+          project.setTool( new TaggingTool() );
+          return true;
+        }
+      }));
+  }
+
+  if (userprofile.show_cropping_tool) {
+    editToolActions.push(
+      new Action({
+        helpText: "Crop tool",
+        buttonID: 'edit_button_crop',
+        buttonName: 'crop',
+        run: function (e) {
+          project.setTool( new CroppingTool() );
+          return true;
+        }
+      }));
+  }
+
+  if (userprofile.show_segmentation_tool) {
+    editToolActions.push(
+      new Action({
+         helpText: "Segmentation Tool",
+         buttonID: 'edit_button_segmentation',
+         buttonName: 'canvas',
+         keyShortcuts: {
+         },
+         run: function (e) {
+            requestQueue.register(django_url + project.id + '/stack/' + project.focusedStack.id + '/slice-info', "POST", {},
+             function (status, text, xml) {
+                    if (status === 200) {
+                        if (text && text !== " ") {
+                            var e = $.parseJSON(text);
+                            if (e.error) {
+                                alert(e.error);
+                            } else {
+                                if( project.focusedStack.s !== 0 ) {
+                                  alert('Segmentation Tool only works on zoom-level 0!');
+                                  return;
+                                }
+                                project.setTool( new SegmentationTool() );
+                            }
+                        }
+                    }
+            });
+         }
+      }));
+  }
+
+  if (userprofile.show_tracing_tool) {
+    editToolActions.push(
+      new Action({
+        helpText: "Tracing tool",
+        buttonID: 'edit_button_trace',
+        buttonName: 'trace',
+        run: function (e) {
+          project.setTool( new TracingTool() );
+          return true;
+        }
+      }));
+  }
 }
 
-if (userprofile.show_tagging_tool) {
-  editToolActions.push(
-    new Action({
-      helpText: "Tagging tool",
-      buttonID: 'edit_button_tags',
-      buttonName: 'tags',
-      run: function (e) {
-        project.setTool( new TaggingTool() );
-        return true;
-      }
-    }));
-}
-
-if (userprofile.show_cropping_tool) {
-  editToolActions.push(
-    new Action({
-      helpText: "Crop tool",
-      buttonID: 'edit_button_crop',
-      buttonName: 'crop',
-      run: function (e) {
-        project.setTool( new CroppingTool() );
-        return true;
-      }
-    }));
-}
-
-if (userprofile.show_segmentation_tool) {
-  editToolActions.push(
-    new Action({
-       helpText: "Segmentation Tool",
-       buttonID: 'edit_button_segmentation',
-       buttonName: 'canvas',
-       keyShortcuts: {
-       },
-       run: function (e) {
-          requestQueue.register(django_url + project.id + '/stack/' + project.focusedStack.id + '/slice-info', "POST", {},
-           function (status, text, xml) {
-                  if (status === 200) {
-                      if (text && text !== " ") {
-                          var e = $.parseJSON(text);
-                          if (e.error) {
-                              alert(e.error);
-                          } else {
-                              if( project.focusedStack.s !== 0 ) {
-                                alert('Segmentation Tool only works on zoom-level 0!');
-                                return;
-                              }
-                              project.setTool( new SegmentationTool() );
-                          }
-                      }
-                  }
-          });
-       }
-    }));
-}
-
-if (userprofile.show_tracing_tool) {
-  editToolActions.push(
-    new Action({
-      helpText: "Tracing tool",
-      buttonID: 'edit_button_trace',
-      buttonName: 'trace',
-      run: function (e) {
-        project.setTool( new TracingTool() );
-        return true;
-      }
-    }));
-}
+/* Edit tools are dependent on the current user. Therefore,
+ * they get initialized when we know whether the user is
+ * logged in or not.
+ */
+var editToolActions = new Array();
 
 var segmentationWindowActions = [
 

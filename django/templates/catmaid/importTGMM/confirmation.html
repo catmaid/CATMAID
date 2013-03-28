@@ -1,0 +1,72 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% load common %}
+
+{% block extrastyle %}
+<style>
+    .not-accessible { color: red; }
+</style>
+{% endblock %}
+
+{% block extrahead %}
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url admin:index %}">Home</a> &rsaquo; {{ title }}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div id="content-main">
+    <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+
+    <p>The following project associated with the selected stack will be created to import tracking results. If the field is empty it means the stack was not found or the project already exists. Go to previous step and make sure stack title macthes exactly the database entry and that the new project name is unique. Likewise, you should see a list of XML files to be imported from tracking. If you do not see any file listed, go to the previous step and review the provided XML basename.</p>
+    <p><table>
+        <tr>
+            <th>Project</th>
+            <th>Stack Dimension</th>
+            <th>Stack Resolution</th>
+            <th>Stack Name</th>
+            <th>Stack Zoom Levels</th>
+            <th>Stack Extension</th>
+            <th>Stack Image Base</th>
+            <th>Stack Metadata</th>
+        </tr>
+        
+                <tr>
+                  <td>{{ projects.name }}</td>                 
+                  <td>{{ projects.stacks.dimension }}</td>
+                  <td>{{ projects.stacks.resolution }}</td>
+                  <td>{{ projects.stacks.title }}</td>
+                  <td>{{ projects.stacks.num_zoom_levels }}</td>
+                  <td>{{ projects.stacks.file_extension }}</td>
+                  <td class="accessible">{{ projects.stacks.image_base }}</td>
+                  <td>{{ projects.stacks.metadata }}</td>
+                </tr>               
+    </table></p>
+    
+	<p><table>
+		<tr>
+			<th>XML teacking files to be imported</th>
+		</tr>
+		{% for f in filesXML %}
+                <tr>
+			<td>{{ f }}</td> 
+		</tr>
+		{% endfor %}
+	</table>
+	</p>
+    <p>
+      <form method="post" id="confirmation-form"
+            action="">
+      {% csrf_token %}
+      {{ wizard.management_form }}
+      {% if wizard.steps.prev %}
+          <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}" class="button small">{% trans "prev step" %}</button>
+      {% endif %}
+      <input type="submit" value="submit"/>
+    </form>
+    </p>
+  </div>
+{% endblock %}

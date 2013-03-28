@@ -40,7 +40,7 @@ def shapely_polygon_to_svg(polygon, transform_params, vp):
 	version="1.1"\
 	>\
 	<g id="polygon">\
-		<path d="{}" fill-rule="evenodd" fill="{}" />\
+		<path d="{}" fill-rule="evenodd" fill="{}" style="fill-opacity:{}"/>\
 	</g>\
 </svg>'
     exy = polygon.exterior.xy;
@@ -50,7 +50,7 @@ def shapely_polygon_to_svg(polygon, transform_params, vp):
         ixy = interior.xy
         ixy = transform_shapely_xy(transform_params, ixy)
         svg_str = ' '.join([svg_str, path_to_svg(ixy)])
-    return svg_template.format(svg_str, vp.color)
+    return svg_template.format(svg_str, vp.color, vp.opacity)
 
 def request_to_transform_params(request):
     param_names = ['xtrans', 'ytrans', 'hview', 'wview', 'scale', 'top', 'left'] 
@@ -252,14 +252,17 @@ def all_volume_traces(request, project_id=None, stack_id=None):
     area_segs = qs1.all()
     
     svg_list = []
+    opacities = []
+    
     for seg in area_segs:
         polygon = area_segment_to_shapely(seg)
         vp = get_view_properties(seg.class_instance)
         svg_list.append(shapely_polygon_to_svg(polygon, transform_params, vp))
+        opacities.append(vp.opacity)
     
     ids = [aseg.id for aseg in area_segs]
 
-    return HttpResponse(json.dumps({'i' : ids, 'svg' : svg_list}))
+    return HttpResponse(json.dumps({'i' : ids, 'svg' : svg_list, 'opc' : opacities}))
 
 def get_view_properties(class_instance):
     try:

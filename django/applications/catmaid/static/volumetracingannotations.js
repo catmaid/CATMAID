@@ -133,11 +133,6 @@ var VolumeTracingAnnotations = new function ()
             "success" : function(){}
         });
     }
-    
-    this.setBrushColor = function(color)
-    {
-        self.tool.brush.fill = color;
-    }
 }
 
 var VolumeTracingPalette = new function()
@@ -276,7 +271,7 @@ var VolumeTracingPalette = new function()
                       "success": function(data)
                         {
                             self.colorwheel.color(data.color);
-                            VolumeTracingAnnotations.setBrushColor(data.color);
+                            VolumeTracingAnnotations.tool.setBrush(data);
                         }          
                 }); 
             }

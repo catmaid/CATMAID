@@ -1025,6 +1025,13 @@ var WindowMaker = new function()
 
         contentbutton.appendChild(sync);
 
+        var refresh = document.createElement('input');
+        refresh.setAttribute("type", "button");
+        refresh.setAttribute("id", "skeleton_info");
+        refresh.setAttribute("value", "Skeleton Info");
+        refresh.onclick = SkeletonConnectivity.skeleton_info;
+        contentbutton.appendChild(refresh);
+
         content.appendChild( contentbutton );
 
         var container = createContainer( "connectivity_widget" );

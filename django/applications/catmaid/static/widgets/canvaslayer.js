@@ -17,7 +17,7 @@ function CanvasLayer( stack, tool )
 
     this.getOpacity = function()
     {
-        return opacity;
+        return opacity * 100;
     }
 
     this.redraw = function()

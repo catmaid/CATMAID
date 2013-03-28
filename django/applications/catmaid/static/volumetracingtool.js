@@ -61,15 +61,21 @@ function VolumeTracingTool()
         slider_box.appendChild(slider_b_box);
     };
     
-
+    this.setBrush = function(ob)
+    {        
+        self.brush.fill = ob.color;
+        self.brush.opacity = ob.opacity;
+    }
     
     this.enable = function()
     {
+        self.brush.set({'opacity' : .5});
         self.enabled = true;
     }
     
     this.disable = function()
     {
+        self.brush.set({'opacity' : 0});
         self.enabled = false;
     }
     
@@ -129,6 +135,7 @@ function VolumeTracingTool()
             var trace = self.getTraceByID(id);
             var objects = [];
             var svg = data.svg[ii];
+            var opc = data.opc[ii];
             
             if (trace == null)
             {
@@ -137,6 +144,7 @@ function VolumeTracingTool()
             }
             
             trace.populateSVG(svg);
+            trace.setOpacity(opc);
         }
     }
     
@@ -204,14 +212,17 @@ function VolumeTracingTool()
      */
     this.createCanvasLayer = function ()
     {
-        canvasLayer = new CanvasLayer( self.stack, self );
+        canvasLayer = new CanvasLayer( self.stack, self );        
+        canvasLayer.setOpacity(1);
         
         var h = canvasLayer.canvas.getHeight();
         var w = canvasLayer.canvas.getWidth();
         self.brush = new fabric.Circle({top: 200, left: 200, radius: self.brush_slider.val,
-            fill: '#0000ff'});
+            fill: '#0000ff', opacity: 0});
+        self.brush.setActive(false);
         canvasLayer.canvas.add(self.brush);
         canvasLayer.canvas.interactive = true;
+        
         
         self.stack.addLayer("VolumeCanvasLayer", canvasLayer);
         self.stack.resize();
@@ -281,14 +292,30 @@ function VolumeTracingTool()
             {
                 if( e.shiftKey ) {
                     self.brush_slider.move(1);
+                } else if (e.altKey) {
+                    var clOpacity = canvasLayer.getOpacity() / 100 + .1;
+                    if (clOpacity > 1)
+                    {
+                        clOpacity = 1;
+                    }
+                    canvasLayer.setOpacity(clOpacity);
+                    self.stack.overviewlayer.refresh();
                 } else {
                     self.prototype.slider_z.move( 1 );
                 }
-            }
+            }            
             else
             {
                 if( e.shiftKey ) {
                     self.brush_slider.move(-1);
+                } else if (e.altKey) {
+                    var clOpacity = canvasLayer.getOpacity() / 100 - .1;
+                    if (clOpacity < 0)
+                    {
+                        clOpacity = 0;
+                    }
+                    canvasLayer.setOpacity(clOpacity);
+                    self.stack.overviewlayer.refresh();
                 } else {
                     self.prototype.slider_z.move( -1 );
                 }
@@ -657,6 +684,15 @@ function fabricTrace(stack, cl, objid, r)
         self.objectList = inObjList;
         
         self.addToCanvas();
+    }
+    
+    this.setOpacity = function(opc)
+    {
+        o = {opacity: opc};
+        for (var i = 0; i < self.objectList.length; i++)
+        {
+            self.objectList[i].set(o);
+        }
     }
     
     this.translate = function(currPos, lastPos, scale)

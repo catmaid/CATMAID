@@ -253,16 +253,21 @@ def all_volume_traces(request, project_id=None, stack_id=None):
     
     svg_list = []
     opacities = []
+    tids = []
     
     for seg in area_segs:
         polygon = area_segment_to_shapely(seg)
         vp = get_view_properties(seg.class_instance)
         svg_list.append(shapely_polygon_to_svg(polygon, transform_params, vp))
         opacities.append(vp.opacity)
+        tids.append(seg.class_instance.id);
     
     ids = [aseg.id for aseg in area_segs]
 
-    return HttpResponse(json.dumps({'i' : ids, 'svg' : svg_list, 'opc' : opacities}))
+    return HttpResponse(json.dumps({'i' : ids,
+                                    'svg' : svg_list,
+                                    'opc' : opacities,
+                                    'tid' : tids}))
 
 def get_view_properties(class_instance):
     try:
@@ -320,8 +325,11 @@ def volume_classes(request, project_id=None):
     return HttpResponse(json.dumps(
         tuple({'data' : {'title' : ci.name},
                'attr' : {'id': 'instance_%d' % ci.id,
-               'rel' : 'instance',
-               'name' : ci.name}} for ci in instances.all())))
+                         'rel' : 'instance',
+                         'name' : ci.name,
+                         'color' : get_view_properties(ci).color,
+                         'opacity' : get_view_properties(ci).opacity}} \
+                               for ci in instances.all())))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def create_new_trace(request, project_id=None):

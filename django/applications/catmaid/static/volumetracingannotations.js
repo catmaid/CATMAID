@@ -119,16 +119,16 @@ var VolumeTracingAnnotations = new function ()
         });
     }
     
-    this.setColor = function(instance_id, color)
+    this.setViewProps = function(instance_id, vp)
     {
-        self.tool.brush.fill = color;
+        self.tool.brush.set(vp.color);
         $.ajax({
             "dataType" : 'json',
             "type" : "POST",
             "cache" : false,
             "url" : django_url + project.id + '/volumetrace/settraceproperties',
-            "data" : {'color' : color,
-                      'opacity' : 0.5,
+            "data" : {'color' : vp.color,
+                      'opacity' : vp.opacity,
                       'trace_id' : instance_id},
             "success" : function(){}
         });
@@ -140,13 +140,27 @@ var VolumeTracingPalette = new function()
     var self = this;
     this.trace_id = "";
     this.trees = [];
+    this.class_id = -1;
+    this.view_props = {'color': '#0000ff', 'opacity': 0.5};
+    
+    this.syncProps = function()
+    {
+        self.view_props.color = self.colorwheel.color().hex;
+        VolumeTracingAnnotations.tool.setViewProps(self.view_props);
+        
+    }
+    
+    this.syncPropsAndUpdate = function()
+    {
+        self.syncProps();
+        VolumeTracingAnnotations.setViewProps(
+            self.trace_id, self.view_props);
+    }
     
     this.init = function(pid)
     {
         var tree = $("#area_segment_tree");
         var color_wheel = $("#area_segment_colorwheel")[0];
-        
-        
         
         self.colorwheel = Raphael.colorwheel(color_wheel, 150);
         color_wheel.style.position = 'absolute';
@@ -156,13 +170,12 @@ var VolumeTracingPalette = new function()
         color_wheel.style.margin = '0 auto';
         color_wheel.hidden = true;
         
-        self.colorwheel.onchange(function(){
-            VolumeTracingAnnotations.setBrushColor(
-                self.colorwheel.color().hex)});
+        //Change brush in real-time
+        self.colorwheel.onchange(self.syncProps);
+                
+        //Change back-end attribute on mouse-up
         self.colorwheel.ondrag(function(){}, 
-            function(){
-            VolumeTracingAnnotations.setColor(
-                self.trace_id, self.colorwheel.color().hex)});
+            self.syncPropsAndUpdate);
         
         tree.jstree({
           "core": {
@@ -257,9 +270,8 @@ var VolumeTracingPalette = new function()
             var id = data.rslt.obj.attr('id');
             if (id.indexOf('instance') >= 0)
             {
-                self.trace_id = id.replace('instance_', '');
-                VolumeTracingAnnotations.tool.enable();
-                self.colorwheel.color(VolumeTracingAnnotations.tool.brush.fill);                
+                self.trace_id = id.replace('instance_', '');                
+                self.colorwheel.color(self.view_props.color);                
                 $('#area_segment_colorwheel')[0].hidden = false;
                 
                 $.ajax({
@@ -269,9 +281,12 @@ var VolumeTracingPalette = new function()
                       "url": django_url + project.id + '/volumetrace/traceproperties',
                       "data": {'trace_id' : self.trace_id},
                       "success": function(data)
-                        {
+                        {                            
                             self.colorwheel.color(data.color);
-                            VolumeTracingAnnotations.tool.setBrush(data);
+                            self.view_props.color = data.color;
+                            self.view_props.opacity = data.opacity;
+                            VolumeTracingAnnotations.tool.enable();
+                            VolumeTracingAnnotations.tool.setViewProps(data);                            
                         }          
                 }); 
             }

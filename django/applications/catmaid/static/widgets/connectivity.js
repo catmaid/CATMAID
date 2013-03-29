@@ -67,9 +67,6 @@ var SkeletonConnectivity = new function()
                     }
                 }
         });
-
-
-
     }
 
     this.createConnectivityTable = function( status, text ) {

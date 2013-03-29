@@ -58,11 +58,27 @@ function OverviewLayer( stack )
 							setOpac );
 
 			slider.idd = key;
-			container.innerHTML += key + "<br />";
+			// container.innerHTML += "<input type='checkbox' name='" + key + "-check' id='" + key + "-check' checked>" + key + "<br />";
+			container.innerHTML += "<button type='button' id='"+ key + "-button'>" + key + "</button><br />";
+			container.setAttribute("id", key + "-container");
+			
 			container.appendChild( slider.getView() );
 			view.appendChild(container);
+
+			self.setButtonHandle( key );
+
 		}
 	};
+
+	this.setButtonHandle = function( key ) {
+		$('#'+ key + '-button').click(function() {
+			if( !self.layers[key].visible ) {
+				self.layers[key].reattachTileLayer();
+			} else {
+				self.layers[key].isolateTileLayer();
+			}
+	    });
+	}
 
 	var self = this;
 
@@ -71,7 +87,7 @@ function OverviewLayer( stack )
 	var view = document.createElement( "div" );
 	view.className = "OverviewLayer";
 	view.id = "OverviewLayer";
-	view.style.zIndex = 6;
+	view.style.zIndex = 8;
 
 }
 

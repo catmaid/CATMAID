@@ -241,7 +241,7 @@ var WebGLApp = new function () {
     controls.target = pos;
     camera.position.x = pos.x;
     camera.position.y = pos.y;
-    camera.position.z = (dim.z/2)+100+pos.z;
+    camera.position.z = (dim.z/2)+pos.z;
     camera.up.set(0, 1, 0);
     self.render();
   }
@@ -883,7 +883,7 @@ var WebGLApp = new function () {
   this.updateActiveNodePosition = function()
   {
     var atn_pos = SkeletonAnnotations.getActiveNodePosition();
-    if( show_active_node ) {
+    if( show_active_node & (atn_pos !== null) ) {
         self.showActiveNode();
         var co = transform_coordinates( [
           translation.x + ((atn_pos.x) / project.focusedStack.scale) * resolution.x,
@@ -1131,10 +1131,10 @@ var WebGLApp = new function () {
     var geometry = new THREE.Geometry();
     var xwidth = dimension.x*resolution.x*scale,
         ywidth = dimension.y*resolution.y*scale * missing_section_height / 100.;
-    geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( 0,0,0 ) ) );
-    geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( xwidth,0,0 ) ) );
-    geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( 0,ywidth,0 ) ) );
-    geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( xwidth,ywidth,0 ) ) );
+    geometry.vertices.push( new THREE.Vector3( 0,0,0 ) );
+    geometry.vertices.push( new THREE.Vector3( xwidth,0,0 ) );
+    geometry.vertices.push( new THREE.Vector3( 0,ywidth,0 ) );
+    geometry.vertices.push( new THREE.Vector3( xwidth,ywidth,0 ) );
     geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
 
     var material = new THREE.MeshBasicMaterial( { color: 0x151349, opacity:0.6, transparent: true, side: THREE.DoubleSide } );
@@ -1341,10 +1341,11 @@ var WebGLApp = new function () {
         var geometry = new THREE.Geometry();
         var xwidth = dimension.x*resolution.x*scale,
             ywidth = dimension.y*resolution.y*scale;
-        geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( 0,0,0 ) ) );
-        geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( xwidth,0,0 ) ) );
-        geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( 0,ywidth,0 ) ) );
-        geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( xwidth,ywidth,0 ) ) );
+
+        geometry.vertices.push( new THREE.Vector3( 0,0,0 ) );
+        geometry.vertices.push( new THREE.Vector3( xwidth,0,0 ) );
+        geometry.vertices.push( new THREE.Vector3( 0,ywidth,0 ) );
+        geometry.vertices.push( new THREE.Vector3( xwidth,ywidth,0 ) );
         geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
 
         var material = new THREE.MeshBasicMaterial( { color: 0x151349,
@@ -1373,10 +1374,10 @@ var WebGLApp = new function () {
       geometry = new THREE.Geometry(),
       floor = 0, step = 25;
     for ( var i = 0; i <= 40; i ++ ) {
-      geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( - 500, floor, i * step - 500 ) ) );
-      geometry.vertices.push( new THREE.Vertex( new THREE.Vector3(   500, floor, i * step - 500 ) ) );
-      geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( i * step - 500, floor, -500 ) ) );
-      geometry.vertices.push( new THREE.Vertex( new THREE.Vector3( i * step - 500, floor,  500 ) ) );
+      geometry.vertices.push( new THREE.Vector3( - 500, floor, i * step - 500 ) );
+      geometry.vertices.push( new THREE.Vector3(   500, floor, i * step - 500 ) );
+      geometry.vertices.push( new THREE.Vector3( i * step - 500, floor, -500 ) );
+      geometry.vertices.push( new THREE.Vector3( i * step - 500, floor,  500 ) );
 
     }
     floormesh = new THREE.Line( geometry, line_material, THREE.LinePieces );
@@ -1424,8 +1425,8 @@ var WebGLApp = new function () {
             }
           }
 
-
           var intersects = raycaster.intersectObjects( sphere_objects, true );
+          console.log('intersects sphere objects', intersects)
           if ( intersects.length > 0 ) {
             for( var i = 0; i < sphere_objects.length; i++) {
               if( sphere_objects[i].id === intersects[0].object.id ) {
@@ -1770,6 +1771,10 @@ var WebGLApp = new function () {
     }
     if (SkeletonAnnotations.getActiveNodeType() != "treenode") {
       alert("You can only add skeletons to the 3D WebGL View at the moment - please select a node of a skeleton.");
+      return;
+    }
+    if( skeleton_id in skeletons ) {
+      alert('Skeleton already added to the list');
       return;
     }
     self.addSkeletonFromID( project.id, skeleton_id ); // will call self.render()

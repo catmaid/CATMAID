@@ -61,10 +61,23 @@ function VolumeTracingTool()
         slider_box.appendChild(slider_b_box);
     };
     
-    this.setBrush = function(ob)
-    {        
-        self.brush.fill = ob.color;
-        self.brush.opacity = ob.opacity;
+    this.setViewProps = function(vp)
+    {
+        var tid = VolumeTracingPalette.trace_id;        
+        var traces = self.getTracesByInstance(tid);
+                
+        self.brush.fill = vp.color;
+        if (self.enabled)
+        {
+            self.brush.opacity = vp.opacity;
+        }
+
+        for (var i = 0; i < traces.length; i++)
+        {
+            traces[i].setViewProps(vp);
+        }
+        
+        canvasLayer.canvas.renderAll();
     }
     
     this.enable = function()
@@ -136,15 +149,17 @@ function VolumeTracingTool()
             var objects = [];
             var svg = data.svg[ii];
             var opc = data.opc[ii];
+            var trace_id = data.tid[ii];
             
             if (trace == null)
             {
                 trace = self.createNewTrace();
-                trace.id = id;
+                trace.id = id;                
             }
             
+            trace.trace_id = trace_id;
             trace.populateSVG(svg);
-            trace.setOpacity(opc);
+            trace.setOpacity(opc);            
         }
     }
     
@@ -156,12 +171,14 @@ function VolumeTracingTool()
             var trace = self.getTraceByID(id);
             var objects = [];
             var svg = data.svg[ii];
+            var trace_id = data.tid[ii];
             
             if (trace == null)
             {
                 trace = self.createNewTrace();
                 trace.id = id;
                 trace.populateSVG(svg);
+                trace.trace_id = trace_id;
             }
         }
     }
@@ -178,6 +195,19 @@ function VolumeTracingTool()
         return null;
     }
     
+    this.getTracesByInstance = function(trace_id)
+    {
+        traces = [];
+        for (var i = 0; i < self.traces.length; i++)
+        {
+            if (self.traces[i].trace_id == trace_id)
+            {
+                traces.push(self.traces[i]);
+            }
+        }
+        return traces;
+    }
+    
     this.destroyToolbar = function()
     {
         traceBrushSize = self.brush_slider.val;
@@ -188,9 +218,14 @@ function VolumeTracingTool()
     
     this.createNewTrace = function()
     {
-        VolumeTraceLastID--;
-        var trace = new fabricTrace(self.stack, canvasLayer, 
-            VolumeTraceLastID, self.brush_slider.val);
+        VolumeTraceLastID--;        
+        var trace = new fabricTrace(
+            self.stack,
+            canvasLayer, 
+            VolumeTraceLastID,
+            self.brush_slider.val,
+            VolumeTracingPalette.trace_id,
+            VolumeTracingPalette.view_props);
         self.traces.push(trace);
         return trace;
     }
@@ -612,7 +647,7 @@ function stackPxToDisplayPxYArray(y, stack)
 
 
 
-function fabricTrace(stack, cl, objid, r)
+function fabricTrace(stack, cl, objid, r, instanceid, vp)
 {
     var self = this;
     this.canvasLayer = cl;
@@ -621,6 +656,10 @@ function fabricTrace(stack, cl, objid, r)
     this.x = []; // x,y trace in stack pixel coordinates
     this.y = [];
     this.stack = stack;
+    this.trace_id = instanceid;
+    // vp should be a js object like 
+    // vp = {'color': '#00ffff', 'opacity': 0.5}
+    this.view_props = vp;
     
     /**
      * A fabricTrace's ID will be negative if it has not yet been synced
@@ -651,6 +690,7 @@ function fabricTrace(stack, cl, objid, r)
     
     this.addObject = function(obj)
     {
+        obj.set(self.view_props);
         self.objectList.push(obj);
         self.canvasLayer.canvas.add(obj);
         self.x.push(displayPxToStackPxX(obj.left, self.stack));
@@ -679,6 +719,10 @@ function fabricTrace(stack, cl, objid, r)
     
     this.setObjects = function(inObjList)
     {
+        for (var i = 0; i < inObjList.length; i++)
+        {
+            inObjList[i].set(self.view_props);
+        }
         self.removeFromCanvas();
         self.clear();
         self.objectList = inObjList;
@@ -692,6 +736,15 @@ function fabricTrace(stack, cl, objid, r)
         for (var i = 0; i < self.objectList.length; i++)
         {
             self.objectList[i].set(o);
+        }
+    }
+    
+    this.setViewProps = function(vp)
+    {
+        self.view_props = vp;
+        for (var i = 0; i < self.objectList.length; i++)
+        {
+            self.objectList[i].set(vp);
         }
     }
     

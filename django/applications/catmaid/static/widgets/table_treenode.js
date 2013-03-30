@@ -7,14 +7,14 @@ var TreenodeTable = new function()
 {
   var ns = this; // reference to the namespace
   ns.oTable = null;
-  var asInitVals = [];
-  asInitVals[1] = "LR";
   var skelid = -1; // Skeleton currently shown
   var last_displayed_skeletons = {};
   last_displayed_skeletons[0] = 'None';
 
+  var filter_nodetype = 'LR', filter_searchtag = '';
+
   this.setSkeleton = function( skeleton_id ) {
-    skelid = skeleton_id;
+    skelid = parseInt(skeleton_id, 10);
   };
 
   /** Update the table to list the nodes of the active skeleton. */
@@ -22,6 +22,7 @@ var TreenodeTable = new function()
     var skid = SkeletonAnnotations.getActiveSkeletonId();
     if (skid) {
       ns.setSkeleton( skid ); // -1 means: trigger picking the selected skeleton
+      $('#search_labels').val( filter_searchtag );
       ns.oTable.fnClearTable( 0 );
       ns.oTable.fnDraw();
     } else {
@@ -33,6 +34,7 @@ var TreenodeTable = new function()
   /** Update the table to list the nodes of the skeleton currently being listed. */
   this.refresh = function() {
     if (ns.oTable && skelid > 0) {
+      $('#search_labels').val( filter_searchtag );
       ns.oTable.fnClearTable( 0 );
       ns.oTable.fnDraw();
     }
@@ -77,6 +79,16 @@ var TreenodeTable = new function()
           "name": "stack_id",
           "value": project.focusedStack.id
         });
+
+        // set type to bSearch_0
+        for( var i = 0; i < aoData.length; i++ ) {
+          if( aoData[i]['name'] === 'sSearch_1' ) {
+            aoData[i]['value'] = filter_nodetype;
+          }
+          if( aoData[i]['name'] === 'sSearch_2' ) {
+            aoData[i]['value'] = filter_searchtag;
+          }
+        }
 
         if( skelid && !(skelid in last_displayed_skeletons) ) {
           // check if skeleton id already in list, and if so, do not add it
@@ -203,25 +215,15 @@ var TreenodeTable = new function()
       ]
     });
 
-    // filter table
-    $.each(asInitVals, function(index, value) {
-      if(value==="Search")
-        return;
-      if(value) {
-        ns.oTable.fnFilter(value, index);
+    $("#treenodetable thead input").keydown(function (event) { /* Filter on the column (the index) of this element */
+      // filter table on hit enter
+      if( event.which == 13 ) {
+        filter_searchtag = $('#search_labels').val();
+        TreenodeTable.refresh();
       }
     });
 
-    $("#treenodetable thead input").keyup(function () { /* Filter on the column (the index) of this element */
-      var i = $("thead input").index(this) + 2;
-      asInitVals[i] = this.value;
-      ns.oTable.fnFilter(this.value, i);
-    });
-
-    $("#treenodetable thead input").each(function (i) {
-      asInitVals[i+2] = this.value;
-    });
-
+    // remove the 'Search' string when first focusing the search box
     $("#treenodetable thead input").focus(function () {
       if (this.className === "search_init") {
         this.className = "";
@@ -229,20 +231,12 @@ var TreenodeTable = new function()
       }
     });
 
-    $("#treenodetable thead input").blur(function (event) {
-      if (this.value === "") {
-        this.className = "search_init";
-        this.value = asInitVals[$("thead input").index(this)+2];
-      }
-    });
-
     $('select#search_type').change( function() {
-      ns.oTable.fnFilter( $(this).val(), 1 );
-      asInitVals[1] = $(this).val();
+      filter_nodetype = $(this).val();
+      TreenodeTable.refresh();
     });
 
     $("#treenodetable tbody tr").live('dblclick', function () {
-
       var aData = ns.oTable.fnGetData(this);
       // retrieve coordinates and moveTo
       var x = parseFloat(aData[4]);
@@ -254,5 +248,6 @@ var TreenodeTable = new function()
                        SkeletonAnnotations.staticSelectNode(id, skelid);
                      });
     });
+
   };
 }

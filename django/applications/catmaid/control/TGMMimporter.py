@@ -4,6 +4,7 @@ import glob
 import os.path
 import numpy as np
 import xml.etree.ElementTree as ET
+import os
 
 from django import forms
 from django.conf import settings
@@ -25,6 +26,8 @@ from catmaid.fields import Double3D
 from catmaid.control import common
 from catmaid.control import treenode
 
+from celery.task import task #TODO: try to make it work so import_tracks can be done asynchronous in the background instead of timing out
+import time
 
 TEMPLATES = {"pathsettings": "catmaid/importTGMM/setup_path.html",
              "confirmation": "catmaid/importTGMM/confirmation.html"}
@@ -249,19 +252,23 @@ class ImportingWizard(SessionWizardView):
             selected_projects, make_public, permissions,
             tile_width, tile_height, tile_source_type)
 
-        #save all the tracking information to the new project
+        #usually uploading all the tracked points takes a while, so we use a separate project to do it
         filesXML = self.files
+
         if imported_projects: #checking that the project was imported coreectly
-            numNodes, numSkeletons = import_tracks(filesXML, selected_projects, trln, ImportingWizard.requestDjango)
+            fileOutputProgress = os.path.split(filesXML[0])
+            fileOutputProgress = fileOutputProgress[0] + "/" + "progressReportFile.txt"
+
+            import_tracks(filesXML, selected_projects, trln, ImportingWizard.requestDjango, fileOutputProgress)
 
         # Show final page
         return render_to_response('catmaid/importTGMM/done.html', {
             'projects': selected_projects,
             'imported_projects': imported_projects,
             'not_imported_projects': not_imported_projects,
-            'numNodes': numNodes,
-            'numSkeletons': numSkeletons
-        })
+        }) 
+          
+        
 
 def TGMMimporter_admin_view(request, *args, **kwargs):
     """ Wraps the class based ImportingWizard view in a
@@ -406,8 +413,8 @@ def import_projects( pre_projects, make_public, permissions,
 
 
 
-
-def import_tracks(filesXML, project, trln, request):
+@task()
+def import_tracks(filesXML, project, trln, request, fileOutputProgress):
     """Import tracks into a selected project"""
 
     numNodes = 0
@@ -438,7 +445,10 @@ def import_tracks(filesXML, project, trln, request):
     
 
     tOld = int(filesXML[0][-8:-4]) - 1
+    fout = open(fileOutputProgress,'w')
+    fout.write("Saving tracked points in the database\n")    
     for f in filesXML:
+        tic = time.time()
         t = int(f[-8:-4])
         
         if (t - tOld) != 1: # we assume consecutive time points
@@ -451,7 +461,9 @@ def import_tracks(filesXML, project, trln, request):
         #convert x,y,z from pixels to project coordinates
         treeNodeList[:numT, 0] *= project.stacks.resolution.x
         treeNodeList[:numT, 1] *= project.stacks.resolution.y
-        treeNodeList[:numT, 2] *= project.stacks.resolution.z
+
+        treeNodeList[:numT, 2] = np.around(treeNodeList[:numT, 2]) #we need to round this coordinate so CATMAID can retieve points (we use z==z_cut to make query faster)
+        treeNodeList[:numT, 2] *= project.stacks.resolution.z 
         treeNodeList[:numT, 0] += trln.x
         treeNodeList[:numT, 1] += trln.y
         treeNodeList[:numT, 2] += trln.z
@@ -473,8 +485,13 @@ def import_tracks(filesXML, project, trln, request):
 
         numNodes += numT
         tOld = t
+        toc = time.time()
+        fout.write("Done saving all nodes from file " + f + " in " + str(toc-tic) + " secs \n")
+        fout.flush()
 
-    return (numNodes, numSkeletons)
+    fout.write("Job completed successfully\n")
+    fout.write("Saved a total of " + str(numNodes) + " nodes from " + str(numSkeletons) + " lineages in the database\n")
+    fout.close()
 
 
 def relate_neuron_to_skeleton(neuron, skeleton, relation_map, request, project_id):
@@ -644,7 +661,7 @@ def parse_TGMM_XML_file(fileXML, treeNodeList, t, nullVal):
         confidence = int(gmm.get('splitScore'))
 
         #save elements
-        treeNodeList[numT, :] =[m[0], m[1], m[2], t, channel_, radius, parent, confidence, nullVal]
+        treeNodeList[numT, :] =[m[1], m[0], m[2], t, channel_, radius, parent, confidence, nullVal] #apparently TGMM flips x,y woth respect how CATMAID displays elements
         numT = numT + 1
 
 

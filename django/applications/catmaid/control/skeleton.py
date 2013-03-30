@@ -127,7 +127,9 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None):
         'root_id': tn.id,
         'x': tn.location.x,
         'y': tn.location.y,
-        'z': tn.location.z}),
+        'z': tn.location.z,
+        't': tn.location_t,
+        'c': tn.location_c}),
         mimetype='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

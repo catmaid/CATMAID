@@ -31,7 +31,7 @@
             <li>{{ p.name }}</li>
         {% endfor %}
         </ul></p>
-	<p>{{ numSkeletons }} lineages for a total of {{ numNodes }} tracked locations have been added successfully.</p>
+	<p>All the tracking information is being uploaded to the database. It can take a while for millions of points. Check teh file progressReportFile.txt for progress report.</p>
         <p><a href="{% url admin:index %}">Return to the administration home page.</a></p>
     {% endif %}
   </div>

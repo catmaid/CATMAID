@@ -487,10 +487,18 @@ var ObjectTree = new function()
                           nodeID = e.root_id;
                           skeletonID = skelid;
                           // go to node
-                          project.moveTo(e.z, e.y, e.x, undefined,
+                          if( project. getStackFirst().tile_source_type == 5)
+                          {
+                                project.moveTo5D(e.z, e.y, e.x, undefined,e.t, e.c,
                                          function () {
                                            SkeletonAnnotations.staticSelectNode(nodeID, skeletonID);
                                          });
+                          }else{
+                              project.moveTo(e.z, e.y, e.x, undefined,
+                                         function () {
+                                           SkeletonAnnotations.staticSelectNode(nodeID, skeletonID);
+                                         });
+                        }
                         }
                       }
                     }

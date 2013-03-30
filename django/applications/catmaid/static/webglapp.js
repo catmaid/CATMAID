@@ -425,6 +425,11 @@ var WebGLApp = new function () {
           self.otherSpheres[ idx ].visible = vis;
         }
       }
+      for( var idx in self.radiusSpheres ) {
+        if( self.radiusSpheres.hasOwnProperty( idx )) {
+          self.radiusSpheres[ idx ].visible = vis;
+        }
+      }
       for( var idx in self.labelSphere ) {
         if( self.textlabels.hasOwnProperty( idx )) {
           self.labelSphere[ idx ].visible = vis;
@@ -466,8 +471,8 @@ var WebGLApp = new function () {
 
     this.updateSkeletonColor = function() {
       this.actor[connectivity_types[0]].material.color.setRGB( this.actorColor[0]/255., this.actorColor[1]/255., this.actorColor[2]/255. );
-      for ( var k in this.otherSpheres ) {
-        this.otherSpheres[k].material.color.setRGB( this.actorColor[0]/255., this.actorColor[1]/255., this.actorColor[2]/255. );
+      for ( var k in this.radiusSpheres ) {
+        this.radiusSpheres[k].material.color.setRGB( this.actorColor[0]/255., this.actorColor[1]/255., this.actorColor[2]/255. );
       }
     }
 
@@ -488,10 +493,13 @@ var WebGLApp = new function () {
         scene.remove( this.actor[connectivity_types[i]] );
       }
       for ( var k in this.labelSphere ) {
-          scene.remove( this.labelSphere[k] );
+        scene.remove( this.labelSphere[k] );
       }
       for ( var k in this.otherSpheres ) {
         scene.remove( this.otherSpheres[k] );
+      }
+      for ( var k in this.radiusSpheres ) {
+        scene.remove( this.radiusSpheres[k] );
       }
       for ( var k in this.textlabels ) {
         if( self.textlabels.hasOwnProperty)
@@ -539,6 +547,7 @@ var WebGLApp = new function () {
       }
       this.labelSphere = new Object();
       this.otherSpheres = new Object();
+      this.radiusSpheres = new Object();
       this.textlabels = new Object();
     }
 
@@ -657,7 +666,7 @@ var WebGLApp = new function () {
 
           this.geometry[type].vertices.push( new THREE.Vertex( to_vector ) );
 
-          if( type === 'presynaptic_to') {
+          if( !(fromkey in this.otherSpheres) && type === 'presynaptic_to') {
             var radiusSphere = new THREE.SphereGeometry( 40 * scale, 32, 32, 1);
             this.otherSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:false  } ) );
             this.otherSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
@@ -665,7 +674,8 @@ var WebGLApp = new function () {
             this.otherSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
             this.otherSpheres[fromkey].skeleton_id = self.id;
             scene.add( this.otherSpheres[fromkey] );
-          } else if( type === 'postsynaptic_to') {
+          }
+          if( !(fromkey in this.otherSpheres) && type === 'postsynaptic_to') {
             var radiusSphere = new THREE.SphereGeometry( 40 * scale, 32, 32, 1);
             this.otherSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false  } ) );
             this.otherSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
@@ -677,24 +687,24 @@ var WebGLApp = new function () {
 
           // check if either from or to key vertex has a sphere associated with it
           var radiusFrom = parseFloat( this.original_vertices[fromkey]['radius'] );
-          if( !(fromkey in this.otherSpheres) && radiusFrom > 0 ) {
+          if( !(fromkey in this.radiusSpheres) && radiusFrom > 0 ) {
             var radiusSphere = new THREE.SphereGeometry( radiusFrom * scale, 32, 32, 1);
-            this.otherSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
-            this.otherSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
-            this.otherSpheres[fromkey].node_id = fromkey;
-            this.otherSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
-            this.otherSpheres[fromkey].skeleton_id = self.id;
-            scene.add( this.otherSpheres[fromkey] );
+            this.radiusSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+            this.radiusSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
+            this.radiusSpheres[fromkey].node_id = fromkey;
+            this.radiusSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
+            this.radiusSpheres[fromkey].skeleton_id = self.id;
+            scene.add( this.radiusSpheres[fromkey] );
           }
 
           var radiusTo = parseFloat( this.original_vertices[tokey]['radius'] );
-          if( !(tokey in this.otherSpheres) && radiusTo > 0 ) {
+          if( !(tokey in this.radiusSpheres) && radiusTo > 0 ) {
             var radiusSphere = new THREE.SphereGeometry( radiusTo * scale, 32, 32, 1);
-            this.otherSpheres[tokey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
-            this.otherSpheres[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
-            this.otherSpheres[tokey].orig_coord = this.original_vertices[fromkey];
-            this.otherSpheres[tokey].skeleton_id = self.id;
-            scene.add( this.otherSpheres[tokey] );
+            this.radiusSpheres[tokey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+            this.radiusSpheres[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
+            this.radiusSpheres[tokey].orig_coord = this.original_vertices[fromkey];
+            this.radiusSpheres[tokey].skeleton_id = self.id;
+            scene.add( this.radiusSpheres[tokey] );
           }
 
           // text labels

@@ -45,19 +45,21 @@ var SkeletonConnectivity = new function()
                             var dialog = document.createElement('div');
                             dialog.setAttribute("id", "dialog-confirm");
                             dialog.setAttribute("title", "Skeleton Information");
-                            console.log(e)
                             var msg = document.createElement('p');
-                            msg.innerHTML = "Node count: " + e.count + "<br />" +
-                                "Neuronname: " + skeletonTitle + "<br />";
+                            msg.innerHTML = 
+                                "Neuron Name: " + skeletonTitle + "<br />" +
+                                "Node count: " + e.node_count + "<br />" +
+                                "Input sites: " + e.input_count + "<br />" +
+                                "Output sites: " + e.output_count + "<br />" +
+                                "Cable length: " + e.cable_length + "<br />" +
+                                "Construction time: " + e.measure_construction_time + "<br />" +
+                                "Percentage reviewed: " + e.percentage_reviewed + "<br />";
                             dialog.appendChild(msg);
 
                             $(dialog).dialog({
                               height: 440,
                               modal: true,
                               buttons: {
-                                "Cancel": function() {
-                                  $(this).dialog("close");
-                                },
                                 "OK": function() {
                                   $(this).dialog("close");
                                 }

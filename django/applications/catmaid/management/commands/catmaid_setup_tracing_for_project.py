@@ -23,7 +23,8 @@ class Command(NoArgsCommand):
 
         class_dictionary = {}
 
-        for required_class in ("skeleton",
+        for required_class in ("assembly",
+                               "skeleton",
                                "neuron",
                                "group",
                                "label",

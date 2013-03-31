@@ -1,10 +1,10 @@
 # Absolute path to the root folder of your CATMAID fork without trailing slash
-# e.g. /home/alice/dev/CATMAID
+# e.g. /home/alice/catmaid
 
 abs_catmaid_path = ''
 
 # Absolute path to the site-packages folder of your virtual Python environment without trailing slash
-# e.g. /home/alice/dev/CATMAID/django/env/lib/PYTHON_VERSION/site-packages
+# e.g. /home/alice/.virtualenvs/catmaid
 
 abs_virtualenv_python_library_path = ''
 

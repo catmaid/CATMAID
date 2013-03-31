@@ -15,14 +15,10 @@ var SegmentationAnnotations = new function()
     self.current_active_assembly = null;
 
     // the canvas layer using fabric.js
-    // , 
     var automatic_propagation = false, propagation_counter = 20;
-    // more criteria, e.g. min_overlap_ratio_threshold=0.8
 
     // base url for slices, filename ending
     var slice_base_url, slice_filename_extension;
-
-    var cygraph;
 
     var canvas;
 
@@ -31,6 +27,63 @@ var SegmentationAnnotations = new function()
 
     var slices_todo = [], slices_todo_selected = null, bookmarks = [], slices_bookmark_selected = null;
     
+    this.get_slices_at_location = function( wc, e ) {
+        requestQueue.register(django_url + project.id + "/stack/" + get_current_stack().id + '/slices-at-location', "GET", {
+            x: wc.worldLeftC + e.offsetX,
+            y: wc.worldTopC + e.offsetY,
+            scale : 0.5, // defined as 1/2**zoomlevel
+            z : get_current_stack().z}, function (status, text, xml) {
+                if (status === 200) {
+                    if (text && text !== " ") {
+                        var e = $.parseJSON(text);
+                        if (e.error) {
+                            alert(e.error);
+                        } else {
+                            // loop through slices and check whether one has an assembly id set
+                            // console.log('found ', e.length, ' slices at this location and fetch them.', e)
+                            for(var idx in e) {
+                                if(e.hasOwnProperty( idx )) {
+                                    if( e[idx].assembly_id ) {
+                                        // console.log('found assembly id of one slcie', e[idx].assembly_id  )
+                                        SegmentationAnnotations.set_current_assembly_id( e[idx].assembly_id )
+                                        return;
+                                    }
+                                }
+                            }
+                            if( SegmentationAnnotations.has_current_assembly() ) {
+                                // current assembly set is already set
+                                SegmentationAnnotations.add_slices_group( e );
+                            } else {
+                                // requires creation of a new assembly and neuron
+                                requestQueue.register(django_url + project.id + '/assembly/create-assembly-and-neuron', "GET", {},
+                                                function (status, text, xml) {
+                                                    if (status === 200) {
+                                                        if (text && text !== " ") {
+                                                            var eb = $.parseJSON(text);
+                                                            if (eb.error) {
+                                                                alert(eb.error);
+                                                            } else {
+                                                                $('#growl-alert').growlAlert({
+                                                                    autoShow: true,
+                                                                    content: "Created a new assembly and neuron" + eb.assembly_id,
+                                                                    title: 'Warning',
+                                                                    position: 'top-right',
+                                                                    delayTime: 2000,
+                                                                    onComplete: function() {  }
+                                                                });
+                                                                SegmentationAnnotations.current_active_assembly = eb.assembly_id;
+                                                                SegmentationAnnotations.add_slices_group( e );
+                                                            }
+                                                        }
+                                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+        });
+    }
+
     this.reset_all = function() {
         self.current_active_assembly = null
         allslices = new Object();
@@ -42,72 +95,6 @@ var SegmentationAnnotations = new function()
         slices_todo_selected = null;
         bookmarks = [];
         slices_bookmark_selected = null;
-    }
-/*
-    this.test_graph = function() {
-
-        var obj = new Object();
-        obj.me = 'he';
-        cygraph.add([
-          { group: "nodes", data: { id: "n0", slice: obj, blub:{test:123} }, position: { x: 100, y: 100 } },
-          { group: "nodes", data: { id: "n1" }, position: { x: 200, y: 200 } },
-          { group: "nodes", data: { id: "n2" }, position: { x: 200, y: 200 } },
-          { group: "edges", data: { id: "e0", source: "n0", target: "n1" } },
-          { group: "edges", data: { id: "e1", source: "n0", target: "n2" } }
-        ]);
-        // cygraph.elements("node[id = 'n0']")
-        /*
-        var n = SegmentationAnnotations.cygraph.nodes("[id = 'n0']")
-        n.data()
-        var e = g.edges("[source='n0']");
-        $.each(e, function(id, element){
-            console.log('id', id, element.data() );
-        });
-
-        
-        console.log( cygraph.nodes() )
-    }*/
-
-    this.init_graph = function() {
-        console.log($('#cytograph'))
-        var options = {
-            ready: function(){
-              console.log('cytoscape ready')
-            },
-            style: cytoscape.stylesheet()
-              .selector("node")
-                  .css({
-                    "content": "data(label)",
-                    "shape": "data(shape)",
-                    "border-width": 1,
-                    "background-color": "data(color)", //#DDD",
-                    "border-color": "#555",
-                  })
-                .selector("edge")
-                  .css({
-                    "content": "data(label)",
-                    "width": "data(weight)", //mapData(weight, 0, 100, 10, 50)",
-                    "target-arrow-shape": "triangle",
-                    // "source-arrow-shape": "circle",
-                    "line-color": "#444",
-                    "opacity": 0.4,
-                    
-                  })
-                .selector(":selected")
-                  .css({
-                    "background-color": "#000",
-                    "line-color": "#000",
-                    "source-arrow-color": "#000",
-                    "target-arrow-color": "#000",
-                    "text-opacity": 1.0
-                  })
-        }
-        $('#cytograph').cytoscape(options);
-        cygraph = $('#cytograph').cytoscape("get");
-        console.log('cygraph', cygraph)
-        self.cygraph = cygraph;
-        g = cygraph;
-        //self.test_graph();
     }
 
     this.toggle_automatic_propagation = function( ) {
@@ -226,7 +213,7 @@ var SegmentationAnnotations = new function()
             slices_right_flags: result['slices_right_flags'],
         },
           "success": function(data) {
-             console.log('returned', data)
+             console.log('save assembly returned', data)
           }
         });
     }
@@ -255,7 +242,6 @@ var SegmentationAnnotations = new function()
                                 slices_grouping[ e[ idx ].node_id ]['sliceindex'] = 0;
                                 slices_grouping[ e[ idx ].node_id ]['slicelist'].push( [ e[ idx ].node_id ] );
                             }
-                            console.log('load segments ....')
                             requestQueue.register(django_url + project.id + '/stack/' + get_current_stack().id + '/segments-of-assembly', "GET", {
                                 assemblyid: assembly_id
                             }, function (status, text, xml) {
@@ -272,24 +258,23 @@ var SegmentationAnnotations = new function()
                                                     // console.log('origin slice', newsegment.get_origin_sliceid() )
                                                     // console.log('target slices', newsegment.get_target1_sliceid(), newsegment.get_target2_sliceid() )
                                                     var slice;
-
                                                     slice = get_slice( newsegment.get_origin_sliceid() );
                                                     if( slice !== undefined ) {
-                                                        console.log('found slice', slice);
+                                                        // console.log('found slice', slice);
                                                         slice.selected_segment_right = 0
                                                         slice.segments_right.push( newsegment.node_id );
                                                     } else { console.log('did not find slice', newsegment.get_origin_sliceid() )}
 
                                                     slice = get_slice( newsegment.get_target1_sliceid() );
                                                     if( slice !== undefined ) {
-                                                        console.log('found slice', slice);
+                                                        // console.log('found slice', slice);
                                                         slice.selected_segment_left = 0
                                                         slice.segments_left.push( newsegment.node_id );
                                                     } else { console.log('did not find slice', newsegment.get_target1_sliceid() )}
 
                                                     slice = get_slice( newsegment.get_target2_sliceid() );
                                                     if( slice !== undefined ) {
-                                                        console.log('found slice', slice);
+                                                        // console.log('found slice', slice);
                                                         slice.selected_segment_left = 0
                                                         slice.segments_left.push( newsegment.node_id );                                                        
                                                     } else { console.log('did not find slice', newsegment.get_target2_sliceid() )}
@@ -374,7 +359,7 @@ var SegmentationAnnotations = new function()
     }
 
     self.set_current_assembly_id = function( assembly_id ) {
-        console.log('on assembly change. new assembly id: ', assembly_id);
+        // console.log('on assembly change. new assembly id: ', assembly_id);
         if (isNaN(assembly_id)) {
             alert('Selected assemblyID is not a number.');
             self.current_active_assembly = null;
@@ -391,7 +376,7 @@ var SegmentationAnnotations = new function()
     };
 
     var openAssemblyInObjectTree = function( ) {
-        console.log('try to open in object tree', self.current_active_assembly);
+        // console.log('try to open in object tree', self.current_active_assembly);
         // Check if the Object Tree div is visible
         if ($('#object_tree_widget').css('display') === "none" || ! $('#synchronize_object_tree').attr('checked')) {
             return;
@@ -452,7 +437,7 @@ var SegmentationAnnotations = new function()
     }
 
     self.set_propagation_counter = function( counter ) {
-        console.log('reset counter', counter)
+        // console.log('reset counter', counter)
         propagation_counter = counter;
     }
 
@@ -461,12 +446,10 @@ var SegmentationAnnotations = new function()
     }
 
     self.fetch_segments_right = function() {
-        console.log('fetch segments right');
         allslices[ current_active_slice ].fetch_segments( true );
     }
 
     var fetch_allsegments_current = function() {
-        console.log('fetch segments right and left');
         fetch_all_segments( current_active_slice );
     }
     self.fetch_allsegments_current = fetch_allsegments_current;
@@ -478,11 +461,6 @@ var SegmentationAnnotations = new function()
 
     self.fetch_segments_left = function() {
         allslices[ current_active_slice ].fetch_segments( false );
-        //allslices[ current_active_slice ].fetch_slices_for_selected_segment( false );
-    }
-
-    self.slice_infobox = function() {
-        console.log( 'current active slice', self.get_current_active_slice() );
     }
 
     self.bookmark_active_slice = function( shiftKey ) {
@@ -786,7 +764,6 @@ var SegmentationAnnotations = new function()
 
     var fetch_all_segments = function( node_id ) {
         if( have_slice(node_id) ) {
-            console.log('fetch all segments of slice', node_id);
             allslices[ node_id ].fetch_segments( true );
             allslices[ node_id ].fetch_segments( false );
         }
@@ -835,6 +812,43 @@ var SegmentationAnnotations = new function()
             alert('Can not create segments table for slice. Not fetch slice!')
             return;
         }
+        var slice = allslices[ node_id ];
+        $('#slicetable').empty();
+        $('#slicetable').append('<tr>'+
+            '<td>node id</td>' +
+            '<td>assembly_id</td>' +
+            '<td>sectionindex</td>' +
+            '<td>boundingbox</td>' +
+            '<td>center_x</td>' +
+            '<td>center_y</td>' +
+            '<td>threshold</td>' +
+            '<td>size</td>' +
+            '<td>status</td>' +
+            '<td>flag_left</td>' +
+            '<td>flag_right</td>' +
+            '<td>selected_segment_left</td>' +
+            '<td>segments_left</td>' +
+            '<td>selected_segment_right</td>' +
+            '<td>segments_right</td>' +
+            '</tr>');
+        $('#slicetable').append('<tr>'+
+            '<td>'+slice.node_id+'</td>' +
+            '<td>'+slice.assembly_id+'</td>' +
+            '<td>'+slice.sectionindex+'</td>' +
+            '<td>' + '</td>' +
+            '<td>'+slice.center_x+'</td>' +
+            '<td>'+slice.center_y+'</td>' +
+            '<td>'+slice.threshold+'</td>' +
+            '<td>'+slice.size+'</td>' +
+            '<td>'+slice.status+'</td>' +
+            '<td>'+slice.flag_left+'</td>' +
+            '<td>'+slice.flag_right+'</td>' +
+            '<td>'+slice.selected_segment_left+'</td>' +
+            '<td>'+slice.segments_left[ slice.selected_segment_left ]+'</td>' +
+            '<td>'+slice.selected_segment_right+'</td>' +
+            '<td>'+slice.segments_right[ slice.selected_segment_right ]+'</td>' +
+            '</tr>');
+
         $('#segmentstable').empty();
         var right_segments = allslices[ node_id ].segments_right;
         $('#segmentstable').append('<tr>'+
@@ -1130,7 +1144,7 @@ var SegmentationAnnotations = new function()
     };
 
     this.next_slice = function( direction ) {
-        console.log('next slice', direction)
+        // console.log('next slice', direction)
         if( current_active_slice === null ) {
             console.log('currently no active slice.return');
             return;
@@ -1192,7 +1206,7 @@ var SegmentationAnnotations = new function()
 
         // define the set of new slices visible
         nr_elements = slices_grouping[ current_active_slice ].slicelist[ index ].length;
-        console.log('slicesgrouping for current slice. try to make it visible', slices_grouping[ current_active_slice ], 'index', index);
+        // console.log('slicesgrouping for current slice. try to make it visible', slices_grouping[ current_active_slice ], 'index', index);
         for(var idx = 0; idx < nr_elements; idx++) {
             var new_active_slice = slices_grouping[ current_active_slice ].slicelist[ index ][ idx ];
             if( idx == 0)
@@ -1248,7 +1262,7 @@ var SegmentationAnnotations = new function()
     }
 
     var make_visible = function( node_id, do_goto_slice ) {
-        console.log('make visible', node_id, '; gotoslice', do_goto_slice);
+        // console.log('make visible', node_id, '; gotoslice', do_goto_slice);
         var nodeidsplit = inv_cc_slice( node_id );
         if( have_slice( node_id ) ) {
             if( !is_slice_visible( nodeidsplit.sectionindex, node_id ) ) {
@@ -1383,12 +1397,17 @@ var SegmentationAnnotations = new function()
     };
     self.activate_slice = activate_slice;
 
+    var compose_segment_node_id = function( origin_section, target_section, segmentid ) {
+        return ""+origin_section+"_"+target_section+"-"+segmentid;
+    }
+
     function Segment( segment )
     {
         var self = this;
 
         this.segmentid = segment.segmentid;
-        this.node_id = ""+segment.origin_section+"_"+segment.target_section+"-"+segment.segmentid;
+        this.node_id = compose_segment_node_id( segment.origin_section, segment.target_section,
+            segment.segmentid);
         this.origin_node_id = ""+segment.origin_section+"_"+segment.origin_slice_id;
         this.target1_node_id = ""+segment.target_section+"_"+segment.target1_slice_id;
         if( segment.target2_slice_id )
@@ -1471,7 +1490,7 @@ var SegmentationAnnotations = new function()
         this.center_x = slice.center_x; // actual pixel-based slice center, different from bounding box center
         this.center_y = slice.center_y;
         this.threshold = slice.threshold;
-        this.size = slice.threshold;
+        this.size = slice.size;
         this.status = slice.status;
         this.flag_left = slice.flag_left;
         this.flag_right = slice.flag_right;
@@ -1514,16 +1533,6 @@ var SegmentationAnnotations = new function()
         ** and initialize segments_{left|right} object
         */
         this.fetch_segments = function ( for_right, callback ) {
-            // console.log('fetch segments:', for_right, callback );
-            // do not fetch segments if already fetched
-            /*if(self.segments_right.length > 0 || self.segments_left.length > 0) {
-                console.log('already existing segments', self.segments_right, self.selected_segment_right, self.segments_left, self.selected_segment_left);
-                if (callback && typeof(callback) === "function") {
-                    // execute the callback, passing parameters as necessary
-                    callback();
-                }
-                return;
-            }*/
             var fetchurl;
             if( for_right )
                 fetchurl = django_url + project.id + "/stack/" + get_current_stack().id + '/segments-for-slice-right';
@@ -1539,33 +1548,42 @@ var SegmentationAnnotations = new function()
                             if (e.error) {
                                 alert(e.error);
                             } else {
-                                console.log('found segments (for right:', for_right, ') :', e);
+                                // console.log('found segments (for right:', for_right, ') :', e);
                                 if( e.length == 0 ) {                                    
+                                    // TODO: correct ?
                                     if( for_right ) {
                                         self.flag_right = 2;
-                                        console.log('flag right with 2. no segments found to the right');
+                                        // console.log('flag right with 2. no segments found to the right');
                                     } else {
                                         self.flag_left = 2;
-                                        console.log('flag left with 2. no segments found to the left');
+                                        // console.log('flag left with 2. no segments found to the left');
                                     }
                                 }
                                 for(var idx in e) {
-
-                                    var newsegment = new Segment( e[idx] );
-                                    add_segment_instance( newsegment );
-
+                                    var node_id = compose_segment_node_id( e[idx].origin_section,
+                                        e[idx].target_section,
+                                        e[idx].segmentid);
                                     if( for_right ) {
-                                        console.log('push to right', newsegment.node_id )
-                                        self.segments_right.push( newsegment.node_id );
-                                        // not automatically select segmetn
-                                        /*if( !self.selected_segment_right ) {
-                                            self.selected_segment_right = 0;
-                                        } */                                           
+                                        function has_segment( segments, node_id ) {
+                                            for( var i = 0; i < segments.length; i++ ) {
+                                                if( segments[i] === node_id)
+                                                    return true;
+                                            }
+                                            return false;
+                                        }
+                                        if( ! has_segment( self.segments_right, node_id ) ) {
+                                            var newsegment = new Segment( e[idx] );
+                                            add_segment_instance( newsegment );
+                                            self.segments_right.push( newsegment.node_id );
+                                        }
+                                        // autoselect segment here if necessary        
                                     } else {
-                                        console.log('push to left', newsegment.node_id )
-                                        self.segments_left.push( newsegment.node_id );
-                                        /*if( !self.selected_segment_left )
-                                            self.selected_segment_left = 0;*/
+                                        if( ! has_segment( self.segments_left, node_id ) ) {
+                                            var newsegment = new Segment( e[idx] );
+                                            add_segment_instance( newsegment );
+                                            self.segments_left.push( newsegment.node_id );
+                                        }
+                                        // autoselect segment here if necessary
                                     }
                                 }
 
@@ -1573,9 +1591,7 @@ var SegmentationAnnotations = new function()
                                     // execute the callback, passing parameters as necessary
                                     callback();
                                 } 
-                                
                                 self.automatic_propagate( for_right );
-
                             }
                         }
                     }
@@ -1590,15 +1606,15 @@ var SegmentationAnnotations = new function()
                 }
                 //console.log('automatic propgation is ', automatic_propagation)
                 if( automatic_propagation && propagation_counter > 0 && self.segments_right.length > 0 && for_right ) {
-                    console.log('automatic propagation!')
+                    // console.log('automatic propagation!')
                     var seg = get_segment( self.get_current_right_segment() );
-                    console.log('along selected segment: ', seg)
+                    // console.log('along selected segment: ', seg)
                     if( seg !== undefined ) { 
                         // undefined should never happen because we check in the if statement whether
                         // there are right segments at all
-                        console.log('choosen segment to propagate to right is', seg );
+                        // console.log('choosen segment to propagate to right is', seg );
                         propagation_counter--;
-                        console.log('propgation counter: ', propagation_counter)
+                        // console.log('propgation counter: ', propagation_counter)
                         if( seg.cost < 10 ) {
                             // arbitrary tests can be incorporated here or directly in the
                             // backend functions in slice.py where we filter the fetched segments
@@ -1614,20 +1630,20 @@ var SegmentationAnnotations = new function()
             if( to_right ) {
                 if( selected_segment_index === undefined ) {
                     selected_segment_index = self.selected_segment_right;
-                    console.log('use selected segment right', selected_segment_index);
+                    // console.log('use selected segment right', selected_segment_index);
                 }
                 segments = self.segments_right;
             } else {
                 if( selected_segment_index === undefined ) {
                     selected_segment_index = self.selected_segment_right;
-                    console.log('use selected segment left', selected_segment_index);
+                    // console.log('use selected segment left', selected_segment_index);
                 }
                 // selected_segment_index = self.selected_segment_left;
                 segments = self.segments_left;
             }
             var selected_segment = get_segment( segments[ selected_segment_index ] );
             if( selected_segment === undefined ) {
-                console.log('no segments found, cannot add');
+                // console.log('no segments found, cannot add');
                 return [];
             }
             var prototype_slice, slices_to_add;
@@ -1640,7 +1656,7 @@ var SegmentationAnnotations = new function()
                 }
                 
             } else {
-                console.log('!!!slices group is to the left. type is', selected_segment.segmenttype, selected_segment);
+                // console.log('!!!slices group is to the left. type is', selected_segment.segmenttype, selected_segment);
                 if( selected_segment.segmenttype == 2 ) {
                     prototype_slice = selected_segment.origin_node_id;
                     slices_to_add = [ prototype_slice ]
@@ -1693,7 +1709,7 @@ var SegmentationAnnotations = new function()
         }
 
         this.add_slicesgroup_for_selected_segment = function( for_right ) {
-            console.log('add slicesgroup for selected segment to right: ', for_right);
+            // console.log('add slicesgroup for selected segment to right: ', for_right);
             if( for_right ) {
                 if( self.flag_right === 2 ) {
                     console.log('no segment exist to the right. press "e" (added continuation/branch TODO) to mark as end to the right and add a new slice');
@@ -1701,7 +1717,7 @@ var SegmentationAnnotations = new function()
                 }
                 if( self.selected_segment_right === null ) {
                     self.fetch_segments( for_right, function() {
-                        console.log('callbackfunction after fetch segments to right', self);
+                        // console.log('callbackfunction after fetch segments to right', self);
                         slices_to_add = self.add_slices_group_from_segments_new( true, 0 ); // select the segment 0
                         if( slices_to_add == 0 ) {
                             console.log('do not add a new slice group because no segments available')
@@ -1714,7 +1730,7 @@ var SegmentationAnnotations = new function()
                         }
                     })                    
                 } else {
-                    console.log('right segment already selected', self.selected_segment_right)
+                    // console.log('right segment already selected', self.selected_segment_right)
                     // select the segment
                     // self.selected_segment_right = selected_segment;
                     slices_to_add = self.add_slices_group_from_segments_new( true ); // right segment already selected, not overwrite
@@ -1736,7 +1752,7 @@ var SegmentationAnnotations = new function()
                 }
                 if( self.selected_segment_left === null ) {
                   self.fetch_segments( for_right, function() {
-                        console.log('callbackfunction after fetch segments to left', self);
+                        // console.log('callbackfunction after fetch segments to left', self);
                         slices_to_add = self.add_slices_group_from_segments_new( false, 0 );
                         if( slices_to_add == 0 ) {
                             console.log('do not add a new slice group because no segments available')

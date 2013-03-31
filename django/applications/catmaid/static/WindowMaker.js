@@ -108,8 +108,7 @@ var WindowMaker = new function()
 
     var tabdiv = document.createElement('div');
     tabdiv.setAttribute("id", "view-3d-webgl-skeleton-table-div");
-    tabdiv.style.height = "150px";
-    tabdiv.style.overflow = "auto";
+    // tabdiv.style.overflow = "auto";
     container.appendChild(tabdiv);
 
     var tab = document.createElement('table');
@@ -344,30 +343,25 @@ var WindowMaker = new function()
     return win;
   };
 
-  var createSegmentsTablesWindow = function()
+  var createSliceInfoWindow = function()
   {
-    console.log('create...')
-    var win = new CMWWindow("Segments Table Widget");
+    var win = new CMWWindow("Slice Info Widget");
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
-    /*
-    var container = createContainer("segments_table_widget");
-    content.appendChild(container);
-
-    
-    var graph = document.createElement('div');
-    graph.setAttribute("id", "segmentstable-div");
-    graph.style.height = "100%";
-    graph.style.width = "100%";
-    container.appendChild(graph);
-    */
-
-    var container = createContainer("segmentstable-container");
+    var container = createContainer("table-container");
     content.appendChild( container );
 
-    container.innerHTML =
+    var slicetable = document.createElement('div');
+    slicetable.innerHTML =
+      '<table cellpadding="0" cellspacing="2" border="0" class="display" id="slicetable"></table>';
+
+    var segmentstable = document.createElement('div');
+    segmentstable.innerHTML =
       '<table cellpadding="0" cellspacing="2" border="0" class="display" id="segmentstable"></table>';
+
+    container.appendChild( slicetable );
+    container.appendChild( segmentstable );
 
     addListener(win, container);
 
@@ -1031,6 +1025,13 @@ var WindowMaker = new function()
 
         contentbutton.appendChild(sync);
 
+        var refresh = document.createElement('input');
+        refresh.setAttribute("type", "button");
+        refresh.setAttribute("id", "skeleton_info");
+        refresh.setAttribute("value", "Skeleton Info");
+        refresh.onclick = SkeletonConnectivity.skeleton_info;
+        contentbutton.appendChild(refresh);
+
         content.appendChild( contentbutton );
 
         var container = createContainer( "connectivity_widget" );
@@ -1098,6 +1099,50 @@ var WindowMaker = new function()
       return win;
   };
 
+
+  var createOntologyWidget = function()
+  {
+    var win = new CMWWindow( "Ontology editor" );
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer( "ontology_editor_widget" );
+    content.appendChild( container );
+
+    container.innerHTML =
+      '<input type="button" id="refresh_ontology_editor" value="refresh" style="display:block; float:left;" />' +
+      '<br clear="all" />' +
+      '<div id="ontology_known_roots">Known root class names: <span id="known_root_names"></span></div>' +
+      '<div id="ontology_warnings"></div>' +
+      '<div id="ontology_tree_name"><h4>Ontology</h4>' +
+      '<div id="ontology_tree_object"></div></div>' +
+      '<div id="ontology_relations_name"><h4>Relations</h4>' +
+      '<div id="ontology_relations_tree"></div></div>' +
+      '<div id="ontology_classes_name"><h4>Classes</h4>' +
+      '<div id="ontology_classes_tree"></div></div>' +
+      '<div id="ontology_add_dialog" style="display:none; cursor:default">' +
+      '<div id="input_rel"><p>New relation name: <input type="text" id="relname" /></p></div>' +
+      '<div id="input_class"><p>New class name: <input type="text" id="classname" /></p></div>' +
+      '<div id="select_class"><p>Subject: <select id="classid"></p></select></div>' +
+      '<div id="select_rel"></p>Relation: <select id="relid"></select></p></div>' +
+      '<div id="target_rel"><p>Relation: <span id="name"></span></p></div>' +
+      '<div id="target_object"><p>Object: <span id="name"></span></p></div>' +
+      '<p><input type="button" id="cancel" value="Cancel" />' +
+      '<input type="button" id="add" value="Add" /></p></div>' +
+      '<div id="cardinality_restriction_dialog" style="display:none; cursor:default">' +
+      '<p><div id="select_type">Cardinality type: <select id="cardinality_type"></select></div>' +
+      '<div id="input_value">Cardinality value: <input type="text" id="cardinality_val" /></div></p>' +
+      '<p><input type="button" id="cancel" value="Cancel" />' +
+      '<input type="button" id="add" value="Add" /></p></div>';
+
+    addListener(win, container);
+
+    addLogic(win);
+
+    OntologyEditor.init( project.getId() );
+
+    return win;
+  };
 
   var getHelpForActions = function(actions)
   {
@@ -1331,14 +1376,15 @@ var WindowMaker = new function()
     "graph-widget": createGraphWindow,
     "compartment-graph-widget": createCompartmentGraphWindow,
     "assemblygraph-widget": createAssemblyGraphWindow,
-    "segmentstable-widget": createSegmentsTablesWindow,
+    "sliceinfo-widget": createSliceInfoWindow,
     "object-tree": createObjectTreeWindow,
     "statistics": createStatisticsWindow,
     "disclaimer": createDisclaimerWindow,
     "review-system": createReviewWindow,
     "connectivity-widget": createConnectivityWindow,
     "adjacencymatrix-widget": createAdjacencyMatrixWindow,
-    "skeleton-analytics-widget": createSkeletonAnalyticsWindow
+    "skeleton-analytics-widget": createSkeletonAnalyticsWindow,
+    "ontology-editor": createOntologyWidget
   };
 
   /** If the window for the given name is already showing, just focus it.

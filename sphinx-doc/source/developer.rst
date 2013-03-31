@@ -5,9 +5,7 @@ Developer Documentation
    :maxdepth: 1
 
    installation
-   djangoinstall
    userprofiles
-   administration
    dbmigration
    faq
    djangounittest

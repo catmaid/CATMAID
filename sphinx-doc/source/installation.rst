@@ -67,6 +67,11 @@ this with::
                          libxml2-dev libxslt1-dev libjpeg-dev \
                          libtiff-dev virtualenvwrapper
 
+Virtual Env Wrapper needs to source your environment. Start a new terminal
+or if you are using the bash::
+
+    source ~/.bashrc
+
 To create a new virtualenv for CATMAID's Python dependencies,
 you can do::
 
@@ -144,7 +149,7 @@ user with, for example::
 You should now be able to access the database and see that it is
 currently empty, e.g.::
 
-    psql -U catmaid catmaid
+    psql -U catmaid_user catmaid
     Password:
     psql (9.1.8)
     Type "help" for help.

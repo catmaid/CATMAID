@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.views.generic import TemplateView
 
 class HomepageView(TemplateView):
@@ -8,5 +9,6 @@ class HomepageView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(self.__class__, self).get_context_data(**kwargs)
+        context['CATMAID_URL'] = settings.CATMAID_URL
         profile_context = self.request.user.userprofile.as_dict()
         return dict(context.items() + profile_context.items())

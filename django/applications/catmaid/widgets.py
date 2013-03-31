@@ -14,6 +14,7 @@ class Integer3DWidget(forms.MultiWidget):
         super(Integer3DWidget, self).__init__(widgets, attrs, **kwargs)
 
     def decompress(self, value):
+        from catmaid.fields import Integer3D
         if value:
             if isinstance(value, str) or isinstance(value, unicode):
                 try:
@@ -22,7 +23,7 @@ class Integer3DWidget(forms.MultiWidget):
                    return [float(num) for num in str_list]
                 except ValueError:
                     pass
-            elif isinstance(value, Integer3DWidget):
+            elif isinstance(value, Integer3D):
                 return [value.x, value.y, value.z]
         return [None, None, None]
 
@@ -44,6 +45,7 @@ class Double3DWidget(forms.MultiWidget):
         super(Double3DWidget, self).__init__(widgets, attrs, **kwargs)
 
     def decompress(self, value):
+        from catmaid.fields import Double3D
         if value:
             if isinstance(value, str) or isinstance(value, unicode):
                 try:
@@ -52,7 +54,7 @@ class Double3DWidget(forms.MultiWidget):
                    return [float(num) for num in str_list]
                 except ValueError:
                     pass
-            elif isinstance(value, Double3DWidget):
+            elif isinstance(value, Double3D):
                 return [value.x, value.y, value.z]
         return [None, None, None]
 
@@ -75,6 +77,7 @@ class RGBAWidget(forms.MultiWidget):
         super(RGBAWidget, self).__init__(widgets, attrs, **kwargs)
 
     def decompress(self, value):
+        from catmaid.fields import RGBA
         if value:
             if isinstance(value, str) or isinstance(value, unicode):
                 try:
@@ -83,7 +86,7 @@ class RGBAWidget(forms.MultiWidget):
                    return [float(num) for num in str_list]
                 except ValueError:
                     pass
-            elif isinstance(value, RGBAWidget):
+            elif isinstance(value, RGBA):
                 return [value.r, value.g, value.b, value.a]
         return [None, None, None, None]
 

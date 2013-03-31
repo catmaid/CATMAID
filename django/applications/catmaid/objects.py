@@ -163,14 +163,15 @@ class Skeleton(object):
             else:
                 edge[ID_from][ID_to]['delta_creation_time'] = stamp2-stamp1
 
-    def measure_construction_time(self, threshold=0):
+    def measure_construction_time(self, threshold=10):
         """ Measure the amount of time consumed in creating this Skeleton.
-        Will discard edges that took longer than the given threshold, in seconds.
+        This will only count edges that were created lower than the given
+        threshold value in seconds.
         """
         sum = 0
         for ID_from, ID_to, d  in self.graph.edges(data=True):
             # print d['delta_creation_time'].seconds
-            if d['delta_creation_time'].seconds > threshold:
+            if d['delta_creation_time'].seconds < threshold:
                 sum += d['delta_creation_time'].seconds
         return sum
 

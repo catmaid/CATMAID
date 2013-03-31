@@ -621,9 +621,8 @@ function SegmentationTool()
             'G': [ 71 ]
         },
         run: function (e) {
-            console.log('segments table there?', $('#segmentstable').length)
             if( $('#segmentstable').length == 0 ) {
-                WindowMaker.show('segmentstable-widget');
+                WindowMaker.show('sliceinfo-widget');
             }
             SegmentationAnnotations.create_segments_table_for_current_active();
             return true;
@@ -672,64 +671,7 @@ function SegmentationTool()
 
     this.clickXY = function( e ) {
         var wc = self.stack.getFieldOfViewInPixel();
-        requestQueue.register(django_url + project.id + "/stack/" + self.stack.id + '/slices-at-location', "GET", {
-            x: wc.worldLeftC + e.offsetX,
-            y: wc.worldTopC + e.offsetY,
-            scale : 0.5, // defined as 1/2**zoomlevel
-            z : self.stack.z}, function (status, text, xml) {
-                if (status === 200) {
-                    if (text && text !== " ") {
-                        var e = $.parseJSON(text);
-                        if (e.error) {
-                            alert(e.error);
-                        } else {
-                            // loop through slices and check whether one has an assembly id set
-                            console.log('found ', e.length, ' slices at this location and fetch them.', e)
-                            for(var idx in e) {
-                                if(e.hasOwnProperty( idx )) {
-                                    if( e[idx].assembly_id ) {
-                                        // console.log('found assembly id of one slcie', e[idx].assembly_id  )
-                                        SegmentationAnnotations.set_current_assembly_id( e[idx].assembly_id )
-                                        return;
-                                    }
-                                }
-                            }
-
-                            if( SegmentationAnnotations.has_current_assembly() ) {
-                                // console.log('already have current assembly set')
-                                SegmentationAnnotations.add_slices_group( e );
-
-                            } else {
-                                // console.log('need to create new assembly')
-                                // no assembly found, create one
-                                requestQueue.register(django_url + project.id + '/assembly/create-assembly-and-neuron', "GET", {},
-                                                function (status, text, xml) {
-                                                    if (status === 200) {
-                                                        if (text && text !== " ") {
-                                                            var eb = $.parseJSON(text);
-                                                            if (eb.error) {
-                                                                alert(eb.error);
-                                                            } else {
-                                                                $('#growl-alert').growlAlert({
-                                                                    autoShow: true,
-                                                                    content: "Created a new assembly and neuron" + eb.assembly_id,
-                                                                    title: 'Warning',
-                                                                    position: 'top-right',
-                                                                    delayTime: 2000,
-                                                                    onComplete: function() {  }
-                                                                });
-                                                                SegmentationAnnotations.current_active_assembly = eb.assembly_id;
-                                                                SegmentationAnnotations.add_slices_group( e );
-                                                            }
-                                                        }
-                                                    }
-                                });
-                            }
-                        }
-                    }
-                }
-        });
-
+        SegmentationAnnotations.get_slices_at_location( wc, e );
         return;
     }
 

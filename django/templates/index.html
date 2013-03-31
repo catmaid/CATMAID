@@ -41,6 +41,7 @@
 		<script type="text/javascript">
 			var STATIC_URL_JS = '{{ STATIC_URL|escapejs }}';
 			var IE = false;
+			var django_url = "{{ CATMAID_URL }}";
 		</script>
 
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/js/Detector.js"></script>
@@ -126,7 +127,8 @@
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/adjmatrix.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/compartment_graph_widget.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/skeleton_analytics.js"></script>
-
+		<script type="text/javascript" src="{{ STATIC_URL }}ontologytool.js"></script>
+		<script type="text/javascript" src="{{ STATIC_URL }}widgets/ontology_editor.js"></script>
 	</head>
 	<body onload="realInit();"><a></a>
 		<div id="growl-alert" class="growl-message" style="display: none"></div>
@@ -155,6 +157,7 @@
 				<div class="box" id="toolbox_project" style="display:none"></div>
 				<div class="box" id="toolbox_edit" style="display:none"></div>
 				<div class="box" id="toolbox_segmentation" style="display:none"></div>
+				<div class="box" id="toolbox_ontology" style="display:none"></div>
 				<div class="box" id="toolbox_data" style="display:none"></div>
 
 				<div id="spinner_box" class="box_right" style="width:20px; height: 20px; position:relative">

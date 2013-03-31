@@ -79,11 +79,6 @@ function countProperties(obj) {
   return count;
 }
 
-// url of the django instance relative to the CATMAID URL
-// (if any, needed e.g. by cropping tool). It is expected
-// to end with a slash.
-var django_url = ""
-
 /**
  * queue a login-request on pressing return
  * to be used as onkeydown-handler in the account and password input fields
@@ -239,6 +234,8 @@ function handle_profile_update(e) {
     userprofile.show_segmentation_tool = e.show_segmentation_tool;
   if (e.show_tracing_tool)
     userprofile.show_tracing_tool = e.show_tracing_tool;
+  if (e.show_ontology_tool)
+    userprofile.show_ontology_tool = e.show_ontology_tool;
   // update the edit tool actions and its div container
   createEditToolActions();
   new_edit_actions = createButtonsFromActions(editToolActions,
@@ -559,7 +556,8 @@ function handle_openProjectStack( status, text, xml )
 					stack,
 					e.tile_width,
 					e.tile_height,
-					tilesource);
+					tilesource,
+          true);
 
 			stack.addLayer( "TileLayer", tilelayer );
 
@@ -570,15 +568,18 @@ function handle_openProjectStack( status, text, xml )
 								stack,
 								value.tile_width,
 								value.tile_height,
-								tilesource2);
+								tilesource2,
+                false);
 				// set default opacity internally
 				tilelayer2.setOpacity( value.default_opacity );
 				stack.addLayer( value.title, tilelayer2 );
 				stack.overviewlayer.setOpacity( value.title,  value.default_opacity );
 			});
-
-
+      
 			project.addStack( stack );
+
+      // refresh the overview handler to also register the mouse events on the buttons
+      stack.overviewlayer.refresh();
 
 			if ( inittool === 'tracingtool' ) {
 			  project.setTool( new TracingTool() );
@@ -1036,6 +1037,7 @@ var realInit = function()
 	document.getElementById( "toolbar_crop" ).style.display = "none";
 	document.getElementById( "toolbox_project" ).style.display = "none";
 	document.getElementById( "toolbox_edit" ).style.display = "none";
+	document.getElementById( "toolbox_ontology" ).style.display = "none";
 	document.getElementById( "toolbox_data" ).style.display = "none";
   document.getElementById( "toolbox_segmentation" ).style.display = "none";
 	document.getElementById( "toolbox_show" ).style.display = "none";

@@ -40,7 +40,7 @@ def shapely_polygon_to_svg(polygon, transform_params, vp):
 	version="1.1"\
 	>\
 	<g id="polygon">\
-		<path d="{}" fill-rule="evenodd" fill="{}" style="fill-opacity:{}"/>\
+		<path d="{}" fill-rule="evenodd"/>\
 	</g>\
 </svg>'
     exy = polygon.exterior.xy;
@@ -50,7 +50,7 @@ def shapely_polygon_to_svg(polygon, transform_params, vp):
         ixy = interior.xy
         ixy = transform_shapely_xy(transform_params, ixy)
         svg_str = ' '.join([svg_str, path_to_svg(ixy)])
-    return svg_template.format(svg_str, vp.color, vp.opacity)
+    return svg_template.format(svg_str)
 
 def request_to_transform_params(request):
     param_names = ['xtrans', 'ytrans', 'hview', 'wview', 'scale', 'top', 'left'] 
@@ -75,12 +75,15 @@ def coords_to_tuples(c):
 def segment_inner_shapely(seg):
     coord_list = [InnerPolygonPath.objects.get(id=ii).coordinates
         for ii in seg.inner_paths]
-    return [coords_to_tuples(coords) for coords in coord_list]
+    all_inners = [coords_to_tuples(coords) for coords in coord_list]
+    #TODO: either use floating points to store paths, or fix invalid int paths
+    valid_inners = [inner for inner in all_inners if Polygon(inner).is_valid]
+    return valid_inners
 
 def area_segment_to_shapely(seg):
     ext_coords = coords_to_tuples(seg.coordinates)
     int_coord_list = segment_inner_shapely(seg)
-    poly = Polygon(ext_coords, int_coord_list)
+    poly = Polygon(ext_coords, int_coord_list)    
     poly.id = seg.id
     vp = get_view_properties(seg.class_instance)
     #poly.color = vp.color
@@ -110,7 +113,7 @@ def ring_to_coordinate_list(ring):
 
 def create_interior_polygons(interiors, z):
     inner_ids = []
-    for interior in interiors:
+    for interior in interiors:        
         bbox_int = shapely_ring_bounds(interior)
         inner_path = InnerPolygonPath(coordinates = ring_to_coordinate_list(interior),
                                       z = z,
@@ -119,7 +122,11 @@ def create_interior_polygons(interiors, z):
                                       min_y = bbox_int[1],
                                       max_y = bbox_int[3])
         inner_path.save()
-        inner_ids.append(inner_path.id)
+        if Polygon(coords_to_tuples(inner_path.coordinates)).is_valid:
+            print 'valid inner path'
+            inner_ids.append(inner_path.id)
+        else:
+            print 'invalid inner path'
     return inner_ids
         
 
@@ -187,9 +194,10 @@ def push_volume_trace(request, project_id=None, stack_id=None):
         #    colorstr = union_polygon.color
         #else:
         #    colorstr = '#0000ff'
-        overlap_segments.append(union_polygon)
-        print overlap_segments
-        union_polygon = cascaded_union(overlap_segments)
+        #overlap_segments.append(union_polygon)
+        #union_polygon = cascaded_union(overlap_segments)
+        for seg in overlap_segments:
+            union_polygon = union_polygon.union(seg)
         #union_polygon.color = colorstr
         bbox_ext = shapely_ring_bounds(union_polygon.exterior)
         interior_ids = create_interior_polygons(union_polygon.interiors, z)
@@ -225,7 +233,7 @@ def push_volume_trace(request, project_id=None, stack_id=None):
         dbids = ids
     
     return HttpResponse(json.dumps({'i' : ids, 'dbi' : dbids, 'svg' : svglist}))
-        
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def all_volume_traces(request, project_id=None, stack_id=None):
     transform_params = request_to_transform_params(request)
@@ -252,21 +260,21 @@ def all_volume_traces(request, project_id=None, stack_id=None):
     area_segs = qs1.all()
     
     svg_list = []
-    opacities = []
-    tids = []
+    vps = []
     
     for seg in area_segs:
         polygon = area_segment_to_shapely(seg)
         vp = get_view_properties(seg.class_instance)
         svg_list.append(shapely_polygon_to_svg(polygon, transform_params, vp))
-        opacities.append(vp.opacity)
-        tids.append(seg.class_instance.id);
+        vps.append(vp)    
     
-    ids = [aseg.id for aseg in area_segs]
+    ids = [seg.id for seg in area_segs]
+    tids = [seg.class_instance.id for seg in area_segs]    
 
     return HttpResponse(json.dumps({'i' : ids,
                                     'svg' : svg_list,
-                                    'opc' : opacities,
+                                    'vp' : [{'opacity' : vp.opacity,
+                                             'color' : vp.color} for vp in vps],
                                     'tid' : tids}))
 
 def get_view_properties(class_instance):

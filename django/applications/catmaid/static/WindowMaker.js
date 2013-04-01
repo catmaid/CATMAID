@@ -1132,6 +1132,7 @@ var WindowMaker = new function()
       addLogic(win);
       
       VolumeTracingPalette.init(project.getId());
+      VolumeTracingPalette.setWindow(win);
       
       return win;
   }

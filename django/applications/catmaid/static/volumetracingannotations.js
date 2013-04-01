@@ -138,6 +138,7 @@ var VolumeTracingAnnotations = new function ()
 var VolumeTracingPalette = new function()
 {
     var self = this;
+    var window = null;
     this.trace_id = "";
     this.trees = [];
     this.class_id = -1;
@@ -343,5 +344,18 @@ var VolumeTracingPalette = new function()
     {
         console.log('fresh!');
         $("#area_segment_tree").jstree("refresh", -1);
+    }
+    
+    this.setWindow = function(win)
+    {
+        window = win;
+    }
+    
+    this.closeWindow = function()
+    {
+        if (window)
+        {
+            window.close();
+        }
     }
 }

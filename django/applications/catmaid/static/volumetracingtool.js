@@ -446,6 +446,7 @@ function VolumeTracingTool()
         self.stack = null;
         self.unregister();
         self.destroyToolbar();
+        VolumeTracingPalette.closeWindow();
         //alert('Destroyed Volume Tool');
         return;
     };

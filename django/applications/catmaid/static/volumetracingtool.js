@@ -100,6 +100,7 @@ function VolumeTracingTool()
         var lastScale = self.lastScale;
         var lastPos = self.lastPos;
         var dZ = self.currentZ() - self.lastZ;
+        var lastMouseXY = null;
 
         
         self.cacheScreen();
@@ -148,7 +149,7 @@ function VolumeTracingTool()
             var trace = self.getTraceByID(id);
             var objects = [];
             var svg = data.svg[ii];
-            var opc = data.opc[ii];
+            var vp = data.vp[ii];
             var trace_id = data.tid[ii];
             
             if (trace == null)
@@ -159,8 +160,9 @@ function VolumeTracingTool()
             
             trace.trace_id = trace_id;
             trace.populateSVG(svg);
-            trace.setOpacity(opc);            
+            trace.setViewProps(vp);
         }
+        canvasLayer.canvas.renderAll();
     }
     
     this.pullNewTraces = function(data)
@@ -172,6 +174,7 @@ function VolumeTracingTool()
             var objects = [];
             var svg = data.svg[ii];
             var trace_id = data.tid[ii];
+            var vp = data.vp[ii];
             
             if (trace == null)
             {
@@ -179,8 +182,10 @@ function VolumeTracingTool()
                 trace.id = id;
                 trace.populateSVG(svg);
                 trace.trace_id = trace_id;
+                trace.setViewProps(vp);
             }
         }
+        canvasLayer.canvas.renderAll();
     }
     
     this.getTraceByID = function(id)
@@ -253,7 +258,7 @@ function VolumeTracingTool()
         var h = canvasLayer.canvas.getHeight();
         var w = canvasLayer.canvas.getWidth();
         self.brush = new fabric.Circle({top: 200, left: 200, radius: self.brush_slider.val,
-            fill: '#0000ff', opacity: 0});
+            fill: VolumeTracingPalette.view_props.color, opacity: 0});
         self.brush.setActive(false);
         canvasLayer.canvas.add(self.brush);
         canvasLayer.canvas.interactive = true;
@@ -280,6 +285,8 @@ function VolumeTracingTool()
         }
     }
     
+    
+    
     var onmousemove = 
     {
         pos: function(e)
@@ -300,8 +307,14 @@ function VolumeTracingTool()
                 
                 if (self.isDragging && self.enabled)
                 {
-                    var spot = self.brush.clone();
-                    self.currentTrace.addObject(spot);
+                    var minSqR = Math.pow(self.brush_slider.val / 2, 2);
+                    if (Math.pow(e.offsetX - self.lastMouseXY.x, 2) +
+                        Math.pow(e.offsetY - self.lastMouseXY.y, 2) >= minSqR)
+                    {
+                        var spot = self.brush.clone();
+                        self.currentTrace.addObject(spot);
+                        self.lastMouseXY = {"x": m.offsetX, "y": m.offsetY};
+                    }
                 }
                 
                 canvasLayer.canvas.renderAll();
@@ -313,8 +326,11 @@ function VolumeTracingTool()
     
     var onmousedown = function(e)
     {
+        self.lastMouseXY = {"x": e.offsetX, "y": e.offsetY};
         self.currentTrace = self.createNewTrace();
-        self.isDragging = true;        
+        self.isDragging = true;
+        var spot = self.brush.clone();
+        self.currentTrace.addObject(spot);
     }
 
     var onmousewheel = function(e)
@@ -690,7 +706,10 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp)
     
     this.addObject = function(obj)
     {
-        obj.set(self.view_props);
+        //obj.set(self.view_props);
+        obj.setActive(false);
+        obj.fill = self.view_props.color;
+        obj.opacity = self.view_props.opacity;
         self.objectList.push(obj);
         self.canvasLayer.canvas.add(obj);
         self.x.push(displayPxToStackPxX(obj.left, self.stack));
@@ -721,7 +740,8 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp)
     {
         for (var i = 0; i < inObjList.length; i++)
         {
-            inObjList[i].set(self.view_props);
+            inObjList[i].fill = self.view_props.color;
+            inObjList[i].opacity = self.view_props.opacity;
         }
         self.removeFromCanvas();
         self.clear();
@@ -744,7 +764,8 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp)
         self.view_props = vp;
         for (var i = 0; i < self.objectList.length; i++)
         {
-            self.objectList[i].set(vp);
+            self.objectList[i].fill = vp.color;
+            self.objectList[i].opacity = vp.opacity;
         }
     }
     
@@ -774,7 +795,11 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp)
             fabric.loadSVGFromString(svg,
                 function(obj, opt)
                 {
-                    var widget = new fabric.PathGroup(obj, opt);
+                    //var widget = new fabric.PathGroup(obj, opt).toObject();
+                    var widget = fabric.util.groupSVGElements(obj, opt);
+                    //widget.set(self.view_props);
+                    widget.fill = VolumeTracingPalette.view_props.color;
+                    widget.opacity =  VolumeTracingPalette.view_props.opacity;
                     objects.push(widget);
                 });
 

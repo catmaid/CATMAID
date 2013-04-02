@@ -352,10 +352,23 @@ var VolumeTracingPalette = new function()
         console.log('fresh!');
         $("#area_segment_tree").jstree("refresh", -1);
     }
-    
+
     this.setWindow = function(win)
     {
         window = win;
+        window.addListener(function(cmwin, sig)
+        {
+            if (sig == CMWWindow.CLOSE)
+            {
+                console.log("Closed window")
+                window = null;
+            }
+        });
+    }
+
+    this.isWindowClosed = function()
+    {
+        return window == null;
     }
     
     this.closeWindow = function()

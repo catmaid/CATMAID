@@ -9,7 +9,7 @@
 
 
 
-var canvasLayer = null;
+
 var traceBrushSize = 16;
 var VolumeTraceLastID = 0; 
 function VolumeTracingTool()
@@ -17,7 +17,7 @@ function VolumeTracingTool()
     this.prototype = new Navigator();
     
     var self = this;
-    
+    var canvasLayer = null;
     
     this.stack = null;
     this.toolname = "Volume Tracing Tool";
@@ -36,6 +36,16 @@ function VolumeTracingTool()
     
     this.registerToolbar = function()
     {
+        if (VolumeTracingPalette.isWindowClosed())
+        {
+            /*
+             * If the tool button is clicked when this tool is already active,
+             * the window will be closed when we reach this point in execution,
+             * causing things to break in a kind-of-gross way.
+            */
+            WindowMaker.show('volume-tracing');
+        }
+
         self.brush_slider = new Slider(SLIDER_HORIZONTAL, true, 1, 100, 100, traceBrushSize,
             self.changeSlice);
         var nav = self.prototype;
@@ -420,7 +430,6 @@ function VolumeTracingTool()
         {
             self.stack.getView().removeChild(canvasLayer.view);
         }
-        //alert('Unregistered Volume Tool');
         return;
     };
     
@@ -442,14 +451,15 @@ function VolumeTracingTool()
         self.prototype.destroy( "volume_tracing_button" );
         canvasLayer.canvas.clear();
 
-        canvasLayer = null;
-
-        self.volumeAnnotation.tool = null;
-        self.stack = null;
-        self.unregister();
         self.destroyToolbar();
         VolumeTracingPalette.closeWindow();
-        //alert('Destroyed Volume Tool');
+
+        self.unregister();
+
+        canvasLayer = null;
+        self.volumeAnnotation.tool = null;
+        self.stack = null;
+
         return;
     };
 
@@ -704,7 +714,7 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp)
         {
             self.objectList[i].remove();
         }
-        canvasLayer.canvas.renderAll();
+        self.canvasLayer.canvas.renderAll();
     }
     
     this.addObject = function(obj)

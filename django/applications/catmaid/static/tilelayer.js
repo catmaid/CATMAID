@@ -334,8 +334,21 @@ function TileLayer(
 			zoom = 0;
 		}
 
-		effectiveTileWidth = tileWidth * mag;
-		effectiveTileHeight = tileHeight * mag;
+		//add strething to show isotropic resolution
+		var magWidth = 1.0;
+		var magHeight = 1.0;
+		if( triviewPlane == 1)//comment out this if else statement if you do not want anistropic resolution in triview
+		{
+			magHeight = stack.resolution.z / stack.resolution.x;
+		}	
+		else if( triviewPlane == 2)
+		{
+			magWidth = stack.resolution.z / stack.resolution.y;
+		}
+
+
+		effectiveTileWidth = tileWidth * mag * magWidth;
+		effectiveTileHeight = tileHeight * mag * magHeight;
 
 		//we need scale to adjust translation in the centering
 		var pos_s = stack.s;
@@ -349,7 +362,16 @@ function TileLayer(
 
 		//center triview with respect to windows size
 		pos_r /= tileScale;
-		pos_c /=tileScale;
+		pos_c /= tileScale;
+
+		if( triviewPlane == 1)
+		{
+			pos_r *= magHeight;
+		}	
+		else if( triviewPlane == 2)
+		{
+			pos_c *= magWidth;
+		}
 
 		pos_r -=centerr;
 		pos_c -=centerc;

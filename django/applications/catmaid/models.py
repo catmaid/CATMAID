@@ -871,6 +871,18 @@ class UserProfile(models.Model):
         pdict['show_tracing_tool'] = self.show_tracing_tool
         pdict['show_ontology_tool'] = self.show_ontology_tool
         return pdict
+    
+    # Fix a problem with duplicate keys when new users are added.
+    # From <http://stackoverflow.com/questions/6117373/django-userprofile-m2m-field-in-admin-error>
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            try:
+                p = UserProfile.objects.get(user=self.user)
+                self.pk = p.pk
+            except UserProfile.DoesNotExist:
+                pass
+
+        super(UserProfile, self).save(*args, **kwargs)
 
 def create_user_profile(sender, instance, created, **kwargs):
     """ Create the UserProfile when a new User is saved.

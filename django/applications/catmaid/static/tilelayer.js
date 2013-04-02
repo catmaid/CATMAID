@@ -52,7 +52,8 @@ function TileLayer(
 		stack,						//!< reference to the parent stack
 		tileWidth,
 		tileHeight,
-		tileSource
+		tileSource,
+		visibility
 		)
 {
 	/**
@@ -325,11 +326,24 @@ function TileLayer(
 		return opacity;
 	}
 
+	this.isolateTileLayer = function()
+	{	
+		stack.getView().removeChild( tilesContainer );
+		self.visible = false;
+	}
+
+	this.reattachTileLayer = function()
+	{
+		stack.getView().appendChild( tilesContainer );
+		self.visible = true;
+	}
+
 	// initialise
 	var self = this;
 
 	// internal opacity variable
 	var opacity = 100;
+	this.visible = visibility;
 	
 	/* Contains all tiles in a 2d-array */
 	var tiles = new Array();
@@ -337,7 +351,9 @@ function TileLayer(
 	
 	var tilesContainer = document.createElement( "div" );
 	tilesContainer.className = "sliceTiles";
-	stack.getView().appendChild( tilesContainer );
+
+	if( self.visible )
+		stack.getView().appendChild( tilesContainer );
 	
 	var LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
 	var LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );

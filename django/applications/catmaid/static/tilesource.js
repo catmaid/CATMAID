@@ -4,7 +4,7 @@
 function getTileSource( tileSourceType, baseURL, fileExtension )
 {
     var tileSources = [DefaultTileSource, RequestTileSource,
-        HDF5TileSource, BackslashTileSource, SlashTileSource];
+        HDF5TileSource, BackslashTileSource, LargeDataTileSource];
 
     if (tileSourceType > 0 && tileSourceType <= tileSources.length)
     {
@@ -123,11 +123,11 @@ function BackslashTileSource( baseURL, fileExtension )
 }
 
 /**
- * Creates URLs for "/" separated tile names
+ * A tile source for large datasets where the scale and rows are encoded as folders
  *
- * Source type: 1
+ * Source type: 5
  */
-function SlashTileSource( baseURL, fileExtension )
+function LargeDataTileSource( baseURL, fileExtension )
 {
     /**
      * Return the URL of a single tile, defined by it grid position
@@ -136,7 +136,7 @@ function SlashTileSource( baseURL, fileExtension )
     this.getTileURL = function( project, stack, baseName,
         tileWidth, tileHeight, col, row, zoom_level )
     {
-        return baseURL + zoom_level + "/" + stack.z + "/" + row + "/" + col + "." + fileExtension;
+        return baseURL + zoom_level + "/" + baseName + "/" + row + "/" +  col + "." + fileExtension;
     }
 
     this.getOverviewLayer = function( layer )
@@ -144,6 +144,7 @@ function SlashTileSource( baseURL, fileExtension )
         return new GenericOverviewLayer( layer, baseURL, fileExtension );
     }
 }
+
 
 /**
  * This is an overview layer that doesn't display anything.

@@ -556,7 +556,8 @@ function handle_openProjectStack( status, text, xml )
 					stack,
 					e.tile_width,
 					e.tile_height,
-					tilesource);
+					tilesource,
+          true);
 
 			stack.addLayer( "TileLayer", tilelayer );
 
@@ -567,15 +568,18 @@ function handle_openProjectStack( status, text, xml )
 								stack,
 								value.tile_width,
 								value.tile_height,
-								tilesource2);
+								tilesource2,
+                false);
 				// set default opacity internally
 				tilelayer2.setOpacity( value.default_opacity );
 				stack.addLayer( value.title, tilelayer2 );
 				stack.overviewlayer.setOpacity( value.title,  value.default_opacity );
 			});
-
-
+      
 			project.addStack( stack );
+
+      // refresh the overview handler to also register the mouse events on the buttons
+      stack.overviewlayer.refresh();
 
 			if ( inittool === 'tracingtool' ) {
 			  project.setTool( new TracingTool() );

@@ -359,7 +359,6 @@ function Stack(
 		if ( layers[ key ] )
 			layers[ key ].unregister();
 		layers[ key ] = layer;
-        self.overviewlayer.refresh();
 		return;
 	}
 	

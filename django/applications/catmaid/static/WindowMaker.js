@@ -1114,7 +1114,14 @@ var WindowMaker = new function()
         '<div class="toolbar_fill"></div>' +
         '</div>' +
         '<div id="area_segment_tree"></div>'+
-        '<div id="area_segment_colorwheel">Select a Color</div>'+
+        '<div id="area_segment_view_properties">'+
+        '<div id="area_segment_view_caption">Display Properties</div>'+        
+        '<div id="area_segment_colorwheel"></div>'+
+        '<div id="toolbar_volseg_opacity" class="toolbar" style="display:none;">'+
+        '<div id="volseg_opacity_box"></div>'+
+        '<div class="toolbar_fill"></div>'+
+        '</div>'+
+        '</div>'+
         '<div id="trace_add_dialog" style="display:none; cursor:default">' +
         '<div id="input_trace_object"><p>New object name: <input type="text" id="tracename" /></p></div>' +
         '<p><input type="button" id="trace_cancel" value="Cancel" />' +

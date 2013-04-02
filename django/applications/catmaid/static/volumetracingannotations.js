@@ -130,7 +130,14 @@ var VolumeTracingAnnotations = new function ()
             "data" : {'color' : vp.color,
                       'opacity' : vp.opacity,
                       'trace_id' : instance_id},
-            "success" : function(){}
+            "success" : function()
+            {
+                var tree = $("#area_segment_tree");
+                if (tree.length)
+                {
+                    tree.jstree("refresh");
+                }
+            }
         });
     }
 }
@@ -180,7 +187,7 @@ var VolumeTracingPalette = new function()
         
         tree.jstree({
           "core": {
-            "html_titles": false
+            "html_titles": true
           },
           "plugins": ["themes", "json_data", "ui", "crrm", "types", "dnd", "contextmenu"],
           "json_data": {
@@ -220,7 +227,7 @@ var VolumeTracingPalette = new function()
             "theme": "classic",
             "url": STATIC_URL_JS + "widgets/themes/kde/jsTree/classic/style.css",
             "dots": true,
-            "icons": true
+            "icons": false
           },
           "contextmenu": {
             "items": function (obj) {

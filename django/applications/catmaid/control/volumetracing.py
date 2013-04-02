@@ -11,6 +11,8 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control.common import _create_relation
 
+from PIL import Image, ImageDraw
+
 def path_to_svg(xy):
     
     ctrl_char = 'M'
@@ -308,11 +310,33 @@ def set_trace_properties(request, project_id=None):
     vp.opacity = opacity;
     vp.save();
     return HttpResponse(json.dumps({'message' : 'ok' }))
+
+def HTMLColorToRGB(colorstring):
+    """ convert #RRGGBB to an (R, G, B) tuple """
+    """ liffed entirely from http://code.activestate.com/recipes/266466-html-colors-tofrom-rgb-tuples/"""
+    colorstring = colorstring.strip()
+    if colorstring[0] == '#': colorstring = colorstring[1:]
+    if len(colorstring) != 6:
+        raise ValueError, "input #%s is not in #RRGGBB format" % colorstring
+    r, g, b = colorstring[:2], colorstring[2:4], colorstring[4:]
+    r, g, b = [int(n, 16) for n in (r, g, b)]
+    return (r, g, b)
+
+def instance_png(request, project_id=None, instance_id=None):
+    print "project", project_id
+    print "instance", instance_id
+    vp = get_view_properties(ClassInstance.objects.get(id = instance_id))
+    im = Image.new("RGBA" , (18,18))
+    draw = ImageDraw.Draw(im)
+    draw.ellipse((5,5,12,12), HTMLColorToRGB(vp.color))
+    response = HttpResponse(mimetype="image/png")
+    im.save(response, 'png')
+    return response
     
 
 def volume_classes(request, project_id=None):
-    #print request.GET.get('parentid')
-    #print request.GET.get('pid')
+    print request.GET.get('parentid')
+    print request.GET.get('pid')
     parentId = int(request.GET.get('parentid'))
     projectId = int(request.GET.get('pid'))
     p = get_object_or_404(Project, id=project_id)
@@ -322,16 +346,21 @@ def volume_classes(request, project_id=None):
         class_classes = ClassClass.objects.filter(class_b__class_name = 'traceable_root',
                                   relation__relation_name = 'is_a')
         return HttpResponse(json.dumps(
-            tuple({'data' : {'title' : c.class_name},
+            tuple({'data' : {'title' : '<IMG SRC="static/widgets/themes/kde/jsTree/volumesegment/class.png">' + c.class_name},
                    'state' : 'closed',
                    'attr' : {'id': 'class_%d' % c.id,
                              'rel': 'class',
                              'name': c.class_name}} \
             for c in [cc.class_a for cc in class_classes])))
-    c= Class.objects.get(id = parentId)
+    
+    c = Class.objects.get(id = parentId)
     instances = ClassInstance.objects.filter(class_column = c)
+    pngsrc = 'http://catmaidv/catmaid/{}/volumetrace/{}/instance.png' #.format(projectId, ci.id) 
+    for ci in instances.all():
+        print pngsrc.format(projectId, ci.id)
+    
     return HttpResponse(json.dumps(
-        tuple({'data' : {'title' : ci.name},
+        tuple({'data' : {'title' : '<img src="' + pngsrc.format(projectId, ci.id) + '"\>' + ci.name},
                'attr' : {'id': 'instance_%d' % ci.id,
                          'rel' : 'instance',
                          'name' : ci.name,

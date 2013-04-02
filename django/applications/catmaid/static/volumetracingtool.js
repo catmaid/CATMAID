@@ -213,14 +213,6 @@ function VolumeTracingTool()
         return traces;
     }
     
-    this.destroyToolbar = function()
-    {
-        traceBrushSize = self.brush_slider.val;
-        //document.getElementById("toolbar_volseg").style.display = "none";        
-        $("#toolbar_volseg")[0].style.display = "none";
-        self.brush_slider.update(0, 1, undefined, 0, null);
-    };
-    
     this.createNewTrace = function()
     {
         VolumeTraceLastID--;        
@@ -432,10 +424,20 @@ function VolumeTracingTool()
         return;
     };
     
+    this.destroyToolbar = function()
+    {
+        var toolbar = $("#toolbar_volseg");
+        if (toolbar.length)
+        {
+            $("#toolbar_volseg")[0].style.display = "none";
+        }
+        
+        traceBrushSize = self.brush_slider.val;
+        self.brush_slider.update(0, 1, undefined, 0, null);
+    };
+    
     this.destroy = function()
     {
-        //document.getElementById("toolbar_volseg").style.display = "none";  
-        $("#toolbar_volseg")[0].style.display = "none";
         self.stack.removeLayer( "VolumeCanvasLayer" );
         self.prototype.destroy( "volume_tracing_button" );
         canvasLayer.canvas.clear();

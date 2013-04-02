@@ -1125,7 +1125,7 @@ var WindowMaker = new function()
         '<div id="area_segment_view_properties">'+
         '<div id="area_segment_view_caption">Display Properties</div>'+        
         '<div id="area_segment_colorwheel"></div>'+
-        '<div id="toolbar_volseg_opacity" class="toolbar" style="display:none;">'+
+        '<div id="toolbar_volseg_opacity" class="toolbar">'+
         '<div id="volseg_opacity_box"></div>'+
         '<div class="toolbar_fill"></div>'+
         '</div>'+

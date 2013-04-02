@@ -119,9 +119,19 @@ var VolumeTracingAnnotations = new function ()
         });
     }
     
-    this.setViewProps = function(instance_id, vp)
+    this.setViewProps = function(instance_id, vp, refresh)
     {
-        self.tool.brush.set(vp.color);
+        var refreshTree = function()
+        {
+            var tree = $("#area_segment_tree");
+            if (tree.length)
+            {
+                tree.jstree("refresh");
+            }
+        };
+        
+        var callback = refresh ? refreshTree : function(){};
+        
         $.ajax({
             "dataType" : 'json',
             "type" : "POST",
@@ -130,14 +140,7 @@ var VolumeTracingAnnotations = new function ()
             "data" : {'color' : vp.color,
                       'opacity' : vp.opacity,
                       'trace_id' : instance_id},
-            "success" : function()
-            {
-                var tree = $("#area_segment_tree");
-                if (tree.length)
-                {
-                    tree.jstree("refresh");
-                }
-            }
+            "success" : callback
         });
     }
 }
@@ -150,40 +153,71 @@ var VolumeTracingPalette = new function()
     this.trees = [];
     this.class_id = -1;
     this.view_props = {'color': '#0000ff', 'opacity': 0.5};
+    this.view = null;
     
-    this.syncProps = function()
+    this.syncColor = function()
     {
         self.view_props.color = self.colorwheel.color().hex;
         VolumeTracingAnnotations.tool.setViewProps(self.view_props);
-        
     }
     
-    this.syncPropsAndUpdate = function()
+    this.syncColorAndUpdate = function()
     {
-        self.syncProps();
+        self.syncColor();
         VolumeTracingAnnotations.setViewProps(
-            self.trace_id, self.view_props);
+            self.trace_id, self.view_props, true);
+    }
+    
+    this.changeOpacity = function()
+    {
+        self.view_props.opacity = self.opacity_slider.val / 100;
+        VolumeTracingAnnotations.tool.setViewProps(self.view_props);
+        VolumeTracingAnnotations.setViewProps(self.trace_id, self.view_props, false);
     }
     
     this.init = function(pid)
     {
         var tree = $("#area_segment_tree");
-        var color_wheel = $("#area_segment_colorwheel")[0];
+        self.view = $("#area_segment_view_properties")[0];
+        var colorwheel_view = $("#area_segment_colorwheel")[0];                
+        var caption_view = $("#area_segment_view_caption")[0];
+        var slider_box = $("#volseg_opacity_box")[0];
         
-        self.colorwheel = Raphael.colorwheel(color_wheel, 150);
-        color_wheel.style.position = 'absolute';
-        color_wheel.style.bottom = '0px';
-        color_wheel.style.right = '0px';
-        color_wheel.style.width = '60%';
-        color_wheel.style.margin = '0 auto';
-        color_wheel.hidden = true;
+        self.view.style.position = 'absolute';
+        self.view.style.bottom = '0px';
+        self.view.style.right = '0px';
+        self.view.style.width = '100%';
+        self.view.style.height = '200px';
+        self.view.style.margin = '0 auto';
+        
+        self.colorwheel = Raphael.colorwheel(colorwheel_view, 150);
+        
+        self.opacity_slider = new Slider(SLIDER_HORIZONTAL, true, 1, 100, 100,
+            self.view_props.opacity * 100, self.changeOpacity);
+            
+        while (slider_box.firstChild)
+        {
+            slider_box.removeChild(slider_box.firstChild);
+        }
+        
+        var slider_inner_box = document.createElement("div");
+        slider_inner_box.className = "box";
+        slider_inner_box.id = "volseg_opacity_box";
+        var slider_inner_box_label = document.createElement("p");
+        slider_inner_box_label.appendChild(document.createTextNode("Opacity" + "     "))
+        slider_inner_box.appendChild(slider_inner_box_label);
+        slider_inner_box.appendChild(self.opacity_slider.getView());
+        slider_inner_box.appendChild(self.opacity_slider.getInputView());
+        slider_box.appendChild(slider_inner_box);
+        
+        self.view.hidden = true;
         
         //Change brush in real-time
-        self.colorwheel.onchange(self.syncProps);
+        self.colorwheel.onchange(self.syncColor);
                 
         //Change back-end attribute on mouse-up
         self.colorwheel.ondrag(function(){}, 
-            self.syncPropsAndUpdate);
+            self.syncColorAndUpdate);
         
         tree.jstree({
           "core": {
@@ -280,7 +314,7 @@ var VolumeTracingPalette = new function()
             {
                 self.trace_id = id.replace('instance_', '');                
                 self.colorwheel.color(self.view_props.color);                
-                $('#area_segment_colorwheel')[0].hidden = false;
+                self.view.hidden = false;
                 
                 $.ajax({
                     "dataType": 'json',
@@ -291,6 +325,7 @@ var VolumeTracingPalette = new function()
                       "success": function(data)
                         {                            
                             self.colorwheel.color(data.color);
+                            self.opacity_slider.setByValue(data.opacity * 100, true);
                             self.view_props.color = data.color;
                             self.view_props.opacity = data.opacity;
                             VolumeTracingAnnotations.tool.enable();
@@ -300,13 +335,13 @@ var VolumeTracingPalette = new function()
             }
             else
             {
-                $('#area_segment_colorwheel')[0].hidden = true;
+                self.view.hidden = true;
                 VolumeTracingAnnotations.tool.disable();
             }
             //console.log(event);
             //console.log(data);
         }).bind("deselect_node.jstree", function (event, data){
-            $('#area_segment_colorwheel')[0].hidden = true;
+            self.view.hidden = true;
             VolumeTracingAnnotations.tool.disable();
         });
 

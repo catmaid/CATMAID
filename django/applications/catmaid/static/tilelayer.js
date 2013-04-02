@@ -58,11 +58,11 @@ function TileLayer(
 	/**
 	 * initialise the tiles array
 	 */
+	/**
+	 * initialise the tiles array
+	 */
 	var initTiles = function( rows, cols )
 	{
-		while ( tilesContainer.firstChild )
-			tilesContainer.removeChild( tilesContainer.firstChild );
-		
 		delete tiles;
 		tiles = new Array();
 		
@@ -75,7 +75,7 @@ function TileLayer(
 				tiles[ i ][ j ].alt = "empty";
 				tiles[ i ][ j ].src = STATIC_URL_JS + "widgets/empty256.gif";
 				
-				tilesContainer.appendChild( tiles[ i ][ j ] );
+//				tilesContainer.appendChild( tiles[ i ][ j ] );
 			}
 		}
 
@@ -126,12 +126,10 @@ function TileLayer(
 			{
 				for ( var i = 0; i < tiles.length; ++i )
 				{
-					tilesContainer.removeChild( tiles[ i ].pop() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
 					img.src = STATIC_URL_JS + "widgets/empty256.gif";
 					img.style.visibility = "hidden";
-					tilesContainer.appendChild( img );
 					tiles[ i ].unshift( img );
 				}
 			}
@@ -139,12 +137,10 @@ function TileLayer(
 			{
 				for ( var i = 0; i < tiles.length; ++i )
 				{
-					tilesContainer.removeChild( tiles[ i ].shift() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
 					img.src = STATIC_URL_JS + "widgets/empty256.gif";
 					img.style.visibility = "hidden";
-					tilesContainer.appendChild( img );
 					tiles[ i ].push( img );
 				}
 			}
@@ -154,12 +150,10 @@ function TileLayer(
 				var new_row = new Array();
 				for ( var i = 0; i < tiles[ 0 ].length; ++i )
 				{
-					tilesContainer.removeChild( old_row.pop() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
 					img.src = STATIC_URL_JS + "widgets/empty256.gif";
 					img.style.visibility = "hidden";
-					tilesContainer.appendChild( img );
 					new_row.push( img );
 				}
 				tiles.unshift( new_row );
@@ -170,12 +164,10 @@ function TileLayer(
 				var new_row = new Array();
 				for ( var i = 0; i < tiles[ 0 ].length; ++i )
 				{
-					tilesContainer.removeChild( old_row.pop() );
 					var img = document.createElement( "img" );
 					img.alt = "empty";
 					img.src = STATIC_URL_JS + "widgets/empty256.gif";
 					img.style.visibility = "hidden";
-					tilesContainer.appendChild( img );
 					new_row.push( img );
 				}
 				tiles.push( new_row );
@@ -211,7 +203,7 @@ function TileLayer(
 		var t = top;
 		var l = left;
 
-		// update the images sources
+		// draw
 		for ( var i = 0; i < tiles.length; ++i )
 		{
 			var r = fr + i;
@@ -250,12 +242,7 @@ function TileLayer(
 					*/
 
 				}
-				tiles[ i ][ j ].style.top = t + "px";
-				tiles[ i ][ j ].style.left = l + "px";
-				tiles[ i ][ j ].style.visibility = "visible";
-
-				tiles[ i ][ j ].style.width = effectiveTileWidth + "px";
-				tiles[ i ][ j ].style.height = effectiveTileHeight + "px";
+				ctx.drawImage( tiles[ i ][ j ], l, t, tileWidth, tileHeight );
 
 				l += effectiveTileWidth;
 
@@ -274,12 +261,21 @@ function TileLayer(
 	
 	this.resize = function( width, height )
 	{
-//		alert( "resize tileLayer of stack" + stack.getId() );
+		console.log( "resize tileLayer of stack" + stack.getId() );
+		
+		tilesCanvas.width = width;
+		tilesCanvas.height = height;
+		tilesCanvas.style.width = width + "px";
+		tilesCanvas.style.height = height + "px";
 		
 		var rows = Math.floor( height / tileHeight ) + 2;
 		var cols = Math.floor( width / tileWidth ) + 2;
+		
+		ctx = tilesCanvas.getContext("2d");
+		
 		initTiles( rows, cols );
 		self.redraw();
+		
 		return;
 	}
 	
@@ -333,11 +329,30 @@ function TileLayer(
 	
 	/* Contains all tiles in a 2d-array */
 	var tiles = new Array();
-	var tiles2 = new Array();
 	
-	var tilesContainer = document.createElement( "div" );
-	tilesContainer.className = "sliceTiles";
-	stack.getView().appendChild( tilesContainer );
+	var tilesCanvas = document.createElement( "canvas" );
+	tilesCanvas.style.position = "absolute";
+	tilesCanvas.style.top = "0px";
+	tilesCanvas.style.left = "0px";
+//	tilesCanvas.style.width = "100%";
+//	tilesCanvas.style.height = "100%";
+	stack.getView().appendChild( tilesCanvas );
+	
+	var ctx;
+	try
+	{
+		ctx = tilesCanvas.getContext( "2d" );
+	}
+	catch( e )
+	{
+		alert( "Sorry, CATMAID uses the HTML5 canvas element that seems not to be available in your web browser." );
+		return false;
+	}
+	
+	img = document.createElement( "img" );
+	img.src = "http://fly.mpi-cbg.de/~saalfeld/saalfeld.jpg";
+		
+	ctx.drawImage( img, 0, 0, tileWidth, tileHeight );
 	
 	var LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
 	var LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );

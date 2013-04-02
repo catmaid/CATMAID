@@ -14,6 +14,7 @@ from django.template import Context, loader
 from django.contrib.formtools.wizard.views import SessionWizardView
 from django.shortcuts import render_to_response
 from django.utils.datastructures import SortedDict
+from django.db import transaction
 
 from guardian.models import Permission, User, Group
 from guardian.shortcuts import get_perms_for_model, assign
@@ -28,6 +29,8 @@ from catmaid.control import treenode
 
 from celery.task import task #TODO: try to make it work so import_tracks can be done asynchronous in the background instead of timing out
 import time
+
+import hotshot #for profiling purposes
 
 TEMPLATES = {"pathsettings": "catmaid/importTGMM/setup_path.html",
              "confirmation": "catmaid/importTGMM/confirmation.html"}
@@ -259,8 +262,13 @@ class ImportingWizard(SessionWizardView):
             fileOutputProgress = os.path.split(filesXML[0])
             fileOutputProgress = fileOutputProgress[0] + "/" + "progressReportFile.txt"
 
+            #hola: comment this! TODO
+            prof = hotshot.Profile( "/media/sdd2/dataCATMAID/12_06_29/XMLfinalResult_large/importTracks.prof" )
+            prof.start()
+
             import_tracks(filesXML, selected_projects, trln, ImportingWizard.requestDjango, fileOutputProgress)
 
+            prof.stop()
         # Show final page
         return render_to_response('catmaid/importTGMM/done.html', {
             'projects': selected_projects,
@@ -435,15 +443,22 @@ def import_tracks(filesXML, project, trln, request, fileOutputProgress):
     #setup database for tracing in this particular project
     setupTracingForProject(project_id, user_id),
 
-    #preallocate memory to make it faster: we assume no more than 3000000 nodes per time point
-    numCol = 9
-    treeNodeList = np.zeros( (len(filesXML) * 300000,numCol), dtype = float ) #x,y,z,t,c, radius, parentId, confidence, skeletonId
+    #preallocate memory to make it faster: we assume no more than maxNodesPerTM nodes per time point
+    maxNodesPerTM = 300000
+    numCol = 8 #x,y,z,t,c, radius, parentId, confidence
+    treeNodeList = np.zeros( (maxNodesPerTM,numCol), dtype = float ) 
     
     nullVal = np.int64(-9223372036854775808) #default value to indicate None (numpy integer arrays do not hod NaN)
-    parentId = nullVal * np.ones( (len(filesXML) * 300000,1), dtype = 'int64' ) #stores parentId for previous time opint in the database
-    skeletonId = nullVal * np.ones( (len(filesXML) * 300000,1), dtype = 'int64' ) #stores skeletonId for previous time opint in the database  
+    #parentId = nullVal * np.ones( (len(filesXML) * 300000,1), dtype = 'int64' ) #stores parentId for previous time opint in the database
+    #skeletonId = nullVal * np.ones( (len(filesXML) * 300000,1), dtype = 'int64' ) #stores skeletonId for previous time opint in the database  
     
+    parentId = list(range( ( maxNodesPerTM )) ) # we use list because we need to store the skeleton model (not only id)
+    parentIdCurrent = list(range( ( maxNodesPerTM )) ) # to save current skeleton Id
+    skeletonId = list(range( ( maxNodesPerTM )) ) # we use list because we need to store the skeleton model (not only id)
+    skeletonIdCurrent = list(range( ( maxNodesPerTM )) ) # to save current skeleton Id
 
+
+    
     tOld = int(filesXML[0][-8:-4]) - 1
     fout = open(fileOutputProgress,'w')
     fout.write("Saving tracked points in the database\n")    
@@ -470,18 +485,28 @@ def import_tracks(filesXML, project, trln, request, fileOutputProgress):
 
 
         for ii in range(numT):
+
+            #if node is dead assign it to its own skeleton
+            if treeNodeList[ii,0] < -1e30 :
+                treeNodeList[ii,6] = -1
             #figure out parentId and skeletonId    
-            par = treeNodeList[ii,6]
+            par = np.int64(treeNodeList[ii,6])
             if par < 0:#new lineage
                 treeNodeList[ii,6] = nullVal
-                treeNodeList[ii,8] = nullVal
+                skeletonIdCurrent[ii] = None
+                parentIdCurrent[ii] = None
                 numSkeletons += 1
             else:
-                treeNodeList[ii,6] = parentId[ par ]
-                treeNodeList[ii,8] = skeletonId[ par ]
+                treeNodeList[ii,6] = parentId[ par ].id
+                skeletonIdCurrent[ii] = skeletonId[ par ]
+                parentIdCurrent[ii] = parentId[ par ]
 
         #update tree nodes in batch mode and obtain parentId and skeletonId in the database
-        parentId, skeletonId = import_treeNodes_bulk( treeNodeList, numT, parentId, skeletonId, nullVal, project_id, request )       
+        #hola: chnage this! TODO
+        if t == 0:
+            parentId, skeletonId = import_treeNodes( treeNodeList, numT, parentId, parentIdCurrent, skeletonId, skeletonIdCurrent, nullVal, project_id, request )       
+        else:
+            parentId, skeletonId = import_treeNodes_bulk_allWithParents( treeNodeList, numT, parentId, parentIdCurrent, skeletonId, skeletonIdCurrent, project_id, request )       
 
         numNodes += numT
         tOld = t
@@ -515,12 +540,15 @@ def insert_new_treenode(request, project_id, parent_id=None, skeleton=None, para
 
     if parent_id:
         new_treenode.parent_id = parent_id
-    new_treenode.save()
+    #so I can reuse teh function for bulk queries
+    if bool(params['saveInDB']) == True:
+        new_treenode.save()
+    
     return new_treenode
 
-def import_treeNodes_bulk( treeNodeList, numT, parentId, skeletonId, nullVal, project_id, request ):
-    """Save a list of treenodes into the database in bulk to save time in the transaction 
-        TreeNodeList order is x,y,z,t,c, radius, parentId, confidence, skeletonId"""
+def import_treeNodes( treeNodeList, numT, parentId, parentIdCurrent, skeletonId, skeletonIdCurrent, nullVal, project_id, request ):
+    """Save a list of treenodes into the database 
+        TreeNodeList order is x,y,z,t,c, radius, parentId, confidence"""
 
 
     for ii in range(numT):
@@ -542,7 +570,8 @@ def import_treeNodes_bulk( treeNodeList, numT, parentId, skeletonId, nullVal, pr
 
                 'useneuron': np.int64(-1),
                 'parent_id': np.int64(treeNodeList[ii,6]),
-                'skeleton_id': np.int64(treeNodeList[ii,8])
+
+                'saveInDB' : True
                 }
 
         relation_map = common.get_relation_to_id_map(project_id)
@@ -551,21 +580,25 @@ def import_treeNodes_bulk( treeNodeList, numT, parentId, skeletonId, nullVal, pr
 
         try:
             if nullVal != int(params['parent_id']):  # A root node and parent node exist
-                parent_treenode = Treenode.objects.get(pk=params['parent_id'])
-                has_changed_group = False
-                if parent_treenode.parent_id is None and 1 == Treenode.objects.filter(skeleton_id=parent_treenode.skeleton_id).count():
-                    # Node is isolated. If it is a part_of 'Isolated synapatic terminals',
-                    # then reassign the skeleton's and neuron's user_id to the user.
-                    # The treenode remains the property of the original user.
-                    neuron_id, skeleton_id = treenode._maybe_move_terminal_to_staging(request.user, project_id, parent_treenode.id)
-                    has_changed_group = True
+                #parent_treenode = Treenode.objects.get(pk=params['parent_id'])
+                parent_treenode = parentIdCurrent[ii]
+                
+                #Not needed for TGMM importer
+                #has_changed_group = False     
+                #if parent_treenode.parent_id is None and 1 == Treenode.objects.filter(skeleton_id=parent_treenode.skeleton_id).count():
+                #    # Node is isolated. If it is a part_of 'Isolated synapatic terminals',
+                #    # then reassign the skeleton's and neuron's user_id to the user.
+                #    # The treenode remains the property of the original user.
+                #    neuron_id, skeleton_id = treenode._maybe_move_terminal_to_staging(request.user, project_id, parent_treenode.id)
+                #    has_changed_group = True
 
                 response_on_error = 'Could not insert new treenode!'
-                skeleton = ClassInstance.objects.get(pk=parent_treenode.skeleton_id)
+                #skeleton = ClassInstance.objects.get(pk=parent_treenode.skeleton_id)
+                skeleton = skeletonIdCurrent[ii] #saved before hand
                 new_treenode = insert_new_treenode(request, project_id, params['parent_id'], skeleton, params)
 
-                skeletonId[ii] = skeleton.id
-                parentId[ii] = new_treenode.id
+                skeletonId[ii] = skeleton
+                parentId[ii] = new_treenode
                 #return HttpResponse(json.dumps({'treenode_id': new_treenode.id, 'skeleton_id': skeleton.id, 'has_changed_group': has_changed_group}))
 
             else:
@@ -630,8 +663,8 @@ def import_treeNodes_bulk( treeNodeList, numT, parentId, skeletonId, nullVal, pr
                     response_on_error = 'Failed to write to logs.'
                     common.insert_into_log(project_id, request.user.id, 'create_neuron', new_treenode.location, 'Create neuron %d and skeleton %d' % (new_neuron.id, new_skeleton.id))
 
-                    skeletonId[ii] = new_skeleton.id
-                    parentId[ii] = new_treenode.id
+                    skeletonId[ii] = new_skeleton
+                    parentId[ii] = new_treenode
 
                     #return HttpResponse(json.dumps({
                     #    'treenode_id': new_treenode.id,
@@ -642,6 +675,74 @@ def import_treeNodes_bulk( treeNodeList, numT, parentId, skeletonId, nullVal, pr
         except Exception as e:
             import traceback
             raise Exception(response_on_error + ':' + str(e) + str(traceback.format_exc()))   
+
+    return (parentId, skeletonId)
+
+def import_treeNodes_bulk_allWithParents( treeNodeList, numT, parentId, parentIdCurrent, skeletonId, skeletonIdCurrent, project_id, request ):
+    """Save a list of treenodes into the database in bulk to save time in the transaction.
+        We assume all the nodes have a parent so we do not have to create new skeletons or neurons 
+        TreeNodeList order is x,y,z,t,c, radius, parentId, confidence"""
+
+
+    bulkQuery = list( range(numT) ) #I preallocate it only once
+    for ii in range(numT):
+        #copied from treeNode.py::createNewNode()
+        #params = {
+        #        'x': treeNodeList[ii,0],
+        #        'y': treeNodeList[ii,1],
+        #        'z': treeNodeList[ii,2],
+        #        'radius': treeNodeList[ii,5],
+
+        #        'confidence': int(treeNodeList[ii,7]),
+        #        't'        :  int(treeNodeList[ii,3]),
+        #        'c'         : int(treeNodeList[ii,4]),
+
+        #        'parent_id': np.int64(treeNodeList[ii,6]),
+
+        #        'saveInDB' : False
+        #        }
+        #bulkQuery[ii] = insert_new_treenode(request, project_id, parentIdCurrent[ii].id, skeletonIdCurrent[ii], params)
+
+        parent_id = np.int64(treeNodeList[ii,6]) 
+        
+        #these thre values are always the same
+        bulkQuery[ii] = Treenode()
+        bulkQuery[ii].user = request.user
+        bulkQuery[ii].editor = request.user
+        bulkQuery[ii].project_id = project_id
+
+        bulkQuery[ii].location = Double3D(float(treeNodeList[ii,0]), float(treeNodeList[ii,1]), float(treeNodeList[ii,2]))
+        bulkQuery[ii].radius = int(treeNodeList[ii,5])
+        bulkQuery[ii].skeleton = skeletonIdCurrent[ii]
+        bulkQuery[ii].confidence = int(treeNodeList[ii,7])
+
+        bulkQuery[ii].location_t = int( treeNodeList[ii,3] )
+        bulkQuery[ii].location_c = int( treeNodeList[ii,4] )
+
+        bulkQuery[ii].parent_id = parent_id
+
+    #perform bulk query
+    try:
+        response_on_error = 'Could not insert new bulk of treenodes!'
+        Treenode.objects.bulk_create(bulkQuery)
+    except Exception as e:
+        import traceback
+        raise Exception(response_on_error + ':' + str(e) + str(traceback.format_exc())) 
+
+    #retrieve skeleton and parent_id information after bulk update
+    try:
+        nn = 0
+        for tt in Treenode.objects.select_related('parent').filter(project_id = project_id, location_t = int(treeNodeList[ii,3]), user_id = request.user.id ).order_by('pk'):
+            skeletonId[nn] = skeletonIdCurrent[nn]
+            parentId[nn] = tt.parent #this hits the database again because parent is a foreignKey relation unless we use select_related()
+            nn += 1
+
+        if nn != numT:
+
+            raise Exception("Number of objects retrieved is different than inserted")
+    except Exception as e:
+            import traceback
+            raise Exception(response_on_error + ':' + str(e) + str(traceback.format_exc())) 
 
     return (parentId, skeletonId)
 
@@ -661,7 +762,7 @@ def parse_TGMM_XML_file(fileXML, treeNodeList, t, nullVal):
         confidence = int(gmm.get('splitScore'))
 
         #save elements
-        treeNodeList[numT, :] =[m[1], m[0], m[2], t, channel_, radius, parent, confidence, nullVal] #apparently TGMM flips x,y woth respect how CATMAID displays elements
+        treeNodeList[numT, :] =[m[1], m[0], m[2], t, channel_, radius, parent, confidence] #apparently TGMM flips x,y woth respect how CATMAID displays elements
         numT = numT + 1
 
 

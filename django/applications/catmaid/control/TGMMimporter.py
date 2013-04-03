@@ -559,6 +559,7 @@ def import_treeNodes_bulk( treeNodeList, numT, parentId, skeletonId, nullVal, pr
                     # The treenode remains the property of the original user.
                     neuron_id, skeleton_id = treenode._maybe_move_terminal_to_staging(request.user, project_id, parent_treenode.id)
                     has_changed_group = True
+                
 
                 response_on_error = 'Could not insert new treenode!'
                 skeleton = ClassInstance.objects.get(pk=parent_treenode.skeleton_id)

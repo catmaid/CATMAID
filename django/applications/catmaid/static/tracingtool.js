@@ -519,6 +519,9 @@ function TracingTool()
       if (!mayView())
         return false;
       tracingLayer.svgOverlay.tracingCommand('goparent');
+
+      if (e.ctrlKey === true)//so we can validate automatic tracking very fast
+        tracingLayer.svgOverlay.setConfidence(5, e.altKey);
       return true;
     }
   }) );
@@ -532,6 +535,8 @@ function TracingTool()
       if (!mayView())
         return false;
       tracingLayer.svgOverlay.tracingCommand('gochild', e);
+      if (e.ctrlKey === true)//so we can validate automatic tracking very fast
+        tracingLayer.svgOverlay.setConfidence(5, e.altKey);
       return true;
     }
   }) );

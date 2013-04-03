@@ -6,12 +6,13 @@
 /** Namespace where Node instances are created and edited. */
 var SkeletonElements = new function()
 {
-  var active_skeleton_color = "rgb(255,255,0)";
+  var active_skeleton_color = "rgb(127,0,255)";
   var inactive_skeleton_color = "rgb(255,0,255)";
   var inactive_skeleton_color_above = "rgb(0,0,255)";
   var inactive_skeleton_color_below = "rgb(255,0,0)";
   var root_node_color = "rgb(255, 0, 0)";
   var leaf_node_color = "rgb(128, 0, 0)";
+  var branch_node_color = "rgb(139, 69, 0)";
 
   var TYPE_NODE = "treenode";
   var TYPE_CONNECTORNODE = "connector";
@@ -422,7 +423,9 @@ var SkeletonElements = new function()
       this.fillcolor = root_node_color;
     } else if ((this.type !== TYPE_CONNECTORNODE) && (this.numberOfChildren === 0)) {
       this.fillcolor = leaf_node_color;
-    } else {
+    } else if ((this.type !== TYPE_CONNECTORNODE) && (this.numberOfChildren > 1)) {
+      this.fillcolor = branch_node_color;
+    }else {
       // If none of the above applies, just colour according to the z difference.
       this.fillcolor = this.colorFromZDiff(this.zdiff, this.skeleton_id);
     }

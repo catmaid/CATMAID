@@ -194,9 +194,21 @@ def create_treenode(request, project_id=None):
                 neuron_id, skeleton_id = _maybe_move_terminal_to_staging(request.user, project_id, parent_treenode.id)
                 has_changed_group = True
 
+
+            #to allow tracing backwards in time
+            tracingBackwards = False
+            if parent_treenode.parent_id is None and parent_treenode.location_t > params['t']:
+                params['parent_id'] = None
+                tracingBackwards = True
+
             response_on_error = 'Could not insert new treenode!'
             skeleton = ClassInstance.objects.get(pk=parent_treenode.skeleton_id)
             new_treenode = insert_new_treenode(params['parent_id'], skeleton)
+
+            if tracingBackwards == True:
+                response_on_error = 'Could not change parent for tracing backwards'
+                parent_treenode.parent_id = new_treenode.id
+                parent_treenode.save(force_update = True) #update records
 
             return HttpResponse(json.dumps({'treenode_id': new_treenode.id, 'skeleton_id': skeleton.id, 'has_changed_group': has_changed_group}))
 
@@ -341,6 +353,7 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
         # Loop the creation of treenodes in z resolution steps until target
         # section is reached
         parent_id = params['parent_id']
+        prev_treenode = parent
         atn_slice_index = ((parent_z - params['stack_translation_z']) / params['resz']).quantize(decimal.Decimal('1'), rounding=decimal.ROUND_FLOOR)
         for i in range(1, steps + (0 if skip_last else 1)):  
             #if (atn_slice_index + i * sign) in broken_slices:
@@ -362,10 +375,20 @@ def _create_interpolated_treenode(request, params, project_id, skip_last):
             new_treenode.radius = params['radius']
             new_treenode.skeleton_id = parent_skeleton_id
             new_treenode.confidence = params['confidence']
-            new_treenode.parent_id = parent_id  # This is not a root node.
+            if dt < 0:#tracing backwards
+                new_treenode.parent_id = None
+            else:
+                new_treenode.parent_id = parent_id  # This is not a root node.
+            
             new_treenode.save()
 
             parent_id = new_treenode.id
+
+            #update previous created node 
+            if dt < 0:
+                prev_treenode.parent_id = parent_id
+                prev_treenode.save(force_update = True)
+                prev_treenode = new_treenode
 
         # parent_id contains the ID of the last added node
         return parent_id, parent_skeleton_id

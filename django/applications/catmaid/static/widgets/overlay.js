@@ -1821,10 +1821,19 @@ var SkeletonAnnotations = new function()
                 alert("Could not retrieve parent node location: " + json.error);
               } else {
                 // json[0], [1], [2], [3]: id, x, y, z
-                stack.getProject().moveTo(json[3], json[2], json[1], undefined,
+                // json[4], [5], [6]: skeleton_id, t, c
+                if( stack.tile_source_type === 5)//5D visualization
+                {
+                  stack.getProject().moveTo5D(json[3], json[2], json[1], undefined, json[5], json[6],
                   function() {
                     SkeletonAnnotations.staticSelectNode(parent_id, skeleton_id);
                   });
+                }else{
+                  stack.getProject().moveTo(json[3], json[2], json[1], undefined,
+                  function() {
+                    SkeletonAnnotations.staticSelectNode(parent_id, skeleton_id);
+                  });
+                }
               }
             }
           }, "get_location");

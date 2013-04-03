@@ -542,7 +542,7 @@ function handle_openProjectStack( status, text, xml )
 					e.broken_slices,
 					e.trakem2_project,
 					e.num_zoom_levels,
-					-2,
+					-4,
 					e.tile_source_type,
 					labelupload, // TODO: if there is any
 					e.metadata,

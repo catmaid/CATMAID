@@ -324,7 +324,7 @@ var SkeletonElements = new function()
         // May be hidden if the node was reused
         if ("none" === node.line.node.style.display) { node.line.show(); }
       }
-      if (node.confidence < 5) {
+      if (node.confidence < 1) {//TODO: setup a box in navigator to set this parameter (minNodeConfidenceDisplay)
         if (node.number_text) {
           updateConfidenceText(
             node.x, node.y, parent.x, parent.y,

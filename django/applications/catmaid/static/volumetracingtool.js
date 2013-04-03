@@ -18,16 +18,18 @@ function VolumeTracingTool()
     
     var self = this;
     var canvasLayer = null;
+    var isDragging = false;    
+    var enabled = false;
     
     this.stack = null;
     this.toolname = "Volume Tracing Tool";
     //var canvasLayer = null;
     this.brush = null;
-    this.isDragging = false;    
+    
     this.volumeAnnotation = VolumeTracingAnnotations;
     this.currentTrace = null;
     this.traces = [];
-    this.enabled = false;
+    
     this.lastPos = null;
     this.lastScale = 1;
     this.lastZ = 0;
@@ -77,7 +79,7 @@ function VolumeTracingTool()
         var traces = self.getTracesByInstance(tid);
                 
         self.brush.fill = vp.color;
-        if (self.enabled)
+        if (enabled)
         {
             self.brush.opacity = vp.opacity;
         }
@@ -103,7 +105,7 @@ function VolumeTracingTool()
     this.enable = function()
     {
         self.brush.set({'opacity' : .5});
-        self.enabled = true;
+        enabled = true;
         bringActiveTracesForward();
         self.brush.bringToFront();
         canvasLayer.canvas.renderAll();
@@ -112,7 +114,7 @@ function VolumeTracingTool()
     this.disable = function()
     {
         self.brush.set({'opacity' : 0});
-        self.enabled = false;
+        enabled = false;
     }
     
     
@@ -292,10 +294,10 @@ function VolumeTracingTool()
     
     var onmouseup = function(e)
     {        
-        if (self.isDragging)
+        if (isDragging)
         {
-            self.isDragging = false;
-            if (self.enabled)
+            isDragging = false;
+            if (enabled)
             {
                 self.currentTrace.addObject(self.brush.clone());
                 self.volumeAnnotation.pushTrace(self.currentTrace);
@@ -327,7 +329,7 @@ function VolumeTracingTool()
                 
                 self.brush.set({'left': m.offsetX, 'top': m.offsetY});
                 
-                if (self.isDragging && self.enabled)
+                if (isDragging && enabled)
                 {
                     var minSqR = Math.pow(self.brush_slider.val / 2, 2);
                     if (Math.pow(e.offsetX - self.lastMouseXY.x, 2) +
@@ -348,11 +350,14 @@ function VolumeTracingTool()
     
     var onmousedown = function(e)
     {
-        self.lastMouseXY = {"x": e.offsetX, "y": e.offsetY};
-        self.currentTrace = self.createNewTrace();
-        self.isDragging = true;
-        var spot = self.brush.clone();
-        self.currentTrace.addObject(spot);
+        if (enabled)
+        {
+            self.lastMouseXY = {"x": e.offsetX, "y": e.offsetY};
+            self.currentTrace = self.createNewTrace();        
+            isDragging = true;
+            var spot = self.brush.clone();
+            self.currentTrace.addObject(spot);
+        }
     }
 
     var onmousewheel = function(e)
@@ -413,7 +418,7 @@ function VolumeTracingTool()
         self.prototype.register( parentStack, "volume_tracing_button" );
         
         var proto_mousedown = canvasLayer.view.onmousedown;
-        self.proto_mouseup = canvasLayer.view.onmouseup;
+        self.proto_mouseup = canvasLayer.view.onmouseup ? canvasLayer.view.onmouseup : function(e){};
         
         canvasLayer.view.onmousemove = onmousemove.pos;
         canvasLayer.view.onmousedown = function(e)

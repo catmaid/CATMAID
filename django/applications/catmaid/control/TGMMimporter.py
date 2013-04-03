@@ -262,13 +262,13 @@ class ImportingWizard(SessionWizardView):
             fileOutputProgress = os.path.split(filesXML[0])
             fileOutputProgress = fileOutputProgress[0] + "/" + "progressReportFile.txt"
 
-            #hola: comment this! TODO
-            prof = hotshot.Profile( "/media/sdd2/dataCATMAID/12_06_29/XMLfinalResult_large/importTracks.prof" )
-            prof.start()
+            #uncomment this to profile code. Check http://www.rkblog.rk.edu.pl/w/p/django-profiling-hotshot-and-kcachegrind/
+            #prof = hotshot.Profile( "/media/sdd2/dataCATMAID/12_06_29/XMLfinalResult_large/importTracks.prof" )
+            #prof.start()
 
             import_tracks(filesXML, selected_projects, trln, ImportingWizard.requestDjango, fileOutputProgress)
 
-            prof.stop()
+            #prof.stop()
         # Show final page
         return render_to_response('catmaid/importTGMM/done.html', {
             'projects': selected_projects,
@@ -449,11 +449,11 @@ def import_tracks(filesXML, project, trln, request, fileOutputProgress):
     treeNodeList = np.zeros( (maxNodesPerTM,numCol), dtype = float ) 
     
     nullVal = np.int64(-9223372036854775808) #default value to indicate None (numpy integer arrays do not hod NaN)
-    #parentId = nullVal * np.ones( (len(filesXML) * 300000,1), dtype = 'int64' ) #stores parentId for previous time opint in the database
-    #skeletonId = nullVal * np.ones( (len(filesXML) * 300000,1), dtype = 'int64' ) #stores skeletonId for previous time opint in the database  
+    parentId = nullVal * np.ones( (maxNodesPerTM,1), dtype = 'int64' ) #stores parentId for previous time opint in the database
+    #skeletonId = nullVal * np.ones( (maxNodesPerTem,1), dtype = 'int64' ) #stores skeletonId for previous time opint in the database  
     
-    parentId = list(range( ( maxNodesPerTM )) ) # we use list because we need to store the skeleton model (not only id)
-    parentIdCurrent = list(range( ( maxNodesPerTM )) ) # to save current skeleton Id
+    #parentId = list(range( ( maxNodesPerTM )) ) # we use list because we need to store the skeleton model (not only id)
+    #parentIdCurrent = list(range( ( maxNodesPerTM )) ) # to save current skeleton Id
     skeletonId = list(range( ( maxNodesPerTM )) ) # we use list because we need to store the skeleton model (not only id)
     skeletonIdCurrent = list(range( ( maxNodesPerTM )) ) # to save current skeleton Id
 
@@ -493,20 +493,15 @@ def import_tracks(filesXML, project, trln, request, fileOutputProgress):
             par = np.int64(treeNodeList[ii,6])
             if par < 0:#new lineage
                 treeNodeList[ii,6] = nullVal
-                skeletonIdCurrent[ii] = None
-                parentIdCurrent[ii] = None
+                skeletonIdCurrent[ii] = create_skeleton_new_lineage( treeNodeList[ii,:], project_id, request )
                 numSkeletons += 1
             else:
-                treeNodeList[ii,6] = parentId[ par ].id
+                treeNodeList[ii,6] = parentId[ par ]
                 skeletonIdCurrent[ii] = skeletonId[ par ]
-                parentIdCurrent[ii] = parentId[ par ]
+
 
         #update tree nodes in batch mode and obtain parentId and skeletonId in the database
-        #hola: chnage this! TODO
-        if t == 0:
-            parentId, skeletonId = import_treeNodes( treeNodeList, numT, parentId, parentIdCurrent, skeletonId, skeletonIdCurrent, nullVal, project_id, request )       
-        else:
-            parentId, skeletonId = import_treeNodes_bulk_allWithParents( treeNodeList, numT, parentId, parentIdCurrent, skeletonId, skeletonIdCurrent, project_id, request )       
+        parentId, skeletonId = import_treeNodes_bulk_allWithParents( treeNodeList, numT, parentId, skeletonId, skeletonIdCurrent, project_id, request, nullVal )       
 
         numNodes += numT
         tOld = t
@@ -627,10 +622,12 @@ def import_treeNodes( treeNodeList, numT, parentId, parentIdCurrent, skeletonId,
                     response_on_error = 'Could not insert new treenode!'
                     new_treenode = insert_new_treenode(request,project_id, None, new_skeleton, params)
 
-                    return HttpResponse(json.dumps({
-                        'treenode_id': new_treenode.id,
-                        'skeleton_id': new_skeleton.id,
-                        'neuron_id': params['useneuron']}))
+                    #return HttpResponse(json.dumps({
+                    #    'treenode_id': new_treenode.id,
+                    #    'skeleton_id': new_skeleton.id,
+                    #    'neuron_id': params['useneuron']}))
+                    skeletonId[ii] = new_skeleton
+                    parentId[ii] = new_treenode
                 else:
                     # A neuron does not exist, therefore we put the new skeleton
                     # into a new neuron, and put the new neuron into a group.
@@ -678,7 +675,112 @@ def import_treeNodes( treeNodeList, numT, parentId, parentIdCurrent, skeletonId,
 
     return (parentId, skeletonId)
 
-def import_treeNodes_bulk_allWithParents( treeNodeList, numT, parentId, parentIdCurrent, skeletonId, skeletonIdCurrent, project_id, request ):
+def create_skeleton_new_lineage( treeNodeList, project_id, request ):
+    """Save a list of treenodes into the database 
+        TreeNodeList order is x,y,z,t,c, radius, parentId, confidence"""
+
+
+    #copied from treeNode.py::createNewNode()
+    params = {
+            'x': treeNodeList[0],
+            'y': treeNodeList[1],
+            'z': treeNodeList[2],
+            'radius': treeNodeList[5],
+
+            'confidence': int(treeNodeList[7]),
+            't'        :  int(treeNodeList[3]),
+            'c'         : int(treeNodeList[4]),
+
+            'targetgroup': "Fragments",
+
+            'useneuron': np.int64(-1),
+            'parent_id': np.int64(treeNodeList[6]), #it should be nullVal
+
+            'saveInDB' : True
+            }
+
+    relation_map = common.get_relation_to_id_map(project_id)
+    class_map = common.get_class_to_id_map(project_id)
+    response_on_error = ''
+
+    try:
+        # No parent node: We must create a new root node, which needs a
+        # skeleton and a neuron to belong to.
+        response_on_error = 'Could not insert new treenode instance!'
+
+        new_skeleton = ClassInstance()
+        new_skeleton.user = request.user
+        new_skeleton.project_id = project_id
+        new_skeleton.class_column_id = class_map['skeleton']
+        new_skeleton.name = 'skeleton'
+        new_skeleton.save()
+        new_skeleton.name = 'skeleton %d' % new_skeleton.id
+        new_skeleton.save()
+
+        if -1 == params['useneuron']:
+            # Check that the neuron to use exists
+            if 0 == ClassInstance.objects.filter(pk=params['useneuron']).count():
+                params['useneuron'] = -1
+
+        if -1 != params['useneuron']:  # A neuron already exists, so we use it
+            response_on_error = 'Could not relate the neuron model to the new skeleton!'
+            relate_neuron_to_skeleton(params['useneuron'], new_skeleton.id, relation_map, request, project_id)
+
+            #response_on_error = 'Could not insert new treenode!'
+            #new_treenode = insert_new_treenode(request,project_id, None, new_skeleton, params)
+
+            #return HttpResponse(json.dumps({
+            #    'treenode_id': new_treenode.id,
+            #    'skeleton_id': new_skeleton.id,
+            #    'neuron_id': params['useneuron']}))
+            return new_skeleton
+        else:
+            # A neuron does not exist, therefore we put the new skeleton
+            # into a new neuron, and put the new neuron into a group.
+            # Instead of placing the new neuron in the Fragments group,
+            # place the new neuron in the staging area of the user.
+
+            # Fetch the parent group: can be the user staging group
+            # or the Isolated synaptic terminals group
+            parent_group, is_new = treenode._fetch_targetgroup(request.user, project_id, params['targetgroup'], relation_map['part_of'], class_map)
+            response_on_error = 'Failed to insert new instance of a neuron.'
+            new_neuron = ClassInstance()
+            new_neuron.user = request.user
+            new_neuron.project_id = project_id
+            new_neuron.class_column_id = class_map['neuron']
+            new_neuron.name = 'neuron'
+            new_neuron.save()
+            new_neuron.name = 'neuron %d' % new_neuron.id
+            new_neuron.save()
+
+            response_on_error = 'Could not relate the neuron model to the new skeleton!'
+            relate_neuron_to_skeleton(new_neuron.id, new_skeleton.id, relation_map, request, project_id)
+
+            # Add neuron to the group
+            response_on_error = 'Failed to insert part_of relation between neuron id and fragments group.'
+            treenode._create_relation(request.user, project_id, relation_map['part_of'], new_neuron.id, parent_group.id)
+
+            #response_on_error = 'Failed to insert instance of treenode.'
+            #new_treenode = insert_new_treenode(request, project_id,None, new_skeleton, params)
+
+            response_on_error = 'Failed to write to logs.'
+            common.insert_into_log(project_id, request.user.id, 'create_neuron', Double3D(float(params['x']), float(params['y']), float(params['z'])), 'Create neuron %d and skeleton %d' % (new_neuron.id, new_skeleton.id))
+
+            return new_skeleton
+
+            #return HttpResponse(json.dumps({
+            #    'treenode_id': new_treenode.id,
+            #    'skeleton_id': new_skeleton.id,
+            #    'refresh': is_new
+            #    }))
+
+    except Exception as e:
+        import traceback
+        raise Exception(response_on_error + ':' + str(e) + str(traceback.format_exc()))   
+
+
+
+def import_treeNodes_bulk_allWithParents( treeNodeList, numT, parentId, skeletonId, skeletonIdCurrent, project_id, request, nullVal ):
     """Save a list of treenodes into the database in bulk to save time in the transaction.
         We assume all the nodes have a parent so we do not have to create new skeletons or neurons 
         TreeNodeList order is x,y,z,t,c, radius, parentId, confidence"""
@@ -719,7 +821,10 @@ def import_treeNodes_bulk_allWithParents( treeNodeList, numT, parentId, parentId
         bulkQuery[ii].location_t = int( treeNodeList[ii,3] )
         bulkQuery[ii].location_c = int( treeNodeList[ii,4] )
 
-        bulkQuery[ii].parent_id = parent_id
+        if parent_id != nullVal:
+            bulkQuery[ii].parent_id = parent_id
+        else:
+            bulkQuery[ii].parent_id = None
 
     #perform bulk query
     try:
@@ -732,14 +837,19 @@ def import_treeNodes_bulk_allWithParents( treeNodeList, numT, parentId, parentId
     #retrieve skeleton and parent_id information after bulk update
     try:
         nn = 0
-        for tt in Treenode.objects.select_related('parent').filter(project_id = project_id, location_t = int(treeNodeList[ii,3]), user_id = request.user.id ).order_by('pk'):
+        #for tt in Treenode.objects.select_related('parent').filter(project_id = project_id, location_t = int(treeNodeList[ii,3]), user_id = request.user.id ).order_by('pk'):
+        for tt in Treenode.objects.values('id').filter(project_id = project_id, location_t = int(treeNodeList[ii,3]), user_id = request.user.id ).order_by('pk'):
             skeletonId[nn] = skeletonIdCurrent[nn]
-            parentId[nn] = tt.parent #this hits the database again because parent is a foreignKey relation unless we use select_related()
+            parentId[nn] = tt['id']
+            #if tt.parent:
+            #    parentId[nn] = tt.parent.id #this hits the database again because parent is a foreignKey relation unless we use select_related()
+            #else:
+            #    parentId[nn] = nullVal
             nn += 1
 
         if nn != numT:
-
             raise Exception("Number of objects retrieved is different than inserted")
+
     except Exception as e:
             import traceback
             raise Exception(response_on_error + ':' + str(e) + str(traceback.format_exc())) 

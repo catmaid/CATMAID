@@ -224,6 +224,8 @@ function handle_logout(status, text, xml) {
  * tools in the toolbar.
  */
 function handle_profile_update(e) {
+  if (e.inverse_mouse_wheel)
+    userprofile.inverse_mouse_wheel = e.inverse_mouse_wheel;
   if (e.show_text_label_tool)
     userprofile.show_text_label_tool = e.show_text_label_tool;
   if (e.show_tagging_tool)
@@ -546,7 +548,7 @@ function handle_openProjectStack( status, text, xml )
 					e.tile_source_type,
 					labelupload, // TODO: if there is any
 					e.metadata,
-					e.inverse_mouse_wheel);
+					userprofile.inverse_mouse_wheel);
 
 			document.getElementById( "toolbox_project" ).style.display = "block";
 

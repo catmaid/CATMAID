@@ -1455,7 +1455,66 @@ var WindowMaker = new function()
 
     return win;
   };
+  
+  
+  var createNotificationsWindow = function()
+  {
+    var win = new CMWWindow( "Notifications" );
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
 
+    var container = createContainer( "notifications_widget" );
+    content.appendChild( container );
+
+    container.innerHTML = '<table cellpadding="0" cellspacing="0" border="0" class="display" id="notificationstable">' +
+        '<thead>' +
+          '<tr>' +
+            '<th>id</th>' +
+            '<th>type</th>' +
+            '<th>status' +
+              '<select name="search_type" id="search_type" class="search_init">' +
+                '<option value="">Any</option>' + 
+                '<option value="0">Open</option>' + 
+                '<option value="1">Approved</option>' +
+                '<option value="2">Rejected</option>' + 
+              '</select>' +
+            '</th>' +
+            '<th>x</th>' +
+            '<th>y</th>' +
+            '<th>z</th>' +
+            '<th>actions</th>' +
+            '<th>requester</th>' +
+            '<th>request time</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tfoot>' +
+          '<tr>' +
+            '<th>id</th>' +
+            '<th>type</th>' +
+            '<th>status</th>' +
+            '<th>x</th>' +
+            '<th>y</th>' +
+            '<th>z</th>' +
+            '<th>actions</th>' +
+            '<th>requester</th>' +
+            '<th>request time</th>' +
+          '</tr>' +
+        '</tfoot>' +
+        '<tbody>' +
+          '<tr><td colspan="8"></td></tr>' +
+        '</tbody>' +
+      '</table>';
+
+    addListener(win, container);
+
+    addLogic(win);
+
+    NotificationsTable.init();
+    
+    return win;
+  };
+  
+  
   var creators = {
     "keyboard-shortcuts": createKeyboardShortcutsWindow,
     "search": createSearchWindow,
@@ -1479,6 +1538,7 @@ var WindowMaker = new function()
     "skeleton-analytics-widget": createSkeletonAnalyticsWindow,
     "ontology-editor": createOntologyWidget,
     "classification-editor": createClassificationWidget,
+    "notifications": createNotificationsWindow
   };
 
   /** If the window for the given name is already showing, just focus it.

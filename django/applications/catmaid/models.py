@@ -18,6 +18,8 @@ from guardian.shortcuts import get_objects_for_user
 
 from taggit.managers import TaggableManager
 
+from south.db import db
+
 CELL_BODY_CHOICES = (
     ('u', 'Unknown'),
     ('l', 'Local'),
@@ -101,6 +103,22 @@ class Concept(models.Model):
     creation_time = models.DateTimeField(default=datetime.now)
     edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
+
+def create_concept_sub_table(table_name):
+    db.execute('''CREATE TABLE %s () INHERITS (concept)''' % table_name);
+    db.execute('''CREATE SEQUENCE %s_id_seq
+                    START WITH 1
+                    INCREMENT BY 1
+                    NO MAXVALUE
+                    NO MINVALUE
+                    CACHE 1''' % table_name);
+    db.execute('''ALTER SEQUENCE %s_id_seq OWNED BY %s.id''' % (table_name, table_name));
+    db.execute('''ALTER TABLE ONLY %s ADD CONSTRAINT %s_pkey PRIMARY KEY (id)''' % (table_name, table_name));
+    db.execute('''ALTER TABLE %s ALTER COLUMN id SET DEFAULT nextval('%s_id_seq'::regclass)''' % (table_name, table_name));   # use concept_id_seq so id unique across all concepts?
+    db.execute('''ALTER TABLE ONLY %s ADD CONSTRAINT %s_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth_user(id)''' % (table_name, table_name));
+    db.execute('''CREATE TRIGGER on_edit_%s
+                    BEFORE UPDATE ON %s
+                    FOR EACH ROW EXECUTE PROCEDURE on_edit()''' % (table_name, table_name));
 
 class Class(models.Model):
     class Meta:
@@ -362,6 +380,8 @@ class UserFocusedModel(models.Model):
     objects = UserFocusedManager()
     user = models.ForeignKey(User)
     project = models.ForeignKey(Project)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     class Meta:
         abstract = True
 
@@ -391,8 +411,6 @@ class TextlabelLocation(models.Model):
 class Location(UserFocusedModel):
     class Meta:
         db_table = "location"
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     editor = models.ForeignKey(User, related_name='location_editor', db_column='editor_id')
     location = Double3DField()
     reviewer_id = models.IntegerField(default=-1)
@@ -401,8 +419,6 @@ class Location(UserFocusedModel):
 class Treenode(UserFocusedModel):
     class Meta:
         db_table = "treenode"
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     editor = models.ForeignKey(User, related_name='treenode_editor', db_column='editor_id')
     location = Double3DField()
     parent = models.ForeignKey('self', null=True, related_name='children')
@@ -416,8 +432,6 @@ class Treenode(UserFocusedModel):
 class Connector(UserFocusedModel):
     class Meta:
         db_table = "connector"
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     editor = models.ForeignKey(User, related_name='connector_editor', db_column='editor_id')
     location = Double3DField()
     confidence = models.IntegerField(default=5)
@@ -429,8 +443,6 @@ class TreenodeClassInstance(UserFocusedModel):
     class Meta:
         db_table = "treenode_class_instance"
     # Repeat the columns inherited from 'relation_instance'
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     relation = models.ForeignKey(Relation)
     # Now new columns:
     treenode = models.ForeignKey(Treenode)
@@ -440,8 +452,6 @@ class ConnectorClassInstance(UserFocusedModel):
     class Meta:
         db_table = "connector_class_instance"
     # Repeat the columns inherited from 'relation_instance'
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     relation = models.ForeignKey(Relation)
     # Now new columns:
     connector = models.ForeignKey(Connector)
@@ -451,8 +461,6 @@ class TreenodeConnector(UserFocusedModel):
     class Meta:
         db_table = "treenode_connector"
     # Repeat the columns inherited from 'relation_instance'
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     relation = models.ForeignKey(Relation)
     # Now new columns:
     treenode = models.ForeignKey(Treenode)
@@ -637,8 +645,6 @@ class ApiKey(models.Model):
 class Log(UserFocusedModel):
     class Meta:
         db_table = "log"
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     operation_type = models.CharField(max_length=255)
     location = Double3DField()
     freetext = models.TextField()
@@ -667,9 +673,6 @@ class SliceContoursHighres(UserFocusedModel):
     length = models.FloatField(null=True)
 
 class Segments(UserFocusedModel):
-
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
 
     stack = models.ForeignKey(Stack)
 
@@ -726,8 +729,6 @@ class Segments(UserFocusedModel):
 
 class Slices(UserFocusedModel):
 
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     stack = models.ForeignKey(Stack)
 
     assembly = models.ForeignKey(ClassInstance,null=True,db_index=True)
@@ -770,8 +771,6 @@ class SegmentToConstraintMap(models.Model):
 class Drawing(UserFocusedModel):
     class Meta:
         db_table = "drawing"
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     stack = models.ForeignKey(Stack)
     skeleton_id = models.IntegerField()
     z = models.IntegerField()
@@ -940,3 +939,97 @@ class DeprecatedSession(models.Model):
     session_id = models.CharField(max_length=26)
     data = models.TextField(default='')
     last_accessed = models.DateTimeField(default=datetime.now)
+
+
+class ChangeRequest(UserFocusedModel):
+    OPEN = 0
+    APPROVED = 1
+    REJECTED = 2
+    # TODO: add an INVALID state?
+    
+    class Meta:
+        db_table = "change_request"
+    
+    type = models.CharField(max_length = 32)
+    description = models.TextField()
+    status = models.IntegerField(default = 0)
+    recipient = models.ForeignKey(User, related_name='change_recipient', db_column='recipient_id')
+    location = Double3DField()
+    treenode = models.ForeignKey(Treenode)
+    connector = models.ForeignKey(Connector)
+    validate_action = models.TextField()
+    approve_action = models.TextField()
+    reject_action = models.TextField()
+    completion_time = models.DateTimeField(default = None, null = True)
+    
+    def status_name(self):
+        return ['Open', 'Approved', 'Rejected'][self.status]
+    
+    def is_valid(self):
+        try:
+            is_valid = eval(self.validate_action)
+        except Exception as e:
+            raise Exception('Could not validate the request (%s)', str(e))
+        
+        return is_valid;
+    
+    def approve(self, *args, **kwargs):
+        # TODO: check if action is still valid?
+        
+        try:
+            exec('from catmaid.control import *\n\n' + self.approve_action)
+            self.status = ChangeRequest.APPROVED
+            self.completion_time = datetime.now()
+            self.save()
+            
+            # Send a message and an e-mail to the requester.
+            title = self.type + ' Request Approved'
+            message = self.recipient.get_full_name() + ' has approved your ' + self.type.lower() + ' request.'
+            Message(user = self.user,
+                    title = title,
+                    text = message).save()
+            # TODO: only send one e-mail per day
+            try:
+                self.user.email_user('[CATMAID] ' + title, message)
+            except Exception as e:
+                print >> sys.stderr, 'Failed to send e-mail (', str(e), ')'
+        except Exception as e:
+            raise Exception('Failed to approve change request: %s' % str(e))
+    
+    def reject(self, *args, **kwargs):
+        # TODO: check if action is still valid?
+        
+        try:
+            exec('from catmaid.control import *\n\n' + self.reject_action)
+            self.status = ChangeRequest.REJECTED
+            self.completion_time = datetime.now()
+            self.save()
+            
+            # Send a message and an e-mail to the requester.
+            title = self.type + ' Request Rejected'
+            message = self.recipient.get_full_name() + ' has rejected your ' + self.type.lower() + ' request.'
+            Message(user = self.user,
+                    title = title,
+                    text = message).save()
+            # TODO: only send one e-mail per day
+            try:
+                self.user.email_user('[CATMAID] ' + title, message)
+            except Exception as e:
+                print >> sys.stderr, 'Failed to send e-mail (', str(e), ')'
+        except Exception as e:
+            raise Exception('Failed to reject change request: %s' % str(e))
+    
+    def save(self, *args, **kwargs):
+        super(ChangeRequest, self).save(*args, **kwargs)
+        
+        # Send a message and e-mail to the recipient.
+        # TODO: only send one e-mail per day
+        title = self.type + ' Request'
+        message = self.user.get_full_name() + ' has sent you a ' + self.type.lower() + ' request.  Please check your notifications.'
+        Message(user = self.recipient,
+                title = title,
+                text = message).save()
+        try:
+            self.recipient.email_user('[CATMAID] ' + title, message)
+        except Exception as e:
+            print >> sys.stderr, 'Failed to send e-mail (', str(e), ')'

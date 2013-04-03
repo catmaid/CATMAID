@@ -38,6 +38,11 @@ function Selector()
 		mouseCatcher.style.height = height + "px";
 		return;
 	}
+
+	this.redraw = function()
+	{
+		// nothing to do here
+	};
 	
 	var onmousemove =
 	{
@@ -266,6 +271,13 @@ function Selector()
 		document.getElementById( "edit_button_select" ).className = "button";
 		stack = null;
 		return;
+	}
+
+	/** This function should return true if there was any action
+		linked to the key code, or false otherwise. */
+	this.handleKeyPress = function( e )
+	{
+		return false;
 	}
 }
 

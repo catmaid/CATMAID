@@ -151,18 +151,80 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
             
             # Add the tag to the tree node/connector.
             if ntype == 'treenode':
+                tn = Treenode.objects.get(id=location_id)
                 tci = TreenodeClassInstance(
                     user=request.user,
                     project=p,
                     relation=labeled_as_relation,
-                    treenode=Treenode(id=location_id),
+                    treenode=tn,
                     class_instance=tag)
+                tci.save()
+                #print >> sys.stderr, 'About to compare ' + str(tn) + '\nto:' + str(request)
+                if tn.user != request.user:
+                    # Inform the owner of the node that the tag was added and give them the option of removing it.
+                    wr = ChangeRequest(type = 'Tag', 
+                                       status = ChangeRequest.OPEN,
+                                       project = p, 
+                                       user = request.user,
+                                       recipient = tn.user,
+                                       location = tn.location,
+                                       treenode = tn,
+                                       validate_action = 'label_exists(' + str(tci.id) + ', "treenode")',
+                                       reject_action = 'remove_label(' + str(tci.id) + ', "treenode")').save()
             else:
+                c = Connector.objects.get(id=location_id)
                 tci = ConnectorClassInstance(
                     user=request.user,
                     project=p,
                     relation=labeled_as_relation,
-                    connector=Connector(id=location_id),
+                    connector=c,
                     class_instance=tag)
-            tci.save()
+                tci.save()
+                if c.user != request.user:
+                    # Inform the owner of the connector that the tag was added and give them the option of removing it.
+                    wr = ChangeRequest(type = 'Tag', 
+                                       status = ChangeRequest.OPEN,
+                                       project = p, 
+                                       user = request.user,
+                                       recipient = c.user,
+                                       location = c.location,
+                                       connector = c,
+                                       validate_action = 'label_exists(' + str(tci.id) + ', "connector")',
+                                       reject_action = 'remove_label(' + str(tci.id) + ', "connector")').save()
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+
+
+def label_exists(label_id, node_type):
+    # This checks to see if the exact instance of the tag being applied to a node/connector still exists.
+    # If the tag was removed and added again then this will return False.
+    if node_type == 'treenode':
+        try:
+            label = TreenodeClassInstance.get(pk=label_id)
+            return True
+        except TreenodeClassInstance.DoesNotExist:
+            return False
+    elif node_type == 'connector':
+        try:
+            label = ConnectorClassInstance.get(pk=label_id)
+            return True
+        except ConnectorClassInstance.DoesNotExist:
+            return False
+    else:
+        raise Exception('Unknown node type: "%s"', node_type)
+
+
+def remove_label(label_id, node_type):
+    # This removes an exact instance of a tag being applied to a node/connector, it does not look up the tag by name.
+    # If the tag was removed and added again then this will do nothing and the tag will remain.
+    if node_type == 'treenode':
+        try:
+            label = TreenodeClassInstance.objects.get(pk=label_id).delete()
+        except TreenodeClassInstance.DoesNotExist:
+            pass
+    elif node_type == 'connector':
+        try:
+            label = ConnectorClassInstance.objects.get(pk=label_id).delete()
+        except ConnectorClassInstance.DoesNotExist:
+            pass
+    else:
+        raise Exception('Unknown node type: "%s"', node_type)

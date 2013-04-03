@@ -90,10 +90,23 @@ function VolumeTracingTool()
         canvasLayer.canvas.renderAll();
     }
     
+    var bringActiveTracesForward = function()
+    {
+        var tid = VolumeTracingPalette.trace_id;
+        var activeTraces = self.getTracesByInstance(tid);
+        for (var i = 0; i < activeTraces.length; i++)
+        {
+            activeTraces[i].bringToFront();
+        }
+    }
+    
     this.enable = function()
     {
         self.brush.set({'opacity' : .5});
         self.enabled = true;
+        bringActiveTracesForward();
+        self.brush.bringToFront();
+        canvasLayer.canvas.renderAll();
     }
     
     this.disable = function()
@@ -171,7 +184,10 @@ function VolumeTracingTool()
             trace.trace_id = trace_id;
             trace.populateSVG(svg);
             trace.setViewProps(vp);
+            trace.sendToBack();
         }
+        bringActiveTracesForward();
+        self.brush.bringToFront();
         canvasLayer.canvas.renderAll();
     }
     
@@ -193,8 +209,11 @@ function VolumeTracingTool()
                 trace.populateSVG(svg);
                 trace.trace_id = trace_id;
                 trace.setViewProps(vp);
+                trace.sendToBack();
             }
         }
+        bringActiveTracesForward();
+        self.brush.bringToFront();
         canvasLayer.canvas.renderAll();
     }
     
@@ -260,9 +279,10 @@ function VolumeTracingTool()
         var h = canvasLayer.canvas.getHeight();
         var w = canvasLayer.canvas.getWidth();
         self.brush = new fabric.Circle({top: 200, left: 200, radius: self.brush_slider.val,
-            fill: VolumeTracingPalette.view_props.color, opacity: 0});
+            fill: VolumeTracingPalette.view_props.color, opacity: 0});        
         self.brush.setActive(false);
         canvasLayer.canvas.add(self.brush);
+        self.brush.bringToFront();
         canvasLayer.canvas.interactive = true;
         
         
@@ -769,6 +789,22 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp)
         for (var i = 0; i < self.objectList.length; i++)
         {
             self.objectList[i].set(o);
+        }
+    }
+    
+    this.bringToFront = function()
+    {
+        for (var i = 0; i < self.objectList.length; i++)
+        {
+            self.objectList[i].bringToFront();
+        }
+    }
+    
+    this.sendToBack = function()
+    {
+        for (var i = 0; i < self.objectList.length; i++)
+        {
+            self.objectList[i].sendToBack();
         }
     }
     

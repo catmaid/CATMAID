@@ -171,6 +171,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                 if tn.user != request.user:
                     # Inform the owner of the node that the tag was added and give them the option of removing it.
                     wr = ChangeRequest(type = 'Tag', 
+                                       description = 'Added tag \'' + tag_name + '\'', 
                                        status = ChangeRequest.OPEN,
                                        project = p, 
                                        user = request.user,
@@ -191,6 +192,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                 if c.user != request.user:
                     # Inform the owner of the connector that the tag was added and give them the option of removing it.
                     wr = ChangeRequest(type = 'Tag', 
+                                       description = 'Added tag \'' + tag_name + '\'', 
                                        status = ChangeRequest.OPEN,
                                        project = p, 
                                        user = request.user,

@@ -107,6 +107,11 @@ var NotificationsTable = new function()
         "sWidth": "50px"
       }, // type
       {
+        "bSearchable": false,
+        "bSortable": false,
+        "sWidth": "100px"
+      }, // description
+      {
         "sClass": "center",
         "bSearchable": true,
         "bSortable": true,
@@ -130,42 +135,29 @@ var NotificationsTable = new function()
         "bSortable": false,
       	"fnRender" : function(obj) {
 			var crID = obj.aData[0]
-			var x = obj.aData[3]
-			var y = obj.aData[4]
-			var z = obj.aData[5]
-      		var nodeID = obj.aData[6]
-      		var disabled = (obj.aData[2] == 'Open' ? '' : ' disabled');
-			return '<button onclick="project.moveTo(' + z + ', ' + y + ', ' + x + ', undefined, function () {SkeletonAnnotations.staticSelectNode(' + nodeID + ');})">Show</button>' + 
+			var x = obj.aData[4]
+			var y = obj.aData[5]
+			var z = obj.aData[6]
+      		var nodeID = obj.aData[7]
+      		var skeletonID = obj.aData[8]
+      		var disabled = (obj.aData[3] == 'Open' ? '' : ' disabled');
+			return '<button onclick="project.moveTo(' + z + ', ' + y + ', ' + x + ', undefined, function () {SkeletonAnnotations.staticSelectNode(' + nodeID + ', ' + skeletonID + ');})">Show</button>' + 
 				'<button onclick="NotificationsTable.approve(' + crID + ');"' + disabled + '>Approve</button>' + 
 				'<button onclick="NotificationsTable.reject(' + crID + ');"' + disabled + '>Reject</button>'
 		}
-      }, // "Show" button
-//       {
-//       	"sClass": "center",
-//       	"bSearchable": false,
-//         "bSortable": false,
-//       	"fnRender" : function(obj) {
-//       		var id = obj.aData[0]
-// 			return '<button onclick="foo.approveChangeRequest(' + id + ')">Approve</button>'
-// 			}
-//       }, // approve button
-//       {
-//       	"sClass": "center",
-//       	"bSearchable": false,
-//         "bSortable": false,
-//       	"fnRender" : function(obj) {
-//       		var id = obj.aData[0]
-// 			return '<button onclick="foo.rejectChangeRequest(' + id + ')">Reject</button>'
-// 			}
-//       }, // reject button
+      }, // Action buttons (node_id)
+      {
+      	"bSearchable": false,
+        "bVisible": false
+      }, // skeleton_id
       {
         "bSearchable": true,
         "bSortable": true
-      }, // requester
+      }, // from
       {
         "bSearchable": false,
         "bSortable": true
-      } // requested time
+      } // date
       ]
     });
 

@@ -945,7 +945,7 @@ class ChangeRequest(UserFocusedModel):
     OPEN = 0
     APPROVED = 1
     REJECTED = 2
-    # TODO: add an INVALID state?
+    INVALID = 3
     
     class Meta:
         db_table = "change_request"

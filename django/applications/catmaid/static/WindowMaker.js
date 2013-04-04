@@ -1386,33 +1386,38 @@ var WindowMaker = new function()
           '<tr>' +
             '<th>id</th>' +
             '<th>type</th>' +
+            '<th>description</th>' +
             '<th>status' +
               '<select name="search_type" id="search_type" class="search_init">' +
                 '<option value="">Any</option>' + 
                 '<option value="0">Open</option>' + 
                 '<option value="1">Approved</option>' +
                 '<option value="2">Rejected</option>' + 
+                '<option value="3">Invalid</option>' + 
               '</select>' +
             '</th>' +
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
             '<th>actions</th>' +
-            '<th>requester</th>' +
-            '<th>request time</th>' +
+            '<th>skeleton id</th>' +
+            '<th>from</th>' +
+            '<th>date</th>' +
           '</tr>' +
         '</thead>' +
         '<tfoot>' +
           '<tr>' +
             '<th>id</th>' +
             '<th>type</th>' +
+            '<th>description</th>' +
             '<th>status</th>' +
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
             '<th>actions</th>' +
-            '<th>requester</th>' +
-            '<th>request time</th>' +
+            '<th>skeleton id</th>' +
+            '<th>from</th>' +
+            '<th>date</th>' +
           '</tr>' +
         '</tfoot>' +
         '<tbody>' +

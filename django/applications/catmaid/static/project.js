@@ -61,7 +61,7 @@ function Project( pid )
 		}
 
 		// Only set focus if stack isn't already in focus
-		if ( stack ! == self.focusedStack )
+		if ( stack !== self.focusedStack )
 		    self.setFocusedStack( stack );
 		
 		// only set the tool for the first stack

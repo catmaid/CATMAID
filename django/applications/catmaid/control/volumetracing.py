@@ -82,10 +82,15 @@ def segment_inner_shapely(seg):
     valid_inners = [inner for inner in all_inners if Polygon(inner).is_valid]
     return valid_inners
 
-def area_segment_to_shapely(seg):
+def area_segment_to_shapely(seg, ext_only = False):
     ext_coords = coords_to_tuples(seg.coordinates)
-    int_coord_list = segment_inner_shapely(seg)
-    poly = Polygon(ext_coords, int_coord_list)    
+    
+    if ext_only:
+        poly = Polygon(ext_coords)
+    else:
+        int_coord_list = segment_inner_shapely(seg)
+        poly = Polygon(ext_coords, int_coord_list)
+    
     poly.id = seg.id
     vp = get_view_properties(seg.class_instance)
     #poly.color = vp.color
@@ -149,7 +154,7 @@ def erase_volume_trace(request, project_id=None, stack_id = None):
     r = float(request.POST.get('r'))
     z = float(request.POST.get('z'))
     i = request.POST.get('i')
-    instance_id = int(request.POST.get('instance_id'));
+    instance_id = int(request.POST.get('instance_id'))
     transform_params = request_to_transform_params(request)
     
     s = get_object_or_404(Stack, pk=stack_id)
@@ -284,6 +289,114 @@ def push_shapely_polygon(polygon, z, project, stack, instance, user, check_ovlp 
         
     return aseg, ids, polygon
 
+def close_all_holes(x, y, z, stack, project, class_instance):    
+    qs1 = AreaSegment.objects.filter(
+        project_id = project,
+        stack_id = stack,
+        z = z,
+        class_instance = class_instance,
+        type = 0).exclude(
+        min_x__gte = int(round(x)),
+        min_y__gte = int(round(y)),
+        max_x__lte = int(round(x)),
+        max_y__lte = int(round(y)))
+    pt = Point((x, y))
+    asegs = qs1.all()
+    shapely_polygons = [area_segment_to_shapely(seg, ext_only=True) for seg in asegs]
+    ovlp_polygons_seg_zip = [(p, seg) for (p, seg) in zip(shapely_polygons, asegs) if p.contains(pt)]
+    
+    for polygon, seg in ovlp_polygons_seg_zip:
+        # somewhat easier than deleting each inner trace one at a time.
+        change_polygon(seg, polygon)
+    
+    return zip(*ovlp_polygons_seg_zip)
+
+def close_hole(x, y, z, stack, project, class_instance):
+    qs1 = AreaSegment.objects.filter(
+        project_id = project,
+        stack_id = stack,
+        z = z,
+        class_instance = class_instance,
+        type = 0).exclude(
+        min_x__gte = int(round(x)),
+        min_y__gte = int(round(y)),
+        max_x__lte = int(round(x)),
+        max_y__lte = int(round(y)))
+    pt = Point((x, y))
+    asegs = qs1.all()
+    shapely_polygons = [area_segment_to_shapely(seg, ext_only=True) for seg in asegs]
+    ovlp_polygons_seg_zip = [(p, seg) for (p, seg) in zip(shapely_polygons, asegs) if p.contains(pt)]
+    
+    ovlp_polygons_ext, ovlp_segs = zip(*ovlp_polygons_seg_zip)
+    ovlp_polygons = []
+    
+    for seg in ovlp_segs:
+        inner_paths = seg.inner_paths
+        for interior_id in seg.inner_paths:
+            path = InnerPolygonPath.objects.get(id = interior_id)
+            inner_poly = Polygon(coords_to_tuples(path.coordinates))
+            if inner_poly.contains(pt):
+                inner_paths.remove(interior_id)
+                path.delete()
+        seg.inner_paths = inner_paths
+        seg.save()
+        ovlp_polygons.append(area_segment_to_shapely(seg))
+    
+    return ovlp_polygons, ovlp_segs
+
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def close_all_holes_in_trace(request, project_id=None, stack_id=None):
+    x = float(request.POST.get('x'))
+    y = float(request.POST.get('y'))
+    z = float(request.POST.get('z'))
+    instance_id = int(request.POST.get('instance_id'))
+    transform_params = request_to_transform_params(request)
+    
+    s = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, id=project_id)
+    ci = get_object_or_404(ClassInstance, id=instance_id)    
+    
+    polygons, segs = close_all_holes(x, y, z, s, p, ci)
+    
+    vp = get_view_properties(ci)
+    
+    svg = [shapely_polygon_to_svg(poly, transform_params, vp) for poly in polygons]
+    id = [aseg.id for aseg in segs]
+    dbid = id
+    view_prop = {'color': vp.color, 'opacity': vp.opacity}
+    tid = ci.id
+    return HttpResponse(json.dumps({'i' : id, 'dbi' : dbid, 'svg' : svg,
+                                    'instance_id' : tid,
+                                    'view_props' : view_prop}))
+    
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def close_hole_in_trace(request, project_id=None, stack_id=None):
+    x = float(request.POST.get('x'))
+    y = float(request.POST.get('y'))
+    z = float(request.POST.get('z'))
+    instance_id = int(request.POST.get('instance_id'))
+    transform_params = request_to_transform_params(request)
+    
+    s = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, id=project_id)
+    ci = get_object_or_404(ClassInstance, id=instance_id)
+    
+    polygons, segs = close_hole(x, y, z, s, p, ci)
+    
+    vp = get_view_properties(ci)
+    
+    svg = [shapely_polygon_to_svg(poly, transform_params, vp) for poly in polygons]
+    id = [aseg.id for aseg in segs]
+    dbid = id
+    view_prop = {'color': vp.color, 'opacity': vp.opacity}
+    tid = ci.id
+    return HttpResponse(json.dumps({'i' : id, 'dbi' : dbid, 'svg' : svg,
+                                    'instance_id' : tid,
+                                    'view_props' : view_prop}))
+        
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def push_volume_trace(request, project_id=None, stack_id=None):    
     x = request.POST.getlist('x[]')
@@ -291,7 +404,7 @@ def push_volume_trace(request, project_id=None, stack_id=None):
     r = float(request.POST.get('r'))
     z = float(request.POST.get('z'))
     i = request.POST.get('i')
-    instance_id = int(request.POST.get('instance_id'));
+    instance_id = int(request.POST.get('instance_id'))
     transform_params = request_to_transform_params(request)
     
     s = get_object_or_404(Stack, pk=stack_id)

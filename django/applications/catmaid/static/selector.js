@@ -21,7 +21,7 @@ function Selector()
 	var stack = null;
 	var position_markers = new Array();
 	// settings for duplicated cursors
-	var img_path = STATIC_URL_JS + "widgets/themes/kde/svg-cursor-30px.png";
+	var img_path = STATIC_URL_JS + "widgets/themes/kde/svg-cursor-light-30px.png";
 	var img_width = 30;
 	var img_height = 30;
 

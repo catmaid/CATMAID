@@ -58,9 +58,6 @@ function TileLayer(
 	/**
 	 * initialise the tiles array
 	 */
-	/**
-	 * initialise the tiles array
-	 */
 	var initTiles = function( rows, cols )
 	{
 		delete tiles;

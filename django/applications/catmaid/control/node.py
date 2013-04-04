@@ -523,11 +523,28 @@ def _fetch_location(treenode_id):
     return cursor.fetchone()
 
 
+def _fetch_location_connector(connector_id):
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT
+          id,
+          (location).x AS x,
+          (location).y AS y,
+          (location).z AS z
+        FROM connector
+        WHERE id=%s''', [connector_id])
+    return cursor.fetchone()
+
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def get_location(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])
-        return HttpResponse(json.dumps(_fetch_location(tnid)))
+        nodetype = request.POST.get('type', 'treenode')
+        if nodetype == 'connector':
+            return HttpResponse(json.dumps(_fetch_location_connector(tnid)))
+        else:
+            return HttpResponse(json.dumps(_fetch_location(tnid)))
     except Exception as e:
         raise Exception('Could not obtain the location of node with id #%s' % tnid)
 

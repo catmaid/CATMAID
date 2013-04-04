@@ -276,10 +276,10 @@ var createEditToolActions = function() {
                             if (e.error) {
                                 alert(e.error);
                             } else {
-                                if( project.focusedStack.s !== 0 ) {
-                                  alert('Segmentation Tool only works on zoom-level 0!');
+                                /*if( project.focusedStack.s !== 1 ) {
+                                  alert('Segmentation Tool only works on zoom-level 1!');
                                   return;
-                                }
+                                }*/
                                 project.setTool( new SegmentationTool() );
                             }
                         }
@@ -326,10 +326,10 @@ var segmentationWindowActions = [
 
   new Action({
     helpText: "Show segments table",
-    buttonID: "segmentation_button_segments_table",
+    buttonID: "segmentation_button_sliceinfo",
     buttonName: 'table_segments',
     run: function (e) {
-      WindowMaker.show('segmentstable-widget');
+      WindowMaker.show('sliceinfo-widget');
       return true;
     }
   }),

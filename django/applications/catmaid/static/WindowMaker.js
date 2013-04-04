@@ -350,30 +350,25 @@ var WindowMaker = new function()
     return win;
   };
 
-  var createSegmentsTablesWindow = function()
+  var createSliceInfoWindow = function()
   {
-    console.log('create...')
-    var win = new CMWWindow("Segments Table Widget");
+    var win = new CMWWindow("Slice Info Widget");
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
-    /*
-    var container = createContainer("segments_table_widget");
-    content.appendChild(container);
-
-    
-    var graph = document.createElement('div');
-    graph.setAttribute("id", "segmentstable-div");
-    graph.style.height = "100%";
-    graph.style.width = "100%";
-    container.appendChild(graph);
-    */
-
-    var container = createContainer("segmentstable-container");
+    var container = createContainer("table-container");
     content.appendChild( container );
 
-    container.innerHTML =
+    var slicetable = document.createElement('div');
+    slicetable.innerHTML =
+      '<table cellpadding="0" cellspacing="2" border="0" class="display" id="slicetable"></table>';
+
+    var segmentstable = document.createElement('div');
+    segmentstable.innerHTML =
       '<table cellpadding="0" cellspacing="2" border="0" class="display" id="segmentstable"></table>';
+
+    container.appendChild( slicetable );
+    container.appendChild( segmentstable );
 
     addListener(win, container);
 
@@ -1037,6 +1032,13 @@ var WindowMaker = new function()
 
         contentbutton.appendChild(sync);
 
+        var refresh = document.createElement('input');
+        refresh.setAttribute("type", "button");
+        refresh.setAttribute("id", "skeleton_info");
+        refresh.setAttribute("value", "Skeleton Info");
+        refresh.onclick = SkeletonConnectivity.skeleton_info;
+        contentbutton.appendChild(refresh);
+
         content.appendChild( contentbutton );
 
         var container = createContainer( "connectivity_widget" );
@@ -1381,7 +1383,7 @@ var WindowMaker = new function()
     "graph-widget": createGraphWindow,
     "compartment-graph-widget": createCompartmentGraphWindow,
     "assemblygraph-widget": createAssemblyGraphWindow,
-    "segmentstable-widget": createSegmentsTablesWindow,
+    "sliceinfo-widget": createSliceInfoWindow,
     "object-tree": createObjectTreeWindow,
     "statistics": createStatisticsWindow,
     "disclaimer": createDisclaimerWindow,

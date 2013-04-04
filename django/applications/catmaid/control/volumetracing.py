@@ -92,7 +92,10 @@ def area_segment_to_shapely(seg):
     return poly
 
 
-def get_overlapping_segments(polygon, bbox, z, project, stack, instance):
+def get_overlapping_segments(polygon, z, project, stack, instance):
+    
+    bbox = shapely_ring_bounds(polygon.exterior)
+    
     qs1 = AreaSegment.objects.filter(
         project_id = project,
         stack_id = stack,
@@ -125,12 +128,157 @@ def create_interior_polygons(interiors, z):
                                       max_y = bbox_int[3])
         inner_path.save()
         if Polygon(coords_to_tuples(inner_path.coordinates)).is_valid:
-            print 'valid inner path'
             inner_ids.append(inner_path.id)
         else:
-            print 'invalid inner path'
+            print 'Invalid inner path: ', inner_path.id
     return inner_ids
+
+def trace_polygon(x, y, r):
+    if len(x) > 1:            
+        xystr = map(list, zip(*[x, y]))    
+        xy = [map(float, xx) for xx in xystr]        
+        union_polygon = LineString(xy).buffer(r)
+    else:
+        union_polygon = Point(float(x[0]), float(y[0])).buffer(r)
+    return union_polygon
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def erase_volume_trace(request, project_id=None, stack_id = None):
+    x = request.POST.getlist('x[]')
+    y = request.POST.getlist('y[]')
+    r = float(request.POST.get('r'))
+    z = float(request.POST.get('z'))
+    i = request.POST.get('i')
+    instance_id = int(request.POST.get('instance_id'));
+    transform_params = request_to_transform_params(request)
+    
+    s = get_object_or_404(Stack, pk=stack_id)
+    p = get_object_or_404(Project, id=project_id)
+    ci = get_object_or_404(ClassInstance, id=instance_id)
+    
+    ''' Calculate the trace polygon '''
+    polygon = trace_polygon(x, y, r);
+    
+    ids = erase_shapely_polygon(polygon, z, p, s, ci, request.user)
+    
+    svglist = [area_segment_to_svg(AreaSegment.objects.get(id = dbid), transform_params) for dbid in ids]
+    
+    ids += [i]
+    dbids = ids
+    svglist += ['']
+    
+    return HttpResponse(json.dumps({'i' : ids, 'dbi' : dbids, 'svg' : svglist}))
+
+def erase_shapely_polygon(polygon, z, project, stack, instance, user):
+    ''' Grab overlapping polygons '''
+    overlap_segments, ids = get_overlapping_segments(polygon,
+        z, project = project, stack = stack, instance = instance)
+    out_ids = ids;
+    for dbpoly, dbid in zip(overlap_segments, ids):
+        aseg = AreaSegment.objects.get(id = dbid)        
+        ''' 
+        3 Cases, sort of.
+        Case 1: polygon totally encloses dbpoly. dbpoly_diff is a GeometryCollection and
+                dbpoly_diff.geoms is an emtpy array
+        Case 2: dbpoly/polygon results in a single polygon. dbpoly_diff is a Polygon, which has no
+                geoms field.
+        Case 3: dbpoly/polygon results in multiple polygons. dbpoly_diff is a MultiPolygon and
+                dbpoly_diff is a nonempty array of Polygons.
+        '''
+        dbpoly_diff = dbpoly.difference(polygon)
+        if dbpoly_diff.geom_type == 'Polygon':
+            # Case 2 from above. Just change the points in the existing polygon.
+            change_polygon(aseg, dbpoly_diff, save=True)
+        else:
+            npoly = len(dbpoly_diff.geoms)
+            if npoly == 0:
+                # Case 1 from above. Erase existing polygon
+                aseg.type = 1
+                aseg.save()
+            else:
+                # Case 3 from above.
+                # Change aseg to the first polygon in dbpoly_diff
+                change_polygon(aseg, dbpoly_diff.geoms[0], save=True)
+                # Push the rest of the polygons
+                for subpoly in dbpoly_diff.geoms[1:]:
+                    newseg, id, poly = push_shapely_polygon(subpoly, z, project, stack, instance, user, check_ovlp = False)
+                    out_ids.append(newseg.id)
+    return out_ids
+
+def change_polygon(aseg, polygon, save=True):
+    bbox_ext = shapely_ring_bounds(polygon.exterior)
+    interior_ids = create_interior_polygons(polygon.interiors, aseg.z)
+    
+    ''' Update the merged polygon'''
+    old_interior_ids = aseg.inner_paths
+    
+    aseg.coordinates = ring_to_coordinate_list(polygon.exterior)
+    aseg.min_x = bbox_ext[0]
+    aseg.max_x = bbox_ext[2]
+    aseg.min_y = bbox_ext[1]
+    aseg.max_y = bbox_ext[3]
+    aseg.inner_paths = interior_ids
+    
+    if save:
+        aseg.save()
+    
+    ''' delete unused inner paths '''
+    for interior_id in old_interior_ids:
+        InnerPolygonPath.objects.get(id = interior_id).delete()
+    
         
+        
+def push_shapely_polygon(polygon, z, project, stack, instance, user, check_ovlp = True):    
+
+    if check_ovlp:
+        ''' Grab overlapping polygons '''
+        overlap_segments, ids = get_overlapping_segments(polygon,
+            z, project = project, stack = stack, instance = instance)
+    else:
+        overlap_segments = None
+        ids = []
+
+    if overlap_segments is None or len(overlap_segments) == 0:
+        ''' Trace bounding box '''
+        # min_x, min_y, max_x, max_y
+        bbox_ext = shapely_ring_bounds(polygon.exterior)
+        ''' save new polygon '''
+        ext_coords = ring_to_coordinate_list(polygon.exterior)
+        
+        interior_ids = create_interior_polygons(polygon.interiors, z)
+        
+        aseg = AreaSegment(
+            user = user,
+            project = project,
+            stack = stack,
+            coordinates = ext_coords,
+            class_instance = instance,
+            min_x = bbox_ext[0],
+            max_x = bbox_ext[2],
+            min_y = bbox_ext[1],
+            max_y = bbox_ext[3],
+            inner_paths = interior_ids,
+            z = z)
+        
+        aseg.save()
+        
+    else:
+        for seg in overlap_segments:
+            polygon = polygon.union(seg)
+        #bbox_ext = shapely_ring_bounds(polygon.exterior)
+        #interior_ids = create_interior_polygons(polygon.interiors, z)
+        
+        ''' Update the merged polygon'''
+        aseg = AreaSegment.objects.get(id = ids[0])
+        change_polygon(aseg, polygon)
+        
+        ''' soft-delete the now-unused polygons '''
+        for id in ids[1:]:
+            delArea = AreaSegment.objects.get(id = id)
+            delArea.type = 1 #type == 1 indicates unused segments
+            delArea.save()
+        
+    return aseg, ids, polygon
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def push_volume_trace(request, project_id=None, stack_id=None):    
@@ -145,98 +293,33 @@ def push_volume_trace(request, project_id=None, stack_id=None):
     s = get_object_or_404(Stack, pk=stack_id)
     p = get_object_or_404(Project, id=project_id)
     ci = get_object_or_404(ClassInstance, id=instance_id)
+        
+    polygon = trace_polygon(x, y, r)
     
-    ''' Calculate the trace polygon '''
-    union_polygon = None
+    aseg, ovlp_ids, union_polygon = push_shapely_polygon(polygon, z, p, s, ci, request.user)
     
-    if len(x) > 1:            
-        xystr = map(list, zip(*[x, y]))    
-        xy = [map(float, xx) for xx in xystr]        
-        union_polygon = LineString(xy).buffer(r)
-    else:
-        union_polygon = Point(float(x[0]), float(y[0])).buffer(r)
+    vp = get_view_properties(ci)
     
-    ''' Trace bounding box '''
-    # min_x, min_y, max_x, max_y
-    bbox_ext = shapely_ring_bounds(union_polygon.exterior)
-
-    ''' Grab overlapping polygons '''
-    overlap_segments, ids = get_overlapping_segments(union_polygon,
-        bbox_ext, z, project = p, stack = s, instance = ci)
-
-    if overlap_segments is None or len(overlap_segments) == 0:
-        ''' save new polygon '''
-        ext_coords = ring_to_coordinate_list(union_polygon.exterior)
-        
-        interior_ids = create_interior_polygons(union_polygon.interiors, z)
-        
-        aseg = AreaSegment(
-            user=request.user,
-            project=p,
-            stack = s,
-            coordinates = ext_coords,
-            class_instance = ci,
-            min_x = bbox_ext[0],
-            max_x = bbox_ext[2],
-            min_y = bbox_ext[1],
-            max_y = bbox_ext[3],
-            inner_paths = interior_ids,
-            z = z)
-        
-        vp = get_view_properties(aseg.class_instance)
-        svg_xml = shapely_polygon_to_svg(union_polygon, transform_params, vp)
-        
-        aseg.save()
-        ids = [i]
-        dbids = [aseg.id]
-        svglist = [svg_xml]        
-        
-    else:
-        #if hasattr(union_polygon, 'color'):
-        #    colorstr = union_polygon.color
-        #else:
-        #    colorstr = '#0000ff'
-        #overlap_segments.append(union_polygon)
-        #union_polygon = cascaded_union(overlap_segments)
-        for seg in overlap_segments:
-            union_polygon = union_polygon.union(seg)
-        #union_polygon.color = colorstr
-        bbox_ext = shapely_ring_bounds(union_polygon.exterior)
-        interior_ids = create_interior_polygons(union_polygon.interiors, z)
-        
-        ''' Update the merged polygon'''
-        aseg = AreaSegment.objects.get(id = ids[0])
-        old_interior_ids = aseg.inner_paths
-        
-        aseg.coordinates = ring_to_coordinate_list(union_polygon.exterior)
-        aseg.min_x = bbox_ext[0]
-        aseg.max_x = bbox_ext[2]
-        aseg.min_y = bbox_ext[1]
-        aseg.max_y = bbox_ext[3]
-        aseg.inner_paths = interior_ids
-        aseg.save()
-        
-        ''' soft-delete the now-unused polygons '''
-        for id in ids[1:]:
-            delArea = AreaSegment.objects.get(id = id)
-            #old_interior_ids += delArea.inner_paths
-            delArea.type = 1 #type == 1 indicates unused segments
-            delArea.save()
-
-        ''' delete unused inner paths '''
-        for interior_id in old_interior_ids:
-            InnerPolygonPath.objects.get(id = interior_id).delete()
-        
-        ''' push empty svg for all ids that are to be deleted '''
-        vp = get_view_properties(aseg.class_instance)
-        svglist = [shapely_polygon_to_svg(union_polygon, transform_params, vp)]
-        svglist += [''] * len(ids)
-        ids += [i]
-        dbids = ids
+    ids = ovlp_ids
+    ids += [i]
+    
+    dbids = ovlp_ids
+    dbids = [aseg.id]
+    
+    svglist = [shapely_polygon_to_svg(union_polygon, transform_params, vp)]
+    svglist += [''] * len(ovlp_ids)
     
     return HttpResponse(json.dumps({'i' : ids, 'dbi' : dbids, 'svg' : svglist}))
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def area_segment_to_svg(seg, transform_params):
+    if seg.type == 0:
+        polygon = area_segment_to_shapely(seg)
+        vp = get_view_properties(seg.class_instance)
+        return shapely_polygon_to_svg(polygon, transform_params, vp)
+    else:
+        return ''
+   
+@requires_user_role([UserRole.Browse])
 def all_volume_traces(request, project_id=None, stack_id=None):
     transform_params = request_to_transform_params(request)
     #s = get_object_or_404(Stack, pk=stack_id)
@@ -267,7 +350,7 @@ def all_volume_traces(request, project_id=None, stack_id=None):
     for seg in area_segs:
         polygon = area_segment_to_shapely(seg)
         vp = get_view_properties(seg.class_instance)
-        svg_list.append(shapely_polygon_to_svg(polygon, transform_params, vp))
+        svg_list.append(area_segment_to_svg(seg, transform_params))
         vps.append(vp)    
     
     ids = [seg.id for seg in area_segs]
@@ -298,8 +381,6 @@ def set_trace_properties(request, project_id=None):
     color = request.POST.get('color')
     opacity = float(request.POST.get('opacity'))
     
-    print 'setting color of instance ', instance_id, ' to ', color
-    
     ci = get_object_or_404(ClassInstance, id=instance_id);
     vp = None
     try:
@@ -323,8 +404,6 @@ def HTMLColorToRGB(colorstring):
     return (r, g, b)
 
 def instance_png(request, project_id=None, instance_id=None):
-    print "project", project_id
-    print "instance", instance_id
     vp = get_view_properties(ClassInstance.objects.get(id = instance_id))
     im = Image.new("RGBA" , (18,18))
     draw = ImageDraw.Draw(im)
@@ -335,8 +414,6 @@ def instance_png(request, project_id=None, instance_id=None):
     
 
 def volume_classes(request, project_id=None):
-    print request.GET.get('parentid')
-    print request.GET.get('pid')
     parentId = int(request.GET.get('parentid'))
     projectId = int(request.GET.get('pid'))
     p = get_object_or_404(Project, id=project_id)
@@ -356,8 +433,6 @@ def volume_classes(request, project_id=None):
     c = Class.objects.get(id = parentId)
     instances = ClassInstance.objects.filter(class_column = c)
     pngsrc = 'http://catmaidv/catmaid/{}/volumetrace/{}/instance.png' #.format(projectId, ci.id) 
-    for ci in instances.all():
-        print pngsrc.format(projectId, ci.id)
     
     return HttpResponse(json.dumps(
         tuple({'data' : {'title' : '<img src="' + pngsrc.format(projectId, ci.id) + '"\>' + ci.name},
@@ -370,7 +445,6 @@ def volume_classes(request, project_id=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def create_new_trace(request, project_id=None):
-    print 'called create new trace'
     parent_class_name = request.POST.get('parent')
     new_trace_name = request.POST.get('trace_name')
     p = get_object_or_404(Project, id=project_id)
@@ -379,7 +453,6 @@ def create_new_trace(request, project_id=None):
                        project = p,
                        class_column = c,
                        name = new_trace_name)
-    print 'Creating new ', parent_class_name, ' with name ', new_trace_name
     ci.save()
     return HttpResponse(json.dumps({'message' : 'ok'}))
                        

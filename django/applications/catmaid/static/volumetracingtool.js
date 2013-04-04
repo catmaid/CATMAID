@@ -20,6 +20,8 @@ function VolumeTracingTool()
     var canvasLayer = null;
     var isDragging = false;    
     var enabled = false;
+//    var eraserMode = false;
+    var eraserKey = 'ctrlKey';
     
     this.stack = null;
     this.toolname = "Volume Tracing Tool";
@@ -244,7 +246,7 @@ function VolumeTracingTool()
         return traces;
     }
     
-    this.createNewTrace = function()
+    this.createNewTrace = function(eraserMode)
     {
         VolumeTraceLastID--;        
         var trace = new fabricTrace(
@@ -253,7 +255,8 @@ function VolumeTracingTool()
             VolumeTraceLastID,
             self.brush_slider.val,
             VolumeTracingPalette.trace_id,
-            VolumeTracingPalette.view_props);
+            VolumeTracingPalette.view_props,
+            eraserMode);
         self.traces.push(trace);
         return trace;
     }
@@ -301,6 +304,9 @@ function VolumeTracingTool()
             {
                 self.currentTrace.addObject(self.brush.clone());
                 self.volumeAnnotation.pushTrace(self.currentTrace);
+                self.brush.opacity = VolumeTracingPalette.view_props.opacity;
+                self.brush.fill = VolumeTracingPalette.view_props.color;
+                self.brush.stroke = "";
             }
         }
         else
@@ -352,9 +358,25 @@ function VolumeTracingTool()
     {
         if (enabled)
         {
+            var eraserMode = e[eraserKey];
+            if (eraserMode)
+            {
+                self.brush.opacity = 1;
+                self.brush.stroke = VolumeTracingPalette.view_props.color;
+                self.brush.fill = "";
+                self.brush.strokeWidth = 2;
+            }
+            else
+            {
+                self.brush.opacity = VolumeTracingPalette.view_props.opacity;
+                self.brush.fill = VolumeTracingPalette.view_props.color;
+                self.brush.stroke = "";
+            }
+            
             self.lastMouseXY = {"x": e.offsetX, "y": e.offsetY};
-            self.currentTrace = self.createNewTrace();        
+            self.currentTrace = self.createNewTrace(eraserMode);
             isDragging = true;
+            
             var spot = self.brush.clone();
             self.currentTrace.addObject(spot);
         }
@@ -701,7 +723,7 @@ function stackPxToDisplayPxYArray(y, stack)
 
 
 
-function fabricTrace(stack, cl, objid, r, instanceid, vp)
+function fabricTrace(stack, cl, objid, r, instanceid, vp, eraserMode)
 {
     var self = this;
     this.canvasLayer = cl;
@@ -714,6 +736,7 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp)
     // vp should be a js object like 
     // vp = {'color': '#00ffff', 'opacity': 0.5}
     this.view_props = vp;
+    var eraser = eraserMode;
     
     /**
      * A fabricTrace's ID will be negative if it has not yet been synced
@@ -746,8 +769,8 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp)
     {
         //obj.set(self.view_props);
         obj.setActive(false);
-        obj.fill = self.view_props.color;
-        obj.opacity = self.view_props.opacity;
+        //obj.fill = self.view_props.color;
+        //obj.opacity = self.view_props.opacity;
         self.objectList.push(obj);
         self.canvasLayer.canvas.add(obj);
         self.x.push(displayPxToStackPxX(obj.left, self.stack));
@@ -859,6 +882,11 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp)
 
             self.setObjects(objects);
         }
+    }
+    
+    this.isAdditive = function()
+    {
+        return !eraser;
     }
 }
 

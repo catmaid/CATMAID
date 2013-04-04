@@ -22,8 +22,8 @@ function VolumeTracingTool()
     var isDragging = false;    
     var enabled = false;
     var eraserKeys = ['ctrlKey'];
-    var closeHoleKeys = ['altKey'];
-    var closeAllHolesKeys = ['altKey', 'shiftKey'];
+    var closeHoleKeys = ['shiftKey'];
+    var closeAllHolesKeys = ['ctrlKey', 'shiftKey'];
     
     this.stack = null;
     this.toolname = "Volume Tracing Tool";
@@ -376,13 +376,17 @@ function VolumeTracingTool()
     var closeHole = function(e)
     {
         var m = ui.getMouse(e, self.stack.getView());
-        VolumeTracingAnnotations.closeHole(m.offsetX, m.offsetY, VolumeTracingPalette.trace_id);
+        var x = displayPxToStackPxX(m.offsetX, self.stack);
+        var y = displayPxToStackPxY(m.offsetY, self.stack);
+        VolumeTracingAnnotations.closeHole(x, y, VolumeTracingPalette.trace_id);
     }
     
     var closeAllHoles = function(e)
     {
         var m = ui.getMouse(e, self.stack.getView());
-        VolumeTracingAnnotations.closeAllHoles(m.offsetX, m.offsetY, VolumeTracingPalette.trace_id);
+        var x = displayPxToStackPxX(m.offsetX, self.stack);
+        var y = displayPxToStackPxY(m.offsetY, self.stack);
+        VolumeTracingAnnotations.closeAllHoles(x, y, VolumeTracingPalette.trace_id);        
     }
     
     var onmousemove = 
@@ -426,20 +430,24 @@ function VolumeTracingTool()
     {
         if (enabled)
         {
-            if (checkKeys(e, eraserKeys))
+            if (checkKeys(e, closeAllHolesKeys))
             {
-                dragErase(e);
+                console.log('close all')
+                closeAllHoles(e);
             }
             else if (checkKeys(e, closeHoleKeys))
             {
+                console.log('close')
                 closeHole(e);
             }
-            else if (checkKeys(e, closeAllHolesKeys))
+            else if (checkKeys(e, eraserKeys))
             {
-                closeAllHoles(e);
+                console.log('erase')
+                dragErase(e);
             }
-            else
+            else 
             {
+                console.log('paint')
                 dragPaint(e);
             }
         }

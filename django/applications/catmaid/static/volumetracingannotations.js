@@ -9,7 +9,7 @@ var VolumeTracingAnnotations = new function ()
     
     this.fixTrace = function(data)
     {
-        console.log(data);
+        //console.log(data);
         
         for (var ii = 0; ii < data.i.length; ii++)
         {
@@ -141,9 +141,9 @@ var VolumeTracingAnnotations = new function ()
                 'left': screenPos.left};
         $.ajax({
             "dataType" : 'json',
-            "type" : POST,
+            "type" : "POST",
             "cache" : false,
-            "url" : django_url + project.id + '/volumetrace/closehole',
+            "url": django_url + project.id + '/stack/' + self.stack.id + '/volumetrace/closehole',
             "data" : data,
             "success" : self.fixTrace
         });
@@ -164,9 +164,9 @@ var VolumeTracingAnnotations = new function ()
                 'left': screenPos.left};
         $.ajax({
             "dataType" : 'json',
-            "type" : POST,
+            "type" : "POST",
             "cache" : false,
-            "url" : django_url + project.id + '/volumetrace/closeallholes',
+            "url": django_url + project.id + '/stack/' + self.stack.id + '/volumetrace/closeallholes',
             "data" : data,
             "success" : self.fixTrace
         });

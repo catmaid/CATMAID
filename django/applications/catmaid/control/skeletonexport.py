@@ -18,6 +18,14 @@ try:
 except ImportError:
     pass    
 
+try:
+    import neuroml
+    import neuroml.writers as writers
+except ImportError:
+    pass    
+
+
+
 def get_treenodes_qs(project_id=None, skeleton_id=None, with_labels=True):
     treenode_qs = Treenode.objects.filter(skeleton_id=skeleton_id)
     if with_labels:

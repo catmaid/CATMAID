@@ -478,7 +478,10 @@ function Stack(
 				// treenode table. setting the focus to a dummy
 				// href element does not work
 				$('#search_labels').blur();
-				//project.setFocusedStack( self );
+				// only update the project's focused stack if the stack
+				// isn't already focused
+				if ( self !== project.focusedStack )
+					project.setFocusedStack( self );
 				break;
 			case CMWWindow.BLUR:
 				self.overview.getView().style.zIndex = "5";

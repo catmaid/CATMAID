@@ -386,6 +386,11 @@ var ClassificationEditor = new function()
             // Override the submit behaviour if select graph form is displayed
             self.overrideSelectGraphSubmit(container, pid);
          }
+         else if (page_type == 'setup')
+         {
+            // Override the submit behaviour if the setup form is displayed
+            self.overrideSetupSubmit(container, pid);
+         }
     }
 
   this.overrideNewGraphSubmit = function(container, pid) {
@@ -510,6 +515,26 @@ var ClassificationEditor = new function()
                     var e = $.parseJSON(data);
                     container.innerHTML = e.content;
                     self.handleContent( e.page, container, pid, e.link );
+                }
+            });
+            return false;
+        });
+    }
+
+    return found;
+  };
+
+  this.overrideSetupSubmit = function(container, pid) {
+    var form = $("#setup-classification-form");
+    var found = form.length !== 0;
+    if (found) {
+        form.submit(function(){
+            $.ajax({
+                type: "POST",
+                url: form.attr('action'),
+                data: form.serialize(),
+                success: function(data, textStatus) {
+                    ClassificationEditor.refresh();
                 }
             });
             return false;

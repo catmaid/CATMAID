@@ -1,0 +1,10 @@
+{% load url from future %}
+
+{% block classification-content %}
+<p>The classification system doesn't seem to be set-up to work with this project. It needs certain classes and relations which have not been found (or only parts of it). If you press the "Setup" button below, all needed things are created. Afterwards, the classification system should be usable for this project.</p>
+
+<form method="post" id="setup-classification-form"
+        action="{% url 'rebuild_classification_setup' project_id workspace_pid %}">
+    <p><input type="submit" value="Setup" /></p>
+</form>
+{% endblock %}

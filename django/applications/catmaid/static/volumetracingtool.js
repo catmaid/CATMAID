@@ -1,5 +1,4 @@
 /**
-/**
 * Volume tracing tool
 * 
 * Note that at this early stage in development, nomenclature has not 
@@ -7,8 +6,6 @@
 * Area Tracing and Area Segmentation, which are all subtle variations on
 * the same concept. IE, they all relate here.
 */
-
-
 
 
 var traceBrushSize = 16;
@@ -39,6 +36,51 @@ function VolumeTracingTool()
     
     this.proto_mouseup = null;
     
+    /**
+     * fixTrace(data)
+     * Fixes fabric.js traces to data returned by ajax.
+     * data - an object with the following fields
+     *     i - an array of unique display indices
+     *     dbi - an array of the indices of the corresponding AreaSegments in the catmaid database.
+     *           i and dbi are often the same. This is used for mapping.
+     *     svg - an array of svg xml strings. Empty strings indicate that no object should be
+     *           displayed.
+     *     trace_id - the id of the class_instance that contains the AreaSegments
+     *     view_prop - an object with fields color and opacity
+     * 
+     * For each index i, finds the FabricTrace with that index, creating it if it does not exist.
+     *  Any fabric.js objects it holds are removed, and replaced with one representing the svg xml.
+     *  Its index is changed from i to dbi, if they are different (dbi != i if this is a newly
+     *  created trace). Color and opacity are determined by view_prop.
+     */
+    var fixTrace = function(data)
+    {
+        //console.log(data);
+        
+        for (var ii = 0; ii < data.i.length; ii++)
+        {
+            
+            var id = data.i[ii];
+            var dbid = data.dbi[ii];
+            var trace = self.getTraceByID(id);           
+            var svg = data.svg[ii];
+            
+            if (trace == null)
+            {
+                trace = self.createNewTrace(data.trace_id, data.view_props);
+            }
+            
+            trace.populateSVG(svg);
+                            
+            if (trace.id != dbid)
+            {
+                trace.id = dbid;
+            }
+            
+        }
+        return;
+    }
+    
     this.registerToolbar = function()
     {
         if (VolumeTracingPalette.isWindowClosed())
@@ -52,7 +94,7 @@ function VolumeTracingTool()
         }
 
         self.brush_slider = new Slider(SLIDER_HORIZONTAL, true, 1, 100, 100, traceBrushSize,
-            self.changeSlice);
+            self.changeBrushSize);
         var nav = self.prototype;
 
         //document.getElementById("toolbar_volseg").style.display = "block";
@@ -76,9 +118,11 @@ function VolumeTracingTool()
         slider_box.appendChild(slider_b_box);
     };
     
-    this.setViewProps = function(vp)
-    {
-        var tid = VolumeTracingPalette.trace_id;        
+    /**
+     * Set the color and opacity for all traces with the given trace_id
+     */
+    this.setViewProps = function(tid, vp)
+    {        
         var traces = self.getTracesByInstance(tid);
                 
         self.brush.fill = vp.color;
@@ -95,6 +139,9 @@ function VolumeTracingTool()
         canvasLayer.canvas.renderAll();
     }
     
+    /**
+     * Bring the active traces forward
+     */
     var bringActiveTracesForward = function()
     {
         var tid = VolumeTracingPalette.trace_id;
@@ -105,6 +152,9 @@ function VolumeTracingTool()
         }
     }
     
+    /**
+     * Enable the brush
+     */
     this.enable = function()
     {
         self.brush.set({'opacity' : .5});
@@ -114,12 +164,14 @@ function VolumeTracingTool()
         canvasLayer.canvas.renderAll();
     }
     
+    /**
+     * Disable the brush
+     */
     this.disable = function()
     {
         self.brush.set({'opacity' : 0});
         enabled = false;
     }
-    
     
     this.redraw = function()
     {
@@ -130,18 +182,19 @@ function VolumeTracingTool()
         var dZ = self.currentZ() - self.lastZ;
         var lastMouseXY = null;
 
-        
         self.cacheScreen();
         
+        // If scale and Z didn't change, just translate the traces to the correct location
         if (scale == lastScale && dZ == 0)
         {
             for (var i = 0; i < self.traces.length; i++)
-            {
+            {                
                 self.traces[i].translate(currPos, lastPos, scale);
             }
         }
         else
         {
+            // Otherwise, refresh them from the database
             var oldTraces = self.traces;
             // If we switched sections, remove the old traces after adding the new ones, to avoid
             // flickering.
@@ -167,6 +220,18 @@ function VolumeTracingTool()
         canvasLayer.canvas.renderAll();        
     }
     
+    /**
+     * Draw all traces represented in the object data
+     * data - an object with the following fields
+     *     i - an array of unique display indices
+     *     dbi - an array of the indices of the corresponding AreaSegments in the catmaid database.
+     *           i and dbi are often the same. This is used for mapping.
+     *     svg - an array of svg xml strings. Empty strings indicate that no object should be
+     *           displayed.
+     *     trace_id - the id of the class_instance that contains the AreaSegments
+     *     vp - an array of object with fields color and opacity
+     *  
+     */
     this.pullTraces = function(data)
     {
         //console.log(data);
@@ -196,6 +261,19 @@ function VolumeTracingTool()
         canvasLayer.canvas.renderAll();
     }
     
+    /**
+     * Draw the traces represented in the object data. Only draws traces with ids that are not
+     * currently present on the screen.
+     * data - an object with the following fields
+     *     i - an array of unique display indices
+     *     dbi - an array of the indices of the corresponding AreaSegments in the catmaid database.
+     *           i and dbi are often the same. This is used for mapping.
+     *     svg - an array of svg xml strings. Empty strings indicate that no object should be
+     *           displayed.
+     *     trace_id - the id of the class_instance that contains the AreaSegments
+     *     vp - an array of object with fields color and opacity
+     *  
+     */
     this.pullNewTraces = function(data)
     {
         for (var ii = 0; ii < data.i.length; ii++)
@@ -220,6 +298,10 @@ function VolumeTracingTool()
         canvasLayer.canvas.renderAll();
     }
     
+    
+    /**
+     * Returns the FabricTrace with the given id, if it exists, or null if not.
+     */
     this.getTraceByID = function(id)
     {
         for (var i = 0; i < self.traces.length; i++)
@@ -232,6 +314,10 @@ function VolumeTracingTool()
         return null;
     }
     
+    /**
+     * Returns a list of all FabricTraces associated with the given instance id, ie, all those
+     * that should have the same color and opacity.
+     */
     this.getTracesByInstance = function(trace_id)
     {
         traces = [];
@@ -245,6 +331,9 @@ function VolumeTracingTool()
         return traces;
     }
     
+    /**
+     * Creates a FabricTrace to be used as an eraser-mask for the given instance id.
+     */
     this.createNewEraserTrace = function(trace_id, vp)
     {
         VolumeTraceLastID--;        
@@ -261,6 +350,9 @@ function VolumeTracingTool()
         return trace;
     }
     
+    /**
+     * Creates a new additive FabricTrace for the given instance id
+     */
     this.createNewTrace = function(trace_id, vp)
     {
         VolumeTraceLastID--;        
@@ -276,6 +368,9 @@ function VolumeTracingTool()
         return trace;
     }
     
+    /**
+     * Caches the screen position
+     */
     this.cacheScreen = function()
     {
         self.lastPos = self.stack.screenPosition();
@@ -283,6 +378,9 @@ function VolumeTracingTool()
         self.lastZ = self.currentZ();
     }
     
+    /**
+     * Returns the current Z as 
+     */
     this.currentZ = function()
     {
         return self.stack.z * self.stack.resolution.z + self.stack.translation.z;
@@ -318,7 +416,7 @@ function VolumeTracingTool()
             if (enabled)
             {
                 self.currentTrace.addObject(self.brush.clone());
-                self.volumeAnnotation.pushTrace(self.currentTrace);
+                self.volumeAnnotation.pushTrace(self.currentTrace, fixTrace);
                 self.brush.opacity = VolumeTracingPalette.view_props.opacity;
                 self.brush.fill = VolumeTracingPalette.view_props.color;
                 self.brush.stroke = "";
@@ -366,7 +464,7 @@ function VolumeTracingTool()
         self.brush.strokeWidth = 2;
         
         self.lastMouseXY = {"x": e.offsetX, "y": e.offsetY};
-        self.currentTrace = self.createNewEraserTrace(VolumeTracingPalette.trace_id, vp);
+        self.currentTrace = self.createNewEraserTrace(VolumeTracingPalette.trace_id, vp, fixTrace);
         isDragging = true;
         
         var spot = self.brush.clone();
@@ -378,7 +476,7 @@ function VolumeTracingTool()
         var m = ui.getMouse(e, self.stack.getView());
         var x = displayPxToStackPxX(m.offsetX, self.stack);
         var y = displayPxToStackPxY(m.offsetY, self.stack);
-        VolumeTracingAnnotations.closeHole(x, y, VolumeTracingPalette.trace_id);
+        VolumeTracingAnnotations.closeHole(x, y, VolumeTracingPalette.trace_id, fixTrace);
     }
     
     var closeAllHoles = function(e)
@@ -386,7 +484,7 @@ function VolumeTracingTool()
         var m = ui.getMouse(e, self.stack.getView());
         var x = displayPxToStackPxX(m.offsetX, self.stack);
         var y = displayPxToStackPxY(m.offsetY, self.stack);
-        VolumeTracingAnnotations.closeAllHoles(x, y, VolumeTracingPalette.trace_id);        
+        VolumeTracingAnnotations.closeAllHoles(x, y, VolumeTracingPalette.trace_id, fixTrace);
     }
     
     var onmousemove = 
@@ -432,22 +530,18 @@ function VolumeTracingTool()
         {
             if (checkKeys(e, closeAllHolesKeys))
             {
-                console.log('close all')
                 closeAllHoles(e);
             }
             else if (checkKeys(e, closeHoleKeys))
             {
-                console.log('close')
                 closeHole(e);
             }
             else if (checkKeys(e, eraserKeys))
             {
-                console.log('erase')
                 dragErase(e);
             }
             else 
             {
-                console.log('paint')
                 dragPaint(e);
             }
         }
@@ -456,6 +550,11 @@ function VolumeTracingTool()
          */
     }
 
+    /**
+     * Replacement mousewheel handler
+     * Shift + roll changes the size of the brush
+     * Alt + roll changes layer opacity
+     */
     var onmousewheel = function(e)
     {
         var w = ui.getMouseWheel( e );
@@ -587,15 +686,14 @@ function VolumeTracingTool()
     this.handleKeyPress = function(e)
     {
         var keyAction = keyCodeToAction[e.keyCode];
-        if (keyAction) {
-            //tracingLayer.svgOverlay.ensureFocused();
+        if (keyAction) {            
             return keyAction.run(e);
         } else {
             return false;
         }
     };
     
-    this.changeSlice = function(val)
+    this.changeBrushSize = function(val)
     {
         statusBar.replaceLast("VRad: " + val);
         self.brush.set({'radius': val});
@@ -796,7 +894,9 @@ function stackPxToDisplayPxYArray(y, stack)
 }
 
 
-
+/**
+ * Holds a representation for a single catmaid-db AreaTrace, used for painting with fabric.js
+ */
 function fabricTrace(stack, cl, objid, r, instanceid, vp, eraserMode)
 {
     var self = this;
@@ -806,6 +906,7 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp, eraserMode)
     this.x = []; // x,y trace in stack pixel coordinates
     this.y = [];
     this.stack = stack;
+    // The id of the ClassInstance that goes with this trace/seg/AreaSegment/Volume Segment.
     this.trace_id = instanceid;
     // vp should be a js object like 
     // vp = {'color': '#00ffff', 'opacity': 0.5}
@@ -841,10 +942,7 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp, eraserMode)
     
     this.addObject = function(obj)
     {
-        //obj.set(self.view_props);
         obj.setActive(false);
-        //obj.fill = self.view_props.color;
-        //obj.opacity = self.view_props.opacity;
         self.objectList.push(obj);
         self.canvasLayer.canvas.add(obj);
         self.x.push(displayPxToStackPxX(obj.left, self.stack));
@@ -865,12 +963,12 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp, eraserMode)
      */
     this.setObject = function(inObj)
     {
-        /*self.removeFromCanvas();
-        self.objectList = [inObj];
-        self.addToCanvas();*/
         self.setObjects([inObj]);
     }
     
+    /**
+     * Remove current object list, replacing it with inObjList
+     */
     this.setObjects = function(inObjList)
     {
         for (var i = 0; i < inObjList.length; i++)

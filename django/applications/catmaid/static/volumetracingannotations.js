@@ -1,46 +1,32 @@
-
+/**
+* Volume tracing data transactions
+* 
+* Note that at this early stage in development, nomenclature has not 
+* yet been settled. As such, you will find references to Volume Tracing,
+* Area Tracing and Area Segmentation, which are all subtle variations on
+* the same concept. IE, they all relate here.
+*/
 
 var VolumeTracingAnnotations = new function ()
 {
     var self = this;
-    var pendingTraces = [];
     this.tool = null;
     this.stack = null;
-    
-    this.fixTrace = function(data)
-    {
-        //console.log(data);
-        
-        for (var ii = 0; ii < data.i.length; ii++)
-        {
-            
-            var id = data.i[ii];
-            var dbid = data.dbi[ii];
-            var trace = self.tool.getTraceByID(id);           
-            var svg = data.svg[ii];
-            
-            if (trace == null)
-            {
-                trace = self.tool.createNewTrace(data.trace_id, data.view_props);
-            }
-            
-            trace.populateSVG(svg);
-                            
-            if (trace.id != dbid)
-            {
-                trace.id = dbid;
-            }
-            
-        }
-        return;
-    }
     
     this.setStack = function(inStack)
     {
         self.stack = inStack;
     }
     
-    this.pushTrace = function(trace)
+    /**
+     * Pushes a FabricTrace into the database. If it is an additive FabricTrace, this adds a new
+     * AreaTrace polygon to the project (unless it overlaps an existing one). If it is an eraser-
+     * mask FabricTrace, this performs the erase operation.
+     * 
+     * trace - the FabricTrace to push
+     * callback - a callback function, in the style of VolumeTracingTool.fixTrace(data)
+     */
+    this.pushTrace = function(trace, callback)
     {
         var radii = [];
         var ctrX = [];
@@ -51,6 +37,11 @@ var VolumeTracingAnnotations = new function ()
         r = trace.r;
         ctrX = trace.x;
         ctrY = trace.y;
+        
+        /*
+         * We push only the radius and the list of x, y. A server side script creates a
+         * correctly-merged polygon, which will be fed as svg to the callback function.
+        */
         
         screenPos = self.stack.screenPosition();
         
@@ -74,10 +65,14 @@ var VolumeTracingAnnotations = new function ()
           "cache": false,
           "url": django_url + project.id + '/stack/' + self.stack.id + url,
           "data": data,
-          "success": self.fixTrace
+          "success": callback
         }); 
     }
     
+    /**
+     * Calls the server to retrieve all traces for the given view. Returned data is passed to 
+     * the callback function, which should be in the style of VolumeTracingTool.pullTraces(data).
+     */
     this.retrieveAllTraces = function(callback)
     {
         screenPos = self.stack.screenPosition();
@@ -101,6 +96,15 @@ var VolumeTracingAnnotations = new function ()
         });
     }
     
+    /**
+     * Sets view properties for a given ClassInstance in the catmaid db.
+     * instance_id - the id of the ClassInstance to set.
+     * vp - an object with fields:
+     *      color - a hex string of the style '#0000ff'
+     *      opacity - a number from 0 to 1.
+     * refresh - if true, will cause the jstree to refresh when the server call completes
+     *           successfully.
+     */
     this.setViewProps = function(instance_id, vp, refresh)
     {
         var refreshTree = function()
@@ -126,7 +130,10 @@ var VolumeTracingAnnotations = new function ()
         });
     }
     
-    this.closeHole = function(x, y, trace_id)
+    /**
+     * Closes a hole, if it exists, for the given trace_id at position x, y in stack coordinates.
+     */
+    this.closeHole = function(x, y, trace_id, callback)
     {
         data = {'x': x,
                 'y': y,
@@ -145,11 +152,14 @@ var VolumeTracingAnnotations = new function ()
             "cache" : false,
             "url": django_url + project.id + '/stack/' + self.stack.id + '/volumetrace/closehole',
             "data" : data,
-            "success" : self.fixTrace
+            "success" : callback
         });
     }
     
-    this.closeAllHoles = function(x, y, trace_id)
+    /**
+     * Closes all holes for an AreaSegment that contains the point (x,y)
+     */
+    this.closeAllHoles = function(x, y, trace_id, callback)
     {
         data = {'x': x,
                 'y': y,
@@ -168,11 +178,14 @@ var VolumeTracingAnnotations = new function ()
             "cache" : false,
             "url": django_url + project.id + '/stack/' + self.stack.id + '/volumetrace/closeallholes',
             "data" : data,
-            "success" : self.fixTrace
+            "success" : callback
         });
     }
 }
 
+/**
+ * Handles the VolumeTracing window.
+ */
 var VolumeTracingPalette = new function()
 {
     var self = this;
@@ -180,15 +193,23 @@ var VolumeTracingPalette = new function()
     this.trace_id = "";
     this.trees = [];
     this.class_id = -1;
+    // Default view properties
     this.view_props = {'color': '#0000ff', 'opacity': 0.5};
     this.view = null;
     
+    /**
+     * Sync view_props.color to the color wheel, and update the active VolumeTracingTool.
+     */
     this.syncColor = function()
     {
         self.view_props.color = self.colorwheel.color().hex;
-        VolumeTracingAnnotations.tool.setViewProps(self.view_props);
+        VolumeTracingAnnotations.tool.setViewProps(self.trace_id, self.view_props);
     }
     
+    /**
+     * Sync view_props.color to the color wheel, update the active VolumeTracingTool, and
+     * propagate the change to the database.
+     */
     this.syncColorAndUpdate = function()
     {
         self.syncColor();
@@ -199,7 +220,7 @@ var VolumeTracingPalette = new function()
     this.changeOpacity = function()
     {
         self.view_props.opacity = self.opacity_slider.val / 100;
-        VolumeTracingAnnotations.tool.setViewProps(self.view_props);
+        VolumeTracingAnnotations.tool.setViewProps(self.trace_id, self.view_props);
         VolumeTracingAnnotations.setViewProps(self.trace_id, self.view_props, false);
     }
     
@@ -306,18 +327,7 @@ var VolumeTracingPalette = new function()
                          }
                     }
                     }
-                } /*else if (type_of_node === "instance") {
-                    menu = {
-                    "edit_area_object": {
-                        "separator_before": false,
-                        "separator_after": false,
-                        "label": "Edit Object",
-                        "action": function (obj) {
-                            return self.edit_object(pid, tree_id);
-                         }
-                    }
-                    }
-                }*/
+                }
                 return menu;
             }
           },
@@ -343,6 +353,7 @@ var VolumeTracingPalette = new function()
                 self.trace_id = id.replace('instance_', '');                
                 self.colorwheel.color(self.view_props.color);                
                 self.view.hidden = false;
+                var trace_id = self.trace_id;
                 
                 $.ajax({
                     "dataType": 'json',
@@ -357,7 +368,7 @@ var VolumeTracingPalette = new function()
                             self.view_props.color = data.color;
                             self.view_props.opacity = data.opacity;
                             VolumeTracingAnnotations.tool.enable();
-                            VolumeTracingAnnotations.tool.setViewProps(data);                            
+                            VolumeTracingAnnotations.tool.setViewProps(trace_id, data);                            
                         }          
                 }); 
             }
@@ -366,8 +377,6 @@ var VolumeTracingPalette = new function()
                 self.view.hidden = true;
                 VolumeTracingAnnotations.tool.disable();
             }
-            //console.log(event);
-            //console.log(data);
         }).bind("deselect_node.jstree", function (event, data){
             self.view.hidden = true;
             VolumeTracingAnnotations.tool.disable();
@@ -375,6 +384,9 @@ var VolumeTracingPalette = new function()
 
     }
     
+    /**
+     * Create a new traceable_root ClassInstance
+     */
     this.create_new_object = function(n, pid)
     {
         $('#trace_add_dialog #trace_cancel').off("click").on("click",

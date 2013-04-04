@@ -156,6 +156,8 @@ def erase_volume_trace(request, project_id=None, stack_id = None):
     p = get_object_or_404(Project, id=project_id)
     ci = get_object_or_404(ClassInstance, id=instance_id)
     
+    vp = get_view_properties(ci);
+    
     ''' Calculate the trace polygon '''
     polygon = trace_polygon(x, y, r);
     
@@ -167,7 +169,9 @@ def erase_volume_trace(request, project_id=None, stack_id = None):
     dbids = ids
     svglist += ['']
     
-    return HttpResponse(json.dumps({'i' : ids, 'dbi' : dbids, 'svg' : svglist}))
+    return HttpResponse(json.dumps({'i' : ids, 'dbi' : dbids, 'svg' : svglist,
+                                    'instance_id' : instance_id,
+                                    'view_props' : {'color' : vp.color, 'opacity' : vp.opacity}}))
 
 def erase_shapely_polygon(polygon, z, project, stack, instance, user):
     ''' Grab overlapping polygons '''
@@ -309,7 +313,9 @@ def push_volume_trace(request, project_id=None, stack_id=None):
     svglist = [shapely_polygon_to_svg(union_polygon, transform_params, vp)]
     svglist += [''] * len(ovlp_ids)
     
-    return HttpResponse(json.dumps({'i' : ids, 'dbi' : dbids, 'svg' : svglist}))
+    return HttpResponse(json.dumps({'i' : ids, 'dbi' : dbids, 'svg' : svglist,
+                                    'instance_id' : instance_id,
+                                    'view_props' : {'color' : vp.color, 'opacity' : vp.opacity}}))
 
 def area_segment_to_svg(seg, transform_params):
     if seg.type == 0:

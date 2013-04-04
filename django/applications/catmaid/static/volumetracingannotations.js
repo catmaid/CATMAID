@@ -7,22 +7,6 @@ var VolumeTracingAnnotations = new function ()
     this.tool = null;
     this.stack = null;
     
-    /*this.removePendingTrace = function(id)
-    {
-        var trace = null;
-        for (var i = 0; i < pendingTraces.length; i++)
-        {
-            if (id == pendingTraces[i].id)
-            {
-                trace = pendingTraces.splice(i, 1);
-                trace = trace[0];
-                break;
-            }            
-        }
-        return trace;
-    }*/
-
-    
     this.fixTrace = function(data)
     {
         console.log(data);
@@ -37,7 +21,7 @@ var VolumeTracingAnnotations = new function ()
             
             if (trace == null)
             {
-                trace = self.tool.createNewTrace(false);
+                trace = self.tool.createNewTrace(data.trace_id, data.view_props);
             }
             
             trace.populateSVG(svg);
@@ -75,7 +59,7 @@ var VolumeTracingAnnotations = new function ()
                 'y' : ctrY,
                 'z' : self.stack.z * self.stack.resolution.z + self.stack.translation.z,
                 'i' : trace.id,
-                'instance_id' : VolumeTracingPalette.trace_id,
+                'instance_id' : trace.trace_id,
                 'xtrans' : self.stack.translation.x + self.stack.x,
                 'ytrans' : self.stack.translation.y + self.stack.y,
                 'wview' : self.stack.viewWidth,
@@ -139,6 +123,52 @@ var VolumeTracingAnnotations = new function ()
                       'opacity' : vp.opacity,
                       'trace_id' : instance_id},
             "success" : callback
+        });
+    }
+    
+    this.closeHole = function(x, y, trace_id)
+    {
+        data = {'x': x,
+                'y': y,
+                'z' : self.stack.z * self.stack.resolution.z + self.stack.translation.z,
+                'instance_id': trace_id,
+                'xtrans' : self.stack.translation.x + self.stack.x,
+                'ytrans' : self.stack.translation.y + self.stack.y,
+                'wview' : self.stack.viewWidth,
+                'hview' : self.stack.viewHeight,
+                'scale' : self.stack.scale,
+                'top' : screenPos.top,
+                'left': screenPos.left};
+        $.ajax({
+            "dataType" : 'json',
+            "type" : POST,
+            "cache" : false,
+            "url" : django_url + project.id + '/volumetrace/closehole',
+            "data" : data,
+            "success" : self.fixTrace
+        });
+    }
+    
+    this.closeAllHoles = function(x, y, trace_id)
+    {
+        data = {'x': x,
+                'y': y,
+                'z' : self.stack.z * self.stack.resolution.z + self.stack.translation.z,
+                'instance_id': trace_id,
+                'xtrans' : self.stack.translation.x + self.stack.x,
+                'ytrans' : self.stack.translation.y + self.stack.y,
+                'wview' : self.stack.viewWidth,
+                'hview' : self.stack.viewHeight,
+                'scale' : self.stack.scale,
+                'top' : screenPos.top,
+                'left': screenPos.left};
+        $.ajax({
+            "dataType" : 'json',
+            "type" : POST,
+            "cache" : false,
+            "url" : django_url + project.id + '/volumetrace/closeallholes',
+            "data" : data,
+            "success" : self.fixTrace
         });
     }
 }

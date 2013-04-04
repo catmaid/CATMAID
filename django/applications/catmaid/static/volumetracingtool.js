@@ -1,4 +1,5 @@
 /**
+/**
 * Volume tracing tool
 * 
 * Note that at this early stage in development, nomenclature has not 
@@ -20,12 +21,12 @@ function VolumeTracingTool()
     var canvasLayer = null;
     var isDragging = false;    
     var enabled = false;
-//    var eraserMode = false;
-    var eraserKey = 'ctrlKey';
+    var eraserKeys = ['ctrlKey'];
+    var closeHoleKeys = ['altKey'];
+    var closeAllHolesKeys = ['altKey', 'shiftKey'];
     
     this.stack = null;
     this.toolname = "Volume Tracing Tool";
-    //var canvasLayer = null;
     this.brush = null;
     
     this.volumeAnnotation = VolumeTracingAnnotations;
@@ -181,7 +182,7 @@ function VolumeTracingTool()
             
             if (trace == null)
             {
-                trace = self.createNewTrace();
+                trace = self.createNewTrace(trace_id, vp);
                 trace.id = id;                
             }
             
@@ -208,11 +209,9 @@ function VolumeTracingTool()
             
             if (trace == null)
             {
-                trace = self.createNewTrace();
+                trace = self.createNewTrace(trace_id, vp);
                 trace.id = id;
                 trace.populateSVG(svg);
-                trace.trace_id = trace_id;
-                trace.setViewProps(vp);
                 trace.sendToBack();
             }
         }
@@ -246,7 +245,23 @@ function VolumeTracingTool()
         return traces;
     }
     
-    this.createNewTrace = function(eraserMode)
+    this.createNewEraserTrace = function(trace_id, vp)
+    {
+        VolumeTraceLastID--;        
+        
+        var trace = new fabricTrace(
+            self.stack,
+            canvasLayer, 
+            VolumeTraceLastID,
+            self.brush_slider.val,
+            trace_id,
+            vp,
+            true);
+        self.traces.push(trace);
+        return trace;
+    }
+    
+    this.createNewTrace = function(trace_id, vp)
     {
         VolumeTraceLastID--;        
         var trace = new fabricTrace(
@@ -254,9 +269,9 @@ function VolumeTracingTool()
             canvasLayer, 
             VolumeTraceLastID,
             self.brush_slider.val,
-            VolumeTracingPalette.trace_id,
-            VolumeTracingPalette.view_props,
-            eraserMode);
+            trace_id,
+            vp,
+            false);
         self.traces.push(trace);
         return trace;
     }
@@ -315,7 +330,60 @@ function VolumeTracingTool()
         }
     }
     
+    var checkKeys = function(e, keys)
+    {
+        for (var i = 0; i < keys.length; i++)
+        {
+            if (!e[keys[i]])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
     
+    var dragPaint = function(e)
+    {
+        var vp = VolumeTracingPalette.view_props;
+        self.brush.opacity = vp.opacity;
+        self.brush.fill = vp.color;
+        self.brush.stroke = "";
+        
+        self.lastMouseXY = {"x": e.offsetX, "y": e.offsetY};
+        self.currentTrace = self.createNewTrace(VolumeTracingPalette.trace_id, vp);
+        isDragging = true;
+        
+        var spot = self.brush.clone();
+        self.currentTrace.addObject(spot);
+    }
+    
+    var dragErase = function(e)
+    {
+        var vp = VolumeTracingPalette.view_props;
+        self.brush.opacity = 1;
+        self.brush.stroke = vp.color;
+        self.brush.fill = "";
+        self.brush.strokeWidth = 2;
+        
+        self.lastMouseXY = {"x": e.offsetX, "y": e.offsetY};
+        self.currentTrace = self.createNewEraserTrace(VolumeTracingPalette.trace_id, vp);
+        isDragging = true;
+        
+        var spot = self.brush.clone();
+        self.currentTrace.addObject(spot);
+    }
+    
+    var closeHole = function(e)
+    {
+        var m = ui.getMouse(e, self.stack.getView());
+        VolumeTracingAnnotations.closeHole(m.offsetX, m.offsetY, VolumeTracingPalette.trace_id);
+    }
+    
+    var closeAllHoles = function(e)
+    {
+        var m = ui.getMouse(e, self.stack.getView());
+        VolumeTracingAnnotations.closeAllHoles(m.offsetX, m.offsetY, VolumeTracingPalette.trace_id);
+    }
     
     var onmousemove = 
     {
@@ -358,28 +426,26 @@ function VolumeTracingTool()
     {
         if (enabled)
         {
-            var eraserMode = e[eraserKey];
-            if (eraserMode)
+            if (checkKeys(e, eraserKeys))
             {
-                self.brush.opacity = 1;
-                self.brush.stroke = VolumeTracingPalette.view_props.color;
-                self.brush.fill = "";
-                self.brush.strokeWidth = 2;
+                dragErase(e);
+            }
+            else if (checkKeys(e, closeHoleKeys))
+            {
+                closeHole(e);
+            }
+            else if (checkKeys(e, closeAllHolesKeys))
+            {
+                closeAllHoles(e);
             }
             else
             {
-                self.brush.opacity = VolumeTracingPalette.view_props.opacity;
-                self.brush.fill = VolumeTracingPalette.view_props.color;
-                self.brush.stroke = "";
+                dragPaint(e);
             }
-            
-            self.lastMouseXY = {"x": e.offsetX, "y": e.offsetY};
-            self.currentTrace = self.createNewTrace(eraserMode);
-            isDragging = true;
-            
-            var spot = self.brush.clone();
-            self.currentTrace.addObject(spot);
         }
+        /*
+         * else TODO select clicked-on instance in jstree
+         */
     }
 
     var onmousewheel = function(e)
@@ -458,7 +524,7 @@ function VolumeTracingTool()
         }
         canvasLayer.view.onmouseup = onmouseup;
         
-        self.createNewTrace();
+        //self.createNewTrace();
         
         self.stack.getView().appendChild(canvasLayer.view);
         self.volumeAnnotation.setStack(self.stack);

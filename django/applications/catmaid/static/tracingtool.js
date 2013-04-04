@@ -541,6 +541,20 @@ function TracingTool()
     }
   }) );
 
+  this.addAction( new Action({
+    helpText: "Go to the next element with lowest confidence in the current time point and channel",//if there is more, the first one is chosen
+    keyShortcuts: {
+      "R": [ 82 ] //depending if shift is down or up it will go to left or right child
+    },
+    run: function (e) {
+      if (!mayView())
+        return false;
+      tracingLayer.svgOverlay.tracingCommand('golowconfidence');
+      
+      return true;
+    }
+  }) );
+
 
   this.addAction( new Action({
     helpText: "Go to last edited node in this skeleton",

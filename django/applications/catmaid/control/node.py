@@ -614,6 +614,32 @@ def find_previous_branchnode_or_root(request, project_id=None):
 
 
 
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def find_next_lowest_confidence(request, project_id=None):
+    try:
+        t = int(request.POST['t'])
+        c = int(request.POST['ch'])
+
+        qs = Treenode.objects.filter(project_id = project_id, location_t = t, location_c = c).order_by('confidence') #ascending order
+
+        #json is a tuple:
+        #json[0]: treenode id
+        #json[4]: skeleton_id
+        #json[1], [2], [3], [5], [6]: x, y, z, t, c in calibrated world units
+
+        return HttpResponse(json.dumps( (
+            qs[0].id,
+            int(qs[0].location.x),
+            int(qs[0].location.y),
+            int(qs[0].location.z),
+            qs[0].skeleton_id,
+            int(qs[0].location_t),
+            int(qs[0].location_c) ) ) )
+
+    except Exception as e:
+        raise Exception('There is no node in this time point to select' + str(e))
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def find_next_child(request, project_id=None):
     try:

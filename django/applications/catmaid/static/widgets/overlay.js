@@ -1748,6 +1748,60 @@ var SkeletonAnnotations = new function()
     };
 
 
+    this.goToLowestConfidenceNode = function()
+    {
+
+      //check over teh cached nodes if there is one in the current time point with 0 confidence (so we do not have to query the database)
+      var nodeLowC = undefined;
+      var idn;
+      for (idn in nodes)
+      {
+          if ( (nodes[idn].t == stack.t) && (nodes[idn].ch == stack.c) && (nodes[idn].confidence == 0) )
+          {
+              nodeLowC = nodes[idn];
+              break;
+          }
+      }
+
+      if (nodeLowC) {
+        // We found a cached node to display
+        self.moveToAndSelectNode(nodeLowC);
+      } else {
+        requestQueue.replace(
+          django_url + project.id + "/node/next_lowest_confidence",
+          "POST",
+          {t: stack.t,
+           ch: stack.c },
+          function(status, text) {
+            if (200 === status) {
+              var json = $.parseJSON(text);
+              if (json.error) {
+                alert("Error when trying to find next lowest confidence node:" + json.error);
+              } else {
+                // json is a tuple:
+                // json[0]: treenode id
+                //json[4]: skeleton_id
+                // json[1], [2], [3], [5], [6]: x, y, z, t, c in calibrated world units                
+
+                  if( stack.tile_source_type === 5)//5D visualization
+                  {
+                    stack.getProject().moveTo5D(json[3], json[2], json[1], undefined,json[5], json[6],
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json[0], json[4]);
+                    });
+                   }else{   
+                  stack.getProject().moveTo(json[3], json[2], json[1], undefined,
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json[0], json[4]);
+                    });
+                  }
+                 }              
+            }
+          });
+      }
+    }
+
+
     this.goToChildNode = function(treenode_id, e) {
       requestQueue.register(
           django_url + project.id + "/node/next_child",
@@ -1902,6 +1956,9 @@ var SkeletonAnnotations = new function()
         }else {
           alert('There must be a currently active node in order to move to its parent.');
         }
+        break;
+      case "golowconfidence":
+        self.goToLowestConfidenceNode();
         break;
       case "goactive":
         var activeNodePosition = SkeletonAnnotations.getActiveNodePosition();

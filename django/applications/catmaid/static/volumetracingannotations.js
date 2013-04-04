@@ -25,7 +25,7 @@ var VolumeTracingAnnotations = new function ()
     
     this.fixTrace = function(data)
     {
-        //console.log(data);
+        console.log(data);
         
         for (var ii = 0; ii < data.i.length; ii++)
         {
@@ -37,16 +37,14 @@ var VolumeTracingAnnotations = new function ()
             
             if (trace == null)
             {
-                continue;
+                trace = self.tool.createNewTrace(false);
             }
-            else
+            
+            trace.populateSVG(svg);
+                            
+            if (trace.id != dbid)
             {
-                trace.populateSVG(svg);
-                                
-                if (id != dbid)
-                {
-                    trace.id = dbid;
-                }
+                trace.id = dbid;
             }
             
         }
@@ -64,7 +62,7 @@ var VolumeTracingAnnotations = new function ()
         var ctrX = [];
         var ctrY = [];
         
-        //pendingTraces.push(trace);
+        var url = trace.isAdditive() ? '/volumetrace/push' : '/volumetrace/erase';
         
         r = trace.r;
         ctrX = trace.x;
@@ -90,9 +88,9 @@ var VolumeTracingAnnotations = new function ()
           "dataType": 'json',
           "type": "POST",
           "cache": false,
-          "url": django_url + project.id + '/stack/' + self.stack.id + '/volumetrace/push',
+          "url": django_url + project.id + '/stack/' + self.stack.id + url,
           "data": data,
-          "success": self.fixTrace          
+          "success": self.fixTrace
         }); 
     }
     

@@ -323,7 +323,7 @@ var VolumeTracingPalette = new function()
                         "separator_after": false,
                         "label": "Create New Object",
                         "action": function (obj) {
-                            return self.create_new_object(this, pid);
+                            return self.create_new_object(this, obj, pid);
                          }
                     }
                     }
@@ -387,8 +387,10 @@ var VolumeTracingPalette = new function()
     /**
      * Create a new traceable_root ClassInstance
      */
-    this.create_new_object = function(n, pid)
+    this.create_new_object = function(n, obj, pid)
     {
+        n.obj = obj;
+        
         $('#trace_add_dialog #trace_cancel').off("click").on("click",
         function() {
             // clear input box
@@ -400,7 +402,7 @@ var VolumeTracingPalette = new function()
         function(){
             console.log("add clicked");
             console.log(n);
-            var parentClass = n.get_text();
+            var parentClass = n.obj[0].getAttribute('name');
             var traceName = $('#trace_add_dialog #tracename').val();
             
             $.ajax({
@@ -408,10 +410,10 @@ var VolumeTracingPalette = new function()
                 "type": "POST",
                   "cache": false,
                   "url": django_url + project.id + '/volumetrace/create',
-                  "data": {'parent' : n.get_text(),
+                  "data": {'parent' : parentClass,
                            'pid' : pid,
                            'trace_name' : traceName},
-                  "success": VolumeTracingPalette.refresh        
+                  "success": VolumeTracingPalette.refresh
             });
             
             $('#trace_add_dialog #traceclassname').val("");

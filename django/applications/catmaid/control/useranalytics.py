@@ -1,12 +1,40 @@
-from catmaid.objects import *
+from django.http import HttpResponse
+from django.db.models import Count
+
 from catmaid.models import *
+from catmaid.objects import *
+
 from datetime import timedelta, time
-import matplotlib.pyplot as plt
+
 import numpy as np
 import copy
-import matplotlib.colors as colors
-from matplotlib.dates import  DateFormatter, DayLocator
 
+try:
+    import matplotlib.pyplot as plt
+    import matplotlib.colors as colors
+    from matplotlib.dates import  DateFormatter, DayLocator
+except:
+    pass
+
+from pylab import figure, axes, pie, title
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+
+def test_matplotlib(request, project_id = None):
+
+    # f = generateReport( user_id = 1, activeTimeThresh = 2)
+
+    f = figure(1, figsize=(6,6))
+    ax = axes([0.1, 0.1, 0.8, 0.8])
+    labels = 'Frogs', 'Hogs', 'Dogs', 'Logs'
+    fracs = [15,30,45, 10]
+    explode=(0, 0.05, 0, 0)
+    pie(fracs, explode=explode, labels=labels, autopct='%1.1f%%', shadow=True)
+    title('Raining Hogs and Dogs', bbox={'facecolor':'0.8', 'pad':5})
+
+    canvas = FigureCanvasAgg( f )    
+    response = HttpResponse(content_type='image/png')
+    canvas.print_png(response)
+    return response
 
 def eventTimes(user_id, start_date, end_date):
     tns = Treenode.objects.filter(

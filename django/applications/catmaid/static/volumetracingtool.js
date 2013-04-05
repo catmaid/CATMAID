@@ -47,6 +47,7 @@ function VolumeTracingTool()
      *           displayed.
      *     trace_id - the id of the class_instance that contains the AreaSegments
      *     view_prop - an object with fields color and opacity
+     *     z - the z coordinate associated with these traces
      * 
      * For each index i, finds the FabricTrace with that index, creating it if it does not exist.
      *  Any fabric.js objects it holds are removed, and replaced with one representing the svg xml.
@@ -55,29 +56,30 @@ function VolumeTracingTool()
      */
     var fixTrace = function(data)
     {
-        //console.log(data);
-        
-        for (var ii = 0; ii < data.i.length; ii++)
+        if (data.z == self.currentZ())
         {
-            
-            var id = data.i[ii];
-            var dbid = data.dbi[ii];
-            var trace = self.getTraceByID(id);           
-            var svg = data.svg[ii];
-            
-            if (trace == null)
+            for (var ii = 0; ii < data.i.length; ii++)
             {
-                trace = self.createNewTrace(data.trace_id, data.view_props);
+                
+                var id = data.i[ii];
+                var dbid = data.dbi[ii];
+                var trace = self.getTraceByID(id);           
+                var svg = data.svg[ii];
+                
+                if (trace == null)
+                {
+                    trace = self.createNewTrace(data.trace_id, data.view_props);
+                }
+                
+                trace.populateSVG(svg);
+                                
+                if (trace.id != dbid)
+                {
+                    trace.id = dbid;
+                }
+                
             }
-            
-            trace.populateSVG(svg);
-                            
-            if (trace.id != dbid)
-            {
-                trace.id = dbid;
             }
-            
-        }
         return;
     }
     
@@ -235,30 +237,32 @@ function VolumeTracingTool()
     this.pullTraces = function(data)
     {
         //console.log(data);
-        
-        for (var ii = 0; ii < data.i.length; ii++)
+        if (data.z == self.currentZ())
         {
-            var id = data.i[ii];
-            var trace = self.getTraceByID(id);
-            var objects = [];
-            var svg = data.svg[ii];
-            var vp = data.vp[ii];
-            var trace_id = data.tid[ii];
-            
-            if (trace == null)
+            for (var ii = 0; ii < data.i.length; ii++)
             {
-                trace = self.createNewTrace(trace_id, vp);
-                trace.id = id;                
+                var id = data.i[ii];
+                var trace = self.getTraceByID(id);
+                var objects = [];
+                var svg = data.svg[ii];
+                var vp = data.vp[ii];
+                var trace_id = data.tid[ii];
+                
+                if (trace == null)
+                {
+                    trace = self.createNewTrace(trace_id, vp);
+                    trace.id = id;                
+                }
+                
+                trace.trace_id = trace_id;
+                trace.populateSVG(svg);
+                trace.setViewProps(vp);
+                trace.sendToBack();
             }
-            
-            trace.trace_id = trace_id;
-            trace.populateSVG(svg);
-            trace.setViewProps(vp);
-            trace.sendToBack();
+            bringActiveTracesForward();
+            self.brush.bringToFront();
+            canvasLayer.canvas.renderAll();
         }
-        bringActiveTracesForward();
-        self.brush.bringToFront();
-        canvasLayer.canvas.renderAll();
     }
     
     /**
@@ -276,26 +280,33 @@ function VolumeTracingTool()
      */
     this.pullNewTraces = function(data)
     {
-        for (var ii = 0; ii < data.i.length; ii++)
+        /*
+         * When scrolling fast, its possible to overshoot the ajax call, meaning we need this check
+         * to prevent drawing traces from multiple z's.
+        */
+        if (data.z == self.currentZ()) 
         {
-            var id = data.i[ii];
-            var trace = self.getTraceByID(id);
-            var objects = [];
-            var svg = data.svg[ii];
-            var trace_id = data.tid[ii];
-            var vp = data.vp[ii];
-            
-            if (trace == null)
+            for (var ii = 0; ii < data.i.length; ii++)
             {
-                trace = self.createNewTrace(trace_id, vp);
-                trace.id = id;
-                trace.populateSVG(svg);
-                trace.sendToBack();
+                var id = data.i[ii];
+                var trace = self.getTraceByID(id);
+                var objects = [];
+                var svg = data.svg[ii];
+                var trace_id = data.tid[ii];
+                var vp = data.vp[ii];
+                
+                if (trace == null)
+                {
+                    trace = self.createNewTrace(trace_id, vp);
+                    trace.id = id;
+                    trace.populateSVG(svg);
+                    trace.sendToBack();
+                }
             }
+            bringActiveTracesForward();
+            self.brush.bringToFront();
+            canvasLayer.canvas.renderAll();
         }
-        bringActiveTracesForward();
-        self.brush.bringToFront();
-        canvasLayer.canvas.renderAll();
     }
     
     

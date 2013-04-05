@@ -252,7 +252,8 @@ def erase_volume_trace(request, project_id=None, stack_id = None):
     
     return HttpResponse(json.dumps({'i' : ids, 'dbi' : dbids, 'svg' : svglist,
                                     'instance_id' : instance_id,
-                                    'view_props' : {'color' : vp.color, 'opacity' : vp.opacity}}))
+                                    'view_props' : {'color' : vp.color, 'opacity' : vp.opacity},
+                                    'z' : z}))
 
 """
 
@@ -458,7 +459,8 @@ def close_all_holes_in_trace(request, project_id=None, stack_id=None):
     tid = ci.id
     return HttpResponse(json.dumps({'i' : id, 'dbi' : dbid, 'svg' : svg,
                                     'instance_id' : tid,
-                                    'view_props' : view_prop}))
+                                    'view_props' : view_prop,
+                                    'z' : z}))
     
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -484,7 +486,8 @@ def close_hole_in_trace(request, project_id=None, stack_id=None):
     tid = ci.id
     return HttpResponse(json.dumps({'i' : id, 'dbi' : dbid, 'svg' : svg,
                                     'instance_id' : tid,
-                                    'view_props' : view_prop}))
+                                    'view_props' : view_prop,
+                                    'z' : z}))
         
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -518,7 +521,8 @@ def push_volume_trace(request, project_id=None, stack_id=None):
     
     return HttpResponse(json.dumps({'i' : ids, 'dbi' : dbids, 'svg' : svglist,
                                     'instance_id' : instance_id,
-                                    'view_props' : {'color' : vp.color, 'opacity' : vp.opacity}}))
+                                    'view_props' : {'color' : vp.color, 'opacity' : vp.opacity},
+                                    'z' : z}))
 
 def area_segment_to_svg(seg, transform_params):
     if seg.type == 0:
@@ -569,7 +573,8 @@ def all_volume_traces(request, project_id=None, stack_id=None):
                                     'svg' : svg_list,
                                     'vp' : [{'opacity' : vp.opacity,
                                              'color' : vp.color} for vp in vps],
-                                    'tid' : tids}))
+                                    'tid' : tids,
+                                    'z' : z}))
 
 def get_view_properties(class_instance):
     try:

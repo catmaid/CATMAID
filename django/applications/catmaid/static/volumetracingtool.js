@@ -56,7 +56,7 @@ function VolumeTracingTool()
      */
     var fixTrace = function(data)
     {
-        if (data.z == self.currentZ())
+        if (data.z == currentZ())
         {
             for (var ii = 0; ii < data.i.length; ii++)
             {
@@ -181,7 +181,7 @@ function VolumeTracingTool()
         var scale = self.stack.scale;
         var lastScale = self.lastScale;
         var lastPos = self.lastPos;
-        var dZ = self.currentZ() - self.lastZ;
+        var dZ = currentZ() - self.lastZ;
         var lastMouseXY = null;
 
         self.cacheScreen();
@@ -202,12 +202,12 @@ function VolumeTracingTool()
             // flickering.
             var callfun = dZ ? 
                 function(data){
-                    self.pullTraces(data);
+                    pullTraces(data);
                     for (var i = 0; i < oldTraces.length; i++)
                     {
                             oldTraces[i].setObjects([]);
                     }
-                } : self.pullTraces;
+                } : pullTraces;
             
             if (dZ)
             {
@@ -234,10 +234,10 @@ function VolumeTracingTool()
      *     vp - an array of object with fields color and opacity
      *  
      */
-    this.pullTraces = function(data)
+    var pullTraces = function(data)
     {
         //console.log(data);
-        if (data.z == self.currentZ())
+        if (data.z == currentZ())
         {
             for (var ii = 0; ii < data.i.length; ii++)
             {
@@ -278,13 +278,13 @@ function VolumeTracingTool()
      *     vp - an array of object with fields color and opacity
      *  
      */
-    this.pullNewTraces = function(data)
+    var pullNewTraces = function(data)
     {
         /*
          * When scrolling fast, its possible to overshoot the ajax call, meaning we need this check
          * to prevent drawing traces from multiple z's.
         */
-        if (data.z == self.currentZ()) 
+        if (data.z == currentZ()) 
         {
             for (var ii = 0; ii < data.i.length; ii++)
             {
@@ -386,13 +386,13 @@ function VolumeTracingTool()
     {
         self.lastPos = self.stack.screenPosition();
         self.lastScale = self.stack.scale;
-        self.lastZ = self.currentZ();
+        self.lastZ = currentZ();
     }
     
     /**
      * Returns the current Z as 
      */
-    this.currentZ = function()
+    var currentZ = function()
     {
         return self.stack.z * self.stack.resolution.z + self.stack.translation.z;
     }
@@ -648,7 +648,7 @@ function VolumeTracingTool()
         self.volumeAnnotation.setStack(self.stack);
         self.volumeAnnotation.tool = self;
         
-        self.volumeAnnotation.retrieveAllTraces(self.pullTraces);
+        self.volumeAnnotation.retrieveAllTraces(pullTraces);
         self.cacheScreen();
         
         return;
@@ -708,8 +708,7 @@ function VolumeTracingTool()
     {
         statusBar.replaceLast("VRad: " + val);
         self.brush.set({'radius': val});
-        canvasLayer.canvas.renderAll();
-        //self.brush.setCoords();
+        canvasLayer.canvas.renderAll();        
         return;
     };
 
@@ -911,8 +910,8 @@ function stackPxToDisplayPxYArray(y, stack)
 function fabricTrace(stack, cl, objid, r, instanceid, vp, eraserMode)
 {
     var self = this;
-    this.canvasLayer = cl;
-    this.objectList = []; //List of fabric.js Objects
+    var canvasLayer = cl;
+    var objectList = []; //List of fabric.js Objects
     this.r = r / stack.scale;
     this.x = []; // x,y trace in stack pixel coordinates
     this.y = [];
@@ -934,28 +933,28 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp, eraserMode)
     
     this.addToCanvas = function()
     {
-        var canvas = self.canvasLayer.canvas;
-        for (var i = 0; i < self.objectList.length; i++)
+        var canvas = canvasLayer.canvas;
+        for (var i = 0; i < objectList.length; i++)
         {
-            canvas.add(self.objectList[i]);
+            canvas.add(objectList[i]);
         }
-        self.canvasLayer.canvas.renderAll();
+        canvasLayer.canvas.renderAll();
     }
     
     this.removeFromCanvas = function()
     {
-        for (var i = 0; i < self.objectList.length; i++)
+        for (var i = 0; i < objectList.length; i++)
         {
-            self.objectList[i].remove();
+            objectList[i].remove();
         }
-        self.canvasLayer.canvas.renderAll();
+        canvasLayer.canvas.renderAll();
     }
     
     this.addObject = function(obj)
     {
         obj.setActive(false);
-        self.objectList.push(obj);
-        self.canvasLayer.canvas.add(obj);
+        objectList.push(obj);
+        canvasLayer.canvas.add(obj);
         self.x.push(displayPxToStackPxX(obj.left, self.stack));
         self.y.push(displayPxToStackPxY(obj.top, self.stack));
     }
@@ -964,7 +963,7 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp, eraserMode)
     {
         self.x = [];
         self.y = [];
-        self.objectList = [];    
+        objectList = [];    
     }
     
     /**
@@ -989,7 +988,7 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp, eraserMode)
         }
         self.removeFromCanvas();
         self.clear();
-        self.objectList = inObjList;
+        objectList = inObjList;
         
         self.addToCanvas();
     }
@@ -997,35 +996,35 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp, eraserMode)
     this.setOpacity = function(opc)
     {
         o = {opacity: opc};
-        for (var i = 0; i < self.objectList.length; i++)
+        for (var i = 0; i < objectList.length; i++)
         {
-            self.objectList[i].set(o);
+            objectList[i].set(o);
         }
     }
     
     this.bringToFront = function()
     {
-        for (var i = 0; i < self.objectList.length; i++)
+        for (var i = 0; i < objectList.length; i++)
         {
-            self.objectList[i].bringToFront();
+            objectList[i].bringToFront();
         }
     }
     
     this.sendToBack = function()
     {
-        for (var i = 0; i < self.objectList.length; i++)
+        for (var i = 0; i < objectList.length; i++)
         {
-            self.objectList[i].sendToBack();
+            objectList[i].sendToBack();
         }
     }
     
     this.setViewProps = function(vp)
     {
         self.view_props = vp;
-        for (var i = 0; i < self.objectList.length; i++)
+        for (var i = 0; i < objectList.length; i++)
         {
-            self.objectList[i].fill = vp.color;
-            self.objectList[i].opacity = vp.opacity;
+            objectList[i].fill = vp.color;
+            objectList[i].opacity = vp.opacity;
         }
     }
     
@@ -1035,11 +1034,11 @@ function fabricTrace(stack, cl, objid, r, instanceid, vp, eraserMode)
         dTop = (currPos.top - lastPos.top) * scale;
         var l = null;
         var t = null;
-        for (var i = 0; i < self.objectList.length; i++)
+        for (var i = 0; i < objectList.length; i++)
         {
-            l = self.objectList[i].left;
-            t = self.objectList[i].top;
-            self.objectList[i].set({'top' : t - dTop, 'left' : l - dLeft});
+            l = objectList[i].left;
+            t = objectList[i].top;
+            objectList[i].set({'top' : t - dTop, 'left' : l - dLeft});
         }
     }
     

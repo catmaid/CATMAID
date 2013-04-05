@@ -17,32 +17,12 @@ var WebGLApp = new function () {
     self.divID = divID;
     self.divID_jQuery = '#' + divID;
 
-    self.divWidth = $(this.divID_jQuery).width();
-    self.divHeight = $(this.divID_jQuery).height();
+    // self.divWidth = $(this.divID_jQuery).width();
+    // self.divHeight = $(this.divID_jQuery).height();
 
     resolution = project.focusedStack.resolution;
     dimension = project.focusedStack.dimension;
     translation = project.focusedStack.translation;
-
-    init_webgl();
-    debugaxes();
-    draw_grid();
-    XYView();
-
-    self.createActiveNode();
-
-    // if there is an active skeleton, add it to the view
-    if(SkeletonAnnotations.getActiveNodeId()) {
-      self.addSkeletonFromID( self.project_id, SkeletonAnnotations.getActiveSkeletonId() );
-
-      // and create active node
-      $('#enable_active_node').attr('checked', true);
-      
-      show_active_node = true;
-      self.showActiveNode();
-      self.updateActiveNodePosition();
-      
-    }
 
     $('#webgl-rmall').click(function() {
         WebGLApp.removeAllSkeletons();
@@ -68,7 +48,7 @@ var WebGLApp = new function () {
       self.render();
     })
     
-    self.render();
+    // self.render();
   }
 
   /** Clean up. */
@@ -103,7 +83,8 @@ var WebGLApp = new function () {
 
     //camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
       //camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
-    camera = new THREE.CombinedCamera( -self.divWidth, -self.divHeight, 75, 1, 3000, -1000, 1, 500 );
+
+    camera = new THREE.CombinedCamera( -canvasWidth, -canvasHeight, 75, 1, 3000, -1000, 1, 500 );
     camera.frustumCulled = false;
     // THREE.CombinedCamera = function ( width, height, fov, near, far, orthonear, orthofar ) {
     controls = new THREE.TrackballControls( camera, container );
@@ -160,7 +141,7 @@ var WebGLApp = new function () {
     renderer = new THREE.WebGLRenderer({ antialias: true });
     //renderer = new THREE.CanvasRenderer();
     renderer.sortObjects = false;
-    renderer.setSize( self.divWidth, self.divHeight );
+    renderer.setSize( canvasWidth, canvasHeight );
     
     // renderer.shadowMapEnabled = true;
     // renderer.shadowMapType = THREE.PCFShadowMap;
@@ -202,6 +183,27 @@ var WebGLApp = new function () {
       50 );
 
     controls.target = new THREE.Vector3(coord[0]*scale,coord[1]*scale,coord[2]*scale);
+
+    
+    debugaxes();
+    draw_grid();
+    XYView();
+
+    self.createActiveNode();
+
+    // if there is an active skeleton, add it to the view
+    if(SkeletonAnnotations.getActiveNodeId()) {
+      self.addSkeletonFromID( self.project_id, SkeletonAnnotations.getActiveSkeletonId() );
+
+      // and create active node
+      $('#enable_active_node').attr('checked', true);
+      
+      show_active_node = true;
+      self.showActiveNode();
+      self.updateActiveNodePosition();
+      
+    }
+
 
   }
 
@@ -812,27 +814,36 @@ var WebGLApp = new function () {
     var divID = 'view_in_3d_webgl_widget'; //'viewer-3d-webgl-canvas';
     if( THREEx.FullScreen.activated() ){
         var w = canvasWidth, h = canvasHeight;
-        $('#viewer-3d-webgl-canvas').width(w);
-        $('#viewer-3d-webgl-canvas').height(h);
-        $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
-        renderer.setSize( w, h );
+        self.resizeView( w, h );
+        // $('#viewer-3d-webgl-canvas').width(w);
+        // $('#viewer-3d-webgl-canvas').height(h);
+        // $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
+        // renderer.setSize( w, h );
         THREEx.FullScreen.cancel();
     } else {
         THREEx.FullScreen.request(document.getElementById('viewer-3d-webgl-canvas'));
         var w = window.innerWidth, h = window.innerHeight;
-        $('#viewer-3d-webgl-canvas').width(w);
-        $('#viewer-3d-webgl-canvas').height(h);
-        $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
-        renderer.setSize( w, h );
+        self.resizeView( w, h );
+        // $('#viewer-3d-webgl-canvas').width(w);
+        // $('#viewer-3d-webgl-canvas').height(h);
+        // $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
+        // renderer.setSize( w, h );
     }
     self.render();
   }
 
   self.resizeView = function (w, h) {
+    canvasWidth = w;
+    canvasHeight = h;
+    if( self.divID === undefined ) {
+      return;
+    }
+    if( renderer === undefined ) {
+      init_webgl();
+    }
+
     if( renderer && !THREEx.FullScreen.activated() ) {
       $('#view_in_3d_webgl_widget').css('overflowY', 'hidden');
-      var canvasWidth = w,
-          canvasHeight = h;
       if( isNaN(h) && isNaN(w) ) {
         canvasHeight = 800;
         canvasWidth = 600;
@@ -852,6 +863,9 @@ var WebGLApp = new function () {
       $('#viewer-3d-webgl-canvas').height(canvasHeight);
       $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
       renderer.setSize( canvasWidth, canvasHeight );
+
+      // setup_camera();
+      camera.setSize( canvasWidth, canvasHeight );
 
       // resize list view, needs frame height to fill it
 //      var heightAvailable = $('#view_in_3d_webgl_widget').height() - canvasHeight;
@@ -883,15 +897,19 @@ var WebGLApp = new function () {
   }
 
   this.hideActiveNode = function() {
-    active_node.visible = false;
+    if(active_node)
+      active_node.visible = false;
   }
 
   this.showActiveNode = function() {
-    active_node.visible = true;
+    if(active_node)
+      active_node.visible = true;
   }
 
   this.updateActiveNodePosition = function()
   {
+    if(!active_node)
+      return;
     var atn_pos = SkeletonAnnotations.getActiveNodePosition();
     if( show_active_node & (atn_pos !== null) ) {
         self.showActiveNode();
@@ -1436,7 +1454,7 @@ var WebGLApp = new function () {
           }
 
           var intersects = raycaster.intersectObjects( sphere_objects, true );
-          console.log('intersects sphere objects', intersects)
+          // console.log('intersects sphere objects', intersects)
           if ( intersects.length > 0 ) {
             for( var i = 0; i < sphere_objects.length; i++) {
               if( sphere_objects[i].id === intersects[0].object.id ) {
@@ -1467,8 +1485,8 @@ var WebGLApp = new function () {
     // mouse.x = ( event.clientX / self.divWidth );
     //mouse.y = -( event.clientY / self.divHeight );
 
-    mouse.x = ( event.offsetX / self.divWidth )*2-1;
-    mouse.y = -( event.offsetY / self.divHeight )*2+1;
+    mouse.x = ( event.offsetX / canvasWidth )*2-1;
+    mouse.y = -( event.offsetY / canvasHeight )*2+1;
     //mouse.x = ( event.clientX - self.divWidth );
     //mouse.y = ( event.clientY - self.divHeight );
 
@@ -1602,6 +1620,10 @@ var WebGLApp = new function () {
   }
 
   self.addSkeletonToTable = function ( skeleton ) {
+
+    if( $('#skeletonrow-' + skeleton.id ).length > 0 ) {
+      return;
+    }
 
     var rowElement = $('<tr/>').attr({
       id: 'skeletonrow-' + skeleton.id
@@ -1783,10 +1805,12 @@ var WebGLApp = new function () {
       alert("You can only add skeletons to the 3D WebGL View at the moment - please select a node of a skeleton.");
       return;
     }
-    if( skeleton_id in skeletons ) {
-      alert('Skeleton already added to the list');
-      return;
-    }
+    // if( skeleton_id in skeletons ) {
+    //   alert('Skeleton already added to the list');
+    //   self.removeSkeleton( skeleton_id );
+      
+    //   // return;
+    // }
     self.addSkeletonFromID( project.id, skeleton_id ); // will call self.render()
   }
 

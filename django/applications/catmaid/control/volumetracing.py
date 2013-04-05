@@ -13,6 +13,46 @@ from catmaid.control.common import _create_relation
 
 from PIL import Image, ImageDraw
 
+'''
+Volume Tracing database tools.
+
+Authored by Larry Lindsey - llindsey@clm.utexas.edu or larry.f.lindsey@gmail.com
+
+Tentative nomenclature:
+A "Volume Trace" consists of a grouped collection of Area Segments, aka Area Traces. Here,
+ individual segments are linked by a ClassInstance.
+
+An Area Segment consists of an exterior polygon with an arbitrary number of internal polygons
+ representing holes.
+ 
+Geometric operations are performed on a per-ClassInstance basis.
+
+
+### Of particular interest ###
+push_shapely_polygon - pushes a shapely polygon into the database. For a given class instance, this
+ assumes that there should be no overlapping polygons. Therefore, this function searches for any
+ existing polygons that overlap the one given, and stores the union if any are found.
+ 
+change_polygon - takes a shapely polygon and an AreaSegment, overwriting the AreaSegment's
+ information with that contained in the shapely polygon.
+ 
+area_segment_to_shapely - returns a shapely polygon representation of the given AreaSegment
+ 
+close_all_holes - closes all holes in a polygon that encloses the given point in x, y, z
+
+close_hole - closes a hole in a polygon if it (the hole) encloses the given point in x, y, z
+
+
+See Also: AreaSegment, InnerPolygonPath and ViewProperties in models.py
+
+'''
+
+
+""" 
+
+Converts a 2 x n array to an svg path string
+
+"""
 def path_to_svg(xy):
     
     ctrl_char = 'M'
@@ -25,15 +65,39 @@ def path_to_svg(xy):
     
     return svg_str
         
+"""
 
+Convenience function to convert stack coordinates to view coordinates
+
+t - translation
+w - view width
+s - scale
+x - array of points to translate
+
+"""
 def transform_volume_pts(t, w, s, x):
     return [(s * (y - t) + w/2) for y in x]
 
+"""
+
+Converts a shapely-style point from stack coordinates to view coordinates
+
+p - parameter dict containing keys xtrans, ytrans, wview, hview and scale.
+xy - points, as returned for instance by Polygon.exterior.xy
+
+"""
 def transform_shapely_xy(p, xy):   
     xtr = transform_volume_pts(p['xtrans'], p['wview'], p['scale'], xy[0])    
     ytr = transform_volume_pts(p['ytrans'], p['hview'], p['scale'], xy[1])
     return [xtr, ytr]
-    
+
+"""
+
+Returns a complete XML-SVG representation of a shapely polygon. The polygon is assumed to store
+stack coordinates, while the svg will be returned in view coordinates. The front end may draw the
+svg directly to the canvas.
+
+"""
 def shapely_polygon_to_svg(polygon, transform_params, vp):
     svg_template = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\
 <svg\
@@ -78,9 +142,8 @@ def segment_inner_shapely(seg):
     coord_list = [InnerPolygonPath.objects.get(id=ii).coordinates
         for ii in seg.inner_paths]
     all_inners = [coords_to_tuples(coords) for coords in coord_list]
-    #TODO: either use floating points to store paths, or fix invalid int paths
-    valid_inners = [inner for inner in all_inners if Polygon(inner).is_valid]
-    return valid_inners
+    #valid_inners = [inner for inner in all_inners if Polygon(inner).is_valid]
+    return all_inners
 
 def area_segment_to_shapely(seg, ext_only = False):
     ext_coords = coords_to_tuples(seg.coordinates)
@@ -93,7 +156,6 @@ def area_segment_to_shapely(seg, ext_only = False):
     
     poly.id = seg.id
     vp = get_view_properties(seg.class_instance)
-    #poly.color = vp.color
     return poly
 
 
@@ -121,6 +183,14 @@ def get_overlapping_segments(polygon, z, project, stack, instance):
 def ring_to_coordinate_list(ring):
     return ring.xy[0].tolist() + ring.xy[1].tolist()
 
+
+"""
+
+Creates InnerPolygonPath's representing the interiors of a polygon.
+
+interiors should be as returned by Polygon.interiors
+
+"""
 def create_interior_polygons(interiors, z):
     inner_ids = []
     for interior in interiors:        
@@ -135,9 +205,15 @@ def create_interior_polygons(interiors, z):
         if Polygon(coords_to_tuples(inner_path.coordinates)).is_valid:
             inner_ids.append(inner_path.id)
         else:
-            print 'Invalid inner path: ', inner_path.id
+            print 'Invalid inner path: ', inner_path.id # Shouldn't ever happen
     return inner_ids
 
+"""
+
+For an array of x and y, and a singleton r, creates a polygon representing a continous path
+ left by dragging a circle of radius r through the points x,y .
+
+"""
 def trace_polygon(x, y, r):
     if len(x) > 1:            
         xystr = map(list, zip(*[x, y]))    
@@ -178,6 +254,11 @@ def erase_volume_trace(request, project_id=None, stack_id = None):
                                     'instance_id' : instance_id,
                                     'view_props' : {'color' : vp.color, 'opacity' : vp.opacity}}))
 
+"""
+
+Uses a shapely polygon as an erase-mask.
+
+"""
 def erase_shapely_polygon(polygon, z, project, stack, instance, user):
     ''' Grab overlapping polygons '''
     overlap_segments, ids = get_overlapping_segments(polygon,
@@ -214,6 +295,12 @@ def erase_shapely_polygon(polygon, z, project, stack, instance, user):
                     out_ids.append(newseg.id)
     return out_ids
 
+"""
+
+Sets the representation stored in the AreaSegment aseg to that stored in the shapely Polygon
+ polygon.
+
+"""
 def change_polygon(aseg, polygon, save=True):
     bbox_ext = shapely_ring_bounds(polygon.exterior)
     interior_ids = create_interior_polygons(polygon.interiors, aseg.z)
@@ -234,9 +321,12 @@ def change_polygon(aseg, polygon, save=True):
     ''' delete unused inner paths '''
     for interior_id in old_interior_ids:
         InnerPolygonPath.objects.get(id = interior_id).delete()
-    
-        
-        
+
+"""
+
+Pushes a shapely Polygon into the database as an AreaSegment
+
+"""
 def push_shapely_polygon(polygon, z, project, stack, instance, user, check_ovlp = True):    
 
     if check_ovlp:
@@ -513,7 +603,8 @@ def set_trace_properties(request, project_id=None):
 
 def HTMLColorToRGB(colorstring):
     """ convert #RRGGBB to an (R, G, B) tuple """
-    """ liffed entirely from http://code.activestate.com/recipes/266466-html-colors-tofrom-rgb-tuples/"""
+    """ lifted entirely from
+        http://code.activestate.com/recipes/266466-html-colors-tofrom-rgb-tuples/"""
     colorstring = colorstring.strip()
     if colorstring[0] == '#': colorstring = colorstring[1:]
     if len(colorstring) != 6:
@@ -522,6 +613,13 @@ def HTMLColorToRGB(colorstring):
     r, g, b = [int(n, 16) for n in (r, g, b)]
     return (r, g, b)
 
+"""
+
+Generates an HttpResponse containing an 18x18 pixel PNG with a transparent background and a small
+ circle colored as given by the ViewProperty associated with the given instance_id. This is used
+ for the instance icons in the JSTree.
+
+"""
 def instance_png(request, project_id=None, instance_id=None):
     vp = get_view_properties(ClassInstance.objects.get(id = instance_id))
     im = Image.new("RGBA" , (18,18))
@@ -551,7 +649,7 @@ def volume_classes(request, project_id=None):
     
     c = Class.objects.get(id = parentId)
     instances = ClassInstance.objects.filter(class_column = c)
-    pngsrc = 'http://catmaidv/catmaid/{}/volumetrace/{}/instance.png' #.format(projectId, ci.id) 
+    pngsrc = 'http://catmaidv/catmaid/{}/volumetrace/{}/instance.png'
     
     return HttpResponse(json.dumps(
         tuple({'data' : {'title' : '<img src="' + pngsrc.format(projectId, ci.id) + '"\>' + ci.name},

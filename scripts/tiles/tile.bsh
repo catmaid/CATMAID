@@ -383,7 +383,7 @@ public class TilingJob {
 		// check if enough colors are available
 		numChannels = project.getNeededChannels().size();
 		if (numChannels > this.colors.size()) {
-			IJ.log("Got only " + colors.length() + " colors, but would need " + numChannels);
+			IJ.log("Got only " + colors.size() + " color(s), but would need " + numChannels + " to process all wanted channels. Please use the -clr option.");
 			return false;
 		}
 		// Make sure we only ask for channels that are available
@@ -405,7 +405,7 @@ public class TilingJob {
 				s.neededChannels.remove( ch );
 
 			if ( s.neededChannels.size() == 0 )
-				stacksToRemole.add( s );
+				stacksToRemove.add( s );
 		}
 		// remove empty stacks
 		for ( s : stacksToRemove )
@@ -762,7 +762,7 @@ void preProcess( job ) {
 			macro += "if (" + ch + " <= channels) {"
 				+" Stack.setChannel(" + ch  + ");\n"
 				+" setMinAndMax(0, " + job.maxValue + ");\n"
-				+" run(\"" + job.colors.get( ch ) + "\");\n"
+				+" run(\"" + job.colors.get( i ) + "\");\n"
 				+" wantedChannels[" + (ch - 1) + "]=1;\n"
 				+"}";
 		}

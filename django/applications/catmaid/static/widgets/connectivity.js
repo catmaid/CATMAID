@@ -31,6 +31,46 @@ var SkeletonConnectivity = new function()
                 'update_connectivity_table');
     };
 
+    this.skeleton_info = function() {
+        if( skeletonID === null)
+            return;
+        requestQueue.register(django_url + project.id + '/skeleton/' + skeletonID + '/statistics', "POST", {},
+         function (status, text, xml) {
+                if (status === 200) {
+                    if (text && text !== " ") {
+                        var e = $.parseJSON(text);
+                        if (e.error) {
+                            alert(e.error);
+                        } else {
+                            var dialog = document.createElement('div');
+                            dialog.setAttribute("id", "dialog-confirm");
+                            dialog.setAttribute("title", "Skeleton Information");
+                            var msg = document.createElement('p');
+                            msg.innerHTML = 
+                                "Neuron Name: " + skeletonTitle + "<br />" +
+                                "Node count: " + e.node_count + "<br />" +
+                                "Input sites: " + e.input_count + "<br />" +
+                                "Output sites: " + e.output_count + "<br />" +
+                                "Cable length: " + e.cable_length + "<br />" +
+                                "Construction time: " + e.measure_construction_time + "<br />" +
+                                "Percentage reviewed: " + e.percentage_reviewed + "<br />";
+                            dialog.appendChild(msg);
+
+                            $(dialog).dialog({
+                              height: 440,
+                              modal: true,
+                              buttons: {
+                                "OK": function() {
+                                  $(this).dialog("close");
+                                }
+                              }
+                            });
+                        }
+                    }
+                }
+        });
+    }
+
     this.createConnectivityTable = function( status, text ) {
 
         if (200 !== status) { return; }

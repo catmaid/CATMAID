@@ -59,8 +59,10 @@ function Project( pid )
 			var c = stack.projectCoordinates();
 			self.moveTo( c.z, c.y, c.x );
 		}
-		
-		// self.setFocusedStack( stack );
+
+		// Only set focus if stack isn't already in focus
+		if ( stack !== self.focusedStack )
+		    self.setFocusedStack( stack );
 		
 		// only set the tool for the first stack
 		if ( stacks.length == 1 )
@@ -86,7 +88,15 @@ function Project( pid )
 		}
 		return false;
 	}
-	
+
+	/**
+	 * get all the currently opened stacks
+	 */
+	this.getStacks = function()
+	{
+		return stacks;
+	}
+
 	/**
 	 * remove a stack from the list
 	 */
@@ -187,7 +197,7 @@ function Project( pid )
         } else if( self.getTool().toolname === 'tracingtool' ) {
         	document.getElementById( "toolbox_data" ).style.display = "block";
         }
-		
+
 		if ( !self.focusedStack && stacks.length > 0 ) {
 			self.setFocusedStack( stacks[ 0 ] )
 		} 
@@ -291,12 +301,14 @@ function Project( pid )
 			document.getElementById("toolbox_edit").style.display = "block";
 			//document.getElementById("toolbox_data").style.display = "block";
 			//document.getElementById("toolbox_segmentation").style.display = "block";
+			document.getElementById("toolbox_data").style.display = "block";
 		}
 		else 
 		{
 			document.getElementById("toolbox_edit").style.display = "none";
 			//document.getElementById("toolbox_data").style.display = "none";
 			//document.getElementById("toolbox_segmentation").style.display = "none";
+			document.getElementById("toolbox_data").style.display = "none";
 		}
 		window.onresize();
 		

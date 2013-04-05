@@ -16,6 +16,19 @@ except:
     pass
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
+def skeleton_statistics(request, project_id=None, skeleton_id=None):
+    p = get_object_or_404(Project, pk=project_id)
+    skel = Skeleton( skeleton_id = skeleton_id, project_id = project_id )
+    const_time = skel.measure_construction_time()
+    construction_time = '{0} minutes {1} seconds'.format( const_time / 60, const_time % 60)
+    return HttpResponse(json.dumps({'node_count': skel.node_count(),
+    'input_count': skel.input_count(),
+    'output_count': skel.output_count(),
+    'cable_length': int(skel.cable_length()),
+    'measure_construction_time': construction_time,
+    'percentage_reviewed': skel.percentage_reviewed() }), mimetype='text/json')
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
     # Works with either the skeleton_id or the treenode_id
     p = get_object_or_404(Project, pk=project_id)
@@ -296,8 +309,8 @@ def skeleton_info_raw(request, project_id=None, skeleton_id=None):
     outgoing = _connected_skeletons(skeleton_id, relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'], relation_ids['model_of'], cursor)
     # Sort by number of connections
     result = {
-        'incoming': [e for e in list(reversed(sorted(incoming.values(), key=itemgetter('synaptic_count')))) if e['synaptic_count'] >= synaptic_count_high_pass],
-        'outgoing': [e for e in list(reversed(sorted(outgoing.values(), key=itemgetter('synaptic_count'))))if e['synaptic_count'] >= synaptic_count_high_pass]
+        'incoming': [e for e in list(reversed(sorted(incoming.values(), key=itemgetter('synaptic_count')))) if int(e['synaptic_count']) >= synaptic_count_high_pass],
+        'outgoing': [e for e in list(reversed(sorted(outgoing.values(), key=itemgetter('synaptic_count')))) if int(e['synaptic_count']) >= synaptic_count_high_pass]
     }
     json_return = json.dumps(result, sort_keys=True, indent=4)
     return HttpResponse(json_return, mimetype='text/json')

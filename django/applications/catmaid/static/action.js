@@ -276,10 +276,10 @@ var createEditToolActions = function() {
                             if (e.error) {
                                 alert(e.error);
                             } else {
-                                if( project.focusedStack.s !== 0 ) {
-                                  alert('Segmentation Tool only works on zoom-level 0!');
+                                /*if( project.focusedStack.s !== 1 ) {
+                                  alert('Segmentation Tool only works on zoom-level 1!');
                                   return;
-                                }
+                                }*/
                                 project.setTool( new SegmentationTool() );
                             }
                         }
@@ -301,6 +301,19 @@ var createEditToolActions = function() {
         }
       }));
   }
+
+  if (userprofile.show_ontology_tool) {
+    editToolActions.push(
+      new Action({
+        helpText: "Show ontology tools",
+        buttonID: "edit_button_ontology",
+        buttonName: 'ontology_tools',
+        run: function (e) {
+          project.setTool( new OntologyTool() );
+          return true;
+        }
+      }));
+  }
 }
 
 /* Edit tools are dependent on the current user. Therefore,
@@ -313,10 +326,10 @@ var segmentationWindowActions = [
 
   new Action({
     helpText: "Show segments table",
-    buttonID: "segmentation_button_segments_table",
+    buttonID: "segmentation_button_sliceinfo",
     buttonName: 'table_segments',
     run: function (e) {
-      WindowMaker.show('segmentstable-widget');
+      WindowMaker.show('sliceinfo-widget');
       return true;
     }
   }),

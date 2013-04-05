@@ -5,13 +5,11 @@ Developer Documentation
    :maxdepth: 1
 
    installation
-   djangoinstall
    userprofiles
-   administration
    dbmigration
    faq
    djangounittest
    celeryinstall
-   catmaid_aws
+   ami
    data_view_types
    alternative_install

@@ -404,7 +404,7 @@ function TracingTool()
     keyShortcuts: {
       "M": [ 77 ]
     },
-      run: tagFn('not a branch')
+      run: tagFn('soma')
   } ) );
 
   this.addAction( new Action({

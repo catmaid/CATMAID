@@ -97,7 +97,19 @@ urlpatterns += patterns(
 
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/get-drawing-enum$', 'catmaid.control.get_drawing_enum'),
 
-
+    # Volume Trace Tool
+    
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/volumetrace/push$', 'catmaid.control.push_volume_trace'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/volumetrace/closehole$', 'catmaid.control.close_hole_in_trace'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/volumetrace/closeallholes$', 'catmaid.control.close_all_holes_in_trace'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/volumetrace/erase$', 'catmaid.control.erase_volume_trace'),
+    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/volumetrace/getall$', 'catmaid.control.all_volume_traces'),
+    (r'^(?P<project_id>\d+)/volumetrace/classtree$', 'catmaid.control.volume_classes'),
+    (r'^(?P<project_id>\d+)/volumetrace/traceproperties$', 'catmaid.control.trace_properties'),
+    (r'^(?P<project_id>\d+)/volumetrace/settraceproperties$', 'catmaid.control.set_trace_properties'),
+    (r'^(?P<project_id>\d+)/volumetrace/create$', 'catmaid.control.create_new_trace'),
+    (r'^(?P<project_id>\d+)/volumetrace/(?P<instance_id>\d+)/instance.png$', 'catmaid.control.instance_png'),
+        
     # ------
 
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/node_count$', 'catmaid.control.node_count'),

@@ -1107,6 +1107,43 @@ var WindowMaker = new function()
   };
 
 
+  var createAreaSegmentWidget = function()
+  {
+      var win = new CMWWindow( "Area Segment" );
+      var content = win.getFrame();
+      content.style.backgroundColor = "#fffff";
+      
+      var container = createContainer( "area_segment_widget" );
+      content.appendChild( container );
+      
+      container.innerHTML = 
+        '<div id="toolbar_volseg" class="toolbar" style="display:none;">' +
+        '<div id="volseg_radius_box"></div>' +
+        '<div class="toolbar_fill"></div>' +
+        '</div>' +
+        '<div id="area_segment_tree"></div>'+
+        '<div id="area_segment_view_properties">'+
+        '<div id="area_segment_view_caption">Display Properties</div>'+        
+        '<div id="area_segment_colorwheel"></div>'+
+        '<div id="toolbar_volseg_opacity" class="toolbar">'+
+        '<div id="volseg_opacity_box"></div>'+
+        '<div class="toolbar_fill"></div>'+
+        '</div>'+
+        '</div>'+
+        '<div id="trace_add_dialog" style="display:none; cursor:default">' +
+        '<div id="input_trace_object"><p>New object name: <input type="text" id="tracename" /></p></div>' +
+        '<p><input type="button" id="trace_cancel" value="Cancel" />' +
+        '<input type="button" id="trace_add" value="Add" /></p></div>';
+      addListener(win, container);
+        
+      addLogic(win);
+      
+      VolumeTracingPalette.init(project.getId());
+      VolumeTracingPalette.setWindow(win);
+      
+      return win;
+  }
+
   var createOntologyWidget = function()
   {
     var win = new CMWWindow( "Ontology editor" );
@@ -1391,7 +1428,8 @@ var WindowMaker = new function()
     "connectivity-widget": createConnectivityWindow,
     "adjacencymatrix-widget": createAdjacencyMatrixWindow,
     "skeleton-analytics-widget": createSkeletonAnalyticsWindow,
-    "ontology-editor": createOntologyWidget
+    "ontology-editor": createOntologyWidget,
+    "volume-tracing" : createAreaSegmentWidget
   };
 
   /** If the window for the given name is already showing, just focus it.

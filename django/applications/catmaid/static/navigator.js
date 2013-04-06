@@ -228,6 +228,8 @@ function Navigator()
 		}
 	};
 	
+	this.onmousewheel = onmousewheel;
+	
 	//--------------------------------------------------------------------------
 	/**
 	 * Slider commands for changing the slice come in too frequently, thus the
@@ -460,9 +462,9 @@ function Navigator()
 		self.mouseCatcher.onmousedown = onmousedown;
 		try
 		{
-			self.mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel.zoom, false );
+			self.mouseCatcher.addEventListener( "DOMMouseScroll", self.onmousewheel.zoom, false );
 			/* Webkit takes the event but does not understand it ... */
-			self.mouseCatcher.addEventListener( "mousewheel", onmousewheel.zoom, false );
+			self.mouseCatcher.addEventListener( "mousewheel", self.onmousewheel.zoom, false );
 		}
 		catch ( error )
 		{

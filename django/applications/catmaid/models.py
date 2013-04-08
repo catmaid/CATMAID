@@ -952,7 +952,7 @@ class ChangeRequest(UserFocusedModel):
     
     type = models.CharField(max_length = 32)
     description = models.TextField()
-    status = models.IntegerField(default = 0)
+    status = models.IntegerField(default = OPEN)
     recipient = models.ForeignKey(User, related_name='change_recipient', db_column='recipient_id')
     location = Double3DField()
     treenode = models.ForeignKey(Treenode)
@@ -962,22 +962,39 @@ class ChangeRequest(UserFocusedModel):
     reject_action = models.TextField()
     completion_time = models.DateTimeField(default = None, null = True)
     
+    # TODO: get the project from the treenode/connector so it doesn't have to specified when creating a request
+    
     def status_name(self):
-        return ['Open', 'Approved', 'Rejected'][self.status]
+        self.is_valid() # Make sure invalid state is current
+        return ['Open', 'Approved', 'Rejected', 'Invalid'][self.status]
     
     def is_valid(self):
-        try:
-            is_valid = eval(self.validate_action)
-        except Exception as e:
-            raise Exception('Could not validate the request (%s)', str(e))
+        """ Returns a boolean value indicating whether the change request is still valid."""
         
+        if self.status == ChangeRequest.OPEN:
+            # Run the request's validation code snippet to determine whether it is still valid.
+            try:
+                from catmaid.control import *
+                is_valid = eval(self.validate_action)
+                if not is_valid:
+                    # Cache the result so we don't have to do the eval next time.
+                    # TODO: can a request ever be temporarily invalid?
+                    self.status = ChangeRequest.INVALID
+                    self.save()
+            except Exception as e:
+                raise Exception('Could not validate the request (%s)', str(e))
+        else:
+            is_valid = False
+                
         return is_valid;
     
     def approve(self, *args, **kwargs):
-        # TODO: check if action is still valid?
+        if not self.is_valid():
+            raise Exception('Failed to approve change request: the change is no longer possible.')
         
         try:
-            exec('from catmaid.control import *\n\n' + self.approve_action)
+            from catmaid.control import *
+            exec(self.approve_action)
             self.status = ChangeRequest.APPROVED
             self.completion_time = datetime.now()
             self.save()
@@ -985,22 +1002,17 @@ class ChangeRequest(UserFocusedModel):
             # Send a message and an e-mail to the requester.
             title = self.type + ' Request Approved'
             message = self.recipient.get_full_name() + ' has approved your ' + self.type.lower() + ' request.'
-            Message(user = self.user,
-                    title = title,
-                    text = message).save()
-            # TODO: only send one e-mail per day
-            try:
-                self.user.email_user('[CATMAID] ' + title, message)
-            except Exception as e:
-                print >> sys.stderr, 'Failed to send e-mail (', str(e), ')'
+            notify_user(self.user, title, message)
         except Exception as e:
             raise Exception('Failed to approve change request: %s' % str(e))
     
     def reject(self, *args, **kwargs):
-        # TODO: check if action is still valid?
+        if not self.is_valid():
+            raise Exception('Failed to reject change request: the change is no longer possible.')
         
         try:
-            exec('from catmaid.control import *\n\n' + self.reject_action)
+            from catmaid.control import *
+            exec(self.reject_action)
             self.status = ChangeRequest.REJECTED
             self.completion_time = datetime.now()
             self.save()
@@ -1008,28 +1020,35 @@ class ChangeRequest(UserFocusedModel):
             # Send a message and an e-mail to the requester.
             title = self.type + ' Request Rejected'
             message = self.recipient.get_full_name() + ' has rejected your ' + self.type.lower() + ' request.'
-            Message(user = self.user,
-                    title = title,
-                    text = message).save()
-            # TODO: only send one e-mail per day
-            try:
-                self.user.email_user('[CATMAID] ' + title, message)
-            except Exception as e:
-                print >> sys.stderr, 'Failed to send e-mail (', str(e), ')'
+            notify_user(self.user, title, message)
+            
         except Exception as e:
             raise Exception('Failed to reject change request: %s' % str(e))
+
+
+def send_email_to_change_request_recipient(sender, instance, created, **kwargs):
+    """ Send the recipient of a change request a message and an e-mail when the request is created."""
     
-    def save(self, *args, **kwargs):
-        super(ChangeRequest, self).save(*args, **kwargs)
-        
-        # Send a message and e-mail to the recipient.
-        # TODO: only send one e-mail per day
-        title = self.type + ' Request'
-        message = self.user.get_full_name() + ' has sent you a ' + self.type.lower() + ' request.  Please check your notifications.'
-        Message(user = self.recipient,
-                title = title,
-                text = message).save()
-        try:
-            self.recipient.email_user('[CATMAID] ' + title, message)
-        except Exception as e:
-            print >> sys.stderr, 'Failed to send e-mail (', str(e), ')'
+    if created:
+        title = instance.type + ' Request'
+        message = instance.user.get_full_name() + ' has sent you a ' + instance.type.lower() + ' request.  Please check your notifications.'
+        notify_user(instance.recipient, title, message)
+
+post_save.connect(send_email_to_change_request_recipient, sender = ChangeRequest)
+
+
+def notify_user(user, title, message):
+    """ Send a user a message and an e-mail."""
+    
+    # TODO: only send one e-mail per day, probably using a Timer object <http://docs.python.org/2/library/threading.html#timer-objects>
+    
+    # Create the message
+    Message(user = user,
+            title = title,
+            text = message).save()
+    
+    # Send the e-mail
+    try:
+        user.email_user('[CATMAID] ' + title, message)
+    except Exception as e:
+        print >> sys.stderr, 'Failed to send e-mail (', str(e), ')'

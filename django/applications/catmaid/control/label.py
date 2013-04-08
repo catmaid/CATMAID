@@ -172,7 +172,6 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                     # Inform the owner of the node that the tag was added and give them the option of removing it.
                     wr = ChangeRequest(type = 'Tag', 
                                        description = 'Added tag \'' + tag_name + '\'', 
-                                       status = ChangeRequest.OPEN,
                                        project = p, 
                                        user = request.user,
                                        recipient = tn.user,
@@ -193,7 +192,6 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                     # Inform the owner of the connector that the tag was added and give them the option of removing it.
                     wr = ChangeRequest(type = 'Tag', 
                                        description = 'Added tag \'' + tag_name + '\'', 
-                                       status = ChangeRequest.OPEN,
                                        project = p, 
                                        user = request.user,
                                        recipient = c.user,
@@ -209,7 +207,7 @@ def label_exists(label_id, node_type):
     # If the tag was removed and added again then this will return False.
     if node_type == 'treenode':
         try:
-            label = TreenodeClassInstance.get(pk=label_id)
+            label = TreenodeClassInstance.objects.get(pk=label_id)
             return True
         except TreenodeClassInstance.DoesNotExist:
             return False

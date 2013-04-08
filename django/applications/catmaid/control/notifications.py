@@ -34,8 +34,6 @@ def list_notifications(request, project_id = None):
     else:
         range_end = range_start + int(range_length)
     
-    print >> sys.stderr, 'Range: ' + str(range_start) + ':' + str(range_end)
-    
     change_request_list = [[cr.id, cr.type, cr.description, cr.status_name(), cr.location.x, cr.location.y, cr.location.z, 
                             (cr.treenode if cr.treenode else cr.connector).id, cr.treenode.skeleton.id if cr.treenode else 'null', 
                             cr.user.get_full_name(), cr.creation_time.strftime('%Y-%m-%d %I:%M %p')] for cr in change_requests[range_start:range_end]]

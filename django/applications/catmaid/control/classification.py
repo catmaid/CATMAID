@@ -777,6 +777,12 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
 
             return HttpResponse(json.dumps([data]))
         else:
+            # Edit tools should only be displayed if wanted by the user and
+            # if the user has the can_annotate permission
+            if display_edit_tools:
+                project = Project.objects.get(id=project_id)
+                display_edit_tools = request.user.has_perm('can_annotate', project)
+
             # Get parent class instance
             parent_q = ClassInstance.objects.filter(id=parent_id)
             if parent_q.count() == 0:

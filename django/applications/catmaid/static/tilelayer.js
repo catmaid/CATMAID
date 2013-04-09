@@ -45,6 +45,42 @@ function getTileBaseName3D( stack, pixelPos, adjacent )
   return z + "/";
 }
 
+function Tile( width, height, onload, ctx )
+{
+	var self = this;
+	var x = 0;
+	var y = 0;
+	var scale = 1;
+	self.loaded = false;
+	
+	self.setPosition = function( newX, newY )
+	{
+		x = newX;
+		y = newY;
+	}
+	
+	self.paint = function( scale )
+	{
+		ctx.drawImage( img, x, y, width * scale, height * scale );
+	}
+	
+	self.setURL = function( url )
+	{
+		/* WebKit does not fire again if src is not changed */
+		self.loaded = self.loaded && img.src == url;
+		img.src = url;
+		//console.log( self.loaded );
+	}
+	
+	var img = document.createElement( "img" );
+	img.addEventListener( "load", function(){ self.loaded = true; } );
+	img.alt = "";
+	img.src = STATIC_URL_JS + "widgets/empty256.gif";
+//	img.onload = self.paint;
+	
+	//document.body.appendChild(img);
+}
+
 /**
  * 
  */
@@ -55,6 +91,11 @@ function TileLayer(
 		tileSource
 		)
 {
+	var self = this;
+	var timeout = null;
+	var tryPaintTimeout = null;
+	var mag = 1.0;
+	
 	/**
 	 * initialise the tiles array
 	 */
@@ -67,13 +108,7 @@ function TileLayer(
 		{
 			tiles[ i ] = new Array();
 			for ( var j = 0; j < cols; ++j )
-			{
-				tiles[ i ][ j ] = document.createElement( "img" );
-				tiles[ i ][ j ].alt = "empty";
-				tiles[ i ][ j ].src = STATIC_URL_JS + "widgets/empty256.gif";
-				
-//				tilesContainer.appendChild( tiles[ i ][ j ] );
-			}
+				tiles[ i ][ j ] = new Tile( tileWidth, tileHeight, self.paint, ctx );
 		}
 
 		return;
@@ -82,111 +117,45 @@ function TileLayer(
 	/**
 	 * align and update the tiles to be ( x, y ) in the image center
 	 */
-	this.redraw = function(completionCallback)
+	self.redraw = function(completionCallback)
 	{
-		var pixelPos = [ stack.x, stack.y, stack.z ];
-		var tileBaseName = getTileBaseName( pixelPos );
+		if ( !timeout )
+			timeout = window.setTimeout( self.paint, 20 );
+		
+		if (typeof completionCallback !== "undefined") {
+			completionCallback();
+		}
+
+		return 2;
+	}
+	
+	self.paint = function()
+	{
+		var tileBaseName = getTileBaseName( [ stack.x, stack.y, stack.z ] );
 
 		var zoom = stack.s;
-		var mag = 1.0;
-		var artificialZoom = false;
-		/* If the zoom is negative we zoom in digitally. For this
-		 * we take the zero zoom level and adjust the tile properties.
-		 * This way we let the browser do the zooming work.
-		 */
-		if (zoom < 0) {
-			artificialZoom = true;
+		if ( zoom < 0 )
+		{
 			mag = Math.pow(2, -zoom);
 			zoom = 0;
 		}
+		else
+			mag = 1.0;
 
 		effectiveTileWidth = tileWidth * mag;
 		effectiveTileHeight = tileHeight * mag;
 
-		var fr = Math.floor( stack.yc / effectiveTileHeight );
+		var fr = Math.floor( stack.yc /  effectiveTileHeight);
 		var fc = Math.floor( stack.xc / effectiveTileWidth );
 		
 		var xd = 0;
 		var yd = 0;
-		
-		if ( stack.z == stack.old_z && stack.s == stack.old_s )
-		{
-			var old_fr = Math.floor( stack.old_yc / effectiveTileHeight );
-			var old_fc = Math.floor( stack.old_xc / effectiveTileWidth );
-			
-			xd = fc - old_fc;
-			yd = fr - old_fr;
-
-			
-			// re-order the tiles array on demand
-			if ( xd < 0 )
-			{
-				for ( var i = 0; i < tiles.length; ++i )
-				{
-					var img = document.createElement( "img" );
-					img.alt = "empty";
-					img.src = STATIC_URL_JS + "widgets/empty256.gif";
-					img.style.visibility = "hidden";
-					tiles[ i ].unshift( img );
-				}
-			}
-			else if ( xd > 0 )
-			{
-				for ( var i = 0; i < tiles.length; ++i )
-				{
-					var img = document.createElement( "img" );
-					img.alt = "empty";
-					img.src = STATIC_URL_JS + "widgets/empty256.gif";
-					img.style.visibility = "hidden";
-					tiles[ i ].push( img );
-				}
-			}
-			else if ( yd < 0 )
-			{
-				var old_row = tiles.pop();
-				var new_row = new Array();
-				for ( var i = 0; i < tiles[ 0 ].length; ++i )
-				{
-					var img = document.createElement( "img" );
-					img.alt = "empty";
-					img.src = STATIC_URL_JS + "widgets/empty256.gif";
-					img.style.visibility = "hidden";
-					new_row.push( img );
-				}
-				tiles.unshift( new_row );
-			}
-			else if ( yd > 0 )
-			{
-				var old_row = tiles.shift();
-				var new_row = new Array();
-				for ( var i = 0; i < tiles[ 0 ].length; ++i )
-				{
-					var img = document.createElement( "img" );
-					img.alt = "empty";
-					img.src = STATIC_URL_JS + "widgets/empty256.gif";
-					img.style.visibility = "hidden";
-					new_row.push( img );
-				}
-				tiles.push( new_row );
-			}
-		}
-
-		if ( stack.s != stack.old_s)
-		{
-			if (artificialZoom)
-			{
-				LAST_XT = Math.floor( ( stack.dimension.x - 1 ) / tileWidth );
-				LAST_YT = Math.floor( ( stack.dimension.y - 1 ) / tileHeight );
-			}
-			else
-			{
-				LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
-				LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
-			}
-		}
 
 		var top;
 		var left;
+		
+		LAST_XT = Math.floor( ( stack.dimension.x * stack.scale - 1 ) / tileWidth );
+		LAST_YT = Math.floor( ( stack.dimension.y * stack.scale - 1 ) / tileHeight );
 
 		if ( stack.yc >= 0 )
 			top  = -( stack.yc % effectiveTileHeight );
@@ -200,7 +169,7 @@ function TileLayer(
 		var t = top;
 		var l = left;
 
-		// draw
+		/* update urls */
 		for ( var i = 0; i < tiles.length; ++i )
 		{
 			var r = fr + i;
@@ -216,31 +185,14 @@ function TileLayer(
 				 */
 				if ( r < 0 || c < 0 || r > LAST_YT || c > LAST_XT )
 				{
-					tiles[ i ][ j ].alt = "";
-					tiles[ i ][ j ].src = STATIC_URL_JS + "widgets/black.gif";
+					tiles[ i ][ j ].setURL( STATIC_URL_JS + "widgets/black.gif" );
 				}
 				else
 				{
-					tiles[ i ][ j ].alt = "";
-					tiles[ i ][ j ].src = self.tileSource.getTileURL( project, stack,
-						tileBaseName, tileWidth, tileHeight, c, r, zoom);
-
-          // prefetch tiles
-          // TODO: fetch information in stack table: -2, -1, 1, 2
-					/*
-          var adj = [], tmpimg = new Image(), tmptileBaseName;
-          for( var jj in adj ) {
-            tmptileBaseName = getTileBaseName3D( stack, pixelPos, adj[jj] );
-            // only prefetch for type 1
-            if( tileSourceType === 1 ) {
-              tmpimg.src = self.getTileURL( tmptileBaseName + r + "_" + c + "_" + zoom );
-            }
-          }
-					*/
-
+					tiles[ i ][ j ].setURL( self.tileSource.getTileURL( project, stack, tileBaseName, tileWidth, tileHeight, c, r, zoom ) );
 				}
-				ctx.drawImage( tiles[ i ][ j ], l, t, tileWidth, tileHeight );
-
+				tiles[ i ][ j ].setPosition( l, t );
+				
 				l += effectiveTileWidth;
 
 			}
@@ -248,17 +200,34 @@ function TileLayer(
 			t += effectiveTileHeight;
 		}
 		
+		if ( !tryPaintTimeout )
+			tryPaintTimeout = window.setTimeout( self.tryPaint, 20 );
 		
-		if (typeof completionCallback !== "undefined") {
-			completionCallback();
-		}
-
-		return 2;
+		timeout = null;
+		
+		return;
 	}
 	
-	this.resize = function( width, height )
+	self.tryPaint = function()
 	{
-		console.log( "resize tileLayer of stack" + stack.getId() );
+		for ( var i = 0; i < tiles.length; ++i )
+			for ( var j = 0; j < tiles[ 0 ].length; ++j )
+				if ( !tiles[ i ][ j ].loaded )
+				{
+					tryPaintTimeout = window.setTimeout( self.tryPaint, 20 );
+					return;
+				}
+		
+		for ( var i = 0; i < tiles.length; ++i )
+			for ( var j = 0; j < tiles[ 0 ].length; ++j )
+				tiles[ i ][ j ].paint( mag );
+		
+		tryPaintTimeout = null;
+	}
+	
+	self.resize = function( width, height )
+	{
+		//console.log( "resize tileLayer of stack" + stack.getId() );
 		
 		tilesCanvas.width = width;
 		tilesCanvas.height = height;
@@ -279,17 +248,17 @@ function TileLayer(
 	/**
 	 * Get the width of an image tile.
 	 */
-	this.getTileWidth = function(){ return tileWidth; }
+	self.getTileWidth = function(){ return tileWidth; }
 	
 	/**
 	 * Get the height of an image tile.
 	 */
-	this.getTileHeight = function(){ return tileHeight; }
+	self.getTileHeight = function(){ return tileHeight; }
 	
 	/**
 	 * Get the number of tile columns.
 	 */
-	this.numTileColumns = function()
+	self.numTileColumns = function()
 	{
 		if ( tiles.length == 0 )
 			return 0;
@@ -300,26 +269,23 @@ function TileLayer(
 	/**
 	 * Get the number of tile rows.
 	 */
-	this.numTileColumns = function(){ return tiles.length; }
+	self.numTileColumns = function(){ return tiles.length; }
 	
 	/**
 	 * Get the stack.
 	 */
-	this.getStack = function(){ return stack; }
+	self.getStack = function(){ return stack; }
 
-	this.setOpacity = function( val )
+	self.setOpacity = function( val )
 	{
-		tilesContainer.style.opacity = val+"";
+		tilesContainer.style.opacity = val + "";
 		opacity = val;
 	}
 
-	this.getOpacity = function()
+	self.getOpacity = function()
 	{
 		return opacity;
 	}
-
-	// initialise
-	var self = this;
 
 	// internal opacity variable
 	var opacity = 100;

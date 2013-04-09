@@ -61,14 +61,18 @@ var ClassificationEditor = new function()
             tree.jstree("refresh", -1);
         });
 
-        $("#display_edit_tools").click(function () {
-            if ($("#display_edit_tools").attr('checked')) {
-                display_edit_tools = true;
-            } else {
-                display_edit_tools = false;
-            }
-            tree.jstree("refresh", -1);
-        });
+        if ($("#display_edit_tools").length === 0) {
+            display_edit_tools = false;
+        } else {
+            $("#display_edit_tools").click(function () {
+                if ($("#display_edit_tools").attr('checked')) {
+                    display_edit_tools = true;
+                } else {
+                    display_edit_tools = false;
+                }
+                tree.jstree("refresh", -1);
+            });
+        }
 
         tree.bind("reload_nodes.jstree",
             function (event, data) {

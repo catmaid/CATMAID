@@ -1,10 +1,25 @@
+{% load guardian_tags %}
 {% load url from future %}
 
 {% block classification-content %}
-<p>The classification system doesn't seem to be set-up to work with this project. It needs certain classes and relations which have not been found (or only parts of it). If you press the "Setup" button below, all needed things are created. Afterwards, the classification system should be usable for this project.</p>
+{% get_obj_perms user for project as "project_perms" %}
+{% get_obj_perms user for workspace as "workspace_perms" %}
 
-<form method="post" id="setup-classification-form"
-        action="{% url 'rebuild_classification_setup' project.id workspace.id %}">
-    <p><input type="submit" value="Setup" /></p>
-</form>
+<p>The classification system doesn't seem to be set-up to work with this project. It needs certain classes and relations which have not been found (or only parts of it).</p>
+
+{% if not "can_annotate" in project_perms %}
+    <p>Unfortunately, you don't have the permissions to add the missing bits
+    to the current project.</p>
+{% elif not "can_annotate" in workspace_perms %}
+    <p>Unfortunately, you don't have the permissions to add the missing bits
+    to the current workspace.</p>
+{% else %}
+    <p>If you press the "Setup" button below, all needed things are created.
+    Afterwards, the classification system should be usable for this project.</p>
+
+    <form method="post" id="setup-classification-form"
+            action="{% url 'rebuild_classification_setup' project.id workspace.id %}">
+        <p><input type="submit" value="Setup" /></p>
+    </form>
+{% endif %}
 {% endblock %}

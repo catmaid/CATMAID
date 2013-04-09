@@ -59,8 +59,10 @@ function Project( pid )
 			var c = stack.projectCoordinates();
 			self.moveTo( c.z, c.y, c.x );
 		}
-		
-		// self.setFocusedStack( stack );
+
+		// Only set focus if stack isn't already in focus
+		if ( stack !== self.focusedStack )
+		    self.setFocusedStack( stack );
 		
 		// only set the tool for the first stack
 		if ( stacks.length == 1 )
@@ -86,7 +88,15 @@ function Project( pid )
 		}
 		return false;
 	}
-	
+
+	/**
+	 * get all the currently opened stacks
+	 */
+	this.getStacks = function()
+	{
+		return stacks;
+	}
+
 	/**
 	 * remove a stack from the list
 	 */

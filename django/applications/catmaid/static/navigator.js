@@ -496,7 +496,7 @@ function Navigator()
 			0,
 			self.stack.slices,
 			self.stack.z,
-			self.changeSlice );
+			self.changeSliceDelayed );
 		
 		self.input_x.onchange = changeXByInput;
 		try

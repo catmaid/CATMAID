@@ -31,7 +31,12 @@ Neuron Catalog
 
 .. figure:: _static/screenshots/neuron_catalog.png
    :alt: Neuron Catalog
-   
+
+Selector tool: Mirrored mouse cursor in all open stacks
+
+.. figure:: _static/screenshots/selector-tool-mouse-mirror.png
+   :scale: 60 %
+   :alt: Selector tool
 
 ..  .. figure:: _static/screenshots/stats.png
     The Statistics Widget

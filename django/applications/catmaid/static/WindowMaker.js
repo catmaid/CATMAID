@@ -221,8 +221,8 @@ var WindowMaker = new function()
 
     var canvas = document.createElement('div');
     canvas.setAttribute("id", "viewer-3d-webgl-canvas");
-    canvas.style.width = "800px";
-    canvas.style.height = "600px";
+    // canvas.style.width = "800px";
+    // canvas.style.height = "600px";
     canvas.style.backgroundColor = "#000000";
     container.appendChild(canvas);
 

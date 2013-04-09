@@ -313,13 +313,17 @@ def create_linked_graphs_form( workspace_pid, project_id, inverse=True  ):
 def show_classification_editor( request, workspace_pid=None, project_id=None, link_id=None):
     """ Selects the right view to show, based on the provided project.
     """
+    project_id = int(project_id)
+    workspace_pid = int(workspace_pid)
+    project = Project.objects.get(id=project_id)
+    workspace = Project.objects.get(id=workspace_pid)
+    context = Context({
+        'project': project,
+        'workspace': workspace,
+    })
     # First, check if the classification system is correctly set-up
     setup_okay = check_classification_setup(workspace_pid)
     if not setup_okay:
-        context = Context({
-            'project_id': project_id,
-            'workspace_pid': workspace_pid
-        })
         template_name = "catmaid/classification/setup.html"
         page_type = 'setup'
         link_if = -1
@@ -335,13 +339,9 @@ def show_classification_editor( request, workspace_pid=None, project_id=None, li
             else:
                 selected_graph = selected_graph_q[0]
 
-            context = Context({
-                'num_graphs': 1,
-                'graph_id': link_id,
-                'project_id': project_id,
-                'workspace_pid': workspace_pid,
-                'settings': settings,
-            })
+            context['num_graphs'] = 1
+            context['graph_id'] = link_id
+            context['settings'] = settings
 
             template_name = "catmaid/classification/show_graph.html"
             page_type = 'show_graph'
@@ -350,12 +350,8 @@ def show_classification_editor( request, workspace_pid=None, project_id=None, li
             root_links_q = get_classification_links_qs( workspace_pid, project_id )
             num_roots = len(root_links_q)
 
-            context = Context({
-                'num_graphs': num_roots,
-                'project_id': project_id,
-                'workspace_pid': workspace_pid,
-                'CATMAID_URL': settings.CATMAID_URL
-            })
+            context['num_graphs'] = num_roots
+            context['CATMAID_URL'] = settings.CATMAID_URL
 
             if num_roots == 0:
                 new_graph_form_class = create_new_graph_form(workspace_pid)
@@ -389,25 +385,26 @@ def show_classification_editor( request, workspace_pid=None, project_id=None, li
 def add_classification_graph(request, workspace_pid=None, project_id=None):
     workspace_pid = int(workspace_pid)
     project_id = int(project_id)
+    project = get_object_or_404(Project, pk=project_id)
     # Has the form been submitted?
     new_graph_form_class = create_new_graph_form(workspace_pid)
     if request.method == 'POST':
         new_graph_form = new_graph_form_class(request.POST)
         if new_graph_form.is_valid():
             # Create the new classification graph
-            project = get_object_or_404(Project, pk=project_id)
             ontology = new_graph_form.cleaned_data['ontology']
             init_new_classification( workspace_pid, request.user, project, ontology )
             return HttpResponse('A new graph has been initalized.')
     else:
         new_graph_form = new_graph_form_class()
 
-    link_form = create_linked_graphs_form( workspace_pid, project_id )
+    workspace = get_object_or_404(Project, pk=workspace_pid)
+    link_form = create_linked_graphs_form( workspace.id, project.id )
     link_graph_form = link_form()
 
     return render_to_response("catmaid/classification/new_graph.html", {
-        'project_id': project_id,
-        'workspace_pid': workspace_pid,
+        'project': project,
+        'workspace': workspace,
         'new_graph_form': new_graph_form,
         'link_graph_form': link_graph_form,
         'CATMAID_URL': settings.CATMAID_URL
@@ -415,13 +412,15 @@ def add_classification_graph(request, workspace_pid=None, project_id=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def link_classification_graph(request, workspace_pid=None, project_id=None):
+    workspace_pid = int(workspace_pid)
+    project_id = int(project_id)
+    project = get_object_or_404(Project, pk=project_id)
     link_form = create_linked_graphs_form( workspace_pid, project_id )
     # Has the form been submitted?
     if request.method == 'POST':
         link_graph_form = link_form(request.POST)
         if link_graph_form.is_valid():
             # Link existing classification graph
-            project = get_object_or_404(Project, pk=project_id)
             link = link_graph_form.cleaned_data['classification_graph']
             graph_to_link = link.class_instance_b
             link_existing_classification( workspace_pid, request.user, project, graph_to_link)
@@ -429,12 +428,14 @@ def link_classification_graph(request, workspace_pid=None, project_id=None):
     else:
         link_graph_form = link_form()
 
+    workspace = get_object_or_404(Project, pk=workspace_pid)
+
     new_graph_form_class = create_new_graph_form(workspace_pid)
     new_graph_form = new_graph_form_class()
 
     return render_to_response("catmaid/classification/new_graph.html", {
-        'project_id': project_id,
-        'workspace_pid': workspace_pid,
+        'project': project,
+        'workspace': workspace,
         'new_graph_form': new_graph_form,
         'link_graph_form': link_graph_form,
         'CATMAID_URL': settings.CATMAID_URL
@@ -442,23 +443,26 @@ def link_classification_graph(request, workspace_pid=None, project_id=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def select_classification_graph(request, workspace_pid=None, project_id=None):
+    workspace_pid = int(workspace_pid)
+    project_id = int(project_id)
     link_form = create_linked_graphs_form( workspace_pid, project_id, False )
     # Has the form been submitted?
     if request.method == 'POST':
         form = link_form(request.POST)
         if form.is_valid():
             # Link existing classification graph
-            project = get_object_or_404(Project, pk=project_id)
             link = form.cleaned_data['classification_graph']
             return show_classification_editor(request, workspace_pid, project_id, link.id)
     else:
+        project = get_object_or_404(Project, pk=project_id)
+        workspace = get_object_or_404(Project, pk=workspace_pid)
         root_links_q = get_classification_links_qs( workspace_pid, project_id )
         num_roots = len(root_links_q)
         form = link_form()
 
         return render_to_response("catmaid/classification/select_graph.html", {
-            'project_id': project_id,
-            'workspace_pid': workspace_pid,
+            'project': project,
+            'workspace': workspace,
             'select_graph_form': new_graph_form,
             'num_graphs': num_roots,
         })

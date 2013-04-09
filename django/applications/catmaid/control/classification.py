@@ -5,7 +5,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.views.generic import TemplateView
 from django.shortcuts import get_object_or_404, render_to_response
-from django.template import Context
+from django.template import RequestContext
 
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
 from catmaid.control.common import insert_into_log
@@ -317,7 +317,7 @@ def show_classification_editor( request, workspace_pid=None, project_id=None, li
     workspace_pid = int(workspace_pid)
     project = Project.objects.get(id=project_id)
     workspace = Project.objects.get(id=workspace_pid)
-    context = Context({
+    context = RequestContext(request, {
         'project': project,
         'workspace': workspace,
     })
@@ -408,7 +408,7 @@ def add_classification_graph(request, workspace_pid=None, project_id=None):
         'new_graph_form': new_graph_form,
         'link_graph_form': link_graph_form,
         'CATMAID_URL': settings.CATMAID_URL
-    })
+    }, context_instance=RequestContext(request))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def link_classification_graph(request, workspace_pid=None, project_id=None):
@@ -439,7 +439,7 @@ def link_classification_graph(request, workspace_pid=None, project_id=None):
         'new_graph_form': new_graph_form,
         'link_graph_form': link_graph_form,
         'CATMAID_URL': settings.CATMAID_URL
-    })
+    }, context_instance=RequestContext(request))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def select_classification_graph(request, workspace_pid=None, project_id=None):
@@ -465,7 +465,7 @@ def select_classification_graph(request, workspace_pid=None, project_id=None):
             'workspace': workspace,
             'select_graph_form': new_graph_form,
             'num_graphs': num_roots,
-        })
+        }, context_instance=RequestContext(request))
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_classification_graph(request, workspace_pid, project_id=None, link_id=None):

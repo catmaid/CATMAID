@@ -12,9 +12,11 @@ from catmaid.control.common import insert_into_log
 from catmaid.control.ajax_templates import *
 from catmaid.control.ontology import get_class_links_qs
 from catmaid.models import Class, ClassClass, ClassInstance, ClassInstanceClassInstance
-from catmaid.models import Relation, UserRole, Project, Restriction
-from catmaid.models import CardinalityRestriction
+from catmaid.models import Relation, UserRole, Project, Restriction, Stack
+from catmaid.models import CardinalityRestriction, RegionOfInterest
+from catmaid.models import RegionOfInterestClassInstance
 from catmaid.control.authentication import requires_user_role
+from catmaid.control.roi import link_roi_to_class_instance
 
 # All needed classes by the classification system alongside their
 # descriptions.
@@ -28,7 +30,8 @@ needed_classes = {
 # descriptions.
 needed_relations = {
     'is_a': "A basic is_a relation",
-    'classified_by': "Link a classification to something"}
+    'classified_by': "Link a classification to something",
+    'linked_to': "Links a ROI to a class instance."}
 
 class ClassProxy(Class):
     """ A proxy class to allow custom labeling of class in model forms.
@@ -1136,3 +1139,17 @@ def autofill_classification_graph(request, workspace_pid, project_id=None, link_
         return HttpResponse("Added nodes: %s" % ','.join(node_names))
     else:
         return HttpResponse("Couldn't infer any new class instances.")
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def link_roi_to_classification(request, project_id=None, workspace_pid=None,
+        stack_id=None, ci_id=None):
+    """ With the help of this method one can link a region of interest
+    (ROI) to a class instance in a classification graph. The information
+    about the ROI is passed as POST variables.
+    """
+    # Find 'linked_to' relatios
+    rel = Relation.objects.get(project_id=workspace_pid,
+        relation_name="linked_to")
+
+    return link_roi_to_class_instance(request, project_id=project_id,
+        relation_id=rel.id, stack_id=stack_id, ci_id=ci_id)

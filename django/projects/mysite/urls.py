@@ -302,6 +302,8 @@ urlpatterns += patterns('',
         'catmaid.control.autofill_classification_graph', name='autofill_classification_graph'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/link$'.format(integer),
         'catmaid.control.link_classification_graph', name='link_classification_graph'),
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/stack/(?P<stack_id>{0})/linkroi/(?P<ci_id>{0})/$'.format(integer),
+        'catmaid.control.link_roi_to_classification', name='link_roi_to_classification'),
     )
 
 # Notifications

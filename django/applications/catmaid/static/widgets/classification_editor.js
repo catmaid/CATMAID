@@ -199,6 +199,16 @@ var ClassificationEditor = new function()
                                     }
                                   };
                             } else if (node_type === "element") {
+                                // Add entry for linking a region of interest
+                                menu['link_roi'] = {
+                                    "separator_before": true,
+                                    "separator_after": false,
+                                    "label": "Link region of interest",
+                                    "action": function (obj) {
+                                        var node_id = obj.attr("id").replace("node_", "");
+                                        self.link_roi(node_id);
+                                    }
+                                };
                                 // Add removing entry
                                 menu["remove_element"] = {
                                     "separator_before": true,
@@ -315,6 +325,42 @@ var ClassificationEditor = new function()
             // Add handlers to select elements available in edit mode
             self.addEditSelectHandlers(tree_id, pid);
         });
+    };
+
+    /**
+     * Links the current view to the currently selected class instance.
+     */
+    this.link_roi = function(node_id) {
+        // 1. Open Roi tool and register it with current stack. Bind own method
+        // to apply button. Add a cancel button.
+        var tool = new RoiTool();
+        tool.button_roi_apply.onclick = function()
+        {
+            // Collect relevant information
+            var cb = tool.getCropBox();
+            var data = {
+                x_min: cb.left,
+                x_max: cb.right,
+                y_min: cb.top,
+                y_max: cb.bottom,
+                z: tool.stack.z,
+                zoom_level: tool.stack.s
+            }
+            // The actual creation and linking of the ROI happens in
+            // the back-end. Create URL for initiating this:
+            var roi_url = self.get_cls_url(project.id,
+                "/stack/" + tool.stack.getId() + "/linkroi/" + node_id + "/");
+            // Make Ajax call and handle response in callback
+            requestQueue.register(roi_url, 'POST', data,
+                function(status, text, xml) {
+                    console.log("LinkROI returned.");
+                });
+
+            // 2. Open the navigator tool as replacement
+            project.setTool( new Navigator() );
+        };
+
+        project.setTool( tool );
     };
 
     this.create_new_instance = function(treeid, pid, parentid, classid, relid, name) {

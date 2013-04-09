@@ -851,8 +851,12 @@ var WebGLApp = new function () {
       $('#viewer-3d-webgl-canvas').width(canvasWidth);
       $('#viewer-3d-webgl-canvas').height(canvasHeight);
       $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
-      renderer.setSize( canvasWidth, canvasHeight );
-
+      
+      camera.setSize(canvasWidth, canvasHeight);
+	  camera.toPerspective();
+	  
+	  renderer.setSize( canvasWidth, canvasHeight );
+	  
       // resize list view, needs frame height to fill it
 //      var heightAvailable = $('#view_in_3d_webgl_widget').height() - canvasHeight;
 //      if( heightAvailable < 150 ) {
@@ -1489,7 +1493,6 @@ var WebGLApp = new function () {
 
   var render = function render() {
     controls.update();
-    renderer.clear();
     renderer.render( scene, camera );
   }
   self.render = render;

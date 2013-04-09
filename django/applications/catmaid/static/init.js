@@ -159,13 +159,12 @@ function handle_login(status, text, xml, completionCallback) {
 
       document.getElementById("project_menu_new").style.display = "block";
 
-      handle_profile_update(e);
-
       //msg_timeout = window.setTimeout( message, MSG_TIMEOUT_INTERVAL );
       message();
     } else if (e.error) {
       alert(e.error);
     }
+    handle_profile_update(e);
     updateProjects(completionCallback);
   } else if (status != 200) {
     // Of course, lots of non-200 errors are fine - just report

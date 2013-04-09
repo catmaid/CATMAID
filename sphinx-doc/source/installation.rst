@@ -275,3 +275,13 @@ with its "Export > Flat Images" option and selecting the "Export
 for web" checkbox. Make the folder with the image pyramid
 web-accessible and use the URL as ``image_base`` URL for your
 stack.
+
+13. Making tools visible
+########################
+
+CATMAID offers a growing set of :ref:`tools <tools>`. To not overload
+the user-interface, all tools which go beyond navigation are hidden by
+default. Which tools are visible is stored a
+:ref:`user profile <user-profiles>` for each user. You can adjust these
+settings at the bottom of the page while editing a user in the admin
+interface.

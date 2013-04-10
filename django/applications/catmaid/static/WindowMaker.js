@@ -227,7 +227,8 @@ var WindowMaker = new function()
     container.appendChild(canvas);
 
 
-    //addListener(win, container);
+    // addListener(win, container);
+
     win.addListener(
       function(callingWindow, signal) {
         switch (signal) {

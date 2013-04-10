@@ -1484,10 +1484,11 @@ var WindowMaker = new function()
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
-            '<th>actions</th>' +
+            '<th>node id</th>' +
             '<th>skeleton id</th>' +
             '<th>from</th>' +
             '<th>date</th>' +
+            '<th>actions</th>' +
           '</tr>' +
         '</thead>' +
         '<tfoot>' +
@@ -1499,10 +1500,11 @@ var WindowMaker = new function()
             '<th>x</th>' +
             '<th>y</th>' +
             '<th>z</th>' +
-            '<th>actions</th>' +
+            '<th>node id</th>' +
             '<th>skeleton id</th>' +
             '<th>from</th>' +
             '<th>date</th>' +
+            '<th>actions</th>' +
           '</tr>' +
         '</tfoot>' +
         '<tbody>' +

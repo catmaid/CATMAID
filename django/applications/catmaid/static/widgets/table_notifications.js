@@ -35,9 +35,9 @@ var NotificationsTable = new function()
         }
       }
       else if (status == 500) {
-		win = window.open('', '', 'width=1100,height=620');
-		win.document.write(text);
-		win.focus();
+        win = window.open('', '', 'width=1100,height=620');
+        win.document.write(text);
+        win.focus();
       }
       return true;
     });
@@ -59,12 +59,31 @@ var NotificationsTable = new function()
         }
       }
       else if (status == 500) {
-		win = window.open('', '', 'width=1100,height=620');
-		win.document.write(text);
-		win.focus();
+        win = window.open('', '', 'width=1100,height=620');
+        win.document.write(text);
+        win.focus();
       }
       return true;
     });
+  };
+  
+  this.perform_action = function(row_index) {
+    var node = document.getElementById('action_select_' + row_index);
+
+    if (node && node.tagName == "SELECT") {
+      var row_data = ns.oTable.fnGetData(row_index);
+      var action = node.options[node.selectedIndex].value;
+      if (action == 'Show') {
+        project.moveTo(row_data[6], row_data[5], row_data[4], undefined, function () {SkeletonAnnotations.staticSelectNode(row_data[7], row_data[8]);});
+      }
+      else if (action == 'Approve') {
+        NotificationsTable.approve(row_data[0]);
+      }
+      else if (action == 'Reject') {
+        NotificationsTable.reject(row_data[0]);
+      }
+      node.selectedIndex = 0;
+    }
   };
   
   this.init = function (pid)
@@ -104,18 +123,16 @@ var NotificationsTable = new function()
         "sClass": "center",
         "bSearchable": true,
         "bSortable": false,
-        "sWidth": "50px"
       }, // type
       {
         "bSearchable": false,
         "bSortable": false,
-        "sWidth": "100px"
       }, // description
       {
         "sClass": "center",
         "bSearchable": true,
         "bSortable": true,
-        "sWidth": "150px"
+        "sWidth": "120px"
       }, // status
       {
         "bSearchable": false,
@@ -126,28 +143,15 @@ var NotificationsTable = new function()
         "bVisible": false
       }, // y
       {
-      	"bSearchable": false,
+          "bSearchable": false,
         "bVisible": false
       }, // z
       {
-      	"sClass": "center",
-      	"bSearchable": false,
-        "bSortable": false,
-      	"fnRender" : function(obj) {
-			var crID = obj.aData[0]
-			var x = obj.aData[4]
-			var y = obj.aData[5]
-			var z = obj.aData[6]
-      		var nodeID = obj.aData[7]
-      		var skeletonID = obj.aData[8]
-      		var disabled = (obj.aData[3] == 'Open' ? '' : ' disabled');
-			return '<button onclick="project.moveTo(' + z + ', ' + y + ', ' + x + ', undefined, function () {SkeletonAnnotations.staticSelectNode(' + nodeID + ', ' + skeletonID + ');})">Show</button>' + 
-				'<button onclick="NotificationsTable.approve(' + crID + ');"' + disabled + '>Approve</button>' + 
-				'<button onclick="NotificationsTable.reject(' + crID + ');"' + disabled + '>Reject</button>'
-		}
-      }, // Action buttons (node_id)
+        "bSearchable": false,
+        "bVisible": false
+      }, // node_id
       {
-      	"bSearchable": false,
+          "bSearchable": false,
         "bVisible": false
       }, // skeleton_id
       {
@@ -156,8 +160,25 @@ var NotificationsTable = new function()
       }, // from
       {
         "bSearchable": false,
-        "bSortable": true
-      } // date
+        "bSortable": true,
+        "sWidth": "100px"
+      }, // date
+      {
+        "sClass": "center",
+        "bSearchable": false,
+        "bSortable": false,
+        "mDataProp": null,
+        "fnRender" : function(obj) {
+           var disabled = (obj.aData[3] == 'Open' ? '' : ' disabled');
+           return '<select id="action_select_' + obj.iDataRow + '" onchange="NotificationsTable.perform_action(' + obj.iDataRow + ')">' + 
+                  '  <option>Action:</option>' + 
+                  '  <option>Show</option>' + 
+                  '  <option' + disabled + '>Approve</option>' + 
+                  '  <option' + disabled + '>Reject</option>' + 
+                  '</select>'
+        },
+        "sWidth": "100px"
+      } // actions
       ]
     });
 

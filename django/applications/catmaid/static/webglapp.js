@@ -51,14 +51,14 @@ var WebGLApp = new function () {
     // self.render();
   }
 
-  /** Clean up. */
+  /** Clean up after closing the 3d viewer. */
   this.destroy = function() {
     renderer.domElement.removeEventListener('mousedown', onMouseDown, false);
     renderer.domElement.removeEventListener('mouseup', onMouseUp, false);
     renderer.domElement.removeEventListener('mousemove', onMouseMove, false);
     renderer.domElement.removeEventListener('mousewheel', onMouseWheel, false);
     renderer = null;
-    // self.removeAllSkeletons();
+    self.removeAllSkeletons();
   };
 
   var randomColors = [];
@@ -967,7 +967,8 @@ var WebGLApp = new function () {
         self.removeSkeleton( skeleton_id );
       }
     }
-    self.render();
+    if( renderer !== null )
+      self.render();
   }
 
   this.getColorOfSkeleton = function( skeleton_id ) {

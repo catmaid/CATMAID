@@ -190,7 +190,7 @@ var ReviewSystem = new function()
             segment['sequence'].forEach(function(node) {
                 users[node['rid']].count += 1;
             });
-        }, skeleton_data);
+        });
         // Create string with user's reviewed counts:
         var user_revisions = Object.keys(users).reduce(function(s, u) {
             u = users[u];

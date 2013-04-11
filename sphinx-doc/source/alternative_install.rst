@@ -23,10 +23,11 @@ we will use `Gevent <http://gevent.org/>`_ to provide this functionality. It
 is a WSGI server is based on Python `coroutines <http://en.wikipedia.org/wiki/Coroutine>`_
 and `greenlets <http://greenlet.readthedocs.org/en/latest/>`_.
 
-Of course, you need to install Nginx. In Debian based distributions, this can
-be done with::
+Of course, you need to install Nginx, and the libevent package if you will use gevent.
+In Debian based distributions, this can be done with::
 
-  sudo apt-get install nginx
+  sudo apt-get install nginx libevent-dev
+
 
 Nginx can be started after this. Additionally, you need to make sure a FastCGI
 PHP server is installed. Here we assume PHP-FPM to be available and listing on

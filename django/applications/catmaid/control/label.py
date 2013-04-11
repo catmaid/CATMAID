@@ -104,7 +104,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
     labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
     p = get_object_or_404(Project, pk=project_id)
     
-    newTags = request.POST['tags'].split(',')
+    new_tags = request.POST['tags'].split(',')
     
     # Get the existing list of tags for the tree node/connector and delete any that are not in the new list.
     if ntype == 'treenode':
@@ -112,19 +112,47 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
             treenode__id=location_id,
             relation=labeled_as_relation,
             class_instance__class_column__class_name='label').select_related('class_instance__name')
-        TreenodeClassInstance.objects.for_user(request.user).filter(
+        labels_to_delete = TreenodeClassInstance.objects.filter(
             treenode__id=location_id,
             relation=labeled_as_relation,
-            class_instance__class_column__class_name='label').exclude(class_instance__name__in=newTags).delete()
+            class_instance__class_column__class_name='label').exclude(class_instance__name__in=new_tags)
+        other_labels = labels_to_delete.exclude(treenode__user = request.user)
+        # Delete labels created by the current user
+        labels_to_delete.filter(treenode__user = request.user).delete()
+        # Create change requests for labels created by other users
+        for label in other_labels:
+            ChangeRequest(type = 'Remove Tag', 
+                          description = 'Remove tag \'' + label.class_instance.name + '\'', 
+                          project = p, 
+                          user = request.user,
+                          recipient = label.treenode.user,
+                          location = label.treenode.location,
+                          treenode = label.treenode,
+                          validate_action = 'label_exists(' + str(label.id) + ', "treenode")',
+                          approve_action = 'remove_label(' + str(label.id) + ', "treenode")').save()
     elif ntype == 'connector' or ntype == 'location':
         existingLabels = ConnectorClassInstance.objects.filter(
             connector__id=location_id,
             relation=labeled_as_relation,
             class_instance__class_column__class_name='label').select_related('class_instance__name')
-        ConnectorClassInstance.objects.for_user(request.user).filter(
+        labels_to_delete = ConnectorClassInstance.objects.filter(
             connector__id=location_id,
             relation=labeled_as_relation,
-            class_instance__class_column__class_name='label').exclude(class_instance__name__in=newTags).delete()
+            class_instance__class_column__class_name='label').exclude(class_instance__name__in=new_tags)
+        other_labels = labels_to_delete.exclude(connector__user = request.user)
+        # Delete labels created by the current user
+        labels_to_delete.filter(connector__user = request.user).delete()
+        # Create change requests for labels created by other users
+        for label in other_labels:
+            ChangeRequest(type = 'Remove Tag', 
+                          description = 'Remove tag \'' + label.class_instance.name + '\'', 
+                          project = p, 
+                          user = request.user,
+                          recipient = label.connector.user,
+                          location = label.connector.location,
+                          connector = label.connector,
+                          validate_action = 'label_exists(' + str(label.id) + ', "connector")',
+                          approve_action = 'remove_label(' + str(label.id) + ', "connector")').save()
     else:
         raise Http404('Unknown node type: "%s"' % (ntype,))
 
@@ -132,7 +160,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
 
     # Add any new labels.
     label_class = Class.objects.get(project=project_id, class_name='label')
-    for tag_name in newTags:
+    for tag_name in new_tags:
         if len(tag_name) > 0 and tag_name not in existingNames:
             # Make sure the tag instance exists.
             existing_tags = list(ClassInstance.objects.filter(
@@ -159,10 +187,9 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                     treenode=tn,
                     class_instance=tag)
                 tci.save()
-                #print >> sys.stderr, 'About to compare ' + str(tn) + '\nto:' + str(request)
                 if tn.user != request.user:
                     # Inform the owner of the node that the tag was added and give them the option of removing it.
-                    wr = ChangeRequest(type = 'Tag', 
+                    wr = ChangeRequest(type = 'Add Tag', 
                                        description = 'Added tag \'' + tag_name + '\'', 
                                        project = p, 
                                        user = request.user,
@@ -182,7 +209,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                 tci.save()
                 if c.user != request.user:
                     # Inform the owner of the connector that the tag was added and give them the option of removing it.
-                    wr = ChangeRequest(type = 'Tag', 
+                    wr = ChangeRequest(type = 'Add Tag', 
                                        description = 'Added tag \'' + tag_name + '\'', 
                                        project = p, 
                                        user = request.user,

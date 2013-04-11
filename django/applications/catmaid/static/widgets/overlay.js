@@ -475,8 +475,8 @@ var SkeletonAnnotations = new function()
       tagbox = e;
 
       $("#tagBoxId" + atn.id).mousedown(function (event) {
-        updateTags();
         if($("#Tags" + atn.id).tagEditorGetTags()==="") {
+          updateTags();
           removeTagbox();
           self.hideLabels();
           self.updateNodes();

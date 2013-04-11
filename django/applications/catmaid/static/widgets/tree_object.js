@@ -485,7 +485,7 @@ var ObjectTree = new function()
                           alert(e.error);
                         } else {
                           nodeID = e.root_id;
-                          skeletonID = skelid;
+                          skeletonID = parseInt(skelid);
                           // go to node
                           project.moveTo(e.z, e.y, e.x, undefined,
                                          function () {

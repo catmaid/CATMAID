@@ -1,10 +1,14 @@
-from scipy.sparse.csgraph import dijkstra
 from numpy import array, float32
 from numpy.linalg import norm
 import networkx as nx
 from sets import Set
 from catmaid.objects import *
 from collections import namedtuple, defaultdict
+
+try:
+    from scipy.sparse.csgraph import dijkstra
+except:
+    pass
 
 def synapse_clustering( skeleton_id, h_list ):
 

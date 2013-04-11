@@ -14,8 +14,8 @@ var NeuronStagingArea = new function()
 		self.selected = true;
 
 		// color
-		self.colorhex = '#ff0000';
-		self.colorvalue = 0;
+		self.colorhex = '#FFFF00';
+		self.colorvalue = [255, 255, 0];
 
 		// 3d viewer attributes
 		self.pre_visible = true;
@@ -90,7 +90,7 @@ var NeuronStagingArea = new function()
 		                            "Node count: " + e.node_count + "<br />" +
 		                            "Input sites: " + e.input_count + "<br />" +
 		                            "Output sites: " + e.output_count + "<br />" +
-		                            "Cable length: " + e.cable_length + "<br />" +
+		                            "Cable length: " + e.cable_length + " nm<br />" +
 		                            "Construction time: " + e.measure_construction_time + "<br />" +
 		                            "Percentage reviewed: " + e.percentage_reviewed + "<br />";
 		                        dialog.appendChild(msg);
@@ -151,19 +151,21 @@ var NeuronStagingArea = new function()
 
     self.change_skeleton_color = function( id, colorrgb, color )
     {
-    	console.log('change color', id, colorrgb, color.hex);
-      	skeletonmodels[ id ].colorvalue = value;
-      	skeletonmodels[ id ].colorhex = color.hex; // _rgb2hex( 'rgb('+value[0]+','+value[1]+','+value[2]+')' );
-      	// console.log('change color', id, skeletonmodels[ id ].colorvalue, skeletonmodels[ id ].colorhex );
+      	skeletonmodels[ id ].colorvalue = colorrgb;
+      	skeletonmodels[ id ].colorhex = color.hex;
       	$('#skeletonaction-changecolor-' + id).css("background-color", skeletonmodels[ id ].colorhex );
     }
 
+    self.get_color_of_skeleton = function( id )
+    {
+    	console.log('color of skeleton', id, ' is ', skeletonmodels[ id ].colorhex)
+    	return skeletonmodels[ id ].colorhex;
+    }
 
 	self.get_selected_skeletons = function()
 	{
 		var keys = [];
-    	for( var skeleton_id in skeletonmodels )
-    	{	
+    	for( var skeleton_id in skeletonmodels ) {	
       		if( skeletonmodels.hasOwnProperty(skeleton_id) &&
       			skeletonmodels[ skeleton_id ].selected ) {
       				keys.push( skeleton_id )

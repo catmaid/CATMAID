@@ -104,9 +104,8 @@ var CompartmentGraphWidget = new function()
 
   this.updateGraph = function( data ) {
 
-
     for(var i = 0; i < data.nodes.length; i++) {
-      data.nodes[i]['data']['color'] = WebGLApp.getColorOfSkeleton( parseInt(data.nodes[i]['data'].id));
+      data.nodes[i]['data']['color'] = NeuronStagingArea.get_color_of_skeleton( parseInt(data.nodes[i]['data'].id) );
     }
 
     // first remove all nodes
@@ -163,16 +162,16 @@ var CompartmentGraphWidget = new function()
 
     cy.layout( options );
 
-    cy.nodes().bind("mouseover", function(e) {
-      // console.log('node mouseover', e);
-    });
+    // cy.nodes().bind("mouseover", function(e) {
+    //   // console.log('node mouseover', e);
+    // });
 
   }
 
   this.updateConfidenceGraphFrom3DViewer = function() {
     requestQueue.replace(django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
         "POST",
-        { skeleton_list: WebGLApp.getListOfSkeletonIDs(true),
+        { skeleton_list: NeuronStagingArea.get_selected_skeletons(),
           confidence_threshold: $('#confidence_threshold').val(),
           bandwidth: $('#clustering_bandwidth').val() },
         function (status, text) {

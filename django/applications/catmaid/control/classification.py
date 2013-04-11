@@ -393,7 +393,11 @@ def add_classification_graph(request, workspace_pid=None, project_id=None):
         if new_graph_form.is_valid():
             # Create the new classification graph
             ontology = new_graph_form.cleaned_data['ontology']
-            init_new_classification( workspace_pid, request.user, project, ontology )
+            ontology_root_ci = init_new_classification( workspace_pid,
+                request.user, ontology )
+            # Link this graph instance to the project
+            link_existing_classification( workspace_pid, request.user,
+                project, ontology_root_ci )
             return HttpResponse('A new graph has been initalized.')
     else:
         new_graph_form = new_graph_form_class()
@@ -544,16 +548,16 @@ def traverse_class_instances(node, func):
         traverse_class_instances(c, func)
     func(node)
 
-def init_new_classification( workspace_pid, user, project, ontology ):
+
+def init_new_classification( workspace_pid, user, ontology ):
     """ Intializes a new classification graph which is automatically
     linked to the provided project. This graph is based on the passed
     ontology (a root class in the semantic space).
     """
     # Create a new ontology root instance
-    ontology_root_ci = ClassInstance.objects.create(
-        user = user, project_id = workspace_pid, class_column = ontology)
-    # Link this graph instance to the project
-    link_existing_classification( workspace_pid, user, project, ontology_root_ci )
+    ontology_root_ci = ClassInstance.objects.create(user = user,
+        project_id = workspace_pid, class_column = ontology)
+    return ontology_root_ci
 
 def link_existing_classification( workspace_pid, user, project, ontology_root_ci ):
     """ Links a project to an existing graph (class instance) and places

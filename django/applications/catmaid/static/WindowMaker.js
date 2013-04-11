@@ -391,12 +391,12 @@ var WindowMaker = new function()
     var contentbutton = document.createElement('div');
     contentbutton.setAttribute("id", 'compartment_graph_window_buttons');
 
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "confidence_compartment_show_neurons_from_3d_view");
-    add.setAttribute("value", "Show graph");
-    add.onclick = CompartmentGraphWidget.updateConfidenceGraphFrom3DViewer;
-    contentbutton.appendChild(add);
+    var show = document.createElement('input');
+    show.setAttribute("type", "button");
+    show.setAttribute("id", "confidence_compartment_show_neurons_from_3d_view");
+    show.setAttribute("value", "Show graph");
+    show.onclick = CompartmentGraphWidget.updateConfidenceGraphFrom3DViewer;
+    contentbutton.appendChild(show);
 
     var label = document.createTextNode('Keep edges with confidence');
     contentbutton.appendChild(label);
@@ -411,8 +411,15 @@ var WindowMaker = new function()
     }
     contentbutton.appendChild(sync);
 
-    var label = document.createTextNode('or higher.');
+    var label = document.createTextNode('or higher. Bandwidth:');
     contentbutton.appendChild(label);
+
+    var bandwidth = document.createElement('input');
+    bandwidth.setAttribute('id', 'clustering_bandwidth');
+    bandwidth.setAttribute('type', 'text');
+    bandwidth.setAttribute('value', 9000);
+    bandwidth.style.width = "30px";
+    contentbutton.appendChild(bandwidth);
 
     content.appendChild( contentbutton );
 
@@ -805,7 +812,7 @@ var WindowMaker = new function()
       '</table>';
     // ABOVE, notice the table needs one dummy row
 
-    addListener(win, container, 'skeleton_analytics_table');
+    addListener(win, container, 'skeleton_analytics');
     addLogic(win);
     SkeletonAnalytics.init();
 

@@ -39,9 +39,9 @@ var CompartmentGraphWidget = new function()
               .css({
                 "content": "data(label)",
                 "width": "data(weight)", //mapData(weight, 0, 100, 10, 50)",
-                "target-arrow-shape": "triangle",
+                "target-arrow-shape": "data(arrow)",
                 // "source-arrow-shape": "circle",
-                "line-color": "#444",
+                "line-color": "data(color)",
                 "opacity": 0.4,
                 
               })
@@ -170,33 +170,20 @@ var CompartmentGraphWidget = new function()
   }
 
   this.updateConfidenceGraphFrom3DViewer = function() {
-    jQuery.ajax({
-      url: django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
-      type: "POST",
-      dataType: "json",
-      data: { 
-        skeleton_list: WebGLApp.getListOfSkeletonIDs(true),
-        confidence_threshold: $('#confidence_threshold').val()
-         },
-      success: function (data) {
-        self.updateGraph( data );
-      }
-    });
+    requestQueue.replace(django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
+        "POST",
+        { skeleton_list: WebGLApp.getListOfSkeletonIDs(true),
+          confidence_threshold: $('#confidence_threshold').val(),
+          bandwidth: $('#clustering_bandwidth').val() },
+        function (status, text) {
+            if (200 !== status) return;
+            var json = $.parseJSON(text);
+            if (json.error) {
+                alert(json.error);
+                return;
+            }
+            self.updateGraph( json );
+        },
+        "graph_widget_request");
   }
-
-  this.updateEdgecountGraphFrom3DViewer = function() {
-    jQuery.ajax({
-      url: django_url + project.id + "/skeletongroup/skeletonlist_edgecount_compartment_subgraph",
-      type: "POST",
-      dataType: "json",
-      data: { 
-        skeleton_list: WebGLApp.getListOfSkeletonIDs(true),
-        edgecount: parseInt( $('#edgecount_threshold').val(), 10)
-         },
-      success: function (data) {
-        self.updateGraph( data );
-      }
-    });
-  }
-
 };

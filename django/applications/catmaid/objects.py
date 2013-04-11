@@ -202,7 +202,7 @@ class SkeletonGroup(object):
 
     def __init__(self, skeleton_id_list, project_id):
         """ A set of skeleton ids """
-        self.skeleton_id_list = skeleton_id_list
+        self.skeleton_id_list = list(set(skeleton_id_list))
         self.project_id = project_id
         self.skeletons = {}
         for skeleton_id in skeleton_id_list:

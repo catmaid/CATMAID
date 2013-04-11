@@ -24,10 +24,6 @@ var WebGLApp = new function () {
     dimension = project.focusedStack.dimension;
     translation = project.focusedStack.translation;
 
-    $('#webgl-rmall').click(function() {
-        WebGLApp.removeAllSkeletons();
-    })
-
     $('#webgl-show').click(function() {
       for( var skeleton_id in skeletons)
       {
@@ -479,12 +475,6 @@ var WebGLApp = new function () {
       }
     }
 
-    this.changeColor = function( value )
-    {
-      this.actorColor = value;
-      this.updateSkeletonColor();
-      $('#skeletonaction-changecolor-' + self.id).css("background-color", rgb2hex( 'rgb('+value[0]+','+value[1]+','+value[2]+')' ) );
-    }
 
     this.removeActorFromScene = function()
     {
@@ -999,7 +989,7 @@ var WebGLApp = new function () {
         return;
     } else {
         skeletons[skeleton_id].changeColor( value );
-        $('#skeletonaction-changecolor-' + skeleton_id).css("background-color",color.hex);
+        $('#skeletonaction-changecolor-' + skeleton_id).css("background-color", color.hex);
         self.render();
         return true;
     }
@@ -1623,155 +1613,6 @@ var WebGLApp = new function () {
 
   }
 
-  self.addSkeletonToTable = function ( skeleton ) {
-
-    if( $('#skeletonrow-' + skeleton.id ).length > 0 ) {
-      return;
-    }
-
-    var rowElement = $('<tr/>').attr({
-      id: 'skeletonrow-' + skeleton.id
-    });
-    // $('#webgl-skeleton-table > tbody:last').append( rowElement );
-    $('#webgl-skeleton-table > tbody:last').append( rowElement );
-    
-    var td = $(document.createElement("td"));
-    td.append( $(document.createElement("img")).attr({
-      id:    'skeletonaction-activate-' + skeleton.id,
-      value: 'Nearest node'
-    })
-      .click( function( event )
-      {
-        TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton.id );
-      })
-      .attr('src', STATIC_URL_JS + 'widgets/themes/kde/activate.gif')
-    );
-    td.append( $(document.createElement("img")).attr({
-          id:    'skeletonaction-remove-' + skeleton.id,
-          value: 'Remove'
-          })
-          .click( function( event )
-          {
-            self.removeSkeleton( skeleton.id );
-          })
-          .attr('src', STATIC_URL_JS + 'widgets/themes/kde/delete.png')
-          .text('Remove!')
-    );
-    rowElement.append( td );
-
-    rowElement.append(
-      $(document.createElement("td")).text( skeleton.baseName + ' (SkeletonID: ' + skeleton.id + ')' )
-    );
-
-    // show skeleton
-    rowElement.append(
-      $(document.createElement("td")).append(
-        $(document.createElement("input")).attr({
-                  id:    'skeletonshow-' + skeleton.id,
-                  name:  skeleton.baseName,
-                  value: skeleton.id,
-                  type:  'checkbox',
-                  checked: true
-          })
-          .click( function( event )
-          {
-            var vis = $('#skeletonshow-' + skeleton.id).is(':checked');
-            skeletons[skeleton.id].setActorVisibility( vis );
-            skeletons[skeleton.id].setPreVisibility( vis );
-            $('#skeletonpre-' + skeleton.id).attr('checked', vis );
-            skeletons[skeleton.id].setPostVisibility( vis );
-            $('#skeletonpost-' + skeleton.id).attr('checked', vis );
-            if( vis === false) {
-              skeletons[skeleton.id].setTextVisibility( vis );
-              $('#skeletontext-' + skeleton.id).attr('checked', vis );
-            }
-              
-            self.render();
-          } )
-    ));
-
-    // show pre
-    rowElement.append(
-      $(document.createElement("td")).append(
-        $(document.createElement("input")).attr({
-                  id:    'skeletonpre-' + skeleton.id,
-                  name:  skeleton.baseName,
-                  value: skeleton.id,
-                  type:  'checkbox',
-                  checked:true
-          })
-          .click( function( event )
-          {
-            skeletons[skeleton.id].setPreVisibility( $('#skeletonpre-' + skeleton.id).is(':checked') );
-            self.render();
-          } )
-    ));
-
-    // show post
-    rowElement.append(
-      $(document.createElement("td")).append(
-        $(document.createElement("input")).attr({
-                  id:    'skeletonpost-' + skeleton.id,
-                  name:  skeleton.baseName,
-                  value: skeleton.id,
-                  type:  'checkbox',
-                  checked:true
-          })
-          .click( function( event )
-          {
-            skeletons[skeleton.id].setPostVisibility( $('#skeletonpost-' + skeleton.id).is(':checked') );
-            self.render();
-          } )
-    ));
-
-    rowElement.append(
-      $(document.createElement("td")).append(
-        $(document.createElement("input")).attr({
-                  id:    'skeletontext-' + skeleton.id,
-                  name:  skeleton.baseName,
-                  value: skeleton.id,
-                  type:  'checkbox',
-                  checked:false
-          })
-          .click( function( event )
-          {
-            skeletons[skeleton.id].setTextVisibility( $('#skeletontext-' + skeleton.id).is(':checked') );
-            self.render();
-          } )
-    ));
-
-    var td = $(document.createElement("td"));
-    td.append(
-      $(document.createElement("button")).attr({
-        id:    'skeletonaction-changecolor-' + skeleton.id,
-        value: 'Change color'
-      })
-        .click( function( event )
-        {
-          $('#color-wheel-' + skeleton.id).toggle();
-        })
-        .text('Change color')
-    );
-    td.append(
-      $('<div id="color-wheel-' +
-        skeleton.id + '"><div class="colorwheel'+
-        skeleton.id + '"></div></div>')
-    );
-    rowElement.append( td );
-
-    var cw = Raphael.colorwheel($("#color-wheel-"+skeleton.id+" .colorwheel"+skeleton.id)[0],150);
-    cw.color("#FFFF00");
-    $('#skeletonaction-changecolor-' + skeleton.id).css("background-color","#FFFF00");
-    cw.onchange(function(color)
-    {
-      var colors = [parseInt(color.r), parseInt(color.g), parseInt(color.b)]
-      self.changeSkeletonColor( skeleton.id, colors, color );
-    })
-
-    $('#color-wheel-' + skeleton.id).hide();
-
-  }
-
   self.addActiveObjectToStagingArea = function() {
     // add either a skeleton or an assembly based on the tool selected
     if( project.getTool().toolname === 'segmentationtool' ) {
@@ -1850,36 +1691,6 @@ var WebGLApp = new function () {
     }
     return keys;
   };
-
-  self.storeSkeletonList = function() {
-    var shortname = prompt('Short name reference for skeleton list?'),
-        description = prompt('Short description?');
-    jQuery.ajax({
-      url: django_url + project.id + '/skeletonlist/save',
-      data: { shortname: shortname, description: description,
-        skeletonlist: self.getListOfSkeletonIDs() },
-      type: "POST",
-      dataType: "json",
-      success: function () {
-      }
-    });
-  };
-
-  self.loadSkeletonList = function() {
-    var shortname = prompt('Short name reference?');
-    jQuery.ajax({
-      url: django_url + project.id + '/skeletonlist/load',
-      data: { shortname: shortname },
-      type: "POST",
-      dataType: "json",
-      success: function ( data ) {
-        for( var idx in data['skeletonlist'])
-        {
-          self.addSkeletonFromID( self.project_id, data['skeletonlist'][idx] );
-        }
-      }
-    });
-  }
 
   self.toggleConnector = function() {
     if( connector_filter ) {

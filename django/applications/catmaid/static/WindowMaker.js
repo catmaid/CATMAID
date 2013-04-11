@@ -89,23 +89,23 @@ var WindowMaker = new function()
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
-    add.setAttribute("id", "add_current_to_3d_webgl_view");
+    add.setAttribute("id", "add_current_active_object_to_staging");
     add.setAttribute("value", "Add active object");
-    add.onclick = WebGLApp.addActiveObjectToStagingArea;
+    add.onclick = NeuronStagingArea.add_active_object_to_stage;
     buttons.appendChild(add);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
-    rand.setAttribute("id", "store_skeleton_list");
-    rand.setAttribute("value", "Store list");
-    rand.onclick = WebGLApp.storeSkeletonList;
+    rand.setAttribute("id", "save_skeleton_list");
+    rand.setAttribute("value", "Save list");
+    rand.onclick = NeuronStagingArea.save_skeleton_list;
     buttons.appendChild(rand);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
     rand.setAttribute("id", "load_skeleton_list");
     rand.setAttribute("value", "Load list");
-    rand.onclick = WebGLApp.loadSkeletonList;
+    rand.onclick = NeuronStagingArea.load_skeleton_list;
     buttons.appendChild(rand);
     
     win.getFrame().appendChild(buttons);
@@ -118,7 +118,7 @@ var WindowMaker = new function()
           '<tr>' +
             '<th width="100px">action</th>' +
             '<th>name</th>' +
-            '<th>show</th>' +
+            '<th>selected</th>' +
             '<th>pre</th>' +
             '<th>post</th>' +
             '<th>text</th>' +
@@ -137,6 +137,10 @@ var WindowMaker = new function()
           '</tr>' +
         '</tbody>';
     container.appendChild(tab);
+
+    $('#webgl-rmall').click(function() {
+      NeuronStagingArea.remove_all_skeletons;
+    })
 
     addListener(win, container, "view-3d-webgl-skeleton-buttons-div");
 
@@ -1033,13 +1037,6 @@ var WindowMaker = new function()
 
         contentbutton.appendChild(sync);
 
-        var refresh = document.createElement('input');
-        refresh.setAttribute("type", "button");
-        refresh.setAttribute("id", "skeleton_info");
-        refresh.setAttribute("value", "Skeleton Info");
-        refresh.onclick = SkeletonConnectivity.skeleton_info;
-        contentbutton.appendChild(refresh);
-
         content.appendChild( contentbutton );
 
         var container = createContainer( "connectivity_widget" );
@@ -1382,6 +1379,7 @@ var WindowMaker = new function()
     "log-table": createLogTableWindow,
     "export-widget": createExportWidget,
     "graph-widget": createGraphWindow,
+    "neuron-staging-area": createStagingListWindow,
     "compartment-graph-widget": createCompartmentGraphWindow,
     "assemblygraph-widget": createAssemblyGraphWindow,
     "sliceinfo-widget": createSliceInfoWindow,

@@ -21,12 +21,13 @@ def skeleton_statistics(request, project_id=None, skeleton_id=None):
     skel = Skeleton( skeleton_id = skeleton_id, project_id = project_id )
     const_time = skel.measure_construction_time()
     construction_time = '{0} minutes {1} seconds'.format( const_time / 60, const_time % 60)
-    return HttpResponse(json.dumps({'node_count': skel.node_count(),
-    'input_count': skel.input_count(),
-    'output_count': skel.output_count(),
-    'cable_length': int(skel.cable_length()),
-    'measure_construction_time': construction_time,
-    'percentage_reviewed': skel.percentage_reviewed() }), mimetype='text/json')
+    return HttpResponse(json.dumps({
+        'node_count': skel.node_count(),
+        'input_count': skel.input_count(),
+        'output_count': skel.output_count(),
+        'cable_length': int(skel.cable_length()),
+        'measure_construction_time': construction_time,
+        'percentage_reviewed': skel.percentage_reviewed() }), mimetype='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):

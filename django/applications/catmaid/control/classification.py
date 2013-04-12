@@ -778,7 +778,11 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
             child_types_jstree = child_types_to_jstree_dict( child_types )
 
             # Create JSTree data structure
-            data = {'data': {'title': cls_graph.class_column.class_name},
+            if len(cls_graph.name) > 0:
+                root_name = cls_graph.name
+            else:
+                root_name = cls_graph.class_column.class_name
+            data = {'data': {'title': root_name},
                 'attr': {'id': 'node_%s' % cls_graph.id,
                          'linkid': root_link.id,
                          'rel': 'root',

@@ -25,8 +25,9 @@ var OntologyEditor = new function()
                 })
 
         // Assign a function to the refresh button
-        $("#refresh_ontology_editor").off("click").on("click",
-            OntologyEditor.refresh_trees);
+        $("#refresh_ontology_editor").click(function() {
+            OntologyEditor.refresh_trees();
+        });
 
         // change to pid workspace if pid was passed
         if (pid) {

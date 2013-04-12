@@ -174,7 +174,7 @@ class Skeleton(object):
             else:
                 edge[ID_from][ID_to]['delta_creation_time'] = stamp2-stamp1
 
-    def measure_construction_time(self, threshold=10):
+    def measure_construction_time(self, threshold=300):
         """ Measure the amount of time consumed in creating this Skeleton.
         This will only count edges that were created lower than the given
         threshold value in seconds.

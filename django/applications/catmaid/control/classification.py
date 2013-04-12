@@ -47,8 +47,26 @@ class ClassInstanceClassInstanceProxy(ClassInstanceClassInstance):
         proxy=True
 
     def __unicode__(self):
-        return "{0} ({1})".format(
-            self.class_instance_b.class_column.class_name, str(self.id))
+        # Basic result string
+        if len(self.class_instance_b.name) > 0:
+            name = self.class_instance_b.name
+        else:
+            name = self.class_instance_b.class_column.class_name
+        result = "{0} ({1})".format(name, str(self.id))
+
+        # Display referce count if wanted
+        display_refs = True
+        if display_refs:
+            # Get projects that are linked to this CI (expect it to be
+            # a classification root)
+            num_links = ClassInstanceClassInstance.objects.filter(
+                class_instance_b=self.class_instance_b,
+                relation__relation_name='classified_by').count()
+            result = "{0} Refs: {1}".format(result, str(num_links))
+
+        return result
+
+
 
 def get_root_classes_qs(workspace_pid):
     """ Return a queryset that will get all root classes for the

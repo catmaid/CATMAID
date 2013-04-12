@@ -846,11 +846,20 @@ var OntologyEditor = new function()
                     return
                 }
                 var classes = JSON.parse(data);
+                // sort classes
+                var sorted_classes = [];
+                $.each(classes, function (key, value) {
+                    sorted_classes.push([key, value])
+                });
+                sorted_classes.sort(function(a, b) {return a[0].localeCompare(b[0]);});
+
                 // populate class select box
                 var class_select = $('#ontology_add_dialog #classid');
                 class_select.empty();
-                $.each(classes, function (key, value) {
-                    class_select.append($('<option></option>').attr("value", value).text(key + " (" + value + ")"));
+                $.each(sorted_classes, function (i) {
+                    var class_name = sorted_classes[i][0];
+                    var class_id = sorted_classes[i][1]
+                    class_select.append($('<option></option>').attr("value", class_id).text(class_name + " (" + class_id + ")"));
                 });
                 // show class dropdown
                 $('#ontology_add_dialog #select_class').css("display", "block");

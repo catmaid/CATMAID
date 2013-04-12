@@ -14,7 +14,7 @@ from catmaid.control.ontology import get_class_links_qs
 from catmaid.models import Class, ClassClass, ClassInstance, ClassInstanceClassInstance
 from catmaid.models import Relation, UserRole, Project, Restriction
 from catmaid.models import CardinalityRestriction
-from catmaid.control.authentication import requires_user_role, can_edit_or_fail
+from catmaid.control.authentication import requires_user_role
 
 # All needed classes by the classification system alongside their
 # descriptions.
@@ -910,13 +910,6 @@ def classification_instance_operation(request, workspace_pid=None, project_id=No
     def create_node():
         """ Creates a new node.
         """
-        # Can only create a node if the parent node is owned by the user
-        # or the user is a superuser.
-        # Given that the parentid is 0 to signal root (but root has a non-zero id),
-        # this implies that regular non-superusers cannot create nodes under root,
-        # but only in their staging area.
-        can_edit_or_fail(request.user, params['parentid'], 'class_instance')
-
         # TODO: Test if class and parent class instance exist
         # if params['classid'] not in class_map:
         #    raise CatmaidException('Failed to select class.')
@@ -961,8 +954,6 @@ def classification_instance_operation(request, workspace_pid=None, project_id=No
     def remove_node():
         """ Will remove a node.
         """
-        # Can only remove the node if the user owns it or the user is a superuser
-        can_edit_or_fail(request.user, params['id'], 'class_instance')
         # A class instance can be linked to different other class instances. This
         # operation will remove a complete class instance and thus *all* links to
         # other class instances.

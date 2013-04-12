@@ -90,7 +90,7 @@ var NeuronStagingArea = new function()
 		                            "Node count: " + e.node_count + "<br />" +
 		                            "Input sites: " + e.input_count + "<br />" +
 		                            "Output sites: " + e.output_count + "<br />" +
-		                            "Cable length: " + e.cable_length + " nm<br />" +
+		                            "Cable length: " + e.cable_length + " nm <br />" +
 		                            "Construction time: " + e.measure_construction_time + "<br />" +
 		                            "Percentage reviewed: " + e.percentage_reviewed + "<br />";
 		                        dialog.appendChild(msg);
@@ -110,6 +110,15 @@ var NeuronStagingArea = new function()
 		    });
 }
 
+	}
+
+	self.reinit_list_with_existing_skeleton = function()
+	{
+    	for( var skeleton_id in skeletonmodels ) {
+    		if( skeletonmodels.hasOwnProperty(skeleton_id) ) {
+				self._add_skeleton_to_table( skeletonmodels[ skeleton_id ] );
+    		}
+    	}
 	}
 
 	self.add_skeleton_to_stage = function( id, neuronname )
@@ -154,6 +163,12 @@ var NeuronStagingArea = new function()
       	skeletonmodels[ id ].colorvalue = colorrgb;
       	skeletonmodels[ id ].colorhex = color.hex;
       	$('#skeletonaction-changecolor-' + id).css("background-color", skeletonmodels[ id ].colorhex );
+      	WebGLApp.changeSkeletonColor( id, colorrgb );
+    }
+
+    self.get_skeletonmodel = function( id )
+    {
+    	return skeletonmodels[ id ];
     }
 
     self.get_color_of_skeleton = function( id )

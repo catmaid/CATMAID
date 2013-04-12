@@ -4,10 +4,18 @@ var WebGLApp = new function () {
   self = this;
   self.neurons = [];
 
-  var scene, renderer, scale, controls, zplane = null, meshes = [], show_meshes = false, show_active_node = true;
+  var scene, renderer, scale, controls, zplane = null, meshes = [];
   var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, projector, contour_objects = [],
-      bbmesh, floormesh, black_bg = true, debugax, togglevisibleall = false, show_missing_sections = false, missing_sections = [], mouse = new THREE.Vector2();
+      bbmesh, floormesh, debugax, togglevisibleall = false, missing_sections = [], mouse = new THREE.Vector2();
   var is_mouse_down = false, connector_filter = false, missing_section_height = 20, soma_scale = 1.0;
+
+  var show_meshes = false,
+      show_active_node = true,
+      show_missing_sections = false,
+      show_zplane = false,
+      show_boundingbox = true,
+      show_floor = true,
+      show_background = true;
 
   this.init = function( divID ) {
 
@@ -74,16 +82,13 @@ var WebGLApp = new function () {
   var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
 
   function init_webgl() {
+
     container = document.getElementById(self.divID);
+
     scene = new THREE.Scene();
-    // camera = new THREE.PerspectiveCamera( 75, self.divWidth / self.divHeight, 1, 3000 );
-
-    //camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
-      //camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
-
     camera = new THREE.CombinedCamera( -canvasWidth, -canvasHeight, 75, 1, 3000, -1000, 1, 500 );
     camera.frustumCulled = false;
-    // THREE.CombinedCamera = function ( width, height, fov, near, far, orthonear, orthofar ) {
+
     controls = new THREE.TrackballControls( camera, container );
     controls.rotateSpeed = 1.0;
     controls.zoomSpeed = 3.2;
@@ -93,59 +98,28 @@ var WebGLApp = new function () {
     controls.staticMoving = true;
     controls.dynamicDampingFactor = 0.3;
 
-/*
-    var ambient = new THREE.AmbientLight( 0x101010 );
-    scene.add( ambient );
-
-    directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
-    directionalLight.position.set( 1, 1, 2 ).normalize();
-    scene.add( directionalLight );
-*/
-
-    pointLight = new THREE.PointLight( 0xffaa00 );
+    // lights
+    scene.add( new THREE.AmbientLight( 0x505050 ) );
+    var pointLight = new THREE.PointLight( 0xffaa00 );
     scene.add( pointLight );
 
-    // light representation
-
-    scene.add( new THREE.AmbientLight( 0x505050 ) );
-
     var light = new THREE.SpotLight( 0xffffff, 1.5 );
-    //light.position.set( 0, 500, 2000 );
     light.castShadow = true;
-
     light.shadowCameraNear = 200;
     light.shadowCameraFar = camera.far;
     light.shadowCameraFov = 50;
-
     light.shadowBias = -0.00022;
     light.shadowDarkness = 0.5;
-
     light.shadowMapWidth = 2048;
     light.shadowMapHeight = 2048;
-
     scene.add( light );
-
-/*
-    sphere = new THREE.SphereGeometry( 100, 16, 8, 1 );
-    lightMesh = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffaa00 } ) );
-    lightMesh.scale.set( 0.05, 0.05, 0.05 );
-    lightMesh.position = pointLight.position;
-    scene.add( lightMesh );
-*/
 
     projector = new THREE.Projector();
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
-    //renderer = new THREE.CanvasRenderer();
     renderer.sortObjects = false;
     renderer.setSize( canvasWidth, canvasHeight );
     
-    // renderer.shadowMapEnabled = true;
-    // renderer.shadowMapType = THREE.PCFShadowMap;
-
-    // Follow size
-    // THREEx.WindowResize.bind(renderer, camera);
-
     container.appendChild( renderer.domElement )
     renderer.domElement.addEventListener('mousedown', onMouseDown, false);
     renderer.domElement.addEventListener('mouseup', onMouseUp, false);
@@ -181,25 +155,23 @@ var WebGLApp = new function () {
 
     controls.target = new THREE.Vector3(coord[0]*scale,coord[1]*scale,coord[2]*scale);
 
-    
     debugaxes();
     draw_grid();
     XYView();
-
     self.createActiveNode();
 
-    // if there is an active skeleton, add it to the view
-    if(SkeletonAnnotations.getActiveNodeId()) {
-      self.addSkeletonFromID( self.project_id, SkeletonAnnotations.getActiveSkeletonId() );
+    // if no skeleton in staging area, add the current active one, otherwise refresh
 
-      // and create active node
-      $('#enable_active_node').attr('checked', true);
-      
-      show_active_node = true;
-      self.showActiveNode();
-      self.updateActiveNodePosition();
-      
-    }
+
+    // // if there is an active skeleton, add it to the view
+    // if(SkeletonAnnotations.getActiveNodeId()) {
+    //   self.addSkeletonFromID( SkeletonAnnotations.getActiveSkeletonId() );
+    //   // and create active node
+    //   $('#enable_active_node').attr('checked', true);
+    //   show_active_node = true;
+    //   self.showActiveNode();
+    //   self.updateActiveNodePosition();
+    // }
 
 
   }
@@ -397,14 +369,36 @@ var WebGLApp = new function () {
     var self = this;
     var type, from_vector, to_vector, labelspheregeometry = new THREE.SphereGeometry( 130 * scale, 32, 32, 1);
 
-    this.line_material = new Object();
-    this.actorColor = [255, 255, 0];
-    this.visible = true;
-    this.id = skeleton_data.id;
-    this.baseName = skeleton_data.baseName;
-    this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
-    this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } );
-    this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } );
+    self.id = skeleton_data.id;
+    self.baseName = skeleton_data.baseName;
+    
+    this.initialize_objects = function()
+    {
+      this.line_material = new Object();
+      this.actorColor = [255, 255, 0]; // color from staging area?
+      this.visible = true;
+      this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
+      this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } );
+      this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } );
+
+      this.original_vertices = null;
+      this.original_connectivity = null;
+      this.geometry = new Object();
+      this.actor = new Object();
+      this.geometry[connectivity_types[0]] = new THREE.Geometry();
+      this.geometry[connectivity_types[1]] = new THREE.Geometry();
+      this.geometry[connectivity_types[2]] = new THREE.Geometry();
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        this.actor[connectivity_types[i]] = new THREE.Line( this.geometry[connectivity_types[i]],
+          this.line_material[connectivity_types[i]], THREE.LinePieces );
+      }
+      this.labelSphere = new Object();
+      this.otherSpheres = new Object();
+      this.radiusSpheres = new Object();
+      this.textlabels = new Object();
+    }
+
+    self.initialize_objects();
 
     this.setCompleteActorVisibility = function( vis ) {
       self.visible = vis;
@@ -475,28 +469,38 @@ var WebGLApp = new function () {
       }
     }
 
+    this.changeColor = function( value ) {
+      self.actorColor = value;
+      self.updateSkeletonColor();
+    }
+
 
     this.removeActorFromScene = function()
     {
       for ( var i=0; i<connectivity_types.length; ++i ) {
-        scene.remove( this.actor[connectivity_types[i]] );
+        if( this.actor.hasOwnProperty(connectivity_types[i]) )
+          scene.remove( this.actor[connectivity_types[i]] );
       }
       this.remove_connector_selection();
-      for ( var i=0; i<connectivity_types.length; ++i ) {
-        scene.remove( this.actor[connectivity_types[i]] );
-      }
+      // for ( var i=0; i<connectivity_types.length; ++i ) {
+      //   if( this.actor.hasOwnProperty(connectivity_types[i]) )
+      //     scene.remove( this.actor[connectivity_types[i]] );
+      // }
       for ( var k in this.labelSphere ) {
-        scene.remove( this.labelSphere[k] );
+        if( this.labelSphere.hasOwnProperty( k ) )
+          scene.remove( this.labelSphere[k] );
       }
       for ( var k in this.otherSpheres ) {
-        scene.remove( this.otherSpheres[k] );
+        if( this.otherSpheres.hasOwnProperty( k ) )
+          scene.remove( this.otherSpheres[k] );
       }
       for ( var k in this.radiusSpheres ) {
-        scene.remove( this.radiusSpheres[k] );
+        if( this.radiusSpheres.hasOwnProperty( k ) )
+          scene.remove( this.radiusSpheres[k] );
       }
       for ( var k in this.textlabels ) {
-        if( self.textlabels.hasOwnProperty)
-        scene.remove( this.textlabels[k] );
+        if( self.textlabels.hasOwnProperty( k ))
+          scene.remove( this.textlabels[k] );
       }
     }
 
@@ -524,25 +528,6 @@ var WebGLApp = new function () {
         this.actorColor[1]+','+
         this.actorColor[2]+')' ), 16);
     };
-
-    this.initialize_objects = function()
-    {
-      this.original_vertices = null;
-      this.original_connectivity = null;
-      this.geometry = new Object();
-      this.actor = new Object();
-      this.geometry[connectivity_types[0]] = new THREE.Geometry();
-      this.geometry[connectivity_types[1]] = new THREE.Geometry();
-      this.geometry[connectivity_types[2]] = new THREE.Geometry();
-      for ( var i=0; i<connectivity_types.length; ++i ) {
-        this.actor[connectivity_types[i]] = new THREE.Line( this.geometry[connectivity_types[i]],
-          this.line_material[connectivity_types[i]], THREE.LinePieces );
-      }
-      this.labelSphere = new Object();
-      this.otherSpheres = new Object();
-      this.radiusSpheres = new Object();
-      this.textlabels = new Object();
-    }
 
     this.remove_connector_selection = function()
     {
@@ -620,9 +605,8 @@ var WebGLApp = new function () {
 
     this.reinit_actor = function ( skeleton_data )
     {
-      if( this.actor !== undefined  ) {
-        self.removeActorFromScene();
-      }
+
+      self.removeActorFromScene();
       self.initialize_objects();
 
       this.original_vertices = skeleton_data.vertices;
@@ -785,6 +769,13 @@ var WebGLApp = new function () {
       }
       this.updateSkeletonColor();
       this.addCompositeActorToScene();
+
+      var skeletonmodel = NeuronStagingArea.get_skeletonmodel( self.id );
+      self.setActorVisibility( skeletonmodel.selected );
+      self.setPreVisibility( skeletonmodel.pre_visible );
+      self.setPostVisibility( skeletonmodel.post_visible );
+      self.setTextVisibility( skeletonmodel.text_visible );
+
     }
 
     self.reinit_actor( skeleton_data );
@@ -806,25 +797,16 @@ var WebGLApp = new function () {
     if( THREEx.FullScreen.activated() ){
         var w = canvasWidth, h = canvasHeight;
         self.resizeView( w, h );
-        // $('#viewer-3d-webgl-canvas').width(w);
-        // $('#viewer-3d-webgl-canvas').height(h);
-        // $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
-        // renderer.setSize( w, h );
         THREEx.FullScreen.cancel();
     } else {
         THREEx.FullScreen.request(document.getElementById('viewer-3d-webgl-canvas'));
         var w = window.innerWidth, h = window.innerHeight;
         self.resizeView( w, h );
-        // $('#viewer-3d-webgl-canvas').width(w);
-        // $('#viewer-3d-webgl-canvas').height(h);
-        // $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
-        // renderer.setSize( w, h );
     }
     self.render();
   }
 
   self.resizeView = function (w, h) {
-    console.log('resize view')
     canvasWidth = w;
     canvasHeight = h;
     if( self.divID === undefined ) {
@@ -856,17 +838,9 @@ var WebGLApp = new function () {
       $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
       
       camera.setSize(canvasWidth, canvasHeight);
-      camera.toPerspective();
-	  
+      camera.toPerspective(); // invokes update of camera matrices
       renderer.setSize( canvasWidth, canvasHeight );
-	  
-      // resize list view, needs frame height to fill it
-//      var heightAvailable = $('#view_in_3d_webgl_widget').height() - canvasHeight;
-//      if( heightAvailable < 150 ) {
-//          $('#view-3d-webgl-skeleton-table-div').height(150);
-//      } else {
-//          $('#view-3d-webgl-skeleton-table-div').height(heightAvailable - 30);
-//      }
+
       self.render();
     }
   }
@@ -949,7 +923,6 @@ var WebGLApp = new function () {
     self.render();
   }
 
-
   this.removeAllSkeletons = function() {
     for( var skeleton_id in skeletons)
     {
@@ -970,7 +943,7 @@ var WebGLApp = new function () {
   }
 
   // add skeleton to scene
-  this.addSkeleton = function( skeleton_id, skeleton_data )
+  this.addSkeletonFromData = function( skeleton_id, skeleton_data )
   {
     if( skeletons.hasOwnProperty(skeleton_id) ){
       // skeleton already in the list, just reinitialize
@@ -982,14 +955,13 @@ var WebGLApp = new function () {
     return skeletons[skeleton_id];
   }
 
-  this.changeSkeletonColor = function( skeleton_id, value, color )
+  this.changeSkeletonColor = function( skeleton_id, value )
   {
     if( !skeletons.hasOwnProperty(skeleton_id) ){
         alert("Skeleton "+skeleton_id+" does not exist. Cannot change color!");
         return;
     } else {
         skeletons[skeleton_id].changeColor( value );
-        $('#skeletonaction-changecolor-' + skeleton_id).css("background-color", color.hex);
         self.render();
         return true;
     }
@@ -1030,7 +1002,6 @@ var WebGLApp = new function () {
         });
         return;
     } else {
-        $('#skeletonrow-' + skeleton_id).remove();
         skeletons[skeleton_id].removeActorFromScene();
         delete skeletons[skeleton_id];
         self.render();
@@ -1040,38 +1011,40 @@ var WebGLApp = new function () {
 
   self.toggleBackground = function()
   {
-      if( black_bg ) {
+      if( show_background ) {
           renderer.setClearColorHex( 0xffffff, 1 );
-          black_bg = false;
+          show_background = false;
       } else {
           renderer.setClearColorHex( 0x000000, 1 );
-          black_bg = true;
+          show_background = true;
       }
       self.render();
   }
 
   self.toggleFloor = function()
   {
-      if( floormesh.visible ) {
-          // disable floor
+      if( show_floor ) {
           floormesh.visible = false;
+          show_floor = false;
       } else {
-          // enable floor
           floormesh.visible = true;
+          show_floor = true;
       }
       self.render();
   }
 
   self.toggleBB = function()
   {
-      if( bbmesh.visible ) {
+      if( show_boundingbox ) {
           // disable floor
           bbmesh.visible = false;
           debugax.visible = false;
+          show_boundingbox = false;
       } else {
           // enable floor
           bbmesh.visible = true;
           debugax.visible = true;
+          show_boundingbox = true;
       }
       self.render();
   }
@@ -1111,16 +1084,18 @@ var WebGLApp = new function () {
         success: function (models) {
           // loop over objects
           for( var obj in models) {
-            var vert = models[obj].vertices;
-            var vert2 = [];
-            for ( var i = 0; i < vert.length; i+=3 ) {
-              var fv = transform_coordinates([vert[i],vert[i+1],vert[i+2]]);
-              vert2.push( fv[0] );
-              vert2.push( fv[1] );
-              vert2.push( fv[2] );
+            if( models.hasOwnProperty( obj )) {
+              var vert = models[obj].vertices;
+              var vert2 = [];
+              for ( var i = 0; i < vert.length; i+=3 ) {
+                var fv = transform_coordinates([vert[i],vert[i+1],vert[i+2]]);
+                vert2.push( fv[0] );
+                vert2.push( fv[1] );
+                vert2.push( fv[2] );
+              }
+              models[obj].vertices = vert2;
+              loader.createModel( models[obj], callback );              
             }
-            models[obj].vertices = vert2;
-            loader.createModel( models[obj], callback );
           }
         }
       });
@@ -1233,20 +1208,13 @@ var WebGLApp = new function () {
     dialog.appendChild(rand);
     dialog.appendChild( document.createElement("br"));*/
 
-    dialog.appendChild( document.createTextNode("Restrict display to shared connectors between visible skeletons") );
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "toggle_connector");
-    rand.setAttribute("value", "Restrict connectors");
-    rand.onclick = WebGLApp.toggleConnector;
-    dialog.appendChild(rand);
-    dialog.appendChild( document.createElement("br"));
-
     var rand = document.createElement('input');
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "enable_z_plane");
     rand.setAttribute("value", "Enable z-plane");
-    rand.onclick = WebGLApp.updateZPlane;
+    if( show_zplane )
+      rand.setAttribute("checked", "true");
+    rand.onclick = WebGLApp.toggle_zplane;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Enable z-plane');
     dialog.appendChild(rand);
@@ -1256,6 +1224,8 @@ var WebGLApp = new function () {
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "show_meshes");
     rand.setAttribute("value", "Show meshes");
+    if( show_meshes )
+      rand.setAttribute("checked", "true");
     rand.onclick = WebGLApp.toggleMeshes;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Show meshes');
@@ -1266,7 +1236,8 @@ var WebGLApp = new function () {
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "enable_active_node");
     rand.setAttribute("value", "Enable active node");
-    rand.setAttribute("checked", "true");
+    if( show_active_node )
+      rand.setAttribute("checked", "true");
     rand.onclick = WebGLApp.toggleActiveNode;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Enable active node');
@@ -1277,6 +1248,8 @@ var WebGLApp = new function () {
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "enable_missing_sections");
     rand.setAttribute("value", "Missing sections");
+    if( show_missing_sections )
+      rand.setAttribute("checked", "true");
     rand.onclick = WebGLApp.toggleMissingSections;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Missing sections');
@@ -1296,6 +1269,8 @@ var WebGLApp = new function () {
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "toggle_floor");
     rand.setAttribute("value", "Toggle Floor");
+    if( show_floor )
+      rand.setAttribute("checked", "true");
     rand.onclick = WebGLApp.toggleFloor;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Toggle floor');
@@ -1306,6 +1281,8 @@ var WebGLApp = new function () {
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "toggle_aabb");
     rand.setAttribute("value", "Toggle Bounding Box");
+    if( show_boundingbox )
+      rand.setAttribute("checked", "true");
     rand.onclick = WebGLApp.toggleBB;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Toggle Bounding Box');
@@ -1316,6 +1293,8 @@ var WebGLApp = new function () {
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "toggle_bgcolor");
     rand.setAttribute("value", "Toggle Background Color");
+    if( show_background )
+      rand.setAttribute("checked", "true");
     rand.onclick = WebGLApp.toggleBackground;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Toggle Background Color');
@@ -1343,44 +1322,39 @@ var WebGLApp = new function () {
     });
   }
 
-  self.updateZPlane = function() {
-    var zval;
-    if( $('#enable_z_plane').attr('checked') != undefined ) {
-      zval = project.focusedStack.z;
+  self.toggle_zplane = function() {
+    if( show_zplane ) {
+      scene.remove( zplane );
+      zplane = null;
+      show_zplane = false;
     } else {
-      zval = -1;
-    }
-    // if disabled, deselect
-    if( zval === -1 ) {
-        scene.remove( zplane );
-        zplane = null;
-        self.render();
-        return;
-    }
-    var newval;
-    newval = (-zval * resolution.z - translation.z) * scale;
-    if( zplane === null ) {
-        var geometry = new THREE.Geometry();
-        var xwidth = dimension.x*resolution.x*scale,
-            ywidth = dimension.y*resolution.y*scale;
+      // create
+      var geometry = new THREE.Geometry();
+      var xwidth = dimension.x*resolution.x*scale,
+          ywidth = dimension.y*resolution.y*scale;
 
-        geometry.vertices.push( new THREE.Vector3( 0,0,0 ) );
-        geometry.vertices.push( new THREE.Vector3( xwidth,0,0 ) );
-        geometry.vertices.push( new THREE.Vector3( 0,ywidth,0 ) );
-        geometry.vertices.push( new THREE.Vector3( xwidth,ywidth,0 ) );
-        geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
+      geometry.vertices.push( new THREE.Vector3( 0,0,0 ) );
+      geometry.vertices.push( new THREE.Vector3( xwidth,0,0 ) );
+      geometry.vertices.push( new THREE.Vector3( 0,ywidth,0 ) );
+      geometry.vertices.push( new THREE.Vector3( xwidth,ywidth,0 ) );
+      geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
 
-        var material = new THREE.MeshBasicMaterial( { color: 0x151349,
-          side: THREE.DoubleSide } );
-        zplane = new THREE.Mesh( geometry, material );
-        zplane.position.z = newval;
-        scene.add( zplane );
-        self.render();
-        return;
+      var material = new THREE.MeshBasicMaterial( { color: 0x151349, side: THREE.DoubleSide } );
+      zplane = new THREE.Mesh( geometry, material );
+      scene.add( zplane );
+      show_zplane = true;
+      self.updateZPlane();
     }
+    self.render();
+
+  }
+
+  self.updateZPlane = function() {
+    if( !show_zplane )
+      return;
+    var newval = (-project.focusedStack.z * resolution.z - translation.z) * scale;
     zplane.position.z = newval;
     self.render();
-    
   }
 
   function debugaxes() {
@@ -1639,42 +1613,24 @@ var WebGLApp = new function () {
       }}});
   }
 
-  self.addActiveSkeletonToView = function() {
-    var atn_id = SkeletonAnnotations.getActiveNodeId(),
-        skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
-    if (!atn_id) {
-      alert("You must have an active node selected to add its skeleton to the 3D WebGL View.");
-      return;
-    }
-    if (SkeletonAnnotations.getActiveNodeType() != "treenode") {
-      alert("You can only add skeletons to the 3D WebGL View at the moment - please select a node of a skeleton.");
-      return;
-    }
-    // if( skeleton_id in skeletons ) {
-    //   alert('Skeleton already added to the list');
-    //   self.removeSkeleton( skeleton_id );
-      
-    //   // return;
-    // }
-    self.addSkeletonFromID( project.id, skeleton_id ); // will call self.render()
-  }
-
-  self.addSkeletonFromID = function (projectID, skeletonID) {
+  self.addSkeletonFromID = function (skeletonID) {
     if( skeletonID !== undefined )
     {
-        jQuery.ajax({
-          url: django_url + project.id + '/skeleton/' + skeletonID + '/json',
-          type: "GET",
-          dataType: "json",
-          success: function (skeleton_data) {
-            skeleton_data['baseName'] = skeleton_data['neuron']['neuronname'];
-            var skeleton = self.addSkeleton( parseInt(skeletonID), skeleton_data );
-            self.addSkeletonToTable( skeleton );
-            self.render();
-          }
-        });
+      var skeleton_id = parseInt( skeletonID );
+      jQuery.ajax({
+        url: django_url + project.id + '/skeleton/' + skeleton_id + '/json',
+        type: "GET",
+        dataType: "json",
+        success: function (skeleton_data) {
+          skeleton_data['baseName'] = skeleton_data['neuron']['neuronname'];
+          var skeleton = self.addSkeletonFromData( skeleton_id, skeleton_data );
+          self.render();
+        }
+      });
     }
   };
+
+
 
   self.getListOfSkeletonIDs = function(only_visible) {
     var keys = [];
@@ -1691,6 +1647,31 @@ var WebGLApp = new function () {
     }
     return keys;
   };
+
+  // use the staging skeleton list to refresh all neurons
+  self.refresh_skeletons = function() {
+    // self.removeAllSkeletons(); // TODO: is this slower than use reinit actor and remove only the rest?
+    var skeletons_to_remove = {};
+    for(var skeleton_id in skeletons) {
+      if( skeletons.hasOwnProperty( skeleton_id )) {
+        skeletons_to_remove[ skeleton_id ] = true;
+      }
+    }
+    var stageskeletons = NeuronStagingArea.get_selected_skeletons();
+    for(var i = 0; i < stageskeletons.length; i++) {
+      var skeleton_id = parseInt( stageskeletons[ i ] );
+      skeletons_to_remove[ skeleton_id ] = false;
+    }
+    for(var skeleton_id in skeletons_to_remove) {
+      if( skeletons_to_remove.hasOwnProperty( skeleton_id )) {
+        if( skeletons_to_remove[ skeleton_id ] ) {
+          self.removeSkeleton( skeleton_id );
+        } else {
+          self.addSkeletonFromID( skeleton_id );
+        }
+      }
+    }
+  }
 
   self.toggleConnector = function() {
     if( connector_filter ) {

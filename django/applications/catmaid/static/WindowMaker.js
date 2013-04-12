@@ -36,8 +36,8 @@ var WindowMaker = new function()
               for (var name in windows) {
                 if (windows.hasOwnProperty(name)) {
                   if (win === windows[name]) {
+                    // console.log("deleted " + name, windows[name]);
                     delete windows[name];
-                    // console.log("deleted " + name);
                     break;
                   }
                 }
@@ -138,13 +138,14 @@ var WindowMaker = new function()
         '</tbody>';
     container.appendChild(tab);
 
-    $('#webgl-rmall').click(function() {
-      NeuronStagingArea.remove_all_skeletons;
-    })
-
     addListener(win, container, "view-3d-webgl-skeleton-buttons-div");
 
     addLogic(win);
+
+    NeuronStagingArea.reinit_list_with_existing_skeleton();
+    $('#webgl-rmall').click(function() {
+        NeuronStagingArea.remove_all_skeletons();
+    });
 
     return win;
 
@@ -173,6 +174,13 @@ var WindowMaker = new function()
     
     var container = createContainer("view_in_3d_webgl_widget");
     content.appendChild(container);
+
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
+    add.setAttribute("id", "refresh_viewer");
+    add.setAttribute("value", "Refresh");
+    add.onclick = WebGLApp.refresh_skeletons;
+    buttons.appendChild(add);
     
     var add = document.createElement('input');
     add.setAttribute("type", "button");
@@ -214,6 +222,14 @@ var WindowMaker = new function()
     rand.setAttribute("id", "randomize_skeleton_color");
     rand.setAttribute("value", "Randomize color");
     rand.onclick = WebGLApp.randomizeColors;
+    buttons.appendChild(rand);
+
+    // Restrict display to shared connectors between visible skeletons
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
+    rand.setAttribute("id", "toggle_connector");
+    rand.setAttribute("value", "Restrict connectors");
+    rand.onclick = WebGLApp.toggleConnector;
     buttons.appendChild(rand);
 
     var rand = document.createElement('input');

@@ -607,6 +607,7 @@ var ClassificationEditor = new function()
 
     this.refresh = function()
     {
-        self.load_classification(project.id);
+        if (project)
+            self.load_classification(project.id);
     };
 }

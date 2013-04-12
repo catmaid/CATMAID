@@ -16,6 +16,10 @@ guard_root_classes = False
 # have the same name like already present ones
 be_strict = True
 
+# Names of new classes and relations will be trimmed automatically,
+# if trim_names is true.
+trim_names = True
+
 class ClassElement:
     def __init__(self, id, name):
         self.id = id
@@ -271,6 +275,9 @@ def add_relation_to_ontology(request, project_id=None):
     if name is None:
         raise Exception("Couldn't find name for new relation.")
 
+    if trim_names:
+        name = name.strip()
+
     if be_strict:
         # Make sure that there isn't already a relation with this name
         num_r = Relation.objects.filter(project_id = project_id,
@@ -342,6 +349,9 @@ def add_class_to_ontology(request, project_id=None):
 
     if name is None:
         raise Exception("Couldn't find name for new class.")
+
+    if trim_names:
+        name = name.strip()
 
     if be_strict:
         # Make sure that there isn't already a class with this name

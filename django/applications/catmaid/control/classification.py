@@ -299,7 +299,13 @@ def create_linked_graphs_form( workspace_pid, project_id, inverse=True  ):
     it is False, then only linked projects will be shown.
     """
     root_links = get_classification_links_qs( workspace_pid, project_id, inverse )
-    root_ids = [l.id for l in root_links]
+    # Make sure we use no classification graph more than once
+    known_roots = []
+    root_ids = []
+    for link in root_links:
+        if link.class_instance_b.id not in known_roots:
+            known_roots.append(link.class_instance_b.id)
+            root_ids.append(link.id)
 
     class AvailableClassificationsForm(forms.Form):
         """ A simple form to select an available classification for a

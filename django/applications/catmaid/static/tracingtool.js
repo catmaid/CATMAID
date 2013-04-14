@@ -439,6 +439,19 @@ function TracingTool()
   } ) );
 
   this.addAction( new Action({
+    helpText: "Next open leaf node",
+    keyShortcuts: {
+      "R": [ 82 ]
+    },
+    run: function (e) {
+      if (!mayView())
+        return false;
+      tracingLayer.svgOverlay.tracingCommand('goopenleaf');
+      return true;
+    }
+  } ) );
+
+  this.addAction( new Action({
     helpText: "Go to next branch or end point (with alt, stop earlier at node with tag, synapse or low confidence; with shift and at a branch node, move down the other branch)",
     keyShortcuts: {
       "V": [ 86 ]

@@ -16,6 +16,45 @@ except:
     pass
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
+def last_openleaf(request, project_id=None, skeleton_id=None):
+    # retrieve all treenodes of skeleton with labels
+    # eliminate all node by removing them if they are a parent
+    # check remaining nodes if they have an end tag
+    tn = Treenode.objects.get(
+        project=project_id,
+        skeleton_id=skeleton_id).order_by("edition_time")
+
+    tnodes = []
+    tparents = []
+    for t in tn:
+        tnodes.append( t.id )
+        if not t.parent is None:
+            tparents.append( t.parent )
+
+    print 'tnodes', tnodes, 'tparents', tparents
+    for tid in tparents:
+        go = True
+        while go:
+            try:
+                tnodes.remove( tid )
+            except:
+                go = False
+
+    print 'tnodes reduced', tnodes
+
+    qs_labels = TreenodeClassInstance.objects.filter(
+        relation__relation_name='labeled_as',
+        class_instance__class_column__class_name='label',
+        treenode__id__in=tnodes,
+        project=project_id).select_related('treenode', 'class_instance').values('treenode_id', 'class_instance__name')
+
+    for q in qs_labels:
+        print 'found label', q.class_instance.name
+
+    nodeid = 0
+    return HttpResponse(str(nodeid))
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_statistics(request, project_id=None, skeleton_id=None):
     p = get_object_or_404(Project, pk=project_id)
     skel = Skeleton( skeleton_id = skeleton_id, project_id = project_id )

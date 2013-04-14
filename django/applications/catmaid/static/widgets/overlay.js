@@ -1798,6 +1798,23 @@ var SkeletonAnnotations = new function()
           alert('There must be a currently active node in order to move to its parent.');
         }
         break;
+      case "goopenleaf":
+        console.log('go leaf', SkeletonAnnotations.getActiveSkeletonId())
+        requestQueue.register(django_url + project.id + '/skeleton/' + SkeletonAnnotations.getActiveSkeletonId() + '/openleaf' , "POST", {
+          }, function (status, text, xml) {
+            if (status === 200) {
+              if (text && text != " ") {
+                var jso = $.parseJSON(text);
+                if (jso.error) {
+                  alert(jso.error);
+                } else {
+                  console.log('return', jso)
+                  // project.moveTo(jso[3], jso[2], jso[1], undefined, function() { });
+                }
+              }
+            }
+          });
+        break;
       case "goactive":
         var activeNodePosition = SkeletonAnnotations.getActiveNodePosition();
         if (activeNodePosition === null) {

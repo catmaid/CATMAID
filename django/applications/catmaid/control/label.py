@@ -10,6 +10,14 @@ from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def label_remove(request, project_id=None):
+    # check if superuser, then delete label and all associated instances
+    class_instance_for_label = int(request.POST['class_instance_id'])
+    if request.user.is_superuser:
+        ClassInstance.objects.filter(id=class_instance_for_label).delete()
+        return HttpResponse(json.dumps({'message': 'success'}), mimetype="text/plain")
+    return HttpResponse(json.dumps({}), mimetype="text/plain")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_all(request, project_id=None):

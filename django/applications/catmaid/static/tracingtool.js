@@ -881,6 +881,14 @@ TracingTool.search = function()
               return false;
           };
         };
+        var removelabel = function(id) {
+          return function() {
+            requestQueue.register(django_url + project.id + '/label/remove', "POST", {
+            class_instance_id: id
+            }, function (status, text) {});
+            return false;
+          };
+        }
         for (i = 0; i < data.length; ++i) {
           row = $('<tr/>');
           row.append($('<td/>').text(data[i].id));
@@ -922,6 +930,15 @@ TracingTool.search = function()
                   ).append("&nbsp;");
                 return index + 1;
               }, 1);
+            } else {
+              // no nodes, option to remove the label
+              console.log('no nodes', data[i])
+              actionLink = $('<a/>');
+              actionLink.attr({'id': ''+data[i].id});
+              actionLink.attr({'href':''});
+              actionLink.click(removelabel(data[i].id));
+              actionLink.text("Remove label");
+              row.append($('<td/>').append(actionLink));
             }
           } else {
             row.append($('<td/>').text('IMPLEMENT ME'));

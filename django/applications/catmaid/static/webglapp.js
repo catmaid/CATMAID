@@ -564,33 +564,33 @@ var WebGLApp = new function () {
             this.original_vertices[fromkey]['y'],
             this.original_vertices[fromkey]['z']
           ]);
-          from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
+          var from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
 
           // transform
           from_vector.multiplyScalar( scale );
 
-          this.connectorgeometry[type].vertices.push( new THREE.Vertex( from_vector ) );
+          this.connectorgeometry[type].vertices.push( from_vector );
 
           var tv=transform_coordinates([
             this.original_vertices[tokey]['x'],
             this.original_vertices[tokey]['y'],
             this.original_vertices[tokey]['z']
           ]);
-          to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
+          var to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
 
           // transform
           // to_vector.add( translate_x, translate_y, translate_z );
           to_vector.multiplyScalar( scale );
 
-          this.connectorgeometry[type].vertices.push( new THREE.Vertex( to_vector ) );
+          this.connectorgeometry[type].vertices.push( to_vector );
 
         }
       }
 
     for ( var i=0; i<connectivity_types.length; ++i ) {
       if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
-        this.connectoractor[connectivity_types[i]] = new THREE.Line( this.connectorgeometry[connectivity_types[i]], this.line_material[connectivity_types[i]], THREE.LinePieces );
-        scene.add( this.connectoractor[connectivity_types[i]] );
+        this.connectoractor[connectivity_types[i]] = new THREE.Line( this.connectorgeometry[connectivity_types[i]], this.line_material[connectivity_types[i]] );
+        scene.add( this.connectoractor[connectivity_types[i]], THREE.LinePieces);
       }
     }
 
@@ -616,25 +616,25 @@ var WebGLApp = new function () {
                    this.original_vertices[fromkey]['y'],
                    this.original_vertices[fromkey]['z']
               ]);
-          from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
+          var from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
 
           // transform
           from_vector.multiplyScalar( scale );
 
-          this.geometry[type].vertices.push( new THREE.Vertex( from_vector ) );
+          this.geometry[type].vertices.push( from_vector );
 
           var tv=transform_coordinates([
                    this.original_vertices[tokey]['x'],
                    this.original_vertices[tokey]['y'],
                    this.original_vertices[tokey]['z']
               ]);
-          to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
+          var to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
 
           // transform
           // to_vector.add( translate_x, translate_y, translate_z );
           to_vector.multiplyScalar( scale );
 
-          this.geometry[type].vertices.push( new THREE.Vertex( to_vector ) );
+          this.geometry[type].vertices.push( to_vector );
 
           if( !(fromkey in this.otherSpheres) && type === 'presynaptic_to') {
             var radiusSphere = new THREE.SphereGeometry( 40 * scale, 32, 32, 1);

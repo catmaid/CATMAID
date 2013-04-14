@@ -77,7 +77,8 @@ var WindowMaker = new function()
   };
 
 
-  var createStagingListWindow = function() {
+  var createStagingListWindow = function( webglwin ) {
+
     var win = new CMWWindow("Neuron Staging Table");
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
@@ -140,7 +141,30 @@ var WindowMaker = new function()
 
     addListener(win, container, "view-3d-webgl-skeleton-buttons-div");
 
-    addLogic(win);
+    // addLogic(win);
+
+    document.getElementById("content").style.display = "none";
+
+    /* be the first window */
+    if (rootWindow.getFrame().parentNode != document.body) {
+      document.body.appendChild(rootWindow.getFrame());
+      document.getElementById("content").style.display = "none";
+    }
+
+    if (rootWindow.getChild() === null)
+      rootWindow.replaceChild(win);
+    else {
+        if( webglwin === undefined) {
+            rootWindow.replaceChild(new CMWHSplitNode(rootWindow.getChild(), win));
+        } else {
+            // TODO: staging area widget should appear only vertically below the webgl viewer
+            // this does not work:
+            // rootWindow.replaceChild(rootWindow.getChild(), new CMWVSplitNode(webglwin, win));
+            // rootWindow.replaceChild(new CMWVSplitNode(webglwin.getParent(), win));
+            rootWindow.replaceChild(new CMWHSplitNode(rootWindow.getChild(), win));
+            
+        }            
+    }
 
     NeuronStagingArea.reinit_list_with_existing_skeleton();
     $('#webgl-rmall').click(function() {
@@ -154,10 +178,6 @@ var WindowMaker = new function()
   /** Creates and returns a new 3d webgl window */
   var create3dWebGLWindow = function()
   {
-
-    if( $( "#neuron_staging_table").length == 0 ) {
-        createStagingListWindow();
-    }
 
     if ( !Detector.webgl ) {
       alert('Your browser does not seem to support WebGL.');
@@ -288,6 +308,14 @@ var WindowMaker = new function()
 
 
     addLogic(win);
+
+    var stagewin = null;
+    if( $( "#neuron_staging_table").length == 0 ) {
+        createStagingListWindow( win);
+    }
+
+    win.focus();
+
 
     // Fill in with a Raphael canvas, now that the window exists in the DOM:
     // createWebGLViewerFromCATMAID(canvas.getAttribute("id"));

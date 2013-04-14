@@ -160,18 +160,11 @@ var WebGLApp = new function () {
     XYView();
     self.createActiveNode();
 
-    // if no skeleton in staging area, add the current active one, otherwise refresh
-
-
-    // // if there is an active skeleton, add it to the view
-    // if(SkeletonAnnotations.getActiveNodeId()) {
-    //   self.addSkeletonFromID( SkeletonAnnotations.getActiveSkeletonId() );
-    //   // and create active node
-    //   $('#enable_active_node').attr('checked', true);
-    //   show_active_node = true;
-    //   self.showActiveNode();
-    //   self.updateActiveNodePosition();
-    // }
+    // // if there is an active skeleton, add it to the view if staging area is empty
+    if(SkeletonAnnotations.getActiveNodeId() && NeuronStagingArea.get_selected_skeletons().length === 0) {
+      NeuronStagingArea.add_active_object_to_stage();
+      self.refresh_skeletons();
+    }
 
 
   }

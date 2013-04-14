@@ -314,9 +314,6 @@ var WindowMaker = new function()
         createStagingListWindow( win);
     }
 
-    win.focus();
-
-
     // Fill in with a Raphael canvas, now that the window exists in the DOM:
     // createWebGLViewerFromCATMAID(canvas.getAttribute("id"));
 

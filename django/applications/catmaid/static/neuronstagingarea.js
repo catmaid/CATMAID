@@ -132,6 +132,25 @@ var NeuronStagingArea = new function()
 		}
 	}
 
+	self.add_skeleton_to_stage_without_name = function( id, callback )
+	{
+	    if( id !== undefined )
+	    {
+	      var skeleton_id = parseInt( id );
+	      jQuery.ajax({
+	        url: django_url + project.id + '/skeleton/' + skeleton_id + '/neuronname',
+	        type: "GET",
+	        dataType: "json",
+	        success: function ( data ) {
+	        	self.add_skeleton_to_stage( id, data['neuronname'] );
+	        	if (typeof callback !== "undefined") {
+  					callback();
+  				}
+	        }
+	      });
+	    }
+	}
+
 	self._remove_skeleton_from_table = function( id )
 	{
 		$('#skeletonrow-' + id).remove();

@@ -118,7 +118,7 @@ var ObjectTree = new function()
                           } else {
                             WindowMaker.show("3d-webgl-view");
                             json.forEach(function(skid) {
-                              WebGLApp.addSkeletonFromID(project.id, skid);
+                              NeuronStagingArea.add_skeleton_to_stage_without_name( skid, WebGLApp.refresh_skeletons );
                             });
                           }
                         }
@@ -459,12 +459,12 @@ var ObjectTree = new function()
               "show_webglviewer": {
                 "separator_before": false,
                 "separator_after": false,
-                "label": "3D Viewer",
+                "label": "Show in 3D",
                 "action": function (obj) {
                   // var myparent = $.jstree._focused()._get_parent(obj);
                   WindowMaker.show("3d-webgl-view");
                   var skelid = obj.attr("id").replace("node_", "");
-                  WebGLApp.addSkeletonFromID( project.id, skelid )
+                  NeuronStagingArea.add_skeleton_to_stage_without_name( skelid, WebGLApp.refresh_skeletons );
                 }
               },
               "goto_parent": {

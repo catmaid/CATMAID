@@ -997,7 +997,6 @@ var WebGLApp = new function () {
     } else {
         skeletons[skeleton_id].removeActorFromScene();
         delete skeletons[skeleton_id];
-        self.render();
         return true;
     }
   }

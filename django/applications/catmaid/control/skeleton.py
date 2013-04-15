@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
 from catmaid.objects import *
+from catmaid.control.node import _fetch_location
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control.neuron import _in_isolated_synaptic_terminals, _delete_if_empty
@@ -20,7 +21,7 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
     # retrieve all treenodes of skeleton with labels
     # eliminate all node by removing them if they are a parent
     # check remaining nodes if they have an end tag
-    tn = Treenode.objects.get(
+    tn = Treenode.objects.filter(
         project=project_id,
         skeleton_id=skeleton_id).order_by("edition_time")
 
@@ -29,9 +30,8 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
     for t in tn:
         tnodes.append( t.id )
         if not t.parent is None:
-            tparents.append( t.parent )
+            tparents.append( t.parent_id )
 
-    print 'tnodes', tnodes, 'tparents', tparents
     for tid in tparents:
         go = True
         while go:
@@ -40,8 +40,6 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
             except:
                 go = False
 
-    print 'tnodes reduced', tnodes
-
     qs_labels = TreenodeClassInstance.objects.filter(
         relation__relation_name='labeled_as',
         class_instance__class_column__class_name='label',
@@ -49,10 +47,13 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
         project=project_id).select_related('treenode', 'class_instance').values('treenode_id', 'class_instance__name')
 
     for q in qs_labels:
-        print 'found label', q.class_instance.name
+        if 'ends' == q['class_instance__name']:
+            tnodes.remove( q['treenode_id'] )
 
-    nodeid = 0
-    return HttpResponse(str(nodeid))
+    if len(tnodes) == 0:
+        return HttpResponse(json.dumps({'error': 'No open leafs left!'}), mimetype='text/json')
+    else:
+        return HttpResponse(json.dumps(_fetch_location(tnodes[-1])), mimetype='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_statistics(request, project_id=None, skeleton_id=None):

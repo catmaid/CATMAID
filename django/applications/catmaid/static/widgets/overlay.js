@@ -1799,7 +1799,6 @@ var SkeletonAnnotations = new function()
         }
         break;
       case "goopenleaf":
-        console.log('go leaf', SkeletonAnnotations.getActiveSkeletonId())
         requestQueue.register(django_url + project.id + '/skeleton/' + SkeletonAnnotations.getActiveSkeletonId() + '/openleaf' , "POST", {
           }, function (status, text, xml) {
             if (status === 200) {
@@ -1808,8 +1807,7 @@ var SkeletonAnnotations = new function()
                 if (jso.error) {
                   alert(jso.error);
                 } else {
-                  console.log('return', jso)
-                  // project.moveTo(jso[3], jso[2], jso[1], undefined, function() { });
+                  project.moveTo(jso[3], jso[2], jso[1], undefined, function() { self.selectNode(jso[0]) });
                 }
               }
             }

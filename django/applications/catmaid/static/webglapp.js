@@ -760,7 +760,7 @@ var WebGLApp = new function () {
 
         }
       }
-      this.updateSkeletonColor();
+
       this.addCompositeActorToScene();
 
       var skeletonmodel = NeuronStagingArea.get_skeletonmodel( self.id );
@@ -768,6 +768,9 @@ var WebGLApp = new function () {
       self.setPreVisibility( skeletonmodel.pre_visible );
       self.setPostVisibility( skeletonmodel.post_visible );
       self.setTextVisibility( skeletonmodel.text_visible );
+
+      self.actorColor = skeletonmodel.colorvalue;
+      this.updateSkeletonColor();
 
     }
 
@@ -914,6 +917,10 @@ var WebGLApp = new function () {
       skeletons[skeleton_id].changeColor( col );
     }
     self.render();
+  }
+
+  this.has_skeleton = function( skeleton_id ) {
+    return skeletons.hasOwnProperty(skeleton_id);
   }
 
   this.removeAllSkeletons = function() {

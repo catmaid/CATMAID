@@ -182,7 +182,7 @@ var NeuronStagingArea = new function()
       	skeletonmodels[ id ].colorvalue = colorrgb;
       	skeletonmodels[ id ].colorhex = color.hex;
       	$('#skeletonaction-changecolor-' + id).css("background-color", skeletonmodels[ id ].colorhex );
-      	if( $('#view_in_3d_webgl_widget').length )
+      	if( $('#view_in_3d_webgl_widget').length && WebGLApp.has_skeleton( id ) )
       		WebGLApp.changeSkeletonColor( id, colorrgb );
     }
 

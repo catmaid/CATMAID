@@ -2,7 +2,7 @@ from django.conf.urls.defaults import patterns, include, url
 from django.conf import settings
 from django.views.generic import TemplateView
 
-from catmaid.views import HomepageView
+from catmaid.views import HomepageView, UseranalyticsView
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -55,7 +55,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/skeletonlist/save$', 'catmaid.control.save_skeletonlist'),
     (r'^(?P<project_id>\d+)/skeletonlist/load$', 'catmaid.control.load_skeletonlist'),
 
-    (r'^(?P<project_id>\d+)/useranalytics$', 'catmaid.control.test_matplotlib'),
+    (r'^useranalytics$', 'catmaid.control.plot_useranalytics'),
 
     
 

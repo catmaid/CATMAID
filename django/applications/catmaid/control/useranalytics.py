@@ -13,25 +13,21 @@ try:
     import matplotlib.pyplot as plt
     import matplotlib.colors as colors
     from matplotlib.dates import  DateFormatter, DayLocator
+    from pylab import figure, axes, pie, title
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
 except:
     pass
 
-from pylab import figure, axes, pie, title
-from matplotlib.backends.backend_agg import FigureCanvasAgg
+def plot_useranalytics(request):
 
-def test_matplotlib(request, project_id = None):
+    userid = request.GET.get('userid', -1)
 
-    # f = generateReport( user_id = 1, activeTimeThresh = 2)
+    if request.user.is_superuser:
+        f = generateReport( userid, 10 )
+    else:
+        f = figure(1, figsize=(6,6))
 
-    f = figure(1, figsize=(6,6))
-    ax = axes([0.1, 0.1, 0.8, 0.8])
-    labels = 'Frogs', 'Hogs', 'Dogs', 'Logs'
-    fracs = [15,30,45, 10]
-    explode=(0, 0.05, 0, 0)
-    pie(fracs, explode=explode, labels=labels, autopct='%1.1f%%', shadow=True)
-    title('Raining Hogs and Dogs', bbox={'facecolor':'0.8', 'pad':5})
-
-    canvas = FigureCanvasAgg( f )    
+    canvas = FigureCanvasAgg( f )
     response = HttpResponse(content_type='image/png')
     canvas.print_png(response)
     return response
@@ -175,10 +171,13 @@ def generateReport( user_id, activeTimeThresh ):
     # start_date = datetime.now() - timedelta( 7 + datetime.now().isoweekday() )
 #     end_date = datetime.now()
 #     
-    start_date = datetime.now() - timedelta(40) - timedelta( 7 + datetime.now().isoweekday() )
-    end_date = datetime.now() - timedelta(40)
+    start_date = datetime.now() - timedelta( 7 + datetime.now().isoweekday() )
+    end_date = datetime.now()
     
-    nts, cts, rts = eventTimes( user_id, start_date, end_date)
+    nts, cts, rts = eventTimes( user_id, start_date, end_date )
+
+    if len(nts) == 0:
+        return figure(1, figsize=(6,6))
     
     annotationEvents, ae_timeaxis = eventsPerInterval( nts+cts, start_date, end_date )
     reviewEvents, re_timeaxis = eventsPerInterval( rts, start_date, end_date )
@@ -190,12 +189,12 @@ def generateReport( user_id, activeTimeThresh ):
 
     dayformat = DateFormatter('%b %d')
     
-    fig = plt.figure()
+    fig = plt.figure(figsize=(12,10))
     ax1 = fig.add_subplot(221)
     an = ax1.bar( ae_timeaxis, annotationEvents, color='#0000AA')
     rv = ax1.bar( re_timeaxis, reviewEvents, bottom=annotationEvents, color='#AA0000')
     
-    ax1.legend( (an, rv), ('Annotated', 'Reviewed'), loc=2,frameon=False,fontsize=9 )
+    ax1.legend( (an, rv), ('Annotated', 'Reviewed'), loc=2,frameon=False )
     ax1.set_ylabel('Nodes')
     yl = ax1.get_yticklabels()
     plt.setp(yl, fontsize=10)
@@ -230,7 +229,6 @@ def generateReport( user_id, activeTimeThresh ):
     yl = ax4.get_yticklabels()
     plt.setp(yl, fontsize=10)
     ax4.set_ylabel('Time (24 hr)')
-
     
     return fig
     
@@ -314,6 +312,6 @@ def eventsPerIntervalPerDayPlot(ax,times,start_date,end_date,interval=60):
     plt.setp(yl, fontsize=10)
     ax.set_ylabel('Events',fontsize=10)
     ax.set_xlim( 8 * 60 / interval, 19 * 60 / interval )
-    ax.legend(dats,daylabels,loc=2,fontsize=8,frameon=False) 
+    ax.legend(dats,daylabels,loc=2,frameon=False) 
     
     return ax

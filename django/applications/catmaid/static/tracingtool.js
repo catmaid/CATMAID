@@ -176,6 +176,7 @@ function TracingTool()
     self.prototype.stack.removeLayer( "TracingLayer" );
     self.prototype.destroy( "edit_button_trace" );
     $( "#tracingbuttons" ).remove();
+    // TODO: remove all skeletons from staging area
     tracingLayer.svgOverlay.destroy();
     //
     for (var b in bindings) {

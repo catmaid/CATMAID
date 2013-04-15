@@ -102,6 +102,63 @@ var CompartmentGraphWidget = new function()
 
   };
 
+  this.updateLayout = function() {
+
+
+    var layout =  $('#compartment_layout :selected').attr("value");
+
+    if( layout == 1 ) {
+      var options = {
+        name: 'grid',
+        fit: true, // whether to fit the viewport to the graph
+        rows: undefined, // force num of rows in the grid
+        columns: undefined, // force num of cols in the grid
+        ready: undefined, // callback on layoutready
+        stop: undefined // callback on layoutstop
+        };
+
+      cy.layout( options );
+    } else if ( layout == 2) {
+      options = {
+          name: 'arbor',
+          liveUpdate: true, // whether to show the layout as it's running
+          ready: undefined, // callback on layoutready 
+          stop: undefined, // callback on layoutstop
+          maxSimulationTime: 4000, // max length in ms to run the layout
+          fit: true, // fit to viewport
+          padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
+          ungrabifyWhileSimulating: true, // so you can't drag nodes during layout
+
+          // forces used by arbor (use arbor default on undefined)
+          repulsion: undefined,
+          stiffness: undefined,
+          friction: undefined,
+          gravity: true,
+          fps: undefined,
+          precision: undefined,
+
+          // static numbers or functions that dynamically return what these
+          // values should be for each element
+          nodeMass: undefined, 
+          edgeLength: undefined,
+
+          stepSize: 1, // size of timestep in simulation
+
+          // function that returns true if the system is stable to indicate
+          // that the layout can be stopped
+          stableEnergy: function( energy ){
+              var e = energy; 
+              return (e.max <= 0.5) || (e.mean <= 0.3);
+          }
+      };
+
+      cy.layout( options );
+
+    }
+
+    
+  }
+
   this.updateGraph = function( data ) {
 
     for(var i = 0; i < data.nodes.length; i++) {

@@ -462,6 +462,25 @@ var WindowMaker = new function()
     bandwidth.style.width = "30px";
     contentbutton.appendChild(bandwidth);
 
+    var sync = document.createElement('select');
+    sync.setAttribute("id", "compartment_layout");
+    var option = document.createElement("option");
+    option.text = "Grid";
+    option.value = 1;
+    sync.appendChild(option);
+    var option = document.createElement("option");
+    option.text = "Force-directed";
+    option.value = 2;
+    sync.appendChild(option);
+    contentbutton.appendChild(sync);
+
+    var show = document.createElement('input');
+    show.setAttribute("type", "button");
+    show.setAttribute("id", "refresh_compartment_layout");
+    show.setAttribute("value", "Update layout");
+    show.onclick = CompartmentGraphWidget.updateLayout;
+    contentbutton.appendChild(show);
+
     content.appendChild( contentbutton );
 
     var container = createContainer("compartment_graph_widget");

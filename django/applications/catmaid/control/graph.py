@@ -142,12 +142,18 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
 
     # A DiGraph representing the connections between the arbors (every node is an arbor)
     circuit = nx.DiGraph()
+
     for skid, digraphs in arbors.iteritems():
-        for i, g in enumerate(sorted(digraphs, key=len, reverse=True)):
+        i = 0
+        for g in digraphs:
+            if g.number_of_nodes() == 0:
+                continue
             circuit.add_node(g, {'id': "%s_%s" % (skid, i+1),
                                  'label': "%s [%s]" % (names[skid], i+1),
                                  'skeleton_id': skid,
                                  'node_count': len(g)})
+            i += 1
+            
     # Define edges between arbors, with number of synapses as an edge property
     for c in connectors.values():
         for pre_treenode, pre_skeleton in c[relations['presynaptic_to']]:

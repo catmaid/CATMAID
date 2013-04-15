@@ -218,7 +218,7 @@ var WebGLApp = new function () {
     controls.target = pos;
     camera.position.x = pos.x;
     camera.position.y = (dim.y/2)+150;
-    camera.position.z = pos.z+100;
+    camera.position.z = pos.z;
     camera.up.set(0, 0, -1);
     self.render();
   }

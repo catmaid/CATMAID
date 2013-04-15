@@ -945,6 +945,7 @@ var WebGLApp = new function () {
       skeleton_data['id'] = skeleton_id;
       skeletons[skeleton_id] = new Skeleton( skeleton_data );
     }
+    self.render();
     return skeletons[skeleton_id];
   }
 
@@ -997,6 +998,8 @@ var WebGLApp = new function () {
     } else {
         skeletons[skeleton_id].removeActorFromScene();
         delete skeletons[skeleton_id];
+        if( renderer !== null )
+          self.render();
         return true;
     }
   }
@@ -1616,7 +1619,6 @@ var WebGLApp = new function () {
         success: function (skeleton_data) {
           skeleton_data['baseName'] = skeleton_data['neuron']['neuronname'];
           var skeleton = self.addSkeletonFromData( skeleton_id, skeleton_data );
-          self.render();
         }
       });
     }

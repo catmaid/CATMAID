@@ -709,8 +709,8 @@ var WebGLApp = new function () {
 
     for ( var i=0; i<connectivity_types.length; ++i ) {
       if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
-        this.connectoractor[connectivity_types[i]] = new THREE.Line( this.connectorgeometry[connectivity_types[i]], this.line_material[connectivity_types[i]] );
-        scene.add( this.connectoractor[connectivity_types[i]], THREE.LinePieces);
+        this.connectoractor[connectivity_types[i]] = new THREE.Line( this.connectorgeometry[connectivity_types[i]], this.line_material[connectivity_types[i]], THREE.LinePieces );
+        scene.add( this.connectoractor[connectivity_types[i]] );
       }
     }
 
@@ -889,7 +889,7 @@ var WebGLApp = new function () {
       self.setPostVisibility( skeletonmodel.post_visible );
       self.setTextVisibility( skeletonmodel.text_visible );
 
-      self.actorColor = skeletonmodel.colorvalue;
+      self.actorColor = skeletonmodel.colorrgb;
       this.updateSkeletonColor();
 
     }
@@ -1025,16 +1025,19 @@ var WebGLApp = new function () {
     var i = 0, col;
     for( var skeleton_id in skeletons)
     {
-      if( i < randomColors.length ) {
-        col = randomColors[i];
-      } else {
-        col = [parseInt( Math.random() * 255 ),
-          parseInt( Math.random() * 255 ),
-          parseInt( Math.random() * 255 ) ];
-
+      if( skeletons.hasOwnProperty( skeleton_id )) {
+        if( i < randomColors.length ) {
+          col = randomColors[i];
+        } else {
+          col = [parseInt( Math.random() * 255 ),
+            parseInt( Math.random() * 255 ),
+            parseInt( Math.random() * 255 ) ];
+        }
+        i=i+1;
+        skeletons[skeleton_id].changeColor( col );
+        NeuronStagingArea.set_skeleton_color_rgb( skeleton_id, col);
+        NeuronStagingArea.update_skeleton_color_button( skeleton_id );
       }
-      i=i+1;
-      skeletons[skeleton_id].changeColor( col );
     }
     self.render();
   }
@@ -1488,7 +1491,6 @@ var WebGLApp = new function () {
   }
 
   function draw_grid() {
-    // Grid
     var line_material = new THREE.LineBasicMaterial( { color: 0x535353 } ),
       geometry = new THREE.Geometry(),
       floor = 0, step = 25;
@@ -1502,14 +1504,6 @@ var WebGLApp = new function () {
     floormesh = new THREE.Line( geometry, line_material, THREE.LinePieces );
     scene.add( floormesh );
   }
-
-  /**
-  // DISABLED: causes continuous refresh at a rate of 60 fps
-  function animate() {
-    requestAnimationFrame( animate );
-    self.render();
-  }
-  */
 
   function onMouseDown(event) {
     is_mouse_down = true;

@@ -15,7 +15,7 @@ var NeuronStagingArea = new function()
 
 		// color
 		self.colorhex = '#FFFF00';
-		self.colorvalue = [255, 255, 0];
+		self.colorrgb = [255, 255, 0];
 
 		// 3d viewer attributes
 		self.pre_visible = true;
@@ -176,14 +176,24 @@ var NeuronStagingArea = new function()
     	}
 	}
 
+	self.set_skeleton_color_hex = function( id, colorhex ) {
+		skeletonmodels[ id ].colorhex = colorhex;
+		skeletonmodels[ id ].colorrgb = _hex2rgb( colorhex );
+	}
 
-    self.change_skeleton_color = function( id, colorrgb, color )
+	self.set_skeleton_color_rgb = function( id, colorrgb ) {
+		skeletonmodels[ id ].colorrgb = colorrgb;
+		skeletonmodels[ id ].colorhex = _rgbarray2hex( colorrgb );
+	}	
+
+	self.update_skeleton_color_button = function( id ) {
+		$('#skeletonaction-changecolor-' + id).css("background-color", skeletonmodels[ id ].colorhex );
+	}
+
+    self.update_skeleton_color_in_3d = function( id )
     {
-      	skeletonmodels[ id ].colorvalue = colorrgb;
-      	skeletonmodels[ id ].colorhex = color.hex;
-      	$('#skeletonaction-changecolor-' + id).css("background-color", skeletonmodels[ id ].colorhex );
       	if( $('#view_in_3d_webgl_widget').length && WebGLApp.has_skeleton( id ) )
-      		WebGLApp.changeSkeletonColor( id, colorrgb );
+      		WebGLApp.changeSkeletonColor( id, skeletonmodels[ id ].colorrgb ); 	
     }
 
     self.get_skeletonmodel = function( id )
@@ -237,6 +247,20 @@ var NeuronStagingArea = new function()
 			return ("0" + parseInt(x).toString(16)).slice(-2);
 		}
 			return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
+	}
+
+	function _componentToHex(c) {
+	    var hex = c.toString(16);
+	    return hex.length == 1 ? "0" + hex : hex;
+	}
+
+	function _rgbarray2hex(rgb) {
+    	return "#" + _componentToHex(rgb[0]) + _componentToHex(rgb[1]) + _componentToHex(rgb[2]);
+	}
+
+	function _hex2rgb(hex) {
+	    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+	    return [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)];
 	}
 
 	self._add_skeleton_to_table = function ( skeleton ) {
@@ -408,7 +432,10 @@ var NeuronStagingArea = new function()
 		cw.onchange(function(color)
 		{
 			var colors = [parseInt(color.r), parseInt(color.g), parseInt(color.b)]
-			self.change_skeleton_color( skeleton.id, colors, color );
+			self.set_skeleton_color_rgb( skeleton.id, colors );
+			self.update_skeleton_color_button( skeleton.id);
+			self.update_skeleton_color_in_3d( skeleton.id );
+
 		})
 		$('#color-wheel-' + skeleton.id).hide();
 

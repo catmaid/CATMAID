@@ -157,12 +157,7 @@ var WindowMaker = new function()
         if( webglwin === undefined) {
             rootWindow.replaceChild(new CMWHSplitNode(rootWindow.getChild(), win));
         } else {
-            // TODO: staging area widget should appear only vertically below the webgl viewer
-            // this does not work:
-            // rootWindow.replaceChild(rootWindow.getChild(), new CMWVSplitNode(webglwin, win));
-            // rootWindow.replaceChild(new CMWVSplitNode(webglwin.getParent(), win));
-            rootWindow.replaceChild(new CMWHSplitNode(rootWindow.getChild(), win));
-            
+        	webglwin.getParent().replaceChild(new CMWVSplitNode(webglwin, win), webglwin);
         }            
     }
 

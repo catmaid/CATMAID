@@ -68,7 +68,7 @@ def analyze_skeletons(request, project_id=None):
             2: "Connector without postsynaptic targets",
             3: "Connector without presynaptic skeleton",
             4: "Duplicated synapse?",
-            5: "End node without tag",
+            5: "End node without end tag",
             6: "TODO tag",
             7: "End-node tag in a non-end node."}
 
@@ -193,8 +193,9 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
             node[1].append(row[2])
         else:
             nodes[row[0]] = (row[1], [row[2]])
-            if row[1]:
-                parents.add(row[0])
+
+        if row[1]:
+            parents.add(row[1])
 
 
     # Type 4: potentially duplicated synapses (or triplicated, etc):

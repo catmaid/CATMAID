@@ -8,6 +8,7 @@ from django.utils.safestring import mark_safe
 from guardian.admin import GuardedModelAdmin
 from catmaid.models import Project, DataView, Stack, ProjectStack, UserProfile, Overlay, StackSliceInfo
 from catmaid.control.importer import importer_admin_view
+from catmaid.views import UseranalyticsView
 
 class ProjectAdmin(GuardedModelAdmin):
     list_display = ('title', 'public')
@@ -104,5 +105,6 @@ admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 # Register additional views
 admin.site.register_view('importer', importer_admin_view, 'Importer')
+admin.site.register_view('useranalytics', UseranalyticsView.as_view(), 'User Analytics')
 admin.site.register(Overlay)
 admin.site.register(StackSliceInfo)

@@ -6,15 +6,22 @@ from catmaid.models import Relation
 import networkx as nx
 from networkx.algorithms import weakly_connected_component_subgraphs
 from collections import defaultdict
+from itertools import chain, ifilter
+from functools import partial
+from synapseclustering import tree_max_density
+from numpy import subtract
+from numpy.linalg import norm
+from tree_util import edge_count_to_root, simplify
+from operator import attrgetter
 
-def _skeleton_graph(project_id, skeleton_ids, confidence_threshold):
+def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth):
     """ Assumes all skeleton_ids belong to project_id. """
     skeletons_string = ",".join(str(int(x)) for x in skeleton_ids)
     cursor = connection.cursor()
 
     # Fetch all treenodes of all skeletons
     cursor.execute('''
-    SELECT id, parent_id, confidence, skeleton_id
+    SELECT id, parent_id, confidence, skeleton_id, location
     FROM treenode
     WHERE skeleton_id IN (%s)
     ''' % skeletons_string)
@@ -30,7 +37,8 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold):
     if 0 == confidence_threshold:
         # Do not split skeletons
         for row in rows:
-            arbors[row[3]].add_edge(row[1], row[0])
+            if row[1]:
+                arbors[row[3]].add_edge(row[1], row[0])
         for skid, digraph in arbors.iteritems():
             arbors[skid] = [digraph]
     else:
@@ -39,7 +47,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold):
         for row in rows:
             if row[2] < confidence_threshold:
                 to_split.add(row[3])
-            else:
+            elif row[1]:
                 arbors[row[3]].add_edge(row[1], row[0])
         for skid, digraph in arbors.iteritems():
             if skid in to_split:
@@ -56,11 +64,68 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold):
     FROM treenode_connector
     WHERE skeleton_id IN (%s)
     ''' % skeletons_string)
-    def container():
-        return defaultdict(list)
-    connectors = defaultdict(container)
+    connectors = defaultdict(partial(defaultdict, list))
     for row in cursor.fetchall():
         connectors[row[0]][row[1]].append((row[2], row[3]))
+
+
+    # Cluster by synapses
+    minis = defaultdict(list) # skeleton_id vs list of minified graphs
+    if bandwidth > 0:
+        locations = {row[0]: eval(row[4]) for row in rows}
+
+        treenode_connector = defaultdict(list)
+        for connector_id, pp in connectors.iteritems():
+            for treenode_id in chain.from_iterable(pp[relations['presynaptic_to']]):
+                treenode_connector[treenode_id].append((connector_id, "presynaptic_to"))
+            for treenode_id in chain.from_iterable(pp[relations['postsynaptic_to']]):
+                treenode_connector[treenode_id].append((connector_id, "postsynaptic_to"))
+
+        for skeleton_id, graphs in arbors.iteritems():
+            subdomains = []
+            arbors[skeleton_id] = subdomains
+            for graph in graphs:
+                for parent_id, treenode_id in graph.edges():
+                    loc0 = locations[treenode_id]
+                    loc1 = locations[parent_id]
+                    graph[parent_id][treenode_id]['weight'] = norm(subtract(loc0, loc1))
+                treenode_ids = []
+                connector_ids =[]
+                relation_ids = []
+                for treenode_id in ifilter(treenode_connector.has_key, graph.nodes()):
+                    for c in treenode_connector.get(treenode_id):
+                        connector_id, relation = c
+                        treenode_ids.append(treenode_id)
+                        connector_ids.append(connector_id)
+                        relation_ids.append(relation)
+                # Invoke Casey's magic
+                synapse_group = tree_max_density(graph.to_undirected(), treenode_ids, connector_ids, relation_ids, [bandwidth]).values()[0]
+                # The list of nodes of each synapse_group contains only nodes that have connectors
+                # A local_max is the skeleton node most central to a synapse_group
+                anchors = {}
+                for domain in synapse_group.values():
+                    g = nx.DiGraph()
+                    g.add_path(domain.node_ids) # bogus graph, containing treenodes that point to connectors
+                    subdomains.append(g)
+                    anchors[domain.local_max] = g
+                # Define edges between domains: create a simplified graph
+                mini = simplify(graph, anchors.keys())
+                # Replace each node by the corresponding graph, or a graph of a single node
+                table = {}
+                for node in mini.nodes():
+                    g = anchors.get(node)
+                    if not g:
+                        # A branch node that was not an anchor, i.e. did not represent a synapse group
+                        g = nx.Graph()
+                        g.add_node(node, {'branch': True})
+                        subdomains.append(g)
+                    # Associate the Graph with treenodes that have connectors
+                    # with the node in the minified tree
+                    mini.node[node]['g'] = g
+                # Put the mini into a map of skeleton_id and list of minis,
+                # to be used later for defining intra-neuron edges in the circuit graph
+                minis[skeleton_id].append(mini)
+
 
     # Obtain neuron names
     cursor.execute('''
@@ -73,16 +138,22 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold):
       AND cici.relation_id = r.id
       AND r.relation_name = 'model_of'
     ''' % skeletons_string)
-    names = {row[0]: row[1] for row in cursor.fetchall()}
+    names = dict(cursor.fetchall())
 
     # A DiGraph representing the connections between the arbors (every node is an arbor)
     circuit = nx.DiGraph()
+
     for skid, digraphs in arbors.iteritems():
-        for i, g in enumerate(sorted(digraphs, key=len, reverse=True)):
+        i = 0
+        for g in digraphs:
+            if g.number_of_nodes() == 0:
+                continue
             circuit.add_node(g, {'id': "%s_%s" % (skid, i+1),
                                  'label': "%s [%s]" % (names[skid], i+1),
                                  'skeleton_id': skid,
                                  'node_count': len(g)})
+            i += 1
+            
     # Define edges between arbors, with number of synapses as an edge property
     for c in connectors.values():
         for pre_treenode, pre_skeleton in c[relations['presynaptic_to']]:
@@ -97,17 +168,37 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold):
                                 if edge_props:
                                     edge_props['c'] += 1
                                 else:
-                                    circuit.add_edge(pre_arbor, post_arbor, {'c': 1})
+                                    circuit.add_edge(pre_arbor, post_arbor, {'c': 1, 'arrow': 'triangle', 'color': '#444', 'directed': True})
                                 break
                     break
+
+    if bandwidth > 0:
+        # Add edges between circuit nodes that represent different domains of the same neuron
+        for skeleton_id, list_mini in minis.iteritems():
+            for mini in list_mini:
+                for i,node in enumerate(mini.nodes()):
+                    g = mini.node[node]['g']
+                    if g not in circuit:
+                        # A branch node that was preserved to the minified arbor
+                        circuit.add_node(g, {'id': '%s-%s' % (skeleton_id, node),
+                                             'skeleton_id': skeleton_id,
+                                             'label': "%s [%s]" % (names[skeleton_id], node),
+                                             'node_count': 1})
+                for node1, node2 in mini.edges_iter():
+                    g1 = mini.node[node1]['g']
+                    g2 = mini.node[node2]['g']
+                    circuit.add_edge(g1, g2, {'c': 1, 'arrow': 'none', 'color': '#F00', 'directed': False})
+
     return circuit
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_graph(request, project_id=None):
     project_id = int(project_id)
-    skeleton_ids = map(int, request.POST.getlist('skeleton_list[]'))
+    skeleton_ids = [int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_list[')]
     confidence_threshold = int(request.POST.get('confidence_threshold', 0))
-    circuit = _skeleton_graph(project_id, skeleton_ids, confidence_threshold)
+    bandwidth = int(request.POST.get('bandwidth', 9000)) # in nanometers
+    circuit = _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth)
     package = {'nodes': [{'data': props} for digraph, props in circuit.nodes_iter(data=True)],
                'edges': []}
     edges = package['edges']
@@ -118,8 +209,10 @@ def skeleton_graph(request, project_id=None):
                                'source': id1,
                                'target': id2,
                                'weight': props['c'],
-                               'label': str(props['c']),
-                               'directed': True}})
+                               'label': str(props['c']) if props['directed'] else None,
+                               'directed': props['directed'],
+                               'arrow': props['arrow'],
+                               'color': props['color']}})
 
     return HttpResponse(json.dumps(package))
 

@@ -55,4 +55,14 @@ def load_skeletonlist(request, project_id=None):
     if len(skellist) == 0:
         return HttpResponse(json.dumps({'error': 'No skeleton list found for this short name.'}))
 
-    return HttpResponse(json.dumps({'skeletonlist': skellist[0].skeleton_list}))
+    qs = ClassInstanceClassInstance.objects.filter(
+                relation__relation_name='model_of',
+                project=p,
+                class_instance_a__in=skellist[0].skeleton_list).select_related("class_instance_b")
+
+    skellist = [q.class_instance_a.id for q in qs]
+    skelneuronname = [q.class_instance_b.name + ' (Skeleton ID: ' + str(q.class_instance_a.id) + ')' for q in qs]
+
+    print skellist, skelneuronname
+
+    return HttpResponse(json.dumps({'skeletonlist': skellist, 'neuronname': skelneuronname}))

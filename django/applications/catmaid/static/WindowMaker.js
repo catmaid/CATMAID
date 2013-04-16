@@ -36,8 +36,8 @@ var WindowMaker = new function()
               for (var name in windows) {
                 if (windows.hasOwnProperty(name)) {
                   if (win === windows[name]) {
+                    // console.log("deleted " + name, windows[name]);
                     delete windows[name];
-                    // console.log("deleted " + name);
                     break;
                   }
                 }
@@ -77,7 +77,8 @@ var WindowMaker = new function()
   };
 
 
-  var createStagingListWindow = function() {
+  var createStagingListWindow = function( webglwin ) {
+
     var win = new CMWWindow("Neuron Staging Table");
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
@@ -89,23 +90,23 @@ var WindowMaker = new function()
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
-    add.setAttribute("id", "add_current_to_3d_webgl_view");
+    add.setAttribute("id", "add_current_active_object_to_staging");
     add.setAttribute("value", "Add active object");
-    add.onclick = WebGLApp.addActiveObjectToStagingArea;
+    add.onclick = NeuronStagingArea.add_active_object_to_stage;
     buttons.appendChild(add);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
-    rand.setAttribute("id", "store_skeleton_list");
-    rand.setAttribute("value", "Store list");
-    rand.onclick = WebGLApp.storeSkeletonList;
+    rand.setAttribute("id", "save_skeleton_list");
+    rand.setAttribute("value", "Save list");
+    rand.onclick = NeuronStagingArea.save_skeleton_list;
     buttons.appendChild(rand);
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
     rand.setAttribute("id", "load_skeleton_list");
     rand.setAttribute("value", "Load list");
-    rand.onclick = WebGLApp.loadSkeletonList;
+    rand.onclick = NeuronStagingArea.load_skeleton_list;
     buttons.appendChild(rand);
     
     win.getFrame().appendChild(buttons);
@@ -118,7 +119,7 @@ var WindowMaker = new function()
           '<tr>' +
             '<th width="100px">action</th>' +
             '<th>name</th>' +
-            '<th>show</th>' +
+            '<th>selected</th>' +
             '<th>pre</th>' +
             '<th>post</th>' +
             '<th>text</th>' +
@@ -140,7 +141,30 @@ var WindowMaker = new function()
 
     addListener(win, container, "view-3d-webgl-skeleton-buttons-div");
 
-    addLogic(win);
+    // addLogic(win);
+
+    document.getElementById("content").style.display = "none";
+
+    /* be the first window */
+    if (rootWindow.getFrame().parentNode != document.body) {
+      document.body.appendChild(rootWindow.getFrame());
+      document.getElementById("content").style.display = "none";
+    }
+
+    if (rootWindow.getChild() === null)
+      rootWindow.replaceChild(win);
+    else {
+        if( webglwin === undefined) {
+            rootWindow.replaceChild(new CMWHSplitNode(rootWindow.getChild(), win));
+        } else {
+        	webglwin.getParent().replaceChild(new CMWVSplitNode(webglwin, win), webglwin);
+        }            
+    }
+
+    NeuronStagingArea.reinit_list_with_existing_skeleton();
+    $('#webgl-rmall').click(function() {
+        NeuronStagingArea.remove_all_skeletons();
+    });
 
     return win;
 
@@ -149,10 +173,6 @@ var WindowMaker = new function()
   /** Creates and returns a new 3d webgl window */
   var create3dWebGLWindow = function()
   {
-
-    if( $( "#neuron_staging_table").length == 0 ) {
-        createStagingListWindow();
-    }
 
     if ( !Detector.webgl ) {
       alert('Your browser does not seem to support WebGL.');
@@ -169,6 +189,13 @@ var WindowMaker = new function()
     
     var container = createContainer("view_in_3d_webgl_widget");
     content.appendChild(container);
+
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
+    add.setAttribute("id", "refresh_viewer");
+    add.setAttribute("value", "Refresh");
+    add.onclick = WebGLApp.refresh_skeletons;
+    buttons.appendChild(add);
     
     var add = document.createElement('input');
     add.setAttribute("type", "button");
@@ -210,6 +237,14 @@ var WindowMaker = new function()
     rand.setAttribute("id", "randomize_skeleton_color");
     rand.setAttribute("value", "Randomize color");
     rand.onclick = WebGLApp.randomizeColors;
+    buttons.appendChild(rand);
+
+    // Restrict display to shared connectors between visible skeletons
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
+    rand.setAttribute("id", "toggle_connector");
+    rand.setAttribute("value", "Restrict connectors");
+    rand.onclick = WebGLApp.toggleConnector;
     buttons.appendChild(rand);
 
     var rand = document.createElement('input');
@@ -268,6 +303,11 @@ var WindowMaker = new function()
 
 
     addLogic(win);
+
+    var stagewin = null;
+    if( $( "#neuron_staging_table").length == 0 ) {
+        createStagingListWindow( win);
+    }
 
     // Fill in with a Raphael canvas, now that the window exists in the DOM:
     // createWebGLViewerFromCATMAID(canvas.getAttribute("id"));
@@ -387,12 +427,12 @@ var WindowMaker = new function()
     var contentbutton = document.createElement('div');
     contentbutton.setAttribute("id", 'compartment_graph_window_buttons');
 
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "confidence_compartment_show_neurons_from_3d_view");
-    add.setAttribute("value", "Show graph");
-    add.onclick = CompartmentGraphWidget.updateConfidenceGraphFrom3DViewer;
-    contentbutton.appendChild(add);
+    var show = document.createElement('input');
+    show.setAttribute("type", "button");
+    show.setAttribute("id", "confidence_compartment_show_neurons_from_3d_view");
+    show.setAttribute("value", "Show graph");
+    show.onclick = CompartmentGraphWidget.updateConfidenceGraphFrom3DViewer;
+    contentbutton.appendChild(show);
 
     var label = document.createTextNode('Keep edges with confidence');
     contentbutton.appendChild(label);
@@ -407,8 +447,34 @@ var WindowMaker = new function()
     }
     contentbutton.appendChild(sync);
 
-    var label = document.createTextNode('or higher.');
+    var label = document.createTextNode('or higher. Bandwidth:');
     contentbutton.appendChild(label);
+
+    var bandwidth = document.createElement('input');
+    bandwidth.setAttribute('id', 'clustering_bandwidth');
+    bandwidth.setAttribute('type', 'text');
+    bandwidth.setAttribute('value', 9000);
+    bandwidth.style.width = "30px";
+    contentbutton.appendChild(bandwidth);
+
+    var sync = document.createElement('select');
+    sync.setAttribute("id", "compartment_layout");
+    var option = document.createElement("option");
+    option.text = "Grid";
+    option.value = 1;
+    sync.appendChild(option);
+    var option = document.createElement("option");
+    option.text = "Force-directed";
+    option.value = 2;
+    sync.appendChild(option);
+    contentbutton.appendChild(sync);
+
+    var show = document.createElement('input');
+    show.setAttribute("type", "button");
+    show.setAttribute("id", "refresh_compartment_layout");
+    show.setAttribute("value", "Update layout");
+    show.onclick = CompartmentGraphWidget.updateLayout;
+    contentbutton.appendChild(show);
 
     content.appendChild( contentbutton );
 
@@ -801,7 +867,7 @@ var WindowMaker = new function()
       '</table>';
     // ABOVE, notice the table needs one dummy row
 
-    addListener(win, container, 'skeleton_analytics_table');
+    addListener(win, container, 'skeleton_analytics');
     addLogic(win);
     SkeletonAnalytics.init();
 
@@ -1032,13 +1098,6 @@ var WindowMaker = new function()
         }
 
         contentbutton.appendChild(sync);
-
-        var refresh = document.createElement('input');
-        refresh.setAttribute("type", "button");
-        refresh.setAttribute("id", "skeleton_info");
-        refresh.setAttribute("value", "Skeleton Info");
-        refresh.onclick = SkeletonConnectivity.skeleton_info;
-        contentbutton.appendChild(refresh);
 
         content.appendChild( contentbutton );
 
@@ -1382,6 +1441,7 @@ var WindowMaker = new function()
     "log-table": createLogTableWindow,
     "export-widget": createExportWidget,
     "graph-widget": createGraphWindow,
+    "neuron-staging-area": createStagingListWindow,
     "compartment-graph-widget": createCompartmentGraphWindow,
     "assemblygraph-widget": createAssemblyGraphWindow,
     "sliceinfo-widget": createSliceInfoWindow,

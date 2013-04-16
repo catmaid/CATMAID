@@ -174,7 +174,7 @@ class Skeleton(object):
             else:
                 edge[ID_from][ID_to]['delta_creation_time'] = stamp2-stamp1
 
-    def measure_construction_time(self, threshold=10):
+    def measure_construction_time(self, threshold=300):
         """ Measure the amount of time consumed in creating this Skeleton.
         This will only count edges that were created lower than the given
         threshold value in seconds.
@@ -202,7 +202,7 @@ class SkeletonGroup(object):
 
     def __init__(self, skeleton_id_list, project_id):
         """ A set of skeleton ids """
-        self.skeleton_id_list = skeleton_id_list
+        self.skeleton_id_list = list(set(skeleton_id_list))
         self.project_id = project_id
         self.skeletons = {}
         for skeleton_id in skeleton_id_list:

@@ -7,7 +7,11 @@ var WebGLApp = new function () {
   var scene, renderer, scale, controls, zplane = null, meshes = [];
   var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, projector, contour_objects = [],
       bbmesh, floormesh, debugax, togglevisibleall = false, missing_sections = [], mouse = new THREE.Vector2();
+  var pointLight, light, ambientLight;
   var is_mouse_down = false, connector_filter = false, missing_section_height = 20, soma_scale = 1.0;
+
+  var labelspheregeometry;
+  var radiusSphere;
 
   var show_meshes = false,
       show_active_node = true,
@@ -63,7 +67,54 @@ var WebGLApp = new function () {
     renderer.domElement.removeEventListener('mousewheel', onMouseWheel, false);
     renderer = null;
     self.removeAllSkeletons();
+    self.destroy_all_non_skeleton_data();
   };
+
+  this.destroy_all_non_skeleton_data = function() {
+    scene.remove( pointLight );
+    scene.remove( light );
+    scene.remove( ambientLight );
+
+    if( active_node !== null) {
+      scene.remove( active_node );
+      delete active_node;
+      active_node = null;
+    }
+
+    if( floormesh !== null) {
+      scene.remove( floormesh );
+      delete floormesh;
+      floormesh = null;
+    }
+
+    if( zplane !== null) {
+      scene.remove( zplane );
+      delete zplane;
+      zplane = null;
+    }
+
+    if( floormesh !== null) {
+      scene.remove( floormesh );
+      delete floormesh;
+      floormesh = null;
+    }
+
+    if( bbmesh !== null) {
+      scene.remove( bbmesh );
+      delete bbmesh;
+      bbmesh = null;
+    }
+
+    if( debugax !== null) {
+      scene.remove( debugax );
+      delete debugax;
+      debugax = null;
+    }
+
+    // TODO: remove meshes
+    // TODO: remove missing sections
+
+  }
 
   var randomColors = [];
   randomColors[0] = [255, 255, 0]; // yellow
@@ -99,11 +150,12 @@ var WebGLApp = new function () {
     controls.dynamicDampingFactor = 0.3;
 
     // lights
-    scene.add( new THREE.AmbientLight( 0x505050 ) );
-    var pointLight = new THREE.PointLight( 0xffaa00 );
+    ambienteLight = new THREE.AmbientLight( 0x505050 )
+    scene.add( ambientLight );
+    pointLight = new THREE.PointLight( 0xffaa00 );
     scene.add( pointLight );
 
-    var light = new THREE.SpotLight( 0xffffff, 1.5 );
+    light = new THREE.SpotLight( 0xffffff, 1.5 );
     light.castShadow = true;
     light.shadowCameraNear = 200;
     light.shadowCameraFar = camera.far;
@@ -154,6 +206,10 @@ var WebGLApp = new function () {
       50 );
 
     controls.target = new THREE.Vector3(coord[0]*scale,coord[1]*scale,coord[2]*scale);
+
+    // new THREE.SphereGeometry( 160 * scale, 32, 32, 1 );
+    labelspheregeometry = new THREE.OctahedronGeometry( 130 * scale, 4);
+    radiusSphere = new THREE.OctahedronGeometry( 40 * scale, 4);
 
     debugaxes();
     draw_grid();
@@ -360,13 +416,116 @@ var WebGLApp = new function () {
   var Skeleton = function( skeleton_data )
   {
     var self = this;
-    var type, from_vector, to_vector, labelspheregeometry = new THREE.SphereGeometry( 130 * scale, 32, 32, 1);
+    var type, from_vector, to_vector;
 
     self.id = skeleton_data.id;
     self.baseName = skeleton_data.baseName;
     
+    this.destroy_data = function() {
+
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        if( this.actor.hasOwnProperty(connectivity_types[i]) ) {
+          delete this.actor[connectivity_types[i]];
+          this.actor[connectivity_types[i]] = null;
+        }
+
+        if( this.geometry.hasOwnProperty(connectivity_types[i]) ) {
+          delete this.geometry[connectivity_types[i]];
+          this.geometry[connectivity_types[i]] = null;
+        }
+
+        if( this.connectorgeometry.hasOwnProperty(connectivity_types[i]) ) {
+          delete this.connectorgeometry[connectivity_types[i]];
+          this.connectorgeometry[connectivity_types[i]] = null;
+        }        
+
+      }
+
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
+          if( this.connectoractor && this.connectoractor[connectivity_types[i]] ) {
+            delete this.connectoractor[connectivity_types[i]];
+            this.connectoractor[connectivity_types[i]] = null;
+          }
+        }
+      }
+      // for ( var i=0; i<connectivity_types.length; ++i ) {
+      //   if( this.actor.hasOwnProperty(connectivity_types[i]) )
+      //     scene.remove( this.actor[connectivity_types[i]] );
+      // }
+      for ( var k in this.labelSphere ) {
+        if( this.labelSphere.hasOwnProperty( k ) )
+          delete this.labelSphere[k];
+          this.labelSphere[k] = null;
+      }
+      for ( var k in this.otherSpheres ) {
+        if( this.otherSpheres.hasOwnProperty( k ) )
+          delete this.otherSpheres[k];
+          this.otherSpheres[k] = null;
+      }
+      for ( var k in this.radiusSpheres ) {
+        if( this.radiusSpheres.hasOwnProperty( k ) )
+          delete this.radiusSpheres[k];
+          this.radiusSpheres[k] = null;
+      }
+      for ( var k in this.textlabels ) {
+        if( self.textlabels.hasOwnProperty( k ))
+          delete this.textlabels[k];
+          this.textlabels[k] = null;
+      }
+
+      delete this.original_vertices;
+      this.original_vertices = null;
+      delete this.original_connectivity;
+      this.original_connectivity = null;
+
+      self.initialize_objects();
+
+    }
+
+    this.removeActorFromScene = function()
+    {
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        if( this.actor.hasOwnProperty(connectivity_types[i]) )
+          scene.remove( this.actor[connectivity_types[i]] );
+      }
+      this.remove_connector_selection();
+      // for ( var i=0; i<connectivity_types.length; ++i ) {
+      //   if( this.actor.hasOwnProperty(connectivity_types[i]) )
+      //     scene.remove( this.actor[connectivity_types[i]] );
+      // }
+      for ( var k in this.labelSphere ) {
+        if( this.labelSphere.hasOwnProperty( k ) )
+          scene.remove( this.labelSphere[k] );
+      }
+      for ( var k in this.otherSpheres ) {
+        if( this.otherSpheres.hasOwnProperty( k ) )
+          scene.remove( this.otherSpheres[k] );
+      }
+      for ( var k in this.radiusSpheres ) {
+        if( this.radiusSpheres.hasOwnProperty( k ) )
+          scene.remove( this.radiusSpheres[k] );
+      }
+      for ( var k in this.textlabels ) {
+        if( self.textlabels.hasOwnProperty( k ))
+          scene.remove( this.textlabels[k] );
+      }
+    }
+
+    this.remove_connector_selection = function()
+    {
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
+          if( this.connectoractor && this.connectoractor[connectivity_types[i]] ) {
+            scene.remove( this.connectoractor[connectivity_types[i]] );
+          }
+        }
+      }
+    }
+
     this.initialize_objects = function()
     {
+
       this.line_material = new Object();
       this.actorColor = [255, 255, 0]; // color from staging area?
       this.visible = true;
@@ -389,6 +548,9 @@ var WebGLApp = new function () {
       this.otherSpheres = new Object();
       this.radiusSpheres = new Object();
       this.textlabels = new Object();
+
+      this.connectoractor = new Object();
+      this.connectorgeometry = new Object();
     }
 
     self.initialize_objects();
@@ -467,36 +629,6 @@ var WebGLApp = new function () {
       self.updateSkeletonColor();
     }
 
-
-    this.removeActorFromScene = function()
-    {
-      for ( var i=0; i<connectivity_types.length; ++i ) {
-        if( this.actor.hasOwnProperty(connectivity_types[i]) )
-          scene.remove( this.actor[connectivity_types[i]] );
-      }
-      this.remove_connector_selection();
-      // for ( var i=0; i<connectivity_types.length; ++i ) {
-      //   if( this.actor.hasOwnProperty(connectivity_types[i]) )
-      //     scene.remove( this.actor[connectivity_types[i]] );
-      // }
-      for ( var k in this.labelSphere ) {
-        if( this.labelSphere.hasOwnProperty( k ) )
-          scene.remove( this.labelSphere[k] );
-      }
-      for ( var k in this.otherSpheres ) {
-        if( this.otherSpheres.hasOwnProperty( k ) )
-          scene.remove( this.otherSpheres[k] );
-      }
-      for ( var k in this.radiusSpheres ) {
-        if( this.radiusSpheres.hasOwnProperty( k ) )
-          scene.remove( this.radiusSpheres[k] );
-      }
-      for ( var k in this.textlabels ) {
-        if( self.textlabels.hasOwnProperty( k ))
-          scene.remove( this.textlabels[k] );
-      }
-    }
-
     this.addCompositeActorToScene = function()
     {
       for ( var i=0; i<connectivity_types.length; ++i ) {
@@ -521,18 +653,6 @@ var WebGLApp = new function () {
         this.actorColor[1]+','+
         this.actorColor[2]+')' ), 16);
     };
-
-    this.remove_connector_selection = function()
-    {
-      for ( var i=0; i<connectivity_types.length; ++i ) {
-        if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
-          if( this.connectoractor && this.connectoractor[connectivity_types[i]] ) {
-            scene.remove( this.connectoractor[connectivity_types[i]] );
-          }
-        }
-      }
-    }
-
 
     this.create_connector_selection = function( connector_data )
     {
@@ -600,11 +720,13 @@ var WebGLApp = new function () {
     {
 
       self.removeActorFromScene();
+      self.destroy_data();
       self.initialize_objects();
 
       this.original_vertices = skeleton_data.vertices;
       this.original_connectivity = skeleton_data.connectivity;
       var textlabel_visibility = $('#skeletontext-' + self.id).is(':checked');
+      var radiusCustomSphere;
 
       for (var fromkey in this.original_connectivity) {
         var to = this.original_connectivity[fromkey];
@@ -637,7 +759,6 @@ var WebGLApp = new function () {
           this.geometry[type].vertices.push( to_vector );
 
           if( !(fromkey in this.otherSpheres) && type === 'presynaptic_to') {
-            var radiusSphere = new THREE.SphereGeometry( 40 * scale, 32, 32, 1);
             this.otherSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:false  } ) );
             this.otherSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
             this.otherSpheres[fromkey].node_id = fromkey;
@@ -646,7 +767,6 @@ var WebGLApp = new function () {
             scene.add( this.otherSpheres[fromkey] );
           }
           if( !(fromkey in this.otherSpheres) && type === 'postsynaptic_to') {
-            var radiusSphere = new THREE.SphereGeometry( 40 * scale, 32, 32, 1);
             this.otherSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false  } ) );
             this.otherSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
             this.otherSpheres[fromkey].node_id = fromkey;
@@ -658,7 +778,7 @@ var WebGLApp = new function () {
           // check if either from or to key vertex has a sphere associated with it
           var radiusFrom = parseFloat( this.original_vertices[fromkey]['radius'] );
           if( !(fromkey in this.radiusSpheres) && radiusFrom > 0 ) {
-            var radiusSphere = new THREE.SphereGeometry( radiusFrom * scale, 32, 32, 1);
+            radiusCustomSphere = new THREE.OctahedronGeometry( radiusFrom * scale, 4); // TODO reuse sphere geometry
             this.radiusSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
             this.radiusSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
             this.radiusSpheres[fromkey].node_id = fromkey;
@@ -669,7 +789,7 @@ var WebGLApp = new function () {
 
           var radiusTo = parseFloat( this.original_vertices[tokey]['radius'] );
           if( !(tokey in this.radiusSpheres) && radiusTo > 0 ) {
-            var radiusSphere = new THREE.SphereGeometry( radiusTo * scale, 32, 32, 1);
+            radiusCustomSphere = new THREE.OctahedronGeometry( radiusTo * scale, 4); // TODO reuse sphere geometry
             this.radiusSpheres[tokey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
             this.radiusSpheres[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
             this.radiusSpheres[tokey].orig_coord = this.original_vertices[fromkey];
@@ -1004,6 +1124,7 @@ var WebGLApp = new function () {
         return;
     } else {
         skeletons[skeleton_id].removeActorFromScene();
+        skeletons[skeleton_id].destroy_data();
         delete skeletons[skeleton_id];
         if( renderer !== null )
           self.render();

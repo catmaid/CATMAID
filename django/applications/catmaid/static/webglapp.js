@@ -51,12 +51,13 @@ var WebGLApp = new function () {
     // self.render();
   }
 
-  /** Clean up. */
+  /** Clean up after closing the 3d viewer. */
   this.destroy = function() {
     renderer.domElement.removeEventListener('mousedown', onMouseDown, false);
     renderer.domElement.removeEventListener('mouseup', onMouseUp, false);
     renderer.domElement.removeEventListener('mousemove', onMouseMove, false);
     renderer.domElement.removeEventListener('mousewheel', onMouseWheel, false);
+    renderer = null;
     self.removeAllSkeletons();
   };
 
@@ -89,7 +90,7 @@ var WebGLApp = new function () {
     // THREE.CombinedCamera = function ( width, height, fov, near, far, orthonear, orthofar ) {
     controls = new THREE.TrackballControls( camera, container );
     controls.rotateSpeed = 1.0;
-    controls.zoomSpeed = 1.2;
+    controls.zoomSpeed = 3.2;
     controls.panSpeed = 0.8;
     controls.noZoom = false;
     controls.noPan = false;
@@ -243,7 +244,7 @@ var WebGLApp = new function () {
     controls.target = pos;
     camera.position.x = pos.x;
     camera.position.y = pos.y;
-    camera.position.z = (dim.z/2)+pos.z;
+    camera.position.z = (dim.z/2)+pos.z+100;
     camera.up.set(0, 1, 0);
     self.render();
   }
@@ -256,7 +257,7 @@ var WebGLApp = new function () {
     controls.target = pos;
     camera.position.x = pos.x;
     camera.position.y = (dim.y/2)+150;
-    camera.position.z = pos.z;
+    camera.position.z = pos.z+100;
     camera.up.set(0, 0, -1);
     self.render();
   }
@@ -833,12 +834,13 @@ var WebGLApp = new function () {
   }
 
   self.resizeView = function (w, h) {
+    console.log('resize view')
     canvasWidth = w;
     canvasHeight = h;
     if( self.divID === undefined ) {
       return;
     }
-    if( renderer === undefined ) {
+    if( renderer === undefined || renderer === null ) {
       init_webgl();
     }
 
@@ -864,9 +866,9 @@ var WebGLApp = new function () {
       $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
       
       camera.setSize(canvasWidth, canvasHeight);
-	  camera.toPerspective();
+      camera.toPerspective();
 	  
-	  renderer.setSize( canvasWidth, canvasHeight );
+      renderer.setSize( canvasWidth, canvasHeight );
 	  
       // resize list view, needs frame height to fill it
 //      var heightAvailable = $('#view_in_3d_webgl_widget').height() - canvasHeight;
@@ -965,7 +967,8 @@ var WebGLApp = new function () {
         self.removeSkeleton( skeleton_id );
       }
     }
-    self.render();
+    if( renderer !== null )
+      self.render();
   }
 
   this.getColorOfSkeleton = function( skeleton_id ) {

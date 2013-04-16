@@ -1038,9 +1038,9 @@ var SkeletonElements = new function()
     // Return the actual connectorCreateLine function
     return function(self, to_id, confidence, pre) {
       if (pre) {
-        return new ArrowLine(self.paper, self.pregroup[to_id].treenode.x, self.pregroup[to_id].treenode.y, self.x, self.y, confidence, 5, 2, "rgb(126, 57, 112)", self.id, to_id);
+        return new ArrowLine(self.paper, self.pregroup[to_id].treenode.x, self.pregroup[to_id].treenode.y, self.x, self.y, confidence, 5, 2, "rgb(200, 0, 0)", self.id, to_id);
       } else {
-        return new ArrowLine(self.paper, self.x, self.y, self.postgroup[to_id].treenode.x, self.postgroup[to_id].treenode.y, confidence, 5, 2, "rgb(67, 67, 128)", self.id, to_id);
+        return new ArrowLine(self.paper, self.x, self.y, self.postgroup[to_id].treenode.x, self.postgroup[to_id].treenode.y, confidence, 5, 2, "rgb(0, 217, 232)", self.id, to_id);
       }
     };
   }();

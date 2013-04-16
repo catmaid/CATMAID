@@ -249,11 +249,25 @@ function CMWHSplitNode( child1, child2 )
 	frame.style.top = "0px";
 	frame.style.bottom = "0px";
 	
-	frame.appendChild( child1.getFrame() );
-	frame.appendChild( child2.getFrame() );
-	
 	var resizeHandle = new ResizeHandle( "h", this );
-	child1.getFrame().appendChild( resizeHandle.getView() );
+	{
+		var child1Frame = child1.getFrame();
+		child1Frame.style.left = "0px";
+		child1Frame.style.top = "0px";
+		child1Frame.style.width = "";
+		child1Frame.style.height = "";
+		
+		var child2Frame = child2.getFrame();
+		child2Frame.style.left = "0px";
+		child2Frame.style.top = "0px";
+		child2Frame.style.width = "";
+		child2Frame.style.height = "";
+		
+		frame.appendChild( child1Frame );
+		frame.appendChild( child2Frame );
+		
+		child1Frame.appendChild( resizeHandle.getView() );
+	}
 	
 	var widthRatio = 0.5;
 	
@@ -443,11 +457,26 @@ function CMWVSplitNode( child1, child2 )
 	frame.style.top = "0px";
 	frame.style.bottom = "0px";
 	
-	frame.appendChild( child1.getFrame() );
-	frame.appendChild( child2.getFrame() );
-	
 	var resizeHandle = new ResizeHandle( "v", this );
-	child1.getFrame().appendChild( resizeHandle.getView() );
+	
+	{
+		var child1Frame = child1.getFrame();
+		child1Frame.style.left = "0px";
+		child1Frame.style.top = "0px";
+		child1Frame.style.width = "";
+		child1Frame.style.height = "";
+		
+		var child2Frame = child2.getFrame();
+		child2Frame.style.left = "0px";
+		child2Frame.style.top = "0px";
+		child2Frame.style.width = "";
+		child2Frame.style.height = "";
+		
+		frame.appendChild( child1Frame );
+		frame.appendChild( child2Frame );
+		
+		child1Frame.appendChild( resizeHandle.getView() );
+	}
 	
 	var heightRatio = 0.5;
 	
@@ -538,13 +567,14 @@ function CMWVSplitNode( child1, child2 )
 	{
 		var oldChild = child1;
 		self.removeResizeHandle();
-		if ( newChild.getFrame().parentNode != null )
-			newChild.getFrame().parentNode.removeChild( newChild.getFrame() );
-		newChild.getFrame().appendChild( resizeHandle.getView() );
+		var newChildFrame = newChild.getFrame();
+		if ( newChildFrame.parentNode != null )
+			newChildFrame.parentNode.removeChild( newChildFrame );
+		newChildFrame.appendChild( resizeHandle.getView() );
 		if ( child1.getFrame().parentNode == frame )
-			frame.replaceChild( newChild.getFrame(), child1.getFrame() );
+			frame.replaceChild( newChildFrame, child1.getFrame() );
 		else
-			frame.appendChild( newChild.getFrame() );
+			frame.appendChild( newChildFrame );
 		child1 = newChild;
 		newChild.setParent( self );
 		self.redraw();
@@ -791,17 +821,14 @@ function CMWWindow( title )
 			var sourceSplitNode = CMWWindow.selectedWindow.getParent();
 			var sourceSibling = sourceSplitNode.getSiblingOf( CMWWindow.selectedWindow );
 			var sourceSiblingFrame = sourceSibling.getFrame();
-			var selectedWindowFrame = CMWWindow.selectedWindow.getFrame();
-			var targetSibling = parent.getSiblingOf( self );
-			var targetSiblingFrame = targetSibling.getFrame();
 			
 			sourceSplitNode.removeResizeHandle();
 			sourceSplitNode.getParent().replaceChild( sourceSibling, sourceSplitNode );
 			
-			sourceSiblingFrame.style.top = selectedWindowFrame.style.top = frame.style.top = targetSiblingFrame.style.top = "0px";
-			sourceSiblingFrame.style.left = selectedWindowFrame.style.left = frame.style.left = targetSiblingFrame.style.left = "0px";
-			sourceSiblingFrame.style.width = selectedWindowFrame.style.width = frame.style.width = targetSiblingFrame.style.width = "";
-			sourceSiblingFrame.style.height = selectedWindowFrame.style.height = frame.style.height = targetSiblingFrame.style.height = "";
+			sourceSiblingFrame.style.top = "0px";
+			sourceSiblingFrame.style.left = "0px";
+			sourceSiblingFrame.style.width = "";
+			sourceSiblingFrame.style.height = "";
 		
 			if ( eventCatcher.className == "eventCatcherTop" )
 			{

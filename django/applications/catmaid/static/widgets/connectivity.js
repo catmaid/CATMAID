@@ -98,7 +98,7 @@ var SkeletonConnectivity = new function()
                                 var skelid = parseInt( event.target.value );
                                 var vis = $('#incoming-show-skeleton-' + skelid).is(':checked');
                                 if( vis ) {
-                                    NeuronStagingArea.add_skeleton_to_stage( skelid, data['incoming'][e]['name'] );
+                                    NeuronStagingArea.add_skeleton_to_stage_without_name( skelid );
                                 } else {
                                     NeuronStagingArea.remove_skeleton( skelid );
                                 }

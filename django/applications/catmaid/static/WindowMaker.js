@@ -79,7 +79,7 @@ var WindowMaker = new function()
 
   var createStagingListWindow = function( webglwin ) {
 
-    var win = new CMWWindow("Neuron Staging Table");
+    var win = new CMWWindow("Selection Table");
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 

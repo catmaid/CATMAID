@@ -207,7 +207,7 @@ var WindowMaker = new function()
     var add = document.createElement('input');
     add.setAttribute("type", "button");
     add.setAttribute("id", "refresh_viewer");
-    add.setAttribute("value", "Show all");
+    add.setAttribute("value", "Show selected");
     add.onclick = WebGLApp.refresh_skeletons;
     buttons.appendChild(add);
     

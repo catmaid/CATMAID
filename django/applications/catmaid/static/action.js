@@ -468,7 +468,7 @@ var tracingWindowActions = [
   }),
 
   new Action({
-      helpText: "Neuron Staging Area",
+      helpText: "Selection Table",
       buttonID: "data_button_neuron_staging_area_widget",
       buttonName: 'neuron_staging',
       run: function (e) {

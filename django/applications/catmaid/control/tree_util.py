@@ -74,7 +74,8 @@ def reroot(tree, new_root):
 def simplify(tree, keepers):
     """ Given a tree and a set of nodes to keep, create a new tree
     where only the nodes to keep and the branch points between them are preserved.
-    WARNING: will reroot the tree at the first of the keepers. """
+    WARNING: will reroot the tree at the first of the keepers.
+    WARNING: keepers can't be empty. """
     # Ensure no repeats
     keepers = set(keepers)
     # Add all keeper nodes to the minified graph

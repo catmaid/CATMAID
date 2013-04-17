@@ -116,13 +116,6 @@ var WebGLApp = new function () {
 
   }
 
-  var randomColors = [];
-  randomColors[0] = [255, 255, 0]; // yellow
-  randomColors[1] = [255, 0, 255]; // magenta
-  // randomColors[2] = [0, 255, 255]; // cyan
-  randomColors[2] = [255, 255, 255]; // white
-  randomColors[3] = [255, 128, 0]; // orange
-
   /* transform coordinates from CATMAID coordinate system
      to WebGL coordinate system: x->x, y->y+dy, z->-z
     */
@@ -1020,28 +1013,6 @@ var WebGLApp = new function () {
     return assemblies[ assembly_data.id ];
   }
 
-  this.randomizeColors = function()
-  {
-    var i = 0, col;
-    for( var skeleton_id in skeletons)
-    {
-      if( skeletons.hasOwnProperty( skeleton_id )) {
-        if( i < randomColors.length ) {
-          col = randomColors[i];
-        } else {
-          col = [parseInt( Math.random() * 255 ),
-            parseInt( Math.random() * 255 ),
-            parseInt( Math.random() * 255 ) ];
-        }
-        i=i+1;
-        skeletons[skeleton_id].changeColor( col );
-        NeuronStagingArea.set_skeleton_color_rgb( skeleton_id, col);
-        NeuronStagingArea.update_skeleton_color_button( skeleton_id );
-      }
-    }
-    self.render();
-  }
-
   this.has_skeleton = function( skeleton_id ) {
     return skeletons.hasOwnProperty(skeleton_id);
   }
@@ -1082,7 +1053,7 @@ var WebGLApp = new function () {
   this.changeSkeletonColor = function( skeleton_id, value )
   {
     if( !skeletons.hasOwnProperty(skeleton_id) ){
-        alert("Skeleton "+skeleton_id+" does not exist. Cannot change color!");
+        console.log("Skeleton "+skeleton_id+" does not exist. Cannot change color in 3d!");
         return;
     } else {
         skeletons[skeleton_id].changeColor( value );
@@ -1746,8 +1717,6 @@ var WebGLApp = new function () {
     }
   };
 
-
-
   self.getListOfSkeletonIDs = function(only_visible) {
     var keys = [];
     for( var skeleton_id in skeletons)
@@ -1763,6 +1732,11 @@ var WebGLApp = new function () {
     }
     return keys;
   };
+
+  self.add_active_and_refresh_skeletons = function() {
+      NeuronStagingArea.add_active_object_to_stage();
+      self.refresh_skeletons();
+  }
 
   // use the staging skeleton list to refresh all neurons
   self.refresh_skeletons = function() {

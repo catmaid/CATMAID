@@ -97,6 +97,13 @@ var WindowMaker = new function()
 
     var rand = document.createElement('input');
     rand.setAttribute("type", "button");
+    rand.setAttribute("id", "randomize_skeleton_color");
+    rand.setAttribute("value", "Randomize color");
+    rand.onclick = NeuronStagingArea.randomizeColors;
+    buttons.appendChild(rand);
+
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
     rand.setAttribute("id", "save_skeleton_list");
     rand.setAttribute("value", "Save list");
     rand.onclick = NeuronStagingArea.save_skeleton_list;
@@ -192,8 +199,15 @@ var WindowMaker = new function()
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
+    add.setAttribute("id", "add_active");
+    add.setAttribute("value", "Show active");
+    add.onclick = WebGLApp.add_active_and_refresh_skeletons;
+    buttons.appendChild(add);
+
+    var add = document.createElement('input');
+    add.setAttribute("type", "button");
     add.setAttribute("id", "refresh_viewer");
-    add.setAttribute("value", "Refresh");
+    add.setAttribute("value", "Show all");
     add.onclick = WebGLApp.refresh_skeletons;
     buttons.appendChild(add);
     
@@ -230,13 +244,6 @@ var WindowMaker = new function()
     rand.setAttribute("id", "yz_plane");
     rand.setAttribute("value", "YZ");
     rand.onclick = WebGLApp.YZView;
-    buttons.appendChild(rand);
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "randomize_skeleton_color");
-    rand.setAttribute("value", "Randomize color");
-    rand.onclick = WebGLApp.randomizeColors;
     buttons.appendChild(rand);
 
     // Restrict display to shared connectors between visible skeletons

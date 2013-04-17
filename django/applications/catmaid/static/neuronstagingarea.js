@@ -196,6 +196,34 @@ var NeuronStagingArea = new function()
       		WebGLApp.changeSkeletonColor( id, skeletonmodels[ id ].colorrgb ); 	
     }
 
+  var randomColors = [];
+	  randomColors[0] = [255, 255, 0]; // yellow
+	  randomColors[1] = [255, 0, 255]; // magenta
+	  // randomColors[2] = [0, 255, 255]; // cyan
+	  randomColors[2] = [255, 255, 255]; // white
+	  randomColors[3] = [255, 128, 0]; // orange
+
+	self.randomizeColors = function()
+	{
+
+		var i = 0, col, skeleton_id, skeletonsin3d = self.get_selected_skeletons();
+		for(var idx = 0; idx < skeletonsin3d.length; idx ++) {
+			skeleton_id = skeletonsin3d[idx];
+			if( idx < randomColors.length ) {
+				col = randomColors[idx];
+			} else {
+				col = [parseInt( Math.random() * 255 ),
+						parseInt( Math.random() * 255 ),
+						parseInt( Math.random() * 255 ) ];
+			}
+			self.set_skeleton_color_rgb( skeleton_id, col);
+			self.update_skeleton_color_button( skeleton_id );
+			if( WebGLApp.has_skeleton( parseInt( skeleton_id ) ) )
+				WebGLApp.changeSkeletonColor( parseInt(skeleton_id), col );
+		}
+
+	}
+
     self.get_skeletonmodel = function( id )
     {
     	return skeletonmodels[ id ];

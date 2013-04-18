@@ -3,29 +3,21 @@
  *
  * requirements:
  *	 tools.js
- *	 boxselectiontool.js
+ *	 roitool.js
  *	 slider.js
  *	 stack.js
  */
 
 /**
- * Cropping tool. It adds some GUI components to the box
- * selection tool and allows to crop the selected region.
+ * Cropping tool. It adds some GUI components to the roi tool
+ * and allows to crop the selected region.
  */
 function CroppingTool() {
 	// call super constructor
-	BoxSelectionTool.call( this );
+	RoiTool.call( this );
 
 	var self = this;
 	this.toolname = "croppingtool";
-
-	if ( !ui ) ui = new UI();
-
-	// inputs for x, y, width and height of the crop box
-	this.box_crop_x = document.getElementById( "box_crop_x" );
-	this.box_crop_y = document.getElementById( "box_crop_y" );
-	this.box_crop_w = document.getElementById( "box_crop_w" );
-	this.box_crop_h = document.getElementById( "box_crop_h" );
 
 	this.slider_crop_top_z = new Slider(
 			SLIDER_HORIZONTAL,
@@ -54,46 +46,87 @@ function CroppingTool() {
 			5,
 			function( val ){ statusBar.replaceLast( "crop s: " + val ); } );
 
-	var slider_crop_top_z_view = self.slider_crop_top_z.getView();
-	slider_crop_top_z_view.id = "slider_crop_top_z";
-	document.getElementById( "slider_crop_top_z" ).parentNode.replaceChild(
-			slider_crop_top_z_view,
-			document.getElementById( "slider_crop_top_z" ) );
-	document.getElementById( "slider_crop_top_z" ).parentNode.replaceChild(
-			self.slider_crop_top_z.getInputView(),
-			slider_crop_top_z_view.nextSibling );
 
-	var slider_crop_bottom_z_view = self.slider_crop_bottom_z.getView();
-	slider_crop_bottom_z_view.id = "slider_crop_bottom_z";
-	document.getElementById( "slider_crop_bottom_z" ).parentNode.replaceChild(
-			slider_crop_bottom_z_view,
-			document.getElementById( "slider_crop_bottom_z" ) );
-	document.getElementById( "slider_crop_bottom_z" ).parentNode.replaceChild(
-			self.slider_crop_bottom_z.getInputView(),
-			slider_crop_bottom_z_view.nextSibling );
+	// Obtain a reference to the RoiTool toolbar button
+	var toolbar = document.getElementById("toolbar_roi");
+	var toolbar_button = document.getElementById("button_roi_apply").parentNode;
 
-	var slider_crop_s_view = self.slider_crop_s.getView();
-	slider_crop_s_view.id = "slider_crop_s";
-	document.getElementById( "slider_crop_s" ).parentNode.replaceChild(
-			slider_crop_s_view,
-			document.getElementById( "slider_crop_s" ) );
-	document.getElementById( "slider_crop_s" ).parentNode.replaceChild(
-			self.slider_crop_s.getInputView(),
-			slider_crop_s_view.nextSibling );
+	// Keep a list of added elements
+	var added_elements = new Array();
+
+	// A procedure to create a toolbar box
+	var create_tb_box = function()
+	{
+		var container = document.createElement("div");
+		container.setAttribute("class", "box");
+		return container;
+	};
+
+	// A procedure to add containers for extra sliders
+	var create_slider_box = function(name, text, slider) {
+		var p = document.createElement("p");
+		p.innerHTML = text + "&nbsp;&nbsp;";
+		// fill container
+		var container = create_tb_box();
+		container.appendChild(p);
+		container.appendChild(slider.getView());
+		container.appendChild(slider.getInputView());
+		// add container to the toolbar
+		toolbar.insertBefore(container, toolbar_button)
+		added_elements.push(container);
+	};
+
+	create_slider_box( "slider_crop_top_z", "top z-index",
+		this.slider_crop_top_z );
+	create_slider_box( "slider_crop_bottom_z", "bottom z-index",
+		this.slider_crop_bottom_z );
+	create_slider_box( "slider_crop_s", "zoom-level",
+		this.slider_crop_s );
 
 	//! stacks menu
 	this.stacks_menu = new Menu();
 	this.stacks_to_crop = null;
+	var stacks_container = create_tb_box();
+	stacks_container.setAttribute("id", "crop_stacks_menu_box");
+	var stacks_menu_item = document.createElement("div");
+	stacks_menu_item.setAttribute("class", "menu_item");
+	stacks_menu_item.setAttribute("style", "float:left");
+	stacks_menu_item.onmouseover = function() {
+		this.lastChild.style.display = 'block';
+	};
+	stacks_menu_item.onmouseout = function() {
+		this.lastChild.style.display = 'none';
+	}
+	var stacks_p = document.createElement("p");
+	var stacks_a = document.createElement("a");
+	stacks_a.innerHTML = "Stacks";
+	var stacks_menu_pulldown = document.createElement("div");
+	stacks_menu_pulldown.setAttribute("class", "pulldown");
+	stacks_menu_pulldown.setAttribute("id", "crop_stacks_menu");
+	// fill containers
+	stacks_p.appendChild(stacks_a);
+	stacks_menu_item.appendChild(stacks_p);
+	stacks_menu_item.appendChild(stacks_menu_pulldown);
+	stacks_container.appendChild(stacks_menu_item);
+	// add container to the toolbar
+	toolbar.insertBefore(stacks_container, toolbar_button);
+	added_elements.push(stacks_container);
 
 	//! RGB slices/single channel checkbox
-	this.check_rgb_slices = document.getElementById( "check_crop_rgb_slices" );
-
-	this.button_crop_apply = document.getElementById( "button_crop_apply" );
-
-	//! mouse catcher
-	this.mouseCatcher = document.createElement( "div" );
-	this.mouseCatcher.className = "sliceMouseCatcher";
-	this.mouseCatcher.style.cursor = "default";
+	var rgb_slices_container = create_tb_box();
+	var rgb_slices_p1 = document.createElement("p");
+	rgb_slices_p1.innerHTML = "RGB slices&nbsp;";
+	this.check_rgb_slices = document.createElement("input");
+	this.check_rgb_slices.setAttribute("type", "checkbox");
+	this.check_rgb_slices.setAttribute("id", "check_crop_rgb_slices");
+	var rgb_slices_p2 = document.createElement("p");
+	rgb_slices_p2.appendChild(this.check_rgb_slices);
+	// fill containers
+	rgb_slices_container.appendChild(rgb_slices_p1);
+	rgb_slices_container.appendChild(rgb_slices_p2);
+	// add container to the toolbar
+	toolbar.insertBefore(rgb_slices_container, toolbar_button);
+	added_elements.push(rgb_slices_container);
 
 	/**
 	 * Creates the URL that invokes the cropping job.
@@ -151,8 +184,9 @@ function CroppingTool() {
 	}
 
 	/**
-	 * handle the answer of a microstack crop request
-	 * this answer is not the ready made microstack itself but a confirmation that the cropping process was invoked
+	 * Handle the response of a microstack crop request. This answer is not the
+	 * ready made microstack itself but a confirmation that the cropping
+	 * process was invoked
 	 */
 	var handle_crop = function( status, text, xml )
 	{
@@ -175,32 +209,10 @@ function CroppingTool() {
 		return;
 	}
 
-	// Updates UI elements like the the crop box input boxes.
-	this.updateControls = function()
-	{
-		if ( self.getCropBox() )
-		{
-			var cropBoxBB = self.getCropBoxBoundingBox();
-			self.box_crop_x.value = cropBoxBB.left_px;
-			self.box_crop_y.value = cropBoxBB.top_px;
-			self.box_crop_w.value = cropBoxBB.width_px;
-			self.box_crop_h.value = cropBoxBB.height_px;
-		}
-
-		return;
-	}
-
-	this.redraw = function()
-	{
-		// call register of super class
-		CroppingTool.superproto.redraw.call( self );
-		self.updateControls();
-	}
-
 	/**
-	 * This methods gets the related stacks of the current one and creates a
-	 * menu if there is more than one stack in total. The menu is meant to
-	 * select thes stacks that get cropped to the output file.
+	 * This methods gets the related stacks of the current project and creates
+	 * a menu if there is more than one stack in total. The menu is meant to
+	 * select the stacks that get cropped to the output file.
 	 */
 	this.updateStacksMenu = function()
 	{
@@ -252,13 +264,6 @@ function CroppingTool() {
 		document.getElementById( "crop_stacks_menu" ).appendChild( self.stacks_menu.getView() );
 	}
 
-	this.resize = function( width, height )
-	{
-		self.mouseCatcher.style.width = width + "px";
-		self.mouseCatcher.style.height = height + "px";
-		return;
-	}
-
 	//--------------------------------------------------------------------------
 	/**
 	 * Slider commands for changing the slice come in too frequently, thus the
@@ -294,9 +299,7 @@ function CroppingTool() {
 	{
 
 	}
-	//--------------------------------------------------------------------------
 
-	//--------------------------------------------------------------------------
 	/**
 	 * ... same as said before for scale changes ...
 	 */
@@ -352,228 +355,6 @@ function CroppingTool() {
 
 	//--------------------------------------------------------------------------
 
-	var changeCropBoxXByInput = function( e )
-	{
-		var val = parseInt( this.value );
-		var cropBox = self.getCropBox();
-
-		if ( isNaN( val ) )
-		{
-			this.value = self.toPx( cropBox.left, self.stack.resolution.x );
-		}
-		else
-		{
-			var screen_left = self.getScreenLeft();
-			var width_world = cropBox.right - cropBox.left;
-			cropBox.left = self.toWorld( val, self.stack.resolution.x ) + screen_left;
-			cropBox.right = cropBox.left + width_world;
-			self.updateCropBox();
-			self.updateControls();
-		}
-		return;
-	}
-
-	var changeCropBoxYByInput = function( e )
-	{
-		var val = parseInt( this.value );
-		var cropBox = self.getCropBox();
-
-		if ( isNaN( val ) )
-		{
-			this.value = self.toPx( cropBox.left, self.stack.resolution.y );
-		}
-		else
-		{
-			var screen_top = self.getScreenTop();
-			var height_world = cropBox.bottom - cropBox.top;
-			cropBox.top = self.toWorld( val, self.stack.resolution.y ) + screen_top;
-			cropBox.bottom = cropBox.top + height_world;
-			self.updateCropBox();
-			self.updateControls();
-		}
-		return;
-	}
-
-	var changeCropBoxWByInput = function( e )
-	{
-		var val = parseInt( this.value );
-		var cropBox = self.getCropBox();
-
-		if ( isNaN( val ) )
-		{
-			var width_world = cropBox.right - cropBox.left;
-			this.value = self.toPx( width_world, self.stack.resolution.x );
-		}
-		else
-		{
-			var width_world = self.toWorld( val, self.stack.resolution.x );
-			cropBox.right = cropBox.left + width_world;
-			self.updateCropBox();
-			self.updateControls();
-		}
-		return;
-	}
-
-	var changeCropBoxHByInput = function( e )
-	{
-		var val = parseInt( this.value );
-		var cropBox = self.getCropBox();
-
-		if ( isNaN( val ) )
-		{
-			var height_world = cropBox.bottom - cropBox.top;
-			this.value = self.toPx( height_world, self.stack.resolution.y );
-		}
-		else
-		{
-			var height_world = self.toWorld( val, self.stack.resolution.y );
-			cropBox.bottom = cropBox.top + height_world;
-			self.updateCropBox();
-			self.updateControls();
-		}
-		return;
-	}
-
-	var cropBoxMouseWheel = function( e )
-	{
-		var w = ui.getMouseWheel( e );
-		if ( w )
-		{
-			this.value = parseInt( this.value ) - w;
-			this.onchange();
-		}
-		return false
-	}
-
-	var onmousedown = function( e )
-	{
-		var b = ui.getMouseButton( e );
-		switch ( b )
-		{
-		case 2:
-			ui.removeEvent( "onmousemove", onmousemove.crop );
-			ui.removeEvent( "onmouseup", onmouseup );
-			break;
-		default:
-			var m = ui.getMouse( e, self.stack.getView() );
-			self.createCropBox( m.offsetX, m.offsetY );
-
-			ui.registerEvent( "onmousemove", onmousemove.crop );
-			ui.registerEvent( "onmouseup", onmouseup );
-			ui.catchEvents( "crosshair" );
-		}
-		ui.onmousedown( e );
-
-		//! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
-		document.body.firstChild.focus();
-
-		return false;
-	}
-
-	var onmousemove =
-	{
-		pos : function ( e )
-		{
-			var xp;
-			var yp;
-			var m = ui.getMouse( e, self.stack.getView() );
-			if ( m )
-			{
-				var s = self.stack;
-				var pos_x = s.translation.x + ( s.x + ( m.offsetX - s.viewWidth / 2 ) / s.scale ) * s.resolution.x;
-				var pos_y = s.translation.x + ( s.y + ( m.offsetY - s.viewHeight / 2 ) / s.scale ) * s.resolution.y;
-				statusBar.replaceLast( "[" + self.convertWorld( pos_x ).toFixed( 3 ) + ", " + self.convertWorld( pos_y ).toFixed( 3 ) + "]" );
-			}
-			return false;
-		},
-		crop : function( e )
-		{
-			var cropBox = self.getCropBox();
-
-			if ( cropBox )
-			{
-				// adjust left and rigt component
-				cropBox.xdist += ui.diffX;
-				var xdist_world = self.toWorld( cropBox.xdist, self.stack.resolution.x );
-				if ( cropBox.xdist > 0 )
-				{
-					cropBox.left = cropBox.xorigin;
-					cropBox.right = cropBox.xorigin + xdist_world;
-				}
-				else
-				{
-					cropBox.left = cropBox.xorigin + xdist_world;
-					cropBox.right = cropBox.xorigin;
-				}
-
-				// adjust top and bottom component
-				cropBox.ydist += ui.diffY;
-				var ydist_world = self.toWorld( cropBox.ydist, self.stack.resolution.y );
-				if ( cropBox.ydist > 0 )
-				{
-					cropBox.top = cropBox.yorigin;
-					cropBox.bottom = cropBox.yorigin + ydist_world;
-				}
-				else
-				{
-					cropBox.top = cropBox.yorigin + ydist_world;
-					cropBox.bottom = cropBox.yorigin;
-				}
-
-				self.updateCropBox();
-			}
-			self.updateControls();
-		}
-	};
-
-	var onmouseup = function ( e )
-	{
-		ui.releaseEvents();
-		ui.removeEvent( "onmousemove", onmousemove.crop );
-		ui.removeEvent( "onmouseup", onmouseup );
-		self.updateControls();
-	}
-
-	var onmousewheel = function( e )
-	{
-
-	}
-
-	// Adds a mouse wheel listener to a component.
-	this.addMousewheelListener = function( component, handler )
-	{
-		try
-		{
-			component.addEventListener( "DOMMouseScroll", handler, false );
-		}
-		catch ( error )
-		{
-			try
-			{
-				component.onmousewheel = handler;
-			}
-			catch ( error ) {}
-		}
-
-	}
-
-	// Removes a mouse wheel listener from a component.
-	this.removeMousewheelListener = function( component, handler )
-	{
-		try
-		{
-			component.removeEventListener( "DOMMouseScroll", handler, false );
-		}
-		catch ( error )
-		{
-			try
-			{
-				component.onmousewheel = null;
-			}
-			catch ( error ) {}
-		}
-	}
-
 	/**
 	 * install this tool in a stack.
 	 * register all GUI control elements and event handlers
@@ -587,54 +368,19 @@ function CroppingTool() {
 		var project = self.stack.getProject();
 		var stacks = projects_available[project.id];
 		self.stacks_to_crop = new Array();
-		for ( var s in stacks )
-		{
+		$.each(stacks, function(index, value) {
 			// By default, mark only the current stack to be cropped
 			self.stacks_to_crop.push(
 				{
-					data : stacks[ s ],
-					marked : ( s == self.stack.getId() )
+					data : value,
+					marked : ( value.id == self.stack.getId() )
 				}
 			);
-		}
+		});
 
 		document.getElementById( "edit_button_crop" ).className = "button_active";
-		document.getElementById( "toolbar_crop" ).style.display = "block";
-
-		self.mouseCatcher.style.cursor = "crosshair";
-		self.mouseCatcher.onmousedown = onmousedown;
-		self.mouseCatcher.onmousemove = onmousemove.pos;
-
-		try
-		{
-			self.mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel, false );
-			/* Webkit takes the event but does not understand it ... */
-			self.mouseCatcher.addEventListener( "mousewheel", onmousewheel, false );
-		}
-		catch ( error )
-		{
-			try
-			{
-				self.mouseCatcher.onmousewheel = onmousewheel;
-			}
-			catch ( error ) {}
-		}
 
 		self.stack.getView().appendChild( self.mouseCatcher );
-
-		self.box_crop_x.onchange = changeCropBoxXByInput;
-		self.addMousewheelListener( self.box_crop_x, cropBoxMouseWheel );
-		self.box_crop_y.onchange = changeCropBoxYByInput;
-		self.addMousewheelListener( self.box_crop_y, cropBoxMouseWheel );
-		self.box_crop_w.onchange = changeCropBoxWByInput;
-		self.addMousewheelListener( self.box_crop_w, cropBoxMouseWheel );
-		self.box_crop_h.onchange = changeCropBoxHByInput;
-		self.addMousewheelListener( self.box_crop_h, cropBoxMouseWheel );
-
-		self.box_crop_x.parentNode.parentNode.style.display = "block";
-		self.box_crop_y.parentNode.parentNode.style.display = "block";
-		self.box_crop_w.parentNode.parentNode.style.display = "block";
-		self.box_crop_h.parentNode.parentNode.style.display = "block";
 
 		// initialize top and bottom z-index slider
 		if ( self.stack.slices.length < 2 )	//!< hide the self.slider_z if there is only one slice
@@ -674,7 +420,7 @@ function CroppingTool() {
 		self.updateStacksMenu();
 
 		// initialize crop button
-		self.button_crop_apply.onclick = crop;
+		self.button_roi_apply.onclick = crop;
 
 		self.updateControls();
 
@@ -701,16 +447,6 @@ function CroppingTool() {
 		self.unregister();
 
 		document.getElementById( "edit_button_crop" ).className = "button";
-		document.getElementById( "toolbar_crop" ).style.display = "none";
-
-		self.box_crop_x.onchange = null;
-		self.removeMousewheelListener( self.box_crop_x, cropBoxMouseWheel );
-		self.box_crop_y.onchange = null;
-		self.removeMousewheelListener( self.box_crop_y, cropBoxMouseWheel );
-		self.box_crop_w.onchange = null;
-		self.removeMousewheelListener( self.box_crop_w, cropBoxMouseWheel );
-		self.box_crop_h.onchange = null;
-		self.removeMousewheelListener( self.box_crop_h, cropBoxMouseWheel );
 
 		self.slider_crop_top_z.update(
 			0,
@@ -735,19 +471,19 @@ function CroppingTool() {
 
 		self.stacks_menu.update();
 
-		self.button_crop_apply.onclick = null;
+		self.button_roi_apply.onclick = null;
+
+		// remove added elements from toolbar
+		var toolbar = document.getElementById("toolbar_roi");
+		$.each(added_elements, function(i, val) {
+			toolbar.removeChild(val);
+		});
 
 		// call destroy of super class
 		CroppingTool.superproto.destroy.call( self );
 
 		return;
 	}
-
-	/** This function should return true if there was any action
-		linked to the key code, or false otherwise. */
-	this.handleKeyPress = function( e ) {
-		return false;
-	}
 }
-extend( CroppingTool, BoxSelectionTool );
+extend( CroppingTool, RoiTool );
 

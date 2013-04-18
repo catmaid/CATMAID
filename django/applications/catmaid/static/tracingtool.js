@@ -895,6 +895,12 @@ TracingTool.search = function()
               return false;
           };
         };
+        var actionaddstage = function(type) {
+          return function() {
+              NeuronStagingArea.add_skeleton_to_stage_without_name( parseInt($(this).attr('id')) );
+              return false;
+          };
+        };
         var removelabel = function(id) {
           return function() {
             requestQueue.register(django_url + project.id + '/label/remove', "POST", {
@@ -909,12 +915,23 @@ TracingTool.search = function()
           row.append($('<td/>').text(data[i].name));
           row.append($('<td/>').text(data[i].class_name));
           if (data[i].class_name === 'neuron' || data[i].class_name === 'skeleton') {
+            var tdd = $('<td/>');
             actionLink = $('<a/>');
             actionLink.attr({'id': ''+data[i].id});
             actionLink.attr({'href':''});
             actionLink.click(action(data[i].class_name));
             actionLink.text("Go to nearest node");
-            row.append($('<td/>').append(actionLink));
+            tdd.append(actionLink);
+            if( data[i].class_name === 'skeleton' ) {
+              actionLink = $('<a/>');
+              actionLink.attr({'id': ''+data[i].id});
+              actionLink.attr({'href':''});
+              actionLink.click(actionaddstage(data[i].class_name));
+              actionLink.text(" Add to selection table");
+              tdd.append(actionLink)
+            }
+            row.append(tdd);
+  
           } else if (data[i].class_name === 'label') {
             // Create a link that will then query, when clicked, for the list of nodes
             // that point to the label, and show a list [1], [2], [3] ... clickable,

@@ -151,8 +151,9 @@ function CroppingTool() {
 	}
 
 	/**
-	 * handle the answer of a microstack crop request
-	 * this answer is not the ready made microstack itself but a confirmation that the cropping process was invoked
+	 * Handle the response of a microstack crop request. This answer is not the
+	 * ready made microstack itself but a confirmation that the cropping
+	 * process was invoked
 	 */
 	var handle_crop = function( status, text, xml )
 	{
@@ -198,9 +199,9 @@ function CroppingTool() {
 	}
 
 	/**
-	 * This methods gets the related stacks of the current one and creates a
-	 * menu if there is more than one stack in total. The menu is meant to
-	 * select thes stacks that get cropped to the output file.
+	 * This methods gets the related stacks of the current project and creates
+	 * a menu if there is more than one stack in total. The menu is meant to
+	 * select the stacks that get cropped to the output file.
 	 */
 	this.updateStacksMenu = function()
 	{

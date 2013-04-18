@@ -51,6 +51,9 @@ function CroppingTool() {
 	var toolbar = document.getElementById("toolbar_roi");
 	var toolbar_button = document.getElementById("button_roi_apply").parentNode;
 
+	// Keep a list of added elements
+	var added_elements = new Array();
+
 	// A procedure to create a toolbar box
 	var create_tb_box = function()
 	{
@@ -70,6 +73,7 @@ function CroppingTool() {
 		container.appendChild(slider.getInputView());
 		// add container to the toolbar
 		toolbar.insertBefore(container, toolbar_button)
+		added_elements.push(container);
 	};
 
 	create_slider_box( "slider_crop_top_z", "top z-index",
@@ -106,6 +110,7 @@ function CroppingTool() {
 	stacks_container.appendChild(stacks_menu_item);
 	// add container to the toolbar
 	toolbar.insertBefore(stacks_container, toolbar_button);
+	added_elements.push(stacks_container);
 
 	//! RGB slices/single channel checkbox
 	var rgb_slices_container = create_tb_box();
@@ -121,6 +126,7 @@ function CroppingTool() {
 	rgb_slices_container.appendChild(rgb_slices_p2);
 	// add container to the toolbar
 	toolbar.insertBefore(rgb_slices_container, toolbar_button);
+	added_elements.push(rgb_slices_container);
 
 	/**
 	 * Creates the URL that invokes the cropping job.
@@ -466,6 +472,12 @@ function CroppingTool() {
 		self.stacks_menu.update();
 
 		self.button_roi_apply.onclick = null;
+
+		// remove added elements from toolbar
+		var toolbar = document.getElementById("toolbar_roi");
+		$.each(added_elements, function(i, val) {
+			toolbar.removeChild(val);
+		});
 
 		// call destroy of super class
 		CroppingTool.superproto.destroy.call( self );

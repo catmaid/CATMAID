@@ -441,29 +441,6 @@ var WindowMaker = new function()
     show.onclick = CompartmentGraphWidget.updateConfidenceGraphFrom3DViewer;
     contentbutton.appendChild(show);
 
-    var label = document.createTextNode('Keep edges with confidence');
-    contentbutton.appendChild(label);
-
-    var sync = document.createElement('select');
-    sync.setAttribute("id", "confidence_threshold");
-    for (var i = 0; i < 6; ++i) {
-      var option = document.createElement("option");
-      option.text = i.toString();
-      option.value = i;
-      sync.appendChild(option);
-    }
-    contentbutton.appendChild(sync);
-
-    var label = document.createTextNode('or higher. Bandwidth:');
-    contentbutton.appendChild(label);
-
-    var bandwidth = document.createElement('input');
-    bandwidth.setAttribute('id', 'clustering_bandwidth');
-    bandwidth.setAttribute('type', 'text');
-    bandwidth.setAttribute('value', 9000);
-    bandwidth.style.width = "30px";
-    contentbutton.appendChild(bandwidth);
-
     var sync = document.createElement('select');
     sync.setAttribute("id", "compartment_layout");
     var option = document.createElement("option");
@@ -481,6 +458,13 @@ var WindowMaker = new function()
     show.setAttribute("id", "refresh_compartment_layout");
     show.setAttribute("value", "Update layout");
     show.onclick = CompartmentGraphWidget.updateLayout;
+    contentbutton.appendChild(show);
+
+    var show = document.createElement('input');
+    show.setAttribute("type", "button");
+    show.setAttribute("id", "graph_properties");
+    show.setAttribute("value", "Properties");
+    show.onclick = CompartmentGraphWidget.graph_properties;
     contentbutton.appendChild(show);
 
     content.appendChild( contentbutton );

@@ -8,6 +8,100 @@ var CompartmentGraphWidget = new function()
 
   var self = this;
 
+  var confidence_threshold = 0,
+      synaptic_count_edge_filter = 0, // value equal or higher than this number or kept
+      show_node_labels = true,
+      clustering_bandwidth = 0;
+
+  this.toggle_show_node_labels = function() {
+    if( show_node_labels ) {
+      show_node_labels = false;
+      cy.nodes().css('text-opacity', 0);
+    } else {
+      show_node_labels = true;
+      cy.nodes().css('text-opacity', 1);
+    }
+  }
+
+  this.graph_properties = function() {
+
+    var dialog = document.createElement('div');
+    dialog.setAttribute("id", "dialog-graph-confirm");
+    dialog.setAttribute("title", "Graph properties");
+
+    var label = document.createTextNode('Keep edges with confidence');
+    dialog.appendChild(label);
+
+    var sync = document.createElement('select');
+    sync.setAttribute("id", "confidence_threshold");
+    for (var i = 0; i < 6; ++i) {
+      var option = document.createElement("option");
+      option.text = i.toString();
+      option.value = i;
+      sync.appendChild(option);
+    }
+    dialog.appendChild(sync);
+    // TODO: set confidence_threshold
+    dialog.appendChild( document.createElement("br"));
+
+    var label = document.createTextNode('or higher.');
+    dialog.appendChild(label);
+    dialog.appendChild( document.createElement("br"));
+
+    var label = document.createTextNode('Bandwidth:');
+    dialog.appendChild(label);
+    var bandwidth = document.createElement('input');
+    bandwidth.setAttribute('id', 'clustering_bandwidth_input');
+    bandwidth.setAttribute('type', 'text');
+    bandwidth.setAttribute('value', clustering_bandwidth );
+    bandwidth.style.width = "80px";
+    dialog.appendChild(bandwidth);
+    dialog.appendChild( document.createElement("br"));
+
+    var label = document.createTextNode('Keep edges with weight ');
+    dialog.appendChild(label);
+    var syncount = document.createElement('input');
+    syncount.setAttribute('id', 'synaptic_count_edge_filter');
+    syncount.setAttribute('type', 'text');
+    syncount.setAttribute('value', synaptic_count_edge_filter );
+    syncount.style.width = "30px";
+    dialog.appendChild(syncount);
+    label = document.createTextNode(' or higher.');
+    dialog.appendChild(label);
+    dialog.appendChild( document.createElement("br"));
+
+    var label = document.createTextNode('Show node labels:');
+    dialog.appendChild(label);
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "show_node_labels");
+    rand.setAttribute("value", "Show node labels");
+    if( show_node_labels )
+      rand.setAttribute("checked", "true");
+    rand.onclick = self.toggle_show_node_labels;
+    dialog.appendChild(rand);
+    dialog.appendChild( document.createElement("br"));
+
+    $(dialog).dialog({
+      height: 440,
+      modal: true,
+      buttons: {
+        "Cancel": function() {
+          $(this).dialog("close");
+        },
+        "OK": function() {
+          $(this).dialog("close");
+          // TODO: fixme, does not return correct value after update
+          clustering_bandwidth = $('#clustering_bandwidth_input').val();
+          confidence_threshold = $('#confidence_threshold').val();
+          synaptic_count_edge_filter = parseInt($('#synaptic_count_edge_filter').val() );
+          
+        }
+      }
+    });
+
+  }
+
   this.init = function()
   {
 
@@ -159,6 +253,7 @@ var CompartmentGraphWidget = new function()
     
   }
 
+
   this.updateGraph = function( data ) {
 
     for(var i = 0; i < data.nodes.length; i++) {
@@ -226,11 +321,16 @@ var CompartmentGraphWidget = new function()
   }
 
   this.updateConfidenceGraphFrom3DViewer = function() {
+    var skellist = NeuronStagingArea.get_selected_skeletons();
+    if( skellist.length == 0) {
+      alert('Please add skeletons to the selection table before updating the graph.')
+      return;
+    }
     requestQueue.replace(django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
         "POST",
         { skeleton_list: NeuronStagingArea.get_selected_skeletons(),
-          confidence_threshold: $('#confidence_threshold').val(),
-          bandwidth: $('#clustering_bandwidth').val() },
+          confidence_threshold: confidence_threshold,
+          bandwidth: clustering_bandwidth },
         function (status, text) {
             if (200 !== status) return;
             var json = $.parseJSON(text);

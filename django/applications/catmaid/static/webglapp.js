@@ -1409,7 +1409,6 @@ var WebGLApp = new function () {
         },
         "OK": function() {
           $(this).dialog("close");
-          // console.log($('#missing-section-height').val())
           missing_section_height = $('#missing-section-height').val();
           soma_scale = $('#soma-scale').val();
           if( show_missing_sections ) {

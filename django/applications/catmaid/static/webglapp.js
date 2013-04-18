@@ -1191,7 +1191,7 @@ var WebGLApp = new function () {
                 vert2.push( fv[2] );
               }
               models[obj].vertices = vert2;
-              loader.create( models[obj], callback );              
+              loader.load( models[obj], callback );              
             }
           }
         }

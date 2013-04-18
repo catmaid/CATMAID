@@ -588,16 +588,15 @@ function CroppingTool() {
 		var project = self.stack.getProject();
 		var stacks = projects_available[project.id];
 		self.stacks_to_crop = new Array();
-		for ( var s in stacks )
-		{
+		$.each(stacks, function(index, value) {
 			// By default, mark only the current stack to be cropped
 			self.stacks_to_crop.push(
 				{
-					data : stacks[ s ],
-					marked : ( s == self.stack.getId() )
+					data : value,
+					marked : ( value.id == self.stack.getId() )
 				}
 			);
-		}
+		});
 
 		document.getElementById( "edit_button_crop" ).className = "button_active";
 		document.getElementById( "toolbar_crop" ).style.display = "block";

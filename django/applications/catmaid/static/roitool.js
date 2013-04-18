@@ -53,10 +53,10 @@ RoiTool.prototype.updateControls = function()
     if ( this.getCropBox() )
     {
         var roiBoxBB = this.getCropBoxBoundingBox();
-        this.box_roi_x.value = roiBoxBB.left_px;
-        this.box_roi_y.value = roiBoxBB.top_px;
-        this.box_roi_w.value = roiBoxBB.width_px;
-        this.box_roi_h.value = roiBoxBB.height_px;
+        this.box_roi_x.value = isNaN(roiBoxBB.left_px) ? "-" : roiBoxBB.left_px;
+        this.box_roi_y.value = isNaN(roiBoxBB.top_px) ? "-" : roiBoxBB.top_px;
+        this.box_roi_w.value = isNaN(roiBoxBB.width_px) ? "-" : roiBoxBB.width_px;
+        this.box_roi_h.value = isNaN(roiBoxBB.height_px) ? "-" : roiBoxBB.height_px;
     }
 
     return;

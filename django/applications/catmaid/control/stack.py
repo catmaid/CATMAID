@@ -5,6 +5,8 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 
 import os
+from contextlib import closing
+import h5py
 
 def get_stack_info(project_id=None, stack_id=None, user=None):
     """ Returns a dictionary with relevant information for stacks.

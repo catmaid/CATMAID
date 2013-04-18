@@ -1191,7 +1191,9 @@ var WebGLApp = new function () {
                 vert2.push( fv[2] );
               }
               models[obj].vertices = vert2;
-              loader.load( models[obj], callback );              
+              var parsed = loader.parse( models[obj] );
+              createScene( parsed['geometry'] )
+
             }
           }
         }

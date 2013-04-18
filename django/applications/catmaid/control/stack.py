@@ -4,7 +4,7 @@ from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 
-import os
+import os, os.path
 from contextlib import closing
 import h5py
 

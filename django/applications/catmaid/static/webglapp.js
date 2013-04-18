@@ -1167,7 +1167,7 @@ var WebGLApp = new function () {
 
   function createScene( geometry, start ) {
     //addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshPhongMaterial( { ambient: 0x030303, color: 0x030303, specular: 0x990000, shininess: 30 } ) );
-    addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.2, side: THREE.DoubleSide } ) ); // , transparent:true
+    addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.2, wireframe:true } ) ); // , transparent:true
   }
 
   function drawmesh() {

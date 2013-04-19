@@ -130,6 +130,8 @@ var WindowMaker = new function()
             '<th>pre</th>' +
             '<th>post</th>' +
             '<th>text</th>' +
+            '<th>user color</th>' +
+            '<th>review user color</th>' +
             '<th>property</th>' +
           '</tr>' +
         '</thead>' +

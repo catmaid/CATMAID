@@ -22,6 +22,9 @@ var NeuronStagingArea = new function()
 		self.post_visible = true;
 		self.text_visible = false;
 
+		self.usercolor_visible = false;
+		self.userreviewcolor_visible = false;
+
 		// properties for up/downstream
 		self.synaptic_count_high_pass = 0; // this number or higher
 		self.node_count_high_pass = 400; // this number or higher
@@ -345,6 +348,8 @@ var NeuronStagingArea = new function()
 		      {
 		      	var vis = $('#skeletonshow-' + skeleton.id).is(':checked')
 		      	skeletonmodels[ skeleton.id ].selected = vis;
+		      	// TODO: do not refresh all the skeletons,but just remove,add
+		      	// the relevant skeleton here
 		      	if( $('#view_in_3d_webgl_widget').length )
 		      		WebGLApp.refresh_skeletons();
 
@@ -412,6 +417,36 @@ var NeuronStagingArea = new function()
 		      	skeletonmodels[ skeleton.id ].text_visible = $('#skeletontext-' + skeleton.id).is(':checked');
 		        // skeletons[skeleton.id].setTextVisibility( $('#skeletontext-' + skeleton.id).is(':checked') );
 		        // self.render();
+		      } )
+		));
+
+		rowElement.append(
+		  $(document.createElement("td")).append(
+		    $(document.createElement("input")).attr({
+		              id:    'skeletonusercolor-' + skeleton.id,
+		              name:  skeleton.baseName,
+		              value: skeleton.id,
+		              type:  'checkbox',
+		              checked:false
+		      })
+		      .click( function( event )
+		      {
+		      	skeletonmodels[ skeleton.id ].usercolor_visible = $('#skeletonusercolor-' + skeleton.id).is(':checked');
+		      } )
+		));
+
+		rowElement.append(
+		  $(document.createElement("td")).append(
+		    $(document.createElement("input")).attr({
+		              id:    'skeletonuserreviewcolor-' + skeleton.id,
+		              name:  skeleton.baseName,
+		              value: skeleton.id,
+		              type:  'checkbox',
+		              checked:false
+		      })
+		      .click( function( event )
+		      {
+		      	skeletonmodels[ skeleton.id ].userreviewcolor_visible = $('#skeletonuserreviewcolor-' + skeleton.id).is(':checked');
 		      } )
 		));
 

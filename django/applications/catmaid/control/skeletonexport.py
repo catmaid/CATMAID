@@ -1,4 +1,5 @@
 import json
+import md5
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -95,6 +96,27 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
                 lab = ['uncertain']
             else:
                 lab = []
+
+        user_color = md5.new()
+        user_color.update(str(tn.user_id))
+        user_color = user_color.hexdigest()
+        user_color = [
+                int(user_color[:1],16)/255.,
+                int(user_color[2:4],16)/255.,
+                int(user_color[4:6],16)/255.,
+            ]
+        reviewuser_id_color = md5.new()
+        reviewuser_id_color.update(str(tn.reviewer_id))
+        reviewuser_id_color = reviewuser_id_color.hexdigest()
+        if tn.reviewer_id == -1:
+            reviewuser_id_color = [1.0, 0.0, 0.0]
+        else:
+            reviewuser_id_color = [
+                    int(reviewuser_id_color[:1],16)/255.,
+                    int(reviewuser_id_color[2:4],16)/255.,
+                    int(reviewuser_id_color[4:6],16)/255.,
+                ]
+
         vertices[tn.id] = {
             'x': tn.location.x,
             'y': tn.location.y,
@@ -102,11 +124,18 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
             'radius': max(tn.radius, 0),
             'type': 'skeleton',
             'labels': lab,
+            'user_id_color': user_color,
+            'reviewuser_id_color': reviewuser_id_color
+            
+            # TODO: can use sophisticated colormaps
+            # http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
+
             # 'reviewer_id': tn.reviewer_id,
             # 'review_time': tn.review_time
             # To submit the review time, we would need to encode the datetime as string
             # http://stackoverflow.com/questions/455580/json-datetime-between-python-and-javascript
         }
+
         if not tn.parent_id is None:
             if connectivity.has_key(tn.id):
                 connectivity[tn.id][tn.parent_id] = {

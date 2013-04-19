@@ -518,11 +518,14 @@ var WebGLApp = new function () {
 
     this.initialize_objects = function()
     {
-
+      this.skeletonmodel = NeuronStagingArea.get_skeletonmodel( self.id );
       this.line_material = new Object();
       this.actorColor = [255, 255, 0]; // color from staging area?
       this.visible = true;
-      this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
+      if( this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible )
+        this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3, vertexColors: THREE.VertexColors } );
+      else
+        this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
       this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } );
       this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } );
 
@@ -533,6 +536,8 @@ var WebGLApp = new function () {
       this.geometry[connectivity_types[0]] = new THREE.Geometry();
       this.geometry[connectivity_types[1]] = new THREE.Geometry();
       this.geometry[connectivity_types[2]] = new THREE.Geometry();
+      this.vertexcolors = [];
+
       for ( var i=0; i<connectivity_types.length; ++i ) {
         this.actor[connectivity_types[i]] = new THREE.Line( this.geometry[connectivity_types[i]],
           this.line_material[connectivity_types[i]], THREE.LinePieces );
@@ -618,6 +623,12 @@ var WebGLApp = new function () {
     }
 
     this.changeColor = function( value ) {
+      // changing color if one of the options is activated should have no effect
+      // this prevents the bug (?) which changes the transparency of the lines
+      // when changing the skeleton colors
+      if(this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible )
+        return;
+
       self.actorColor = value;
       self.updateSkeletonColor();
     }
@@ -719,7 +730,7 @@ var WebGLApp = new function () {
       this.original_vertices = skeleton_data.vertices;
       this.original_connectivity = skeleton_data.connectivity;
       var textlabel_visibility = $('#skeletontext-' + self.id).is(':checked');
-      var radiusCustomSphere;
+      var radiusCustomSphere, colorkey;
 
       for (var fromkey in this.original_connectivity) {
         var to = this.original_connectivity[fromkey];
@@ -766,6 +777,27 @@ var WebGLApp = new function () {
             this.otherSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
             this.otherSpheres[fromkey].skeleton_id = self.id;
             scene.add( this.otherSpheres[fromkey] );
+          }
+
+          if( (this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible ) && type ==='neurite' ) {
+
+            if( this.skeletonmodel.usercolor_visible )
+              colorkey = 'user_id_color';
+            else
+              colorkey = 'reviewuser_id_color';
+
+            var newcolor = new THREE.Color( 0x00ffff );
+            // newcolor.setHSL( 0.6, 1.0, Math.max( 0, ( 200 - from_vector.x ) / 400 ) * 0.5 + 0.5 );
+            newcolor.setRGB( this.original_vertices[fromkey][colorkey][0],
+              this.original_vertices[fromkey][colorkey][1],
+              this.original_vertices[fromkey][colorkey][2] );
+            this.vertexcolors.push( newcolor );
+            var newcolor = new THREE.Color( 0x00ffff );
+            newcolor.setRGB( this.original_vertices[tokey][colorkey][0],
+              this.original_vertices[tokey][colorkey][1],
+              this.original_vertices[tokey][colorkey][2] );
+            this.vertexcolors.push( newcolor );
+
           }
 
           // check if either from or to key vertex has a sphere associated with it
@@ -876,13 +908,15 @@ var WebGLApp = new function () {
 
       this.addCompositeActorToScene();
 
-      var skeletonmodel = NeuronStagingArea.get_skeletonmodel( self.id );
-      self.setActorVisibility( skeletonmodel.selected );
-      self.setPreVisibility( skeletonmodel.pre_visible );
-      self.setPostVisibility( skeletonmodel.post_visible );
-      self.setTextVisibility( skeletonmodel.text_visible );
+      self.setActorVisibility( this.skeletonmodel.selected );
+      self.setPreVisibility( this.skeletonmodel.pre_visible );
+      self.setPostVisibility( this.skeletonmodel.post_visible );
+      self.setTextVisibility( this.skeletonmodel.text_visible );
 
-      self.actorColor = skeletonmodel.colorrgb;
+      if( this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible )
+        this.geometry['neurite'].colors = this.vertexcolors;
+
+      self.actorColor = this.skeletonmodel.colorrgb;
       this.updateSkeletonColor();
 
     }
@@ -1053,7 +1087,7 @@ var WebGLApp = new function () {
   this.changeSkeletonColor = function( skeleton_id, value )
   {
     if( !skeletons.hasOwnProperty(skeleton_id) ){
-        console.log("Skeleton "+skeleton_id+" does not exist. Cannot change color in 3d!");
+        console.log("Skeleton "+skeleton_id+" does not exist.");
         return;
     } else {
         skeletons[skeleton_id].changeColor( value );

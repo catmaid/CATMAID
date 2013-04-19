@@ -131,6 +131,7 @@
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/skeleton_analytics.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}ontologytool.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/ontology_editor.js"></script>
+		<script type="text/javascript" src="{{ STATIC_URL }}widgets/classification_editor.js"></script>
 	</head>
 	<body onload="realInit();"><a></a>
 		<div id="growl-alert" class="growl-message" style="display: none"></div>
@@ -281,6 +282,23 @@
 				<div class="box"><p>w&nbsp;</p><p><input type="text" id="box_roi_w" name="box_roi_w" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_wmap" /></p></div>
 				<div class="box"><p>h&nbsp;</p><p><input type="text" id="box_roi_h" name="box_roi_h" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_hmap" /></p></div>
 				<div class="box_right"><a href="#" class="button" id="button_roi_apply" onclick="return false;"><img src="{{ STATIC_URL }}widgets/themes/kde/apply.gif" alt="apply" title="apply" /></a></div>
+				<div class="toolbar_fill"></div>
+			</div>
+			<!--
+			*******************************************************************
+			-->
+
+			<!-- Ontology
+			*******************************************************************
+			-->
+			<div id="toolbar_ontology" class="toolbar" style="display:none">
+				<div id="ontology_workspace" class="box">
+					<p>Work space:&nbsp;</p>
+					<p><input type="radio" name="ontology_space" value="project" checked /></p>
+					<p>&nbsp;project specific</p>
+					<p><input type="radio" name="ontology_space" value="classification" />
+					<p>&nbsp;project independent</p>
+				</div>
 				<div class="toolbar_fill"></div>
 			</div>
 			<!--

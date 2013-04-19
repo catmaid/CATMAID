@@ -1144,15 +1144,11 @@ var WindowMaker = new function()
       var container = createContainer( "project_export_widget" );
       content.appendChild( container );
 
-      container.innerHTML =
-        '<h2>Download complete microcircuit reconstruction as <a target="_new" href="'+ django_url + project.id + '/microcircuit/neurohdf' + '">NeuroHDF</a>. ' +
-        'You can use the Python <a target="_new" href="https://github.com/unidesigner/microcircuit/">microcircuit package</a> to load the file and do analysis of the neural circuit.</h2>' +
-        '<br />' +
-        '<h2>Download annotation graph as <a target="_new" href="'+ django_url + project.id + '/annotationdiagram/nx_json ' + '">NetworkX JSON graph</a></h2>';
-
       addListener(win, container);
 
       addLogic(win);
+
+      $('#project_export_widget').load( django_url + project.id + '/exportwidget' )
 
       return win;
   };

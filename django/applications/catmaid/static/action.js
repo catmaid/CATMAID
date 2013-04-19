@@ -427,6 +427,17 @@ var tracingWindowActions = [
         }
     }),
 
+
+  new Action({
+      helpText: "Export widget",
+      buttonID: "data_button_export_widget",
+      buttonName: 'export_widget',
+      run: function (e) {
+          WindowMaker.show('export-widget');
+          return true;
+      }
+  }),
+
 /*    new Action({
         helpText: "Adjacency Matrix widget",
         buttonID: "data_button_connectivity",

@@ -67,7 +67,7 @@ class ClassInstanceClassInstanceProxy(ClassInstanceClassInstance):
         return result
 
 def get_root_classes_count(workspace_pid):
-    """ Return the number of availazle root classes for the given workspace
+    """ Return the number of available root classes for the given workspace
     project.
     """
     return get_class_links_qs(workspace_pid, 'is_a', 'classification_root').count()

@@ -66,7 +66,11 @@ class ClassInstanceClassInstanceProxy(ClassInstanceClassInstance):
 
         return result
 
-
+def get_root_classes_count(workspace_pid):
+    """ Return the number of availazle root classes for the given workspace
+    project.
+    """
+    return get_class_links_qs(workspace_pid, 'is_a', 'classification_root').count()
 
 def get_root_classes_qs(workspace_pid):
     """ Return a queryset that will get all root classes for the
@@ -382,6 +386,8 @@ def show_classification_editor( request, workspace_pid=None, project_id=None, li
                 context['new_graph_form'] = new_graph_form_class()
                 link_form = create_linked_graphs_form(workspace_pid, project_id)
                 context['link_graph_form'] = link_form()
+                num_root_classes = get_root_classes_count(workspace_pid)
+                context['num_root_classes'] = num_root_classes
                 template_name = "catmaid/classification/new_graph.html"
                 page_type = 'new_graph'
                 link_id = -1
@@ -429,12 +435,14 @@ def add_classification_graph(request, workspace_pid=None, project_id=None):
     workspace = get_object_or_404(Project, pk=workspace_pid)
     link_form = create_linked_graphs_form( workspace.id, project.id )
     link_graph_form = link_form()
+    num_root_classes = get_root_classes_count(workspace_pid)
 
     return render_to_response("catmaid/classification/new_graph.html", {
         'project': project,
         'workspace': workspace,
         'new_graph_form': new_graph_form,
         'link_graph_form': link_graph_form,
+        'num_root_classes': num_root_classes,
         'CATMAID_URL': settings.CATMAID_URL
     }, context_instance=RequestContext(request))
 
@@ -460,12 +468,14 @@ def link_classification_graph(request, workspace_pid=None, project_id=None):
 
     new_graph_form_class = create_new_graph_form(workspace_pid)
     new_graph_form = new_graph_form_class()
+    num_root_classes = get_root_classes_count(workspace_pid)
 
     return render_to_response("catmaid/classification/new_graph.html", {
         'project': project,
         'workspace': workspace,
         'new_graph_form': new_graph_form,
         'link_graph_form': link_graph_form,
+        'num_root_classes': num_root_classes,
         'CATMAID_URL': settings.CATMAID_URL
     }, context_instance=RequestContext(request))
 

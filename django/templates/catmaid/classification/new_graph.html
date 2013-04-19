@@ -13,6 +13,12 @@
 {% elif not "can_annotate" in workspace_perms %}
     <p>Unfortunately, you don't have the permissions to create new annotation
     graphs in the current workspace.</p>
+{% elif num_root_classes = 0 %}
+    <p>There are currently no valid classification ontologies available.<p>
+    <p>Please create at least one classification ontology (e.g. with the help
+    of the ontology editor) to start a new classification graph. A class is
+    seen as the root node of a classification ontology if it is linked to the
+    <em>classification_root</em> class with an <em>is_a</em> relation.</p>
 {% else %}
     {% if num_graphs == 0 %}
         <p>There is currently no classification graph associated with this

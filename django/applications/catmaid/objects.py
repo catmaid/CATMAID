@@ -252,6 +252,9 @@ class SkeletonGroup(object):
                     graph.edge[from_skeleton][to_skeleton]['count'] += 1
                     graph.edge[from_skeleton][to_skeleton]['connector_ids'].add( connector_id )
 
+        for u,v,d in graph.edges_iter(data=True):
+            d['connector_ids'] = list(d['connector_ids'])
+
         return graph
 
     def all_shared_connectors(self):

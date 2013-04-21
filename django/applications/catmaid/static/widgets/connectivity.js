@@ -81,7 +81,7 @@ var SkeletonConnectivity = new function()
             var skeleton_id = data['incoming'][e]['skeleton_id'];
             row = $('<tr />');
             row.append( $('<td />').html( '<a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\', ' + skeleton_id + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['incoming'][e]['name'] + '</a>') );
-            row.append( $('<td />').text( data['incoming'][e]['synaptic_count'] ) );
+            row.append( $('<td />').html( '<a href="#" onclick="ConnectorSelection.show_shared_connectors(' + skeletonID + ',' + skeleton_id + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['incoming'][e]['synaptic_count'] + '</a>' ) );
             row.append( $('<td />').text( data['incoming'][e]['percentage_reviewed'] ) );
             row.append( $('<td />').text( data['incoming'][e]['node_count'] ) );
             row.append(
@@ -139,7 +139,8 @@ var SkeletonConnectivity = new function()
             var skeleton_id = data['outgoing'][e]['skeleton_id'];
             row = $('<tr />');
             row.append( $('<td />').html( '<a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\', ' + skeleton_id + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['outgoing'][e]['name'] + '</a>') );
-            row.append( $('<td />').text( data['outgoing'][e]['synaptic_count'] ) );
+            // row.append( $('<td />').text( data['outgoing'][e]['synaptic_count'] ) );
+            row.append( $('<td />').html( '<a href="#" onclick="ConnectorSelection.show_shared_connectors(' + skeleton_id + ',' + skeletonID + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['outgoing'][e]['synaptic_count'] + '</a>' ) );
             row.append( $('<td />').text( data['outgoing'][e]['percentage_reviewed'] ) );
             row.append( $('<td />').text( data['outgoing'][e]['node_count'] ) );
             row.append(

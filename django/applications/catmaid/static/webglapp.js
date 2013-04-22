@@ -586,10 +586,23 @@ var WebGLApp = new function () {
 
     this.setPreVisibility = function( vis ) {
       self.visiblityCompositeActor( 1, vis );
+      for( var idx in self.otherSpheres ) {
+        if( self.otherSpheres.hasOwnProperty( idx )) {
+          if( self.otherSpheres[ idx ].type == 'presynaptic_to')
+            self.otherSpheres[ idx ].visible = vis;
+        }
+      }
     };
 
     this.setPostVisibility = function( vis ) {
       self.visiblityCompositeActor( 2, vis );
+      for( var idx in self.otherSpheres ) {
+        if( self.otherSpheres.hasOwnProperty( idx )) {
+          if( self.otherSpheres[ idx ].type == 'postsynaptic_to')
+            self.otherSpheres[ idx ].visible = vis;
+        }
+      }
+
     };
 
     this.setTextVisibility = function( vis ) {
@@ -768,6 +781,7 @@ var WebGLApp = new function () {
             this.otherSpheres[fromkey].node_id = fromkey;
             this.otherSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
             this.otherSpheres[fromkey].skeleton_id = self.id;
+            this.otherSpheres[fromkey].type = type;
             scene.add( this.otherSpheres[fromkey] );
           }
           if( !(fromkey in this.otherSpheres) && type === 'postsynaptic_to') {
@@ -776,6 +790,7 @@ var WebGLApp = new function () {
             this.otherSpheres[fromkey].node_id = fromkey;
             this.otherSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
             this.otherSpheres[fromkey].skeleton_id = self.id;
+            this.otherSpheres[fromkey].type = type;
             scene.add( this.otherSpheres[fromkey] );
           }
 

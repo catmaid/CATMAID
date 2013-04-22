@@ -10,6 +10,41 @@ from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def graphedge_list(request, project_id=None):
+    """ Assumes that first element of skeletonlist is pre, and second is post """
+    skeletonlist = request.POST.getlist('skeletonlist[]')
+    skeletonlist = map(int, skeletonlist)
+    p = get_object_or_404(Project, pk=project_id)
+    edge = {}
+    connectordata = {}
+
+    qs_tc = TreenodeConnector.objects.filter( 
+        project=p, 
+        skeleton__in=skeletonlist ).select_related('relation__relation_name', 'connector__user', 'connector')
+
+    for q in qs_tc:
+        if q.relation.relation_name == 'presynaptic_to' and q.skeleton_id == skeletonlist[1]:
+            if q.connector_id in edge:
+                edge[ q.connector_id ] += 1
+            else:
+                edge[ q.connector_id ] = 1
+                connectordata[ q.connector_id ] = { 
+                    'connector_id': q.connector_id,
+                    'x': q.connector.location.x,
+                    'y': q.connector.location.y,
+                    'z': q.connector.location.z,
+                    'user': q.connector.user.username }
+
+        if q.relation.relation_name == 'postsynaptic_to' and q.skeleton_id == skeletonlist[0]:
+            if q.connector_id in edge:
+                edge[ q.connector_id ] += 1
+            else:
+                edge[ q.connector_id ] = 1
+
+    # TODO: post-hoc sotring
+    return HttpResponse(json.dumps([connectordata[connector_id] for connector_id, d in edge.items() if d >= 2]), mimetype='text/json')
+    
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_connector(request, project_id=None):

@@ -7,7 +7,7 @@ var ConnectorSelection = new function()
 	self.show_shared_connectors = function( pre, post )
 	{
 	    jQuery.ajax({
-	      url: django_url + project.id + '/skeletongroup/all_shared_connectors',
+	      url: django_url + project.id + '/connector/list/graphedge',
 	      data: { skeletonlist: [pre, post] },
 	      type: "POST",
 	      dataType: "json",
@@ -67,16 +67,20 @@ var ConnectorSelection = new function()
         table.append( thead );
         row = $('<tr />')
         row.append( $('<td />').text("connector id") );
-        row.append( $('<td />').text("creator") );
+        row.append( $('<td />').text("x") );
+        row.append( $('<td />').text("y") );
+        row.append( $('<td />').text("z") );
+        row.append( $('<td />').text("created by") );
         thead.append( row );
 
-		for( var connector_id in connectordata ) {
-			if( connectordata.hasOwnProperty( connector_id )) {
-		        row = $('<tr />')
-		        row.append( $('<td />').html( '<a href="#" onclick="ConnectorSelection.goto_connector(' + connector_id + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + connector_id + '</a>') );
-		        row.append( $('<td />').text("") );            	
-		        thead.append( row );
-			}
+		for( var idx = 0; idx < connectordata.length; idx++ ) {
+	        row = $('<tr />')
+	        row.append( $('<td />').html( '<a href="#" onclick="ConnectorSelection.goto_connector(' + connectordata[idx]['connector_id'] + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + connectordata[idx]['connector_id'] + '</a>') );
+	        row.append( $('<td />').text( connectordata[idx]['x']) );
+	        row.append( $('<td />').text( connectordata[idx]['y']) );
+	        row.append( $('<td />').text( connectordata[idx]['z']) );
+	        row.append( $('<td />').text( connectordata[idx]['user']) );
+	        thead.append( row );
 		}
 
         $('#dialog-connector-selection').append( table );

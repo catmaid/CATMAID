@@ -70,6 +70,11 @@ AUTHENTICATION_BACKENDS = (
 # User-ID of the anonymous (i.e. not-logged-in) user. This is usualld -1.
 ANONYMOUS_USER_ID = -1
 
+# Project ID of a dummy project that will keep all ontologies and
+# classifications that are shared between multiple projcts (and are
+# thereby project independent).
+ONTOLOGY_DUMMY_PROJECT_ID = -1
+
 SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}
 
 # The current site in the django_site database table. This is used so that
@@ -79,6 +84,7 @@ SITE_ID = 1
 
 # Default user profile settings
 PROFILE_DEFAULT_INVERSE_MOUSE_WHEEL = False
+PROFILE_INDEPENDENT_ONTOLOGY_WORKSPACE_IS_DEFAULT = False
 PROFILE_SHOW_TEXT_LABEL_TOOL = False
 PROFILE_SHOW_TAGGING_TOOL = False
 PROFILE_SHOW_CROPPING_TOOL = False

@@ -388,16 +388,6 @@ var tracingWindowActions = [
   }),
 
   new Action({
-      helpText: "Show log",
-      buttonID: "data_button_table_log",
-      buttonName: 'table_log',
-      run: function (e) {
-          WindowMaker.show( 'log-table' );
-          return true;
-      }
-  }),
-
-  new Action({
       helpText: "Review system",
       buttonID: "data_button_review",
       buttonName: 'table_review',
@@ -417,16 +407,6 @@ var tracingWindowActions = [
         }
     }),
 
-
-  new Action({
-      helpText: "Export widget",
-      buttonID: "data_button_export_widget",
-      buttonName: 'export_widget',
-      run: function (e) {
-          WindowMaker.show('export-widget');
-          return true;
-      }
-  }),
 
 /*    new Action({
         helpText: "Adjacency Matrix widget",
@@ -514,6 +494,15 @@ var tracingWindowActions = [
   }),
 
   new Action({
+      helpText: "Show 3D WebGL view",
+      buttonID: "view_3d_webgl_button",
+      buttonName: '3d-view-webgl',
+      run: function (e) {
+        WindowMaker.show('3d-webgl-view');
+      }
+    }),
+
+  new Action({
     helpText: "Show project statistics",
     buttonID: "data_button_stats",
     buttonName: 'stats',
@@ -521,38 +510,47 @@ var tracingWindowActions = [
       WindowMaker.show('statistics');
       return true;
     }
-  })
+  }),
 
-/*
   new Action({
-    helpText: "Show object tree as graph",
-    buttonID: "view_objecttree_graph",
-    buttonName: 'objecttree-graph',
-    run: function (e) {
-      window.open("apps/graph/index.html?project_id="+project.id+"&lower_skeleton_count=10", "Wiring diagram");
-      return true;
-    }
-  })
-  */
+      helpText: "Show log",
+      buttonID: "data_button_table_log",
+      buttonName: 'table_log',
+      run: function (e) {
+          WindowMaker.show( 'log-table' );
+          return true;
+      }
+  }),
+
+  new Action({
+      helpText: "Export widget",
+      buttonID: "data_button_export_widget",
+      buttonName: 'export_widget',
+      run: function (e) {
+          WindowMaker.show('export-widget');
+          return true;
+      }
+  }),
+
    ];
 
-if ( !Detector.webgl ) {
-  tracingWindowActions[tracingWindowActions.length] = new Action({
-    helpText: "Show 3D canvas view",
-    buttonID: "view_3d_button",
-    buttonName: '3d-view',
-    run: function (e) {
-      WindowMaker.show('3d-view');
-      return true;
-    }
-  });
-} else {
-  tracingWindowActions[tracingWindowActions.length] = new Action({
-    helpText: "Show 3D WebGL view",
-    buttonID: "view_3d_webgl_button",
-    buttonName: '3d-view-webgl',
-    run: function (e) {
-      WindowMaker.show('3d-webgl-view');
-    }
-  });
-}
+// if ( !Detector.webgl ) {
+//   tracingWindowActions[tracingWindowActions.length] = new Action({
+//     helpText: "Show 3D canvas view",
+//     buttonID: "view_3d_button",
+//     buttonName: '3d-view',
+//     run: function (e) {
+//       WindowMaker.show('3d-view');
+//       return true;
+//     }
+//   });
+// } else {
+//   tracingWindowActions[tracingWindowActions.length] = new Action({
+//     helpText: "Show 3D WebGL view",
+//     buttonID: "view_3d_webgl_button",
+//     buttonName: '3d-view-webgl',
+//     run: function (e) {
+//       WindowMaker.show('3d-webgl-view');
+//     }
+//   });
+// }

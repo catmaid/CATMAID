@@ -154,16 +154,7 @@ def stats_user_history(request, project_id=None):
 
     tree_reviewed_nodes = Treenode.objects.filter(
         project = project_id,
-        review_time__range = (start_date, end_date)).exclude(reviewer_id=-1).extra(select={ 'date' : 'to_char("treenode"."review_time", \'YYYYMMDD\')' }).order_by('user', 'date')
-    treenode_reviewed_stats = tree_reviewed_nodes.values('reviewer_id', 'date').annotate(count = Count('id'))
-    treenode_reviewed_stats = [{'userid':stat['reviewer_id'], 'date':stat['date'], 'count':stat['count']} for stat in treenode_reviewed_stats]
-    
-    labeled_nodes = TreenodeClassInstance.objects.filter(
-        project = project_id,
-        relation = relation_map['labeled_as'],
-        creation_time__range = (start_date, end_date)).extra(select={ 'date' : 'to_char("treenode_class_instance"."creation_time", \'YYYYMMDD\')' }).order_by('user', 'date')
-    labeled_nodes_stats = labeled_nodes.values('user__username', 'user__id', 'date').annotate(count = Count('id'))
-    labeled_nodes_stats = [{'username':stat['user__username'], 'userid':stat['user__id'], 'date':stat['date'], 'count':stat['count']} for stat in labeled_nodes_stats]
+        review_time__range = (start_date, end_date)).select_related('user').exclude(reviewer_id=-1).extra(select={ 'date' : 'to_char("treenode"."review_time", \'YYYYMMDD\')' }).order_by('date').values('reviewer_id', 'date').annotate(count = Count('id'))
 
     for di in treenode_stats:
         stats_table[ di['username'] ][ di['date'] ]['new_treenodes'] = di['count']
@@ -171,11 +162,8 @@ def stats_user_history(request, project_id=None):
     for di in connector_stats:
         stats_table[ di['username'] ][ di['date'] ]['new_connectors'] = di['count']
 
-    for di in treenode_reviewed_stats:
-        stats_table[ map_userid_to_name[di['userid']] ][ di['date'] ]['new_reviewed_nodes'] = di['count']
-
-    for di in labeled_nodes_stats:
-        stats_table[ di['username'] ][ di['date'] ]['new_tags'] = di['count']
+    for di in tree_reviewed_nodes:
+        stats_table[ map_userid_to_name[di['reviewer_id']] ][ di['date'] ]['new_reviewed_nodes'] = di['count']
 
     return HttpResponse(json.dumps({ 'stats_table': stats_table, 'days': days, 'daysformatted': daysformatted}), mimetype='text/json')
     

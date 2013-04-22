@@ -197,6 +197,8 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/connector/delete$', 'catmaid.control.delete_connector'),
     (r'^(?P<project_id>\d+)/connector/table/list$', 'catmaid.control.list_connector'),
 
+    (r'^(?P<project_id>\d+)/connector/list/graphedge$', 'catmaid.control.graphedge_list'),
+
     )
 
 # Cropping

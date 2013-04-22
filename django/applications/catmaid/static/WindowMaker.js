@@ -314,8 +314,8 @@ var WindowMaker = new function()
     addLogic(win);
 
     var stagewin = null;
-    if( $( "#neuron_staging_table").length == 0 ) {
-        createStagingListWindow( win);
+    if( !NeuronStagingArea.is_widget_open() ) {
+        createStagingListWindow( win );
     }
 
     // Fill in with a Raphael canvas, now that the window exists in the DOM:
@@ -1450,7 +1450,6 @@ var WindowMaker = new function()
   {
     if (creators.hasOwnProperty( name )) {
       if (windows[name]) {
-        console.log('only focus')
         windows[name].focus();
       } else {
         windows[name] = creators[name]();

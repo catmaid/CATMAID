@@ -483,7 +483,9 @@ var tracingWindowActions = [
       buttonID: "data_button_neuron_staging_area_widget",
       buttonName: 'neuron_staging',
       run: function (e) {
-          WindowMaker.show('neuron-staging-area');
+          if( !NeuronStagingArea.is_widget_open() ) {
+            WindowMaker.show('neuron-staging-area');
+          }
           return true;
       }
   }),

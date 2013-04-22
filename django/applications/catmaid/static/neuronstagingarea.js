@@ -111,8 +111,17 @@ var NeuronStagingArea = new function()
 		                }
 		            }
 		    });
-}
+		}
 
+	}
+
+	self.is_widget_open = function()
+	{
+		if( $( "#neuron_staging_table").length == 0 ) {
+			return false;
+		} else {
+			return true;
+		}			
 	}
 
 	self.reinit_list_with_existing_skeleton = function()

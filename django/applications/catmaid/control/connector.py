@@ -24,25 +24,31 @@ def graphedge_list(request, project_id=None):
         skeleton__in=skeletonlist ).select_related('relation__relation_name', 'connector__user', 'connector')
 
     for q in qs_tc:
-        if q.relation.relation_name == 'presynaptic_to' and q.skeleton_id == skeletonlist[1]:
+        adddata = False
+        if q.relation.relation_name == 'presynaptic_to' and q.skeleton_id == skeletonlist[0]:
             if q.connector_id in edge:
                 edge[ q.connector_id ] += 1
             else:
                 edge[ q.connector_id ] = 1
-                connectordata[ q.connector_id ] = { 
-                    'connector_id': q.connector_id,
-                    'x': q.connector.location.x,
-                    'y': q.connector.location.y,
-                    'z': q.connector.location.z,
-                    'user': q.connector.user.username }
+                adddata = True
 
-        if q.relation.relation_name == 'postsynaptic_to' and q.skeleton_id == skeletonlist[0]:
+
+        if q.relation.relation_name == 'postsynaptic_to' and q.skeleton_id == skeletonlist[1]:
             if q.connector_id in edge:
                 edge[ q.connector_id ] += 1
             else:
                 edge[ q.connector_id ] = 1
+                adddata = True
+        if adddata:
+            connectordata[ q.connector_id ] = { 
+                'connector_id': q.connector_id,
+                'x': q.connector.location.x,
+                'y': q.connector.location.y,
+                'z': q.connector.location.z,
+                'user': q.connector.user.username }
 
-    # TODO: post-hoc sotring
+    # TODO: post-hoc sorting
+    
     return HttpResponse(json.dumps([connectordata[connector_id] for connector_id, d in edge.items() if d >= 2]), mimetype='text/json')
     
 

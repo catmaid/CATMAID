@@ -5,6 +5,7 @@ var ClassificationEditor = new function()
     var display_superclass_names = false;
     var display_edit_tools = true;
     var workspace_pid;
+    var bboxtool = new BoxSelectionTool();
 
     /**
      * Initialization of the window.
@@ -203,10 +204,10 @@ var ClassificationEditor = new function()
                                 menu['link_roi'] = {
                                     "separator_before": true,
                                     "separator_after": false,
-                                    "label": "Link region of interest",
+                                    "label": "Link new region of interest",
                                     "action": function (obj) {
                                         var node_id = obj.attr("id").replace("node_", "");
-                                        self.link_roi(node_id);
+                                        self.link_roi(tree_id, node_id);
                                     }
                                 };
                                 // Add removing entry
@@ -266,6 +267,18 @@ var ClassificationEditor = new function()
         //	"args" : /* arguments passed to the function */,
         //	"rslt" : /* any data the function passed to the event */,
         //	"rlbk" : /* an optional rollback object - it is not always present */
+
+        // react to the opening of a node
+        tree.bind("open_node.jstree", function (e, data) {
+            // If there are ROI links, adjust behaviour when clicked. Be
+            // on the save side and make sure this is the only handler.
+            $("img.roiimage", data.rslt.obj).unbind('click').bind('click',
+                function() {
+                    var roi_id = $(this).attr('roi_id');
+                    self.display_roi(roi_id);
+                    return false;
+                });
+        });
 
         // create a node
         tree.bind("create.jstree", function (e, data) {
@@ -330,7 +343,7 @@ var ClassificationEditor = new function()
     /**
      * Links the current view to the currently selected class instance.
      */
-    this.link_roi = function(node_id) {
+    this.link_roi = function(tree_id, node_id) {
         // 1. Open Roi tool and register it with current stack. Bind own method
         // to apply button. Add a cancel button.
         var tool = new RoiTool();
@@ -343,7 +356,7 @@ var ClassificationEditor = new function()
                 x_max: cb.right,
                 y_min: cb.top,
                 y_max: cb.bottom,
-                z: tool.stack.z,
+                z: tool.stack.z * tool.stack.resolution.z + tool.stack.translation.z,
                 zoom_level: tool.stack.s
             }
             // The actual creation and linking of the ROI happens in
@@ -352,15 +365,80 @@ var ClassificationEditor = new function()
                 "/stack/" + tool.stack.getId() + "/linkroi/" + node_id + "/");
             // Make Ajax call and handle response in callback
             requestQueue.register(roi_url, 'POST', data,
-                function(status, text, xml) {
-                    console.log("LinkROI returned.");
-                });
+                self.create_error_aware_callback(
+                    function(status, text, xml) {
+                        var result = $.parseJSON(text);
+                        if (result.status) {
+                            self.show_status("Success", result.status);
+                        } else {
+                            alert("The server returned an unexpected response.");
+                        }
+                        $(tree_id).jstree("refresh", -1);
+                    }));
 
             // 2. Open the navigator tool as replacement
             project.setTool( new Navigator() );
         };
 
         project.setTool( tool );
+    };
+
+    /**
+     * Retrieves the properties of the roi with ID <roi_id> and
+     * displays it in its linked stack.
+     */
+    this.display_roi = function(roi_id) {
+        // Get properties of the requested ROI
+        var roi_info_url = django_url + project.id + "/roi/" + roi_id + "/info";
+        requestQueue.register(roi_info_url, 'GET', null,
+            self.create_error_aware_callback(
+                function(status, text, xml) {
+                    if (!project) {
+                        console.log("There is currently no project definition available.");
+                        return;
+                    }
+                    // Parse JSON data into object
+                    var roi = $.parseJSON(text);
+                    var pid_changes = roi.project_id !== project.id;
+                    // If the project changes, detach the current
+                    // classification editor content and to reinsert it later.
+                    var container;
+                    if (pid_changes) {
+                        container = $('#' + content_div_id).detach();
+                    }
+                    // Close all open stacks and open only the one belonging
+                    // to the ROI. This might also include changing the
+                    // current project. The classification editor would need
+                    // to be reopened with the same view.
+                    var callback = function() {
+                        if (project) {
+                            // Focus the classification editor when there isn't
+                            // a project change, reload it otherwise. Do this
+                            // first to let ROI display work on correct view size.
+                            WindowMaker.show('classification-editor');
+                            // Reinsert the copied content on a project change.
+                            if (pid_changes) {
+                                container.appendTo( $('#' + content_div_id) );
+                            }
+                            // move the project to the ROI location
+                            project.moveTo( roi.location[2], roi.location[1],
+                                roi.location[0], roi.zoom_level );
+                            // draw a ROI rectangle
+                            var stack = project.getStack(roi.stack_id);
+                            var hwidth = roi.width * 0.5;
+                            var hheight = roi.height * 0.5;
+                            bboxtool.destroy();
+                            bboxtool.register(stack);
+                            bboxtool.createCropBoxByWorld(
+                                roi.location[0] - hwidth,
+                                roi.location[1] - hheight,
+                                roi.width, roi.height);
+                            // set tool to navigator
+                            project.setTool( new Navigator() );
+                        }
+                    };
+                    openProjectStack( roi.project_id, roi.stack_id, callback);
+                }));
     };
 
     this.create_new_instance = function(treeid, pid, parentid, classid, relid, name) {
@@ -655,5 +733,21 @@ var ClassificationEditor = new function()
     {
         if (project)
             self.load_classification(project.id, completionCallback);
+    };
+
+    /**
+     * Shows a growl error message in the top right corner.
+     */
+    this.show_status = function( title, message, delaytime ) {
+        if (!delaytime)
+            delaytime = 2500;
+        $('#growl-alert').growlAlert({
+          autoShow: true,
+          content: message,
+          title: title,
+          position: 'top-right',
+          delayTime: delaytime,
+          onComplete: function() { g.remove(); }
+        });
     };
 }

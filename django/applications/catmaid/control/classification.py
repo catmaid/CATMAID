@@ -846,12 +846,31 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
             # Get child types
             child_types = get_child_classes( workspace_pid, parent_ci )
 
+            def make_roi_html(roi):
+                img_data = (roi.id, settings.STATIC_URL)
+                return "<img class='roiimage' roi_id='%s' " \
+                       "src='%s/widgets/themes/kde/camera.png' \>" % img_data
+
             child_data = []
             for child_link in child_links:
                 child = child_link.class_instance_a
+                # Find ROIs for this class instance
+                roi_links = RegionOfInterestClassInstance.objects.filter(
+                    class_instance=child)
+                roi_htmls = []
+                for roi_link in roi_links:
+                    roi_htmls.append( make_roi_html(roi_link.region_of_interest) )
+                roi_html = ''.join(roi_htmls)
+                # Get sub-child information
                 subchild_types = get_child_classes( workspace_pid, child )
                 subchild_types_jstree = child_types_to_jstree_dict( subchild_types )
-                data = {'data': {'title': get_class_name(child.class_column)},
+                # Build title
+                if roi_html:
+                    title = "%s %s" % (get_class_name(child.class_column), roi_html)
+                else:
+                    title = get_class_name(child.class_column)
+                # Build JSTree data structure
+                data = {'data': {'title': title},
                     'attr': {'id': 'node_%s' % child.id,
                              'linkid': child_link.id,
                              'rel': 'element',

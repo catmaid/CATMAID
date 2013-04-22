@@ -1392,43 +1392,6 @@ var WindowMaker = new function()
     var container = createContainer( "project_stats_widget" );
     content.appendChild( container );
 
-    container.innerHTML =
-      '<input type="button" id="refresh_stats" value="Refresh" style="display:block; float:left;" />' +
-      '<br clear="all" />' +
-			'<!-- piechart -->' +
-      '<div class="project-stats">' +
-        '<h3>Contribution Record</h3>' +
-        'columns: new nodes (nn), new connectors (nc), reviewed nodes (nrn), points (pt); points are computed as pt=nn+nc+nrn' +
-        '<table cellpadding="0" cellspacing="0" border="1" class="project-stats" id="project_stats_history_table">' +
-        '</table>' +
-				'<h3>Daily Statistics</h3>' +
-        '<table cellpadding="0" cellspacing="0" border="0" class="project-stats" id="project_stats_table">' +
-          '<tr>' +
-            '<td >#skeletons created</td>' +
-            '<td id="skeletons_created"></td>' +
-            '</td>' +
-          '</tr>' +
-          '<tr>' +
-            '<td >#treenodes_created</td>' +
-            '<td id="treenodes_created"></td>' +
-          '</tr>' +
-          '<tr>' +
-            '<td >#connectors_created</td>' +
-            '<td id="connectors_created"></td>' +
-          '</tr>' +
-        '</table>' +
-      '</div><br clear="all" />' +
-			'<div class="piechart">' + 
-				'<h3>Annotation User Contribution</h3>' +
-				'<table><tr><td><div id="piechart_treenode_holder"></div></td>' +
-        '<td><div id="piechart_editor_holder"></div></td>' +
-        '<td><div id="piechart_reviewer_holder"></div></td></tr></table>' +
-			'</div><br clear="all" />' +
-      '<div class="annotation-history">' + 
-				'<h3 style="text-align: left">Annotation History</h3>' +
-				'<div id="linechart_treenode_holder"></div>' + 
-			'</div><br clear="all" />';
-
     addListener(win, container);
 
     addLogic(win);

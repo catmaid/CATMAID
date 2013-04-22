@@ -25,6 +25,8 @@ var CompartmentGraphWidget = new function()
 
   this.graph_properties = function() {
 
+    console.log('initialize value',synaptic_count_edge_filter, clustering_bandwidth, confidence_threshold)
+
     var dialog = document.createElement('div');
     dialog.setAttribute("id", "dialog-graph-confirm");
     dialog.setAttribute("title", "Graph properties");
@@ -86,19 +88,26 @@ var CompartmentGraphWidget = new function()
       height: 440,
       modal: true,
       buttons: {
-        "Cancel": function() {
-          $(this).dialog("close");
-        },
         "OK": function() {
-          $(this).dialog("close");
+          
+          self.whatvalue();
           // TODO: fixme, does not return correct value after update
           clustering_bandwidth = $('#clustering_bandwidth_input').val();
           confidence_threshold = $('#confidence_threshold').val();
-          synaptic_count_edge_filter = parseInt($('#synaptic_count_edge_filter').val() );
-          
+          synaptic_count_edge_filter = $('#synaptic_count_edge_filter').val();
+
+          $(this).dialog("close");
+
         }
       }
     });
+
+  }
+
+  this.whatvalue = function()
+  {
+    console.log('what value',synaptic_count_edge_filter, clustering_bandwidth, confidence_threshold)
+    console.log('dom', $('#clustering_bandwidth_input').val() )
 
   }
 
@@ -126,8 +135,8 @@ var CompartmentGraphWidget = new function()
                 "border-width": 1,
                 "background-color": "data(color)", //#DDD",
                 "border-color": "#555",
-                "width": "mapData(node_count, 10, 2000, 10, 50)", //"data(node_count)",
-                "height": "mapData(node_count, 10, 2000, 10, 50)"   // "data(node_count)"
+                "width": "mapData(node_count, 10, 2000, 30, 50)", //"data(node_count)",
+                "height": "mapData(node_count, 10, 2000, 30, 50)"   // "data(node_count)"
               })
             .selector("edge")
               .css({
@@ -317,6 +326,12 @@ var CompartmentGraphWidget = new function()
     // cy.nodes().bind("mouseover", function(e) {
     //   // console.log('node mouseover', e);
     // });
+
+    cy.on('click', 'edge', {}, function(evt){
+      var edge = this;
+      var splitedge = edge.id().split('_');
+      ConnectorSelection.show_shared_connectors( splitedge[0], splitedge[2] );
+    });
 
   }
 

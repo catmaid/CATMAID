@@ -1,0 +1,18 @@
+{% block content %}
+
+<div class="project-stats">
+<h3>Contribution Record</h3>
+columns: new nodes (nn), new connectors (nc), reviewed nodes (nrn), points (pt); points are computed as pt=nn+nc+nrn
+<table cellpadding="0" cellspacing="0" border="1" class="project-stats" id="project_stats_history_table"></table>
+<br clear="all" />
+
+<h3>Nodes created by user</h3>
+<div id="piechart_treenode_holder"></div>
+<br clear="all" />
+
+<h3>Nodes reviewed by user</h3>
+<div id="piechart_reviewer_holder"></div>
+<br clear="all" />
+
+{% endblock %}
+

@@ -2,7 +2,7 @@ from django.conf.urls.defaults import patterns, include, url
 from django.conf import settings
 from django.views.generic import TemplateView
 
-from catmaid.views import HomepageView, UseranalyticsView, ExportWidgetView
+from catmaid.views import *
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -58,6 +58,7 @@ urlpatterns += patterns(
     # Views
     (r'^useranalytics$', 'catmaid.control.plot_useranalytics'),
     (r'^(?P<project_id>\d+)/exportwidget$', ExportWidgetView.as_view() ),
+    (r'^(?P<project_id>\d+)/statisticswidget$', ProjectStatisticsWidgetView.as_view() ),
 
     (r'^(?P<project_id>\d+)/graphexport/summary-statistics/csv$', 'catmaid.control.graphexport.summary_statistics' ),
     (r'^(?P<project_id>\d+)/graphexport/nx_json$', 'catmaid.control.graphexport.export_nxjsgraph' ),

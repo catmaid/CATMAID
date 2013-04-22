@@ -190,21 +190,21 @@ var ProjectStatistics = new function()
   }
   
   var refresh_project_statistics = function() {
-    requestQueue.register(django_url + project.id + '/stats-summary', "GET", {
-    }, function (status, text, xml) {
-      if (status == 200) {
-        if (text && text != " ") {
-          var jso = $.parseJSON(text);
-          if (jso.error) {
-            alert(jso.error);
-          }
-          else {
-            update_stats_fields(jso);
-          }
-        }
-      }
-      return true;
-    });
+    // requestQueue.register(django_url + project.id + '/stats-summary', "GET", {
+    // }, function (status, text, xml) {
+    //   if (status == 200) {
+    //     if (text && text != " ") {
+    //       var jso = $.parseJSON(text);
+    //       if (jso.error) {
+    //         alert(jso.error);
+    //       }
+    //       else {
+    //         update_stats_fields(jso);
+    //       }
+    //     }
+    //   }
+    //   return true;
+    // });
 
     requestQueue.register(django_url + project.id + '/stats', "GET", {
     }, function (status, text, xml) {
@@ -221,20 +221,20 @@ var ProjectStatistics = new function()
       return true;
     });
 
-    requestQueue.register(django_url + project.id + '/stats-editor', "GET",{
-    }, function (status, text, xml) {
-      if (status == 200) {
-        if (text && text != " ") {
-          var jso = $.parseJSON(text);
-          if (jso.error) {
-            alert(jso.error);
-          } else {
-            update_piechart(jso, "piechart_editor_holder");
-          }
-        }
-      }
-      return true;
-    });
+    // requestQueue.register(django_url + project.id + '/stats-editor', "GET",{
+    // }, function (status, text, xml) {
+    //   if (status == 200) {
+    //     if (text && text != " ") {
+    //       var jso = $.parseJSON(text);
+    //       if (jso.error) {
+    //         alert(jso.error);
+    //       } else {
+    //         update_piechart(jso, "piechart_editor_holder");
+    //       }
+    //     }
+    //   }
+    //   return true;
+    // });
 
     requestQueue.register(django_url + project.id + '/stats-reviewer', "GET", {
     }, function (status, text, xml) {
@@ -267,14 +267,12 @@ var ProjectStatistics = new function()
       return true;
     });
     
-    d3.json(django_url + project.id + '/stats-history', update_linegraph);
+    // d3.json(django_url + project.id + '/stats-history', update_linegraph);
   }
 
   this.init = function () {
 
-    $("#refresh_stats").click(function () {
-      refresh_project_statistics();
-    });
+    $('#project_stats_widget').load( django_url + project.id + '/statisticswidget' )
 
     refresh_project_statistics();
 

@@ -522,6 +522,10 @@ var WebGLApp = new function () {
       this.line_material = new Object();
       this.actorColor = [255, 255, 0]; // color from staging area?
       this.visible = true;
+      if( this.skeletonmodel === undefined ) {
+        console.log('Can not initialize skeleton object');
+        return;
+      }
       if( this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible )
         this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3, vertexColors: THREE.VertexColors } );
       else

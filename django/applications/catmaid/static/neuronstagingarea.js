@@ -356,23 +356,8 @@ var NeuronStagingArea = new function()
 		      {
 		      	var vis = $('#skeletonshow-' + skeleton.id).is(':checked')
 		      	skeletonmodels[ skeleton.id ].selected = vis;
-		      	// TODO: do not refresh all the skeletons,but just remove,add
-		      	// the relevant skeleton here
-		      	if( $('#view_in_3d_webgl_widget').length )
-		      		WebGLApp.refresh_skeletons();
-
-		        // var vis = $('#skeletonshow-' + skeleton.id).is(':checked');
-		        // skeletons[skeleton.id].setActorVisibility( vis );
-		        // skeletons[skeleton.id].setPreVisibility( vis );
-		        // $('#skeletonpre-' + skeleton.id).attr('checked', vis );
-		        // skeletons[skeleton.id].setPostVisibility( vis );
-		        // $('#skeletonpost-' + skeleton.id).attr('checked', vis );
-		        // if( vis === false) {
-		        //   skeletons[skeleton.id].setTextVisibility( vis );
-		        //   $('#skeletontext-' + skeleton.id).attr('checked', vis );
-		        // }
-		          
-		        // self.render();
+		        if( WebGLApp.is_widget_open() )
+		        	WebGLApp.setSkeletonActorVisibility( skeleton.id, skeletonmodels[ skeleton.id ].selected);
 		      } )
 		));
 
@@ -388,8 +373,10 @@ var NeuronStagingArea = new function()
 		      })
 		      .click( function( event )
 		      {
-		        // skeletons[skeleton.id].setPreVisibility( $('#skeletonpre-' + skeleton.id).is(':checked') );
 		        skeletonmodels[ skeleton.id ].pre_visible = $('#skeletonpre-' + skeleton.id).is(':checked');
+		        if( WebGLApp.is_widget_open() )
+		        	WebGLApp.setSkeletonPreVisibility( skeleton.id, skeletonmodels[ skeleton.id ].pre_visible);
+
 		      } )
 		));
 
@@ -406,8 +393,8 @@ var NeuronStagingArea = new function()
 		      .click( function( event )
 		      {
 		      	skeletonmodels[ skeleton.id ].post_visible = $('#skeletonpost-' + skeleton.id).is(':checked');
-		        // skeletons[skeleton.id].setPostVisibility( $('#skeletonpost-' + skeleton.id).is(':checked') );
-		        // self.render();
+		        if( WebGLApp.is_widget_open() )
+		        	WebGLApp.setSkeletonPostVisibility( skeleton.id, skeletonmodels[ skeleton.id ].post_visible);
 		      } )
 		));
 
@@ -423,8 +410,8 @@ var NeuronStagingArea = new function()
 		      .click( function( event )
 		      {
 		      	skeletonmodels[ skeleton.id ].text_visible = $('#skeletontext-' + skeleton.id).is(':checked');
-		        // skeletons[skeleton.id].setTextVisibility( $('#skeletontext-' + skeleton.id).is(':checked') );
-		        // self.render();
+		        if( WebGLApp.is_widget_open() )
+		        	WebGLApp.setSkeletonTextVisibility( skeleton.id, skeletonmodels[ skeleton.id ].text_visible);
 		      } )
 		));
 

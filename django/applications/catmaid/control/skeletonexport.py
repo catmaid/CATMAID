@@ -94,7 +94,7 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
             else:
                 lab = []
 
-        user_color = _compute_rgb( tn.reviewer_id )
+        user_color = _compute_rgb( tn.user_id )
         reviewuser_id_color = _compute_rgb( tn.reviewer_id )
 
         vertices[tn.id] = {

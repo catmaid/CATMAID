@@ -356,8 +356,14 @@ var NeuronStagingArea = new function()
 		      {
 		      	var vis = $('#skeletonshow-' + skeleton.id).is(':checked')
 		      	skeletonmodels[ skeleton.id ].selected = vis;
-		        if( WebGLApp.is_widget_open() )
+		        if( WebGLApp.is_widget_open() ) {
 		        	WebGLApp.setSkeletonAllVisibility( skeleton.id, skeletonmodels[ skeleton.id ].selected);
+		        	// uncomment the following two lines if you like to see synaptic distribution in 3d
+		        	WebGLApp.setSkeletonPreVisibility( skeleton.id, skeletonmodels[ skeleton.id ].pre_visible);
+		        	WebGLApp.setSkeletonPostVisibility( skeleton.id, skeletonmodels[ skeleton.id ].post_visible);
+		        	WebGLApp.setSkeletonTextVisibility( skeleton.id, skeletonmodels[ skeleton.id ].text_visible);
+		        }
+		        	
 		      } )
 		));
 

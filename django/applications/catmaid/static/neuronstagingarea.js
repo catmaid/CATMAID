@@ -532,4 +532,60 @@ var NeuronStagingArea = new function()
 		});
 	}
 
+	self.usercolormap_dialog = function() {
+
+		var dialog = document.createElement('div');
+		dialog.setAttribute("id", "user-colormap-dialog");
+		dialog.setAttribute("title", "User colormap");
+
+	    var tab = document.createElement('table');
+	    tab.setAttribute("id", "usercolormap-table");
+	    tab.innerHTML =
+	        '<thead>' +
+	          '<tr>' +
+	            '<th>username</th>' +
+	            '<th>longname</th>' +
+	            '<th>color</th>' +
+	          '</tr>' +
+	        '</thead>' +
+	        '<tbody></tbody>';
+	    dialog.appendChild(tab);
+
+		$(dialog).dialog({
+		  height: 440,
+		  modal: false,
+		  dialogClass: "no-close",
+		  buttons: {
+		    "OK": function() {
+		      $(this).dialog("close");
+		      
+		    }
+		  },
+		  close: function(event, ui) { 
+		  	$('#user-colormap-dialog').remove();
+		  }
+		});
+
+        requestQueue.register(django_url + 'user-list', 'GET', undefined,
+            function (status, data, text) {
+                var e = $.parseJSON(data);
+                if (status !== 200) {
+                    alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+                } else {
+                	for(var id in e) {
+                		if( e.hasOwnProperty( id )) {
+                			if( id == -1)
+                				continue;
+        					var rowElement = $('<tr/>');
+        					rowElement.append( $('<td/>').text( e[id].name ) );
+    						rowElement.append( $('<td/>').text( e[id].longname ) );
+    						rowElement.append( $('<div/>').css('width', '100px').css('height', '20px').css('background-color', 'rgb(' + e[id]['user_color'][0] + ',' + e[id]['user_color'][1] + ',' + e[id]['user_color'][2] + ')') );
+    						$('#usercolormap-table > tbody:last').append( rowElement );
+                		}
+                	}
+                }
+        });
+
+	}
+
 }

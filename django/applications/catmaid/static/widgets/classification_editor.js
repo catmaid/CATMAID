@@ -91,7 +91,9 @@ var ClassificationEditor = new function()
               "html_titles": true,
               "load_open": true
             },
-            "plugins": ["themes", "json_data", "ui", "crrm", "types", "contextmenu"],
+            // The UI plugin isn't used, because it doesn't let click events go
+            // through to the node. This, however, is needed to support ROI links.
+            "plugins": ["themes", "json_data", "crrm", "types", "contextmenu"],
             "json_data": {
               "ajax": {
                 "url": url,
@@ -121,11 +123,6 @@ var ClassificationEditor = new function()
               },
               "cache": false,
               "progressive_render": true
-            },
-            "ui": {
-              "select_limit": 1,
-              "select_multiple_modifier": "ctrl",
-              "selected_parent_close": "deselect"
             },
             "themes": {
               "theme": "classic",

@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
-def _compute_rgb( user_id, normalize = False ):
+def _compute_rgb( user_id, normalize = True ):
 	if user_id == -1:
 		return [1.0, 0.0, 0.0]
 	user_color = md5.new()
@@ -28,6 +28,6 @@ def user_list(request):
             "id": u.id,
             "name": u.username,
             "longname": u.get_full_name(),
-            "user_color_normalize": _compute_rgb( u.id, True ),
-            "user_color": _compute_rgb( u.id ) }
+            "user_color_normalize": _compute_rgb( u.id ),
+            "user_color": _compute_rgb( u.id, False ) }
     return HttpResponse(json.dumps(result), mimetype='text/json')

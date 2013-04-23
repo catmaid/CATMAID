@@ -273,6 +273,13 @@ urlpatterns += patterns('',
         'catmaid.control.get_restriction_types'),
     )
 
+# Notifications
+urlpatterns += patterns('',
+    (r'^(?P<project_id>\d+)/notifications/list$', 'catmaid.control.list_notifications'),
+    (r'^(?P<project_id>\d+)/changerequest/approve$', 'catmaid.control.approve_change_request'),
+    (r'^(?P<project_id>\d+)/changerequest/reject$', 'catmaid.control.reject_change_request'),
+    )
+
 if settings.DEBUG:
     urlpatterns += patterns('',
         (r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.STATIC_ROOT}),

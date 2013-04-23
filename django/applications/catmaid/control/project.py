@@ -87,7 +87,7 @@ def get_project_qs_for_user(user):
     """ Returns the query set of projects that are adminiserable and
     browsable by the given user.
     """
-    perms=['can_administer', 'can_browse']
+    perms=['can_administer', 'can_annotate', 'can_browse']
     return get_objects_for_user(user, perms, Project, any_perm=True)
 
 def projects(request):

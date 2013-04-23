@@ -99,6 +99,9 @@ var CompartmentGraphWidget = new function()
           $(this).dialog("close");
 
         }
+      },
+      close: function(event, ui) { 
+        $('#dialog-graph-confirm').remove();
       }
     });
 

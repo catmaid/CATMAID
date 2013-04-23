@@ -747,7 +747,7 @@ var WebGLApp = new function () {
       this.original_vertices = skeleton_data.vertices;
       this.original_connectivity = skeleton_data.connectivity;
       var textlabel_visibility = $('#skeletontext-' + self.id).is(':checked');
-      var radiusCustomSphere, colorkey;
+      var colorkey;
 
       for (var fromkey in this.original_connectivity) {
         var to = this.original_connectivity[fromkey];
@@ -822,8 +822,8 @@ var WebGLApp = new function () {
           // check if either from or to key vertex has a sphere associated with it
           var radiusFrom = parseFloat( this.original_vertices[fromkey]['radius'] );
           if( !(fromkey in this.radiusSpheres) && radiusFrom > 0 ) {
-            radiusCustomSphere = new THREE.OctahedronGeometry( radiusFrom * scale, 4); // TODO reuse sphere geometry
-            this.radiusSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+            radiusCustomSphere = new THREE.SphereGeometry( scale * radiusFrom, 32, 32, 1 );
+            this.radiusSpheres[fromkey] = new THREE.Mesh( radiusCustomSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
             this.radiusSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
             this.radiusSpheres[fromkey].node_id = fromkey;
             this.radiusSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
@@ -833,8 +833,8 @@ var WebGLApp = new function () {
 
           var radiusTo = parseFloat( this.original_vertices[tokey]['radius'] );
           if( !(tokey in this.radiusSpheres) && radiusTo > 0 ) {
-            radiusCustomSphere = new THREE.OctahedronGeometry( radiusTo * scale, 4); // TODO reuse sphere geometry
-            this.radiusSpheres[tokey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+            radiusCustomSphere = new THREE.SphereGeometry( scale * radiusTo, 32, 32, 1 );
+            this.radiusSpheres[tokey] = new THREE.Mesh( radiusCustomSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
             this.radiusSpheres[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
             this.radiusSpheres[tokey].orig_coord = this.original_vertices[fromkey];
             this.radiusSpheres[tokey].skeleton_id = self.id;
@@ -1727,6 +1727,41 @@ var WebGLApp = new function () {
     var td = $(document.createElement("td"));
     rowElement.append( td );
 
+  }
+
+  self.is_widget_open = function() {
+    if( $('#view_in_3d_webgl_widget').length ) 
+      return true;
+    else
+      return false;
+  }
+
+  self.setSkeletonPreVisibility = function( skeleton_id, value ) {
+    if( skeletons.hasOwnProperty(skeleton_id) ) {
+      skeletons[skeleton_id].setPreVisibility( value );
+    }
+    self.render();
+  }
+
+  self.setSkeletonPostVisibility = function( skeleton_id, value ) {
+    if( skeletons.hasOwnProperty(skeleton_id) ) {
+      skeletons[skeleton_id].setPostVisibility( value );
+    }
+    self.render();
+  }
+
+  self.setSkeletonTextVisibility = function( skeleton_id, value ) {
+    if( skeletons.hasOwnProperty(skeleton_id) ) {
+      skeletons[skeleton_id].setTextVisibility( value );
+    }
+    self.render();
+  }
+
+  self.setSkeletonAllVisibility = function( skeleton_id, value ) {
+    if( skeletons.hasOwnProperty(skeleton_id) ) {
+      skeletons[skeleton_id].setActorVisibility( value );
+    }
+    self.render();
   }
 
   self.addActiveObjectToStagingArea = function() {

@@ -357,7 +357,7 @@ var NeuronStagingArea = new function()
 		      	var vis = $('#skeletonshow-' + skeleton.id).is(':checked')
 		      	skeletonmodels[ skeleton.id ].selected = vis;
 		        if( WebGLApp.is_widget_open() )
-		        	WebGLApp.setSkeletonActorVisibility( skeleton.id, skeletonmodels[ skeleton.id ].selected);
+		        	WebGLApp.setSkeletonAllVisibility( skeleton.id, skeletonmodels[ skeleton.id ].selected);
 		      } )
 		));
 

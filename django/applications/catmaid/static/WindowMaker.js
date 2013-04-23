@@ -116,6 +116,13 @@ var WindowMaker = new function()
     rand.onclick = NeuronStagingArea.load_skeleton_list;
     buttons.appendChild(rand);
     
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "button");
+    rand.setAttribute("id", "user_colormap_dialog");
+    rand.setAttribute("value", "User colormap");
+    rand.onclick = NeuronStagingArea.usercolormap_dialog;
+    buttons.appendChild(rand);
+
     win.getFrame().appendChild(buttons);
     content.appendChild(container);
     

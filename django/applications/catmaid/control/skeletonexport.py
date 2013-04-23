@@ -1,5 +1,4 @@
 import json
-import md5
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -11,15 +10,13 @@ from catmaid.control.common import *
 
 import networkx as nx
 from tree_util import edge_count_to_root
-
+from user import _compute_rgb
 
 try:
     import neuroml
     import neuroml.writers as writers
 except ImportError:
     pass    
-
-
 
 def get_treenodes_qs(project_id=None, skeleton_id=None, with_labels=True):
     treenode_qs = Treenode.objects.filter(skeleton_id=skeleton_id)
@@ -97,25 +94,8 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
             else:
                 lab = []
 
-        user_color = md5.new()
-        user_color.update(str(tn.user_id))
-        user_color = user_color.hexdigest()
-        user_color = [
-                int(user_color[:1],16)/255.,
-                int(user_color[2:4],16)/255.,
-                int(user_color[4:6],16)/255.,
-            ]
-        reviewuser_id_color = md5.new()
-        reviewuser_id_color.update(str(tn.reviewer_id))
-        reviewuser_id_color = reviewuser_id_color.hexdigest()
-        if tn.reviewer_id == -1:
-            reviewuser_id_color = [1.0, 0.0, 0.0]
-        else:
-            reviewuser_id_color = [
-                    int(reviewuser_id_color[:1],16)/255.,
-                    int(reviewuser_id_color[2:4],16)/255.,
-                    int(reviewuser_id_color[4:6],16)/255.,
-                ]
+        user_color = _compute_rgb( tn.reviewer_id )
+        reviewuser_id_color = _compute_rgb( tn.reviewer_id )
 
         vertices[tn.id] = {
             'x': tn.location.x,

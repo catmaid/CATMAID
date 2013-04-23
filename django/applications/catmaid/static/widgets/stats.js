@@ -27,9 +27,8 @@ var ProjectStatistics = new function()
       entry += ' ' + data['new_reviewed_nodes'] + ' /';
       points += data['new_reviewed_nodes'];
     } else {
-      entry += ' 0 /';
+      entry += ' 0';
     };
-    entry += ' <b>' + points + '</b>';
     return {'entry': entry, 'points': points};
   }
 
@@ -41,7 +40,6 @@ var ProjectStatistics = new function()
     for(var i = 0; i < data['days'].length; i++ ) {
       header += '<td>'+data['daysformatted'][i]+'</td>';
     }
-    header += '<td>summed points</td>';
     header += '</tr>';
     $('#project_stats_history_table').append( header );
     for(var username in data['stats_table']) {
@@ -56,7 +54,6 @@ var ProjectStatistics = new function()
           weekpointcount += formated['points'];
         }
       }
-      row += '<td>' + weekpointcount + '</td>';
       row += '</tr>';
       if( weekpointcount === 0 ) {
         continue;

@@ -496,7 +496,6 @@ function openProjectStack( pid, sid )
  */
 function handle_openProjectStack( status, text, xml )
 {
-
 	if ( status == 200 && text )
 	{
 		var e = eval( "(" + text + ")" );
@@ -514,8 +513,7 @@ function handle_openProjectStack( status, text, xml )
 				project.register();
 			}
 
-            // TODO: need to check permission of the user to decide on what to display
-
+			// TODO: need to check permission of the user to decide on what to display
 			project.setEditable( e.editable );
 
 			var labelupload = '';
@@ -549,7 +547,7 @@ function handle_openProjectStack( status, text, xml )
 					e.tile_width,
 					e.tile_height,
 					tilesource,
-          true);
+					true);
 
 			stack.addLayer( "TileLayer", tilelayer );
 
@@ -561,28 +559,27 @@ function handle_openProjectStack( status, text, xml )
 								value.tile_width,
 								value.tile_height,
 								tilesource2,
-                false);
+				false);
 				// set default opacity internally
 				tilelayer2.setOpacity( value.default_opacity );
 				stack.addLayer( value.title, tilelayer2 );
 				stack.overviewlayer.setOpacity( value.title,  value.default_opacity );
 			});
-      
+
 			project.addStack( stack );
 
-      // refresh the overview handler to also register the mouse events on the buttons
-      stack.overviewlayer.refresh();
+			// refresh the overview handler to also register the mouse events on the buttons
+			stack.overviewlayer.refresh();
 
 			if ( inittool === 'tracingtool' ) {
-			  project.setTool( new TracingTool() );
+				project.setTool( new TracingTool() );
 			} else if ( inittool === 'navigator' ) {
-			  project.setTool( new Navigator() );
+				project.setTool( new Navigator() );
 			} else if ( inittool === 'canvastool' ) {
-        project.setTool( new CanvasTool() );
-      } else if ( inittool === 'segmentationtool' ) {
-        project.setTool( new SegmentationTool() );
-      }
-
+				project.setTool( new CanvasTool() );
+			} else if ( inittool === 'segmentationtool' ) {
+				project.setTool( new SegmentationTool() );
+			}
 
 			//! if the stack was initialized by an URL query, move it to a given position
 			if ( pid == e.pid && sids.length > 0 )
@@ -608,10 +605,9 @@ function handle_openProjectStack( status, text, xml )
 				}
 			}
 
-            if( init_active_skeleton || init_active_skeleton ) {
-                window.setTimeout("SkeletonAnnotations.staticSelectNode(init_active_node_id, init_active_skeleton)", 2000);
-            }
-
+			if( init_active_skeleton || init_active_skeleton ) {
+				window.setTimeout("SkeletonAnnotations.staticSelectNode(init_active_node_id, init_active_skeleton)", 2000);
+			}
 
 			/* Update the projects "current project" menu. If there is more
 			than one stack linked to the current project, a submenu for easy
@@ -639,7 +635,7 @@ function handle_openProjectStack( status, text, xml )
 	}
 	ui.releaseEvents();
 	return;
-}
+};
 
 /**
  * look for user messages

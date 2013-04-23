@@ -35,7 +35,6 @@ var NeuronStagingArea = new function()
 			dialog.setAttribute("id", "dialog-confirm");
 			dialog.setAttribute("title", "Skeleton Properties");
 
-
 			var entry = document.createElement('input');
 			entry.setAttribute("type", "text");
 			entry.setAttribute("id", "skeleton-selected");

@@ -472,7 +472,7 @@ function updateProjectListFromCache() {
  * queue an open-project-stack-request to the request queue
  * freeze the window to wait for an answer
  */
-function openProjectStack( pid, sid )
+function openProjectStack( pid, sid, completionCallback )
 {
 	if ( project && project.id != pid )
 	{
@@ -484,7 +484,14 @@ function openProjectStack( pid, sid )
 		django_url + pid + '/stack/' + sid + '/info',
 		'GET',
 		{ },
-		handle_openProjectStack );
+		function(args)
+		{
+			handle_openProjectStack.apply(this, arguments);
+			if (completionCallback)
+			{
+				completionCallback();
+			}
+		});
 	return;
 }
 

@@ -68,24 +68,6 @@ class DataViewAdmin(GuardedModelAdmin):
     # to explicitely refer to our wanted template.
     change_form_template = 'admin/catmaid/dataview/change_form.html'
 
-    def add_view(self, request, form_url='', extra_context=None):
-        """ The custom view needs the CATMAID URL when adding new
-        data views. So pass it to the view.
-        """
-        extra_context = extra_context or {}
-        extra_context['catmaid_url'] = settings.CATMAID_URL
-        return super(DataViewAdmin, self).add_view(request, form_url,
-            extra_context=extra_context)
-
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        """  The custom view needs the CATMAID URL when editing
-        data views. So pass it to the view.
-        """
-        extra_context = extra_context or {}
-        extra_context['catmaid_url'] = settings.CATMAID_URL
-        return super(DataViewAdmin, self).change_view(request, object_id,
-            form_url, extra_context=extra_context)
-
 class ProfileInline(admin.StackedInline):
     model = UserProfile
     fk_name = 'user'

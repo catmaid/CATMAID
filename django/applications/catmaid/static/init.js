@@ -566,7 +566,9 @@ function handle_openProjectStack( status, text, xml )
 				stack.overviewlayer.setOpacity( value.title,  value.default_opacity );
 			});
 
-			project.addStack( stack );
+			// If the requested stack is already loaded, the existing
+			// stack is returned. Continue work with the existing stack.
+			stack = project.addStack( stack );
 
 			// refresh the overview handler to also register the mouse events on the buttons
 			stack.overviewlayer.refresh();

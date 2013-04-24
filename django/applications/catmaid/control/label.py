@@ -126,7 +126,10 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
             class_instance__class_column__class_name='label').exclude(class_instance__name__in=new_tags)
         other_labels = labels_to_delete.exclude(treenode__user = request.user)
         # Delete labels created by the current user
-        labels_to_delete.filter(treenode__user = request.user).delete()
+        if request.user.is_superuser:
+            labels_to_delete.delete()
+        else:
+            labels_to_delete.filter(treenode__user = request.user).delete()
         # Create change requests for labels created by other users
         for label in other_labels:
             ChangeRequest(type = 'Remove Tag', 
@@ -149,7 +152,10 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
             class_instance__class_column__class_name='label').exclude(class_instance__name__in=new_tags)
         other_labels = labels_to_delete.exclude(connector__user = request.user)
         # Delete labels created by the current user
-        labels_to_delete.filter(connector__user = request.user).delete()
+        if request.user.is_superuser:
+            labels_to_delete.delete()
+        else:
+            labels_to_delete.filter(connector__user = request.user).delete()
         # Create change requests for labels created by other users
         for label in other_labels:
             ChangeRequest(type = 'Remove Tag', 

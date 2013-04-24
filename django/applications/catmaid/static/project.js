@@ -27,7 +27,9 @@ function Project( pid )
 	}
 
 	/**
-	 * add a stack to the project
+	 * Add a stack to the project. The stack reference is returned. In
+	 * case a stack with the same ID is already loaded, a reference to
+	 * this existing stack is returned.
 	 */
 	this.addStack = function( stack )
 	{
@@ -73,8 +75,9 @@ function Project( pid )
 			// self.focusedStack.setTool( tool );
 
 		}
-		
-		return;
+
+		// return the (possibly updated) stack reference
+		return stack;
 	}
 	
 	/**

@@ -51,8 +51,11 @@ var ConnectorSelection = new function()
 		  buttons: {
 		    "OK": function() {
 		      $(this).dialog("close");
-		      $('#dialog-connector-selection').remove();
+		      
 		    }
+		  },
+		  close: function(event, ui) { 
+		  	$('#dialog-connector-selection').remove();
 		  }
 		});
 

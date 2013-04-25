@@ -311,6 +311,14 @@ urlpatterns += patterns('',
     (r'^(?P<project_id>\d+)/changerequest/reject$', 'catmaid.control.reject_change_request'),
     )
 
+# Regions of interest
+urlpatterns += patterns('',
+    url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/info$'.format(integer),
+        'catmaid.control.get_roi_info', name='get_roi_info'),
+    url(r'^(?P<project_id>{0})/roi/link/(?P<relation_id>{0})/stack/(?P<stack_id>{0})/ci/(?P<ci_id>{0})/$'.format(integer),
+        'catmaid.control.link_roi_to_class_instance', name='link_roi_to_class_instance'),
+    )
+
 if settings.DEBUG:
     urlpatterns += patterns('',
         (r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.STATIC_ROOT}),

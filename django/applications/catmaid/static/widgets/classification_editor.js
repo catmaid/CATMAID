@@ -28,7 +28,7 @@ var ClassificationEditor = new function()
     /**
      * Load the classification data.
      */
-    this.load_classification = function(pid) {
+    this.load_classification = function(pid, completionCallback) {
         requestQueue.register(self.get_cls_url(pid, '/show'),
             'GET', undefined, self.create_error_aware_callback(
                 function(status, data, text) {
@@ -39,6 +39,9 @@ var ClassificationEditor = new function()
                         var container = document.getElementById(content_div_id);
                         container.innerHTML = e.content;
                         self.handleContent( e.page, container, pid );
+                        // execute callback if available
+                        if (completionCallback)
+                            completionCallback();
                     }
                 }));
     }
@@ -648,9 +651,9 @@ var ClassificationEditor = new function()
         }
     };
 
-    this.refresh = function()
+    this.refresh = function(completionCallback)
     {
         if (project)
-            self.load_classification(project.id);
+            self.load_classification(project.id, completionCallback);
     };
 }

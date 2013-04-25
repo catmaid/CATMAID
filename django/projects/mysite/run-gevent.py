@@ -13,10 +13,14 @@ import settings
 
 setup_environ(settings)
 
+# Configure host and port for the WSGI server
+host = getattr(settings, 'WSGI_HOST', '127.0.0.1')
+port = getattr(settings, 'WSGI_PORT', 8080)
+
 def runserver():
     # Create the server
     application = DjangoWSGIApp()
-    address = "127.0.0.1", 8080
+    address = host, port
     server = WSGIServer( address, application )
     # Run the server
     try:

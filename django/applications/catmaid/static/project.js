@@ -268,9 +268,9 @@ function Project( pid )
 	{
 		if ( tool ) tool.destroy();
 		
-		//! close all windows
-		//rootWindow.closeAllChildren();
-		rootWindow.close();
+		//! Close all windows. There is no need to explicitely call close()
+		//! on the root window as this done by the last child.
+		rootWindow.closeAllChildren();
 			
 		ui.removeEvent( "onresize", resize );
 		try

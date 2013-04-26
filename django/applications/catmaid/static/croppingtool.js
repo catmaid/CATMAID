@@ -432,8 +432,8 @@ function CroppingTool() {
 	 */
 	this.unregister = function()
 	{
-		if ( self.stack && self.mouseCatcher.parentNode == self.stack.getView() )
-			self.stack.getView().removeChild( self.mouseCatcher );
+		// call register of super class (updates also stack member)
+		CroppingTool.superproto.unregister.call( self );
 
 		return;
 	}

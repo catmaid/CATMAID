@@ -433,6 +433,20 @@ var ClassificationEditor = new function()
                                 roi.location[0] - hwidth,
                                 roi.location[1] - hheight,
                                 roi.width, roi.height);
+                            // Let the box be above the mouse catcher and
+                            // make sure the crop box has no background
+                            var cbview = bboxtool.getCropBox().layer.getView();
+                            cbview.style.zIndex = "10";
+                            cbview.style.background = "none";
+                            // Add a closing button to the box
+                            var closing_button = document.createElement("p");
+                            closing_button.className = "close";
+                            closing_button.appendChild(document.createTextNode("X"));
+                            cbview.insertBefore(closing_button, cbview.firstChild);
+                            // React to a click on that closing button
+                            closing_button.onclick = function() {
+                                bboxtool.destroy();
+                            }
                             // set tool to navigator
                             project.setTool( new Navigator() );
                         }

@@ -159,34 +159,49 @@ BoxSelectionTool.prototype.initCropBox = function( stack )
 };
 
 /**
- * Creates a new crop box and attaches it to the view. Any existing
- * crop box gets removed first.
+ * Creates a new crop box and attaches it to the view. Its position and extent
+ * are expected to be in screen coordinates. Any existing crop box gets removed
+ * first.
  */
 BoxSelectionTool.prototype.createCropBox = function( screenX, screenY, screenWidth, screenHeight )
 {
     if(typeof(screenWidth)==='undefined') screenWidth = 0;
     if(typeof(screenHeight)==='undefined') screenHeight = 0;
+    var s = this.stack;
+    var worldX = (s.x + ( screenX  - s.viewWidth / 2 ) / s.scale ) * s.resolution.x;
+    var worldY = (s.y + ( screenY - s.viewHeight / 2 ) / s.scale ) * s.resolution.y;
+    var worldWidth = this.toWorld( screenWidth, s.resolution.x );
+    var worldHeight = this.toWorld( screenHeight, s.resolution.y );
 
-    stack = this.stack;
-    view = stack.getView();
+    this.createCropBoxByWorld(worldX, worldY, worldWidth, worldHeight);
+};
+
+/**
+ * Creates a new crop box and attaches it to the view. Its position and extent
+ * are expected to be in world coordinates. Any existing crop box gets removed
+ * first.
+ */
+BoxSelectionTool.prototype.createCropBoxByWorld = function( worldX, worldY, worldWidth, worldHeight )
+{
+    var view = this.stack.getView();
     if ( this.cropBox && this.cropBox.view.parentNode == view )
     {
         view.removeChild( this.cropBox.view );
         delete this.cropBox;
         this.cropBox = false;
     }
-    this.cropBox = this.initCropBox( stack );
-    this.cropBox.left = (stack.x + ( screenX  - stack.viewWidth / 2 ) / stack.scale ) * stack.resolution.x + stack.translation.x;
-    this.cropBox.top = (stack.y + ( screenY - stack.viewHeight / 2 ) / stack.scale ) * stack.resolution.y + stack.translation.y;
-    this.cropBox.right = this.cropBox.left + this.toWorld( screenWidth, stack.resolution.x );
-    this.cropBox.bottom = this.cropBox.top + this.toWorld( screenHeight, stack.resolution.y );
+    this.cropBox = this.initCropBox( this.stack );
+    this.cropBox.left = worldX + this.stack.translation.x;
+    this.cropBox.top = worldY + this.stack.translation.y;
+    this.cropBox.right = this.cropBox.left + worldWidth;
+    this.cropBox.bottom = this.cropBox.top + worldHeight;
     this.cropBox.xdist = 0;
     this.cropBox.ydist = 0;
     this.cropBox.xorigin = this.cropBox.left;
     this.cropBox.yorigin = this.cropBox.top;
 
     // update the cache
-    this.cropBoxCache[ stack.getId() ] = this.cropBox;
+    this.cropBoxCache[ this.stack.getId() ] = this.cropBox;
 
     // update other (passive) crop boxes
     this.updateCropBox();

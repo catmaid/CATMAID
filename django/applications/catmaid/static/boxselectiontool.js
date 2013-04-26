@@ -18,24 +18,24 @@ function BoxSelectionTool()
     this.zoomlevel = null;
 
     // Output unit and factor wrt. nm
-    this.output_unit = unescape( "nm" )
+    this.output_unit = unescape( "nm" );
     this.output_unit_factor = 1.0;
 
     this.getCropBox = function()
     {
         return this.cropBox;
-    }
-}
+    };
+};
 
 BoxSelectionTool.prototype.toPx = function( world_coord, resolution )
 {
     return world_coord / resolution * this.stack.scale;
-}
+};
 
 BoxSelectionTool.prototype.toWorld = function( px_coord, resolution )
 {
     return px_coord / this.stack.scale * resolution;
-}
+};
 
 /**
  * A method that expects a value in nano meters to convert
@@ -44,19 +44,19 @@ BoxSelectionTool.prototype.toWorld = function( px_coord, resolution )
 BoxSelectionTool.prototype.convertWorld = function( val )
 {
     return val * this.output_unit_factor;
-}
+};
 
 BoxSelectionTool.prototype.getScreenLeft = function()
 {
     var stack = this.stack;
     return ( ( stack.x - stack.viewWidth / stack.scale / 2 ) + stack.translation.x ) * stack.resolution.x;
-}
+};
 
 BoxSelectionTool.prototype.getScreenTop = function()
 {
     var stack = this.stack;
     return ( ( stack.y - stack.viewHeight / stack.scale / 2 ) + stack.translation.y ) * stack.resolution.y;
-}
+};
 
 /**
  * Gets the bounding box of the current crop box in world
@@ -86,7 +86,7 @@ BoxSelectionTool.prototype.getCropBoxBoundingBox = function()
 
     return { left_world : l, top_world : t, right_world : r, bottom_world : b, width_world : width, height_world : height,
              left_px : left_px, top_px : top_px, right_px : right_px, bottom_px : bottom_px, width_px : width_px, height_px : height_px }
-}
+};
 
 /**
  * Updates the visual representation of the current crop box.
@@ -122,7 +122,7 @@ BoxSelectionTool.prototype.updateCropBox = function()
         " -> " + this.convertWorld( cropBoxBB.right_world ).toFixed( 3 ) + "," + this.convertWorld( cropBoxBB.bottom_world ).toFixed( 3 ) );
 
     return;
-}
+};
 
 /**
  * Redraws the content.
@@ -132,7 +132,7 @@ BoxSelectionTool.prototype.redraw = function()
     // update crop box if available
     if ( this.cropBox )
         this.updateCropBox();
-}
+};
 
 /**
  * Creates a new cropping box and attaches it to the stack.
@@ -140,7 +140,7 @@ BoxSelectionTool.prototype.redraw = function()
 BoxSelectionTool.prototype.initCropBox = function( stack )
 {
     var view = stack.getView();
-    var cb = {}
+    var cb = {};
     cb.view = document.createElement( "div" );
     cb.view.className = "cropBox";
     cb.view.style.visibility = "hidden";
@@ -156,7 +156,7 @@ BoxSelectionTool.prototype.initCropBox = function( stack )
     cb.stack = stack;
 
     return cb;
-}
+};
 
 /**
  * Creates a new crop box and attaches it to the view. Any existing
@@ -190,7 +190,7 @@ BoxSelectionTool.prototype.createCropBox = function( screenX, screenY, screenWid
 
     // update other (passive) crop boxes
     this.updateCropBox();
-}
+};
 
 /**
  * unregister all project related GUI control connections and event
@@ -211,7 +211,7 @@ BoxSelectionTool.prototype.destroy = function()
     this.stack = null;
 
     return;
-}
+};
 
 /**
 * install this tool in a stack.
@@ -260,5 +260,5 @@ BoxSelectionTool.prototype.register = function( parentStack )
     this.zoomlevel = this.stack.s;
 
     return;
-}
+};
 

@@ -486,9 +486,9 @@ function Stack(
 				break;
 			case CMWWindow.BLUR:
 				self.overview.getView().style.zIndex = "5";
-				/*if ( tool )
+				if ( tool )
 					tool.unregister();
-				tool = null;*/
+				tool = null;
 				// window.onresize();
         // stackWindow.redraw();
 				break;

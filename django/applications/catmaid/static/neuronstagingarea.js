@@ -172,6 +172,11 @@ var NeuronStagingArea = new function()
 		if( skeletonmodels.hasOwnProperty( id ) ) {
 			self._remove_skeleton_from_table( id );
 			delete skeletonmodels[ id ];
+			// remove from webgl if open
+			if( WebGLApp.is_widget_open() ) {
+				WebGLApp.removeSkeleton( id );
+			}
+
 		} else {
 			console.log('Cannot remove skeleton', id, ' it is not in the list');
 		}

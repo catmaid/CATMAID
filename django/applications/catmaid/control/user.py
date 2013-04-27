@@ -12,13 +12,13 @@ def _compute_rgb( user_id, normalize = True ):
 	user_color.update(str(user_id))
 	user_color = user_color.hexdigest()
 	if normalize:
-		return [int(user_color[:1],16)/255.,
-				int(user_color[2:4],16)/255.,
-				int(user_color[4:6],16)/255. ]
+		return [int(user_color[-2:],16)/255.,
+				int(user_color[-4:-2],16)/255.,
+				int(user_color[-6:-4],16)/255. ]
 	else:
-		return [int(user_color[:1],16),
-				int(user_color[2:4],16),
-				int(user_color[4:6],16) ]
+		return [int(user_color[-2:],16),
+				int(user_color[-4:-2],16),
+				int(user_color[-6:-4],16) ]
 
 @login_required
 def user_list(request):

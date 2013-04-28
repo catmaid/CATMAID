@@ -65,7 +65,7 @@ var ProjectStatistics = new function()
 
   var update_piechart = function(data, chart_name) {
     $(chart_name).empty();
-    var rpie = Raphael(chart_name, 300, 200);
+    var rpie = Raphael(chart_name, 500, 200);
     var pie = rpie.g.piechart(90, 100, 80, data.values, { legend: data.users, legendpos: "east", colors:['red', 'blue', 'green', 'yellow', 'orange', 'black', 'gray']});
     pie.hover(function () {
       this.sector.stop();

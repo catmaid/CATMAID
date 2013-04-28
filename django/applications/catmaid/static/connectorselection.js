@@ -41,23 +41,10 @@ var ConnectorSelection = new function()
 	self.show_dialog = function( pre, post, connectordata )
 	{
 
-		var dialog = document.createElement('div');
-		dialog.setAttribute("id", "dialog-connector-selection");
-		dialog.setAttribute("title", "Connector Selection Table");
+		WindowMaker.show('create-connector-selection');
 
-		$(dialog).dialog({
-		  // height: 440,
-		  modal: false,
-		  buttons: {
-		    "OK": function() {
-		      $(this).dialog("close");
-		      
-		    }
-		  },
-		  close: function(event, ui) { 
-		  	$('#dialog-connector-selection').remove();
-		  }
-		});
+
+		$('#dialog-connector-selection').empty();
 
 		$('#dialog-connector-selection').append(
 			$(document.createTextNode( 'From skeleton ' + pre + ' to skeleton ' + post ))

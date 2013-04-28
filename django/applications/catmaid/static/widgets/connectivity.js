@@ -81,7 +81,7 @@ var SkeletonConnectivity = new function()
             var skeleton_id = data['incoming'][e]['skeleton_id'];
             row = $('<tr />');
             row.append( $('<td />').html( '<a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\', ' + skeleton_id + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['incoming'][e]['name'] + '</a>') );
-            row.append( $('<td />').html( '<a href="#" onclick="ConnectorSelection.show_shared_connectors(' + skeletonID + ',' + skeleton_id + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['incoming'][e]['synaptic_count'] + '</a>' ) );
+            row.append( $('<td />').html( '<a href="#" onclick="ConnectorSelection.show_shared_connectors(' + skeleton_id + ',' + skeletonID + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['incoming'][e]['synaptic_count'] + '</a>' ) );
 
             var cell = $('<td />');
             if( data['incoming'][e]['percentage_reviewed'] == 100 ) {
@@ -150,7 +150,7 @@ var SkeletonConnectivity = new function()
             row = $('<tr />');
             row.append( $('<td />').html( '<a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\', ' + skeleton_id + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['outgoing'][e]['name'] + '</a>') );
             // row.append( $('<td />').text( data['outgoing'][e]['synaptic_count'] ) );
-            row.append( $('<td />').html( '<a href="#" onclick="ConnectorSelection.show_shared_connectors(' + skeleton_id + ',' + skeletonID + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['outgoing'][e]['synaptic_count'] + '</a>' ) );
+            row.append( $('<td />').html( '<a href="#" onclick="ConnectorSelection.show_shared_connectors(' + skeletonID + ',' + skeleton_id + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['outgoing'][e]['synaptic_count'] + '</a>' ) );
 
             var cell = $('<td />');
             if( data['outgoing'][e]['percentage_reviewed'] == 100 ) {

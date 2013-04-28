@@ -77,6 +77,28 @@ var WindowMaker = new function()
   };
 
 
+  var createConnectorSelectionWindow = function()
+  {
+    var win = new CMWWindow("Connector Selection Table");
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer("connector_selection_widget");
+    content.appendChild(container);
+
+    var dialog = document.createElement('div');
+    dialog.setAttribute("id", "dialog-connector-selection");
+    container.appendChild( dialog );
+
+    addListener(win, container);
+
+    addLogic(win);
+
+    return win;
+  };
+
+
+
   var createStagingListWindow = function( webglwin ) {
 
     var win = new CMWWindow("Selection Table");
@@ -1485,6 +1507,7 @@ var WindowMaker = new function()
     "export-widget": createExportWidget,
     "graph-widget": createGraphWindow,
     "neuron-staging-area": createStagingListWindow,
+    "create-connector-selection": createConnectorSelectionWindow,
     "compartment-graph-widget": createCompartmentGraphWindow,
     "assemblygraph-widget": createAssemblyGraphWindow,
     "sliceinfo-widget": createSliceInfoWindow,

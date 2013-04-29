@@ -375,10 +375,6 @@ var NeuronStagingArea = new function()
 			        	skeletonmodels[ skeleton.id ].post_visible = vis;
 			        	$('#skeletonpost-' + skeleton.id).attr('checked', vis);
 			        	WebGLApp.setSkeletonPostVisibility( skeleton.id, vis );
-			        	
-			        	skeletonmodels[ skeleton.id ].text_visible = vis;
-			        	$('#skeletontext-' + skeleton.id).attr('checked', vis);
-			        	WebGLApp.setSkeletonTextVisibility( skeleton.id, vis );
 
 		        	}
 		        }

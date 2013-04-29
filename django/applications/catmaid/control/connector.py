@@ -25,7 +25,8 @@ def graphedge_list(request, project_id=None):
 
     for q in qs_tc:
         if not q.connector_id in edge:
-            edge[ q.connector_id ] = {'pre': set(), 'post': set()}
+            # has to be a list, not a set, because we need matching treenode id
+            edge[ q.connector_id ] = {'pre': [], 'post': [], 'pretreenode': [], 'posttreenode': []}
             connectordata[ q.connector_id ] = { 
                 'connector_id': q.connector_id,
                 'x': q.connector.location.x,
@@ -34,11 +35,20 @@ def graphedge_list(request, project_id=None):
                 'user': q.connector.user.username }
 
         if q.relation.relation_name == 'presynaptic_to':
-            edge[ q.connector_id ]['pre'].add( q.skeleton_id )
+            edge[ q.connector_id ]['pre'].append( q.skeleton_id )
+            edge[ q.connector_id ]['pretreenode'].append( q.treenode_id )
         elif q.relation.relation_name == 'postsynaptic_to':
-            edge[ q.connector_id ]['post'].add( q.skeleton_id )
+            edge[ q.connector_id ]['post'].append( q.skeleton_id )
+            edge[ q.connector_id ]['posttreenode'].append( q.treenode_id )
     
-    return HttpResponse(json.dumps([connectordata[k] for k,v in edge.items() if skeletonlist[0] in v['pre'] and skeletonlist[1] in v['post']]), mimetype='text/json')
+    result = []
+    for k,v in edge.items():
+     if skeletonlist[0] in v['pre'] and skeletonlist[1] in v['post']:
+        connectordata[k]['pretreenode'] = v['pretreenode'][ v['pre'].index( skeletonlist[0] ) ]
+        connectordata[k]['posttreenode'] = v['posttreenode'][ v['post'].index( skeletonlist[1] ) ]
+        result.append(connectordata[k])
+
+    return HttpResponse(json.dumps( result ), mimetype='text/json')
     
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

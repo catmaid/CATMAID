@@ -21,7 +21,28 @@ var ConnectorSelection = new function()
 	{
 		requestQueue.register(django_url + project.id + '/node/get_location', "POST", {
 	        tnid: connectorid,
-	        type: 'connector'
+	        type: "connector"
+        }, function (status, text, xml) {
+	        if (status === 200) {
+	          if (text && text != " ") {
+	            var jso = $.parseJSON(text);
+	            if (jso.error) {
+	              alert(jso.error);
+	            } else {
+	              project.moveTo(jso[3], jso[2], jso[1], undefined, function() { 
+	              	SkeletonAnnotations.staticSelectNode(jso[0], null);
+	              });
+	            }
+	          }
+	        }
+	      });
+	}
+
+	self.goto_treenode = function( treenodeid )
+	{
+		requestQueue.register(django_url + project.id + '/node/get_location', "POST", {
+	        tnid: treenodeid,
+	        type: "treenode"
         }, function (status, text, xml) {
 	        if (status === 200) {
 	          if (text && text != " ") {
@@ -57,6 +78,8 @@ var ConnectorSelection = new function()
         table.append( thead );
         row = $('<tr />')
         row.append( $('<td />').text("connector id") );
+        row.append( $('<td />').text("pre node id") );
+        row.append( $('<td />').text("post node id") );
         row.append( $('<td />').text("x") );
         row.append( $('<td />').text("y") );
         row.append( $('<td />').text("z") );
@@ -66,6 +89,8 @@ var ConnectorSelection = new function()
 		for( var idx = 0; idx < connectordata.length; idx++ ) {
 	        row = $('<tr />')
 	        row.append( $('<td />').html( '<a href="#" onclick="ConnectorSelection.goto_connector(' + connectordata[idx]['connector_id'] + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + connectordata[idx]['connector_id'] + '</a>') );
+	        row.append( $('<td />').html( '<a href="#" onclick="ConnectorSelection.goto_treenode(' + connectordata[idx]['pretreenode'] + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + connectordata[idx]['pretreenode'] + '</a>') );
+	        row.append( $('<td />').html( '<a href="#" onclick="ConnectorSelection.goto_treenode(' + connectordata[idx]['posttreenode'] + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + connectordata[idx]['posttreenode'] + '</a>') );
 	        row.append( $('<td />').text( connectordata[idx]['x']) );
 	        row.append( $('<td />').text( connectordata[idx]['y']) );
 	        row.append( $('<td />').text( connectordata[idx]['z']) );

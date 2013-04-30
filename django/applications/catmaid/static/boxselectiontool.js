@@ -46,15 +46,13 @@ BoxSelectionTool.prototype.convertWorld = function( val )
     return val * this.output_unit_factor;
 };
 
-BoxSelectionTool.prototype.getScreenLeft = function()
+BoxSelectionTool.prototype.getScreenLeft = function(stack)
 {
-    var stack = this.stack;
     return ( ( stack.x - stack.viewWidth / stack.scale / 2 ) + stack.translation.x ) * stack.resolution.x;
 };
 
-BoxSelectionTool.prototype.getScreenTop = function()
+BoxSelectionTool.prototype.getScreenTop = function(stack)
 {
-    var stack = this.stack;
     return ( ( stack.y - stack.viewHeight / stack.scale / 2 ) + stack.translation.y ) * stack.resolution.y;
 };
 
@@ -62,7 +60,7 @@ BoxSelectionTool.prototype.getScreenTop = function()
  * Gets the bounding box of the current crop box in world
  * and pixel coordinates.
  */
-BoxSelectionTool.prototype.getCropBoxBoundingBox = function()
+BoxSelectionTool.prototype.getCropBoxBoundingBox = function(stack)
 {
     var t = Math.min( this.cropBox.top, this.cropBox.bottom );
     var b = Math.max( this.cropBox.top, this.cropBox.bottom );
@@ -71,11 +69,11 @@ BoxSelectionTool.prototype.getCropBoxBoundingBox = function()
     var width = r - l;
     var height = b - t;
     //! left-most border of the view in physical project coordinates
-    var screen_left = this.getScreenLeft();
-    var screen_top = this.getScreenTop();
+    var screen_left = this.getScreenLeft(stack);
+    var screen_top = this.getScreenTop(stack);
 
-    var rx = this.stack.resolution.x / this.stack.scale;
-    var ry = this.stack.resolution.y / this.stack.scale;
+    var rx = stack.resolution.x / stack.scale;
+    var ry = stack.resolution.y / stack.scale;
 
     var left_px = Math.floor( ( l - screen_left ) / rx );
     var top_px = Math.floor( ( t - screen_top ) / ry );
@@ -93,12 +91,11 @@ BoxSelectionTool.prototype.getCropBoxBoundingBox = function()
  */
 BoxSelectionTool.prototype.updateCropBox = function()
 {
-    var cropBoxBB = this.getCropBoxBoundingBox();
-
     // update all cached cropping boxes
     for ( var s in this.cropBoxCache )
     {
         var cb = this.cropBoxCache[ s ];
+        var cropBoxBB = this.getCropBoxBoundingBox(cb.stack);
 
         cb.view.style.visibility = "visible";
         cb.view.style.left = cropBoxBB.left_px + "px";

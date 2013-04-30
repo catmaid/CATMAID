@@ -50,9 +50,10 @@ extend( RoiTool, BoxSelectionTool );
  */
 RoiTool.prototype.updateControls = function()
 {
-    if ( this.getCropBox() )
+    var cb = this.getCropBox();
+    if ( cb )
     {
-        var roiBoxBB = this.getCropBoxBoundingBox();
+        var roiBoxBB = this.getCropBoxBoundingBox(cb.stack);
         this.box_roi_x.value = isNaN(roiBoxBB.left_px) ? "-" : roiBoxBB.left_px;
         this.box_roi_y.value = isNaN(roiBoxBB.top_px) ? "-" : roiBoxBB.top_px;
         this.box_roi_w.value = isNaN(roiBoxBB.width_px) ? "-" : roiBoxBB.width_px;

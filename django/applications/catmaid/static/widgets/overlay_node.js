@@ -461,7 +461,7 @@ var SkeletonElements = new function()
       if (this.c && this.mc) {
       } else {
         // create a raphael circle object
-        this.c = paper.circle(this.x, this.y, this.r);
+        this.c = paper.circle(this.x, this.y, 3); // again hard-code the radius to address issue #522
         // a raphael circle oversized for the mouse logic
         this.mc = paper.circle(this.x, this.y, CATCH_RADIUS);
 

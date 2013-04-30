@@ -987,7 +987,7 @@ var SkeletonElements = new function()
       });
       var arrow_mousedown = function(e) {
         e.stopPropagation();
-        if(!(e.shiftKey && e.ctrlKey)) {
+        if(!(e.shiftKey && (e.ctrlKey || e.metaKey))) {
           return;
         }
         requestQueue.register(django_url + project.id + '/link/delete', "POST", {

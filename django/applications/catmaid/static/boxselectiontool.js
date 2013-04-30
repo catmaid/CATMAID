@@ -48,12 +48,14 @@ BoxSelectionTool.prototype.convertWorld = function( val )
 
 BoxSelectionTool.prototype.getScreenLeft = function(stack)
 {
-    return ( ( stack.x - stack.viewWidth / stack.scale / 2 ) + stack.translation.x ) * stack.resolution.x;
+    return ( ( stack.x - stack.viewWidth / stack.scale / 2 ) +
+        stack.translation.x ) * stack.resolution.x;
 };
 
 BoxSelectionTool.prototype.getScreenTop = function(stack)
 {
-    return ( ( stack.y - stack.viewHeight / stack.scale / 2 ) + stack.translation.y ) * stack.resolution.y;
+    return ( ( stack.y - stack.viewHeight / stack.scale / 2 ) +
+        stack.translation.y ) * stack.resolution.y;
 };
 
 /**
@@ -82,8 +84,12 @@ BoxSelectionTool.prototype.getCropBoxBoundingBox = function(stack)
     var right_px = left_px + width_px;
     var bottom_px = top_px + height_px;
 
-    return { left_world : l, top_world : t, right_world : r, bottom_world : b, width_world : width, height_world : height,
-             left_px : left_px, top_px : top_px, right_px : right_px, bottom_px : bottom_px, width_px : width_px, height_px : height_px }
+    return { left_world : l, top_world : t,
+             right_world : r, bottom_world : b,
+             width_world : width, height_world : height,
+             left_px : left_px, top_px : top_px,
+             right_px : right_px, bottom_px : bottom_px,
+              width_px : width_px, height_px : height_px }
 };
 
 /**
@@ -129,7 +135,8 @@ BoxSelectionTool.prototype.initCropBox = function( stack )
  * are expected to be in screen coordinates. Any existing crop box gets removed
  * first.
  */
-BoxSelectionTool.prototype.createCropBox = function( screenX, screenY, screenWidth, screenHeight )
+BoxSelectionTool.prototype.createCropBox = function( screenX, screenY,
+    screenWidth, screenHeight )
 {
     if(typeof(screenWidth)==='undefined') screenWidth = 0;
     if(typeof(screenHeight)==='undefined') screenHeight = 0;
@@ -147,7 +154,8 @@ BoxSelectionTool.prototype.createCropBox = function( screenX, screenY, screenWid
  * are expected to be in world coordinates. Any existing crop box gets removed
  * first.
  */
-BoxSelectionTool.prototype.createCropBoxByWorld = function( worldX, worldY, worldWidth, worldHeight )
+BoxSelectionTool.prototype.createCropBoxByWorld = function( worldX,
+    worldY, worldWidth, worldHeight )
 {
     var view = this.stack.getView();
     if ( this.cropBox )
@@ -256,10 +264,6 @@ function BoxSelectionLayer( stack, tool, crop_box)
 
     this.redraw = function()
     {
-        // hack to make the tool redraw the canvas
-        //tool.redraw();
-        console.log("redraw layer");
-
         var cropBoxBB = tool.getCropBoxBoundingBox(stack);
 
         view.style.visibility = "visible";

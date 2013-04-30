@@ -348,7 +348,7 @@ RoiTool.prototype.register = function( parentStack )
     this.mouseCatcher.onmousedown = this.onmousedown_bound;
     this.mouseCatcher.onmousemove = this.onmousemove_pos_bound;
 
-    var onmounsewheel = this.onmousewheel.bind(this);
+    var onmousewheel = this.onmousewheel.bind(this);
     try
     {
         this.mouseCatcher.addEventListener( "DOMMouseScroll", onmousewheel, false );

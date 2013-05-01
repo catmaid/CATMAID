@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 
 # Root classes can be seen as namespaces in the semantic space. Different
 # tools use different root classes.
-root_classes = ['root']
+root_classes = ['root', 'classification_root']
 
 # Root classes can be treated special if wanted. If set to True root
 # classes won't appear an the class overview and can't be deleted
@@ -15,6 +15,10 @@ guard_root_classes = False
 # In strict mode, it is not allowed to add relations and classes that
 # have the same name like already present ones
 be_strict = True
+
+# Names of new classes and relations will be trimmed automatically,
+# if trim_names is true.
+trim_names = True
 
 class ClassElement:
     def __init__(self, id, name):
@@ -271,6 +275,9 @@ def add_relation_to_ontology(request, project_id=None):
     if name is None:
         raise Exception("Couldn't find name for new relation.")
 
+    if trim_names:
+        name = name.strip()
+
     if be_strict:
         # Make sure that there isn't already a relation with this name
         num_r = Relation.objects.filter(project_id = project_id,
@@ -342,6 +349,9 @@ def add_class_to_ontology(request, project_id=None):
 
     if name is None:
         raise Exception("Couldn't find name for new class.")
+
+    if trim_names:
+        name = name.strip()
 
     if be_strict:
         # Make sure that there isn't already a class with this name
@@ -535,3 +545,21 @@ def get_restriction_types(request, project_id=None, restriction=None):
         return HttpResponse(json.dumps({'types': types}))
     else:
         raise Exception("Unsupported restriction type encountered: " + restriction)
+
+def get_class_links_qs( project_id, rel_name, class_name, class_is_b=True ):
+    """ Returns a list of all classes, that have a certain relationship
+    to a particular class in a project's semantic space.
+    """
+    relation = Relation.objects.filter(relation_name=rel_name,
+        project_id=project_id)
+    other_class = Class.objects.filter(class_name=class_name,
+        project_id=project_id)
+    # Get all classes with the given relation to the given class
+    # (if present).
+    if class_is_b:
+        cici_q = ClassClass.objects.filter(project_id=project_id,
+            relation__in=relation, class_b__in=other_class)
+    else:
+        cici_q = ClassClass.objects.filter(project_id=project_id,
+            relation__in=relation, class_a__in=other_class)
+    return cici_q

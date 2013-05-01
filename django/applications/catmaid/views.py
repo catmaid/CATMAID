@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.views.generic import TemplateView
+from django.conf import settings
 
 class HomepageView(TemplateView):
     """ This view returns the index page of CATMAID and passes some
@@ -12,3 +13,11 @@ class HomepageView(TemplateView):
         context['CATMAID_URL'] = settings.CATMAID_URL
         profile_context = self.request.user.userprofile.as_dict()
         return dict(context.items() + profile_context.items())
+
+class UseranalyticsView(TemplateView):
+    template_name = "catmaid/useranalytics.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(UseranalyticsView, self).get_context_data(**kwargs)
+        context['catmaid_url'] = settings.CATMAID_URL
+        return context

@@ -4,6 +4,10 @@ from catmaid.models import *
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 
+import os, os.path
+from contextlib import closing
+import h5py
+
 def get_stack_info(project_id=None, stack_id=None, user=None):
     """ Returns a dictionary with relevant information for stacks.
     Depending on the tile_source_type, get information from database
@@ -81,7 +85,6 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
             'broken_slices': broken_slices,
             'trakem2_project': int(s.trakem2_project),
             'overlay': overlays,
-            'inverse_mouse_wheel': user.userprofile.inverse_mouse_wheel,
         }
 
     return result

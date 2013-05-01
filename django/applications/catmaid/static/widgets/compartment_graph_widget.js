@@ -39,9 +39,9 @@ var CompartmentGraphWidget = new function()
               .css({
                 "content": "data(label)",
                 "width": "data(weight)", //mapData(weight, 0, 100, 10, 50)",
-                "target-arrow-shape": "triangle",
+                "target-arrow-shape": "data(arrow)",
                 // "source-arrow-shape": "circle",
-                "line-color": "#444",
+                "line-color": "data(color)",
                 "opacity": 0.4,
                 
               })
@@ -102,11 +102,67 @@ var CompartmentGraphWidget = new function()
 
   };
 
+  this.updateLayout = function() {
+
+
+    var layout =  $('#compartment_layout :selected').attr("value");
+
+    if( layout == 1 ) {
+      var options = {
+        name: 'grid',
+        fit: true, // whether to fit the viewport to the graph
+        rows: undefined, // force num of rows in the grid
+        columns: undefined, // force num of cols in the grid
+        ready: undefined, // callback on layoutready
+        stop: undefined // callback on layoutstop
+        };
+
+      cy.layout( options );
+    } else if ( layout == 2) {
+      options = {
+          name: 'arbor',
+          liveUpdate: true, // whether to show the layout as it's running
+          ready: undefined, // callback on layoutready 
+          stop: undefined, // callback on layoutstop
+          maxSimulationTime: 4000, // max length in ms to run the layout
+          fit: true, // fit to viewport
+          padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
+          ungrabifyWhileSimulating: true, // so you can't drag nodes during layout
+
+          // forces used by arbor (use arbor default on undefined)
+          repulsion: undefined,
+          stiffness: undefined,
+          friction: undefined,
+          gravity: true,
+          fps: undefined,
+          precision: undefined,
+
+          // static numbers or functions that dynamically return what these
+          // values should be for each element
+          nodeMass: undefined, 
+          edgeLength: undefined,
+
+          stepSize: 1, // size of timestep in simulation
+
+          // function that returns true if the system is stable to indicate
+          // that the layout can be stopped
+          stableEnergy: function( energy ){
+              var e = energy; 
+              return (e.max <= 0.5) || (e.mean <= 0.3);
+          }
+      };
+
+      cy.layout( options );
+
+    }
+
+    
+  }
+
   this.updateGraph = function( data ) {
 
-
     for(var i = 0; i < data.nodes.length; i++) {
-      data.nodes[i]['data']['color'] = WebGLApp.getColorOfSkeleton( parseInt(data.nodes[i]['data'].id));
+      data.nodes[i]['data']['color'] = NeuronStagingArea.get_color_of_skeleton( parseInt(data.nodes[i]['data'].id) );
     }
 
     // first remove all nodes
@@ -163,40 +219,27 @@ var CompartmentGraphWidget = new function()
 
     cy.layout( options );
 
-    cy.nodes().bind("mouseover", function(e) {
-      // console.log('node mouseover', e);
-    });
+    // cy.nodes().bind("mouseover", function(e) {
+    //   // console.log('node mouseover', e);
+    // });
 
   }
 
   this.updateConfidenceGraphFrom3DViewer = function() {
-    jQuery.ajax({
-      url: django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
-      type: "POST",
-      dataType: "json",
-      data: { 
-        skeleton_list: WebGLApp.getListOfSkeletonIDs(true),
-        confidence_threshold: $('#confidence_threshold').val()
-         },
-      success: function (data) {
-        self.updateGraph( data );
-      }
-    });
+    requestQueue.replace(django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
+        "POST",
+        { skeleton_list: NeuronStagingArea.get_selected_skeletons(),
+          confidence_threshold: $('#confidence_threshold').val(),
+          bandwidth: $('#clustering_bandwidth').val() },
+        function (status, text) {
+            if (200 !== status) return;
+            var json = $.parseJSON(text);
+            if (json.error) {
+                alert(json.error);
+                return;
+            }
+            self.updateGraph( json );
+        },
+        "graph_widget_request");
   }
-
-  this.updateEdgecountGraphFrom3DViewer = function() {
-    jQuery.ajax({
-      url: django_url + project.id + "/skeletongroup/skeletonlist_edgecount_compartment_subgraph",
-      type: "POST",
-      dataType: "json",
-      data: { 
-        skeleton_list: WebGLApp.getListOfSkeletonIDs(true),
-        edgecount: parseInt( $('#edgecount_threshold').val(), 10)
-         },
-      success: function (data) {
-        self.updateGraph( data );
-      }
-    });
-  }
-
 };

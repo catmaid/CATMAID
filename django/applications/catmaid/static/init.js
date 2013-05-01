@@ -159,13 +159,12 @@ function handle_login(status, text, xml, completionCallback) {
 
       document.getElementById("project_menu_new").style.display = "block";
 
-      handle_profile_update(e);
-
       //msg_timeout = window.setTimeout( message, MSG_TIMEOUT_INTERVAL );
       message();
     } else if (e.error) {
       alert(e.error);
     }
+    handle_profile_update(e);
     updateProjects(completionCallback);
   } else if (status != 200) {
     // Of course, lots of non-200 errors are fine - just report
@@ -224,18 +223,11 @@ function handle_logout(status, text, xml) {
  * tools in the toolbar.
  */
 function handle_profile_update(e) {
-  if (e.show_text_label_tool)
-    userprofile.show_text_label_tool = e.show_text_label_tool;
-  if (e.show_tagging_tool)
-    userprofile.show_tagging_tool = e.show_tagging_tool;
-  if (e.show_cropping_tool)
-    userprofile.show_cropping_tool = e.show_cropping_tool
-  if (e.show_segmentation_tool)
-    userprofile.show_segmentation_tool = e.show_segmentation_tool;
-  if (e.show_tracing_tool)
-    userprofile.show_tracing_tool = e.show_tracing_tool;
-  if (e.show_ontology_tool)
-    userprofile.show_ontology_tool = e.show_ontology_tool;
+  if (e.userprofile) {
+      userprofile = e.userprofile;
+  } else {
+      alert("The server returned no valid user profile.");
+  }
   // update the edit tool actions and its div container
   createEditToolActions();
   new_edit_actions = createButtonsFromActions(editToolActions,
@@ -480,7 +472,7 @@ function updateProjectListFromCache() {
  * queue an open-project-stack-request to the request queue
  * freeze the window to wait for an answer
  */
-function openProjectStack( pid, sid )
+function openProjectStack( pid, sid, completionCallback )
 {
 	if ( project && project.id != pid )
 	{
@@ -492,7 +484,14 @@ function openProjectStack( pid, sid )
 		django_url + pid + '/stack/' + sid + '/info',
 		'GET',
 		{ },
-		handle_openProjectStack );
+		function(args)
+		{
+			handle_openProjectStack.apply(this, arguments);
+			if (completionCallback)
+			{
+				completionCallback();
+			}
+		});
 	return;
 }
 
@@ -504,7 +503,6 @@ function openProjectStack( pid, sid )
  */
 function handle_openProjectStack( status, text, xml )
 {
-
 	if ( status == 200 && text )
 	{
 		var e = eval( "(" + text + ")" );
@@ -522,8 +520,7 @@ function handle_openProjectStack( status, text, xml )
 				project.register();
 			}
 
-            // TODO: need to check permission of the user to decide on what to display
-
+			// TODO: need to check permission of the user to decide on what to display
 			project.setEditable( e.editable );
 
 			var labelupload = '';
@@ -546,7 +543,7 @@ function handle_openProjectStack( status, text, xml )
 					e.tile_source_type,
 					labelupload, // TODO: if there is any
 					e.metadata,
-					e.inverse_mouse_wheel);
+					userprofile.inverse_mouse_wheel);
 
 			document.getElementById( "toolbox_project" ).style.display = "block";
 
@@ -557,7 +554,7 @@ function handle_openProjectStack( status, text, xml )
 					e.tile_width,
 					e.tile_height,
 					tilesource,
-          true);
+					true);
 
 			stack.addLayer( "TileLayer", tilelayer );
 
@@ -569,28 +566,29 @@ function handle_openProjectStack( status, text, xml )
 								value.tile_width,
 								value.tile_height,
 								tilesource2,
-                false);
+				false);
 				// set default opacity internally
 				tilelayer2.setOpacity( value.default_opacity );
 				stack.addLayer( value.title, tilelayer2 );
 				stack.overviewlayer.setOpacity( value.title,  value.default_opacity );
 			});
-      
-			project.addStack( stack );
 
-      // refresh the overview handler to also register the mouse events on the buttons
-      stack.overviewlayer.refresh();
+			// If the requested stack is already loaded, the existing
+			// stack is returned. Continue work with the existing stack.
+			stack = project.addStack( stack );
+
+			// refresh the overview handler to also register the mouse events on the buttons
+			stack.overviewlayer.refresh();
 
 			if ( inittool === 'tracingtool' ) {
-			  project.setTool( new TracingTool() );
+				project.setTool( new TracingTool() );
 			} else if ( inittool === 'navigator' ) {
-			  project.setTool( new Navigator() );
+				project.setTool( new Navigator() );
 			} else if ( inittool === 'canvastool' ) {
-        project.setTool( new CanvasTool() );
-      } else if ( inittool === 'segmentationtool' ) {
-        project.setTool( new SegmentationTool() );
-      }
-
+				project.setTool( new CanvasTool() );
+			} else if ( inittool === 'segmentationtool' ) {
+				project.setTool( new SegmentationTool() );
+			}
 
 			//! if the stack was initialized by an URL query, move it to a given position
 			if ( pid == e.pid && sids.length > 0 )
@@ -616,10 +614,9 @@ function handle_openProjectStack( status, text, xml )
 				}
 			}
 
-            if( init_active_skeleton || init_active_skeleton ) {
-                window.setTimeout("SkeletonAnnotations.staticSelectNode(init_active_node_id, init_active_skeleton)", 2000);
-            }
-
+			if( init_active_skeleton || init_active_skeleton ) {
+				window.setTimeout("SkeletonAnnotations.staticSelectNode(init_active_node_id, init_active_skeleton)", 2000);
+			}
 
 			/* Update the projects "current project" menu. If there is more
 			than one stack linked to the current project, a submenu for easy
@@ -647,7 +644,7 @@ function handle_openProjectStack( status, text, xml )
 	}
 	ui.releaseEvents();
 	return;
-}
+};
 
 /**
  * look for user messages
@@ -1034,7 +1031,7 @@ var realInit = function()
 	document.getElementById( "toolbar_nav" ).style.display = "none";
 	document.getElementById( "toolbar_text" ).style.display = "none";
 	document.getElementById( "toolbar_tags" ).style.display = "none";
-	document.getElementById( "toolbar_crop" ).style.display = "none";
+	document.getElementById( "toolbar_roi" ).style.display = "none";
 	document.getElementById( "toolbox_project" ).style.display = "none";
 	document.getElementById( "toolbox_edit" ).style.display = "none";
 	document.getElementById( "toolbox_ontology" ).style.display = "none";

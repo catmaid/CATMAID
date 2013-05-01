@@ -58,8 +58,12 @@ for f in ['', '_production']:
     data = re.sub('CATMAID_SERVERNAME', catmaid_servername, data)
     data = re.sub('CATMAID_SUBDIR', catmaid_subdirectory, data)
     # If CATMAID doesn't live in a sub-directery, double-slashes can occur
-    # in the generated configurations. Remove those:
-    data = re.sub('//', '/', data)
+    # in the generated configurations. Remove those, if they are not part
+    # of a recognized protocol specification:
+    known_protocols = ["http", "https", "ftp", "ssh", "nfs", "smb"]
+    known_protocols = ["(?<!%s:)" % p for p in known_protocols]
+    known_protocols = ''.join(known_protocols)
+    data = re.sub('%s//' % known_protocols, '/', data)
     # Write out the configuration
     o.write( data )
     o.close()

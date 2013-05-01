@@ -34,6 +34,7 @@ def login_vnc(request):
 
 
 def login_user(request):
+    profile_context = {}
     if request.method == 'POST':
         # Try to log the user into the system.
         username = request.POST.get('name', 0)
@@ -41,7 +42,7 @@ def login_user(request):
         user = authenticate(username=username, password=password)
 
         if user is not None:
-            profile_context = user.userprofile.as_dict()
+            profile_context['userprofile'] = user.userprofile.as_dict()
             if user.is_active:
                 # Redirect to a success page.
                 request.session['user_id'] = user.id
@@ -56,11 +57,11 @@ def login_user(request):
                return HttpResponse(json.dumps(profile_context))
         else:
             # Return an 'invalid login' error message.
-            profile_context = request.user.userprofile.as_dict()
+            profile_context['userprofile'] = request.user.userprofile.as_dict()
             profile_context['error'] = ' Invalid login'
             return HttpResponse(json.dumps(profile_context))
     else:   # request.method == 'GET'
-        profile_context = request.user.userprofile.as_dict()
+        profile_context['userprofile'] = request.user.userprofile.as_dict()
         # Check if the user is logged in.
         if request.user.is_authenticated():
             profile_context['id'] = request.session.session_key
@@ -76,7 +77,8 @@ def logout_user(request):
     logout(request)
     # Return profile context of anonymous user
     anon_user = User.objects.get(id=settings.ANONYMOUS_USER_ID)
-    profile_context = anon_user.userprofile.as_dict()
+    profile_context = {}
+    profile_context['userprofile'] = anon_user.userprofile.as_dict()
     profile_context['success'] = True
     return HttpResponse(json.dumps(profile_context))
 

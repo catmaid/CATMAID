@@ -19,18 +19,13 @@ var ProjectStatistics = new function()
     };
     if( data.hasOwnProperty('new_connectors') ) {
       entry += ' ' + data['new_connectors'] + ' /';
-      points += 10 * data['new_connectors'];
+      points += data['new_connectors'];
     } else {
       entry += ' 0 /';
     };
     if( data.hasOwnProperty('new_reviewed_nodes') ) {
       entry += ' ' + data['new_reviewed_nodes'] + ' /';
       points += data['new_reviewed_nodes'];
-    } else {
-      entry += ' 0 /';
-    };
-    if( data.hasOwnProperty('new_tags') ) {
-      entry += ' ' + data['new_tags'] + ' /';
     } else {
       entry += ' 0 /';
     };
@@ -63,7 +58,11 @@ var ProjectStatistics = new function()
       }
       row += '<td>' + weekpointcount + '</td>';
       row += '</tr>';
-      $('#project_stats_history_table').append( row );
+      if( weekpointcount === 0 ) {
+        continue;
+      } else {
+        $('#project_stats_history_table').append( row );
+      }
     }
   }
 

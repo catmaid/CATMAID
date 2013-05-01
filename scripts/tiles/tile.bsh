@@ -23,7 +23,6 @@ import mpicbg.ij.integral.*;
 
 final String fileSeperator = System.getProperty("file.separator");
 
-int tileSize = 256;
 int thumbnailSize = 192;
 String overviewName = "small";
 String inputFile = "totile.txt";
@@ -289,6 +288,7 @@ public class TilingJob {
 	public String generatedInfo = "";
 	public boolean useGeneratedInfo = false;
 	public int numZoomLevels;
+	public int tileSize;
 	/* With meta data pattern one can automatically read out meta data
 	 * frem the individual channels. To map a meta data entry to a channel
   	 * a placeholder is used: <$Ch>. Valid entries are e.g.:
@@ -298,7 +298,7 @@ public class TilingJob {
 	public ArrayList metadataPatterns;
 	final public String metadataChPattern = "<$Ch>";
 
-	public TilingJob( String imagePath, projectFileName, colors, outputDir, unitConvFactor, maxValue, grayscaleSingleChannels, useGeneratedInfo, numZoomLevels, ArrayList metadataPatterns, metadataFileName ) {
+	public TilingJob( String imagePath, projectFileName, colors, outputDir, unitConvFactor, maxValue, grayscaleSingleChannels, useGeneratedInfo, numZoomLevels, int tileSize, ArrayList metadataPatterns, metadataFileName ) {
 		this.imagePath = imagePath;
 		this.projectFileName = projectFileName;
 		this.colors = colors;
@@ -307,6 +307,7 @@ public class TilingJob {
 		this.grayscaleSingleChannels = grayscaleSingleChannels;
 		this.useGeneratedInfo = useGeneratedInfo;
 		this.numZoomLevels = numZoomLevels;
+		this.tileSize = tileSize;
 
 		setup( imagePath, outputDir, metadataPatterns );
 
@@ -383,7 +384,7 @@ public class TilingJob {
 		// check if enough colors are available
 		numChannels = project.getNeededChannels().size();
 		if (numChannels > this.colors.size()) {
-			IJ.log("Got only " + colors.length() + " colors, but would need " + numChannels);
+			IJ.log("Got only " + colors.size() + " color(s), but would need " + numChannels + " to process all wanted channels. Please use the -clr option.");
 			return false;
 		}
 		// Make sure we only ask for channels that are available
@@ -405,7 +406,7 @@ public class TilingJob {
 				s.neededChannels.remove( ch );
 
 			if ( s.neededChannels.size() == 0 )
-				stacksToRemole.add( s );
+				stacksToRemove.add( s );
 		}
 		// remove empty stacks
 		for ( s : stacksToRemove )
@@ -427,7 +428,7 @@ public class TilingJob {
 	}
 
 	public String toString() {
-		return "TilingJob: " + project;
+		return "TilingJob (" + tileSize + "px): " + project;
 	}
 }
 
@@ -600,10 +601,10 @@ int getNumScaleLevels( int height, int tileSize )
 
 void createTiles( job, stack, imp, stackDir ) {
 	int numSlices = imp.getNSlices();
-	int tileWidth = tileSize;
-	int tileHeight = tileSize;
+	int tileWidth = job.tileSize;
+	int tileHeight = job.tileSize;
 	if ( job.numZoomLevels == -1 )
-		job.numZoomLevels = getNumScaleLevels( imp.getHeight(), tileSize );
+		job.numZoomLevels = getNumScaleLevels( imp.getHeight(), job.tileSize );
 
 	IJ.log( "computing tiles for " + job.numZoomLevels + " scale levels, " + numSlices + " slices" );
 
@@ -762,7 +763,7 @@ void preProcess( job ) {
 			macro += "if (" + ch + " <= channels) {"
 				+" Stack.setChannel(" + ch  + ");\n"
 				+" setMinAndMax(0, " + job.maxValue + ");\n"
-				+" run(\"" + job.colors.get( ch ) + "\");\n"
+				+" run(\"" + job.colors.get( i ) + "\");\n"
 				+" wantedChannels[" + (ch - 1) + "]=1;\n"
 				+"}";
 		}
@@ -944,6 +945,7 @@ boolean grayscaleSingleChannels = true;
 boolean useGeneratedInfo = false;
 //int numZoomLevels = -1; // ...compute from image height
 int numZoomLevels = 4;
+int tileSize = 256;
 metadataPatterns = new ArrayList();
 ArrayList metadataPatterns;
 String metadataFileName = null;
@@ -961,6 +963,7 @@ void setup( options ) {
 		IJ.log( "-target-dir <dir>        -- Define the directory in which the result should be saved" );
 		IJ.log( "-info-file <filename>    -- The name of the info YAML file" );
 		IJ.log( "-levels <numLevels>      -- Number of zoom-out levels wrt. to the original image (-1 for auto calculation), e.g -levels 4" );
+		IJ.log( "-tilesize <tilesize>     -- The width and height of one generated tile, e.g. -tilesize 256" );
 		IJ.log( "-metadata-file <filename>-- Define the name of a file that should be used for metadata retrieval" );
 		IJ.log( "-gen-meta <identifiers>  -- Let the tool add some meta data from the file, saved in file info file, for single channels, e.g. -gen-meta \"IlluminationChannel #<$Ch> Power|Power, IlluminationChannel #<$Ch> Wavelength|Wavelength\"" );
 		IJ.log( "--gen-info               -- Let the tool generate information about resolution and size, saved in file info file" );
@@ -1038,6 +1041,13 @@ void setup( options ) {
 		numZoomLevels = 4;
 	}
 
+	// tile size in pixel -- default: 256
+	if ( options.containsKey( "-tilesize" ) ) {
+		tileSize = new Integer( options.get( "-tilesize" ) ).intValue();
+	} else {
+		tileSize = 256;
+	}
+
 	// input file -- default totile.txt
 	if ( options.containsKey( "-input" ) ) {
 		inputFile = options.get( "-input" );
@@ -1100,7 +1110,7 @@ for (int i; i < bsh.args.length; i++) {
 setup( options );
 files = getInputFiles( inputFile );
 for (String f : files) {
-	j = new TilingJob( f, projectFileName, colors, stackDirName, unitConvFactor, maxValue, grayscaleSingleChannels, useGeneratedInfo, numZoomLevels, metadataPatterns, metadataFileName );
+	j = new TilingJob( f, projectFileName, colors, stackDirName, unitConvFactor, maxValue, grayscaleSingleChannels, useGeneratedInfo, numZoomLevels, tileSize, metadataPatterns, metadataFileName );
 	jobPool.jobs.add( j );
 	System.out.println( "Added new job: " + j );
 }

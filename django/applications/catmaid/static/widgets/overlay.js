@@ -1798,6 +1798,21 @@ var SkeletonAnnotations = new function()
           alert('There must be a currently active node in order to move to its parent.');
         }
         break;
+      case "goopenleaf":
+        requestQueue.register(django_url + project.id + '/skeleton/' + SkeletonAnnotations.getActiveSkeletonId() + '/openleaf' , "POST", {
+          }, function (status, text, xml) {
+            if (status === 200) {
+              if (text && text != " ") {
+                var jso = $.parseJSON(text);
+                if (jso.error) {
+                  alert(jso.error);
+                } else {
+                  project.moveTo(jso[3], jso[2], jso[1], undefined, function() { self.selectNode(jso[0]) });
+                }
+              }
+            }
+          });
+        break;
       case "goactive":
         var activeNodePosition = SkeletonAnnotations.getActiveNodePosition();
         if (activeNodePosition === null) {

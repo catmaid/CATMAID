@@ -5,6 +5,7 @@ var SkeletonConnectivity = new function()
 {
     var projectID, skeletonID, skeletonTitle;
     var self = this;
+    var data = null; // hold the table data in order to select/deselect all skeletons
 
     this.init = function() {
         projectID = project.id;
@@ -31,50 +32,10 @@ var SkeletonConnectivity = new function()
                 'update_connectivity_table');
     };
 
-    this.skeleton_info = function() {
-        if( skeletonID === null)
-            return;
-        requestQueue.register(django_url + project.id + '/skeleton/' + skeletonID + '/statistics', "POST", {},
-         function (status, text, xml) {
-                if (status === 200) {
-                    if (text && text !== " ") {
-                        var e = $.parseJSON(text);
-                        if (e.error) {
-                            alert(e.error);
-                        } else {
-                            var dialog = document.createElement('div');
-                            dialog.setAttribute("id", "dialog-confirm");
-                            dialog.setAttribute("title", "Skeleton Information");
-                            var msg = document.createElement('p');
-                            msg.innerHTML = 
-                                "Neuron Name: " + skeletonTitle + "<br />" +
-                                "Node count: " + e.node_count + "<br />" +
-                                "Input sites: " + e.input_count + "<br />" +
-                                "Output sites: " + e.output_count + "<br />" +
-                                "Cable length: " + e.cable_length + "<br />" +
-                                "Construction time: " + e.measure_construction_time + "<br />" +
-                                "Percentage reviewed: " + e.percentage_reviewed + "<br />";
-                            dialog.appendChild(msg);
-
-                            $(dialog).dialog({
-                              height: 440,
-                              modal: true,
-                              buttons: {
-                                "OK": function() {
-                                  $(this).dialog("close");
-                                }
-                              }
-                            });
-                        }
-                    }
-                }
-        });
-    }
-
     this.createConnectivityTable = function( status, text ) {
 
         if (200 !== status) { return; }
-        var data = $.parseJSON(text);
+        data = $.parseJSON(text);
         if (data.error) {
             alert(data.error);
             return;
@@ -103,7 +64,15 @@ var SkeletonConnectivity = new function()
         row.append( $('<td />').text("syn count") );
         row.append( $('<td />').text("reviewed") );
         row.append( $('<td />').text("node count") );
-        row.append( $('<td />').text("show") );
+        row.append( $('<td />').text("select") );
+        thead.append( row );
+        row = $('<tr />')
+        row.append( $('<td />').text("") );
+        row.append( $('<td />').text("") );
+        row.append( $('<td />').text("") );
+        row.append( $('<td />').text("") );
+        var el = $('<input type="checkbox" id="upstream-selectall' + '" />');
+        row.append( $('<td />').append( el ) );
         thead.append( row );
         tbody = $('<tbody />');
         table.append( tbody );
@@ -125,13 +94,13 @@ var SkeletonConnectivity = new function()
                     })
                         .click( function( event )
                         {
-                            if( $( "#view_in_3d_webgl_widget").length ) {
+                            if( $( "#neuron_staging_table").length ) {
                                 var skelid = parseInt( event.target.value );
                                 var vis = $('#incoming-show-skeleton-' + skelid).is(':checked');
                                 if( vis ) {
-                                    WebGLApp.addSkeletonFromID( project.id, skelid );
+                                    NeuronStagingArea.add_skeleton_to_stage_without_name( skelid );
                                 } else {
-                                    WebGLApp.removeSkeleton( skelid );
+                                    NeuronStagingArea.remove_skeleton( skelid );
                                 }
                             }
                         } )
@@ -153,7 +122,15 @@ var SkeletonConnectivity = new function()
         row.append( $('<td />').text("syn count") );
         row.append( $('<td />').text("reviewed") );
         row.append( $('<td />').text("node count") );
-        row.append( $('<td />').text("show") );
+        row.append( $('<td />').text("select") );
+        thead.append( row );
+        row = $('<tr />')
+        row.append( $('<td />').text("") );
+        row.append( $('<td />').text("") );
+        row.append( $('<td />').text("") );
+        row.append( $('<td />').text("") );
+        var el = $('<input type="checkbox" id="downstream-selectall' + '" />');
+        row.append( $('<td />').append( el ) );
         thead.append( row );
         tbody = $('<tbody />');
         table.append( tbody );
@@ -175,13 +152,13 @@ var SkeletonConnectivity = new function()
                     })
                         .click( function( event )
                         {
-                            if( $( "#view_in_3d_webgl_widget").length ) {
+                            if( $( "#neuron_staging_table").length ) {
                                 var skelid = parseInt( event.target.value );
                                 var vis = $('#outgoing-show-skeleton-' + skelid).is(':checked');
                                 if( vis ) {
-                                    WebGLApp.addSkeletonFromID( project.id, skelid );
+                                    NeuronStagingArea.add_skeleton_to_stage( skelid, data['outgoing'][e]['name'] );
                                 } else {
-                                    WebGLApp.removeSkeleton( skelid );
+                                    NeuronStagingArea.remove_skeleton( skelid );
                                 }
                             }
                         } )
@@ -194,6 +171,39 @@ var SkeletonConnectivity = new function()
         table.append( $('<br /><br /><br /><br />') );
         outgoing.append( table );
 
+        $('#downstream-selectall').click( function( event ) {
+            if( $( "#neuron_staging_table").length && $('#downstream-selectall').is(':checked') ) {
+                for(var e in data['outgoing'] ) {
+                    var skeleton_id = data['outgoing'][e]['skeleton_id'];
+                    $('#outgoing-show-skeleton-' + skeleton_id).attr('checked', true);
+                    NeuronStagingArea.add_skeleton_to_stage( skeleton_id, data['outgoing'][e]['name'] );
+                }
+            } else {
+                for(var e in data['outgoing'] ) {
+                    var skeleton_id = data['outgoing'][e]['skeleton_id'];
+                    $('#outgoing-show-skeleton-' + skeleton_id).attr('checked', false);
+                    NeuronStagingArea.remove_skeleton( skeleton_id );
+                }
+            }
+        });
+
+        $('#upstream-selectall').click( function( event ) {
+            if( $( "#neuron_staging_table").length && $('#upstream-selectall').is(':checked') ) {
+                for(var e in data['incoming'] ) {
+                    var skeleton_id = data['incoming'][e]['skeleton_id'];
+                    $('#incoming-show-skeleton-' + skeleton_id).attr('checked', true);
+                    NeuronStagingArea.add_skeleton_to_stage( skeleton_id, data['incoming'][e]['name'] );
+                }
+            } else {
+                for(var e in data['incoming'] ) {
+                    var skeleton_id = data['incoming'][e]['skeleton_id'];
+                    $('#incoming-show-skeleton-' + skeleton_id).attr('checked', false);
+                    NeuronStagingArea.remove_skeleton( skeleton_id );
+                }
+            }
+        });
+
         $("#connectivity_table").prepend( $(document.createTextNode( skeletonTitle )) );
+
     };
 };

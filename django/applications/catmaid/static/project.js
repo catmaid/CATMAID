@@ -27,7 +27,9 @@ function Project( pid )
 	}
 
 	/**
-	 * add a stack to the project
+	 * Add a stack to the project. The stack reference is returned. In
+	 * case a stack with the same ID is already loaded, a reference to
+	 * this existing stack is returned.
 	 */
 	this.addStack = function( stack )
 	{
@@ -59,8 +61,10 @@ function Project( pid )
 			var c = stack.projectCoordinates();
 			self.moveTo( c.z, c.y, c.x );
 		}
-		
-		// self.setFocusedStack( stack );
+
+		// Only set focus if stack isn't already in focus
+		if ( stack !== self.focusedStack )
+		    self.setFocusedStack( stack );
 		
 		// only set the tool for the first stack
 		if ( stacks.length == 1 )
@@ -71,8 +75,9 @@ function Project( pid )
 			// self.focusedStack.setTool( tool );
 
 		}
-		
-		return;
+
+		// return the (possibly updated) stack reference
+		return stack;
 	}
 	
 	/**
@@ -86,7 +91,15 @@ function Project( pid )
 		}
 		return false;
 	}
-	
+
+	/**
+	 * get all the currently opened stacks
+	 */
+	this.getStacks = function()
+	{
+		return stacks;
+	}
+
 	/**
 	 * remove a stack from the list
 	 */
@@ -255,9 +268,9 @@ function Project( pid )
 	{
 		if ( tool ) tool.destroy();
 		
-		//! close all windows
-		//rootWindow.closeAllChildren();
-		rootWindow.close();
+		//! Close all windows. There is no need to explicitely call close()
+		//! on the root window as this done by the last child.
+		rootWindow.closeAllChildren();
 			
 		ui.removeEvent( "onresize", resize );
 		try

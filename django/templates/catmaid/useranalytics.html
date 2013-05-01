@@ -1,0 +1,62 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrahead %}
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url admin:index %}">Home</a> &rsaquo; {{ title }}
+  </div>
+{% endblock %}
+
+{% block content %}
+
+<h2>User Analytics</h2>
+
+<select id="logtable_username"></select>
+<button id="refresh" href="#">Refresh</button>
+<br />
+<img src="{{ catmaid_url }}useranalytics" id="useranalyticsimg" />
+
+<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
+<script type="text/javascript">
+
+  $.ajax({
+    "dataType": 'json',
+    "type": "GET",
+    "cache": false,
+    "url": '{{ catmaid_url }}user-list',
+    "data": {},
+    "success": function( e ) {
+      console.log('success', e);
+      var new_users = document.getElementById("logtable_username");
+      while (new_users.length > 0)
+          new_users.remove(0);
+      for (var i in e) {
+        if( e.hasOwnProperty(i)) {
+            var new_users = document.getElementById("logtable_username");
+            while (new_users.length > 0)
+                new_users.remove(0);
+            for (var i in e) {
+                var option = document.createElement("option");
+                option.text = e[i].name + " (" + e[i].longname + ")";
+                option.value = e[i].id;
+                new_users.appendChild(option);
+            }
+            new_users.size = e.length;
+        }
+      }
+      new_users.size = e.length;
+    }
+  });
+
+  $('#refresh').on('click', function() {
+    console.log('click');
+    document.getElementById("useranalyticsimg").src = "{{ catmaid_url }}useranalytics?userid=" + $('#logtable_username').val();
+  });
+
+</script>
+
+{% endblock %}
+

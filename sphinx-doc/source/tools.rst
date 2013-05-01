@@ -1,3 +1,5 @@
+.. _tools:
+
 Tools
 =====
 
@@ -82,3 +84,8 @@ information about the number of images, the channels and whether to use
 hyperstacks to ImageJ. For the purpose of creating these meta data tags,
 the tool ``exiftool`` is used internally.
 
+Ontology Tools
+--------------
+
+The documentation of the ontology tools can be found on a
+:ref:`separate page <ontology-tools>`.

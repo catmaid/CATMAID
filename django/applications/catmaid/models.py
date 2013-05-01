@@ -114,6 +114,9 @@ class Class(models.Model):
     class_name = models.CharField(max_length=255)
     description = models.TextField()
 
+    def __unicode__(self):
+        return self.class_name
+
 class ConnectivityDirection:
     PRESYNAPTIC_PARTNERS = 0
     POSTSYNAPTIC_PARTNERS = 1
@@ -843,6 +846,8 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User)
     inverse_mouse_wheel = models.BooleanField(
         default=settings.PROFILE_DEFAULT_INVERSE_MOUSE_WHEEL)
+    independent_ontology_workspace_is_default = models.BooleanField(
+        default=settings.PROFILE_INDEPENDENT_ONTOLOGY_WORKSPACE_IS_DEFAULT)
     show_text_label_tool = models.BooleanField(
         default=settings.PROFILE_SHOW_TEXT_LABEL_TOOL)
     show_tagging_tool = models.BooleanField(
@@ -864,6 +869,8 @@ class UserProfile(models.Model):
         """
         pdict = {}
         pdict['inverse_mouse_wheel'] = self.inverse_mouse_wheel
+        pdict['independent_ontology_workspace_is_default'] = \
+            self.independent_ontology_workspace_is_default
         pdict['show_text_label_tool'] = self.show_text_label_tool
         pdict['show_tagging_tool'] = self.show_tagging_tool
         pdict['show_cropping_tool'] = self.show_cropping_tool
@@ -871,6 +878,18 @@ class UserProfile(models.Model):
         pdict['show_tracing_tool'] = self.show_tracing_tool
         pdict['show_ontology_tool'] = self.show_ontology_tool
         return pdict
+    
+    # Fix a problem with duplicate keys when new users are added.
+    # From <http://stackoverflow.com/questions/6117373/django-userprofile-m2m-field-in-admin-error>
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            try:
+                p = UserProfile.objects.get(user=self.user)
+                self.pk = p.pk
+            except UserProfile.DoesNotExist:
+                pass
+
+        super(UserProfile, self).save(*args, **kwargs)
 
 def create_user_profile(sender, instance, created, **kwargs):
     """ Create the UserProfile when a new User is saved.

@@ -468,6 +468,16 @@ var tracingWindowActions = [
   }),
 
   new Action({
+      helpText: "Selection Table",
+      buttonID: "data_button_neuron_staging_area_widget",
+      buttonName: 'neuron_staging',
+      run: function (e) {
+          WindowMaker.show('neuron-staging-area');
+          return true;
+      }
+  }),
+
+  new Action({
     helpText: "Show object tree",
     buttonID: "data_button_tree",
     buttonName: 'tree',

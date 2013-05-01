@@ -8,6 +8,7 @@ from django.utils.safestring import mark_safe
 from guardian.admin import GuardedModelAdmin
 from catmaid.models import Project, DataView, Stack, ProjectStack, UserProfile, Overlay, StackSliceInfo
 from catmaid.control.importer import importer_admin_view
+from catmaid.views import UseranalyticsView
 
 class ProjectAdmin(GuardedModelAdmin):
     list_display = ('title', 'public')
@@ -67,24 +68,6 @@ class DataViewAdmin(GuardedModelAdmin):
     # to explicitely refer to our wanted template.
     change_form_template = 'admin/catmaid/dataview/change_form.html'
 
-    def add_view(self, request, form_url='', extra_context=None):
-        """ The custom view needs the CATMAID URL when adding new
-        data views. So pass it to the view.
-        """
-        extra_context = extra_context or {}
-        extra_context['catmaid_url'] = settings.CATMAID_URL
-        return super(DataViewAdmin, self).add_view(request, form_url,
-            extra_context=extra_context)
-
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        """  The custom view needs the CATMAID URL when editing
-        data views. So pass it to the view.
-        """
-        extra_context = extra_context or {}
-        extra_context['catmaid_url'] = settings.CATMAID_URL
-        return super(DataViewAdmin, self).change_view(request, object_id,
-            form_url, extra_context=extra_context)
-
 class ProfileInline(admin.StackedInline):
     model = UserProfile
     fk_name = 'user'
@@ -104,5 +87,6 @@ admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 # Register additional views
 admin.site.register_view('importer', importer_admin_view, 'Importer')
+admin.site.register_view('useranalytics', UseranalyticsView.as_view(), 'User Analytics')
 admin.site.register(Overlay)
 admin.site.register(StackSliceInfo)

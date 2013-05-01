@@ -286,23 +286,6 @@ var WebGLApp = new function () {
   }
   self.YZView = YZView;
 
-  // credit: http://stackoverflow.com/questions/638948/background-color-hex-to-javascript-variable-jquery
-  function rgb2hex(rgb) {
-   rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-   function hex(x) {
-    return ("0" + parseInt(x).toString(16)).slice(-2);
-   }
-   return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
-  }
-
-  function rgb2hex2(rgb) {
-    rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-    function hex(x) {
-      return ("0" + parseInt(x).toString(16)).slice(-2);
-    }
-    return "0x" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
-  }
-
   var Assembly = function( assembly_data, high_res )
   {
 
@@ -690,16 +673,12 @@ var WebGLApp = new function () {
     }
 
     this.getActorColorAsHTMLHex = function () {
-      return rgb2hex( 'rgb('+this.actorColor.r*255+','+
-        this.actorColor.g * 255+','+
-        this.actorColor.b * 255+')' );
+      return this.actorColor.getHexString();
     }
 
     this.getActorColorAsHex = function()
     {
-      return parseInt( rgb2hex2( 'rgb('+this.actorColor.r*255+','+
-        this.actorColor.g*255+','+
-        this.actorColor.b*255+')' ), 16);
+      return this.actorColor.getHex();
     };
 
     this.create_connector_selection = function( connector_data )

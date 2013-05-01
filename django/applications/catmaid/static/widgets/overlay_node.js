@@ -604,6 +604,9 @@ var SkeletonElements = new function()
         mc = this,
         c = this.prev;
 
+      if( node.id !== SkeletonAnnotations.getActiveNodeId() )
+        return;
+
       node.x = ox + dx;
       node.y = oy + dy;
       c.attr({
@@ -633,6 +636,7 @@ var SkeletonElements = new function()
 
     /** Here 'this' is mc. */
     var mc_start = function(x, y, e) {
+      
       if (is_middle_click(e)) {
         // Allow middle-click panning
         return;
@@ -640,6 +644,9 @@ var SkeletonElements = new function()
       e.stopPropagation();
       var node = this.catmaidNode,
         c = this.prev;
+
+      this.paper.catmaidSVGOverlay.activateNode(node);
+
       ox = node.x;
       oy = node.y;
       c.attr({
@@ -648,6 +655,7 @@ var SkeletonElements = new function()
     };
 
     var mc_mousedown = function(e) {
+    
       if (is_middle_click(e)) {
         // Allow middle-click panning
         return;

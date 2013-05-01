@@ -51,7 +51,7 @@ var ConnectorSelection = new function()
 	              alert(jso.error);
 	            } else {
 	              project.moveTo(jso[3], jso[2], jso[1], undefined, function() { 
-	              	SkeletonAnnotations.staticSelectNode(jso[0], null);
+	              	SkeletonAnnotations.staticSelectNode(jso[0], jso[4]);	
 	              });
 	            }
 	          }

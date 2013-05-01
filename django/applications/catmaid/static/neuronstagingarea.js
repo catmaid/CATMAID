@@ -24,6 +24,7 @@ var NeuronStagingArea = new function()
 
 		self.usercolor_visible = false;
 		self.userreviewcolor_visible = false;
+		self.shade_by_betweenness = false;
 
 		// properties for up/downstream
 		self.synaptic_count_high_pass = 0; // this number or higher
@@ -432,7 +433,9 @@ var NeuronStagingArea = new function()
 		      })
 		      .click( function( event )
 		      {
-		      	skeletonmodels[ skeleton.id ].usercolor_visible = $('#skeletonusercolor-' + skeleton.id).is(':checked');
+		        skeletonmodels[ skeleton.id ].usercolor_visible = $('#skeletonusercolor-' + skeleton.id).is(':checked');
+		        if( $('#view_in_3d_webgl_widget').length && WebGLApp.has_skeleton( skeleton.id ) )
+		          WebGLApp.changeSkeletonColor( skeleton.id ); 	
 		      } )
 		));
 
@@ -448,6 +451,25 @@ var NeuronStagingArea = new function()
 		      .click( function( event )
 		      {
 		      	skeletonmodels[ skeleton.id ].userreviewcolor_visible = $('#skeletonuserreviewcolor-' + skeleton.id).is(':checked');
+		        if( $('#view_in_3d_webgl_widget').length && WebGLApp.has_skeleton( skeleton.id ) )
+		          WebGLApp.changeSkeletonColor( skeleton.id ); 	
+		      } )
+		));
+
+		rowElement.append(
+		  $(document.createElement("td")).append(
+		    $(document.createElement("input")).attr({
+		              id:    'skeletonshadebybetweenness-' + skeleton.id,
+		              name:  skeleton.baseName,
+		              value: skeleton.id,
+		              type:  'checkbox',
+		              checked:false
+		      })
+		      .click( function( event )
+		      {
+		      	skeletonmodels[ skeleton.id ].shade_by_betweenness = $('#skeletonshadebybetweenness-' + skeleton.id).is(':checked');
+		        if( $('#view_in_3d_webgl_widget').length && WebGLApp.has_skeleton( skeleton.id ) )
+		          WebGLApp.changeSkeletonColor( skeleton.id ); 	
 		      } )
 		));
 

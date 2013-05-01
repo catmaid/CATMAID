@@ -177,7 +177,41 @@ var WindowMaker = new function()
         '</tbody>';
     container.appendChild(tab);
 
-    addListener(win, container, "view-3d-webgl-skeleton-buttons-div");
+    win.addListener(
+      function(callingWindow, signal) {
+        switch (signal) {
+          case CMWWindow.CLOSE:
+            if (typeof project === undefined || project === null) {
+              rootWindow.close();
+              document.getElementById("content").style.display = "none";
+            }
+            else {
+              // Remove from listing
+              for (var name in windows) {
+                if (windows.hasOwnProperty(name)) {
+                  if (win === windows[name]) {
+                    // console.log("deleted " + name, windows[name]);
+                    delete windows[name];
+                    break;
+                  }
+                }
+              }
+              NeuronStagingArea.remove_all_skeletons();
+              // win.close();
+            }
+            break;
+          case CMWWindow.RESIZE:
+            if( buttons.id !== undefined ) {
+                container.style.height = ( win.getContentHeight() - $('#' + buttons.id).height() ) + "px";
+            } else {
+                container.style.height = ( win.getContentHeight() ) + "px";
+            }
+            container.style.width = ( win.getAvailableWidth() + "px" );
+
+            break;
+        }
+        return true;
+      });
 
     // addLogic(win);
 

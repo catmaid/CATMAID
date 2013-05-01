@@ -161,6 +161,7 @@ var WindowMaker = new function()
             '<th>text</th>' +
             '<th>user color</th>' +
             '<th>review user color</th>' +
+            '<th>shade</th>' +
             '<th>property</th>' +
           '</tr>' +
         '</thead>' +
@@ -169,6 +170,7 @@ var WindowMaker = new function()
             '<td><button type="button" id="webgl-rmall">remove all</button></td>' +
             '<td></td>' +
             '<td><button type="button" id="webgl-show">hide</button></td>' +
+            '<td></td>' +
             '<td></td>' +
             '<td></td>' +
             '<td></td>' +

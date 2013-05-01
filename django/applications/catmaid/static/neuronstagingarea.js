@@ -153,7 +153,6 @@ var NeuronStagingArea = new function()
 	        type: "GET",
 	        dataType: "json",
 	        success: function ( data ) {
-	        	console.log(skeleton_id, data['neuronname'])
 	        	self.add_skeleton_to_stage( skeleton_id, data['neuronname'] );
 	        	if (typeof callback !== "undefined") {
   					callback();

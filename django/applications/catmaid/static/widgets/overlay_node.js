@@ -645,7 +645,10 @@ var SkeletonElements = new function()
       var node = this.catmaidNode,
         c = this.prev;
 
-      this.paper.catmaidSVGOverlay.activateNode(node);
+      // If not trying to join or remove a node, but merely click on it to drag it or select it:
+      if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        this.paper.catmaidSVGOverlay.activateNode(node);
+      }
 
       ox = node.x;
       oy = node.y;

@@ -104,7 +104,7 @@ var SkeletonElements = new function()
     this.parent_id = parent_id;
     this.children = {};
     this.numberOfChildren = 0;
-    this.r = 3; // not use radius size on overlay display
+    this.r = r > 0 ? 60 : 3; // 3; // not use radius size on overlay display
     this.x = x;
     this.y = y;
     this.z = z;
@@ -174,7 +174,7 @@ var SkeletonElements = new function()
     node.parent_id = parent_id;
     node.children = {};
     node.numberOfChildren = 0;
-    node.r = r < 0 ? 3 : r;
+    node.r = r > 0 ? 60 : 3;// 3; // hardcode value r < 0 ? 3 : r;
     node.x = x;
     node.y = y;
     node.z = z;
@@ -461,9 +461,12 @@ var SkeletonElements = new function()
       if (this.c && this.mc) {
       } else {
         // create a raphael circle object
-        this.c = paper.circle(this.x, this.y, 3); // again hard-code the radius to address issue #522
+        this.c = paper.circle(this.x, this.y, this.r); // again hard-code the radius to address issue #522
         // a raphael circle oversized for the mouse logic
-        this.mc = paper.circle(this.x, this.y, CATCH_RADIUS);
+        if( this.r > 0 )
+          this.mc = paper.circle(this.x, this.y, this.r + 5);
+        else
+          this.mc = paper.circle(this.x, this.y, CATCH_RADIUS);
 
         assignEventHandlers(this.mc, this.type);
       }

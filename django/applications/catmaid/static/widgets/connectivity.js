@@ -177,7 +177,7 @@ var SkeletonConnectivity = new function()
                                 var skelid = parseInt( event.target.value );
                                 var vis = $('#outgoing-show-skeleton-' + skelid).is(':checked');
                                 if( vis ) {
-                                    NeuronStagingArea.add_skeleton_to_stage( skelid, data['outgoing'][e]['name'] );
+                                    NeuronStagingArea.add_skeleton_to_stage_without_name( skelid );
                                 } else {
                                     NeuronStagingArea.remove_skeleton( skelid );
                                 }
@@ -197,7 +197,7 @@ var SkeletonConnectivity = new function()
                 for(var e in data['outgoing'] ) {
                     var skeleton_id = data['outgoing'][e]['skeleton_id'];
                     $('#outgoing-show-skeleton-' + skeleton_id).attr('checked', true);
-                    NeuronStagingArea.add_skeleton_to_stage( skeleton_id, data['outgoing'][e]['name'] );
+                    NeuronStagingArea.add_skeleton_to_stage_without_name( skeleton_id );
                 }
             } else {
                 for(var e in data['outgoing'] ) {
@@ -213,7 +213,7 @@ var SkeletonConnectivity = new function()
                 for(var e in data['incoming'] ) {
                     var skeleton_id = data['incoming'][e]['skeleton_id'];
                     $('#incoming-show-skeleton-' + skeleton_id).attr('checked', true);
-                    NeuronStagingArea.add_skeleton_to_stage( skeleton_id, data['incoming'][e]['name'] );
+                    NeuronStagingArea.add_skeleton_to_stage_without_name( skeleton_id );
                 }
             } else {
                 for(var e in data['incoming'] ) {

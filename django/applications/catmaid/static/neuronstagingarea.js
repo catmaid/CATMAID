@@ -9,7 +9,7 @@ var NeuronStagingArea = new function()
 	{
 		var self = this;
 		self.id = id;
-		self.baseName = neuronname;
+		self.baseName = neuronname + ' (SkeletonID: ' + self.id + ')';
 
 		self.selected = true;
 
@@ -153,7 +153,8 @@ var NeuronStagingArea = new function()
 	        type: "GET",
 	        dataType: "json",
 	        success: function ( data ) {
-	        	self.add_skeleton_to_stage( id, data['neuronname'] );
+	        	console.log(skeleton_id, data['neuronname'])
+	        	self.add_skeleton_to_stage( skeleton_id, data['neuronname'] );
 	        	if (typeof callback !== "undefined") {
   					callback();
   				}
@@ -280,7 +281,7 @@ var NeuronStagingArea = new function()
       			alert("Select the node of a skeleton, not a connector, to add it oto the staging area.");
       			return;
     		}
-    		self.add_skeleton_to_stage( skeleton_id, $('#neuronName').text() );
+    		self.add_skeleton_to_stage_without_name( skeleton_id );
 		}
 	}
 
@@ -547,7 +548,7 @@ var NeuronStagingArea = new function()
 		  success: function ( data ) {
 		    for( var idx in data['skeletonlist'])
 		    {
-		    	self.add_skeleton_to_stage( data['skeletonlist'][idx], data['neuronname'][idx] );
+		    	self.add_skeleton_to_stage_without_name( data['skeletonlist'][idx] );
 		    }
 		  }
 		});

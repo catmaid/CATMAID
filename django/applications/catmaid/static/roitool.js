@@ -98,7 +98,7 @@ RoiTool.prototype.changeCropBoxXByInput = function( e )
     }
     else
     {
-        var screen_left = this.getScreenLeft();
+        var screen_left = this.getScreenLeft(this.stack);
         var width_world = cropBox.right - cropBox.left;
         cropBox.left = this.toWorld( val, this.stack.resolution.x ) + screen_left;
         cropBox.right = cropBox.left + width_world;
@@ -122,7 +122,7 @@ RoiTool.prototype.changeCropBoxYByInput = function( e )
     }
     else
     {
-        var screen_top = this.getScreenTop();
+        var screen_top = this.getScreenTop(this.stack);
         var height_world = cropBox.bottom - cropBox.top;
         cropBox.top = this.toWorld( val, this.stack.resolution.y ) + screen_top;
         cropBox.bottom = cropBox.top + height_world;

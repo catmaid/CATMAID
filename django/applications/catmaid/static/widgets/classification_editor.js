@@ -210,6 +210,29 @@ var ClassificationEditor = new function()
                                         self.link_roi(tree_id, node_id);
                                     }
                                 };
+                                // Add entry and submenu for removing a region of interest
+                                var rois = JSON.parse(obj.attr("rois"));
+                                var submenu = {}
+                                for (i=0; i<rois.length; i++) {
+                                    var roi = rois[i];
+                                    submenu['remove_roi_' + roi] = {
+                                        "separator_before": false,
+                                        "separator_after": false,
+                                        "label": "" + (i + 1) + ". Roi (" + roi + ")",
+                                        "action": function (r_id) {
+                                            return function (obj) {
+                                                self.remove_roi(tree_id, r_id);
+                                            }
+                                        }(roi)
+                                    };
+                                }
+                                menu['remove_roi'] = {
+                                    "separator_before": false,
+                                    "separator_after": false,
+                                    "label": "Remove region of interest",
+                                    "_disabled": rois.length == 0,
+                                    "submenu": submenu,
+                                };
                                 // Add removing entry
                                 menu["remove_element"] = {
                                     "separator_before": true,
@@ -381,6 +404,32 @@ var ClassificationEditor = new function()
         };
 
         project.setTool( tool );
+    };
+
+    /**
+     * Removes the ROI link having the passed ID after asking the
+     * user for confirmation.
+     */
+    this.remove_roi = function(tree_id, roi_id) {
+        // Make sure the user knows what (s)he is doing
+        if (!confirm("Are you sure you want to remove the region of interest?")) {
+            return false;
+        }
+        // Remove the ROI
+        var roi_remove_url = django_url + project.id +
+            "/roi/" + roi_id + "/remove";
+        // Make Ajax call and handle response in callback
+        requestQueue.register(roi_remove_url, 'GET', null,
+            self.create_error_aware_callback(
+                function(status, text, xml) {
+                    var result = $.parseJSON(text);
+                    if (result.status) {
+                        self.show_status("Success", result.status);
+                    } else {
+                        alert("The server returned an unexpected response.");
+                    }
+                    $(tree_id).jstree("refresh", -1);
+                }));
     };
 
     /**

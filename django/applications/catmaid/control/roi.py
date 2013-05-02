@@ -82,3 +82,24 @@ def link_roi_to_class_instance(request, project_id=None, relation_id=None,
 
     return HttpResponse(json.dumps(status))
 
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def remove_roi_link(request, project_id=None, roi_id=None):
+    """ Removes the ROI link with the ID <roi_id>. If there are no more
+    links to the actual ROI after the removal, the ROI gets removed as well.
+    """
+    # Remove ROI link
+    roi_link = RegionOfInterestClassInstance.objects.get(id=roi_id)
+    roi_link.delete()
+    # Remove ROI if there are no more links to it
+    remaining_links = RegionOfInterestClassInstance.objects.filter(
+        region_of_interest=roi_link.region_of_interest)
+    if remaining_links.count() == 0:
+        roi_link.region_of_interest.delete()
+        status = {'status': "Removed ROI link with ID %s. The ROI " \
+            "itself has been deleted as well." % roi_id}
+    else:
+        status = {'status': "Removed ROI link with ID %s. The ROI " \
+            "itself has not been deleted, because there are still " \
+            "links to it." % roi_id}
+
+    return HttpResponse(json.dumps(status))

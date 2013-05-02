@@ -861,6 +861,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
                 for roi_link in roi_links:
                     roi_htmls.append( make_roi_html(roi_link.region_of_interest) )
                 roi_html = ''.join(roi_htmls)
+                roi_json = json.dumps( [r.id for r in roi_links] )
                 # Get sub-child information
                 subchild_types = get_child_classes( workspace_pid, child )
                 subchild_types_jstree = child_types_to_jstree_dict( subchild_types )
@@ -874,6 +875,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
                     'attr': {'id': 'node_%s' % child.id,
                              'linkid': child_link.id,
                              'rel': 'element',
+                             'rois': roi_json,
                              'child_groups': json.dumps(subchild_types_jstree)}}
 
                 # Test if there are children links present and mark

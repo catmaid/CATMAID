@@ -319,6 +319,8 @@ urlpatterns += patterns('',
         'catmaid.control.get_roi_info', name='get_roi_info'),
     url(r'^(?P<project_id>{0})/roi/link/(?P<relation_id>{0})/stack/(?P<stack_id>{0})/ci/(?P<ci_id>{0})/$'.format(integer),
         'catmaid.control.link_roi_to_class_instance', name='link_roi_to_class_instance'),
+    url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/remove$'.format(integer),
+        'catmaid.control.remove_roi_link', name='remove_roi_link'),
     )
 
 if settings.DEBUG:

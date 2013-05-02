@@ -367,8 +367,8 @@ var ClassificationEditor = new function()
      * Links the current view to the currently selected class instance.
      */
     this.link_roi = function(tree_id, node_id) {
-        // 1. Open Roi tool and register it with current stack. Bind own method
-        // to apply button. Add a cancel button.
+        // Open Roi tool and register it with current stack. Bind own method
+        // to apply button.
         var tool = new RoiTool();
         tool.button_roi_apply.onclick = function()
         {
@@ -399,8 +399,36 @@ var ClassificationEditor = new function()
                         $(tree_id).jstree("refresh", -1);
                     }));
 
-            // 2. Open the navigator tool as replacement
+            // Open the navigator tool as replacement
             project.setTool( new Navigator() );
+        };
+
+        // Create a cancel button
+        var cancel_button = document.createElement("div");
+        cancel_button.setAttribute("class", "box_right");
+        var cancel_link = document.createElement("a");
+        cancel_link.setAttribute("class", "button");
+        cancel_link.onclick = function()
+        {
+            project.setTool( new Navigator() );
+        };
+        var cancel_img = document.createElement("img");
+        cancel_img.setAttribute("src", STATIC_URL_JS + "widgets/themes/kde/cancel.gif");
+        cancel_img.setAttribute("alt", "cancel");
+        cancel_img.setAttribute("title", "cancel");
+        cancel_link.appendChild(cancel_img);
+        cancel_button.appendChild(cancel_link);
+
+        // Add cancel button to toolbar
+	    var toolbar = document.getElementById("toolbar_roi");
+	    var toolbar_button = document.getElementById("button_roi_apply").parentNode;
+        toolbar.insertBefore(cancel_button, toolbar_button.nextSibling);
+
+        // Make sure the cancel button gets removed
+        var original_destroy = tool.destroy;
+        tool.destroy = function() {
+            toolbar.removeChild(cancel_button);
+            original_destroy.call(this);
         };
 
         project.setTool( tool );

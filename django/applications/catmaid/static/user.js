@@ -50,13 +50,15 @@ User.getUsers = function(completionCallback)
 
 User.prototype.handleGetUsers = function(status, text, xml)
 {
-	if (status === 200 && text)
+	if (status == 200 && text)
 	{
 		var jsonData = $.parseJSON(text);
-		jsonData.forEach(function(userData) {
+		for (var i = 0; i < jsonData.length; i++)
+		{
+			var userData = jsonData[i];
 			new User(userData.id, userData.login, userData.full_name, userData.first_name, userData.last_name, 
 			         new THREE.Color().setRGB(userData.color[0], userData.color[1], userData.color[2]));
-		});
+		}
 	}
 	else
 	{

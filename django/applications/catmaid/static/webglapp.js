@@ -518,11 +518,18 @@ var WebGLApp = new function () {
 
     this.initialize_objects = function()
     {
-
+      this.skeletonmodel = NeuronStagingArea.get_skeletonmodel( self.id );
       this.line_material = new Object();
       this.actorColor = [255, 255, 0]; // color from staging area?
       this.visible = true;
-      this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
+      if( this.skeletonmodel === undefined ) {
+        console.log('Can not initialize skeleton object');
+        return;
+      }
+      if( this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible )
+        this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3, vertexColors: THREE.VertexColors } );
+      else
+        this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
       this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } );
       this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } );
 
@@ -533,6 +540,8 @@ var WebGLApp = new function () {
       this.geometry[connectivity_types[0]] = new THREE.Geometry();
       this.geometry[connectivity_types[1]] = new THREE.Geometry();
       this.geometry[connectivity_types[2]] = new THREE.Geometry();
+      this.vertexcolors = [];
+
       for ( var i=0; i<connectivity_types.length; ++i ) {
         this.actor[connectivity_types[i]] = new THREE.Line( this.geometry[connectivity_types[i]],
           this.line_material[connectivity_types[i]], THREE.LinePieces );
@@ -581,10 +590,23 @@ var WebGLApp = new function () {
 
     this.setPreVisibility = function( vis ) {
       self.visiblityCompositeActor( 1, vis );
+      for( var idx in self.otherSpheres ) {
+        if( self.otherSpheres.hasOwnProperty( idx )) {
+          if( self.otherSpheres[ idx ].type == 'presynaptic_to')
+            self.otherSpheres[ idx ].visible = vis;
+        }
+      }
     };
 
     this.setPostVisibility = function( vis ) {
       self.visiblityCompositeActor( 2, vis );
+      for( var idx in self.otherSpheres ) {
+        if( self.otherSpheres.hasOwnProperty( idx )) {
+          if( self.otherSpheres[ idx ].type == 'postsynaptic_to')
+            self.otherSpheres[ idx ].visible = vis;
+        }
+      }
+
     };
 
     this.setTextVisibility = function( vis ) {
@@ -618,6 +640,12 @@ var WebGLApp = new function () {
     }
 
     this.changeColor = function( value ) {
+      // changing color if one of the options is activated should have no effect
+      // this prevents the bug (?) which changes the transparency of the lines
+      // when changing the skeleton colors
+      if(this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible )
+        return;
+
       self.actorColor = value;
       self.updateSkeletonColor();
     }
@@ -719,7 +747,7 @@ var WebGLApp = new function () {
       this.original_vertices = skeleton_data.vertices;
       this.original_connectivity = skeleton_data.connectivity;
       var textlabel_visibility = $('#skeletontext-' + self.id).is(':checked');
-      var radiusCustomSphere;
+      var colorkey;
 
       for (var fromkey in this.original_connectivity) {
         var to = this.original_connectivity[fromkey];
@@ -757,6 +785,7 @@ var WebGLApp = new function () {
             this.otherSpheres[fromkey].node_id = fromkey;
             this.otherSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
             this.otherSpheres[fromkey].skeleton_id = self.id;
+            this.otherSpheres[fromkey].type = type;
             scene.add( this.otherSpheres[fromkey] );
           }
           if( !(fromkey in this.otherSpheres) && type === 'postsynaptic_to') {
@@ -765,14 +794,36 @@ var WebGLApp = new function () {
             this.otherSpheres[fromkey].node_id = fromkey;
             this.otherSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
             this.otherSpheres[fromkey].skeleton_id = self.id;
+            this.otherSpheres[fromkey].type = type;
             scene.add( this.otherSpheres[fromkey] );
+          }
+
+          if( (this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible ) && type ==='neurite' ) {
+
+            if( this.skeletonmodel.usercolor_visible )
+              colorkey = 'user_id_color';
+            else
+              colorkey = 'reviewuser_id_color';
+
+            var newcolor = new THREE.Color( 0x00ffff );
+            // newcolor.setHSL( 0.6, 1.0, Math.max( 0, ( 200 - from_vector.x ) / 400 ) * 0.5 + 0.5 );
+            newcolor.setRGB( this.original_vertices[fromkey][colorkey][0],
+              this.original_vertices[fromkey][colorkey][1],
+              this.original_vertices[fromkey][colorkey][2] );
+            this.vertexcolors.push( newcolor );
+            var newcolor = new THREE.Color( 0x00ffff );
+            newcolor.setRGB( this.original_vertices[tokey][colorkey][0],
+              this.original_vertices[tokey][colorkey][1],
+              this.original_vertices[tokey][colorkey][2] );
+            this.vertexcolors.push( newcolor );
+
           }
 
           // check if either from or to key vertex has a sphere associated with it
           var radiusFrom = parseFloat( this.original_vertices[fromkey]['radius'] );
           if( !(fromkey in this.radiusSpheres) && radiusFrom > 0 ) {
-            radiusCustomSphere = new THREE.OctahedronGeometry( radiusFrom * scale, 4); // TODO reuse sphere geometry
-            this.radiusSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+            radiusCustomSphere = new THREE.SphereGeometry( scale * radiusFrom, 32, 32, 1 );
+            this.radiusSpheres[fromkey] = new THREE.Mesh( radiusCustomSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
             this.radiusSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
             this.radiusSpheres[fromkey].node_id = fromkey;
             this.radiusSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
@@ -782,8 +833,8 @@ var WebGLApp = new function () {
 
           var radiusTo = parseFloat( this.original_vertices[tokey]['radius'] );
           if( !(tokey in this.radiusSpheres) && radiusTo > 0 ) {
-            radiusCustomSphere = new THREE.OctahedronGeometry( radiusTo * scale, 4); // TODO reuse sphere geometry
-            this.radiusSpheres[tokey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+            radiusCustomSphere = new THREE.SphereGeometry( scale * radiusTo, 32, 32, 1 );
+            this.radiusSpheres[tokey] = new THREE.Mesh( radiusCustomSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
             this.radiusSpheres[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
             this.radiusSpheres[tokey].orig_coord = this.original_vertices[fromkey];
             this.radiusSpheres[tokey].skeleton_id = self.id;
@@ -876,13 +927,15 @@ var WebGLApp = new function () {
 
       this.addCompositeActorToScene();
 
-      var skeletonmodel = NeuronStagingArea.get_skeletonmodel( self.id );
-      self.setActorVisibility( skeletonmodel.selected );
-      self.setPreVisibility( skeletonmodel.pre_visible );
-      self.setPostVisibility( skeletonmodel.post_visible );
-      self.setTextVisibility( skeletonmodel.text_visible );
+      self.setActorVisibility( this.skeletonmodel.selected );
+      self.setPreVisibility( this.skeletonmodel.pre_visible );
+      self.setPostVisibility( this.skeletonmodel.post_visible );
+      self.setTextVisibility( this.skeletonmodel.text_visible );
 
-      self.actorColor = skeletonmodel.colorrgb;
+      if( this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible )
+        this.geometry['neurite'].colors = this.vertexcolors;
+
+      self.actorColor = this.skeletonmodel.colorrgb;
       this.updateSkeletonColor();
 
     }
@@ -957,6 +1010,8 @@ var WebGLApp = new function () {
   self.look_at_active_node = function()
   {
     if( active_node ) {
+      // always fetch the update node coordinates first
+      self.updateActiveNodePosition();
       controls.target = new THREE.Vector3(active_node.position.x,
         active_node.position.y,
         active_node.position.z);
@@ -1053,7 +1108,7 @@ var WebGLApp = new function () {
   this.changeSkeletonColor = function( skeleton_id, value )
   {
     if( !skeletons.hasOwnProperty(skeleton_id) ){
-        console.log("Skeleton "+skeleton_id+" does not exist. Cannot change color in 3d!");
+        console.log("Skeleton "+skeleton_id+" does not exist.");
         return;
     } else {
         skeletons[skeleton_id].changeColor( value );
@@ -1409,7 +1464,6 @@ var WebGLApp = new function () {
         },
         "OK": function() {
           $(this).dialog("close");
-          // console.log($('#missing-section-height').val())
           missing_section_height = $('#missing-section-height').val();
           soma_scale = $('#soma-scale').val();
           if( show_missing_sections ) {
@@ -1675,6 +1729,41 @@ var WebGLApp = new function () {
     var td = $(document.createElement("td"));
     rowElement.append( td );
 
+  }
+
+  self.is_widget_open = function() {
+    if( $('#view_in_3d_webgl_widget').length ) 
+      return true;
+    else
+      return false;
+  }
+
+  self.setSkeletonPreVisibility = function( skeleton_id, value ) {
+    if( skeletons.hasOwnProperty(skeleton_id) ) {
+      skeletons[skeleton_id].setPreVisibility( value );
+    }
+    self.render();
+  }
+
+  self.setSkeletonPostVisibility = function( skeleton_id, value ) {
+    if( skeletons.hasOwnProperty(skeleton_id) ) {
+      skeletons[skeleton_id].setPostVisibility( value );
+    }
+    self.render();
+  }
+
+  self.setSkeletonTextVisibility = function( skeleton_id, value ) {
+    if( skeletons.hasOwnProperty(skeleton_id) ) {
+      skeletons[skeleton_id].setTextVisibility( value );
+    }
+    self.render();
+  }
+
+  self.setSkeletonAllVisibility = function( skeleton_id, value ) {
+    if( skeletons.hasOwnProperty(skeleton_id) ) {
+      skeletons[skeleton_id].setActorVisibility( value );
+    }
+    self.render();
   }
 
   self.addActiveObjectToStagingArea = function() {

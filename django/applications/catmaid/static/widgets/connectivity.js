@@ -81,8 +81,18 @@ var SkeletonConnectivity = new function()
             var skeleton_id = data['incoming'][e]['skeleton_id'];
             row = $('<tr />');
             row.append( $('<td />').html( '<a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\', ' + skeleton_id + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['incoming'][e]['name'] + '</a>') );
-            row.append( $('<td />').text( data['incoming'][e]['synaptic_count'] ) );
-            row.append( $('<td />').text( data['incoming'][e]['percentage_reviewed'] ) );
+            row.append( $('<td />').html( '<a href="#" onclick="ConnectorSelection.show_shared_connectors(' + skeleton_id + ',' + skeletonID + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['incoming'][e]['synaptic_count'] + '</a>' ) );
+
+            var cell = $('<td />');
+            if( data['incoming'][e]['percentage_reviewed'] == 100 ) {
+                cell.css('background-color', '#6fff5c');
+            } else if ( ( data['incoming'][e]['percentage_reviewed'] > 0 ) ) {
+                cell.css('background-color', '#ffc71d');
+            } else {
+                cell.css('background-color', '#ff8c8c');
+            }
+
+            row.append( cell.text( data['incoming'][e]['percentage_reviewed'] ) );
             row.append( $('<td />').text( data['incoming'][e]['node_count'] ) );
             row.append(
                 $('<td />').append(
@@ -139,8 +149,19 @@ var SkeletonConnectivity = new function()
             var skeleton_id = data['outgoing'][e]['skeleton_id'];
             row = $('<tr />');
             row.append( $('<td />').html( '<a href="#" onclick="TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\', ' + skeleton_id + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['outgoing'][e]['name'] + '</a>') );
-            row.append( $('<td />').text( data['outgoing'][e]['synaptic_count'] ) );
-            row.append( $('<td />').text( data['outgoing'][e]['percentage_reviewed'] ) );
+            // row.append( $('<td />').text( data['outgoing'][e]['synaptic_count'] ) );
+            row.append( $('<td />').html( '<a href="#" onclick="ConnectorSelection.show_shared_connectors(' + skeletonID + ',' + skeleton_id + '); return false;" style="text-decoration:none; color: black;" onmouseover="this.style.textDecoration=\'underline\';" onmouseout="this.style.textDecoration=\'none\';">' + data['outgoing'][e]['synaptic_count'] + '</a>' ) );
+
+            var cell = $('<td />');
+            if( data['outgoing'][e]['percentage_reviewed'] == 100 ) {
+                cell.css('background-color', '#6fff5c');
+            } else if ( ( data['outgoing'][e]['percentage_reviewed'] > 0 ) ) {
+                cell.css('background-color', '#ffc71d');
+            } else {
+                cell.css('background-color', '#ff8c8c');
+            }
+            
+            row.append( cell.text( data['outgoing'][e]['percentage_reviewed'] ) );
             row.append( $('<td />').text( data['outgoing'][e]['node_count'] ) );
             row.append(
                 $('<td />').append(
@@ -156,7 +177,7 @@ var SkeletonConnectivity = new function()
                                 var skelid = parseInt( event.target.value );
                                 var vis = $('#outgoing-show-skeleton-' + skelid).is(':checked');
                                 if( vis ) {
-                                    NeuronStagingArea.add_skeleton_to_stage( skelid, data['outgoing'][e]['name'] );
+                                    NeuronStagingArea.add_skeleton_to_stage_without_name( skelid );
                                 } else {
                                     NeuronStagingArea.remove_skeleton( skelid );
                                 }
@@ -176,7 +197,7 @@ var SkeletonConnectivity = new function()
                 for(var e in data['outgoing'] ) {
                     var skeleton_id = data['outgoing'][e]['skeleton_id'];
                     $('#outgoing-show-skeleton-' + skeleton_id).attr('checked', true);
-                    NeuronStagingArea.add_skeleton_to_stage( skeleton_id, data['outgoing'][e]['name'] );
+                    NeuronStagingArea.add_skeleton_to_stage_without_name( skeleton_id );
                 }
             } else {
                 for(var e in data['outgoing'] ) {
@@ -192,7 +213,7 @@ var SkeletonConnectivity = new function()
                 for(var e in data['incoming'] ) {
                     var skeleton_id = data['incoming'][e]['skeleton_id'];
                     $('#incoming-show-skeleton-' + skeleton_id).attr('checked', true);
-                    NeuronStagingArea.add_skeleton_to_stage( skeleton_id, data['incoming'][e]['name'] );
+                    NeuronStagingArea.add_skeleton_to_stage_without_name( skeleton_id );
                 }
             } else {
                 for(var e in data['incoming'] ) {

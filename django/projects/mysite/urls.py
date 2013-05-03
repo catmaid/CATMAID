@@ -2,7 +2,7 @@ from django.conf.urls.defaults import patterns, include, url
 from django.conf import settings
 from django.views.generic import TemplateView
 
-from catmaid.views import HomepageView, UseranalyticsView
+from catmaid.views import *
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -55,9 +55,15 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/skeletonlist/save$', 'catmaid.control.save_skeletonlist'),
     (r'^(?P<project_id>\d+)/skeletonlist/load$', 'catmaid.control.load_skeletonlist'),
 
+    # Views
     (r'^useranalytics$', 'catmaid.control.plot_useranalytics'),
+    (r'^(?P<project_id>\d+)/exportwidget$', ExportWidgetView.as_view() ),
+    (r'^(?P<project_id>\d+)/statisticswidget$', ProjectStatisticsWidgetView.as_view() ),
 
-    
+    (r'^(?P<project_id>\d+)/graphexport/summary-statistics/csv$', 'catmaid.control.graphexport.summary_statistics' ),
+    (r'^(?P<project_id>\d+)/graphexport/nx_json$', 'catmaid.control.graphexport.export_nxjsgraph' ),
+    (r'^(?P<project_id>\d+)/graphexport/graphml$', 'catmaid.control.graphexport.export_graphml' ),
+        
 
     (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'catmaid.control.adjacency_matrix'),
     (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'catmaid.control.skeletonlist_subgraph'),
@@ -108,6 +114,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuronname$', 'catmaid.control.neuronname'),
     (r'^(?P<project_id>\d+)/skeleton/node/(?P<treenode_id>\d+)/node_count$', 'catmaid.control.node_count'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'catmaid.control.skeleton_swc'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuroml$', 'catmaid.control.skeleton_neuroml'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', 'catmaid.control.skeleton_json'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neurohdf$', 'catmaid.control.skeleton_neurohdf'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review$', 'catmaid.control.export_review_skeleton'),
@@ -190,6 +197,8 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/connector/create$', 'catmaid.control.create_connector'),
     (r'^(?P<project_id>\d+)/connector/delete$', 'catmaid.control.delete_connector'),
     (r'^(?P<project_id>\d+)/connector/table/list$', 'catmaid.control.list_connector'),
+
+    (r'^(?P<project_id>\d+)/connector/list/graphedge$', 'catmaid.control.graphedge_list'),
 
     )
 
@@ -293,6 +302,13 @@ urlpatterns += patterns('',
         'catmaid.control.autofill_classification_graph', name='autofill_classification_graph'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/link$'.format(integer),
         'catmaid.control.link_classification_graph', name='link_classification_graph'),
+    )
+
+# Notifications
+urlpatterns += patterns('',
+    (r'^(?P<project_id>\d+)/notifications/list$', 'catmaid.control.list_notifications'),
+    (r'^(?P<project_id>\d+)/changerequest/approve$', 'catmaid.control.approve_change_request'),
+    (r'^(?P<project_id>\d+)/changerequest/reject$', 'catmaid.control.reject_change_request'),
     )
 
 if settings.DEBUG:

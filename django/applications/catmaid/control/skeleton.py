@@ -44,11 +44,11 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
         relation__relation_name='labeled_as',
         class_instance__class_column__class_name='label',
         treenode__id__in=tnodes,
-        project=project_id).select_related('treenode', 'class_instance').values('treenode_id', 'class_instance__name')
+        project=project_id).select_related('treenode', 'class_instance__name').values('treenode_id', 'class_instance__name')
 
     for q in qs_labels:
-        if 'ends' == q['class_instance__name']:
-            tnodes.remove( q['treenode_id'] )
+        if len(q['class_instance__name']) > 0:
+            tnodes.append( q['treenode_id'] )
 
     if len(tnodes) == 0:
         return HttpResponse(json.dumps({'error': 'No open leafs left!'}), mimetype='text/json')

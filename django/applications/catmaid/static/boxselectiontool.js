@@ -264,6 +264,9 @@ function BoxSelectionLayer( stack, tool, crop_box)
 
     this.redraw = function()
     {
+        if( !self.visible )
+            return;
+
         var cropBoxBB = tool.getCropBoxBoundingBox(stack);
 
         view.style.visibility = "visible";
@@ -337,6 +340,18 @@ function BoxSelectionLayer( stack, tool, crop_box)
             view.className = "cropBoxNonActive";
     };
 
+    this.isolateTileLayer = function()
+    {
+        stack.getView().removeChild( view );
+        self.visible = false;
+    };
+
+    this.reattachTileLayer = function()
+    {
+        stack.getView().appendChild( view );
+        self.visible = true;
+    };
+
     var self = this;
 
     // indicates if this the currently active crop box
@@ -359,8 +374,10 @@ function BoxSelectionLayer( stack, tool, crop_box)
 
     // internal opacity variable
     var opacity = 100;
+    this.visible = true;
 
     // add view to DOM
-    stack.getView().appendChild( view );
+    if( self.visible )
+        stack.getView().appendChild( view );
 };
 

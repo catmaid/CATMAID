@@ -124,6 +124,27 @@ var ObjectTree = new function()
                         }
                       });
                 }
+              },
+              all_skeletons_to_selection = {
+                "separator_before": false,
+                "separator_after": true,
+                "label": "Add all to selection",
+                "action": function (obj) {
+                  // Fetch skeletons with more than 1 node:
+                  requestQueue.register(django_url + project.id + '/object-tree/' + obj.attr("id").replace("node_", "") + '/' + obj.attr("rel") + '/1/get-skeletons', "POST", {},
+                      function(status, text, xml) {
+                        if (200 === status) {
+                          var json = $.parseJSON(text);
+                          if (json.error) {
+                            alert(json.error);
+                          } else {
+                            json.forEach(function(skid) {
+                              NeuronStagingArea.add_skeleton_to_stage_without_name( skid );
+                            });
+                          }
+                        }
+                      });
+                }
               }
           if (type_of_node === "root") {
             menu = {
@@ -156,6 +177,7 @@ var ObjectTree = new function()
           } else if (type_of_node === "group") {
             menu = {
               "show_all_skeletons": show_all_skeletons,
+              "all_skeletons_to_selection": all_skeletons_to_selection,
               "create_group": {
                 "separator_before": false,
                 "separator_after": false,
@@ -256,6 +278,7 @@ var ObjectTree = new function()
           } else if (type_of_node === "neuron") {
             menu = {
               "show_all_skeletons": show_all_skeletons,
+              "all_skeletons_to_selection": all_skeletons_to_selection,
               "select_nearest": {
                 "separator_before": false,
                 "separator_after": false,

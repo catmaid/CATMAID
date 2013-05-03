@@ -9,7 +9,7 @@ var NeuronStagingArea = new function()
 	{
 		var self = this;
 		self.id = id;
-		self.baseName = neuronname;
+		self.baseName = neuronname + ' (SkeletonID: ' + self.id + ')';
 
 		self.selected = true;
 
@@ -22,6 +22,9 @@ var NeuronStagingArea = new function()
 		self.post_visible = true;
 		self.text_visible = false;
 
+		self.usercolor_visible = false;
+		self.userreviewcolor_visible = false;
+
 		// properties for up/downstream
 		self.synaptic_count_high_pass = 0; // this number or higher
 		self.node_count_high_pass = 400; // this number or higher
@@ -31,7 +34,6 @@ var NeuronStagingArea = new function()
 			var dialog = document.createElement('div');
 			dialog.setAttribute("id", "dialog-confirm");
 			dialog.setAttribute("title", "Skeleton Properties");
-
 
 			var entry = document.createElement('input');
 			entry.setAttribute("type", "text");
@@ -108,8 +110,17 @@ var NeuronStagingArea = new function()
 		                }
 		            }
 		    });
-}
+		}
 
+	}
+
+	self.is_widget_open = function()
+	{
+		if( $( "#neuron_staging_table").length == 0 ) {
+			return false;
+		} else {
+			return true;
+		}			
 	}
 
 	self.reinit_list_with_existing_skeleton = function()
@@ -142,7 +153,7 @@ var NeuronStagingArea = new function()
 	        type: "GET",
 	        dataType: "json",
 	        success: function ( data ) {
-	        	self.add_skeleton_to_stage( id, data['neuronname'] );
+	        	self.add_skeleton_to_stage( skeleton_id, data['neuronname'] );
 	        	if (typeof callback !== "undefined") {
   					callback();
   				}
@@ -161,6 +172,11 @@ var NeuronStagingArea = new function()
 		if( skeletonmodels.hasOwnProperty( id ) ) {
 			self._remove_skeleton_from_table( id );
 			delete skeletonmodels[ id ];
+			// remove from webgl if open
+			if( WebGLApp.is_widget_open() ) {
+				WebGLApp.removeSkeleton( id );
+			}
+
 		} else {
 			console.log('Cannot remove skeleton', id, ' it is not in the list');
 		}
@@ -264,7 +280,7 @@ var NeuronStagingArea = new function()
       			alert("Select the node of a skeleton, not a connector, to add it oto the staging area.");
       			return;
     		}
-    		self.add_skeleton_to_stage( skeleton_id, $('#neuronName').text() );
+    		self.add_skeleton_to_stage_without_name( skeleton_id );
 		}
 	}
 
@@ -345,21 +361,24 @@ var NeuronStagingArea = new function()
 		      {
 		      	var vis = $('#skeletonshow-' + skeleton.id).is(':checked')
 		      	skeletonmodels[ skeleton.id ].selected = vis;
-		      	if( $('#view_in_3d_webgl_widget').length )
-		      		WebGLApp.refresh_skeletons();
+		        if( WebGLApp.is_widget_open() ) {
 
-		        // var vis = $('#skeletonshow-' + skeleton.id).is(':checked');
-		        // skeletons[skeleton.id].setActorVisibility( vis );
-		        // skeletons[skeleton.id].setPreVisibility( vis );
-		        // $('#skeletonpre-' + skeleton.id).attr('checked', vis );
-		        // skeletons[skeleton.id].setPostVisibility( vis );
-		        // $('#skeletonpost-' + skeleton.id).attr('checked', vis );
-		        // if( vis === false) {
-		        //   skeletons[skeleton.id].setTextVisibility( vis );
-		        //   $('#skeletontext-' + skeleton.id).attr('checked', vis );
-		        // }
-		          
-		        // self.render();
+		        	if( event.shiftKey ) {
+		        		WebGLApp.setSkeletonAllVisibility( skeleton.id, vis);
+		        	} else {
+			        	WebGLApp.setSkeletonAllVisibility( skeleton.id, vis );
+
+			        	skeletonmodels[ skeleton.id ].pre_visible = vis;
+			        	$('#skeletonpre-' + skeleton.id).attr('checked', vis);
+			        	WebGLApp.setSkeletonPreVisibility( skeleton.id,  vis );
+
+			        	skeletonmodels[ skeleton.id ].post_visible = vis;
+			        	$('#skeletonpost-' + skeleton.id).attr('checked', vis);
+			        	WebGLApp.setSkeletonPostVisibility( skeleton.id, vis );
+
+		        	}
+		        }
+		        	
 		      } )
 		));
 
@@ -375,8 +394,10 @@ var NeuronStagingArea = new function()
 		      })
 		      .click( function( event )
 		      {
-		        // skeletons[skeleton.id].setPreVisibility( $('#skeletonpre-' + skeleton.id).is(':checked') );
 		        skeletonmodels[ skeleton.id ].pre_visible = $('#skeletonpre-' + skeleton.id).is(':checked');
+		        if( WebGLApp.is_widget_open() )
+		        	WebGLApp.setSkeletonPreVisibility( skeleton.id, skeletonmodels[ skeleton.id ].pre_visible);
+
 		      } )
 		));
 
@@ -393,8 +414,8 @@ var NeuronStagingArea = new function()
 		      .click( function( event )
 		      {
 		      	skeletonmodels[ skeleton.id ].post_visible = $('#skeletonpost-' + skeleton.id).is(':checked');
-		        // skeletons[skeleton.id].setPostVisibility( $('#skeletonpost-' + skeleton.id).is(':checked') );
-		        // self.render();
+		        if( WebGLApp.is_widget_open() )
+		        	WebGLApp.setSkeletonPostVisibility( skeleton.id, skeletonmodels[ skeleton.id ].post_visible);
 		      } )
 		));
 
@@ -410,8 +431,38 @@ var NeuronStagingArea = new function()
 		      .click( function( event )
 		      {
 		      	skeletonmodels[ skeleton.id ].text_visible = $('#skeletontext-' + skeleton.id).is(':checked');
-		        // skeletons[skeleton.id].setTextVisibility( $('#skeletontext-' + skeleton.id).is(':checked') );
-		        // self.render();
+		        if( WebGLApp.is_widget_open() )
+		        	WebGLApp.setSkeletonTextVisibility( skeleton.id, skeletonmodels[ skeleton.id ].text_visible);
+		      } )
+		));
+
+		rowElement.append(
+		  $(document.createElement("td")).append(
+		    $(document.createElement("input")).attr({
+		              id:    'skeletonusercolor-' + skeleton.id,
+		              name:  skeleton.baseName,
+		              value: skeleton.id,
+		              type:  'checkbox',
+		              checked:false
+		      })
+		      .click( function( event )
+		      {
+		      	skeletonmodels[ skeleton.id ].usercolor_visible = $('#skeletonusercolor-' + skeleton.id).is(':checked');
+		      } )
+		));
+
+		rowElement.append(
+		  $(document.createElement("td")).append(
+		    $(document.createElement("input")).attr({
+		              id:    'skeletonuserreviewcolor-' + skeleton.id,
+		              name:  skeleton.baseName,
+		              value: skeleton.id,
+		              type:  'checkbox',
+		              checked:false
+		      })
+		      .click( function( event )
+		      {
+		      	skeletonmodels[ skeleton.id ].userreviewcolor_visible = $('#skeletonuserreviewcolor-' + skeleton.id).is(':checked');
 		      } )
 		));
 
@@ -496,10 +547,66 @@ var NeuronStagingArea = new function()
 		  success: function ( data ) {
 		    for( var idx in data['skeletonlist'])
 		    {
-		    	self.add_skeleton_to_stage( data['skeletonlist'][idx], data['neuronname'][idx] );
+		    	self.add_skeleton_to_stage_without_name( data['skeletonlist'][idx] );
 		    }
 		  }
 		});
+	}
+
+	self.usercolormap_dialog = function() {
+
+		var dialog = document.createElement('div');
+		dialog.setAttribute("id", "user-colormap-dialog");
+		dialog.setAttribute("title", "User colormap");
+
+	    var tab = document.createElement('table');
+	    tab.setAttribute("id", "usercolormap-table");
+	    tab.innerHTML =
+	        '<thead>' +
+	          '<tr>' +
+	            '<th>username</th>' +
+	            '<th>longname</th>' +
+	            '<th>color</th>' +
+	          '</tr>' +
+	        '</thead>' +
+	        '<tbody></tbody>';
+	    dialog.appendChild(tab);
+
+		$(dialog).dialog({
+		  height: 440,
+		  modal: false,
+		  dialogClass: "no-close",
+		  buttons: {
+		    "OK": function() {
+		      $(this).dialog("close");
+		      
+		    }
+		  },
+		  close: function(event, ui) { 
+		  	$('#user-colormap-dialog').remove();
+		  }
+		});
+
+        requestQueue.register(django_url + 'user-list', 'GET', undefined,
+            function (status, data, text) {
+                var e = $.parseJSON(data);
+                if (status !== 200) {
+                    alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+                } else {
+                	for(var id in e) {
+                		if( e.hasOwnProperty( id )) {
+                			if( id == -1)
+                				continue;
+        					var rowElement = $('<tr/>');
+        					rowElement.append( $('<td/>').text( e[id].name ) );
+    						rowElement.append( $('<td/>').text( e[id].longname ) );
+    						rowElement.append( $('<div/>').css('width', '100px').css('height', '20px').css('background-color', 'rgb(' + e[id]['user_color'][0] + ',' + e[id]['user_color'][1] + ',' + e[id]['user_color'][2] + ')') );
+    						$('#usercolormap-table > tbody:last').append( rowElement );
+                		}
+                	}
+                }
+        });
+
 	}
 
 }

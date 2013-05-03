@@ -21,3 +21,19 @@ class UseranalyticsView(TemplateView):
         context = super(UseranalyticsView, self).get_context_data(**kwargs)
         context['catmaid_url'] = settings.CATMAID_URL
         return context
+
+class ExportWidgetView(TemplateView):
+    template_name = "catmaid/exportwidget.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(ExportWidgetView, self).get_context_data(**kwargs)
+        context['catmaid_url'] = settings.CATMAID_URL
+        return context
+
+class ProjectStatisticsWidgetView(TemplateView):
+    template_name = "catmaid/projectstatistics.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(ProjectStatisticsWidgetView, self).get_context_data(**kwargs)
+        context['catmaid_url'] = settings.CATMAID_URL
+        return context

@@ -165,6 +165,11 @@ function handle_login(status, text, xml, completionCallback) {
       alert(e.error);
     }
     handle_profile_update(e);
+    
+    // Asynchronously get the full list of users.
+    // TODO: how to handle failure of this call?
+    User.getUsers();
+    
     updateProjects(completionCallback);
   } else if (status != 200) {
     // Of course, lots of non-200 errors are fine - just report

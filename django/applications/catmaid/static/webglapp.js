@@ -637,15 +637,9 @@ var WebGLApp = new function () {
           // Determine the base color of the vertex.
           var baseColor = this.actorColor;
           if (this.skeletonmodel.usercolor_visible) {
-            if (!('userColor' in vertex)) {
-              vertex.userColor = new THREE.Color().setRGB( vertex.user_id_color[0], vertex.user_id_color[1], vertex.user_id_color[2] );
-            }
-            baseColor = vertex.userColor;
+            baseColor = User(vertex.user_id).color;
           } else if (this.skeletonmodel.userreviewcolor_visible) {
-            if (!('reviewerColor' in vertex)) {
-              vertex.reviewerColor = new THREE.Color().setRGB( vertex.reviewuser_id_color[0], vertex.reviewuser_id_color[1], vertex.reviewuser_id_color[2] );
-            }
-            baseColor = vertex.reviewerColor;
+            baseColor = User(vertex.reviewer_id).color;
           }
           
           // Darken the color by the vertex's weight.
@@ -659,6 +653,9 @@ var WebGLApp = new function () {
           }
         }
         this.geometry['neurite'].colorsNeedUpdate = true;
+        
+        this.actor['neurite'].material.color = new THREE.Color(0xffffff);
+        this.actor['neurite'].material.needsUpdate = true;
       } else {
         // Display the entire skeleton with a single color.
         this.line_material['neurite'].vertexColors = THREE.NoColors;

@@ -10,7 +10,6 @@ from catmaid.control.common import *
 
 import networkx as nx
 from tree_util import edge_count_to_root
-from user import _compute_rgb
 
 try:
     import neuroml
@@ -102,9 +101,6 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
             else:
                 lab = []
 
-        user_color = _compute_rgb( tn.user_id )
-        reviewuser_id_color = _compute_rgb( tn.reviewer_id )
-
         vertices[tn.id] = {
             'x': tn.location.x,
             'y': tn.location.y,
@@ -112,13 +108,9 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
             'radius': max(tn.radius, 0),
             'type': 'skeleton',
             'labels': lab,
-            'user_id_color': user_color,
-            'reviewuser_id_color': reviewuser_id_color
+            'user_id': tn.user_id,
+            'reviewer_id': tn.reviewer_id
             
-            # TODO: can use sophisticated colormaps
-            # http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
-
-            # 'reviewer_id': tn.reviewer_id,
             # 'review_time': tn.review_time
             # To submit the review time, we would need to encode the datetime as string
             # http://stackoverflow.com/questions/455580/json-datetime-between-python-and-javascript

@@ -1,33 +1,28 @@
 import json
-import md5
+import colorsys
 
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
-def _compute_rgb( user_id, normalize = True ):
-	if user_id == -1:
-		return [1.0, 0.0, 0.0]
-	user_color = md5.new()
-	user_color.update(str(user_id))
-	user_color = user_color.hexdigest()
-	if normalize:
-		return [int(user_color[-2:],16)/255.,
-				int(user_color[-4:-2],16)/255.,
-				int(user_color[-6:-4],16)/255. ]
-	else:
-		return [int(user_color[-2:],16),
-				int(user_color[-4:-2],16),
-				int(user_color[-6:-4],16) ]
-
 @login_required
 def user_list(request):
-    result = {}
-    for u in User.objects.all().order_by('last_name', 'first_name'):
-        result[str(u.id)] = {
+    result = []
+    users = User.objects.all().order_by('last_name', 'first_name')
+    i = 0.0
+    for u in users:
+        result.append({
             "id": u.id,
-            "name": u.username,
-            "longname": u.get_full_name(),
-            "user_color_normalize": _compute_rgb( u.id ),
-            "user_color": _compute_rgb( u.id, False ) }
+            "login": u.username,
+            "full_name": u.get_full_name(),
+            "first_name": u.first_name,
+            "last_name": u.last_name,
+            "color": colorsys.hsv_to_rgb(i / len(users) + 90.0 / 360.0, 1.0 - (i % 2) * 0.5, 1) })
+        i = i + 1.0
+    
+    # Rational behind color algorithm:
+    #  * The hue of each color is evenly spaced around the color map starting at green.
+    #  * The saturation of each color toggles between 1 and 0.5 so that neighboring colors are easier to distinguish.
+    #  * The value is held at 1.0 to maximize the range of shading that can be done.
+    
     return HttpResponse(json.dumps(result), mimetype='text/json')

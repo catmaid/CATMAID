@@ -586,8 +586,8 @@ var NeuronStagingArea = new function()
 	    tab.innerHTML =
 	        '<thead>' +
 	          '<tr>' +
-	            '<th>username</th>' +
-	            '<th>longname</th>' +
+	            '<th>login</th>' +
+	            '<th>name</th>' +
 	            '<th>color</th>' +
 	          '</tr>' +
 	        '</thead>' +
@@ -596,6 +596,7 @@ var NeuronStagingArea = new function()
 
 		$(dialog).dialog({
 		  height: 440,
+		  width: 340,
 		  modal: false,
 		  dialogClass: "no-close",
 		  buttons: {
@@ -615,16 +616,15 @@ var NeuronStagingArea = new function()
                 if (status !== 200) {
                     alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
                 } else {
-                	for(var id in e) {
-                		if( e.hasOwnProperty( id )) {
-                			if( id == -1)
-                				continue;
-        					var rowElement = $('<tr/>');
-        					rowElement.append( $('<td/>').text( e[id].name ) );
-    						rowElement.append( $('<td/>').text( e[id].longname ) );
-    						rowElement.append( $('<div/>').css('width', '100px').css('height', '20px').css('background-color', 'rgb(' + e[id]['user_color'][0] + ',' + e[id]['user_color'][1] + ',' + e[id]['user_color'][2] + ')') );
-    						$('#usercolormap-table > tbody:last').append( rowElement );
-                		}
+                	for(var i = 0; i < e.length; i++) {
+                		var user = e[i];
+						if( user.id == -1)
+							continue;
+						var rowElement = $('<tr/>');
+						rowElement.append( $('<td/>').text( user.login ) );
+						rowElement.append( $('<td/>').text( user.full_name ) );
+						rowElement.append( $('<div/>').css('width', '100px').css('height', '20px').css('background-color', 'rgb(' + Math.round(user.color[0]*255) + ',' + Math.round(user.color[1]*255) + ',' + Math.round(user.color[2]*255) + ')') );
+						$('#usercolormap-table > tbody:last').append( rowElement );
                 	}
                 }
         });

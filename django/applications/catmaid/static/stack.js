@@ -276,11 +276,12 @@ function Stack(
 	 */
 	this.moveTo = function( zp, yp, xp, sp, completionCallback )
 	{
-		var layersWithBeforeMove = [];
+		var layersWithBeforeMove = [], l;
 		for ( var key in layers ) {
 			if (layers.hasOwnProperty(key)) {
 				l = layers[key];
-				if (l.beforeMove) {
+				// if (l.beforeMove) {
+				if( typeof l.beforeMove === 'function') {
 					layersWithBeforeMove.push(l);
 				}
 			}

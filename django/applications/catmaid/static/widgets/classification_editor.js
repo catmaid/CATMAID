@@ -3,6 +3,7 @@ var ClassificationEditor = new function()
     var self = this;
     var content_div_id = 'classification_editor_widget';
     var display_superclass_names = false;
+    var display_previews = true;
     var display_edit_tools = true;
     var workspace_pid;
     var bboxtool = new BoxSelectionTool();
@@ -67,6 +68,14 @@ var ClassificationEditor = new function()
                 display_superclass_names = false;
             }
             tree.jstree("refresh", -1);
+        });
+
+        $("#display_previews").click(function () {
+            if ($("#display_previews").attr('checked')) {
+                display_previews = true;
+            } else {
+                display_previews = false;
+            }
         });
 
         if ($("#display_edit_tools").length === 0) {
@@ -312,27 +321,33 @@ var ClassificationEditor = new function()
             // Add a preview when hovering a roi image
             $("img.roiimage", data.rslt.obj).hover(
                 function(e) {
-                    // Show preview in mouse-in handler
-                    var roi_id = $(this).attr('roi_id');
-                    var no_cache = "?v=" + (new Date()).getTime();
-                    var roi_img_url = django_url + project.id +
-                        "/roi/" + roi_id + "/image" + no_cache;
-                    $("body").append("<p id='imagepreview'><img src='" +
-                        roi_img_url + "' alt='Image preview' /></p>");
-                    $("#imagepreview")
-                        .css("top", (e.pageY - preview_y_offset) + "px")
-                        .css("left", (e.pageX + preview_x_offset) + "px")
-                        .fadeIn("fast");
+                    if (display_previews) {
+                        // Show preview in mouse-in handler
+                        var roi_id = $(this).attr('roi_id');
+                        var no_cache = "?v=" + (new Date()).getTime();
+                        var roi_img_url = django_url + project.id +
+                            "/roi/" + roi_id + "/image" + no_cache;
+                        $("body").append("<p id='imagepreview'><img src='" +
+                            roi_img_url + "' alt='Image preview' /></p>");
+                        $("#imagepreview")
+                            .css("top", (e.pageY - preview_y_offset) + "px")
+                            .css("left", (e.pageX + preview_x_offset) + "px")
+                            .fadeIn("fast");
+                    }
                 },
                 function(e) {
-                    // Hide preview in mouse-out handler
-                    $("#imagepreview").remove();
+                    if (display_previews) {
+                        // Hide preview in mouse-out handler
+                        $("#imagepreview").remove();
+                    }
                 });
             $("img.roiimage", data.rslt.obj).mousemove(
                 function(e) {
-                    $("#imagepreview")
-                        .css("top", (e.pageY - preview_y_offset) + "px")
-                        .css("left", (e.pageX + preview_x_offset) + "px")
+                    if (display_previews) {
+                        $("#imagepreview")
+                            .css("top", (e.pageY - preview_y_offset) + "px")
+                            .css("left", (e.pageX + preview_x_offset) + "px")
+                    }
                 });
         });
 

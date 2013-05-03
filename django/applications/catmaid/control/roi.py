@@ -1,11 +1,27 @@
 import json
+import os.path
 
+from django.conf import settings
 from django.http import HttpResponse
+from django.shortcuts import redirect
 
+from pgmagick import Image, Blob
+from catmaid.control import cropping
 from catmaid.control.authentication import requires_user_role
+from catmaid.control.common import urljoin
 from catmaid.models import UserRole, RegionOfInterest, Project, Relation
 from catmaid.models import Stack, ClassInstance, RegionOfInterestClassInstance
 from catmaid.fields import Double3D
+
+from celery.task import task
+
+# Prefix for stored ROIs
+file_prefix = "roi_"
+# File extension of the stored ROIs
+file_extension = "png"
+# The path were cropped files get stored in
+roi_path = os.path.join(settings.MEDIA_ROOT,
+    settings.MEDIA_ROI_SUBDIRECTORY)
 
 @requires_user_role([UserRole.Browse])
 def get_roi_info(request, project_id=None, roi_id=None):
@@ -103,3 +119,53 @@ def remove_roi_link(request, project_id=None, roi_id=None):
             "links to it." % roi_id}
 
     return HttpResponse(json.dumps(status))
+
+@task()
+def create_roi_image(user, project_id, roi_id, file_path):
+    # Get ROI
+    roi = RegionOfInterest.objects.get(id=roi_id)
+    # Prepare parameters
+    hwidth = roi.width * 0.5
+    x_min = roi.location.x - hwidth
+    x_max = roi.location.x + hwidth
+    hheight = roi.height * 0.5
+    y_min = roi.location.y - hheight
+    y_max = roi.location.y + hheight
+    z_min = z_max = roi.location.z
+    single_channel = False
+    # Create a cropping job
+    job = cropping.CropJob(user, project_id, [roi.stack.id],
+        x_min, x_max, y_min, y_max, z_min, z_max, roi.zoom_level,
+        single_channel)
+    # Create the pgmagick images
+    cropped_stacks = cropping.extract_substack( job )
+    if len(cropped_stacks) == 0:
+        raise StandardError("Couldn't create ROI image")
+    # There is only one image here
+    img = cropped_stacks[0]
+    img.write(str(file_path))
+
+    return "Created image of ROI %s" % roi_id
+
+@requires_user_role([UserRole.Browse])
+def get_roi_image(request, project_id=None, roi_id=None):
+    """ Returns the URL to the cropped image, described by the ROI.  These
+    images are cached, and won't get removed automatically. If the image is
+    already present its URL is used and returned. For performance reasons it
+    might be a good idea, to add this test to the web-server config.
+    """
+    file_name = file_prefix + roi_id + "." + file_extension
+    file_path = os.path.join(roi_path, file_name)
+    if not os.path.exists(file_path):
+        # Start async processing
+        create_roi_image.delay(request.user, project_id, roi_id, file_path)
+        # Use waiting image
+        url = urljoin(settings.STATIC_URL,
+            "widgets/themes/kde/wait_bgwhite.gif")
+    else:
+        # Create real image di
+        url_base = urljoin(settings.MEDIA_URL,
+            settings.MEDIA_ROI_SUBDIRECTORY)
+        url = urljoin(url_base, file_name)
+
+    return redirect(url)

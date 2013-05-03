@@ -321,9 +321,13 @@ urlpatterns += patterns('',
         'catmaid.control.link_roi_to_class_instance', name='link_roi_to_class_instance'),
     url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/remove$'.format(integer),
         'catmaid.control.remove_roi_link', name='remove_roi_link'),
+    url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/image$'.format(integer),
+        'catmaid.control.get_roi_image', name='get_roi_image'),
     )
 
 if settings.DEBUG:
     urlpatterns += patterns('',
         (r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.STATIC_ROOT}),
+        (r'^%s(?P<path>.*)$' % settings.MEDIA_URL.replace(settings.CATMAID_URL, ''),
+            'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
     )

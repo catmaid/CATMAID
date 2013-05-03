@@ -115,9 +115,20 @@ def remove_roi_link(request, project_id=None, roi_id=None):
     remaining_links = RegionOfInterestClassInstance.objects.filter(
         region_of_interest=roi_link.region_of_interest)
     if remaining_links.count() == 0:
+        # Delete the ROI class instance
         roi_link.region_of_interest.delete()
+        # Make sure, there is no cropped image left
+        file_name, file_path = create_roi_path(roi_id)
+        file_info = ""
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            try:
+                os.remove(file_path)
+                file_info = " The same goes for its cropped image."
+            except OSError, e:
+                file_info = " However, its cropped image couldn't be removed."
+        # Create status data
         status = {'status': "Removed ROI link with ID %s. The ROI " \
-            "itself has been deleted as well." % roi_id}
+            "itself has been deleted as well.%s" % (roi_id, file_info)}
     else:
         status = {'status': "Removed ROI link with ID %s. The ROI " \
             "itself has not been deleted, because there are still " \

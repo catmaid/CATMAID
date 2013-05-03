@@ -96,6 +96,9 @@ class Overlay(models.Model):
     tile_height = models.IntegerField(default=512)
     tile_source_type = models.IntegerField(default=1)
 
+    def __unicode__(self):
+        return str(self.id) + ": " + self.stack.title + " with " + self.title
+
 class Concept(models.Model):
     class Meta:
         db_table = "concept"

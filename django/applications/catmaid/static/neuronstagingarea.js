@@ -213,30 +213,20 @@ var NeuronStagingArea = new function()
       		WebGLApp.changeSkeletonColor( id, skeletonmodels[ id ].colorrgb ); 	
     }
 
-  var randomColors = [];
-	  randomColors[0] = [255, 255, 0]; // yellow
-	  randomColors[1] = [255, 0, 255]; // magenta
-	  // randomColors[2] = [0, 255, 255]; // cyan
-	  randomColors[2] = [255, 255, 255]; // white
-	  randomColors[3] = [255, 128, 0]; // orange
-
 	self.randomizeColors = function()
 	{
-
-		var i = 0, col, skeleton_id, skeletonsin3d = self.get_selected_skeletons();
-		for(var idx = 0; idx < skeletonsin3d.length; idx ++) {
-			skeleton_id = skeletonsin3d[idx];
-			if( idx < randomColors.length ) {
-				col = randomColors[idx];
-			} else {
-				col = [parseInt( Math.random() * 255 ),
-						parseInt( Math.random() * 255 ),
-						parseInt( Math.random() * 255 ) ];
-			}
-			self.set_skeleton_color_rgb( skeleton_id, col);
+		var skeletons = self.get_selected_skeletons();
+		var numSkeletons = Object.keys(skeletons).length;
+		var hueStart = Math.random();
+		var hueStep = 1.0 / skeletons.length;
+		for (var i = 0; i < skeletons.length; i++) {
+			var skeleton_id = skeletons[i];
+			var newColor = new THREE.Color().setHSL((hueStart + i * hueStep) % 1.0, (skeletons.length > 6 ? 1.0 - i % 2.0 * 0.5 : 1.0), 0.5);
+			self.set_skeleton_color_hex( skeleton_id, '#' + newColor.getHexString());
 			self.update_skeleton_color_button( skeleton_id );
-			if( WebGLApp.has_skeleton( parseInt( skeleton_id ) ) )
-				WebGLApp.changeSkeletonColor( parseInt(skeleton_id), col );
+			if( WebGLApp.has_skeleton( parseInt( skeleton_id ) ) ) {
+				WebGLApp.changeSkeletonColor( parseInt(skeleton_id), [newColor.r * 255, newColor.g * 255, newColor.b * 255] );
+			}
 		}
 
 	}

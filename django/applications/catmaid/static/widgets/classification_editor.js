@@ -217,6 +217,7 @@ var ClassificationEditor = new function()
                                 menu['link_roi'] = {
                                     "separator_before": true,
                                     "separator_after": false,
+                                    "_class": "wider-context-menu",
                                     "label": "Link new region of interest",
                                     "action": function (obj) {
                                         var node_id = obj.attr("id").replace("node_", "");
@@ -243,6 +244,7 @@ var ClassificationEditor = new function()
                                     "separator_before": false,
                                     "separator_after": false,
                                     "label": "Remove region of interest",
+                                    "_class": "wider-context-menu",
                                     "_disabled": rois.length == 0,
                                     "submenu": submenu,
                                 };

@@ -93,6 +93,11 @@ def link_roi_to_class_instance(request, project_id=None, relation_id=None,
     roi_ci.class_instance = ci
     roi_ci.save()
 
+    # Create cropped image, if wanted
+    if settings.ROI_AUTO_CREATE_IMAGE:
+        file_name, file_path = create_roi_path(roi.id)
+        create_roi_image.delay(request.user, project_id, roi.id, file_path)
+
     # Build result data set
     status = {'status': "Created new ROI with ID %s." % roi.id}
 
@@ -147,6 +152,14 @@ def create_roi_image(user, project_id, roi_id, file_path):
 
     return "Created image of ROI %s" % roi_id
 
+def create_roi_path(roi_id):
+    """ Creates a tuple (file name, file path) for the given ROI ID.
+    """
+    file_name = file_prefix + str(roi_id) + "." + file_extension
+    file_path = os.path.join(roi_path, file_name)
+
+    return (file_name, file_path)
+
 @requires_user_role([UserRole.Browse])
 def get_roi_image(request, project_id=None, roi_id=None):
     """ Returns the URL to the cropped image, described by the ROI.  These
@@ -154,8 +167,7 @@ def get_roi_image(request, project_id=None, roi_id=None):
     already present its URL is used and returned. For performance reasons it
     might be a good idea, to add this test to the web-server config.
     """
-    file_name = file_prefix + roi_id + "." + file_extension
-    file_path = os.path.join(roi_path, file_name)
+    file_name, file_path = create_roi_path(roi_id)
     if not os.path.exists(file_path):
         # Start async processing
         create_roi_image.delay(request.user, project_id, roi_id, file_path)

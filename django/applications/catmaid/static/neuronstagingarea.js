@@ -615,26 +615,18 @@ var NeuronStagingArea = new function()
 		  	$('#user-colormap-dialog').remove();
 		  }
 		});
-
-        requestQueue.register(django_url + 'user-list', 'GET', undefined,
-            function (status, data, text) {
-                var e = $.parseJSON(data);
-                if (status !== 200) {
-                    alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
-                } else {
-                	for(var id in e) {
-                		if( e.hasOwnProperty( id )) {
-                			if( id == -1)
-                				continue;
-        					var rowElement = $('<tr/>');
-        					rowElement.append( $('<td/>').text( e[id].name ) );
-    						rowElement.append( $('<td/>').text( e[id].longname ) );
-    						rowElement.append( $('<div/>').css('width', '100px').css('height', '20px').css('background-color', 'rgb(' + e[id]['user_color'][0] + ',' + e[id]['user_color'][1] + ',' + e[id]['user_color'][2] + ')') );
-    						$('#usercolormap-table > tbody:last').append( rowElement );
-                		}
-                	}
-                }
-        });
+		
+		users = User.all();
+		for (var userID in users) {
+			if (userID != -1) {
+				user = users[userID];
+				var rowElement = $('<tr/>');
+				rowElement.append( $('<td/>').text( user.login ) );
+				rowElement.append( $('<td/>').text( user.fullName ) );
+				rowElement.append( $('<div/>').css('width', '100px').css('height', '20px').css('background-color', '#' + user.color.getHexString()) );
+				$('#usercolormap-table > tbody:last').append( rowElement );
+			}
+		}
 
 	}
 

@@ -4,6 +4,7 @@ import os.path
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import redirect
+from django.core.cache import cache
 
 from pgmagick import Image, Blob
 from catmaid.control import cropping
@@ -14,6 +15,7 @@ from catmaid.models import Stack, ClassInstance, RegionOfInterestClassInstance
 from catmaid.fields import Double3D
 
 from celery.task import task
+from celery.utils.log import get_task_logger
 
 # Prefix for stored ROIs
 file_prefix = "roi_"
@@ -22,6 +24,10 @@ file_extension = "png"
 # The path were cropped files get stored in
 roi_path = os.path.join(settings.MEDIA_ROOT,
     settings.MEDIA_ROI_SUBDIRECTORY)
+# A common logger for the celery tasks
+logger = get_task_logger(__name__)
+# Locks will expire after two minutes
+LOCK_EXPIRE = 60 * 2
 
 @requires_user_role([UserRole.Browse])
 def get_roi_info(request, project_id=None, roi_id=None):
@@ -96,7 +102,7 @@ def link_roi_to_class_instance(request, project_id=None, relation_id=None,
     # Create cropped image, if wanted
     if settings.ROI_AUTO_CREATE_IMAGE:
         file_name, file_path = create_roi_path(roi.id)
-        create_roi_image.delay(request.user, project_id, roi.id, file_path)
+        create_roi_image(request.user, project_id, roi.id, file_path)
 
     # Build result data set
     status = {'status': "Created new ROI with ID %s." % roi.id}
@@ -136,30 +142,58 @@ def remove_roi_link(request, project_id=None, roi_id=None):
 
     return HttpResponse(json.dumps(status))
 
-@task()
+def create_lock_name(roi_id):
+    """ Creates a name for the image creation lock.
+    """
+    return "%s-lock-%s" % ('catmaid.create_roi_image', roi_id)
+
 def create_roi_image(user, project_id, roi_id, file_path):
-    # Get ROI
-    roi = RegionOfInterest.objects.get(id=roi_id)
-    # Prepare parameters
-    hwidth = roi.width * 0.5
-    x_min = roi.location.x - hwidth
-    x_max = roi.location.x + hwidth
-    hheight = roi.height * 0.5
-    y_min = roi.location.y - hheight
-    y_max = roi.location.y + hheight
-    z_min = z_max = roi.location.z
-    single_channel = False
-    # Create a cropping job
-    job = cropping.CropJob(user, project_id, [roi.stack.id],
-        x_min, x_max, y_min, y_max, z_min, z_max, roi.zoom_level,
-        single_channel)
-    # Create the pgmagick images
-    cropped_stacks = cropping.extract_substack( job )
-    if len(cropped_stacks) == 0:
-        raise StandardError("Couldn't create ROI image")
-    # There is only one image here
-    img = cropped_stacks[0]
-    img.write(str(file_path))
+    """ Tries to acquire a lock for a creating the cropped image
+    of a certain ROI. If able to do this, launches the celery task
+    which removes the lock when done.
+    """
+    lock_id = create_lock_name(roi_id)
+    # cache.add fails if the key is already exists
+    acquire_lock = lambda: cache.add(lock_id, "true", LOCK_EXPIRE)
+    if not acquire_lock():
+        logger.debug("ROI %s is already taken care of by another worker" % roi_id)
+        return False
+    else:
+        create_roi_image_task.delay(user, project_id, roi_id, file_path)
+        return True
+
+@task(name='catmaid.create_roi_image')
+def create_roi_image_task(user, project_id, roi_id, file_path):
+    lock_id = create_lock_name(roi_id)
+    # memcache delete is very slow, but we have to use it to take
+    # advantage of using add() for atomic locking
+    release_lock = lambda: cache.delete(lock_id)
+    logger.debug("Creating cropped image for ROI with ID %s" % roi_id)
+    try:
+        # Get ROI
+        roi = RegionOfInterest.objects.get(id=roi_id)
+        # Prepare parameters
+        hwidth = roi.width * 0.5
+        x_min = roi.location.x - hwidth
+        x_max = roi.location.x + hwidth
+        hheight = roi.height * 0.5
+        y_min = roi.location.y - hheight
+        y_max = roi.location.y + hheight
+        z_min = z_max = roi.location.z
+        single_channel = False
+        # Create a cropping job
+        job = cropping.CropJob(user, project_id, [roi.stack.id],
+            x_min, x_max, y_min, y_max, z_min, z_max, roi.zoom_level,
+            single_channel)
+        # Create the pgmagick images
+        cropped_stacks = cropping.extract_substack( job )
+        if len(cropped_stacks) == 0:
+            raise StandardError("Couldn't create ROI image")
+        # There is only one image here
+        img = cropped_stacks[0]
+        img.write(str(file_path))
+    finally:
+        release_lock()
 
     return "Created image of ROI %s" % roi_id
 
@@ -181,7 +215,7 @@ def get_roi_image(request, project_id=None, roi_id=None):
     file_name, file_path = create_roi_path(roi_id)
     if not os.path.exists(file_path):
         # Start async processing
-        create_roi_image.delay(request.user, project_id, roi_id, file_path)
+        create_roi_image(request.user, project_id, roi_id, file_path)
         # Use waiting image
         url = urljoin(settings.STATIC_URL,
             "widgets/themes/kde/wait_bgwhite.gif")

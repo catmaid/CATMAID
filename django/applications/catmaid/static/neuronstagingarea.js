@@ -4,7 +4,10 @@ var NeuronStagingArea = new function()
 
 	var self = this;
 	var skeletonmodels = {};
-
+	
+	self.skeletonsColorMethod = 'random';
+	self.skeletonsShadingMethod = 'none';
+	
 	var SkeletonModel = function( id, neuronname )
 	{
 		var self = this;
@@ -14,17 +17,34 @@ var NeuronStagingArea = new function()
 		self.selected = true;
 
 		// color
-		self.colorhex = '#FFFF00';
-		self.colorrgb = [255, 255, 0];
-
+		{
+			if (Object.keys(skeletonmodels).length == 0) {
+				// The first skeleton added is yellow.
+				self.color = new THREE.Color('#FFFF00');
+			} else {
+				// Any subsequent skeleton added will be at the midpoint of the largest existing gap in the HSV color space.
+				var existingHues = [];
+				for (var skeletonID in skeletonmodels) {
+					existingHues.push(skeletonmodels[skeletonID].color.getHSL().h);
+				}
+				existingHues.sort();
+				existingHues.push(existingHues[0] + 1.0);
+				var newHue = 0.0;
+				var maxGap = 0.0;
+				for (var i = 0; i < existingHues.length - 1; i++) {
+					if (existingHues[i + 1] - existingHues[i] > maxGap) {
+						newHue = ((existingHues[i + 1] + existingHues[i]) / 2) % 1.0;
+						maxGap = existingHues[i + 1] - existingHues[i];
+					}
+				}
+				self.color = new THREE.Color().setHSL(newHue, 1.0, 0.5);
+			}
+		}
+		
 		// 3d viewer attributes
 		self.pre_visible = true;
 		self.post_visible = true;
 		self.text_visible = false;
-
-		self.usercolor_visible = false;
-		self.userreviewcolor_visible = false;
-		self.shade_by_betweenness = false;
 
 		// properties for up/downstream
 		self.synaptic_count_high_pass = 0; // this number or higher
@@ -141,6 +161,7 @@ var NeuronStagingArea = new function()
 		} else {
 			skeletonmodels[ id ] = new SkeletonModel( id, neuronname );
 			self._add_skeleton_to_table( skeletonmodels[ id ] );
+			self.update_skeleton_color_button( id );
 		}
 	}
 
@@ -192,44 +213,58 @@ var NeuronStagingArea = new function()
     		}
     	}
 	}
-
-	self.set_skeleton_color_hex = function( id, colorhex ) {
-		skeletonmodels[ id ].colorhex = colorhex;
-		skeletonmodels[ id ].colorrgb = _hex2rgb( colorhex );
+	
+	self.set_skeletons_base_color = function() {
+		// Set the color of all skeletons based on the state of the "Color" pop-up menu.
+		var skeletons = self.get_all_skeletons();
+		
+		self.skeletonsColorMethod = $('#skeletons_base_color :selected').attr("value");
+		
+		if (self.skeletonsColorMethod == "random") {
+			var hueStart = Math.random();
+			var hueStep = 1.0 / skeletons.length;
+			for (var i = 0; i < skeletons.length; i++) {
+				var skeletonID = parseInt(skeletons[i]);
+				var newColor = new THREE.Color().setHSL((hueStart + i * hueStep) % 1.0, (skeletons.length > 6 ? 1.0 - i % 2.0 * 0.5 : 1.0), 0.5);
+				skeletonmodels[ skeletonID ].color = newColor;
+				self.update_skeleton_color_button( skeletonID );
+				if( WebGLApp.has_skeleton( skeletonID ) ) {
+					WebGLApp.changeSkeletonColor( skeletonID, newColor );
+				}
+			}
+		} else {
+			for (var i = 0; i < skeletons.length; i++) {
+				var skeletonID = parseInt(skeletons[i]);
+				if( WebGLApp.has_skeleton(skeletonID) ) {
+					WebGLApp.changeSkeletonColor(skeletonID);
+				}
+			}
+		}
+	}
+	
+	self.set_skeletons_shading = function() {
+		// Set the shading of all skeletons based on the state of the "Shading" pop-up menu.
+		var skeletons = self.get_all_skeletons();
+		
+		self.skeletonsShadingMethod = $('#skeletons_shading :selected').attr("value");
+		
+		for (var i = 0; i < skeletons.length; i++) {
+			var skeletonID = parseInt(skeletons[i]);
+			if( WebGLApp.has_skeleton(skeletonID) ) {
+				WebGLApp.changeSkeletonColor(skeletonID);
+			}
+		}
 	}
 
-	self.set_skeleton_color_rgb = function( id, colorrgb ) {
-		skeletonmodels[ id ].colorrgb = colorrgb;
-		skeletonmodels[ id ].colorhex = _rgbarray2hex( colorrgb );
-	}	
-
 	self.update_skeleton_color_button = function( id ) {
-		$('#skeletonaction-changecolor-' + id).css("background-color", skeletonmodels[ id ].colorhex );
+		$('#skeletonaction-changecolor-' + id).css("background-color", '#' + skeletonmodels[ id ].color.getHexString() );
 	}
 
     self.update_skeleton_color_in_3d = function( id )
     {
       	if( $('#view_in_3d_webgl_widget').length && WebGLApp.has_skeleton( id ) )
-      		WebGLApp.changeSkeletonColor( id, skeletonmodels[ id ].colorrgb ); 	
+      		WebGLApp.changeSkeletonColor( id, skeletonmodels[ id ].color ); 	
     }
-
-	self.randomizeColors = function()
-	{
-		var skeletons = self.get_selected_skeletons();
-		var numSkeletons = Object.keys(skeletons).length;
-		var hueStart = Math.random();
-		var hueStep = 1.0 / skeletons.length;
-		for (var i = 0; i < skeletons.length; i++) {
-			var skeleton_id = skeletons[i];
-			var newColor = new THREE.Color().setHSL((hueStart + i * hueStep) % 1.0, (skeletons.length > 6 ? 1.0 - i % 2.0 * 0.5 : 1.0), 0.5);
-			self.set_skeleton_color_hex( skeleton_id, '#' + newColor.getHexString());
-			self.update_skeleton_color_button( skeleton_id );
-			if( WebGLApp.has_skeleton( parseInt( skeleton_id ) ) ) {
-				WebGLApp.changeSkeletonColor( parseInt(skeleton_id), [newColor.r * 255, newColor.g * 255, newColor.b * 255] );
-			}
-		}
-
-	}
 
     self.get_skeletonmodel = function( id )
     {
@@ -238,7 +273,7 @@ var NeuronStagingArea = new function()
 
     self.get_color_of_skeleton = function( id )
     {
-    	return skeletonmodels[ id ].colorhex;
+    	return skeletonmodels[ id ].color.clone();
     }
 
 	self.get_selected_skeletons = function()
@@ -427,57 +462,6 @@ var NeuronStagingArea = new function()
 		      } )
 		));
 
-		rowElement.append(
-		  $(document.createElement("td")).append(
-		    $(document.createElement("input")).attr({
-		              id:    'skeletonusercolor-' + skeleton.id,
-		              name:  skeleton.baseName,
-		              value: skeleton.id,
-		              type:  'checkbox',
-		              checked:false
-		      })
-		      .click( function( event )
-		      {
-		        skeletonmodels[ skeleton.id ].usercolor_visible = $('#skeletonusercolor-' + skeleton.id).is(':checked');
-		        if( $('#view_in_3d_webgl_widget').length && WebGLApp.has_skeleton( skeleton.id ) )
-		          WebGLApp.changeSkeletonColor( skeleton.id ); 	
-		      } )
-		));
-
-		rowElement.append(
-		  $(document.createElement("td")).append(
-		    $(document.createElement("input")).attr({
-		              id:    'skeletonuserreviewcolor-' + skeleton.id,
-		              name:  skeleton.baseName,
-		              value: skeleton.id,
-		              type:  'checkbox',
-		              checked:false
-		      })
-		      .click( function( event )
-		      {
-		      	skeletonmodels[ skeleton.id ].userreviewcolor_visible = $('#skeletonuserreviewcolor-' + skeleton.id).is(':checked');
-		        if( $('#view_in_3d_webgl_widget').length && WebGLApp.has_skeleton( skeleton.id ) )
-		          WebGLApp.changeSkeletonColor( skeleton.id ); 	
-		      } )
-		));
-
-		rowElement.append(
-		  $(document.createElement("td")).append(
-		    $(document.createElement("input")).attr({
-		              id:    'skeletonshadebybetweenness-' + skeleton.id,
-		              name:  skeleton.baseName,
-		              value: skeleton.id,
-		              type:  'checkbox',
-		              checked:false
-		      })
-		      .click( function( event )
-		      {
-		      	skeletonmodels[ skeleton.id ].shade_by_betweenness = $('#skeletonshadebybetweenness-' + skeleton.id).is(':checked');
-		        if( $('#view_in_3d_webgl_widget').length && WebGLApp.has_skeleton( skeleton.id ) )
-		          WebGLApp.changeSkeletonColor( skeleton.id ); 	
-		      } )
-		));
-
 		var td = $(document.createElement("td"));
 		td.append(
 		  $(document.createElement("button")).attr({
@@ -524,8 +508,7 @@ var NeuronStagingArea = new function()
 		$('#skeletonaction-changecolor-' + skeleton.id).css("background-color","#FFFF00");
 		cw.onchange(function(color)
 		{
-			var colors = [parseInt(color.r), parseInt(color.g), parseInt(color.b)]
-			self.set_skeleton_color_rgb( skeleton.id, colors );
+			skeletonmodels[ skeleton.id ].color = new THREE.Color().setRGB(parseInt(color.r) / 255.0, parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);
 			self.update_skeleton_color_button( skeleton.id);
 			self.update_skeleton_color_in_3d( skeleton.id );
 

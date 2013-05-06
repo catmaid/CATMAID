@@ -617,18 +617,19 @@ var WebGLApp = new function () {
     }
 
     this.updateSkeletonColor = function() {
-      if (this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible || 
-          this.skeletonmodel.shade_by_betweenness) {
+      if (NeuronStagingArea.skeletonsColorMethod == 'creator' || NeuronStagingArea.skeletonsColorMethod == 'reviewer' || 
+          NeuronStagingArea.skeletonsShadingMethod != 'none') {
         // The skeleton colors need to be set per-vertex.
         this.line_material['neurite'].vertexColors = THREE.VertexColors;
         this.line_material['neurite'].needsUpdate = true;
         this.geometry['neurite'].colors = [];
         var vertexWeights = {};
-        if (this.skeletonmodel.shade_by_betweenness) {
+        if (NeuronStagingArea.skeletonsShadingMethod == 'betweenness_centrality') {
           // Darken the skeleton based on the betweenness calculation.
           vertexWeights = this.get_betweenness();
+        } else if (NeuronStagingArea.skeletonsShadingMethod == 'branch_centrality') {
+          // TODO: Darken the skeleton based on the branch calculation.
         }
-        // TODO: also allow shading by "backbone" centrality
         var num_verts = this.vertexIDs['neurite'].length;
         for ( var i = 0; i < num_verts; i += 1 ) {
           var vertexID = this.vertexIDs['neurite'][i];
@@ -636,9 +637,9 @@ var WebGLApp = new function () {
           
           // Determine the base color of the vertex.
           var baseColor = this.actorColor;
-          if (this.skeletonmodel.usercolor_visible) {
+          if (NeuronStagingArea.skeletonsColorMethod == 'creator') {
             baseColor = User(vertex.user_id).color;
-          } else if (this.skeletonmodel.userreviewcolor_visible) {
+          } else if (NeuronStagingArea.skeletonsColorMethod == 'reviewer') {
             baseColor = User(vertex.reviewer_id).color;
           }
           
@@ -671,10 +672,10 @@ var WebGLApp = new function () {
       }
     }
 
-    this.changeColor = function( value ) {
-      self.actorColor = new THREE.Color().setRGB(value[0] / 255.0, value[1] / 255.0, value[2] / 255.0);
+    this.changeColor = function( color ) {
+      self.actorColor = color;
       
-      if (!this.skeletonmodel.usercolor_visible && !this.skeletonmodel.userreviewcolor_visible) {
+      if (NeuronStagingArea.skeletonsColorMethod == 'random' || NeuronStagingArea.skeletonsColorMethod == 'manual') {
         self.updateSkeletonColor();
       }
     }
@@ -936,10 +937,7 @@ var WebGLApp = new function () {
       self.setPostVisibility( this.skeletonmodel.post_visible );
       self.setTextVisibility( this.skeletonmodel.text_visible );
       
-      self.actorColor = new THREE.Color().setRGB(
-        this.skeletonmodel.colorrgb[0] / 255.0, 
-        this.skeletonmodel.colorrgb[1] / 255.0, 
-        this.skeletonmodel.colorrgb[2] / 255.0);
+      self.actorColor = this.skeletonmodel.color;
       this.updateSkeletonColor();
 
     }
@@ -1130,16 +1128,16 @@ var WebGLApp = new function () {
     return skeletons[skeleton_id];
   }
 
-  this.changeSkeletonColor = function( skeleton_id, value )
+  this.changeSkeletonColor = function( skeleton_id, color )
   {
     if( !skeletons.hasOwnProperty(skeleton_id) ){
         console.log("Skeleton "+skeleton_id+" does not exist.");
         return;
     } else {
-        if (value === undefined) {
+        if (color === undefined) {
             skeletons[skeleton_id].updateSkeletonColor();
         } else {
-            skeletons[skeleton_id].changeColor( value );
+            skeletons[skeleton_id].changeColor( color );
         }
         self.render();
         return true;

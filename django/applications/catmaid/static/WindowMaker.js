@@ -117,34 +117,56 @@ var WindowMaker = new function()
     add.onclick = NeuronStagingArea.add_active_object_to_stage;
     buttons.appendChild(add);
 
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "randomize_skeleton_color");
-    rand.setAttribute("value", "Randomize color");
-    rand.onclick = NeuronStagingArea.randomizeColors;
-    buttons.appendChild(rand);
+    var save = document.createElement('input');
+    save.setAttribute("type", "button");
+    save.setAttribute("id", "save_skeleton_list");
+    save.setAttribute("value", "Save list");
+    save.style.marginLeft = '1em';
+    save.onclick = NeuronStagingArea.save_skeleton_list;
+    buttons.appendChild(save);
 
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "save_skeleton_list");
-    rand.setAttribute("value", "Save list");
-    rand.onclick = NeuronStagingArea.save_skeleton_list;
-    buttons.appendChild(rand);
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "load_skeleton_list");
-    rand.setAttribute("value", "Load list");
-    rand.onclick = NeuronStagingArea.load_skeleton_list;
-    buttons.appendChild(rand);
+    var load = document.createElement('input');
+    load.setAttribute("type", "button");
+    load.setAttribute("id", "load_skeleton_list");
+    load.setAttribute("value", "Load list");
+    load.onclick = NeuronStagingArea.load_skeleton_list;
+    buttons.appendChild(load);
     
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "user_colormap_dialog");
-    rand.setAttribute("value", "User colormap");
-    rand.onclick = NeuronStagingArea.usercolormap_dialog;
-    buttons.appendChild(rand);
-
+    var map = document.createElement('input');
+    map.setAttribute("type", "button");
+    map.setAttribute("id", "user_colormap_dialog");
+    map.setAttribute("value", "User colormap");
+    map.style.marginLeft = '1em';
+    map.onclick = NeuronStagingArea.usercolormap_dialog;
+    buttons.appendChild(map);
+    
+    var colorLabel = document.createElement('div');
+    colorLabel.innerHTML = 'Color:';
+    colorLabel.style.display = 'inline';
+    colorLabel.style.marginLeft = '1em';
+    buttons.appendChild(colorLabel);
+    var colorMenu = document.createElement('select');
+    colorMenu.setAttribute("id", "skeletons_base_color");
+    $('<option/>', {value : 'random', text: 'Random', selected: true}).appendTo(colorMenu);
+    $('<option/>', {value : 'creator', text: 'By Creator'}).appendTo(colorMenu);
+    $('<option/>', {value : 'reviewer', text: 'By Reviewer'}).appendTo(colorMenu);
+    $('<option/>', {value : 'manual', text: 'Manual'}).appendTo(colorMenu);
+    colorMenu.onchange = NeuronStagingArea.set_skeletons_base_color;
+    buttons.appendChild(colorMenu);
+    
+    var shadingLabel = document.createElement('div');
+    shadingLabel.innerHTML = 'Shading:';
+    shadingLabel.style.display = 'inline';
+    shadingLabel.style.marginLeft = '1em';
+    buttons.appendChild(shadingLabel);
+    var shadingMenu = document.createElement('select');
+    shadingMenu.setAttribute("id", "skeletons_shading");
+    $('<option/>', {value : 'none', text: 'None', selected: true}).appendTo(shadingMenu);
+    $('<option/>', {value : 'betweenness_centrality', text: 'Betweenness Centrality'}).appendTo(shadingMenu);
+// TODO:    $('<option/>', {value : 'branch_centrality', text: 'Branch Centrality'}).appendTo(shadingMenu);
+    shadingMenu.onchange = NeuronStagingArea.set_skeletons_shading;
+    buttons.appendChild(shadingMenu);
+    
     win.getFrame().appendChild(buttons);
     content.appendChild(container);
     
@@ -159,9 +181,6 @@ var WindowMaker = new function()
             '<th>pre</th>' +
             '<th>post</th>' +
             '<th>text</th>' +
-            '<th>user color</th>' +
-            '<th>review user color</th>' +
-            '<th>shade</th>' +
             '<th>property</th>' +
           '</tr>' +
         '</thead>' +
@@ -170,9 +189,6 @@ var WindowMaker = new function()
             '<td><button type="button" id="webgl-rmall">remove all</button></td>' +
             '<td></td>' +
             '<td><button type="button" id="webgl-show">hide</button></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
             '<td></td>' +
             '<td></td>' +
           '</tr>' +

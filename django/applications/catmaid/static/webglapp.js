@@ -626,7 +626,7 @@ var WebGLApp = new function () {
         var vertexWeights = {};
         if (NeuronStagingArea.skeletonsShadingMethod == 'betweenness_centrality') {
           // Darken the skeleton based on the betweenness calculation.
-          vertexWeights = this.get_betweenness();
+          vertexWeights = this.betweenness;
         } else if (NeuronStagingArea.skeletonsShadingMethod == 'branch_centrality') {
           // TODO: Darken the skeleton based on the branch calculation.
         }
@@ -929,7 +929,31 @@ var WebGLApp = new function () {
           this.graph.add_edge(fromkey, tokey);
         }
       }
-
+      
+      // TODO: do this automatically or wait until the user chooses the shading option from the menu?
+      if (typeof(Worker) !== "undefined")
+      {
+        var w = new Worker(STATIC_URL_JS + "graph_worker.js");
+        w.skeleton = this;
+        w.onmessage = function (event) {
+          this.skeleton.betweenness = event.data;
+          this.skeleton.updateSkeletonColor();
+        }
+        
+        w.postMessage({graph: jsnx.convert.to_edgelist(this.graph), action:'betweenness_centrality'});
+      }
+      else
+      {
+        $('#growl-alert').growlAlert({
+          autoShow: true,
+          content: "Cannot calculate betweenness centrality, your browser does not support Web Workers...",
+          title: 'Warning',
+          position: 'top-right',
+          delayTime: 2000,
+          onComplete: function() {  }
+        });
+      }
+      
       this.addCompositeActorToScene();
 
       self.setActorVisibility( this.skeletonmodel.selected );
@@ -940,27 +964,6 @@ var WebGLApp = new function () {
       self.actorColor = this.skeletonmodel.color;
       this.updateSkeletonColor();
 
-    }
-    
-    this.get_betweenness = function() {
-      if (Object.keys(this.betweenness).length == 0) {
-        // Calculate the betweenness value for every node.
-        // TODO: if the graph could be simplified, e.g. consolidating nodes between branches, then this would go a lot faster.
-        this.betweenness = jsnx.betweenness_centrality(this.graph);
-        
-        // Rescale the betweenness values so that they range from 0.0 to 1.0.
-        var max_b = 0.0;
-        for (var b in this.betweenness) {
-          if (this.betweenness[b] > max_b) {
-            max_b = this.betweenness[b];
-          }
-        }
-        for (var b in this.betweenness) {
-          this.betweenness[b] /= max_b;
-        }
-      }
-      
-      return this.betweenness;
     }
     
     self.reinit_actor( skeleton_data );

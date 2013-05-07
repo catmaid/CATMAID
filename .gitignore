@@ -25,3 +25,4 @@ django/configuration.py
 scripts/cloud/configuration.py
 *.swp
 django/static
+backups

@@ -211,8 +211,7 @@ var WebGLApp = new function () {
 
     // // if there is an active skeleton, add it to the view if staging area is empty
     if(SkeletonAnnotations.getActiveNodeId() && NeuronStagingArea.get_selected_skeletons().length === 0) {
-      NeuronStagingArea.add_active_object_to_stage();
-      self.refresh_skeletons();
+      NeuronStagingArea.add_active_object_to_stage( WebGLApp.refresh_skeletons );
     }
 
 
@@ -1855,8 +1854,7 @@ var WebGLApp = new function () {
   };
 
   self.add_active_and_refresh_skeletons = function() {
-      NeuronStagingArea.add_active_object_to_stage();
-      self.refresh_skeletons();
+      NeuronStagingArea.add_active_object_to_stage( WebGLApp.refresh_skeletons );
   }
 
   // use the staging skeleton list to refresh all neurons

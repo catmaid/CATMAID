@@ -25,6 +25,7 @@ var SkeletonAnnotations = new function()
           return;
         } else {
           // Should never happen
+          console.log('Call to activate a node with a skeletonID which is not active should never happen.')
           s.activateNode(null); // deselect: there's a mismatch between node and skeleton
         }
       }

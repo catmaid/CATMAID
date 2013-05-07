@@ -843,9 +843,11 @@ TracingTool.goToNearestInNeuronOrSkeleton = function(type, objectID) {
       } else {
         nodeIDToSelect = data.treenode_id;
         skeletonIDToSelect = data.skeleton_id;
+        console.log('goToNearestInNeuronOrSkeleton', type, objectID )
         project.moveTo(data.z, data.y, data.x,
                        undefined,
                        function () {
+                        console.log('static select ndoe', nodeIDToSelect, skeletonIDToSelect )
                          SkeletonAnnotations.staticSelectNode(nodeIDToSelect, skeletonIDToSelect);
                        });
       }

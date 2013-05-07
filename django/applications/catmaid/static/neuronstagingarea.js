@@ -6,7 +6,6 @@ var NeuronStagingArea = new function()
 	var skeletonmodels = {};
 	
 	self.skeletonsColorMethod = 'random';
-	self.skeletonsShadingMethod = 'none';
 	
 	var SkeletonModel = function( id, neuronname )
 	{
@@ -245,20 +244,6 @@ var NeuronStagingArea = new function()
 		}
 	}
 	
-	self.set_skeletons_shading = function() {
-		// Set the shading of all skeletons based on the state of the "Shading" pop-up menu.
-		var skeletons = self.get_all_skeletons();
-		
-		self.skeletonsShadingMethod = $('#skeletons_shading :selected').attr("value");
-		
-		for (var i = 0; i < skeletons.length; i++) {
-			var skeletonID = parseInt(skeletons[i]);
-			if( WebGLApp.has_skeleton(skeletonID) ) {
-				WebGLApp.changeSkeletonColor(skeletonID);
-			}
-		}
-	}
-
 	self.update_skeleton_color_button = function( id ) {
 		$('#skeletonaction-changecolor-' + id).css("background-color", '#' + skeletonmodels[ id ].color.getHexString() );
 	}

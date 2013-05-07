@@ -132,14 +132,6 @@ var WindowMaker = new function()
     load.onclick = NeuronStagingArea.load_skeleton_list;
     buttons.appendChild(load);
     
-    var map = document.createElement('input');
-    map.setAttribute("type", "button");
-    map.setAttribute("id", "user_colormap_dialog");
-    map.setAttribute("value", "User colormap");
-    map.style.marginLeft = '1em';
-    map.onclick = NeuronStagingArea.usercolormap_dialog;
-    buttons.appendChild(map);
-    
     var colorLabel = document.createElement('div');
     colorLabel.innerHTML = 'Color:';
     colorLabel.style.display = 'inline';
@@ -154,18 +146,13 @@ var WindowMaker = new function()
     colorMenu.onchange = NeuronStagingArea.set_skeletons_base_color;
     buttons.appendChild(colorMenu);
     
-    var shadingLabel = document.createElement('div');
-    shadingLabel.innerHTML = 'Shading:';
-    shadingLabel.style.display = 'inline';
-    shadingLabel.style.marginLeft = '1em';
-    buttons.appendChild(shadingLabel);
-    var shadingMenu = document.createElement('select');
-    shadingMenu.setAttribute("id", "skeletons_shading");
-    $('<option/>', {value : 'none', text: 'None', selected: true}).appendTo(shadingMenu);
-    $('<option/>', {value : 'betweenness_centrality', text: 'Betweenness Centrality'}).appendTo(shadingMenu);
-// TODO:    $('<option/>', {value : 'branch_centrality', text: 'Branch Centrality'}).appendTo(shadingMenu);
-    shadingMenu.onchange = NeuronStagingArea.set_skeletons_shading;
-    buttons.appendChild(shadingMenu);
+    var map = document.createElement('input');
+    map.setAttribute("type", "button");
+    map.setAttribute("id", "user_colormap_dialog");
+    map.setAttribute("value", "User colormap");
+    map.style.marginLeft = '1em';
+    map.onclick = NeuronStagingArea.usercolormap_dialog;
+    buttons.appendChild(map);
     
     win.getFrame().appendChild(buttons);
     content.appendChild(container);
@@ -341,7 +328,20 @@ var WindowMaker = new function()
     options.style.marginLeft = '1em';
     options.onclick = WebGLApp.configure_parameters;
     buttons.appendChild(options);
-
+    
+    var shadingLabel = document.createElement('div');
+    shadingLabel.innerHTML = 'Shading:';
+    shadingLabel.style.display = 'inline';
+    shadingLabel.style.marginLeft = '1em';
+    buttons.appendChild(shadingLabel);
+    var shadingMenu = document.createElement('select');
+    shadingMenu.setAttribute("id", "skeletons_shading");
+    $('<option/>', {value : 'none', text: 'None', selected: true}).appendTo(shadingMenu);
+    $('<option/>', {value : 'betweenness_centrality', text: 'Betweenness centrality'}).appendTo(shadingMenu);
+// TODO:    $('<option/>', {value : 'branch_centrality', text: 'Branch centrality'}).appendTo(shadingMenu);
+    shadingMenu.onchange = WebGLApp.set_shading_method;
+    buttons.appendChild(shadingMenu);
+    
     var canvas = document.createElement('div');
     canvas.setAttribute("id", "viewer-3d-webgl-canvas");
     // canvas.style.width = "800px";

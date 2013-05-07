@@ -20,6 +20,8 @@ var WebGLApp = new function () {
       show_boundingbox = true,
       show_floor = true,
       show_background = true;
+  
+  var shading_method = 'none';
 
   this.init = function( divID ) {
 
@@ -617,16 +619,16 @@ var WebGLApp = new function () {
 
     this.updateSkeletonColor = function() {
       if (NeuronStagingArea.skeletonsColorMethod == 'creator' || NeuronStagingArea.skeletonsColorMethod == 'reviewer' || 
-          NeuronStagingArea.skeletonsShadingMethod != 'none') {
+          shading_method != 'none') {
         // The skeleton colors need to be set per-vertex.
         this.line_material['neurite'].vertexColors = THREE.VertexColors;
         this.line_material['neurite'].needsUpdate = true;
         this.geometry['neurite'].colors = [];
         var vertexWeights = {};
-        if (NeuronStagingArea.skeletonsShadingMethod == 'betweenness_centrality') {
+        if (shading_method == 'betweenness_centrality') {
           // Darken the skeleton based on the betweenness calculation.
           vertexWeights = this.betweenness;
-        } else if (NeuronStagingArea.skeletonsShadingMethod == 'branch_centrality') {
+        } else if (shading_method == 'branch_centrality') {
           // TODO: Darken the skeleton based on the branch calculation.
         }
         var num_verts = this.vertexIDs['neurite'].length;
@@ -941,7 +943,6 @@ var WebGLApp = new function () {
         }
         
         // TODO: put up some kind of indicator that the calculation is underway.
-        console.log('Calc ' + this.id);
         w.postMessage({graph: jsnx.convert.to_edgelist(this.graph), action:'betweenness_centrality'});
       }
       else
@@ -1922,5 +1923,14 @@ var WebGLApp = new function () {
         self.render();
       }
     });
+  }
+  
+  self.set_shading_method = function() {
+    // Set the shading of all skeletons based on the state of the "Shading" pop-up menu.
+    shading_method = $('#skeletons_shading :selected').attr("value");
+    
+    for (var skeletonID in skeletons) {
+      self.changeSkeletonColor(skeletonID);
+    }
   }
 }

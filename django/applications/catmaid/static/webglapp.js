@@ -211,7 +211,7 @@ var WebGLApp = new function () {
 
     // // if there is an active skeleton, add it to the view if staging area is empty
     if(SkeletonAnnotations.getActiveNodeId() && NeuronStagingArea.get_selected_skeletons().length === 0) {
-      NeuronStagingArea.add_active_object_to_stage( WebGLApp.refresh_skeletons );
+      NeuronStagingArea.add_active_object_to_stage();
     }
 
 
@@ -643,7 +643,7 @@ var WebGLApp = new function () {
           }
           
           // Darken the color by the vertex's weight.
-          var w = (vertexID in vertexWeights ? vertexWeights[vertexID] * 0.75 + 0.25 : 1.0);
+          var w = (vertexID in vertexWeights ? vertexWeights[vertexID] * 0.5 + 0.5 : 1.0);
           var color = new THREE.Color().setRGB(baseColor.r * w, baseColor.g * w, baseColor.b * w);
           this.geometry['neurite'].colors.push(color);
           
@@ -937,8 +937,11 @@ var WebGLApp = new function () {
         w.onmessage = function (event) {
           this.skeleton.betweenness = event.data;
           this.skeleton.updateSkeletonColor();
+          WebGLApp.render();
         }
         
+        // TODO: put up some kind of indicator that the calculation is underway.
+        console.log('Calc ' + this.id);
         w.postMessage({graph: jsnx.convert.to_edgelist(this.graph), action:'betweenness_centrality'});
       }
       else

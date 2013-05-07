@@ -280,69 +280,67 @@ var WindowMaker = new function()
     var container = createContainer("view_in_3d_webgl_widget");
     content.appendChild(container);
 
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "add_active");
-    add.setAttribute("value", "Show active");
-    add.onclick = WebGLApp.add_active_and_refresh_skeletons;
-    buttons.appendChild(add);
-
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "refresh_viewer");
-    add.setAttribute("value", "Show selected");
-    add.onclick = WebGLApp.refresh_skeletons;
-    buttons.appendChild(add);
+    var reload = document.createElement('input');
+    reload.setAttribute("type", "button");
+    reload.setAttribute("id", "refresh_skeletons");
+    reload.setAttribute("value", "Reload skeletons");
+    reload.onclick = WebGLApp.refresh_skeletons;
+    buttons.appendChild(reload);
     
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "center_active_node");
-    add.setAttribute("value", "Center active");
-    add.onclick = WebGLApp.look_at_active_node;
-    buttons.appendChild(add);
+    var center = document.createElement('input');
+    center.setAttribute("type", "button");
+    center.setAttribute("id", "center_active_node");
+    center.setAttribute("value", "Center active");
+    center.style.marginLeft = '1em';
+    center.onclick = WebGLApp.look_at_active_node;
+    buttons.appendChild(center);
 
     var fulls = document.createElement('input');
     fulls.setAttribute("type", "button");
     fulls.setAttribute("id", "fullscreen_webgl_view");
     fulls.setAttribute("value", "Fullscreen");
+    fulls.style.marginLeft = '1em';
     fulls.onclick = WebGLApp.fullscreenWebGL;
     buttons.appendChild(fulls);
 
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "xy_plane");
-    rand.setAttribute("value", "XY");
-    rand.onclick =  WebGLApp.XYView;
-    buttons.appendChild(rand);
+    var xy = document.createElement('input');
+    xy.setAttribute("type", "button");
+    xy.setAttribute("id", "xy_plane");
+    xy.setAttribute("value", "XY");
+    xy.style.marginLeft = '1em';
+    xy.onclick =  WebGLApp.XYView;
+    buttons.appendChild(xy);
 
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "xz_plane");
-    rand.setAttribute("value", "XZ");
-    rand.onclick = WebGLApp.XZView;
-    buttons.appendChild(rand);
+    var xz = document.createElement('input');
+    xz.setAttribute("type", "button");
+    xz.setAttribute("id", "xz_plane");
+    xz.setAttribute("value", "XZ");
+    xz.onclick = WebGLApp.XZView;
+    buttons.appendChild(xz);
 
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "yz_plane");
-    rand.setAttribute("value", "YZ");
-    rand.onclick = WebGLApp.YZView;
-    buttons.appendChild(rand);
+    var yz = document.createElement('input');
+    yz.setAttribute("type", "button");
+    yz.setAttribute("id", "yz_plane");
+    yz.setAttribute("value", "YZ");
+    yz.onclick = WebGLApp.YZView;
+    buttons.appendChild(yz);
 
     // Restrict display to shared connectors between visible skeletons
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "toggle_connector");
-    rand.setAttribute("value", "Restrict connectors");
-    rand.onclick = WebGLApp.toggleConnector;
-    buttons.appendChild(rand);
+    var connectors = document.createElement('input');
+    connectors.setAttribute("type", "button");
+    connectors.setAttribute("id", "toggle_connector");
+    connectors.setAttribute("value", "Restrict connectors");
+    connectors.style.marginLeft = '1em';
+    connectors.onclick = WebGLApp.toggleConnector;
+    buttons.appendChild(connectors);
 
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "configure_parameters");
-    rand.setAttribute("value", "Options");
-    rand.onclick = WebGLApp.configure_parameters;
-    buttons.appendChild(rand);
+    var options = document.createElement('input');
+    options.setAttribute("type", "button");
+    options.setAttribute("id", "configure_parameters");
+    options.setAttribute("value", "Options");
+    options.style.marginLeft = '1em';
+    options.onclick = WebGLApp.configure_parameters;
+    buttons.appendChild(options);
 
     var canvas = document.createElement('div');
     canvas.setAttribute("id", "viewer-3d-webgl-canvas");

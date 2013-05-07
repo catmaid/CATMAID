@@ -162,6 +162,9 @@ var NeuronStagingArea = new function()
 			skeletonmodels[ id ] = new SkeletonModel( id, neuronname );
 			self._add_skeleton_to_table( skeletonmodels[ id ] );
 			self.update_skeleton_color_button( id );
+			if( WebGLApp.is_widget_open() ) {
+				WebGLApp.addSkeletonFromID( id );
+			}
 		}
 	}
 
@@ -176,7 +179,7 @@ var NeuronStagingArea = new function()
 	        dataType: "json",
 	        success: function ( data ) {
 	        	self.add_skeleton_to_stage( skeleton_id, data['neuronname'] );
-	        	if (typeof callback !== "undefined") {
+	        	if (typeof callback === "function") {
   					callback();
   				}
 	        }

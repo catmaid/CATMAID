@@ -937,49 +937,48 @@ var WebGLApp = new function () {
       
       // Make a simplified version of the graph that combines all nodes between branches and leaves.
       self.simplifiedGraph = self.graph.copy();
-      self.graphEdgeMap = {};
-      self.graph.nodes().sort().forEach(function(n1) {
-        var n2s = self.simplifiedGraph.neighbors(n1).sort();
-        if (n2s.length === 2) {
-          // self node can be replaced by a single edge connecting its neighbors.
-          self.simplifiedGraph.remove_node(n1);
-          self.simplifiedGraph.add_edge(n2s[0], n2s[1]);
+      self.graph.nodes().sort().forEach(function(node) {
+        var neighbors = self.simplifiedGraph.neighbors(node).sort();
+        if (neighbors.length === 2) {
+          // This node can be replaced by a single edge connecting its neighbors.
           
-          // Keep track of which edge in the simplified graph maps to which edges in the original graph.
-          var e1 = [n1, n2s[0]].sort();
-          if (e1 in self.graphEdgeMap) {
-            self.graphEdgeMap[n2s] = self.graphEdgeMap[e1];
-            delete self.graphEdgeMap[e1];
-          } else {
-            self.graphEdgeMap[n2s] = [e1];
+          // Keep track of which edges in the original graph map to which edge in the simplified graph.
+          var edge0Data = self.simplifiedGraph.get_edge_data(node, neighbors[0]);
+          var edge1Data = self.simplifiedGraph.get_edge_data(node, neighbors[1]);
+          var map = ('map' in edge0Data ? edge0Data.map : []);
+          map.push([node, neighbors[0]]);
+          map.push([node, neighbors[1]]);
+          if ('map' in edge1Data) {
+            map = map.concat(edge1Data.map);
           }
-          var e2 = [n1, n2s[1]].sort();
-          if (e2 in self.graphEdgeMap) {
-            self.graphEdgeMap[n2s] = self.graphEdgeMap[n2s].concat(self.graphEdgeMap[e2]);
-            delete self.graphEdgeMap[e2];
-          } else {
-            self.graphEdgeMap[n2s].push(e2);
-          }
+          
+          // Replace the node.
+          self.simplifiedGraph.remove_node(node);
+          self.simplifiedGraph.add_edge(neighbors[0], neighbors[1], (map.length > 0 ? {map: map} : {}));
         }
       });
       
       // TODO: do this automatically or wait until the user chooses the shading option from the menu?
       if (typeof(Worker) !== "undefined")
       {
+        // Calculate the betweenness centrality of the graph in another thread.
+        // TODO: put up some kind of indicator that the calculation is underway.
         var w = new Worker(STATIC_URL_JS + "graph_worker.js");
         w.skeleton = self;
         w.onmessage = function (event) {
-          // 'this' is now the worker
-          for (eSimple in event.data) {
-            if (event.data.hasOwnProperty(eSimple)) {
-              var value = event.data[eSimple];
-              if (eSimple in this.skeleton.graphEdgeMap) {
-                w.skeleton.graphEdgeMap[eSimple].forEach(function(eFull) {
-                  w.skeleton.betweenness[eFull] = value;
-                });
-              } else {
-                w.skeleton.betweenness[eSimple] = value;
+          // Map the betweenness values back to the original graph.
+          for (var simplifiedEdge in event.data) {
+            simplifiedEdge = simplifiedEdge.split(',');
+            if (event.data.hasOwnProperty(simplifiedEdge)) {
+              // Assign the value to all edges in the original graph that map to the edge in the simplified graph.
+              var value = event.data[simplifiedEdge];
+              var edgeData = w.skeleton.simplifiedGraph.get_edge_data(simplifiedEdge[0], simplifiedEdge[1]);
+              if (!('map' in edgeData)) {
+                edgeData.map = [simplifiedEdge];
               }
+              edgeData.map.forEach(function(originalEdge) {
+                w.skeleton.betweenness[originalEdge] = value;
+              });
             }
           }
           if (shading_method === 'betweenness_centrality') {
@@ -987,8 +986,6 @@ var WebGLApp = new function () {
             WebGLApp.render();
           }
         }
-        
-        // TODO: put up some kind of indicator that the calculation is underway.
         w.postMessage({graph: jsnx.convert.to_edgelist(self.simplifiedGraph), action:'edge_betweenness_centrality'});
       }
       else

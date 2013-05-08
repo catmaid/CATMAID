@@ -17,27 +17,31 @@ var NeuronStagingArea = new function()
 
 		// color
 		{
-			if (Object.keys(skeletonmodels).length == 0) {
-				// The first skeleton added is yellow.
-				self.color = new THREE.Color('#FFFF00');
+			var newHue = 0.0;
+			
+			if (Object.keys(skeletonmodels).length === 0) {
+				// This is the first skeleton, pick a random hue.
+				newHue = Math.random();
 			} else {
 				// Any subsequent skeleton added will be at the midpoint of the largest existing gap in the HSV color space.
 				var existingHues = [];
 				for (var skeletonID in skeletonmodels) {
-					existingHues.push(skeletonmodels[skeletonID].color.getHSL().h);
+					if (skeletonmodels.hasOwnProperty(skeletonID)) {
+						existingHues.push(skeletonmodels[skeletonID].color.getHSL().h);
+					}
 				}
 				existingHues.sort();
 				existingHues.push(existingHues[0] + 1.0);
-				var newHue = 0.0;
 				var maxGap = 0.0;
-				for (var i = 0; i < existingHues.length - 1; i++) {
-					if (existingHues[i + 1] - existingHues[i] > maxGap) {
-						newHue = ((existingHues[i + 1] + existingHues[i]) / 2) % 1.0;
-						maxGap = existingHues[i + 1] - existingHues[i];
+				existingHues.slice(0, -1).forEach(function(hue, i) {
+					if (existingHues[i + 1] - hue > maxGap) {
+						newHue = ((existingHues[i + 1] + hue) / 2) % 1.0;
+						maxGap = existingHues[i + 1] - hue;
 					}
-				}
-				self.color = new THREE.Color().setHSL(newHue, 1.0, 0.5);
+				});
 			}
+			
+			self.color = new THREE.Color().setHSL(newHue, 1.0, 0.5);
 		}
 		
 		// 3d viewer attributes
@@ -136,7 +140,7 @@ var NeuronStagingArea = new function()
 
 	self.is_widget_open = function()
 	{
-		if( $( "#neuron_staging_table").length == 0 ) {
+		if( $( "#neuron_staging_table").length === 0 ) {
 			return false;
 		} else {
 			return true;
@@ -222,25 +226,23 @@ var NeuronStagingArea = new function()
 		
 		self.skeletonsColorMethod = $('#skeletons_base_color :selected').attr("value");
 		
-		if (self.skeletonsColorMethod == "random") {
+		if (self.skeletonsColorMethod === "random") {
 			var hueStart = Math.random();
 			var hueStep = 1.0 / skeletons.length;
-			for (var i = 0; i < skeletons.length; i++) {
-				var skeletonID = parseInt(skeletons[i]);
+			skeletons.forEach(function(skeletonID, i) {
 				var newColor = new THREE.Color().setHSL((hueStart + i * hueStep) % 1.0, (skeletons.length > 6 ? 1.0 - i % 2.0 * 0.5 : 1.0), 0.5);
 				skeletonmodels[ skeletonID ].color = newColor;
 				self.update_skeleton_color_button( skeletonID );
 				if( WebGLApp.has_skeleton( skeletonID ) ) {
 					WebGLApp.changeSkeletonColor( skeletonID, newColor );
 				}
-			}
+			});
 		} else {
-			for (var i = 0; i < skeletons.length; i++) {
-				var skeletonID = parseInt(skeletons[i]);
+			skeletons.forEach(function(skeletonID) {
 				if( WebGLApp.has_skeleton(skeletonID) ) {
 					WebGLApp.changeSkeletonColor(skeletonID);
 				}
-			}
+			});
 		}
 	}
 	
@@ -290,8 +292,8 @@ var NeuronStagingArea = new function()
       			alert("You must have an active node selected to add its skeleton to the staging area.");
       			return;
 			}
-    		if (SkeletonAnnotations.getActiveNodeType() != "treenode") {
-      			alert("Select the node of a skeleton, not a connector, to add it oto the staging area.");
+    		if (SkeletonAnnotations.getActiveNodeType() !== "treenode") {
+      			alert("Select the node of a skeleton, not a connector, to add it to the staging area.");
       			return;
     		}
     		self.add_skeleton_to_stage_without_name( skeleton_id, callback );
@@ -309,7 +311,7 @@ var NeuronStagingArea = new function()
 
 	function _componentToHex(c) {
 	    var hex = c.toString(16);
-	    return hex.length == 1 ? "0" + hex : hex;
+	    return hex.length === 1 ? "0" + hex : hex;
 	}
 
 	function _rgbarray2hex(rgb) {
@@ -573,7 +575,7 @@ var NeuronStagingArea = new function()
 		
 		users = User.all();
 		for (var userID in users) {
-			if (userID != -1) {
+			if (users.hasOwnProperty(userID) && userID !== -1) {
 				user = users[userID];
 				var rowElement = $('<tr/>');
 				rowElement.append( $('<td/>').text( user.login ) );

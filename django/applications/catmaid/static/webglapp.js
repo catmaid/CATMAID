@@ -577,7 +577,7 @@ var WebGLApp = new function () {
       self.visiblityCompositeActor( 1, vis );
       for( var idx in self.otherSpheres ) {
         if( self.otherSpheres.hasOwnProperty( idx )) {
-          if( self.otherSpheres[ idx ].type == 'presynaptic_to')
+          if( self.otherSpheres[ idx ].type === 'presynaptic_to')
             self.otherSpheres[ idx ].visible = vis;
         }
       }
@@ -587,7 +587,7 @@ var WebGLApp = new function () {
       self.visiblityCompositeActor( 2, vis );
       for( var idx in self.otherSpheres ) {
         if( self.otherSpheres.hasOwnProperty( idx )) {
-          if( self.otherSpheres[ idx ].type == 'postsynaptic_to')
+          if( self.otherSpheres[ idx ].type === 'postsynaptic_to')
             self.otherSpheres[ idx ].visible = vis;
         }
       }
@@ -618,63 +618,61 @@ var WebGLApp = new function () {
     }
 
     this.updateSkeletonColor = function() {
-      if (NeuronStagingArea.skeletonsColorMethod == 'creator' || NeuronStagingArea.skeletonsColorMethod == 'reviewer' || 
-          shading_method != 'none') {
+      if (NeuronStagingArea.skeletonsColorMethod === 'creator' || NeuronStagingArea.skeletonsColorMethod === 'reviewer' || 
+          shading_method !== 'none') {
         // The skeleton colors need to be set per-vertex.
-        this.line_material['neurite'].vertexColors = THREE.VertexColors;
-        this.line_material['neurite'].needsUpdate = true;
-        this.geometry['neurite'].colors = [];
+        self.line_material['neurite'].vertexColors = THREE.VertexColors;
+        self.line_material['neurite'].needsUpdate = true;
+        self.geometry['neurite'].colors = [];
         var edgeWeights = {};
-        if (shading_method == 'betweenness_centrality') {
+        if (shading_method === 'betweenness_centrality') {
           // Darken the skeleton based on the betweenness calculation.
-          edgeWeights = this.betweenness;
-        } else if (shading_method == 'branch_centrality') {
+          edgeWeights = self.betweenness;
+        } else if (shading_method === 'branch_centrality') {
           // TODO: Darken the skeleton based on the branch calculation.
         }
-        var num_verts = this.vertexIDs['neurite'].length;
-        for ( var i = 0; i < num_verts; i += 1 ) {
-          var vertexID = this.vertexIDs['neurite'][i];
-          var vertex = this.original_vertices[vertexID];
+        self.vertexIDs['neurite'].forEach(function(vertexID) {
+          var vertex = self.original_vertices[vertexID];
           
           // Determine the base color of the vertex.
-          var baseColor = this.actorColor;
-          if (NeuronStagingArea.skeletonsColorMethod == 'creator') {
+          var baseColor = self.actorColor;
+          if (NeuronStagingArea.skeletonsColorMethod === 'creator') {
             baseColor = User(vertex.user_id).color;
-          } else if (NeuronStagingArea.skeletonsColorMethod == 'reviewer') {
+          } else if (NeuronStagingArea.skeletonsColorMethod === 'reviewer') {
             baseColor = User(vertex.reviewer_id).color;
           }
           
           // Darken the color by the average weight of the vertex's edges.
-          var neighbors = self.graph.neighbors(vertexID);
           var weight = 0;
-          for (var j = 0; j < neighbors.length; j++) {
-            var edge = [vertexID, neighbors[j]].sort();
+          var neighbors = self.graph.neighbors(vertexID);
+          neighbors.forEach(function(neighbor) {
+            var edge = [vertexID, neighbor].sort();
             weight += (edge in edgeWeights ? edgeWeights[edge] : 1.0);
-          }
+          });
           weight = (weight / neighbors.length) * 0.5 + 0.5;
           var color = new THREE.Color().setRGB(baseColor.r * weight, baseColor.g * weight, baseColor.b * weight);
-          this.geometry['neurite'].colors.push(color);
+          self.geometry['neurite'].colors.push(color);
           
-          if (vertexID in this.radiusSpheres) {
-            this.radiusSpheres[vertexID].material.color = baseColor;
-            this.radiusSpheres[vertexID].material.needsUpdate = true;
+          if (vertexID in self.radiusSpheres) {
+            self.radiusSpheres[vertexID].material.color = baseColor;
+            self.radiusSpheres[vertexID].material.needsUpdate = true;
           }
-        }
-        this.geometry['neurite'].colorsNeedUpdate = true;
+        });
+        self.geometry['neurite'].colorsNeedUpdate = true;
         
-        this.actor['neurite'].material.color = new THREE.Color(0xffffff);
-        this.actor['neurite'].material.needsUpdate = true;
+        self.actor['neurite'].material.color = new THREE.Color(0xffffff);
+        self.actor['neurite'].material.needsUpdate = true;
       } else {
         // Display the entire skeleton with a single color.
-        this.line_material['neurite'].vertexColors = THREE.NoColors;
-        this.line_material['neurite'].needsUpdate = true;
+        self.line_material['neurite'].vertexColors = THREE.NoColors;
+        self.line_material['neurite'].needsUpdate = true;
         
-        this.actor['neurite'].material.color = this.actorColor;
-        this.actor['neurite'].material.needsUpdate = true;
+        self.actor['neurite'].material.color = self.actorColor;
+        self.actor['neurite'].material.needsUpdate = true;
       
-        for ( var k in this.radiusSpheres ) {
-          this.radiusSpheres[k].material.color = this.actorColor;
-          this.radiusSpheres[k].material.needsUpdate = true;
+        for ( var k in self.radiusSpheres ) {
+          self.radiusSpheres[k].material.color = self.actorColor;
+          self.radiusSpheres[k].material.needsUpdate = true;
         }
       }
     }
@@ -682,7 +680,7 @@ var WebGLApp = new function () {
     this.changeColor = function( color ) {
       self.actorColor = color;
       
-      if (NeuronStagingArea.skeletonsColorMethod == 'random' || NeuronStagingArea.skeletonsColorMethod == 'manual') {
+      if (NeuronStagingArea.skeletonsColorMethod === 'random' || NeuronStagingArea.skeletonsColorMethod === 'manual') {
         self.updateSkeletonColor();
       }
     }
@@ -938,61 +936,60 @@ var WebGLApp = new function () {
       }
       
       // Make a simplified version of the graph that combines all nodes between branches and leaves.
-      this.simplifiedGraph = this.graph.copy();
-      this.graphEdgeMap = {};
-      var n1s = this.graph.nodes().sort();
-      for (var i = 0; i < n1s.length; i++) {
-        var n1 = n1s[i];
-        var n2s = this.simplifiedGraph.neighbors(n1).sort();
-        if (n2s.length == 2) {
-          // This node can be replaced by a single edge connecting its neighbors.
-          this.simplifiedGraph.remove_node(n1);
-          this.simplifiedGraph.add_edge(n2s[0], n2s[1]);
+      self.simplifiedGraph = self.graph.copy();
+      self.graphEdgeMap = {};
+      self.graph.nodes().sort().forEach(function(n1) {
+        var n2s = self.simplifiedGraph.neighbors(n1).sort();
+        if (n2s.length === 2) {
+          // self node can be replaced by a single edge connecting its neighbors.
+          self.simplifiedGraph.remove_node(n1);
+          self.simplifiedGraph.add_edge(n2s[0], n2s[1]);
           
           // Keep track of which edge in the simplified graph maps to which edges in the original graph.
           var e1 = [n1, n2s[0]].sort();
-          if (e1 in this.graphEdgeMap) {
-            this.graphEdgeMap[n2s] = this.graphEdgeMap[e1];
-            delete this.graphEdgeMap[e1];
+          if (e1 in self.graphEdgeMap) {
+            self.graphEdgeMap[n2s] = self.graphEdgeMap[e1];
+            delete self.graphEdgeMap[e1];
           } else {
-            this.graphEdgeMap[n2s] = [e1];
+            self.graphEdgeMap[n2s] = [e1];
           }
           var e2 = [n1, n2s[1]].sort();
-          if (e2 in this.graphEdgeMap) {
-            this.graphEdgeMap[n2s] = this.graphEdgeMap[n2s].concat(this.graphEdgeMap[e2]);
-            delete this.graphEdgeMap[e2];
+          if (e2 in self.graphEdgeMap) {
+            self.graphEdgeMap[n2s] = self.graphEdgeMap[n2s].concat(self.graphEdgeMap[e2]);
+            delete self.graphEdgeMap[e2];
           } else {
-            this.graphEdgeMap[n2s].push(e2);
+            self.graphEdgeMap[n2s].push(e2);
           }
         }
-      }
+      });
       
       // TODO: do this automatically or wait until the user chooses the shading option from the menu?
       if (typeof(Worker) !== "undefined")
       {
         var w = new Worker(STATIC_URL_JS + "graph_worker.js");
-        w.skeleton = this;
+        w.skeleton = self;
         w.onmessage = function (event) {
           // 'this' is now the worker
-          for (var eSimple in event.data) {
-            var value = event.data[eSimple];
-            if (eSimple in this.skeleton.graphEdgeMap) {
-              var eFulls = this.skeleton.graphEdgeMap[eSimple];
-              for (var i = 0; i < eFulls.length; i++) {
-                this.skeleton.betweenness[eFulls[i]] = value;
+          for (eSimple in event.data) {
+            if (event.data.hasOwnProperty(eSimple)) {
+              var value = event.data[eSimple];
+              if (eSimple in this.skeleton.graphEdgeMap) {
+                w.skeleton.graphEdgeMap[eSimple].forEach(function(eFull) {
+                  w.skeleton.betweenness[eFull] = value;
+                });
+              } else {
+                w.skeleton.betweenness[eSimple] = value;
               }
-            } else {
-              this.skeleton.betweenness[eSimple] = value;
             }
           }
-          if (shading_method == 'betweenness_centrality') {
-            this.skeleton.updateSkeletonColor();
+          if (shading_method === 'betweenness_centrality') {
+            w.skeleton.updateSkeletonColor();
             WebGLApp.render();
           }
         }
         
         // TODO: put up some kind of indicator that the calculation is underway.
-        w.postMessage({graph: jsnx.convert.to_edgelist(this.simplifiedGraph), action:'edge_betweenness_centrality'});
+        w.postMessage({graph: jsnx.convert.to_edgelist(self.simplifiedGraph), action:'edge_betweenness_centrality'});
       }
       else
       {
@@ -1006,15 +1003,15 @@ var WebGLApp = new function () {
         });
       }
       
-      this.addCompositeActorToScene();
+      self.addCompositeActorToScene();
 
-      self.setActorVisibility( this.skeletonmodel.selected );
-      self.setPreVisibility( this.skeletonmodel.pre_visible );
-      self.setPostVisibility( this.skeletonmodel.post_visible );
-      self.setTextVisibility( this.skeletonmodel.text_visible );
+      self.setActorVisibility( self.skeletonmodel.selected );
+      self.setPreVisibility( self.skeletonmodel.pre_visible );
+      self.setPostVisibility( self.skeletonmodel.post_visible );
+      self.setTextVisibility( self.skeletonmodel.text_visible );
       
-      self.actorColor = this.skeletonmodel.color;
-      this.updateSkeletonColor();
+      self.actorColor = self.skeletonmodel.color;
+      self.updateSkeletonColor();
 
     }
     
@@ -1978,8 +1975,10 @@ var WebGLApp = new function () {
     // Set the shading of all skeletons based on the state of the "Shading" pop-up menu.
     shading_method = $('#skeletons_shading :selected').attr("value");
     
-    for (var skeletonID in skeletons) {
-      self.changeSkeletonColor(skeletonID);
+    for (var skeleton_id in skeletons) {
+      if (skeletons.hasOwnProperty(skeleton_id)) {
+        self.changeSkeletonColor(skeleton_id);
+      }
     }
   }
 }

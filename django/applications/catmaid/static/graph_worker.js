@@ -7,12 +7,14 @@ function calculateBetweennessCentrality(graph) {
 	// Rescale the betweenness values so that they range from 0.0 to 1.0.
 	var max_b = 0.0;
 	for (var b in betweenness) {
-		if (betweenness[b] > max_b) {
+		if (betweenness.hasOwnProperty(b) && betweenness[b] > max_b) {
 			max_b = betweenness[b];
 		}
 	}
 	for (var b in betweenness) {
-		betweenness[b] /= max_b;
+		if (betweenness.hasOwnProperty(b)) {
+			betweenness[b] /= max_b;
+		}
 	}
 	
 	postMessage(betweenness);
@@ -25,12 +27,14 @@ function calculateEdgeBetweennessCentrality(graph) {
 	// Rescale the betweenness values so that they range from 0.0 to 1.0.
 	var max_b = 0.0;
 	for (var b in betweenness) {
-		if (betweenness[b] > max_b) {
+		if (betweenness.hasOwnProperty(b) && betweenness[b] > max_b) {
 			max_b = betweenness[b];
 		}
 	}
 	for (var b in betweenness) {
-		betweenness[b] /= max_b;
+		if (betweenness.hasOwnProperty(b)) {
+			betweenness[b] /= max_b;
+		}
 	}
 	
 	postMessage(betweenness);
@@ -47,10 +51,10 @@ onmessage = function(event) {
 		throw "Missing action parameter in worker call.";
 	}
 	
-	if (action == 'betweenness_centrality') {
+	if (action === 'betweenness_centrality') {
 		calculateBetweennessCentrality(graph);
 	}
-	else if (action == 'edge_betweenness_centrality') {
+	else if (action === 'edge_betweenness_centrality') {
 		calculateEdgeBetweennessCentrality(graph);
 	}
 	else {

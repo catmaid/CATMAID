@@ -624,10 +624,10 @@ var WebGLApp = new function () {
         this.line_material['neurite'].vertexColors = THREE.VertexColors;
         this.line_material['neurite'].needsUpdate = true;
         this.geometry['neurite'].colors = [];
-        var vertexWeights = {};
+        var edgeWeights = {};
         if (shading_method == 'betweenness_centrality') {
           // Darken the skeleton based on the betweenness calculation.
-          vertexWeights = this.betweenness;
+          edgeWeights = this.betweenness;
         } else if (shading_method == 'branch_centrality') {
           // TODO: Darken the skeleton based on the branch calculation.
         }
@@ -644,9 +644,15 @@ var WebGLApp = new function () {
             baseColor = User(vertex.reviewer_id).color;
           }
           
-          // Darken the color by the vertex's weight.
-          var w = (vertexID in vertexWeights ? vertexWeights[vertexID] * 0.5 + 0.5 : 1.0);
-          var color = new THREE.Color().setRGB(baseColor.r * w, baseColor.g * w, baseColor.b * w);
+          // Darken the color by the average weight of the vertex's edges.
+          var neighbors = self.graph.neighbors(vertexID);
+          var weight = 0;
+          for (var j = 0; j < neighbors.length; j++) {
+            var edge = [vertexID, neighbors[j]].sort();
+            weight += (edge in edgeWeights ? edgeWeights[edge] : 1.0);
+          }
+          weight = (weight / neighbors.length) * 0.5 + 0.5;
+          var color = new THREE.Color().setRGB(baseColor.r * weight, baseColor.g * weight, baseColor.b * weight);
           this.geometry['neurite'].colors.push(color);
           
           if (vertexID in this.radiusSpheres) {
@@ -931,19 +937,62 @@ var WebGLApp = new function () {
         }
       }
       
+      // Make a simplified version of the graph that combines all nodes between branches and leaves.
+      this.simplifiedGraph = this.graph.copy();
+      this.graphEdgeMap = {};
+      var n1s = this.graph.nodes().sort();
+      for (var i = 0; i < n1s.length; i++) {
+        var n1 = n1s[i];
+        var n2s = this.simplifiedGraph.neighbors(n1).sort();
+        if (n2s.length == 2) {
+          // This node can be replaced by a single edge connecting its neighbors.
+          this.simplifiedGraph.remove_node(n1);
+          this.simplifiedGraph.add_edge(n2s[0], n2s[1]);
+          
+          // Keep track of which edge in the simplified graph maps to which edges in the original graph.
+          var e1 = [n1, n2s[0]].sort();
+          if (e1 in this.graphEdgeMap) {
+            this.graphEdgeMap[n2s] = this.graphEdgeMap[e1];
+            delete this.graphEdgeMap[e1];
+          } else {
+            this.graphEdgeMap[n2s] = [e1];
+          }
+          var e2 = [n1, n2s[1]].sort();
+          if (e2 in this.graphEdgeMap) {
+            this.graphEdgeMap[n2s] = this.graphEdgeMap[n2s].concat(this.graphEdgeMap[e2]);
+            delete this.graphEdgeMap[e2];
+          } else {
+            this.graphEdgeMap[n2s].push(e2);
+          }
+        }
+      }
+      
       // TODO: do this automatically or wait until the user chooses the shading option from the menu?
       if (typeof(Worker) !== "undefined")
       {
         var w = new Worker(STATIC_URL_JS + "graph_worker.js");
         w.skeleton = this;
         w.onmessage = function (event) {
-          this.skeleton.betweenness = event.data;
-          this.skeleton.updateSkeletonColor();
-          WebGLApp.render();
+          // 'this' is now the worker
+          for (var eSimple in event.data) {
+            var value = event.data[eSimple];
+            if (eSimple in this.skeleton.graphEdgeMap) {
+              var eFulls = this.skeleton.graphEdgeMap[eSimple];
+              for (var i = 0; i < eFulls.length; i++) {
+                this.skeleton.betweenness[eFulls[i]] = value;
+              }
+            } else {
+              this.skeleton.betweenness[eSimple] = value;
+            }
+          }
+          if (shading_method == 'betweenness_centrality') {
+            this.skeleton.updateSkeletonColor();
+            WebGLApp.render();
+          }
         }
         
         // TODO: put up some kind of indicator that the calculation is underway.
-        w.postMessage({graph: jsnx.convert.to_edgelist(this.graph), action:'betweenness_centrality'});
+        w.postMessage({graph: jsnx.convert.to_edgelist(this.simplifiedGraph), action:'edge_betweenness_centrality'});
       }
       else
       {

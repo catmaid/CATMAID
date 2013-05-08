@@ -1948,6 +1948,8 @@ var WebGLApp = new function () {
 
       }
     }
+    self.render();
+    
     // call magic
     jQuery.ajax({
       url: django_url + project.id + '/skeletongroup/all_shared_connectors',

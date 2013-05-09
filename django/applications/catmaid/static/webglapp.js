@@ -630,6 +630,7 @@ var WebGLApp = new function () {
           edgeWeights = self.betweenness;
         } else if (shading_method === 'branch_centrality') {
           // TODO: Darken the skeleton based on the branch calculation.
+          edgeWeights = self.branchCentrality;
         }
         self.vertexIDs['neurite'].forEach(function(vertexID) {
           var vertex = self.original_vertices[vertexID];
@@ -649,7 +650,7 @@ var WebGLApp = new function () {
             var edge = [vertexID, neighbor].sort();
             weight += (edge in edgeWeights ? edgeWeights[edge] : 1.0);
           });
-          weight = (weight / neighbors.length) * 0.5 + 0.5;
+          weight = (weight / neighbors.length) * 0.75 + 0.25;
           var color = new THREE.Color().setRGB(baseColor.r * weight, baseColor.g * weight, baseColor.b * weight);
           self.geometry['neurite'].colors.push(color);
           
@@ -782,6 +783,7 @@ var WebGLApp = new function () {
       
       this.graph = jsnx.Graph();
       this.betweenness = {};
+      this.branchCentrality = {};
       
       for (var fromkey in this.original_connectivity) {
         var fromVertex = this.original_vertices[fromkey];
@@ -957,42 +959,69 @@ var WebGLApp = new function () {
           self.simplifiedGraph.add_edge(neighbors[0], neighbors[1], (map.length > 0 ? {map: map} : {}));
         }
       });
+      var serializedGraph = jsnx.convert.to_edgelist(self.simplifiedGraph);
       
-      // TODO: do this automatically or wait until the user chooses the shading option from the menu?
+      // TODO: do these automatically or wait until the user chooses the shading option from the menu?
       if (typeof(Worker) !== "undefined")
       {
         // Calculate the betweenness centrality of the graph in another thread.
         // TODO: put up some kind of indicator that the calculation is underway.
-        var w = new Worker(STATIC_URL_JS + "graph_worker.js");
-        w.skeleton = self;
-        w.onmessage = function (event) {
+        var w1 = new Worker(STATIC_URL_JS + "graph_worker.js");
+        w1.skeleton = self;
+        w1.onmessage = function (event) {
           // Map the betweenness values back to the original graph.
           for (var simplifiedEdge in event.data) {
-            simplifiedEdge = simplifiedEdge.split(',');
             if (event.data.hasOwnProperty(simplifiedEdge)) {
               // Assign the value to all edges in the original graph that map to the edge in the simplified graph.
               var value = event.data[simplifiedEdge];
-              var edgeData = w.skeleton.simplifiedGraph.get_edge_data(simplifiedEdge[0], simplifiedEdge[1]);
+              simplifiedEdge = simplifiedEdge.split(',');
+              var edgeData = w1.skeleton.simplifiedGraph.get_edge_data(simplifiedEdge[0], simplifiedEdge[1]);
               if (!('map' in edgeData)) {
                 edgeData.map = [simplifiedEdge];
               }
               edgeData.map.forEach(function(originalEdge) {
-                w.skeleton.betweenness[originalEdge] = value;
+                w1.skeleton.betweenness[originalEdge.sort()] = value;
               });
             }
           }
           if (shading_method === 'betweenness_centrality') {
-            w.skeleton.updateSkeletonColor();
+            w1.skeleton.updateSkeletonColor();
             WebGLApp.render();
           }
         }
-        w.postMessage({graph: jsnx.convert.to_edgelist(self.simplifiedGraph), action:'edge_betweenness_centrality'});
+        w1.postMessage({graph: serializedGraph, action:'edge_betweenness_centrality'});
+        
+        // Calculate the branch centrality of the graph in another thread.
+        var w2 = new Worker(STATIC_URL_JS + "graph_worker.js");
+        w2.skeleton = self;
+        w2.onmessage = function (event) {
+          // Map the centrality values back to the original graph.
+          for (var simplifiedEdge in event.data) {
+            if (event.data.hasOwnProperty(simplifiedEdge)) {
+              // Assign the value to all edges in the original graph that map to the edge in the simplified graph.
+              var value = event.data[simplifiedEdge];
+              simplifiedEdge = simplifiedEdge.split(',');
+              var edgeData = w2.skeleton.simplifiedGraph.get_edge_data(simplifiedEdge[0], simplifiedEdge[1]);
+              if (!('map' in edgeData)) {
+                edgeData.map = [simplifiedEdge];
+              }
+              edgeData.map.forEach(function(originalEdge) {
+                w2.skeleton.branchCentrality[originalEdge.sort()] = value;
+              });
+            }
+          }
+          if (shading_method === 'branch_centrality') {
+            w2.skeleton.updateSkeletonColor();
+            WebGLApp.render();
+          }
+        }
+        w2.postMessage({graph: serializedGraph, action:'branch_centrality'});
       }
       else
       {
         $('#growl-alert').growlAlert({
           autoShow: true,
-          content: "Cannot calculate betweenness centrality, your browser does not support Web Workers...",
+          content: "Cannot calculate graph centrality, your browser does not support Web Workers...",
           title: 'Warning',
           position: 'top-right',
           delayTime: 2000,

@@ -338,7 +338,7 @@ var WindowMaker = new function()
     shadingMenu.setAttribute("id", "skeletons_shading");
     $('<option/>', {value : 'none', text: 'None', selected: true}).appendTo(shadingMenu);
     $('<option/>', {value : 'betweenness_centrality', text: 'Betweenness centrality'}).appendTo(shadingMenu);
-// TODO:    $('<option/>', {value : 'branch_centrality', text: 'Branch centrality'}).appendTo(shadingMenu);
+    $('<option/>', {value : 'branch_centrality', text: 'Branch centrality'}).appendTo(shadingMenu);
     shadingMenu.onchange = WebGLApp.set_shading_method;
     buttons.appendChild(shadingMenu);
     

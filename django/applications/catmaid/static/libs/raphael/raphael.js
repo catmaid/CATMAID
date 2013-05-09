@@ -217,6 +217,17 @@
     rgbtoString = function () {
         return this.hex;
     };
+// This is buggy and was fixed in 2.0.
+// Including a fix described at <https://github.com/DmitryBaranovskiy/raphael/issues/251?source=cc> in lieu of updating to 2.x.
+//     R.hsb2rgb = function (h, s, b, o) {
+//         if (R.is(h, "object") && "h" in h && "s" in h && "b" in h) {
+//             b = h.b;
+//             s = h.s;
+//             h = h.h;
+//             o = h.o;
+//         }
+//         return R.hsl2rgb(h, s, b / 2, o);
+//     };
     R.hsb2rgb = function (h, s, b, o) {
         if (R.is(h, "object") && "h" in h && "s" in h && "b" in h) {
             b = h.b;
@@ -224,7 +235,17 @@
             h = h.h;
             o = h.o;
         }
-        return R.hsl2rgb(h, s, b / 2, o);
+        if (h > 1 || s > 1 || b > 1) {
+            h /= 360;
+            s /= 100;
+            b /= 100;
+        }
+        var hh = h;
+        var ll = (2 - s) * b;
+        var ss = s * b;
+        ss /= (ll <= 1) ? (ll) : 2 - (ll);
+        ll /= 2;
+        return R.hsl2rgb(hh, ss, ll, o);
     };
     R.hsl2rgb = function (h, s, l, o) {
         if (R.is(h, "object") && "h" in h && "s" in h && "l" in h) {

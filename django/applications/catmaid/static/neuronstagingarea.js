@@ -5,6 +5,8 @@ var NeuronStagingArea = new function()
 	var self = this;
 	var skeletonmodels = {};
 
+	var togglevisibleall = false;
+
 	var SkeletonModel = function( id, neuronname )
 	{
 		var self = this;
@@ -130,6 +132,22 @@ var NeuronStagingArea = new function()
 				self._add_skeleton_to_table( skeletonmodels[ skeleton_id ] );
     		}
     	}
+
+    	// setup button handlers
+	    $('#webgl-show').click(function() {
+			for( var skeleton_id in skeletonmodels ) {
+				if( skeletonmodels.hasOwnProperty(skeleton_id) ) {
+					self.select_skeleton( skeleton_id, togglevisibleall );
+				}
+			}
+	      togglevisibleall = !togglevisibleall;
+	      if( togglevisibleall )
+	        $('#webgl-show').text('select all');
+	      else
+	        $('#webgl-show').text('unselect all');
+	    })
+
+
 	}
 
 	self.add_skeleton_to_stage = function( id, neuronname )
@@ -362,21 +380,7 @@ var NeuronStagingArea = new function()
 		      	var vis = $('#skeletonshow-' + skeleton.id).is(':checked')
 		      	skeletonmodels[ skeleton.id ].selected = vis;
 		        if( WebGLApp.is_widget_open() ) {
-
-		        	if( event.shiftKey ) {
-		        		WebGLApp.setSkeletonAllVisibility( skeleton.id, vis);
-		        	} else {
-			        	WebGLApp.setSkeletonAllVisibility( skeleton.id, vis );
-
-			        	skeletonmodels[ skeleton.id ].pre_visible = vis;
-			        	$('#skeletonpre-' + skeleton.id).attr('checked', vis);
-			        	WebGLApp.setSkeletonPreVisibility( skeleton.id,  vis );
-
-			        	skeletonmodels[ skeleton.id ].post_visible = vis;
-			        	$('#skeletonpost-' + skeleton.id).attr('checked', vis);
-			        	WebGLApp.setSkeletonPostVisibility( skeleton.id, vis );
-
-		        	}
+	        		self.select_skeleton( skeleton.id, vis );
 		        }
 		        	
 		      } )
@@ -520,6 +524,31 @@ var NeuronStagingArea = new function()
 		})
 		$('#color-wheel-' + skeleton.id).hide();
 
+	}
+
+	self.select_skeleton = function( skeleton_id, vis ) {
+		console.log('select skeleton', skeleton_id, vis, skeletonmodels[ skeleton_id ].selected )
+		if( !skeletonmodels.hasOwnProperty( skeleton_id ) ) {
+			return;
+		}
+		var vis;
+		if( vis === undefined) {
+			vis = !skeletonmodels[ skeleton_id ].selected;
+		}
+	  	var skeleton = skeletonmodels[ skeleton_id ];
+	  	$('#skeletonshow-' + skeleton.id).attr('checked', vis);
+	  	skeletonmodels[ skeleton.id ].selected = vis;
+	    if( WebGLApp.is_widget_open() ) {
+        	WebGLApp.setSkeletonAllVisibility( skeleton.id, vis );
+
+        	skeletonmodels[ skeleton.id ].pre_visible = vis;
+        	$('#skeletonpre-' + skeleton.id).attr('checked', vis);
+        	WebGLApp.setSkeletonPreVisibility( skeleton.id,  vis );
+
+        	skeletonmodels[ skeleton.id ].post_visible = vis;
+        	$('#skeletonpost-' + skeleton.id).attr('checked', vis);
+        	WebGLApp.setSkeletonPostVisibility( skeleton.id, vis );
+	    }
 	}
 
 	self.save_skeleton_list = function() {

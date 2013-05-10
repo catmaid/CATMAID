@@ -36,26 +36,6 @@ var WebGLApp = new function () {
     dimension = project.focusedStack.dimension;
     translation = project.focusedStack.translation;
 
-    $('#webgl-show').click(function() {
-      for( var skeleton_id in skeletons)
-      {
-        if( skeletons.hasOwnProperty(skeleton_id) ) {
-          skeletons[ skeleton_id ].setCompleteActorVisibility( togglevisibleall );
-          $('#skeletonshow-' + skeleton_id).attr('checked', togglevisibleall );
-          $('#skeletonpre-' + skeleton_id).attr('checked', togglevisibleall );
-          $('#skeletonpost-' + skeleton_id).attr('checked', togglevisibleall );
-          if( togglevisibleall === false )
-            $('#skeletontext-' + skeleton_id).attr('checked', togglevisibleall );
-        }
-      }
-      togglevisibleall = !togglevisibleall;
-      if( togglevisibleall )
-        $('#webgl-show').text('show');
-      else
-        $('#webgl-show').text('hide');
-      self.render();
-    })
-    
     // self.render();
   }
 

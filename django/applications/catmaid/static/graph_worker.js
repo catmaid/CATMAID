@@ -8,6 +8,36 @@ var GraphWorker = new function()
 	var self = this;
 	
 	
+	self.simplify = function(graph) {
+		// Make a simplified version of the graph that combines all nodes between branches and leaves.
+		
+		// Start with a copy of the graph.
+		var simplifiedGraph = graph.copy();
+		
+		// Loop through each node and replace it with an edge if it has exactly two neighbors.
+		graph.nodes().sort().forEach(function(node) {
+			var neighbors = simplifiedGraph.neighbors(node).sort();
+			if (neighbors.length === 2) {
+				// Keep track of which edges in the original graph map to which edge in the simplified graph.
+				var edge0Data = simplifiedGraph.get_edge_data(node, neighbors[0]);
+				var edge1Data = simplifiedGraph.get_edge_data(node, neighbors[1]);
+				var map = ('map' in edge0Data ? edge0Data.map : []);
+				map.push([node, neighbors[0]]);
+				map.push([node, neighbors[1]]);
+				if ('map' in edge1Data) {
+					map = map.concat(edge1Data.map);
+				}
+
+				// Replace the node.
+				simplifiedGraph.remove_node(node);
+				simplifiedGraph.add_edge(neighbors[0], neighbors[1], (map.length > 0 ? {map: map} : {}));
+			}
+		});
+		
+      return jsnx.convert.to_edgelist(simplifiedGraph);
+	}
+	
+	
 	self.calculateBetweennessCentrality = function(graph) {
 		// Calculate the betweenness value for every node.
 		var betweenness = jsnx.betweenness_centrality(graph);
@@ -129,7 +159,10 @@ onmessage = function(event) {
 	
 	var response;
 	
-	if (action === 'betweenness_centrality') {
+	if (action === 'simplify') {
+		response = GraphWorker.simplify(graph);
+	}
+	else if (action === 'betweenness_centrality') {
 		response = GraphWorker.calculateBetweennessCentrality(graph);
 	}
 	else if (action === 'edge_betweenness_centrality') {

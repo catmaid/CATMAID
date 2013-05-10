@@ -938,46 +938,15 @@ var WebGLApp = new function () {
         }
       }
       
-      // Make a simplified version of the graph that combines all nodes between branches and leaves.
-      self.simplifiedGraph = self.graph.copy();
-      self.graph.nodes().sort().forEach(function(node) {
-        var neighbors = self.simplifiedGraph.neighbors(node).sort();
-        if (neighbors.length === 2) {
-          // This node can be replaced by a single edge connecting its neighbors.
-          
-          // Keep track of which edges in the original graph map to which edge in the simplified graph.
-          var edge0Data = self.simplifiedGraph.get_edge_data(node, neighbors[0]);
-          var edge1Data = self.simplifiedGraph.get_edge_data(node, neighbors[1]);
-          var map = ('map' in edge0Data ? edge0Data.map : []);
-          map.push([node, neighbors[0]]);
-          map.push([node, neighbors[1]]);
-          if ('map' in edge1Data) {
-            map = map.concat(edge1Data.map);
-          }
-          
-          // Replace the node.
-          self.simplifiedGraph.remove_node(node);
-          self.simplifiedGraph.add_edge(neighbors[0], neighbors[1], (map.length > 0 ? {map: map} : {}));
-        }
-      });
-      var serializedGraph = jsnx.convert.to_edgelist(self.simplifiedGraph);
-      
-// Export the simplified graph to GraphViz DOT format:
-//       var dot = 'graph {\n';
-//       self.simplifiedGraph.edges().forEach(function(edge) {
-//         var edgeData = self.simplifiedGraph.get_edge_data(edge[0], edge[1]);
-//         dot += edge[0] + '--' + edge[1] + ' [ label="' + ('map' in edgeData ? edgeData.map.length : 1) + '" ];\n';
-//       });
-//       dot += '}\n';
-//       console.log(dot);
       
       // TODO: do these automatically or wait until the user chooses the shading option from the menu?
       if (typeof(Worker) !== "undefined")
       {
+        // TODO: put up some kind of indicator that calculations are underway.
+      
         // Calculate the betweenness centrality of the graph in another thread.
-        // TODO: put up some kind of indicator that the calculation is underway.
+        // (This will run once the simplified graph has been created by w3 below.)
         var w1 = new Worker(STATIC_URL_JS + "graph_worker.js");
-        w1.skeleton = self;
         w1.onmessage = function (event) {
           // Map the betweenness values back to the original graph.
           for (var simplifiedEdge in event.data) {
@@ -985,25 +954,24 @@ var WebGLApp = new function () {
               // Assign the value to all edges in the original graph that map to the edge in the simplified graph.
               var value = event.data[simplifiedEdge];
               simplifiedEdge = simplifiedEdge.split(',');
-              var edgeData = w1.skeleton.simplifiedGraph.get_edge_data(simplifiedEdge[0], simplifiedEdge[1]);
+              var edgeData = self.simplifiedGraph.get_edge_data(simplifiedEdge[0], simplifiedEdge[1]);
               if (!('map' in edgeData)) {
                 edgeData.map = [simplifiedEdge];
               }
               edgeData.map.forEach(function(originalEdge) {
-                w1.skeleton.betweenness[originalEdge.sort()] = value;
+                self.betweenness[originalEdge.sort()] = value;
               });
             }
           }
           if (shading_method === 'betweenness_centrality') {
-            w1.skeleton.updateSkeletonColor();
+            self.updateSkeletonColor();
             WebGLApp.render();
           }
         }
-        w1.postMessage({graph: serializedGraph, action:'edge_betweenness_centrality'});
         
         // Calculate the branch centrality of the graph in another thread.
+        // (This will run once the simplified graph has been created by w3 below.)
         var w2 = new Worker(STATIC_URL_JS + "graph_worker.js");
-        w2.skeleton = self;
         w2.onmessage = function (event) {
           // Map the centrality values back to the original graph.
           for (var simplifiedEdge in event.data) {
@@ -1011,14 +979,14 @@ var WebGLApp = new function () {
               // Assign the value to all edges in the original graph that map to the edge in the simplified graph.
               var value = event.data[simplifiedEdge];
               simplifiedEdge = simplifiedEdge.split(',');
-              var edgeData = w2.skeleton.simplifiedGraph.get_edge_data(simplifiedEdge[0], simplifiedEdge[1]);
+              var edgeData = self.simplifiedGraph.get_edge_data(simplifiedEdge[0], simplifiedEdge[1]);
               if (!('map' in edgeData)) {
                 edgeData.map = [simplifiedEdge];
               }
               
 //               // Label each segment with it's value.
 //               if( !self.textlabels.hasOwnProperty( simplifiedEdge )) {
-//                 var text3d = new THREE.TextGeometry( parseInt(value * w2.skeleton.simplifiedGraph.number_of_edges()), {
+//                 var text3d = new THREE.TextGeometry( parseInt(value * self.simplifiedGraph.number_of_edges()), {
 //                   size: 100 * scale,
 //                   height: 20 * scale,
 //                   curveSegments: 1,
@@ -1047,16 +1015,35 @@ var WebGLApp = new function () {
 //               }
               
               edgeData.map.forEach(function(originalEdge) {
-                w2.skeleton.branchCentrality[originalEdge.sort()] = value;
+                self.branchCentrality[originalEdge.sort()] = value;
               });
             }
           }
           if (shading_method === 'branch_centrality') {
-            w2.skeleton.updateSkeletonColor();
+            self.updateSkeletonColor();
             WebGLApp.render();
           }
         }
-        w2.postMessage({graph: serializedGraph, action:'branch_centrality'});
+        
+		// Make a simplified version of the graph that combines all nodes between branches and leaves.
+        var w3 = new Worker(STATIC_URL_JS + "graph_worker.js");
+        w3.onmessage = function (event) {
+          self.simplifiedGraph = jsnx.convert.to_networkx_graph(event.data);
+        
+          // Export the simplified graph to GraphViz DOT format:
+//           var dot = 'graph {\n';
+//           self.simplifiedGraph.edges().forEach(function(edge) {
+//             var edgeData = self.simplifiedGraph.get_edge_data(edge[0], edge[1]);
+//             dot += edge[0] + '--' + edge[1] + ' [ label="' + ('map' in edgeData ? edgeData.map.length : 1) + '" ];\n';
+//           });
+//           dot += '}\n';
+//           console.log(dot);
+          
+          // Calculate the betweenness and branch centralities of the simplified graph.
+          w1.postMessage({graph: event.data, action:'edge_betweenness_centrality'});
+          w2.postMessage({graph: event.data, action:'branch_centrality'});
+        }
+        w3.postMessage({graph: jsnx.convert.to_edgelist(self.graph), action:'simplify'});
       }
       else
       {

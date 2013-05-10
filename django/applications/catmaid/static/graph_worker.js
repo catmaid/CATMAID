@@ -1,4 +1,6 @@
-importScripts('libs/jsnetworkx/jsnetworkx.js');
+if (typeof(importScripts) !== "undefined") {
+	importScripts('libs/jsnetworkx/jsnetworkx.js');
+}
 
 
 var GraphWorker = new function()
@@ -105,6 +107,8 @@ var GraphWorker = new function()
 		for (var c in centrality) {
 			if (centrality.hasOwnProperty(c)) {
 				centrality[c] /= i;
+				// To increase the "contrast" of the values you could also do:
+				// centrality[c] = Math.pow(centrality[c] / i, 2);
 			}
 		}
 	

@@ -933,6 +933,7 @@ var WebGLApp = new function () {
               scene.add( this.labelSphere[tokey] );
           }
           
+          // TODO: should non-neurite segments be excluded?
           this.graph.add_edge(fromkey, tokey);
         }
       }
@@ -960,6 +961,15 @@ var WebGLApp = new function () {
         }
       });
       var serializedGraph = jsnx.convert.to_edgelist(self.simplifiedGraph);
+      
+// Export the simplified graph to GraphViz DOT format:
+//       var dot = 'graph {\n';
+//       self.simplifiedGraph.edges().forEach(function(edge) {
+//         var edgeData = self.simplifiedGraph.get_edge_data(edge[0], edge[1]);
+//         dot += edge[0] + '--' + edge[1] + ' [ label="' + ('map' in edgeData ? edgeData.map.length : 1) + '" ];\n';
+//       });
+//       dot += '}\n';
+//       console.log(dot);
       
       // TODO: do these automatically or wait until the user chooses the shading option from the menu?
       if (typeof(Worker) !== "undefined")
@@ -1005,6 +1015,37 @@ var WebGLApp = new function () {
               if (!('map' in edgeData)) {
                 edgeData.map = [simplifiedEdge];
               }
+              
+//               // Label each segment with it's value.
+//               if( !self.textlabels.hasOwnProperty( simplifiedEdge )) {
+//                 var text3d = new THREE.TextGeometry( parseInt(value * w2.skeleton.simplifiedGraph.number_of_edges()), {
+//                   size: 100 * scale,
+//                   height: 20 * scale,
+//                   curveSegments: 1,
+//                   font: "helvetiker"
+//                 });
+//                 text3d.computeBoundingBox();
+//                 var centerOffset = -0.5 * ( text3d.boundingBox.max.x - text3d.boundingBox.min.x );
+//                 
+//                 var originalEdge = edgeData.map[0];
+//                 var fv = transform_coordinates([self.original_vertices[originalEdge[0]].x, self.original_vertices[originalEdge[0]].y, self.original_vertices[originalEdge[0]].z]);
+//                 var from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
+//                 from_vector.multiplyScalar( scale );
+//                 var tv = transform_coordinates([self.original_vertices[originalEdge[1]].x, self.original_vertices[originalEdge[1]].y, self.original_vertices[originalEdge[1]].z]);
+//                 var to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
+//                 to_vector.multiplyScalar( scale );
+//                 
+//                 var textMaterial = new THREE.MeshNormalMaterial( { color: 0xffffff, overdraw: true } );
+//                 var text = new THREE.Mesh( text3d, textMaterial );
+//                 text.position.x = (from_vector.x + to_vector.x) / 2.0;
+//                 text.position.y = (from_vector.y + to_vector.y) / 2.0;
+//                 text.position.z = (from_vector.z + to_vector.z) / 2.0;
+//                 text.visible = textlabel_visibility;
+//                 
+//                 self.textlabels[ simplifiedEdge ] = text;
+//                 scene.add( text );
+//               }
+              
               edgeData.map.forEach(function(originalEdge) {
                 w2.skeleton.branchCentrality[originalEdge.sort()] = value;
               });

@@ -175,7 +175,7 @@ var WindowMaker = new function()
           '<tr>' +
             '<td><button type="button" id="webgl-rmall">remove all</button></td>' +
             '<td></td>' +
-            '<td><button type="button" id="webgl-show">hide</button></td>' +
+            '<td><button type="button" id="webgl-show">unselect all</button></td>' +
             '<td></td>' +
             '<td></td>' +
           '</tr>' +

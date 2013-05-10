@@ -330,10 +330,19 @@ var CompartmentGraphWidget = new function()
     //   // console.log('node mouseover', e);
     // });
 
+    cy.on('click', 'node', {}, function(evt){
+      var node = this;
+      var splitedge = node.id().split('_');
+      if( evt.originalEvent.shiftKey )
+        NeuronStagingArea.select_skeleton( splitedge[0] );
+
+    });
+
     cy.on('click', 'edge', {}, function(evt){
       var edge = this;
       var splitedge = edge.id().split('_');
-      ConnectorSelection.show_shared_connectors( splitedge[0], splitedge[2] );
+      if( evt.originalEvent.shiftKey )
+        ConnectorSelection.show_shared_connectors( splitedge[0], splitedge[2] );
     });
 
   }

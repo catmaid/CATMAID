@@ -198,10 +198,9 @@ function TracingTool()
 
   this.prototype.changeSlice = function( val )
   {
-    if( $( "#view_in_3d_webgl_widget").length ) {
-        if( $('#enable_z_plane').attr('checked') != undefined ) {
-            WebGLApp.updateZPlane( val );
-        }
+    if( WebGLApp.is_widget_open() ) {
+      WebGLApp.updateZPlane( val );
+
     }
     if( tracingLayer.svgOverlay.hasTagbox() ) {
       tracingLayer.svgOverlay.removeTagbox();

@@ -407,16 +407,6 @@ var tracingWindowActions = [
       }
   }),
 
-  new Action({
-      helpText: "Notifications",
-      buttonID: "data_button_notifications",
-      buttonName: 'table_notifications',
-      run: function (e) {
-          WindowMaker.show('notifications');
-          return true;
-      }
-  }),
-
     new Action({
         helpText: "Connectivity widget",
         buttonID: "data_button_connectivit",

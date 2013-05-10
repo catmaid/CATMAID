@@ -866,7 +866,7 @@ var WebGLApp = new function () {
             var centerOffset = -0.5 * ( text3d.boundingBox.max.x - text3d.boundingBox.min.x );
 
             var textMaterial = new THREE.MeshNormalMaterial( { color: 0xffffff, overdraw: true } );
-            text = new THREE.Mesh( text3d, textMaterial );
+            var text = new THREE.Mesh( text3d, textMaterial );
             text.position.x = from_vector.x;
             text.position.y = from_vector.y;
             text.position.z = from_vector.z;

@@ -33,8 +33,8 @@ each other.
 Let's extend the universe ontology by the fact that all galaxies contain
 matter: *matter part_of galaxy*. We could also define a restriction that says
 that something that claims to be a galaxy has at least one entity that is
-considered matter. If it doesn't have matter is no galaxy in the sense of our
-ontology.
+considered matter. If it doesn't have matter it is no galaxy in the sense of
+our ontology.
 
 Instantiation
 --------------
@@ -42,13 +42,29 @@ Instantiation
 With ontologies one usually defines abstract concepts which are valid
 for actual individual entities. The concept that galaxies are part of
 the universe holds for all the actual galaxy instances (i.e. the real
-galaxies). If we would declare something without a galaxy that doesn't
-contain matter, we could actually test that and see that it is wrong in
-terms of our ontology.
+galaxies). If we would declare a galaxy that doesn't contain matter, we
+could actually test that and see that it is wrong in terms of our
+ontology.
 
 To model something (e.g. observations in the real world) with respect to
 an ontology one would create instances of classes (i.e. types) defined
-by the ontology.
+by the ontology and put these classes into relation to each other.
+
+Work spaces
+-----------
+
+CATMAID supports two ways to work with ontologies and their instantiation with
+respect to a certain project: *project specific* and *project independent*. When
+in project specific mode (the default), ontologies and their instantiations are
+only visible in the current project. In contrast, if set to project independent,
+they are visible to all other projects (when in project independent mode).
+
+Visibility across projects is important for linking classification graphs
+(ontology instantiations) to multiple projects at the same time.
+
+Whether the one or the other mode is the default for a user can be set in his/her
+user profile settings. This is needed when e.g. repetitions of a an experiment
+are organized into different projects, but need one common annotation.
 
 Ontology editor
 ---------------

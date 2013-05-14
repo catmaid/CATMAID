@@ -170,15 +170,16 @@ function CroppingTool() {
 	}
 
 	/**
-	 * crop a microstack by initiating a server backend
-	 * @todo which has to be built
+	 * crop a microstack by initiating a server backend call
 	 */
 	var crop = function()
 	{
 		var url = self.get_crop_url();
+		var cb = self.getCropBox();
+		var data = {'rotationcw': cb.rotation_cw}
 		if (url)
 		{
-			requestQueue.register(url, 'GET', {}, handle_crop );
+			requestQueue.register(url, 'GET', data, handle_crop );
 		}
 		return false;
 	}

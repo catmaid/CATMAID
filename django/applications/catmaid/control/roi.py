@@ -62,7 +62,7 @@ def link_roi_to_class_instance(request, project_id=None, relation_id=None,
     y_max = float(request.POST['y_max'])
     z = float(request.POST['z'])
     zoom_level = int(request.POST['zoom_level'])
-    rotation_cw = 0.0
+    rotation_cw = int(request.POST['rotation_cw'])
 
     # Get related objects
     project = Project.objects.get(id=project_id)
@@ -183,8 +183,8 @@ def create_roi_image_task(user, project_id, roi_id, file_path):
         single_channel = False
         # Create a cropping job
         job = cropping.CropJob(user, project_id, [roi.stack.id],
-            x_min, x_max, y_min, y_max, z_min, z_max, roi.zoom_level,
-            single_channel)
+            x_min, x_max, y_min, y_max, z_min, z_max, roi.rotation_cw,
+            roi.zoom_level, single_channel)
         # Create the pgmagick images
         cropped_stacks = cropping.extract_substack( job )
         if len(cropped_stacks) == 0:

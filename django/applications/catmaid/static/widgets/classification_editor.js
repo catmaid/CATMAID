@@ -430,7 +430,8 @@ var ClassificationEditor = new function()
                 y_min: cb.top,
                 y_max: cb.bottom,
                 z: tool.stack.z * tool.stack.resolution.z + tool.stack.translation.z,
-                zoom_level: tool.stack.s
+                zoom_level: tool.stack.s,
+                rotation_cw: cb.rotation_cw
             }
             // The actual creation and linking of the ROI happens in
             // the back-end. Create URL for initiating this:
@@ -559,7 +560,7 @@ var ClassificationEditor = new function()
                             bboxtool.createCropBoxByWorld(
                                 roi.location[0] - hwidth,
                                 roi.location[1] - hheight,
-                                roi.width, roi.height);
+                                roi.width, roi.height, roi.rotation_cw);
                             // Let the box be above the mouse catcher and
                             // make sure the crop box has no background
                             var cbview = bboxtool.getCropBox().layer.getView();

@@ -1,7 +1,7 @@
 from django import forms
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_syncdb
 from datetime import datetime
 import sys
 import re
@@ -929,6 +929,22 @@ def new_create_anonymous_user(sender, **kwargs):
 
 import guardian
 guardian.management.create_anonymous_user = new_create_anonymous_user
+
+# ------------------------------------------------------------------------
+
+# Prevent interactive question about wanting a superuser created.  (This code
+# has to go in this "models" module so that it gets processed by the "syncdb"
+# command during database creation.)
+#
+# From http://stackoverflow.com/questions/1466827/ --
+
+from django.contrib.auth import models as auth_models
+from django.contrib.auth.management import create_superuser
+
+post_syncdb.disconnect(
+    create_superuser,
+    sender=auth_models,
+    dispatch_uid='django.contrib.auth.management.create_superuser')
 
 # ------------------------------------------------------------------------
 

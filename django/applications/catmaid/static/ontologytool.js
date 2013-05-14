@@ -105,7 +105,7 @@ function OntologyTool()
 	 */
     this.unregister = function()
     {
-        $("#toolbox_ontology").hide();
+        // nothing to do here currently
     };
 
 	/**

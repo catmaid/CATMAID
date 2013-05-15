@@ -46,6 +46,14 @@ function CroppingTool() {
 			5,
 			function( val ){ statusBar.replaceLast( "crop s: " + val ); } );
 
+	// Make sliders a bit smaller to save space
+	var viewSize = parseInt( getPropertyFromCssRules( 2, 2, "width" ) );
+	var viewTop = parseInt( getPropertyFromCssRules( 2, 2, "marginLeft" ) );
+	var viewBottom = parseInt( getPropertyFromCssRules( 2, 2, "marginRight" ) );
+	var new_width = 0.6*viewSize + viewTop + viewBottom;
+	this.slider_crop_top_z.resize(new_width);
+	this.slider_crop_bottom_z.resize(new_width);
+	this.slider_crop_s.resize(new_width);
 
 	// Obtain a reference to the RoiTool toolbar button
 	var toolbar = document.getElementById("toolbar_roi");

@@ -190,8 +190,6 @@ Now create some required tables with::
 
     ./manage.py syncdb
 
-When prompted to create a superuser, **SAY NO** at this stage.
-
 And bring the database schema up to date for applications that
 mange changes to their tables with South::
 

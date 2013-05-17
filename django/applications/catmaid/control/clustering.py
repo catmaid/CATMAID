@@ -45,6 +45,8 @@ def create_ontology_selection_form( workspace_pid, class_ids=None ):
         ontologies = forms.ModelMultipleChoiceField(
             queryset=Class.objects.filter(id__in=class_ids),
             widget=CheckboxSelectMultiple())
+        add_nonleafs = forms.BooleanField(initial=False,
+            required=False, label="Use sub-paths as features")
 
     return SelectOntologyForm
 
@@ -78,7 +80,9 @@ class ClusteringWizard(SessionWizardView):
         context = super(ClusteringWizard, self).get_context_data(form=form, **kwargs)
         if self.steps.current == 'ontologies':
             desc = 'Please select all the ontologies that you want to see ' \
-                   'considered for feature selection.'
+                   'considered for feature selection. Additionally, you can ' \
+                   'define whether all sub-paths starting from root to a ' \
+                   'leaf should be used as features, too.'
         elif self.steps.current == 'classifications':
             desc = 'Below are all classification graphs shown, that are based ' \
                    'on the previeously selected ontologies. Please select those ' \
@@ -95,6 +99,7 @@ class ClusteringWizard(SessionWizardView):
     def done(self, form_list, **kwargs):
         cleaned_data = [form.cleaned_data for form in form_list]
         ontologies = cleaned_data[0].get('ontologies')
+        add_nonleafs = cleaned_data[0].get('add_nonleafs')
         graphs = cleaned_data[1].get('classification_graphs')
         metric = cleaned_data[2].get('metric')
         linkage = cleaned_data[2].get('linkage')
@@ -104,7 +109,7 @@ class ClusteringWizard(SessionWizardView):
         features = []
         # TODO: Only consider features that are instantiated
         for o in ontologies:
-            features = features + get_features( o )
+            features = features + get_features( o, add_nonleafs )
 
         bin_matrix = create_binary_matrix(graphs, features)
         dst_matrix = create_distance_matrix(graphs, metric)
@@ -142,14 +147,14 @@ class Feature:
     def __len__(self):
         return len(self.links)
 
-def get_features( ontology ):
+def get_features( ontology, add_nonleafs=False ):
     """ Return a list of Feature instances which represent paths
     to leafs of the ontology.
     """
-    feature_lists = get_feature_paths( ontology )
+    feature_lists = get_feature_paths( ontology, add_nonleafs )
     return [ Feature(fl) for fl in feature_lists ]
 
-def get_feature_paths( ontology, depth=0, max_depth=100 ):
+def get_feature_paths( ontology, add_nonleafs=False, depth=0, max_depth=100 ):
     """ Returns all root-leaf paths of the passed ontology. It respects
     is_a relationships.
     """
@@ -178,17 +183,19 @@ def get_feature_paths( ontology, depth=0, max_depth=100 ):
 
         if depth < max_depth:
             # Get features of the current feature's class a
-            child_features = get_feature_paths( flink.class_a, depth+1 )
+            child_features = get_feature_paths( flink.class_a, add_nonleafs, depth+1 )
             # If there is a super class, get the children in addition
             # to the children of the current class.
             if flink.super_class:
                 child_features = child_features + \
-                    get_feature_paths( flink.super_class, depth+1 )
-            if len(child_features) == 0:
-                add_single_link = True
-            else:
-                for cf in child_features:
-                    features.append( [flink] + cf )
+                    get_feature_paths( flink.super_class, add_nonleafs, depth+1 )
+
+            # Remember the path to this node as feature if a leaf is reached
+            # or if non-leaf nodes should be added, too.
+            is_leaf = (len(child_features) == 0)
+            add_single_link = is_leaf or add_nonleafs
+            for cf in child_features:
+                features.append( [flink] + cf )
         else:
             # Add current node if we reached the maximum depth
             # and don't recurse any further.

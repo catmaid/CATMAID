@@ -1,7 +1,7 @@
 from django import forms
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_syncdb
 from datetime import datetime
 import sys
 import re
@@ -17,6 +17,8 @@ from .fields import Double3DField, Integer3DField, IntegerArrayField, RGBAField
 from guardian.shortcuts import get_objects_for_user
 
 from taggit.managers import TaggableManager
+
+from south.db import db
 
 CELL_BODY_CHOICES = (
     ('u', 'Unknown'),
@@ -94,6 +96,9 @@ class Overlay(models.Model):
     tile_height = models.IntegerField(default=512)
     tile_source_type = models.IntegerField(default=1)
 
+    def __unicode__(self):
+        return str(self.id) + ": " + self.stack.title + " with " + self.title
+
 class Concept(models.Model):
     class Meta:
         db_table = "concept"
@@ -101,6 +106,22 @@ class Concept(models.Model):
     creation_time = models.DateTimeField(default=datetime.now)
     edition_time = models.DateTimeField(default=datetime.now)
     project = models.ForeignKey(Project)
+
+def create_concept_sub_table(table_name):
+    db.execute('''CREATE TABLE %s () INHERITS (concept)''' % table_name);
+    db.execute('''CREATE SEQUENCE %s_id_seq
+                    START WITH 1
+                    INCREMENT BY 1
+                    NO MAXVALUE
+                    NO MINVALUE
+                    CACHE 1''' % table_name);
+    db.execute('''ALTER SEQUENCE %s_id_seq OWNED BY %s.id''' % (table_name, table_name));
+    db.execute('''ALTER TABLE ONLY %s ADD CONSTRAINT %s_pkey PRIMARY KEY (id)''' % (table_name, table_name));
+    db.execute('''ALTER TABLE %s ALTER COLUMN id SET DEFAULT nextval('%s_id_seq'::regclass)''' % (table_name, table_name));   # use concept_id_seq so id unique across all concepts?
+    db.execute('''ALTER TABLE ONLY %s ADD CONSTRAINT %s_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth_user(id)''' % (table_name, table_name));
+    db.execute('''CREATE TRIGGER on_edit_%s
+                    BEFORE UPDATE ON %s
+                    FOR EACH ROW EXECUTE PROCEDURE on_edit()''' % (table_name, table_name));
 
 class Class(models.Model):
     class Meta:
@@ -113,6 +134,9 @@ class Class(models.Model):
     # Now new columns:
     class_name = models.CharField(max_length=255)
     description = models.TextField()
+
+    def __unicode__(self):
+        return self.class_name
 
 class ConnectivityDirection:
     PRESYNAPTIC_PARTNERS = 0
@@ -359,6 +383,8 @@ class UserFocusedModel(models.Model):
     objects = UserFocusedManager()
     user = models.ForeignKey(User)
     project = models.ForeignKey(Project)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
     class Meta:
         abstract = True
 
@@ -388,8 +414,6 @@ class TextlabelLocation(models.Model):
 class Location(UserFocusedModel):
     class Meta:
         db_table = "location"
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     editor = models.ForeignKey(User, related_name='location_editor', db_column='editor_id')
     location = Double3DField()
     reviewer_id = models.IntegerField(default=-1)
@@ -398,8 +422,6 @@ class Location(UserFocusedModel):
 class Treenode(UserFocusedModel):
     class Meta:
         db_table = "treenode"
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     editor = models.ForeignKey(User, related_name='treenode_editor', db_column='editor_id')
     location = Double3DField()
     parent = models.ForeignKey('self', null=True, related_name='children')
@@ -413,8 +435,6 @@ class Treenode(UserFocusedModel):
 class Connector(UserFocusedModel):
     class Meta:
         db_table = "connector"
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     editor = models.ForeignKey(User, related_name='connector_editor', db_column='editor_id')
     location = Double3DField()
     confidence = models.IntegerField(default=5)
@@ -426,8 +446,6 @@ class TreenodeClassInstance(UserFocusedModel):
     class Meta:
         db_table = "treenode_class_instance"
     # Repeat the columns inherited from 'relation_instance'
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     relation = models.ForeignKey(Relation)
     # Now new columns:
     treenode = models.ForeignKey(Treenode)
@@ -437,8 +455,6 @@ class ConnectorClassInstance(UserFocusedModel):
     class Meta:
         db_table = "connector_class_instance"
     # Repeat the columns inherited from 'relation_instance'
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     relation = models.ForeignKey(Relation)
     # Now new columns:
     connector = models.ForeignKey(Connector)
@@ -448,8 +464,6 @@ class TreenodeConnector(UserFocusedModel):
     class Meta:
         db_table = "treenode_connector"
     # Repeat the columns inherited from 'relation_instance'
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     relation = models.ForeignKey(Relation)
     # Now new columns:
     treenode = models.ForeignKey(Treenode)
@@ -634,8 +648,6 @@ class ApiKey(models.Model):
 class Log(UserFocusedModel):
     class Meta:
         db_table = "log"
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     operation_type = models.CharField(max_length=255)
     location = Double3DField()
     freetext = models.TextField()
@@ -665,9 +677,6 @@ class SliceContoursHighres(UserFocusedModel):
 
 class Segments(UserFocusedModel):
 
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
-
     stack = models.ForeignKey(Stack)
 
     assembly = models.ForeignKey(ClassInstance,null=True)
@@ -685,46 +694,48 @@ class Segments(UserFocusedModel):
     direction = models.BooleanField() # 0:LR if origin_section< target_section / 1:RL as boolean, otherwise
     status = models.IntegerField(db_index=True, default=1)
 
-    center_distance = models.FloatField()
-    set_difference = models.FloatField()
-    set_difference_ratio = models.FloatField()
-    aligned_set_difference = models.FloatField()
-    aligned_set_difference_ratio = models.FloatField()
-    size = models.FloatField()
-    overlap = models.FloatField()
-    overlap_ratio = models.FloatField()
-    aligned_overlap = models.FloatField()
-    aligned_overlap_ratio = models.FloatField()
-    average_slice_distance = models.FloatField()
-    max_slice_distance = models.FloatField()
-    aligned_average_slice_distance = models.FloatField()
-    aligned_max_slice_distance = models.FloatField()
-    histogram_0 = models.FloatField()
-    histogram_1 = models.FloatField()
-    histogram_2 = models.FloatField()
-    histogram_3 = models.FloatField()
-    histogram_4 = models.FloatField()
-    histogram_5 = models.FloatField()
-    histogram_6 = models.FloatField()
-    histogram_7 = models.FloatField()
-    histogram_8 = models.FloatField()
-    histogram_9 = models.FloatField()
-    normalized_histogram_0 = models.FloatField()
-    normalized_histogram_1 = models.FloatField()
-    normalized_histogram_2 = models.FloatField()
-    normalized_histogram_3 = models.FloatField()
-    normalized_histogram_4 = models.FloatField()
-    normalized_histogram_5 = models.FloatField()
-    normalized_histogram_6 = models.FloatField()
-    normalized_histogram_7 = models.FloatField()
-    normalized_histogram_8 = models.FloatField()
-    normalized_histogram_9 = models.FloatField()
+class SegmentsData(models.Model):
+
+    segment = models.ForeignKey(Segments)
+
+    center_distance = models.FloatField(default=0.0)
+    set_difference = models.FloatField(default=0.0)
+    set_difference_ratio = models.FloatField(default=0.0)
+    aligned_set_difference = models.FloatField(default=0.0)
+    aligned_set_difference_ratio = models.FloatField(default=0.0)
+    size = models.FloatField(default=0.0)
+    overlap = models.FloatField(default=0.0)
+    overlap_ratio = models.FloatField(default=0.0)
+    aligned_overlap = models.FloatField(default=0.0)
+    aligned_overlap_ratio = models.FloatField(default=0.0)
+    average_slice_distance = models.FloatField(default=0.0)
+    max_slice_distance = models.FloatField(default=0.0)
+    aligned_average_slice_distance = models.FloatField(default=0.0)
+    aligned_max_slice_distance = models.FloatField(default=0.0)
+    histogram_0 = models.FloatField(default=0.0)
+    histogram_1 = models.FloatField(default=0.0)
+    histogram_2 = models.FloatField(default=0.0)
+    histogram_3 = models.FloatField(default=0.0)
+    histogram_4 = models.FloatField(default=0.0)
+    histogram_5 = models.FloatField(default=0.0)
+    histogram_6 = models.FloatField(default=0.0)
+    histogram_7 = models.FloatField(default=0.0)
+    histogram_8 = models.FloatField(default=0.0)
+    histogram_9 = models.FloatField(default=0.0)
+    normalized_histogram_0 = models.FloatField(default=0.0)
+    normalized_histogram_1 = models.FloatField(default=0.0)
+    normalized_histogram_2 = models.FloatField(default=0.0)
+    normalized_histogram_3 = models.FloatField(default=0.0)
+    normalized_histogram_4 = models.FloatField(default=0.0)
+    normalized_histogram_5 = models.FloatField(default=0.0)
+    normalized_histogram_6 = models.FloatField(default=0.0)
+    normalized_histogram_7 = models.FloatField(default=0.0)
+    normalized_histogram_8 = models.FloatField(default=0.0)
+    normalized_histogram_9 = models.FloatField(default=0.0)
 
 
 class Slices(UserFocusedModel):
 
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     stack = models.ForeignKey(Stack)
 
     assembly = models.ForeignKey(ClassInstance,null=True,db_index=True)
@@ -767,8 +778,6 @@ class SegmentToConstraintMap(models.Model):
 class Drawing(UserFocusedModel):
     class Meta:
         db_table = "drawing"
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
     stack = models.ForeignKey(Stack)
     skeleton_id = models.IntegerField()
     z = models.IntegerField()
@@ -843,6 +852,8 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User)
     inverse_mouse_wheel = models.BooleanField(
         default=settings.PROFILE_DEFAULT_INVERSE_MOUSE_WHEEL)
+    independent_ontology_workspace_is_default = models.BooleanField(
+        default=settings.PROFILE_INDEPENDENT_ONTOLOGY_WORKSPACE_IS_DEFAULT)
     show_text_label_tool = models.BooleanField(
         default=settings.PROFILE_SHOW_TEXT_LABEL_TOOL)
     show_tagging_tool = models.BooleanField(
@@ -864,6 +875,8 @@ class UserProfile(models.Model):
         """
         pdict = {}
         pdict['inverse_mouse_wheel'] = self.inverse_mouse_wheel
+        pdict['independent_ontology_workspace_is_default'] = \
+            self.independent_ontology_workspace_is_default
         pdict['show_text_label_tool'] = self.show_text_label_tool
         pdict['show_tagging_tool'] = self.show_tagging_tool
         pdict['show_cropping_tool'] = self.show_cropping_tool
@@ -919,6 +932,22 @@ guardian.management.create_anonymous_user = new_create_anonymous_user
 
 # ------------------------------------------------------------------------
 
+# Prevent interactive question about wanting a superuser created.  (This code
+# has to go in this "models" module so that it gets processed by the "syncdb"
+# command during database creation.)
+#
+# From http://stackoverflow.com/questions/1466827/ --
+
+from django.contrib.auth import models as auth_models
+from django.contrib.auth.management import create_superuser
+
+post_syncdb.disconnect(
+    create_superuser,
+    sender=auth_models,
+    dispatch_uid='django.contrib.auth.management.create_superuser')
+
+# ------------------------------------------------------------------------
+
 # Include models for deprecated PHP-only tables, just so that we can
 # remove them with South in a later migration.
 
@@ -933,3 +962,116 @@ class DeprecatedSession(models.Model):
     session_id = models.CharField(max_length=26)
     data = models.TextField(default='')
     last_accessed = models.DateTimeField(default=datetime.now)
+
+
+class ChangeRequest(UserFocusedModel):
+    OPEN = 0
+    APPROVED = 1
+    REJECTED = 2
+    INVALID = 3
+    
+    class Meta:
+        db_table = "change_request"
+    
+    type = models.CharField(max_length = 32)
+    description = models.TextField()
+    status = models.IntegerField(default = OPEN)
+    recipient = models.ForeignKey(User, related_name='change_recipient', db_column='recipient_id')
+    location = Double3DField()
+    treenode = models.ForeignKey(Treenode)
+    connector = models.ForeignKey(Connector)
+    validate_action = models.TextField()
+    approve_action = models.TextField()
+    reject_action = models.TextField()
+    completion_time = models.DateTimeField(default = None, null = True)
+    
+    # TODO: get the project from the treenode/connector so it doesn't have to specified when creating a request
+    
+    def status_name(self):
+        self.is_valid() # Make sure invalid state is current
+        return ['Open', 'Approved', 'Rejected', 'Invalid'][self.status]
+    
+    def is_valid(self):
+        """ Returns a boolean value indicating whether the change request is still valid."""
+        
+        if self.status == ChangeRequest.OPEN:
+            # Run the request's validation code snippet to determine whether it is still valid.
+            try:
+                from catmaid.control import *
+                is_valid = eval(self.validate_action)
+                if not is_valid:
+                    # Cache the result so we don't have to do the eval next time.
+                    # TODO: can a request ever be temporarily invalid?
+                    self.status = ChangeRequest.INVALID
+                    self.save()
+            except Exception as e:
+                raise Exception('Could not validate the request (%s)', str(e))
+        else:
+            is_valid = False
+                
+        return is_valid;
+    
+    def approve(self, *args, **kwargs):
+        if not self.is_valid():
+            raise Exception('Failed to approve change request: the change is no longer possible.')
+        
+        try:
+            from catmaid.control import *
+            exec(self.approve_action)
+            self.status = ChangeRequest.APPROVED
+            self.completion_time = datetime.now()
+            self.save()
+            
+            # Send a message and an e-mail to the requester.
+            title = self.type + ' Request Approved'
+            message = self.recipient.get_full_name() + ' has approved your ' + self.type.lower() + ' request.'
+            notify_user(self.user, title, message)
+        except Exception as e:
+            raise Exception('Failed to approve change request: %s' % str(e))
+    
+    def reject(self, *args, **kwargs):
+        if not self.is_valid():
+            raise Exception('Failed to reject change request: the change is no longer possible.')
+        
+        try:
+            from catmaid.control import *
+            exec(self.reject_action)
+            self.status = ChangeRequest.REJECTED
+            self.completion_time = datetime.now()
+            self.save()
+            
+            # Send a message and an e-mail to the requester.
+            title = self.type + ' Request Rejected'
+            message = self.recipient.get_full_name() + ' has rejected your ' + self.type.lower() + ' request.'
+            notify_user(self.user, title, message)
+            
+        except Exception as e:
+            raise Exception('Failed to reject change request: %s' % str(e))
+
+
+def send_email_to_change_request_recipient(sender, instance, created, **kwargs):
+    """ Send the recipient of a change request a message and an e-mail when the request is created."""
+    
+    if created:
+        title = instance.type + ' Request'
+        message = instance.user.get_full_name() + ' has sent you a ' + instance.type.lower() + ' request.  Please check your notifications.'
+        notify_user(instance.recipient, title, message)
+
+post_save.connect(send_email_to_change_request_recipient, sender = ChangeRequest)
+
+
+def notify_user(user, title, message):
+    """ Send a user a message and an e-mail."""
+    
+    # TODO: only send one e-mail per day, probably using a Timer object <http://docs.python.org/2/library/threading.html#timer-objects>
+    
+    # Create the message
+    Message(user = user,
+            title = title,
+            text = message).save()
+    
+    # Send the e-mail
+    try:
+        user.email_user('[CATMAID] ' + title, message)
+    except Exception as e:
+        print >> sys.stderr, 'Failed to send e-mail (', str(e), ')'

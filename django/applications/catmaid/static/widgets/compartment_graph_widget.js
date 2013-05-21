@@ -8,6 +8,112 @@ var CompartmentGraphWidget = new function()
 
   var self = this;
 
+  var confidence_threshold = 0,
+      synaptic_count_edge_filter = 0, // value equal or higher than this number or kept
+      show_node_labels = true,
+      clustering_bandwidth = 0;
+
+  this.toggle_show_node_labels = function() {
+    if( show_node_labels ) {
+      show_node_labels = false;
+      cy.nodes().css('text-opacity', 0);
+    } else {
+      show_node_labels = true;
+      cy.nodes().css('text-opacity', 1);
+    }
+  }
+
+  this.graph_properties = function() {
+
+    console.log('initialize value',synaptic_count_edge_filter, clustering_bandwidth, confidence_threshold)
+
+    var dialog = document.createElement('div');
+    dialog.setAttribute("id", "dialog-graph-confirm");
+    dialog.setAttribute("title", "Graph properties");
+
+    var label = document.createTextNode('Keep edges with confidence');
+    dialog.appendChild(label);
+
+    var sync = document.createElement('select');
+    sync.setAttribute("id", "confidence_threshold");
+    for (var i = 0; i < 6; ++i) {
+      var option = document.createElement("option");
+      option.text = i.toString();
+      option.value = i;
+      sync.appendChild(option);
+    }
+    dialog.appendChild(sync);
+    // TODO: set confidence_threshold
+    dialog.appendChild( document.createElement("br"));
+
+    var label = document.createTextNode('or higher.');
+    dialog.appendChild(label);
+    dialog.appendChild( document.createElement("br"));
+
+    var label = document.createTextNode('Bandwidth:');
+    dialog.appendChild(label);
+    var bandwidth = document.createElement('input');
+    bandwidth.setAttribute('id', 'clustering_bandwidth_input');
+    bandwidth.setAttribute('type', 'text');
+    bandwidth.setAttribute('value', clustering_bandwidth );
+    bandwidth.style.width = "80px";
+    dialog.appendChild(bandwidth);
+    dialog.appendChild( document.createElement("br"));
+
+    var label = document.createTextNode('Keep edges with weight ');
+    dialog.appendChild(label);
+    var syncount = document.createElement('input');
+    syncount.setAttribute('id', 'synaptic_count_edge_filter');
+    syncount.setAttribute('type', 'text');
+    syncount.setAttribute('value', synaptic_count_edge_filter );
+    syncount.style.width = "30px";
+    dialog.appendChild(syncount);
+    label = document.createTextNode(' or higher.');
+    dialog.appendChild(label);
+    dialog.appendChild( document.createElement("br"));
+
+    var label = document.createTextNode('Show node labels:');
+    dialog.appendChild(label);
+    var rand = document.createElement('input');
+    rand.setAttribute("type", "checkbox");
+    rand.setAttribute("id", "show_node_labels");
+    rand.setAttribute("value", "Show node labels");
+    if( show_node_labels )
+      rand.setAttribute("checked", "true");
+    rand.onclick = self.toggle_show_node_labels;
+    dialog.appendChild(rand);
+    dialog.appendChild( document.createElement("br"));
+
+    $(dialog).dialog({
+      height: 440,
+      modal: true,
+      buttons: {
+        "OK": function() {
+          
+          self.whatvalue();
+          // TODO: fixme, does not return correct value after update
+          clustering_bandwidth = $('#clustering_bandwidth_input').val();
+          confidence_threshold = $('#confidence_threshold').val();
+          synaptic_count_edge_filter = $('#synaptic_count_edge_filter').val();
+
+          $(this).dialog("close");
+
+        }
+      },
+      close: function(event, ui) { 
+        $('#dialog-graph-confirm').remove();
+      }
+    });
+
+  }
+
+  this.whatvalue = function()
+  {
+    console.log('what value',synaptic_count_edge_filter, clustering_bandwidth, confidence_threshold)
+    console.log('dom', $('#clustering_bandwidth_input').val() )
+
+  }
+
   this.init = function()
   {
 
@@ -32,16 +138,16 @@ var CompartmentGraphWidget = new function()
                 "border-width": 1,
                 "background-color": "data(color)", //#DDD",
                 "border-color": "#555",
-                "width": "mapData(node_count, 10, 2000, 10, 50)", //"data(node_count)",
-                "height": "mapData(node_count, 10, 2000, 10, 50)"   // "data(node_count)"
+                "width": "mapData(node_count, 10, 2000, 30, 50)", //"data(node_count)",
+                "height": "mapData(node_count, 10, 2000, 30, 50)"   // "data(node_count)"
               })
             .selector("edge")
               .css({
                 "content": "data(label)",
                 "width": "data(weight)", //mapData(weight, 0, 100, 10, 50)",
-                "target-arrow-shape": "triangle",
+                "target-arrow-shape": "data(arrow)",
                 // "source-arrow-shape": "circle",
-                "line-color": "#444",
+                "line-color": "data(color)",
                 "opacity": 0.4,
                 
               })
@@ -102,11 +208,68 @@ var CompartmentGraphWidget = new function()
 
   };
 
+  this.updateLayout = function() {
+
+
+    var layout =  $('#compartment_layout :selected').attr("value");
+
+    if( layout == 1 ) {
+      var options = {
+        name: 'grid',
+        fit: true, // whether to fit the viewport to the graph
+        rows: undefined, // force num of rows in the grid
+        columns: undefined, // force num of cols in the grid
+        ready: undefined, // callback on layoutready
+        stop: undefined // callback on layoutstop
+        };
+
+      cy.layout( options );
+    } else if ( layout == 2) {
+      options = {
+          name: 'arbor',
+          liveUpdate: true, // whether to show the layout as it's running
+          ready: undefined, // callback on layoutready 
+          stop: undefined, // callback on layoutstop
+          maxSimulationTime: 4000, // max length in ms to run the layout
+          fit: true, // fit to viewport
+          padding: [ 50, 50, 50, 50 ], // top, right, bottom, left
+          ungrabifyWhileSimulating: true, // so you can't drag nodes during layout
+
+          // forces used by arbor (use arbor default on undefined)
+          repulsion: undefined,
+          stiffness: undefined,
+          friction: undefined,
+          gravity: true,
+          fps: undefined,
+          precision: undefined,
+
+          // static numbers or functions that dynamically return what these
+          // values should be for each element
+          nodeMass: undefined, 
+          edgeLength: undefined,
+
+          stepSize: 1, // size of timestep in simulation
+
+          // function that returns true if the system is stable to indicate
+          // that the layout can be stopped
+          stableEnergy: function( energy ){
+              var e = energy; 
+              return (e.max <= 0.5) || (e.mean <= 0.3);
+          }
+      };
+
+      cy.layout( options );
+
+    }
+
+    
+  }
+
+
   this.updateGraph = function( data ) {
 
-
     for(var i = 0; i < data.nodes.length; i++) {
-      data.nodes[i]['data']['color'] = WebGLApp.getColorOfSkeleton( parseInt(data.nodes[i]['data'].id));
+      data.nodes[i]['data']['color'] = NeuronStagingArea.get_color_of_skeleton( parseInt(data.nodes[i]['data'].id) );
     }
 
     // first remove all nodes
@@ -163,40 +326,47 @@ var CompartmentGraphWidget = new function()
 
     cy.layout( options );
 
-    cy.nodes().bind("mouseover", function(e) {
-      // console.log('node mouseover', e);
+    // cy.nodes().bind("mouseover", function(e) {
+    //   // console.log('node mouseover', e);
+    // });
+
+    cy.on('click', 'node', {}, function(evt){
+      var node = this;
+      var splitedge = node.id().split('_');
+      if( evt.originalEvent.shiftKey )
+        NeuronStagingArea.select_skeleton( splitedge[0] );
+
+    });
+
+    cy.on('click', 'edge', {}, function(evt){
+      var edge = this;
+      var splitedge = edge.id().split('_');
+      if( evt.originalEvent.shiftKey )
+        ConnectorSelection.show_shared_connectors( splitedge[0], splitedge[2] );
     });
 
   }
 
   this.updateConfidenceGraphFrom3DViewer = function() {
-    jQuery.ajax({
-      url: django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
-      type: "POST",
-      dataType: "json",
-      data: { 
-        skeleton_list: WebGLApp.getListOfSkeletonIDs(true),
-        confidence_threshold: $('#confidence_threshold').val()
-         },
-      success: function (data) {
-        self.updateGraph( data );
-      }
-    });
+    var skellist = NeuronStagingArea.get_selected_skeletons();
+    if( skellist.length == 0) {
+      alert('Please add skeletons to the selection table before updating the graph.')
+      return;
+    }
+    requestQueue.replace(django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
+        "POST",
+        { skeleton_list: NeuronStagingArea.get_selected_skeletons(),
+          confidence_threshold: confidence_threshold,
+          bandwidth: clustering_bandwidth },
+        function (status, text) {
+            if (200 !== status) return;
+            var json = $.parseJSON(text);
+            if (json.error) {
+                alert(json.error);
+                return;
+            }
+            self.updateGraph( json );
+        },
+        "graph_widget_request");
   }
-
-  this.updateEdgecountGraphFrom3DViewer = function() {
-    jQuery.ajax({
-      url: django_url + project.id + "/skeletongroup/skeletonlist_edgecount_compartment_subgraph",
-      type: "POST",
-      dataType: "json",
-      data: { 
-        skeleton_list: WebGLApp.getListOfSkeletonIDs(true),
-        edgecount: parseInt( $('#edgecount_threshold').val(), 10)
-         },
-      success: function (data) {
-        self.updateGraph( data );
-      }
-    });
-  }
-
 };

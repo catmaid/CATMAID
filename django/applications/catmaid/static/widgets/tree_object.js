@@ -118,7 +118,28 @@ var ObjectTree = new function()
                           } else {
                             WindowMaker.show("3d-webgl-view");
                             json.forEach(function(skid) {
-                              WebGLApp.addSkeletonFromID(project.id, skid);
+                              NeuronStagingArea.add_skeleton_to_stage_without_name( skid );
+                            });
+                          }
+                        }
+                      });
+                }
+              },
+              all_skeletons_to_selection = {
+                "separator_before": false,
+                "separator_after": true,
+                "label": "Add all to selection",
+                "action": function (obj) {
+                  // Fetch skeletons with more than 1 node:
+                  requestQueue.register(django_url + project.id + '/object-tree/' + obj.attr("id").replace("node_", "") + '/' + obj.attr("rel") + '/1/get-skeletons', "POST", {},
+                      function(status, text, xml) {
+                        if (200 === status) {
+                          var json = $.parseJSON(text);
+                          if (json.error) {
+                            alert(json.error);
+                          } else {
+                            json.forEach(function(skid) {
+                              NeuronStagingArea.add_skeleton_to_stage_without_name( skid );
                             });
                           }
                         }
@@ -156,6 +177,7 @@ var ObjectTree = new function()
           } else if (type_of_node === "group") {
             menu = {
               "show_all_skeletons": show_all_skeletons,
+              "all_skeletons_to_selection": all_skeletons_to_selection,
               "create_group": {
                 "separator_before": false,
                 "separator_after": false,
@@ -256,6 +278,7 @@ var ObjectTree = new function()
           } else if (type_of_node === "neuron") {
             menu = {
               "show_all_skeletons": show_all_skeletons,
+              "all_skeletons_to_selection": all_skeletons_to_selection,
               "select_nearest": {
                 "separator_before": false,
                 "separator_after": false,
@@ -459,12 +482,12 @@ var ObjectTree = new function()
               "show_webglviewer": {
                 "separator_before": false,
                 "separator_after": false,
-                "label": "3D Viewer",
+                "label": "Show in 3D",
                 "action": function (obj) {
                   // var myparent = $.jstree._focused()._get_parent(obj);
                   WindowMaker.show("3d-webgl-view");
                   var skelid = obj.attr("id").replace("node_", "");
-                  WebGLApp.addSkeletonFromID( project.id, skelid )
+                  NeuronStagingArea.add_skeleton_to_stage_without_name( skelid );
                 }
               },
               "goto_parent": {
@@ -485,7 +508,7 @@ var ObjectTree = new function()
                           alert(e.error);
                         } else {
                           nodeID = e.root_id;
-                          skeletonID = skelid;
+                          skeletonID = parseInt(skelid);
                           // go to node
                           project.moveTo(e.z, e.y, e.x, undefined,
                                          function () {

@@ -37,3 +37,6 @@ from drawing import *
 from contraint import *
 from graph import *
 from ontology import *
+from useranalytics import *
+from classification import *
+from notifications import *

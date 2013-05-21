@@ -104,7 +104,7 @@ var SkeletonElements = new function()
     this.parent_id = parent_id;
     this.children = {};
     this.numberOfChildren = 0;
-    this.r = 3; // not use radius size on overlay display
+    this.r = r > 0 ? 60 : 3; // 3; // not use radius size on overlay display
     this.x = x;
     this.y = y;
     this.z = z;
@@ -174,7 +174,7 @@ var SkeletonElements = new function()
     node.parent_id = parent_id;
     node.children = {};
     node.numberOfChildren = 0;
-    node.r = r < 0 ? 3 : r;
+    node.r = r > 0 ? 60 : 3;// 3; // hardcode value r < 0 ? 3 : r;
     node.x = x;
     node.y = y;
     node.z = z;
@@ -461,9 +461,12 @@ var SkeletonElements = new function()
       if (this.c && this.mc) {
       } else {
         // create a raphael circle object
-        this.c = paper.circle(this.x, this.y, this.r);
+        this.c = paper.circle(this.x, this.y, this.r); // again hard-code the radius to address issue #522
         // a raphael circle oversized for the mouse logic
-        this.mc = paper.circle(this.x, this.y, CATCH_RADIUS);
+        if( this.r > 0 )
+          this.mc = paper.circle(this.x, this.y, this.r + 5);
+        else
+          this.mc = paper.circle(this.x, this.y, CATCH_RADIUS);
 
         assignEventHandlers(this.mc, this.type);
       }
@@ -601,6 +604,9 @@ var SkeletonElements = new function()
         mc = this,
         c = this.prev;
 
+      if( node.id !== SkeletonAnnotations.getActiveNodeId() )
+        return;
+
       node.x = ox + dx;
       node.y = oy + dy;
       c.attr({
@@ -630,6 +636,7 @@ var SkeletonElements = new function()
 
     /** Here 'this' is mc. */
     var mc_start = function(x, y, e) {
+      
       if (is_middle_click(e)) {
         // Allow middle-click panning
         return;
@@ -637,6 +644,12 @@ var SkeletonElements = new function()
       e.stopPropagation();
       var node = this.catmaidNode,
         c = this.prev;
+
+      // If not trying to join or remove a node, but merely click on it to drag it or select it:
+      if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        this.paper.catmaidSVGOverlay.activateNode(node);
+      }
+
       ox = node.x;
       oy = node.y;
       c.attr({
@@ -645,6 +658,7 @@ var SkeletonElements = new function()
     };
 
     var mc_mousedown = function(e) {
+    
       if (is_middle_click(e)) {
         // Allow middle-click panning
         return;
@@ -987,7 +1001,7 @@ var SkeletonElements = new function()
       });
       var arrow_mousedown = function(e) {
         e.stopPropagation();
-        if(!(e.shiftKey && e.ctrlKey)) {
+        if(!(e.shiftKey && (e.ctrlKey || e.metaKey))) {
           return;
         }
         requestQueue.register(django_url + project.id + '/link/delete', "POST", {
@@ -1038,9 +1052,9 @@ var SkeletonElements = new function()
     // Return the actual connectorCreateLine function
     return function(self, to_id, confidence, pre) {
       if (pre) {
-        return new ArrowLine(self.paper, self.pregroup[to_id].treenode.x, self.pregroup[to_id].treenode.y, self.x, self.y, confidence, 5, 2, "rgb(126, 57, 112)", self.id, to_id);
+        return new ArrowLine(self.paper, self.pregroup[to_id].treenode.x, self.pregroup[to_id].treenode.y, self.x, self.y, confidence, 5, 2, "rgb(200, 0, 0)", self.id, to_id);
       } else {
-        return new ArrowLine(self.paper, self.x, self.y, self.postgroup[to_id].treenode.x, self.postgroup[to_id].treenode.y, confidence, 5, 2, "rgb(67, 67, 128)", self.id, to_id);
+        return new ArrowLine(self.paper, self.x, self.y, self.postgroup[to_id].treenode.x, self.postgroup[to_id].treenode.y, confidence, 5, 2, "rgb(0, 217, 232)", self.id, to_id);
       }
     };
   }();

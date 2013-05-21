@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404
 
 from catmaid.models import *
 from catmaid.objects import *
+from catmaid.control.node import _fetch_location
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control.neuron import _in_isolated_synaptic_terminals, _delete_if_empty
@@ -16,17 +17,57 @@ except:
     pass
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
+def last_openleaf(request, project_id=None, skeleton_id=None):
+    # retrieve all treenodes of skeleton with labels
+    # eliminate all node by removing them if they are a parent
+    # check remaining nodes if they have an end tag
+    tn = Treenode.objects.filter(
+        project=project_id,
+        skeleton_id=skeleton_id).order_by("edition_time")
+
+    tnodes = []
+    tparents = []
+    for t in tn:
+        tnodes.append( t.id )
+        if not t.parent is None:
+            tparents.append( t.parent_id )
+
+    for tid in tparents:
+        go = True
+        while go:
+            try:
+                tnodes.remove( tid )
+            except:
+                go = False
+
+    qs_labels = TreenodeClassInstance.objects.filter(
+        relation__relation_name='labeled_as',
+        class_instance__class_column__class_name='label',
+        treenode__id__in=tnodes,
+        project=project_id).select_related('treenode', 'class_instance__name').values('treenode_id', 'class_instance__name')
+
+    for q in qs_labels:
+        if len(q['class_instance__name']) > 0:
+            tnodes.append( q['treenode_id'] )
+
+    if len(tnodes) == 0:
+        return HttpResponse(json.dumps({'error': 'No open leafs left!'}), mimetype='text/json')
+    else:
+        return HttpResponse(json.dumps(_fetch_location(tnodes[-1])), mimetype='text/json')
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_statistics(request, project_id=None, skeleton_id=None):
     p = get_object_or_404(Project, pk=project_id)
     skel = Skeleton( skeleton_id = skeleton_id, project_id = project_id )
     const_time = skel.measure_construction_time()
     construction_time = '{0} minutes {1} seconds'.format( const_time / 60, const_time % 60)
-    return HttpResponse(json.dumps({'node_count': skel.node_count(),
-    'input_count': skel.input_count(),
-    'output_count': skel.output_count(),
-    'cable_length': int(skel.cable_length()),
-    'measure_construction_time': construction_time,
-    'percentage_reviewed': skel.percentage_reviewed() }), mimetype='text/json')
+    return HttpResponse(json.dumps({
+        'node_count': skel.node_count(),
+        'input_count': skel.input_count(),
+        'output_count': skel.output_count(),
+        'cable_length': int(skel.cable_length()),
+        'measure_construction_time': construction_time,
+        'percentage_reviewed': skel.percentage_reviewed() }), mimetype='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):

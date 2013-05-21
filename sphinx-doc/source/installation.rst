@@ -65,7 +65,8 @@ this with::
                          libhdf5-serial-dev libboost1.48-dev \
                          libboost-python1.48-dev uuid-dev \
                          libxml2-dev libxslt1-dev libjpeg-dev \
-                         libtiff-dev virtualenvwrapper
+                         libtiff-dev virtualenvwrapper \
+                         libblas-dev liblapack-dev
 
 Virtual Env Wrapper needs to source your environment. Start a new terminal
 or if you are using the bash::
@@ -188,8 +189,6 @@ instructions assume that you've changed into that directory::
 Now create some required tables with::
 
     ./manage.py syncdb
-
-When prompted to create a superuser, **SAY NO** at this stage.
 
 And bring the database schema up to date for applications that
 mange changes to their tables with South::

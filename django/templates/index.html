@@ -44,7 +44,6 @@
 			var django_url = "{{ CATMAID_URL }}";
 		</script>
 
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/js/Detector.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.dataTables.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.jstree.js"></script>
@@ -75,11 +74,13 @@
 		<script type="text/javascript" src="{{ STATIC_URL }}selector.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}taggingtool.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}boxselectiontool.js"></script>
+		<script type="text/javascript" src="{{ STATIC_URL }}roitool.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}croppingtool.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}tracingtool.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}tracinglayer.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}segmentationannotations.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}segmentationtool.js"></script>
+		<script type="text/javascript" src="{{ STATIC_URL }}neuronstagingarea.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/canvastool.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/canvaslayer.js"></script>
 
@@ -110,25 +111,27 @@
 		<script type="text/javascript" src="{{ STATIC_URL }}treelines.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/three.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/js/controls/TrackballControls.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/js/RequestAnimationFrame.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/js/Stats.js"></script>
+		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/js/Detector.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/three.js/helvetiker_regular.typeface.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/threex/THREEx.FullScreen.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/threex/THREEx.WindowResize.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}webglapp.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}WindowMaker.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/windowmanager.js"></script>
+		<script type="text/javascript" src="{{ STATIC_URL }}libs/arbor/arbor.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/cytoscape.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapeweb/js/min/json2.min.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapeweb/js/min/AC_OETags.min.js"></script>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapeweb/js/min/cytoscapeweb.min.js"></script>
+		<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/cytoscape.layout.arbor.js"></script>
+		<script type="text/javascript" src="{{ STATIC_URL }}libs/cytoscapejs/cytoscape.layout.random.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/graph_widget.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/connectivity.js"></script>
+		<script type="text/javascript" src="{{ STATIC_URL }}connectorselection.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/adjmatrix.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/compartment_graph_widget.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/skeleton_analytics.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}ontologytool.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/ontology_editor.js"></script>
+		<script type="text/javascript" src="{{ STATIC_URL }}widgets/classification_editor.js"></script>
+		<script type="text/javascript" src="{{ STATIC_URL }}widgets/table_notifications.js"></script>
 	</head>
 	<body onload="realInit();"><a></a>
 		<div id="growl-alert" class="growl-message" style="display: none"></div>
@@ -270,23 +273,32 @@
 			*******************************************************************
 			-->
 
-			<!-- Crop
+			<!-- Region of interest
 			*******************************************************************
 			-->
-			<div id="toolbar_crop" class="toolbar" style="display:none">
-				<div class="box"><p>x&nbsp;</p><p><input type="text" id="box_crop_x" name="box_crop_x" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_crop_xmap" /></p></div>
-				<div class="box"><p>y&nbsp;</p><p><input type="text" id="box_crop_y" name="box_crop_y" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_crop_ymap" /></p></div>
-				<div class="box"><p>w&nbsp;</p><p><input type="text" id="box_crop_w" name="box_crop_w" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_crop_wmap" /></p></div>
-				<div class="box"><p>h&nbsp;</p><p><input type="text" id="box_crop_h" name="box_crop_h" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_crop_hmap" /></p></div>
-				<div class="box" id="crop_top_z_index_box"><p>top z-index&nbsp;&nbsp;</p><div id="slider_crop_top_z"></div><p>&nbsp;&nbsp;</p></div>
-				<div class="box" id="crop_bottom_z_index_box"><p>bottom z-index&nbsp;&nbsp;</p><div id="slider_crop_bottom_z"></div><p>&nbsp;&nbsp;</p></div>
-				<div class="box" id="crop_zoom_level_box"><p>zoom-level&nbsp;&nbsp;</p><div id="slider_crop_s"></div><p>&nbsp;&nbsp;</p></div>
-				<div id="crop_stacks_menu_box" class="box">
-					<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p><a>Stacks</a></p>
-						<div class="pulldown" id="crop_stacks_menu"></div></div>
+			<div id="toolbar_roi" class="toolbar" style="display:none">
+				<div class="box"><p>x&nbsp;</p><p><input type="text" id="box_roi_x" name="box_roi_x" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_xmap" /></p></div>
+				<div class="box"><p>y&nbsp;</p><p><input type="text" id="box_roi_y" name="box_roi_y" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_ymap" /></p></div>
+				<div class="box"><p>w&nbsp;</p><p><input type="text" id="box_roi_w" name="box_roi_w" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_wmap" /></p></div>
+				<div class="box"><p>h&nbsp;</p><p><input type="text" id="box_roi_h" name="box_roi_h" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_hmap" /></p></div>
+				<div class="box_right"><a href="#" class="button" id="button_roi_apply" onclick="return false;"><img src="{{ STATIC_URL }}widgets/themes/kde/apply.gif" alt="apply" title="apply" /></a></div>
+				<div class="toolbar_fill"></div>
+			</div>
+			<!--
+			*******************************************************************
+			-->
+
+			<!-- Ontology
+			*******************************************************************
+			-->
+			<div id="toolbar_ontology" class="toolbar" style="display:none">
+				<div id="ontology_workspace" class="box">
+					<p>Work space:&nbsp;</p>
+					<p><input type="radio" name="ontology_space" value="project" checked /></p>
+					<p>&nbsp;project specific</p>
+					<p><input type="radio" name="ontology_space" value="classification" />
+					<p>&nbsp;project independent</p>
 				</div>
-				<div class="box"><p>RGB slices&nbsp;</p><p><input type="checkbox" id="check_crop_rgb_slices" name="check_crop_rgb_slices" /></p></div>
-				<div class="box_right"><a href="#" class="button" id="button_crop_apply" onclick="return false;"><img src="{{ STATIC_URL }}widgets/themes/kde/apply.gif" alt="apply" title="apply" /></a></div>
 				<div class="toolbar_fill"></div>
 			</div>
 			<!--
@@ -371,10 +383,10 @@
 			-->
 			<map id="xmap" name="xmap"><area shape="rect" coords="0,0,13,9" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) + 1; x.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) - 1; x.onchange();" alt="-" /></map>
 			<map id="ymap" name="ymap"><area shape="rect" coords="0,0,13,9" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) + 1; y.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) - 1; y.onchange();" alt="-" /></map>
-			<map id="box_crop_xmap" name="box_crop_xmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_crop_x = document.getElementById( 'box_crop_x' ); box_crop_x.value = parseInt( box_crop_x.value ) + 1; box_crop_x.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_crop_x = document.getElementById( 'box_crop_x' ); box_crop_x.value = parseInt( box_crop_x.value ) - 1; box_crop_x.onchange();" alt="-" /></map>
-			<map id="box_crop_ymap" name="box_crop_ymap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_crop_y = document.getElementById( 'box_crop_y' ); box_crop_y.value = parseInt( box_crop_y.value ) + 1; box_crop_y.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_crop_y = document.getElementById( 'box_crop_y' ); box_crop_y.value = parseInt( box_crop_y.value ) - 1; box_crop_y.onchange();" alt="-" /></map>
-			<map id="box_crop_wmap" name="box_crop_wmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_crop_w = document.getElementById( 'box_crop_w' ); box_crop_w.value = parseInt( box_crop_w.value ) + 1; box_crop_w.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_crop_w = document.getElementById( 'box_crop_w' ); box_crop_w.value = parseInt( box_crop_w.value ) - 1; box_crop_w.onchange();" alt="-" /></map>
-			<map id="box_crop_hmap" name="box_crop_hmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_crop_h = document.getElementById( 'box_crop_h' ); box_crop_h.value = parseInt( box_crop_h.value ) + 1; box_crop_h.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_crop_h = document.getElementById( 'box_crop_h' ); box_crop_h.value = parseInt( box_crop_h.value ) - 1; box_crop_h.onchange();" alt="-" /></map>
+			<map id="box_roi_xmap" name="box_roi_xmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_x = document.getElementById( 'box_roi_x' ); box_roi_x.value = parseInt( box_roi_x.value ) + 1; box_roi_x.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_x = document.getElementById( 'box_roi_x' ); box_roi_x.value = parseInt( box_roi_x.value ) - 1; box_roi_x.onchange();" alt="-" /></map>
+			<map id="box_roi_ymap" name="box_roi_ymap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_y = document.getElementById( 'box_roi_y' ); box_roi_y.value = parseInt( box_roi_y.value ) + 1; box_roi_y.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_y = document.getElementById( 'box_roi_y' ); box_roi_y.value = parseInt( box_roi_y.value ) - 1; box_roi_y.onchange();" alt="-" /></map>
+			<map id="box_roi_wmap" name="box_roi_wmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_w = document.getElementById( 'box_roi_w' ); box_roi_w.value = parseInt( box_roi_w.value ) + 1; box_roi_w.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_w = document.getElementById( 'box_roi_w' ); box_roi_w.value = parseInt( box_roi_w.value ) - 1; box_roi_w.onchange();" alt="-" /></map>
+			<map id="box_roi_hmap" name="box_roi_hmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_h = document.getElementById( 'box_roi_h' ); box_roi_h.value = parseInt( box_roi_h.value ) + 1; box_roi_h.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_h = document.getElementById( 'box_roi_h' ); box_roi_h.value = parseInt( box_roi_h.value ) - 1; box_roi_h.onchange();" alt="-" /></map>
 			<!--
 			***********************************************************************
 			-->

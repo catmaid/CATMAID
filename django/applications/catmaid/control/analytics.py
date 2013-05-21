@@ -68,7 +68,7 @@ def analyze_skeletons(request, project_id=None):
             2: "Connector without postsynaptic targets",
             3: "Connector without presynaptic skeleton",
             4: "Duplicated synapse?",
-            5: "End node without tag",
+            5: "End node without end tag",
             6: "TODO tag",
             7: "End-node tag in a non-end node."}
 
@@ -186,6 +186,7 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
     # Collapse repeated rows into nodes with none or more tags
     nodes = {}
     parents = set()
+    root = None
     for row in cursor.fetchall():
         node = nodes.get(row[0])
         if node:
@@ -193,8 +194,11 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
             node[1].append(row[2])
         else:
             nodes[row[0]] = (row[1], [row[2]])
-            if row[1]:
-                parents.add(row[0])
+
+        if row[1]:
+            parents.add(row[1])
+        else:
+            root = row[0]
 
 
     # Type 4: potentially duplicated synapses (or triplicated, etc):
@@ -248,7 +252,10 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
     # Type 5: end node without a tag
     # Type 6: node with a TODO tag
     # Type 7: root, slab or branch node with a tag like 'ends', 'not a branch', 'uncertain end', or 'uncertain continuation'
-    end_labels = set(['ends', 'not a branch', 'uncertain end', 'uncertain continuation'])
+    end_labels = set(['ends', 'not a branch', 'uncertain end', 'uncertain continuation', 'soma', 'nerve out'])
+    print 'all nodes', nodes
+    if root in parents:
+        parents.remove(root) # Consider the root as a leaf node
     for node_id, props in nodes.iteritems():
         labels = set(props[1])
         if node_id not in parents:

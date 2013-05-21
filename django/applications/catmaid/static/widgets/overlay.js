@@ -25,6 +25,7 @@ var SkeletonAnnotations = new function()
           return;
         } else {
           // Should never happen
+          console.log('Call to activate a node with a skeletonID which is not active should never happen.')
           s.activateNode(null); // deselect: there's a mismatch between node and skeleton
         }
       }
@@ -308,16 +309,10 @@ var SkeletonAnnotations = new function()
                 alert("Getting the ancestry of the skeleton "+node.skeleton_id+" failed with HTTP status code "+status);
               }
             });
-            // 3. Refresh the nodes with info from the database
-            self.updateNodes(); // recolors nodes when recreating them
           }
 
           atn.set(node);
-
-          if (!changing_skeletons) {
-            // Nodes didn't change, but the active state has
-            self.recolorAllNodes();
-          }
+          self.recolorAllNodes();
 
           // refresh all widgets except for the object tree
           // the reason is that calling a refresh just after a request to open tree path
@@ -475,8 +470,8 @@ var SkeletonAnnotations = new function()
       tagbox = e;
 
       $("#tagBoxId" + atn.id).mousedown(function (event) {
-        updateTags();
         if($("#Tags" + atn.id).tagEditorGetTags()==="") {
+          updateTags();
           removeTagbox();
           self.hideLabels();
           self.updateNodes();
@@ -1797,6 +1792,21 @@ var SkeletonAnnotations = new function()
         } else {
           alert('There must be a currently active node in order to move to its parent.');
         }
+        break;
+      case "goopenleaf":
+        requestQueue.register(django_url + project.id + '/skeleton/' + SkeletonAnnotations.getActiveSkeletonId() + '/openleaf' , "POST", {
+          }, function (status, text, xml) {
+            if (status === 200) {
+              if (text && text != " ") {
+                var jso = $.parseJSON(text);
+                if (jso.error) {
+                  alert(jso.error);
+                } else {
+                  project.moveTo(jso[3], jso[2], jso[1], undefined, function() { self.selectNode(jso[0]) });
+                }
+              }
+            }
+          });
         break;
       case "goactive":
         var activeNodePosition = SkeletonAnnotations.getActiveNodePosition();

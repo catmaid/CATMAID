@@ -8,10 +8,15 @@ from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 
+import networkx as nx
+from tree_util import edge_count_to_root
+from user import _compute_rgb
+
 try:
-    import networkx as nx
+    import neuroml
+    import neuroml.writers as writers
 except ImportError:
-    pass
+    pass    
 
 def get_treenodes_qs(project_id=None, skeleton_id=None, with_labels=True):
     treenode_qs = Treenode.objects.filter(skeleton_id=skeleton_id)
@@ -88,6 +93,10 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
                 lab = ['uncertain']
             else:
                 lab = []
+
+        user_color = _compute_rgb( tn.user_id )
+        reviewuser_id_color = _compute_rgb( tn.reviewer_id )
+
         vertices[tn.id] = {
             'x': tn.location.x,
             'y': tn.location.y,
@@ -95,11 +104,18 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
             'radius': max(tn.radius, 0),
             'type': 'skeleton',
             'labels': lab,
+            'user_id_color': user_color,
+            'reviewuser_id_color': reviewuser_id_color
+            
+            # TODO: can use sophisticated colormaps
+            # http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
+
             # 'reviewer_id': tn.reviewer_id,
             # 'review_time': tn.review_time
             # To submit the review time, we would need to encode the datetime as string
             # http://stackoverflow.com/questions/455580/json-datetime-between-python-and-javascript
         }
+
         if not tn.parent_id is None:
             if connectivity.has_key(tn.id):
                 connectivity[tn.id][tn.parent_id] = {
@@ -188,6 +204,92 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
+def skeleton_neuroml(request, project_id=None, skeleton_id=None):
+
+    p = get_object_or_404(Project, pk=project_id)
+    sk = get_object_or_404(ClassInstance, pk=skeleton_id, project=project_id)
+
+    treenode_qs = Treenode.objects.filter(skeleton=sk)
+    qs=Treenode.objects.filter(skeleton_id=39350).order_by('-parent')
+
+    if len(qs) < 2:
+        return HttpResponse(json.dumps({'error': 'Less than two nodes in skeleton' }))
+
+    def pointwithdia( tn ):
+        return neuroml.Point3DWithDiam(x=tn.location.x,
+            y=tn.location.y,
+            z=tn.location.z,
+            diameter=tn.radius)
+
+    current_tn = None
+    next_tn = None
+    seg_id = 1
+    segments_container = []
+
+    for tn in qs:
+        if current_tn is None:
+            current_tn = tn
+            continue
+        else:
+            if next_tn is None:
+                next_tn = tn
+                # add soma segment, assuming root node is soma
+                p = pointwithdia( current_tn )
+                d = pointwithdia( next_tn )
+                soma = neuroml.Segment(proximal=p, distal=d)
+                soma.name = 'Root'
+                soma.id = 0
+                segments_container.append( soma )
+                parent_segment = soma
+                parent = neuroml.SegmentParent(segments=soma.id)
+                continue
+            else:
+                p = pointwithdia( current_tn )
+                d = pointwithdia( next_tn )
+
+                new_segment = neuroml.Segment(proximal = p, 
+                                               distal = d, 
+                                               parent = parent)
+
+                new_segment.id = seg_id
+                new_segment.name = 'segment_' + str(new_segment.id)
+
+                parent = neuroml.SegmentParent(segments=new_segment.id)
+                parent_segment = new_segment
+                seg_id += 1 
+
+                segments_container.append(new_segment)
+
+                current_tn = next_tn
+
+    response = HttpResponse(content_type='text/txt')
+    response['Content-Disposition'] = 'attachment; filename="data.neuroml"'
+
+    namespacedef = 'xmlns="http://www.neuroml.org/schema/neuroml2" '
+    namespacedef += ' xmlns:xi="http://www.w3.org/2001/XInclude"'
+    namespacedef += ' xmlns:xs="http://www.w3.org/2001/XMLSchema"'
+    namespacedef += ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
+    namespacedef += ' xsi:schemaLocation="http://www.w3.org/2001/XMLSchema"'
+
+    test_morphology = neuroml.Morphology()
+    test_morphology.segments += segments_container
+    test_morphology.id = "Morphology"
+
+    cell = neuroml.Cell()
+    cell.name = 'Cell'
+    cell.id = 'Cell'
+    cell.morphology = test_morphology
+
+    doc = neuroml.NeuroMLDocument()
+    doc.cells.append(cell)
+    doc.id = "TestNeuroMLDocument"
+
+    doc.export( response, 0, name_="neuroml", namespacedef_=namespacedef)
+
+    return response
+    
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_swc(*args, **kwargs):
     kwargs['format'] = 'swc'
     return export_skeleton_response(*args, **kwargs)
@@ -197,32 +299,6 @@ def skeleton_swc(*args, **kwargs):
 def skeleton_json(*args, **kwargs):
     kwargs['format'] = 'json'
     return export_extended_skeleton_response(*args, **kwargs)
-
-def _rootID(graph):
-    """ Search and return the first node that has zero predecessors.
-    Will be the root node in directed graphs.
-    Avoids one database lookup. """
-    for nodeID in graph.nodes():
-        if 0 == len(graph.predecessors(nodeID)):
-            return nodeID
-
-def _edgeCountToRoot(graph):
-    """ Return a map of nodeID vs number of edges from the first node that lacks predecessors. """
-    distances = {}
-    count = 1
-    current_level = [_rootID(graph)]
-    next_level = []
-    while current_level:
-        # Consume all elements in current_level
-        while current_level:
-            nodeID = current_level.pop()
-            distances[nodeID] = count
-            next_level.extend(graph.successors(nodeID)) # successors is the empty list when none
-        # Rotate lists (current_level is now empty)
-        current_level, next_level = next_level, current_level
-        count += 1
-    return distances
-
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def export_review_skeleton(request, project_id=None, skeleton_id=None, format=None):
@@ -243,9 +319,11 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None, format=No
             reviewed.add(t[0])
         if t[2]: # if parent
             g.add_edge(t[2], t[0]) # edge from parent to child
+        else:
+            root_id = t[0]
 
     # Create all sequences, as long as possible and always from end towards root
-    distances = _edgeCountToRoot(g) # distance in number of edges from root
+    distances = edge_count_to_root(g, root_node=root_id) # distance in number of edges from root
     seen = set()
     sequences = []
     # Iterate end nodes sorted from highest to lowest distance to root

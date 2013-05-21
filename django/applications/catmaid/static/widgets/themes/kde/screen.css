@@ -7,7 +7,6 @@ html, body
 }
 html, body, input, textarea, p, dl, select, button
 {
-	color:#000000;
 	font-family:Arial, Helvetica, sans-serif;
 	font-size:11px;
 	font-weight:normal;
@@ -247,4 +246,31 @@ div#ontology_editor_widget div#ontology_warnings
 .even-wider-context-menu
 {
     min-width: 235px;
+}
+
+div#classification_graph_object a {
+    padding-bottom: 2px;
+}
+
+div#classification_graph_object a.jstree-hovered,
+div#classification_graph_object a.jstree-clicked {
+    padding-bottom: 1px;
+}
+
+div#classification_graph_object li.editnode a {
+    padding-bottom: 3px;
+    color: #767676;
+}
+
+div#classification_graph_object li.editnode a.jstree-hovered,
+div#classification_graph_object li.editnode a.jstree-clicked {
+    padding-bottom: 2px;
+}
+
+div#classification_graph_object div.select_new_classification_instance {
+    cursor: pointer;
+    background: white;
+    color: #767676;
+    margin-top: 2px;
+    position: absolute;
 }

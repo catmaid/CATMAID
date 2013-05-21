@@ -4,10 +4,22 @@ var WebGLApp = new function () {
   self = this;
   self.neurons = [];
 
-  var scene, renderer, scale, controls, zplane = null, meshes = [], show_meshes = false, show_active_node = true;
+  var scene, renderer, scale, controls, zplane = null, meshes = [];
   var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, projector, contour_objects = [],
-      bbmesh, floormesh, black_bg = true, debugax, togglevisibleall = false, show_missing_sections = false, missing_sections = [], mouse = new THREE.Vector2();
-  var is_mouse_down = false, connector_filter = false, missing_section_height = 20, soma_scale = 1.0;
+      bbmesh, floormesh, debugax, togglevisibleall = false, missing_sections = [], mouse = new THREE.Vector2();
+  var pointLight, light, ambientLight;
+  var is_mouse_down = false, connector_filter = false, missing_section_height = 20, soma_scale = 30.0;
+
+  var labelspheregeometry;
+  var radiusSphere;
+
+  var show_meshes = false,
+      show_active_node = true,
+      show_missing_sections = false,
+      show_zplane = false,
+      show_boundingbox = true,
+      show_floor = true,
+      show_background = true;
 
   this.init = function( divID ) {
 
@@ -24,48 +36,65 @@ var WebGLApp = new function () {
     dimension = project.focusedStack.dimension;
     translation = project.focusedStack.translation;
 
-    $('#webgl-rmall').click(function() {
-        WebGLApp.removeAllSkeletons();
-    })
-
-    $('#webgl-show').click(function() {
-      for( var skeleton_id in skeletons)
-      {
-        if( skeletons.hasOwnProperty(skeleton_id) ) {
-          skeletons[ skeleton_id ].setCompleteActorVisibility( togglevisibleall );
-          $('#skeletonshow-' + skeleton_id).attr('checked', togglevisibleall );
-          $('#skeletonpre-' + skeleton_id).attr('checked', togglevisibleall );
-          $('#skeletonpost-' + skeleton_id).attr('checked', togglevisibleall );
-          if( togglevisibleall === false )
-            $('#skeletontext-' + skeleton_id).attr('checked', togglevisibleall );
-        }
-      }
-      togglevisibleall = !togglevisibleall;
-      if( togglevisibleall )
-        $('#webgl-show').text('show');
-      else
-        $('#webgl-show').text('hide');
-      self.render();
-    })
-    
     // self.render();
   }
 
-  /** Clean up. */
+  /** Clean up after closing the 3d viewer. */
   this.destroy = function() {
     renderer.domElement.removeEventListener('mousedown', onMouseDown, false);
     renderer.domElement.removeEventListener('mouseup', onMouseUp, false);
     renderer.domElement.removeEventListener('mousemove', onMouseMove, false);
     renderer.domElement.removeEventListener('mousewheel', onMouseWheel, false);
+    renderer = null;
     self.removeAllSkeletons();
+    self.destroy_all_non_skeleton_data();
   };
 
-  var randomColors = [];
-  randomColors[0] = [255, 255, 0]; // yellow
-  randomColors[1] = [255, 0, 255]; // magenta
-  // randomColors[2] = [0, 255, 255]; // cyan
-  randomColors[2] = [255, 255, 255]; // white
-  randomColors[3] = [255, 128, 0]; // orange
+  this.destroy_all_non_skeleton_data = function() {
+    scene.remove( pointLight );
+    scene.remove( light );
+    scene.remove( ambientLight );
+
+    if( active_node !== null) {
+      scene.remove( active_node );
+      delete active_node;
+      active_node = null;
+    }
+
+    if( floormesh !== null) {
+      scene.remove( floormesh );
+      delete floormesh;
+      floormesh = null;
+    }
+
+    if( zplane !== null) {
+      scene.remove( zplane );
+      delete zplane;
+      zplane = null;
+    }
+
+    if( floormesh !== null) {
+      scene.remove( floormesh );
+      delete floormesh;
+      floormesh = null;
+    }
+
+    if( bbmesh !== null) {
+      scene.remove( bbmesh );
+      delete bbmesh;
+      bbmesh = null;
+    }
+
+    if( debugax !== null) {
+      scene.remove( debugax );
+      delete debugax;
+      debugax = null;
+    }
+
+    // TODO: remove meshes
+    // TODO: remove missing sections
+
+  }
 
   /* transform coordinates from CATMAID coordinate system
      to WebGL coordinate system: x->x, y->y+dy, z->-z
@@ -77,78 +106,45 @@ var WebGLApp = new function () {
   var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
 
   function init_webgl() {
+
     container = document.getElementById(self.divID);
+
     scene = new THREE.Scene();
-    // camera = new THREE.PerspectiveCamera( 75, self.divWidth / self.divHeight, 1, 3000 );
-
-    //camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
-      //camera = new THREE.OrthographicCamera( self.divWidth / -2, self.divWidth / 2, self.divHeight / 2, self.divHeight / -2, 1, 1000 );
-
     camera = new THREE.CombinedCamera( -canvasWidth, -canvasHeight, 75, 1, 3000, -1000, 1, 500 );
     camera.frustumCulled = false;
-    // THREE.CombinedCamera = function ( width, height, fov, near, far, orthonear, orthofar ) {
+
     controls = new THREE.TrackballControls( camera, container );
     controls.rotateSpeed = 1.0;
-    controls.zoomSpeed = 1.2;
-    controls.panSpeed = 0.8;
+    controls.zoomSpeed = 3.2;
+    controls.panSpeed = 1.5;
     controls.noZoom = false;
     controls.noPan = false;
     controls.staticMoving = true;
     controls.dynamicDampingFactor = 0.3;
 
-/*
-    var ambient = new THREE.AmbientLight( 0x101010 );
-    scene.add( ambient );
-
-    directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
-    directionalLight.position.set( 1, 1, 2 ).normalize();
-    scene.add( directionalLight );
-*/
-
+    // lights
+    ambienteLight = new THREE.AmbientLight( 0x505050 )
+    scene.add( ambientLight );
     pointLight = new THREE.PointLight( 0xffaa00 );
     scene.add( pointLight );
 
-    // light representation
-
-    scene.add( new THREE.AmbientLight( 0x505050 ) );
-
-    var light = new THREE.SpotLight( 0xffffff, 1.5 );
-    //light.position.set( 0, 500, 2000 );
+    light = new THREE.SpotLight( 0xffffff, 1.5 );
     light.castShadow = true;
-
     light.shadowCameraNear = 200;
     light.shadowCameraFar = camera.far;
     light.shadowCameraFov = 50;
-
     light.shadowBias = -0.00022;
     light.shadowDarkness = 0.5;
-
     light.shadowMapWidth = 2048;
     light.shadowMapHeight = 2048;
-
     scene.add( light );
-
-/*
-    sphere = new THREE.SphereGeometry( 100, 16, 8, 1 );
-    lightMesh = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffaa00 } ) );
-    lightMesh.scale.set( 0.05, 0.05, 0.05 );
-    lightMesh.position = pointLight.position;
-    scene.add( lightMesh );
-*/
 
     projector = new THREE.Projector();
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
-    //renderer = new THREE.CanvasRenderer();
     renderer.sortObjects = false;
     renderer.setSize( canvasWidth, canvasHeight );
     
-    // renderer.shadowMapEnabled = true;
-    // renderer.shadowMapType = THREE.PCFShadowMap;
-
-    // Follow size
-    // THREEx.WindowResize.bind(renderer, camera);
-
     container.appendChild( renderer.domElement )
     renderer.domElement.addEventListener('mousedown', onMouseDown, false);
     renderer.domElement.addEventListener('mouseup', onMouseUp, false);
@@ -184,24 +180,18 @@ var WebGLApp = new function () {
 
     controls.target = new THREE.Vector3(coord[0]*scale,coord[1]*scale,coord[2]*scale);
 
-    
+    // new THREE.SphereGeometry( 160 * scale, 32, 32, 1 );
+    labelspheregeometry = new THREE.OctahedronGeometry( 130 * scale, 4);
+    radiusSphere = new THREE.OctahedronGeometry( 40 * scale, 4);
+
     debugaxes();
     draw_grid();
     XYView();
-
     self.createActiveNode();
 
-    // if there is an active skeleton, add it to the view
-    if(SkeletonAnnotations.getActiveNodeId()) {
-      self.addSkeletonFromID( self.project_id, SkeletonAnnotations.getActiveSkeletonId() );
-
-      // and create active node
-      $('#enable_active_node').attr('checked', true);
-      
-      show_active_node = true;
-      self.showActiveNode();
-      self.updateActiveNodePosition();
-      
+    // // if there is an active skeleton, add it to the view if staging area is empty
+    if(SkeletonAnnotations.getActiveNodeId() && NeuronStagingArea.get_selected_skeletons().length === 0) {
+      NeuronStagingArea.add_active_object_to_stage( WebGLApp.refresh_skeletons );
     }
 
 
@@ -243,7 +233,7 @@ var WebGLApp = new function () {
     controls.target = pos;
     camera.position.x = pos.x;
     camera.position.y = pos.y;
-    camera.position.z = (dim.z/2)+pos.z;
+    camera.position.z = (dim.z/2)+pos.z+100;
     camera.up.set(0, 1, 0);
     self.render();
   }
@@ -398,16 +388,153 @@ var WebGLApp = new function () {
   var Skeleton = function( skeleton_data )
   {
     var self = this;
-    var type, from_vector, to_vector, labelspheregeometry = new THREE.SphereGeometry( 130 * scale, 32, 32, 1);
+    var type, from_vector, to_vector;
 
-    this.line_material = new Object();
-    this.actorColor = [255, 255, 0];
-    this.visible = true;
-    this.id = skeleton_data.id;
-    this.baseName = skeleton_data.baseName;
-    this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
-    this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } );
-    this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } );
+    self.id = skeleton_data.id;
+    self.baseName = skeleton_data.baseName;
+    
+    this.destroy_data = function() {
+
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        if( this.actor.hasOwnProperty(connectivity_types[i]) ) {
+          delete this.actor[connectivity_types[i]];
+          this.actor[connectivity_types[i]] = null;
+        }
+
+        if( this.geometry.hasOwnProperty(connectivity_types[i]) ) {
+          delete this.geometry[connectivity_types[i]];
+          this.geometry[connectivity_types[i]] = null;
+        }
+
+        if( this.connectorgeometry.hasOwnProperty(connectivity_types[i]) ) {
+          delete this.connectorgeometry[connectivity_types[i]];
+          this.connectorgeometry[connectivity_types[i]] = null;
+        }        
+
+      }
+
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
+          if( this.connectoractor && this.connectoractor[connectivity_types[i]] ) {
+            delete this.connectoractor[connectivity_types[i]];
+            this.connectoractor[connectivity_types[i]] = null;
+          }
+        }
+      }
+      // for ( var i=0; i<connectivity_types.length; ++i ) {
+      //   if( this.actor.hasOwnProperty(connectivity_types[i]) )
+      //     scene.remove( this.actor[connectivity_types[i]] );
+      // }
+      for ( var k in this.labelSphere ) {
+        if( this.labelSphere.hasOwnProperty( k ) )
+          delete this.labelSphere[k];
+          this.labelSphere[k] = null;
+      }
+      for ( var k in this.otherSpheres ) {
+        if( this.otherSpheres.hasOwnProperty( k ) )
+          delete this.otherSpheres[k];
+          this.otherSpheres[k] = null;
+      }
+      for ( var k in this.radiusSpheres ) {
+        if( this.radiusSpheres.hasOwnProperty( k ) )
+          delete this.radiusSpheres[k];
+          this.radiusSpheres[k] = null;
+      }
+      for ( var k in this.textlabels ) {
+        if( self.textlabels.hasOwnProperty( k ))
+          delete this.textlabels[k];
+          this.textlabels[k] = null;
+      }
+
+      delete this.original_vertices;
+      this.original_vertices = null;
+      delete this.original_connectivity;
+      this.original_connectivity = null;
+
+      self.initialize_objects();
+
+    }
+
+    this.removeActorFromScene = function()
+    {
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        if( this.actor.hasOwnProperty(connectivity_types[i]) )
+          scene.remove( this.actor[connectivity_types[i]] );
+      }
+      this.remove_connector_selection();
+      // for ( var i=0; i<connectivity_types.length; ++i ) {
+      //   if( this.actor.hasOwnProperty(connectivity_types[i]) )
+      //     scene.remove( this.actor[connectivity_types[i]] );
+      // }
+      for ( var k in this.labelSphere ) {
+        if( this.labelSphere.hasOwnProperty( k ) )
+          scene.remove( this.labelSphere[k] );
+      }
+      for ( var k in this.otherSpheres ) {
+        if( this.otherSpheres.hasOwnProperty( k ) )
+          scene.remove( this.otherSpheres[k] );
+      }
+      for ( var k in this.radiusSpheres ) {
+        if( this.radiusSpheres.hasOwnProperty( k ) )
+          scene.remove( this.radiusSpheres[k] );
+      }
+      for ( var k in this.textlabels ) {
+        if( self.textlabels.hasOwnProperty( k ))
+          scene.remove( this.textlabels[k] );
+      }
+    }
+
+    this.remove_connector_selection = function()
+    {
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
+          if( this.connectoractor && this.connectoractor[connectivity_types[i]] ) {
+            scene.remove( this.connectoractor[connectivity_types[i]] );
+          }
+        }
+      }
+    }
+
+    this.initialize_objects = function()
+    {
+      this.skeletonmodel = NeuronStagingArea.get_skeletonmodel( self.id );
+      this.line_material = new Object();
+      this.actorColor = [255, 255, 0]; // color from staging area?
+      this.visible = true;
+      if( this.skeletonmodel === undefined ) {
+        console.log('Can not initialize skeleton object');
+        return;
+      }
+      if( this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible )
+        this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3, vertexColors: THREE.VertexColors } );
+      else
+        this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
+      this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } );
+      this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } );
+
+      this.original_vertices = null;
+      this.original_connectivity = null;
+      this.geometry = new Object();
+      this.actor = new Object();
+      this.geometry[connectivity_types[0]] = new THREE.Geometry();
+      this.geometry[connectivity_types[1]] = new THREE.Geometry();
+      this.geometry[connectivity_types[2]] = new THREE.Geometry();
+      this.vertexcolors = [];
+
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        this.actor[connectivity_types[i]] = new THREE.Line( this.geometry[connectivity_types[i]],
+          this.line_material[connectivity_types[i]], THREE.LinePieces );
+      }
+      this.labelSphere = new Object();
+      this.otherSpheres = new Object();
+      this.radiusSpheres = new Object();
+      this.textlabels = new Object();
+
+      this.connectoractor = new Object();
+      this.connectorgeometry = new Object();
+    }
+
+    self.initialize_objects();
 
     this.setCompleteActorVisibility = function( vis ) {
       self.visible = vis;
@@ -442,10 +569,23 @@ var WebGLApp = new function () {
 
     this.setPreVisibility = function( vis ) {
       self.visiblityCompositeActor( 1, vis );
+      for( var idx in self.otherSpheres ) {
+        if( self.otherSpheres.hasOwnProperty( idx )) {
+          if( self.otherSpheres[ idx ].type == 'presynaptic_to')
+            self.otherSpheres[ idx ].visible = vis;
+        }
+      }
     };
 
     this.setPostVisibility = function( vis ) {
       self.visiblityCompositeActor( 2, vis );
+      for( var idx in self.otherSpheres ) {
+        if( self.otherSpheres.hasOwnProperty( idx )) {
+          if( self.otherSpheres[ idx ].type == 'postsynaptic_to')
+            self.otherSpheres[ idx ].visible = vis;
+        }
+      }
+
     };
 
     this.setTextVisibility = function( vis ) {
@@ -478,35 +618,15 @@ var WebGLApp = new function () {
       }
     }
 
-    this.changeColor = function( value )
-    {
-      this.actorColor = value;
-      this.updateSkeletonColor();
-      $('#skeletonaction-changecolor-' + self.id).css("background-color", rgb2hex( 'rgb('+value[0]+','+value[1]+','+value[2]+')' ) );
-    }
+    this.changeColor = function( value ) {
+      // changing color if one of the options is activated should have no effect
+      // this prevents the bug (?) which changes the transparency of the lines
+      // when changing the skeleton colors
+      if(this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible )
+        return;
 
-    this.removeActorFromScene = function()
-    {
-      for ( var i=0; i<connectivity_types.length; ++i ) {
-        scene.remove( this.actor[connectivity_types[i]] );
-      }
-      this.remove_connector_selection();
-      for ( var i=0; i<connectivity_types.length; ++i ) {
-        scene.remove( this.actor[connectivity_types[i]] );
-      }
-      for ( var k in this.labelSphere ) {
-        scene.remove( this.labelSphere[k] );
-      }
-      for ( var k in this.otherSpheres ) {
-        scene.remove( this.otherSpheres[k] );
-      }
-      for ( var k in this.radiusSpheres ) {
-        scene.remove( this.radiusSpheres[k] );
-      }
-      for ( var k in this.textlabels ) {
-        if( self.textlabels.hasOwnProperty)
-        scene.remove( this.textlabels[k] );
-      }
+      self.actorColor = value;
+      self.updateSkeletonColor();
     }
 
     this.addCompositeActorToScene = function()
@@ -533,37 +653,6 @@ var WebGLApp = new function () {
         this.actorColor[1]+','+
         this.actorColor[2]+')' ), 16);
     };
-
-    this.initialize_objects = function()
-    {
-      this.original_vertices = null;
-      this.original_connectivity = null;
-      this.geometry = new Object();
-      this.actor = new Object();
-      this.geometry[connectivity_types[0]] = new THREE.Geometry();
-      this.geometry[connectivity_types[1]] = new THREE.Geometry();
-      this.geometry[connectivity_types[2]] = new THREE.Geometry();
-      for ( var i=0; i<connectivity_types.length; ++i ) {
-        this.actor[connectivity_types[i]] = new THREE.Line( this.geometry[connectivity_types[i]],
-          this.line_material[connectivity_types[i]], THREE.LinePieces );
-      }
-      this.labelSphere = new Object();
-      this.otherSpheres = new Object();
-      this.radiusSpheres = new Object();
-      this.textlabels = new Object();
-    }
-
-    this.remove_connector_selection = function()
-    {
-      for ( var i=0; i<connectivity_types.length; ++i ) {
-        if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
-          if( this.connectoractor && this.connectoractor[connectivity_types[i]] ) {
-            scene.remove( this.connectoractor[connectivity_types[i]] );
-          }
-        }
-      }
-    }
-
 
     this.create_connector_selection = function( connector_data )
     {
@@ -595,25 +684,25 @@ var WebGLApp = new function () {
             this.original_vertices[fromkey]['y'],
             this.original_vertices[fromkey]['z']
           ]);
-          from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
+          var from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
 
           // transform
           from_vector.multiplyScalar( scale );
 
-          this.connectorgeometry[type].vertices.push( new THREE.Vertex( from_vector ) );
+          this.connectorgeometry[type].vertices.push( from_vector );
 
           var tv=transform_coordinates([
             this.original_vertices[tokey]['x'],
             this.original_vertices[tokey]['y'],
             this.original_vertices[tokey]['z']
           ]);
-          to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
+          var to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
 
           // transform
           // to_vector.add( translate_x, translate_y, translate_z );
           to_vector.multiplyScalar( scale );
 
-          this.connectorgeometry[type].vertices.push( new THREE.Vertex( to_vector ) );
+          this.connectorgeometry[type].vertices.push( to_vector );
 
         }
       }
@@ -629,14 +718,15 @@ var WebGLApp = new function () {
 
     this.reinit_actor = function ( skeleton_data )
     {
-      if( this.actor !== undefined  ) {
-        self.removeActorFromScene();
-      }
+
+      self.removeActorFromScene();
+      self.destroy_data();
       self.initialize_objects();
 
       this.original_vertices = skeleton_data.vertices;
       this.original_connectivity = skeleton_data.connectivity;
       var textlabel_visibility = $('#skeletontext-' + self.id).is(':checked');
+      var colorkey;
 
       for (var fromkey in this.original_connectivity) {
         var to = this.original_connectivity[fromkey];
@@ -648,50 +738,71 @@ var WebGLApp = new function () {
                    this.original_vertices[fromkey]['y'],
                    this.original_vertices[fromkey]['z']
               ]);
-          from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
+          var from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
 
           // transform
           from_vector.multiplyScalar( scale );
 
-          this.geometry[type].vertices.push( new THREE.Vertex( from_vector ) );
+          this.geometry[type].vertices.push( from_vector );
 
           var tv=transform_coordinates([
                    this.original_vertices[tokey]['x'],
                    this.original_vertices[tokey]['y'],
                    this.original_vertices[tokey]['z']
               ]);
-          to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
+          var to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
 
           // transform
           // to_vector.add( translate_x, translate_y, translate_z );
           to_vector.multiplyScalar( scale );
 
-          this.geometry[type].vertices.push( new THREE.Vertex( to_vector ) );
+          this.geometry[type].vertices.push( to_vector );
 
           if( !(fromkey in this.otherSpheres) && type === 'presynaptic_to') {
-            var radiusSphere = new THREE.SphereGeometry( 40 * scale, 32, 32, 1);
             this.otherSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:false  } ) );
             this.otherSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
             this.otherSpheres[fromkey].node_id = fromkey;
             this.otherSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
             this.otherSpheres[fromkey].skeleton_id = self.id;
+            this.otherSpheres[fromkey].type = type;
             scene.add( this.otherSpheres[fromkey] );
           }
           if( !(fromkey in this.otherSpheres) && type === 'postsynaptic_to') {
-            var radiusSphere = new THREE.SphereGeometry( 40 * scale, 32, 32, 1);
             this.otherSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false  } ) );
             this.otherSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
             this.otherSpheres[fromkey].node_id = fromkey;
             this.otherSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
             this.otherSpheres[fromkey].skeleton_id = self.id;
+            this.otherSpheres[fromkey].type = type;
             scene.add( this.otherSpheres[fromkey] );
+          }
+
+          if( (this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible ) && type ==='neurite' ) {
+
+            if( this.skeletonmodel.usercolor_visible )
+              colorkey = 'user_id_color';
+            else
+              colorkey = 'reviewuser_id_color';
+
+            var newcolor = new THREE.Color( 0x00ffff );
+            // newcolor.setHSL( 0.6, 1.0, Math.max( 0, ( 200 - from_vector.x ) / 400 ) * 0.5 + 0.5 );
+            newcolor.setRGB( this.original_vertices[fromkey][colorkey][0],
+              this.original_vertices[fromkey][colorkey][1],
+              this.original_vertices[fromkey][colorkey][2] );
+            this.vertexcolors.push( newcolor );
+            var newcolor = new THREE.Color( 0x00ffff );
+            newcolor.setRGB( this.original_vertices[tokey][colorkey][0],
+              this.original_vertices[tokey][colorkey][1],
+              this.original_vertices[tokey][colorkey][2] );
+            this.vertexcolors.push( newcolor );
+
           }
 
           // check if either from or to key vertex has a sphere associated with it
           var radiusFrom = parseFloat( this.original_vertices[fromkey]['radius'] );
           if( !(fromkey in this.radiusSpheres) && radiusFrom > 0 ) {
-            var radiusSphere = new THREE.SphereGeometry( radiusFrom * scale, 32, 32, 1);
-            this.radiusSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+            radiusCustomSphere = new THREE.SphereGeometry( scale * radiusFrom, 32, 32, 1 );
+            this.radiusSpheres[fromkey] = new THREE.Mesh( radiusCustomSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
             this.radiusSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
             this.radiusSpheres[fromkey].node_id = fromkey;
             this.radiusSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
@@ -701,8 +812,8 @@ var WebGLApp = new function () {
 
           var radiusTo = parseFloat( this.original_vertices[tokey]['radius'] );
           if( !(tokey in this.radiusSpheres) && radiusTo > 0 ) {
-            var radiusSphere = new THREE.SphereGeometry( radiusTo * scale, 32, 32, 1);
-            this.radiusSpheres[tokey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+            radiusCustomSphere = new THREE.SphereGeometry( scale * radiusTo, 32, 32, 1 );
+            this.radiusSpheres[tokey] = new THREE.Mesh( radiusCustomSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
             this.radiusSpheres[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
             this.radiusSpheres[tokey].orig_coord = this.original_vertices[fromkey];
             this.radiusSpheres[tokey].skeleton_id = self.id;
@@ -771,29 +882,43 @@ var WebGLApp = new function () {
               this.labelSphere[tokey].skeleton_id = self.id;
               scene.add( this.labelSphere[tokey] );
           }
-          if( ($.inArray( "soma", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
-              this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00 } ) );
-              this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
-              this.labelSphere[fromkey].scale.set( 2*soma_scale, 2*soma_scale, 2*soma_scale );
-              this.labelSphere[fromkey].node_id = fromkey;
-              this.labelSphere[fromkey].orig_coord = this.original_vertices[fromkey];
-              this.labelSphere[fromkey].skeleton_id = self.id;
-              scene.add( this.labelSphere[fromkey] );
+          if( ( ($.inArray( "soma", this.original_vertices[fromkey]['labels'] ) !== -1) ||
+            ($.inArray( "cell body", this.original_vertices[fromkey]['labels'] ) !== -1 ) ) && (this.radiusSpheres[fromkey]=== undefined) ) {
+              this.radiusSpheres[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00 } ) );
+              this.radiusSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
+              this.radiusSpheres[fromkey].scale.set( soma_scale, soma_scale, soma_scale );
+              this.radiusSpheres[fromkey].node_id = fromkey;
+              this.radiusSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
+              this.radiusSpheres[fromkey].skeleton_id = self.id;
+              scene.add( this.radiusSpheres[fromkey] );
           }
-          if( ($.inArray( "soma", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
-              this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00  } ) );
-              this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
-              this.labelSphere[tokey].scale.set( 2*soma_scale, 2*soma_scale, 2*soma_scale );
-              this.labelSphere[tokey].node_id = fromkey;
-              this.labelSphere[tokey].orig_coord = this.original_vertices[fromkey];
-              this.labelSphere[tokey].skeleton_id = self.id;
-              scene.add( this.labelSphere[tokey] );
+          if( ( ($.inArray( "soma", this.original_vertices[tokey]['labels'] ) !== -1) ||
+              ($.inArray( "cell body", this.original_vertices[tokey]['labels'] ) !== -1) ) && (this.radiusSpheres[tokey]=== undefined) ) {
+              this.radiusSpheres[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00  } ) );
+              this.radiusSpheres[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
+              this.radiusSpheres[tokey].scale.set( soma_scale, soma_scale, soma_scale );
+              this.radiusSpheres[tokey].node_id = fromkey;
+              this.radiusSpheres[tokey].orig_coord = this.original_vertices[fromkey];
+              this.radiusSpheres[tokey].skeleton_id = self.id;
+              scene.add( this.radiusSpheres[tokey] );
           }
 
         }
       }
-      this.updateSkeletonColor();
+
       this.addCompositeActorToScene();
+
+      self.setActorVisibility( this.skeletonmodel.selected );
+      self.setPreVisibility( this.skeletonmodel.pre_visible );
+      self.setPostVisibility( this.skeletonmodel.post_visible );
+      self.setTextVisibility( this.skeletonmodel.text_visible );
+
+      if( this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible )
+        this.geometry['neurite'].colors = this.vertexcolors;
+
+      self.actorColor = this.skeletonmodel.colorrgb;
+      this.updateSkeletonColor();
+
     }
 
     self.reinit_actor( skeleton_data );
@@ -815,19 +940,11 @@ var WebGLApp = new function () {
     if( THREEx.FullScreen.activated() ){
         var w = canvasWidth, h = canvasHeight;
         self.resizeView( w, h );
-        // $('#viewer-3d-webgl-canvas').width(w);
-        // $('#viewer-3d-webgl-canvas').height(h);
-        // $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
-        // renderer.setSize( w, h );
         THREEx.FullScreen.cancel();
     } else {
         THREEx.FullScreen.request(document.getElementById('viewer-3d-webgl-canvas'));
         var w = window.innerWidth, h = window.innerHeight;
         self.resizeView( w, h );
-        // $('#viewer-3d-webgl-canvas').width(w);
-        // $('#viewer-3d-webgl-canvas').height(h);
-        // $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
-        // renderer.setSize( w, h );
     }
     self.render();
   }
@@ -838,7 +955,7 @@ var WebGLApp = new function () {
     if( self.divID === undefined ) {
       return;
     }
-    if( renderer === undefined ) {
+    if( renderer === undefined || renderer === null ) {
       init_webgl();
     }
 
@@ -864,17 +981,9 @@ var WebGLApp = new function () {
       $('#viewer-3d-webgl-canvas').css("background-color", "#000000");
       
       camera.setSize(canvasWidth, canvasHeight);
-	  camera.toPerspective();
-	  
-	  renderer.setSize( canvasWidth, canvasHeight );
-	  
-      // resize list view, needs frame height to fill it
-//      var heightAvailable = $('#view_in_3d_webgl_widget').height() - canvasHeight;
-//      if( heightAvailable < 150 ) {
-//          $('#view-3d-webgl-skeleton-table-div').height(150);
-//      } else {
-//          $('#view-3d-webgl-skeleton-table-div').height(heightAvailable - 30);
-//      }
+      camera.toPerspective(); // invokes update of camera matrices
+      renderer.setSize( canvasWidth, canvasHeight );
+
       self.render();
     }
   }
@@ -882,6 +991,8 @@ var WebGLApp = new function () {
   self.look_at_active_node = function()
   {
     if( active_node ) {
+      // always fetch the update node coordinates first
+      self.updateActiveNodePosition();
       controls.target = new THREE.Vector3(active_node.position.x,
         active_node.position.y,
         active_node.position.z);
@@ -938,25 +1049,9 @@ var WebGLApp = new function () {
     return assemblies[ assembly_data.id ];
   }
 
-  this.randomizeColors = function()
-  {
-    var i = 0, col;
-    for( var skeleton_id in skeletons)
-    {
-      if( i < randomColors.length ) {
-        col = randomColors[i];
-      } else {
-        col = [parseInt( Math.random() * 255 ),
-          parseInt( Math.random() * 255 ),
-          parseInt( Math.random() * 255 ) ];
-
-      }
-      i=i+1;
-      skeletons[skeleton_id].changeColor( col );
-    }
-    self.render();
+  this.has_skeleton = function( skeleton_id ) {
+    return skeletons.hasOwnProperty(skeleton_id);
   }
-
 
   this.removeAllSkeletons = function() {
     for( var skeleton_id in skeletons)
@@ -965,7 +1060,8 @@ var WebGLApp = new function () {
         self.removeSkeleton( skeleton_id );
       }
     }
-    self.render();
+    if( renderer !== null )
+      self.render();
   }
 
   this.getColorOfSkeleton = function( skeleton_id ) {
@@ -977,7 +1073,7 @@ var WebGLApp = new function () {
   }
 
   // add skeleton to scene
-  this.addSkeleton = function( skeleton_id, skeleton_data )
+  this.addSkeletonFromData = function( skeleton_id, skeleton_data )
   {
     if( skeletons.hasOwnProperty(skeleton_id) ){
       // skeleton already in the list, just reinitialize
@@ -986,17 +1082,17 @@ var WebGLApp = new function () {
       skeleton_data['id'] = skeleton_id;
       skeletons[skeleton_id] = new Skeleton( skeleton_data );
     }
+    self.render();
     return skeletons[skeleton_id];
   }
 
-  this.changeSkeletonColor = function( skeleton_id, value, color )
+  this.changeSkeletonColor = function( skeleton_id, value )
   {
     if( !skeletons.hasOwnProperty(skeleton_id) ){
-        alert("Skeleton "+skeleton_id+" does not exist. Cannot change color!");
+        console.log("Skeleton "+skeleton_id+" does not exist.");
         return;
     } else {
         skeletons[skeleton_id].changeColor( value );
-        $('#skeletonaction-changecolor-' + skeleton_id).css("background-color",color.hex);
         self.render();
         return true;
     }
@@ -1037,48 +1133,51 @@ var WebGLApp = new function () {
         });
         return;
     } else {
-        $('#skeletonrow-' + skeleton_id).remove();
         skeletons[skeleton_id].removeActorFromScene();
+        skeletons[skeleton_id].destroy_data();
         delete skeletons[skeleton_id];
-        self.render();
+        if( renderer !== null )
+          self.render();
         return true;
     }
   }
 
   self.toggleBackground = function()
   {
-      if( black_bg ) {
+      if( show_background ) {
           renderer.setClearColorHex( 0xffffff, 1 );
-          black_bg = false;
+          show_background = false;
       } else {
           renderer.setClearColorHex( 0x000000, 1 );
-          black_bg = true;
+          show_background = true;
       }
       self.render();
   }
 
   self.toggleFloor = function()
   {
-      if( floormesh.visible ) {
-          // disable floor
+      if( show_floor ) {
           floormesh.visible = false;
+          show_floor = false;
       } else {
-          // enable floor
           floormesh.visible = true;
+          show_floor = true;
       }
       self.render();
   }
 
   self.toggleBB = function()
   {
-      if( bbmesh.visible ) {
+      if( show_boundingbox ) {
           // disable floor
           bbmesh.visible = false;
           debugax.visible = false;
+          show_boundingbox = false;
       } else {
           // enable floor
           bbmesh.visible = true;
           debugax.visible = true;
+          show_boundingbox = true;
       }
       self.render();
   }
@@ -1104,7 +1203,7 @@ var WebGLApp = new function () {
 
   function createScene( geometry, start ) {
     //addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshPhongMaterial( { ambient: 0x030303, color: 0x030303, specular: 0x990000, shininess: 30 } ) );
-    addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.2, side: THREE.DoubleSide } ) ); // , transparent:true
+    addMesh( geometry, scale, 0, 0, 0,  0,0,0, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.2, wireframe:true } ) ); // , transparent:true
   }
 
   function drawmesh() {
@@ -1118,16 +1217,20 @@ var WebGLApp = new function () {
         success: function (models) {
           // loop over objects
           for( var obj in models) {
-            var vert = models[obj].vertices;
-            var vert2 = [];
-            for ( var i = 0; i < vert.length; i+=3 ) {
-              var fv = transform_coordinates([vert[i],vert[i+1],vert[i+2]]);
-              vert2.push( fv[0] );
-              vert2.push( fv[1] );
-              vert2.push( fv[2] );
+            if( models.hasOwnProperty( obj )) {
+              var vert = models[obj].vertices;
+              var vert2 = [];
+              for ( var i = 0; i < vert.length; i+=3 ) {
+                var fv = transform_coordinates([vert[i],vert[i+1],vert[i+2]]);
+                vert2.push( fv[0] );
+                vert2.push( fv[1] );
+                vert2.push( fv[2] );
+              }
+              models[obj].vertices = vert2;
+              var parsed = loader.parse( models[obj] );
+              createScene( parsed['geometry'] )
+
             }
-            models[obj].vertices = vert2;
-            loader.createModel( models[obj], callback );
           }
         }
       });
@@ -1240,20 +1343,13 @@ var WebGLApp = new function () {
     dialog.appendChild(rand);
     dialog.appendChild( document.createElement("br"));*/
 
-    dialog.appendChild( document.createTextNode("Restrict display to shared connectors between visible skeletons") );
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "toggle_connector");
-    rand.setAttribute("value", "Restrict connectors");
-    rand.onclick = WebGLApp.toggleConnector;
-    dialog.appendChild(rand);
-    dialog.appendChild( document.createElement("br"));
-
     var rand = document.createElement('input');
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "enable_z_plane");
     rand.setAttribute("value", "Enable z-plane");
-    rand.onclick = WebGLApp.updateZPlane;
+    if( show_zplane )
+      rand.setAttribute("checked", "true");
+    rand.onclick = WebGLApp.toggle_zplane;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Enable z-plane');
     dialog.appendChild(rand);
@@ -1263,6 +1359,8 @@ var WebGLApp = new function () {
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "show_meshes");
     rand.setAttribute("value", "Show meshes");
+    if( show_meshes )
+      rand.setAttribute("checked", "true");
     rand.onclick = WebGLApp.toggleMeshes;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Show meshes');
@@ -1273,7 +1371,8 @@ var WebGLApp = new function () {
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "enable_active_node");
     rand.setAttribute("value", "Enable active node");
-    rand.setAttribute("checked", "true");
+    if( show_active_node )
+      rand.setAttribute("checked", "true");
     rand.onclick = WebGLApp.toggleActiveNode;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Enable active node');
@@ -1284,6 +1383,8 @@ var WebGLApp = new function () {
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "enable_missing_sections");
     rand.setAttribute("value", "Missing sections");
+    if( show_missing_sections )
+      rand.setAttribute("checked", "true");
     rand.onclick = WebGLApp.toggleMissingSections;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Missing sections');
@@ -1303,6 +1404,8 @@ var WebGLApp = new function () {
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "toggle_floor");
     rand.setAttribute("value", "Toggle Floor");
+    if( show_floor )
+      rand.setAttribute("checked", "true");
     rand.onclick = WebGLApp.toggleFloor;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Toggle floor');
@@ -1313,6 +1416,8 @@ var WebGLApp = new function () {
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "toggle_aabb");
     rand.setAttribute("value", "Toggle Bounding Box");
+    if( show_boundingbox )
+      rand.setAttribute("checked", "true");
     rand.onclick = WebGLApp.toggleBB;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Toggle Bounding Box');
@@ -1323,6 +1428,8 @@ var WebGLApp = new function () {
     rand.setAttribute("type", "checkbox");
     rand.setAttribute("id", "toggle_bgcolor");
     rand.setAttribute("value", "Toggle Background Color");
+    if( show_background )
+      rand.setAttribute("checked", "true");
     rand.onclick = WebGLApp.toggleBackground;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Toggle Background Color');
@@ -1338,56 +1445,54 @@ var WebGLApp = new function () {
         },
         "OK": function() {
           $(this).dialog("close");
-          // console.log($('#missing-section-height').val())
+        }
+      },
+      close: function(event, ui) {
+
           missing_section_height = $('#missing-section-height').val();
           soma_scale = $('#soma-scale').val();
           if( show_missing_sections ) {
             self.removeMissingSections();
             self.createMissingSections();            
           }
-        }
+          $('#dialog-confirm').remove();
       }
     });
   }
 
-  self.updateZPlane = function() {
-    var zval;
-    if( $('#enable_z_plane').attr('checked') != undefined ) {
-      zval = project.focusedStack.z;
+  self.toggle_zplane = function() {
+    if( show_zplane ) {
+      scene.remove( zplane );
+      zplane = null;
+      show_zplane = false;
     } else {
-      zval = -1;
-    }
-    // if disabled, deselect
-    if( zval === -1 ) {
-        scene.remove( zplane );
-        zplane = null;
-        self.render();
-        return;
-    }
-    var newval;
-    newval = (-zval * resolution.z - translation.z) * scale;
-    if( zplane === null ) {
-        var geometry = new THREE.Geometry();
-        var xwidth = dimension.x*resolution.x*scale,
-            ywidth = dimension.y*resolution.y*scale;
+      // create
+      var geometry = new THREE.Geometry();
+      var xwidth = dimension.x*resolution.x*scale,
+          ywidth = dimension.y*resolution.y*scale;
 
-        geometry.vertices.push( new THREE.Vector3( 0,0,0 ) );
-        geometry.vertices.push( new THREE.Vector3( xwidth,0,0 ) );
-        geometry.vertices.push( new THREE.Vector3( 0,ywidth,0 ) );
-        geometry.vertices.push( new THREE.Vector3( xwidth,ywidth,0 ) );
-        geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
+      geometry.vertices.push( new THREE.Vector3( 0,0,0 ) );
+      geometry.vertices.push( new THREE.Vector3( xwidth,0,0 ) );
+      geometry.vertices.push( new THREE.Vector3( 0,ywidth,0 ) );
+      geometry.vertices.push( new THREE.Vector3( xwidth,ywidth,0 ) );
+      geometry.faces.push( new THREE.Face4( 0, 1, 3, 2 ) );
 
-        var material = new THREE.MeshBasicMaterial( { color: 0x151349,
-          side: THREE.DoubleSide } );
-        zplane = new THREE.Mesh( geometry, material );
-        zplane.position.z = newval;
-        scene.add( zplane );
-        self.render();
-        return;
+      var material = new THREE.MeshBasicMaterial( { color: 0x151349, side: THREE.DoubleSide } );
+      zplane = new THREE.Mesh( geometry, material );
+      scene.add( zplane );
+      show_zplane = true;
+      self.updateZPlane();
     }
+    self.render();
+
+  }
+
+  self.updateZPlane = function() {
+    if( !show_zplane )
+      return;
+    var newval = (-project.focusedStack.z * resolution.z - translation.z) * scale;
     zplane.position.z = newval;
     self.render();
-    
   }
 
   function debugaxes() {
@@ -1398,7 +1503,6 @@ var WebGLApp = new function () {
   }
 
   function draw_grid() {
-    // Grid
     var line_material = new THREE.LineBasicMaterial( { color: 0x535353 } ),
       geometry = new THREE.Geometry(),
       floor = 0, step = 25;
@@ -1412,14 +1516,6 @@ var WebGLApp = new function () {
     floormesh = new THREE.Line( geometry, line_material, THREE.LinePieces );
     scene.add( floormesh );
   }
-
-  /**
-  // DISABLED: causes continuous refresh at a rate of 60 fps
-  function animate() {
-    requestAnimationFrame( animate );
-    self.render();
-  }
-  */
 
   function onMouseDown(event) {
     is_mouse_down = true;
@@ -1619,153 +1715,39 @@ var WebGLApp = new function () {
 
   }
 
-  self.addSkeletonToTable = function ( skeleton ) {
+  self.is_widget_open = function() {
+    if( $('#view_in_3d_webgl_widget').length ) 
+      return true;
+    else
+      return false;
+  }
 
-    if( $('#skeletonrow-' + skeleton.id ).length > 0 ) {
-      return;
+  self.setSkeletonPreVisibility = function( skeleton_id, value ) {
+    if( skeletons.hasOwnProperty(skeleton_id) ) {
+      skeletons[skeleton_id].setPreVisibility( value );
     }
+    self.render();
+  }
 
-    var rowElement = $('<tr/>').attr({
-      id: 'skeletonrow-' + skeleton.id
-    });
-    // $('#webgl-skeleton-table > tbody:last').append( rowElement );
-    $('#webgl-skeleton-table > tbody:last').append( rowElement );
-    
-    var td = $(document.createElement("td"));
-    td.append( $(document.createElement("img")).attr({
-      id:    'skeletonaction-activate-' + skeleton.id,
-      value: 'Nearest node'
-    })
-      .click( function( event )
-      {
-        TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton.id );
-      })
-      .attr('src', STATIC_URL_JS + 'widgets/themes/kde/activate.gif')
-    );
-    td.append( $(document.createElement("img")).attr({
-          id:    'skeletonaction-remove-' + skeleton.id,
-          value: 'Remove'
-          })
-          .click( function( event )
-          {
-            self.removeSkeleton( skeleton.id );
-          })
-          .attr('src', STATIC_URL_JS + 'widgets/themes/kde/delete.png')
-          .text('Remove!')
-    );
-    rowElement.append( td );
+  self.setSkeletonPostVisibility = function( skeleton_id, value ) {
+    if( skeletons.hasOwnProperty(skeleton_id) ) {
+      skeletons[skeleton_id].setPostVisibility( value );
+    }
+    self.render();
+  }
 
-    rowElement.append(
-      $(document.createElement("td")).text( skeleton.baseName + ' (SkeletonID: ' + skeleton.id + ')' )
-    );
+  self.setSkeletonTextVisibility = function( skeleton_id, value ) {
+    if( skeletons.hasOwnProperty(skeleton_id) ) {
+      skeletons[skeleton_id].setTextVisibility( value );
+    }
+    self.render();
+  }
 
-    // show skeleton
-    rowElement.append(
-      $(document.createElement("td")).append(
-        $(document.createElement("input")).attr({
-                  id:    'skeletonshow-' + skeleton.id,
-                  name:  skeleton.baseName,
-                  value: skeleton.id,
-                  type:  'checkbox',
-                  checked: true
-          })
-          .click( function( event )
-          {
-            var vis = $('#skeletonshow-' + skeleton.id).is(':checked');
-            skeletons[skeleton.id].setActorVisibility( vis );
-            skeletons[skeleton.id].setPreVisibility( vis );
-            $('#skeletonpre-' + skeleton.id).attr('checked', vis );
-            skeletons[skeleton.id].setPostVisibility( vis );
-            $('#skeletonpost-' + skeleton.id).attr('checked', vis );
-            if( vis === false) {
-              skeletons[skeleton.id].setTextVisibility( vis );
-              $('#skeletontext-' + skeleton.id).attr('checked', vis );
-            }
-              
-            self.render();
-          } )
-    ));
-
-    // show pre
-    rowElement.append(
-      $(document.createElement("td")).append(
-        $(document.createElement("input")).attr({
-                  id:    'skeletonpre-' + skeleton.id,
-                  name:  skeleton.baseName,
-                  value: skeleton.id,
-                  type:  'checkbox',
-                  checked:true
-          })
-          .click( function( event )
-          {
-            skeletons[skeleton.id].setPreVisibility( $('#skeletonpre-' + skeleton.id).is(':checked') );
-            self.render();
-          } )
-    ));
-
-    // show post
-    rowElement.append(
-      $(document.createElement("td")).append(
-        $(document.createElement("input")).attr({
-                  id:    'skeletonpost-' + skeleton.id,
-                  name:  skeleton.baseName,
-                  value: skeleton.id,
-                  type:  'checkbox',
-                  checked:true
-          })
-          .click( function( event )
-          {
-            skeletons[skeleton.id].setPostVisibility( $('#skeletonpost-' + skeleton.id).is(':checked') );
-            self.render();
-          } )
-    ));
-
-    rowElement.append(
-      $(document.createElement("td")).append(
-        $(document.createElement("input")).attr({
-                  id:    'skeletontext-' + skeleton.id,
-                  name:  skeleton.baseName,
-                  value: skeleton.id,
-                  type:  'checkbox',
-                  checked:false
-          })
-          .click( function( event )
-          {
-            skeletons[skeleton.id].setTextVisibility( $('#skeletontext-' + skeleton.id).is(':checked') );
-            self.render();
-          } )
-    ));
-
-    var td = $(document.createElement("td"));
-    td.append(
-      $(document.createElement("button")).attr({
-        id:    'skeletonaction-changecolor-' + skeleton.id,
-        value: 'Change color'
-      })
-        .click( function( event )
-        {
-          $('#color-wheel-' + skeleton.id).toggle();
-        })
-        .text('Change color')
-    );
-    td.append(
-      $('<div id="color-wheel-' +
-        skeleton.id + '"><div class="colorwheel'+
-        skeleton.id + '"></div></div>')
-    );
-    rowElement.append( td );
-
-    var cw = Raphael.colorwheel($("#color-wheel-"+skeleton.id+" .colorwheel"+skeleton.id)[0],150);
-    cw.color("#FFFF00");
-    $('#skeletonaction-changecolor-' + skeleton.id).css("background-color","#FFFF00");
-    cw.onchange(function(color)
-    {
-      var colors = [parseInt(color.r), parseInt(color.g), parseInt(color.b)]
-      self.changeSkeletonColor( skeleton.id, colors, color );
-    })
-
-    $('#color-wheel-' + skeleton.id).hide();
-
+  self.setSkeletonAllVisibility = function( skeleton_id, value ) {
+    if( skeletons.hasOwnProperty(skeleton_id) ) {
+      skeletons[skeleton_id].setActorVisibility( value );
+    }
+    self.render();
   }
 
   self.addActiveObjectToStagingArea = function() {
@@ -1794,40 +1776,19 @@ var WebGLApp = new function () {
       }}});
   }
 
-  self.addActiveSkeletonToView = function() {
-    var atn_id = SkeletonAnnotations.getActiveNodeId(),
-        skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
-    if (!atn_id) {
-      alert("You must have an active node selected to add its skeleton to the 3D WebGL View.");
-      return;
-    }
-    if (SkeletonAnnotations.getActiveNodeType() != "treenode") {
-      alert("You can only add skeletons to the 3D WebGL View at the moment - please select a node of a skeleton.");
-      return;
-    }
-    // if( skeleton_id in skeletons ) {
-    //   alert('Skeleton already added to the list');
-    //   self.removeSkeleton( skeleton_id );
-      
-    //   // return;
-    // }
-    self.addSkeletonFromID( project.id, skeleton_id ); // will call self.render()
-  }
-
-  self.addSkeletonFromID = function (projectID, skeletonID) {
+  self.addSkeletonFromID = function (skeletonID) {
     if( skeletonID !== undefined )
     {
-        jQuery.ajax({
-          url: django_url + project.id + '/skeleton/' + skeletonID + '/json',
-          type: "GET",
-          dataType: "json",
-          success: function (skeleton_data) {
-            skeleton_data['baseName'] = skeleton_data['neuron']['neuronname'];
-            var skeleton = self.addSkeleton( parseInt(skeletonID), skeleton_data );
-            self.addSkeletonToTable( skeleton );
-            self.render();
-          }
-        });
+      var skeleton_id = parseInt( skeletonID );
+      jQuery.ajax({
+        url: django_url + project.id + '/skeleton/' + skeleton_id + '/json',
+        type: "GET",
+        dataType: "json",
+        success: function (skeleton_data) {
+          skeleton_data['baseName'] = skeleton_data['neuron']['neuronname'];
+          var skeleton = self.addSkeletonFromData( skeleton_id, skeleton_data );
+        }
+      });
     }
   };
 
@@ -1847,34 +1808,33 @@ var WebGLApp = new function () {
     return keys;
   };
 
-  self.storeSkeletonList = function() {
-    var shortname = prompt('Short name reference for skeleton list?'),
-        description = prompt('Short description?');
-    jQuery.ajax({
-      url: django_url + project.id + '/skeletonlist/save',
-      data: { shortname: shortname, description: description,
-        skeletonlist: self.getListOfSkeletonIDs() },
-      type: "POST",
-      dataType: "json",
-      success: function () {
-      }
-    });
-  };
+  self.add_active_and_refresh_skeletons = function() {
+      NeuronStagingArea.add_active_object_to_stage( WebGLApp.refresh_skeletons );
+  }
 
-  self.loadSkeletonList = function() {
-    var shortname = prompt('Short name reference?');
-    jQuery.ajax({
-      url: django_url + project.id + '/skeletonlist/load',
-      data: { shortname: shortname },
-      type: "POST",
-      dataType: "json",
-      success: function ( data ) {
-        for( var idx in data['skeletonlist'])
-        {
-          self.addSkeletonFromID( self.project_id, data['skeletonlist'][idx] );
+  // use the staging skeleton list to refresh all neurons
+  self.refresh_skeletons = function() {
+    // self.removeAllSkeletons(); // TODO: is this slower than use reinit actor and remove only the rest?
+    var skeletons_to_remove = {};
+    for(var skeleton_id in skeletons) {
+      if( skeletons.hasOwnProperty( skeleton_id )) {
+        skeletons_to_remove[ skeleton_id ] = true;
+      }
+    }
+    var stageskeletons = NeuronStagingArea.get_selected_skeletons();
+    for(var i = 0; i < stageskeletons.length; i++) {
+      var skeleton_id = parseInt( stageskeletons[ i ] );
+      skeletons_to_remove[ skeleton_id ] = false;
+    }
+    for(var skeleton_id in skeletons_to_remove) {
+      if( skeletons_to_remove.hasOwnProperty( skeleton_id )) {
+        if( skeletons_to_remove[ skeleton_id ] ) {
+          self.removeSkeleton( skeleton_id );
+        } else {
+          self.addSkeletonFromID( skeleton_id );
         }
       }
-    });
+    }
   }
 
   self.toggleConnector = function() {

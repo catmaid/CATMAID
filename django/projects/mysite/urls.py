@@ -2,7 +2,7 @@ from django.conf.urls.defaults import patterns, include, url
 from django.conf import settings
 from django.views.generic import TemplateView
 
-from catmaid.views import HomepageView
+from catmaid.views import *
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -55,6 +55,16 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/skeletonlist/save$', 'catmaid.control.save_skeletonlist'),
     (r'^(?P<project_id>\d+)/skeletonlist/load$', 'catmaid.control.load_skeletonlist'),
 
+    # Views
+    (r'^useranalytics$', 'catmaid.control.plot_useranalytics'),
+    (r'^(?P<project_id>\d+)/exportwidget$', ExportWidgetView.as_view() ),
+    (r'^(?P<project_id>\d+)/statisticswidget$', ProjectStatisticsWidgetView.as_view() ),
+
+    (r'^(?P<project_id>\d+)/graphexport/summary-statistics/csv$', 'catmaid.control.graphexport.summary_statistics' ),
+    (r'^(?P<project_id>\d+)/graphexport/nx_json$', 'catmaid.control.graphexport.export_nxjsgraph' ),
+    (r'^(?P<project_id>\d+)/graphexport/graphml$', 'catmaid.control.graphexport.export_graphml' ),
+        
+
     (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'catmaid.control.adjacency_matrix'),
     (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'catmaid.control.skeletonlist_subgraph'),
     (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'catmaid.control.skeleton_graph'),
@@ -104,6 +114,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuronname$', 'catmaid.control.neuronname'),
     (r'^(?P<project_id>\d+)/skeleton/node/(?P<treenode_id>\d+)/node_count$', 'catmaid.control.node_count'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'catmaid.control.skeleton_swc'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuroml$', 'catmaid.control.skeleton_neuroml'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', 'catmaid.control.skeleton_json'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neurohdf$', 'catmaid.control.skeleton_neurohdf'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review$', 'catmaid.control.export_review_skeleton'),
@@ -112,6 +123,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-others$', 'catmaid.control.reset_other_reviewer_ids'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/info$', 'catmaid.control.skeleton_info_raw'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/statistics$', 'catmaid.control.skeleton_statistics'),
+    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/openleaf$', 'catmaid.control.last_openleaf'),
     (r'^(?P<project_id>\d+)/skeleton/split$', 'catmaid.control.split_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/get-root$', 'catmaid.control.root_for_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/ancestry$', 'catmaid.control.skeleton_ancestry'),
@@ -138,6 +150,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/labels-for-nodes$', 'catmaid.control.labels_for_nodes'),
     (r'^(?P<project_id>\d+)/labels-for-node/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'catmaid.control.labels_for_node'),
     (r'^(?P<project_id>\d+)/label/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)/update$', 'catmaid.control.label_update'),
+    (r'^(?P<project_id>\d+)/label/remove$', 'catmaid.control.label_remove'),
 
     (r'^(?P<project_id>\d+)/object-tree/expand$', 'catmaid.control.tree_object_expand'),
     (r'^(?P<project_id>\d+)/object-tree/list', 'catmaid.control.tree_object_list'),
@@ -184,6 +197,8 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/connector/create$', 'catmaid.control.create_connector'),
     (r'^(?P<project_id>\d+)/connector/delete$', 'catmaid.control.delete_connector'),
     (r'^(?P<project_id>\d+)/connector/table/list$', 'catmaid.control.list_connector'),
+
+    (r'^(?P<project_id>\d+)/connector/list/graphedge$', 'catmaid.control.graphedge_list'),
 
     )
 
@@ -256,6 +271,44 @@ urlpatterns += patterns('',
         'catmaid.control.remove_restriction'),
     (r'^(?P<project_id>%s)/ontology/restrictions/(?P<restriction>[^/]*)/types$' % (integer),
         'catmaid.control.get_restriction_types'),
+    )
+
+# Classification
+urlpatterns += patterns('',
+    (r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/number$'.format(integer),
+        'catmaid.control.get_classification_number'),
+    (r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/show$'.format(integer),
+        'catmaid.control.show_classification_editor'),
+    (r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/show/(?P<link_id>\d+)$'.format(integer),
+        'catmaid.control.show_classification_editor'),
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/select$'.format(integer),
+        'catmaid.control.select_classification_graph', name='select_classification_graph'),
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/setup/test$'.format(integer),
+        'catmaid.control.check_classification_setup_view', name='test_classification_setup'),
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/setup/rebuild$'.format(integer),
+        'catmaid.control.rebuild_classification_setup_view', name='rebuild_classification_setup'),
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/new$'.format(integer),
+        'catmaid.control.add_classification_graph', name='add_classification_graph'),
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/list$'.format(integer),
+        'catmaid.control.list_classification_graph', name='list_classification_graph'),
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/list/(?P<link_id>\d+)$'.format(integer),
+        'catmaid.control.list_classification_graph', name='list_classification_graph'),
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/(?P<link_id>\d+)/remove$'.format(integer),
+        'catmaid.control.remove_classification_graph', name='remove_classification_graph'),
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/instance-operation$'.format(integer),
+        'catmaid.control.classification_instance_operation',
+        name='classification_instance_operation'),
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/(?P<link_id>\d+)/autofill$'.format(integer),
+        'catmaid.control.autofill_classification_graph', name='autofill_classification_graph'),
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/link$'.format(integer),
+        'catmaid.control.link_classification_graph', name='link_classification_graph'),
+    )
+
+# Notifications
+urlpatterns += patterns('',
+    (r'^(?P<project_id>\d+)/notifications/list$', 'catmaid.control.list_notifications'),
+    (r'^(?P<project_id>\d+)/changerequest/approve$', 'catmaid.control.approve_change_request'),
+    (r'^(?P<project_id>\d+)/changerequest/reject$', 'catmaid.control.reject_change_request'),
     )
 
 if settings.DEBUG:

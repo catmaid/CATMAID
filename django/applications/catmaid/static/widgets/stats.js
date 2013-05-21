@@ -19,7 +19,7 @@ var ProjectStatistics = new function()
     };
     if( data.hasOwnProperty('new_connectors') ) {
       entry += ' ' + data['new_connectors'] + ' /';
-      points += 10 * data['new_connectors'];
+      points += data['new_connectors'];
     } else {
       entry += ' 0 /';
     };
@@ -27,14 +27,8 @@ var ProjectStatistics = new function()
       entry += ' ' + data['new_reviewed_nodes'] + ' /';
       points += data['new_reviewed_nodes'];
     } else {
-      entry += ' 0 /';
+      entry += ' 0';
     };
-    if( data.hasOwnProperty('new_tags') ) {
-      entry += ' ' + data['new_tags'] + ' /';
-    } else {
-      entry += ' 0 /';
-    };
-    entry += ' <b>' + points + '</b>';
     return {'entry': entry, 'points': points};
   }
 
@@ -46,7 +40,6 @@ var ProjectStatistics = new function()
     for(var i = 0; i < data['days'].length; i++ ) {
       header += '<td>'+data['daysformatted'][i]+'</td>';
     }
-    header += '<td>summed points</td>';
     header += '</tr>';
     $('#project_stats_history_table').append( header );
     for(var username in data['stats_table']) {
@@ -61,15 +54,18 @@ var ProjectStatistics = new function()
           weekpointcount += formated['points'];
         }
       }
-      row += '<td>' + weekpointcount + '</td>';
       row += '</tr>';
-      $('#project_stats_history_table').append( row );
+      if( weekpointcount === 0 ) {
+        continue;
+      } else {
+        $('#project_stats_history_table').append( row );
+      }
     }
   }
 
   var update_piechart = function(data, chart_name) {
     $(chart_name).empty();
-    var rpie = Raphael(chart_name, 300, 200);
+    var rpie = Raphael(chart_name, 500, 200);
     var pie = rpie.g.piechart(90, 100, 80, data.values, { legend: data.users, legendpos: "east", colors:['red', 'blue', 'green', 'yellow', 'orange', 'black', 'gray']});
     pie.hover(function () {
       this.sector.stop();
@@ -191,21 +187,21 @@ var ProjectStatistics = new function()
   }
   
   var refresh_project_statistics = function() {
-    requestQueue.register(django_url + project.id + '/stats-summary', "GET", {
-    }, function (status, text, xml) {
-      if (status == 200) {
-        if (text && text != " ") {
-          var jso = $.parseJSON(text);
-          if (jso.error) {
-            alert(jso.error);
-          }
-          else {
-            update_stats_fields(jso);
-          }
-        }
-      }
-      return true;
-    });
+    // requestQueue.register(django_url + project.id + '/stats-summary', "GET", {
+    // }, function (status, text, xml) {
+    //   if (status == 200) {
+    //     if (text && text != " ") {
+    //       var jso = $.parseJSON(text);
+    //       if (jso.error) {
+    //         alert(jso.error);
+    //       }
+    //       else {
+    //         update_stats_fields(jso);
+    //       }
+    //     }
+    //   }
+    //   return true;
+    // });
 
     requestQueue.register(django_url + project.id + '/stats', "GET", {
     }, function (status, text, xml) {
@@ -222,20 +218,20 @@ var ProjectStatistics = new function()
       return true;
     });
 
-    requestQueue.register(django_url + project.id + '/stats-editor', "GET",{
-    }, function (status, text, xml) {
-      if (status == 200) {
-        if (text && text != " ") {
-          var jso = $.parseJSON(text);
-          if (jso.error) {
-            alert(jso.error);
-          } else {
-            update_piechart(jso, "piechart_editor_holder");
-          }
-        }
-      }
-      return true;
-    });
+    // requestQueue.register(django_url + project.id + '/stats-editor', "GET",{
+    // }, function (status, text, xml) {
+    //   if (status == 200) {
+    //     if (text && text != " ") {
+    //       var jso = $.parseJSON(text);
+    //       if (jso.error) {
+    //         alert(jso.error);
+    //       } else {
+    //         update_piechart(jso, "piechart_editor_holder");
+    //       }
+    //     }
+    //   }
+    //   return true;
+    // });
 
     requestQueue.register(django_url + project.id + '/stats-reviewer', "GET", {
     }, function (status, text, xml) {
@@ -268,14 +264,12 @@ var ProjectStatistics = new function()
       return true;
     });
     
-    d3.json(django_url + project.id + '/stats-history', update_linegraph);
+    // d3.json(django_url + project.id + '/stats-history', update_linegraph);
   }
 
   this.init = function () {
 
-    $("#refresh_stats").click(function () {
-      refresh_project_statistics();
-    });
+    $('#project_stats_widget').load( django_url + project.id + '/statisticswidget' )
 
     refresh_project_statistics();
 

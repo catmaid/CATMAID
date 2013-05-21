@@ -10,6 +10,46 @@ from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def graphedge_list(request, project_id=None):
+    """ Assumes that first element of skeletonlist is pre, and second is post """
+    skeletonlist = request.POST.getlist('skeletonlist[]')
+    skeletonlist = map(int, skeletonlist)
+    p = get_object_or_404(Project, pk=project_id)
+    edge = {}
+    connectordata = {}
+
+    qs_tc = TreenodeConnector.objects.filter( 
+        project=p, 
+        skeleton__in=skeletonlist ).select_related('relation__relation_name', 'connector__user', 'connector')
+
+    for q in qs_tc:
+        if not q.connector_id in edge:
+            # has to be a list, not a set, because we need matching treenode id
+            edge[ q.connector_id ] = {'pre': [], 'post': [], 'pretreenode': [], 'posttreenode': []}
+            connectordata[ q.connector_id ] = { 
+                'connector_id': q.connector_id,
+                'x': q.connector.location.x,
+                'y': q.connector.location.y,
+                'z': q.connector.location.z,
+                'user': q.connector.user.username }
+
+        if q.relation.relation_name == 'presynaptic_to':
+            edge[ q.connector_id ]['pre'].append( q.skeleton_id )
+            edge[ q.connector_id ]['pretreenode'].append( q.treenode_id )
+        elif q.relation.relation_name == 'postsynaptic_to':
+            edge[ q.connector_id ]['post'].append( q.skeleton_id )
+            edge[ q.connector_id ]['posttreenode'].append( q.treenode_id )
+    
+    result = []
+    for k,v in edge.items():
+     if skeletonlist[0] in v['pre'] and skeletonlist[1] in v['post']:
+        connectordata[k]['pretreenode'] = v['pretreenode'][ v['pre'].index( skeletonlist[0] ) ]
+        connectordata[k]['posttreenode'] = v['posttreenode'][ v['post'].index( skeletonlist[1] ) ]
+        result.append(connectordata[k])
+
+    return HttpResponse(json.dumps( result ), mimetype='text/json')
+    
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_connector(request, project_id=None):

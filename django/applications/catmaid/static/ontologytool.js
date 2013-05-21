@@ -7,6 +7,11 @@ function OntologyTool()
     this.toolname = "ontologytool";
     var self = this;
     var actions = new Array();
+    // The workspace mode indicates whether the semantic space of the
+    // current project ("project") or of a dummy project ("classification")
+    // should be used. The latter is of use for a semantic space to be
+    // shared between projects.
+    var workspace_mode = "project";
 
     this.addAction = function ( action ) {
         actions.push( action );
@@ -17,11 +22,23 @@ function OntologyTool()
     };
 
     this.addAction( new Action({
-        helpText: "Open the ontology editor for the current project",
+        helpText: "Open the ontology editor",
         buttonName: "editor",
         buttonID: "ontology_button_editor",
         run: function(e) {
             WindowMaker.show('ontology-editor');
+            self.update_workspace_in_widgets();
+            return true;
+        }
+    }));
+
+    this.addAction( new Action({
+        helpText: "Show classification editor",
+        buttonName: 'classification_editor',
+        buttonID: "classification_editor_button",
+        run: function (e) {
+            WindowMaker.show('classification-editor');
+            self.update_workspace_in_widgets();
             return true;
         }
     }));
@@ -31,6 +48,7 @@ function OntologyTool()
      */
     var setupSubTools = function()
     {
+        // setup tool box
         var box = createButtonsFromActions(
             actions,
             "toolbox_ontology",
@@ -48,6 +66,38 @@ function OntologyTool()
       $("#edit_button_ontology").removeClass("button");
       setupSubTools();
       $("#toolbox_ontology").show();
+      $("#toolbar_ontology").show();
+
+      // Assign a function to the workspace radio buttons
+      $("input[name='ontology_space']").change( function() {
+          self.workspace_mode = $(this).val();
+          self.update_workspace_in_widgets();
+      });
+    };
+
+    /**
+     * Updates the workspace configuration of the ontology and the
+     * classification widget.
+     */
+    this.update_workspace_in_widgets = function() {
+          if (self.workspace_mode === "classification") {
+              OntologyEditor.change_workspace(-1, true);
+              ClassificationEditor.change_workspace(-1, true);
+          } else {
+              OntologyEditor.change_workspace(project.id, true);
+              ClassificationEditor.change_workspace(project.id, true);
+          }
+    };
+
+    /**
+     * Updates the workspace toolbar according to the user profile.
+     */
+    var update_workspace_toolbar = function() {
+        var use_projects = userprofile.independent_ontology_workspace_is_default ? false : true;
+        $("input[name='ontology_space'][value='project']").prop('checked', use_projects);
+        $("input[name='ontology_space'][value='classification']").prop('checked', !use_projects);
+        self.workspace_mode = use_projects ? "project" : "classification";
+        self.update_workspace_in_widgets();
     };
 
 	/**
@@ -55,7 +105,7 @@ function OntologyTool()
 	 */
     this.unregister = function()
     {
-        $("#toolbox_ontology").hide();
+        // nothing to do here currently
     };
 
 	/**
@@ -65,6 +115,7 @@ function OntologyTool()
 	this.destroy = function()
 	{
         $("#toolbox_ontology").hide();
+        $("#toolbar_ontology").hide();
         $("#edit_button_ontology").removeClass("button_active");
         $("#edit_button_ontology").addClass("button");
     }
@@ -94,4 +145,7 @@ function OntologyTool()
           return false;
         }
     }
+
+    // init the workspace bar
+    update_workspace_toolbar();
 }

@@ -74,6 +74,8 @@ class RGBAWidget(forms.MultiWidget):
             forms.TextInput(attrs),
             forms.TextInput(attrs),
         )
+        for widget in widgets:
+            widget.attrs['onchange'] = 'update_color_swatch();'
         super(RGBAWidget, self).__init__(widgets, attrs, **kwargs)
 
     def decompress(self, value):
@@ -91,4 +93,13 @@ class RGBAWidget(forms.MultiWidget):
         return [None, None, None, None]
 
     def format_output(self, rendered_widgets):
-        return  u'R: %s G: %s B: %s A: %s' % rendered_widgets
+        return  (u'R: %s G: %s B: %s A: %s' % tuple(rendered_widgets) + 
+            u'''<div id="id_userprofile-0-color-swatch" style="background-color:#000000; border-style:inset; border-width:thin; padding-left:1em; width:100px; height:20px; display:inline-block;">&nbsp;</div>
+            <script>update_color_swatch = function() {
+                var r = parseInt(parseFloat(document.getElementById("id_userprofile-0-color_0").value) * 255), 
+                    g = parseInt(parseFloat(document.getElementById("id_userprofile-0-color_1").value) * 255), 
+                    b = parseInt(parseFloat(document.getElementById("id_userprofile-0-color_2").value) * 255);
+                document.getElementById("id_userprofile-0-color-swatch").style.backgroundColor = "rgb(" + r + ", " + g + ", " + b + ")";
+            };
+            update_color_swatch();
+            </script>''')

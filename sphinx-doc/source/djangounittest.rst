@@ -43,7 +43,7 @@ Fix it with::
 Loading the test fixtures (schema and data) into a new CATMAID database
 -----------------------------------------------------------------------
 
-Directly editing the data in the test fixtures (`django/applications/vncbrowser/tables_and_data.sql`) would be very error-prone.  A better idea is to create a new CATMAID instance pointing to a database that only contains the fixture data.  Then you should only very carefully make changes to the CATMAID instance where they are required to support a new test you want to add.
+Directly editing the data in the test fixtures (`django/applications/catmaid/tables_and_data.sql`) would be very error-prone.  A better idea is to create a new CATMAID instance pointing to a database that only contains the fixture data.  Then you should only very carefully make changes to the CATMAID instance where they are required to support a new test you want to add.
 
 To create such an instance, follow the usual installation instructions for CATMAID up to the point where you would use the `createuser.sh` script, and make sure that you specify a new database name, e.g. `catmaid_fixture`::
 
@@ -74,7 +74,7 @@ Test coverage
 
 If you install `coverage.py` (`pip install coverage` in your virtualenv) you can generate test coverage statistics with::
 
-    coverage run ./manage.py test vncbrowser
+    coverage run ./manage.py test catmaid
 
 Then run::
 

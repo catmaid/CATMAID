@@ -72,9 +72,36 @@ class ProfileInline(admin.StackedInline):
     model = UserProfile
     fk_name = 'user'
     max_num = 1
+    
+    def get_formset(self, request, obj=None, **kwargs):
+        # Exclude the color field for non-superusers.
+        # It's not important to override exactly this method, we just need some method that gets the request object.
+        if request.user.is_superuser:
+            self.exclude = ()
+        else:
+            self.exclude = ('color',)
+        return super(ProfileInline, self).get_formset(request, obj, **kwargs)
 
 class CustomUserAdmin(UserAdmin):
     inlines = [ProfileInline,]
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff')
+    
+    def changelist_view(self, request, extra_context=None):
+        # Add a color column for superusers.
+        # It's not important to override exactly this method, we just need some method that gets the request object.
+        if request.user.is_superuser and self.list_display[-1] != 'color':
+            self.list_display = self.list_display + ('color',)
+        return super(CustomUserAdmin, self).changelist_view(request, extra_context=extra_context)
+
+def color(self):
+    try:
+        up = UserProfile.objects.get(user=self)
+        return mark_safe('<div style="background-color:%s; border-style:inset; border-width:thin; margin-left:1em; width:100px; height:100%%;">&nbsp;</div>' % up.color.hex_color())
+    except Exception as e:
+        return mark_safe('<div>%s</div>' % str(e))
+
+color.allow_tags = True
+User.color = color
 
 # Add model admin views
 admin.site.register(Project, ProjectAdmin)

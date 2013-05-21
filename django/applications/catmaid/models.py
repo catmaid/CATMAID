@@ -659,22 +659,6 @@ class SkeletonlistDashboard(UserFocusedModel):
     skeleton_list = IntegerArrayField()
     description = models.TextField()
 
-class SliceContours(UserFocusedModel):
-
-    coordinates = IntegerArrayField()
-
-    stack = models.ForeignKey(Stack)
-    node_id = models.CharField(max_length=255,db_index=True) # convention: {sectionindex}_{slide_id}
-    length = models.FloatField(null=True)
-
-class SliceContoursHighres(UserFocusedModel):
-
-    coordinates = IntegerArrayField()
-
-    stack = models.ForeignKey(Stack)
-    node_id = models.CharField(max_length=255,db_index=True) # convention: {sectionindex}_{slide_id}
-    length = models.FloatField(null=True)
-
 class Segments(UserFocusedModel):
 
     stack = models.ForeignKey(Stack)
@@ -693,46 +677,6 @@ class Segments(UserFocusedModel):
     segmentation_cost = models.FloatField()
     direction = models.BooleanField() # 0:LR if origin_section< target_section / 1:RL as boolean, otherwise
     status = models.IntegerField(db_index=True, default=1)
-
-class SegmentsData(models.Model):
-
-    segment = models.ForeignKey(Segments)
-
-    center_distance = models.FloatField(default=0.0)
-    set_difference = models.FloatField(default=0.0)
-    set_difference_ratio = models.FloatField(default=0.0)
-    aligned_set_difference = models.FloatField(default=0.0)
-    aligned_set_difference_ratio = models.FloatField(default=0.0)
-    size = models.FloatField(default=0.0)
-    overlap = models.FloatField(default=0.0)
-    overlap_ratio = models.FloatField(default=0.0)
-    aligned_overlap = models.FloatField(default=0.0)
-    aligned_overlap_ratio = models.FloatField(default=0.0)
-    average_slice_distance = models.FloatField(default=0.0)
-    max_slice_distance = models.FloatField(default=0.0)
-    aligned_average_slice_distance = models.FloatField(default=0.0)
-    aligned_max_slice_distance = models.FloatField(default=0.0)
-    histogram_0 = models.FloatField(default=0.0)
-    histogram_1 = models.FloatField(default=0.0)
-    histogram_2 = models.FloatField(default=0.0)
-    histogram_3 = models.FloatField(default=0.0)
-    histogram_4 = models.FloatField(default=0.0)
-    histogram_5 = models.FloatField(default=0.0)
-    histogram_6 = models.FloatField(default=0.0)
-    histogram_7 = models.FloatField(default=0.0)
-    histogram_8 = models.FloatField(default=0.0)
-    histogram_9 = models.FloatField(default=0.0)
-    normalized_histogram_0 = models.FloatField(default=0.0)
-    normalized_histogram_1 = models.FloatField(default=0.0)
-    normalized_histogram_2 = models.FloatField(default=0.0)
-    normalized_histogram_3 = models.FloatField(default=0.0)
-    normalized_histogram_4 = models.FloatField(default=0.0)
-    normalized_histogram_5 = models.FloatField(default=0.0)
-    normalized_histogram_6 = models.FloatField(default=0.0)
-    normalized_histogram_7 = models.FloatField(default=0.0)
-    normalized_histogram_8 = models.FloatField(default=0.0)
-    normalized_histogram_9 = models.FloatField(default=0.0)
-
 
 class Slices(UserFocusedModel):
 

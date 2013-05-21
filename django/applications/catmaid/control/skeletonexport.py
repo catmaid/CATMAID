@@ -10,7 +10,6 @@ from catmaid.control.common import *
 
 import networkx as nx
 from tree_util import edge_count_to_root
-from user import _compute_rgb
 
 try:
     import neuroml
@@ -94,8 +93,8 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
             else:
                 lab = []
 
-        user_color = _compute_rgb( tn.user_id )
-        reviewuser_id_color = _compute_rgb( tn.reviewer_id )
+        user_color = tn.user.userprofile.color
+        reviewer_color = UserProfile.objects.filter(user_id=tn.reviewer_id)[0].color
 
         vertices[tn.id] = {
             'x': tn.location.x,
@@ -104,8 +103,8 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
             'radius': max(tn.radius, 0),
             'type': 'skeleton',
             'labels': lab,
-            'user_id_color': user_color,
-            'reviewuser_id_color': reviewuser_id_color
+            'user_id_color': [user_color.r, user_color.g, user_color.b],
+            'reviewuser_id_color': [reviewer_color.r, reviewer_color.g, reviewer_color.b]
             
             # TODO: can use sophisticated colormaps
             # http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps

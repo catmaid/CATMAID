@@ -20,6 +20,8 @@ from taggit.managers import TaggableManager
 
 from south.db import db
 
+from control.user import distinct_user_color
+
 CELL_BODY_CHOICES = (
     ('u', 'Unknown'),
     ('l', 'Local'),
@@ -866,6 +868,7 @@ class UserProfile(models.Model):
         default=settings.PROFILE_SHOW_TRACING_TOOL)
     show_ontology_tool = models.BooleanField(
         default=settings.PROFILE_SHOW_ONTOLOGY_TOOL)
+    color = RGBAField(default=distinct_user_color)
 
     def __unicode__(self):
         return self.user.username

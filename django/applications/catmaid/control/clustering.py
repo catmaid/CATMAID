@@ -1,3 +1,4 @@
+import sys
 import json
 import string
 
@@ -6,19 +7,30 @@ from django.forms.widgets import CheckboxSelectMultiple
 from django.shortcuts import render_to_response
 from django.contrib.formtools.wizard.views import SessionWizardView
 from django.http import HttpResponse
+from django.template import RequestContext
 
 from catmaid.models import Class, ClassInstance, ClassClass, ClassInstanceClassInstance
 from catmaid.control.classification import ClassProxy
 from catmaid.control.classification import get_root_classes_qs, get_classification_links_qs
 
+import numpy, scipy
+import scipy.cluster.hierarchy as hier
+import scipy.spatial.distance as dist
+
 metrics = (
-    ('JC', 'Jaccard'),
+    ('jaccard', 'Jaccard'),
+    ('hamming', 'Hamming'),
+    ('chebyshev', 'Chebyshev'),
 )
 
 linkages = (
-    ('MIN', 'Single-linkage'),
-    ('MAX', 'Complete-linkage'),
-    ('AVG', 'Average-linkage'),
+    ('single', 'Single (nearest point algorithm)'),
+    ('complete', 'Complete (farthest point algorithm)'),
+    ('average', 'Average (UPGMA)'),
+    ('weighted', 'Weighted'),
+    ('centroid', 'Centroid'),
+    ('median', 'Median'),
+    ('ward', 'Ward'),
 )
 
 class ClassInstanceProxy(ClassInstance):
@@ -58,7 +70,6 @@ class ClusteringSetupGraphs(forms.Form):
 class ClusteringSetupMath(forms.Form):
     metric = forms.ChoiceField(choices=metrics)
     linkage = forms.ChoiceField(choices=linkages)
-    pass
 
 class ClusteringWizard(SessionWizardView):
     template_name = "catmaid/clustering/setup.html"
@@ -101,8 +112,8 @@ class ClusteringWizard(SessionWizardView):
         ontologies = cleaned_data[0].get('ontologies')
         add_nonleafs = cleaned_data[0].get('add_nonleafs')
         graphs = cleaned_data[1].get('classification_graphs')
-        metric = cleaned_data[2].get('metric')
-        linkage = cleaned_data[2].get('linkage')
+        metric = str(cleaned_data[2].get('metric'))
+        linkage = str(cleaned_data[2].get('linkage'))
 
         # Featurs are abstract concepts (classes) and graphs will be
         # checked which classes they have instanciated.
@@ -111,22 +122,46 @@ class ClusteringWizard(SessionWizardView):
         for o in ontologies:
             features = features + get_features( o, add_nonleafs )
 
-        bin_matrix = create_binary_matrix(graphs, features)
-        dst_matrix = create_distance_matrix(graphs, metric)
-        clustering = create_clustering(graphs, metric, linkage)
+        bin_matrix = numpy.array(create_binary_matrix(graphs, features))
+        # Calculate the distance matrix
+        dst_matrix = dist.pdist(bin_matrix, metric)
+        # The distance matrix now has no redundancies, but we need the square form
+        dst_matrix = dist.squareform(dst_matrix)
+        # Calculate linkage matrix
+        linkage_matrix = hier.linkage(bin_matrix, linkage, metric)
+        # Obtain the clustering dendrogram data
+        dendrogram = hier.dendrogram(linkage_matrix, no_plot=True,
+            count_sort=True)
 
-        # Create a binary_matrix with names for display
+        # Create a binary_matrix with graphs attached for display
         num_graphs = len(graphs)
-        named_bin_matrix = []
+        display_bin_matrix = []
         for i in range( num_graphs ):
-            row = [ "Graph " + str(i) ] + bin_matrix[i]
-            named_bin_matrix.append( row )
+            display_bin_matrix.append(
+                {'graph': graphs[i], 'feature': bin_matrix[i]})
 
-        return render_to_response('catmaid/clustering/display.html', {
+        # Create dst_matrix with graphs attached
+        display_dst_matrix = []
+        for i in range(num_graphs):
+            display_dst_matrix.append(
+                {'graph': graphs[i], 'distances': dst_matrix[i]})
+
+        # Create a JSON version of the dendrogram to make it
+        # available to the client.
+        dendrogram_json = json.dumps(dendrogram)
+
+        # Get the default request context and add custom data
+        context = RequestContext(self.request)
+        context.update({
             'ontologies': ontologies,
+            'graphs': graphs,
             'features': features,
-            'named_bin_matrix': named_bin_matrix,
-        })
+            'bin_matrix': display_bin_matrix,
+            'metric': metric,
+            'dst_matrix': display_dst_matrix,
+            'dendrogram': dendrogram_json})
+
+        return render_to_response('catmaid/clustering/display.html', context)
 
 class FeatureLink:
     def __init__(self, class_a, class_b, relation, super_class = None):
@@ -261,8 +296,3 @@ def create_binary_matrix(graphs, features):
 
     return matrix
 
-def create_distance_matrix(graphs, metric):
-    return []
-
-def create_clustering(graphs, metric, linkage):
-    return []

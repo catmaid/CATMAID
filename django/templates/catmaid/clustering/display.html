@@ -28,14 +28,20 @@
         <td>{{ forloop.counter }}</td>
     {% endfor %}
     </tr>
-    {% for graph in named_bin_matrix %}
+    {% for bin_row in bin_matrix %}
     <tr>
-        {% for elem in graph %}
-            <td>{{ elem }}</td>
+        <td>{{ bin_row.graph.name }}</td>
+        {% for elem in bin_row.feature %}
+            <td>{{ elem|floatformat:0 }}</td>
         {% endfor %}
     </tr>
     {% endfor %}
 </table>
+
+{# Smuggle the dendrogram data into the DOM #}
+<img src="{{ STATIC_URL }}widgets/themes/kde/empty.gif" alt=""
+    onload="ClusteringWidget.render_clustering({{ dendrogram_json }});
+        this.parentNode.removeChild(this);" />
 
 <p class="title">Distance matrix:</p>
 <p class="indented">Distance metric: {{ metric }}</p>
@@ -61,4 +67,6 @@
     </tr>
     {% endfor %}
 </table>
-<p class="title">Clustering:</p>
+
+<p class="title">Dendrogram:</p>
+<div id="clustering-graph"></div>

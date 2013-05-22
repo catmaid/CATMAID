@@ -24,7 +24,7 @@ var ClusteringWidget = new function()
                 } else {
                     container.innerHTML = "<p>" + data + "</p>";
                     // patch the data if requested
-                    if (patch != null)
+                    if (patch)
                     {
                         patch( container );
                     }
@@ -64,6 +64,43 @@ var ClusteringWidget = new function()
             });
         }
     }
+
+    this.render_clustering = function(distance_matrix)
+    {
+        // If the "clustering-graph" div is available, try to to draw
+        // a hierarchical clustering graph.
+        var container = $("#clustering-graph");
+        var found = container.length !== 0;
+        if (found) {
+            container = container[0];
+            // get dendrogram data
+            var dendrogram = self.create_dendrogram(distrance_matrix);
+            // create Raphael canvas
+            var canvas = document.createElement('div');
+            canvas.setAttribute("id", "clustering-canvas");
+            canvas.style.width = "800px";
+            canvas.style.height = "600px";
+            container.appendChild(canvas);
+            var r = new Raphael("clustering-canvas");
+            // add axes
+            var c = r.circle(50,40,10);
+            c.attr("fill", "#f00");
+            c.attr("stroke", "#fff");
+        }
+    };
+
+    /**
+     * Uses the distance matrix to create a cluster hierarchy. The elements
+     * with the lowest distance to each other is the first cluster. The next
+     * step is to create a new distance matrix where the elements of the first
+     * cluster will be treated as one element. How the new distances are
+     * calculated depends on the linkage: With maximum linkage, the distance
+     * to an element is the maximum distance one of the cluster's elements has
+     * to it. Then the process is repeated.
+     */
+    this.create_dendrogram = function(distrance_matrixi)
+    {
+    };
 
     this.init = function()
     {

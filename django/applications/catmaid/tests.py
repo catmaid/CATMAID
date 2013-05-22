@@ -24,40 +24,8 @@ class SimpleTest(TestCase):
         """
         self.assertEqual(1 + 1, 2)
 
-
-def ensure_schema_and_data_exist():
-    """
-    This function will create the CATMAID schema is it doesn't seem to
-    exist yet (based on the presence or not of the 'project' table).
-    If it needs to add the schema, it will also add testing data.
-    """
-    cursor = connection.cursor()
-    # See if the project table has been created:
-    cursor.execute("SELECT count(*) FROM pg_tables WHERE tablename = 'project'")
-    row = cursor.fetchone()
-    if row[0] == 1:
-        return
-    current_directory = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(current_directory, "fixtures/tables_and_data.sql")) as fp:
-        cursor.execute(fp.read())
-
-
-def remove_example_data():
-    """
-    This function will remove example data from the database, without touching
-    the schema. Warning: This takes a long time to run.
-    """
-    tables = connection.introspection.table_names()
-    cursor = connection.cursor()
-    for table in tables:
-        cursor.execute('TRUNCATE TABLE "%s" RESTART IDENTITY CASCADE' % table)
-
-
 class TransactionTests(TransactionTestCase):
-
-    def setUp(self):
-        ensure_schema_and_data_exist()
-        remove_example_data()
+    fixtures = ['testdata']
 
     def test_successful_commit(self):
         def insert_user():
@@ -140,10 +108,7 @@ class TransactionTests(TransactionTestCase):
 
 
 class InsertionTest(TestCase):
-
-    def setUp(self):
-        ensure_schema_and_data_exist()
-        remove_example_data()
+    fixtures = ['testdata']
 
     def insert_project(self):
         p = Project()
@@ -191,9 +156,9 @@ class InsertionTest(TestCase):
 
 
 class RelationQueryTests(TestCase):
+    fixtures = ['testdata']
 
     def setUp(self):
-        ensure_schema_and_data_exist()
         self.test_project_id = 3
 
     def test_find_all_neurons(self):
@@ -267,9 +232,9 @@ def swc_string_to_sorted_matrix(s):
 
 
 class ViewPageTests(TestCase):
+    fixtures = ['testdata']
 
     def setUp(self):
-        ensure_schema_and_data_exist()
         self.test_project_id = 3
         self.client = Client()
 
@@ -2531,9 +2496,9 @@ class ViewPageTests(TestCase):
 
 
 class TreenodeTests(TestCase):
+    fixtures = ['testdata']
 
     def setUp(self):
-        ensure_schema_and_data_exist()
         self.test_project_id = 3
 
     def test_find_all_treenodes(self):

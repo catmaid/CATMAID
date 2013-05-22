@@ -38,7 +38,7 @@ def ensure_schema_and_data_exist():
     if row[0] == 1:
         return
     current_directory = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(current_directory, "tables_and_data.sql")) as fp:
+    with open(os.path.join(current_directory, "fixtures/tables_and_data.sql")) as fp:
         cursor.execute(fp.read())
 
 

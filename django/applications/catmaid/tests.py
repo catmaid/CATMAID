@@ -9,12 +9,12 @@ import urllib
 import json
 import datetime
 
-from models import Project, Stack, Integer3D, Double3D, ProjectStack
-from models import ClassInstance, Session, Log, Message, TextlabelLocation
+from models import Project, Stack, ProjectStack
+from models import ClassInstance, Log, Message, TextlabelLocation
 from models import Treenode, Connector, TreenodeConnector, User
 from models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
-from .fields import Double3D
-from views.catmaid_replacements import get_relation_to_id_map, get_class_to_id_map
+from .fields import Double3D, Integer3D
+from control.common import get_relation_to_id_map, get_class_to_id_map
 
 
 class SimpleTest(TestCase):
@@ -273,15 +273,11 @@ class ViewPageTests(TestCase):
         self.test_project_id = 3
         self.client = Client()
 
+        user = User.objects.create_user('temporary',
+            'temporary@gmail.com', 'temporary')
+
     def fake_authentication(self):
-        session = Session()
-        session.session_id = 'f9v85q77vuvamsr0tlnv5inkk5'
-        session.data = 'id|s:1:"3";key|s:54:"7gtmcy8g03457xg3hmuxdgregtyu45ty57ycturemuzm934etmvo56";'
-        session.last_accessed = datetime.datetime.now()
-        session.save()
-        # And insert the corresponding cookie:
-        self.client.cookies['PHPSESSID'] = 'f9v85q77vuvamsr0tlnv5inkk5'
-        self.client.cookies['PHPSESSID']['path'] = '/'
+        self.client.login(username='temporary', password='temporary')
 
     def compare_swc_data(self, s1, s2):
         m1 = swc_string_to_sorted_matrix(s1)

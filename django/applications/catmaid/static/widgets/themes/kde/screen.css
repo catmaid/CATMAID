@@ -293,6 +293,10 @@ div#classification_graph_object img.roiimage {
     margin: 1.5em 16px 0.5em 20px;
 }
 
+#clustering_content #distance_matrix td.lowertriangle {
+    background-color: #CED8F6;
+}
+
 #clustering_content p.title {
 	font-weight:bold;
 }

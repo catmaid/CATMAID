@@ -1079,7 +1079,7 @@ var WindowMaker = new function()
         start.setAttribute("type", "button");
         start.setAttribute("id", "start_review_skeleton");
         start.setAttribute("value", "Start to review skeleton");
-        start.onclick = ReviewSystem.startSkeletonToReview;
+        start.onclick = function(ev) { ReviewSystem.startSkeletonToReview(); };
         contentbutton.appendChild(start);
 
         var end = document.createElement('input');

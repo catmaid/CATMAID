@@ -161,14 +161,14 @@ function handle_login(status, text, xml, completionCallback) {
 
       //msg_timeout = window.setTimeout( message, MSG_TIMEOUT_INTERVAL );
       message();
+      
+      // Asynchronously get the full list of users.
+      // TODO: how to handle failure of this call?
+      User.getUsers();
     } else if (e.error) {
       alert(e.error);
     }
     handle_profile_update(e);
-    
-    // Asynchronously get the full list of users.
-    // TODO: how to handle failure of this call?
-    User.getUsers();
     
     updateProjects(completionCallback);
   } else if (status != 200) {

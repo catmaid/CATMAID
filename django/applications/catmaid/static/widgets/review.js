@@ -51,7 +51,7 @@ var ReviewSystem = new function()
         if (self.skeleton_segments===null)
             return;
         if( self.current_segment_index == 0 ) {
-            self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index], self.startSkeletonToReview );
+            self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
             // Go to 'previous' section, to check whether an end really ends
             var segment = self.current_segment['sequence'];
             if (segment.length > 1) {
@@ -79,7 +79,8 @@ var ReviewSystem = new function()
         if (self.skeleton_segments===null)
             return;
         if( self.current_segment_index === self.current_segment['sequence'].length - 1  ) {
-            self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index], self.startSkeletonToReview );
+            self.markAsReviewed( self.current_segment['sequence'][self.current_segment_index] );
+            self.startSkeletonToReview(skeletonID);
             return;
         }
 
@@ -123,23 +124,58 @@ var ReviewSystem = new function()
         self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
     };
 
-    this.markAsReviewed = function( node_ob, funct ) {
-        requestQueue.register(
-            django_url+projectID+"/node/" + node_ob['id'] + "/reviewed",
-            "POST",
-            {},
-            function (status, text) {
+    /** The queue of submitted requests is reset if any returns an error.
+     *  The returned function accepts null URL as argument, which signals
+     *  that no request to the server is necessary and the handler fn must be invoked directly. */
+    var submitterFn = function() {
+        // Accumulate invocations
+        var queue = [];
+
+        var handlerFn = function(fn) {
+            return function(status, text) {
+                if (200 !== status) {
+                    alert("Unexpected request response status: " + status);
+                    queue.length = 0; // reset
+                    return;
+                }
                 var json = $.parseJSON(text);
                 if (json.error) {
-                    alert( json.error );
-                } else {
-                    // Mark locally as reviewed
-                    node_ob['rid'] = json.reviewer_id;
-                    // Execute continuation if any
-                    if( funct )
-                        funct();
+                    alert(json.error);
+                    queue.length = 0; // reset
+                    return;
                 }
-            });
+                // Invoke handler
+                fn(json);
+                // ... then remove this call
+                queue.shift();
+                // ... and invoke the oldest of any accumulated requests
+                next();
+            };
+        };
+
+        var next = function() {
+            if (0 === queue.length) return;
+            var q = queue[0];
+            if (q.url) {
+                requestQueue.register(q.url, "POST", q.post, handlerFn(q.fn));
+            } else {
+                q.fn();
+                queue.shift();
+            }
+        };
+
+        return function(url, post, fn) {
+            queue.push({url: url,
+                        post: post,
+                        fn: fn});
+            next();
+        };
+    };
+
+    var submit = submitterFn();
+
+    this.markAsReviewed = function( node_ob ) {
+        submit(django_url+projectID+"/node/" + node_ob['id'] + "/reviewed", {}, function(json) { node_ob['rid'] = json.reviewer_id;} );
     };
 
     this.selectNextSegment = function( ev ) {
@@ -255,35 +291,20 @@ var ReviewSystem = new function()
         return true;
     };
 
-    this.startSkeletonToReview = function( ) {
-        skeletonID = SkeletonAnnotations.getActiveSkeletonId();
+    this.startSkeletonToReview = function( skid ) {
+        if (!skid) {
+            skeletonID = SkeletonAnnotations.getActiveSkeletonId();
+        }
         if (!checkSkeletonID()) {
             return;
         }
-        requestQueue.replace(
-            django_url+projectID+"/skeleton/" + skeletonID + "/review",
-            "POST",
-            {},
-            function (status, text) {
-                if (200 !== status) { return; }
-                var skeleton_data = $.parseJSON(text);
-                if (skeleton_data.error) {
-                    if ("REPLACED" === skeleton_data.error) { return; }
-                    alert( skeleton_data.error );
-                } else {
-                    requestQueue.register(django_url + "accounts/" + projectID + "/all-usernames", "POST", {},
-                        function(status, text) {
-                            if (200 !== status) { return; }
-                            var usernames = $.parseJSON(text);
-                            if (usernames.error) {
-                                alert(usernames.error);
-                            } else {
-                                self.createReviewSkeletonTable( skeleton_data, usernames );
-                            }
-                        });
-                }
-            },
-            "start_review_skeleton");
+        submit(django_url + "accounts/" + projectID + "/all-usernames", {},
+            function(usernames) {
+                submit(django_url + projectID + "/skeleton/" + skeletonID + "/review", {},
+                    function(skeleton_data) {
+                            self.createReviewSkeletonTable( skeleton_data, usernames );
+                    });
+            });
     };
 
     var resetFn = function(fnName) {
@@ -293,21 +314,10 @@ var ReviewSystem = new function()
         if (!confirm("Are you sure you want to alter the review state of skeleton #" + skeletonID + " with '" + fnName + "' ?")) {
             return;
         }
-        requestQueue.replace(
-            django_url+projectID+"/skeleton/" + skeletonID + "/review/" + fnName,
-            "POST",
-            {},
-            function (status, text) {
-                if (200 !== status) { return; }
-                var json = $.parseJSON(text);
-                if (json.error) {
-                    if ("REPLACED" === json.error) { return; }
-                    alert(json.error);
-                    return;
-                }
+        submit(django_url+projectID+"/skeleton/" + skeletonID + "/review/" + fnName, {},
+            function(json) {
                 self.startSkeletonToReview();
-            },
-            "review_" + fnName);
+            });
     };
 
     this.resetAllRevisions = function() {

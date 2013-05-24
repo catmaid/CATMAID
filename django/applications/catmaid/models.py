@@ -1,7 +1,8 @@
 from django import forms
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import post_save, post_syncdb
+from django.db.models.signals import pre_save, post_save, post_syncdb
+from django.dispatch import receiver
 from datetime import datetime
 import sys
 import re
@@ -943,11 +944,13 @@ class ChangeRequest(UserFocusedModel):
         
         if self.status == ChangeRequest.OPEN:
             # Run the request's validation code snippet to determine whether it is still valid.
+            # The action is required to set a value for the is_valid variable.
             try:
-                from catmaid.control import *
-                is_valid = eval(self.validate_action)
+                exec(self.validate_action)
+                if 'is_valid' not in dir():
+                    raise Exception('validation action did not define is_valid')
                 if not is_valid:
-                    # Cache the result so we don't have to do the eval next time.
+                    # Cache the result so we don't have to do the exec next time.
                     # TODO: can a request ever be temporarily invalid?
                     self.status = ChangeRequest.INVALID
                     self.save()
@@ -963,7 +966,6 @@ class ChangeRequest(UserFocusedModel):
             raise Exception('Failed to approve change request: the change is no longer possible.')
         
         try:
-            from catmaid.control import *
             exec(self.approve_action)
             self.status = ChangeRequest.APPROVED
             self.completion_time = datetime.now()
@@ -981,7 +983,6 @@ class ChangeRequest(UserFocusedModel):
             raise Exception('Failed to reject change request: the change is no longer possible.')
         
         try:
-            from catmaid.control import *
             exec(self.reject_action)
             self.status = ChangeRequest.REJECTED
             self.completion_time = datetime.now()
@@ -994,6 +995,14 @@ class ChangeRequest(UserFocusedModel):
             
         except Exception as e:
             raise Exception('Failed to reject change request: %s' % str(e))
+
+
+@receiver(pre_save, sender=ChangeRequest)
+def validate_change_request(sender, **kwargs):
+    # Make sure the validate action defines is_valid.
+    cr = kwargs['instance']
+    if re.search('is_valid\s=', cr.validate_action) == None:
+        raise Exception('The validate action of a ChangeRequest must assign a value to the is_valid variable.')
 
 
 def send_email_to_change_request_recipient(sender, instance, created, **kwargs):

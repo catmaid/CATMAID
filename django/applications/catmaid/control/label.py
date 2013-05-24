@@ -139,8 +139,8 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                           recipient = label.treenode.user,
                           location = label.treenode.location,
                           treenode = label.treenode,
-                          validate_action = 'label_exists(' + str(label.id) + ', "treenode")',
-                          approve_action = 'remove_label(' + str(label.id) + ', "treenode")').save()
+                          validate_action = 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(label.id) + ', "treenode")',
+                          approve_action = 'from catmaid.control.label import remove_label\nremove_label(' + str(label.id) + ', "treenode")').save()
     elif ntype == 'connector' or ntype == 'location':
         existingLabels = ConnectorClassInstance.objects.filter(
             connector__id=location_id,
@@ -165,8 +165,8 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                           recipient = label.connector.user,
                           location = label.connector.location,
                           connector = label.connector,
-                          validate_action = 'label_exists(' + str(label.id) + ', "connector")',
-                          approve_action = 'remove_label(' + str(label.id) + ', "connector")').save()
+                          validate_action = 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(label.id) + ', "connector")',
+                          approve_action = 'from catmaid.control.label import remove_label\nremove_label(' + str(label.id) + ', "connector")').save()
     else:
         raise Http404('Unknown node type: "%s"' % (ntype,))
 
@@ -210,8 +210,8 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                                        recipient = tn.user,
                                        location = tn.location,
                                        treenode = tn,
-                                       validate_action = 'label_exists(' + str(tci.id) + ', "treenode")',
-                                       reject_action = 'remove_label(' + str(tci.id) + ', "treenode")').save()
+                                       validate_action = 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(tci.id) + ', "treenode")',
+                                       reject_action = 'from catmaid.control.label import remove_label\nremove_label(' + str(tci.id) + ', "treenode")').save()
             else:
                 c = Connector.objects.get(id=location_id)
                 tci = ConnectorClassInstance(
@@ -230,8 +230,8 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                                        recipient = c.user,
                                        location = c.location,
                                        connector = c,
-                                       validate_action = 'label_exists(' + str(tci.id) + ', "connector")',
-                                       reject_action = 'remove_label(' + str(tci.id) + ', "connector")').save()
+                                       validate_action = 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(tci.id) + ', "connector")',
+                                       reject_action = 'from catmaid.control.label import remove_label\nremove_label(' + str(tci.id) + ', "connector")').save()
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
 

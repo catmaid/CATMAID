@@ -122,3 +122,28 @@ def simplify(tree, keepers):
 
     return mini
 
+def partition(tree):
+    """ Partition the tree as a list of sequences of node IDs,
+    with branch nodes repeated as ends of all sequences except the longest
+    one that finishes at the root.
+    Each sequence runs from an end node to either the root or a branch node. """
+    distances = edge_count_to_root(tree, root_node=None) # distance in number of edges from root
+    seen = set()
+    sequences = []
+    # Iterate end nodes sorted from highest to lowest distance to root
+    endNodeIDs = (nID for nID in tree.nodes() if 0 == len(tree.successors(nID)))
+    for nodeID in sorted(endNodeIDs, key=distances.get, reverse=True):
+        sequence = [tree.node[nodeID]]
+        parents = tree.predecessors(nodeID)
+        while parents:
+            parentID = parents[0]
+            sequence.append(tree.node[parentID])
+            if parentID in seen:
+                break
+            seen.add(parentID)
+            parents = tree.predecessors(parentID)
+
+        if len(sequence) > 1:
+            sequences.append(sequence)
+    return sequences
+

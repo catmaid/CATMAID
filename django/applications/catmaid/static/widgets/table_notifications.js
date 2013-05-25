@@ -78,9 +78,11 @@ var NotificationsTable = new function()
       }
       else if (action == 'Approve') {
         NotificationsTable.approve(row_data[0]);
+        message();  // Refresh the notifications icon badge
       }
       else if (action == 'Reject') {
         NotificationsTable.reject(row_data[0]);
+        message();  // Refresh the notifications icon badge
       }
       node.selectedIndex = 0;
     }
@@ -108,10 +110,10 @@ var NotificationsTable = new function()
           "success": fnCallback
         });
       },
-      "iDisplayLength": -1,
+      "iDisplayLength": 50,
       "aLengthMenu": [
-        [-1, 10, 100, 200],
-        ["All", 10, 100, 200]
+        [-1, 10, 50, 100, 200],
+        ["All", 10, 50, 100, 200]
       ],
       "bJQueryUI": true,
       "aoColumns": [{

@@ -1019,14 +1019,13 @@ post_save.connect(send_email_to_change_request_recipient, sender = ChangeRequest
 def notify_user(user, title, message):
     """ Send a user a message and an e-mail."""
     
-    # TODO: only send one e-mail per day, probably using a Timer object <http://docs.python.org/2/library/threading.html#timer-objects>
-    
     # Create the message
-    Message(user = user,
-            title = title,
-            text = message).save()
+#     Message(user = user,
+#             title = title,
+#             text = message).save()
     
     # Send the e-mail
+    # TODO: only send one e-mail per day, probably using a Timer object <http://docs.python.org/2/library/threading.html#timer-objects>
     try:
         user.email_user('[CATMAID] ' + title, message)
     except Exception as e:

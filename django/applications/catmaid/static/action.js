@@ -142,9 +142,10 @@ function createButtonsFromActions(actions, boxID, iconPrefix) {
       buttonID = action.getButtonID();
       a = document.createElement('a');
       a.setAttribute('class', 'button');
-      a.setAttribute('id', action.getButtonID());
+      a.setAttribute('id', buttonID);
       a.onclick = action.run;
       img = document.createElement('img');
+      img.setAttribute('id', buttonID + '_img');
       img.setAttribute('src', STATIC_URL_JS + 'widgets/themes/kde/' + iconPrefix + action.getButtonName() + '.png');
       img.setAttribute('alt', action.getHelpText());
       shortcuts = action.getKeyShortcutsString();

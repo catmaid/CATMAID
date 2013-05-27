@@ -245,4 +245,68 @@ def skeleton_graph(request, project_id=None):
 
     return HttpResponse(json.dumps(package))
 
+class Counts():
+    inputs = 0
+    outputs = 0
+    seenInputs = 0
+    seenOutputs = 0
+    nPossibleIOPaths = 0
+
+def _node_centrality_by_synapse(skeleton_id):
+    """ Compute the synapse centraly of every node in a tree.
+    Return the dictionary of node ID keys and Count values. """
+    cursor = connection.cursor()
+    cursor.execute('''
+    SELECT t.id, t.parent_id, r.relation_name
+    FROM treenode t LEFT OUTER JOIN (treenode_connector tc INNER JOIN relation r ON tc.relation_id = r.id) ON t.skeleton_id = tc.skeleton_id
+    WHERE t.skeleton_id = %s
+    ''' % skeleton_id)
+
+
+    nodes = {} # node ID vs list of two numeric values: sum of inputs and sum of outputs
+    tree = nx.DiGraph()
+    root = None
+    parents = set()
+    totalInputs = 0
+    totalOutputs = 0
+
+    for row in cursor.fetchall():
+        counts = nodes[row[0]]
+        if not counts:
+            counts = Counts()
+            nodes[row[0]] = counts
+        if row[2]:
+            if 14 == len(row[2]): # Same as:  'presynaptic_to' == row[2]
+                counts.outputs += 1
+                totalOutputs += 1
+            else:
+                counts.inputs += 1
+                totalInputs += 1
+        if row[1]:
+            parents.add(row[1])
+            tree.add_edge(row[0], row[1])
+        else:
+            root = row[0]
+    
+    # 1. Ensure the root is an end by checking that it has only one child; otherwise reroot at the first end node found
+    if len(tree.successors(root)) > 1:
+        # Reroot at the first end node found
+        endNode = (nodeID for nodeID in nodes.iterkeys() if nodeID not in parents).next()
+        reroot(tree, endNode)
+    # 2. Partition into sequences, sorted from small to large
+    sequences = sorted(partition(tree), key=len)
+    # 3. Traverse all partitions counting synapses seen
+    for seq in sequences:
+        # Each seq runs from an end node towards the root or a branch node
+        seenI = 0
+        seenO = 0
+        for nodeID in seq:
+            counts = nodes[nodeID]
+            seenI += counts.inputs + counts.seenInputs
+            seenO += counts.outputs + counts.seenOutputs
+            counts.seenInputs = seenI
+            counts.seenOutputs = seenO
+            counts.nPossibleIOPaths = counts.seenInputs * (totalOutputs - counts.seenOutputs) + counts.seenOutputs * (totalInputs - counts.seenInputs)
+    
+    return nodes
 

@@ -291,6 +291,22 @@
         chart.symbols = symbols;
         chart.axis = axis;
 
+        chart.worldToPaperX = function(world_x) {
+            return x + gutter + (world_x - minx) * kx;
+        }
+
+        chart.worldToPaperY = function(world_y) {
+            return y + height - gutter - (world_y - miny) * ky;
+        }
+
+        chart.paperToWorldX = function(paper_x) {
+            return (paper_x - x - gutter) / kx - minx;
+        }
+
+        chart.paperToWorldY = function(paper_y) {
+            return (y - paper_y + height - gutter) / ky + miny;
+        }
+
  /*\
  * linechart.hoverColumn
  [ method ]

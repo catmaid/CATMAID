@@ -888,7 +888,7 @@ TracingTool.search = function()
         table = $('<table/>');
         $('#search-results').append(table);
         tbody = $('<tbody/>');
-        tbody.append('<tr><th>ID</th><th>Name</th><th>Class</th><th>Action</th></tr>');
+        tbody.append('<tr><th></th><th>ID</th><th>Name</th><th>Class</th><th>Action</th><th></th></tr>');
         table.append(tbody);
         var action = function(type) {
           return function() {
@@ -912,6 +912,7 @@ TracingTool.search = function()
         }
         for (i = 0; i < data.length; ++i) {
           row = $('<tr/>');
+          row.append($('<td/>').text(i+1));
           row.append($('<td/>').text(data[i].id));
           row.append($('<td/>').text(data[i].name));
           row.append($('<td/>').text(data[i].class_name));
@@ -932,7 +933,6 @@ TracingTool.search = function()
               tdd.append(actionLink)
             }
             row.append(tdd);
-  
           } else if (data[i].class_name === 'label') {
             // Create a link that will then query, when clicked, for the list of nodes
             // that point to the label, and show a list [1], [2], [3] ... clickable,
@@ -966,7 +966,6 @@ TracingTool.search = function()
               }, 1);
             } else {
               // no nodes, option to remove the label
-              console.log('no nodes', data[i])
               actionLink = $('<a/>');
               actionLink.attr({'id': ''+data[i].id});
               actionLink.attr({'href':''});
@@ -977,6 +976,7 @@ TracingTool.search = function()
           } else {
             row.append($('<td/>').text('IMPLEMENT ME'));
           }
+          row.append($('<td/>').text(i+1));
           tbody.append(row);
         }
       }

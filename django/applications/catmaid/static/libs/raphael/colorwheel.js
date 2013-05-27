@@ -99,46 +99,53 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
   }
 
   function drag(e){
-    var x = e.pageX - (parent.offset().left + center),
-        y = e.pageY - (parent.offset().top + center);
+    var x, y, page;
+
+    e.preventDefault(); // prevents scrolling on touch
+
+    page = e.originalEvent.touches ? e.originalEvent.touches[0] : e;
+
+    x = page.pageX - (parent.offset().left + center);
+    y = page.pageY - (parent.offset().top + center);
 
     if(drag_target == hue_ring){
       set_hue_cursor(x,y);
       update_color();
-	  run_onchange_event();
+      run_onchange_event();
       return true;
     }
     if(drag_target == bs_square){
       set_bs_cursor(x,y);
       update_color();
-	  run_onchange_event();
+      run_onchange_event();
       return true;
     }
   }
 
   function start_drag(event, target){
-    $(document).mouseup(stop_drag);
-    $(document).mousemove(drag);
+    event.preventDefault(); // prevents scrolling on touch
+
+    $(document).on('mouseup touchend',stop_drag);
+    $(document).on('mousemove touchmove',drag);
     drag_target = target;
     drag(event);
     drag_callbacks[0](current_color);
   }
 
-  function stop_drag(){
-    $(document).unbind("mouseup",stop_drag);
-    $(document).unbind("mousemove",drag);
-    drag_callbacks[1](current_color);
-	run_onchange_event();
-  }
+  function stop_drag(event){
+    event.preventDefault(); // prevents scrolling on touch
 
-  function event_drag_stop(event,o){
-    o.mousemove = null;
-    drag_target=null;
+    $(document).off("mouseup touchend",stop_drag);
+    $(document).off("mousemove touchmove",drag);
+    drag_callbacks[1](current_color);
+    run_onchange_event();
   }
 
   function events_setup(){
-    $([hue_ring.event.node,hue_ring.cursor[0].node]).mousedown(function(e){start_drag(e,hue_ring);});
-    $([bs_square.b.node, bs_square.cursor[0].node]).mousedown(function(e){start_drag(e,bs_square);});
+    $([hue_ring.event.node,hue_ring.cursor[0].node]).on("mousedown touchstart",
+                                                        function(e){start_drag(e,hue_ring);});
+    $([bs_square.b.node, bs_square.cursor[0].node]).on("mousedown touchstart",
+                                                       function(e){start_drag(e,bs_square);});
   }
 
   function cursor_create(size){
@@ -155,12 +162,12 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
   function set_bs_cursor(x,y){
     x = x+center;
     y = y+center;
-    if(x < sdim.x) x = sdim.x;
-    if(x > sdim.x+sdim.l) x = sdim.x+sdim.l;
-    if(y < sdim.y) y = sdim.y;
-    if(y > sdim.y+sdim.l) y = sdim.y + sdim.l;
+    if(x < sdim.x){x = sdim.x}
+    if(x > sdim.x+sdim.l){x = sdim.x+sdim.l}
+    if(y < sdim.y){y = sdim.y}
+    if(y > sdim.y+sdim.l){y = sdim.y + sdim.l}
 
-    bs_square.cursor.attr({cx:x, cy:y}).translate(0,0);
+    bs_square.cursor.attr({cx:x, cy:y}).transform("t0,0");
   }
 
 
@@ -207,7 +214,7 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
 
     if(input_target){
       var c = current_color.hex;
-      if(dont_replace_input_value != true) { input_target.value = c;}
+      if(dont_replace_input_value !== true) { input_target.value = c;}
        if(hsb.b < 0.5){
         $(input_target).css("color", "#FFF");
       } else {
@@ -229,7 +236,7 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
 
     var x = Math.cos(radians(d)) * (center-tri_size-padding);
     var y = Math.sin(radians(d)) * (center-tri_size-padding);
-    hue_ring.cursor.attr({cx:x+center, cy:y+center}).translate(0,0);
+    hue_ring.cursor.attr({cx:x+center, cy:y+center}).transform("t0,0");
     set_hue("hsb("+(d+90)/360+",1,1)");
   }
 
@@ -266,14 +273,19 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
     var n = r.clone();
     var hue = d*(255/k);
 
-    n.rotate((360/k)*d, (size/2), size/2);
+    var s = size/2,
+      t = tri_size,
+      p = padding;
+
+    n.transform("t"+s+","+(s-t)+"r"+(360/k)*d+"t0,-"+(s-t-p)+"");
+
     n.attr({"stroke-width":0, fill:"hsb("+d*(1/k)+", 1, 0.85)"});
     hue_ring.hues.push(n);
   }
 
   function create_hue_ring(){
     var s = hue_segement_shape(),
-        tri = canvas.path(s).attr({stroke:null}).translate(size/2, padding),
+        tri = canvas.path(s).attr({stroke:"rgba(0,0,0,0)"}).transform("t"+(size/2)+","+padding),
         k = segments; // # of segments to use to generate the hues
 
     hue_ring.hues = canvas.set();
@@ -295,9 +307,9 @@ Raphael.colorwheel = function(target, color_wheel_size, no_segments){
   }
 
   function run_onchange_event(){
-	if (change_callback != undefined){
+    if (({}).toString.call(change_callback).match(/function/i)){
       change_callback(current_color);
-    }	
+    }
   }
 
   return create(target, color_wheel_size);

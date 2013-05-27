@@ -119,16 +119,20 @@ var ClusteringWidget = new function()
                    minx: 0.0,
                    maxy: max_y < 1.0 ? 1.0 : max_y,
                 });
+
             // draw own x axis
             r.path("M" + chart.worldToPaperX(0.0) +
                    "," + chart.worldToPaperY(0.0) +
                    "H" + chart.worldToPaperX(max_x + 5));
 
+            // get the paper coordinates of the x axis
+            var x_axis_y = chart.worldToPaperY(0.0);
+
             // label leaves with incrementing numbers
             chart.labels = r.set();
             var x = 15; var h = 5;
             // draw labels 3px below X axis
-            var label_y = chart.worldToPaperY(0.0) + 3;
+            var label_y = x_axis_y + 3;
             // SciPy positions leaves every ten ticks, starting at five.
             // Iterate the clusters and get coordinates of leaf nodes.
             var label_coords = [];
@@ -139,6 +143,7 @@ var ClusteringWidget = new function()
             }
             // draw labels
             var label_num = 1;
+            var label_center_y = null;
             $.each(label_coords, function(i, coord) {
                 // only draw labels for real leaves
                 if (dendrogram.leaves[i] < dendrogram.ivl.length) {
@@ -151,6 +156,10 @@ var ClusteringWidget = new function()
                         'font': "11px 'Fontin Sans', Fontin-Sans, sans-serif" });
                     // increment counter
                     label_num = label_num + 1;
+                    // store vertical label center if not already done
+                    if (label_center_y == null) {
+                        label_center_y = b.y + h;
+                    }
                 }
             });
 
@@ -173,6 +182,33 @@ var ClusteringWidget = new function()
             });
             legend.appendChild(legend_table);
             container.appendChild(legend);
+
+            // attach hovering functions
+            chart.hoverColumn(
+                function() {
+                    // The first leaf of a SciPy dendrogram is at x=5,
+                    // calculate relative x to this.
+                    var rel_leaf_x = Math.round(chart.paperToWorldX(this.x) - 5);
+                    // Only show tags if a leaf column is hovered, i.e. the relative
+                    // x coordinate can be divided by 10 without remainder.
+                    if (rel_leaf_x % 10 == 0) {
+                        var graph_idx = rel_leaf_x / 10
+                        var graph_name = dendrogram.ivl[graph_idx];
+                        // Make the tag appear on the right of the pointer for
+                        // the first half of leafs and to the left for the rest.
+                        var dir = (this.x < this.paper.width * 0.5) ? 0 : 180;
+                        // create tag
+                        this.bulletWidth = 2;
+                        this.tags = r.set()
+                        this.tags.push(
+                            r.tag(this.x, label_center_y, graph_name, dir, 10)
+                                .insertBefore(this)
+                                .attr([{ fill: "#CED8F6" }, { fill : "#000" }]));
+                    }
+                },
+                function() {
+                    this.tags && this.tags.remove();
+                });
         }
     };
 

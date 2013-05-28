@@ -27,6 +27,7 @@ function RoiTool()
 	this.box_roi_y = document.getElementById( "box_roi_y" );
 	this.box_roi_w = document.getElementById( "box_roi_w" );
 	this.box_roi_h = document.getElementById( "box_roi_h" );
+	this.box_roi_r = document.getElementById( "box_roi_r" );
 
 	//! mouse catcher
 	this.mouseCatcher = document.createElement( "div" );
@@ -58,6 +59,7 @@ RoiTool.prototype.updateControls = function()
         this.box_roi_y.value = isNaN(roiBoxBB.top_px) ? "-" : roiBoxBB.top_px;
         this.box_roi_w.value = isNaN(roiBoxBB.width_px) ? "-" : roiBoxBB.width_px;
         this.box_roi_h.value = isNaN(roiBoxBB.height_px) ? "-" : roiBoxBB.height_px;
+        this.box_roi_r.value = isNaN(roiBoxBB.rotation_cw) ? "-" : roiBoxBB.rotation_cw;
     }
 
     return;
@@ -172,6 +174,27 @@ RoiTool.prototype.changeCropBoxHByInput = function( e )
     {
         var height_world = this.toWorld( val, this.stack.resolution.y );
         cropBox.bottom = cropBox.top + height_world;
+        this.updateCropBox();
+        this.updateControls();
+    }
+    return;
+};
+
+/**
+ * Handles onchange events in the height input box.
+ */
+RoiTool.prototype.changeCropBoxRByInput = function( e )
+{
+    var val = parseInt( this.box_roi_r.value );
+    var cropBox = this.getCropBox();
+
+    if ( isNaN( val ) )
+    {
+        this.box_roi_r.value = cropBox.rotation_cw;
+    }
+    else
+    {
+        cropBox.rotation_cw = val;
         this.updateCropBox();
         this.updateControls();
     }
@@ -376,6 +399,8 @@ RoiTool.prototype.register = function( parentStack )
     this.addMousewheelListener( this.box_roi_w, this.cropBoxMouseWheel );
     this.box_roi_h.onchange = this.changeCropBoxHByInput.bind(this);
     this.addMousewheelListener( this.box_roi_h, this.cropBoxMouseWheel );
+    this.box_roi_r.onchange = this.changeCropBoxRByInput.bind(this);
+    this.addMousewheelListener( this.box_roi_r, this.cropBoxMouseWheel );
 
     // initialize crop button
     //this.button_roi_apply.onclick = crop;

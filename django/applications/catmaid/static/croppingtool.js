@@ -46,6 +46,14 @@ function CroppingTool() {
 			5,
 			function( val ){ statusBar.replaceLast( "crop s: " + val ); } );
 
+	// Make sliders a bit smaller to save space
+	var viewSize = parseInt( getPropertyFromCssRules( 2, 2, "width" ) );
+	var viewTop = parseInt( getPropertyFromCssRules( 2, 2, "marginLeft" ) );
+	var viewBottom = parseInt( getPropertyFromCssRules( 2, 2, "marginRight" ) );
+	var new_width = 0.6*viewSize + viewTop + viewBottom;
+	this.slider_crop_top_z.resize(new_width);
+	this.slider_crop_bottom_z.resize(new_width);
+	this.slider_crop_s.resize(new_width);
 
 	// Obtain a reference to the RoiTool toolbar button
 	var toolbar = document.getElementById("toolbar_roi");
@@ -170,15 +178,16 @@ function CroppingTool() {
 	}
 
 	/**
-	 * crop a microstack by initiating a server backend
-	 * @todo which has to be built
+	 * crop a microstack by initiating a server backend call
 	 */
 	var crop = function()
 	{
 		var url = self.get_crop_url();
+		var cb = self.getCropBox();
+		var data = {'rotationcw': cb.rotation_cw}
 		if (url)
 		{
-			requestQueue.register(url, 'GET', {}, handle_crop );
+			requestQueue.register(url, 'GET', data, handle_crop );
 		}
 		return false;
 	}

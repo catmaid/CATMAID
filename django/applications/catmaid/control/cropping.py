@@ -17,6 +17,7 @@ import random
 import os.path
 import glob
 from time import time
+from math import cos, sin, radians
 
 # The libuuid import is a workaround for a bug with GraphicsMagick
 # which expects the library to be loaded already. Therefore, it
@@ -41,7 +42,9 @@ class CropJob:
     integers. If no output_path is given, a random one (based on the
     settings) is generated.
     """
-    def __init__(self, user, project_id, stack_ids, x_min, x_max, y_min, y_max, z_min, z_max, zoom_level, single_channel=False, output_path=None):
+    def __init__(self, user, project_id, stack_ids, x_min, x_max, y_min, y_max,
+                 z_min, z_max, rotation_cw, zoom_level, single_channel=False,
+                 output_path=None):
         self.user = user
         self.project_id = int(project_id)
         self.project = get_object_or_404(Project, pk=project_id)
@@ -62,6 +65,8 @@ class CropJob:
         self.z_min = float(z_min)
         self.z_max = float(z_max)
         self.zoom_level = int(zoom_level)
+        # Save a normalized version of the rotation angle
+        self.rotation_cw = rotation_cw % 360
         # Create an output path if not already present
         if output_path is None:
             file_name = file_prefix + id_generator() + "." + file_extension
@@ -206,8 +211,111 @@ def addMetaData( path, job, result ):
     images.writeImages( path )
 
 def extract_substack( job ):
-    """ Extracts a sub-stack as specified in the passed job. A list of
-    pgmagick images is returned -- one for each slice, starting on top.
+    """ Extracts a sub-stack as specified in the passed job while respecting
+    rotation requests. A list of pgmagick images is returned -- one for each
+    slice, starting on top.
+    """
+    # Treat rotation requests special
+    if abs(job.rotation_cw) < 0.00001:
+        # No rotation, create the sub-stack
+        cropped_stack = extract_substack_no_rotation( job )
+    elif abs(job.rotation_cw - 90.0) < 0.00001:
+        # 90 degree rotation, create the sub-stack and do a simple rotation
+        cropped_stack = extract_substack_no_rotation( job )
+        for img in cropped_stack:
+            img.rotate(270.0)
+    elif abs(job.rotation_cw - 180.0) < 0.00001:
+        # 180 degree rotation, create the sub-stack and do a simple rotation
+        cropped_stack = extract_substack_no_rotation( job )
+        for img in cropped_stack:
+            img.rotate(180.0)
+    elif abs(job.rotation_cw - 270.0) < 0.00001:
+        # 270 degree rotation, create the sub-stack and do a simple rotation
+        cropped_stack = extract_substack_no_rotation( job )
+        for img in cropped_stack:
+            img.rotate(90.0)
+    else:
+        # Some methods do counter-clockwise rotation
+        rotation_ccw = 360.0 - job.rotation_cw
+        # There is rotation requested. First, backup the cropping
+        # coordinates and manipulate the job to create a cropped
+        # stack of the bounding box of the rotated box.
+        real_x_min = job.x_min
+        real_x_max = job.x_max
+        real_y_min = job.y_min
+        real_y_max = job.y_max
+        # Rotate bounding box counter-clockwise around center.
+        center = [0.5 * (job.x_max + job.x_min),
+            0.5 * (job.y_max + job.y_min)]
+        rot_p1 = rotate2d(rotation_ccw,
+            [real_x_min, real_y_min], center)
+        rot_p2 = rotate2d(rotation_ccw,
+            [real_x_min, real_y_max], center)
+        rot_p3 = rotate2d(rotation_ccw,
+            [real_x_max, real_y_max], center)
+        rot_p4 = rotate2d(rotation_ccw,
+            [real_x_max, real_y_min], center)
+        # Find new (larger) bounding box of rotated ROI and write
+        # them into the job
+        job.x_min = min([rot_p1[0], rot_p2[0], rot_p3[0], rot_p4[0]])
+        job.y_min = min([rot_p1[1], rot_p2[1], rot_p3[1], rot_p4[1]])
+        job.x_max = max([rot_p1[0], rot_p2[0], rot_p3[0], rot_p4[0]])
+        job.y_max = max([rot_p1[1], rot_p2[1], rot_p3[1], rot_p4[1]])
+        # Create the enlarged sub-stack
+        cropped_stack = extract_substack_no_rotation( job )
+
+        # Next, rotate the whole result stack counterclockwise to have the
+        # actual ROI axis aligned.
+        for img in cropped_stack:
+            img.rotate(rotation_ccw)
+
+        # Last, do a second crop to remove the not needed parts. The region
+        # to crop is defined by the relative original cropbox coordinates to
+        # to the rotated bounding box.
+        rot_bb_p1 = rotate2d(rotation_ccw,
+            [job.x_min, job.y_min], center)
+        rot_bb_p2 = rotate2d(rotation_ccw,
+            [job.x_min, job.y_max], center)
+        rot_bb_p3 = rotate2d(rotation_ccw,
+            [job.x_max, job.y_max], center)
+        rot_bb_p4 = rotate2d(rotation_ccw,
+            [job.x_max, job.y_min], center)
+        # Get bounding box minumum coordinates in world space
+        bb_x_min = min([rot_bb_p1[0], rot_bb_p2[0], rot_bb_p3[0], rot_bb_p4[0]])
+        bb_y_min = min([rot_bb_p1[1], rot_bb_p2[1], rot_bb_p3[1], rot_bb_p4[1]])
+        # Create relative final crop coordinates
+        crop_p1 = [abs(real_x_min - bb_x_min), abs(real_y_min - bb_y_min)]
+        crop_p2 = [abs(real_x_min - bb_x_min), abs(real_y_max - bb_y_min)]
+        crop_p3 = [abs(real_x_max - bb_x_min), abs(real_y_min - bb_y_min)]
+        crop_p4 = [abs(real_x_max - bb_x_min), abs(real_y_max - bb_y_min)]
+        crop_x_min = min([crop_p1[0], crop_p2[0], crop_p3[0], crop_p4[0]])
+        crop_y_min = min([crop_p1[1], crop_p2[1], crop_p3[1], crop_p4[1]])
+        crop_x_max = max([crop_p1[0], crop_p2[0], crop_p3[0], crop_p4[0]])
+        crop_y_max = max([crop_p1[1], crop_p2[1], crop_p3[1], crop_p4[1]])
+        crop_x_min_px = to_x_index(crop_x_min, job, False)
+        crop_y_min_px = to_y_index(crop_y_min, job, False)
+        crop_x_max_px = to_x_index(crop_x_max, job, False)
+        crop_y_max_px = to_y_index(crop_y_max, job, False)
+        crop_width_px = crop_x_max_px - crop_x_min_px
+        crop_height_px = crop_y_max_px - crop_y_min_px
+        # Crop all images (Geometry: width, height, xOffset, yOffset)
+        crop_geometry = Geometry(crop_width_px, crop_height_px,
+            crop_x_min_px, crop_y_min_px)
+        for img in cropped_stack:
+            img.crop(crop_geometry)
+
+        # Reset the original job parameters
+        job.x_min = real_x_min
+        job.x_max = real_x_max
+        job.y_min = real_y_min
+        job.y_max = real_y_max
+
+    return cropped_stack
+
+def extract_substack_no_rotation( job ):
+    """ Extracts a sub-stack as specified in the passed job without respecting
+    rotation requests. A list of pgmagick images is returned -- one for each
+    slice, starting on top.
     """
 
     # Calculate the slice numbers and pixel positions
@@ -301,6 +409,20 @@ def extract_substack( job ):
             cropped_stack.append( cropped_slice )
 
     return cropped_stack
+
+def rotate2d(degrees, point, origin):
+    """ A rotation function that rotates a point counter-clockwise around
+    a point. To rotate around the origin use [0,0].
+    From: http://ubuntuforums.org/archive/index.php/t-975315.html
+    """
+    x = point[0] - origin[0]
+    yorz = point[1] - origin[1]
+    newx = (x*cos(radians(degrees))) - (yorz*sin(radians(degrees)))
+    newyorz = (x*sin(radians(degrees))) + (yorz*cos(radians(degrees)))
+    newx += origin[0]
+    newyorz += origin[1]
+
+    return newx,newyorz
 
 @task()
 def process_crop_job(job):
@@ -406,13 +528,16 @@ def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None, y_min
     string_list = stack_ids.split(",")
     stack_ids = [int( x ) for x in string_list]
 
+    # Get basic cropping parameters
+    rotation_cw = float(request.GET.get('rotationcw', 0.0))
+
     # Should an output slice contain all channels of the source tiles
     # or only a single (the red) one?
     single_channel = bool(single_channel)
 
     # Crate a new cropping job
     job = CropJob(request.user, project_id, stack_ids, x_min, x_max,
-        y_min, y_max, z_min, z_max, zoom_level, single_channel)
+        y_min, y_max, z_min, z_max, rotation_cw, zoom_level, single_channel)
 
     # Parameter check
     errors = sanity_check( job )

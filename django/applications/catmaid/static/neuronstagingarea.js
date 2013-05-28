@@ -601,10 +601,10 @@ var NeuronStagingArea = new function()
 		  }
 		});
 		
-		users = User.all();
+		var users = User.all();
 		for (var userID in users) {
-			if (users.hasOwnProperty(userID) && userID !== -1) {
-				user = users[userID];
+			if (users.hasOwnProperty(userID) && userID !== "-1") {
+				var user = users[userID];
 				var rowElement = $('<tr/>');
 				rowElement.append( $('<td/>').text( user.login ) );
 				rowElement.append( $('<td/>').text( user.fullName ) );

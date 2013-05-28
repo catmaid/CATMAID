@@ -1,43 +1,142 @@
-Automatic Database Migrations
-=============================
+Database Migrations
+===================
 
 Historically, keeping your database in sync with what's expected by the code
-has been error-prone and annoying, but now CATMAID has a simple system for
-automatic migrations.  If the backend detects that the code requires updates to
-the database schema, it will apply those automatically.  This page describes
-what you need to know about these migrations.
+has been error-prone and annoying, but CATMAID uses a system for schema and
+data migrations called `South <http://south.aeracode.org/>`_ which simplifies
+and structures this task. In contrast to past versions of CATMAID, South
+migrations *won't* get applied automatically. So when updating the code base,
+the database has to be updated as well. This page describes what you need to
+know about these migrations.
 
-I got the error "Migrating the database failed."
-------------------------------------------------
 
-Are you adding a new migration yourself?  Something's wrong with your SQL, and
-you need to check the error in Apache's `error.log` file and then fix the SQL
-that you added to `migrations.php`.
+General things about South
+--------------------------
+
+South has been built to bring migrations to Django projects. Since CATMAID's
+backend is Django based, it can make use of it. South is stable, tries to be
+simple and is database-independent. CATMAID, however, depends on some
+PostgreSQL specific features and database-independence is therefore not really
+important here.
+
+Every migration is kept in its own file. They are stored in a `migrations`
+folder within a Django application's directory. In the case of CATMAID this is::
+
+    django/applications/catmaid/migrations
+
+In there you find files like these::
+
+    0005_add_ontology_visibility_setting_to_profile.py
+    0006_add_restriction_tables.py
+    0007_add_treenode_parent_index.py
+
+Each migration file groups logically connected changes to the database schema
+and data. As can be seen above, migrations are ordered by the first characters of
+their file name. Obviously, the order is important and when creating migrations
+you want to make sure to not create ambiguous file names.
+
+A migration file contains of a class with a ``forward()`` and a ``backward()``
+method as well as a dictionary called ``models`` which contains all available
+models which were around when the migration was created (i.e. it contains the
+changes of the migration; read more about it
+`here <http://south.readthedocs.org/en/latest/ormfreezing.html>`_).
+
+The main way to interact with South is with the help of ``manage.py``
+commands. South adds multiple commands to it, the most often used will probably
+be ``schemamigration`` to create new migrations and ``migrate`` to run
+migrations (see below). To use ``manage.py``, you need to be in the
+*virtualenv* environment (activate it with ``workon catmaid``). The commands
+in other parts of this page assume you are in the *virtualenv* and the folder
+where the ``manage.py`` file lives.
+
+Of course, the migration files need to be added to the source code management.
+
+
+Checking for new migrations and applying them
+---------------------------------------------
+
+To check if there are new migrations that need to be applied, run::
+
+    ./manage.py migrate --list
+
+CATMAID utilizes two other applications that use South as well: guardian and
+djcelery. If you want to refer only to CATMAID, do::
+
+    ./manage.py migrate catmaid --list
+
+If there is no migration that has not been applied, you will see a list like the
+following::
+
+    (*) 0005_add_ontology_visibility_setting_to_profile
+    (*) 0006_add_restriction_tables
+    (*) 0007_add_treenode_parent_index
+
+The ``(*)`` marks indicate that a migration has been applied. In turn ``( )``
+would mean it hasn't. So if migration 0007 wouldn't be applied yet, it would
+read::
+
+    (*) 0005_add_ontology_visibility_setting_to_profile
+    (*) 0006_add_restriction_tables
+    ( ) 0007_add_treenode_parent_index
+
+And if you would then want to apply migration 0007, you would need to either
+run::
+
+    manage.py migrate catmaid 0007
+
+to only apply this particular migration. Alternatively, you can apply *all* not
+yet applied migrations with::
+
+    manage.py migrate catmaid
 
 
 I want to make a change to the database
 ---------------------------------------
 
-If you want to make a change to the database, you would start by generating a
-template migration by running the script `scripts/database/add-migration.py`,
-supplying a short description of what change the migration makes, e.g.::
+Usually, changes to the database are needed because there have been changes to
+CATMAID's models in the file (like adding a new field to a class)::
 
-    scripts/database/add-migration.py "Remove the bezierkey table"
+    django/applications/catmaid/models.py
 
-This will add a new migration to the file `inc/migrations.php`.  You should
-edit that file, and you will find near the end a section that looks like::
+If this is the case, you can let South create a migration for this change by
+running::
 
-           '2011-07-12T15:27:38' => new Migration(
-                   'Remove the bezierkey table',
-                   <<<EOMIGRATION
-    [Put your migration here.]
-    EOMIGRATION
-    ),
+    manage.py schemamigration catmaid [title] --auto
 
-You just replace the line `[Put your migration here.]` with your SQL.  The next
-time you reload CATMAID from your browser, this migration will be automatically
-run.  You should commit and push that change before (or in the same commit as)
-code that relies on the new version of the schema, of course.
+This will create a new file in CATMAID's migration folder. It will make sure it
+has the next free ID and ``[title]`` is the remainder of the file name. If
+``[title]`` isn't provided, South will come up with an own name. The parameter
+``--auto`` instructs South to inspect the models module of CATMAID and to create
+a migration based on the changes with respect to the last migration.
+
+If you in turn wanted to create an empty migration to do changes the database
+that are not based on the models module, run::
+
+    manage.py schemamigration catmaid [title] --empty
+
+These commands, however, do only create the migration file. They don't apply it.
+This has to be done manually afterwards.
+
+
+I want to use raw SQL in a migration
+------------------------------------
+
+Using raw SQL in a migration is is perfectly possible. Instead of using the
+object relational mapper, you can execute SQL statements directly within the
+``forward()`` and ``backward()`` methods within the migrations file. To do so
+you would first need to create an empty migration by running::
+
+    manage.py schemamigration catmaid [title] --empty
+
+Edit the new file and pass your SQL statements as string arguments to the
+``db.execute()`` method. For instance::
+
+    db.execute("DROP INDEX IF EXISTS treenode_parent_id_index")
+
+If you actually add or delete tables or fields, make sure that the ``models``
+dictionary is consistent with it (e.g. doesn't state a model has the field you
+just deleted manually).
+
 
 I just want to drop the database and start from scratch
 -------------------------------------------------------

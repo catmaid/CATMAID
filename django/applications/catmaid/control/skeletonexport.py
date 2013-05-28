@@ -108,7 +108,7 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
             'radius': max(tn.radius, 0),
             'type': 'skeleton',
             'labels': lab,
-            'user_id': tn.user.id,
+            'user_id': tn.user_id,
             'reviewer_id': tn.reviewer_id
             
             # 'review_time': tn.review_time

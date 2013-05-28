@@ -170,13 +170,10 @@ function handle_login(status, text, xml, completionCallback) {
     }
     handle_profile_update(e);
     
-<<<<<<< HEAD
-=======
     // Asynchronously get the full list of users.
     // TODO: how to handle failure of this call?
     User.getUsers();
     
->>>>>>> Cherry-picked b4c0bdb81b from graph-betweenness branch: "Now managing users in centralized User objects."
     updateProjects(completionCallback);
   } else if (status != 200) {
     // Of course, lots of non-200 errors are fine - just report

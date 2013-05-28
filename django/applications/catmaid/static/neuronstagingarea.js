@@ -603,11 +603,7 @@ var NeuronStagingArea = new function()
 		
 		users = User.all();
 		for (var userID in users) {
-<<<<<<< HEAD
 			if (users.hasOwnProperty(userID) && userID !== -1) {
-=======
-			if (userID != -1) {
->>>>>>> Cherry-picked b4c0bdb81b from graph-betweenness branch: "Now managing users in centralized User objects."
 				user = users[userID];
 				var rowElement = $('<tr/>');
 				rowElement.append( $('<td/>').text( user.login ) );

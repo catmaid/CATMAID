@@ -93,9 +93,6 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
             else:
                 lab = []
 
-        user_color = tn.user.userprofile.color
-        reviewer_color = UserProfile.objects.filter(user_id=tn.reviewer_id)[0].color
-
         vertices[tn.id] = {
             'x': tn.location.x,
             'y': tn.location.y,
@@ -103,13 +100,9 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
             'radius': max(tn.radius, 0),
             'type': 'skeleton',
             'labels': lab,
-            'user_id_color': [user_color.r, user_color.g, user_color.b],
-            'reviewuser_id_color': [reviewer_color.r, reviewer_color.g, reviewer_color.b]
+            'user_id': tn.user_id,
+            'reviewer_id': tn.reviewer_id
             
-            # TODO: can use sophisticated colormaps
-            # http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
-
-            # 'reviewer_id': tn.reviewer_id,
             # 'review_time': tn.review_time
             # To submit the review time, we would need to encode the datetime as string
             # http://stackoverflow.com/questions/455580/json-datetime-between-python-and-javascript

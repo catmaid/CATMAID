@@ -139,6 +139,15 @@ var NeuronStagingArea = new function()
 
 	}
 
+	self.highlight_skeleton = function( new_skeleton_id ) {
+    	for( var skeleton_id in skeletonmodels ) {
+    		if( skeletonmodels.hasOwnProperty(skeleton_id) ) {
+    			$('#skeletonrow-' + skeleton_id).css('background-color', 'white');
+    		}
+    	}
+		$('#skeletonrow-' + new_skeleton_id).css('background-color', '#FFFF00');
+	}
+
 	self.is_widget_open = function()
 	{
 		if( $( "#neuron_staging_table").length === 0 ) {
@@ -173,7 +182,7 @@ var NeuronStagingArea = new function()
 
 	}
 
-	self.add_skeleton_to_stage = function( id, neuronname )
+	self.add_skeleton_to_stage = function( id, neuronname, callback )
 	{
 		// if it does not exists yet, add it
 		if( skeletonmodels.hasOwnProperty( id ) ) {
@@ -185,6 +194,10 @@ var NeuronStagingArea = new function()
 			if( WebGLApp.is_widget_open() ) {
 				WebGLApp.addSkeletonFromID( id );
 			}
+		}
+		if (typeof callback !== "undefined" && callback instanceof Function) {
+			console.log('call callback')
+			callback();
 		}
 	}
 
@@ -198,10 +211,7 @@ var NeuronStagingArea = new function()
 	        type: "GET",
 	        dataType: "json",
 	        success: function ( data ) {
-	        	self.add_skeleton_to_stage( skeleton_id, data['neuronname'] );
-	        	if (typeof callback !== "undefined" && callback instanceof Function) {
-  					callback();
-  				}
+	        	self.add_skeleton_to_stage( skeleton_id, data['neuronname'], callback );
 	        }
 	      });
 	    }
@@ -300,7 +310,7 @@ var NeuronStagingArea = new function()
 		return Object.keys( skeletonmodels );
 	}
 
-	self.add_active_object_to_stage = function( callback ) {
+	self.add_active_object_to_stage = function( event ) {
 		// add either a skeleton or an assembly based on the tool selected
 		if( project.getTool().toolname === 'tracingtool' ) {
     		var atn_id = SkeletonAnnotations.getActiveNodeId(),
@@ -313,7 +323,10 @@ var NeuronStagingArea = new function()
       			alert("Select the node of a skeleton, not a connector, to add it to the staging area.");
       			return;
     		}
-    		self.add_skeleton_to_stage_without_name( skeleton_id, callback );
+			var new_callback = function() {
+				self.highlight_skeleton( skeleton_id );
+			}
+    		self.add_skeleton_to_stage_without_name( skeleton_id, new_callback );
 		}
 	}
 
@@ -341,8 +354,8 @@ var NeuronStagingArea = new function()
 	}
 
 	self._add_skeleton_to_table = function ( skeleton ) {
-
-		if( $('#skeletonrow-' + skeleton.id ).length > 0 ) {
+	
+	if( $('#skeletonrow-' + skeleton.id ).length > 0 ) {
 		  return;
 		}
 

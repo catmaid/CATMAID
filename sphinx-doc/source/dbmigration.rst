@@ -138,6 +138,64 @@ dictionary is consistent with it (e.g. doesn't state a model has the field you
 just deleted manually).
 
 
+Merge branches with migrations into branches with newer migrations
+------------------------------------------------------------------
+
+Of course, it can happen that one works on a branch where new migrations are
+added while another branch (e.g. upstream's master) got new migrations added,
+too. This might introduce problems when you want to merge one branch into the
+other.
+
+For example, let's say the most recent migration on *master* starts with ``0007``.
+You create a new topic branch based on this and you add a new migration with a
+name starting with ``0008_add_column``. After some time you want to merge this
+branch back into *master*, which meanwhile also got a new migration with a name
+stating with ``0008_add_table``.
+
+If you just merge your branch, both migration files will be present next to each
+other. South loads migrations in ASCII sort order, so in principal both are at
+the correct position. This isn't really a problem *if* those migrations don't
+modify the same models. You can then simply run ``migrate`` with the ``--merge``
+option to apply those out of order migrations.
+
+Though, this works in most situations, it is not very pretty. As an alternative,
+you might want to consider the following: Re-create the migration(s) to have the
+correct ID, based on the upstream commits. This however needs some manual work.
+So before merging a branch, check whether there are conflicting IDs and, if so,
+do the following in the topic branch (referring to the example above)::
+
+1. Roll back the migrations to the last non-conflicting state, here ``0007``::
+
+       manage.py migrate catmaid 0007
+
+2. Delete all conflicting migrations in the topic branch. If custom migration
+   code has been added (like raw SQL), make sure to keep it around.
+
+3. Merge the branch with the newer migrations into your topic branch (e.g.
+   upstream/master).
+
+4. Re-create your migrations (the new files will get correct IDs)::
+
+       manage.py schemamigration [title] --auto
+
+   Note that this will create *one* migration containing all the database
+   changes you made. Of course, you can also create migrations for single models
+   if you want.
+
+   If you have custom migration code, create new empty migrations and add your
+   custom migration code to them::
+
+       manage.py schemamigration [title] --empty
+
+5. Migrate your database to make sure everything works and if so, create a new
+   commit to add the new migrations
+
+6. Merge the topic branch into the target branch
+
+Also note that the South documentation has an own section on team workflows. You
+can find it `here <http://south.readthedocs.org/en/latest/tutorial/part5.html>`_.
+
+
 I just want to drop the database and start from scratch
 -------------------------------------------------------
 

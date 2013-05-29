@@ -176,7 +176,7 @@ do the following in the topic branch (referring to the example above)::
 
 4. Re-create your migrations (the new files will get correct IDs)::
 
-       manage.py schemamigration [title] --auto
+       manage.py schemamigration catmaid [title] --auto
 
    Note that this will create *one* migration containing all the database
    changes you made. Of course, you can also create migrations for single models
@@ -185,7 +185,7 @@ do the following in the topic branch (referring to the example above)::
    If you have custom migration code, create new empty migrations and add your
    custom migration code to them::
 
-       manage.py schemamigration [title] --empty
+       manage.py schemamigration catmaid [title] --empty
 
 5. Migrate your database to make sure everything works and if so, create a new
    commit to add the new migrations

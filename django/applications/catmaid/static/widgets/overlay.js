@@ -1649,7 +1649,6 @@ var SkeletonAnnotations = new function()
 
       var atn = self.getActiveNode();
       if (atn !== null && (atn.type === 'treenode')) {
-        if (atn.parent !== null || toConnector) {
           requestQueue.register(django_url + project.id + '/node/' + atn.id + '/confidence/update', "POST", {
             pid: project.id,
             to_connector: toConnector,
@@ -1667,7 +1666,6 @@ var SkeletonAnnotations = new function()
               }
             }
           });
-        }
       }
     };
 

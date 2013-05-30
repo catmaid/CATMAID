@@ -370,14 +370,58 @@ var WebGLApp = new function () {
 
   }
 
-  var Skeleton = function( skeleton_data )
+  var Skeleton = function( skeleton_id, skeleton_data )
   {
     var self = this;
-    var type, from_vector, to_vector;
 
-    self.id = skeleton_data.id;
+    self.id = skeleton_id;
     self.baseName = skeleton_data.baseName;
+
+		// There are many more member variables, all initialized at function initialize_objects
     
+    this.initialize_objects = function()
+    {
+      this.skeletonmodel = NeuronStagingArea.get_skeletonmodel( self.id );
+      this.line_material = new Object();
+      this.actorColor = new THREE.Color(0xffff00);
+      this.visible = true;
+      if( this.skeletonmodel === undefined ) {
+        console.log('Can not initialize skeleton object');
+        return;
+      }
+      this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
+      this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } );
+      this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } );
+
+      this.original_vertices = null;
+      this.original_connectivity = null;
+      this.geometry = new Object();
+      this.actor = new Object();
+      this.geometry[connectivity_types[0]] = new THREE.Geometry();
+      this.geometry[connectivity_types[1]] = new THREE.Geometry();
+      this.geometry[connectivity_types[2]] = new THREE.Geometry();
+      this.vertexcolors = [];
+      this.vertexIDs = new Object();
+      this.vertexIDs[connectivity_types[0]] = [];
+      this.vertexIDs[connectivity_types[1]] = [];
+      this.vertexIDs[connectivity_types[2]] = [];
+      
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        this.actor[connectivity_types[i]] = new THREE.Line( this.geometry[connectivity_types[i]],
+          this.line_material[connectivity_types[i]], THREE.LinePieces );
+      }
+      this.labelSphere = new Object();
+      this.otherSpheres = new Object();
+      this.radiusSpheres = new Object();
+      this.textlabels = new Object();
+
+      this.connectoractor = new Object();
+      this.connectorgeometry = new Object();
+    };
+
+    self.initialize_objects();
+
+
     this.destroy_data = function() {
 
       for ( var i=0; i<connectivity_types.length; ++i ) {
@@ -438,7 +482,7 @@ var WebGLApp = new function () {
 
       self.initialize_objects();
 
-    }
+    };
 
     this.removeActorFromScene = function()
     {
@@ -467,7 +511,7 @@ var WebGLApp = new function () {
         if( self.textlabels.hasOwnProperty( k ))
           scene.remove( this.textlabels[k] );
       }
-    }
+    };
 
     this.remove_connector_selection = function()
     {
@@ -478,49 +522,8 @@ var WebGLApp = new function () {
           }
         }
       }
-    }
+    };
 
-    this.initialize_objects = function()
-    {
-      this.skeletonmodel = NeuronStagingArea.get_skeletonmodel( self.id );
-      this.line_material = new Object();
-      this.actorColor = new THREE.Color(0xffff00);
-      this.visible = true;
-      if( this.skeletonmodel === undefined ) {
-        console.log('Can not initialize skeleton object');
-        return;
-      }
-      this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
-      this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } );
-      this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } );
-
-      this.original_vertices = null;
-      this.original_connectivity = null;
-      this.geometry = new Object();
-      this.actor = new Object();
-      this.geometry[connectivity_types[0]] = new THREE.Geometry();
-      this.geometry[connectivity_types[1]] = new THREE.Geometry();
-      this.geometry[connectivity_types[2]] = new THREE.Geometry();
-      this.vertexcolors = [];
-      this.vertexIDs = new Object();
-      this.vertexIDs[connectivity_types[0]] = [];
-      this.vertexIDs[connectivity_types[1]] = [];
-      this.vertexIDs[connectivity_types[2]] = [];
-      
-      for ( var i=0; i<connectivity_types.length; ++i ) {
-        this.actor[connectivity_types[i]] = new THREE.Line( this.geometry[connectivity_types[i]],
-          this.line_material[connectivity_types[i]], THREE.LinePieces );
-      }
-      this.labelSphere = new Object();
-      this.otherSpheres = new Object();
-      this.radiusSpheres = new Object();
-      this.textlabels = new Object();
-
-      this.connectoractor = new Object();
-      this.connectorgeometry = new Object();
-    }
-
-    self.initialize_objects();
 
     this.setCompleteActorVisibility = function( vis ) {
       self.visible = vis;
@@ -595,11 +598,10 @@ var WebGLApp = new function () {
           this.actor[connectivity_types[i]].translateZ( dz );
         }
       }
-    }
+    };
 
     this.updateSkeletonColor = function() {
-      if (NeuronStagingArea.skeletonsColorMethod === 'creator' || NeuronStagingArea.skeletonsColorMethod === 'reviewer' || 
-          shading_method !== 'none') {
+      if (NeuronStagingArea.skeletonsColorMethod === 'creator' || NeuronStagingArea.skeletonsColorMethod === 'reviewer' || shading_method !== 'none') {
         // The skeleton colors need to be set per-vertex.
         self.line_material['neurite'].vertexColors = THREE.VertexColors;
         self.line_material['neurite'].needsUpdate = true;
@@ -656,7 +658,7 @@ var WebGLApp = new function () {
           self.radiusSpheres[k].material.needsUpdate = true;
         }
       }
-    }
+    };
 
     this.changeColor = function( color ) {
       self.actorColor = color;
@@ -664,23 +666,23 @@ var WebGLApp = new function () {
       if (NeuronStagingArea.skeletonsColorMethod === 'random' || NeuronStagingArea.skeletonsColorMethod === 'manual') {
         self.updateSkeletonColor();
       }
-    }
+    };
 
     this.addCompositeActorToScene = function()
     {
       for ( var i=0; i<connectivity_types.length; ++i ) {
         scene.add( this.actor[connectivity_types[i]] );
       }
-    }
+    };
 
     this.visiblityCompositeActor = function( type_index, visible )
     {
       this.actor[connectivity_types[type_index]].visible = visible;
-    }
+    };
 
     this.getActorColorAsHTMLHex = function () {
       return this.actorColor.getHexString();
-    }
+    };
 
     this.getActorColorAsHex = function()
     {
@@ -710,7 +712,7 @@ var WebGLApp = new function () {
             continue;
           }
 
-          type = connectivity_types[connectivity_types.indexOf(this.original_connectivity[fromkey][tokey]['type'])];
+          var type = connectivity_types[connectivity_types.indexOf(this.original_connectivity[fromkey][tokey]['type'])];
 
           var fv=transform_coordinates([
             this.original_vertices[fromkey]['x'],
@@ -740,14 +742,14 @@ var WebGLApp = new function () {
         }
       }
 
-    for ( var i=0; i<connectivity_types.length; ++i ) {
-      if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
-        this.connectoractor[connectivity_types[i]] = new THREE.Line( this.connectorgeometry[connectivity_types[i]], this.line_material[connectivity_types[i]], THREE.LinePieces );
-        scene.add( this.connectoractor[connectivity_types[i]] );
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
+          this.connectoractor[connectivity_types[i]] = new THREE.Line( this.connectorgeometry[connectivity_types[i]], this.line_material[connectivity_types[i]], THREE.LinePieces );
+          scene.add( this.connectoractor[connectivity_types[i]] );
+        }
       }
-    }
 
-    }
+    };
 
     this.reinit_actor = function ( skeleton_data )
     {
@@ -771,7 +773,7 @@ var WebGLApp = new function () {
         for (var tokey in to) {
           var toVertex = this.original_vertices[tokey];
 
-          type = connectivity_types[connectivity_types.indexOf(this.original_connectivity[fromkey][tokey]['type'])];
+          var type = connectivity_types[connectivity_types.indexOf(this.original_connectivity[fromkey][tokey]['type'])];
           var fv=transform_coordinates([fromVertex['x'], fromVertex['y'], fromVertex['z']]);
           var from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
 
@@ -1049,7 +1051,7 @@ var WebGLApp = new function () {
       self.actorColor = self.skeletonmodel.color;
       self.updateSkeletonColor();
 
-    }
+    };
     
     self.reinit_actor( skeleton_data );
 
@@ -1209,8 +1211,7 @@ var WebGLApp = new function () {
       // skeleton already in the list, just reinitialize
       skeletons[skeleton_id].reinit_actor( skeleton_data );
     } else {
-      skeleton_data['id'] = skeleton_id;
-      skeletons[skeleton_id] = new Skeleton( skeleton_data );
+      skeletons[skeleton_id] = new Skeleton( skeleton_id, skeleton_data );
     }
     self.render();
     return skeletons[skeleton_id];
@@ -1915,14 +1916,14 @@ var WebGLApp = new function () {
     if( skeletonID !== undefined )
     {
       var skeleton_id = parseInt( skeletonID );
-      jQuery.ajax({
-        url: django_url + project.id + '/skeleton/' + skeleton_id + '/json',
-        type: "GET",
-        dataType: "json",
-        success: function (skeleton_data) {
-          skeleton_data['baseName'] = skeleton_data['neuron']['neuronname'];
-          var skeleton = self.addSkeletonFromData( skeleton_id, skeleton_data );
+      requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/json', 'POST', {}, function(status, text) {
+        if (200 !== status) return;
+        var json = $.parseJSON(text);
+        if (json.error) {
+          alert(json.error);
+          return;
         }
+        self.addSkeletonFromData(skeleton_id, json);
       });
     }
   };

@@ -748,9 +748,9 @@ def create_skeleton_new_lineage( treeNodeList, project_id, request ):
             new_neuron.user = request.user
             new_neuron.project_id = project_id
             new_neuron.class_column_id = class_map['neuron']
-            new_neuron.name = 'neuron'
+            new_neuron.name = 'Cell_Lineage'
             new_neuron.save()
-            new_neuron.name = 'neuron %d' % new_neuron.id
+            new_neuron.name = 'Cell_Lineage %d' % new_neuron.id
             new_neuron.save()
 
             response_on_error = 'Could not relate the neuron model to the new skeleton!'

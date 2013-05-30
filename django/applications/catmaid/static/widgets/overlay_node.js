@@ -602,7 +602,19 @@ var SkeletonElements = new function()
               alert('Can not join node with another node of the same skeleton!');
               return;
             }
-            paper.catmaidSVGOverlay.createTreenodeLink(atnID, node.id);
+
+            //check time points to make sure of the order
+            if( node.t === SkeletonAnnotations.getActiveNodeTime() ) {
+              alert('Can not join node with another node of the same time point!');
+              return;
+            }
+
+            if( node.t > SkeletonAnnotations.getActiveNodeTime() ){
+              paper.catmaidSVGOverlay.createTreenodeLink(atnID, node.id);
+            }
+            else{
+              paper.catmaidSVGOverlay.createTreenodeLink(node.id, atnID);
+            }
             // TODO check for error
             statusBar.replaceLast("Joined node #" + atnID + " to node #" + node.id);
           }

@@ -436,7 +436,7 @@ function Navigator()
 	{
 		var val = parseInt( this.value );
 		if ( isNaN( val ) ) this.value = self.stack.x;
-		else self.stack.moveToPixel( self.stack.z, self.stack.y, val, self.stack.s );
+		else self.stack.moveToPixel( self.stack.z, self.stack.y, val, self.stack.s, self.stack.t, self.stack.c );
 		return;
 	}
 	
@@ -444,7 +444,7 @@ function Navigator()
 	{
 		var val = parseInt( this.value );
 		if ( isNaN( val ) ) this.value = self.stack.y;
-		else self.stack.moveToPixel( self.stack.z, val, self.stack.x, self.stack.s );
+		else self.stack.moveToPixel( self.stack.z, val, self.stack.x, self.stack.s, self.stack.t, self.stack.c );
 		return;
 	}
 	

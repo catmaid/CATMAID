@@ -370,6 +370,8 @@ def most_recent_treenode(request, project_id=None):
         'x': int(tn.location.x),
         'y': int(tn.location.y),
         'z': int(tn.location.z),
+        't': int(tn.location_t),
+        'c': int(tn.location_c),
         #'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
         #'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f'),
         #'type': 'treenode'

@@ -365,6 +365,9 @@ function TracingTool()
     }
   }) );
 
+
+
+/*
     this.addAction( new Action({
         helpText: "Switch to skeleton tracing mode",
         buttonName: "skeleton",
@@ -377,7 +380,7 @@ function TracingTool()
             return true;
         }
     } ) );
-
+*/
 
     /** Return a function that attempts to tag the active treenode or connector,
      * and display an alert when no node is active.
@@ -421,6 +424,8 @@ function TracingTool()
       run: tagFn('uncertain continuation')
   } ) );
 
+/*
+not needed for cell tracking
   this.addAction( new Action({
     helpText: "Add 'not a branch' Tag (Shift: Remove) for the active node",
     keyShortcuts: {
@@ -428,7 +433,8 @@ function TracingTool()
     },
       run: tagFn('not a branch')
   } ) );
-
+*/
+/* not needed for cell tracking
   this.addAction( new Action({
     helpText: "Add 'soma' Tag (Shift: Remove) for the active node",
     keyShortcuts: {
@@ -436,7 +442,9 @@ function TracingTool()
     },
       run: tagFn('not a branch')
   } ) );
+*/
 
+/* not needed for cell tracking
   this.addAction( new Action({
     helpText: "Switch to synapse dropping mode",
     buttonName: "synapse",
@@ -451,15 +459,14 @@ function TracingTool()
       return true;
     }
   } ) );
-
-  /*
-  //deaftivated in 5D view to allow hot keys for time displacement
+*/
+  
   this.addAction( new Action({
     helpText: "Go to active node",
     buttonName: "goactive",
     buttonID: 'trace_button_goactive',
     keyShortcuts: {
-      "A": [ 65 ]
+      "Y": [ 89 ]
     },
     run: function (e) {
       if (!mayView())
@@ -468,7 +475,7 @@ function TracingTool()
       return true;
     }
   } ) );
-  */
+  
 
   this.addAction( new Action({
     helpText: "Go to next branch or end point (with alt, stop earlier at node with tag, synapse or low confidence; with shift and at a branch node, move down the other branch)",
@@ -573,6 +580,9 @@ function TracingTool()
     helpText: "Split this skeleton at the active node",
     buttonName: "skelsplitting",
     buttonID: 'trace_button_skelsplitting',
+    keyShortcuts: {
+      "X": [ 88 ]
+    },
     run: function (e) {
       if (!mayEdit())
         return false;
@@ -581,6 +591,7 @@ function TracingTool()
     }
   }) );
 
+/* we do not need this for cell lineage (since we have t to impose tree order)
   this.addAction( new Action({
     helpText: "Re-root this skeleton at the active node",
     buttonName: "skelrerooting",
@@ -595,9 +606,10 @@ function TracingTool()
       return true;
     }
   }) );
+*/
 
   this.addAction( new Action({
-    helpText: "Toggle the display of labels",
+    helpText: "Turn on/off the display of tags",
     buttonName: "togglelabels",
     buttonID: 'trace_button_togglelabels',
     keyShortcuts: {
@@ -789,6 +801,7 @@ function TracingTool()
     }
   }) );
 
+/* we do not use the review system right now for cell tracking
   this.addAction( new Action({
       helpText: "Move to previous node in segment for review. At an end node, moves one section beyond for you to check that it really ends.",
       keyShortcuts: {
@@ -831,19 +844,22 @@ function TracingTool()
       }
   }) );
 
+*/
+
   this.addAction( new Action({
-      helpText: "Rename object tree node or current active neuron (Shift key)",
+      //helpText: "Rename object tree node or current active neuron (Shift key)",
+      helpText: "Rename current active lineage",
       keyShortcuts: {
-          'F2': [ 113 ]
+          'N': [ 78 ]
       },
       run: function (e) {
           if (!mayEdit()) {
               return false;
           }
-          if(e.shiftKey)
+          //if(e.shiftKey)
             tracingLayer.svgOverlay.updateNeuronName();
-          else
-            ObjectTree.renameCurrentActiveNode();
+          //else
+          //  ObjectTree.renameCurrentActiveNode();
           return true;
       }
   }) );

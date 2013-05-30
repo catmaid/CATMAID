@@ -41,6 +41,8 @@ var SkeletonAnnotations = new function()
     y: null,
     z: null,
     parent_id: null,
+    t: null,
+    ch: null,
     set: function(node) {
       if (node) {
         atn.id = node.id;
@@ -49,6 +51,8 @@ var SkeletonAnnotations = new function()
         atn.x = node.x;
         atn.y = node.y;
         atn.z = node.z;
+        atn.t = node.t;
+        atn.ch = node.ch;
         if (node.parent) {
           atn.parent_id = node.parent.id;
         } else {
@@ -72,6 +76,10 @@ var SkeletonAnnotations = new function()
 
   this.getActiveNodeId = function() {
     return atn.id;
+  };
+
+  this.getActiveNodeTime = function() {
+    return atn.t;
   };
 
   this.getActiveSkeletonId = function() {
@@ -1597,15 +1605,15 @@ var SkeletonAnnotations = new function()
     this.set_tracing_mode = function (mode) {
       // toggles the button correctly
       // might update the mouse pointer
-      document.getElementById("trace_button_skeleton").className = "button";
-      document.getElementById("trace_button_synapse").className = "button";
+      //document.getElementById("trace_button_skeleton").className = "button";
+      //document.getElementById("trace_button_synapse").className = "button";
 
       if (mode === "skeletontracing") {
         currentmode = mode;
-        document.getElementById("trace_button_skeleton").className = "button_active";
+        //document.getElementById("trace_button_skeleton").className = "button_active";
       } else if (currentmode === "skeletontracing") {
         currentmode = mode;
-        document.getElementById("trace_button_synapse").className = "button_active";
+        //document.getElementById("trace_button_synapse").className = "button_active";
       }
     };
 
@@ -1695,10 +1703,19 @@ var SkeletonAnnotations = new function()
                     onComplete: function() { g.remove(); }
                   });
                 } else {
+                  if( stack.tile_source_type === 5)//5D visualization
+                  {
+                    stack.getProject().moveTo5D(json[3], json[2], json[1], undefined,json[5], json[6],
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json[0], json[4]);
+                    });
+                   }else{   
                   stack.getProject().moveTo(json[3], json[2], json[1], undefined,
                     function() {
                       SkeletonAnnotations.staticSelectNode(json[0], json[4]);
                     });
+                  }
+
                 }
               }
             }
@@ -1973,7 +1990,15 @@ var SkeletonAnnotations = new function()
                 if (jso.error) {
                   alert(jso.error);
                 } else {
-                  project.moveTo(jso[3], jso[2], jso[1], undefined, function() { });
+
+                  if( stack.tile_source_type === 5)//5D visualization
+                  {
+                    project.moveTo5D(jso[3], jso[2], jso[1], undefined,jso[5], jso[6], function() {});
+                   }else{   
+                    project.moveTo(jso[3], jso[2], jso[1], undefined, function() {});
+                  }
+
+
                 }
               }
             }
@@ -1998,7 +2023,15 @@ var SkeletonAnnotations = new function()
                 if (jso.error) {
                   alert(jso.error);
                 } else {
-                  project.moveTo(jso.z, jso.y, jso.x, undefined, function() { self.selectNode(jso.id) });
+                  
+
+                  if( stack.tile_source_type === 5)//5D visualization
+                  {
+                    project.moveTo5D(jso.z, jso.y, jso.x, undefined,jso.t, jso.c, function() {self.selectNode(jso.id)});
+                   }else{   
+                    project.moveTo(jso.z, jso.y, jso.x, undefined, function() { self.selectNode(jso.id) });
+                  }
+
                 }
               }
             }

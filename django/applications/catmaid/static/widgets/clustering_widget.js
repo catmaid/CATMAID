@@ -95,6 +95,10 @@ var ClusteringWidget = new function()
             canvas.style.height = height + "px";
             container.appendChild(canvas);
             var r = new Raphael("clustering-canvas");
+            // allow scaling with keeping the aspect ratio
+            r.setViewBox(0, 0, width, height, true);
+            r.setSize('100%', '100%');
+            r.canvas.setAttribute('preserveAspectRatio', 'xMinYMin');
 
             // create a colors for each cluster
             var colors = [];
@@ -163,6 +167,50 @@ var ClusteringWidget = new function()
                 }
             });
 
+            // add a handle for cluster resizing
+            var rhandle = document.createElement("div");
+            rhandle.style.width = "0px";
+            rhandle.style.height = "0px";
+            rhandle.style.borderStyle = "solid";
+            rhandle.style.borderWidth = "0 0 10px 10px";
+            rhandle.style.borderColor = "transparent transparent #ccc transparent";
+            rhandle.style.position = "absolute";
+            rhandle.style.left = (canvas.offsetLeft + canvas.offsetWidth - 10) + "px";
+            rhandle.style.top = (canvas.offsetTop + canvas.offsetHeight -20) + "px";
+            // add drag code
+            var scale_ratio = width / height;
+            var start_mouse_x, start_mouse_y,
+                start_canvas_w, start_canvas_h;
+            var move_handler = function(e) {
+                var diff_x = e.clientX - start_mouse_x,
+                    diff_y = e.clientY - start_mouse_y;
+                if (width < height) {
+                    var new_height = start_canvas_h + diff_y;
+                    canvas.style.height = new_height  + "px";
+                    canvas.style.width = (new_height * scale_ratio) + "px";
+                } else {
+                    var new_width = start_canvas_w + diff_x;
+                    canvas.style.height = (new_width / scale_ratio) + "px";
+                    canvas.style.width = new_width + "px";
+                }
+                rhandle.style.left = (canvas.offsetLeft + canvas.offsetWidth - 10) + "px";
+                rhandle.style.top = (canvas.offsetTop + canvas.offsetHeight -20) + "px";
+            };
+            rhandle.addEventListener('mousedown',
+                function(e) {
+                    start_mouse_x = e.clientX;
+                    start_mouse_y = e.clientY;
+                    start_canvas_w = canvas.offsetWidth;
+                    start_canvas_h = canvas.offsetHeight;
+                    window.addEventListener("mousemove", move_handler, true);
+                }, false);
+            window.addEventListener('mouseup',
+                function(e) {
+                    window.removeEventListener("mousemove", move_handler, true);
+                }, false);
+            // add handle
+            container.appendChild(rhandle);
+
             // create a legend
             var legend = document.createElement('div');
             legend.setAttribute("id", "clustering-legend");
@@ -196,7 +244,7 @@ var ClusteringWidget = new function()
                         var graph_name = dendrogram.ivl[graph_idx];
                         // Make the tag appear on the right of the pointer for
                         // the first half of leafs and to the left for the rest.
-                        var dir = (this.x < this.paper.width * 0.5) ? 0 : 180;
+                        var dir = (this.x < width * 0.5) ? 0 : 180;
                         // create tag
                         this.bulletWidth = 2;
                         this.tags = r.set()

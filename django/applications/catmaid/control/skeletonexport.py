@@ -11,6 +11,9 @@ from catmaid.control.common import *
 import networkx as nx
 from tree_util import edge_count_to_root
 
+from itertools import imap
+from collections import defaultdict
+
 try:
     import neuroml
     import neuroml.writers as writers
@@ -58,6 +61,56 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
     else:
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
+
+def _skeleton_for_3d_viewer(skeleton_id=None):
+    skeleton_id = int(skeleton_id) # sanitize
+    cursor = connection.cursor()
+
+    # Fetch the neuron name
+    cursor.execute(
+        '''SELECT name
+           FROM class_instance ci,
+                class_instance_class_instance cici
+           WHERE cici.class_instance_a = %s
+             AND cici.class_instance_b = ci.id
+        ''' % skeleton_id)
+    name = cursor.fetchone()[0]
+    
+    # Fetch all nodes, with their tags if any
+    cursor.execute(
+        '''SELECT t.id, t.user_id, t.location, t.reviewer_id, t.parent_id, t.radius, ci.name
+          FROM treenode t LEFT OUTER JOIN (treenode_class_instance tci INNER JOIN class_instance ci ON tci.class_instance_id = ci.id) ON t.id = tci.treenode_id
+          WHERE t.skeleton_id = %s
+        ''' % skeleton_id)
+
+    nodes = [] # node properties
+    tags = defaultdict(list)
+    for row in cursor.fetchall():
+        if row[6]:
+            tags[row[6]].append(row[0])
+        x, y, z = imap(float, row[2][1:-1].split(','))
+        # properties: id, parent_id, user_id, reviewer_id, x, y, z, radius
+        nodes.append((row[0], row[4], row[1], row[3], x, y, z, 0 if row[5] < 0 else row[5]))
+
+    # Fetch all connectors with their partner treenode IDs
+    cursor.execute(
+        ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name
+            FROM treenode_connector tc,
+                 relation r
+            WHERE tc.skeleton_id = %s
+              AND tc.relation_id = r.id
+        ''' % skeleton_id)
+
+    # List of (treenode_id, connector_id, relation_id)n with relation_id replaced by 0 (presynaptic) or 1 (postsynaptic)
+    # 'presynaptic_to' has an 'r' at position 1:
+    connectors = tuple((row[0], row[1], 0 if 'r' == row[2][1] else 1) for row in cursor.fetchall())
+
+    return name, nodes, tags, connectors
+
+def skeleton_for_3d_viewer(request, project_id=None, skeleton_id=None):
+    return HttpResponse(json.dumps(_skeleton_for_3d_viewer(skeleton_id)))
+
+
 def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
 
     treenode_qs, labels_as, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id, with_labels=True)
@@ -70,7 +123,7 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
         else:
             labels[tn.treenode_id] = [ lab ]
             # whenever the word uncertain is in the tag, add it
-        # here. this is used in the 3d webgl viewer
+            # here. This is used in the 3d webgl viewer
     for cn in labelconnector_qs:
         lab = str(cn.class_instance.name).lower()
         if cn.connector_id in labels:
@@ -87,7 +140,7 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
         if tn.id in labels:
             lab = labels[tn.id]
         else:
-            # TODO this is wrong. uncertain labels are not added when the node is labeled
+            # Fake label for WebGL 3d viewer to show a sphere
             if tn.confidence < 5:
                 lab = ['uncertain']
             else:

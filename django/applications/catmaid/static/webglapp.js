@@ -370,14 +370,20 @@ var WebGLApp = new function () {
 
   }
 
-  var Skeleton = function( skeleton_id, skeleton_data )
+	// TODO skeleton_data cannot be an argument to the constructor: would be available at all times forever, never being thrown away.
+  var Skeleton = function()
   {
     var self = this;
 
-    self.id = skeleton_id;
-    self.baseName = skeleton_data.baseName;
+		this.init = function(skeleton_id, skeleton_data) {
+			self.id = skeleton_id;
+			self.baseName = skeleton_data.neuron.neuronname;
+      self.initialize_objects();
+			self.reinit_actor( skeleton_data );
+		};
 
 		// There are many more member variables, all initialized at function initialize_objects
+		// and the skeleton_data is used at the very end of this constructor by calling reinit_actor
     
     this.initialize_objects = function()
     {
@@ -419,9 +425,6 @@ var WebGLApp = new function () {
       this.connectorgeometry = new Object();
     };
 
-    self.initialize_objects();
-
-
     this.destroy_data = function() {
 
       for ( var i=0; i<connectivity_types.length; ++i ) {
@@ -439,7 +442,6 @@ var WebGLApp = new function () {
           delete this.connectorgeometry[connectivity_types[i]];
           this.connectorgeometry[connectivity_types[i]] = null;
         }        
-
       }
 
       for ( var i=0; i<connectivity_types.length; ++i ) {
@@ -748,8 +750,10 @@ var WebGLApp = new function () {
           scene.add( this.connectoractor[connectivity_types[i]] );
         }
       }
-
     };
+
+
+
 
     this.reinit_actor = function ( skeleton_data )
     {
@@ -766,20 +770,26 @@ var WebGLApp = new function () {
       this.graph = jsnx.Graph();
       this.betweenness = {};
       this.branchCentrality = {};
-      
+
+
       for (var fromkey in this.original_connectivity) {
         var fromVertex = this.original_vertices[fromkey];
         var to = this.original_connectivity[fromkey];
+
         for (var tokey in to) {
           var toVertex = this.original_vertices[tokey];
 
+					// TODO this seems pointless: type ends up being the same interned string
           var type = connectivity_types[connectivity_types.indexOf(this.original_connectivity[fromkey][tokey]['type'])];
+
+
+					// Create edge between parent-child nodes:
+					// Takes the coordinates of each node, transforms them into the space,
+					// and then adds them to the parallel lists of geometry and vertexIDs
           var fv=transform_coordinates([fromVertex['x'], fromVertex['y'], fromVertex['z']]);
           var from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
 
-          // transform
           from_vector.multiplyScalar( scale );
-
           this.geometry[type].vertices.push( from_vector );
           this.vertexIDs[type].push(fromkey);
 
@@ -829,7 +839,7 @@ var WebGLApp = new function () {
             radiusCustomSphere = new THREE.SphereGeometry( scale * radiusTo, 32, 32, 1 );
             this.radiusSpheres[tokey] = new THREE.Mesh( radiusCustomSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
             this.radiusSpheres[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
-            this.radiusSpheres[tokey].orig_coord = fromVertex;
+            this.radiusSpheres[tokey].orig_coord = toVertex;
             this.radiusSpheres[tokey].skeleton_id = self.id;
             scene.add( this.radiusSpheres[tokey] );
           }
@@ -858,7 +868,6 @@ var WebGLApp = new function () {
               this.textlabels[ fromkey ] = text;
               scene.add( text );
             }
-            
           }
 
           // if either from or to have a relevant label, and they are not yet
@@ -1052,10 +1061,7 @@ var WebGLApp = new function () {
       self.updateSkeletonColor();
 
     };
-    
-    self.reinit_actor( skeleton_data );
-
-  }
+  };
 
   // array of skeletons
   var skeletons = new Object();
@@ -1211,10 +1217,10 @@ var WebGLApp = new function () {
       // skeleton already in the list, just reinitialize
       skeletons[skeleton_id].reinit_actor( skeleton_data );
     } else {
-      skeletons[skeleton_id] = new Skeleton( skeleton_id, skeleton_data );
+      skeletons[skeleton_id] = new Skeleton();
+			skeletons[skeleton_id].init( skeleton_id, skeleton_data );
     }
     self.render();
-    return skeletons[skeleton_id];
   }
 
   this.changeSkeletonColor = function( skeleton_id, color )
@@ -1912,18 +1918,91 @@ var WebGLApp = new function () {
       }}});
   }
 
+
+	// Constants used in skeleton_data
+	var typeRelations = [Object.freeze({type: 'presynaptic_to'}),
+			                 Object.freeze({type: 'postsynaptic_to'})];
+	var typeNeurite = Object.freeze({type: 'neurite'});
+	var typeSkeleton = 'skeleton';
+	var typeConnector = 'connector';
+	var EMPTY = Object.freeze([]);
+
   self.addSkeletonFromID = function (skeletonID) {
     if( skeletonID !== undefined )
     {
       var skeleton_id = parseInt( skeletonID );
-      requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/json', 'POST', {}, function(status, text) {
+      requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/json2', 'POST', {}, function(status, text) {
         if (200 !== status) return;
         var json = $.parseJSON(text);
         if (json.error) {
           alert(json.error);
           return;
         }
-        self.addSkeletonFromData(skeleton_id, json);
+
+				// Test new server-side function: transform compact format into the old format
+				var neuronName = json[0];
+				var nodes = json[1];
+				var tags = json[2];
+				var connectors = json[3];
+
+				var connectivity = nodes.reduce(function(ob, node) {
+															 // node[0]: id
+															 // node[1]: parent id
+															 if (!node[1] ){
+																 // is root, no parent
+																 return ob;
+															 }
+															 var e = {};
+					                     e[node[1]] = typeNeurite;
+															 ob[node[0]] = e;
+															 return ob;
+														 }, {});
+
+				connectors.forEach(function(con) {
+					// con[0]: treenode id
+					// con[1]: connector id
+					// con[2]: relation id as 0 for pre and 1 for post
+					connectivity[con[0]][con[1]] = typeRelations[con[2]];
+				});
+
+				var nodeTags = {};
+				Object.keys(tags).forEach(function(tag) {
+					tags[tag].forEach(function(nodeID) {
+						if (nodeTags.hasOwnProperty(nodeID)) {
+							nodeTags[nodeID].push(tag);
+						} else {
+							nodeTags[nodeID] = [tag];
+						}
+					});
+				});
+				
+				var vertices = nodes.reduce(function(ob, node) {
+					var labels = nodeTags.hasOwnProperty(node[0]) ? nodeTags[node[0]] : EMPTY;
+					ob[node[0]] = {labels: labels,
+						             radius: node[7],
+						             reviewer_id: node[3],
+						             type: typeSkeleton,
+						             user_id: node[2],
+						             x: node[4],
+						             y: node[5],
+						             z: node[6]};
+					return ob;
+				}, {});
+
+				connectors.forEach(function(con) {
+					vertices[con[1]] = {labels: EMPTY,
+															reviewer_id: con[6],
+															type: typeConnector,
+															x: con[3],
+															y: con[4],
+															z: con[5]};
+				});
+
+				var skeleton_data = {neuron: {neuronname: neuronName},
+					                   connectivity: connectivity,
+														 vertices: vertices};
+
+        self.addSkeletonFromData(skeleton_id, skeleton_data);
       });
     }
   };

@@ -79,7 +79,7 @@ def _skeleton_for_3d_viewer(skeleton_id=None):
     # Fetch all nodes, with their tags if any
     cursor.execute(
         '''SELECT t.id, t.user_id, t.location, t.reviewer_id, t.parent_id, t.radius, ci.name
-          FROM treenode t LEFT OUTER JOIN (treenode_class_instance tci INNER JOIN class_instance ci ON tci.class_instance_id = ci.id) ON t.id = tci.treenode_id
+          FROM treenode t LEFT OUTER JOIN (treenode_class_instance tci INNER JOIN class_instance ci ON tci.class_instance_id = ci.id INNER JOIN relation r ON tci.relation_id = r.id AND r.relation_name = 'labeled_as') ON t.id = tci.treenode_id
           WHERE t.skeleton_id = %s
         ''' % skeleton_id)
 
@@ -88,22 +88,30 @@ def _skeleton_for_3d_viewer(skeleton_id=None):
     for row in cursor.fetchall():
         if row[6]:
             tags[row[6]].append(row[0])
+            if 't' == row[6][0]:
+                print row
         x, y, z = imap(float, row[2][1:-1].split(','))
         # properties: id, parent_id, user_id, reviewer_id, x, y, z, radius
         nodes.append((row[0], row[4], row[1], row[3], x, y, z, 0 if row[5] < 0 else row[5]))
 
     # Fetch all connectors with their partner treenode IDs
     cursor.execute(
-        ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name
+        ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name, c.location, c.reviewer_id
             FROM treenode_connector tc,
+                 connector c,
                  relation r
             WHERE tc.skeleton_id = %s
+              AND tc.connector_id = c.id
               AND tc.relation_id = r.id
         ''' % skeleton_id)
+    # Above, purposefully ignoring connector tags. Would require a left outer join on the inner join of connector_class_instance and class_instance, and frankly connector tags are pointless in the 3d viewer.
 
-    # List of (treenode_id, connector_id, relation_id)n with relation_id replaced by 0 (presynaptic) or 1 (postsynaptic)
+    # List of (treenode_id, connector_id, relation_id, x, y, z)n with relation_id replaced by 0 (presynaptic) or 1 (postsynaptic)
     # 'presynaptic_to' has an 'r' at position 1:
-    connectors = tuple((row[0], row[1], 0 if 'r' == row[2][1] else 1) for row in cursor.fetchall())
+    connectors = []
+    for row in cursor.fetchall():
+        x, y, z = imap(float, row[3][1:-1].split(','))
+        connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z, row[4]))
 
     return name, nodes, tags, connectors
 

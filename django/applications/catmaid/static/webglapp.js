@@ -426,7 +426,6 @@ var WebGLApp = new function () {
     this.init = function(skeleton_id, skeleton_data) {
       self.id = skeleton_id;
       self.baseName = skeleton_data[0];
-      self.initialize_objects();
       self.reinit_actor( skeleton_data );
     };
 

@@ -1978,7 +1978,7 @@ var WebGLApp = new function () {
     if( skeletonID !== undefined )
     {
       var skeleton_id = parseInt( skeletonID );
-      requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/json2', 'POST', {}, function(status, text) {
+      requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/webglapp', 'POST', {}, function(status, text) {
         if (200 !== status) return;
         var json = $.parseJSON(text);
         if (json.error) {

@@ -2054,9 +2054,10 @@ var WebGLApp = new function () {
 
     if (connector_filter) {
       // Find all connector IDs referred to by more than one skeleton
+      // but only for visible skeletons
       var counts = {};
       for (var skeleton_id in skeletons) {
-        if (skeletons.hasOwnProperty(skeleton_id)) {
+        if (skeletons.hasOwnProperty(skeleton_id) && $('#skeletonshow-' + skeleton_id).is(':checked')) {
           var sk = skeletons[skeleton_id];
           for (var connectorID in sk.connectorProps) {
             if (sk.connectorProps.hasOwnProperty(connectorID)) {

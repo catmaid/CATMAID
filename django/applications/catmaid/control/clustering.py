@@ -3,6 +3,7 @@ import json
 import string
 
 from django import forms
+from django.forms.formsets import formset_factory
 from django.forms.widgets import CheckboxSelectMultiple
 from django.shortcuts import render_to_response
 from django.contrib.formtools.wizard.views import SessionWizardView
@@ -57,10 +58,17 @@ def create_ontology_selection_form( workspace_pid, class_ids=None ):
         ontologies = forms.ModelMultipleChoiceField(
             queryset=Class.objects.filter(id__in=class_ids),
             widget=CheckboxSelectMultiple())
-        add_nonleafs = forms.BooleanField(initial=False,
-            required=False, label="Use sub-paths as features")
 
     return SelectOntologyForm
+
+class FeatureForm(forms.Form):
+	feature = forms.BooleanField()
+
+class ClusteringSetupFeatures(forms.Form):
+    #add_nonleafs = forms.BooleanField(initial=False,
+    #    required=False, label="Use sub-paths as features")
+    features = forms.MultipleChoiceField(choices=[],
+            widget=CheckboxSelectMultiple())
 
 class ClusteringSetupGraphs(forms.Form):
     classification_graphs = forms.ModelMultipleChoiceField(
@@ -84,48 +92,83 @@ class ClusteringWizard(SessionWizardView):
             ontologies = self.get_cleaned_data_for_step('ontologies')['ontologies']
             root_ci_qs = ClassInstanceProxy.objects.filter( class_column__in=ontologies )
             form.fields['classification_graphs'].queryset = root_ci_qs
+        elif current_step == 'features':
+            # Display a list of all available features
+            ontologies = self.get_cleaned_data_for_step('ontologies')['ontologies']
+            add_nonleafs = True
+            # Featurs are abstract concepts (classes) and graphs will be
+            # checked which classes they have instanciated.
+            raw_features = []
+            for o in ontologies:
+                raw_features = raw_features + get_features( o, add_nonleafs )
+            self.features = raw_features
+            # Build form array
+            features = []
+            for i, f in enumerate(raw_features):
+                features.append((i, f.name))
+            # Add form array to form field
+            form.fields['features'].choices = features
 
         return form
 
     def get_context_data(self, form, **kwargs):
         context = super(ClusteringWizard, self).get_context_data(form=form, **kwargs)
-        if self.steps.current == 'ontologies':
-            desc = 'Please select all the ontologies that you want to see ' \
-                   'considered for feature selection. Additionally, you can ' \
-                   'define whether all sub-paths starting from root to a ' \
-                   'leaf should be used as features, too.'
-        elif self.steps.current == 'classifications':
-            desc = 'Below are all classification graphs shown, that are based ' \
-                   'on the previeously selected ontologies. Please select those ' \
-                   'you want to be considered in the clustering.'
-        else:
-            desc = "Please adjust the clustering settings to your liking."
+        extra_context = {'workspace_pid': self.workspace_pid}
 
-        context.update({
-            'description': desc,
-            'workspace_pid': self.workspace_pid})
+        if self.steps.current == 'ontologies':
+            extra_context['description'] = \
+                'Please select all the ontologies that you want to see ' \
+                'considered for feature selection. Additionally, you can ' \
+                'define whether all sub-paths starting from root to a ' \
+                'leaf should be used as features, too.'
+        elif self.steps.current == 'classifications':
+            extra_context['description'] = \
+               'Below are all classification graphs shown, that are based ' \
+               'on the previeously selected ontologies. Please select those ' \
+               'you want to be considered in the clustering.'
+        elif self.steps.current == 'features':
+            extra_context['description'] = \
+               'In this page you can select all the features you would ' \
+               'to be taken into account by the clustering. A selected term ' \
+               'means the path from the ontologie\'s root to this term will ' \
+               'be used as feature. By default all possible features of all ' \
+               'selected ontologies are selected.'
+            # Create formsets for before selected ontologies and add them to
+            # context. Each formset ID will have the prefix "ontology-<ID>".
+            ontologies = self.get_cleaned_data_for_step(
+                'ontologies')['ontologies']
+            FeatureFormset = formset_factory(FeatureForm)
+            formsets = []
+            for o in ontologies:
+                formsets.append({
+                   'ontology': o,
+                   'formset': FeatureFormset(prefix='ontology-' + str(o.id))})
+            extra_context['formsets'] = formsets
+        else:
+            extra_context['description'] = \
+                   "Please adjust the clustering settings to your liking."
+
+        context.update(extra_context)
 
         return context
 
     def done(self, form_list, **kwargs):
         cleaned_data = [form.cleaned_data for form in form_list]
         ontologies = cleaned_data[0].get('ontologies')
-        add_nonleafs = cleaned_data[0].get('add_nonleafs')
-        graphs = cleaned_data[1].get('classification_graphs')
-        metric = str(cleaned_data[2].get('metric'))
-        linkage = str(cleaned_data[2].get('linkage'))
+        selected_feature_ids = cleaned_data[1].get('features')
+        graphs = cleaned_data[2].get('classification_graphs')
+        metric = str(cleaned_data[3].get('metric'))
+        linkage = str(cleaned_data[3].get('linkage'))
 
-        # Featurs are abstract concepts (classes) and graphs will be
-        # checked which classes they have instanciated.
+        # Get selected features
         features = []
-        # TODO: Only consider features that are instantiated
-        for o in ontologies:
-            features = features + get_features( o, add_nonleafs )
+        for f_id in selected_feature_ids:
+            features.append(self.features[int(f_id)])
 
+        # Create binary matrix
         bin_matrix = numpy.array(create_binary_matrix(graphs, features))
         # Calculate the distance matrix
         dst_matrix = dist.pdist(bin_matrix, metric)
-
         # The distance matrix now has no redundancies, but we need the square form
         dst_matrix = dist.squareform(dst_matrix)
         # Calculate linkage matrix
@@ -249,6 +292,7 @@ def setup_clustering(request, workspace_pid=None):
     select_ontology_form = create_ontology_selection_form(workspace_pid)
     forms = [('ontologies', select_ontology_form),
              ('classifications', ClusteringSetupGraphs),
+             ('features', ClusteringSetupFeatures),
              ('clustering', ClusteringSetupMath)]
     view = ClusteringWizard.as_view(forms, workspace_pid=workspace_pid)
     return view(request)

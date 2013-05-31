@@ -108,7 +108,256 @@ var ClusteringWidget = new function()
                     }});
             });
         }
+
+        // add feature selection trees if the div can be found
+        var feature_div = $("#clutering-setup-features", container);
+        if (feature_div.length !== 0) {
+            // load tree for every ontology div found below
+            $.each($("span", feature_div[0]), function(i, val) {
+                var tree_id = $(val).attr("id") + "-tree";
+                self.load_feature_tree( tree_id );
+            });
+        }
     }
+
+    this.load_feature_tree = function( tree_id, container ) {
+        var tree = $(tree_id);
+        var pid = -1;
+        console.log(tree_id);
+
+        tree.jstree({
+          "core": {
+            "html_titles": false
+          },
+          "plugins": ["themes", "json_data", "ui", "crrm", "types", "dnd", "contextmenu"],
+          "json_data": {
+            "ajax": {
+              "url": django_url + pid + '/ontology/list',
+              "data": function (n) {
+                var expandRequest, parentName, parameters;
+                // depending on which type of node it is, display those
+                // the result is fed to the AJAX request `data` option
+                parameters = {
+                  "pid": pid,
+                  "parenttype": n.attr ? n.attr("rel") : "relation",
+                  "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
+                };
+                // if a specific root class is requested, add it to the request
+                if (root_class) {
+                  parameters["rootclass"] = root_class;
+                }
+                if (ObjectTree.currentExpandRequest) {
+                  parameters['expandtarget'] = ObjectTree.currentExpandRequest.join(',');
+                }
+                if (n[0]) {
+                  parameters['parentname'] = n[0].innerText;
+                }
+                if (n.attr && n.attr("rel") == "relation") {
+                  parameters['classbid'] = n.attr("classbid");
+                }
+                return parameters;
+              },
+              "success": function (e) {
+                if (e.warning) {
+                    $("#ontology_warnings").html("Warning: " + e.warning);
+                } else {
+                    $("#ontology_warnings").html("");
+                }
+                if (e.error) {
+                  alert(e.error);
+                }
+              }
+            },
+            "progressive_render": true
+          },
+          "ui": {
+            "select_limit": 1,
+            "select_multiple_modifier": "ctrl",
+            "selected_parent_close": "deselect"
+          },
+
+          "themes": {
+            "theme": "classic",
+            "url": STATIC_URL_JS + "widgets/themes/kde/jsTree/classic/style.css",
+            "dots": true,
+            "icons": true
+          },
+          "contextmenu": {
+            "items": function (obj) {
+                var id_of_node = obj.attr("id");
+                var type_of_node = obj.attr("rel");
+                var menu = {};
+                if (type_of_node === "root") {
+                    menu = {
+                    "add_class_with_relation": {
+                        "separator_before": false,
+                        "separator_after": false,
+                        "label": "Relate a class to this one",
+                        "_class": "wider-context-menu",
+                        "action": function (obj) {
+                            return OntologyEditor.create_link_handler(this, pid, obj, tree_id);
+                         }
+                    },
+                    "remove_all_links": {
+                        "separator_before": true,
+                        "separator_after": false,
+                        "label": "Remove all class-class links",
+                        "_class": "wider-context-menu",
+                        "action": function (obj) {
+                            // assure that this was on purpose
+                            if (confirm("Are you sure you want to remove all ontology class-class links?")) {
+                                return OntologyEditor.remove_all_links_handler(pid, tree_id);
+                            }
+                         }
+                    }
+                    }
+                } else if (type_of_node === "class") {
+                    var restriction_types = JSON.parse(obj.attr("restrictions"));
+                    // create restrictions submenu
+                    add_restriction_submenu = {
+                        "add_cardinality_restriction": {
+                            "separator_before": false,
+                            "separator_after": false,
+                            "label": "Cardinality",
+                            "action": function (obj) {
+                                return OntologyEditor.create_cardinality_restriction(pid, obj);
+                             }
+                        },
+                        "add_exclusivity_restriction": {
+                            "separator_before": false,
+                            "separator_after": false,
+                            "label": "Exclusivity",
+                            "action": function (obj) {
+                                // A exclusivity constraint is a cardinality constraint
+                                // that restricts to exactly one value.
+                                return OntologyEditor.create_cardinality_restriction(pid, obj, 1);
+                             }
+                        }
+                    }
+
+                    menu = {
+                    "add_class_with_relation": {
+                        "separator_before": false,
+                        "separator_after": false,
+                        "label": "Relate a class to this one",
+                        "action": function (obj) {
+                            return OntologyEditor.create_link_handler(this, pid, obj, tree_id);
+                         }
+                    },
+                    "add_restriction": {
+                        "separator_before": true,
+                        "separator_after": false,
+                        "_disabled": false,
+                        "label": "Add restriction",
+                        "submenu": add_restriction_submenu
+                    }};
+
+                    // if there are restrictions present, offer to remove them
+                    var has_restrictions = false;
+                    var rem_restriction_submenu = {};
+
+                    for (r_type in restriction_types) {
+                        has_restrictions = true;
+                        restrictions = restriction_types[r_type];
+                        for (var r=0; r<restrictions.length; r++) {
+                            restriction = restrictions[r];
+                            var r_name = "";
+                            if (r_type == 'cardinality') {
+                                r_name = "Type " + restriction.type + " cardinality with value " + restriction.value;
+                            } else {
+                                r_name = r_type;
+                            }
+                            // add ID
+                            r_name = r_name + " (" + restriction.id + ")";
+                            rem_restriction_submenu['rem_restriction_' + restriction.id] = {
+                                "separator_before": false,
+                                "separator_after": false,
+                                "label": r_name,
+                                "_class": "even-wider-context-menu",
+                                "action": function(rid) {
+                                    return function (obj) {
+                                        return OntologyEditor.remove_restriction(pid, obj, rid);
+                                    }}(restriction.id)
+                                }
+                        }
+                    }
+
+                    if (has_restrictions) {
+                        menu["remove_restriction"] = {
+                            "separator_before": false,
+                            "separator_after": false,
+                            "_disabled": false,
+                            "label": "Remove restriction",
+                            "submenu": rem_restriction_submenu
+                        }
+                    }
+
+                    // add remove parent-link entry
+                    menu["remove_parent_links"] = {
+                        "separator_before": true,
+                        "separator_after": false,
+                        "_class": "wider-context-menu",
+                        "label": "Remove parent relation link",
+                        "action": function (obj) {
+                            // assure that this was on purpose
+                            if (confirm("Are you sure you want to remove the class-class link between this class and the class connected with the parent relation?")) {
+                                var cc_id = obj.attr('ccid')
+                                return OntologyEditor.remove_link_handler(pid, cc_id, tree_id);
+                            }
+                         }
+                    }
+                } else if (type_of_node === "relation") {
+                    menu = {
+                    "add_class_with_relation": {
+                        "separator_before": false,
+                        "separator_after": false,
+                        "label": "Relate a class with this relation",
+                        "_class": "wider-context-menu",
+                        "action": function (obj) {
+                            return OntologyEditor.create_link_handler(this, pid, obj, tree_id);
+                         }
+                    },
+                    "remove_all_links": {
+                        "separator_before": true,
+                        "separator_after": false,
+                        "label": "Remove all links with this relation",
+                        "_class": "wider-context-menu",
+                        "action": function (obj) {
+                            // assure that this was on purpose
+                            if (confirm("Are you sure you want to remove all ontology class-class links that use this relation?")) {
+                                var rel_id = obj.attr('id').replace("node_", "")
+                                var class_b_id = obj.attr('classbid')
+                                return OntologyEditor.remove_selected_links_handler(pid, rel_id, class_b_id, tree_id);
+                            }
+                         }
+                    }
+                    }
+                }
+                return menu;
+            }
+          },
+          "crrm": {},
+          "types": {
+            "types": {
+                "root": {
+                    "icon": {
+                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/root.png"
+                    },
+                },
+                "class": {
+                    "icon": {
+                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/class.png"
+                    },
+                },
+                "relation": {
+                    "icon": {
+                        "image": STATIC_URL_JS + "widgets/themes/kde/jsTree/ontology/relation.png"
+                    },
+                }
+            }
+          }
+        });
+    };
 
     this.render_clustering = function(dendrogram)
     {

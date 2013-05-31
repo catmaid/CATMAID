@@ -481,9 +481,6 @@ var WebGLApp = new function () {
       this.nodeProps = null;
       delete this.connectorProps;
       this.connectorProps = null;
-
-      self.initialize_objects();
-
     };
 
     this.removeActorFromScene = function()
@@ -736,8 +733,10 @@ var WebGLApp = new function () {
 
     this.reinit_actor = function ( skeleton_data )
     {
-      self.removeActorFromScene();
-      self.destroy_data();
+      if (self.actor) {
+        self.removeActorFromScene();
+        self.destroy_data();
+      }
       self.initialize_objects();
 
       var textlabel_visibility = $('#skeletontext-' + self.id).is(':checked');

@@ -637,11 +637,9 @@ var WindowMaker = new function()
             '<th>z</th>' +
             '<th>t</th>' +
             '<th>ch</th>' +
-            '<th>s</th>' +
-            '<th>r</th>' +
-            '<th>user</th>' +
-            '<th>last modified</th>' +
-            '<th>reviewer</th>' +
+            '<th>nodeId</th>' +
+            '<th>parentId</th>' +
+            '<th>editor</th>' +
           '</tr>' +
         '</thead>' +
         '<tfoot>' +
@@ -655,11 +653,9 @@ var WindowMaker = new function()
             '<th>z</th>' +
             '<th>t</th>' +
             '<th>ch</th>' +
-            '<th>s</th>' +
-            '<th>r</th>' +
-            '<th>user</th>' +
-            '<th>last modified</th>' +
-            '<th>reviewer</th>' +
+            '<th>nodeId</th>' +
+            '<th>parentId</th>' +
+            '<th>editor</th>' +
           '</tr>' +
         '</tfoot>' +
         '<tbody>' +

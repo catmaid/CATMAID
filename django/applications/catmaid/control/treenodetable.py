@@ -80,16 +80,18 @@ def list_treenode_table(request, project_id=None):
             response_on_error = 'Could not fetch %s skeleton IDs.' % specified_skeleton_count
             skeleton_ids = [int(request.POST.get('skeleton_%s' % i, 0)) for i in range(int(specified_skeleton_count))]
 
+        
         if should_sort:
             column_count = int(request.POST.get('iSortingCols', 0))
             sorting_directions = [request.POST.get('sSortDir_%d' % d) for d in range(column_count)]
             sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '', sorting_directions)
 
-            fields = ['tid', 'type', '"treenode"."labels"', 'confidence', 'x', 'y', 'z', '"treenode"."section"', 'radius', 'username', 'last_modified', 'last_reviewer']
+            fields = ['tid', 'type', '"treenode"."labels"', 'confidence', 'x', 'y', 'z','t','ch', '"treenode"."section"', 'radius', 'last_editor']
             # TODO type field not supported.
             sorting_index = [int(request.POST.get('iSortCol_%d' % d)) for d in range(column_count)]
             sorting_cols = map(lambda i: fields[i], sorting_index)
 
+        
         response_on_error = 'Could not get the list of treenodes.'
         t = Treenode.objects.filter(
             project = project_id,
@@ -103,16 +105,15 @@ def list_treenode_table(request, project_id=None):
                 'confidence': '"treenode"."confidence"',
                 'parent_id': '"treenode"."parent_id"',
                 'user_id': '"treenode"."user_id"',
-                'edition_time': '"treenode"."edition_time"',
                 'x': '("treenode"."location")."x"',
                 'y': '("treenode"."location")."y"',
                 'z': '("treenode"."location")."z"',
                 't': '"treenode"."location_t"',
                 'ch': '"treenode"."location_c"',
-                'username': '"auth_user"."username"',
-                'last_reviewer': '"treenode"."reviewer_id"',
-                'last_modified': 'to_char("treenode"."edition_time", \'DD-MM-YYYY HH24:MI\')'
+                'last_editor': '"treenode"."editor_id"'
             }).distinct()
+
+        
         # Rationale for using .extra():
         # Since we don't use .order_by() for ordering, extra fields are not
         # included in the SELECT statement, and so .distinct() will work as
@@ -129,6 +130,7 @@ def list_treenode_table(request, project_id=None):
         # filtered out.
         row_count = len(treenodes)
 
+        
         # Filter out irrelevant treenodes if a label has been specified
         if 'labeled_as' in relation_map:
             response_on_error = 'Could not retrieve labels for project.'
@@ -160,6 +162,7 @@ def list_treenode_table(request, project_id=None):
         # B : branch (has more than one child)
         # L : leaf (has no children)
         # X : undefined (uh oh!)
+       
         if 0 == display_start and -1 == display_length:
             # All nodes are loaded: determine child_count from loaded nodes
             child_count = {}
@@ -179,6 +182,7 @@ def list_treenode_table(request, project_id=None):
             for treenode in child_count_query:
                 child_count[treenode.id] = treenode.child_count
 
+        
         # Determine type
         for treenode in treenodes:
             if None == treenode.parent_id:
@@ -206,6 +210,8 @@ def list_treenode_table(request, project_id=None):
         users = {u[0]: u[1] for u in User.objects.filter().values_list('id', 'username')}
         users[-1] = "None" # Rather than AnonymousUser
 
+
+        
         def formatTreenode(tn):
             row = [str(tn.tid)]
             row.append(tn.nodetype)
@@ -214,16 +220,18 @@ def list_treenode_table(request, project_id=None):
             else:
                 row.append('')
             row.append(str(tn.confidence))
-            row.append('%.2f' % tn.x)
-            row.append('%.2f' % tn.y)
-            row.append('%.2f' % tn.z)
-            row.append(int(tn.t))
-            row.append(int(tn.ch))
-            row.append(int((tn.z - translation.z) / resolution.z))
-            row.append(str(tn.radius))
-            row.append(tn.username)
-            row.append(tn.last_modified)
-            row.append(str(users.get(tn.last_reviewer, "Unknown")))
+            row.append('%.2f' % (( tn.x - translation.x ) / resolution.x ))
+            row.append('%.2f' % (( tn.y - translation.y ) / resolution.y ))
+            row.append('%.2f' % (( tn.z - translation.z ) / resolution.z ))
+            row.append(str(tn.t))
+            row.append(str(tn.ch))
+            row.append(str(tn.tid))
+            if tn.parent_id == None:
+                row.append(str(-1))
+            else:
+                row.append(str(tn.parent_id))
+            row.append(str(users.get(tn.last_editor, "Unknown")))
+
             return row
 
         result = {'iTotalRecords': row_count, 'iTotalDisplayRecords': row_count}

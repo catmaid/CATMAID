@@ -187,27 +187,21 @@ var TreenodeTable = new function()
       {
         "sClass": "center",
         "bSearchable": false
-      }, // ch
+      }, // c (I need it so it is in aData and I can move to nodes with double click)
       {
         "sClass": "center",
         "bSearchable": false,
         "bSortable": false
-      }, // section index: not sortable due to the index being computed after sorting
+      }, // node id: not sortable due to random allocation of id
       {
         "sClass": "center",
-        "bSearchable": false
-      }, // radius
-      {
-        "bSearchable": false
-      }, // username
-      {
         "bSearchable": false,
-        "bSortable": true
-      }, // last modified
+        "bSortable": false
+      }, // parent id: not sortable due to random allocation of id
       {
           "bSearchable": false,
           "bSortable": true
-      } // reviewer
+      } // last editor
       ]
     });
 
@@ -253,9 +247,9 @@ var TreenodeTable = new function()
 
       var aData = ns.oTable.fnGetData(this);
       // retrieve coordinates and moveTo
-      var x = parseFloat(aData[4]);
-      var y = parseFloat(aData[5]);
-      var z = parseFloat(aData[6]);
+      var x = parseFloat(aData[4] * project.getStackFirst().resolution.x  + project.getStackFirst().translation.x);
+      var y = parseFloat(aData[5] * project.getStackFirst().resolution.y + project.getStackFirst().translation.y);
+      var z = parseFloat(aData[6] * project.getStackFirst().resolution.z + project.getStackFirst().translation.z);
       var t = parseFloat(aData[7]);
       var c = parseFloat(aData[8]);
 

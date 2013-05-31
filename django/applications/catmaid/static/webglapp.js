@@ -370,7 +370,55 @@ var WebGLApp = new function () {
 
   }
 
-  // TODO skeleton_data cannot be an argument to the constructor: would be available at all times forever, never being thrown away.
+  // Shared across all text labels
+  var textMaterial = new THREE.MeshNormalMaterial( { color: 0xffffff, overdraw: true } );
+
+  var geometryCache = {};
+  /** Memoized function to reuse geometries for text tags. With reference counting.
+   *  All skeletons share the same geometry for the same node text tag. */
+  var getTagGeometry = function(tagString) {
+      if (tagString in geometryCache) {
+        var e = geometryCache[tagString];
+        e.refs += 1;
+        return e.geometry;
+      }
+      // Else create, store, and return a new one:
+      var text3d = new THREE.TextGeometry( tagString, {
+        size: 100 * scale,
+        height: 20 * scale,
+        curveSegments: 1,
+        font: "helvetiker"
+      });
+      text3d.computeBoundingBox();
+      text3d.tagString = tagString;
+      geometryCache[tagString] = {geometry: text3d, refs: 1};
+      return text3d;
+   };
+
+  var releaseTagGeometry = function(tagString) {
+    if (tagString in geometryCache) {
+      var e = geometryCache[tagString];
+      e.refs -= 1;
+      if (0 === e.refs) {
+        delete geometryCache[tagString].geometry;
+        delete geometryCache[tagString];
+      }
+    }
+  };
+
+  /** An object to represent a skeleton in the WebGL space.
+   *  The skeleton consists of three geometries:
+   *    (1) one for the edges between nodes, represented as a list of contiguous pairs of points; 
+   *    (2) one for the edges representing presynaptic relations to connectors;
+   *    (3) one for the edges representing postsynaptic relations to connectors.
+   *  Each geometry has its own mesh material and can be switched independently.
+   *  In addition, each skeleton node with a pre- or postsynaptic relation to a connector
+   *  gets a clickable sphere to represent it.
+   *  Nodes with an 'uncertain' or 'todo' in their text tags also get a sphere.
+   *
+   *  When visualizing only the connectors among the skeletons visible in the WebGL space, the geometries of the pre- and postsynaptic edges are hidden away, and a new pair of geometries are created to represent just the edges that converge onto connectors also related to by the other skeletons.
+   *
+   */
   var Skeleton = function()
   {
     var self = this;
@@ -382,9 +430,6 @@ var WebGLApp = new function () {
       self.reinit_actor( skeleton_data );
     };
 
-    // There are many more member variables, all initialized at function initialize_objects
-    // and the skeleton_data is used at the very end of this constructor by calling reinit_actor
-    
     this.initialize_objects = function()
     {
       this.skeletonmodel = NeuronStagingArea.get_skeletonmodel( self.id );
@@ -507,8 +552,11 @@ var WebGLApp = new function () {
           scene.remove( this.radiusSpheres[k] );
       }
       for ( var k in this.textlabels ) {
-        if( self.textlabels.hasOwnProperty( k ))
+        if( self.textlabels.hasOwnProperty( k )) {
+          var tagString = this.textlabels[k];
           scene.remove( this.textlabels[k] );
+          releaseTagGeometry( tagString );
+        }
       }
     };
 
@@ -813,7 +861,7 @@ var WebGLApp = new function () {
                          'neurite');
         }
         if (node[7] > 0) {
-          createNodeSphere(id, node[4], node[5], node[6], v, node[7] * scale);
+          createNodeSphere(node[0], node[4], node[5], node[6], v, node[7] * scale);
         }
       });
 
@@ -883,32 +931,13 @@ var WebGLApp = new function () {
         }
       }
 
-      // Create geometries for each tag
-      var tagGeometries = {};
-      for (var tagString in tagNodes) {
-        if (tagNodes.hasOwnProperty(tagString)) {
-          if (!tagGeometries.hasOwnProperty(tagString)) {
-            var text3d = new THREE.TextGeometry( tagString, {
-              size: 100 * scale,
-              height: 20 * scale,
-              curveSegments: 1,
-              font: "helvetiker"
-            });
-            text3d.computeBoundingBox();
-            tagGeometries[tagString] = text3d;
-          }
-        }
-      }
-
-      var textMaterial = new THREE.MeshNormalMaterial( { color: 0xffffff, overdraw: true } );
-
-      // Create meshes for the tags for all nodes that need them
+      // Create meshes for the tags for all nodes that need them, reusing the geometries
       for (var tagString in tagNodes) {
         if (tagNodes.hasOwnProperty(tagString)) {
           tagNodes[tagString].forEach(function(nodeID) {
             var node = nodeProps[nodeID];
             var v = pixelSpaceVector(node[4], node[5], node[6]); 
-            var text = new THREE.Mesh( tagGeometries[tagString], textMaterial );
+            var text = new THREE.Mesh( getTagGeometry(tagString), textMaterial );
             text.position.x = v.x;
             text.position.y = v.y;
             text.position.z = v.z;
@@ -919,7 +948,7 @@ var WebGLApp = new function () {
         }
       }
 
-      // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or TODO
+      // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
       var labelColors = {uncertain: new THREE.MeshBasicMaterial( { color: 0xff8000, opacity:0.6, transparent:true  } ),
                          todo: new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:true  } )};
 
@@ -2006,7 +2035,7 @@ var WebGLApp = new function () {
         }
       }
     }
-  }
+  };
 
   self.toggleConnector = function() {
     if( connector_filter ) {

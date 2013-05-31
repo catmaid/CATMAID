@@ -84,15 +84,13 @@ def _skeleton_for_3d_viewer(skeleton_id=None):
         ''' % skeleton_id)
 
     nodes = [] # node properties
-    tags = defaultdict(list)
+    tags = defaultdict(list) # node ID vs list of tags
     for row in cursor.fetchall():
         if row[6]:
             tags[row[6]].append(row[0])
-            if 't' == row[6][0]:
-                print row
         x, y, z = imap(float, row[2][1:-1].split(','))
         # properties: id, parent_id, user_id, reviewer_id, x, y, z, radius
-        nodes.append((row[0], row[4], row[1], row[3], x, y, z, 0 if row[5] < 0 else row[5]))
+        nodes.append((row[0], row[4], row[1], row[3], x, y, z, row[5]))
 
     # Fetch all connectors with their partner treenode IDs
     cursor.execute(

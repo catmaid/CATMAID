@@ -794,6 +794,7 @@ var WebGLApp = new function () {
       var textlabel_visibility = $('#skeletontext-' + self.id).is(':checked');
       var colorkey;
       
+      // Populate the graph for calculating the centrality-based shading
       this.graph = jsnx.Graph();
       this.betweenness = {};
       this.branchCentrality = {};
@@ -855,7 +856,6 @@ var WebGLApp = new function () {
         var v; // for reuse in translating the sphere if any
         // If node has a parent
         if (node[1]) {
-          // TODO: should non-neurite segments be excluded?
           self.graph.add_edge(node[0], node[1]);
       
           // indices 4,5,6 are x,y,z
@@ -984,14 +984,34 @@ var WebGLApp = new function () {
         }
       }
 
+      self.addCompositeActorToScene();
 
-      // Skeleton shading methods
-          
-      // TODO: do these automatically or wait until the user chooses the shading option from the menu?
+      self.setActorVisibility( self.skeletonmodel.selected );
+      self.setPreVisibility( self.skeletonmodel.pre_visible );
+      self.setPostVisibility( self.skeletonmodel.post_visible );
+      self.setTextVisibility( self.skeletonmodel.text_visible );
+      
+      self.actorColor = self.skeletonmodel.color;
+
+      self.shaderWorkers();
+    };
+
+    /** Populate datastructures for skeleton shading methods, and trigger a render
+     * when done and if appropriate. Does none of that and updates skeleton color
+     * when the shading method is none, or the graph data structures are already
+     * populated. */
+    this.shaderWorkers = function() {
+      // Update color and return if calculations were already done or are not requested
+      if ('none' === shading_method || Object.keys(self.betweenness).length > 0) {
+        self.updateSkeletonColor();
+        WebGLApp.render();
+        return;
+      }
+
       if (typeof(Worker) !== "undefined")
       {
-        // TODO: put up some kind of indicator that calculations are underway.
-        // -- it is already the case with the spinning wheel thanks to using the requestQueue rather than ajax directly.
+        // Put up some kind of indicator that calculations are underway.
+        $.blockUI({message: '<h2><img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> Computing... just a moment...</h2>'});
       
         // Calculate the betweenness centrality of the graph in another thread.
         // (This will run once the simplified graph has been created by w3 below.)
@@ -1013,10 +1033,11 @@ var WebGLApp = new function () {
             }
           }
           if (shading_method === 'betweenness_centrality') {
+            $.unblockUI();
             self.updateSkeletonColor();
             WebGLApp.render();
           }
-        }
+        };
         
         // Calculate the branch centrality of the graph in another thread.
         // (This will run once the simplified graph has been created by w3 below.)
@@ -1069,10 +1090,11 @@ var WebGLApp = new function () {
             }
           }
           if (shading_method === 'branch_centrality') {
+            $.unblockUI();
             self.updateSkeletonColor();
             WebGLApp.render();
           }
-        }
+        };
         
     // Make a simplified version of the graph that combines all nodes between branches and leaves.
         var w3 = new Worker(STATIC_URL_JS + "graph_worker.js");
@@ -1091,7 +1113,7 @@ var WebGLApp = new function () {
           // Calculate the betweenness and branch centralities of the simplified graph.
           w1.postMessage({graph: event.data, action:'edge_betweenness_centrality'});
           w2.postMessage({graph: event.data, action:'branch_centrality'});
-        }
+        };
         w3.postMessage({graph: jsnx.convert.to_edgelist(self.graph), action:'simplify'});
       }
       else
@@ -1105,19 +1127,12 @@ var WebGLApp = new function () {
           onComplete: function() {  }
         });
       }
-      
-      self.addCompositeActorToScene();
-
-      self.setActorVisibility( self.skeletonmodel.selected );
-      self.setPreVisibility( self.skeletonmodel.pre_visible );
-      self.setPostVisibility( self.skeletonmodel.post_visible );
-      self.setTextVisibility( self.skeletonmodel.text_visible );
-      
-      self.actorColor = self.skeletonmodel.color;
-      self.updateSkeletonColor();
-
     };
   };
+
+
+
+
 
   // array of skeletons
   var skeletons = new Object();
@@ -1264,7 +1279,7 @@ var WebGLApp = new function () {
     } else {
       return '#FF0000';
     }
-  }
+  };
 
   // add skeleton to scene
   this.addSkeletonFromData = function( skeleton_id, skeleton_data )
@@ -1277,7 +1292,7 @@ var WebGLApp = new function () {
       skeletons[skeleton_id].init( skeleton_id, skeleton_data );
     }
     self.render();
-  }
+  };
 
   this.changeSkeletonColor = function( skeleton_id, color )
   {
@@ -1293,7 +1308,7 @@ var WebGLApp = new function () {
         self.render();
         return true;
     }
-  }
+  };
 
   this.removeAssembly = function( assembly_id ) {
 
@@ -2103,8 +2118,8 @@ var WebGLApp = new function () {
     
     for (var skeleton_id in skeletons) {
       if (skeletons.hasOwnProperty(skeleton_id)) {
-        self.changeSkeletonColor(skeleton_id);
+        skeletons[skeleton_id].shaderWorkers();
       }
     }
   };
-}
+};

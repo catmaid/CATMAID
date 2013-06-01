@@ -406,6 +406,11 @@ var WebGLApp = new function () {
     }
   };
 
+  // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
+  var labelColors = {uncertain: new THREE.MeshBasicMaterial( { color: 0xff8000, opacity:0.6, transparent:true  } ),
+                     todo: new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:true  } )};
+
+
   /** An object to represent a skeleton in the WebGL space.
    *  The skeleton consists of three geometries:
    *    (1) one for the edges between nodes, represented as a list of contiguous pairs of points; 
@@ -946,10 +951,6 @@ var WebGLApp = new function () {
           });
         }
       }
-
-      // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
-      var labelColors = {uncertain: new THREE.MeshBasicMaterial( { color: 0xff8000, opacity:0.6, transparent:true  } ),
-                         todo: new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:true  } )};
 
       var createLabelSphere = function(nodeID, color) {
         var node = nodeProps[nodeID];

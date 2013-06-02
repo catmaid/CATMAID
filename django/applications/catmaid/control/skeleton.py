@@ -324,7 +324,7 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
     return partners
 
 
-#@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_info_raw(request, project_id=None, skeleton_id=None):
     # sanitize arguments
     synaptic_count_high_pass = int( request.POST.get( 'threshold', 0 ) )

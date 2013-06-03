@@ -273,7 +273,7 @@ def _connected_skeletons(skeleton_ids, relation_id_1, relation_id_2, model_of_id
       AND t1.relation_id = %s
       AND t1.connector_id = t2.connector_id
       AND t2.relation_id = %s
-    ''', (','.join(str(skid) for skid in skeleton_ids), relation_id_1, relation_id_2))
+    ''' % (','.join(str(skid) for skid in skeleton_ids), int(relation_id_1), int(relation_id_2)))
 
     # Sum the number of synapses
     for srcID, partnerID in cursor.fetchall():

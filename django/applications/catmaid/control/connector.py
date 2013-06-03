@@ -58,6 +58,10 @@ def one_to_many_synapses(request, project_id=None):
     skid = request.POST.get('skid');
     skids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
     relation_name = request.POST.get('relation') # expecting presynaptic_to or postsynaptic_to
+    if 'postsynaptic_to' == relation_name or 'presynaptic_to' == relation_name:
+        pass
+    else:
+        raise Exception("Cannot accept a relation named '%s'" % relation_name)
     cursor = connection.cursor();
     cursor.execute('''
     SELECT tc1.connector_id, c.location,
@@ -76,12 +80,12 @@ def one_to_many_synapses(request, project_id=None):
       AND tc2.skeleton_id IN (%s)
       AND tc1.connector_id = tc2.connector_id
       AND tc1.relation_id = r1.id
-      AND r1.relation_name = %s
+      AND r1.relation_name = '%s'
       AND tc1.treenode_id = t1.id
       AND tc2.treenode_id = t2.id
       AND tc1.user_id = u1.id
       AND tc2.user_id = u2.id
-    ''', (skid, ','.join(str(d) for d in skids), relation_name))
+    ''' % (skid, ','.join(str(d) for d in skids), relation_name))
 
     def parse(loc):
         return tuple(imap(float, loc[1:-1].split(',')))

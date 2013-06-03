@@ -110,6 +110,19 @@ var NotificationsTable = new function()
           "success": fnCallback
         });
       },
+      "fnRowCallback": function ( nRow, aaData, iDisplayIndex ) {
+        // Color each row based on its status.
+        if (aaData[3] === 'Open') {
+          nRow.style.backgroundColor = '#ffffdd';
+        } else if (aaData[3] === 'Approved') {
+          nRow.style.backgroundColor = '#ddffdd';
+        } else if (aaData[3] === 'Rejected') {
+          nRow.style.backgroundColor = '#ffdddd';
+        } else if (aaData[3] === 'Invalid') {
+          nRow.style.backgroundColor = '#dddddd';
+        }
+        return nRow;
+      },
       "iDisplayLength": 50,
       "aLengthMenu": [
         [-1, 10, 50, 100, 200],

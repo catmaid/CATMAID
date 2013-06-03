@@ -1,33 +1,48 @@
 import json
-import md5
+import colorsys
+from random import random
 
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
-def _compute_rgb( user_id, normalize = True ):
-	if user_id == -1:
-		return [1.0, 0.0, 0.0]
-	user_color = md5.new()
-	user_color.update(str(user_id))
-	user_color = user_color.hexdigest()
-	if normalize:
-		return [int(user_color[-2:],16)/255.,
-				int(user_color[-4:-2],16)/255.,
-				int(user_color[-6:-4],16)/255. ]
-	else:
-		return [int(user_color[-2:],16),
-				int(user_color[-4:-2],16),
-				int(user_color[-6:-4],16) ]
-
 @login_required
 def user_list(request):
-    result = {}
+    result = []
     for u in User.objects.all().order_by('last_name', 'first_name'):
-        result[str(u.id)] = {
+        up = u.userprofile
+        result.append({
             "id": u.id,
-            "name": u.username,
-            "longname": u.get_full_name(),
-            "user_color_normalize": _compute_rgb( u.id ),
-            "user_color": _compute_rgb( u.id, False ) }
+            "login": u.username,
+            "full_name": u.get_full_name(),
+            "first_name": u.first_name,
+            "last_name": u.last_name,
+            "color": (up.color.r, up.color.g, up.color.b) })
+    
     return HttpResponse(json.dumps(result), mimetype='text/json')
+
+
+initial_colors = [(1, 0, 0, 1), 
+                  (0, 1, 0, 1), 
+                  (0, 0, 1, 1), 
+                  (1, 0, 1, 1), 
+                  (0, 1, 1, 1), 
+                  (1, 1, 0, 1), 
+                  (1, 1, 1, 1), 
+                  (1, 0.5, 0, 1), 
+                  (1, 0, 0.5, 1), 
+                  (0.5, 1, 0, 1), 
+                  (0, 1, 0.5, 1), 
+                  (0.5, 0, 1, 1), 
+                  (0, 0.5, 1, 1)];
+
+
+def distinct_user_color():
+    users = User.objects.exclude(id__exact=-1).order_by('id')
+    
+    if len(users) < len(initial_colors):
+        distinct_color = initial_colors[len(users)]
+    else:
+        distinct_color = colorsys.hsv_to_rgb(random(), random(), 1.0) + (1,)
+    
+    return distinct_color

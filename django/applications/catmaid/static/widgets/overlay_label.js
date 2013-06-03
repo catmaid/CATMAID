@@ -21,7 +21,7 @@ text) {
   this.text = text;
 
   // create a raphael circle object
-  var c = this.paper.g.blob(this.x+4, this.y, this.text);
+  var c = this.paper.blob(this.x+4, this.y, this.text);
 
   this.remove = function () {
     c.remove();

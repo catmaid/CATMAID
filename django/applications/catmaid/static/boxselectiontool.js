@@ -89,7 +89,8 @@ BoxSelectionTool.prototype.getCropBoxBoundingBox = function(stack)
              width_world : width, height_world : height,
              left_px : left_px, top_px : top_px,
              right_px : right_px, bottom_px : bottom_px,
-              width_px : width_px, height_px : height_px }
+             width_px : width_px, height_px : height_px,
+             rotation_cw: this.cropBox.rotation_cw }
 };
 
 /**
@@ -155,7 +156,7 @@ BoxSelectionTool.prototype.createCropBox = function( screenX, screenY,
  * first.
  */
 BoxSelectionTool.prototype.createCropBoxByWorld = function( worldX,
-    worldY, worldWidth, worldHeight )
+    worldY, worldWidth, worldHeight, rotation_cw )
 {
     var view = this.stack.getView();
     if ( this.cropBox )
@@ -172,6 +173,7 @@ BoxSelectionTool.prototype.createCropBoxByWorld = function( worldX,
     this.cropBox.ydist = 0;
     this.cropBox.xorigin = this.cropBox.left;
     this.cropBox.yorigin = this.cropBox.top;
+    this.cropBox.rotation_cw = rotation_cw ? rotation_cw : 0;
 
     // update the cache
     this.cropBoxCache[ this.stack.getId() ] = this.cropBox;
@@ -269,11 +271,20 @@ function BoxSelectionLayer( stack, tool, crop_box)
 
         var cropBoxBB = tool.getCropBoxBoundingBox(stack);
 
+        // Size and positioning
         view.style.visibility = "visible";
         view.style.left = cropBoxBB.left_px + "px";
         view.style.top = cropBoxBB.top_px + "px";
         view.style.width = cropBoxBB.width_px  + "px";
         view.style.height = cropBoxBB.height_px  + "px";
+
+        // Rotation
+        var rotation_cmd = "rotate(" + cropBoxBB.rotation_cw + "deg)";
+        view.style.webkitTransform = rotation_cmd;
+        view.style.MozTransform = rotation_cmd;
+        view.style.msTransform = rotation_cmd;
+        view.style.OTransform = rotation_cmd;
+        view.style.transform = rotation_cmd;
 
         var current_scale = stack.scale;
         var output_scale = 1 / Math.pow( 2, tool.zoomlevel );

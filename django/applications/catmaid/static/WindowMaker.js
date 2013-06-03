@@ -117,34 +117,43 @@ var WindowMaker = new function()
     add.onclick = NeuronStagingArea.add_active_object_to_stage;
     buttons.appendChild(add);
 
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "randomize_skeleton_color");
-    rand.setAttribute("value", "Randomize color");
-    rand.onclick = NeuronStagingArea.randomizeColors;
-    buttons.appendChild(rand);
+    var save = document.createElement('input');
+    save.setAttribute("type", "button");
+    save.setAttribute("id", "save_skeleton_list");
+    save.setAttribute("value", "Save list");
+    save.style.marginLeft = '1em';
+    save.onclick = NeuronStagingArea.save_skeleton_list;
+    buttons.appendChild(save);
 
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "save_skeleton_list");
-    rand.setAttribute("value", "Save list");
-    rand.onclick = NeuronStagingArea.save_skeleton_list;
-    buttons.appendChild(rand);
-
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "load_skeleton_list");
-    rand.setAttribute("value", "Load list");
-    rand.onclick = NeuronStagingArea.load_skeleton_list;
-    buttons.appendChild(rand);
+    var load = document.createElement('input');
+    load.setAttribute("type", "button");
+    load.setAttribute("id", "load_skeleton_list");
+    load.setAttribute("value", "Load list");
+    load.onclick = NeuronStagingArea.load_skeleton_list;
+    buttons.appendChild(load);
     
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "user_colormap_dialog");
-    rand.setAttribute("value", "User colormap");
-    rand.onclick = NeuronStagingArea.usercolormap_dialog;
-    buttons.appendChild(rand);
-
+    var colorLabel = document.createElement('div');
+    colorLabel.innerHTML = 'Color:';
+    colorLabel.style.display = 'inline';
+    colorLabel.style.marginLeft = '1em';
+    buttons.appendChild(colorLabel);
+    var colorMenu = document.createElement('select');
+    colorMenu.setAttribute("id", "skeletons_base_color");
+    $('<option/>', {value : 'random', text: 'Random', selected: true}).appendTo(colorMenu);
+    $('<option/>', {value : 'creator', text: 'By Creator'}).appendTo(colorMenu);
+    $('<option/>', {value : 'reviewer', text: 'By Reviewer'}).appendTo(colorMenu);
+    $('<option/>', {value : 'manual', text: 'Manual'}).appendTo(colorMenu);
+    colorMenu.onchange = NeuronStagingArea.set_skeletons_base_color;
+    buttons.appendChild(colorMenu);
+    
+    var map = document.createElement('input');
+    map.setAttribute("type", "button");
+    map.setAttribute("id", "user_colormap_dialog");
+    map.setAttribute("value", "User colormap");
+    map.style.marginLeft = '1em';
+    map.onclick = NeuronStagingArea.usercolormap_dialog;
+    buttons.appendChild(map);
+    
     win.getFrame().appendChild(buttons);
     content.appendChild(container);
     
@@ -159,8 +168,6 @@ var WindowMaker = new function()
             '<th>pre</th>' +
             '<th>post</th>' +
             '<th>text</th>' +
-            '<th>user color</th>' +
-            '<th>review user color</th>' +
             '<th>property</th>' +
           '</tr>' +
         '</thead>' +
@@ -262,70 +269,81 @@ var WindowMaker = new function()
     var container = createContainer("view_in_3d_webgl_widget");
     content.appendChild(container);
 
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "add_active");
-    add.setAttribute("value", "Show active");
-    add.onclick = WebGLApp.add_active_and_refresh_skeletons;
-    buttons.appendChild(add);
-
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "refresh_viewer");
-    add.setAttribute("value", "Show selected");
-    add.onclick = WebGLApp.refresh_skeletons;
-    buttons.appendChild(add);
+    var reload = document.createElement('input');
+    reload.setAttribute("type", "button");
+    reload.setAttribute("id", "refresh_skeletons");
+    reload.setAttribute("value", "Reload skeletons");
+    reload.onclick = WebGLApp.refresh_skeletons;
+    buttons.appendChild(reload);
     
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "center_active_node");
-    add.setAttribute("value", "Center active");
-    add.onclick = WebGLApp.look_at_active_node;
-    buttons.appendChild(add);
+    var center = document.createElement('input');
+    center.setAttribute("type", "button");
+    center.setAttribute("id", "center_active_node");
+    center.setAttribute("value", "Center active");
+    center.style.marginLeft = '1em';
+    center.onclick = WebGLApp.look_at_active_node;
+    buttons.appendChild(center);
 
     var fulls = document.createElement('input');
     fulls.setAttribute("type", "button");
     fulls.setAttribute("id", "fullscreen_webgl_view");
     fulls.setAttribute("value", "Fullscreen");
+    fulls.style.marginLeft = '1em';
     fulls.onclick = WebGLApp.fullscreenWebGL;
     buttons.appendChild(fulls);
 
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "xy_plane");
-    rand.setAttribute("value", "XY");
-    rand.onclick =  WebGLApp.XYView;
-    buttons.appendChild(rand);
+    var xy = document.createElement('input');
+    xy.setAttribute("type", "button");
+    xy.setAttribute("id", "xy_plane");
+    xy.setAttribute("value", "XY");
+    xy.style.marginLeft = '1em';
+    xy.onclick =  WebGLApp.XYView;
+    buttons.appendChild(xy);
 
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "xz_plane");
-    rand.setAttribute("value", "XZ");
-    rand.onclick = WebGLApp.XZView;
-    buttons.appendChild(rand);
+    var xz = document.createElement('input');
+    xz.setAttribute("type", "button");
+    xz.setAttribute("id", "xz_plane");
+    xz.setAttribute("value", "XZ");
+    xz.onclick = WebGLApp.XZView;
+    buttons.appendChild(xz);
 
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "yz_plane");
-    rand.setAttribute("value", "YZ");
-    rand.onclick = WebGLApp.YZView;
-    buttons.appendChild(rand);
+    var yz = document.createElement('input');
+    yz.setAttribute("type", "button");
+    yz.setAttribute("id", "yz_plane");
+    yz.setAttribute("value", "YZ");
+    yz.onclick = WebGLApp.YZView;
+    buttons.appendChild(yz);
 
     // Restrict display to shared connectors between visible skeletons
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "toggle_connector");
-    rand.setAttribute("value", "Restrict connectors");
-    rand.onclick = WebGLApp.toggleConnector;
-    buttons.appendChild(rand);
+    var connectors = document.createElement('input');
+    connectors.setAttribute("type", "button");
+    connectors.setAttribute("id", "toggle_connector");
+    connectors.setAttribute("value", "Restrict connectors");
+    connectors.style.marginLeft = '1em';
+    connectors.onclick = WebGLApp.toggleConnector;
+    buttons.appendChild(connectors);
 
-    var rand = document.createElement('input');
-    rand.setAttribute("type", "button");
-    rand.setAttribute("id", "configure_parameters");
-    rand.setAttribute("value", "Options");
-    rand.onclick = WebGLApp.configure_parameters;
-    buttons.appendChild(rand);
-
+    var options = document.createElement('input');
+    options.setAttribute("type", "button");
+    options.setAttribute("id", "configure_parameters");
+    options.setAttribute("value", "Options");
+    options.style.marginLeft = '1em';
+    options.onclick = WebGLApp.configure_parameters;
+    buttons.appendChild(options);
+    
+    var shadingLabel = document.createElement('div');
+    shadingLabel.innerHTML = 'Shading:';
+    shadingLabel.style.display = 'inline';
+    shadingLabel.style.marginLeft = '1em';
+    buttons.appendChild(shadingLabel);
+    var shadingMenu = document.createElement('select');
+    shadingMenu.setAttribute("id", "skeletons_shading");
+    $('<option/>', {value : 'none', text: 'None', selected: true}).appendTo(shadingMenu);
+    $('<option/>', {value : 'betweenness_centrality', text: 'Betweenness centrality'}).appendTo(shadingMenu);
+    $('<option/>', {value : 'branch_centrality', text: 'Branch centrality'}).appendTo(shadingMenu);
+    shadingMenu.onchange = WebGLApp.set_shading_method;
+    buttons.appendChild(shadingMenu);
+    
     var canvas = document.createElement('div');
     canvas.setAttribute("id", "viewer-3d-webgl-canvas");
     // canvas.style.width = "800px";
@@ -1063,7 +1081,7 @@ var WindowMaker = new function()
         start.setAttribute("type", "button");
         start.setAttribute("id", "start_review_skeleton");
         start.setAttribute("value", "Start to review skeleton");
-        start.onclick = ReviewSystem.startSkeletonToReview;
+        start.onclick = function(ev) { ReviewSystem.startSkeletonToReview(); };
         contentbutton.appendChild(start);
 
         var end = document.createElement('input');

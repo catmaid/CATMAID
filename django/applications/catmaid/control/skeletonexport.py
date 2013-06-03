@@ -10,7 +10,9 @@ from catmaid.control.common import *
 
 import networkx as nx
 from tree_util import edge_count_to_root
-from user import _compute_rgb
+
+from itertools import imap
+from collections import defaultdict
 
 try:
     import neuroml
@@ -59,6 +61,62 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
     else:
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
+
+def _skeleton_for_3d_viewer(skeleton_id=None):
+    skeleton_id = int(skeleton_id) # sanitize
+    cursor = connection.cursor()
+
+    # Fetch the neuron name
+    cursor.execute(
+        '''SELECT name
+           FROM class_instance ci,
+                class_instance_class_instance cici
+           WHERE cici.class_instance_a = %s
+             AND cici.class_instance_b = ci.id
+        ''' % skeleton_id)
+    name = cursor.fetchone()[0]
+    
+    # Fetch all nodes, with their tags if any
+    cursor.execute(
+        '''SELECT t.id, t.user_id, t.location, t.reviewer_id, t.parent_id, t.radius, ci.name
+          FROM treenode t LEFT OUTER JOIN (treenode_class_instance tci INNER JOIN class_instance ci ON tci.class_instance_id = ci.id INNER JOIN relation r ON tci.relation_id = r.id AND r.relation_name = 'labeled_as') ON t.id = tci.treenode_id
+          WHERE t.skeleton_id = %s
+        ''' % skeleton_id)
+
+    nodes = [] # node properties
+    tags = defaultdict(list) # node ID vs list of tags
+    for row in cursor.fetchall():
+        if row[6]:
+            tags[row[6]].append(row[0])
+        x, y, z = imap(float, row[2][1:-1].split(','))
+        # properties: id, parent_id, user_id, reviewer_id, x, y, z, radius
+        nodes.append((row[0], row[4], row[1], row[3], x, y, z, row[5]))
+
+    # Fetch all connectors with their partner treenode IDs
+    cursor.execute(
+        ''' SELECT tc.treenode_id, tc.connector_id, r.relation_name, c.location, c.reviewer_id
+            FROM treenode_connector tc,
+                 connector c,
+                 relation r
+            WHERE tc.skeleton_id = %s
+              AND tc.connector_id = c.id
+              AND tc.relation_id = r.id
+        ''' % skeleton_id)
+    # Above, purposefully ignoring connector tags. Would require a left outer join on the inner join of connector_class_instance and class_instance, and frankly connector tags are pointless in the 3d viewer.
+
+    # List of (treenode_id, connector_id, relation_id, x, y, z)n with relation_id replaced by 0 (presynaptic) or 1 (postsynaptic)
+    # 'presynaptic_to' has an 'r' at position 1:
+    connectors = []
+    for row in cursor.fetchall():
+        x, y, z = imap(float, row[3][1:-1].split(','))
+        connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z, row[4]))
+
+    return name, nodes, tags, connectors
+
+def skeleton_for_3d_viewer(request, project_id=None, skeleton_id=None):
+    return HttpResponse(json.dumps(_skeleton_for_3d_viewer(skeleton_id)))
+
+
 def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
 
     treenode_qs, labels_as, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id, with_labels=True)
@@ -71,7 +129,7 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
         else:
             labels[tn.treenode_id] = [ lab ]
             # whenever the word uncertain is in the tag, add it
-        # here. this is used in the 3d webgl viewer
+            # here. This is used in the 3d webgl viewer
     for cn in labelconnector_qs:
         lab = str(cn.class_instance.name).lower()
         if cn.connector_id in labels:
@@ -88,14 +146,11 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
         if tn.id in labels:
             lab = labels[tn.id]
         else:
-            # TODO this is wrong. uncertain labels are not added when the node is labeled
+            # Fake label for WebGL 3d viewer to show a sphere
             if tn.confidence < 5:
                 lab = ['uncertain']
             else:
                 lab = []
-
-        user_color = _compute_rgb( tn.user_id )
-        reviewuser_id_color = _compute_rgb( tn.reviewer_id )
 
         vertices[tn.id] = {
             'x': tn.location.x,
@@ -104,13 +159,9 @@ def generate_extended_skeleton_data( project_id=None, skeleton_id=None ):
             'radius': max(tn.radius, 0),
             'type': 'skeleton',
             'labels': lab,
-            'user_id_color': user_color,
-            'reviewuser_id_color': reviewuser_id_color
+            'user_id': tn.user_id,
+            'reviewer_id': tn.reviewer_id
             
-            # TODO: can use sophisticated colormaps
-            # http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
-
-            # 'reviewer_id': tn.reviewer_id,
             # 'review_time': tn.review_time
             # To submit the review time, we would need to encode the datetime as string
             # http://stackoverflow.com/questions/455580/json-datetime-between-python-and-javascript

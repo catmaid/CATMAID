@@ -4,7 +4,8 @@ var NeuronStagingArea = new function()
 
 	var self = this;
 	var skeletonmodels = {};
-
+	
+	self.skeletonsColorMethod = 'random';
 	var togglevisibleall = false;
 
 	var SkeletonModel = function( id, neuronname )
@@ -16,16 +17,38 @@ var NeuronStagingArea = new function()
 		self.selected = true;
 
 		// color
-		self.colorhex = '#FFFF00';
-		self.colorrgb = [255, 255, 0];
-
+		{
+			var newHue = 0.0;
+			
+			if (Object.keys(skeletonmodels).length === 0) {
+				// This is the first skeleton, pick a random hue.
+				newHue = Math.random();
+			} else {
+				// Any subsequent skeleton added will be at the midpoint of the largest existing gap in the HSV color space.
+				var existingHues = [];
+				for (var skeletonID in skeletonmodels) {
+					if (skeletonmodels.hasOwnProperty(skeletonID)) {
+						existingHues.push(skeletonmodels[skeletonID].color.getHSL().h);
+					}
+				}
+				existingHues.sort();
+				existingHues.push(existingHues[0] + 1.0);
+				var maxGap = 0.0;
+				existingHues.slice(0, -1).forEach(function(hue, i) {
+					if (existingHues[i + 1] - hue > maxGap) {
+						newHue = ((existingHues[i + 1] + hue) / 2) % 1.0;
+						maxGap = existingHues[i + 1] - hue;
+					}
+				});
+			}
+			
+			self.color = new THREE.Color().setHSL(newHue, 1.0, 0.5);
+		}
+		
 		// 3d viewer attributes
 		self.pre_visible = true;
 		self.post_visible = true;
 		self.text_visible = false;
-
-		self.usercolor_visible = false;
-		self.userreviewcolor_visible = false;
 
 		// properties for up/downstream
 		self.synaptic_count_high_pass = 0; // this number or higher
@@ -116,9 +139,18 @@ var NeuronStagingArea = new function()
 
 	}
 
+	self.highlight_skeleton = function( new_skeleton_id ) {
+    	for( var skeleton_id in skeletonmodels ) {
+    		if( skeletonmodels.hasOwnProperty(skeleton_id) ) {
+    			$('#skeletonrow-' + skeleton_id).css('background-color', 'white');
+    		}
+    	}
+		$('#skeletonrow-' + new_skeleton_id).css('background-color', '#FFFF00');
+	}
+
 	self.is_widget_open = function()
 	{
-		if( $( "#neuron_staging_table").length == 0 ) {
+		if( $( "#neuron_staging_table").length === 0 ) {
 			return false;
 		} else {
 			return true;
@@ -150,7 +182,7 @@ var NeuronStagingArea = new function()
 
 	}
 
-	self.add_skeleton_to_stage = function( id, neuronname )
+	self.add_skeleton_to_stage = function( id, neuronname, callback )
 	{
 		// if it does not exists yet, add it
 		if( skeletonmodels.hasOwnProperty( id ) ) {
@@ -158,6 +190,14 @@ var NeuronStagingArea = new function()
 		} else {
 			skeletonmodels[ id ] = new SkeletonModel( id, neuronname );
 			self._add_skeleton_to_table( skeletonmodels[ id ] );
+			self.update_skeleton_color_button( id );
+			if( WebGLApp.is_widget_open() ) {
+				WebGLApp.addSkeletonFromID( id );
+			}
+		}
+		if (typeof callback !== "undefined" && callback instanceof Function) {
+			console.log('call callback')
+			callback();
 		}
 	}
 
@@ -171,10 +211,7 @@ var NeuronStagingArea = new function()
 	        type: "GET",
 	        dataType: "json",
 	        success: function ( data ) {
-	        	self.add_skeleton_to_stage( skeleton_id, data['neuronname'] );
-	        	if (typeof callback !== "undefined" && callback instanceof Function) {
-  					callback();
-  				}
+	        	self.add_skeleton_to_stage( skeleton_id, data['neuronname'], callback );
 	        }
 	      });
 	    }
@@ -209,54 +246,42 @@ var NeuronStagingArea = new function()
     		}
     	}
 	}
-
-	self.set_skeleton_color_hex = function( id, colorhex ) {
-		skeletonmodels[ id ].colorhex = colorhex;
-		skeletonmodels[ id ].colorrgb = _hex2rgb( colorhex );
+	
+	self.set_skeletons_base_color = function() {
+		// Set the color of all skeletons based on the state of the "Color" pop-up menu.
+		var skeletons = self.get_all_skeletons();
+		
+		self.skeletonsColorMethod = $('#skeletons_base_color :selected').attr("value");
+		
+		if (self.skeletonsColorMethod === "random") {
+			var hueStart = Math.random();
+			var hueStep = 1.0 / skeletons.length;
+			skeletons.forEach(function(skeletonID, i) {
+				var newColor = new THREE.Color().setHSL((hueStart + i * hueStep) % 1.0, (skeletons.length > 6 ? 1.0 - i % 2.0 * 0.5 : 1.0), 0.5);
+				skeletonmodels[ skeletonID ].color = newColor;
+				self.update_skeleton_color_button( skeletonID );
+				if( WebGLApp.has_skeleton( skeletonID ) ) {
+					WebGLApp.changeSkeletonColor( skeletonID, newColor );
+				}
+			});
+		} else {
+			skeletons.forEach(function(skeletonID) {
+				if( WebGLApp.has_skeleton(skeletonID) ) {
+					WebGLApp.changeSkeletonColor(skeletonID);
+				}
+			});
+		}
 	}
-
-	self.set_skeleton_color_rgb = function( id, colorrgb ) {
-		skeletonmodels[ id ].colorrgb = colorrgb;
-		skeletonmodels[ id ].colorhex = _rgbarray2hex( colorrgb );
-	}	
-
+	
 	self.update_skeleton_color_button = function( id ) {
-		$('#skeletonaction-changecolor-' + id).css("background-color", skeletonmodels[ id ].colorhex );
+		$('#skeletonaction-changecolor-' + id).css("background-color", '#' + skeletonmodels[ id ].color.getHexString() );
 	}
 
     self.update_skeleton_color_in_3d = function( id )
     {
       	if( $('#view_in_3d_webgl_widget').length && WebGLApp.has_skeleton( id ) )
-      		WebGLApp.changeSkeletonColor( id, skeletonmodels[ id ].colorrgb ); 	
+      		WebGLApp.changeSkeletonColor( id, skeletonmodels[ id ].color ); 	
     }
-
-  var randomColors = [];
-	  randomColors[0] = [255, 255, 0]; // yellow
-	  randomColors[1] = [255, 0, 255]; // magenta
-	  // randomColors[2] = [0, 255, 255]; // cyan
-	  randomColors[2] = [255, 255, 255]; // white
-	  randomColors[3] = [255, 128, 0]; // orange
-
-	self.randomizeColors = function()
-	{
-
-		var i = 0, col, skeleton_id, skeletonsin3d = self.get_selected_skeletons();
-		for(var idx = 0; idx < skeletonsin3d.length; idx ++) {
-			skeleton_id = skeletonsin3d[idx];
-			if( idx < randomColors.length ) {
-				col = randomColors[idx];
-			} else {
-				col = [parseInt( Math.random() * 255 ),
-						parseInt( Math.random() * 255 ),
-						parseInt( Math.random() * 255 ) ];
-			}
-			self.set_skeleton_color_rgb( skeleton_id, col);
-			self.update_skeleton_color_button( skeleton_id );
-			if( WebGLApp.has_skeleton( parseInt( skeleton_id ) ) )
-				WebGLApp.changeSkeletonColor( parseInt(skeleton_id), col );
-		}
-
-	}
 
     self.get_skeletonmodel = function( id )
     {
@@ -265,7 +290,7 @@ var NeuronStagingArea = new function()
 
     self.get_color_of_skeleton = function( id )
     {
-    	return skeletonmodels[ id ].colorhex;
+    	return skeletonmodels[ id ].color.clone();
     }
 
 	self.get_selected_skeletons = function()
@@ -285,7 +310,7 @@ var NeuronStagingArea = new function()
 		return Object.keys( skeletonmodels );
 	}
 
-	self.add_active_object_to_stage = function( callback ) {
+	self.add_active_object_to_stage = function( event ) {
 		// add either a skeleton or an assembly based on the tool selected
 		if( project.getTool().toolname === 'tracingtool' ) {
     		var atn_id = SkeletonAnnotations.getActiveNodeId(),
@@ -294,11 +319,14 @@ var NeuronStagingArea = new function()
       			alert("You must have an active node selected to add its skeleton to the staging area.");
       			return;
 			}
-    		if (SkeletonAnnotations.getActiveNodeType() != "treenode") {
-      			alert("Select the node of a skeleton, not a connector, to add it oto the staging area.");
+    		if (SkeletonAnnotations.getActiveNodeType() !== "treenode") {
+      			alert("Select the node of a skeleton, not a connector, to add it to the staging area.");
       			return;
     		}
-    		self.add_skeleton_to_stage_without_name( skeleton_id, callback );
+			var new_callback = function() {
+				self.highlight_skeleton( skeleton_id );
+			}
+    		self.add_skeleton_to_stage_without_name( skeleton_id, new_callback );
 		}
 	}
 
@@ -313,7 +341,7 @@ var NeuronStagingArea = new function()
 
 	function _componentToHex(c) {
 	    var hex = c.toString(16);
-	    return hex.length == 1 ? "0" + hex : hex;
+	    return hex.length === 1 ? "0" + hex : hex;
 	}
 
 	function _rgbarray2hex(rgb) {
@@ -326,8 +354,8 @@ var NeuronStagingArea = new function()
 	}
 
 	self._add_skeleton_to_table = function ( skeleton ) {
-
-		if( $('#skeletonrow-' + skeleton.id ).length > 0 ) {
+	
+	if( $('#skeletonrow-' + skeleton.id ).length > 0 ) {
 		  return;
 		}
 
@@ -440,36 +468,6 @@ var NeuronStagingArea = new function()
 		      } )
 		));
 
-		rowElement.append(
-		  $(document.createElement("td")).append(
-		    $(document.createElement("input")).attr({
-		              id:    'skeletonusercolor-' + skeleton.id,
-		              name:  skeleton.baseName,
-		              value: skeleton.id,
-		              type:  'checkbox',
-		              checked:false
-		      })
-		      .click( function( event )
-		      {
-		      	skeletonmodels[ skeleton.id ].usercolor_visible = $('#skeletonusercolor-' + skeleton.id).is(':checked');
-		      } )
-		));
-
-		rowElement.append(
-		  $(document.createElement("td")).append(
-		    $(document.createElement("input")).attr({
-		              id:    'skeletonuserreviewcolor-' + skeleton.id,
-		              name:  skeleton.baseName,
-		              value: skeleton.id,
-		              type:  'checkbox',
-		              checked:false
-		      })
-		      .click( function( event )
-		      {
-		      	skeletonmodels[ skeleton.id ].userreviewcolor_visible = $('#skeletonuserreviewcolor-' + skeleton.id).is(':checked');
-		      } )
-		));
-
 		var td = $(document.createElement("td"));
 		td.append(
 		  $(document.createElement("button")).attr({
@@ -516,8 +514,7 @@ var NeuronStagingArea = new function()
 		$('#skeletonaction-changecolor-' + skeleton.id).css("background-color","#FFFF00");
 		cw.onchange(function(color)
 		{
-			var colors = [parseInt(color.r), parseInt(color.g), parseInt(color.b)]
-			self.set_skeleton_color_rgb( skeleton.id, colors );
+			skeletonmodels[ skeleton.id ].color = new THREE.Color().setRGB(parseInt(color.r) / 255.0, parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);
 			self.update_skeleton_color_button( skeleton.id);
 			self.update_skeleton_color_in_3d( skeleton.id );
 
@@ -593,8 +590,8 @@ var NeuronStagingArea = new function()
 	    tab.innerHTML =
 	        '<thead>' +
 	          '<tr>' +
-	            '<th>username</th>' +
-	            '<th>longname</th>' +
+	            '<th>login</th>' +
+	            '<th>name</th>' +
 	            '<th>color</th>' +
 	          '</tr>' +
 	        '</thead>' +
@@ -603,6 +600,7 @@ var NeuronStagingArea = new function()
 
 		$(dialog).dialog({
 		  height: 440,
+		  width: 340,
 		  modal: false,
 		  dialogClass: "no-close",
 		  buttons: {
@@ -615,26 +613,18 @@ var NeuronStagingArea = new function()
 		  	$('#user-colormap-dialog').remove();
 		  }
 		});
-
-        requestQueue.register(django_url + 'user-list', 'GET', undefined,
-            function (status, data, text) {
-                var e = $.parseJSON(data);
-                if (status !== 200) {
-                    alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
-                } else {
-                	for(var id in e) {
-                		if( e.hasOwnProperty( id )) {
-                			if( id == -1)
-                				continue;
-        					var rowElement = $('<tr/>');
-        					rowElement.append( $('<td/>').text( e[id].name ) );
-    						rowElement.append( $('<td/>').text( e[id].longname ) );
-    						rowElement.append( $('<div/>').css('width', '100px').css('height', '20px').css('background-color', 'rgb(' + e[id]['user_color'][0] + ',' + e[id]['user_color'][1] + ',' + e[id]['user_color'][2] + ')') );
-    						$('#usercolormap-table > tbody:last').append( rowElement );
-                		}
-                	}
-                }
-        });
+		
+		var users = User.all();
+		for (var userID in users) {
+			if (users.hasOwnProperty(userID) && userID !== "-1") {
+				var user = users[userID];
+				var rowElement = $('<tr/>');
+				rowElement.append( $('<td/>').text( user.login ) );
+				rowElement.append( $('<td/>').text( user.fullName ) );
+				rowElement.append( $('<div/>').css('width', '100px').css('height', '20px').css('background-color', '#' + user.color.getHexString()) );
+				$('#usercolormap-table > tbody:last').append( rowElement );
+			}
+		}
 
 	}
 

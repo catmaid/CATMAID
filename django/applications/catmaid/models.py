@@ -1,7 +1,8 @@
 from django import forms
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import post_save, post_syncdb
+from django.db.models.signals import pre_save, post_save, post_syncdb
+from django.dispatch import receiver
 from datetime import datetime
 import sys
 import re
@@ -19,6 +20,8 @@ from guardian.shortcuts import get_objects_for_user
 from taggit.managers import TaggableManager
 
 from south.db import db
+
+from control.user import distinct_user_color
 
 CELL_BODY_CHOICES = (
     ('u', 'Unknown'),
@@ -659,22 +662,6 @@ class SkeletonlistDashboard(UserFocusedModel):
     skeleton_list = IntegerArrayField()
     description = models.TextField()
 
-class SliceContours(UserFocusedModel):
-
-    coordinates = IntegerArrayField()
-
-    stack = models.ForeignKey(Stack)
-    node_id = models.CharField(max_length=255,db_index=True) # convention: {sectionindex}_{slide_id}
-    length = models.FloatField(null=True)
-
-class SliceContoursHighres(UserFocusedModel):
-
-    coordinates = IntegerArrayField()
-
-    stack = models.ForeignKey(Stack)
-    node_id = models.CharField(max_length=255,db_index=True) # convention: {sectionindex}_{slide_id}
-    length = models.FloatField(null=True)
-
 class Segments(UserFocusedModel):
 
     stack = models.ForeignKey(Stack)
@@ -693,46 +680,6 @@ class Segments(UserFocusedModel):
     segmentation_cost = models.FloatField()
     direction = models.BooleanField() # 0:LR if origin_section< target_section / 1:RL as boolean, otherwise
     status = models.IntegerField(db_index=True, default=1)
-
-class SegmentsData(models.Model):
-
-    segment = models.ForeignKey(Segments)
-
-    center_distance = models.FloatField(default=0.0)
-    set_difference = models.FloatField(default=0.0)
-    set_difference_ratio = models.FloatField(default=0.0)
-    aligned_set_difference = models.FloatField(default=0.0)
-    aligned_set_difference_ratio = models.FloatField(default=0.0)
-    size = models.FloatField(default=0.0)
-    overlap = models.FloatField(default=0.0)
-    overlap_ratio = models.FloatField(default=0.0)
-    aligned_overlap = models.FloatField(default=0.0)
-    aligned_overlap_ratio = models.FloatField(default=0.0)
-    average_slice_distance = models.FloatField(default=0.0)
-    max_slice_distance = models.FloatField(default=0.0)
-    aligned_average_slice_distance = models.FloatField(default=0.0)
-    aligned_max_slice_distance = models.FloatField(default=0.0)
-    histogram_0 = models.FloatField(default=0.0)
-    histogram_1 = models.FloatField(default=0.0)
-    histogram_2 = models.FloatField(default=0.0)
-    histogram_3 = models.FloatField(default=0.0)
-    histogram_4 = models.FloatField(default=0.0)
-    histogram_5 = models.FloatField(default=0.0)
-    histogram_6 = models.FloatField(default=0.0)
-    histogram_7 = models.FloatField(default=0.0)
-    histogram_8 = models.FloatField(default=0.0)
-    histogram_9 = models.FloatField(default=0.0)
-    normalized_histogram_0 = models.FloatField(default=0.0)
-    normalized_histogram_1 = models.FloatField(default=0.0)
-    normalized_histogram_2 = models.FloatField(default=0.0)
-    normalized_histogram_3 = models.FloatField(default=0.0)
-    normalized_histogram_4 = models.FloatField(default=0.0)
-    normalized_histogram_5 = models.FloatField(default=0.0)
-    normalized_histogram_6 = models.FloatField(default=0.0)
-    normalized_histogram_7 = models.FloatField(default=0.0)
-    normalized_histogram_8 = models.FloatField(default=0.0)
-    normalized_histogram_9 = models.FloatField(default=0.0)
-
 
 class Slices(UserFocusedModel):
 
@@ -866,6 +813,7 @@ class UserProfile(models.Model):
         default=settings.PROFILE_SHOW_TRACING_TOOL)
     show_ontology_tool = models.BooleanField(
         default=settings.PROFILE_SHOW_ONTOLOGY_TOOL)
+    color = RGBAField(default=distinct_user_color)
 
     def __unicode__(self):
         return self.user.username
@@ -996,11 +944,13 @@ class ChangeRequest(UserFocusedModel):
         
         if self.status == ChangeRequest.OPEN:
             # Run the request's validation code snippet to determine whether it is still valid.
+            # The action is required to set a value for the is_valid variable.
             try:
-                from catmaid.control import *
-                is_valid = eval(self.validate_action)
+                exec(self.validate_action)
+                if 'is_valid' not in dir():
+                    raise Exception('validation action did not define is_valid')
                 if not is_valid:
-                    # Cache the result so we don't have to do the eval next time.
+                    # Cache the result so we don't have to do the exec next time.
                     # TODO: can a request ever be temporarily invalid?
                     self.status = ChangeRequest.INVALID
                     self.save()
@@ -1016,7 +966,6 @@ class ChangeRequest(UserFocusedModel):
             raise Exception('Failed to approve change request: the change is no longer possible.')
         
         try:
-            from catmaid.control import *
             exec(self.approve_action)
             self.status = ChangeRequest.APPROVED
             self.completion_time = datetime.now()
@@ -1034,7 +983,6 @@ class ChangeRequest(UserFocusedModel):
             raise Exception('Failed to reject change request: the change is no longer possible.')
         
         try:
-            from catmaid.control import *
             exec(self.reject_action)
             self.status = ChangeRequest.REJECTED
             self.completion_time = datetime.now()
@@ -1047,6 +995,14 @@ class ChangeRequest(UserFocusedModel):
             
         except Exception as e:
             raise Exception('Failed to reject change request: %s' % str(e))
+
+
+@receiver(pre_save, sender=ChangeRequest)
+def validate_change_request(sender, **kwargs):
+    # Make sure the validate action defines is_valid.
+    cr = kwargs['instance']
+    if re.search('is_valid\s=', cr.validate_action) == None:
+        raise Exception('The validate action of a ChangeRequest must assign a value to the is_valid variable.')
 
 
 def send_email_to_change_request_recipient(sender, instance, created, **kwargs):
@@ -1063,14 +1019,13 @@ post_save.connect(send_email_to_change_request_recipient, sender = ChangeRequest
 def notify_user(user, title, message):
     """ Send a user a message and an e-mail."""
     
-    # TODO: only send one e-mail per day, probably using a Timer object <http://docs.python.org/2/library/threading.html#timer-objects>
-    
     # Create the message
-    Message(user = user,
-            title = title,
-            text = message).save()
+#     Message(user = user,
+#             title = title,
+#             text = message).save()
     
     # Send the e-mail
+    # TODO: only send one e-mail per day, probably using a Timer object <http://docs.python.org/2/library/threading.html#timer-objects>
     try:
         user.email_user('[CATMAID] ' + title, message)
     except Exception as e:

@@ -118,6 +118,11 @@ var SkeletonAnnotations = new function()
     if ($('#treenode_table_widget').css('display') === "block" && $('#synchronize_treenodetable').attr('checked')) {
       TreenodeTable.init( project.getId() );
     }
+
+    if( NeuronStagingArea.is_widget_open() ) {
+      NeuronStagingArea.highlight_skeleton( SkeletonAnnotations.getActiveSkeletonId() );
+    }
+
   };
 
   this.exportSWC = function() {

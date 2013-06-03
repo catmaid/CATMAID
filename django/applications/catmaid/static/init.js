@@ -161,10 +161,15 @@ function handle_login(status, text, xml, completionCallback) {
 
       //msg_timeout = window.setTimeout( message, MSG_TIMEOUT_INTERVAL );
       message();
+      
+      // Asynchronously get the full list of users.
+      // TODO: how to handle failure of this call?
+      User.getUsers();
     } else if (e.error) {
       alert(e.error);
     }
     handle_profile_update(e);
+    
     updateProjects(completionCallback);
   } else if (status != 200) {
     // Of course, lots of non-200 errors are fine - just report
@@ -682,27 +687,41 @@ function handle_message( status, text, xml )
 				var n = 0;
 				for ( var i in e )
 				{
-					e[ i ].action = django_url + 'messages/mark_read?id=' + e[ i ].id;
-					e[ i ].note = e[ i ].time_formatted;
-					++n;
-					var dt = document.createElement( "dt" );
-					dt.appendChild( document.createTextNode( e[ i ].time_formatted ) );
-					var dd1 = document.createElement( "dd" );
-					var dd1a = document.createElement( "a" );
-					dd1a.href = e[ i ].action;
-                    dd1a.target = '_blank'; // FIXME: does not open in new window
-					dd1a.appendChild( document.createTextNode( e[ i ].title ) );
-					dd1.appendChild( dd1a );
-					var dd2 = document.createElement( "dd" );
-					dd2.innerHTML = e[ i ].text;
-					message_container.appendChild( dt );
-					message_container.appendChild( dd1 );
-					message_container.appendChild( dd2 );
+					if (e [ i ].id == -1) {
+						notifications_count = e [ i ].notification_count;
+						var notifications_button_img = $('#data_button_notifications_img');
+						if (notifications_button_img !== undefined) {
+							if (notifications_count > 0)
+								notifications_button_img.attr('src', STATIC_URL_JS + 'widgets/themes/kde/table_notifications_open.png');
+							else
+								notifications_button_img.attr('src', STATIC_URL_JS + 'widgets/themes/kde/table_notifications.png');
+						}
+						
+						delete e [ i ];
+					} else {
+						e[ i ].action = django_url + 'messages/mark_read?id=' + e[ i ].id;
+						e[ i ].note = e[ i ].time_formatted;
+						++n;
+						var dt = document.createElement( "dt" );
+						dt.appendChild( document.createTextNode( e[ i ].time_formatted ) );
+						var dd1 = document.createElement( "dd" );
+						var dd1a = document.createElement( "a" );
+						dd1a.href = e[ i ].action;
+						dd1a.target = '_blank'; // FIXME: does not open in new window
+						dd1a.appendChild( document.createTextNode( e[ i ].title ) );
+						dd1.appendChild( dd1a );
+						var dd2 = document.createElement( "dd" );
+						dd2.innerHTML = e[ i ].text;
+						message_container.appendChild( dt );
+						message_container.appendChild( dd1 );
+						message_container.appendChild( dd2 );
+					}
 				}
 				message_menu.update( e );
 				if ( n > 0 ) document.getElementById( "message_menu_text" ).className = "alert";
 				else document.getElementById( "message_menu_text" ).className = "";
 			}
+
 		}
 	}
 	

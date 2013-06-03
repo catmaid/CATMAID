@@ -132,6 +132,8 @@
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/ontology_editor.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/classification_editor.js"></script>
 		<script type="text/javascript" src="{{ STATIC_URL }}widgets/table_notifications.js"></script>
+		<script type="text/javascript" src="{{ STATIC_URL }}libs/jsnetworkx/jsnetworkx.js"></script>
+		<script type="text/javascript" src="{{ STATIC_URL }}user.js"></script>
 	</head>
 	<body onload="realInit();"><a></a>
 		<div id="growl-alert" class="growl-message" style="display: none"></div>
@@ -281,6 +283,7 @@
 				<div class="box"><p>y&nbsp;</p><p><input type="text" id="box_roi_y" name="box_roi_y" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_ymap" /></p></div>
 				<div class="box"><p>w&nbsp;</p><p><input type="text" id="box_roi_w" name="box_roi_w" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_wmap" /></p></div>
 				<div class="box"><p>h&nbsp;</p><p><input type="text" id="box_roi_h" name="box_roi_h" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_hmap" /></p></div>
+				<div class="box"><p>r&nbsp;</p><p><input type="text" id="box_roi_r" name="box_roi_r" size="5" /><img src="{{ STATIC_URL }}widgets/themes/kde/input_topdown.gif" alt="" usemap="#box_roi_rmap" /></p></div>
 				<div class="box_right"><a href="#" class="button" id="button_roi_apply" onclick="return false;"><img src="{{ STATIC_URL }}widgets/themes/kde/apply.gif" alt="apply" title="apply" /></a></div>
 				<div class="toolbar_fill"></div>
 			</div>
@@ -387,6 +390,7 @@
 			<map id="box_roi_ymap" name="box_roi_ymap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_y = document.getElementById( 'box_roi_y' ); box_roi_y.value = parseInt( box_roi_y.value ) + 1; box_roi_y.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_y = document.getElementById( 'box_roi_y' ); box_roi_y.value = parseInt( box_roi_y.value ) - 1; box_roi_y.onchange();" alt="-" /></map>
 			<map id="box_roi_wmap" name="box_roi_wmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_w = document.getElementById( 'box_roi_w' ); box_roi_w.value = parseInt( box_roi_w.value ) + 1; box_roi_w.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_w = document.getElementById( 'box_roi_w' ); box_roi_w.value = parseInt( box_roi_w.value ) - 1; box_roi_w.onchange();" alt="-" /></map>
 			<map id="box_roi_hmap" name="box_roi_hmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_h = document.getElementById( 'box_roi_h' ); box_roi_h.value = parseInt( box_roi_h.value ) + 1; box_roi_h.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_h = document.getElementById( 'box_roi_h' ); box_roi_h.value = parseInt( box_roi_h.value ) - 1; box_roi_h.onchange();" alt="-" /></map>
+			<map id="box_roi_rmap" name="box_roi_rmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_r = document.getElementById( 'box_roi_r' ); box_roi_r.value = parseInt( box_roi_r.value ) + 1; box_roi_r.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_r = document.getElementById( 'box_roi_r' ); box_roi_r.value = parseInt( box_roi_r.value ) - 1; box_roi_r.onchange();" alt="-" /></map>
 			<!--
 			***********************************************************************
 			-->

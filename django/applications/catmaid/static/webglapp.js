@@ -20,6 +20,8 @@ var WebGLApp = new function () {
       show_boundingbox = true,
       show_floor = true,
       show_background = true;
+  
+  var shading_method = 'none';
 
   this.init = function( divID ) {
 
@@ -191,7 +193,7 @@ var WebGLApp = new function () {
 
     // // if there is an active skeleton, add it to the view if staging area is empty
     if(SkeletonAnnotations.getActiveNodeId() && NeuronStagingArea.get_selected_skeletons().length === 0) {
-      NeuronStagingArea.add_active_object_to_stage( WebGLApp.refresh_skeletons );
+      NeuronStagingArea.add_active_object_to_stage();
     }
 
 
@@ -264,23 +266,6 @@ var WebGLApp = new function () {
     self.render();
   }
   self.YZView = YZView;
-
-  // credit: http://stackoverflow.com/questions/638948/background-color-hex-to-javascript-variable-jquery
-  function rgb2hex(rgb) {
-   rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-   function hex(x) {
-    return ("0" + parseInt(x).toString(16)).slice(-2);
-   }
-   return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
-  }
-
-  function rgb2hex2(rgb) {
-    rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-    function hex(x) {
-      return ("0" + parseInt(x).toString(16)).slice(-2);
-    }
-    return "0x" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
-  }
 
   var Assembly = function( assembly_data, high_res )
   {
@@ -385,14 +370,110 @@ var WebGLApp = new function () {
 
   }
 
-  var Skeleton = function( skeleton_data )
+  // Shared across all text labels
+  var textMaterial = new THREE.MeshNormalMaterial( { color: 0xffffff, overdraw: true } );
+
+  var geometryCache = {};
+  /** Memoized function to reuse geometries for text tags. With reference counting.
+   *  All skeletons share the same geometry for the same node text tag. */
+  var getTagGeometry = function(tagString) {
+      if (tagString in geometryCache) {
+        var e = geometryCache[tagString];
+        e.refs += 1;
+        return e.geometry;
+      }
+      // Else create, store, and return a new one:
+      var text3d = new THREE.TextGeometry( tagString, {
+        size: 100 * scale,
+        height: 20 * scale,
+        curveSegments: 1,
+        font: "helvetiker"
+      });
+      text3d.computeBoundingBox();
+      text3d.tagString = tagString;
+      geometryCache[tagString] = {geometry: text3d, refs: 1};
+      return text3d;
+   };
+
+  var releaseTagGeometry = function(tagString) {
+    if (tagString in geometryCache) {
+      var e = geometryCache[tagString];
+      e.refs -= 1;
+      if (0 === e.refs) {
+        delete geometryCache[tagString].geometry;
+        delete geometryCache[tagString];
+      }
+    }
+  };
+
+  // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
+  var labelColors = {uncertain: new THREE.MeshBasicMaterial( { color: 0xff8000, opacity:0.6, transparent:true  } ),
+                     todo: new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:true  } )};
+
+
+  /** An object to represent a skeleton in the WebGL space.
+   *  The skeleton consists of three geometries:
+   *    (1) one for the edges between nodes, represented as a list of contiguous pairs of points; 
+   *    (2) one for the edges representing presynaptic relations to connectors;
+   *    (3) one for the edges representing postsynaptic relations to connectors.
+   *  Each geometry has its own mesh material and can be switched independently.
+   *  In addition, each skeleton node with a pre- or postsynaptic relation to a connector
+   *  gets a clickable sphere to represent it.
+   *  Nodes with an 'uncertain' or 'todo' in their text tags also get a sphere.
+   *
+   *  When visualizing only the connectors among the skeletons visible in the WebGL space, the geometries of the pre- and postsynaptic edges are hidden away, and a new pair of geometries are created to represent just the edges that converge onto connectors also related to by the other skeletons.
+   *
+   */
+  var Skeleton = function()
   {
     var self = this;
-    var type, from_vector, to_vector;
 
-    self.id = skeleton_data.id;
-    self.baseName = skeleton_data.baseName;
-    
+    this.init = function(skeleton_id, skeleton_data) {
+      self.id = skeleton_id;
+      self.baseName = skeleton_data[0];
+      self.reinit_actor( skeleton_data );
+    };
+
+    this.initialize_objects = function()
+    {
+      this.skeletonmodel = NeuronStagingArea.get_skeletonmodel( self.id );
+      this.line_material = new Object();
+      this.actorColor = new THREE.Color(0xffff00);
+      this.visible = true;
+      if( this.skeletonmodel === undefined ) {
+        console.log('Can not initialize skeleton object');
+        return;
+      }
+      this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
+      this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } );
+      this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } );
+
+      this.nodeProps = null;
+      this.connectorProps = null;
+      this.geometry = new Object();
+      this.actor = new Object(); // has three keys (the connectivity_types), each key contains the edges of each type
+      this.geometry[connectivity_types[0]] = new THREE.Geometry();
+      this.geometry[connectivity_types[1]] = new THREE.Geometry();
+      this.geometry[connectivity_types[2]] = new THREE.Geometry();
+      this.vertexcolors = [];
+      this.vertexIDs = new Object();
+      this.vertexIDs[connectivity_types[0]] = [];
+      this.vertexIDs[connectivity_types[1]] = [];
+      this.vertexIDs[connectivity_types[2]] = [];
+      
+      for ( var i=0; i<connectivity_types.length; ++i ) {
+        this.actor[connectivity_types[i]] = new THREE.Line( this.geometry[connectivity_types[i]],
+          this.line_material[connectivity_types[i]], THREE.LinePieces );
+      }
+      this.labelSphere = new Object();
+      this.otherSpheres = new Object();
+      this.radiusSpheres = new Object();
+      this.textlabels = new Object();
+
+      this.connectoractor = new Object();
+      this.connectorgeometry = new Object();
+    };
+
     this.destroy_data = function() {
 
       for ( var i=0; i<connectivity_types.length; ++i ) {
@@ -410,7 +491,6 @@ var WebGLApp = new function () {
           delete this.connectorgeometry[connectivity_types[i]];
           this.connectorgeometry[connectivity_types[i]] = null;
         }        
-
       }
 
       for ( var i=0; i<connectivity_types.length; ++i ) {
@@ -446,14 +526,11 @@ var WebGLApp = new function () {
           this.textlabels[k] = null;
       }
 
-      delete this.original_vertices;
-      this.original_vertices = null;
-      delete this.original_connectivity;
-      this.original_connectivity = null;
-
-      self.initialize_objects();
-
-    }
+      delete this.nodeProps;
+      this.nodeProps = null;
+      delete this.connectorProps;
+      this.connectorProps = null;
+    };
 
     this.removeActorFromScene = function()
     {
@@ -479,62 +556,13 @@ var WebGLApp = new function () {
           scene.remove( this.radiusSpheres[k] );
       }
       for ( var k in this.textlabels ) {
-        if( self.textlabels.hasOwnProperty( k ))
+        if( self.textlabels.hasOwnProperty( k )) {
+          var tagString = this.textlabels[k];
           scene.remove( this.textlabels[k] );
-      }
-    }
-
-    this.remove_connector_selection = function()
-    {
-      for ( var i=0; i<connectivity_types.length; ++i ) {
-        if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
-          if( this.connectoractor && this.connectoractor[connectivity_types[i]] ) {
-            scene.remove( this.connectoractor[connectivity_types[i]] );
-          }
+          releaseTagGeometry( tagString );
         }
       }
-    }
-
-    this.initialize_objects = function()
-    {
-      this.skeletonmodel = NeuronStagingArea.get_skeletonmodel( self.id );
-      this.line_material = new Object();
-      this.actorColor = [255, 255, 0]; // color from staging area?
-      this.visible = true;
-      if( this.skeletonmodel === undefined ) {
-        console.log('Can not initialize skeleton object');
-        return;
-      }
-      if( this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible )
-        this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3, vertexColors: THREE.VertexColors } );
-      else
-        this.line_material[connectivity_types[0]] = new THREE.LineBasicMaterial( { color: 0xffff00, opacity: 1.0, linewidth: 3 } );
-      this.line_material[connectivity_types[1]] = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1.0, linewidth: 6 } );
-      this.line_material[connectivity_types[2]] = new THREE.LineBasicMaterial( { color: 0x00f6ff, opacity: 1.0, linewidth: 6 } );
-
-      this.original_vertices = null;
-      this.original_connectivity = null;
-      this.geometry = new Object();
-      this.actor = new Object();
-      this.geometry[connectivity_types[0]] = new THREE.Geometry();
-      this.geometry[connectivity_types[1]] = new THREE.Geometry();
-      this.geometry[connectivity_types[2]] = new THREE.Geometry();
-      this.vertexcolors = [];
-
-      for ( var i=0; i<connectivity_types.length; ++i ) {
-        this.actor[connectivity_types[i]] = new THREE.Line( this.geometry[connectivity_types[i]],
-          this.line_material[connectivity_types[i]], THREE.LinePieces );
-      }
-      this.labelSphere = new Object();
-      this.otherSpheres = new Object();
-      this.radiusSpheres = new Object();
-      this.textlabels = new Object();
-
-      this.connectoractor = new Object();
-      this.connectorgeometry = new Object();
-    }
-
-    self.initialize_objects();
+    };
 
     this.setCompleteActorVisibility = function( vis ) {
       self.visible = vis;
@@ -547,7 +575,7 @@ var WebGLApp = new function () {
 
     this.setActorVisibility = function( vis ) {
       self.visible = vis;
-      self.visiblityCompositeActor( 0, vis );
+      self.visibilityCompositeActor( 'neurite', vis );
       // also show and hide spheres
       for( var idx in self.otherSpheres ) {
         if( self.otherSpheres.hasOwnProperty( idx )) {
@@ -560,28 +588,27 @@ var WebGLApp = new function () {
         }
       }
       for( var idx in self.labelSphere ) {
-        if( self.textlabels.hasOwnProperty( idx )) {
+        if( self.labelSphere.hasOwnProperty( idx )) {
           self.labelSphere[ idx ].visible = vis;
         }
       }
-      
     };
 
     this.setPreVisibility = function( vis ) {
-      self.visiblityCompositeActor( 1, vis );
+      self.visibilityCompositeActor( 'presynaptic_to', vis );
       for( var idx in self.otherSpheres ) {
         if( self.otherSpheres.hasOwnProperty( idx )) {
-          if( self.otherSpheres[ idx ].type == 'presynaptic_to')
+          if( self.otherSpheres[ idx ].type === 'presynaptic_to')
             self.otherSpheres[ idx ].visible = vis;
         }
       }
     };
 
     this.setPostVisibility = function( vis ) {
-      self.visiblityCompositeActor( 2, vis );
+      self.visibilityCompositeActor( 'postsynaptic_to', vis );
       for( var idx in self.otherSpheres ) {
         if( self.otherSpheres.hasOwnProperty( idx )) {
-          if( self.otherSpheres[ idx ].type == 'postsynaptic_to')
+          if( self.otherSpheres[ idx ].type === 'postsynaptic_to')
             self.otherSpheres[ idx ].visible = vis;
         }
       }
@@ -609,321 +636,503 @@ var WebGLApp = new function () {
           this.actor[connectivity_types[i]].translateZ( dz );
         }
       }
-    }
+    };
 
     this.updateSkeletonColor = function() {
-      this.actor[connectivity_types[0]].material.color.setRGB( this.actorColor[0]/255., this.actorColor[1]/255., this.actorColor[2]/255. );
-      for ( var k in this.radiusSpheres ) {
-        this.radiusSpheres[k].material.color.setRGB( this.actorColor[0]/255., this.actorColor[1]/255., this.actorColor[2]/255. );
+      if (NeuronStagingArea.skeletonsColorMethod === 'creator' || NeuronStagingArea.skeletonsColorMethod === 'reviewer' || shading_method !== 'none') {
+        // The skeleton colors need to be set per-vertex.
+        self.line_material['neurite'].vertexColors = THREE.VertexColors;
+        self.line_material['neurite'].needsUpdate = true;
+        self.geometry['neurite'].colors = [];
+        var edgeWeights = {};
+        if (shading_method === 'betweenness_centrality') {
+          // Darken the skeleton based on the betweenness calculation.
+          edgeWeights = self.betweenness;
+        } else if (shading_method === 'branch_centrality') {
+          // TODO: Darken the skeleton based on the branch calculation.
+          edgeWeights = self.branchCentrality;
+        }
+        self.vertexIDs['neurite'].forEach(function(vertexID) {
+          var vertex = self.nodeProps[vertexID];
+          
+          // Determine the base color of the vertex.
+          var baseColor = self.actorColor;
+          if (NeuronStagingArea.skeletonsColorMethod === 'creator') {
+            baseColor = User(vertex[2]).color; // vertex[2] is user_id
+          } else if (NeuronStagingArea.skeletonsColorMethod === 'reviewer') {
+            baseColor = User(vertex[3]).color; // vertex[3] is reviewer_id
+          }
+          
+          // Darken the color by the average weight of the vertex's edges.
+          var weight = 0;
+          var neighbors = self.graph.neighbors(vertexID);
+          neighbors.forEach(function(neighbor) {
+            var edge = [vertexID, neighbor].sort();
+            weight += (edge in edgeWeights ? edgeWeights[edge] : 1.0);
+          });
+          weight = (weight / neighbors.length) * 0.75 + 0.25;
+          var color = new THREE.Color().setRGB(baseColor.r * weight, baseColor.g * weight, baseColor.b * weight);
+          self.geometry['neurite'].colors.push(color);
+          
+          if (vertexID in self.radiusSpheres) {
+            self.radiusSpheres[vertexID].material.color = baseColor;
+            self.radiusSpheres[vertexID].material.needsUpdate = true;
+          }
+        });
+        self.geometry['neurite'].colorsNeedUpdate = true;
+        
+        self.actor['neurite'].material.color = new THREE.Color(0xffffff);
+        self.actor['neurite'].material.needsUpdate = true;
+      } else {
+        // Display the entire skeleton with a single color.
+        self.line_material['neurite'].vertexColors = THREE.NoColors;
+        self.line_material['neurite'].needsUpdate = true;
+        
+        self.actor['neurite'].material.color = self.actorColor;
+        self.actor['neurite'].material.needsUpdate = true;
+      
+        for ( var k in self.radiusSpheres ) {
+          self.radiusSpheres[k].material.color = self.actorColor;
+          self.radiusSpheres[k].material.needsUpdate = true;
+        }
       }
-    }
+    };
 
-    this.changeColor = function( value ) {
-      // changing color if one of the options is activated should have no effect
-      // this prevents the bug (?) which changes the transparency of the lines
-      // when changing the skeleton colors
-      if(this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible )
-        return;
-
-      self.actorColor = value;
-      self.updateSkeletonColor();
-    }
+    this.changeColor = function( color ) {
+      self.actorColor = color;
+      
+      if (NeuronStagingArea.skeletonsColorMethod === 'random' || NeuronStagingArea.skeletonsColorMethod === 'manual') {
+        self.updateSkeletonColor();
+      }
+    };
 
     this.addCompositeActorToScene = function()
     {
       for ( var i=0; i<connectivity_types.length; ++i ) {
         scene.add( this.actor[connectivity_types[i]] );
       }
-    }
+    };
 
-    this.visiblityCompositeActor = function( type_index, visible )
+    this.visibilityCompositeActor = function( type, visible )
     {
-      this.actor[connectivity_types[type_index]].visible = visible;
-    }
+      this.actor[type].visible = visible;
+    };
 
     this.getActorColorAsHTMLHex = function () {
-      return rgb2hex( 'rgb('+this.actorColor[0]+','+
-        this.actorColor[1]+','+
-        this.actorColor[2]+')' );
-    }
+      return this.actorColor.getHexString();
+    };
 
     this.getActorColorAsHex = function()
     {
-      return parseInt( rgb2hex2( 'rgb('+this.actorColor[0]+','+
-        this.actorColor[1]+','+
-        this.actorColor[2]+')' ), 16);
+      return this.actorColor.getHex();
     };
 
-    this.create_connector_selection = function( connector_data )
+    this.remove_connector_selection = function()
     {
-      this.connectoractor = new Object();
-      this.connectorgeometry = new Object();
-      this.connectorgeometry[connectivity_types[0]] = new THREE.Geometry();
-      this.connectorgeometry[connectivity_types[1]] = new THREE.Geometry();
-      this.connectorgeometry[connectivity_types[2]] = new THREE.Geometry();
-
-      for (var fromkey in this.original_connectivity) {
-        var to = this.original_connectivity[fromkey];
-        for (var tokey in to) {
-
-          // check if fromkey or tokey point to the correct connector type, otherwise skip
-          if( this.original_vertices[fromkey]['type'] !== 'connector' &&
-            this.original_vertices[tokey]['type'] !== 'connector') {
-            continue;
+      if (self.connectoractor) {
+        for (var i=0; i<2; ++i) {
+          if (self.connectoractor[synapticTypes[i]]) {
+            scene.remove(self.connectoractor[synapticTypes[i]]);
+            delete self.connectoractor[synapticTypes[i]];
           }
+        }
+        self.connectoractor = null;
+      }
+    };
 
-          // check if connector is in selection list
-          if( !(parseInt(fromkey) in connector_data) && !(parseInt(tokey) in connector_data) ) {
-            continue;
-          }
+    this.create_connector_selection = function( common_connector_IDs )
+    {
+      self.connectoractor = new Object();
+      self.connectorgeometry = new Object();
+      self.connectorgeometry[connectivity_types[1]] = new THREE.Geometry();
+      self.connectorgeometry[connectivity_types[2]] = new THREE.Geometry();
 
-          type = connectivity_types[connectivity_types.indexOf(this.original_connectivity[fromkey][tokey]['type'])];
-
-          var fv=transform_coordinates([
-            this.original_vertices[fromkey]['x'],
-            this.original_vertices[fromkey]['y'],
-            this.original_vertices[fromkey]['z']
-          ]);
-          var from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
-
-          // transform
-          from_vector.multiplyScalar( scale );
-
-          this.connectorgeometry[type].vertices.push( from_vector );
-
-          var tv=transform_coordinates([
-            this.original_vertices[tokey]['x'],
-            this.original_vertices[tokey]['y'],
-            this.original_vertices[tokey]['z']
-          ]);
-          var to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
-
-          // transform
-          // to_vector.add( translate_x, translate_y, translate_z );
-          to_vector.multiplyScalar( scale );
-
-          this.connectorgeometry[type].vertices.push( to_vector );
-
+      for (var connectorID in self.connectorProps) {
+        if (self.connectorProps.hasOwnProperty(connectorID) && connectorID in common_connector_IDs) {
+          var con = self.connectorProps[connectorID];
+          var node = self.nodeProps[con[0]]; // 0 is the treenode ID
+          var v1 = pixelSpaceVector(node[4], node[5], node[6]); // x, y, z
+          var v2 = pixelSpaceVector(con[3], con[4], con[5]); // x, y, z
+          // con[2] is 0 for presynaptic_to and 1 for postsynaptic_to
+          var vertices = self.connectorgeometry[synapticTypes[con[2]]].vertices;
+          vertices.push( v1 );
+          vertices.push( v2 );
         }
       }
 
-    for ( var i=0; i<connectivity_types.length; ++i ) {
-      if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
-        this.connectoractor[connectivity_types[i]] = new THREE.Line( this.connectorgeometry[connectivity_types[i]], this.line_material[connectivity_types[i]], THREE.LinePieces );
-        scene.add( this.connectoractor[connectivity_types[i]] );
+      for (var i=0; i<2; ++i) {
+        var type = synapticTypes[i];
+        self.connectoractor[type] = new THREE.Line( this.connectorgeometry[type], this.line_material[type], THREE.LinePieces );
+        scene.add( this.connectoractor[type] );
       }
-    }
+    };
 
-    }
+    /* Transfer from world coordinates (in nanometers) to pixel coordinates,
+       reversing two axes and scaling as appropriate, and return a vector.
+       In other words, transform coordinates from CATMAID coordinate system
+       to WebGL coordinate system: x->x, y->y+dy, z->-z */
+    var pixelSpaceVector = function(x, y, z) {
+      return new THREE.Vector3(x * scale,
+                               (-y + dimension.y * resolution.y) * scale,
+                               -z * scale);
+    };
+
+    // 0 is pre, 1 is post
+    var synapticTypes = ['presynaptic_to', 'postsynaptic_to'];
+    var synapticColors = [new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:false  } ),
+                          new THREE.MeshBasicMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false  } )];
+
 
     this.reinit_actor = function ( skeleton_data )
     {
-
-      self.removeActorFromScene();
-      self.destroy_data();
+      if (self.actor) {
+        self.removeActorFromScene();
+        self.destroy_data();
+      }
       self.initialize_objects();
 
-      this.original_vertices = skeleton_data.vertices;
-      this.original_connectivity = skeleton_data.connectivity;
       var textlabel_visibility = $('#skeletontext-' + self.id).is(':checked');
       var colorkey;
+      
+      // Populate the graph for calculating the centrality-based shading
+      this.graph = jsnx.Graph();
+      this.betweenness = {};
+      this.branchCentrality = {};
 
-      for (var fromkey in this.original_connectivity) {
-        var to = this.original_connectivity[fromkey];
-        for (var tokey in to) {
+      var nodes = skeleton_data[1];
+      var tags = skeleton_data[2];
+      var connectors = skeleton_data[3];
 
-          type = connectivity_types[connectivity_types.indexOf(this.original_connectivity[fromkey][tokey]['type'])];
-          var fv=transform_coordinates([
-                   this.original_vertices[fromkey]['x'],
-                   this.original_vertices[fromkey]['y'],
-                   this.original_vertices[fromkey]['z']
-              ]);
-          var from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
+      // Map of node ID vs node properties
+      var nodeProps = nodes.reduce(function(ob, node) {
+        ob[node[0]] = node;
+        return ob;
+      }, {});
 
-          // transform
-          from_vector.multiplyScalar( scale );
+      // Store for reuse in other functions
+      self.nodeProps = nodeProps;
+      self.connectorProps = connectors.reduce(function(ob, con) {
+        ob[con[1]] = con;
+        return ob;
+      }, {});
 
-          this.geometry[type].vertices.push( from_vector );
 
-          var tv=transform_coordinates([
-                   this.original_vertices[tokey]['x'],
-                   this.original_vertices[tokey]['y'],
-                   this.original_vertices[tokey]['z']
-              ]);
-          var to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
+      var createEdge = function(id1, x1, y1, z1,
+                                id2, x2, y2, z2,
+                                type) {
+        // Create edge between child (id1) and parent (id2) nodes:
+        // Takes the coordinates of each node, transforms them into the space,
+        // and then adds them to the parallel lists of vertices and vertexIDs
+        var v1 = pixelSpaceVector(x1, y1, z1);
+        self.geometry[type].vertices.push( v1 );
+        self.vertexIDs[type].push(id1);
 
-          // transform
-          // to_vector.add( translate_x, translate_y, translate_z );
-          to_vector.multiplyScalar( scale );
+        var v2 = pixelSpaceVector(x2, y2, z2);
+        self.geometry[type].vertices.push( v2 );
+        self.vertexIDs[type].push(id2);
 
-          this.geometry[type].vertices.push( to_vector );
+        return v1;
+      };
 
-          if( !(fromkey in this.otherSpheres) && type === 'presynaptic_to') {
-            this.otherSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:false  } ) );
-            this.otherSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
-            this.otherSpheres[fromkey].node_id = fromkey;
-            this.otherSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
-            this.otherSpheres[fromkey].skeleton_id = self.id;
-            this.otherSpheres[fromkey].type = type;
-            scene.add( this.otherSpheres[fromkey] );
-          }
-          if( !(fromkey in this.otherSpheres) && type === 'postsynaptic_to') {
-            this.otherSpheres[fromkey] = new THREE.Mesh( radiusSphere, new THREE.MeshBasicMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false  } ) );
-            this.otherSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
-            this.otherSpheres[fromkey].node_id = fromkey;
-            this.otherSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
-            this.otherSpheres[fromkey].skeleton_id = self.id;
-            this.otherSpheres[fromkey].type = type;
-            scene.add( this.otherSpheres[fromkey] );
-          }
+      var createNodeSphere = function(id, x, y, z, v, radius) {
+        // TODO replace with IcosahedronGeometry: less vertices
+        var radiusCustomSphere = new THREE.SphereGeometry( radius, 32, 32, 1 );
+        var mesh = new THREE.Mesh( radiusCustomSphere, new THREE.MeshBasicMaterial( { color: self.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+        if (!v) v = pixelSpaceVector(x, y, z);
+        mesh.position.set( v.x, v.y, v.z );
+        mesh.node_id = id;
+        mesh.orig_coord = {x: x, y: y, z: z};
+        mesh.skeleton_id = self.id;
+        self.radiusSpheres[id] = mesh;
+        scene.add( mesh );
+      };
 
-          if( (this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible ) && type ==='neurite' ) {
+      // Create edges between all skeleton nodes
+      // and a sphere on the node if radius > 0
+      nodes.forEach(function(node) {
+        // node[0]: treenode ID
+        // node[1]: parent ID
+        // node[7]: radius
+        var v; // for reuse in translating the sphere if any
+        // If node has a parent
+        if (node[1]) {
+          self.graph.add_edge(node[0], node[1]);
+      
+          // indices 4,5,6 are x,y,z
+          var p = nodeProps[node[1]];
+          v = createEdge(node[0], node[4], node[5], node[6],
+                         p[0], p[4], p[5], p[6],
+                         'neurite');
+        }
+        if (node[7] > 0) {
+          createNodeSphere(node[0], node[4], node[5], node[6], v, node[7] * scale);
+        }
+      });
 
-            if( this.skeletonmodel.usercolor_visible )
-              colorkey = 'user_id_color';
-            else
-              colorkey = 'reviewuser_id_color';
+      // The itype is 0 (pre) or 1 (post), and chooses from the two arrays above
+      var createSynapticSphere = function(nodeID, x, y, z, itype) {
+        var v = pixelSpaceVector(x, y, z);
+        var mesh = new THREE.Mesh( radiusSphere, synapticColors[itype] );
+        mesh.position.set( v.x, v.y, v.z );
+        mesh.node_id = nodeID;
+        mesh.orig_coord = {x: x, y: y, z: z};
+        mesh.skeleton_id = self.id;
+        mesh.type = synapticTypes[itype];
+        self.otherSpheres[nodeID] = mesh;
+        scene.add( mesh );
+      };
 
-            var newcolor = new THREE.Color( 0x00ffff );
-            // newcolor.setHSL( 0.6, 1.0, Math.max( 0, ( 200 - from_vector.x ) / 400 ) * 0.5 + 0.5 );
-            newcolor.setRGB( this.original_vertices[fromkey][colorkey][0],
-              this.original_vertices[fromkey][colorkey][1],
-              this.original_vertices[fromkey][colorkey][2] );
-            this.vertexcolors.push( newcolor );
-            var newcolor = new THREE.Color( 0x00ffff );
-            newcolor.setRGB( this.original_vertices[tokey][colorkey][0],
-              this.original_vertices[tokey][colorkey][1],
-              this.original_vertices[tokey][colorkey][2] );
-            this.vertexcolors.push( newcolor );
+      // Create edges between all connector nodes and their associated skeleton nodes,
+      // appropriately colored as pre- or postsynaptic.
+      // If not yet there, create as well the sphere for the node related to the connector
+      connectors.forEach(function(con) {
+        // con[0]: treenode ID
+        // con[1]: connector ID
+        // con[2]: 0 for pre, 1 for post
+        var node = nodeProps[con[0]];
+        // indices 3,4,5 are x,y,z for connector
+        // indices 4,5,6 are x,y,z for node
+        createEdge(con[1], con[3], con[4], con[5],
+                   node[0], node[4], node[5], node[6],
+                   synapticTypes[con[2]]);
+        if (!self.otherSpheres.hasOwnProperty(node[0])) {
+          // con[2] is 0 for presynaptic and 1 for postsynaptic
+          createSynapticSphere(node[0], node[4], node[5], node[6], con[2]);
+        }
+      });
 
-          }
-
-          // check if either from or to key vertex has a sphere associated with it
-          var radiusFrom = parseFloat( this.original_vertices[fromkey]['radius'] );
-          if( !(fromkey in this.radiusSpheres) && radiusFrom > 0 ) {
-            radiusCustomSphere = new THREE.SphereGeometry( scale * radiusFrom, 32, 32, 1 );
-            this.radiusSpheres[fromkey] = new THREE.Mesh( radiusCustomSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
-            this.radiusSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
-            this.radiusSpheres[fromkey].node_id = fromkey;
-            this.radiusSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
-            this.radiusSpheres[fromkey].skeleton_id = self.id;
-            scene.add( this.radiusSpheres[fromkey] );
-          }
-
-          var radiusTo = parseFloat( this.original_vertices[tokey]['radius'] );
-          if( !(tokey in this.radiusSpheres) && radiusTo > 0 ) {
-            radiusCustomSphere = new THREE.SphereGeometry( scale * radiusTo, 32, 32, 1 );
-            this.radiusSpheres[tokey] = new THREE.Mesh( radiusCustomSphere, new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
-            this.radiusSpheres[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
-            this.radiusSpheres[tokey].orig_coord = this.original_vertices[fromkey];
-            this.radiusSpheres[tokey].skeleton_id = self.id;
-            scene.add( this.radiusSpheres[tokey] );
-          }
-
-          // text labels
-          if( this.original_vertices[fromkey]['labels'].length > 0) {
-
-            var theText = this.original_vertices[fromkey]['labels'].join();
-            var text3d = new THREE.TextGeometry( theText, {
-              size: 100 * scale,
-              height: 20 * scale,
-              curveSegments: 1,
-              font: "helvetiker"
-            });
-            text3d.computeBoundingBox();
-            var centerOffset = -0.5 * ( text3d.boundingBox.max.x - text3d.boundingBox.min.x );
-
-            var textMaterial = new THREE.MeshNormalMaterial( { color: 0xffffff, overdraw: true } );
-            text = new THREE.Mesh( text3d, textMaterial );
-            text.position.x = from_vector.x;
-            text.position.y = from_vector.y;
-            text.position.z = from_vector.z;
-            text.visible = textlabel_visibility;
-
-            if( !this.textlabels.hasOwnProperty( fromkey )) {
-              this.textlabels[ fromkey ] = text;
-              scene.add( text );
+      // Sort out tags by node: some nodes may have more than one
+      var nodeIDTags = {};
+      for (var tag in tags) {
+        if (tags.hasOwnProperty(tag)) {
+          tags[tag].forEach(function(nodeID) {
+            if (nodeIDTags.hasOwnProperty(nodeID)) {
+              nodeIDTags[nodeID].push(tag);
+            } else {
+              nodeIDTags[nodeID] = [tag];
             }
-            
-          }
-
-          // if either from or to have a relevant label, and they are not yet
-          // created, create one
-          if( ($.inArray( "uncertain", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
-              this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff8000, opacity:0.6, transparent:true  } ) );
-              this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
-              this.labelSphere[fromkey].node_id = fromkey;
-              this.labelSphere[fromkey].skeleton_id = self.id;
-              this.labelSphere[fromkey].orig_coord = this.original_vertices[fromkey];
-              scene.add( this.labelSphere[fromkey] );
-          }
-          if( ($.inArray( "uncertain", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
-              this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff8000, opacity:0.6, transparent:true  } ) );
-              this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
-              this.labelSphere[tokey].node_id = fromkey;
-              this.labelSphere[tokey].skeleton_id = self.id;
-              this.labelSphere[tokey].orig_coord = this.original_vertices[fromkey];
-              scene.add( this.labelSphere[tokey] );
-          }
-          if( ($.inArray( "todo", this.original_vertices[fromkey]['labels'] ) !== -1) && (this.labelSphere[fromkey]=== undefined) ) {
-              this.labelSphere[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:true  } ) );
-              this.labelSphere[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
-              this.labelSphere[fromkey].node_id = fromkey;
-              this.labelSphere[fromkey].skeleton_id = self.id;
-              this.labelSphere[fromkey].orig_coord = this.original_vertices[fromkey];
-              scene.add( this.labelSphere[fromkey] );
-          }
-          if( ($.inArray( "todo", this.original_vertices[tokey]['labels'] ) !== -1) && (this.labelSphere[tokey]=== undefined) ) {
-              this.labelSphere[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:true  } ) );
-              this.labelSphere[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
-              this.labelSphere[tokey].node_id = fromkey;
-              this.labelSphere[tokey].skeleton_id = self.id;
-              this.labelSphere[tokey].orig_coord = this.original_vertices[fromkey];
-              this.labelSphere[tokey].skeleton_id = self.id;
-              scene.add( this.labelSphere[tokey] );
-          }
-          if( ( ($.inArray( "soma", this.original_vertices[fromkey]['labels'] ) !== -1) ||
-            ($.inArray( "cell body", this.original_vertices[fromkey]['labels'] ) !== -1 ) ) && (this.radiusSpheres[fromkey]=== undefined) ) {
-              this.radiusSpheres[fromkey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00 } ) );
-              this.radiusSpheres[fromkey].position.set( from_vector.x, from_vector.y, from_vector.z );
-              this.radiusSpheres[fromkey].scale.set( soma_scale, soma_scale, soma_scale );
-              this.radiusSpheres[fromkey].node_id = fromkey;
-              this.radiusSpheres[fromkey].orig_coord = this.original_vertices[fromkey];
-              this.radiusSpheres[fromkey].skeleton_id = self.id;
-              scene.add( this.radiusSpheres[fromkey] );
-          }
-          if( ( ($.inArray( "soma", this.original_vertices[tokey]['labels'] ) !== -1) ||
-              ($.inArray( "cell body", this.original_vertices[tokey]['labels'] ) !== -1) ) && (this.radiusSpheres[tokey]=== undefined) ) {
-              this.radiusSpheres[tokey] = new THREE.Mesh( labelspheregeometry, new THREE.MeshBasicMaterial( { color: 0xffff00  } ) );
-              this.radiusSpheres[tokey].position.set( to_vector.x, to_vector.y, to_vector.z );
-              this.radiusSpheres[tokey].scale.set( soma_scale, soma_scale, soma_scale );
-              this.radiusSpheres[tokey].node_id = fromkey;
-              this.radiusSpheres[tokey].orig_coord = this.original_vertices[fromkey];
-              this.radiusSpheres[tokey].skeleton_id = self.id;
-              scene.add( this.radiusSpheres[tokey] );
-          }
-
+          });
         }
       }
 
-      this.addCompositeActorToScene();
+      // Sort and convert to string the array of tags of each node
+      for (var nodeID in nodeIDTags) {
+        if (nodeIDTags.hasOwnProperty(nodeID)) {
+          nodeIDTags[nodeID] = nodeIDTags[nodeID].sort().join();
+        }
+      }
 
-      self.setActorVisibility( this.skeletonmodel.selected );
-      self.setPreVisibility( this.skeletonmodel.pre_visible );
-      self.setPostVisibility( this.skeletonmodel.post_visible );
-      self.setTextVisibility( this.skeletonmodel.text_visible );
+      // Group nodes by common tag string
+      var tagNodes = {};
+      for (var nodeID in nodeIDTags) {
+        if (nodeIDTags.hasOwnProperty(nodeID)) {
+          var tagString = nodeIDTags[nodeID];
+          if (tagNodes.hasOwnProperty(nodeIDTags)) {
+            tagNodes[tagString].push(nodeID);
+          } else {
+            tagNodes[tagString] = [nodeID];
+          }
+        }
+      }
 
-      if( this.skeletonmodel.usercolor_visible || this.skeletonmodel.userreviewcolor_visible )
-        this.geometry['neurite'].colors = this.vertexcolors;
+      // Create meshes for the tags for all nodes that need them, reusing the geometries
+      for (var tagString in tagNodes) {
+        if (tagNodes.hasOwnProperty(tagString)) {
+          tagNodes[tagString].forEach(function(nodeID) {
+            var node = nodeProps[nodeID];
+            var v = pixelSpaceVector(node[4], node[5], node[6]); 
+            var text = new THREE.Mesh( getTagGeometry(tagString), textMaterial );
+            text.position.x = v.x;
+            text.position.y = v.y;
+            text.position.z = v.z;
+            text.visible = textlabel_visibility;
+            self.textlabels[nodeID] = text;
+            scene.add( text );
+          });
+        }
+      }
 
-      self.actorColor = this.skeletonmodel.colorrgb;
-      this.updateSkeletonColor();
+      var createLabelSphere = function(nodeID, color) {
+        var node = nodeProps[nodeID];
+        var v = pixelSpaceVector(node[4], node[5], node[6]);
+        var mesh = new THREE.Mesh( labelspheregeometry, color );
+        mesh.position.set( v.x, v.y, v.z );
+        mesh.node_id = nodeID;
+        mesh.skeleton_id = self.id;
+        mesh.orig_coord = {x: node[4], y: node[5], z: node[6]};
+        self.labelSphere[nodeID] = mesh;
+        scene.add( mesh );
+      };
 
-    }
+      // Place spheres on nodes with special labels:
+      for (var tag in tags) {
+        if (tags.hasOwnProperty(tag)) {
+          var tagLC = tag.toLowerCase();
+          if (-1 != tagLC.indexOf('todo')) {
+            tags[tag].forEach(function(nodeID) {
+              if (!self.labelSphere[nodeID]) {
+                createLabelSphere(nodeID, labelColors.todo);
+              }
+            });
+          } else if (-1 != tagLC.indexOf('uncertain')) {
+            tags[tag].forEach(function(nodeID) {
+              if (!self.labelSphere[nodeID]) {
+                createLabelSphere(nodeID, labelColors.uncertain);
+              }
+            });
+          }
+        }
+      }
 
-    self.reinit_actor( skeleton_data );
+      self.addCompositeActorToScene();
 
-  }
+      self.setActorVisibility( self.skeletonmodel.selected );
+      self.setPreVisibility( self.skeletonmodel.pre_visible );
+      self.setPostVisibility( self.skeletonmodel.post_visible );
+      self.setTextVisibility( self.skeletonmodel.text_visible );
+      
+      self.actorColor = self.skeletonmodel.color;
+
+      self.shaderWorkers();
+    };
+
+    /** Populate datastructures for skeleton shading methods, and trigger a render
+     * when done and if appropriate. Does none of that and updates skeleton color
+     * when the shading method is none, or the graph data structures are already
+     * populated. */
+    this.shaderWorkers = function() {
+      // Update color and return if calculations were already done or are not requested
+      if ('none' === shading_method || Object.keys(self.betweenness).length > 0) {
+        self.updateSkeletonColor();
+        WebGLApp.render();
+        return;
+      }
+
+      if (typeof(Worker) !== "undefined")
+      {
+        // Put up some kind of indicator that calculations are underway.
+        $.blockUI({message: '<h2><img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> Computing... just a moment...</h2>'});
+      
+        // Calculate the betweenness centrality of the graph in another thread.
+        // (This will run once the simplified graph has been created by w3 below.)
+        var w1 = new Worker(STATIC_URL_JS + "graph_worker.js");
+        w1.onmessage = function (event) {
+          // Map the betweenness values back to the original graph.
+          for (var simplifiedEdge in event.data) {
+            if (event.data.hasOwnProperty(simplifiedEdge)) {
+              // Assign the value to all edges in the original graph that map to the edge in the simplified graph.
+              var value = event.data[simplifiedEdge];
+              simplifiedEdge = simplifiedEdge.split(',');
+              var edgeData = self.simplifiedGraph.get_edge_data(simplifiedEdge[0], simplifiedEdge[1]);
+              if (!('map' in edgeData)) {
+                edgeData.map = [simplifiedEdge];
+              }
+              edgeData.map.forEach(function(originalEdge) {
+                self.betweenness[originalEdge.sort()] = value;
+              });
+            }
+          }
+          if (shading_method === 'betweenness_centrality') {
+            $.unblockUI();
+            self.updateSkeletonColor();
+            WebGLApp.render();
+          }
+        };
+        
+        // Calculate the branch centrality of the graph in another thread.
+        // (This will run once the simplified graph has been created by w3 below.)
+        var w2 = new Worker(STATIC_URL_JS + "graph_worker.js");
+        w2.onmessage = function (event) {
+          // Map the centrality values back to the original graph.
+          for (var simplifiedEdge in event.data) {
+            if (event.data.hasOwnProperty(simplifiedEdge)) {
+              // Assign the value to all edges in the original graph that map to the edge in the simplified graph.
+              var value = event.data[simplifiedEdge];
+              simplifiedEdge = simplifiedEdge.split(',');
+              var edgeData = self.simplifiedGraph.get_edge_data(simplifiedEdge[0], simplifiedEdge[1]);
+              if (!('map' in edgeData)) {
+                edgeData.map = [simplifiedEdge];
+              }
+              
+//               // Label each segment with it's value.
+//               if( !self.textlabels.hasOwnProperty( simplifiedEdge )) {
+//                 var text3d = new THREE.TextGeometry( parseInt(value * self.simplifiedGraph.number_of_edges()), {
+//                   size: 100 * scale,
+//                   height: 20 * scale,
+//                   curveSegments: 1,
+//                   font: "helvetiker"
+//                 });
+//                 text3d.computeBoundingBox();
+//                 var centerOffset = -0.5 * ( text3d.boundingBox.max.x - text3d.boundingBox.min.x );
+//                 
+//                 var originalEdge = edgeData.map[0];
+//                 var fv = transform_coordinates([self.original_vertices[originalEdge[0]].x, self.original_vertices[originalEdge[0]].y, self.original_vertices[originalEdge[0]].z]);
+//                 var from_vector = new THREE.Vector3(fv[0], fv[1], fv[2] );
+//                 from_vector.multiplyScalar( scale );
+//                 var tv = transform_coordinates([self.original_vertices[originalEdge[1]].x, self.original_vertices[originalEdge[1]].y, self.original_vertices[originalEdge[1]].z]);
+//                 var to_vector = new THREE.Vector3(tv[0], tv[1], tv[2] );
+//                 to_vector.multiplyScalar( scale );
+//                 
+//                 var textMaterial = new THREE.MeshNormalMaterial( { color: 0xffffff, overdraw: true } );
+//                 var text = new THREE.Mesh( text3d, textMaterial );
+//                 text.position.x = (from_vector.x + to_vector.x) / 2.0;
+//                 text.position.y = (from_vector.y + to_vector.y) / 2.0;
+//                 text.position.z = (from_vector.z + to_vector.z) / 2.0;
+//                 text.visible = textlabel_visibility;
+//                 
+//                 self.textlabels[ simplifiedEdge ] = text;
+//                 scene.add( text );
+//               }
+              
+              edgeData.map.forEach(function(originalEdge) {
+                self.branchCentrality[originalEdge.sort()] = value;
+              });
+            }
+          }
+          if (shading_method === 'branch_centrality') {
+            $.unblockUI();
+            self.updateSkeletonColor();
+            WebGLApp.render();
+          }
+        };
+        
+    // Make a simplified version of the graph that combines all nodes between branches and leaves.
+        var w3 = new Worker(STATIC_URL_JS + "graph_worker.js");
+        w3.onmessage = function (event) {
+          self.simplifiedGraph = jsnx.convert.to_networkx_graph(event.data);
+        
+          // Export the simplified graph to GraphViz DOT format:
+//           var dot = 'graph {\n';
+//           self.simplifiedGraph.edges().forEach(function(edge) {
+//             var edgeData = self.simplifiedGraph.get_edge_data(edge[0], edge[1]);
+//             dot += edge[0] + '--' + edge[1] + ' [ label="' + ('map' in edgeData ? edgeData.map.length : 1) + '" ];\n';
+//           });
+//           dot += '}\n';
+//           console.log(dot);
+          
+          // Calculate the betweenness and branch centralities of the simplified graph.
+          w1.postMessage({graph: event.data, action:'edge_betweenness_centrality'});
+          w2.postMessage({graph: event.data, action:'branch_centrality'});
+        };
+        w3.postMessage({graph: jsnx.convert.to_edgelist(self.graph), action:'simplify'});
+      }
+      else
+      {
+        $('#growl-alert').growlAlert({
+          autoShow: true,
+          content: "Cannot calculate graph centrality, your browser does not support Web Workers...",
+          title: 'Warning',
+          position: 'top-right',
+          delayTime: 2000,
+          onComplete: function() {  }
+        });
+      }
+    };
+  };
+
+
+
+
 
   // array of skeletons
   var skeletons = new Object();
@@ -1070,7 +1279,7 @@ var WebGLApp = new function () {
     } else {
       return '#FF0000';
     }
-  }
+  };
 
   // add skeleton to scene
   this.addSkeletonFromData = function( skeleton_id, skeleton_data )
@@ -1079,24 +1288,27 @@ var WebGLApp = new function () {
       // skeleton already in the list, just reinitialize
       skeletons[skeleton_id].reinit_actor( skeleton_data );
     } else {
-      skeleton_data['id'] = skeleton_id;
-      skeletons[skeleton_id] = new Skeleton( skeleton_data );
+      skeletons[skeleton_id] = new Skeleton();
+      skeletons[skeleton_id].init( skeleton_id, skeleton_data );
     }
     self.render();
-    return skeletons[skeleton_id];
-  }
+  };
 
-  this.changeSkeletonColor = function( skeleton_id, value )
+  this.changeSkeletonColor = function( skeleton_id, color )
   {
     if( !skeletons.hasOwnProperty(skeleton_id) ){
         console.log("Skeleton "+skeleton_id+" does not exist.");
         return;
     } else {
-        skeletons[skeleton_id].changeColor( value );
+        if (color === undefined) {
+            skeletons[skeleton_id].updateSkeletonColor();
+        } else {
+            skeletons[skeleton_id].changeColor( color );
+        }
         self.render();
         return true;
     }
-  }
+  };
 
   this.removeAssembly = function( assembly_id ) {
 
@@ -1777,18 +1989,20 @@ var WebGLApp = new function () {
       }}});
   }
 
+
   self.addSkeletonFromID = function (skeletonID) {
     if( skeletonID !== undefined )
     {
       var skeleton_id = parseInt( skeletonID );
-      jQuery.ajax({
-        url: django_url + project.id + '/skeleton/' + skeleton_id + '/json',
-        type: "GET",
-        dataType: "json",
-        success: function (skeleton_data) {
-          skeleton_data['baseName'] = skeleton_data['neuron']['neuronname'];
-          var skeleton = self.addSkeletonFromData( skeleton_id, skeleton_data );
+      requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/compact-json', 'POST', {}, function(status, text) {
+        if (200 !== status) return;
+        var json = $.parseJSON(text);
+        if (json.error) {
+          alert(json.error);
+          return;
         }
+
+        self.addSkeletonFromData(skeleton_id, json);
       });
     }
   };
@@ -1836,7 +2050,7 @@ var WebGLApp = new function () {
         }
       }
     }
-  }
+  };
 
   self.toggleConnector = function() {
     if( connector_filter ) {
@@ -1851,29 +2065,61 @@ var WebGLApp = new function () {
         skeletons[skeleton_id].setPostVisibility( !connector_filter );
         $('#skeletonpre-' + skeleton_id).attr('checked', !connector_filter );
         $('#skeletonpost-' + skeleton_id).attr('checked', !connector_filter );
-
       }
     }
-    // call magic
-    jQuery.ajax({
-      url: django_url + project.id + '/skeletongroup/all_shared_connectors',
-      data: { skeletonlist: self.getListOfSkeletonIDs(true) },
-      type: "POST",
-      dataType: "json",
-      success: function ( data ) {
-        for( var skeleton_id in skeletons)
-        {
-          if( skeletons.hasOwnProperty(skeleton_id) ) {
-            if( connector_filter ) {
-              skeletons[skeleton_id].create_connector_selection( data );
-            } else {
-              skeletons[skeleton_id].remove_connector_selection();
-            }
 
+    if (connector_filter) {
+      // Find all connector IDs referred to by more than one skeleton
+      // but only for visible skeletons
+      var counts = {};
+      for (var skeleton_id in skeletons) {
+        if (skeletons.hasOwnProperty(skeleton_id) && $('#skeletonshow-' + skeleton_id).is(':checked')) {
+          var sk = skeletons[skeleton_id];
+          for (var connectorID in sk.connectorProps) {
+            if (sk.connectorProps.hasOwnProperty(connectorID)) {
+              if (counts.hasOwnProperty(connectorID)) {
+                counts[connectorID][skeleton_id] = null;
+              } else {
+                counts[connectorID] = {};
+                counts[connectorID][skeleton_id] = null;
+              }
+            }
           }
         }
-        self.render();
       }
-    });
-  }
-}
+      var common = {};
+      for (var connectorID in counts) {
+        if (counts.hasOwnProperty(connectorID)) {
+          if (Object.keys(counts[connectorID]).length > 1) {
+            common[connectorID] = null;
+          }
+        }
+      }
+      for (var skeleton_id in skeletons) {
+        if (skeletons.hasOwnProperty(skeleton_id)) {
+          skeletons[skeleton_id].create_connector_selection( common );
+        }
+      }
+
+    } else {
+      for (var skeleton_id in skeletons) {
+        if (skeletons.hasOwnProperty(skeleton_id)) {
+          skeletons[skeleton_id].remove_connector_selection();
+        }
+      }
+    }
+
+    self.render();
+  };
+  
+  self.set_shading_method = function() {
+    // Set the shading of all skeletons based on the state of the "Shading" pop-up menu.
+    shading_method = $('#skeletons_shading :selected').attr("value");
+    
+    for (var skeleton_id in skeletons) {
+      if (skeletons.hasOwnProperty(skeleton_id)) {
+        skeletons[skeleton_id].shaderWorkers();
+      }
+    }
+  };
+};

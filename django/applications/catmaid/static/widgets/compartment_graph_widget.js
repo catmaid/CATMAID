@@ -269,7 +269,7 @@ var CompartmentGraphWidget = new function()
   this.updateGraph = function( data ) {
 
     for(var i = 0; i < data.nodes.length; i++) {
-      data.nodes[i]['data']['color'] = NeuronStagingArea.get_color_of_skeleton( parseInt(data.nodes[i]['data'].id) );
+      data.nodes[i]['data']['color'] = '#' + NeuronStagingArea.get_color_of_skeleton( parseInt(data.nodes[i]['data'].id) ).getHexString();
     }
 
     // first remove all nodes

@@ -135,6 +135,9 @@ class RGBA(object):
                         a=float(m.group(4)))
         else:
             raise Exception, "Couldn't parse value as an RGBA: " + str(s)
+    
+    def hex_color(self):
+        return "#{0:06x}".format(int(self.r * 256 * 256 * 255 + self.g * 256 * 255 + self.b * 255))
 
     def __unicode__(self):
         return u"(%.3f, %.3f, %.3f, %.3f)" % (self.r, self.g, self.b, self.a)
@@ -160,8 +163,10 @@ class RGBAField(models.Field):
         # here; return a new RGBA for any falsy value:
         elif not value:
             return RGBA()
-        else:
+        elif isinstance(value, str):
             return RGBA.from_str(value)
+        else:
+            return RGBA()    #.from_str(value)
 
     def get_db_prep_value(self, value, connection, prepared=False):
         value = self.to_python(value)
@@ -252,7 +257,7 @@ class RGBAFormField(forms.MultiValueField):
             forms.FloatField(label='B'),
             forms.FloatField(label='A'),
         )
-        super(Double3DFormField, self).__init__(fields, *args, **kwargs)
+        super(RGBAFormField, self).__init__(fields, *args, **kwargs)
 
     def compress(self, data_list):
         if data_list:

@@ -305,6 +305,19 @@ var NeuronStagingArea = new function()
     	return keys;
 	}
 
+	self.get_selected_skeletons_data = function() {
+		var skeletons = {};
+		for (var skid in skeletonmodels) {
+			if (skeletonmodels.hasOwnProperty(skid)) {
+				var sk = skeletonmodels[skid];
+				if (sk.selected) {
+					skeletons[skid] = sk.baseName;
+				}
+			}
+		}
+		return skeletons;
+	};
+
 	self.get_all_skeletons = function()
 	{
 		return Object.keys( skeletonmodels );

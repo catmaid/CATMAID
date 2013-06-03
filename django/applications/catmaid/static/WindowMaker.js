@@ -83,16 +83,50 @@ var WindowMaker = new function()
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
+    var div = document.createElement('div');
+    div.setAttribute('id', 'connector-selection-label');
+    content.appendChild(div);
+
     var container = createContainer("connector_selection_widget");
     content.appendChild(container);
 
-    var dialog = document.createElement('div');
-    dialog.setAttribute("id", "dialog-connector-selection");
-    container.appendChild( dialog );
+    container.innerHTML =
+      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="connectorselectiontable">' +
+        '<thead>' +
+          '<tr>' +
+            '<th>Connector</th>' +
+            '<th>Node 1</th>' +
+            '<th>Sk 1</th>' +
+            '<th>C 1</th>' +
+            '<th>Creator 1</th>' +
+            '<th>Node 2</th>' +
+            '<th>Sk 2</th>' +
+            '<th>C 2</th>' +
+            '<th>Creator 2</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tfoot>' +
+          '<tr>' +
+            '<th>Connector</th>' +
+            '<th>Node 1</th>' +
+            '<th>Sk 1</th>' +
+            '<th>C 1</th>' +
+            '<th>Creator 1</th>' +
+            '<th>Node 2</th>' +
+            '<th>Sk 2</th>' +
+            '<th>C 2</th>' +
+            '<th>Creator 2</th>' +
+          '</tr>' +
+        '</tfoot>' +
+        '<tbody>' +
+          '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>' +
+        '</tbody>' +
+      '</table>';
+    // ABOVE, notice the table needs one dummy row
 
     addListener(win, container);
-
     addLogic(win);
+    ConnectorSelection.init(); // MUST go after adding the container to the window, otherwise one gets "cannot read property 'aoData' of null" when trying to add data to the table
 
     return win;
   };
@@ -236,7 +270,7 @@ var WindowMaker = new function()
         if( webglwin === undefined) {
             rootWindow.replaceChild(new CMWHSplitNode(rootWindow.getChild(), win));
         } else {
-        	webglwin.getParent().replaceChild(new CMWVSplitNode(webglwin, win), webglwin);
+          webglwin.getParent().replaceChild(new CMWVSplitNode(webglwin, win), webglwin);
         }            
     }
 
@@ -1145,6 +1179,16 @@ var WindowMaker = new function()
         var contentbutton = document.createElement('div');
         contentbutton.setAttribute("id", 'skeleton_connectivity_buttons');
 
+        var source = document.createElement('select');
+        source.setAttribute('id', 'connectivity_source');
+        ['Active neuron', 'Selected neurons'].forEach(function(text, i) {
+          var option = document.createElement('option');
+          option.text = text;
+          option.value = text;
+          source.appendChild(option);
+        });
+        contentbutton.appendChild(source);
+
         var add = document.createElement('input');
         add.setAttribute("type", "button");
         add.setAttribute("id", "retrieve_connectivity");
@@ -1159,19 +1203,20 @@ var WindowMaker = new function()
         refresh.onclick = SkeletonConnectivity.refresh;
         contentbutton.appendChild(refresh);
 
-        var sync = document.createElement('select');
-        sync.setAttribute("id", "connectivity_count_threshold");
+        var threshold_label = document.createTextNode(' Synapse threshold: ');
+        contentbutton.appendChild(threshold_label);
 
-        // TODO pulldown menu for past items. When selecting one, refresh even if it is the same as currently listed. Acts as a refresh button.
+        var threshold = document.createElement('select');
+        threshold.setAttribute("id", "connectivity_count_threshold");
 
         for (var i = 0; i < 21; i++) {
           var option = document.createElement("option");
           option.text = i.toString();
           option.value = i;
-          sync.appendChild(option);
+          threshold.appendChild(option);
         }
 
-        contentbutton.appendChild(sync);
+        contentbutton.appendChild(threshold);
 
         content.appendChild( contentbutton );
 
@@ -1306,7 +1351,7 @@ var WindowMaker = new function()
       action = actions[i];
       keys = action.getKeys();
       for( k in keys ) {
-	result += '<kbd>' + k + '</kbd> ' + action.getHelpText() + "<br />";
+        result += '<kbd>' + k + '</kbd> ' + action.getHelpText() + "<br />";
       }
     }
     return result;
@@ -1320,7 +1365,7 @@ var WindowMaker = new function()
     if (typeof win == 'undefined') {
       win = windows['keyboard-shortcuts'];
       if (!win) {
-	return;
+        return;
       }
     }
 
@@ -1341,15 +1386,14 @@ var WindowMaker = new function()
 
     tool = project.getTool();
     if (tool) {
-
       if (tool.hasOwnProperty('getMouseHelp')) {
-	keysHTML += '<h4>Tool-specific Mouse Help</h4>';
-	keysHTML += tool.getMouseHelp();
+        keysHTML += '<h4>Tool-specific Mouse Help</h4>';
+        keysHTML += tool.getMouseHelp();
       }
 
       if (tool.hasOwnProperty('getActions')) {
-	keysHTML += '<h4>Tool-specific Key Help</h4>';
-	keysHTML += getHelpForActions(tool.getActions());
+        keysHTML += '<h4>Tool-specific Key Help</h4>';
+        keysHTML += getHelpForActions(tool.getActions());
       }
     }
     keysHTML += '</p>';

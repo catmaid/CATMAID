@@ -55,7 +55,7 @@ def graphedge_list(request, project_id=None):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def one_to_many_synapses(request, project_id=None):
     """ Return the list of synapses of a specific kind between one skeleton and a list of other skeletons. """
-    skid = request.POST.get('skid');
+    skid = int(request.POST.get('skid'));
     skids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
     relation_name = request.POST.get('relation') # expecting presynaptic_to or postsynaptic_to
     if 'postsynaptic_to' == relation_name or 'presynaptic_to' == relation_name:

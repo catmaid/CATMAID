@@ -340,10 +340,6 @@ def skeleton_info_raw(request, project_id=None):
 
     cursor = connection.cursor()
 
-    # Obtain the list of nodes of all skeletons
-    cursor.execute('SELECT id FROM treenode WHERE skeleton_id IN (%s)' % ','.join(str(skid) for skid in skeletons))
-    sk_nodes = tuple(row[0] for row in cursor.fetchall())
-
     # Obtain the IDs of the 'presynaptic_to', 'postsynaptic_to' and 'model_of' relations
     cursor.execute('''
     SELECT relation_name,

@@ -1189,6 +1189,19 @@ var WindowMaker = new function()
         });
         contentbutton.appendChild(source);
 
+        var op = document.createElement('select');
+        op.setAttribute('id', 'connectivity_operation');
+        var option = document.createElement('option');
+        option.text = 'AND';
+        option.value = 'logic-AND'; // added prefix, otherwise gets sent as nonsense
+        op.appendChild(option);
+        var option = document.createElement('option');
+        option.text = 'OR';
+        option.value = 'logic-OR';
+        op.appendChild(option);
+        contentbutton.appendChild(op);
+
+
         var add = document.createElement('input');
         add.setAttribute("type", "button");
         add.setAttribute("id", "retrieve_connectivity");

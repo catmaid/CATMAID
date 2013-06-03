@@ -251,7 +251,7 @@ def skeleton_ancestry(request, project_id=None):
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
 
-def _connected_skeletons(skeleton_ids, relation_id_1, relation_id_2, model_of_id, cursor):
+def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_of_id, cursor):
     class Partner:
         def __init__(self):
             self.name = None
@@ -281,6 +281,12 @@ def _connected_skeletons(skeleton_ids, relation_id_1, relation_id_2, model_of_id
 
     if not partners:
         return partners
+
+    # If op is AND, discard entries where only one of the skids has synapses
+    if len(skeleton_ids) > 1 and 'AND' == op:
+        for partnerID in partners.keys(): # keys() is a copy of the keys
+            if 1 == len(partners[partnerID].skids):
+                del partners[partnerID]
 
     # Obtain a string with unique skeletons
     skids_string = ','.join(str(x) for x in partners.iterkeys())
@@ -324,10 +330,6 @@ def _connected_skeletons(skeleton_ids, relation_id_1, relation_id_2, model_of_id
     for row in cursor.fetchall():
         partners[row[0]].name = '%s / skeleton %s' % (row[1], row[0])
 
-
-    print tuple(p.skids for p in partners.itervalues())
-    print tuple(p.__dict__.keys() for p in partners.itervalues())
-
     return partners
 
 
@@ -337,6 +339,8 @@ def skeleton_info_raw(request, project_id=None):
     project_id = int(project_id)
     skeletons = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('source['))
     synaptic_count_high_pass = int( request.POST.get( 'threshold', 0 ) )
+    op = request.POST.get('boolean_op') # values: AND, OR
+    op = {'AND': 'AND', 'OR': 'OR'}[op[6:]] # sanitize
 
     cursor = connection.cursor()
 
@@ -352,8 +356,8 @@ def skeleton_info_raw(request, project_id=None):
     relation_ids = dict(cursor.fetchall())
 
     # Obtain partner skeletons and their info
-    incoming = _connected_skeletons(skeletons, relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'], relation_ids['model_of'], cursor)
-    outgoing = _connected_skeletons(skeletons, relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'], relation_ids['model_of'], cursor)
+    incoming = _connected_skeletons(skeletons, op, relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'], relation_ids['model_of'], cursor)
+    outgoing = _connected_skeletons(skeletons, op, relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'], relation_ids['model_of'], cursor)
 
     # Remove skeleton IDs under synaptic_count_high_pass and jsonize class instances
     def prepare(partners):
@@ -717,7 +721,6 @@ def reset_reviewer_ids(request, project_id=None, skeleton_id=None):
         GROUP BY user_id, "auth_user".username
         ORDER BY c DESC''' % skeleton_id)
         rows = tuple(cursor.fetchall())
-        print rows
         if rows:
             if 1 == len(rows) and rows[0] == request.user.id:
                 pass # All skeleton nodes are owned by the user

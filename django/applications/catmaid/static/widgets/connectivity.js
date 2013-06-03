@@ -33,7 +33,8 @@ var SkeletonConnectivity = new function()
                 django_url + project.id + '/skeleton/connectivity',
                 'POST',
                 {'source': skids,
-                 'threshold': $('#connectivity_count_threshold').val()},
+                 'threshold': $('#connectivity_count_threshold').val(),
+                 'boolean_op': $('#connectivity_operation').val()},
                 self.createConnectivityTable,
                 'update_connectivity_table');
     };

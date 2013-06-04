@@ -562,6 +562,9 @@ var NeuronStagingArea = new function()
 
 	self.save_skeleton_list = function() {
 		var shortname = prompt('Short name reference for skeleton list?');
+		if (!shortname) return;
+		shortname = shortname.trim();
+		if (0 === shortname.length) return; // can't save a no-name list
 		jQuery.ajax({
 		  url: django_url + project.id + '/skeletonlist/save',
 		  data: { 
@@ -570,13 +573,13 @@ var NeuronStagingArea = new function()
 		  },
 		  type: "POST",
 		  dataType: "json",
-		  	success: function () {
-		  }
+		  success: function () {}
 		});
 	};
 
 	self.load_skeleton_list = function() {
 		var shortname = prompt('Short name reference?');
+		if (!shortname) return;
 		jQuery.ajax({
 		  url: django_url + project.id + '/skeletonlist/load',
 		  data: { shortname: shortname },

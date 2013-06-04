@@ -192,11 +192,10 @@ var NeuronStagingArea = new function()
 			self._add_skeleton_to_table( skeletonmodels[ id ] );
 			self.update_skeleton_color_button( id );
 			if( WebGLApp.is_widget_open() ) {
-				WebGLApp.addSkeletonFromID( id );
+				WebGLApp.addSkeletonFromID( id, true );
 			}
 		}
 		if (typeof callback !== "undefined" && callback instanceof Function) {
-			console.log('call callback')
 			callback();
 		}
 	}
@@ -304,6 +303,19 @@ var NeuronStagingArea = new function()
     	}
     	return keys;
 	}
+
+	self.get_selected_skeletons_data = function() {
+		var skeletons = {};
+		for (var skid in skeletonmodels) {
+			if (skeletonmodels.hasOwnProperty(skid)) {
+				var sk = skeletonmodels[skid];
+				if (sk.selected) {
+					skeletons[skid] = sk.baseName;
+				}
+			}
+		}
+		return skeletons;
+	};
 
 	self.get_all_skeletons = function()
 	{
@@ -524,7 +536,6 @@ var NeuronStagingArea = new function()
 	}
 
 	self.select_skeleton = function( skeleton_id, vis ) {
-		console.log('select skeleton', skeleton_id, vis, skeletonmodels[ skeleton_id ].selected )
 		if( !skeletonmodels.hasOwnProperty( skeleton_id ) ) {
 			return;
 		}
@@ -532,24 +543,28 @@ var NeuronStagingArea = new function()
 		if( vis === undefined) {
 			vis = !skeletonmodels[ skeleton_id ].selected;
 		}
-	  	var skeleton = skeletonmodels[ skeleton_id ];
-	  	$('#skeletonshow-' + skeleton.id).attr('checked', vis);
-	  	skeletonmodels[ skeleton.id ].selected = vis;
-	    if( WebGLApp.is_widget_open() ) {
-        	WebGLApp.setSkeletonAllVisibility( skeleton.id, vis );
+		var skeleton = skeletonmodels[ skeleton_id ];
+		$('#skeletonshow-' + skeleton.id).attr('checked', vis);
+		skeletonmodels[ skeleton.id ].selected = vis;
+		if( WebGLApp.is_widget_open() ) {
+			var connector_filter = WebGLApp.setSkeletonVisibility(skeleton.id, vis);
+			if (!connector_filter) {
+				skeletonmodels[ skeleton.id ].pre_visible = vis;
+				$('#skeletonpre-' + skeleton.id).attr('checked', vis);
+				WebGLApp.setSkeletonPreVisibility( skeleton.id,  vis );
 
-        	skeletonmodels[ skeleton.id ].pre_visible = vis;
-        	$('#skeletonpre-' + skeleton.id).attr('checked', vis);
-        	WebGLApp.setSkeletonPreVisibility( skeleton.id,  vis );
-
-        	skeletonmodels[ skeleton.id ].post_visible = vis;
-        	$('#skeletonpost-' + skeleton.id).attr('checked', vis);
-        	WebGLApp.setSkeletonPostVisibility( skeleton.id, vis );
-	    }
-	}
+				skeletonmodels[ skeleton.id ].post_visible = vis;
+				$('#skeletonpost-' + skeleton.id).attr('checked', vis);
+				WebGLApp.setSkeletonPostVisibility( skeleton.id, vis );
+			}
+		}
+	};
 
 	self.save_skeleton_list = function() {
 		var shortname = prompt('Short name reference for skeleton list?');
+		if (!shortname) return;
+		shortname = shortname.trim();
+		if (0 === shortname.length) return; // can't save a no-name list
 		jQuery.ajax({
 		  url: django_url + project.id + '/skeletonlist/save',
 		  data: { 
@@ -558,13 +573,13 @@ var NeuronStagingArea = new function()
 		  },
 		  type: "POST",
 		  dataType: "json",
-		  	success: function () {
-		  }
+		  success: function () {}
 		});
 	};
 
 	self.load_skeleton_list = function() {
 		var shortname = prompt('Short name reference?');
+		if (!shortname) return;
 		jQuery.ajax({
 		  url: django_url + project.id + '/skeletonlist/load',
 		  data: { shortname: shortname },

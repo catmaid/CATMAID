@@ -10,6 +10,8 @@ from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
 
+from itertools import imap
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def graphedge_list(request, project_id=None):
     """ Assumes that first element of skeletonlist is pre, and second is post """
@@ -49,7 +51,51 @@ def graphedge_list(request, project_id=None):
         result.append(connectordata[k])
 
     return HttpResponse(json.dumps( result ), mimetype='text/json')
-    
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def one_to_many_synapses(request, project_id=None):
+    """ Return the list of synapses of a specific kind between one skeleton and a list of other skeletons. """
+    skid = int(request.POST.get('skid'));
+    skids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
+    relation_name = request.POST.get('relation') # expecting presynaptic_to or postsynaptic_to
+    if 'postsynaptic_to' == relation_name or 'presynaptic_to' == relation_name:
+        pass
+    else:
+        raise Exception("Cannot accept a relation named '%s'" % relation_name)
+    cursor = connection.cursor();
+    cursor.execute('''
+    SELECT tc1.connector_id, c.location,
+           tc1.treenode_id, tc1.skeleton_id, tc1.confidence, u1.username, t1.location,
+           tc2.treenode_id, tc2.skeleton_id, tc2.confidence, u2.username, t2.location
+    FROM treenode_connector tc1,
+         treenode_connector tc2,
+         treenode t1,
+         treenode t2,
+         auth_user u1,
+         auth_user u2,
+         relation r1,
+         connector c
+    WHERE tc1.skeleton_id = %s
+      AND tc1.connector_id = c.id
+      AND tc2.skeleton_id IN (%s)
+      AND tc1.connector_id = tc2.connector_id
+      AND tc1.relation_id = r1.id
+      AND r1.relation_name = '%s'
+      AND tc1.treenode_id = t1.id
+      AND tc2.treenode_id = t2.id
+      AND tc1.user_id = u1.id
+      AND tc2.user_id = u2.id
+    ''' % (skid, ','.join(str(d) for d in skids), relation_name))
+
+    def parse(loc):
+        return tuple(imap(float, loc[1:-1].split(',')))
+
+    rows = tuple((row[0], parse(row[1]),
+                  row[2], row[3], row[4], row[5], parse(row[6]),
+                  row[7], row[8], row[9], row[10], parse(row[11])) for row in cursor.fetchall())
+
+    return HttpResponse(json.dumps(rows))
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_connector(request, project_id=None):

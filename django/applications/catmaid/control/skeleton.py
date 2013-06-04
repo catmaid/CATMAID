@@ -8,7 +8,7 @@ from catmaid.control.authentication import *
 from catmaid.control.common import *
 from catmaid.control.neuron import _in_isolated_synaptic_terminals, _delete_if_empty
 import sys
-
+from collections import defaultdict
 import json
 from operator import itemgetter
 try:
@@ -251,37 +251,47 @@ def skeleton_ancestry(request, project_id=None):
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
 
-def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id, cursor):
-    partners = {}
+def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_of_id, cursor):
+    class Partner:
+        def __init__(self):
+            self.name = None
+            self.num_nodes = 0
+            self.reviewed = 0 # percentage reviewed
+            self.skids = defaultdict(int) # skid vs synapse count
 
-    # Obtain the list of potentially repeated IDs of partner skeletons
+    # Dictionary of partner skeleton ID vs Partner
+    def newPartner():
+        return Partner()
+    partners = defaultdict(newPartner)
+
+    # Obtain the synapses made by all skeleton_ids considering the desired direction of the synapse, as specified by relation_id_1 and relation_id_2:
     cursor.execute('''
-    SELECT t2.skeleton_id
+    SELECT t1.skeleton_id, t2.skeleton_id
     FROM treenode_connector t1,
          treenode_connector t2
-    WHERE t1.skeleton_id = %s
+    WHERE t1.skeleton_id IN (%s)
       AND t1.relation_id = %s
       AND t1.connector_id = t2.connector_id
       AND t2.relation_id = %s
-    ''', (skeleton_id, relation_id_1, relation_id_2))
-    repeated_skids = [row[0] for row in cursor.fetchall()]
+    ''' % (','.join(str(skid) for skid in skeleton_ids), int(relation_id_1), int(relation_id_2)))
 
-    if not repeated_skids:
+    # Sum the number of synapses
+    for srcID, partnerID in cursor.fetchall():
+        partners[partnerID].skids[srcID] += 1
+
+    if not partners:
         return partners
 
-    # Sum the number of synapses that each skeleton does onto the skeleton
-    for skid in repeated_skids:
-        d = partners.get(skid)
-        if d:
-            d['synaptic_count'] += 1
-            continue
-        partners[skid] = {'skeleton_id': skid, 'synaptic_count': 1}
+    # If op is AND, discard entries where only one of the skids has synapses
+    if len(skeleton_ids) > 1 and 'AND' == op:
+        for partnerID in partners.keys(): # keys() is a copy of the keys
+            if 1 == len(partners[partnerID].skids):
+                del partners[partnerID]
 
     # Obtain a string with unique skeletons
-    unique_skids = set(repeated_skids)
-    skids_string = ','.join(str(x) for x in unique_skids)
+    skids_string = ','.join(str(x) for x in partners.iterkeys())
 
-    # Count nodes of each skeleton
+    # Count nodes of each partner skeleton
     cursor.execute('''
     SELECT skeleton_id, count(skeleton_id)
     FROM treenode
@@ -289,7 +299,7 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
     GROUP BY skeleton_id
     ''' % skids_string) # no need to sanitize
     for row in cursor.fetchall():
-        partners[row[0]]['node_count'] = row[1]
+        partners[row[0]].num_nodes = row[1]
 
     # Count reviewed nodes of each skeleton
     cursor.execute('''
@@ -300,13 +310,12 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
     GROUP BY skeleton_id
     ''' % skids_string) # no need to sanitize
     for row in cursor.fetchall():
-        d = partners[row[0]]
-        d['percentage_reviewed'] = int(100.0 * (1 - float(row[1]) / d['node_count']))
+        partner = partners[row[0]]
+        partner.reviewed = int(100.0 * (1 - float(row[1]) / partner.num_nodes))
     # If 100%, it will not be there, so add it
-    for skid in unique_skids:
-        d = partners[skid]
-        if 'percentage_reviewed' not in d:
-            d['percentage_reviewed'] = 100
+    for partner in partners.values():
+        if 0 == partner.reviewed:
+            partner.reviewed = 100
 
     # Obtain name of each skeleton's neuron
     cursor.execute('''
@@ -319,22 +328,22 @@ def _connected_skeletons(skeleton_id, relation_id_1, relation_id_2, model_of_id,
       AND class_instance.id=class_instance_class_instance.class_instance_b
     ''' % (model_of_id, skids_string)) # No need to sanitize, and would quote skids_string
     for row in cursor.fetchall():
-        partners[row[0]]['name'] = '%s / skeleton %s' % (row[1], row[0])
+        partners[row[0]].name = '%s / skeleton %s' % (row[1], row[0])
 
     return partners
 
 
-#@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def skeleton_info_raw(request, project_id=None, skeleton_id=None):
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def skeleton_info_raw(request, project_id=None):
     # sanitize arguments
-    synaptic_count_high_pass = int( request.POST.get( 'threshold', 0 ) )
-    skeleton_id = int(skeleton_id)
     project_id = int(project_id)
-    #
+    skeletons = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('source['))
+    synaptic_count_high_pass = int( request.POST.get( 'threshold', 0 ) )
+    op = request.POST.get('boolean_op') # values: AND, OR
+    op = {'AND': 'AND', 'OR': 'OR'}[op[6:]] # sanitize
+
     cursor = connection.cursor()
-    # Obtain the list of nodes of the current skeleton
-    cursor.execute('SELECT id FROM treenode WHERE skeleton_id=%s' % skeleton_id)
-    sk_nodes = [row[0] for row in cursor.fetchall()]
+
     # Obtain the IDs of the 'presynaptic_to', 'postsynaptic_to' and 'model_of' relations
     cursor.execute('''
     SELECT relation_name,
@@ -343,18 +352,28 @@ def skeleton_info_raw(request, project_id=None, skeleton_id=None):
     WHERE project_id=%s
       AND (relation_name='presynaptic_to'
         OR relation_name='postsynaptic_to'
-        OR relation_name='model_of')''', [project_id])
-    relation_ids = dict(row for row in cursor.fetchall())
+        OR relation_name='model_of')''' % project_id)
+    relation_ids = dict(cursor.fetchall())
+
     # Obtain partner skeletons and their info
-    incoming = _connected_skeletons(skeleton_id, relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'], relation_ids['model_of'], cursor)
-    outgoing = _connected_skeletons(skeleton_id, relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'], relation_ids['model_of'], cursor)
-    # Sort by number of connections
-    result = {
-        'incoming': [e for e in list(reversed(sorted(incoming.values(), key=itemgetter('synaptic_count')))) if int(e['synaptic_count']) >= synaptic_count_high_pass],
-        'outgoing': [e for e in list(reversed(sorted(outgoing.values(), key=itemgetter('synaptic_count')))) if int(e['synaptic_count']) >= synaptic_count_high_pass]
-    }
-    json_return = json.dumps(result, sort_keys=True, indent=4)
-    return HttpResponse(json_return, mimetype='text/json')
+    incoming = _connected_skeletons(skeletons, op, relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'], relation_ids['model_of'], cursor)
+    outgoing = _connected_skeletons(skeletons, op, relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'], relation_ids['model_of'], cursor)
+
+    # Remove skeleton IDs under synaptic_count_high_pass and jsonize class instances
+    def prepare(partners):
+        for partnerID in partners.iterkeys():
+            partner = partners[partnerID]
+            skids = partner.skids
+            for skid in skids.keys():
+                if skids[skid] < synaptic_count_high_pass:
+                    del skids[skid]
+            # jsonize: swap class instance by its dict of members vs values
+            partners[partnerID] = partner.__dict__
+
+    prepare(incoming)
+    prepare(outgoing)
+
+    return HttpResponse(json.dumps({'incoming': incoming, 'outgoing': outgoing}), mimetype='text/json')
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -702,7 +721,6 @@ def reset_reviewer_ids(request, project_id=None, skeleton_id=None):
         GROUP BY user_id, "auth_user".username
         ORDER BY c DESC''' % skeleton_id)
         rows = tuple(cursor.fetchall())
-        print rows
         if rows:
             if 1 == len(rows) and rows[0] == request.user.id:
                 pass # All skeleton nodes are owned by the user

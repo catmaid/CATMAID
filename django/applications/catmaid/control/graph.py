@@ -246,11 +246,12 @@ def skeleton_graph(request, project_id=None):
     return HttpResponse(json.dumps(package))
 
 class Counts():
-    inputs = 0
-    outputs = 0
-    seenInputs = 0
-    seenOutputs = 0
-    nPossibleIOPaths = 0
+    def __init__(self):
+        self.inputs = 0
+        self.outputs = 0
+        self.seenInputs = 0
+        self.seenOutputs = 0
+        self.nPossibleIOPaths = 0
 
 def _node_centrality_by_synapse(skeleton_id):
     """ Compute the synapse centraly of every node in a tree.

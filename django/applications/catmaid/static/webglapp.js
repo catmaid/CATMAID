@@ -4,6 +4,9 @@ var WebGLApp = new function () {
   self = this;
   self.neurons = [];
 
+  // Queue server requests, awaiting returns
+  var submit = submitterFn();
+
   var scene, renderer, scale, controls, zplane = null, meshes = [];
   var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, projector, contour_objects = [],
       bbmesh, floormesh, debugax, togglevisibleall = false, missing_sections = [], mouse = new THREE.Vector2();
@@ -466,7 +469,7 @@ var WebGLApp = new function () {
           this.line_material[connectivity_types[i]], THREE.LinePieces );
       }
       this.labelSphere = new Object();
-      this.otherSpheres = new Object();
+      this.synapticSpheres = new Object();
       this.radiusSpheres = new Object();
       this.textlabels = new Object();
 
@@ -510,10 +513,10 @@ var WebGLApp = new function () {
           delete this.labelSphere[k];
           this.labelSphere[k] = null;
       }
-      for ( var k in this.otherSpheres ) {
-        if( this.otherSpheres.hasOwnProperty( k ) )
-          delete this.otherSpheres[k];
-          this.otherSpheres[k] = null;
+      for ( var k in this.synapticSpheres ) {
+        if( this.synapticSpheres.hasOwnProperty( k ) )
+          delete this.synapticSpheres[k];
+          this.synapticSpheres[k] = null;
       }
       for ( var k in this.radiusSpheres ) {
         if( this.radiusSpheres.hasOwnProperty( k ) )
@@ -547,9 +550,9 @@ var WebGLApp = new function () {
         if( this.labelSphere.hasOwnProperty( k ) )
           scene.remove( this.labelSphere[k] );
       }
-      for ( var k in this.otherSpheres ) {
-        if( this.otherSpheres.hasOwnProperty( k ) )
-          scene.remove( this.otherSpheres[k] );
+      for ( var k in this.synapticSpheres ) {
+        if( this.synapticSpheres.hasOwnProperty( k ) )
+          scene.remove( this.synapticSpheres[k] );
       }
       for ( var k in this.radiusSpheres ) {
         if( this.radiusSpheres.hasOwnProperty( k ) )
@@ -564,24 +567,10 @@ var WebGLApp = new function () {
       }
     };
 
-    this.setCompleteActorVisibility = function( vis ) {
-      self.visible = vis;
-      self.setActorVisibility( vis );
-      self.setPreVisibility( vis );
-      self.setPostVisibility( vis );
-      if( vis ===  false)
-        self.setTextVisibility( vis );
-    };
-
+    /** Set the visibility of the skeleton, radius spheres and label spheres. Does not set the visibility of the synaptic spheres or edges. */
     this.setActorVisibility = function( vis ) {
       self.visible = vis;
       self.visibilityCompositeActor( 'neurite', vis );
-      // also show and hide spheres
-      for( var idx in self.otherSpheres ) {
-        if( self.otherSpheres.hasOwnProperty( idx )) {
-          self.otherSpheres[ idx ].visible = vis;
-        }
-      }
       for( var idx in self.radiusSpheres ) {
         if( self.radiusSpheres.hasOwnProperty( idx )) {
           self.radiusSpheres[ idx ].visible = vis;
@@ -594,26 +583,21 @@ var WebGLApp = new function () {
       }
     };
 
-    this.setPreVisibility = function( vis ) {
-      self.visibilityCompositeActor( 'presynaptic_to', vis );
-      for( var idx in self.otherSpheres ) {
-        if( self.otherSpheres.hasOwnProperty( idx )) {
-          if( self.otherSpheres[ idx ].type === 'presynaptic_to')
-            self.otherSpheres[ idx ].visible = vis;
+    var setSynapticVisibilityFn = function(type) {
+      return function(vis) {
+        self.visibilityCompositeActor(type, vis);
+        for (var idx in self.synapticSpheres) {
+          if (self.synapticSpheres.hasOwnProperty(idx)
+           && self.synapticSpheres[idx].type === type) {
+            self.synapticSpheres[idx].visible = vis;
+          }
         }
-      }
+      };
     };
 
-    this.setPostVisibility = function( vis ) {
-      self.visibilityCompositeActor( 'postsynaptic_to', vis );
-      for( var idx in self.otherSpheres ) {
-        if( self.otherSpheres.hasOwnProperty( idx )) {
-          if( self.otherSpheres[ idx ].type === 'postsynaptic_to')
-            self.otherSpheres[ idx ].visible = vis;
-        }
-      }
+    this.setPreVisibility = setSynapticVisibilityFn('presynaptic_to');
 
-    };
+    this.setPostVisibility = setSynapticVisibilityFn('postsynaptic_to');
 
     this.setTextVisibility = function( vis ) {
       for( var idx in self.textlabels ) {
@@ -713,6 +697,7 @@ var WebGLApp = new function () {
       }
     };
 
+    /** Three possible types of actors: 'neurite', 'presynaptic_to', and 'postsynaptic_to', each consisting, respectibly, of the edges of the skeleton, the edges of the presynaptic sites and the edges of the postsynaptic sites. */
     this.visibilityCompositeActor = function( type, visible )
     {
       this.actor[type].visible = visible;
@@ -748,7 +733,7 @@ var WebGLApp = new function () {
       self.connectorgeometry[connectivity_types[2]] = new THREE.Geometry();
 
       for (var connectorID in self.connectorProps) {
-        if (self.connectorProps.hasOwnProperty(connectorID) && connectorID in common_connector_IDs) {
+        if (self.connectorProps.hasOwnProperty(connectorID) && common_connector_IDs.hasOwnProperty(connectorID)) {
           var con = self.connectorProps[connectorID];
           var node = self.nodeProps[con[0]]; // 0 is the treenode ID
           var v1 = pixelSpaceVector(node[4], node[5], node[6]); // x, y, z
@@ -878,7 +863,7 @@ var WebGLApp = new function () {
         mesh.orig_coord = {x: x, y: y, z: z};
         mesh.skeleton_id = self.id;
         mesh.type = synapticTypes[itype];
-        self.otherSpheres[nodeID] = mesh;
+        self.synapticSpheres[nodeID] = mesh;
         scene.add( mesh );
       };
 
@@ -895,7 +880,7 @@ var WebGLApp = new function () {
         createEdge(con[1], con[3], con[4], con[5],
                    node[0], node[4], node[5], node[6],
                    synapticTypes[con[2]]);
-        if (!self.otherSpheres.hasOwnProperty(node[0])) {
+        if (!self.synapticSpheres.hasOwnProperty(node[0])) {
           // con[2] is 0 for presynaptic and 1 for postsynaptic
           createSynapticSphere(node[0], node[4], node[5], node[6], con[2]);
         }
@@ -986,10 +971,17 @@ var WebGLApp = new function () {
 
       self.addCompositeActorToScene();
 
-      self.setActorVisibility( self.skeletonmodel.selected );
-      self.setPreVisibility( self.skeletonmodel.pre_visible );
-      self.setPostVisibility( self.skeletonmodel.post_visible );
-      self.setTextVisibility( self.skeletonmodel.text_visible );
+      self.setActorVisibility( self.skeletonmodel.selected ); // the skeleton, radius spheres and label spheres
+
+      if (connector_filter) {
+        self.setPreVisibility( false ); // the presynaptic edges and spheres
+        self.setPostVisibility( false ); // the postsynaptic edges and spheres
+      } else {
+        self.setPreVisibility( self.skeletonmodel.pre_visible ); // the presynaptic edges and spheres
+        self.setPostVisibility( self.skeletonmodel.post_visible ); // the postsynaptic edges and spheres
+      }
+
+      self.setTextVisibility( self.skeletonmodel.text_visible ); // the text labels
       
       self.actorColor = self.skeletonmodel.color;
 
@@ -1348,8 +1340,11 @@ var WebGLApp = new function () {
         skeletons[skeleton_id].removeActorFromScene();
         skeletons[skeleton_id].destroy_data();
         delete skeletons[skeleton_id];
-        if( renderer !== null )
+        if (connector_filter) {
+          refreshRestrictedConnectors();
+        } else {
           self.render();
+        }
         return true;
     }
   }
@@ -1756,9 +1751,9 @@ var WebGLApp = new function () {
             }
           }
 
-          for(var idx in skeletons[ skeleton_id ].otherSpheres) {
-            if( skeletons[ skeleton_id ].otherSpheres.hasOwnProperty( idx )) {
-              sphere_objects.push( skeletons[ skeleton_id ].otherSpheres[ idx ] )
+          for(var idx in skeletons[ skeleton_id ].synapticSpheres) {
+            if( skeletons[ skeleton_id ].synapticSpheres.hasOwnProperty( idx )) {
+              sphere_objects.push( skeletons[ skeleton_id ].synapticSpheres[ idx ] )
             }
           }
 
@@ -1938,30 +1933,34 @@ var WebGLApp = new function () {
   self.setSkeletonPreVisibility = function( skeleton_id, value ) {
     if( skeletons.hasOwnProperty(skeleton_id) ) {
       skeletons[skeleton_id].setPreVisibility( value );
+      self.render();
     }
-    self.render();
   }
 
   self.setSkeletonPostVisibility = function( skeleton_id, value ) {
     if( skeletons.hasOwnProperty(skeleton_id) ) {
       skeletons[skeleton_id].setPostVisibility( value );
+      self.render();
     }
-    self.render();
   }
 
   self.setSkeletonTextVisibility = function( skeleton_id, value ) {
     if( skeletons.hasOwnProperty(skeleton_id) ) {
       skeletons[skeleton_id].setTextVisibility( value );
+      self.render();
     }
-    self.render();
-  }
+  };
 
-  self.setSkeletonAllVisibility = function( skeleton_id, value ) {
-    if( skeletons.hasOwnProperty(skeleton_id) ) {
-      skeletons[skeleton_id].setActorVisibility( value );
+  self.setSkeletonVisibility = function( skeleton_id, vis ) {
+    if (!skeletons.hasOwnProperty(skeleton_id)) return;
+    skeletons[skeleton_id].setActorVisibility( vis );
+    if (connector_filter) {
+      refreshRestrictedConnectors();
+    } else {
+      self.render();
     }
-    self.render();
-  }
+    return connector_filter;
+  };
 
   self.addActiveObjectToStagingArea = function() {
     // add either a skeleton or an assembly based on the tool selected
@@ -1990,21 +1989,17 @@ var WebGLApp = new function () {
   }
 
 
-  self.addSkeletonFromID = function (skeletonID) {
-    if( skeletonID !== undefined )
-    {
-      var skeleton_id = parseInt( skeletonID );
-      requestQueue.register(django_url + project.id + '/skeleton/' + skeleton_id + '/compact-json', 'POST', {}, function(status, text) {
-        if (200 !== status) return;
-        var json = $.parseJSON(text);
-        if (json.error) {
-          alert(json.error);
-          return;
-        }
-
-        self.addSkeletonFromData(skeleton_id, json);
-      });
-    }
+  self.addSkeletonFromID = function (skeletonID, refresh_restricted_connectors) {
+    if (!skeletonID) return;
+    var skeleton_id = parseInt(skeletonID);
+    submit(django_url + project.id + '/skeleton/' + skeleton_id + '/compact-json',
+          {},
+          function(json) {
+            self.addSkeletonFromData(skeleton_id, json);
+            if (refresh_restricted_connectors) {
+              refreshRestrictedConnectors();
+            }
+          });
   };
 
   self.getListOfSkeletonIDs = function(only_visible) {
@@ -2036,9 +2031,9 @@ var WebGLApp = new function () {
         skeletons_to_remove[ skeleton_id ] = true;
       }
     }
-    var stageskeletons = NeuronStagingArea.get_selected_skeletons();
-    for(var i = 0; i < stageskeletons.length; i++) {
-      var skeleton_id = parseInt( stageskeletons[ i ] );
+    var stageSkeletons = NeuronStagingArea.get_selected_skeletons();
+    for(var i = 0; i < stageSkeletons.length; i++) {
+      var skeleton_id = parseInt( stageSkeletons[ i ] );
       skeletons_to_remove[ skeleton_id ] = false;
     }
     for(var skeleton_id in skeletons_to_remove) {
@@ -2049,6 +2044,11 @@ var WebGLApp = new function () {
           self.addSkeletonFromID( skeleton_id );
         }
       }
+    }
+
+    // When all finish loading, then update restricted connectors
+    if (connector_filter) {
+      submit(null, null, refreshRestrictedConnectors);
     }
   };
 
@@ -2069,11 +2069,29 @@ var WebGLApp = new function () {
     }
 
     if (connector_filter) {
-      // Find all connector IDs referred to by more than one skeleton
-      // but only for visible skeletons
-      var counts = {};
+      refreshRestrictedConnectors();
+    } else {
+      // Restore all connectors
       for (var skeleton_id in skeletons) {
-        if (skeletons.hasOwnProperty(skeleton_id) && $('#skeletonshow-' + skeleton_id).is(':checked')) {
+        if (skeletons.hasOwnProperty(skeleton_id)) {
+          skeletons[skeleton_id].remove_connector_selection();
+        }
+      }
+      self.render();
+    }
+  };
+
+  var refreshRestrictedConnectors = function() {
+    if (!connector_filter) return;
+    // Find all connector IDs referred to by more than one skeleton
+    // but only for visible skeletons
+    var counts = {};
+    var visible_skeletons = [];
+    var invisible_skeletons = [];
+    for (var skeleton_id in skeletons) {
+      if (skeletons.hasOwnProperty(skeleton_id)) {
+        if ($('#skeletonshow-' + skeleton_id).is(':checked')) {
+          visible_skeletons.push(skeleton_id);
           var sk = skeletons[skeleton_id];
           for (var connectorID in sk.connectorProps) {
             if (sk.connectorProps.hasOwnProperty(connectorID)) {
@@ -2085,30 +2103,24 @@ var WebGLApp = new function () {
               }
             }
           }
-        }
-      }
-      var common = {};
-      for (var connectorID in counts) {
-        if (counts.hasOwnProperty(connectorID)) {
-          if (Object.keys(counts[connectorID]).length > 1) {
-            common[connectorID] = null;
-          }
-        }
-      }
-      for (var skeleton_id in skeletons) {
-        if (skeletons.hasOwnProperty(skeleton_id)) {
-          skeletons[skeleton_id].create_connector_selection( common );
-        }
-      }
-
-    } else {
-      for (var skeleton_id in skeletons) {
-        if (skeletons.hasOwnProperty(skeleton_id)) {
-          skeletons[skeleton_id].remove_connector_selection();
+        } else {
+          invisible_skeletons.push(skeleton_id);
         }
       }
     }
-
+    var common = {};
+    for (var connectorID in counts) {
+      if (Object.keys(counts[connectorID]).length > 1) {
+        common[connectorID] = null; // null, just to add something
+      }
+    }
+    visible_skeletons.forEach(function(skeleton_id) {
+      skeletons[skeleton_id].remove_connector_selection();
+      skeletons[skeleton_id].create_connector_selection( common );
+    });
+    invisible_skeletons.forEach(function(skeleton_id) {
+      skeletons[skeleton_id].remove_connector_selection();
+    });
     self.render();
   };
   

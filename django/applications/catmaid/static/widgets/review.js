@@ -124,54 +124,6 @@ var ReviewSystem = new function()
         self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
     };
 
-    /** The queue of submitted requests is reset if any returns an error.
-     *  The returned function accepts null URL as argument, which signals
-     *  that no request to the server is necessary and the handler fn must be invoked directly. */
-    var submitterFn = function() {
-        // Accumulate invocations
-        var queue = [];
-
-        var handlerFn = function(fn) {
-            return function(status, text) {
-                if (200 !== status) {
-                    alert("Unexpected request response status: " + status);
-                    queue.length = 0; // reset
-                    return;
-                }
-                var json = $.parseJSON(text);
-                if (json.error) {
-                    alert(json.error);
-                    queue.length = 0; // reset
-                    return;
-                }
-                // Invoke handler
-                fn(json);
-                // ... then remove this call
-                queue.shift();
-                // ... and invoke the oldest of any accumulated requests
-                next();
-            };
-        };
-
-        var next = function() {
-            if (0 === queue.length) return;
-            var q = queue[0];
-            if (q.url) {
-                requestQueue.register(q.url, "POST", q.post, handlerFn(q.fn));
-            } else {
-                q.fn();
-                queue.shift();
-            }
-        };
-
-        return function(url, post, fn) {
-            queue.push({url: url,
-                        post: post,
-                        fn: fn});
-            next();
-        };
-    };
-
     var submit = submitterFn();
 
     this.markAsReviewed = function( node_ob ) {

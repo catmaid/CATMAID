@@ -1014,15 +1014,12 @@ var WindowMaker = new function()
                     alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
                 } else {
                     var new_users = document.getElementById("logtable_username");
-                    /*while (new_users.length > 0)
-                        new_users.remove(0);*/
                     for (var i in e) {
                         var option = document.createElement("option");
-                        option.text = e[i].name + " (" + e[i].longname + ")";
+                        option.text = e[i].login + " (" + e[i].full_name + ")";
                         option.value = e[i].id;
                         new_users.appendChild(option);
                     }
-                    new_users.size = e.length;
                 }
         });
 

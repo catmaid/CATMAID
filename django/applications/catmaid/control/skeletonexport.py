@@ -10,15 +10,10 @@ from catmaid.control.common import *
 
 import networkx as nx
 from tree_util import edge_count_to_root
+from exportneuroml import neuroml_single_cell, neuroml_network
 
 from itertools import imap
 from collections import defaultdict
-
-try:
-    import neuroml
-    import neuroml.writers as writers
-except ImportError:
-    pass    
 
 def get_treenodes_qs(project_id=None, skeleton_id=None, with_labels=True):
     treenode_qs = Treenode.objects.filter(skeleton_id=skeleton_id)
@@ -253,92 +248,63 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
     else:
         raise Exception, "Unknown format ('%s') in export_extended_skeleton_response" % (format,)
 
+def _skeleton_neuroml_cell(skeleton_id, preID, postID):
+    skeleton_id = int(skeleton_id) # sanitize
+    cursor = connection.cursor()
+
+    cursor.execute('''
+    SELECT id, parent_id, location, radius
+    FROM treenode
+    WHERE skeleton_id = %s
+    ''' % skeleton_id)
+    nodes = {row[0]: (row[1], tuple(imap(float, row[2][1:-1].split(','))), row[3]) for row in cursor.fetchall()}
+
+    cursor.execute('''
+    SELECT tc.treenode_id, tc.connector_id, tc.relation_id
+    FROM treenode_connector tc
+    WHERE tc.skeleton_id = %s
+      AND (tc.relation_id = %s OR tc.relation_id = %s)
+    ''' % (skeleton_id, preID, postID))
+    pre = defaultdict(list) # treenode ID vs list of connector ID
+    post = defaultdict(list)
+    for row in cursor.fetchall():
+        if row[2] == preID:
+            pre[row[0]].append(row[1])
+        else:
+            post[row[0]].append(row[1])
+
+    return neuroml_single_cell(skeleton_id, nodes, pre, post)
+ 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def skeleton_neuroml(request, project_id=None, skeleton_id=None):
+def skeletons_neuroml(request, project_id=None, skeleton_id=None):
+    """ Export a list of skeletons each as a Cell in NeuroML. """
+    project_id = int(project_id) # sanitize
+    skeleton_ids = (int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
 
-    p = get_object_or_404(Project, pk=project_id)
-    sk = get_object_or_404(ClassInstance, pk=skeleton_id, project=project_id)
+    cursor = connection.cursor()
 
-    treenode_qs = Treenode.objects.filter(skeleton=sk)
-    qs=Treenode.objects.filter(skeleton_id=39350).order_by('-parent')
+    cursor.execute('''
+    SELECT relation_name, id
+    FROM relation
+    WHERE project_id = %s
+      AND (relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to')
+    ''' % project_id)
+    relations = dict(cursor.fetchall())
+    preID = relations['presynaptic_to']
+    postID = relations['postsynaptic_to']
+    cell = _skeleton_neuroml_cell(project_id, skeleton_id)
 
-    if len(qs) < 2:
-        return HttpResponse(json.dumps({'error': 'Less than two nodes in skeleton' }))
-
-    def pointwithdia( tn ):
-        return neuroml.Point3DWithDiam(x=tn.location.x,
-            y=tn.location.y,
-            z=tn.location.z,
-            diameter=tn.radius)
-
-    current_tn = None
-    next_tn = None
-    seg_id = 1
-    segments_container = []
-
-    for tn in qs:
-        if current_tn is None:
-            current_tn = tn
-            continue
-        else:
-            if next_tn is None:
-                next_tn = tn
-                # add soma segment, assuming root node is soma
-                p = pointwithdia( current_tn )
-                d = pointwithdia( next_tn )
-                soma = neuroml.Segment(proximal=p, distal=d)
-                soma.name = 'Root'
-                soma.id = 0
-                segments_container.append( soma )
-                parent_segment = soma
-                parent = neuroml.SegmentParent(segments=soma.id)
-                continue
-            else:
-                p = pointwithdia( current_tn )
-                d = pointwithdia( next_tn )
-
-                new_segment = neuroml.Segment(proximal = p, 
-                                               distal = d, 
-                                               parent = parent)
-
-                new_segment.id = seg_id
-                new_segment.name = 'segment_' + str(new_segment.id)
-
-                parent = neuroml.SegmentParent(segments=new_segment.id)
-                parent_segment = new_segment
-                seg_id += 1 
-
-                segments_container.append(new_segment)
-
-                current_tn = next_tn
+    # TODO could certainly fetch all nodes and synapses in one single query and then split them up.
+    cells = (_skeleton_neuroml_cell(skeleton_id, preID, postID) for skeleton_id in skeleton_ids)
 
     response = HttpResponse(content_type='text/txt')
     response['Content-Disposition'] = 'attachment; filename="data.neuroml"'
 
-    namespacedef = 'xmlns="http://www.neuroml.org/schema/neuroml2" '
-    namespacedef += ' xmlns:xi="http://www.w3.org/2001/XInclude"'
-    namespacedef += ' xmlns:xs="http://www.w3.org/2001/XMLSchema"'
-    namespacedef += ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
-    namespacedef += ' xsi:schemaLocation="http://www.w3.org/2001/XMLSchema"'
-
-    test_morphology = neuroml.Morphology()
-    test_morphology.segments += segments_container
-    test_morphology.id = "Morphology"
-
-    cell = neuroml.Cell()
-    cell.name = 'Cell'
-    cell.id = 'Cell'
-    cell.morphology = test_morphology
-
-    doc = neuroml.NeuroMLDocument()
-    doc.cells.append(cell)
-    doc.id = "TestNeuroMLDocument"
-
-    doc.export( response, 0, name_="neuroml", namespacedef_=namespacedef)
+    neuroml_network(cells, response)
 
     return response
-    
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_swc(*args, **kwargs):

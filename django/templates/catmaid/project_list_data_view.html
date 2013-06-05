@@ -9,13 +9,11 @@
 {% with sample_width=config|get_or_none:"sample_width"|default_if_none:-1 %}
 {% with sample_height=config|get_or_none:"sample_height"|default_if_none:-1 %}
 
-<table>
+{% if sample_images %}<table>{% endif %}
 {% for p in projects %}
     {% if p.stacks.count > 0 %}
-    <tr>
-        {# Add a sample image if requested #}
-        {% if sample_images %}
-            <td class="stackimage">
+    {# Add a sample image if requested #}
+    {% if sample_images %}<tr><td class="stackimage">
             {# Get the samlpe stack  #}
             {% with stack=p.stacks|order_by:'id'|get_stack:sample_stack %}
             {% if stack|is_none %}
@@ -34,24 +32,22 @@
                 {% endwith %}
             {% endif %}
             {% endwith %}
-            </td>
-        {% endif %}
-        <td class="stackname">
+            </td><td class="stackname">
+    {% endif %}
             <dl>
                 <dt>{{ p.title }}</dt>
                 {% for s in p.stacks|order_by:"id" %}
-                <dd><a href="#" onclick="openProjectStack({{p.id}}, {{s.id}})">{{ s.title }}</a><span class="comment"> {{ s.comment }}</span></dd>
+                <dd><a href="#" onclick="openProjectStack({{p.id}}, {{s.id}})">{{ s.title }}</a></dd><dd>{{ s.comment|safe }}</dd>
                 {% endfor %}
                 {# Optionally, add the the neuron catalogue link #}
                 {% if p.is_catalogueable and catalogue_link %}
                     <dd><a href="{{ settings.CATMAID_URL }}{{ p.id }}">Browse the Neuron Catalogue</a></dd>
                 {% endif %}
             </dl>
-        </td>
-    </tr>
+        </td></tr>
     {% endif %}
 {% endfor %}
-</table>
+{% if sample_images %}</table>{% endif %}
 {% endwith %}
 {% endwith %}
 {% endwith %}

@@ -713,16 +713,17 @@ function CMWWindow( title )
 		for ( var i = 0; i < windows.length; ++i )
 		{
 			var w = windows[ i ];
-      if(w.hasFocus()) {
-			  w.getFrame().firstChild.className = "stackInfo";
-			  w.callListeners( CMWWindow.BLUR );
-      }
+			if( w.hasFocus() )
+			{
+				w.getFrame().firstChild.className = "stackInfo";
+				w.callListeners( CMWWindow.BLUR );
+			}
 		}
-	  if(!self.hasFocus()) {
-      frame.firstChild.className = "stackInfo_selected";
-      self.callListeners( CMWWindow.FOCUS );
-    }
-
+		if( !self.hasFocus() )
+		{
+			frame.firstChild.className = "stackInfo_selected";
+			self.callListeners( CMWWindow.FOCUS );
+		}
 		return self;
 	}
 	

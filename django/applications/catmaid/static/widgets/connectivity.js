@@ -90,7 +90,6 @@ var SkeletonConnectivity = new function()
         var onmouseout = function() { this.style.textDecoration = 'none'; };
 
         var add_to_selection_table = function(ev) {
-            if( 0 === $( "#neuron_staging_table").length ) return;
             var skelid = parseInt( ev.target.value );
             if ($('#incoming-show-skeleton-' + skelid).is(':checked')) {
                 NeuronStagingArea.add_skeleton_to_stage_without_name( skelid );
@@ -206,17 +205,19 @@ var SkeletonConnectivity = new function()
              $('#' + name + 'stream-selectall').click( function( event ) {
                  var rows = table[0].childNodes[1].childNodes; // all tr elements
 
-                if( $( "#neuron_staging_table").length && $('#' + name + 'stream-selectall').is(':checked') ) {
+                if($('#' + name + 'stream-selectall').is(':checked') ) {
                     for (var i=rows.length-1; i > -1; --i) {
                         var checkbox = rows[i].childNodes[4].childNodes[0];
                         checkbox.checked = true;
+                        // TODO should be fetching neuron names from the server all at once
                         NeuronStagingArea.add_skeleton_to_stage_without_name( checkbox.value );
                     };
                 } else {
+                    var open = NeuronStagingArea.is_widget_open();
                     for (var i=rows.length-1; i > -1; --i) {
                         var checkbox = rows[i].childNodes[4].childNodes[0];
                         checkbox.checked = false;
-                        NeuronStagingArea.remove_skeleton( checkbox.value );
+                        if (open) NeuronStagingArea.remove_skeleton( checkbox.value );
                     };
                 }
             });

@@ -309,11 +309,14 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
       AND reviewer_id=-1
     GROUP BY skeleton_id
     ''' % skids_string) # no need to sanitize
+    seen = set()
     for row in cursor.fetchall():
+        seen.add(row[0])
         partner = partners[row[0]]
         partner.reviewed = int(100.0 * (1 - float(row[1]) / partner.num_nodes))
     # If 100%, it will not be there, so add it
-    for partner in partners.values():
+    for partnerID in set(partners.keys()) - seen:
+        partner = partners[partnerID]
         if 0 == partner.reviewed:
             partner.reviewed = 100
 

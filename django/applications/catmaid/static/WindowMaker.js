@@ -280,7 +280,6 @@ var WindowMaker = new function()
     });
 
     return win;
-
   }
 
   /** Creates and returns a new 3d webgl window */

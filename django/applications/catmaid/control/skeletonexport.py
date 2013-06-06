@@ -74,7 +74,16 @@ def _skeleton_for_3d_viewer(skeleton_id=None):
            WHERE cici.class_instance_a = %s
              AND cici.class_instance_b = ci.id
         ''' % skeleton_id)
-    name = cursor.fetchone()[0]
+    row = cursor.fetchone()
+    if not row:
+        # Check that the skeleton exists
+        cursor.execute('''SELECT id FROM class_instance WHERE id=%s''' % skeleton_id)
+        if not cursor.fetchone():
+            raise Exception("Skeleton #%s doesn't exist!" % skeleton_id)
+        else:
+            raise Exception("No neuron found for skeleton #%s" % skeleton_id)
+
+    name = row[0]
     
     # Fetch all nodes, with their tags if any
     cursor.execute(

@@ -11,6 +11,11 @@
 /**
  */
 
+/** orientations */
+Stack.ORIENTATION_XY = 0;
+Stack.ORIENTATION_XZ = 1;
+Stack.ORIENTATION_ZY = 2;
+
 /**
  * Stack is the core data viewer and interaction element.  It displays a list
  * of layers of an x,y-plane in an n-dimensional data set, tracks the
@@ -40,7 +45,8 @@ function Stack(
 		tile_source_type,			//!< {int} that defines the tile source type
 		labelupload_url,			//!< {String} that defines the label upload URL for labels (for tile_source_type==2)
 		metadata,					//!< {String} of arbitrary meta data
-    inverse_mouse_wheel //!< {boolean} Whether to inverse mouse wheel for changing sections
+		inverse_mouse_wheel,		//!< {boolean} Whether to inverse mouse wheel for changing sections
+		orientation					//!< {Integer} orientation (0: xy, 1: xz, 2: yz) 
 )
 {
 	var n = dimension.length;
@@ -112,36 +118,100 @@ function Stack(
 	}
 	
 	/**
-	 * Get the project coordinates of the current view.
+	 * Project x-coordinate for stack coordinates
+	 */
+	switch ( orientation )
+	{
+	case Stack.ORIENTATION_ZY:
+		this.stackToProjectX = function( zs, ys, xs )
+		{
+			return zs * resolution.z + translation.x;
+		};
+		break;
+	default:
+		this.stackToProjectX = function( zs, ys, xs )
+		{
+			return xs * resolution.x + translation.x;
+		};
+	}
+	
+	/**
+	 * Project y-coordinate for stack coordinates
+	 */
+	switch ( orientation )
+	{
+	case Stack.ORIENTATION_XZ:
+		this.stackToProjectY = function( zs, ys, xs )
+		{
+			return zs * resolution.z + translation.y;
+		};
+		break;
+	default:
+		this.stackToProjectY = function( zs, ys, xs )
+		{
+			return ys * resolution.y + translation.y;
+		};
+	}
+	
+	/**
+	 * Project z-coordinate for stack coordinates
+	 */
+	switch ( orientation )
+	{
+	case Stack.ORIENTATION_XZ:
+		this.stackToProjectZ = function( zs, ys, xs )
+		{
+			return ys * resolution.y + translation.z;
+		};
+		break;
+	case Stack.ORIENTATION_ZY:
+		this.stackToProjectZ = function( zs, ys, xs )
+		{
+			return xs * resolution.x + translation.z;
+		};
+		break;
+	default:
+		this.stackToProjectZ = function( zs, ys, xs )
+		{
+			return zs * resolution.z + translation.z;
+		};
+	}
+	
+	/**
+	 * Project coordinates of the current view.
 	 */
 	this.projectCoordinates = function()
 	{
 		var l =
 		{
-			z : self.z * resolution.z + translation.z,
+			z : self.stackToProjectZ( self.z, self.y, self.x ),
 			s : self.s,
 			scale : self.scale,
-			y : self.y * resolution.y + translation.y,
-			x : self.x * resolution.x + translation.x
+			y : self.stackToProjectY( self.z, self.y, self.x ),
+			x : self.stackToProjectX( self.z, self.y, self.x )
 		};
 		return l;
 	}
 
-  /*
-   * Get the top and left coordinates in physical project coordinates of
-   * stack's window
-   */
-  this.getWorldTopLeft = function()
-  {
-    return {
-      worldTop : ( ( self.y - self.viewHeight / self.scale / 2 ) ) * self.resolution.y + self.translation.y,
-      worldLeft : ( ( self.x - self.viewWidth / self.scale / 2 ) ) * self.resolution.x + self.translation.x,
-      scale : self.scale
-    }
-  }
 
-  /*
+	/**
+	 * Get the top and left coordinates in physical project coordinates of
+	 * stack's window
+	 * 
+	 * TODO This method doesn't conceptually conform with coordinate transforms
+	 */
+	this.getWorldTopLeft = function()
+	{
+		return {
+			worldTop : ( ( self.y - self.viewHeight / self.scale / 2 ) ) * self.resolution.y + self.translation.y,
+			worldLeft : ( ( self.x - self.viewWidth / self.scale / 2 ) ) * self.resolution.x + self.translation.x,
+			scale : self.scale };
+	}
+
+  /**
    * Get stacks width and height
+   * 
+   * TODO This method doesn't conceptually conform with coordinate transforms 
    */
   this.getFieldOfViewInPixel = function()
   {
@@ -231,12 +301,90 @@ function Stack(
     {
         return layers;
     }
+    
+    
+    /**
+	 * Stack x-coordinate from project coordinates
+	 */
+	switch ( orientation )
+	{
+	case Stack.ORIENTATION_ZY:
+		this.projectToStackX = function( zp, yp, xp )
+		{
+			return Math.max( 0, Math.min( MAX_X, Math.round( ( zp - translation.z ) / resolution.x ) ) );
+		};
+		break;
+	default:
+		this.projectToStackX = function( zp, yp, xp )
+		{
+			return Math.max( 0, Math.min( MAX_X, Math.round( ( xp - translation.x ) / resolution.x ) ) );
+		};
+	}
+	
+	/**
+	 * Stack y-coordinate from project coordinates
+	 */
+	switch ( orientation )
+	{
+	case Stack.ORIENTATION_XZ:
+		this.projectToStackY = function( zp, yp, xp )
+		{
+			return Math.max( 0, Math.min( MAX_Y, Math.round( ( zp - translation.z ) / resolution.y ) ) );
+		};
+		break;
+	default:	// xy
+		this.projectToStackY = function( zp, yp, xp )
+		{
+			return Math.max( 0, Math.min( MAX_Y, Math.round( ( yp - translation.y ) / resolution.y ) ) );
+		};
+	}
+	
+	
+	var projectToStackZ;
+	switch ( orientation )
+	{
+	case Stack.ORIENTATION_XZ:
+		projectToStackZ = function( zp, yp, xp )
+		{
+			return Math.round( ( yp - translation.y ) / resolution.z );
+		};
+		break;
+	case Stack.ORIENTATION_ZY:
+		projectToStackZ = function( zp, yp, xp )
+		{
+			return Math.round( ( xp - translation.x ) / resolution.z );
+		};
+		break;
+	default:
+		projectToStackZ = function( zp, yp, xp )
+		{
+			return Math.round( ( zp - translation.z ) / resolution.z );
+		};
+	}
+	
+	
+	/**
+	 * Stack z-coordinate from project coordinates
+	 */
+	this.projectToStackZ = function( zp, yp, xp )
+	{
+		var z1, z2;
+		z1 = z2 = projectToStackZ( zp, yp, xp );
+		while ( skip_planes[ z1 ] && skip_planes[ z2 ] )
+		{
+			z1 = Math.max( 0, z1 - 1 );
+			z2 = Math.min( MAX_Z, z2 + 1 );
+		}
+		var z3 = skip_planes[ z1 ] ? z2 : z1;
+		return Math.max( 0, Math.min( MAX_Z, z3 ) );
+	}
 
 	this.moveToAfterBeforeMoves = function( zp, yp, xp, sp, completionCallback, layersWithBeforeMove )
 	{
 		var layerWithBeforeMove;
 
-		if (layersWithBeforeMove.length == 0) {
+		if ( layersWithBeforeMove.length == 0 )
+		{
 			// Then carry on to the actual move:
 
 			if ( typeof sp == "number" )
@@ -245,29 +393,21 @@ function Stack(
 				self.scale = 1.0 / Math.pow( 2, self.s );
 			}
 
-			self.x = Math.max( 0, Math.min( MAX_X, ( xp - translation.x ) / resolution.x ) );
-			self.y = Math.max( 0, Math.min( MAX_Y, ( yp - translation.y ) / resolution.y ) );
+			self.x = this.projectToStackX( zp, yp, xp );
+			self.y = this.projectToStackY( zp, yp, xp );
+			self.z = this.projectToStackZ( zp, yp, xp );
 
-			var z1;
-			var z2;
-			z1 = z2 = Math.round( ( zp - translation.z ) / resolution.z );
-			while ( skip_planes[ z1 ] && skip_planes[ z2 ] )
-			{
-				z1 = Math.max( 0, z1 - 1 );
-				z2 = Math.min( MAX_Z, z2 + 1 );
-			}
-			if ( !skip_planes[ z1 ] ) self.z = z1;
-			else self.z = z2;
-			self.z = Math.max( 0, Math.min( MAX_Z, self.z ) );
+			update( completionCallback );
 
-			update(completionCallback);
-
-		} else {
+		}
+		else
+		{
 			// Otherwise do the next layer's beforeMove():
+			
 			layerWithBeforeMove = layersWithBeforeMove.shift();
-			layerWithBeforeMove.beforeMove(function () {
+			layerWithBeforeMove.beforeMove( function() {
 				self.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
-			});
+			} );
 		}
 	}
 
@@ -293,13 +433,13 @@ function Stack(
 	/**
 	 * move to pixel coordinates
 	 */
-	this.moveToPixel = function( zp, yp, xp, sp )
+	this.moveToPixel = function( zs, ys, xs, ss )
 	{
 		project.moveTo(
-			zp * resolution.z + translation.z,
-			yp * resolution.y + translation.y,
-			xp * resolution.x + translation.x,
-			sp );
+			self.stackToProjectZ( zs, ys, xs ),
+			self.stackToProjectY( zs, ys, xs ),
+			self.stackToProjectX( zs, ys, xs ),
+			ss );
 		
 		return true;
 	}
@@ -520,19 +660,27 @@ function Stack(
 		view.appendChild( metadataDisplay );
 	}
 
-  if( inverse_mouse_wheel === 0 ) {
-    self.inverse_mouse_wheel = 1;
-  } else {
-    self.inverse_mouse_wheel = -1;
-  }
-
-  var indicatorbar = document.createElement( "div" );
-  indicatorbar.className = "indicatorbar";
-  indicatorbar.id = "indicatorbar";
-  view.appendChild( indicatorbar );
+	if( inverse_mouse_wheel === 0 )
+		self.inverse_mouse_wheel = 1;
+	else
+		self.inverse_mouse_wheel = -1;
+	
+	var indicatorbar = document.createElement( "div" );
+	indicatorbar.className = "indicatorbar";
+	indicatorbar.id = "indicatorbar";
+	view.appendChild( indicatorbar );
+	
+	var neuronnameDisplay = document.createElement( "div" );
+	neuronnameDisplay.className = "neuronname";
+	neuronnameDisplay.appendChild( document.createElement( "p" ) );
+	var spanName = document.createElement( "span" );
+	spanName.id = "neuronName";
+	neuronnameDisplay.firstChild.appendChild( spanName );
+	neuronnameDisplay.firstChild.firstChild.appendChild( document.createTextNode( "" ) );
+	view.appendChild( neuronnameDisplay );
 
 	// take care, that all values are within a proper range
-  // Declare the x,y,z,s as coordinates in pixels
+	// Declare the x,y,z,s as coordinates in pixels
 	self.z = 0;
 	self.y = Math.floor( MAX_Y / 2 );
 	self.x = Math.floor( MAX_X / 2 );
@@ -543,16 +691,17 @@ function Stack(
 	self.old_x = self.x;
 	self.old_s = self.s;
 
-  self.yc = 0;
-  self.xc = 0;
+	self.yc = 0;
+	self.xc = 0;
 	
 	self.scale = 1 / Math.pow( 2, self.s );
 	self.old_scale = self.scale;
 
-  self.is_trackem2_stack = trakem2_project;
+	self.is_trackem2_stack = trakem2_project;
+	self.orientation = orientation;
 }
 
-//!< in nanometers
+/** known scale bar sizes in nanometers */
 Stack.SCALE_BAR_SIZES = new Array(
 			10,
 			20,
@@ -598,8 +747,11 @@ Stack.SCALE_BAR_SIZES = new Array(
 			200000000000,
 			250000000000,
 			500000000000 );
+
+/** known scale bar units */
 Stack.SCALE_BAR_UNITS = new Array(
 			"nm",
 			unescape( "%u03BCm" ),
 			"mm",
 			"m" );
+

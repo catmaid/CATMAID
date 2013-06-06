@@ -543,7 +543,8 @@ function handle_openProjectStack( status, text, xml )
 					e.tile_source_type,
 					labelupload, // TODO: if there is any
 					e.metadata,
-					userprofile.inverse_mouse_wheel);
+					userprofile.inverse_mouse_wheel,
+					e.orientation );
 
 			document.getElementById( "toolbox_project" ).style.display = "block";
 

@@ -123,7 +123,7 @@ var SkeletonConnectivity = new function()
             row.append( $('<td />').text("select") );
             thead.append( row );
             row = $('<tr />')
-            row.append( $('<td />').text("ALL") );
+            row.append( $('<td />').text("ALL (" + partners.length + " neurons)") );
             row.append( $('<td />').text(partners.reduce(function(sum, partner) { return sum + partner.synaptic_count; }, 0) ));
             var average = (partners.reduce(function(sum, partner) { return sum + partner.reviewed; }, 0 ) / partners.length) | 0;
             row.append( $('<td />').text(average).css('background-color', getBackgroundColor(average)));

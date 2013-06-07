@@ -3,18 +3,19 @@
 #    https://github.com/NeuralEnsemble/libNeuroML
 #    http://neuroml.org
 
+from collections import defaultdict
+
 try:
-    from neuroml import Cell, Segment, NeuroMLDocument, Point3DWithDiam
+    from neuroml import Cell, Segment, SegmentParent, Morphology, NeuroMLDocument, Point3DWithDiam
 except ImportError:
     print "NeuroML module could not be loaded."
-    pass
 
 
 def neuroml_single_cell(skeleton_id, nodes, pre, post):
     """ Encapsulate a single skeleton into a NeuroML Cell instance.
         
         skeleton_id: the ID of the skeleton to which all nodes belong.
-        nodes: a dictionary of node ID vs tuple of node parent ID, location as a tuple of 3 floats, and radius. All in nanometers.
+        nodes: a dictionary of node ID vs tuple of node parent ID, location as a tuple of 3 floats, and radius. In nanometers.
         pre: a dictionary of node ID vs list of connector ID
         post: a dictionary of node ID vs list of connector ID
 
@@ -53,8 +54,10 @@ def neuroml_single_cell(skeleton_id, nodes, pre, post):
     # for each parent-child pair.
 
     segments = []
-    segment_id = 0
+    segment_id = 1
     todo = [rootID]
+
+    # VERY CONFUSINGLY, the Segment.parent is a SegmentParent with the same id as the Segment. An unseemly overheady way to reference the parent Segment.
 
     while todo:
         nodeID = todo.pop()
@@ -62,11 +65,11 @@ def neuroml_single_cell(skeleton_id, nodes, pre, post):
         if not children:
             continue
         p1 = asPoint(nodeID)
-        parent = segments[-1] if segments else None
+        parent = segments[-1].parent if segments else None
         for childID in children:
-            p2.asPoint(childID)
+            p2 = asPoint(childID)
             segment_id += 1
-            segment = Segment(proximal=p1, distal=p2, parent=parent)
+            segment = Segment(proximal=p1, distal=p2, parent=SegmentParent(segments=segment_id))
             segment.id = segment_id
             segment.name = "%s-%s" % (nodeID, childID)
             segments.append(segment)

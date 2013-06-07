@@ -10,7 +10,10 @@ from catmaid.control.common import *
 
 import networkx as nx
 from tree_util import edge_count_to_root
-from exportneuroml import neuroml_single_cell, neuroml_network
+try:
+    from exportneuroml import neuroml_single_cell, neuroml_network
+except ImportError:
+    print "NeuroML is not loading"
 
 from itertools import imap
 from collections import defaultdict
@@ -408,6 +411,7 @@ def export_extended_skeleton_response(request, project_id=None, skeleton_id=None
     else:
         raise Exception, "Unknown format ('%s') in export_extended_skeleton_response" % (format,)
 
+
 def _skeleton_neuroml_cell(skeleton_id, preID, postID):
     skeleton_id = int(skeleton_id) # sanitize
     cursor = connection.cursor()
@@ -436,11 +440,11 @@ def _skeleton_neuroml_cell(skeleton_id, preID, postID):
     return neuroml_single_cell(skeleton_id, nodes, pre, post)
  
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def skeletons_neuroml(request, project_id=None, skeleton_id=None):
+#@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def skeletons_neuroml(request, project_id=None):
     """ Export a list of skeletons each as a Cell in NeuroML. """
     project_id = int(project_id) # sanitize
-    skeleton_ids = (int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
+    skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
 
     cursor = connection.cursor()
 
@@ -453,7 +457,6 @@ def skeletons_neuroml(request, project_id=None, skeleton_id=None):
     relations = dict(cursor.fetchall())
     preID = relations['presynaptic_to']
     postID = relations['postsynaptic_to']
-    cell = _skeleton_neuroml_cell(project_id, skeleton_id)
 
     # TODO could certainly fetch all nodes and synapses in one single query and then split them up.
     cells = (_skeleton_neuroml_cell(skeleton_id, preID, postID) for skeleton_id in skeleton_ids)

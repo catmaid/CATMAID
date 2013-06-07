@@ -326,7 +326,7 @@ var SkeletonConnectivity = new function()
                                      .orient("bottom");
             var yAxis = d3.svg.axis().scale(y)
                                      .orient("left")
-                                     .tickFormat(d3.format(".2s"));
+                                     .tickFormat(d3.format("d")); // "d" means integer, see https://github.com/mbostock/d3/wiki/Formatting#wiki-d3_format
 
 
             // Define the ranges of the axes

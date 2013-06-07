@@ -131,6 +131,55 @@ var WindowMaker = new function()
     return win;
   };
 
+  var createSkeletonMeasurementsTable = function()
+  {
+    var win = new CMWWindow("Skeleton Measurements Table");
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var container = createContainer("skeleton_measurements_widget");
+    content.appendChild(container);
+
+    container.innerHTML =
+      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="skeleton_measurements_table">' +
+        '<thead>' +
+          '<tr>' +
+            '<th>Neuron</th>' +
+            '<th>Skeleton</th>' +
+            '<th>Raw cable (nm)</th>' +
+            '<th>Smooth cable (nm)</th>' +
+            '<th>N inputs</th>' +
+            '<th>N outputs</th>' +
+            '<th>N nodes</th>' +
+            '<th>N branch nodes</th>' +
+            '<th>N end nodes</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tfoot>' +
+          '<tr>' +
+            '<th>Neuron</th>' +
+            '<th>Skeleton</th>' +
+            '<th>Raw cable (nm)</th>' +
+            '<th>Smooth cable (nm)</th>' +
+            '<th>N inputs</th>' +
+            '<th>N outputs</th>' +
+            '<th>N nodes</th>' +
+            '<th>N branch nodes</th>' +
+            '<th>N end nodes</th>' +
+          '</tr>' +
+        '</tfoot>' +
+        '<tbody>' +
+          '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>' +
+        '</tbody>' +
+      '</table>';
+    // ABOVE, notice the table needs one dummy row
+
+    addListener(win, container);
+    addLogic(win);
+    SkeletonMeasurementsTable.init(); // MUST go after adding the container to the window, otherwise one gets "cannot read property 'aoData' of null" when trying to add data to the table
+
+    return win;
+  };
 
 
   var createStagingListWindow = function( webglwin ) {
@@ -187,6 +236,13 @@ var WindowMaker = new function()
     map.style.marginLeft = '1em';
     map.onclick = NeuronStagingArea.usercolormap_dialog;
     buttons.appendChild(map);
+
+    var measure = document.createElement('input');
+    measure.setAttribute('type', 'button');
+    measure.setAttribute('id', 'selection_table_measure');
+    measure.setAttribute('value', 'Measure');
+    measure.onclick = NeuronStagingArea.measure;
+    buttons.appendChild(measure);
     
     win.getFrame().appendChild(buttons);
     content.appendChild(container);
@@ -280,7 +336,6 @@ var WindowMaker = new function()
     });
 
     return win;
-
   }
 
   /** Creates and returns a new 3d webgl window */
@@ -1614,6 +1669,7 @@ var WindowMaker = new function()
     "graph-widget": createGraphWindow,
     "neuron-staging-area": createStagingListWindow,
     "create-connector-selection": createConnectorSelectionWindow,
+    "skeleton-measurements-table": createSkeletonMeasurementsTable,
     "compartment-graph-widget": createCompartmentGraphWindow,
     "assemblygraph-widget": createAssemblyGraphWindow,
     "sliceinfo-widget": createSliceInfoWindow,

@@ -40,7 +40,7 @@
                 new_users.remove(0);
             for (var i in e) {
                 var option = document.createElement("option");
-                option.text = e[i].name + " (" + e[i].longname + ")";
+                option.text = e[i].login + " (" + e[i].full_name + ")";
                 option.value = e[i].id;
                 new_users.appendChild(option);
             }

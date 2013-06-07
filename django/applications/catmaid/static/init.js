@@ -311,6 +311,8 @@ function handle_updateProjects(status, text, xml) {
       recreateProjectStructureFromCache();
       // recreate the project data view
       load_default_dataview();
+      // update the project > open menu
+      project_menu_open.update(cachedProjectsInfo);
     }
     if (project) {
       if (keep_project_alive) project.setEditable(keep_project_editable);

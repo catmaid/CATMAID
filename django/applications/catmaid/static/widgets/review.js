@@ -124,7 +124,7 @@ var ReviewSystem = new function()
         self.goToNodeIndexOfSegmentSequence( self.current_segment_index );
     };
 
-    var submit = submitterFn();
+    var submit = typeof submitterFn!= "undefined" ? submitterFn() : undefined;
 
     this.markAsReviewed = function( node_ob ) {
         submit(django_url+projectID+"/node/" + node_ob['id'] + "/reviewed", {}, function(json) { node_ob['rid'] = json.reviewer_id;} );

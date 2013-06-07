@@ -5,7 +5,7 @@ var WebGLApp = new function () {
   self.neurons = [];
 
   // Queue server requests, awaiting returns
-  var submit = submitterFn();
+  var submit = typeof submitterFn!= "undefined" ? submitterFn() : undefined;
 
   var scene, renderer, scale, controls, zplane = null, meshes = [];
   var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, projector, contour_objects = [],

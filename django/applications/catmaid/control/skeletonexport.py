@@ -62,7 +62,7 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
 
-def _skeleton_for_3d_viewer(skeleton_id=None):
+def _skeleton_for_3d_viewer(skeleton_id):
     skeleton_id = int(skeleton_id) # sanitize
     cursor = connection.cursor()
 

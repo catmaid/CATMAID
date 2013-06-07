@@ -100,6 +100,18 @@ function TracingTool()
       return;
     };
 
+    // Insert a text div for the neuron name in the canvas window title bar
+    /* // TODO
+    var neuronnameDisplay = document.createElement( "div" );
+    neuronnameDisplay.className = "neuronname";
+    neuronnameDisplay.appendChild( document.createElement( "p" ) );
+    var spanName = document.createElement( "span" );
+    spanName.id = "neuronName";
+    neuronnameDisplay.firstChild.appendChild( spanName );
+    neuronnameDisplay.firstChild.firstChild.appendChild( document.createTextNode( "" ) );
+    view.appendChild( neuronnameDisplay );
+    */
+
   };
 
 	/**
@@ -815,7 +827,7 @@ function TracingTool()
     self.prototype.redraw();
   };
 
-}
+};
 
 /* Works as well for skeletons.
  * @param type A 'neuron' or a 'skeleton'.

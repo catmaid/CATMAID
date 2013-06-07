@@ -57,7 +57,7 @@ def neuroml_single_cell(skeleton_id, nodes, pre, post):
     segment_id = 1
     todo = [rootID]
 
-    # VERY CONFUSINGLY, the Segment.parent is a SegmentParent with the same id as the Segment. An unseemly overheady way to reference the parent Segment.
+    # VERY CONFUSINGLY, the Segment.parent is a SegmentParent with the same id as the parent Segment. An unseemly overheady way to reference the parent Segment.
 
     while todo:
         nodeID = todo.pop()
@@ -65,17 +65,16 @@ def neuroml_single_cell(skeleton_id, nodes, pre, post):
         if not children:
             continue
         p1 = asPoint(nodeID)
-        parent = segments[-1].parent if segments else None
+        parent = segments[-1] if segments else None
+        segment_parent = SegmentParent(segments=parent.id) if parent else None
         for childID in children:
             p2 = asPoint(childID)
             segment_id += 1
-            segment = Segment(proximal=p1, distal=p2, parent=SegmentParent(segments=segment_id))
+            segment = Segment(proximal=p1, distal=p2, parent=segment_parent)
             segment.id = segment_id
             segment.name = "%s-%s" % (nodeID, childID)
             segments.append(segment)
-            children2 = successors[childID]
-            if children2:
-                todo.extend(children2)
+            todo.append(childID)
 
     # Pack the segments into a Cell
     morphology = Morphology()

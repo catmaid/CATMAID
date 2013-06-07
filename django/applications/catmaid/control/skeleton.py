@@ -279,6 +279,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
     for srcID, partnerID in cursor.fetchall():
         partners[partnerID].skids[srcID] += 1
 
+    # There may not be any synapses
     if not partners:
         return partners
 
@@ -287,6 +288,10 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
         for partnerID in partners.keys(): # keys() is a copy of the keys
             if 1 == len(partners[partnerID].skids):
                 del partners[partnerID]
+
+    # With AND it is possible that no common partners exist
+    if not partners:
+        return partners
 
     # Obtain a string with unique skeletons
     skids_string = ','.join(str(x) for x in partners.iterkeys())

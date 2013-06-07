@@ -50,19 +50,33 @@ class Skeleton(object):
     def node_count(self):
         return self.graph.number_of_nodes()
 
+    def presynaptic_sites_count(self):
+        """ The number of presynaptic sites """
+        count = 0
+        for k,v in self.connected_connectors.items():
+            count += len(v['presynaptic_to'])
+        return count
+
+    def postsynaptic_sites_count(self):
+        """ The number of postsynaptic sites """
+        count = 0
+        for k,v in self.connected_connectors.items():
+            count += len(v['postsynaptic_to'])
+        return count
+
     def input_count(self):
-        """ Returns the number of anatomical synaptic inputs onto this Skeleton. """
-        n = 0
+        """ Returns the number of unique skeletons upstream of this skeleton """
+        n = set()
         for k,v in self.upstream_skeletons.items():
-            n += v
-        return n
+            n.add( k )
+        return len(n)
 
     def output_count(self):
-        """ Returns the number of anatomical synaptic outputs onto other Skeleton instances. """
-        n = 0
+        """ Returns the number of unique skeletons downstream of this skeleton """
+        n = set()
         for k,v in self.downstream_skeletons.items():
-            n += v
-        return n
+            n.add( k )
+        return len(n)
 
     def _fetch_connected_connectors(self):
         """

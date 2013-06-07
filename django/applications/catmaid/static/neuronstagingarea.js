@@ -640,4 +640,23 @@ var NeuronStagingArea = new function()
       }
     }
   };
+
+	self.measure = function() {
+		var skeleton_ids = self.get_selected_skeletons();
+		if (0 === skeleton_ids.length) return;
+    requestQueue.register(django_url + project.id + '/skeletons/measure', "POST",
+			{skeleton_ids: skeleton_ids},
+			function(status, text) {
+				if (200 !== status) return;
+				var json = $.parseJSON(text);
+				if (json.error) {
+					alert(json.error);
+					return;
+				}
+				SkeletonMeasurementsTable.populate(json.map(function(row) {
+					row.unshift(skeletonmodels[row[0]].baseName);
+					return row;
+				}));
+			});
+	};
 };

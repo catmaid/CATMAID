@@ -124,6 +124,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-others$', 'catmaid.control.reset_other_reviewer_ids'),
     (r'^(?P<project_id>\d+)/skeleton/connectivity$', 'catmaid.control.skeleton_info_raw'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/statistics$', 'catmaid.control.skeleton_statistics'),
+    (r'^(?P<project_id>\d+)/skeletons/measure$', 'catmaid.control.measure_skeletons'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/openleaf$', 'catmaid.control.last_openleaf'),
     (r'^(?P<project_id>\d+)/skeleton/split$', 'catmaid.control.split_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/get-root$', 'catmaid.control.root_for_skeleton'),

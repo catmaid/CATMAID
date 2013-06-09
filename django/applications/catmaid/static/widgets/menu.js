@@ -66,9 +66,12 @@ Menu = function () {
 
       //icon.appendChild( document.createElement( "p" ) );
       //icon.firstChild.appendChild( document.createTextNode( key + "." ) );
-      note.appendChild(document.createElement("p"));
-      // FIXME: should render HTML
-      note.firstChild.appendChild(document.createTextNode(content[key].note));
+
+      // Expect valid HTML for a stack's comment/note
+      var noteContainer = document.createElement("div");
+      noteContainer.setAttribute("class", "menu_item_note");
+      noteContainer.innerHTML = content[key].note;
+      note.appendChild(noteContainer);
 
       var d = document.createElement("div");
       d.className = "pulldown_item";

@@ -541,10 +541,6 @@ var WebGLApp = (function() { return new function () {
       //   if( this.actor.hasOwnProperty(connectivity_types[i]) )
       //     scene.remove( this.actor[connectivity_types[i]] );
       // }
-      for ( var k in this.labelSphere ) {
-        if( this.labelSphere.hasOwnProperty( k ) )
-          scene.remove( this.labelSphere[k] );
-      }
       for ( var k in this.synapticSpheres ) {
         if( this.synapticSpheres.hasOwnProperty( k ) )
           scene.remove( this.synapticSpheres[k] );
@@ -553,13 +549,7 @@ var WebGLApp = (function() { return new function () {
         if( this.radiusSpheres.hasOwnProperty( k ) )
           scene.remove( this.radiusSpheres[k] );
       }
-      for ( var k in this.textlabels ) {
-        if( self.textlabels.hasOwnProperty( k )) {
-          var tagString = this.textlabels[k];
-          scene.remove( this.textlabels[k] );
-          releaseTagGeometry( tagString );
-        }
-      }
+      removeTextMeshes();
     };
 
     /** Set the visibility of the skeleton, radius spheres and label spheres. Does not set the visibility of the synaptic spheres or edges. */
@@ -682,8 +672,16 @@ var WebGLApp = (function() { return new function () {
     var removeTextMeshes = function() {
       for (var k in self.textlabels) {
         if (self.textlabels.hasOwnProperty(k))
+          var tagString = self.textlabels[k];
+          scene.remove(self.textlabels[k]);
+          releaseTagGeometry(tagString);
           delete self.textlabels[k];
-          self.textlabels[k] = null;
+      }
+      for (var k in self.labelSphere) {
+        if (self.labelSphere.hasOwnProperty(k) ) {
+          scene.remove(self.labelSphere[k]);
+          delete self.labelSphere[k];
+        }
       }
     };
 
@@ -693,11 +691,6 @@ var WebGLApp = (function() { return new function () {
         createTextMeshes();
       } else if (!vis) {
         removeTextMeshes();
-      }
-      for( var idx in self.textlabels ) {
-        if( self.textlabels.hasOwnProperty( idx )) {
-          self.textlabels[ idx ].visible = vis;
-        }
       }
     };
 

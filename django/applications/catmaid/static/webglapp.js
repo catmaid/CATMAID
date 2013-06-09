@@ -1,5 +1,4 @@
-var camera;
-var WebGLApp = new function () {
+var WebGLApp = (function() { return new function () {
 
   self = this;
   self.neurons = [];
@@ -7,7 +6,7 @@ var WebGLApp = new function () {
   // Queue server requests, awaiting returns
   var submit = typeof submitterFn!= "undefined" ? submitterFn() : undefined;
 
-  var scene, renderer, scale, controls, zplane = null, meshes = [];
+  var camera, scene, renderer, scale, controls, zplane = null, meshes = [];
   var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, projector, contour_objects = [],
       bbmesh, floormesh, debugax, togglevisibleall = false, missing_sections = [], mouse = new THREE.Vector2();
   var pointLight, light, ambientLight;
@@ -28,14 +27,10 @@ var WebGLApp = new function () {
 
   this.init = function( divID ) {
 
-    self.project_id = project.id;
     self.stack_id = project.focusedStack.id;
 
     self.divID = divID;
     self.divID_jQuery = '#' + divID;
-
-    // self.divWidth = $(this.divID_jQuery).width();
-    // self.divHeight = $(this.divID_jQuery).height();
 
     resolution = project.focusedStack.resolution;
     dimension = project.focusedStack.dimension;
@@ -128,7 +123,7 @@ var WebGLApp = new function () {
     controls.dynamicDampingFactor = 0.3;
 
     // lights
-    ambienteLight = new THREE.AmbientLight( 0x505050 )
+    ambientLight = new THREE.AmbientLight( 0x505050 )
     scene.add( ambientLight );
     pointLight = new THREE.PointLight( 0xffaa00 );
     scene.add( pointLight );
@@ -599,7 +594,106 @@ var WebGLApp = new function () {
 
     this.setPostVisibility = setSynapticVisibilityFn('postsynaptic_to');
 
+    var createTextMeshes = function() {
+      // Sort out tags by node: some nodes may have more than one
+      var nodeIDTags = {};
+      for (var tag in self.tags) {
+        if (self.tags.hasOwnProperty(tag)) {
+          self.tags[tag].forEach(function(nodeID) {
+            if (nodeIDTags.hasOwnProperty(nodeID)) {
+              nodeIDTags[nodeID].push(tag);
+            } else {
+              nodeIDTags[nodeID] = [tag];
+            }
+          });
+        }
+      }
+
+      // Sort and convert to string the array of tags of each node
+      for (var nodeID in nodeIDTags) {
+        if (nodeIDTags.hasOwnProperty(nodeID)) {
+          nodeIDTags[nodeID] = nodeIDTags[nodeID].sort().join();
+        }
+      }
+
+      // Group nodes by common tag string
+      var tagNodes = {};
+      for (var nodeID in nodeIDTags) {
+        if (nodeIDTags.hasOwnProperty(nodeID)) {
+          var tagString = nodeIDTags[nodeID];
+          if (tagNodes.hasOwnProperty(tagString)) {
+            tagNodes[tagString].push(nodeID);
+          } else {
+            tagNodes[tagString] = [nodeID];
+          }
+        }
+      }
+
+      // Create meshes for the tags for all nodes that need them, reusing the geometries
+      for (var tagString in tagNodes) {
+        if (tagNodes.hasOwnProperty(tagString)) {
+          tagNodes[tagString].forEach(function(nodeID) {
+            var node = self.nodeProps[nodeID];
+            var v = pixelSpaceVector(node[4], node[5], node[6]);
+            var text = new THREE.Mesh( getTagGeometry(tagString), textMaterial );
+            text.position.x = v.x;
+            text.position.y = v.y;
+            text.position.z = v.z;
+            text.visible = true;
+            self.textlabels[nodeID] = text;
+            scene.add( text );
+          });
+        }
+      }
+
+      var createLabelSphere = function(nodeID, color) {
+        var node = self.nodeProps[nodeID];
+        var v = pixelSpaceVector(node[4], node[5], node[6]);
+        var mesh = new THREE.Mesh( labelspheregeometry, color );
+        mesh.position.set( v.x, v.y, v.z );
+        mesh.node_id = nodeID;
+        mesh.skeleton_id = self.id;
+        mesh.orig_coord = {x: node[4], y: node[5], z: node[6]};
+        self.labelSphere[nodeID] = mesh;
+        scene.add( mesh );
+      };
+
+      // Place spheres on nodes with special labels:
+      for (var tag in self.tags) {
+        if (self.tags.hasOwnProperty(tag)) {
+          var tagLC = tag.toLowerCase();
+          if (-1 !== tagLC.indexOf('todo')) {
+            self.tags[tag].forEach(function(nodeID) {
+              if (!self.labelSphere[nodeID]) {
+                createLabelSphere(nodeID, labelColors.todo);
+              }
+            });
+          } else if (-1 !== tagLC.indexOf('uncertain')) {
+            self.tags[tag].forEach(function(nodeID) {
+              if (!self.labelSphere[nodeID]) {
+                createLabelSphere(nodeID, labelColors.uncertain);
+              }
+            });
+          }
+        }
+      }
+    };
+
+    var removeTextMeshes = function() {
+      for (var k in self.textlabels) {
+        if (self.textlabels.hasOwnProperty(k))
+          delete self.textlabels[k];
+          self.textlabels[k] = null;
+      }
+    };
+
     this.setTextVisibility = function( vis ) {
+      // Create text meshes if not there, or destroy them if to be hidden
+      if (vis && 0 === Object.keys(self.textlabels).length) {
+        createTextMeshes();
+      } else if (!vis) {
+        removeTextMeshes();
+      }
       for( var idx in self.textlabels ) {
         if( self.textlabels.hasOwnProperty( idx )) {
           self.textlabels[ idx ].visible = vis;
@@ -776,7 +870,7 @@ var WebGLApp = new function () {
       }
       self.initialize_objects();
 
-      var textlabel_visibility = $('#skeletontext-' + self.id).is(':checked');
+      //var textlabel_visibility = $('#skeletontext-' + self.id).is(':checked');
       var colorkey;
       
       // Populate the graph for calculating the centrality-based shading
@@ -800,6 +894,9 @@ var WebGLApp = new function () {
         ob[con[1]] = con;
         return ob;
       }, {});
+
+      // Store for creation when requested
+      self.tags = tags;
 
 
       var createEdge = function(id1, x1, y1, z1,
@@ -886,88 +983,6 @@ var WebGLApp = new function () {
         }
       });
 
-      // Sort out tags by node: some nodes may have more than one
-      var nodeIDTags = {};
-      for (var tag in tags) {
-        if (tags.hasOwnProperty(tag)) {
-          tags[tag].forEach(function(nodeID) {
-            if (nodeIDTags.hasOwnProperty(nodeID)) {
-              nodeIDTags[nodeID].push(tag);
-            } else {
-              nodeIDTags[nodeID] = [tag];
-            }
-          });
-        }
-      }
-
-      // Sort and convert to string the array of tags of each node
-      for (var nodeID in nodeIDTags) {
-        if (nodeIDTags.hasOwnProperty(nodeID)) {
-          nodeIDTags[nodeID] = nodeIDTags[nodeID].sort().join();
-        }
-      }
-
-      // Group nodes by common tag string
-      var tagNodes = {};
-      for (var nodeID in nodeIDTags) {
-        if (nodeIDTags.hasOwnProperty(nodeID)) {
-          var tagString = nodeIDTags[nodeID];
-          if (tagNodes.hasOwnProperty(nodeIDTags)) {
-            tagNodes[tagString].push(nodeID);
-          } else {
-            tagNodes[tagString] = [nodeID];
-          }
-        }
-      }
-
-      // Create meshes for the tags for all nodes that need them, reusing the geometries
-      for (var tagString in tagNodes) {
-        if (tagNodes.hasOwnProperty(tagString)) {
-          tagNodes[tagString].forEach(function(nodeID) {
-            var node = nodeProps[nodeID];
-            var v = pixelSpaceVector(node[4], node[5], node[6]); 
-            var text = new THREE.Mesh( getTagGeometry(tagString), textMaterial );
-            text.position.x = v.x;
-            text.position.y = v.y;
-            text.position.z = v.z;
-            text.visible = textlabel_visibility;
-            self.textlabels[nodeID] = text;
-            scene.add( text );
-          });
-        }
-      }
-
-      var createLabelSphere = function(nodeID, color) {
-        var node = nodeProps[nodeID];
-        var v = pixelSpaceVector(node[4], node[5], node[6]);
-        var mesh = new THREE.Mesh( labelspheregeometry, color );
-        mesh.position.set( v.x, v.y, v.z );
-        mesh.node_id = nodeID;
-        mesh.skeleton_id = self.id;
-        mesh.orig_coord = {x: node[4], y: node[5], z: node[6]};
-        self.labelSphere[nodeID] = mesh;
-        scene.add( mesh );
-      };
-
-      // Place spheres on nodes with special labels:
-      for (var tag in tags) {
-        if (tags.hasOwnProperty(tag)) {
-          var tagLC = tag.toLowerCase();
-          if (-1 != tagLC.indexOf('todo')) {
-            tags[tag].forEach(function(nodeID) {
-              if (!self.labelSphere[nodeID]) {
-                createLabelSphere(nodeID, labelColors.todo);
-              }
-            });
-          } else if (-1 != tagLC.indexOf('uncertain')) {
-            tags[tag].forEach(function(nodeID) {
-              if (!self.labelSphere[nodeID]) {
-                createLabelSphere(nodeID, labelColors.uncertain);
-              }
-            });
-          }
-        }
-      }
 
       self.addCompositeActorToScene();
 
@@ -1203,7 +1218,7 @@ var WebGLApp = new function () {
 
   self.createActiveNode = function()
   {
-    sphere = new THREE.SphereGeometry( 160 * scale, 32, 32, 1 );
+    var sphere = new THREE.SphereGeometry( 160 * scale, 32, 32, 1 );
     active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
     active_node.position.set( 0,0,0 );
     scene.add( active_node );
@@ -1418,7 +1433,7 @@ var WebGLApp = new function () {
     var s = Date.now(),
         callback = function( geometry ) { createScene( geometry, s ) };
     jQuery.ajax({
-        url: django_url+self.project_id+"/stack/"+self.stack_id+"/models",
+        url: django_url + project_id + "/stack/" + self.stack_id + "/models",
         type: "GET",
         dataType: "json",
         success: function (models) {
@@ -1711,8 +1726,9 @@ var WebGLApp = new function () {
 
   function draw_grid() {
     var line_material = new THREE.LineBasicMaterial( { color: 0x535353 } ),
-      geometry = new THREE.Geometry(),
-      floor = 0, step = 25;
+        geometry = new THREE.Geometry(),
+        floor = 0,
+        step = 25;
     for ( var i = 0; i <= 40; i ++ ) {
       geometry.vertices.push( new THREE.Vector3( - 500, floor, i * step - 500 ) );
       geometry.vertices.push( new THREE.Vector3(   500, floor, i * step - 500 ) );
@@ -2134,4 +2150,4 @@ var WebGLApp = new function () {
       }
     }
   };
-};
+}; })();

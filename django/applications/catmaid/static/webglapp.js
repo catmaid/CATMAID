@@ -37,8 +37,6 @@ var WebGLApp = (function() { return new function () {
     resolution = project.focusedStack.resolution;
     dimension = project.focusedStack.dimension;
     translation = project.focusedStack.translation;
-
-    // self.render();
   }
 
   /** Clean up after closing the 3d viewer. */
@@ -566,10 +564,6 @@ var WebGLApp = (function() { return new function () {
           scene.remove( this.actor[connectivity_types[i]] );
       }
       this.remove_connector_selection();
-      // for ( var i=0; i<connectivity_types.length; ++i ) {
-      //   if( this.actor.hasOwnProperty(connectivity_types[i]) )
-      //     scene.remove( this.actor[connectivity_types[i]] );
-      // }
       for ( var k in this.synapticSpheres ) {
         if( this.synapticSpheres.hasOwnProperty( k ) )
           scene.remove( this.synapticSpheres[k] );

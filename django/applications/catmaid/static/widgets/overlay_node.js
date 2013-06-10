@@ -121,7 +121,7 @@ var SkeletonElements = new function()
     this.c = null; // The Raphael circle for drawing
     this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
     this.line = paper.path(); // The Raphael line element that represents an edge between nodes
-    this.line.toBack();
+    // NOT needed this.line.toBack();
 
     // The member functions:
     this.setXY = setXY;
@@ -1034,7 +1034,6 @@ var SkeletonElements = new function()
           strocol,
           confidence,
           paper);
-        confidenceText.toBack();
       }
       // The 'this' refers to the new ArrowLine
       this.remove = function () {

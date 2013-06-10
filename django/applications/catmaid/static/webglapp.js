@@ -1566,7 +1566,7 @@ var WebGLApp = (function() { return new function () {
     rand.setAttribute("value", "Enable z-plane");
     if( show_zplane )
       rand.setAttribute("checked", "true");
-    rand.onclick = WebGLApp.toggle_zplane;
+    rand.onclick = WebGLApp.toggleZplane;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Enable z-plane');
     dialog.appendChild(rand);
@@ -1677,7 +1677,7 @@ var WebGLApp = (function() { return new function () {
     });
   }
 
-  self.toggle_zplane = function() {
+  self.toggleZplane = function() {
     if( show_zplane ) {
       scene.remove( zplane );
       zplane = null;

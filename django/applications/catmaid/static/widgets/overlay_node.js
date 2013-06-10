@@ -913,19 +913,26 @@ var SkeletonElements = new function()
   };
 
   var removeConnectorEdges = function(preLines, postLines) {
+
+    // TODO why is 'remove' checked for existence?
+
     var i;
     for (i in preLines) {
       if (preLines.hasOwnProperty(i)) {
-        if (preLines[i].remove)
+        if (preLines[i].remove) {
           preLines[i].remove();
+          delete preLines[i];
+        }
         else console.log(i, preLines[i]);
       }
     }
 
     for (i in postLines) {
       if (postLines.hasOwnProperty(i)) {
-        if (postLines[i].remove)
+        if (postLines[i].remove) {
           postLines[i].remove();
+          delete postLines[i];
+        }
         else console.log(i, postLines[i]);
       }
     }

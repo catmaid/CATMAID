@@ -269,7 +269,7 @@ var SkeletonElements = new function()
     newConfidenceX = (x + parentx) / 2 + nx * numberOffset,
     newConfidenceY = (y + parenty) / 2 + ny * numberOffset;
 
-    if (typeof existing == "undefined") {
+    if (typeof existing === "undefined") {
       result = paper.text(newConfidenceX,
                           newConfidenceY,
                           ""+confidence);

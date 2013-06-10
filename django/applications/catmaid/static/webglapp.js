@@ -281,7 +281,7 @@ var WebGLApp = (function() { return new function () {
       //console.log('index', index, self.assembly_slices.length, self.assembly_slices)
       if( index === self.assembly_slices.length ) {
         self.add_to_scene();
-        render();
+        WebGLApp.render();
         return;
       } 
       var slice = assembly_data.slices[ index ];
@@ -1820,12 +1820,13 @@ var WebGLApp = (function() { return new function () {
     self.render();
   }
 
-  var render = function render() {
+  self.render = function render() {
     controls.update();
-    renderer.clear();
-    renderer.render( scene, camera );
-  }
-  self.render = render;
+    if (renderer) {
+      renderer.clear();
+      renderer.render( scene, camera );
+    }
+  };
 
   self.addAssemblyToTable = function ( assembly ) {
     var rowElement = $('<tr/>').attr({

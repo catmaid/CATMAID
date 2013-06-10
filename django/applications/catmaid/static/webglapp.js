@@ -85,17 +85,22 @@ var WebGLApp = (function() { return new function () {
       debugax = null;
     }
 
-    // TODO: remove meshes
-    // TODO: remove missing sections
+    if (meshes && meshes.length > 0) {
+      meshes.forEach(function(mesh) {
+        scene.remove(mesh);
+      });
+      meshes = [];
+    }
 
-  }
+    self.removeMissingSections();
+  };
 
   /* transform coordinates from CATMAID coordinate system
      to WebGL coordinate system: x->x, y->y+dy, z->-z
     */
   var transform_coordinates = function ( point ) {
     return [point[0],-point[1]+dimension.y*resolution.y,-point[2] ];
-  }
+  };
 
   var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
 

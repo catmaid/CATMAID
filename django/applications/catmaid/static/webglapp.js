@@ -191,13 +191,40 @@ var WebGLApp = (function() { return new function () {
     XYView();
     self.createActiveNode();
 
-    // // if there is an active skeleton, add it to the view if staging area is empty
-    if(SkeletonAnnotations.getActiveNodeId() && NeuronStagingArea.get_selected_skeletons().length === 0) {
-      NeuronStagingArea.add_active_object_to_stage();
+    // Acknowledge persistent options
+    // (if the 3d window was opened, options set, and then closed, and then reopened)
+    if (show_missing_sections) {
+      self.createMissingSections();
+    }
+    if (show_meshes) {
+      show_meshes = false;
+      self.toggleMeshes(); // show them
+    }
+    if (!show_active_node) {
+      self.hideActiveNode();
+    }
+    if (!show_floor) {
+      show_floor = true;
+      self.toggleFloor(); // hide it
+    }
+    if (!show_background) {
+      show_background = true;
+      self.toggleBackground(); // hide it
+    }
+    if (!show_zplane) {
+      show_zplane = true;
+      self.toggleZplane(); // hide it
     }
 
-
-  }
+    // Skeleton autoloading triggers:
+    var skids = NeuronStagingArea.get_selected_skeletons();
+    // If the staging area contains skeletons, add them
+    skids.forEach(self.addSkeletonFromID);
+    // If the staging area is empty but a node is active, add its skeleton
+    if (0 === skids.length && SkeletonAnnotations.getActiveNodeId()) {
+      NeuronStagingArea.add_active_object_to_stage();
+    }
+  };
 
   function toggleOrthographic() {
       if( ortho ) {

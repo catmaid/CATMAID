@@ -504,17 +504,14 @@ var WebGLApp = (function() { return new function () {
       for ( var i=0; i<connectivity_types.length; ++i ) {
         if( this.actor.hasOwnProperty(connectivity_types[i]) ) {
           delete this.actor[connectivity_types[i]];
-          this.actor[connectivity_types[i]] = null;
         }
 
         if( this.geometry.hasOwnProperty(connectivity_types[i]) ) {
           delete this.geometry[connectivity_types[i]];
-          this.geometry[connectivity_types[i]] = null;
         }
 
         if( this.connectorgeometry.hasOwnProperty(connectivity_types[i]) ) {
           delete this.connectorgeometry[connectivity_types[i]];
-          this.connectorgeometry[connectivity_types[i]] = null;
         }        
       }
 
@@ -522,38 +519,27 @@ var WebGLApp = (function() { return new function () {
         if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
           if( this.connectoractor && this.connectoractor[connectivity_types[i]] ) {
             delete this.connectoractor[connectivity_types[i]];
-            this.connectoractor[connectivity_types[i]] = null;
           }
         }
       }
-      // for ( var i=0; i<connectivity_types.length; ++i ) {
-      //   if( this.actor.hasOwnProperty(connectivity_types[i]) )
-      //     scene.remove( this.actor[connectivity_types[i]] );
-      // }
       for ( var k in this.labelSphere ) {
         if( this.labelSphere.hasOwnProperty( k ) )
           delete this.labelSphere[k];
-          this.labelSphere[k] = null;
       }
       for ( var k in this.synapticSpheres ) {
         if( this.synapticSpheres.hasOwnProperty( k ) )
           delete this.synapticSpheres[k];
-          this.synapticSpheres[k] = null;
       }
       for ( var k in this.radiusSpheres ) {
         if( this.radiusSpheres.hasOwnProperty( k ) )
           delete this.radiusSpheres[k];
-          this.radiusSpheres[k] = null;
       }
       for ( var k in this.textlabels ) {
         if( self.textlabels.hasOwnProperty( k ))
           delete this.textlabels[k];
-          this.textlabels[k] = null;
       }
 
-      delete this.nodeProps;
       this.nodeProps = null;
-      delete this.connectorProps;
       this.connectorProps = null;
     };
 

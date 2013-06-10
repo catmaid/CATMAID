@@ -777,7 +777,7 @@ var SkeletonAnnotations = new function()
             } else {
               // add treenode to the display and update it
               var jso = $.parseJSON(text);
-              var nn = SkeletonElements.newConnectorNode(jso.connector_id, self.paper, 8, pos_x, pos_y, pos_z, 0, 5 /* confidence */, true);
+              var nn = SkeletonElements.newConnectorNode(jso.connector_id, self.paper, pos_x, pos_y, pos_z, 0, 5 /* confidence */, true);
               nodes[jso.connector_id] = nn;
               nn.draw();
               self.activateNode(nn);
@@ -1142,7 +1142,7 @@ var SkeletonAnnotations = new function()
         // and confidence, a[6]: postsynaptic nodes as array of arrays with treenode id
         // and confidence, a[7]: whether the user can edit the connector
         nodes[a[0]] = SkeletonElements.newConnectorNode(
-          a[0], self.paper, 8, phys2pixX(a[1]),
+          a[0], self.paper, phys2pixX(a[1]),
           phys2pixY(a[2]), phys2pixZ(a[3]),
           (a[3] - pz) / stack.resolution.z, a[4], a[7]);
       });

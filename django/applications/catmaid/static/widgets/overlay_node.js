@@ -16,6 +16,8 @@ var SkeletonElements = new function()
   var TYPE_NODE = "treenode";
   var TYPE_CONNECTORNODE = "connector";
 
+  // For drawing:
+  var NODE_RADIUS = 3;
   var CATCH_RADIUS = 8;
 
   var DISABLED = -1; // ID of the disabled nodes
@@ -61,7 +63,7 @@ var SkeletonElements = new function()
     paper, // the raphael paper this node is drawn to
     parent, // the parent node, if present within the subset of nodes retrieved for display; otherwise null.
     parent_id, // the id of the parent node, or null if it is root
-    r, // the radius
+    radius,
     x, // the x coordinate in pixel coordinates
     y, // y coordinates
     z, // z coordinates
@@ -73,9 +75,9 @@ var SkeletonElements = new function()
     var node;
     if (nextNodeIndex < nodePool.length) {
       node = nodePool[nextNodeIndex];
-      reuseNode(node, id, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id, can_edit);
+      reuseNode(node, id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit);
     } else {
-      node = new this.Node(id, paper, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id, can_edit);
+      node = new this.Node(id, paper, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit);
       nodePool.push(node);
     }
     nextNodeIndex += 1;
@@ -88,7 +90,7 @@ var SkeletonElements = new function()
     paper, // the raphael paper this node is drawn to
     parent, // the parent node (may be null if the node is not loaded)
     parent_id, // is null only for the root node
-    r, // the radius
+    radius, // the radius
     x, // the x coordinate in pixel coordinates
     y, // y coordinates
     z, // z coordinates
@@ -104,7 +106,8 @@ var SkeletonElements = new function()
     this.parent_id = parent_id;
     this.children = {};
     this.numberOfChildren = 0;
-    this.r = r > 0 ? 60 : 3; // 3; // not use radius size on overlay display
+    this.radius = radius; // the radius as stored in the database
+    this.r = NODE_RADIUS; // for drawing
     this.x = x;
     this.y = y;
     this.z = z;
@@ -167,14 +170,14 @@ var SkeletonElements = new function()
   };
 
   /** Takes an existing Node and sets all the proper members as given, and resets its children. */
-  var reuseNode = function(node, id, parent, parent_id, r, x, y, z, zdiff, confidence, skeleton_id, can_edit)
+  var reuseNode = function(node, id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit)
   {
     node.id = id;
     node.parent = parent;
     node.parent_id = parent_id;
     node.children = {};
     node.numberOfChildren = 0;
-    node.r = r > 0 ? 60 : 3;// 3; // hardcode value r < 0 ? 3 : r;
+    node.radius = radius; // the radius as stored in the database
     node.x = x;
     node.y = y;
     node.z = z;
@@ -461,12 +464,9 @@ var SkeletonElements = new function()
       if (this.c && this.mc) {
       } else {
         // create a raphael circle object
-        this.c = paper.circle(this.x, this.y, this.r); // again hard-code the radius to address issue #522
+        this.c = paper.circle(this.x, this.y, this.r);
         // a raphael circle oversized for the mouse logic
-        if( this.r > 0 )
-          this.mc = paper.circle(this.x, this.y, this.r + 5);
-        else
-          this.mc = paper.circle(this.x, this.y, CATCH_RADIUS);
+        this.mc = paper.circle(this.x, this.y, CATCH_RADIUS);
 
         assignEventHandlers(this.mc, this.type);
       }
@@ -745,7 +745,6 @@ var SkeletonElements = new function()
   this.newConnectorNode = function(
     id, // unique id for the node from the database
     paper, // the raphael paper this node is drawn to
-    r, // radius
     x, // the x coordinate in pixel coordinates
     y, // y coordinates
     z, // z coordinates
@@ -756,9 +755,9 @@ var SkeletonElements = new function()
     var connector;
     if (nextConnectorIndex < connectorPool.length) {
       connector = connectorPool[nextConnectorIndex];
-      reuseConnectorNode(connector, id, r, x, y, z, zdiff, confidence, can_edit);
+      reuseConnectorNode(connector, id, x, y, z, zdiff, confidence, can_edit);
     } else {
-      connector = new this.ConnectorNode(id, paper, r, x, y, z, zdiff, confidence, can_edit);
+      connector = new this.ConnectorNode(id, paper, x, y, z, zdiff, confidence, can_edit);
       connectorPool.push(connector);
     }
     nextConnectorIndex += 1;
@@ -771,7 +770,6 @@ var SkeletonElements = new function()
   this.ConnectorNode = function (
     id, // unique id for the node from the database
     paper, // the raphael paper this node is drawn to
-    r, // radius
     x, // the x coordinate in pixel coordinates
     y, // y coordinates
     z, // z coordinates
@@ -792,7 +790,7 @@ var SkeletonElements = new function()
     this.paper = paper;
     this.pregroup = {}; // set of presynaptic treenodes
     this.postgroup = {}; // set of postsynaptic treenodes
-    this.r = r; // prefixed radius for now
+    this.r = 8;
     this.c = null; // The Raphael circle for drawing
     this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
     this.preLines = {}; // The Raphael edges to the presynaptic nodes
@@ -819,10 +817,9 @@ var SkeletonElements = new function()
    * @param z
    * @param zdiff
    */
-  var reuseConnectorNode = function(c, id, r, x, y, z, zdiff, confidence, can_edit)
+  var reuseConnectorNode = function(c, id, x, y, z, zdiff, confidence, can_edit)
   {
     c.id = id;
-    c.r = r;
     c.x = x;
     c.y = y;
     c.z = z;

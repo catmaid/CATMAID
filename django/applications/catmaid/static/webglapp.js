@@ -57,37 +57,31 @@ var WebGLApp = (function() { return new function () {
 
     if( active_node !== null) {
       scene.remove( active_node );
-      delete active_node;
       active_node = null;
     }
 
     if( floormesh !== null) {
       scene.remove( floormesh );
-      delete floormesh;
       floormesh = null;
     }
 
     if( zplane !== null) {
       scene.remove( zplane );
-      delete zplane;
       zplane = null;
     }
 
     if( floormesh !== null) {
       scene.remove( floormesh );
-      delete floormesh;
       floormesh = null;
     }
 
     if( bbmesh !== null) {
       scene.remove( bbmesh );
-      delete bbmesh;
       bbmesh = null;
     }
 
     if( debugax !== null) {
       scene.remove( debugax );
-      delete debugax;
       debugax = null;
     }
 

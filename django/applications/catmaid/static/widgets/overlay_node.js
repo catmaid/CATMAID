@@ -154,6 +154,7 @@ var SkeletonElements = new function()
   {
     node.id = DISABLED;
     node.parent = null;
+    node.parent_id = DISABLED;
     node.children = {};
     node.numberOfChildren = 0;
     if (node.c) {
@@ -849,6 +850,7 @@ var SkeletonElements = new function()
    * @param c The ConnectorNode instance to disable
    */
   var disableConnectorNode = function(c) {
+    c.id = DISABLED;
     if (c.c) {
       c.c.hide();
       c.mc.hide();

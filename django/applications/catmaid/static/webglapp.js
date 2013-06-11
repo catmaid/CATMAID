@@ -2,7 +2,7 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 var WebGLApp = (function() { return new function () {
 
-  self = this;
+  var self = this;
   self.neurons = [];
 
   // Queue server requests, awaiting returns

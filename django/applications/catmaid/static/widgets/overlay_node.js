@@ -1037,11 +1037,12 @@ var SkeletonElements = new function()
     var STROKE_WIDTH = 2;
     var PRE_COLOR = "rgb(200, 0, 0)";
     var POST_COLOR = "rgb(0, 217, 232)";
+    var arrowString = "M0,0,L-5,-5,L-5,5,L0,0";
 
     /** Constructor method for ArrowLine. */
     var ArrowLine = function(paper) {
       var linePath;
-      var arrowPath;
+      var arrowPath = paper.path(arrowString);
       var connector_id;
       var treenode_id;
       var confidence_text;
@@ -1071,6 +1072,8 @@ var SkeletonElements = new function()
           }
         });
       };
+
+      arrowPath.mousedown(mousedown);
 
       this.init = function(x1, y1, x2, y2, confidence, stroke_color, connectorID, treenodeID) {
         connector_id = connectorID;
@@ -1106,30 +1109,12 @@ var SkeletonElements = new function()
           });
         }
 
-        if (arrowPath) {
-          // Reset transform
-          arrowPath.transform("");
-          // Set new points
-          var path = arrowPath.attrs.path;
-          path[0][1] = x2new;
-          path[0][2] = y2new;
-          path[1][1] = (x2new - SIZE);
-          path[1][2] = (y2new - SIZE);
-          path[2][1] = (x2new - SIZE);
-          path[2][2] = (y2new + SIZE);
-          path[3][1] = x2new;
-          path[3][2] = y2new;
-          // Transform
-          arrowPath.rotate(90 + angle, x2new, y2new);
-          arrowPath.show();
-        } else {
-          arrowPath = paper.path( "M" + x2new + " " + y2new +
-                                 " L" + (x2new - SIZE) + " " + (y2new - SIZE) +
-                                 " L" + (x2new - SIZE) + " " + (y2new + SIZE) +
-                                 " L" + x2new + " " + y2new)
-            .rotate(90 + angle, x2new, y2new);
-          arrowPath.mousedown(mousedown);
-        }
+        // Reset transform
+        arrowPath.transform("");
+        // Translate
+        arrowPath.transform("t" + x2new + "," + y2new + "r" + angle + "," + x2new + "," + y2new); // uppercase T for absolute translation indpendent of other transformations
+        // Rotate
+        //arrowPath.rotate(angle, x2new, y2new);
 
         arrowPath.attr({
           "fill": stroke_color,
@@ -1159,6 +1144,7 @@ var SkeletonElements = new function()
       this.obliterate = function() {
         connector_id = null;
         treenode_id = null;
+        arrowPath.unmousedown(mousedown);
         arrowPath.remove();
         arrowPath = null;
         linePath.remove();

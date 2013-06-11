@@ -371,12 +371,15 @@ function recreateProjectStructureFromCache() {
   }
   projects_available = new Array();
   // recreate it
+  var i, j, p;
   for (i in cachedProjectsInfo) {
+    if (!cachedProjectsInfo.hasOwnProperty(i)) continue;
     p = cachedProjectsInfo[i];
     // add project
     projects_available[p.pid] = new Array();
     // add linked stacks
     for (j in p.action) {
+      if (!p.action.hasOwnProperty(j)) continue;
       projects_available[p.pid].push(
           { id : j,
             title : p.action[j].title,

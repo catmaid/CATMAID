@@ -56,10 +56,10 @@ property //!< string the property
 
 function parseFragment() {
   if (location.hash) {
-    var r;
+    var r, fragment;
     fragment = /#(.*?)$/i;
     if (r = fragment.exec(location.hash)) {
-      var p;
+      var o, p, value;
       o = new Object();
       value = /([^&=]+)=([^&=]+)/gi
       while (p = value.exec(r[1])) {
@@ -78,10 +78,10 @@ function parseFragment() {
 
 function parseQuery() {
   if (location.search) {
-    var r;
+    var r, query;
     query = /\?(.*?)$/i;
     if (r = query.exec(location.search)) {
-      var p;
+      var o, p, value;
       o = new Object();
       value = /([^&=]+)=([^&=]+)/gi
       while (p = value.exec(r[1])) {

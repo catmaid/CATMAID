@@ -1049,45 +1049,44 @@ var SkeletonElements = new function()
     var pathString = "M0,0,L1,0";
     var arrowString = "M0,0,L-5,-5,L-5,5,L0,0";
 
+    var mousedown = (function(e) {
+      e.stopPropagation();
+      if(!(e.shiftKey && (e.ctrlKey || e.metaKey))) {
+        return;
+      }
+      // 'this' is the arrowPath
+      var updateNodes = this.paper.catmaidSVGOverlay.updateNodes;
+      requestQueue.register(django_url + project.id + '/link/delete', "POST", {
+        pid: project.id,
+        connector_id: this.connector_id,
+        treenode_id: this.treenode_id
+      }, function (status, text) {
+        if (status !== 200) {
+          alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+        } else {
+            if (text && text !== " ") {
+              var e = $.parseJSON(text);
+              if (e.error) {
+                alert(e.error);
+              } else {
+                updateNodes();
+                return true;
+              }
+            }
+        }
+      });
+    });
+
     /** Constructor method for ArrowLine. */
     var ArrowLine = function(paper) {
       var linePath = paper.path(pathString);
       var arrowPath = paper.path(arrowString);
-      var connector_id;
-      var treenode_id;
+      arrowPath.mousedown(mousedown);
       var confidence_text;
 
-      var mousedown = function(e) {
-        e.stopPropagation();
-        if(!(e.shiftKey && (e.ctrlKey || e.metaKey))) {
-          return;
-        }
-        requestQueue.register(django_url + project.id + '/link/delete', "POST", {
-          pid: project.id,
-          connector_id: connector_id,
-          treenode_id: treenode_id
-        }, function (status, text, xml) {
-          if (status !== 200) {
-            alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
-          } else {
-              if (text && text !== " ") {
-                var e = $.parseJSON(text);
-                if (e.error) {
-                  alert(e.error);
-                } else {  
-                  paper.catmaidSVGOverlay.updateNodes();
-                  return true;
-                }
-              }
-          }
-        });
-      };
-
-      arrowPath.mousedown(mousedown);
-
       this.init = function(x1, y1, x2, y2, confidence, stroke_color, connectorID, treenodeID) {
-        connector_id = connectorID;
-        treenode_id = treenodeID;
+        arrowPath.connector_id = connectorID;
+        arrowPath.treenode_id = treenodeID;
 
         var rloc = 9;
         var xdiff = (x2 - x1);
@@ -1150,16 +1149,16 @@ var SkeletonElements = new function()
       this.data = function() { return [linePath, arrowPath]; };
 
       this.disable = function() {
-        connector_id = null;
-        treenode_id = null;
+        arrowPath.connector_id = null;
+        arrowPath.treenode_id = null;
         linePath.hide();
         arrowPath.hide();
         if (confidence_text) confidence_text.hide();
       };
 
       this.obliterate = function() {
-        connector_id = null;
-        treenode_id = null;
+        arrowPath.connector_id = null;
+        arrowPath.treenode_id = null;
         arrowPath.unmousedown(mousedown);
         arrowPath.remove();
         arrowPath = null;

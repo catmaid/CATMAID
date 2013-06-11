@@ -1175,11 +1175,14 @@ var SkeletonAnnotations = new function()
         for (var i in nodes) {
           if (nodes.hasOwnProperty(i)) {
             nodes[i].setColor();
-            // Will only create it or unhide it if the edge is to be displayed
             nodes[i].drawEdges();
           }
         }
       } // end speed toggle
+      
+      // Now that all edges have been created, disable unused arrows
+      SkeletonElements.disableRemainingArrows();
+
 
       // Create raphael's circles on top of the edges
       // so that the events reach the circles first

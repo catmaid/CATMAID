@@ -1209,9 +1209,6 @@ var SkeletonAnnotations = new function()
       }
     };
 
-    // Initialize to the value of stack.scale at instantiation of SVGOverlay
-    var old_scale = stack.scale;
-
 
     /* When we pass a completedCallback to redraw, it's essentially
        always because we want to know that, if any fetching of nodes

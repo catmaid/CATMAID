@@ -389,6 +389,28 @@ function recreateProjectStructureFromCache() {
 }
 
 /**
+ * Retrieves stack menu information from the back-end and
+ * executes a callback on success. This callback is passed
+ * the returned JSON object containing the stack information.
+ */
+function getStackMenuInfo(project_id, callback) {
+    requestQueue.register(django_url + project_id + '/stacks',
+        'GET', undefined, function(status, text, xml) {
+            if (status == 200 && text) {
+                var e = $.parseJSON(text);
+                if (e.error) {
+                    alert(e.error);
+                } else if (callback){
+                    callback(e);
+                }
+            } else {
+                alert("Sorry, the stacks for the current project couldn't be retrieved.");
+            }
+        });
+    return;
+};
+
+/**
  * Update the displayed project list based on the cache
  * entries. This can involve a filter in the text box
  * "project_filter_text".

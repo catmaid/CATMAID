@@ -165,6 +165,7 @@ var SkeletonElements = new function()
     if (node.c) {
       node.c.remove();
       node.c = null;
+      mouseEventManager.forget(node.mc, TYPE_NODE);
       node.mc.catmaidNode = null; // break circular reference
       node.mc.remove();
       node.mc = null;
@@ -503,7 +504,7 @@ var SkeletonElements = new function()
         // a raphael circle oversized for the mouse logic
         this.mc = paper.circle(this.x, this.y, CATCH_RADIUS);
 
-        assignEventHandlers(this.mc, this.type);
+        mouseEventManager.attach(this.mc, this.type);
       }
 
       this.c.attr({
@@ -537,7 +538,7 @@ var SkeletonElements = new function()
    * Below, the function() is but a namespace that returns the actual nodeAssignEventHandlers function,
    * which assigns the event handlers to the mc given to it as argument.
   */
-  var assignEventHandlers = function ()
+  var mouseEventManager = new (function()
   {
     /** Variables used for mouse events, which involve a single node at a time.
      * These are set at mc_start and then used at mc_move. */
@@ -749,9 +750,7 @@ var SkeletonElements = new function()
       }
     };
 
-    // The actual assignEventHandlers function
-    // BEWARE that 'this' cannot be used to refer to the node within this function
-    return function(mc, type) {
+    this.attach = function(mc, type) {
       mc.drag(mc_move, mc_start, mc_up);
       mc.mousedown(mc_mousedown);
       mc.dblclick(mc_dblclick);
@@ -763,7 +762,20 @@ var SkeletonElements = new function()
         mc.click(connector_mc_click);
       }
     };
-  }();
+    
+    this.forget = function(mc, type) {
+      mc.undrag();
+      mc.unmousedown(mc_mousedown);
+      mc.undblclick(mc_dblclick);
+
+      if (TYPE_NODE === type) {
+        mc.unclick(mc_click);
+      } else {
+        // TYPE_CONNECTORNODE
+        mc.unclick(connector_mc_click);
+      }
+    };
+  })();
 
 
   // TODO must reuse nodes instead of creating them new, to avoid DOM insertions.
@@ -847,6 +859,7 @@ var SkeletonElements = new function()
     con.fillcolor = null;
     if (con.c) {
       con.c.remove();
+      mouseEventManager.forget(con.mc, TYPE_CONNECTORNODE);
       con.mc.catmaidNode = null;
       con.mc.remove();
     }

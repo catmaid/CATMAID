@@ -26,8 +26,6 @@ var ui;
 var requestQueue;
 var project;
 var project_view;
-var projects_available;
-var projects_available_ready = false;
 
 var dataview_menu;
 
@@ -307,8 +305,6 @@ function handle_updateProjects(status, text, xml) {
       alert(e.error);
     } else {
       cachedProjectsInfo = e;
-      // update internal project data structure
-      recreateProjectStructureFromCache();
       // recreate the project data view
       load_default_dataview();
       // update the project > open menu
@@ -350,42 +346,10 @@ function updateProjectListFromCacheDelayed()
   }
   cacheLoadingTimeout = window.setTimeout(
     function() {
-      recreateProjectStructureFromCache();
       updateProjectListFromCache();
       // indicate finish of filtered loading of the projects
       indicator.className = "";
     }, 500);
-}
-
-/**
- * A structure of the available projects and their stacks is
- * maintained. This method recreates this structure, based on
- * the cached content.
- */
-function recreateProjectStructureFromCache() {
-  // clear project data structure
-  projects_available_ready = false;
-  if (projects_available)
-  {
-    delete projects_available;
-  }
-  projects_available = new Array();
-  // recreate it
-  for (i in cachedProjectsInfo) {
-    p = cachedProjectsInfo[i];
-    // add project
-    projects_available[p.pid] = new Array();
-    // add linked stacks
-    for (j in p.action) {
-      projects_available[p.pid].push(
-          { id : j,
-            title : p.action[j].title,
-            action : p.action[j].action,
-            note : p.action[j].comment}
-      );
-    }
-  }
-  projects_available_ready = true;
 }
 
 /**
@@ -1137,23 +1101,10 @@ var realInit = function()
 
 	if ( pid && sids.length > 0 )
 	{
-		// Make sure that the client-side project list is ready before
-		// we load the stacks.
-		var wait_for_projects = function()
+		for ( var i = 0; i < sids.length; ++i )
 		{
-			if ( projects_available_ready )
-			{
-				for ( var i = 0; i < sids.length; ++i )
-				{
-					openProjectStack( pid, sids[ i ] )
-				}
-			}
-			else
-			{
-				setTimeout(wait_for_projects, 10);
-			}
-		};
-		wait_for_projects();
+			openProjectStack( pid, sids[ i ] )
+		}
 	}
 	
 	// the text-label toolbar

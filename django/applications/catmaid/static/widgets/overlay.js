@@ -1175,7 +1175,7 @@ var SkeletonAnnotations = new function()
         for (var i in nodes) {
           if (nodes.hasOwnProperty(i)) {
             nodes[i].setColor();
-            // Will only create it or unhide it the edge is to be displayed
+            // Will only create it or unhide it if the edge is to be displayed
             nodes[i].drawEdges();
           }
         }

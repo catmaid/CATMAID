@@ -651,24 +651,24 @@ function handle_openProjectStack( status, text, xml )
 			than one stack linked to the current project, a submenu for easy
 			access is generated. */
 			project_menu_current.update();
-			var stacks = projects_available[project.id];
-			if (stacks.length > 1)
-			{
-				var current_menu_content = new Array();
-				for (var s in stacks)
+			getStackMenuInfo(project.id, function(stacks) {
+				if (stacks.length > 1)
 				{
-					current_menu_content.push(
-						{
-							id : s,
-							title : stacks[s].title,
-							note : stacks[s].note,
-							action : stacks[s].action
-						}
-					);
+					var current_menu_content = new Array();
+					$.each(stacks, function(i, s) {
+						current_menu_content.push(
+							{
+								id : s.id,
+								title : s.title,
+								note : s.note,
+								action : s.action
+							}
+						);
+					});
+					project_menu_current.update( current_menu_content );
+					document.getElementById( "project_menu_current" ).style.display = "block";
 				}
-				project_menu_current.update( current_menu_content );
-				document.getElementById( "project_menu_current" ).style.display = "block";
-			}
+			});
 		}
 	}
 	ui.releaseEvents();

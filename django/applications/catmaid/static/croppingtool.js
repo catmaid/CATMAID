@@ -374,17 +374,19 @@ function CroppingTool() {
 		CroppingTool.superproto.register.call( self, parentStack );
 
 		// initialize the stacks we offer to crop
-		var project = self.stack.getProject();
-		var stacks = projects_available[project.id];
-		self.stacks_to_crop = new Array();
-		$.each(stacks, function(index, value) {
-			// By default, mark only the current stack to be cropped
-			self.stacks_to_crop.push(
-				{
-					data : value,
-					marked : ( value.id == self.stack.getId() )
-				}
-			);
+		getStackMenuInfo(project.id, function(stacks) {
+			self.stacks_to_crop = new Array();
+			$.each(stacks, function(index, value) {
+				// By default, mark only the current stack to be cropped
+				self.stacks_to_crop.push(
+					{
+						data : value,
+						marked : ( value.id == self.stack.getId() )
+					});
+			 });
+
+			// initialize the stacks menu
+			self.updateStacksMenu();
 		});
 
 		document.getElementById( "edit_button_crop" ).className = "button_active";
@@ -424,9 +426,6 @@ function CroppingTool() {
 			self.stack.s,
 			self.changeScale,
 			-1);
-
-		// initialize the stacks menu
-		self.updateStacksMenu();
 
 		// initialize crop button
 		self.button_roi_apply.onclick = crop;

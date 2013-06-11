@@ -26,8 +26,6 @@ var ui;
 var requestQueue;
 var project;
 var project_view;
-var projects_available;
-var projects_available_ready = false;
 
 var dataview_menu;
 
@@ -307,8 +305,6 @@ function handle_updateProjects(status, text, xml) {
       alert(e.error);
     } else {
       cachedProjectsInfo = e;
-      // update internal project data structure
-      recreateProjectStructureFromCache();
       // recreate the project data view
       load_default_dataview();
       // update the project > open menu
@@ -350,7 +346,6 @@ function updateProjectListFromCacheDelayed()
   }
   cacheLoadingTimeout = window.setTimeout(
     function() {
-      recreateProjectStructureFromCache();
       updateProjectListFromCache();
       // indicate finish of filtered loading of the projects
       indicator.className = "";
@@ -358,38 +353,26 @@ function updateProjectListFromCacheDelayed()
 }
 
 /**
- * A structure of the available projects and their stacks is
- * maintained. This method recreates this structure, based on
- * the cached content.
+ * Retrieves stack menu information from the back-end and
+ * executes a callback on success. This callback is passed
+ * the returned JSON object containing the stack information.
  */
-function recreateProjectStructureFromCache() {
-  // clear project data structure
-  projects_available_ready = false;
-  if (projects_available)
-  {
-    delete projects_available;
-  }
-  projects_available = new Array();
-  // recreate it
-  var i, j, p;
-  for (i in cachedProjectsInfo) {
-    if (!cachedProjectsInfo.hasOwnProperty(i)) continue;
-    p = cachedProjectsInfo[i];
-    // add project
-    projects_available[p.pid] = new Array();
-    // add linked stacks
-    for (j in p.action) {
-      if (!p.action.hasOwnProperty(j)) continue;
-      projects_available[p.pid].push(
-          { id : j,
-            title : p.action[j].title,
-            action : p.action[j].action,
-            note : p.action[j].comment}
-      );
-    }
-  }
-  projects_available_ready = true;
-}
+function getStackMenuInfo(project_id, callback) {
+    requestQueue.register(django_url + project_id + '/stacks',
+        'GET', undefined, function(status, text, xml) {
+            if (status == 200 && text) {
+                var e = $.parseJSON(text);
+                if (e.error) {
+                    alert(e.error);
+                } else if (callback){
+                    callback(e);
+                }
+            } else {
+                alert("Sorry, the stacks for the current project couldn't be retrieved.");
+            }
+        });
+    return;
+};
 
 /**
  * Update the displayed project list based on the cache
@@ -632,24 +615,24 @@ function handle_openProjectStack( status, text, xml )
 			than one stack linked to the current project, a submenu for easy
 			access is generated. */
 			project_menu_current.update();
-			var stacks = projects_available[project.id];
-			if (stacks.length > 1)
-			{
-				var current_menu_content = new Array();
-				for (var s in stacks)
+			getStackMenuInfo(project.id, function(stacks) {
+				if (stacks.length > 1)
 				{
-					current_menu_content.push(
-						{
-							id : s,
-							title : stacks[s].title,
-							note : stacks[s].note,
-							action : stacks[s].action
-						}
-					);
+					var current_menu_content = new Array();
+					$.each(stacks, function(i, s) {
+						current_menu_content.push(
+							{
+								id : s.id,
+								title : s.title,
+								note : s.note,
+								action : s.action
+							}
+						);
+					});
+					project_menu_current.update( current_menu_content );
+					document.getElementById( "project_menu_current" ).style.display = "block";
 				}
-				project_menu_current.update( current_menu_content );
-				document.getElementById( "project_menu_current" ).style.display = "block";
-			}
+			});
 		}
 	}
 	ui.releaseEvents();
@@ -1118,23 +1101,10 @@ var realInit = function()
 
 	if ( pid && sids.length > 0 )
 	{
-		// Make sure that the client-side project list is ready before
-		// we load the stacks.
-		var wait_for_projects = function()
+		for ( var i = 0; i < sids.length; ++i )
 		{
-			if ( projects_available_ready )
-			{
-				for ( var i = 0; i < sids.length; ++i )
-				{
-					openProjectStack( pid, sids[ i ] )
-				}
-			}
-			else
-			{
-				setTimeout(wait_for_projects, 10);
-			}
-		};
-		wait_for_projects();
+			openProjectStack( pid, sids[ i ] )
+		}
 	}
 	
 	// the text-label toolbar

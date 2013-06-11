@@ -850,9 +850,8 @@ var SkeletonElements = new function()
     this.r = 8;
     this.c = null; // The Raphael circle for drawing
     this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
-    this.preLines = {}; // The Raphael edges to the presynaptic nodes
-    // TODO preLines and postLines should be null, and arrays when full
-    this.postLines = {}; // The Raphael edges to the postsynaptic nodes
+    this.preLines = null; // Array of ArrowLine to the presynaptic nodes
+    this.postLines = null; // Array of ArrowLine to the postsynaptic nodes
     this.fillcolor = null;
 
     // Member functions
@@ -878,7 +877,7 @@ var SkeletonElements = new function()
     con.postgroup = null;
     con.paper = null;
     // Note: mouse event handlers are removed by c.remove and mc.remove()
-    removeConnectorArrows(con.preLines, con.postLines); // also removes confidence text associated with edges
+    removeConnectorArrows(con); // also removes confidence text associated with edges
     con.preLines = null;
     con.postLines = null;
   };
@@ -916,7 +915,8 @@ var SkeletonElements = new function()
       }
     }
 
-    // preLines and postLines are always removed and then recreated when calling drawEdges
+    c.preLines = null;
+    c.postLines = null;
   };
 
   /**
@@ -929,7 +929,7 @@ var SkeletonElements = new function()
       c.c.hide();
       c.mc.hide();
     }
-    removeConnectorArrows(c.preLines, c.postLines);
+    removeConnectorArrows(c);
   };
 
   /** Here 'this' is the connector node. */
@@ -987,26 +987,23 @@ var SkeletonElements = new function()
   };
 
   /** Disables the ArrowLine object and removes entries from the preLines and postLines. */
-  var removeConnectorArrows = function(preLines, postLines) {
-    var i;
-    for (i in preLines) {
-      if (preLines.hasOwnProperty(i)) {
-        preLines[i].disable();
-        delete preLines[i];
-      }
+  var removeConnectorArrows = function(c) {
+    var disable;
+    if (c.preLines || c.postLines) disable = function(arrow) { arrow.disable(); };
+    if (c.preLines) {
+      c.preLines.forEach(disable);
+      c.preLines = null;
     }
-    for (i in postLines) {
-      if (postLines.hasOwnProperty(i)) {
-        postLines[i].disable();
-        delete postLines[i];
-      }
+    if (c.postLines) {
+      c.postLines.forEach(disable);
+      c.postLines = null;
     }
   };
 
   /**
    * Here 'this' is the connector node.
    */
-  var connectorDrawEdges = function()
+  var connectorDrawEdges = function(redraw)
   {
     var i,
         tnid,
@@ -1015,6 +1012,10 @@ var SkeletonElements = new function()
         pregroup = this.pregroup,
         postgroup = this.postgroup;
 
+    if (redraw) {
+      removeConnectorArrows(this);
+    }
+
     // re-create
     for (i in pregroup) {
       if (pregroup.hasOwnProperty(i)) {
@@ -1022,10 +1023,8 @@ var SkeletonElements = new function()
         confidence = pregroup[i].confidence;
         if (displayBetweenNodes(this, treenode)) {
           tnid = treenode.id;
-          this.preLines[tnid] = connectorCreateArrow(this, tnid, confidence, true, this.preLines[tnid]);
-        } else if (this.preLines.hasOwnProperty(tnid)) {
-          this.preLines[tnid].disable();
-          delete this.preLines[tnid];
+          if (!this.preLines) this.preLines = [];
+          this.preLines.push(connectorCreateArrow(this, tnid, confidence, true));
         }
       }
     }
@@ -1036,10 +1035,8 @@ var SkeletonElements = new function()
         confidence = postgroup[i].confidence;
         if (displayBetweenNodes(this, treenode)) {
           tnid = treenode.id;
-          this.postLines[tnid] = connectorCreateArrow(this, tnid, confidence, false, this.postLines[tnid]);
-        } else if (this.postLines.hasOwnProperty(tnid)) {
-          this.postLines[tnid].disable();
-          delete this.postLines[tnid];
+          if (!this.postLines) this.postLines = [];
+          this.postLines.push(connectorCreateArrow(this, tnid, confidence, false));
         }
       }
     }

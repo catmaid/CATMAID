@@ -678,7 +678,20 @@ function Stack(
 	neuronnameDisplay.firstChild.appendChild( spanName );
 	neuronnameDisplay.firstChild.firstChild.appendChild( document.createTextNode( "" ) );
 	view.appendChild( neuronnameDisplay );
-
+	
+	var vert = document.createElement( "div" );
+	var horr = document.createElement( "div" );
+	vert.style.height = horr.style.width = "100%";
+	vert.style.width = horr.style.height = "1px";
+	vert.style.position = horr.style.position = "absolute";
+	vert.style.top = horr.style.left = "0px";
+	vert.style.left = horr.style.top = "50%";
+	vert.style.zIndex = horr.style.zIndex = "1";
+	vert.style.backgroundColor = horr.style.backgroundColor = "#ffffff";
+	vert.style.opacity = horr.style.opacity = "0.5";
+	view.appendChild( vert );
+	view.appendChild( horr );
+	
 	// take care, that all values are within a proper range
 	// Declare the x,y,z,s as coordinates in pixels
 	self.z = 0;

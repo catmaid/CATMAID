@@ -181,6 +181,7 @@ var SkeletonElements = new function()
     }
     if (node.line) {
       node.line.remove();
+      node.line = null;
     }
     if (node.number_text) {
       node.number_text.remove();
@@ -850,6 +851,7 @@ var SkeletonElements = new function()
     this.c = null; // The Raphael circle for drawing
     this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
     this.preLines = {}; // The Raphael edges to the presynaptic nodes
+    // TODO preLines and postLines should be null, and arrays when full
     this.postLines = {}; // The Raphael edges to the postsynaptic nodes
     this.fillcolor = null;
 
@@ -1013,9 +1015,6 @@ var SkeletonElements = new function()
         pregroup = this.pregroup,
         postgroup = this.postgroup;
 
-    this.preLines = {};
-    this.postLines = {};
-
     // re-create
     for (i in pregroup) {
       if (pregroup.hasOwnProperty(i)) {
@@ -1023,7 +1022,10 @@ var SkeletonElements = new function()
         confidence = pregroup[i].confidence;
         if (displayBetweenNodes(this, treenode)) {
           tnid = treenode.id;
-          this.preLines[tnid] = connectorCreateArrow(this, tnid, confidence, true);
+          this.preLines[tnid] = connectorCreateArrow(this, tnid, confidence, true, this.preLines[tnid]);
+        } else if (this.preLines.hasOwnProperty(tnid)) {
+          this.preLines[tnid].disable();
+          delete this.preLines[tnid];
         }
       }
     }
@@ -1034,7 +1036,10 @@ var SkeletonElements = new function()
         confidence = postgroup[i].confidence;
         if (displayBetweenNodes(this, treenode)) {
           tnid = treenode.id;
-          this.postLines[tnid] = connectorCreateArrow(this, tnid, confidence, false);
+          this.postLines[tnid] = connectorCreateArrow(this, tnid, confidence, false, this.postLines[tnid]);
+        } else if (this.postLines.hasOwnProperty(tnid)) {
+          this.postLines[tnid].disable();
+          delete this.postLines[tnid];
         }
       }
     }
@@ -1088,6 +1093,21 @@ var SkeletonElements = new function()
         arrowPath.connector_id = connectorID;
         arrowPath.treenode_id = treenodeID;
 
+        this.update(x1, y1, x2, y2, confidence);
+
+        // Adjust
+        linePath.attr({"stroke": stroke_color,
+                       "stroke-width": 2});
+        // Adjust color
+        arrowPath.attr({
+          "fill": stroke_color,
+          "stroke": stroke_color
+        });
+
+        this.show();
+      };
+
+      this.update = function(x1, y1, x2, y2, confidence) {
         var rloc = 9;
         var xdiff = (x2 - x1);
         var ydiff = (y2 - y1);
@@ -1111,19 +1131,11 @@ var SkeletonElements = new function()
         linePath.transform( "t" + x1new + "," + y1new
                           + "r" + angle + ",0,0"
                           + "s" + length + "," + length + ",0,0");
-        // Adjust
-        linePath.attr({"stroke": stroke_color,
-                       "stroke-width": 2});
 
         // Reset transform
         arrowPath.transform("");
         // Translate and then rotate relative to 0,0 (preconcatenates)
         arrowPath.transform("t" + x2new + "," + y2new + "r" + angle + ",0,0");
-        // Adjust color
-        arrowPath.attr({
-          "fill": stroke_color,
-          "stroke": stroke_color
-        });
 
         if (confidence_text) {
           if (confidence < 5) {
@@ -1135,18 +1147,18 @@ var SkeletonElements = new function()
         } else if (confidence < 5) {
             confidence_text = updateConfidenceText(x1, y1, x2, y2, stroke_color, confidence, paper);
         }
+      };
 
+      this.show = function() {
         // Ensure visible
         if ("none" === linePath.node.style.display) {
           linePath.show();
           arrowPath.show();
-          // show is not enough
+          // show may not enough
           linePath.node.style.display = "block";
           arrowPath.node.style.display = "block";
         }
       };
-
-      this.data = function() { return [linePath, arrowPath]; };
 
       this.disable = function() {
         arrowPath.connector_id = null;
@@ -1172,16 +1184,19 @@ var SkeletonElements = new function()
       };
     };
 
-    // Return the actual connectorCreateArrow function
-    return function(self, treenode_id, confidence, pre) {
-      var arrow;
-      if (nextArrowIndex < arrowPool.length) {
-        arrow = arrowPool[nextArrowIndex];
-      } else {
-        arrow = new ArrowLine(self.paper);
-        arrowPool.push(arrow);
+    /** Return the actual connectorCreateArrow function
+     *  The 'arrow' argument is optional, and if not undefined or null, will be reused.
+     */
+    return function(self, treenode_id, confidence, pre, arrow) {
+      if (!arrow) {
+        if (nextArrowIndex < arrowPool.length) {
+          arrow = arrowPool[nextArrowIndex];
+        } else {
+          arrow = new ArrowLine(self.paper);
+          arrowPool.push(arrow);
+        }
+        nextArrowIndex += 1;
       }
-      nextArrowIndex += 1;
 
       var src, tgt, color;
       if (pre) {

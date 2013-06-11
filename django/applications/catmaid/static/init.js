@@ -242,7 +242,7 @@ function handle_profile_update(e) {
 /**
  * queue a project-menu-update-request to the request queue
  *
- * the answer depends on the session, which wa sinstantiated by setting a cookie
+ * the answer depends on the session, which was instantiated by setting a cookie
  */
 
 function updateProjects(completionCallback) {

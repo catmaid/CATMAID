@@ -1086,29 +1086,6 @@ var SkeletonAnnotations = new function()
       }
     };
 
-    /** Only called when changing magnification. */
-/*
-    this.updateNodeCoordinates = function (new_scale) {
-      var i,
-          fact = new_scale / old_scale,
-          node, ID;
-      // depending on the scale, update all the node coordinates
-      // First alter X,Y
-      for (ID in nodes) {
-        if (nodes.hasOwnProperty(ID)) {
-          node = nodes[ID];
-          node.setXY(Math.floor(node.x * fact), Math.floor(node.y * fact));
-        }
-      }
-      // Then redraw edges, now that children and parents have been updated
-      for (ID in nodes) {
-        if (nodes.hasOwnProperty(ID)) {
-          nodes[ID].drawEdges();
-        }
-      }
-    };
-*/
-
 
     /** Recreate all nodes (or reuse existing ones if possible).
      *

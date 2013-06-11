@@ -1394,7 +1394,7 @@ var SkeletonAnnotations = new function()
       var wc;
       var worldX, worldY;
       var stackX, stackY;
-      m = ui.getMouse(e, stack.getView(), true);
+      var m = ui.getMouse(e, stack.getView(), true);
       if (m) {
         wc = stack.getWorldTopLeft();
         worldX = wc.worldLeft + ((m.offsetX / stack.scale) * stack.resolution.x);

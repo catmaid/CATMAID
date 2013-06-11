@@ -212,7 +212,7 @@ var NeuronStagingArea = new function()
       var skeleton_id = parseInt( id );
       jQuery.ajax({
         url: django_url + project.id + '/skeleton/' + skeleton_id + '/neuronname',
-        type: "GET",
+        type: "POST", // GET gets cached by the browser
         dataType: "json",
         success: function ( data ) {
           self.add_skeleton_to_stage( skeleton_id, data['neuronname'], callback );

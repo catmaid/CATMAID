@@ -63,6 +63,24 @@ var ClusteringWidget = new function()
                 $(this).attr("clicked", "true");
             });
         }
+
+        // additional functionality for the classification selection form
+        var master_cb = $("#select-all", container);
+        if (master_cb.length > 0) {
+            var slave_cbs = $("#clustering-setup-form input[type=checkbox]",
+                container);
+
+            master_cb.click( function() {
+                var val = master_cb.attr("checked") == "checked";
+                slave_cbs.attr("checked", val);
+            });
+
+            slave_cbs.click( function() {
+                master_cb.attr("checked", $.grep(slave_cbs, function(e) {
+                    return $(e).attr("checked");
+                }).length == slave_cbs.length)
+            });
+        }
     }
 
     this.render_clustering = function(dendrogram)

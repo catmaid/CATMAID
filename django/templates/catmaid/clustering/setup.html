@@ -2,6 +2,16 @@
 
 <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
 <p>{{ description }}</p>
+
+{# Add "Select all" checkboxes for the classification selections step #}
+{% if wizard.steps.current == "classifications" %}
+    <p>
+        <label for="select_all">
+            <input type="checkbox" name="select_all" id="select-all">
+            Select all classification graphs
+        </label>
+    </p>
+{% endif %}
 <form method="post" id="clustering-setup-form"
       action="{% url clustering_setup workspace_pid %}">
 {% csrf_token %}

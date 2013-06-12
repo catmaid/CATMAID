@@ -112,11 +112,33 @@ var ClusteringWidget = new function()
 
     this.render_clustering = function(dendrogram)
     {
+        // The dendrogram data structure might contain NaN values
+        // when empty sets were involved. Replace them by "null"
+        // to be able to parse the JSON object.
+        dendrogram = dendrogram.replace(/NaN/g, "null");
+        // Parse JSON data
+        dendrogram = $.parseJSON(dendrogram);
         // If the "clustering-graph" div is available, try to to draw
         // a hierarchical clustering graph.
         var container = $("#clustering-graph");
         var found = container.length !== 0;
         if (found) {
+            // Replace the null values with 1.0 (for the maximum Jaccard
+            // distance) to make them drawable and remember the null indices.
+            var nan_clusters = new Array();
+            $.each(dendrogram.dcoord, function(i, val) {
+                var contains_nans = false;
+                $.each(val, function(j, val2) {
+                    if (val2 === null) {
+                        contains_nans = true;
+                        dendrogram.dcoord[i][j] = 1.0;
+                    }
+                });
+                if (contains_nans) {
+                    nan_clusters.push(i);
+                }
+            });
+
             container = container[0];
             // find maximum dissimilarity and x value
             var max_y = null;
@@ -145,11 +167,22 @@ var ClusteringWidget = new function()
             r.setSize('100%', '100%');
             r.canvas.setAttribute('preserveAspectRatio', 'xMinYMin');
 
-            // create a colors for each cluster
+            // Sort clusters in a way that NaN clusters are drawn first
+            // and create color array.
+            var x_coords = new Array();
+            var y_coords = new Array();
             var colors = [];
-            Raphael.getColor.reset();
-            $.each(dendrogram.leaves, function(i, val) {
-                colors.push( 'rgb(0,0,0)' );
+            $.each(nan_clusters, function(i, val) {
+                x_coords.push(dendrogram.icoord[val]);
+                y_coords.push(dendrogram.dcoord[val]);
+                colors.push('rgb(140,140,140)');
+            });
+            $.each(dendrogram.dcoord, function(i, val) {
+                if (nan_clusters.indexOf(i) == -1) {
+                    x_coords.push(dendrogram.icoord[i]);
+                    y_coords.push(dendrogram.dcoord[i]);
+                    colors.push('rgb(0,0,0)');
+                }
             });
 
             // create dendrogram
@@ -157,8 +190,8 @@ var ClusteringWidget = new function()
             var chart = r.linechart(
                 padding, 0,                  // left top anchor
                 width - padding, height - padding,  // bottom right anchor
-                dendrogram.icoord,
-                dendrogram.dcoord,
+                x_coords,
+                y_coords,
                 {
                    nostroke: false,   // lines between points are drawn
                    axis: "0 0 0 1",   // draw axis on the left

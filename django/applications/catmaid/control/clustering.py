@@ -125,6 +125,7 @@ class ClusteringWizard(SessionWizardView):
         bin_matrix = numpy.array(create_binary_matrix(graphs, features))
         # Calculate the distance matrix
         dst_matrix = dist.pdist(bin_matrix, metric)
+
         # The distance matrix now has no redundancies, but we need the square form
         dst_matrix = dist.squareform(dst_matrix)
         # Calculate linkage matrix

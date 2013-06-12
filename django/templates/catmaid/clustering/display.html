@@ -82,12 +82,16 @@
 	<div id="clustering">
 		<p class="title"><span class="extend-box-open"></span>Dendrogram:</p>
 		<div class="content">
+			<div class="indented">
+				<em>Note: To display data for every selected classification, all NaN
+				values (not a number) have been replaced by 1.0. These occur when there is
+				more than one feature vector with zeros only in it.</em>
+			</div>
 			{# Smuggle the dendrogram data into the DOM #}
 			<img width="1" height="1" src="{{ STATIC_URL }}widgets/themes/kde/empty.gif" alt=""
-				onload="ClusteringWidget.render_clustering($.parseJSON('{{ dendrogram_json }}'));
+				onload="ClusteringWidget.render_clustering('{{ dendrogram_json }}');
 					this.parentNode.removeChild(this);" />
 			<div id="clustering-graph" class="indented"></div>
 		</div>
 	</div>
 </div>
-

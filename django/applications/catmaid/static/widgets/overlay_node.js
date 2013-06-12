@@ -1,161 +1,196 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-// TODO check all other TODOS
-
-/** Namespace where Node instances are created and edited. */
-var SkeletonElements = new function()
+/** Namespace where Raphael SVG element instances are created, cached and edited. */
+var SkeletonElements = function(catmaidSVGOverlay, paper)
 {
-  var active_skeleton_color = "rgb(255,255,0)";
-  var inactive_skeleton_color = "rgb(255,0,255)";
-  var inactive_skeleton_color_above = "rgb(0,0,255)";
-  var inactive_skeleton_color_below = "rgb(255,0,0)";
-  var root_node_color = "rgb(255, 0, 0)";
-  var leaf_node_color = "rgb(128, 0, 0)";
 
-  var TYPE_NODE = "treenode";
-  var TYPE_CONNECTORNODE = "connector";
+  /** For reusing objects such as DOM elements, which are expensive to insert and remove. */
+  var ElementPoolPrototype = {
+    reset : function() {
+      this.nextIndex = 0
+    },
 
-  // For drawing:
-  var NODE_RADIUS = 3;
-  var CATCH_RADIUS = 8;
+    obliterateFn : function(element) {
+      element.obliterate();
+    },
 
-  var DISABLED = -1; // ID of the disabled nodes
+    disableFn : function(element) {
+      element.disable();
+    },
 
-  // Two arrays containing all created Node and ConnectorNode, for their reuse.
-  var nodePool = [];
-  var connectorPool = [];
-  var arrowPool = [];
-  // The two corresponding indices in the pool for the next available instance for reuse
-  var nextNodeIndex = 0;
-  var nextConnectorIndex = 0;
-  var nextArrowIndex = 0;
+    clear : function() {
+      this.pool.splice(0).forEach(this.obliterateFn);
+      this.reset();
+    },
+
+    disableBeyond : function(new_length) {
+      if (new_length < this.pool.length) {
+        // Drop elements beyond new length plus reserve
+        if (this.pool.length > new_length + this.reserve_size) {
+          this.pool.splice(new_length + this.reserve_size).forEach(this.obliterateFn);
+        }
+        // Disable elements from cut off to new ending of node pool array
+        this.pool.slice(new_length).forEach(this.disableFn);
+      }
+    },
+
+    next : function() {
+      return this.nextIndex < this.pool.length ?
+        this.pool[this.nextIndex++] : null;
+    },
+
+    append : function(element) {
+      this.pool.push(element);
+    }
+  };
+
+  var ElementPool = function(reserve_size) {
+    this.pool = [];
+    this.nextIndex = 0;
+    this.reserve_size = reserve_size;
+  };
+  ElementPool.prototype = ElementPoolPrototype;
+
+  var cache = {
+    nodePool : new ElementPool(100),
+    connectorPool : new ElementPool(20),
+    arrowPool : new ElementPool(50),
+
+    clear : function() {
+      this.nodePool.clear();
+      this.connectorPool.clear();
+      this.arrowPool.clear();
+    },
+
+    reset: function() {
+      this.nodePool.reset();
+      this.connectorPool.reset();
+      this.arrowPool.reset();
+    }
+  };
 
   /** Invoked when the SVGOverlay is created. */
   this.clearCache = function() {
-    nodePool.splice(0).forEach(obliterateNode);
-    connectorPool.splice(0).forEach(obliterateConnectorNode);
-    arrowPool.splice(0).forEach(function(arrow) { arrow.obliterate(); });
-    nextNodeIndex = 0;
-    nextConnectorIndex = 0;
-    nextArrowIndex = 0;
+    cache.clear();
   };
 
   /** Invoked at the start of the continuation that updates all nodes. */
   this.resetCache = function() {
-    nextNodeIndex = 0;
-    nextConnectorIndex = 0;
-    nextArrowIndex = 0;
+    cache.reset();
   };
-
 
   /** Disable all cached Node instances at or beyond the cutoff index,
    * preserving up to 100 disabled nodes and 20 disabled connector nodes,
    * and removing the rest from the cache.
    * Invoked at the end of the continuation that updates all nodes. */
   this.disableBeyond = function(nodeCuttoff, connectorCuttoff) {
-    if (nodeCuttoff < nodePool.length) {
-      // Cut cache array beyond desired cut off point plus 100, and obliterate nodes
-      if (nodePool.length > nodeCuttoff + 100) {
-        nodePool.splice(nodeCuttoff + 100).forEach(obliterateNode);
-      }
-      // Disable nodes from cut off to new ending of node pool array
-      nodePool.slice(nodeCuttoff).forEach(disableNode);
-    }
-
-    // idem for connectorNode
-    if (connectorCuttoff < connectorPool.length) {
-      if (connectorPool.length > connectorCuttoff + 20) {
-        connectorPool.splice(connectorCuttoff + 20).forEach(obliterateConnectorNode);
-      }
-      connectorPool.slice(connectorCuttoff).forEach(disableConnectorNode);
-    }
+    cache.nodePool.disableBeyond(nodeCuttoff);
+    cache.connectorPool.disableBeyond(connectorCuttoff);
   };
 
   this.disableRemainingArrows = function() {
-    // Cur cache array beyond used arrows plus 50, and obliterate the rest
-    if (nextArrowIndex + 50 < arrowPool.length) {
-      arrowPool.splice(nextArrowIndex + 50).forEach(function(arrow) { arrow.obliterate(); });
-    }
-    // Disable unused arrows
-    arrowPool.splice(nextArrowIndex).forEach(function(arrow) { arrow.disable(); });
+    // Cut cache array beyond used arrows plus 50, and obliterate the rest
+    cache.arrowPool.disableBeyond(cache.arrowPool.nextIndex);
   };
 
-  /** Surrogate constructor that may reuse an existing, cached Node instance currently not in use.
-   * Appends any newly created instances to the pool. */
-  this.newNode = function(
-    id, // unique id for the node from the database
-    paper, // the raphael paper this node is drawn to
-    parent, // the parent node, if present within the subset of nodes retrieved for display; otherwise null.
-    parent_id, // the id of the parent node, or null if it is root
-    radius,
-    x, // the x coordinate in pixel coordinates
-    y, // y coordinates
-    z, // z coordinates
-    zdiff, // the different from the current slices
-    confidence,
-    skeleton_id, // the id of the skeleton this node is an element of
-    can_edit) // a boolean combining (is_superuser or user owns the node)
-  {
-    var node;
-    if (nextNodeIndex < nodePool.length) {
-      node = nodePool[nextNodeIndex];
-      reuseNode(node, id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit);
-    } else {
-      node = new this.Node(id, paper, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit);
-      nodePool.push(node);
-    }
-    nextNodeIndex += 1;
-    return node;
-  };
 
-  /** Constructor for Node instances. */
-  this.Node = function(
-    id, // unique id for the node from the database
-    paper, // the raphael paper this node is drawn to
-    parent, // the parent node (may be null if the node is not loaded)
-    parent_id, // is null only for the root node
-    radius, // the radius
-    x, // the x coordinate in pixel coordinates
-    y, // y coordinates
-    z, // z coordinates
-    zdiff, // the different from the current slices
-    confidence,
-    skeleton_id, // the id of the skeleton this node is an element of
-    can_edit)
-  {
-    this.id = id;
-    this.type = TYPE_NODE;
-    this.paper = paper;
-    this.parent = parent;
-    this.parent_id = parent_id;
-    this.children = {};
-    this.numberOfChildren = 0;
-    this.radius = radius; // the radius as stored in the database
-    this.r = NODE_RADIUS; // for drawing
-    this.x = x;
-    this.y = y;
-    this.z = z;
-    this.zdiff = zdiff;
-    this.shouldDisplay = displayTreenode;
-    this.confidence = confidence;
-    this.skeleton_id = skeleton_id;
-    this.can_edit = can_edit;
-    this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
-    this.fillcolor = inactive_skeleton_color;
-    this.c = null; // The Raphael circle for drawing
-    this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
-    this.line = paper.path(); // The Raphael line element that represents an edge between nodes
-    // NOT needed this.line.toBack();
+  //////////////
 
-    // The member functions:
-    this.setXY = setXY;
-    this.drawEdges = nodeDrawEdges;
-    this.draw = draw;
-    this.deletenode = nodeDelete;
-    this.setColor = setColor;
-    this.colorFromZDiff = nodeColorFromZDiff;
-    this.createCircle = createCircle;
+  var TYPE_NODE = "treenode";
+  var TYPE_CONNECTORNODE = "connector";
+
+  /** A prototype for both Treenode and Connector. */
+  var NodePrototype = new (function() {
+    /** Update the local x,y coordinates of the node
+     * and for its raphael objects c, mc as well. */
+    this.setXY = function(xnew, ynew) {
+      this.x = xnew;
+      this.y = ynew;
+      if (this.c) {
+        this.c.attr({
+          cx: xnew,
+          cy: ynew
+        });
+        this.mc.attr({
+          cx: xnew,
+          cy: ynew
+        });
+      }
+    };
+
+    /** Create the Raphael circle elements if and only if the zdiff is zero, that is, if the node lays on the current section. */
+    this.createCircle = function() {
+      if (!this.shouldDisplay()) {
+        return;
+      }
+      // c and mc may already exist if the node is being reused
+      if (this.c && this.mc) {
+        // Do nothing
+      } else {
+        // create a raphael circle object
+        this.c = paper.circle(this.x, this.y, this.NODE_RADIUS);
+        // a raphael circle oversized for the mouse logic
+        this.mc = paper.circle(this.x, this.y, this.CATCH_RADIUS);
+
+        mouseEventManager.attach(this.mc, this.type);
+      }
+
+      var fillcolor = this.color();
+
+      this.c.attr({
+        fill: fillcolor,
+        stroke: "none",
+        opacity: 1.0
+      });
+
+      // mc (where mc stands for 'mouse catcher circle') is fully transparent
+      this.mc.attr({
+        stroke: "none",
+        opacity: 0
+      });
+
+      if ("none" === this.c.node.style.display) {
+        this.c.show();
+        this.mc.show();
+      }
+
+      this.mc.catmaidNode = this; // for event handlers
+    };
+
+    /** Recreate the GUI components, namely the circle and edges.
+     *  This is called only when creating a single node. */
+    // TODO rename to createGraphics
+    this.draw = function() {
+      this.createCircle();
+      this.drawEdges();
+    };
+
+    this.shouldDisplay = function() {
+      return this.zdiff >= 0 && this.zdiff < 1;
+    };
+
+    this.mustDrawLineWith = function(node) {
+      // TODO reads wrong
+      return (this && this.shouldDisplay()) || (node && node.shouldDisplay());
+    };
+  })();
+
+  var AbstractTreenode = function() {
+    // Colors that a node can take
+    this.active_skeleton_color = "rgb(255,255,0)";
+    this.inactive_skeleton_color = "rgb(255,0,255)";
+    this.inactive_skeleton_color_above = "rgb(0,0,255)";
+    this.inactive_skeleton_color_below = "rgb(255,0,0)";
+    this.root_node_color = "rgb(255,0,0)";
+    this.leaf_node_color = "rgb(128,0,0)";
+
+    // For drawing:
+    this.NODE_RADIUS = 3;
+    this.CATCH_RADIUS = 8;
+
+    // ID of the disabled nodes
+    this.DISABLED = -1;
 
     this.addChildNode = function(childNode) {
       if (!this.children.hasOwnProperty(childNode.id)) {
@@ -165,147 +200,536 @@ var SkeletonElements = new function()
       // node objects can be reused for different IDs
       this.children[childNode.id] = childNode;
     };
-  };
 
-  /** Prepare node for removal from cache. */
-  var obliterateNode = function(node) {
-    node.id = null;
-    node.parent = null;
-    node.parent_id = null;
-    node.type = null;
-    node.children = null;
-    node.color = null;
-    if (node.c) {
-      node.c.remove();
-      node.c = null;
-      mouseEventManager.forget(node.mc, TYPE_NODE);
-      node.mc.catmaidNode = null; // break circular reference
-      node.mc.remove();
-      node.mc = null;
-    }
-    if (node.line) {
-      node.line.remove();
-      node.line = null;
-    }
-    if (node.number_text) {
-      node.number_text.remove();
-      node.number_text = null;
-    }
-    node.paper = null;
-    // Note: mouse event handlers are removed by c.remove and mc.remove()
-  };
-
-  /** Before reusing a node, clear all the member variables that
-   * are relevant to the skeleton structure.
-   * All numeric variables will be overwritten,
-   * and the c, mc and line will be reused. */
-  var disableNode = function(node)
-  {
-    node.id = DISABLED;
-    node.parent = null;
-    node.parent_id = DISABLED;
-    node.children = {};
-    node.numberOfChildren = 0;
-    if (node.c) {
-      node.c.hide();
-      node.mc.hide();
-    }
-    if (node.line) {
-      node.line.hide();
-    }
-    if (node.number_text) {
-      node.number_text.remove();
-      node.number_text = null;
-    }
-  };
-
-  /** Takes an existing Node and sets all the proper members as given, and resets its children. */
-  var reuseNode = function(node, id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit)
-  {
-    node.id = id;
-    node.parent = parent;
-    node.parent_id = parent_id;
-    node.children = {};
-    node.numberOfChildren = 0;
-    node.radius = radius; // the radius as stored in the database
-    node.x = x;
-    node.y = y;
-    node.z = z;
-    node.zdiff = zdiff;
-    node.shouldDisplay = displayTreenode;
-    node.confidence = confidence;
-    node.skeleton_id = skeleton_id;
-    node.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
-    node.can_edit = can_edit;
-
-    if (node.c) {
-      if (0 !== zdiff) {
-        node.c.hide();
-        node.mc.hide();
+    /** Set the node fill color depending on its distance from the
+    * current slice, whether it's the active node, the root node, or in
+    * an active skeleton. */
+    this.color = function() {
+      var color;
+      if (SkeletonAnnotations.getActiveNodeId() === this.id) {
+        // The active node is always in green:
+        color = SkeletonAnnotations.getActiveNodeColor();
+      } else if (this.isroot) {
+        // The root node should be colored red unless it's active:
+        color = this.root_node_color;
+      } else if (0 === this.numberOfChildren) {
+        color = this.leaf_node_color;
       } else {
-        var newCoords = {cx: x, cy: y};
-        node.c.attr(newCoords);
-        node.mc.attr(newCoords);
+        // If none of the above applies, just colour according to the z difference.
+        color = this.colorFromZDiff();
       }
-    }
-    if (node.line) {
-      node.line.hide();
-    }
-    if (node.number_text) {
-      node.number_text.remove();
-      node.number_text = null;
-    }
-  };
 
-  /** Trigger the redrawing of the lines with parent, children and connectors.
-   * Here, 'this' is the node, given that it is called in the context of the node only.
-   */
-  var nodeDrawEdges = function(toChildren) {
-    var ID,
-        children = this.children,
-        child;
+      return color;
+    };
 
-    if (toChildren) {
-      for (ID in children) {
-        if (children.hasOwnProperty(ID)) {
-          child = children[ID];
-          if (displayBetweenNodes(this, child))
-            drawLineToParent(children[ID]);
+    this.updateColors = function() {
+      if (this.c) {
+        var fillcolor = this.color();
+        this.c.attr({fill: fillcolor});
+      }
+      if (this.line) {
+        var linecolor = this.colorFromZDiff();
+        this.line.attr({stroke: linecolor});
+      }
+    };
+
+    /** Updates the coordinates of the raphael path
+     * that represents the line from the node to the parent. */
+    this.drawLineToParent = function() {
+      if (!this.parent) {
+        return;
+      }
+      if (!this.mustDrawLineWith(this.parent)) {
+        return;
+      }
+      var lineColor = this.colorFromZDiff();
+      if (this.line) {
+        this.line.attr({
+          path: [
+            ["M", this.x, this.y],
+            ["L", this.parent.x, this.parent.y]
+          ],
+          stroke: lineColor,
+          "stroke-width": 2
+        });
+        // May be hidden if the node was reused
+        if ("none" === this.line.node.style.display) { this.line.show(); }
+      }
+      if (this.confidence < 5) {
+        if (this.number_text) {
+          updateConfidenceText(
+            this.x, this.y, this.parent.x, this.parent.y,
+            lineColor,
+            this.confidence,
+            this.number_text);
+        } else {
+          this.number_text = updateConfidenceText(
+            this.x, this.y, this.parent.x, this.parent.y,
+            lineColor,
+            this.confidence);
+        }
+        this.number_text.toBack();
+      } else {
+        if (this.number_text) {
+          this.number_text.remove();
+          this.number_text = null;
         }
       }
-    }
+    };
 
-    if (displayBetweenNodes(this, this.parent)) {
-      drawLineToParent(this);
-    }
+    /** Trigger the redrawing of the lines with parent treenode,
+     * and also with children when toChildren is true. */
+    this.drawEdges = function(toChildren) {
+      if (toChildren) {
+        for (var ID in this.children) {
+          if (this.children.hasOwnProperty(ID)) {
+            var child = this.children[ID];
+            if (this.mustDrawLineWith(child)) {
+              child.drawLineToParent();
+            }
+          }
+        }
+      }
+
+      if (this.mustDrawLineWith(this.parent)) {
+        this.drawLineToParent();
+      }
+    };
+
+    /** Delete the node from the database and removes it from
+     * the current view and local objects.  */
+    this.deletenode = function (wasActiveNode) {
+      // Capture 'this' for the continuation
+      var node = this;
+      requestQueue.register(django_url + project.id + '/treenode/delete', "POST", {
+        pid: project.id,
+        treenode_id: node.id
+      }, function (status, text) {
+        if (status !== 200) {
+          alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+          return;
+        }
+        var e = $.parseJSON(text);
+        if (e.error) {
+          alert(e.error);
+          return;
+        }
+        // activate parent node when deleted
+        if (wasActiveNode) {
+          if (e.parent_id) {
+            catmaidSVGOverlay.selectNode(e.parent_id);
+          } else {
+            // No parent. But if this node was postsynaptic or presynaptic
+            // to a connector, the connector must be selected:
+            var pp = ov.findConnectors(node.id);
+            // Try first connectors for which node is postsynaptic:
+            if (pp[1].length > 0) {
+              ov.selectNode(pp[1][0]);
+            // Then try connectors for which node is presynaptic
+            } else if (pp[0].length > 0) {
+              ov.selectNode(pp[0][0]);
+            } else {
+              ov.activateNode(null);
+            }
+            // Refresh object tree as well, given that the node had no parent and therefore the deletion of its skeleton was triggered
+            ObjectTree.refresh();
+          }
+        }
+        node.needsync = false;
+        // Redraw everything for now
+        catmaidSVGOverlay.updateNodes();
+        return true;
+      });
+    };
+
+    /** Return a color depending upon some conditions,
+     * such as whether the zdiff with the current section is positive, negative, or zero,
+     * and whether the node belongs to the active skeleton.
+     */
+    this.colorFromZDiff = function() {
+      // zdiff is in sections, therefore the current section is at [0, 1) -- notice 0 is inclusive and 1 is exclusive.
+      if (this.zdiff >= 1) {
+        return this.inactive_skeleton_color_above;
+      } else if (this.zdiff < 0) {
+        return this.inactive_skeleton_color_below;
+      } else if (SkeletonAnnotations.getActiveSkeletonId() === this.skeleton_id) {
+        return this.active_skeleton_color;
+      }
+      return this.inactive_skeleton_color;
+    };
+
+    /** Prepare node for removal from cache. */
+    this.obliterate = function() {
+      this.id = null;
+      this.parent = null;
+      this.parent_id = null;
+      this.type = null;
+      this.children = null;
+      if (this.c) {
+        this.c.remove();
+        this.c = null;
+        mouseEventManager.forget(this.mc, TYPE_NODE);
+        this.mc.catmaidNode = null; // break circular reference
+        this.mc.remove();
+        this.mc = null;
+      }
+      if (this.line) {
+        this.line.remove();
+        this.line = null;
+      }
+      if (this.number_text) {
+        this.number_text.remove();
+        this.number_text = null;
+      }
+    };
+
+    /** Before reusing a node, clear all the member variables that
+     * are relevant to the skeleton structure.
+     * All numeric variables will be overwritten,
+     * and the c, mc and line will be reused. */
+    this.disable = function() {
+      this.id = this.DISABLED;
+      this.parent = null;
+      this.parent_id = this.DISABLED;
+      this.children = {};
+      this.numberOfChildren = 0;
+      if (this.c) {
+        this.c.hide();
+        this.mc.hide();
+      }
+      if (this.line) {
+        this.line.hide();
+      }
+      if (this.number_text) {
+        this.number_text.remove();
+        this.number_text = null;
+      }
+    };
+
+    /** Reset all member variables and reposition Raphael circles when existing. */
+    this.reInit = function(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit) {
+      this.id = id;
+      this.parent = parent;
+      this.parent_id = parent_id;
+      this.children = {};
+      this.numberOfChildren = 0;
+      this.radius = radius; // the radius as stored in the database
+      this.x = x;
+      this.y = y;
+      this.z = z;
+      this.zdiff = zdiff;
+      this.confidence = confidence;
+      this.skeleton_id = skeleton_id;
+      this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
+      this.can_edit = can_edit;
+
+      if (this.c) {
+        if (0 !== zdiff) {
+          this.c.hide();
+          this.mc.hide();
+        } else {
+          var newCoords = {cx: x, cy: y};
+          this.c.attr(newCoords);
+          this.mc.attr(newCoords);
+        }
+      }
+      if (this.line) {
+        this.line.hide();
+      }
+      if (this.number_text) {
+        this.number_text.remove();
+        this.number_text = null;
+      }
+    };
   };
 
-  /** Update the local x,y coordinates of the node
-   * Update them for the raphael objects as well.
-   * Does NOT redraw the edges.
-   * Here 'this' refers to the node.
-   */
-  var setXY = function(xnew, ynew)
+  AbstractTreenode.prototype = NodePrototype;
+
+
+  var Node = function(
+    id,         // unique id for the node from the database
+    parent,     // the parent node (may be null if the node is not loaded)
+    parent_id,  // is null only for the root node
+    radius,     // the radius
+    x,          // the x coordinate in pixels
+    y,          // y coordinates in pixels
+    z,          // z coordinates in pixels
+    zdiff,      // the difference in z from the current slice
+    confidence, // confidence with the parent
+    skeleton_id,// the id of the skeleton this node is an element of
+    can_edit)   // whether the user can edit (move, remove) this node
   {
-    this.x = xnew;
-    this.y = ynew;
-    if (this.c) {
-      this.c.attr({
-        cx: xnew,
-        cy: ynew
-      });
-      this.mc.attr({
-        cx: xnew,
-        cy: ynew
-      });
-    }
+    this.id = id;
+    this.type = TYPE_NODE;
+    this.parent = parent;
+    this.parent_id = parent_id;
+    this.children = {};
+    this.numberOfChildren = 0;
+    this.radius = radius; // the radius as stored in the database
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.zdiff = zdiff;
+    this.confidence = confidence;
+    this.skeleton_id = skeleton_id;
+    this.can_edit = can_edit;
+    this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
+    this.c = null; // The Raphael circle for drawing
+    this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
+    this.line = paper.path(); // The Raphael line element that represents an edge between nodes
   };
 
+  Node.prototype = new AbstractTreenode();
+
+
+  var AbstractConnectorNode = function() {
+    // For drawing:
+    this.NODE_RADIUS = 8;
+    this.CATCH_RADIUS = 8;
+
+    /** Delete the connector from the database and removes it from
+     * the current view and local objects.
+     * Here 'this' is the connector node.
+     */
+    this.deletenode = function() {
+      var connectornode = this;
+      requestQueue.register(django_url + project.id + '/connector/delete', "POST", {
+        pid: project.id,
+        connector_id: connectornode.id
+      }, function (status, text, xml) {
+        if (status !== 200) {
+          alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+          return;
+        }
+        var e = $.parseJSON(text);
+        if (e.error) {
+          alert(e.error);
+          return;
+        }
+        // If there was a presynaptic node, select it
+        var preIDs  = Object.keys(connectornode.pregroup);
+        var postIDs = Object.keys(connectornode.postgroup);
+        if (preIDs.length > 0) {
+            catmaidSVGOverlay.selectNode(preIDs[0]);
+        } else if (postIDs.length > 0) {
+            catmaidSVGOverlay.selectNode(postIDs[0]);
+        } else {
+            catmaidSVGOverlay.activateNode(null);
+        }
+        connectornode.needsync = false;
+        // Refresh all nodes in any case, to reflect the new state of the database
+        catmaidSVGOverlay.updateNodes();
+      });
+    };
+
+    /** Disables the ArrowLine object and removes entries from the preLines and postLines. */
+    this.removeConnectorArrows = function() {
+      if (this.preLines) {
+        this.preLines.forEach(cache.arrowPool.disableFn);
+        this.preLines = null;
+      }
+      if (this.postLines) {
+        this.postLines.forEach(cache.arrowPool.disableFn);
+        this.postLines = null;
+      }
+    };
+
+    this.obliterate = function() {
+      this.id = null;
+      if (this.c) {
+        this.c.remove();
+        mouseEventManager.forget(this.mc, TYPE_CONNECTORNODE);
+        this.mc.catmaidNode = null; // break circular reference
+        this.mc.remove();
+      }
+      this.pregroup = null;
+      this.postgroup = null;
+      // Note: mouse event handlers are removed by c.remove and mc.remove()
+      this.removeConnectorArrows(); // also removes confidence text associated with edges
+      this.preLines = null;
+      this.postLines = null;
+    };
+
+    this.disable = function() {
+      this.id = this.DISABLED;
+      if (this.c) {
+        this.c.hide();
+        this.mc.hide();
+      }
+      this.removeConnectorArrows();
+    };
+
+    this.colorFromZDiff = function()
+    {
+      // zdiff is in sections, therefore the current section is at [0, 1) -- notice 0 is inclusive and 1 is exclusive.
+      if (this.zdiff >= 1) {
+        return "rgb(0,0,255)";
+      } else if (this.zdiff < 0) {
+        return "rgb(255,0,0)";
+      } else {
+        return "rgb(235,117,0)";
+      }
+    };
+
+    this.color = function() {
+      if (SkeletonAnnotations.getActiveNodeId() === this.id) {
+        return "rgb(0,255,0)";
+      }
+      if (this.zdiff >= 0 && this.zdiff < 1) {
+        return "rgb(235,117,0)";
+      }
+    };
+
+    this.updateColors = function() {
+      if (this.c) {
+        var fillcolor = this.color();
+        this.c.attr({fill: fillcolor});
+      }
+    };
+
+    this.drawEdges = function(redraw) {
+
+      // TODO something is very wrong here
+
+
+      if (redraw) {
+        this.removeConnectorArrows();
+      }
+
+      // re-create
+      for (var i in this.pregroup) {
+        if (this.pregroup.hasOwnProperty(i)) {
+          var node = this.pregroup[i].treenode;
+          if (this.mustDrawLineWith(node)) {
+            if (!this.preLines) this.preLines = [];
+            this.preLines.push(connectorCreateArrow(this, node, this.pregroup[i].confidence, true));
+          }
+        }
+      }
+
+      for (var i in this.postgroup) {
+        if (this.postgroup.hasOwnProperty(i)) {
+          var node = this.postgroup[i].treenode;
+          if (this.mustDrawLineWith(node)) {
+            if (!this.postLines) this.postLines = [];
+            this.postLines.push(connectorCreateArrow(this, node, this.postgroup[i].confidence, false));
+          }
+        }
+      }
+    };
+
+    this.reInit = function(id, x, y, z, zdiff, confidence, can_edit) {
+      this.id = id;
+      this.x = x;
+      this.y = y;
+      this.z = z;
+      this.zdiff = zdiff;
+      this.confidence = confidence;
+      this.can_edit = can_edit;
+      this.pregroup = {};
+      this.postgroup = {};
+
+      if (this.c) {
+        if (this.shouldDisplay()) {
+          var newCoords = {cx: x, cy: y};
+          this.c.attr(newCoords);
+          this.mc.attr(newCoords);
+        } else {
+          this.c.hide();
+          this.mc.hide();
+        }
+      }
+
+      this.preLines = null;
+      this.postLines = null;
+    };
+  };
+
+  AbstractConnectorNode.prototype = NodePrototype;
+
+  var ConnectorNode = function(
+    id,         // unique id for the node from the database
+    x,          // the x coordinate in pixel coordinates
+    y,          // y coordinates
+    z,          // z coordinates
+    zdiff,      // the difference from the current slice
+    confidence, // (TODO: UNUSED)
+    can_edit) // whether the logged in user has permissions to edit this node -- the server will in any case enforce permissions; this is for proper GUI flow
+  {
+    this.id = id;
+    this.type = TYPE_CONNECTORNODE;
+    this.needsync = false; // state variable; whether this node is already synchronized with the database
+    this.x = x; // local screen coordinates relative to the div, in pixel coordinates
+    this.y = y;
+    this.z = z;
+    this.zdiff = zdiff;
+    this.confidence = confidence;
+    this.can_edit = can_edit;
+    this.pregroup = {}; // set of presynaptic treenodes
+    this.postgroup = {}; // set of postsynaptic treenodes
+    this.c = null; // The Raphael circle for drawing
+    this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
+    this.preLines = null; // Array of ArrowLine to the presynaptic nodes
+    this.postLines = null; // Array of ArrowLine to the postsynaptic nodes
+  };
+
+  ConnectorNode.prototype = new AbstractConnectorNode();
+
+
+
+  /** Surrogate constructor that may reuse an existing, cached Node instance currently not in use.
+   * Appends any newly created instances to the pool. */
+  this.newNode = function(
+    id,         // unique id for the node from the database
+    parent,     // the parent node, if present within the subset of nodes retrieved for display; otherwise null.
+    parent_id,  // the id of the parent node, or null if it is root
+    radius,
+    x,          // the x coordinate in pixel coordinates
+    y,          // y coordinates
+    z,          // z coordinates
+    zdiff,      // the difference in Z from the current slice
+    confidence,
+    skeleton_id,// the id of the skeleton this node is an element of
+    can_edit)   // a boolean combining (is_superuser or user owns the node)
+  {
+    var node = cache.nodePool.next();
+    if (node) {
+      node.reInit(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit);
+    } else {
+      node = new Node(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit);
+      cache.nodePool.append(node);
+    }
+    return node;
+  };
+
+  /** Surrogate constructor for ConnectorNode.
+   * See "newNode" for explanations. */
+  this.newConnectorNode = function(
+    id, // unique id for the node from the database
+    x, // the x coordinate in pixel coordinates
+    y, // y coordinates
+    z, // z coordinates
+    zdiff, // the different from the current slices
+    confidence,
+    can_edit) // a boolean combining (is_superuser or user owns the node)
+  {
+    var connector = cache.connectorPool.next();
+    if (connector) {
+      connector.reInit(id, x, y, z, zdiff, confidence, can_edit);
+    } else {
+      connector = new ConnectorNode(id, x, y, z, zdiff, confidence, can_edit);
+      cache.connectorPool.append(connector);
+    }
+    return connector;
+  };
+
+
+  /** Used for confidence between treenode nodes and confidence between
+   * a connector and a treenode. */
   var updateConfidenceText = function (x, y,
                                        parentx, parenty,
                                        fillColor,
                                        confidence,
-                                       paper,
                                        existing) {
     var result,
     numberOffset = 12,
@@ -337,211 +761,6 @@ var SkeletonElements = new function()
     return result;
   };
 
-  /** Updates the coordinates of the raphael path
-   * that represents the line from the node to the parent.
-   */
-  var drawLineToParent = function (node) {
-    var parent = node.parent;
-    var lineColor;
-    if (!displayBetweenNodes(node, parent)) {
-      return;
-    }
-    if (parent) {
-      lineColor = node.colorFromZDiff(parent.zdiff, parent.skeleton_id);
-      if (node.line) {
-        node.line.attr({
-          path: [
-            ["M", node.x, node.y],
-            ["L", parent.x, parent.y]
-          ],
-          stroke: lineColor,
-          "stroke-width": 2
-        });
-        // May be hidden if the node was reused
-        if ("none" === node.line.node.style.display) { node.line.show(); }
-      }
-      if (node.confidence < 5) {
-        if (node.number_text) {
-          updateConfidenceText(
-            node.x, node.y, parent.x, parent.y,
-            lineColor,
-            node.confidence,
-            node.paper,
-            node.number_text);
-        } else {
-          node.number_text = updateConfidenceText(
-            node.x, node.y, parent.x, parent.y,
-            lineColor,
-            node.confidence,
-            node.paper);
-        }
-        node.number_text.toBack();
-      } else {
-        if (node.number_text) {
-          node.number_text.remove();
-          node.number_text = null;
-        }
-      }
-    }
-  };
-
-  /** Recreate the GUI components, namely the circle and edges.
-   * Here 'this' refers to the node.
-   *  This is called only when creating a single node
-   */
-  var draw = function() {
-    this.createCircle();
-    this.drawEdges();
-  };
-
-  /** Delete the node from the database and removes it from
-   * the current view and local objects.
-   * Here 'this' refers to the node.
-   */
-  var nodeDelete = function (wasActiveNode) {
-    var node = this;
-    requestQueue.register(django_url + project.id + '/treenode/delete', "POST", {
-      pid: project.id,
-      treenode_id: node.id
-    }, function (status, text) {
-      if (status !== 200) {
-        alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
-      } else {
-
-          if (text && text !== " ") {
-              var e = $.parseJSON(text);
-              if (e.error) {
-                  alert(e.error);
-              } else {
-                  // activate parent node when deleted
-                  if (wasActiveNode) {
-                      var ov = node.paper.catmaidSVGOverlay;
-                      if (e.parent_id) {
-                          ov.selectNode(e.parent_id);
-                      } else {
-                          // No parent. But if this node was postsynaptic or presynaptic
-                          // to a connector, the connector must be selected:
-                          var pp = ov.findConnectors(node.id);
-                          // Try first connectors for which node is postsynaptic:
-                          if (pp[1].length > 0) {
-                              ov.selectNode(pp[1][0]);
-                          // Then try connectors for which node is presynaptic
-                          } else if (pp[0].length > 0) {
-                              ov.selectNode(pp[0][0]);
-                          } else {
-                              ov.activateNode(null);
-                          }
-                          // Refresh object tree as well, given that the node had no parent and therefore the deletion of its skeleton was triggered
-                          ObjectTree.refresh();
-                      }
-                  }
-                  node.needsync = false;
-                  // Redraw everything for now
-                  node.paper.catmaidSVGOverlay.updateNodes();
-              }
-          }
-      }
-      return true;
-    });
-  };
-
-  /** Set the node fill color depending on its distance from the
-  * current slice, whether it's the active node, the root node, or in
-  * an active skeleton.
-   * Here 'this' refers to the node. */
-  var setColor = function ()
-  {
-    if (this.id === SkeletonAnnotations.getActiveNodeId()) {
-      // The active node is always in green:
-      this.fillcolor = SkeletonAnnotations.getActiveNodeColor();
-    } else if (this.isroot) {
-      // The root node should be colored red unless it's active:
-      this.fillcolor = root_node_color;
-    } else if ((this.type !== TYPE_CONNECTORNODE) && (this.numberOfChildren === 0)) {
-      this.fillcolor = leaf_node_color;
-    } else {
-      // If none of the above applies, just colour according to the z difference.
-      this.fillcolor = this.colorFromZDiff(this.zdiff, this.skeleton_id);
-    }
-
-    if (this.c) {
-      this.c.attr({
-        fill: this.fillcolor
-      });
-    }
-  };
-
-  /** Return a color depending upon some conditions,
-   * such as whether the zdiff with the current section is positive, negative, or zero,
-   * and whether the node belongs to the active skeleton.
-   */
-  var nodeColorFromZDiff = function(zdiff, skeleton_id)
-  {
-    // zdiff is in sections, therefore the current section is at [0, 1) -- notice 0 is inclusive and 1 is exclusive.
-    if (zdiff >= 1) {
-      return inactive_skeleton_color_above;
-    } else if (zdiff < 0) {
-      return inactive_skeleton_color_below;
-    } else if (skeleton_id === SkeletonAnnotations.getActiveSkeletonId() ) {
-      return active_skeleton_color;
-    }
-    return inactive_skeleton_color;
-  };
-
-  var displayTreenode = function () {
-    return this.zdiff >= 0 && this.zdiff < 1;
-  };
-
-  var displayConnector = function() {
-    /* Change the constant to 1.5 if you want to see the connector
-       (differently coloured) in the next and previous slices too. */
-    return this.zdiff >= 0 && this.zdiff < 1;
-  };
-
-  var displayBetweenNodes = function(node_a, node_b) {
-    return (node_a && node_a.shouldDisplay()) ||
-      (node_b && node_b.shouldDisplay());
-  };
-
-  /** Create the Raphael circle elements if and only if the zdiff is zero, that is, if the node lays on the current section.
-   * Here 'this' refers to the node.
-   * */
-  var createCircle = function()
-  {
-    if (this.shouldDisplay()) {
-      var paper = this.paper;
-      // c and mc may already exist if the node is being reused
-      if (this.c && this.mc) {
-      } else {
-        // create a raphael circle object
-        this.c = paper.circle(this.x, this.y, this.r);
-        // a raphael circle oversized for the mouse logic
-        this.mc = paper.circle(this.x, this.y, CATCH_RADIUS);
-
-        mouseEventManager.attach(this.mc, this.type);
-      }
-
-      this.c.attr({
-        fill: this.fillcolor,
-        stroke: "none",
-        opacity: 1.0
-      });
-
-      this.mc.attr({
-        fill: "rgb(0, 1, 0)",
-        stroke: "none",
-        opacity: 0
-      });
-
-      if ("none" === this.c.node.style.display) {
-        this.c.show();
-        this.mc.show();
-      }
-
-      this.mc.catmaidNode = this; // for event handlers
-    }
-  };
-
 
   /** Event handling functions for 'mc'
   * Realize that:
@@ -549,8 +768,8 @@ var SkeletonElements = new function()
   * and that, on constructing the mc, we declared:
   *    mc.catmaidNode = this;  // 'this' is the node
    *
-   * Below, the function() is but a namespace that returns the actual nodeAssignEventHandlers function,
-   * which assigns the event handlers to the mc given to it as argument.
+   * Below, the function() is but a namespace that returns a manager object
+   * with functions attach and forget.
   */
   var mouseEventManager = new (function()
   {
@@ -558,9 +777,13 @@ var SkeletonElements = new function()
      * These are set at mc_start and then used at mc_move. */
     var ox = null, oy = null;
 
+    var is_middle_click = function(e) {
+      return 2 === e.which;
+    };
+
     /** Here 'this' is mc. */
     var mc_dblclick = function(e) {
-      if (this.paper.catmaidSVGOverlay.ensureFocused()) {
+      if (catmaidSVGOverlay.ensureFocused()) {
         e.stopPropagation();
         return;
       }
@@ -569,14 +792,13 @@ var SkeletonElements = new function()
     };
 
     /** 
-     * Here 'this' is mc, and treenode is the Node instance
+     * Here 'this' is mc, and node is the Node instance
      */
     var mc_click = function(e) {
       e.stopPropagation();
       var node = this.catmaidNode,
-          paper = this.paper,
           wasActiveNode = false;
-      if (this.paper.catmaidSVGOverlay.ensureFocused()) {
+      if (catmaidSVGOverlay.ensureFocused()) {
         return;
       }
       if (e.shiftKey) {
@@ -588,7 +810,7 @@ var SkeletonElements = new function()
           }
           // if it is active node, set active node to null
           if (node.id === atnID) {
-            paper.catmaidSVGOverlay.activateNode(null);
+            catmaidSVGOverlay.activateNode(null);
             wasActiveNode = true;
           }
           statusBar.replaceLast("Deleted node #" + node.id);
@@ -599,14 +821,13 @@ var SkeletonElements = new function()
           var atnType = SkeletonAnnotations.getActiveNodeType();
           // connected activated treenode or connectornode
           // to existing treenode or connectornode
-          // console.log("from source #" + atnID + " to target #" + node.id);
           if (atnType === TYPE_CONNECTORNODE) {
             if (!mayEdit()) {
               alert("You lack permissions to declare node #" + node.id + "as postsynaptic to connector #" + atnID);
               return;
             }
             // careful, atnID is a connector
-            paper.catmaidSVGOverlay.createLink(node.id, atnID, "postsynaptic_to");
+            catmaidSVGOverlay.createLink(node.id, atnID, "postsynaptic_to");
             // TODO check for error
             statusBar.replaceLast("Joined node #" + atnID + " to connector #" + node.id);
           } else if (atnType === TYPE_NODE) {
@@ -616,7 +837,7 @@ var SkeletonElements = new function()
               alert('Can not join node with another node of the same skeleton!');
               return;
             }
-            paper.catmaidSVGOverlay.createTreenodeLink(atnID, node.id);
+            catmaidSVGOverlay.createTreenodeLink(atnID, node.id);
             // TODO check for error
             statusBar.replaceLast("Joined node #" + atnID + " to node #" + node.id);
           }
@@ -626,7 +847,7 @@ var SkeletonElements = new function()
         }
       } else {
         // activate this node
-        paper.catmaidSVGOverlay.activateNode(node);
+        catmaidSVGOverlay.activateNode(node);
         // stop propagation of the event
       }
     };
@@ -697,7 +918,7 @@ var SkeletonElements = new function()
 
       // If not trying to join or remove a node, but merely click on it to drag it or select it:
       if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
-        this.paper.catmaidSVGOverlay.activateNode(node);
+        catmaidSVGOverlay.activateNode(node);
       }
 
       ox = node.x;
@@ -720,9 +941,8 @@ var SkeletonElements = new function()
       e.stopPropagation();
       var atnID = SkeletonAnnotations.getActiveNodeId(),
           connectornode = this.catmaidNode,
-          paper = this.paper,
           wasActiveNode = false;
-      if (this.paper.catmaidSVGOverlay.ensureFocused()) {
+      if (catmaidSVGOverlay.ensureFocused()) {
         return;
       }
       // return some log information when clicked on the node
@@ -730,7 +950,7 @@ var SkeletonElements = new function()
       if (e.shiftKey) {
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           if (connectornode.id === atnID) {
-            paper.catmaidSVGOverlay.activateNode(null);
+            catmaidSVGOverlay.activateNode(null);
             wasActiveNode = true;
           }
           statusBar.replaceLast("Deleted connector #" + connectornode.id);
@@ -744,7 +964,7 @@ var SkeletonElements = new function()
           if (atnType === TYPE_CONNECTORNODE) {
             alert("Can not join two connector nodes!");
           } else if (atnType === TYPE_NODE) {
-            paper.catmaidSVGOverlay.createLink(atnID, connectornode.id, "presynaptic_to");
+            catmaidSVGOverlay.createLink(atnID, connectornode.id, "presynaptic_to");
             statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
           }
         } else {
@@ -758,9 +978,8 @@ var SkeletonElements = new function()
           });
         }
       } else {
-        //console.log("Try to activate node");
         // activate this node
-        paper.catmaidSVGOverlay.activateNode(connectornode);
+        catmaidSVGOverlay.activateNode(connectornode);
       }
     };
 
@@ -792,263 +1011,12 @@ var SkeletonElements = new function()
   })();
 
 
-  // Also, there shouldn't be a "needsync" flag. Instead, push the node to an array named "needSyncWithDB". Will avoid looping.
-
-  // Regarding the nodes map: it is an array of keys over objects stored in a a cache of nodes that are already inserted into the DOM and that can be reused.
-
-  /** Surrogate constructor for ConnectorNode.
-   * See "newNode" for explanations. */
-  this.newConnectorNode = function(
-    id, // unique id for the node from the database
-    paper, // the raphael paper this node is drawn to
-    x, // the x coordinate in pixel coordinates
-    y, // y coordinates
-    z, // z coordinates
-    zdiff, // the different from the current slices
-    confidence,
-    can_edit) // a boolean combining (is_superuser or user owns the node)
-  {
-    var connector;
-    if (nextConnectorIndex < connectorPool.length) {
-      connector = connectorPool[nextConnectorIndex];
-      reuseConnectorNode(connector, id, x, y, z, zdiff, confidence, can_edit);
-    } else {
-      connector = new this.ConnectorNode(id, paper, x, y, z, zdiff, confidence, can_edit);
-      connectorPool.push(connector);
-    }
-    nextConnectorIndex += 1;
-    return connector;
-  };
-
-  /**
-   * Constructor for ConnectorNode.
-   */
-  this.ConnectorNode = function (
-    id, // unique id for the node from the database
-    paper, // the raphael paper this node is drawn to
-    x, // the x coordinate in pixel coordinates
-    y, // y coordinates
-    z, // z coordinates
-    zdiff, // the different from the current slices
-    confidence,
-    can_edit) // whether the logged in user has permissions to edit this node -- the server will in any case enforce permissions; this is for proper GUI flow
-  {
-    this.id = id;
-    this.type = TYPE_CONNECTORNODE;
-    this.needsync = false; // state variable; whether this node is already synchronized with the database
-    this.x = x; // local screen coordinates relative to the div, in pixel coordinates
-    this.y = y;
-    this.z = z;
-    this.zdiff = zdiff;
-    this.shouldDisplay = displayConnector;
-    this.confidence = confidence;
-    this.can_edit = can_edit;
-    this.paper = paper;
-    this.pregroup = {}; // set of presynaptic treenodes
-    this.postgroup = {}; // set of postsynaptic treenodes
-    this.r = 8;
-    this.c = null; // The Raphael circle for drawing
-    this.mc = null; // The Raphael circle for mouse actions (it's a bit larger)
-    this.preLines = null; // Array of ArrowLine to the presynaptic nodes
-    this.postLines = null; // Array of ArrowLine to the postsynaptic nodes
-    this.fillcolor = null;
-
-    // Member functions
-    this.setXY = setXY;
-    this.setColor = setColor;
-    this.colorFromZDiff = connectorColorFromZDiff;
-    this.createCircle = createCircle;
-    this.deletenode = connectorDelete;
-    this.draw = draw;
-    this.drawEdges = connectorDrawEdges;
-  };
-
-  var obliterateConnectorNode = function(con) {
-    con.id = null;
-    con.fillcolor = null;
-    if (con.c) {
-      con.c.remove();
-      mouseEventManager.forget(con.mc, TYPE_CONNECTORNODE);
-      con.mc.catmaidNode = null;
-      con.mc.remove();
-    }
-    con.pregroup = null;
-    con.postgroup = null;
-    con.paper = null;
-    // Note: mouse event handlers are removed by c.remove and mc.remove()
-    removeConnectorArrows(con); // also removes confidence text associated with edges
-    con.preLines = null;
-    con.postLines = null;
-  };
-
-  /**
-   * @param c The Node to reuse
-   * @param id
-   * @param r
-   * @param x
-   * @param y
-   * @param z
-   * @param zdiff
-   */
-  var reuseConnectorNode = function(c, id, x, y, z, zdiff, confidence, can_edit)
-  {
-    c.id = id;
-    c.x = x;
-    c.y = y;
-    c.z = z;
-    c.zdiff = zdiff;
-    c.shouldDisplay = displayConnector;
-    c.confidence = confidence;
-    c.can_edit = can_edit;
-    c.pregroup = {};
-    c.postgroup = {};
-
-    if (c.c) {
-      if (c.shouldDisplay()) {
-        var newCoords = {cx: x, cy: y};
-        c.c.attr(newCoords);
-        c.mc.attr(newCoords);
-      } else {
-        c.c.hide();
-        c.mc.hide();
-      }
-    }
-
-    c.preLines = null;
-    c.postLines = null;
-  };
-
-  /**
-   *
-   * @param c The ConnectorNode instance to disable
-   */
-  var disableConnectorNode = function(c) {
-    c.id = DISABLED;
-    if (c.c) {
-      c.c.hide();
-      c.mc.hide();
-    }
-    removeConnectorArrows(c);
-  };
-
-  /** Here 'this' is the connector node. */
-  var connectorColorFromZDiff =  function(zdiff)
-  {
-    // zdiff is in sections, therefore the current section is at [0, 1) -- notice 0 is inclusive and 1 is exclusive.
-    if (zdiff >= 1) {
-      return "rgb(0, 0, 255)";
-    } else if (zdiff < 0) {
-      return "rgb(255, 0, 0)";
-    } else {
-      return "rgb(235, 117, 0)";
-    }
-  };
-
-  /** Delete the connector from the database and removes it from
-   * the current view and local objects.
-   * Here 'this' is the connector node.
-   */
-  var connectorDelete = function ()
-  {
-    var connectornode = this;
-    requestQueue.register(django_url + project.id + '/connector/delete', "POST", {
-      pid: project.id,
-      connector_id: connectornode.id
-    }, function (status, text, xml) {
-      if (status !== 200) {
-        alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
-      } else {
-          if (text && text !== " ") {
-            var e = $.parseJSON(text);
-            if (e.error) {
-              alert(e.error);
-            } else {
-              var ov = connectornode.paper.catmaidSVGOverlay;
-              // If there was a presynaptic node, select it
-              var preIDs  = Object.keys(connectornode.pregroup);
-              var postIDs = Object.keys(connectornode.postgroup);
-              if (preIDs.length > 0) {
-                  ov.selectNode(preIDs[0]);
-              } else if (postIDs.length > 0) {
-                  ov.selectNode(postIDs[0]);
-              } else {
-                  ov.activateNode(null);
-              }
-              connectornode.needsync = false;
-              // Refresh all nodes in any case, to reflect the new state of the database
-              ov.updateNodes();
-
-              return true;
-            }
-          }
-      }
-    });
-  };
-
-  /** Disables the ArrowLine object and removes entries from the preLines and postLines. */
-  var removeConnectorArrows = function(c) {
-    var disable;
-    if (c.preLines || c.postLines) disable = function(arrow) { arrow.disable(); };
-    if (c.preLines) {
-      c.preLines.forEach(disable);
-      c.preLines = null;
-    }
-    if (c.postLines) {
-      c.postLines.forEach(disable);
-      c.postLines = null;
-    }
-
-    // TODO disabled arrows should be moved from wherever they are in the arrowPool array to the end of it, updating as well the nextArrowIndex.
-  };
-
-  /**
-   * Here 'this' is the connector node.
-   */
-  var connectorDrawEdges = function(redraw)
-  {
-    var i,
-        tnid,
-        treenode,
-        confidence,
-        pregroup = this.pregroup,
-        postgroup = this.postgroup;
-
-    if (redraw) {
-      removeConnectorArrows(this);
-    }
-
-    // re-create
-    for (i in pregroup) {
-      if (pregroup.hasOwnProperty(i)) {
-        treenode = pregroup[i].treenode;
-        confidence = pregroup[i].confidence;
-        if (displayBetweenNodes(this, treenode)) {
-          tnid = treenode.id;
-          if (!this.preLines) this.preLines = [];
-          this.preLines.push(connectorCreateArrow(this, tnid, confidence, true));
-        }
-      }
-    }
-
-    for (i in postgroup) {
-      if (postgroup.hasOwnProperty(i)) {
-        treenode = postgroup[i].treenode;
-        confidence = postgroup[i].confidence;
-        if (displayBetweenNodes(this, treenode)) {
-          tnid = treenode.id;
-          if (!this.postLines) this.postLines = [];
-          this.postLines.push(connectorCreateArrow(this, tnid, confidence, false));
-        }
-      }
-    }
-  };
-
   /** Below, a function that acts as a namespace and assigns to connectorCreateArrow the proper function.
    * (Notice how it is executed at the end of its declaration. */
   var connectorCreateArrow = function()
   {
-    var PRE_COLOR = "rgb(200, 0, 0)";
-    var POST_COLOR = "rgb(0, 217, 232)";
+    var PRE_COLOR = "rgb(200,0,0)";
+    var POST_COLOR = "rgb(0,217,232)";
     var pathString = "M0,0,L1,0";
     var arrowString = "M0,0,L-5,-5,L-5,5,L0,0";
 
@@ -1058,7 +1026,6 @@ var SkeletonElements = new function()
         return;
       }
       // 'this' is the arrowPath
-      var updateNodes = this.paper.catmaidSVGOverlay.updateNodes;
       requestQueue.register(django_url + project.id + '/link/delete', "POST", {
         pid: project.id,
         connector_id: this.connector_id,
@@ -1072,7 +1039,7 @@ var SkeletonElements = new function()
               if (e.error) {
                 alert(e.error);
               } else {
-                updateNodes();
+                catmaidSVGOverlay.updateNodes();
                 return true;
               }
             }
@@ -1081,23 +1048,23 @@ var SkeletonElements = new function()
     });
 
     /** Constructor method for ArrowLine. */
-    var ArrowLine = function(paper) {
-      var linePath = paper.path(pathString);
-      var arrowPath = paper.path(arrowString);
-      arrowPath.mousedown(mousedown);
-      var confidence_text;
+    var ArrowLine = function() {
+      this.linePath = paper.path(pathString);
+      this.arrowPath = paper.path(arrowString);
+      this.arrowPath.mousedown(mousedown);
+      this.confidence_text = null;
 
       this.init = function(x1, y1, x2, y2, confidence, stroke_color, connectorID, treenodeID) {
-        arrowPath.connector_id = connectorID;
-        arrowPath.treenode_id = treenodeID;
+        this.arrowPath.connector_id = connectorID;
+        this.arrowPath.treenode_id = treenodeID;
 
         this.update(x1, y1, x2, y2, confidence);
 
         // Adjust
-        linePath.attr({"stroke": stroke_color,
+        this.linePath.attr({"stroke": stroke_color,
                        "stroke-width": 2});
         // Adjust color
-        arrowPath.attr({
+        this.arrowPath.attr({
           "fill": stroke_color,
           "stroke": stroke_color
         });
@@ -1122,100 +1089,88 @@ var SkeletonElements = new function()
         var angle = Raphael.angle(x2new, y2new, x1new, y1new);
 
         // Reset transform
-        linePath.transform("");
+        this.linePath.transform("");
         // Translate, rotate and scale
         var length = Math.sqrt((x2new - x1new) * (x2new - x1new)
                              + (y2new - y1new) * (y2new - y1new));
-        linePath.transform( "t" + x1new + "," + y1new
+        this.linePath.transform( "t" + x1new + "," + y1new
                           + "r" + angle + ",0,0"
                           + "s" + length + "," + length + ",0,0");
 
         // Reset transform
-        arrowPath.transform("");
+        this.arrowPath.transform("");
         // Translate and then rotate relative to 0,0 (preconcatenates)
-        arrowPath.transform("t" + x2new + "," + y2new + "r" + angle + ",0,0");
+        this.arrowPath.transform("t" + x2new + "," + y2new + "r" + angle + ",0,0");
 
-        if (confidence_text) {
-          if (confidence < 5) {
-            confidence_text.hide();
+        if (this.confidence_text) {
+          if (this.confidence < 5) {
+            this.confidence_text.hide();
           } else {
-            updateConfidenceText(x1, y1, x2, y2, stroke_color, confidence, paper, confidence_text);
-            confidence_text.show();
+            updateConfidenceText(x1, y1, x2, y2, stroke_color, confidence, this.confidence_text);
+            this.confidence_text.show();
           }
         } else if (confidence < 5) {
-            confidence_text = updateConfidenceText(x1, y1, x2, y2, stroke_color, confidence, paper);
+            this.confidence_text = updateConfidenceText(x1, y1, x2, y2, stroke_color, confidence);
         }
       };
 
       this.show = function() {
         // Ensure visible
-        if ("none" === linePath.node.style.display) {
-          linePath.show();
-          arrowPath.show();
+        if ("none" === this.linePath.node.style.display) {
+          this.linePath.show();
+          this.arrowPath.show();
           // show may not enough
-          linePath.node.style.display = "block";
-          arrowPath.node.style.display = "block";
+          this.linePath.node.style.display = "block";
+          this.arrowPath.node.style.display = "block";
         }
       };
 
       this.disable = function() {
-        arrowPath.connector_id = null;
-        arrowPath.treenode_id = null;
-        linePath.hide();
-        arrowPath.hide();
-        if (confidence_text) confidence_text.hide();
+        this.arrowPath.connector_id = null;
+        this.arrowPath.treenode_id = null;
+        this.linePath.hide();
+        this.arrowPath.hide();
+        if (this.confidence_text) this.confidence_text.hide();
       };
 
       this.obliterate = function() {
-        arrowPath.connector_id = null;
-        arrowPath.treenode_id = null;
-        arrowPath.unmousedown(mousedown);
-        arrowPath.remove();
-        arrowPath = null;
-        linePath.remove();
-        linePath = null;
-        if (confidence_text) {
-          confidence_text.remove();
-          confidence_text = null;
+        this.arrowPath.connector_id = null;
+        this.arrowPath.treenode_id = null;
+        this.arrowPath.unmousedown(mousedown);
+        this.arrowPath.remove();
+        this.arrowPath = null;
+        this.linePath.remove();
+        this.linePath = null;
+        if (this.confidence_text) {
+          this.confidence_text.remove();
+          this.confidence_text = null;
         }
-        paper = null;
       };
     };
 
-    /** Return the actual connectorCreateArrow function
-     *  The 'arrow' argument is optional, and if not undefined or null, will be reused.
-     */
-    return function(self, treenode_id, confidence, pre, arrow) {
+    /** Return the actual connectorCreateArrow function. */
+    return function(self, node, confidence, pre) {
+      var arrow = cache.arrowPool.next();
       if (!arrow) {
-        if (nextArrowIndex < arrowPool.length) {
-          arrow = arrowPool[nextArrowIndex];
-        } else {
-          arrow = new ArrowLine(self.paper);
-          arrowPool.push(arrow);
-        }
-        nextArrowIndex += 1;
+        arrow = new ArrowLine();
+        cache.arrowPool.append(arrow);
       }
 
       var src, tgt, color;
       if (pre) {
-        src = self.pregroup[treenode_id].treenode;
+        src = node;
         tgt = self;
         color = PRE_COLOR;
       } else {
         src = self;
-        tgt = self.postgroup[treenode_id].treenode;
+        tgt = node;
         color = POST_COLOR;
       }
       arrow.init(src.x, src.y,
                  tgt.x, tgt.y,
                  confidence, color,
-                 self.id, treenode_id);
+                 self.id, node.id);
       return arrow;
     };
   }();
-
-  var is_middle_click = function(e) {
-    return 2 === e.which;
-  };
-
-}();
+};

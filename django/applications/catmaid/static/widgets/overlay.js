@@ -194,14 +194,13 @@ var SkeletonAnnotations = new function()
     var old_x = stack.x;
     var old_y = stack.y;
     
-    SkeletonElements.clearCache();
-
     // Register instance: only one per stack allowed
     SVGOverlays[stack] = this;
 
     /** Unregister the SVGOverlay instance and perform cleanup duties. */
     this.destroy = function() {
-      if (self === SVGOverlays[stack]) {
+      if (SVGOverlays[stack] === self) {
+        SVGOverlays[stack].graphics.clearCache();
         delete SVGOverlays[stack];
       }
     };
@@ -260,8 +259,7 @@ var SkeletonAnnotations = new function()
       for (nodeid in nodes) {
         if (nodes.hasOwnProperty(nodeid)) {
           node = nodes[nodeid];
-          node.setColor();
-          node.drawEdges();
+          node.updateColors();
         }
       }
     };
@@ -777,7 +775,7 @@ var SkeletonAnnotations = new function()
             } else {
               // add treenode to the display and update it
               var jso = $.parseJSON(text);
-              var nn = SkeletonElements.newConnectorNode(jso.connector_id, self.paper, pos_x, pos_y, pos_z, 0, 5 /* confidence */, true);
+              var nn = self.graphics.newConnectorNode(jso.connector_id, pos_x, pos_y, pos_z, 0, 5 /* confidence */, true);
               nodes[jso.connector_id] = nn;
               nn.draw();
               self.activateNode(nn);
@@ -827,7 +825,7 @@ var SkeletonAnnotations = new function()
               var nid = parseInt(jso.treenode_id);
 
               // always create a new treenode which is the root of a new skeleton
-              var nn = SkeletonElements.newNode(nid, self.paper, null, null, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
+              var nn = self.graphics.newNode(nid, null, null, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
               if (nn.line) nn.line.toBack();
 
               // add node to nodes list
@@ -983,7 +981,7 @@ var SkeletonAnnotations = new function()
               // add treenode to the display and update it
               var nid = parseInt(jso.treenode_id);
               // The parent will be null if there isn't one or if the parent Node object is not within the set of retrieved nodes, but the parentID will be defined.
-              var nn = SkeletonElements.newNode(nid, self.paper, nodes[parentID], parentID, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
+              var nn = self.graphics.newNode(nid, nodes[parentID], parentID, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
 
               nodes[nid] = nn;
               nn.draw();
@@ -1100,14 +1098,14 @@ var SkeletonAnnotations = new function()
       self.removeLabels();
 
       // Prepare existing Node and ConnectorNode instances for reuse
-      SkeletonElements.resetCache();
+      self.graphics.resetCache();
 
       // Populate Nodes
       jso[0].forEach(function(a, index, array) {
         // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
         // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[8]: user can edit or not
-        nodes[a[0]] = SkeletonElements.newNode(
-          a[0], self.paper, null, a[1], a[6], phys2pixX(a[2]),
+        nodes[a[0]] = self.graphics.newNode(
+          a[0], null, a[1], a[6], phys2pixX(a[2]),
           phys2pixY(a[3]), phys2pixZ(a[4]),
           (a[4] - pz) / stack.resolution.z, a[5], a[7], a[8]);
       });
@@ -1118,14 +1116,14 @@ var SkeletonAnnotations = new function()
         // a[5]: presynaptic nodes as array of arrays with treenode id
         // and confidence, a[6]: postsynaptic nodes as array of arrays with treenode id
         // and confidence, a[7]: whether the user can edit the connector
-        nodes[a[0]] = SkeletonElements.newConnectorNode(
-          a[0], self.paper, phys2pixX(a[1]),
+        nodes[a[0]] = self.graphics.newConnectorNode(
+          a[0], phys2pixX(a[1]),
           phys2pixY(a[2]), phys2pixZ(a[3]),
           (a[3] - pz) / stack.resolution.z, a[4], a[7]);
       });
 
       // Disable any unused instances
-      SkeletonElements.disableBeyond(jso[0].length, jso[1].length);
+      self.graphics.disableBeyond(jso[0].length, jso[1].length);
 
       // Now that all Node instances are in place, loop nodes again
       // and set correct parent objects and parent's children update
@@ -1174,14 +1172,13 @@ var SkeletonAnnotations = new function()
         // Draw node edges first
         for (var i in nodes) {
           if (nodes.hasOwnProperty(i)) {
-            nodes[i].setColor();
             nodes[i].drawEdges();
           }
         }
-      } // end speed toggle
+      }
       
       // Now that all edges have been created, disable unused arrows
-      SkeletonElements.disableRemainingArrows();
+      self.graphics.disableRemainingArrows();
 
 
       // Create raphael's circles on top of the edges
@@ -1408,7 +1405,7 @@ var SkeletonAnnotations = new function()
     };
 
     this.paper = Raphael(view, Math.floor(stack.dimension.x * stack.scale), Math.floor(stack.dimension.y * stack.scale));
-    this.paper.catmaidSVGOverlay = this;
+    this.graphics = new SkeletonElements(this, this.paper);
 
     this.updatePaperDimensions = function () {
       var wi = Math.floor(stack.dimension.x * stack.scale);

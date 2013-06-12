@@ -67,7 +67,6 @@ class Stack(models.Model):
     tile_source_type = models.IntegerField(default=1)
     metadata = models.TextField(default='', blank=True)
     tags = TaggableManager(blank=True)
-    orientation = models.IntegerField(choices=((0, 'xy'), (1, 'xz'), (2, 'zy')), default=0)
 
     def __unicode__(self):
         return self.title
@@ -84,6 +83,7 @@ class ProjectStack(models.Model):
     project = models.ForeignKey(Project)
     stack = models.ForeignKey(Stack)
     translation = Double3DField(default=(0, 0, 0))
+    orientation = models.IntegerField(choices=((0, 'xy'), (1, 'xz'), (2, 'zy')), default=0)
 
     def __unicode__(self):
         return self.project.title + " -- " + self.stack.title

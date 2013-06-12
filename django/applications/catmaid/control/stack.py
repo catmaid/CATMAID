@@ -85,7 +85,7 @@ def get_stack_info(project_id=None, stack_id=None, user=None):
             'broken_slices': broken_slices,
             'trakem2_project': int(s.trakem2_project),
             'overlay': overlays,
-            'orientation': s.orientation,
+            'orientation': ps.orientation,
         }
 
     return result

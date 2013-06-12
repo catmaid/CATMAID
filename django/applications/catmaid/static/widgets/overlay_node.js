@@ -31,12 +31,7 @@ var SkeletonElements = new function()
   var nextConnectorIndex = 0;
   var nextArrowIndex = 0;
 
-  this.resetCache = function() {
-    nextNodeIndex = 0;
-    nextConnectorIndex = 0;
-    nextArrowIndex = 0;
-  };
-
+  /** Invoked when the SVGOverlay is created. */
   this.clearCache = function() {
     nodePool.splice(0).forEach(obliterateNode);
     connectorPool.splice(0).forEach(obliterateConnectorNode);
@@ -46,9 +41,18 @@ var SkeletonElements = new function()
     nextArrowIndex = 0;
   };
 
+  /** Invoked at the start of the continuation that updates all nodes. */
+  this.resetCache = function() {
+    nextNodeIndex = 0;
+    nextConnectorIndex = 0;
+    nextArrowIndex = 0;
+  };
+
+
   /** Disable all cached Node instances at or beyond the cutoff index,
    * preserving up to 100 disabled nodes and 20 disabled connector nodes,
-   * and removing the rest from the cache. */
+   * and removing the rest from the cache.
+   * Invoked at the end of the continuation that updates all nodes. */
   this.disableBeyond = function(nodeCuttoff, connectorCuttoff) {
     if (nodeCuttoff < nodePool.length) {
       // Cut cache array beyond desired cut off point plus 100, and obliterate nodes
@@ -788,11 +792,6 @@ var SkeletonElements = new function()
   })();
 
 
-  // TODO must reuse nodes instead of creating them new, to avoid DOM insertions.
-  // -- well, it can: just leave as members of each the functions that are really different.
-
-  // Identical functions: setXY, setColor, createCircle, deletenode (but for the php URL), some of the sub-functions of createEventHandlers
-
   // Also, there shouldn't be a "needsync" flag. Instead, push the node to an array named "needSyncWithDB". Will avoid looping.
 
   // Regarding the nodes map: it is an array of keys over objects stored in a a cache of nodes that are already inserted into the DOM and that can be reused.
@@ -998,6 +997,8 @@ var SkeletonElements = new function()
       c.postLines.forEach(disable);
       c.postLines = null;
     }
+
+    // TODO disabled arrows should be moved from wherever they are in the arrowPool array to the end of it, updating as well the nextArrowIndex.
   };
 
   /**

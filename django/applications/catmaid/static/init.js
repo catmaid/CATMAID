@@ -795,7 +795,10 @@ function handle_dataviews(status, text, xml) {
 			// a function for creating data view menu handlers
 			create_handler = function( id, code_type ) {
 				return function() {
-				   switch_dataview( id, code_type );
+					// close any open project and its windows
+					rootWindow.closeAllChildren();
+					// open data view
+					switch_dataview( id, code_type );
 				}
 			};
 			/* As we want to handle a data view change in JS,
@@ -816,11 +819,6 @@ function handle_dataviews(status, text, xml) {
 }
 
 function switch_dataview( view_id, view_type ) {
-	/* Every view change, for now, requires the closing of all open
-	 * projects.
-	 */
-	rootWindow.closeAllChildren();
-
 	/* Some views are dynamic, e.g. the plain list view offers a
 	 * live filter of projects. Therefore we treat different types
 	 * of dataviews differently.

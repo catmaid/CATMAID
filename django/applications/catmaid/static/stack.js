@@ -311,13 +311,13 @@ function Stack(
 	case Stack.ORIENTATION_ZY:
 		this.projectToStackX = function( zp, yp, xp )
 		{
-			return Math.max( 0, Math.min( MAX_X, Math.round( ( zp - translation.z ) / resolution.x ) ) );
+			return Math.max( 0, Math.min( MAX_X, ( zp - translation.z ) / resolution.x ) );
 		};
 		break;
 	default:
 		this.projectToStackX = function( zp, yp, xp )
 		{
-			return Math.max( 0, Math.min( MAX_X, Math.round( ( xp - translation.x ) / resolution.x ) ) );
+			return Math.max( 0, Math.min( MAX_X, ( xp - translation.x ) / resolution.x ) );
 		};
 	}
 	
@@ -329,13 +329,13 @@ function Stack(
 	case Stack.ORIENTATION_XZ:
 		this.projectToStackY = function( zp, yp, xp )
 		{
-			return Math.max( 0, Math.min( MAX_Y, Math.round( ( zp - translation.z ) / resolution.y ) ) );
+			return Math.max( 0, Math.min( MAX_Y, ( zp - translation.z ) / resolution.y ) );
 		};
 		break;
 	default:	// xy
 		this.projectToStackY = function( zp, yp, xp )
 		{
-			return Math.max( 0, Math.min( MAX_Y, Math.round( ( yp - translation.y ) / resolution.y ) ) );
+			return Math.max( 0, Math.min( MAX_Y, ( yp - translation.y ) / resolution.y ) );
 		};
 	}
 	

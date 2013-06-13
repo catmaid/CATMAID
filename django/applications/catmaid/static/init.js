@@ -1095,15 +1095,16 @@ var realInit = function()
 	message_menu = new Menu();
 	document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
 
-    login();
-
-	if ( pid && sids.length > 0 )
-	{
-		for ( var i = 0; i < sids.length; ++i )
+	// login and thereafter load stacks if requested
+	login(undefined, undefined, function() {
+		if ( pid && sids.length > 0 )
 		{
-			openProjectStack( pid, sids[ i ] )
+			for ( var i = 0; i < sids.length; ++i )
+			{
+				openProjectStack( pid, sids[ i ] )
+			}
 		}
-	}
+	});
 	
 	// the text-label toolbar
 	

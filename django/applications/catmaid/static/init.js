@@ -246,42 +246,41 @@ function handle_profile_update(e) {
  */
 
 function updateProjects(completionCallback) {
+	// Whatever happened, get details of which projects this user (or no
+	// user) is allowed to edit:
+	$.get(django_url + 'permissions', function (data) {
+		if (data.error) {
+			alert(data.error);
+		} else {
+			user_permissions = data;
+		}
+	}, 'json');
 
-    // Whatever happened, get details of which projects this user (or no
-    // user) is allowed to edit:
-    $.get(django_url + 'permissions', function (data) {
-        if (data.error) {
-            alert(data.error);
-        } else {
-            user_permissions = data;
-        }
-    }, 'json');
+	//ui.catchEvents( "wait" );
+	project_menu_open.update(null);
 
-    //ui.catchEvents( "wait" );
-  project_menu_open.update(null);
+	document.getElementById("projects_h").style.display = "none";
+	document.getElementById("project_filter_form").style.display = "none";
 
-  document.getElementById("projects_h").style.display = "none";
-  document.getElementById("project_filter_form").style.display = "none";
+	var pp = document.getElementById("projects_dl");
 
-  var pp = document.getElementById("projects_dl");
+	while (pp.firstChild) pp.removeChild(pp.firstChild);
 
-  while (pp.firstChild) pp.removeChild(pp.firstChild);
+	var w = document.createElement("dd");
+	w.className = "wait_bgwhite";
+	w.appendChild(document.createTextNode("loading ..."));
+	pp.appendChild(w);
 
-  var w = document.createElement("dd");
-  w.className = "wait_bgwhite";
-  w.appendChild(document.createTextNode("loading ..."));
-  pp.appendChild(w);
-
-  requestQueue.register(django_url + 'projects',
-                        'GET',
-                        undefined,
-                        function (status, text, xml) {
-                        handle_updateProjects(status, text, xml);
-                                if (typeof completionCallback !== "undefined") {
-                                  completionCallback();
-                                }
-			});
-  return;
+	requestQueue.register(django_url + 'projects',
+		'GET',
+		undefined,
+		function (status, text, xml) {
+			handle_updateProjects(status, text, xml);
+			if (typeof completionCallback !== "undefined") {
+				completionCallback();
+			}
+		});
+	return;
 }
 
 var cachedProjectsInfo = null;
@@ -294,33 +293,34 @@ var cachedProjectsInfo = null;
  */
 
 function handle_updateProjects(status, text, xml) {
-  if (status == 200 && text) {
-    var e = $.parseJSON(text);
+	if (status == 200 && text) {
+		var e = $.parseJSON(text);
 
-    var keep_project_alive = false;
-    var keep_project_editable = false;
+		var keep_project_alive = false;
+		var keep_project_editable = false;
 
-    if (e.error) {
-      project_menu_open.update();
-      alert(e.error);
-    } else {
-      cachedProjectsInfo = e;
-      // recreate the project data view
-      load_default_dataview();
-      // update the project > open menu
-      project_menu_open.update(cachedProjectsInfo);
-    }
-    if (project) {
-      if (keep_project_alive) project.setEditable(keep_project_editable);
-      else {
-        project.destroy();
-        delete project;
-      }
-    }
-  }
-  ui.releaseEvents();
-  return;
-}
+		if (e.error) {
+			project_menu_open.update();
+			alert(e.error);
+		} else {
+			cachedProjectsInfo = e;
+			// recreate the project data view
+			load_default_dataview();
+			// update the project > open menu
+			project_menu_open.update(cachedProjectsInfo);
+		}
+		if (project) {
+			if (keep_project_alive) {
+				project.setEditable(keep_project_editable);
+			} else {
+				project.destroy();
+				delete project;
+			}
+		}
+	}
+	ui.releaseEvents();
+	return;
+};
 
 function updateProjectListMessage(text) {
   $('#project_list_message').text(text);

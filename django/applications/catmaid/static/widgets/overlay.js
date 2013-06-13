@@ -13,6 +13,18 @@ var SkeletonAnnotations = new function()
     return SVGOverlays[stack];
   };
 
+  this.getSVGOverlayByPaper = function(paper) {
+    for (var stackID in SVGOverlays) {
+      if (SVGOverlays.hasOwnProperty(stackID)) {
+        var s = SVGOverlays[stackID];
+        if (paper === s.paper) {
+          return s;
+        }
+      }
+    }
+    return null;
+  };
+
   /** Select a node in any of the existing SVGOverlay instances, by its ID and its skeletonID. If it is a connector node, it expects a null skeletonID. */
   this.staticSelectNode = function(nodeID, skeletonID)
   {
@@ -200,7 +212,7 @@ var SkeletonAnnotations = new function()
     /** Unregister the SVGOverlay instance and perform cleanup duties. */
     this.destroy = function() {
       if (SVGOverlays[stack] === self) {
-        SVGOverlays[stack].graphics.clearCache();
+        SVGOverlays[stack].graphics.destroy();
         delete SVGOverlays[stack];
       }
     };
@@ -1128,10 +1140,9 @@ var SkeletonAnnotations = new function()
       // Now that all Node instances are in place, loop nodes again
       // and set correct parent objects and parent's children update
       jso[0].forEach(function(a, index, array) {
-        var nid = a[0]; // Node's ID
         var pn = nodes[a[1]]; // parent Node
         if (pn) {
-          var nn = nodes[nid];
+          var nn = nodes[a[0]];
           // if parent exists, update the references
           nn.parent = pn;
           // update the parent's children
@@ -1301,7 +1312,9 @@ var SkeletonAnnotations = new function()
         $('#neuronName').text('');
         ObjectTree.deselectAll();
         self.activateNode(null);
-        e.stopPropagation();
+        if (!e.shiftKey) {
+          e.stopPropagation();
+        } // else, a node under the mouse will be removed
       } else if (e.shiftKey) {
         if (null === atn.id) {
           if (getMode() === "skeletontracing") {
@@ -1325,14 +1338,16 @@ var SkeletonAnnotations = new function()
                   function (connectorID) {
                     self.createLink(targetTreenodeID, connectorID, "postsynaptic_to");
                   });
+              e.stopPropagation();
             } else if (e.shiftKey) {
               statusBar.replaceLast("created connector, with presynaptic treenode id " + atn.id);
               createSingleConnector( phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
                   function (connectorID) {
                     self.createLink( targetTreenodeID, connectorID, "presynaptic_to" );
                   });
+              e.stopPropagation();
             }
-            e.stopPropagation();
+            // Else don't stop propagation: the mouse functions of the node will be triggered
             return true;
           } else if ("connector" === atn.type) {
             // create new treenode (and skeleton) postsynaptic to activated connector
@@ -1353,12 +1368,14 @@ var SkeletonAnnotations = new function()
               statusBar.replaceLast("Created new node as child of node #" + atn.id);
             }
             createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+            e.stopPropagation();
           } else if ("connector" === atn.type) {
             // create new treenode (and skeleton) presynaptic to activated connector
             // if the connector doesn't have a presynaptic node already
             createPresynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
+            e.stopPropagation();
           }
-          e.stopPropagation();
+          // Else don't stop propagation: a node may be moved
           return true;
         } else if (getMode() === "synapsedropping") {
           // only create single synapses/connectors
@@ -1405,7 +1422,7 @@ var SkeletonAnnotations = new function()
     };
 
     this.paper = Raphael(view, Math.floor(stack.dimension.x * stack.scale), Math.floor(stack.dimension.y * stack.scale));
-    this.graphics = new SkeletonElements(this, this.paper);
+    this.graphics = new SkeletonElements(this.paper);
 
     this.updatePaperDimensions = function () {
       var wi = Math.floor(stack.dimension.x * stack.scale);
@@ -2029,6 +2046,87 @@ var SkeletonAnnotations = new function()
       } else {
         alert("ERROR: unknown node type: " + ob.type);
       }
+    };
+
+    /** Delete the connector from the database and removes it from
+     * the current view and local objects. */
+    this.deleteConnectorNode = function(connectornode) {
+      var catmaidSVGOverlay = this;
+      requestQueue.register(django_url + project.id + '/connector/delete', "POST", {
+        pid: project.id,
+        connector_id: connectornode.id
+      }, function (status, text, xml) {
+        if (status !== 200) {
+          alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+          return;
+        }
+        var e = $.parseJSON(text);
+        if (e.error) {
+          alert(e.error);
+          return;
+        }
+        // If there was a presynaptic node, select it
+        var preIDs  = Object.keys(connectornode.pregroup);
+        var postIDs = Object.keys(connectornode.postgroup);
+        if (preIDs.length > 0) {
+            catmaidSVGOverlay.selectNode(preIDs[0]);
+        } else if (postIDs.length > 0) {
+            catmaidSVGOverlay.selectNode(postIDs[0]);
+        } else {
+            catmaidSVGOverlay.activateNode(null);
+        }
+        connectornode.needsync = false;
+        // Refresh all nodes in any case, to reflect the new state of the database
+        catmaidSVGOverlay.updateNodes();
+
+        statusBar.replaceLast("Deleted connector #" + connectornode.id);
+      });
+    };
+
+    /** Delete the node from the database and removes it from
+     * the current view and local objects.  */
+    this.deleteTreenode = function (node, wasActiveNode) {
+      var catmaidSVGOverlay = this;
+      requestQueue.register(django_url + project.id + '/treenode/delete', "POST", {
+        pid: project.id,
+        treenode_id: node.id
+      }, function (status, text) {
+        if (status !== 200) {
+          alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+          return;
+        }
+        var e = $.parseJSON(text);
+        if (e.error) {
+          alert(e.error);
+          return;
+        }
+        // activate parent node when deleted
+        if (wasActiveNode) {
+          if (e.parent_id) {
+            catmaidSVGOverlay.selectNode(e.parent_id);
+          } else {
+            // No parent. But if this node was postsynaptic or presynaptic
+            // to a connector, the connector must be selected:
+            var pp = catmaidSVGOverlay.findConnectors(node.id);
+            // Try first connectors for which node is postsynaptic:
+            if (pp[1].length > 0) {
+              catmaidSVGOverlay.selectNode(pp[1][0]);
+            // Then try connectors for which node is presynaptic
+            } else if (pp[0].length > 0) {
+              catmaidSVGOverlay.selectNode(pp[0][0]);
+            } else {
+              catmaidSVGOverlay.activateNode(null);
+            }
+            // Refresh object tree as well, given that the node had no parent and therefore the deletion of its skeleton was triggered
+            ObjectTree.refresh();
+          }
+        }
+        node.needsync = false;
+        // Redraw everything for now
+        catmaidSVGOverlay.updateNodes();
+        statusBar.replaceLast("Deleted node #" + node.id);
+        return true;
+      });
     };
   };
 

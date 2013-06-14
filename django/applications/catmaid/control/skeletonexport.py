@@ -125,7 +125,7 @@ def _skeleton_for_3d_viewer(skeleton_id):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_for_3d_viewer(request, project_id=None, skeleton_id=None):
-    return HttpResponse(json.dumps(_skeleton_for_3d_viewer(skeleton_id)))
+    return HttpResponse(json.dumps(_skeleton_for_3d_viewer(skeleton_id), separators=(',', ':')))
 
 
 def _measure_skeletons(skeleton_ids):

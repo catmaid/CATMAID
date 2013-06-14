@@ -330,24 +330,15 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     }
 
     if (this.confidence < 5) {
-      if (this.number_text) {
-        this.updateConfidenceText(
+      // Create new or update
+      this.number_text = this.updateConfidenceText(
           this.x, this.y, this.parent.x, this.parent.y,
           lineColor,
           this.confidence,
           this.number_text);
-      } else {
-        this.number_text = this.updateConfidenceText(
-          this.x, this.y, this.parent.x, this.parent.y,
-          lineColor,
-          this.confidence);
-      }
-      this.number_text.toBack();
-    } else {
-      if (this.number_text) {
-        this.number_text.remove();
-        this.number_text = null;
-      }
+    } else if (this.number_text) {
+      this.number_text.remove();
+      this.number_text = null;
     }
   };
 
@@ -990,15 +981,11 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     // Translate and then rotate relative to 0,0 (preconcatenates)
     this.arrowPath.transform("t" + x2new + "," + y2new + "r" + angle + ",0,0");
 
-    if (this.confidence_text) {
-      if (this.confidence < 5) {
-        this.confidence_text.hide();
-      } else {
-        this.updateConfidenceText(x1, y1, x2, y2, stroke_color, confidence, this.confidence_text);
-        this.confidence_text.show();
-      }
-    } else if (confidence < 5) {
-      this.confidence_text = this.updateConfidenceText(x1, y1, x2, y2, stroke_color, confidence);
+    if (this.confidence < 5) {
+      this.confidence_text = this.updateConfidenceText(x1, y1, x2, y2, stroke_color, confidence, this.confidence_text);
+    } else if (this.confidence_text) {
+      this.confidence_text.remove();
+      this.confidence_text = null;
     }
 
     // Adjust
@@ -1066,7 +1053,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
                                        fillColor,
                                        confidence,
                                        existing) {
-    var result,
+    var text,
     numberOffset = 12,
     confidenceFontSize = '20px',
     xdiff = parentx - x,
@@ -1077,23 +1064,26 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     newConfidenceX = (x + parentx) / 2 + nx * numberOffset,
     newConfidenceY = (y + parenty) / 2 + ny * numberOffset;
 
-    if (typeof existing === "undefined") {
-      result = this.line.paper.text(newConfidenceX, newConfidenceY, ""+confidence);
+    if (existing) {
+      text = existing;
+      text.show();
     } else {
-      result = existing;
+      text = this.line.paper.text(newConfidenceX, newConfidenceY, ""+confidence);
+      text.toBack();
     }
 
-    result.attr({x: newConfidenceX,
-                 y: newConfidenceY,
-                 'font-size': confidenceFontSize,
-                 stroke: 'black',
-                 'stroke-width': 0.25,
-                 fill: fillColor,
-                 text: ""+confidence});
+    text.attr({x: newConfidenceX,
+               y: newConfidenceY,
+               'font-size': confidenceFontSize,
+               stroke: 'black',
+               'stroke-width': 0.25,
+               fill: fillColor,
+               text: ""+confidence});
 
-    return result;
+    return text;
   };
-  
+
+  // Inject into classes that have the member variable 'this.line'
   classes.forEach(function(c) {
     c.updateConfidenceText = updateConfidenceText;
   });

@@ -932,6 +932,7 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
       return;
     }
     // 'this' will be the the arrowPath
+    var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.paper);
     requestQueue.register(django_url + project.id + '/link/delete', "POST", {
       pid: project.id,
       connector_id: this.connector_id,

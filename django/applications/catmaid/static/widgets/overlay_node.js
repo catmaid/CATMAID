@@ -121,7 +121,7 @@ SkeletonElements.prototype.ElementPool = function(reserve_size) {
 SkeletonElements.prototype.ElementPool.prototype = (function() {
   return {
     reset : function() {
-      this.nextIndex = 0
+      this.nextIndex = 0;
     },
 
     obliterateFn : function(element) {
@@ -583,10 +583,12 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
       this.removeConnectorArrows();
     }
 
+    var i, node;
+
     // re-create
-    for (var i in this.pregroup) {
+    for (i in this.pregroup) {
       if (this.pregroup.hasOwnProperty(i)) {
-        var node = this.pregroup[i].treenode;
+        node = this.pregroup[i].treenode;
         if (this.mustDrawLineWith(node)) {
           if (!this.preLines) this.preLines = [];
           this.preLines.push(this.createArrow(this, node, this.pregroup[i].confidence, true));
@@ -594,9 +596,9 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
       }
     }
 
-    for (var i in this.postgroup) {
+    for (i in this.postgroup) {
       if (this.postgroup.hasOwnProperty(i)) {
-        var node = this.postgroup[i].treenode;
+        node = this.postgroup[i].treenode;
         if (this.mustDrawLineWith(node)) {
           if (!this.postLines) this.postLines = [];
           this.postLines.push(this.createArrow(this, node, this.postgroup[i].confidence, false));
@@ -970,11 +972,11 @@ SkeletonElements.prototype.ArrowLine.prototype = new (function() {
     // Reset transform
     this.line.transform("");
     // Translate, rotate and scale
-    var length = Math.sqrt((x2new - x1new) * (x2new - x1new)
-                         + (y2new - y1new) * (y2new - y1new));
-    this.line.transform( "t" + x1new + "," + y1new
-                      + "r" + angle + ",0,0"
-                      + "s" + length + "," + length + ",0,0");
+    var length = Math.sqrt((x2new - x1new) * (x2new - x1new) +
+                           (y2new - y1new) * (y2new - y1new));
+    this.line.transform( "t" + x1new + "," + y1new +
+                         "r" + angle + ",0,0" +
+                         "s" + length + "," + length + ",0,0");
 
     // Reset transform
     this.arrowPath.transform("");

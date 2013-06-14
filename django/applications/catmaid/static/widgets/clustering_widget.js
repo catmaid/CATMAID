@@ -142,19 +142,14 @@ var ClusteringWidget = new function()
                    maxy: max_y < 1.0 ? 1.0 : max_y,
                 });
 
-            // draw own x axis
-            r.path("M" + chart.worldToPaperX(0.0) +
-                   "," + chart.worldToPaperY(0.0) +
-                   "H" + chart.worldToPaperX(max_x + 5));
-
             // get the paper coordinates of the x axis
             var x_axis_y = chart.worldToPaperY(0.0);
 
             // label leaves with incrementing numbers
             chart.labels = r.set();
             var x = 15; var h = 5;
-            // draw labels 3px below X axis
-            var label_y = x_axis_y + 3;
+            // draw labels 6px below X axis
+            var label_y = x_axis_y + 6;
             // SciPy positions leaves every ten ticks, starting at five.
             // Iterate the clusters and get coordinates of leaf nodes.
             var label_coords = [];
@@ -164,26 +159,38 @@ var ClusteringWidget = new function()
                 label_coords.push( {'x': label_x, 'y': label_y} );
             }
             // draw labels
-            var label_num = 1;
             var label_center_y = null;
+			var max_label_width = null
+			var labels = new Array();
             $.each(label_coords, function(i, coord) {
                 // only draw labels for real leaves
                 if (dendrogram.leaves[i] < dendrogram.ivl.length) {
-                    var text = r.text(coord.x, coord.y, "" + (i+1));
+                    // draw label
+                    var text = r.text(coord.x, coord.y, dendrogram.ivl[i]);
+                    // find maximum text width
+                    var bb = text.getBBox();
+                    if (max_label_width == null)
+                        max_label_width = bb.width;
+                    else if (bb.width > max_label_width)
+                        max_label_width = bb.width;
+                    // rotate the label
+                    text.transform("r270");
                     // align it vertically to the top
-                    var b = text.getBBox();
-                    var h = Math.abs(b.y2) - Math.abs(b.y) + 1;
+                    var h = Math.abs(bb.y2) - Math.abs(bb.y) + 1;
                     text.attr({
-                        'y': b.y + h,
+                        //'y': bb.y + h,
+                        'text-anchor': "end",
                         'font': "11px 'Fontin Sans', Fontin-Sans, sans-serif" });
-                    // increment counter
-                    label_num = label_num + 1;
                     // store vertical label center if not already done
                     if (label_center_y == null) {
-                        label_center_y = b.y + h;
+                        label_center_y = bb.y + h;
                     }
+                    // remember this label
+                    labels.push(text);
                 }
             });
+            // adjust viewbox to make everything visible
+            r.setViewBox(0, 0, width, height + max_label_width, true);
 
             // add a handle for cluster resizing
             var rhandle = document.createElement("div");
@@ -229,27 +236,8 @@ var ClusteringWidget = new function()
             // add handle
             container.appendChild(rhandle);
 
-            // create a legend
-            var legend = document.createElement('div');
-            legend.setAttribute("id", "clustering-legend");
-            legend.setAttribute("class", "indented");
-            var legend_table = document.createElement('table');
-            $.each(dendrogram.ivl, function(i, val) {
-                var row = document.createElement('tr');
-                var cell_1 = document.createElement('td');
-                var cell_2 = document.createElement('td');
-                var content_1 = document.createTextNode((i + 1) + ".");
-                var content_2 = document.createTextNode(val);
-                cell_1.appendChild(content_1);
-                cell_2.appendChild(content_2);
-                row.appendChild(cell_1);
-                row.appendChild(cell_2);
-                legend_table.appendChild(row);
-            });
-            legend.appendChild(legend_table);
-            container.appendChild(legend);
-
             // attach hovering functions
+            var current_label = null;
             chart.hoverColumn(
                 function() {
                     // The first leaf of a SciPy dendrogram is at x=5,
@@ -260,20 +248,16 @@ var ClusteringWidget = new function()
                     if (rel_leaf_x % 10 == 0) {
                         var graph_idx = rel_leaf_x / 10
                         var graph_name = dendrogram.ivl[graph_idx];
-                        // Make the tag appear on the right of the pointer for
-                        // the first half of leafs and to the left for the rest.
-                        var dir = (this.x < width * 0.5) ? 0 : 180;
-                        // create tag
-                        this.bulletWidth = 2;
-                        this.tags = r.set()
-                        this.tags.push(
-                            r.tag(this.x, label_center_y, graph_name, dir, 10)
-                                .insertBefore(this)
-                                .attr([{ fill: "#CED8F6" }, { fill : "#000" }]));
+                        // highlight label
+                        current_label = labels[graph_idx];
+                        current_label.attr({'fill': "#0000FF"});
                     }
                 },
                 function() {
-                    this.tags && this.tags.remove();
+                    if (current_label) {
+                        current_label.attr({'fill': "#000000"});
+                        current_label = null;
+                    }
                 });
         }
     };

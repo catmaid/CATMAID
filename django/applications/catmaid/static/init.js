@@ -218,6 +218,8 @@ function handle_logout(status, text, xml) {
 		handle_profile_update(e);
 	}
 
+	updateProjects();
+
 	return;
 }
 

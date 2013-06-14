@@ -312,6 +312,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
 
     if (!this.line) {
       this.line = this.paper.path();
+      this.line.toBack();
     }
 
     this.line.attr({

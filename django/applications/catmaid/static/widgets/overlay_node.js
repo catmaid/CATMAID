@@ -227,8 +227,7 @@ SkeletonElements.prototype.NodePrototype = new (function() {
 
   /** Recreate the GUI components, namely the circle and edges.
    *  This is called only when creating a single node. */
-  // TODO rename to createGraphics
-  this.draw = function() {
+  this.createGraphics = function() {
     this.createCircle();
     this.drawEdges();
   };

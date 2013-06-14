@@ -789,7 +789,7 @@ var SkeletonAnnotations = new function()
               var jso = $.parseJSON(text);
               var nn = self.graphics.newConnectorNode(jso.connector_id, pos_x, pos_y, pos_z, 0, 5 /* confidence */, true);
               nodes[jso.connector_id] = nn;
-              nn.draw();
+              nn.createGraphics();
               self.activateNode(nn);
               if (typeof completionCallback !== "undefined") {
                 completionCallback(jso.connector_id);
@@ -842,7 +842,7 @@ var SkeletonAnnotations = new function()
 
               // add node to nodes list
               nodes[nid] = nn;
-              nn.draw();
+              nn.createGraphics();
 
               // create link : new treenode postsynaptic_to or presynaptic_to deactivated connectorID
               self.createLink(nid, connectorID, link_type);
@@ -996,7 +996,7 @@ var SkeletonAnnotations = new function()
               var nn = self.graphics.newNode(nid, nodes[parentID], parentID, radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
 
               nodes[nid] = nn;
-              nn.draw();
+              nn.createGraphics();
               var active_node_z = atn.z;
               self.activateNode(nn); // will alter atn
 

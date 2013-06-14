@@ -287,7 +287,12 @@ var SkeletonConnectivity = new function()
             var a = distribution(partners, 2);
 
             // The skeletons involved (the active, or the selected and visible)
-            var skids = a[0].map(function(ob) { return ob.skid; }).sort();
+            var skids = Object.keys(a.reduce(function(unique, block) {
+                if (block) block.forEach(function(ob) { unique[ob.skid] = null; });
+                return unique;
+            }, {}));
+
+            if (0 === skids.length) return null;
 
             // Colors: an array of hex values
             var zeroPad = function(s) { return ("0" + s).slice(-2); }

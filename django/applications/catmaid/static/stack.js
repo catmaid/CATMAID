@@ -79,6 +79,7 @@ function Stack(
 		return;
 	}
 	
+	
 	/**
 	 * update all state informations and the screen content
 	 */
@@ -192,8 +193,153 @@ function Stack(
 		};
 		return l;
 	}
+	
+	
+	/**
+	 * Transfer the limiting coordinates of an orthogonal box from stack to
+	 * project coordinates.  Transferred coordinates are written into
+	 * projectBox.  This method is faster than createStackToProjectBox because
+	 * it does not generate new objects (Firefox 20%, Chromium 100% !)
+	 * 
+	 *  @param stackBox {min {x, y, z}, max{x, y, z}}
+	 *  @param projectBox {min {x, y, z}, max{x, y, z}}
+	 */
+	this.stackToProjectBox = function( stackBox, projectBox )
+	{
+		projectBox.min.x = self.stackToProjectX( stackBox.min.z, stackBox.min.y, stackBox.min.x );
+		projectBox.min.y = self.stackToProjectY( stackBox.min.z, stackBox.min.y, stackBox.min.x );
+		projectBox.min.z = self.stackToProjectZ( stackBox.min.z, stackBox.min.y, stackBox.min.x );
+		
+		projectBox.max.x = self.stackToProjectX( stackBox.max.z, stackBox.max.y, stackBox.max.x );
+		projectBox.max.y = self.stackToProjectY( stackBox.max.z, stackBox.max.y, stackBox.max.x );
+		projectBox.max.z = self.stackToProjectZ( stackBox.max.z, stackBox.max.y, stackBox.max.x );
+	}
+	
+	
+	/**
+	 * Create a new box from an orthogonal box by transferring its limiting
+	 * coordinates from stack to project coordinates.
+	 * 
+	 *  @param stackBox {min {x, y, z}, max{x, y, z}}
+	 */
+	this.createStackToProjectBox = function( stackBox )
+	{
+		return {
+			min : {
+				x : self.stackToProjectX( stackBox.min.z, stackBox.min.y, stackBox.min.x ),
+				y : self.stackToProjectY( stackBox.min.z, stackBox.min.y, stackBox.min.x ),
+				z : self.stackToProjectZ( stackBox.min.z, stackBox.min.y, stackBox.min.x )
+			},
+			max : {
+				x : self.stackToProjectX( stackBox.max.z, stackBox.max.y, stackBox.max.x ),
+				y : self.stackToProjectY( stackBox.max.z, stackBox.max.y, stackBox.max.x ),
+				z : self.stackToProjectZ( stackBox.max.z, stackBox.max.y, stackBox.max.x )
+			}
+		}
+	}
 
 
+	/**
+	 * Write the limiting coordinates of the current stack view's bounding box
+	 * into stackBox.  Faster tthan creating an ew box.
+	 * 
+	 *  @param stackBox {min {x, y, z}, max{x, y, z}}
+	 */
+	this.stackViewBox = function( stackBox )
+	{
+		var w2 = self.viewWidth / self.scale / 2;
+		var h2 = self.viewHeight / self.scale / 2;
+		
+		stackBox.min.x = self.x - w2;
+		stackBox.min.y = self.y - h2;
+		stackBox.min.z = self.z - 0.5;
+		
+		stackBox.max.x = self.x + w2;
+		stackBox.max.y = self.y + h2;
+		stackBox.max.z = self.z + 0.5;
+	}
+	
+	
+	/**
+	 * Create the bounding box of the current stack view.
+	 * 
+	 *  @return {min {x, y, z}, max{x, y, z}}
+	 */
+	this.createStackViewBox = function()
+	{
+		var w2 = self.viewWidth / self.scale / 2;
+		var h2 = self.viewHeight / self.scale / 2;
+		
+		return {
+			min : {
+				x : self.x - w2,
+				y : self.y - w2,
+				z : self.z - 0.5
+			},
+			max : {
+				x : self.x + w2,
+				y : self.y + w2,
+				z : self.z + 0.5
+			}
+		}
+	}
+	
+	
+	/**
+	 * Write the limiting coordinates of the current stack view's bounding box
+	 * plus some excess padding space into stackBox.  Faster than creating a
+	 * new box.
+	 * 
+	 *  @param stackBox {min {x, y, z}, max{x, y, z}}
+	 *  @param padScreenX x-padding in screen coordinates
+	 *  @param padScreenY y-padding in screen coordinates
+	 *  @param padScreenZ z-padding in screen coordinates (==stack coordinates as z is not scaled)
+	 */
+	this.paddedStackViewBox = function( paddedStackBox, padScreenX, padScreenY, padScreenZ )
+	{
+		var w2 = ( self.viewWidth / 2 + padScreenX ) / self.scale;
+		var h2 = ( self.viewHeight / 2 + padScreenY ) / self.scale;
+		var d2 = 0.5 + padScreenZ;
+		
+		stackBox.min.x = self.x - w2;
+		stackBox.min.y = self.y - h2;
+		stackBox.min.z = self.z - d2;
+		
+		stackBox.max.x = self.x + w2;
+		stackBox.max.y = self.y + h2;
+		stackBox.max.z = self.z + d2;
+	}
+	
+	
+	/**
+	 * Create the bounding box of the current stack view plus some excess
+	 * padding space.
+	 * 
+	 *  @param padScreenX x-padding in screen coordinates
+	 *  @param padScreenY y-padding in screen coordinates
+	 *  @param padScreenZ z-padding in screen coordinates (==stack coordinates as z is not scaled)
+	 */
+	this.createPaddedStackViewBox = function( padScreenX, padScreenY, padScreenZ )
+	{
+		var w2 = ( self.viewWidth / 2 + padScreenX ) / self.scale;
+		var h2 = ( self.viewHeight / 2 + padScreenY ) / self.scale;
+		var d2 = 0.5 + padScreenZ;
+		
+		return {
+			min : {
+				x : self.x - w2,
+				y : self.y - w2,
+				z : self.z - d2
+			},
+			max : {
+				x : self.x + w2,
+				y : self.y + w2,
+				z : self.z + d2
+			}
+		}
+	}
+	
+	
 	/**
 	 * Get the top and left coordinates in physical project coordinates of
 	 * stack's window
@@ -545,7 +691,7 @@ function Stack(
 	
 	// initialize
 	var self = this;
-	if ( !ui ) ui = new UI();
+	if ( typeof ui == "undefined" ) ui = new UI();
 	
 	self.id = id;
 	

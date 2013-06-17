@@ -640,11 +640,13 @@ var SkeletonAnnotations = new function()
       }
     };
 
-    this.splitSkeleton = function () {
+    this.splitSkeleton = function (e) {
         if( -1 === nodes[atn.id].parent_id ) {
             alert('Can not split at root node!');
             return;
         }
+        par = nodes[ nodes[atn.id].parent_id ];
+        ctrlKey = e.ctrlKey;
         if (confirm("Do you really want to to split the skeleton?")) {
         $.blockUI({ message: '<h2><img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> Splitting skeleton. Just a moment...</h2>' });
         requestQueue.register(
@@ -655,16 +657,52 @@ var SkeletonAnnotations = new function()
           }, function (status, text, xml) {
             $.unblockUI();
             if (status === 200) {
-              if (text && text !== " ") {
+              if (text && text !== " ") 
+              {
                 var e = $.parseJSON(text);
                 if (e.error) {
                   alert(e.error);
-                } else {
+                }else 
+                {
+
+                  if (ctrlKey == false )//stay in the current node
+                  {
                   // just redraw all for now
                   self.updateNodes();
                   ObjectTree.refresh();
                   refreshAllWidgets();
                   self.selectNode(atn.id);
+                  }else{//make old parent node as active
+                      self.activateNode( par );
+                      // just redraw all for now
+                      self.updateNodes();
+                      ObjectTree.refresh();
+                      refreshAllWidgets();
+                      self.selectNode(par.id);
+
+                      //move to selection
+                      if( stack.tile_source_type === 5)//5D visualization
+                      {
+                        stack.getProject().moveTo5D(par.z * stack.resolution.z + stack.translation.z, 
+                                                    par.y * stack.resolution.y + stack.translation.y,
+                                                    par.x * stack.resolution.x + stack.translation.x,
+                                                    undefined, 
+                                                    par.t, par.ch,
+                        function() {
+                          SkeletonAnnotations.staticSelectNode(par.id, par.skeleton_id);
+                        });
+                      }else{
+                        stack.getProject().moveTo(par.z * stack.resolution.z + stack.translation.z, 
+                                                    par.y * stack.resolution.y + stack.translation.y,
+                                                    par.x * stack.resolution.x + stack.translation.x, 
+                                                    undefined,
+                        function() {
+                          SkeletonAnnotations.staticSelectNode(par.id, par.skeleton_id);
+                        });
+                      }
+                      
+                  }
+              
                 }
               }
             }
@@ -2085,7 +2123,7 @@ var SkeletonAnnotations = new function()
         break;
       case "skelsplitting":
         if (atn.id !== null) {
-          self.splitSkeleton();
+          self.splitSkeleton(arguments[1]);
         } else {
           alert('Need to activate a treenode before splitting!');
         }

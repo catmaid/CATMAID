@@ -578,7 +578,7 @@ not needed for cell tracking
   }) );
 
   this.addAction( new Action({
-    helpText: "Split this skeleton at the active node",
+    helpText: "Split this skeleton at the active node (with ctrl it leaves the parent node as active)",
     buttonName: "skelsplitting",
     buttonID: 'trace_button_skelsplitting',
     keyShortcuts: {
@@ -587,7 +587,7 @@ not needed for cell tracking
     run: function (e) {
       if (!mayEdit())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('skelsplitting');
+      tracingLayer.svgOverlay.tracingCommand('skelsplitting', e);
       return true;
     }
   }) );

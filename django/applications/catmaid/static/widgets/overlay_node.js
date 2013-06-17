@@ -615,6 +615,10 @@ var SkeletonElements = new function()
             }
             else{
               paper.catmaidSVGOverlay.createTreenodeLink(node.id, atnID);
+              //make current node active since the user is going to be in this node
+              //Note: right now it is not possible because callback to createTreeNodeLink() is executed in parallel and overwrites the next two commands
+              //paper.catmaidSVGOverlay.activateNode(node);
+              //paper.catmaidSVGOverlay.recolorAllNodes();
             }
             // TODO check for error
             statusBar.replaceLast("Joined node #" + atnID + " to node #" + node.id);

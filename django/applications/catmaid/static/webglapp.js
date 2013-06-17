@@ -741,7 +741,9 @@ var WebGLApp = (function() { return new function () {
           } else if (NeuronStagingArea.skeletonsColorMethod === 'reviewer') {
             baseColor = User(vertex[3]).color; // vertex[3] is reviewer_id
           }
-          
+
+          if (!self.graph) self.createGraph();
+
           // Darken the color by the average weight of the vertex's edges.
           var weight = 0;
           var neighbors = self.graph.neighbors(vertexID);
@@ -873,9 +875,9 @@ var WebGLApp = (function() { return new function () {
 
       //var textlabel_visibility = $('#skeletontext-' + self.id).is(':checked');
       var colorkey;
-      
-      // Populate the graph for calculating the centrality-based shading
-      this.graph = jsnx.Graph();
+
+      // Graph for calculating the centrality-based shading will be created when needed
+      this.graph = null;
       this.betweenness = {};
       this.branchCentrality = {};
 
@@ -939,8 +941,6 @@ var WebGLApp = (function() { return new function () {
         var v; // for reuse in translating the sphere if any
         // If node has a parent
         if (node[1]) {
-          self.graph.add_edge(node[0], node[1]);
-      
           // indices 4,5,6 are x,y,z
           var p = nodeProps[node[1]];
           v = createEdge(node[0], node[4], node[5], node[6],
@@ -1004,6 +1004,19 @@ var WebGLApp = (function() { return new function () {
       self.shaderWorkers();
     };
 
+    this.createGraph = function() {
+      var nodeProps = this.nodeProps,
+          graph = jsnx.Graph();
+      for (var nodeID in nodeProps) {
+        var props = nodeProps[nodeID];
+        if (props[1]) {
+          // Edge from parent to child
+          graph.add_edge(props[1], nodeID);
+        }
+      }
+      this.graph = graph;
+    };
+
     /** Populate datastructures for skeleton shading methods, and trigger a render
      * when done and if appropriate. Does none of that and updates skeleton color
      * when the shading method is none, or the graph data structures are already
@@ -1015,6 +1028,8 @@ var WebGLApp = (function() { return new function () {
         WebGLApp.render();
         return;
       }
+
+      if (!this.graph) this.createGraph();
 
       if (typeof(Worker) !== "undefined")
       {

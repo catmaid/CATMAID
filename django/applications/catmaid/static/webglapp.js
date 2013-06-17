@@ -1,13 +1,14 @@
-var camera;
-var WebGLApp = new function () {
+/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
+/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
+var WebGLApp = (function() { return new function () {
 
-  self = this;
+  var self = this;
   self.neurons = [];
 
   // Queue server requests, awaiting returns
   var submit = typeof submitterFn!= "undefined" ? submitterFn() : undefined;
 
-  var scene, renderer, scale, controls, zplane = null, meshes = [];
+  var camera, scene, renderer, scale, controls, zplane = null, meshes = [];
   var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, projector, contour_objects = [],
       bbmesh, floormesh, debugax, togglevisibleall = false, missing_sections = [], mouse = new THREE.Vector2();
   var pointLight, light, ambientLight;
@@ -28,20 +29,14 @@ var WebGLApp = new function () {
 
   this.init = function( divID ) {
 
-    self.project_id = project.id;
     self.stack_id = project.focusedStack.id;
 
     self.divID = divID;
     self.divID_jQuery = '#' + divID;
 
-    // self.divWidth = $(this.divID_jQuery).width();
-    // self.divHeight = $(this.divID_jQuery).height();
-
     resolution = project.focusedStack.resolution;
     dimension = project.focusedStack.dimension;
     translation = project.focusedStack.translation;
-
-    // self.render();
   }
 
   /** Clean up after closing the 3d viewer. */
@@ -62,51 +57,50 @@ var WebGLApp = new function () {
 
     if( active_node !== null) {
       scene.remove( active_node );
-      delete active_node;
       active_node = null;
     }
 
     if( floormesh !== null) {
       scene.remove( floormesh );
-      delete floormesh;
       floormesh = null;
     }
 
     if( zplane !== null) {
       scene.remove( zplane );
-      delete zplane;
       zplane = null;
     }
 
     if( floormesh !== null) {
       scene.remove( floormesh );
-      delete floormesh;
       floormesh = null;
     }
 
     if( bbmesh !== null) {
       scene.remove( bbmesh );
-      delete bbmesh;
       bbmesh = null;
     }
 
     if( debugax !== null) {
       scene.remove( debugax );
-      delete debugax;
       debugax = null;
     }
 
-    // TODO: remove meshes
-    // TODO: remove missing sections
+    if (meshes && meshes.length > 0) {
+      meshes.forEach(function(mesh) {
+        scene.remove(mesh);
+      });
+      meshes = [];
+    }
 
-  }
+    self.removeMissingSections();
+  };
 
   /* transform coordinates from CATMAID coordinate system
      to WebGL coordinate system: x->x, y->y+dy, z->-z
     */
   var transform_coordinates = function ( point ) {
     return [point[0],-point[1]+dimension.y*resolution.y,-point[2] ];
-  }
+  };
 
   var connectivity_types = new Array('neurite', 'presynaptic_to', 'postsynaptic_to');
 
@@ -128,7 +122,7 @@ var WebGLApp = new function () {
     controls.dynamicDampingFactor = 0.3;
 
     // lights
-    ambienteLight = new THREE.AmbientLight( 0x505050 )
+    ambientLight = new THREE.AmbientLight( 0x505050 )
     scene.add( ambientLight );
     pointLight = new THREE.PointLight( 0xffaa00 );
     scene.add( pointLight );
@@ -194,13 +188,40 @@ var WebGLApp = new function () {
     XYView();
     self.createActiveNode();
 
-    // // if there is an active skeleton, add it to the view if staging area is empty
-    if(SkeletonAnnotations.getActiveNodeId() && NeuronStagingArea.get_selected_skeletons().length === 0) {
-      NeuronStagingArea.add_active_object_to_stage();
+    // Acknowledge persistent options
+    // (if the 3d window was opened, options set, and then closed, and then reopened)
+    if (show_missing_sections) {
+      self.createMissingSections();
+    }
+    if (show_meshes) {
+      show_meshes = false;
+      self.toggleMeshes(); // show them
+    }
+    if (!show_active_node) {
+      self.hideActiveNode();
+    }
+    if (!show_floor) {
+      show_floor = true;
+      self.toggleFloor(); // hide it
+    }
+    if (!show_background) {
+      show_background = true;
+      self.toggleBackground(); // hide it
+    }
+    if (!show_zplane) {
+      show_zplane = true;
+      self.toggleZplane(); // hide it
     }
 
-
-  }
+    // Skeleton autoloading triggers:
+    var skids = NeuronStagingArea.get_selected_skeletons();
+    // If the staging area contains skeletons, add them
+    skids.forEach(self.addSkeletonFromID);
+    // If the staging area is empty but a node is active, add its skeleton
+    if (0 === skids.length && SkeletonAnnotations.getActiveNodeId()) {
+      NeuronStagingArea.add_active_object_to_stage();
+    }
+  };
 
   function toggleOrthographic() {
       if( ortho ) {
@@ -284,7 +305,7 @@ var WebGLApp = new function () {
       //console.log('index', index, self.assembly_slices.length, self.assembly_slices)
       if( index === self.assembly_slices.length ) {
         self.add_to_scene();
-        render();
+        WebGLApp.render();
         return;
       } 
       var slice = assembly_data.slices[ index ];
@@ -482,17 +503,14 @@ var WebGLApp = new function () {
       for ( var i=0; i<connectivity_types.length; ++i ) {
         if( this.actor.hasOwnProperty(connectivity_types[i]) ) {
           delete this.actor[connectivity_types[i]];
-          this.actor[connectivity_types[i]] = null;
         }
 
         if( this.geometry.hasOwnProperty(connectivity_types[i]) ) {
           delete this.geometry[connectivity_types[i]];
-          this.geometry[connectivity_types[i]] = null;
         }
 
         if( this.connectorgeometry.hasOwnProperty(connectivity_types[i]) ) {
           delete this.connectorgeometry[connectivity_types[i]];
-          this.connectorgeometry[connectivity_types[i]] = null;
         }        
       }
 
@@ -500,38 +518,27 @@ var WebGLApp = new function () {
         if( connectivity_types[i] === 'presynaptic_to' || connectivity_types[i] === 'postsynaptic_to') {
           if( this.connectoractor && this.connectoractor[connectivity_types[i]] ) {
             delete this.connectoractor[connectivity_types[i]];
-            this.connectoractor[connectivity_types[i]] = null;
           }
         }
       }
-      // for ( var i=0; i<connectivity_types.length; ++i ) {
-      //   if( this.actor.hasOwnProperty(connectivity_types[i]) )
-      //     scene.remove( this.actor[connectivity_types[i]] );
-      // }
       for ( var k in this.labelSphere ) {
         if( this.labelSphere.hasOwnProperty( k ) )
           delete this.labelSphere[k];
-          this.labelSphere[k] = null;
       }
       for ( var k in this.synapticSpheres ) {
         if( this.synapticSpheres.hasOwnProperty( k ) )
           delete this.synapticSpheres[k];
-          this.synapticSpheres[k] = null;
       }
       for ( var k in this.radiusSpheres ) {
         if( this.radiusSpheres.hasOwnProperty( k ) )
           delete this.radiusSpheres[k];
-          this.radiusSpheres[k] = null;
       }
       for ( var k in this.textlabels ) {
         if( self.textlabels.hasOwnProperty( k ))
           delete this.textlabels[k];
-          this.textlabels[k] = null;
       }
 
-      delete this.nodeProps;
       this.nodeProps = null;
-      delete this.connectorProps;
       this.connectorProps = null;
     };
 
@@ -542,14 +549,6 @@ var WebGLApp = new function () {
           scene.remove( this.actor[connectivity_types[i]] );
       }
       this.remove_connector_selection();
-      // for ( var i=0; i<connectivity_types.length; ++i ) {
-      //   if( this.actor.hasOwnProperty(connectivity_types[i]) )
-      //     scene.remove( this.actor[connectivity_types[i]] );
-      // }
-      for ( var k in this.labelSphere ) {
-        if( this.labelSphere.hasOwnProperty( k ) )
-          scene.remove( this.labelSphere[k] );
-      }
       for ( var k in this.synapticSpheres ) {
         if( this.synapticSpheres.hasOwnProperty( k ) )
           scene.remove( this.synapticSpheres[k] );
@@ -558,13 +557,7 @@ var WebGLApp = new function () {
         if( this.radiusSpheres.hasOwnProperty( k ) )
           scene.remove( this.radiusSpheres[k] );
       }
-      for ( var k in this.textlabels ) {
-        if( self.textlabels.hasOwnProperty( k )) {
-          var tagString = this.textlabels[k];
-          scene.remove( this.textlabels[k] );
-          releaseTagGeometry( tagString );
-        }
-      }
+      removeTextMeshes();
     };
 
     /** Set the visibility of the skeleton, radius spheres and label spheres. Does not set the visibility of the synaptic spheres or edges. */
@@ -599,11 +592,113 @@ var WebGLApp = new function () {
 
     this.setPostVisibility = setSynapticVisibilityFn('postsynaptic_to');
 
-    this.setTextVisibility = function( vis ) {
-      for( var idx in self.textlabels ) {
-        if( self.textlabels.hasOwnProperty( idx )) {
-          self.textlabels[ idx ].visible = vis;
+    var createTextMeshes = function() {
+      // Sort out tags by node: some nodes may have more than one
+      var nodeIDTags = {};
+      for (var tag in self.tags) {
+        if (self.tags.hasOwnProperty(tag)) {
+          self.tags[tag].forEach(function(nodeID) {
+            if (nodeIDTags.hasOwnProperty(nodeID)) {
+              nodeIDTags[nodeID].push(tag);
+            } else {
+              nodeIDTags[nodeID] = [tag];
+            }
+          });
         }
+      }
+
+      // Sort and convert to string the array of tags of each node
+      for (var nodeID in nodeIDTags) {
+        if (nodeIDTags.hasOwnProperty(nodeID)) {
+          nodeIDTags[nodeID] = nodeIDTags[nodeID].sort().join();
+        }
+      }
+
+      // Group nodes by common tag string
+      var tagNodes = {};
+      for (var nodeID in nodeIDTags) {
+        if (nodeIDTags.hasOwnProperty(nodeID)) {
+          var tagString = nodeIDTags[nodeID];
+          if (tagNodes.hasOwnProperty(tagString)) {
+            tagNodes[tagString].push(nodeID);
+          } else {
+            tagNodes[tagString] = [nodeID];
+          }
+        }
+      }
+
+      // Create meshes for the tags for all nodes that need them, reusing the geometries
+      for (var tagString in tagNodes) {
+        if (tagNodes.hasOwnProperty(tagString)) {
+          tagNodes[tagString].forEach(function(nodeID) {
+            var node = self.nodeProps[nodeID];
+            var v = pixelSpaceVector(node[4], node[5], node[6]);
+            var text = new THREE.Mesh( getTagGeometry(tagString), textMaterial );
+            text.position.x = v.x;
+            text.position.y = v.y;
+            text.position.z = v.z;
+            text.visible = true;
+            self.textlabels[nodeID] = text;
+            scene.add( text );
+          });
+        }
+      }
+
+      var createLabelSphere = function(nodeID, color) {
+        var node = self.nodeProps[nodeID];
+        var v = pixelSpaceVector(node[4], node[5], node[6]);
+        var mesh = new THREE.Mesh( labelspheregeometry, color );
+        mesh.position.set( v.x, v.y, v.z );
+        mesh.node_id = nodeID;
+        mesh.skeleton_id = self.id;
+        mesh.orig_coord = {x: node[4], y: node[5], z: node[6]};
+        self.labelSphere[nodeID] = mesh;
+        scene.add( mesh );
+      };
+
+      // Place spheres on nodes with special labels:
+      for (var tag in self.tags) {
+        if (self.tags.hasOwnProperty(tag)) {
+          var tagLC = tag.toLowerCase();
+          if (-1 !== tagLC.indexOf('todo')) {
+            self.tags[tag].forEach(function(nodeID) {
+              if (!self.labelSphere[nodeID]) {
+                createLabelSphere(nodeID, labelColors.todo);
+              }
+            });
+          } else if (-1 !== tagLC.indexOf('uncertain')) {
+            self.tags[tag].forEach(function(nodeID) {
+              if (!self.labelSphere[nodeID]) {
+                createLabelSphere(nodeID, labelColors.uncertain);
+              }
+            });
+          }
+        }
+      }
+    };
+
+    var removeTextMeshes = function() {
+      for (var k in self.textlabels) {
+        if (self.textlabels.hasOwnProperty(k))
+          var tagString = self.textlabels[k];
+          scene.remove(self.textlabels[k]);
+          releaseTagGeometry(tagString);
+          delete self.textlabels[k];
+      }
+      for (var k in self.labelSphere) {
+        if (self.labelSphere.hasOwnProperty(k) ) {
+          scene.remove(self.labelSphere[k]);
+          delete self.labelSphere[k];
+        }
+      }
+    };
+
+    this.setTextVisibility = function( vis ) {
+      // Create text meshes if not there, or destroy them if to be hidden
+      if (vis && 0 === Object.keys(self.textlabels).length) {
+        createTextMeshes();
+      } else if (!vis) {
+        removeTextMeshes();
       }
     };
 
@@ -646,7 +741,9 @@ var WebGLApp = new function () {
           } else if (NeuronStagingArea.skeletonsColorMethod === 'reviewer') {
             baseColor = User(vertex[3]).color; // vertex[3] is reviewer_id
           }
-          
+
+          if (!self.graph) self.createGraph();
+
           // Darken the color by the average weight of the vertex's edges.
           var weight = 0;
           var neighbors = self.graph.neighbors(vertexID);
@@ -776,11 +873,11 @@ var WebGLApp = new function () {
       }
       self.initialize_objects();
 
-      var textlabel_visibility = $('#skeletontext-' + self.id).is(':checked');
+      //var textlabel_visibility = $('#skeletontext-' + self.id).is(':checked');
       var colorkey;
-      
-      // Populate the graph for calculating the centrality-based shading
-      this.graph = jsnx.Graph();
+
+      // Graph for calculating the centrality-based shading will be created when needed
+      this.graph = null;
       this.betweenness = {};
       this.branchCentrality = {};
 
@@ -800,6 +897,9 @@ var WebGLApp = new function () {
         ob[con[1]] = con;
         return ob;
       }, {});
+
+      // Store for creation when requested
+      self.tags = tags;
 
 
       var createEdge = function(id1, x1, y1, z1,
@@ -841,8 +941,6 @@ var WebGLApp = new function () {
         var v; // for reuse in translating the sphere if any
         // If node has a parent
         if (node[1]) {
-          self.graph.add_edge(node[0], node[1]);
-      
           // indices 4,5,6 are x,y,z
           var p = nodeProps[node[1]];
           v = createEdge(node[0], node[4], node[5], node[6],
@@ -886,88 +984,6 @@ var WebGLApp = new function () {
         }
       });
 
-      // Sort out tags by node: some nodes may have more than one
-      var nodeIDTags = {};
-      for (var tag in tags) {
-        if (tags.hasOwnProperty(tag)) {
-          tags[tag].forEach(function(nodeID) {
-            if (nodeIDTags.hasOwnProperty(nodeID)) {
-              nodeIDTags[nodeID].push(tag);
-            } else {
-              nodeIDTags[nodeID] = [tag];
-            }
-          });
-        }
-      }
-
-      // Sort and convert to string the array of tags of each node
-      for (var nodeID in nodeIDTags) {
-        if (nodeIDTags.hasOwnProperty(nodeID)) {
-          nodeIDTags[nodeID] = nodeIDTags[nodeID].sort().join();
-        }
-      }
-
-      // Group nodes by common tag string
-      var tagNodes = {};
-      for (var nodeID in nodeIDTags) {
-        if (nodeIDTags.hasOwnProperty(nodeID)) {
-          var tagString = nodeIDTags[nodeID];
-          if (tagNodes.hasOwnProperty(nodeIDTags)) {
-            tagNodes[tagString].push(nodeID);
-          } else {
-            tagNodes[tagString] = [nodeID];
-          }
-        }
-      }
-
-      // Create meshes for the tags for all nodes that need them, reusing the geometries
-      for (var tagString in tagNodes) {
-        if (tagNodes.hasOwnProperty(tagString)) {
-          tagNodes[tagString].forEach(function(nodeID) {
-            var node = nodeProps[nodeID];
-            var v = pixelSpaceVector(node[4], node[5], node[6]); 
-            var text = new THREE.Mesh( getTagGeometry(tagString), textMaterial );
-            text.position.x = v.x;
-            text.position.y = v.y;
-            text.position.z = v.z;
-            text.visible = textlabel_visibility;
-            self.textlabels[nodeID] = text;
-            scene.add( text );
-          });
-        }
-      }
-
-      var createLabelSphere = function(nodeID, color) {
-        var node = nodeProps[nodeID];
-        var v = pixelSpaceVector(node[4], node[5], node[6]);
-        var mesh = new THREE.Mesh( labelspheregeometry, color );
-        mesh.position.set( v.x, v.y, v.z );
-        mesh.node_id = nodeID;
-        mesh.skeleton_id = self.id;
-        mesh.orig_coord = {x: node[4], y: node[5], z: node[6]};
-        self.labelSphere[nodeID] = mesh;
-        scene.add( mesh );
-      };
-
-      // Place spheres on nodes with special labels:
-      for (var tag in tags) {
-        if (tags.hasOwnProperty(tag)) {
-          var tagLC = tag.toLowerCase();
-          if (-1 != tagLC.indexOf('todo')) {
-            tags[tag].forEach(function(nodeID) {
-              if (!self.labelSphere[nodeID]) {
-                createLabelSphere(nodeID, labelColors.todo);
-              }
-            });
-          } else if (-1 != tagLC.indexOf('uncertain')) {
-            tags[tag].forEach(function(nodeID) {
-              if (!self.labelSphere[nodeID]) {
-                createLabelSphere(nodeID, labelColors.uncertain);
-              }
-            });
-          }
-        }
-      }
 
       self.addCompositeActorToScene();
 
@@ -988,6 +1004,19 @@ var WebGLApp = new function () {
       self.shaderWorkers();
     };
 
+    this.createGraph = function() {
+      var nodeProps = this.nodeProps,
+          graph = jsnx.Graph();
+      for (var nodeID in nodeProps) {
+        var props = nodeProps[nodeID];
+        if (props[1]) {
+          // Edge from parent to child
+          graph.add_edge(props[1], nodeID);
+        }
+      }
+      this.graph = graph;
+    };
+
     /** Populate datastructures for skeleton shading methods, and trigger a render
      * when done and if appropriate. Does none of that and updates skeleton color
      * when the shading method is none, or the graph data structures are already
@@ -999,6 +1028,8 @@ var WebGLApp = new function () {
         WebGLApp.render();
         return;
       }
+
+      if (!this.graph) this.createGraph();
 
       if (typeof(Worker) !== "undefined")
       {
@@ -1203,7 +1234,7 @@ var WebGLApp = new function () {
 
   self.createActiveNode = function()
   {
-    sphere = new THREE.SphereGeometry( 160 * scale, 32, 32, 1 );
+    var sphere = new THREE.SphereGeometry( 160 * scale, 32, 32, 1 );
     active_node = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x00ff00, opacity:0.8, transparent:true } ) );
     active_node.position.set( 0,0,0 );
     scene.add( active_node );
@@ -1418,7 +1449,7 @@ var WebGLApp = new function () {
     var s = Date.now(),
         callback = function( geometry ) { createScene( geometry, s ) };
     jQuery.ajax({
-        url: django_url+self.project_id+"/stack/"+self.stack_id+"/models",
+        url: django_url + project.id + "/stack/" + self.stack_id + "/models",
         type: "GET",
         dataType: "json",
         success: function (models) {
@@ -1556,7 +1587,7 @@ var WebGLApp = new function () {
     rand.setAttribute("value", "Enable z-plane");
     if( show_zplane )
       rand.setAttribute("checked", "true");
-    rand.onclick = WebGLApp.toggle_zplane;
+    rand.onclick = WebGLApp.toggleZplane;
     dialog.appendChild(rand);
     var rand = document.createTextNode('Enable z-plane');
     dialog.appendChild(rand);
@@ -1667,7 +1698,7 @@ var WebGLApp = new function () {
     });
   }
 
-  self.toggle_zplane = function() {
+  self.toggleZplane = function() {
     if( show_zplane ) {
       scene.remove( zplane );
       zplane = null;
@@ -1711,8 +1742,9 @@ var WebGLApp = new function () {
 
   function draw_grid() {
     var line_material = new THREE.LineBasicMaterial( { color: 0x535353 } ),
-      geometry = new THREE.Geometry(),
-      floor = 0, step = 25;
+        geometry = new THREE.Geometry(),
+        floor = 0,
+        step = 25;
     for ( var i = 0; i <= 40; i ++ ) {
       geometry.vertices.push( new THREE.Vector3( - 500, floor, i * step - 500 ) );
       geometry.vertices.push( new THREE.Vector3(   500, floor, i * step - 500 ) );
@@ -1809,12 +1841,13 @@ var WebGLApp = new function () {
     self.render();
   }
 
-  var render = function render() {
+  self.render = function render() {
     controls.update();
-    renderer.clear();
-    renderer.render( scene, camera );
-  }
-  self.render = render;
+    if (renderer) {
+      renderer.clear();
+      renderer.render( scene, camera );
+    }
+  };
 
   self.addAssemblyToTable = function ( assembly ) {
     var rowElement = $('<tr/>').attr({
@@ -2134,4 +2167,4 @@ var WebGLApp = new function () {
       }
     }
   };
-};
+}; })();

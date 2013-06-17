@@ -81,7 +81,7 @@ function Action (properties) {
 
   // -------------------------------------------------------------------
 
-  for (key in properties) {
+  for (var key in properties) {
     if (properties.hasOwnProperty(key)) {
       if (key === 'helpText') {
 	this.setHelpText(properties.helpText);
@@ -93,7 +93,7 @@ function Action (properties) {
 	this.setButtonName(properties.buttonName);
       }
       if (key === 'keyShortcuts') {
-	for (name in properties.keyShortcuts) {
+	for (var name in properties.keyShortcuts) {
 	  if (properties.keyShortcuts.hasOwnProperty(name)) {
 	    this.addKey(name, properties.keyShortcuts[name]);
 	  }
@@ -134,7 +134,7 @@ var getKeyCodeToActionMap = function( actionArray ) {
     those icons to the corresponding function */
 
 function createButtonsFromActions(actions, boxID, iconPrefix) {
-  var box, action, a, img, buttonID, title, shorcuts;
+  var box, action, a, img, buttonID, title, shortcuts;
   box = $( '<div class="box" id="'+boxID+'"></div>' );
   for (i = 0; i < actions.length; ++i) {
     action = actions[i];

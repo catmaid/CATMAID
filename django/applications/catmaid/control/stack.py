@@ -172,3 +172,27 @@ def stack_models(request, project_id=None, stack_id=None):
             }
     return HttpResponse(json.dumps(d), mimetype="text/json")
 
+def stacks(request, project_id=None):
+    """ Returns a response containing the JSON object with menu information
+    about the project's stacks.
+    """
+    p = Project.objects.get(pk=project_id)
+    info = get_stacks_menu_info(p)
+    return HttpResponse(json.dumps(info, sort_keys=True, indent=4),
+        mimetype="text/json")
+
+def get_stacks_menu_info(project):
+    """ Returns a dictionary with information needed to create a menu
+    entry for opening a stack.
+    """
+    info = []
+    for s in project.stacks.all():
+        info.append( {
+            'id': s.id,
+            'title': s.title,
+            'comment': s.comment,
+            'note': '',
+            'action': 'javascript:openProjectStack(%d,%d)' % (project.id, s.id)} )
+
+    return info
+

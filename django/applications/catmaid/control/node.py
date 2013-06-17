@@ -289,7 +289,7 @@ def node_list_tuples(request, project_id=None):
                 for row in cursor.fetchall():
                     labels[row[0]].append(row[1])
 
-        return HttpResponse(json.dumps((treenodes, connectors, labels, n_retrieved_nodes == params['limit'])))
+        return HttpResponse(json.dumps((treenodes, connectors, labels, n_retrieved_nodes == params['limit']), separators=(',', ':'))) # default separators have spaces in them like (', ', ': '). Must provide two: for list and for dictionary. The point of this: less space, more compact json
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))

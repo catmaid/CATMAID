@@ -115,8 +115,10 @@ var NeuronStagingArea = new function()
                             msg.innerHTML = 
                                 "Neuron Name: " + self.baseName + "<br />" +
                                 "Node count: " + e.node_count + "<br />" +
-                                "Input sites: " + e.input_count + "<br />" +
-                                "Output sites: " + e.output_count + "<br />" +
+                                "Postsynaptic sites: " + e.postsynaptic_sites + "<br />" +
+                                "Upstream skeletons: " + e.input_count + "<br />" +
+                                "Presynaptic sites: " + e.presynaptic_sites + "<br />" +
+                                "Downstream skeletons: " + e.output_count + "<br />" +
                                 "Cable length: " + e.cable_length + " nm <br />" +
                                 "Construction time: " + e.measure_construction_time + "<br />" +
                                 "Percentage reviewed: " + e.percentage_reviewed + "<br />";
@@ -210,7 +212,7 @@ var NeuronStagingArea = new function()
       var skeleton_id = parseInt( id );
       jQuery.ajax({
         url: django_url + project.id + '/skeleton/' + skeleton_id + '/neuronname',
-        type: "GET",
+        type: "POST", // GET gets cached by the browser
         dataType: "json",
         success: function ( data ) {
           self.add_skeleton_to_stage( skeleton_id, data['neuronname'], callback );

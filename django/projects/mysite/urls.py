@@ -51,6 +51,7 @@ urlpatterns += patterns(
     (r'^permissions$', 'catmaid.control.user_project_permissions'),
     (r'^messages/list$', 'catmaid.control.list_messages'),
     (r'^messages/mark_read$', 'catmaid.control.read_message'),
+    (r'^(?P<project_id>\d+)/stacks$', 'catmaid.control.stacks'),
 
     (r'^(?P<project_id>\d+)/skeletonlist/save$', 'catmaid.control.save_skeletonlist'),
     (r'^(?P<project_id>\d+)/skeletonlist/load$', 'catmaid.control.load_skeletonlist'),

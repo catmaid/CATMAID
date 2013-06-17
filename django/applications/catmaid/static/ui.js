@@ -199,7 +199,7 @@ UI = function()
 		var offset;
 		var target;
 		propagate = (typeof propagate == "undefined") ? false : propagate;
-		m = new Object();
+		var m = new Object();
 		m.x = realPagePosition.x;
 		m.y = realPagePosition.y;
 		if (relativeTo) {

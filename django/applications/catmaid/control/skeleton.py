@@ -65,6 +65,8 @@ def skeleton_statistics(request, project_id=None, skeleton_id=None):
         'node_count': skel.node_count(),
         'input_count': skel.input_count(),
         'output_count': skel.output_count(),
+        'presynaptic_sites': skel.presynaptic_sites_count(),
+        'postsynaptic_sites': skel.postsynaptic_sites_count(),
         'cable_length': int(skel.cable_length()),
         'measure_construction_time': construction_time,
         'percentage_reviewed': skel.percentage_reviewed() }), mimetype='text/json')

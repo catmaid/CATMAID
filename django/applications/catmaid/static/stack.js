@@ -242,11 +242,11 @@ function Stack(
 			if ( typeof sp == "number" )
 			{
 				self.s = Math.max( self.MIN_S, Math.min( self.MAX_S, Math.round( sp ) ) );
-				self.scale = 1 / Math.pow( 2, self.s );
+				self.scale = 1.0 / Math.pow( 2, self.s );
 			}
 
-			self.x = Math.max( 0, Math.min( MAX_X, Math.round( ( xp - translation.x ) / resolution.x ) ) );
-			self.y = Math.max( 0, Math.min( MAX_Y, Math.round( ( yp - translation.y ) / resolution.y ) ) );
+			self.x = Math.max( 0, Math.min( MAX_X, ( xp - translation.x ) / resolution.x ) );
+			self.y = Math.max( 0, Math.min( MAX_Y, ( yp - translation.y ) / resolution.y ) );
 
 			var z1;
 			var z2;

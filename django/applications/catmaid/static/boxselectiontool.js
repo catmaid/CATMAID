@@ -209,37 +209,37 @@ BoxSelectionTool.prototype.destroy = function()
 */
 BoxSelectionTool.prototype.register = function( parentStack )
 {
+    var self = this;
     // make sure the tool knows all (and only) open projecs
-    var project = parentStack.getProject();
-    var stacks = projects_available[ project.id ];
-    for (var s in stacks)
-    {
-        var id = stacks[ s ].id
-        var opened_stack = project.getStack( id );
-        if ( id in this.cropBoxCache )
-        {
-            // remove the entry if the project isn't opened
-            if ( !opened_stack )
-                delete this.cropBoxCache[ id ];
-        }
-        else
-        {
-            // make sure it has got a cropping box container in the cache
-            if ( opened_stack )
-                this.cropBoxCache[ id ] = this.initCropBox( opened_stack );
-        }
-    }
+    getStackMenuInfo(project.id, function(stacks) {
+        $.each(stacks, function(i, s) {
+            var id = s.id
+            var opened_stack = project.getStack( id );
+            if ( id in self.cropBoxCache )
+            {
+                // remove the entry if the project isn't opened
+                if ( !opened_stack )
+                    delete self.cropBoxCache[ id ];
+            }
+            else
+            {
+                // make sure it has got a cropping box container in the cache
+                if ( opened_stack )
+                    self.cropBoxCache[ id ] = self.initCropBox( opened_stack );
+            }
+        });
 
-    // bring a cached version back to life and
-    // deactivate other available cropping boxes
-    for ( var s in this.cropBoxCache )
-    {
-        var cb = this.cropBoxCache[ s ];
-        var is_active = (cb.stack == parentStack);
-        cb.layer.setActive( is_active );
-        if (is_active)
-            this.cropBox = cb;
-    }
+        // bring a cached version back to life and
+        // deactivate other available cropping boxes
+        for ( var s in self.cropBoxCache )
+        {
+            var cb = self.cropBoxCache[ s ];
+            var is_active = (cb.stack == parentStack);
+            cb.layer.setActive( is_active );
+            if (is_active)
+                self.cropBox = cb;
+        }
+    });
 
     this.stack = parentStack;
     this.zoomlevel = this.stack.s;

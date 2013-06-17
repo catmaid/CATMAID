@@ -645,6 +645,8 @@ class Log(UserFocusedModel):
     operation_type = models.CharField(max_length=255)
     location = Double3DField()
     freetext = models.TextField()
+    location_t = models.IntegerField(default = 0) #added to handle annotations through time
+    location_c = models.IntegerField(default = 0) # added to handle annotations through channels (or any extra dimension)
 
 class SkeletonlistDashboard(UserFocusedModel):
     class Meta:

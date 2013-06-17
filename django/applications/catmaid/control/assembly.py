@@ -134,7 +134,7 @@ def create_assembly_and_neuron(request, project_id=None, stack_id=None):
 
     _create_relation(user, project_id, relation_map['model_of'], new_assembly.id, new_neuron.id)
 
-    insert_into_log(project_id, request.user.id, "create_assembly", None, "Created neuron with ID %s and assembly with ID %s" % (new_neuron.id, new_assembly.id))
+    insert_into_log(project_id, request.user.id, "create_assembly", None,None, None, "Created neuron with ID %s and assembly with ID %s" % (new_neuron.id, new_assembly.id))
 
     return HttpResponse(json.dumps({
         'assembly_id': new_assembly.id,

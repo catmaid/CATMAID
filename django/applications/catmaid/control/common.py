@@ -16,7 +16,7 @@ def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id
     relation.save()
     return relation
 
-def insert_into_log(project_id, user_id, op_type, location=None, freetext=None):
+def insert_into_log(project_id, user_id, op_type, location=None, location_t=None, location_c=None, freetext=None):
     # valid operation types
     operation_type_array = [
         "rename_root",
@@ -51,6 +51,10 @@ def insert_into_log(project_id, user_id, op_type, location=None, freetext=None):
     new_log.operation_type = op_type
     if not location is None:
         new_log.location = location
+    if not location_t is None:
+        new_log.location_t = location_t
+    if not location_c is None:
+        new_log.location_c = location_c
     if not freetext is None:
         new_log.freetext = freetext
 

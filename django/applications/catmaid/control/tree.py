@@ -90,7 +90,7 @@ def instance_operation(request, project_id=None):
         node_ids = [node.id for node in nodes_to_rename]
         if len(node_ids) > 0:
             nodes_to_rename.update(name=params['title'])
-            insert_into_log(project_id, request.user.id, "rename_%s" % params['classname'], None, "Renamed %s with ID %s to %s" % (params['classname'], params['id'], params['title']))
+            insert_into_log(project_id, request.user.id, "rename_%s" % params['classname'], None, None, None, "Renamed %s with ID %s to %s" % (params['classname'], params['id'], params['title']))
             return HttpResponse(json.dumps({'class_instance_ids': node_ids}))
         else:
             instance_operation.res_on_err = ''
@@ -105,7 +105,7 @@ def instance_operation(request, project_id=None):
 
         elif 'skeleton' == params['rel']:
             remove_skeletons([params['id']])
-            insert_into_log(project_id, request.user.id, 'remove_skeleton', None, 'Removed skeleton with ID %s and name %s' % (params['id'], params['title']))
+            insert_into_log(project_id, request.user.id, 'remove_skeleton', None,None, None, 'Removed skeleton with ID %s and name %s' % (params['id'], params['title']))
             return HttpResponse(json.dumps({'status': 1, 'message': 'Removed skeleton successfully.'}))
 
         elif 'neuron' == params['rel']:
@@ -119,7 +119,7 @@ def instance_operation(request, project_id=None):
             node_to_delete = ClassInstance.objects.filter(id=params['id'])
             if node_to_delete.count() > 0:
                 node_to_delete.delete()
-                insert_into_log(project_id, request.user.id, 'remove_neuron', None, 'Removed neuron with ID %s and name %s' % (params['id'], params['title']))
+                insert_into_log(project_id, request.user.id, 'remove_neuron', None,None, None, 'Removed neuron with ID %s and name %s' % (params['id'], params['title']))
                 return HttpResponse(json.dumps({'status': 1, 'message': 'Removed neuron successfully.'}))
             else:
                 instance_operation.res_on_err = ''
@@ -152,7 +152,7 @@ def instance_operation(request, project_id=None):
         node.project_id = project_id
         node.class_column_id = class_map[params['classname']]
         node.save()
-        insert_into_log(project_id, request.user.id, "create_%s" % params['classname'], None, "Created %s with ID %s" % (params['classname'], params['id']))
+        insert_into_log(project_id, request.user.id, "create_%s" % params['classname'], None, None, None,"Created %s with ID %s" % (params['classname'], params['id']))
 
         # We need to connect the node to its parent, or to root if no valid parent is given.
         node_parent_id = params['parentid']
@@ -197,7 +197,7 @@ def instance_operation(request, project_id=None):
                 relation=relation_map[relation_type],
                 class_instance_a=params['src']).update(class_instance_b=params['ref'])
 
-        insert_into_log(project_id, request.user.id, 'move_%s' % params['classname'], None, 'Moved %s with ID %s to %s with ID %s' % (params['classname'], params['id'], params['targetname'], params['ref']))
+        insert_into_log(project_id, request.user.id, 'move_%s' % params['classname'], None,None, None, 'Moved %s with ID %s to %s with ID %s' % (params['classname'], params['id'], params['targetname'], params['ref']))
         return HttpResponse(json.dumps({'message': 'Success.'}))
 
     def has_relations():

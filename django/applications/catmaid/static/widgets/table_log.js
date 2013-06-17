@@ -94,6 +94,16 @@ var LogTable = new function()
                         "bSearchable": false,
                         "bSortable": false
                     },
+                    { // t
+                        "sClass": "center",
+                        "bSearchable": false,
+                        "bSortable": false
+                    },
+                    { // c
+                        "sClass": "center",
+                        "bSearchable": false,
+                        "bSortable": false
+                    },
                     { // freetext
                         "bSearchable": false,
                         "bSortable": false
@@ -107,7 +117,9 @@ var LogTable = new function()
             var x = parseFloat(aData[3]);
             var y = parseFloat(aData[4]);
             var z = parseFloat(aData[5]);
-            project.moveTo(z, y, x);
+            var t = parseFloat(aData[6]);
+            var c = parseFloat(aData[7]);
+            project.moveTo5D(z, y, x, undefined, t, c);
         });
 
     }

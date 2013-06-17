@@ -935,6 +935,8 @@ var WindowMaker = new function()
                     '<th>x</th>' +
                     '<th>y</th>' +
                     '<th>z</th>' +
+                    '<th>t</th>' +
+                    '<th>ch</th>' +
                     '<th>freetext<input type="text" name="search_freetext" id="search_freetext" value="" class="search_init" /></th>' +
                 '</tr>' +
                 '</thead>' +
@@ -946,6 +948,8 @@ var WindowMaker = new function()
                     '<th>x</th>' +
                     '<th>y</th>' +
                     '<th>z</th>' +
+                    '<th>t</th>' +
+                    '<th>ch</th>' +
                     '<th>freetext</th>' +
                 '</tr>' +
                 '</tfoot>' +

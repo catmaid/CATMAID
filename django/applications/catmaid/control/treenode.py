@@ -272,7 +272,7 @@ def create_treenode(request, project_id=None):
                 new_treenode = insert_new_treenode(None, new_skeleton)
 
                 response_on_error = 'Failed to write to logs.'
-                insert_into_log(project_id, request.user.id, 'create_neuron', new_treenode.location, 'Create neuron %d and skeleton %d' % (new_neuron.id, new_skeleton.id))
+                insert_into_log(project_id, request.user.id, 'create_neuron', new_treenode.location,  new_treenode.location_t, new_treenode.location_c, 'Create neuron %d and skeleton %d' % (new_neuron.id, new_skeleton.id))
 
                 return HttpResponse(json.dumps({
                     'treenode_id': new_treenode.id,

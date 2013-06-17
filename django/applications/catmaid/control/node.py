@@ -337,7 +337,9 @@ def update_confidence(request, project_id=None, node_id=0):
 
     if rows_affected > 0:
         location = Location.objects.get(id=tnid).location
-        insert_into_log(project_id, request.user.id, "change_confidence", location, "Changed to %s" % new_confidence)
+        location_t = Treenode.objects.get(id=tnid).location_t
+        location_c = Treenode.objects.get(id=tnid).location_c
+        insert_into_log(project_id, request.user.id, "change_confidence", location, location_t, location_c, "Changed to %s" % new_confidence)
         return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
     # Else, signal error

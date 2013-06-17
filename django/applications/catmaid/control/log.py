@@ -25,7 +25,7 @@ def list_logs(request, project_id=None):
         sorting_directions = [request.POST.get('iSortDir_%d' % d, 'DESC') for d in range(column_count)]
         sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '', sorting_directions)
 
-        fields = ['user', 'operation_type', 'creation_time', 'x', 'y', 'z', 'freetext']
+        fields = ['user', 'operation_type', 'creation_time', 'x', 'y', 'z', 't','c','freetext']
         sorting_index = [int(request.POST.get('iSortCol_%d' % d)) for d in range(column_count)]
         sorting_cols = map(lambda i: fields[i], sorting_index)
 
@@ -41,6 +41,8 @@ def list_logs(request, project_id=None):
         'x': '("log"."location")."x"',
         'y': '("log"."location")."y"',
         'z': '("log"."location")."z"',
+        't': '"log"."location_t"',
+        'c': '"log"."location_c"',
         'username': '"auth_user"."username"',
         'timestamp': '''to_char("log"."creation_time", 'DD-MM-YYYY HH24:MI')'''
     })
@@ -58,6 +60,8 @@ def list_logs(request, project_id=None):
             log.x,
             log.y,
             log.z,
+            log.t,
+            log.c,
             log.freetext
         ]]
 

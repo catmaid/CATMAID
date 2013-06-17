@@ -658,7 +658,7 @@ def import_treeNodes( treeNodeList, numT, parentId, parentIdCurrent, skeletonId,
                     new_treenode = insert_new_treenode(request, project_id,None, new_skeleton, params)
 
                     response_on_error = 'Failed to write to logs.'
-                    common.insert_into_log(project_id, request.user.id, 'create_neuron', new_treenode.location, 'Create neuron %d and skeleton %d' % (new_neuron.id, new_skeleton.id))
+                    common.insert_into_log(project_id, request.user.id, 'create_neuron', new_treenode.location, new_treenode.location_t,new_treenode.location_c, 'Create neuron %d and skeleton %d' % (new_neuron.id, new_skeleton.id))
 
                     skeletonId[ii] = new_skeleton
                     parentId[ii] = new_treenode
@@ -764,7 +764,7 @@ def create_skeleton_new_lineage( treeNodeList, project_id, request ):
             #new_treenode = insert_new_treenode(request, project_id,None, new_skeleton, params)
 
             response_on_error = 'Failed to write to logs.'
-            common.insert_into_log(project_id, request.user.id, 'create_neuron', Double3D(float(params['x']), float(params['y']), float(params['z'])), 'Create neuron %d and skeleton %d' % (new_neuron.id, new_skeleton.id))
+            common.insert_into_log(project_id, request.user.id, 'create_neuron', Double3D(float(params['x']), float(params['y']), float(params['z'])),float(params['t']),float(params['c']), 'Create neuron %d and skeleton %d' % (new_neuron.id, new_skeleton.id))
 
             return new_skeleton
 

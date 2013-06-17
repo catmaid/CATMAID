@@ -113,7 +113,7 @@ def split_skeleton(request, project_id=None):
     # setting new root treenode's parent to null
     Treenode.objects.filter(id=treenode_id).update(parent=None, editor=request.user)
     # Log the location of the node at which the split was done
-    insert_into_log( project_id, request.user.id, "split_skeleton", treenode.location, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
+    insert_into_log( project_id, request.user.id, "split_skeleton", treenode.location, treenode.location_t, treenode.location_c, "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
     return HttpResponse(json.dumps({}), mimetype='text/json')
 
 
@@ -366,7 +366,7 @@ def reroot_skeleton(request, project_id=None):
     try:
         if treenode:
             response_on_error = 'Failed to log reroot.'
-            insert_into_log(project_id, request.user.id, 'reroot_skeleton', treenode.location, 'Rerooted skeleton for treenode with ID %s' % treenode.id)
+            insert_into_log(project_id, request.user.id, 'reroot_skeleton', treenode.location, treenode.location_t, treenode.location_c, 'Rerooted skeleton for treenode with ID %s' % treenode.id)
             return HttpResponse(json.dumps({'newroot': treenode.id}))
         # Else, already root
         return HttpResponse(json.dumps({'error': 'Node #%s is already root!' % treenode_id}))
@@ -624,7 +624,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id):
         response_on_error = 'Could not update parent of treenode with ID %s' % to_treenode_id
         Treenode.objects.filter(id=to_treenode_id).update(parent=from_treenode_id, editor=user)
 
-        insert_into_log(project_id, user.id, 'join_skeleton', from_treenode.location, 'Joined skeleton with ID %s (neuron: %s) into skeleton with ID %s (neuron: %s)' % (to_skid, to_neuron['neuronname'], from_skid, from_neuron['neuronname']) )
+        insert_into_log(project_id, user.id, 'join_skeleton', from_treenode.location, from_treenode.location_t, from_treenode.location_c, 'Joined skeleton with ID %s (neuron: %s) into skeleton with ID %s (neuron: %s)' % (to_skid, to_neuron['neuronname'], from_skid, from_neuron['neuronname']) )
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))

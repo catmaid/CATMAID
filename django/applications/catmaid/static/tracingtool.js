@@ -1002,14 +1002,16 @@ TracingTool.search = function()
                 var z = parseInt(node.z);
                 var y = parseInt(node.y);
                 var x = parseInt(node.x);
+                var t = parseInt(node.t);
+                var c = parseInt(node.ch);
                 var id = parseInt(node.id);
                 var skid = parseInt(node.skid);
                 td.append(
                   $('<a/>').attr({'id': '' + id})
                            .attr({'href':''})
                            .click(function(event) {
-                             project.moveTo(z, y, x,
-                               undefined,
+                             project.moveTo5D(z, y, x,
+                               undefined,t,c,
                                function() {
                                  SkeletonAnnotations.staticSelectNode(id, skid);
                                });

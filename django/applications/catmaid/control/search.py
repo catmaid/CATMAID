@@ -24,6 +24,8 @@ def search(request, project_id=None):
             'x': int(location.x),
             'y': int(location.y),
             'z': int(location.z),
+            't': int(node['treenode__location_t']),
+            'ch': int(node['treenode__location_c']),
             'skid': node['treenode__skeleton']}
 
     search_string = request.GET.get('substring', "")
@@ -71,6 +73,8 @@ def search(request, project_id=None):
     .order_by('-treenode__id')\
     .values('treenode',
         'treenode__location',
+        'treenode__location_t',
+        'treenode__location_c',
         'treenode__skeleton',
         'class_instance__name')
 

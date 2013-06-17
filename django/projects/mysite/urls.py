@@ -134,6 +134,8 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/node/get_location$', 'catmaid.control.get_location'),
     (r'^(?P<project_id>\d+)/node/user-info$', 'catmaid.control.user_info'),
     (r'^(?P<project_id>\d+)/node/next_lowest_confidence$', 'catmaid.control.find_next_lowest_confidence'),
+    (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/move_node_in_z$', 'catmaid.control.move_node_in_z'),
+
 
     (r'^(?P<project_id>\d+)/labels-all$', 'catmaid.control.labels_all'),
     (r'^(?P<project_id>\d+)/labels-for-nodes$', 'catmaid.control.labels_for_nodes'),

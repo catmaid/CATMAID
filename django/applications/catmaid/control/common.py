@@ -39,7 +39,8 @@ def insert_into_log(project_id, user_id, op_type, location=None, location_t=None
         "join_skeleton",
         "reroot_skeleton",
 
-        "change_confidence"
+        "change_confidence",
+        "move_node_in_z"
     ]
 
     if not op_type in operation_type_array:

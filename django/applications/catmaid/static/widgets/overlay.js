@@ -1677,12 +1677,46 @@ var SkeletonAnnotations = new function()
       }
     };
 
+    this.moveNodeInZ = function(AltKey) {//if AltKey == true ->move down; otherwise -> move up
+
+      var atn = self.getActiveNode();
+      if (atn !== null && (atn.type === 'treenode')) {
+          requestQueue.register(django_url + project.id + '/node/' + atn.id + '/move_node_in_z', "POST", {
+            pid: project.id,
+            alt_key: AltKey,
+            tnid: atn.id
+          }, function(status, text) {
+            if (200 === status) {
+              var json = $.parseJSON(text);
+              if (json.error) {
+                alert("Error when trying to update to new Z location:" + json.error);
+              } else {
+                
+                  if( stack.tile_source_type === 5)//5D visualization
+                  {
+                    stack.getProject().moveTo5D(json['z'], json['y'], json['x'], undefined,json['t'], json['c'],
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json['id'], json['skeleton_id']);
+                    });
+                   }else{   
+                  stack.getProject().moveTo(json['z'], json['y'], json['x'], undefined,
+                    function() {
+                      SkeletonAnnotations.staticSelectNode(json['id'], json['skeleton_id']);
+                    });
+                  }      
+              }
+            }
+          });
+      }
+    };
+
     this.goToPreviousBranchOrRootNode = function(treenode_id, e) {
       requestQueue.register(
           django_url + project.id + "/node/previous_branch_or_root",
           "POST",
           {tnid: treenode_id,
-           alt: e.altKey ? 1 : 0},
+           alt: e.altKey ? 1 : 0,
+           ctrl: e.ctrlKey ? 1 : 0},
           function(status, text) {
             if (200 === status) {
               var json = $.parseJSON(text);
@@ -1728,7 +1762,8 @@ var SkeletonAnnotations = new function()
           "POST",
           {tnid: treenode_id,
            shift: e.shiftKey ? 1 : 0,
-           alt: e.altKey ? 1 : 0},
+           alt: e.altKey ? 1 : 0,
+           ctrl: e.ctrlKey ? 1 : 0,},
           function(status, text) {
             if (200 === status) {
               var json = $.parseJSON(text);

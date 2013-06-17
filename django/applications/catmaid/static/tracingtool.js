@@ -419,7 +419,7 @@ function TracingTool()
   this.addAction( new Action({
     helpText: "Add 'uncertain continuation' Tag (Shift: Remove) for the active node",
     keyShortcuts: {
-      "C": [ 67 ]
+      "J": [ 74  ]
     },
       run: tagFn('uncertain continuation')
   } ) );
@@ -478,7 +478,7 @@ not needed for cell tracking
   
 
   this.addAction( new Action({
-    helpText: "Go to next branch or end point (with alt, stop earlier at node with tag, synapse or low confidence; with shift and at a branch node, move down the other branch)",
+    helpText: "Go to next branch or end point (with alt, stop earlier at node with tag, synapse or confidence < 5; with shift and at a branch node, move down the other branch; with ctrl all traversed nodes are set to confidence = 5)",
     keyShortcuts: {
       "V": [ 86 ]
     },
@@ -491,7 +491,7 @@ not needed for cell tracking
   } ) );
 
   this.addAction( new Action({
-    helpText: "Go to previous branch or end node (with alt, stop earlier at node with tag, synapse or low confidence)",
+    helpText: "Go to previous branch or end node (with alt, stop earlier at node with tag, synapse or confidence < 5; with ctrl all traversed nodes are set to confidence = 5)",
     keyShortcuts: {
       "B": [ 66 ]
     },
@@ -518,32 +518,33 @@ not needed for cell tracking
   }) );
 
   this.addAction( new Action({
-    helpText: "Go to the parent of the active node",
+    helpText: "Go to the parent of the active node (Ctrl: set confidence to 5 before going to parent)",
     keyShortcuts: {
       "P": [ 80 ] 
     },
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('goparent');
-
       if (e.ctrlKey === true)//so we can validate automatic tracking very fast
         tracingLayer.svgOverlay.setConfidence(5, e.altKey);
+
+      tracingLayer.svgOverlay.tracingCommand('goparent');
       return true;
     }
   }) );
 
   this.addAction( new Action({
-    helpText: "Go to the child of the active node",//if there is more than one child, it shows a warning
+    helpText: "Go to the child of the active node (Ctrl: set confidence to 5 before going to child)",//if there is more than one child, it shows a warning
     keyShortcuts: {
       "O": [ 79 ] //depending if shift is down or up it will go to left or right child
     },
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('gochild', e);
       if (e.ctrlKey === true)//so we can validate automatic tracking very fast
         tracingLayer.svgOverlay.setConfidence(5, e.altKey);
+
+      tracingLayer.svgOverlay.tracingCommand('gochild', e);
       return true;
     }
   }) );
@@ -797,6 +798,20 @@ not needed for cell tracking
       if (!mayEdit())
         return false;
       tracingLayer.svgOverlay.setConfidence(5, e.altKey);
+      return true;
+    }
+  }) );
+
+
+this.addAction( new Action({
+    helpText: "Move active node location up one plane in Z (Alt: move down)",
+    keyShortcuts: {
+      'M': [ 77 ]
+    },
+    run: function (e) {
+      if (!mayEdit())
+        return false;
+      tracingLayer.svgOverlay.moveNodeInZ(e.altKey);
       return true;
     }
   }) );

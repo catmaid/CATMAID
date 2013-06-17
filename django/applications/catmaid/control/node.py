@@ -348,7 +348,45 @@ def update_confidence(request, project_id=None, node_id=0):
     else:
         return HttpResponse(json.dumps({'error': 'Failed to update confidence at treenode %s.' % tnid}))
 
+@requires_user_role(UserRole.Annotate)
+def move_node_in_z(request, project_id=None, node_id=0):
+    tnid = int(node_id)
+    can_edit_or_fail(request.user, tnid, 'treenode')
 
+    tn = Treenode.objects.get(id=tnid)
+    
+    #recover the stack resolution
+    stack_resolution_z = Stack.objects.get(id=ProjectStack.objects.get(project_id=project_id).stack.id).resolution.z
+    
+    alt_key = request.POST.get('alt_key', 'false') == 'true'
+    if alt_key:
+        tn.location.z = tn.location.z - stack_resolution_z;
+        
+    else:
+        tn.location.z = tn.location.z + stack_resolution_z;
+
+    #update node in database
+    tn.save();
+        
+    if alt_key:
+        insert_into_log(project_id, request.user.id, "move_node_in_z", tn.location, tn.location_t, tn.location_c, "Moved down")
+    else:
+        insert_into_log(project_id, request.user.id, "move_node_in_z", tn.location, tn.location_t, tn.location_c, "Moved up")
+    #return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
+    return HttpResponse(json.dumps({
+        'id': tn.id,
+        'x': int(tn.location.x),
+        'y': int(tn.location.y),
+        'z': int(tn.location.z),
+        'skeleton_id': tn.skeleton.id,
+        't': int(tn.location_t),
+        'c': int(tn.location_c),
+        #'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
+        #'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f'),
+        #'type': 'treenode'
+    }))
+
+    
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def most_recent_treenode(request, project_id=None):
@@ -594,6 +632,7 @@ def find_previous_branchnode_or_root(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])
         alt = 1 == int(request.POST['alt'])
+        ctrl = 1 == int(request.POST['ctrl'])
         skid = Treenode.objects.get(pk=tnid).skeleton_id
         graph = _skeleton_as_graph(skid)
         # Travel upstream until finding a parent node with more than one child 
@@ -601,6 +640,8 @@ def find_previous_branchnode_or_root(request, project_id=None):
         seq = [] # Does not include the starting node tnid
         while True:
             parents = graph.predecessors(tnid)
+            if ctrl == True:#change confidence to 5
+                Treenode.objects.filter(id=tnid).update(confidence=5,editor=request.user)
             if parents: # list of parents is not empty
                 tnid = parents[0] # Can ony have one parent
                 seq.append(tnid)
@@ -679,8 +720,13 @@ def find_next_branchnode_or_end(request, project_id=None):
         tnid = int(request.POST['tnid'])
         shift = 1 == int(request.POST['shift'])
         alt = 1 == int(request.POST['alt'])
+        ctrl = 1 == int(request.POST['ctrl'])
         skid = Treenode.objects.get(pk=tnid).skeleton_id
         graph = _skeleton_as_graph(skid)
+
+        if ctrl == True:#change confidence to 5
+            Treenode.objects.filter(id=tnid).update(confidence=5,editor=request.user)
+
 
         children = graph.successors(tnid)
         if len(children) > 1:
@@ -698,6 +744,8 @@ def find_next_branchnode_or_end(request, project_id=None):
         # or reaching an end node
         seq = [] # Does not include the starting node tnid
         while True:
+            if ctrl == True:#change confidence to 5
+                Treenode.objects.filter(id=tnid).update(confidence=5,editor=request.user)
             children = graph.successors(tnid)
             if 1 == len(children):
                 tnid = children[0]

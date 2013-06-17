@@ -81,6 +81,30 @@ var ClusteringWidget = new function()
                 }).length == slave_cbs.length)
             });
         }
+
+        // add collapsing of sections in result view
+        var result_titles = $("div#clustering_results p.title", container);
+        if (result_titles.length > 0) {
+            result_titles.click( function() {
+                var section = this;
+                $(section).next(".content").slideToggle(500, function() {
+                    // change open/close indicator box
+                    var open_elements = $(".extend-box-open", section);
+                    if (open_elements.length > 0) {
+                        open_elements.attr('class', 'extend-box-closed');
+                    } else {
+                        $(".extend-box-closed", section).attr('class', 'extend-box-open');
+                    }
+                    // update the position of the dendrogram handle
+                    var canvas = document.getElementById("clustering-canvas");
+                    var handle = document.getElementById("dendrogram-handle");
+                    if (canvas != null && handle != null) {
+                        handle.style.left = (canvas.offsetLeft + canvas.offsetWidth - 10) + "px";
+                        handle.style.top = (canvas.offsetTop + canvas.offsetHeight -20) + "px";
+                    }
+                });
+            });
+        }
     }
 
     this.render_clustering = function(dendrogram)
@@ -194,6 +218,7 @@ var ClusteringWidget = new function()
 
             // add a handle for cluster resizing
             var rhandle = document.createElement("div");
+            rhandle.setAttribute("id", "dendrogram-handle");
             rhandle.style.width = "0px";
             rhandle.style.height = "0px";
             rhandle.style.borderStyle = "solid";

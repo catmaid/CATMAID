@@ -69,6 +69,11 @@ var TriviewWidget = new function()
       pos_y *= mag;
 
 
+      //save current coordinates
+      self.pos_x_current = pos_x;
+      self.pos_y_current = pos_y;
+      self.pos_z_current = pos_z;
+
       console.log("We are updating the triview at coordinates", pos_x, pos_y, pos_z, mag);
       /*
       // get physical coordinates for node position creation
@@ -86,20 +91,19 @@ var TriviewWidget = new function()
   	  self.tilelayerXZ.drawTriview(pos_x, pos_y, pos_z,1);
   	  self.tilelayerYZ.resizeNoRedraw(stackViewYZ.getView().offsetWidth, stackViewYZ.getView().offsetHeight);
   	  self.tilelayerYZ.drawTriview(pos_x, pos_y, pos_z,2);
-
-      //save current coordinates
-      self.pos_x_current = pos_x / mag;
-      self.pos_y_current = pos_y / mag;
-      self.pos_z_current = pos_z;
   }
 
   this.updateTriviewFromXYZ_current = function(delta_x, delta_y, delta_z)
   {
+        var pos_x = (self.pos_x_current + delta_x) ;
+        var pos_y = (self.pos_y_current + delta_y) ;
+        var pos_z =  self.pos_z_current + delta_z;
+
+        //compensate for mag changes in updateTriviewFromXYZ
         var pos_s = project.getStackFirst().s;
         var mag = Math.pow(2,pos_s);
-        var pos_x = (self.pos_x_current + delta_x) * mag;
-        var pos_y = (self.pos_y_current + delta_y) * mag;
-        var pos_z =  self.pos_z_current + delta_z;
+        pos_x /= mag;
+        pos_y /= mag;
 
         self.updateTriviewFromXYZ(pos_x, pos_y, pos_z);   
 

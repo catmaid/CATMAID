@@ -1948,14 +1948,23 @@ var SkeletonAnnotations = new function()
         alert("Could not find node with id #" + treenode_id);
         return;
       }
-      if (-1 === node.parent_id) {
-        alert("This is the root node - can't move to its parent");
+      if (-1 === node.parent_id || null === node.parent_id) {
+        growlAlert("WARNING", "This is the root node - can't move to its parent");
         return;
       }
       var parent_id = node.parent_id; // caching ID for the continuation
       var parent_node = nodes[parent_id];
       if (parent_node) {
         // Parent node is already loaded
+        //count number of children
+        var size = 0, key;
+        for (key in parent_node.children) 
+        {
+            if (parent_node.children.hasOwnProperty(key)) size++;
+        }
+        if( size > 1 )
+            growlAlert("WARNING", "Node has more than one child");
+
         self.moveToAndSelectNode(parent_node);
       } else {
         requestQueue.replace(
@@ -1970,6 +1979,7 @@ var SkeletonAnnotations = new function()
               } else {
                 // json[0], [1], [2], [3]: id, x, y, z
                 // json[4], [5], [6]: skeleton_id, t, c
+                //json[7]: number of children
                 if( stack.tile_source_type === 5)//5D visualization
                 {
                   stack.getProject().moveTo5D(json[3], json[2], json[1], undefined, json[5], json[6],
@@ -1982,6 +1992,9 @@ var SkeletonAnnotations = new function()
                     SkeletonAnnotations.staticSelectNode(parent_id, skeleton_id);
                   });
                 }
+
+                if( json[7] > 1)
+                  growlAlert("WARNING", "Node has more than one child");
               }
             }
           }, "get_location");

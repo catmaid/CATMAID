@@ -583,7 +583,15 @@ def _fetch_location(treenode_id):
 def get_location(request, project_id=None):
     try:
         tnid = int(request.POST['tnid'])
-        return HttpResponse(json.dumps(_fetch_location(tnid)))
+        #return HttpResponse(json.dumps(_fetch_location(tnid)))
+        ff = _fetch_location(tnid)
+
+        #add number of children to the reply
+        #print _fetch_location(tnid): returns "(x,y,z,...)" and it is tuple
+        ff += (Treenode.objects.filter(parent_id=tnid).count(),)
+        
+        return HttpResponse(json.dumps(ff) )
+
     except Exception as e:
         raise Exception('Could not obtain the location of node with id #%s' % tnid)
 

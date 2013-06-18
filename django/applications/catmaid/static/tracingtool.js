@@ -272,24 +272,39 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Move up 1 slice in z (or 10 with Shift held)",
+    helpText: "Move up 1 slice in z (or 10 with Shift held) (with ctrl move triview planes)",
     keyShortcuts: {
       ',': [ 44, 188 ]
     },
     run: function (e) {
-      self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
-      return true;
+
+      if( e.ctrlKey === false)
+      {
+        self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
+        return true;
+      }else{
+        tracingLayer.svgOverlay.moveTriview(0,0,1);
+        return true;
+      }
     }
+
   }) );
 
   this.addAction( new Action({
-    helpText: "Move down 1 slice in z (or 10 with Shift held)",
+    helpText: "Move down 1 slice in z (or 10 with Shift held) (with ctrl move triview planes)",
     keyShortcuts: {
       '.': [ 46, 190 ]
     },
     run: function (e) {
-      self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
-      return true;
+
+      if( e.ctrlKey === false)
+      {
+        self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
+        return true;
+      }else{
+          tracingLayer.svgOverlay.moveTriview(0,0,-1);
+          return true;
+      }
     }
   }) );
 
@@ -300,8 +315,8 @@ function TracingTool()
         's': [ 83, 115 ]
       },
       run: function (e) {
-        self.prototype.slider_t.move(1);
-        return true;
+          self.prototype.slider_t.move(1);
+          return true;
       }
     }) );
 
@@ -318,50 +333,79 @@ function TracingTool()
 
 
   this.addAction( new Action({
-    helpText: "Move left (towards negative x)",
+    helpText: "Move left (towards negative x) (with ctrl move triview planes)",
     keyShortcuts: {
       "\u2190": [ arrowKeyCodes.left ]
     },
     run: function (e) {
-      self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
-      self.prototype.input_x.onchange(e);
-      return true;
+
+      if( e.ctrlKey === false)
+      {
+        self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
+        self.prototype.input_x.onchange(e);
+        return true;
+      }else{
+        tracingLayer.svgOverlay.moveTriview(-1,0,0);
+        return true;
+      }
     }
   }) );
 
   this.addAction( new Action({
-    helpText: "Move right (towards positive x)",
+    helpText: "Move right (towards positive x) (with ctrl move triview planes)",
     keyShortcuts: {
       "\u2192": [ arrowKeyCodes.right ]
     },
     run: function (e) {
+
+      if( e.ctrlKey === false)
+      {
       self.prototype.input_x.value = parseInt(self.prototype.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
       self.prototype.input_x.onchange(e);
       return true;
+      }else{
+        tracingLayer.svgOverlay.moveTriview(1,0,0);
+        return true;
+      }
+
     }
   }) );
 
   this.addAction( new Action({
-    helpText: "Move up (towards negative y)",
+    helpText: "Move up (towards negative y) (with ctrl move triview planes)",
     keyShortcuts: {
       "\u2191": [ arrowKeyCodes.up ]
     },
     run: function (e) {
+
+      if( e.ctrlKey === false)
+      {
       self.prototype.input_y.value = parseInt(self.prototype.input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
       self.prototype.input_y.onchange(e);
       return true;
+      }else{
+        tracingLayer.svgOverlay.moveTriview(0,-1,0);
+        return true;
+      }
     }
   }) );
 
   this.addAction( new Action({
-    helpText: "Move down (towards positive y)",
+    helpText: "Move down (towards positive y) (with ctrl move triview planes)",
     keyShortcuts: {
       "\u2193": [ arrowKeyCodes.down ]
     },
     run: function (e) {
+
+      if( e.ctrlKey === false)
+      {
       self.prototype.input_y.value = parseInt(self.prototype.input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
       self.prototype.input_y.onchange(e);
       return true;
+      }else{
+        tracingLayer.svgOverlay.moveTriview(0,1,0);
+        return true;
+      }
     }
   }) );
 

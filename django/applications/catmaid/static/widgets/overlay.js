@@ -273,6 +273,12 @@ var SkeletonAnnotations = new function()
       $('#neuronName').text(neuronname + ' (Skeleton ID: '+ skeletonid +')');
     }
 
+    this.moveTriview = function(delta_x, delta_y, delta_z)
+    {
+        if( WindowMaker.getWindow('triview') != undefined )//triview window is open
+              TriviewWidget.updateTriviewFromXYZ_current(delta_x,delta_y, delta_z);
+    }
+
     this.activateNode = function(node)
     {
       if (node)

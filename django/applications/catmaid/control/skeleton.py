@@ -69,7 +69,7 @@ def skeleton_statistics(request, project_id=None, skeleton_id=None):
         'postsynaptic_sites': skel.postsynaptic_sites_count(),
         'cable_length': int(skel.cable_length()),
         'measure_construction_time': construction_time,
-        'percentage_reviewed': skel.percentage_reviewed() }), mimetype='text/json')
+        'percentage_reviewed': "%.2f" % skel.percentage_reviewed() }), mimetype='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):

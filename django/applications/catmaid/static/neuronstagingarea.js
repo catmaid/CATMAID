@@ -121,7 +121,7 @@ var NeuronStagingArea = new function()
                                 "Downstream skeletons: " + e.output_count + "<br />" +
                                 "Cable length: " + e.cable_length + " nm <br />" +
                                 "Construction time: " + e.measure_construction_time + "<br />" +
-                                "Percentage reviewed: " + e.percentage_reviewed + "<br />";
+                                "Reviewed: " + e.percentage_reviewed + " %<br />";
                             dialog.appendChild(msg);
 
                             $(dialog).dialog({

@@ -92,6 +92,11 @@ PROFILE_SHOW_SEGMENTATION_TOOL = False
 PROFILE_SHOW_TRACING_TOOL = False
 PROFILE_SHOW_ONTOLOGY_TOOL = False
 
+# Defines if a cropped image of a ROI should be created
+# automatically when the ROI is created. If set to False
+# such an image will be created when requested.
+ROI_AUTO_CREATE_IMAGE = False
+
 # A couple of functions useful for generating default directories to
 # be used in the settings files:
 

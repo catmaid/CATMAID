@@ -306,6 +306,8 @@ urlpatterns += patterns('',
         'catmaid.control.autofill_classification_graph', name='autofill_classification_graph'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/link$'.format(integer),
         'catmaid.control.link_classification_graph', name='link_classification_graph'),
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/stack/(?P<stack_id>{0})/linkroi/(?P<ci_id>{0})/$'.format(integer),
+        'catmaid.control.link_roi_to_classification', name='link_roi_to_classification'),
     )
 
 # Notifications
@@ -315,7 +317,21 @@ urlpatterns += patterns('',
     (r'^(?P<project_id>\d+)/changerequest/reject$', 'catmaid.control.reject_change_request'),
     )
 
+# Regions of interest
+urlpatterns += patterns('',
+    url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/info$'.format(integer),
+        'catmaid.control.get_roi_info', name='get_roi_info'),
+    url(r'^(?P<project_id>{0})/roi/link/(?P<relation_id>{0})/stack/(?P<stack_id>{0})/ci/(?P<ci_id>{0})/$'.format(integer),
+        'catmaid.control.link_roi_to_class_instance', name='link_roi_to_class_instance'),
+    url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/remove$'.format(integer),
+        'catmaid.control.remove_roi_link', name='remove_roi_link'),
+    url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/image$'.format(integer),
+        'catmaid.control.get_roi_image', name='get_roi_image'),
+    )
+
 if settings.DEBUG:
     urlpatterns += patterns('',
         (r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.STATIC_ROOT}),
+        (r'^%s(?P<path>.*)$' % settings.MEDIA_URL.replace(settings.CATMAID_URL, ''),
+            'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
     )

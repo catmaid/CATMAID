@@ -251,6 +251,9 @@ var ClusteringWidget = new function()
             };
             rhandle.addEventListener('mousedown',
                 function(e) {
+                    // stop default event behaviour to avoid text being selected
+                    stopDefault(e);
+                    // proces coordinates
                     start_mouse_x = e.clientX;
                     start_mouse_y = e.clientY;
                     start_canvas_w = canvas.offsetWidth;

@@ -301,6 +301,13 @@ div#classification_graph_object img.roiimage {
 	font-weight:bold;
 }
 
+/* This is needed to make jQuery's slideToggle() not override
+ * the overflow property to 'hidded' and thereby cause jumping. */
+#clustering_content .content {
+    position: relative;
+    overflow: visible !important;
+}
+
 .extend-box-open,
 .extend-box-closed {
 	width: 0px;

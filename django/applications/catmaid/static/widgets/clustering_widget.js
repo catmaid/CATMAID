@@ -87,22 +87,25 @@ var ClusteringWidget = new function()
         if (result_titles.length > 0) {
             result_titles.click( function() {
                 var section = this;
-                $(section).next(".content").slideToggle(500, function() {
-                    // change open/close indicator box
-                    var open_elements = $(".extend-box-open", section);
-                    if (open_elements.length > 0) {
-                        open_elements.attr('class', 'extend-box-closed');
-                    } else {
-                        $(".extend-box-closed", section).attr('class', 'extend-box-open');
-                    }
-                    // update the position of the dendrogram handle
-                    var canvas = document.getElementById("clustering-canvas");
-                    var handle = document.getElementById("dendrogram-handle");
-                    if (canvas != null && handle != null) {
-                        handle.style.left = (canvas.offsetLeft + canvas.offsetWidth - 10) + "px";
-                        handle.style.top = (canvas.offsetTop + canvas.offsetHeight -20) + "px";
-                    }
-                });
+                $(section).next(".content").animate(
+                    { height: "toggle",
+                      opacity: "toggle" },
+                    { complete: function() {
+                        // change open/close indicator box
+                        var open_elements = $(".extend-box-open", section);
+                        if (open_elements.length > 0) {
+                            open_elements.attr('class', 'extend-box-closed');
+                        } else {
+                            $(".extend-box-closed", section).attr('class', 'extend-box-open');
+                        }
+                        // update the position of the dendrogram handle
+                        var canvas = document.getElementById("clustering-canvas");
+                        var handle = document.getElementById("dendrogram-handle");
+                        if (canvas != null && handle != null) {
+                            handle.style.left = (canvas.offsetLeft + canvas.offsetWidth - 10) + "px";
+                            handle.style.top = (canvas.offsetTop + canvas.offsetHeight -20) + "px";
+                        }
+                    }});
             });
         }
     }

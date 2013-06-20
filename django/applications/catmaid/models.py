@@ -474,6 +474,27 @@ class TreenodeConnector(UserFocusedModel):
     skeleton = models.ForeignKey(ClassInstance)
     confidence = models.IntegerField(default=5)
 
+class RegionOfInterest(UserFocusedModel):
+    class Meta:
+        db_table = "region_of_interest"
+    # Repeat the columns inherited from 'location'
+    location = Double3DField()
+    # Now new columns:
+    stack = models.ForeignKey(Stack)
+    zoom_level = models.IntegerField()
+    width = models.FloatField()
+    height = models.FloatField()
+    rotation_cw =models.FloatField()
+
+class RegionOfInterestClassInstance(UserFocusedModel):
+    class Meta:
+        db_table = "region_of_interest_class_instance"
+    # Repeat the columns inherited from 'relation_instance'
+    relation = models.ForeignKey(Relation)
+    # Now new columns:
+    region_of_interest = models.ForeignKey(RegionOfInterest)
+    class_instance = models.ForeignKey(ClassInstance)
+
 class Restriction(models.Model):
     class Meta:
         db_table = "restriction"

@@ -583,6 +583,8 @@ function handle_openProjectStack( status, text, xml )
 				project.setTool( new CanvasTool() );
 			} else if ( inittool === 'segmentationtool' ) {
 				project.setTool( new SegmentationTool() );
+			} else if ( inittool === 'classification_editor' ) {
+
 			}
 
 			//! if the stack was initialized by an URL query, move it to a given position

@@ -54,6 +54,10 @@ MEDIA_HDF5_SUBDIRECTORY = 'CATMAID_HDF5_SUBDIR'
 # of MEDIA_ROOT.
 MEDIA_CROPPING_SUBDIRECTORY = 'CATMAID_CROP_SUBDIR'
 
+# Static path to store cropped ROIs (needs to be writable) as
+# subdirectory of MEDIA_ROOT.
+MEDIA_ROI_SUBDIRECTORY = 'CATMAID_ROI_SUBDIR'
+
 # The URL where static files can be accessed, relative to the domain's root
 STATIC_URL = '/CATMAID_SUBDIR/static/'
 # The absolute local path where the static files get collected to

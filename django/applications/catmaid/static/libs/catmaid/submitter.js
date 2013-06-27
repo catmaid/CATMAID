@@ -1,3 +1,6 @@
+/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
+/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
+
 /** The queue of submitted requests is reset if any returns an error.
  *  The returned function accepts null URL as argument, which signals
  *  that no request to the server is necessary and the handler fn must be invoked directly. 
@@ -11,52 +14,93 @@
  *  ... then submit requests like:
  *
  *  submit(django_url + '/skeleton_id/' + skeleton_id,
- *         {all: true},
- *         function(json) { alert('Continuation OK! JSON reply: ' + json); });
+ *     {all: true},
+ *     function(json) { alert('Continuation OK! JSON reply: ' + json); });
+ *
+ *  An optional fourth argument specifies whether the UI has to be blocked.
+ *  An optional fifth argument specifies calls with replace rather than register.
  *
  */
+
+"use strict";
+
 var submitterFn = function() {
-		// Accumulate invocations
-		var queue = [];
+  // Accumulate invocations
+  var queue = [];
 
-		var handlerFn = function(fn) {
-				return function(status, text) {
-						if (200 !== status) {
-								alert("Unexpected request response status: " + status);
-								queue.length = 0; // reset
-								return;
-						}
-						var json = $.parseJSON(text);
-						if (json.error) {
-								alert(json.error);
-								queue.length = 0; // reset
-								return;
-						}
-						// Invoke handler
-						fn(json);
-						// ... then remove this call
-						queue.shift();
-						// ... and invoke the oldest of any accumulated requests
-						next();
-				};
-		};
+  var complete = function(q) {
+    // Remove this call
+    queue.shift();
+    //
+    if (q.blockUI) $.unblockUI();
+    // ... and invoke the oldest of any accumulated requests
+    next();
+  };
 
-		var next = function() {
-				if (0 === queue.length) return;
-				var q = queue[0];
-				if (q.url) {
-						requestQueue.register(q.url, "POST", q.post, handlerFn(q.fn));
-				} else {
-						q.fn();
-						queue.shift();
-				}
-		};
+  var invoke = function(q, json) {
+    try {
+      q.fn(json);
+    } catch (e) {
+      alert(e);
+    } finally {
+      complete(q);
+    }
+  };
 
-		return function(url, post, fn) {
-				queue.push({url: url,
-										post: post,
-										fn: fn});
-				next();
-		};
+  var reset = function(msg) {
+    if (msg) alert(msg);
+    queue.length = 0;
+  };
+
+  var handlerFn = function(q) {
+    return function(status, text) {
+      if (200 !== status) {
+        return reset("Unexpected request response status: " + status);
+      }
+      var json = $.parseJSON(text);
+      if (json.error) {
+        if (q.replace && 'REPLACED' === json.error) {
+          return complete(q);
+        } else {
+          return reset(json.error);
+        }
+      }
+      invoke(q, json);
+    };
+  };
+
+  var next = function() {
+    if (0 === queue.length) return;
+
+    // Process the first element of the queue
+    var q = queue[0];
+
+    // Block UI prior to placing a request, if desired
+    if (q.blockUI) {
+      $.blockUI({message: '<h2><img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> Just a moment...</h2>'});
+    }
+
+    if (q.url) {
+      if (q.replace) {
+        requestQueue.replace(q.url, "POST", q.post, handlerFn(q), q.url);
+      } else {
+        requestQueue.register(q.url, "POST", q.post, handlerFn(q));
+      }
+    } else {
+      // No url: direct execution with null json
+      invoke(q, null);
+    }
+  };
+
+  return function(url, post, fn, blockUI, replace) {
+    queue.push({url: url,
+          post: post,
+          fn: fn,
+          blockUI: blockUI,
+          replace: replace});
+    // Invoke if the queue contains only the new entry
+    if (1 === queue.length) {
+      next();
+    }
+  };
 };
-

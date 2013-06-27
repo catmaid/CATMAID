@@ -6,7 +6,7 @@ function TracingLayer( stack )
 
   var self = this;
 
-  this.svgOverlay = new SkeletonAnnotations.SVGOverlay( stack );
+  this.svgOverlay = new SkeletonAnnotations.SVGOverlay(stack);
 
   this.resize = function ( width, height )
   {
@@ -46,6 +46,7 @@ function TracingLayer( stack )
 
 	this.unregister = function()
 	{
+		this.svgOverlay.destroy();
     // TODO Remove the SVG raphael object from the DOM
 	};
 

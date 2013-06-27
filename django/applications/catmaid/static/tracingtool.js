@@ -68,7 +68,7 @@ function TracingTool()
     self.prototype.register( parentStack, "edit_button_trace" );
 
     // NOW set the mode TODO cleanup this initialization problem
-    tracingLayer.svgOverlay.set_tracing_mode( "skeletontracing" );
+    SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
     tracingLayer.svgOverlay.updateNodes();
 
     // view is the mouseCatcher now
@@ -201,9 +201,7 @@ function TracingTool()
 
   this.prototype.changeScale = function( val )
   {
-    if( tracingLayer.svgOverlay.hasTagbox() ) {
-      tracingLayer.svgOverlay.removeTagbox();
-    }
+    SkeletonAnnotations.Tag.changeScale();
     stack.moveToPixel( stack.z, stack.y, stack.x, val );
     return;
   }
@@ -214,9 +212,7 @@ function TracingTool()
       WebGLApp.updateZPlane( val );
 
     }
-    if( tracingLayer.svgOverlay.hasTagbox() ) {
-      tracingLayer.svgOverlay.removeTagbox();
-    }
+    SkeletonAnnotations.Tag.changeSlice();
     stack.moveToPixel( val, stack.y, stack.x, stack.s );
   }
 
@@ -225,10 +221,8 @@ function TracingTool()
     var m = ui.getMouse(e, tracingLayer.svgOverlay.view, true);
     var offX, offY, pos_x, pos_y;
     if (m) {
-      // add right move of svgOverlay to the m.offsetX
-      offX = m.offsetX + tracingLayer.svgOverlay.offleft;
-      // add down move of svgOverlay to the m.offsetY
-      offY = m.offsetY + tracingLayer.svgOverlay.offtop;
+      offX = m.offsetX;
+      offY = m.offsetY;
 
       // TODO pos_x and pos_y never change
       pos_x = stack.translation.x + (stack.x + (offX - stack.viewWidth / 2) / stack.scale) * stack.resolution.x;
@@ -355,11 +349,22 @@ function TracingTool()
             ";": [ 186 ]
         },
         run: function (e) {
-            tracingLayer.svgOverlay.tracingCommand('skeleton');
-            return true;
+          SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
+          return true;
         }
     } ) );
 
+    this.addAction( new Action({
+      helpText: "Switch to synapse dropping mode",
+      buttonName: "synapse",
+      buttonID: 'trace_button_synapse',
+      run: function (e) {
+        if (!mayEdit())
+          return false;
+        SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SYNAPSE);
+        return true;
+      }
+    } ) );
 
     /** Return a function that attempts to tag the active treenode or connector,
      * and display an alert when no node is active.
@@ -375,7 +380,7 @@ function TracingTool()
           return true;
         }
         // If any modifier key is pressed, remove all tags
-        tracingLayer.svgOverlay.tagATNwithLabel( modifier ? '' : tag);
+        SkeletonAnnotations.Tag.tagATNwithLabel( modifier ? '' : tag, tracingLayer.svgOverlay);
         return true;
       };
     };
@@ -421,21 +426,6 @@ function TracingTool()
   } ) );
 
   this.addAction( new Action({
-    helpText: "Switch to synapse dropping mode",
-    buttonName: "synapse",
-    buttonID: 'trace_button_synapse',
-    keyShortcuts: {
-      "Y": [ 89 ]
-    },
-    run: function (e) {
-      if (!mayEdit())
-        return false;
-      tracingLayer.svgOverlay.tracingCommand('synapse');
-      return true;
-    }
-  } ) );
-
-  this.addAction( new Action({
     helpText: "Go to active node",
     buttonName: "goactive",
     buttonID: 'trace_button_goactive',
@@ -445,7 +435,7 @@ function TracingTool()
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('goactive');
+      tracingLayer.svgOverlay.moveToAndSelectNode(SkeletonAnnotations.getActiveNodeId());
       return true;
     }
   } ) );
@@ -458,7 +448,7 @@ function TracingTool()
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('goopenleaf');
+      tracingLayer.svgOverlay.goToNearestOpenEndNode(SkeletonAnnotations.getActiveNodeId());
       return true;
     }
   } ) );
@@ -471,7 +461,7 @@ function TracingTool()
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('gonextbranch', e);
+      tracingLayer.svgOverlay.goToNextBranchOrEndNode(SkeletonAnnotations.getActiveNodeId(), e);
       return true;
     }
   } ) );
@@ -484,7 +474,7 @@ function TracingTool()
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('goprevbranch', e);
+      tracingLayer.svgOverlay.goToPreviousBranchOrRootNode(SkeletonAnnotations.getActiveNodeId(), e);
       return true;
     }
   } ) );
@@ -511,7 +501,7 @@ function TracingTool()
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('goparent');
+      tracingLayer.svgOverlay.goToParentNode(SkeletonAnnotations.getActiveNodeId());
       return true;
     }
   }) );
@@ -524,7 +514,7 @@ function TracingTool()
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('golastedited');
+      tracingLayer.svgOverlay.goToLastEditedNode(SkeletonAnnotations.getActiveSkeletonId());
       return true;
     }
   }) );
@@ -536,7 +526,7 @@ function TracingTool()
     run: function (e) {
       if (!mayEdit())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('skelsplitting');
+      tracingLayer.svgOverlay.splitSkeleton(SkeletonAnnotations.getActiveNodeId());
       return true;
     }
   }) );
@@ -551,7 +541,7 @@ function TracingTool()
     run: function (e) {
       if (!mayEdit())
         return false;
-      tracingLayer.svgOverlay.rerootSkeleton();
+      tracingLayer.svgOverlay.rerootSkeleton(SkeletonAnnotations.getActiveNodeId());
       return true;
     }
   }) );
@@ -566,11 +556,7 @@ function TracingTool()
     run: function (e) {
       if (!mayView())
         return false;
-      if(tracingLayer.svgOverlay.getLabelStatus()) {
-        tracingLayer.svgOverlay.hideLabels();
-      } else {
-        tracingLayer.svgOverlay.showLabels();
-      }
+      tracingLayer.svgOverlay.toggleLabels();
       return true;
     }
   }) );
@@ -609,7 +595,7 @@ function TracingTool()
       if (!mayEdit())
         return false;
       if (!(e.ctrlKey || e.metaKey)) {
-	tracingLayer.svgOverlay.tracingCommand('tagging');
+        SkeletonAnnotations.Tag.tagATN(tracingLayer.svgOverlay);
         return true;
       } else {
         return false;
@@ -634,7 +620,7 @@ function TracingTool()
       if (!mayView())
         return false;
       if (!(e.ctrlKey || e.metaKey)) {
-        tracingLayer.svgOverlay.tracingCommand('selectnearestnode');
+        tracingLayer.svgOverlay.activateNearestNode();
         return true;
       } else {
         return false;
@@ -663,7 +649,7 @@ function TracingTool()
     run: function (e) {
       if (!mayView())
         return false;
-      tracingLayer.svgOverlay.tracingCommand('retrievetreenodeinfo', e);
+      tracingLayer.svgOverlay.printTreenodeInfo(SkeletonAnnotations.getActiveNodeId());
       return true;
     }
   }) );
@@ -784,10 +770,8 @@ function TracingTool()
           if (!mayEdit()) {
               return false;
           }
-          if(e.shiftKey)
-            tracingLayer.svgOverlay.updateNeuronName();
-          else
-            ObjectTree.renameCurrentActiveNode();
+          if (e.shiftKey) SkeletonAnnotations.updateNeuronName();
+          else ObjectTree.renameCurrentActiveNode();
           return true;
       }
   }) );

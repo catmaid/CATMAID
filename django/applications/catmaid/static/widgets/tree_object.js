@@ -510,10 +510,10 @@ var ObjectTree = new function()
                           nodeID = e.root_id;
                           skeletonID = parseInt(skelid);
                           // go to node
-                          project.moveTo(e.z, e.y, e.x, undefined,
-                                         function () {
-                                           SkeletonAnnotations.staticSelectNode(nodeID, skeletonID);
-                                         });
+                          SkeletonAnnotations.staticMoveTo(e.z, e.y, e.x,
+                            function () {
+                              SkeletonAnnotations.staticSelectNode(nodeID, skeletonID);
+                            });
                         }
                       }
                     }

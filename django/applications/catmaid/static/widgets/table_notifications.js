@@ -74,7 +74,7 @@ var NotificationsTable = new function()
       var row_data = ns.oTable.fnGetData(row_index);
       var action = node.options[node.selectedIndex].value;
       if (action == 'Show') {
-        project.moveTo(row_data[6], row_data[5], row_data[4], undefined, function () {SkeletonAnnotations.staticSelectNode(row_data[7], row_data[8]);});
+        SkeletonAnnotations.staticMoveTo(row_data[6], row_data[5], row_data[4], function () {SkeletonAnnotations.staticSelectNode(row_data[7], row_data[8]);});
       }
       else if (action == 'Approve') {
         NotificationsTable.approve(row_data[0]);

@@ -109,23 +109,20 @@ var ConnectorSelection = new function()
       var aData = table.fnGetData(this);
       var cell = $(evt.target).closest('td').index();
       var loc = locations[aData[0]];
-      var tnid, skid;
+      var tnid;
       if (0 === cell) {
         loc = loc.connector;
         tnid = aData[0];
-        skid = null;
       } else if (cell < 5) {
         loc = loc.treenode1;
         tnid = aData[1];
-        skid = aData[2];
       } else {
         loc = loc.treenode2;
         tnid = aData[5];
-        skid = aData[6];
       }
-      project.moveTo(loc[2], loc[1], loc[0], undefined,
+      SkeletonAnnotations.staticMoveTo(loc[2], loc[1], loc[0],
         function() {
-          SkeletonAnnotations.staticSelectNode(tnid, skid);
+          SkeletonAnnotations.staticSelectNode(tnid);
         });
     });
   };

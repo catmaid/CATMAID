@@ -72,21 +72,23 @@ SkeletonAnnotations.getSVGOverlayByPaper = function(paper) {
 };
 
 /** Select a node in any of the existing SVGOverlay instances, by its ID and its skeletonID. If it is a connector node, it expects a null skeletonID. */
-SkeletonAnnotations.staticSelectNode = function(nodeID, skeletonID) {
+SkeletonAnnotations.staticSelectNode = function(nodeID) {
   for (var stack in this.SVGOverlays) {
     if (this.SVGOverlays.hasOwnProperty(stack)) {
-      var s = this.SVGOverlays[stack];
-      s.selectNode(nodeID);
-      if (SkeletonAnnotations.getActiveSkeletonId() === skeletonID) {
-        return;
-      } else {
-        // Should never happen
-        console.log('Call to activate a node with a skeletonID which is not active should never happen.')
-        s.activateNode(null); // deselect: there's a mismatch between node and skeleton
-      }
+      return this.SVGOverlays[stack].selectNode(nodeID);
     }
   }
-  statusBar.replaceLast("Could not find node #" + nodeID + " for skeleton #" + skeletonID);
+  statusBar.replaceLast("Could not find node #" + nodeID);
+};
+
+/** Move to a location, ensuring that any edits to node coordinates are pushed to the database. After the move, the fn is invoked. */
+SkeletonAnnotations.staticMoveTo = function(z, y, x, fn) {
+  for (var stack in this.SVGOverlays) {
+    if (this.SVGOverlays.hasOwnProperty(stack)) {
+      return this.SVGOverlays[stack].moveTo(z, y, x, fn);
+    }
+  }
+  statusBar.replaceLast("Could not find node #" + nodeID);
 };
 
 SkeletonAnnotations.getActiveNodeId = function() {

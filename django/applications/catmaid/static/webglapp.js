@@ -1799,7 +1799,7 @@ var WebGLApp = (function() { return new function () {
             for( var i = 0; i < sphere_objects.length; i++) {
               if( sphere_objects[i].id === intersects[0].object.id ) {
                   var jso = sphere_objects[i];
-                  project.moveTo(jso.orig_coord.z, jso.orig_coord.y, jso.orig_coord.x, undefined, function() { 
+                  SkeletonAnnotations.staticMoveTo(jso.orig_coord.z, jso.orig_coord.y, jso.orig_coord.x, function() { 
                     SkeletonAnnotations.staticSelectNode(parseInt(jso.node_id, 10), parseInt(jso.skeleton_id, 10)) });
               }
             }

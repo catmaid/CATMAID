@@ -97,7 +97,6 @@ function TracingTool()
           proto_onmousedown( e );
           break;
       }
-      return;
     };
 
     // Insert a text div for the neuron name in the canvas window title bar
@@ -839,12 +838,10 @@ TracingTool.goToNearestInNeuronOrSkeleton = function(type, objectID) {
         nodeIDToSelect = data.treenode_id;
         skeletonIDToSelect = data.skeleton_id;
         //console.log('goToNearestInNeuronOrSkeleton', type, objectID )
-        project.moveTo(data.z, data.y, data.x,
-                       undefined,
-                       function () {
-                         //console.log('static select ndoe', nodeIDToSelect, skeletonIDToSelect )
-                         SkeletonAnnotations.staticSelectNode(nodeIDToSelect, skeletonIDToSelect);
-                       });
+        SkeletonAnnotations.staticMoveTo(data.z, data.y, data.x,
+          function () {
+            SkeletonAnnotations.staticSelectNode(nodeIDToSelect, skeletonIDToSelect);
+          });
       }
     }
   });
@@ -947,8 +944,7 @@ TracingTool.search = function()
                   $('<a/>').attr({'id': '' + id})
                            .attr({'href':''})
                            .click(function(event) {
-                             project.moveTo(z, y, x,
-                               undefined,
+                             SkeletonAnnotations.staticMoveTo(z, y, x,
                                function() {
                                  SkeletonAnnotations.staticSelectNode(id, skid);
                                });

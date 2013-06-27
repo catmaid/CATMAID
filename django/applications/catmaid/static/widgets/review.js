@@ -41,7 +41,7 @@ var ReviewSystem = new function()
         if (self.skeleton_segments===null)
             return;
         var node = self.current_segment['sequence'][idx];
-        project.moveTo(node.z, node.y, node.x, undefined,
+        SkeletonAnnotations.staticMoveTo(node.z, node.y, node.x,
          function () {
             SkeletonAnnotations.staticSelectNode( node.id, skeletonID );
          });

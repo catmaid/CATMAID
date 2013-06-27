@@ -209,10 +209,10 @@ var ConnectorTable = new function()
         skeletonID = null;
       }
 
-      project.moveTo(z, y, x, undefined,
-                     function () {
-                       SkeletonAnnotations.staticSelectNode(idToActivate, skeletonID);
-                     });
+      SkeletonAnnotations.staticMoveTo(z, y, x,
+        function () {
+          SkeletonAnnotations.staticSelectNode(idToActivate, skeletonID);
+        });
     });
 
     $('#connector_relation_type').change(function() {

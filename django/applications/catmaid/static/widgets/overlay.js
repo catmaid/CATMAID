@@ -1354,14 +1354,32 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
 
   this.goToNearestOpenEndNode = function(nodeID) {
     if (this.isIDNull(nodeID)) return;
+    if (this.getLabelStatus()) {
+      var label = this.labels[nodeID];
+      if (label && -1 === label.text.indexOf('end')) {
+        growlAlert("Information", "You are at an open end node.");
+        return;
+      }
+    }
     var self = this;
-    // TODO check that server-side works well: it isn't, ignores tnid POST
+    // TODO could be done by inspecting the graph locally if it is loaded in the 3d Viewer
+    // of from the treenode table (both sources though may not be up to date)
     SkeletonAnnotations.submit(
         django_url + project.id + '/skeleton/' + SkeletonAnnotations.getActiveSkeletonId() + '/openleaf',
         {tnid: nodeID},
         function(jso) {
-          self.moveTo(jso[3], jso[2], jso[1],
-            function() { self.selectNode(jso[0]) });
+          // [0]: open end node ID
+          // [1]: location string as in "(12.3, 45.6, 78.9)"
+          if (!jso[0]) {
+            growlAlert("Information", "No more open ends!");
+          } else if (jso[0] === nodeID) {
+            growlAlert("Information", "You are at an open end node.");
+          } else {
+            // Parse location string
+            var loc = jso[1].slice(1, -1).split(',').map(parseFloat);
+            self.moveTo(loc[2], loc[1], loc[0],
+              function() { self.selectNode(jso[0]) });
+          }
         });
   };
 

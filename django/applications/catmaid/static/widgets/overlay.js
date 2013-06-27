@@ -23,7 +23,10 @@ var SkeletonAnnotations = {
     parent_id: null
   },
 
-  submit : submitterFn()
+  submit : submitterFn(),
+
+  TYPE_NODE : "treenode",
+  TYPE_CONNECTORNODE : "connector"
 };
 
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
@@ -346,7 +349,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
     for (var id in this.nodes) {
       if (nodes.hasOwnProperty(id)) {
         var node = this.nodes[id];
-        if ("connector" === node.type) {
+        if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
           if (node.pregroup.hasOwnProperty(node_id)) {
             pre.push(parseInt(id));
           } else if (node.postgroup.hasOwnProperty(node_id)) {
@@ -377,7 +380,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
         return;
       }
       // Else, select the node
-      if ("treenode" === node.type) {
+      if (SkeletonAnnotations.TYPE_NODE === node.type) {
         // Update statusBar
         statusBar.replaceLast("Activated treenode with id " + node.id + " and skeleton id " + node.skeleton_id);
         // If changing skeletons:
@@ -410,7 +413,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
         // and/or refresh have to be added to the individual operation's
         // (such as split tree) callbacks
         SkeletonAnnotations.refreshAllWidgets();
-      } else if ("connector" === node.type) {
+      } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
         statusBar.replaceLast("Activated connector node #" + node.id);
         atn.set(node);
         this.recolorAllNodes();
@@ -1064,7 +1067,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
         }
       } else {
         targetTreenodeID = atn.id;
-        if ("treenode" === atn.type) {
+        if (SkeletonAnnotations.TYPE_NODE === atn.type) {
           if (e.shiftKey) {
             var synapse_type = e.altKey ? 'post' : 'pre';
             statusBar.replaceLast("created connector, with " + synapse_type + "synaptic treenode id " + atn.id);
@@ -1077,7 +1080,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
           }
           // Else don't stop propagation: the mouse functions of the node will be triggered
           return true;
-        } else if ("connector" === atn.type) {
+        } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
           // create new treenode (and skeleton) postsynaptic to activated connector
           statusBar.replaceLast("created treenode with id " + atn.id + "postsynaptic to activated connector");
           this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
@@ -1089,7 +1092,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
       // depending on what mode we are in
       // do something else when clicking
       if (SkeletonAnnotations.currentmode === "skeletontracing") {
-        if ("treenode" === atn.type || null === atn.id) {
+        if (SkeletonAnnotations.TYPE_NODE === atn.type || null === atn.id) {
           // Create a new treenode,
           // either root node if atn is null, or child if it is not null
           if (null !== atn.id) {
@@ -1097,7 +1100,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
           }
           this.createNode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
           e.stopPropagation();
-        } else if ("connector" === atn.type) {
+        } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
           // create new treenode (and skeleton) presynaptic to activated connector
           // if the connector doesn't have a presynaptic node already
           this.createPresynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z);
@@ -1170,7 +1173,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
       // and stack.x, .y are in absolute pixels, so they also must be brought to nanometers
       var atnid = -1; // cannot send a null
       var atntype = "";
-      if (SkeletonAnnotations.getActiveNodeId() && "treenode" === SkeletonAnnotations.getActiveNodeType()) {
+      if (SkeletonAnnotations.getActiveNodeId() && SkeletonAnnotations.TYPE_NODE === SkeletonAnnotations.getActiveNodeType()) {
         if (future_active_node_id) {
           atnid = future_active_node_id;
         } else {
@@ -1495,7 +1498,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
       growlAlert("WARNING", "Cannot switch between terminal and connector: node not loaded.");
       return;
     }
-    if ("connector" === ob.type) {
+    if (SkeletonAnnotations.TYPE_CONNECTORNODE === ob.type) {
       if (this.switchingConnectorID === ob.id) {
         // Switch back to the terminal
         this.moveToAndSelectNode(this.nodes[this.switchingTreenodeID].id);
@@ -1511,7 +1514,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
           return;
         }
       }
-    } else if ("treenode" === ob.type) {
+    } else if (SkeletonAnnotations.TYPE_NODE === ob.type) {
       if (this.switchingTreenodeID === ob.id) {
         // Switch back to the connector
         this.moveToAndSelectNode(this.nodes[this.switchingConnectorID].id);

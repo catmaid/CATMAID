@@ -164,10 +164,6 @@ SkeletonElements.prototype.ElementPool.prototype = (function() {
 })();
 
 
-// Global variables
-var TYPE_NODE = "treenode";
-var TYPE_CONNECTORNODE = "connector";
-
 /** A prototype for both Treenode and Connector. */
 SkeletonElements.prototype.NodePrototype = new (function() {
   /** Update the local x,y coordinates of the node
@@ -390,7 +386,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     if (this.c) {
       this.c.remove();
       this.c = null;
-      SkeletonElements.prototype.mouseEventManager.forget(this.mc, TYPE_NODE);
+      SkeletonElements.prototype.mouseEventManager.forget(this.mc, SkeletonAnnotations.TYPE_NODE);
       this.mc.catmaidNode = null; // break circular reference
       this.mc.remove();
       this.mc = null;
@@ -485,7 +481,7 @@ SkeletonElements.prototype.Node = function(
 {
   this.paper = paper;
   this.id = id;
-  this.type = TYPE_NODE;
+  this.type = SkeletonAnnotations.TYPE_NODE;
   this.parent = parent;
   this.parent_id = parent_id;
   this.children = {};
@@ -529,7 +525,7 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
     this.id = null;
     if (this.c) {
       this.c.remove();
-      SkeletonElements.prototype.mouseEventManager.forget(this.mc, TYPE_CONNECTORNODE);
+      SkeletonElements.prototype.mouseEventManager.forget(this.mc, SkeletonAnnotations.TYPE_CONNECTORNODE);
       this.mc.catmaidNode = null; // break circular reference
       this.mc.remove();
     }
@@ -652,7 +648,7 @@ SkeletonElements.prototype.ConnectorNode = function(
 {
   this.paper = paper;
   this.id = id;
-  this.type = TYPE_CONNECTORNODE;
+  this.type = SkeletonAnnotations.TYPE_CONNECTORNODE;
   this.needsync = false; // state variable; whether this node is already synchronized with the database
   this.x = x; // local screen coordinates relative to the div, in pixel coordinates
   this.y = y;
@@ -727,7 +723,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
         var atnType = SkeletonAnnotations.getActiveNodeType();
         // connected activated treenode or connectornode
         // to existing treenode or connectornode
-        if (atnType === TYPE_CONNECTORNODE) {
+        if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
           if (!mayEdit()) {
             alert("You lack permissions to declare node #" + node.id + "as postsynaptic to connector #" + atnID);
             return;
@@ -736,7 +732,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
           catmaidSVGOverlay.createLink(node.id, atnID, "postsynaptic_to");
           // TODO check for error
           statusBar.replaceLast("Joined node #" + atnID + " to connector #" + node.id);
-        } else if (atnType === TYPE_NODE) {
+        } else if (atnType === SkeletonAnnotations.TYPE_NODE) {
           // Joining two skeletons: only possible if one owns both nodes involved
           // or is a superuser
           if( node.skeleton_id === SkeletonAnnotations.getActiveSkeletonId() ) {
@@ -874,9 +870,9 @@ SkeletonElements.prototype.mouseEventManager = new (function()
         var atnType = SkeletonAnnotations.getActiveNodeType();
         // connected activated treenode or connectornode
         // to existing treenode or connectornode
-        if (atnType === TYPE_CONNECTORNODE) {
+        if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
           alert("Can not join two connector nodes!");
-        } else if (atnType === TYPE_NODE) {
+        } else if (atnType === SkeletonAnnotations.TYPE_NODE) {
           catmaidSVGOverlay.createLink(atnID, connectornode.id, "presynaptic_to");
           statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
         }
@@ -894,10 +890,10 @@ SkeletonElements.prototype.mouseEventManager = new (function()
     mc.mousedown(mc_mousedown);
     mc.dblclick(mc_dblclick);
 
-    if (TYPE_NODE === type) {
+    if (SkeletonAnnotations.TYPE_NODE === type) {
       mc.click(this.mc_click);
     } else {
-      // TYPE_CONNECTORNODE
+      // SkeletonAnnotations.TYPE_CONNECTORNODE
       mc.click(connector_mc_click);
     }
   };
@@ -907,10 +903,10 @@ SkeletonElements.prototype.mouseEventManager = new (function()
     mc.unmousedown(mc_mousedown);
     mc.undblclick(mc_dblclick);
 
-    if (TYPE_NODE === type) {
+    if (SkeletonAnnotations.TYPE_NODE === type) {
       mc.unclick(this.mc_click);
     } else {
-      // TYPE_CONNECTORNODE
+      // SkeletonAnnotations.TYPE_CONNECTORNODE
       mc.unclick(connector_mc_click);
     }
   };

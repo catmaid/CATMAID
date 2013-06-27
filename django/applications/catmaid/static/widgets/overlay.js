@@ -581,10 +581,8 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
          });
   };
 
-  // TODO continue here
-
-    /** Create a single connector not linked to any treenode.
-     *  If given a completionCallback function, it is invoked with one argument: the ID of the newly created connector. */
+  /** Create a single connector not linked to any treenode.
+    *  If given a completionCallback function, it is invoked with one argument: the ID of the newly created connector. */
   this.createSingleConnector = function (phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, completionCallback) {
     var self = this;
     SkeletonAnnotations.submit(
@@ -790,11 +788,6 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
           }
         });
   };
-
-  // TODO continue here, and try to simplify the updateNodeCoordinatesinDB call chain
-  // which is invoked when moving away from the current position (we hope not just in Z).
-  // The good way to do it: send the update to the database on node mousemoved,
-  // without having to call updateNodes
 
   /** Send an update to the server regarding the positions of nodes edited with the mouse. */
   this.updateNodePositions = function (nodeArray, completedCallback) {

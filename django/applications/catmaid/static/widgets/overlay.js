@@ -51,8 +51,6 @@ SkeletonAnnotations.atn.set = function(node) {
   }
 };
 
-if (true) {
-
 SkeletonAnnotations.getSVGOverlay = function(stack) {
   return this.SVGOverlays[stack];
 };
@@ -1767,5 +1765,3 @@ SkeletonAnnotations.Tag = new (function() {
   /** Upon changing stack slice, remove the tag box. */
   this.changeSlice = this.changeScale;
 })();
-
-}

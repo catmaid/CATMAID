@@ -209,12 +209,12 @@ SkeletonAnnotations.updateNeuronName = function() {
       django_url + project.id + '/skeleton/' + skeletonID + '/neuronname',
       {},
       function(json) {
-          var new_name = prompt("Change neuron name", e['neuronname']);
+          var new_name = prompt("Change neuron name", json['neuronname']);
           if (!new_name) return;
           SkeletonAnnotations.submit(
             django_url + project.id + '/object-tree/instance-operation',
             {operation: "rename_node",
-             id: e['neuronid'],
+             id: json['neuronid'],
              title: new_name,
              classname: "neuron",
              pid: project.id},
@@ -353,7 +353,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
     var pre = [];
     var post = [];
     for (var id in this.nodes) {
-      if (nodes.hasOwnProperty(id)) {
+      if (this.nodes.hasOwnProperty(id)) {
         var node = this.nodes[id];
         if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
           if (node.pregroup.hasOwnProperty(node_id)) {
@@ -1354,7 +1354,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
   };
 
   this.goToLastEditedNode = function(skeletonID) {
-    if (this.isIDNull(skeleton_id)) return;
+    if (this.isIDNull(skeletonID)) return;
     if (!skeletonID) return;
     var self = this;
     SkeletonAnnotations.submit(

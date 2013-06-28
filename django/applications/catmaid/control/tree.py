@@ -399,9 +399,9 @@ def collect_skeleton_ids(request, project_id=None, node_id=None, node_type=None,
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def tree_object_list(request, project_id=None):
-    parent_id = int(request.GET.get('parentid', 0))
-    parent_name = request.GET.get('parentname', '')
-    expand_request = request.GET.get('expandtarget', None)
+    parent_id = int(request.POST.get('parentid', 0))
+    parent_name = request.POST.get('parentname', '')
+    expand_request = request.POST.get('expandtarget', None)
     if expand_request is None:
         expand_request = tuple()
     else:

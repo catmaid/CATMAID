@@ -782,6 +782,15 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
           self.activateNode(nn);
           // ALREADY DONE by activate node // refreshAllWidgets();
 
+          // Append to parent and recolor
+          if (parentID) {
+            var parentNode = self.nodes[parentID];
+            if (parentNode) {
+              parentNode.addChildNode(nn);
+              parentNode.updateColors();
+            }
+          }
+
           // Check whether the Z coordinate of the new node is beyond one section away
           // from the Z coordinate of the parent node (which is the active by definition)
           if (active_node_z !== null && Math.abs(active_node_z - nn.z) > 1) {

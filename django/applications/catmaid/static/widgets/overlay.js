@@ -321,13 +321,17 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
 
   this.destroy = function() {
     // Unregister instance
-    delete SkeletonAnnotations.SVGOverlays[stack];
+    delete SkeletonAnnotations.SVGOverlays[this.stack];
     // Release
-    this.graphics.destroy();
-    this.graphics = null;
-    this.view.onmousemove = null;
-    this.view.onmousedown = null;
-    this.view = null;
+    if (this.graphics) {
+      this.graphics.destroy();
+      this.graphics = null;
+    }
+    if (this.view) {
+      this.view.onmousemove = null;
+      this.view.onmousedown = null;
+      this.view = null;
+    }
   };
 
   /**

@@ -901,6 +901,12 @@ var ObjectTree = new function()
       });
     });
 
+    // Open tree path to the selected skeleton if any
+    if (SkeletonAnnotations.getActiveSkeletonId()) {
+      // TODO: I cannot find where in init is the request made for listing the root node;
+      // TODO  for it is after that request that the requestOpenTreePath call must be made.
+      setTimeout("ObjectTree.requestOpenTreePath(SkeletonAnnotations.getActiveSkeletonId())", 3000);
+    }
   };
 
   /* A function that takes an array of ids starting from the root id

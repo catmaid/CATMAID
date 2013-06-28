@@ -579,7 +579,8 @@ function handle_openProjectStack( status, text, xml )
 				navigator: Navigator,
 				canvastool: CanvasTool,
 				tracingtool: TracingTool,
-				segmentationtool: SegmentationTool
+				segmentationtool: SegmentationTool,
+        classification_editor: null
 			};
 
 			//! if the stack was initialized by an URL query, move it to a given position

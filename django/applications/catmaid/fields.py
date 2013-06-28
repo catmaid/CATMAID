@@ -137,7 +137,7 @@ class RGBA(object):
             raise Exception, "Couldn't parse value as an RGBA: " + str(s)
     
     def hex_color(self):
-        return "#{0:06x}".format(int(self.r * 256 * 256 * 255 + self.g * 256 * 255 + self.b * 255))
+        return "#{0:06x}".format((int(self.r * 255) << 16) + (int(self.g * 255) << 8) + int(self.b * 255))
 
     def __unicode__(self):
         return u"(%.3f, %.3f, %.3f, %.3f)" % (self.r, self.g, self.b, self.a)
@@ -158,7 +158,9 @@ class RGBAField(models.Field):
         if isinstance(value, RGBA):
             return value
         elif (isinstance(value, list) or isinstance(value, tuple)) and len(value) == 3:
-            return RGBA(value[0], value[1], value[2])
+            return RGBA(value[0], value[1], value[2], 1)
+        elif (isinstance(value, list) or isinstance(value, tuple)) and len(value) == 4:
+            return RGBA(value[0], value[1], value[2], value[3])
         # When contructing a Location, we get the empty string
         # here; return a new RGBA for any falsy value:
         elif not value:

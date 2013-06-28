@@ -328,7 +328,8 @@ div.sliceView div.cropBoxNonActive
 }
 
 div.sliceView div.cropBox p.world,
-div.sliceView div.cropBox p.screen
+div.sliceView div.cropBox p.screen,
+div.sliceView div.cropBox p.close
 {
 	position:absolute;
 	right:-1px;
@@ -341,7 +342,8 @@ div.sliceView div.cropBox p.screen
 }
 
 div.sliceView div.cropBoxNonActive p.world,
-div.sliceView div.cropBoxNonActive p.screen
+div.sliceView div.cropBoxNonActive p.screen,
+div.sliceView div.cropBoxNonActive p.close
 {
     visibility: hidden;
 }
@@ -350,3 +352,12 @@ div.sliceView div.cropBox p.screen
 {
 	bottom:-47px;
 }
+
+div.sliceView div.cropBox p.close
+{
+	top: -22px;
+	height: 12px;
+	z-index:6;
+	cursor: pointer;
+}
+

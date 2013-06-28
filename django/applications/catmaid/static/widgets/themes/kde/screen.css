@@ -274,3 +274,17 @@ div#classification_graph_object div.select_new_classification_instance {
     margin-top: 2px;
     position: absolute;
 }
+
+div#classification_graph_object img.roiimage {
+    margin: -4px;
+    padding-left: 4px;
+}
+
+#imagepreview {
+    position: absolute;
+    border: 1px solid #ccc;
+    background: #333;
+    padding: 5px;
+    display: none;
+    color: #fff;
+}

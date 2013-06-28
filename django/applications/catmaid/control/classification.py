@@ -12,9 +12,11 @@ from catmaid.control.common import insert_into_log
 from catmaid.control.ajax_templates import *
 from catmaid.control.ontology import get_class_links_qs
 from catmaid.models import Class, ClassClass, ClassInstance, ClassInstanceClassInstance
-from catmaid.models import Relation, UserRole, Project, Restriction
-from catmaid.models import CardinalityRestriction
+from catmaid.models import Relation, UserRole, Project, Restriction, Stack
+from catmaid.models import CardinalityRestriction, RegionOfInterest
+from catmaid.models import RegionOfInterestClassInstance
 from catmaid.control.authentication import requires_user_role
+from catmaid.control.roi import link_roi_to_class_instance
 
 # All needed classes by the classification system alongside their
 # descriptions.
@@ -28,7 +30,8 @@ needed_classes = {
 # descriptions.
 needed_relations = {
     'is_a': "A basic is_a relation",
-    'classified_by': "Link a classification to something"}
+    'classified_by': "Link a classification to something",
+    'linked_to': "Links a ROI to a class instance."}
 
 class ClassProxy(Class):
     """ A proxy class to allow custom labeling of class in model forms.
@@ -843,15 +846,36 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
             # Get child types
             child_types = get_child_classes( workspace_pid, parent_ci )
 
+            def make_roi_html(roi):
+                img_data = (roi.id, settings.STATIC_URL)
+                return "<img class='roiimage' roi_id='%s' " \
+                       "src='%s/widgets/themes/kde/camera.png' \>" % img_data
+
             child_data = []
             for child_link in child_links:
                 child = child_link.class_instance_a
+                # Find ROIs for this class instance
+                roi_links = RegionOfInterestClassInstance.objects.filter(
+                    class_instance=child)
+                roi_htmls = []
+                for roi_link in roi_links:
+                    roi_htmls.append( make_roi_html(roi_link.region_of_interest) )
+                roi_html = ''.join(roi_htmls)
+                roi_json = json.dumps( [r.id for r in roi_links] )
+                # Get sub-child information
                 subchild_types = get_child_classes( workspace_pid, child )
                 subchild_types_jstree = child_types_to_jstree_dict( subchild_types )
-                data = {'data': {'title': get_class_name(child.class_column)},
+                # Build title
+                if roi_html:
+                    title = "%s %s" % (get_class_name(child.class_column), roi_html)
+                else:
+                    title = get_class_name(child.class_column)
+                # Build JSTree data structure
+                data = {'data': {'title': title},
                     'attr': {'id': 'node_%s' % child.id,
                              'linkid': child_link.id,
                              'rel': 'element',
+                             'rois': roi_json,
                              'child_groups': json.dumps(subchild_types_jstree)}}
 
                 # Test if there are children links present and mark
@@ -1136,3 +1160,17 @@ def autofill_classification_graph(request, workspace_pid, project_id=None, link_
         return HttpResponse("Added nodes: %s" % ','.join(node_names))
     else:
         return HttpResponse("Couldn't infer any new class instances.")
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def link_roi_to_classification(request, project_id=None, workspace_pid=None,
+        stack_id=None, ci_id=None):
+    """ With the help of this method one can link a region of interest
+    (ROI) to a class instance in a classification graph. The information
+    about the ROI is passed as POST variables.
+    """
+    # Find 'linked_to' relatios
+    rel = Relation.objects.get(project_id=workspace_pid,
+        relation_name="linked_to")
+
+    return link_roi_to_class_instance(request, project_id=project_id,
+        relation_id=rel.id, stack_id=stack_id, ci_id=ci_id)

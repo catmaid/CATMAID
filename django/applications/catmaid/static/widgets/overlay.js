@@ -1047,7 +1047,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
       } // else, a node under the mouse will be removed
     } else if (e.shiftKey) {
       if (null === atn.id) {
-        if (SkeletonAnnotations.currentmode === "skeletontracing") {
+        if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SKELETON) {
           growlAlert('BEWARE', 'You need to activate a treenode first (skeleton tracing mode)!');
           e.stopPropagation();
           return true;
@@ -1076,9 +1076,8 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
         }
       }
     } else {
-      // depending on what mode we are in
-      // do something else when clicking
-      if (SkeletonAnnotations.currentmode === "skeletontracing") {
+      // depending on what mode we are in do something else when clicking
+      if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SKELETON) {
         if (SkeletonAnnotations.TYPE_NODE === atn.type || null === atn.id) {
           // Create a new treenode,
           // either root node if atn is null, or child if it is not null
@@ -1095,7 +1094,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
         }
         // Else don't stop propagation: a node may be moved
         return true;
-      } else if (SkeletonAnnotations.currentmode === "synapsedropping") {
+      } else if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SYNAPSE) {
         // only create single synapses/connectors
         this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5);
       }

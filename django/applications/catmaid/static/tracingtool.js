@@ -100,17 +100,16 @@ function TracingTool()
     };
 
     // Insert a text div for the neuron name in the canvas window title bar
-    /* // TODO
     var neuronnameDisplay = document.createElement( "div" );
+    neuronnameDisplay.setAttribute('id', 'neuronname' + stack.getId());
     neuronnameDisplay.className = "neuronname";
     neuronnameDisplay.appendChild( document.createElement( "p" ) );
     var spanName = document.createElement( "span" );
-    spanName.id = "neuronName";
+    spanName.id = "neuronName" + stack.getId();
     neuronnameDisplay.firstChild.appendChild( spanName );
     neuronnameDisplay.firstChild.firstChild.appendChild( document.createTextNode( "" ) );
-    view.appendChild( neuronnameDisplay );
-    */
-
+    stack.getWindow().getFrame().appendChild( neuronnameDisplay );
+    SkeletonAnnotations.updateNeuronNameLabel(stack.getId());
   };
 
 	/**
@@ -181,6 +180,9 @@ function TracingTool()
 	 */
 	this.destroy = function()
 	{
+    // Remove div with the neuron's name
+    $("#neuronname" + stack.getId()).remove();
+
     // Synchronize data with database
     tracingLayer.svgOverlay.updateNodeCoordinatesinDB();
 
@@ -771,7 +773,7 @@ function TracingTool()
           if (!mayEdit()) {
               return false;
           }
-          if (e.shiftKey) SkeletonAnnotations.updateNeuronName();
+          if (e.shiftKey) SkeletonAnnotations.renameNeuron(tracingLayer.svgOverlay.getStack().getId());
           else ObjectTree.renameCurrentActiveNode();
           return true;
       }

@@ -201,8 +201,18 @@ SkeletonAnnotations.maybeExecuteIfSkeletonHasMoreThanOneNode = function(node_id,
       });
 };
 
+SkeletonAnnotations.updateNeuronNameLabel = function(stackID) {
+  var skeletonID = this.getActiveSkeletonId();
+  if (!skeletonID) return;
+  this.submit(
+      django_url + project.id + '/skeleton/' + skeletonID + '/neuronname',
+      {},
+      function(json) {
+        SkeletonAnnotations.setNeuronNameInTopbar(stackID, json['neuronname'], skeletonID);
+      });
+};
 
-SkeletonAnnotations.updateNeuronName = function() {
+SkeletonAnnotations.renameNeuron = function(stackID) {
   var skeletonID = this.getActiveSkeletonId();
   if (!skeletonID) return;
   this.submit(
@@ -219,7 +229,7 @@ SkeletonAnnotations.updateNeuronName = function() {
              classname: "neuron",
              pid: project.id},
             function(json) {
-              SkeletonAnnotations.setNeuronNameInTopbar(new_name, skeletonID);
+              SkeletonAnnotations.setNeuronNameInTopbar(stackID, new_name, skeletonID);
               SkeletonAnnotations.refreshAllWidgets();
             });
       });
@@ -271,8 +281,8 @@ SkeletonAnnotations.SVGOverlay = function(stack) {
   this.graphics = new SkeletonElements(this.paper);
 };
 
-SkeletonAnnotations.setNeuronNameInTopbar = function(neuronName, skeletonID) {
-  $('#neuronName').text(neuronName + ' (Skeleton ID: '+ skeletonID +')');
+SkeletonAnnotations.setNeuronNameInTopbar = function(stackID, neuronName, skeletonID) {
+  $('#neuronName' + stackID).text(neuronName + ' (Skeleton ID: '+ skeletonID +')');
 };
 
 
@@ -394,6 +404,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
           // 1. Open the object tree node if synchronizing:
           SkeletonAnnotations.openSkeletonNodeInObjectTree(node);
           // 2. Update the status with the ancestry of that skeleton:
+          var stackID = this.stack.getId();
           SkeletonAnnotations.submit(
               django_url + project.id + '/skeleton/ancestry',
               {pid: project.id,
@@ -404,7 +415,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
                   message += " <i>part_of</i> [<strong>" + json[i].name + "</strong>]";
                 }
                 statusBar.replaceLastHTML(message);
-                SkeletonAnnotations.setNeuronNameInTopbar(json[0].name, node.skeleton_id);
+                SkeletonAnnotations.setNeuronNameInTopbar(stackID, json[0].name, node.skeleton_id);
                 project.selectedObjects.selectedneuron = json[0].id;
                 project.selectedObjects.selectedskeleton = parseInt(node.skeleton_id);
               });

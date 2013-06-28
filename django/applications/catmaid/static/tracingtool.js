@@ -119,6 +119,8 @@ function TracingTool()
 	 */
 	this.register = function( parentStack )
   {
+    document.getElementById( "toolbox_data" ).style.display = "block";
+
     setupSubTools();
 
     if (tracingLayer && stack) {

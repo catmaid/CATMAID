@@ -69,6 +69,8 @@ function SegmentationTool()
      */
     this.register = function( parentStack )
     {
+        document.getElementById( "toolbox_segmentation" ).style.display = "block";
+
         // console.log('SegmentationTool register', parentStack);
         self.stack = parentStack;
         self.createCanvasLayer();

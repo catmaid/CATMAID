@@ -195,11 +195,6 @@ function Project( pid )
 		tool = newTool;
 		
 		self.hideToolboxes();
-        if( self.getTool().toolname === 'segmentationtool' ) {
-            document.getElementById( "toolbox_segmentation" ).style.display = "block";
-        } else if( self.getTool().toolname === 'tracingtool' ) {
-        	document.getElementById( "toolbox_data" ).style.display = "block";
-        }
 
 		if ( !self.focusedStack && stacks.length > 0 ) {
 			self.setFocusedStack( stacks[ 0 ] )

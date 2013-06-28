@@ -1301,7 +1301,17 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
     });
   };
 
-  this.moveToAndSelectNode = function (nodeID) {
+  this.moveToAndSelectNode = function(nodeID) {
+    if (this.isIDNull(nodeID)) return;
+    var self = this;
+    this.goToNode(nodeID,
+        function() {
+          self.selectNode(nodeID);
+        });
+  };
+
+  /** Move to the node and then invoke the function. */
+  this.goToNode = function (nodeID, fn) {
     if (this.isIDNull(nodeID)) return;
     var node = this.nodes[nodeID];
     var self = this;
@@ -1310,17 +1320,14 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
         this.pix2physZ(node.z),
         this.pix2physY(node.y),
         this.pix2physX(node.x),
-        function() { self.selectNode(nodeID); });
+        fn);
     } else {
       SkeletonAnnotations.submit(
           django_url + project.id + "/node/get_location",
           {tnid: nodeID},
           function(json) {
             // json[0], [1], [2], [3]: id, x, y, z
-            self.moveTo(json[3], json[2], json[1],
-              function() {
-                self.selectNode(nodeID);
-              });
+            self.moveTo(json[3], json[2], json[1], fn);
           },
           false,
           true);
@@ -1612,7 +1619,8 @@ var growlAlert = function(title, message) {
 };
 
 
-/** Manages the creation and deletion of tags via a tag editor div. */
+/** Manages the creation and deletion of tags via a tag editor div.
+  * tagbox from http://blog.crazybeavers.se/wp-content/Demos/jquery.tag.editor */
 SkeletonAnnotations.Tag = new (function() {
   this.tagbox = null;
 
@@ -1629,75 +1637,71 @@ SkeletonAnnotations.Tag = new (function() {
 
   this.tagATNwithLabel = function(label, svgOverlay) {
     var atn = SkeletonAnnotations.atn;
-    requestQueue.register(django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update', "POST", {
-      pid: project.id,
-      tags: label
-    }, function (status, text, xml) {
-      if (status !== 200) {
-        return;
-      }
-      var e = $.parseJSON(text);
-      if (e.error) {
-        alert(e.error);
-        return;
-      }
-      if ('' === label) {
-        growlAlert('Information', 'Tags removed.');
-        return;
-      }
-      growlAlert('Information', 'Tag ' + label + ' added.');
-      svgOverlay.updateNodes();
+    SkeletonAnnotations.submit(
+      django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
+      {pid: project.id,
+       tags: label},
+      function(json) {
+        if ('' === label) {
+          growlAlert('Information', 'Tags removed.');
+        } else {
+          growlAlert('Information', 'Tag ' + label + ' added.');
+        }
+        svgOverlay.updateNodes();
     });
   };
 
   this.handle_tagbox = function(atn, svgOverlay) {
-    var self = this;
     var atnID = SkeletonAnnotations.getActiveNodeId();
-    this.tagbox = $("<div class='tagBox' id='tagBoxId" + atnID + "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: " + atn.x + "px; top: " + atn.y + "px;'>" +
-    "Tag: <input id='Tags" + atnID + "' name='Tags' type='text' value='' /><div style='color:#949494'>(Save&Close: Enter)</div>")
-        .css('background-color', 'white')
-        .css('position', 'absolute')
-        .appendTo("#"+view.id)
+    this.tagbox = $("<div class='tagBox' id='tagBoxId" + atnID + "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: " + atn.x + "px; top: " + atn.y + "px;' />");
+    this.tagbox.append("Tag: ");
+    var input = $("<input id='Tags" + atnID + "' name='Tags' type='text' value='' />");
+    this.tagbox.append(input).append("<div style='color:#949494'>(Save&Close: Enter)</div>");
 
-        .mousedown(function (event) {
-          if ("" === self.tagbox.tagEditorGetTags()) {
-            self.updateTags();
-            self.removeTagbox();
-            svgOverlay.hideLabels();
+    this.tagbox
+      .css('background-color', 'white')
+      .css('position', 'absolute')
+      .appendTo("#" + svgOverlay.view.id)
+
+      .mousedown(function (event) {
+        if ("" === input.tagEditorGetTags()) {
+          SkeletonAnnotations.Tag.updateTags();
+          SkeletonAnnotations.Tag.removeTagbox();
+          svgOverlay.hideLabels();
+          svgOverlay.updateNodes();
+        }
+        event.stopPropagation();
+      })
+
+      .keydown(function (event) {
+        if (13 === event.keyCode) { // ENTER
+          event.stopPropagation();
+          if ("" === input.val()) {
+            SkeletonAnnotations.Tag.updateTags();
+            SkeletonAnnotations.Tag.removeTagbox();
+            growlAlert('Information', 'Tags saved!');
             svgOverlay.updateNodes();
           }
+        }
+      })
+
+      .keyup(function (event) {
+        if (27 === event.keyCode) { // ESC
           event.stopPropagation();
-        })
-
-        .keydown(function (event) {
-          if (13 === event.keyCode) { // ENTER
-            event.stopPropagation();
-            if ("" === self.tagbox.val()) {
-              self.updateTags();
-              self.removeTagbox();
-              growlAlert('Information', 'Tags saved!');
-              svgOverlay.updateNodes();
-            }
-          }
-        })
-
-        .keyup(function (event) {
-          if (27 === event.keyCode) { // ESC
-            event.stopPropagation();
-            self.removeTagbox();
-          }
-        });
+          SkeletonAnnotations.Tag.removeTagbox();
+        }
+      });
 
     SkeletonAnnotations.submit(
         django_url + project.id + '/labels-for-node/' + atn.type  + '/' + atnID,
         {pid: project.id},
         function(json) {
-          self.tagbox.tagEditor({
+          input.tagEditor({
             items: json,
             confirmRemoval: false,
             completeOnSeparator: true
-          })
-          self.tagbox.focus();
+          });
+          input.focus();
 
           // TODO autocompletion should only be invoked after typing at least one character
           // add autocompletion, only request after tagbox creation
@@ -1705,54 +1709,42 @@ SkeletonAnnotations.Tag = new (function() {
             django_url + project.id + '/labels-all',
             {pid: project.id},
             function(json) {
-              self.tagbox.autocomplete({
-                source: json
-              });
+              input.autocomplete({source: json});
             });
         });
   };
 
   this.updateTags = function() {
-    var atnID = SkeletonAnnotations.getActiveNodeId();
+    var atn = SkeletonAnnotations.atn;
     // TODO why pass the atnID both as POST and in the URL?
     SkeletonAnnotations.submit(
-        django_url + project.id + '/label/' + atn.type + '/' + atnID + '/update',
+        django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
         {pid: project.id,
-         nid: atnID,
+         nid: atn.id,
          ntype: atn.type,
-         tags: this.tagBox.tagEditorGetTags()},
+         tags: $("#Tags" + atn.id).tagEditorGetTags()},
         function(json) {});
   };
 
   this.tagATN = function(svgOverlay) {
-    // tagbox from
-    // http://blog.crazybeavers.se/wp-content/Demos/jquery.tag.editor/
-
-    var atnID = SkeletonAnnotations.getActiveNodeId();
-
-    if (null === atnID) {
-      alert("No active node selected!");
+    var atn = SkeletonAnnotations.atn;
+    if (null === atn.id) {
+      alert("Select a node first!");
       return;
     }
-
     if (this.tagbox) {
       growlAlert('BEWARE', 'Close tagbox first before you tag another node!');
       return;
     }
-
-    var handle_tagbox = this.handle_tagbox;
-
-    SkeletonAnnotations.submit(
-        django_url + project.id + '/node/get_location',
-        {tnid: atnID,
-         type: atn.type},
-        function(jso) {
-          handle_tagbox({'id': atnID,
-                         'type': atn.type,
-                         'x': phys2pixX(jso[1]),
-                         'y': phys2pixY(jso[2]),
-                         'z': phys2pixZ(jso[3])}, svgOverlay);
-        });
+    if (svgOverlay.stack.z !== atn.z) {
+      var self = this;
+      svgOverlay.goToNode(atn.id,
+          function() {
+            self.handle_tagbox(atn, svgOverlay);
+          });
+    } else {
+      this.handle_tagbox(atn, svgOverlay);
+    }
   };
 
   /** Upon changing stack scale, remove the tag box. */

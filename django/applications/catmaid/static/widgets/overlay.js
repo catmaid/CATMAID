@@ -794,32 +794,11 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
         });
   };
 
-  /** Send an update to the server regarding the positions of nodes edited with the mouse. */
-  this.updateNodePositions = function (nodeArray, completedCallback) {
-    var requestDictionary = {}, i, k, node;
-    for (i in nodeArray) {
-      if (nodeArray.hasOwnProperty(i)) {
-        requestDictionary['pid' + i] = project.id;
-        node = nodeArray[i];
-        for (k in node) {
-          if (node.hasOwnProperty(k)) {
-            requestDictionary[k + i] = node[k];
-          }
-        }
-      }
-    }
-    SkeletonAnnotations.submit(
-        django_url + project.id + '/node/update',
-        requestDictionary,
-        function(json) {
-          if (typeof completedCallback !== "undefined") {
-            completedCallback(json.updated);
-          }
-        });
-  };
-
+  /** Invoke the callback function after having pushed updated node coordinates
+   * to the database. */
   this.updateNodeCoordinatesinDB = function (callback) {
-    var nodesToUpdate = [];
+    var update = {treenode: [],
+                  connector: []};
     for (var nodeID in this.nodes) {
       if (this.nodes.hasOwnProperty(nodeID)) {
         var node = this.nodes[nodeID];
@@ -827,18 +806,24 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
         // when they changed position
         if (node.needsync) {
           node.needsync = false;
-          nodesToUpdate.push({
-            'node_id': node.id,
-            'x': this.pix2physX(node.x),
-            'y': this.pix2physY(node.y),
-            'z': this.pix2physZ(node.z),
-            'type': node.type
-          });
+          update[node.type].push([node.id,
+                                  this.pix2physX(node.x),
+                                  this.pix2physY(node.y),
+                                  this.pix2physZ(node.z)]);
         }
       }
     }
-    if (nodesToUpdate.length > 0) {
-      this.updateNodePositions(nodesToUpdate, callback);
+    if (update.treenode.length > 0 || update.connector.length > 0) {
+      SkeletonAnnotations.submit(
+          django_url + project.id + '/node/update',
+          {t: update.treenode,
+           c: update.connector},
+          function(json) {
+            if (typeof callback !== "undefined") {
+              // Invoke the callback with the number of nodes that were updated
+              callback(json);
+            }
+          });
     } else if (callback) {
       callback(0);
     }
@@ -1156,10 +1141,9 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
     this.view.style.display = "none";
   };
 
-  /**
-   * update treeline nodes by querying them from the server
-   * with a bounding volume dependant on the current view
-   */
+  /** Update treeline nodes by querying them from the server
+   * with the bounding volume of the current view.
+   * Will also push editions (if any) to nodes to the database. */
   this.updateNodes = function (callback, future_active_node_id)
   {
     var activeSkeleton = SkeletonAnnotations.getActiveSkeletonId();

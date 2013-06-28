@@ -194,7 +194,7 @@ SkeletonAnnotations.maybeExecuteIfSkeletonHasMoreThanOneNode = function(node_id,
       django_url + project.id + '/skeleton/node/' + node_id + '/node_count',
       {},
       function(json) {
-        if (json.count > 1 && !confirm("Do you really want to " + verb + " skeleton #" + r.skeleton_id + ", which has more than one node?")) {
+        if (json.count > 1 && !confirm("Do you really want to " + verb + " skeleton #" + json.skeleton_id + ", which has more than one node?")) {
           return;
         }
         fn();

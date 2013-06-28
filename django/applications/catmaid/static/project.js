@@ -277,12 +277,12 @@ function Project( pid )
 		document.onkeydown = null;
 		document.getElementById( "content" ).style.display = "block";
 		document.getElementById( "project_menu_current" ).style.display = "none";
-        // TODO: bars should be unset by tool on unregister
+		// TODO: bars should be unset by tool on unregister
 		document.getElementById("toolbox_edit").style.display = "none";
 		document.getElementById("toolbox_data").style.display = "none";
 		document.getElementById("toolbox_segmentation").style.display = "none";
-        document.getElementById( "toolbox_project" ).style.display = "none";
-        document.getElementById( "toolbar_nav" ).style.display = "none";
+		document.getElementById( "toolbox_project" ).style.display = "none";
+		document.getElementById( "toolbar_nav" ).style.display = "none";
 
 		project = null;
 

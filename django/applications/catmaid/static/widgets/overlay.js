@@ -1199,6 +1199,13 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
          labels: self.getLabelStatus()},
         function(json) {
           self.refreshNodesFromTuples(json, pz);
+
+          // initialization hack for "URL to this view"
+          if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
+            self.activateNode(self.nodes[SkeletonAnnotations.init_active_node_id]);
+            delete SkeletonAnnotations.init_active_node_id;
+          }
+
           stack.redraw();
           if (typeof callback !== "undefined") {
             callback();

@@ -215,7 +215,7 @@ def can_edit_or_fail(user, ob_id, table_name):
         if user.is_superuser:
             return True
         if 1 == len(rows) and rows[0][0] == user.id:
-            return true
+            return True
         raise Exception('User %s with id #%s cannot edit object #%s (from user #%s) from table %s' % (user.username, user.id, ob_id, rows[0][0], table_name))
     raise ObjectDoesNotExist('Object #%s not found in table %s' % (ob_id, table_name))
 

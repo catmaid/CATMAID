@@ -697,7 +697,6 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
             // (Could not be loaded if the user scrolled away between
             // the creation of the node and its activation)
             var q = queue[0];
-            console.log("q:", q);
             q.self.updateNodes(function () {
               q.self.selectNode(json.treenode_id);
               // Remove this call now that the active node is set properly

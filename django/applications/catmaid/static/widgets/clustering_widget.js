@@ -323,6 +323,19 @@ var ClusteringWidget = new function()
                         current_label = null;
                     }
                 });
+
+            // create export link
+            var export_link = $("#dendrogram_export_link");
+            if (export_link.length !== 0) {
+                export_link = export_link[0];
+                var svg = r.toSVG();
+                var encoded_uri = "data:image/svg+xml;charset=utf-8," +
+                    encodeURIComponent(svg);
+                export_link.setAttribute("href", encoded_uri);
+                // The "download" attribute isn't supported by every browser,
+                // try it nevertheless.
+                export_link.setAttribute("download", "catmaid_dendrogram.svg");
+            }
         }
     };
 

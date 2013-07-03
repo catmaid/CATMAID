@@ -1343,7 +1343,6 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
   this.goToNode = function (nodeID, fn) {
     if (this.isIDNull(nodeID)) return;
     var node = this.nodes[nodeID];
-    var self = this;
     if (node) {
       this.moveTo(
         this.pix2physZ(node.z),
@@ -1351,6 +1350,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
         this.pix2physX(node.x),
         fn);
     } else {
+      var self = this;
       SkeletonAnnotations.submit(
           django_url + project.id + "/node/get_location",
           {tnid: nodeID},

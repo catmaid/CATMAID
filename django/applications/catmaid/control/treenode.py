@@ -365,7 +365,7 @@ def update_treenode_table(request, project_id=None):
         treenode = get_object_or_404(Treenode, project=project_id, id=treenode_id)
         response_on_error = 'Could not update %s for treenode with ID %s.' % (property_name, treenode_id)
         setattr(treenode, property_name, property_value)
-        treenode.user = request.user
+        treenode.editor = request.user
         treenode.save()
 
         return HttpResponse(json.dumps({'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}))

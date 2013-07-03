@@ -1786,3 +1786,69 @@ SkeletonAnnotations.Tag = new (function() {
   /** Upon changing stack slice, remove the tag box. */
   this.changeSlice = this.changeScale;
 })();
+
+window.OptionsDialog = function(title) {
+  this.dialog = document.createElement('div');
+  this.dialog.setAttribute("id", "dialog-confirm");
+  this.dialog.setAttribute("title", title);
+};
+
+window.OptionsDialog.prototype = {};
+
+/** Takes three optional arguments; default to 300, 200, true. */
+window.OptionsDialog.prototype.show = function(width, height, modal) {
+  var self = this;
+  $(this.dialog).dialog({
+    width: width ? width : 300,
+    height: height ? height : 200,
+    modal: modal ? modal : true,
+    buttons: {
+      "Cancel": function() {
+        $(this).dialog("close");
+        if (self.onCancel) self.onCancel();
+      },
+      "OK": function() {
+        $(this).dialog("close");
+        if (self.onOK) self.onOK();
+      }
+    }
+  });
+};
+
+window.OptionsDialog.prototype.appendMessage = function(msg) {
+  var msg = document.createElement('p');
+  msg.innerHTML = msg;
+  this.dialog.appendChild(msg);
+};
+
+window.OptionsDialog.prototype.appendChoice = function(title, choiceID, names, values) {
+  if (!names || !values || names.length !== values.length) {
+    alert("Improper arrays for names and values.");
+    return;
+  }
+  var p = document.createElement('p');
+  if (title) p.innerHTML = title;
+  var choice = document.createElement('select');
+  choice.setAttribute("id", choiceID);
+  for (var i=0, len=names.length; i<len; ++i) {
+    var option = document.createElement('option');
+    option.text = names[i];
+    option.value = values[i];
+    choice.add(option);
+  }
+  p.appendChild(choice);
+  this.dialog.appendChild(p);
+  return choice;
+};
+
+window.OptionsDialog.prototype.appendField = function(title, fieldID, initialValue) {
+  var p = document.createElement('p');
+  p.innerHTML = title;
+  var input = document.createElement('input');
+  input.setAttribute("id", fieldID);
+  input.setAttribute("value", initialValue);
+  p.appendChild(input);
+  this.dialog.appendChild(p);
+  return input;
+};
+

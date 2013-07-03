@@ -1321,6 +1321,35 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
     this.moveToAndSelectNode(node.parent_id);
   };
 
+  this.editRadius = function(treenode_id) {
+    if (this.isIDNull(treenode_id)) return;
+    var self = this;
+    this.goToNode(treenode_id,
+        function() {
+          var dialog = new OptionsDialog("Edit radius");
+          var input = dialog.appendField("Radius: ", "treenode-edit-radius", self.nodes[treenode_id].radius);
+          var choice = dialog.appendChoice("Apply: ", "treenode-edit-radius-scope",
+            ['Only this node', 'From this node to the next branch or end node (included)',
+             'From this node to the previous branch node or root (excluded)',
+             'From this node to root (included)', 'All nodes'],
+            [0, 1, 2, 3, 4]);
+          dialog.onOK = function() {
+            SkeletonAnnotations.submit(
+              django_url + project.id + '/treenode/' + treenode_id + '/radius',
+              {radius: parseFloat(input.value),
+               option: choice.selectedIndex},
+              function(json) {
+                var skeleton_id = self.nodes[treenode_id].skeleton_id;
+                if (NeuronStagingArea.is_widget_open() && NeuronStagingArea.get_skeletonmodel(skeleton_id) && WebGLApp.is_widget_open()) {
+                  // Reinit the actor
+                  WebGLApp.addSkeletonFromID(skeleton_id, false);
+                }
+              });
+          };
+          dialog.show();
+        });
+  };
+
   /** All moving functions must perform moves via the updateNodeCoordinatesinDB
    * otherwise, coordinates for moved nodes would not be updated. */
   this.moveTo = function(z, y, x, fn) {

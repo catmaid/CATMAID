@@ -196,6 +196,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/treenode/info$', 'catmaid.control.treenode_info'),
     (r'^(?P<project_id>\d+)/treenode/table/list$', 'catmaid.control.list_treenode_table'),
     (r'^(?P<project_id>\d+)/treenode/table/update$', 'catmaid.control.update_treenode_table'),
+    (r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/radius$', 'catmaid.control.update_radius'),
 
     (r'^(?P<project_id>\d+)/connector/create$', 'catmaid.control.create_connector'),
     (r'^(?P<project_id>\d+)/connector/delete$', 'catmaid.control.delete_connector'),

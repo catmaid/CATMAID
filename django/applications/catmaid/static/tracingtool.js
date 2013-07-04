@@ -510,7 +510,7 @@ function TracingTool()
   }) );
 
   this.addAction( new Action({
-    helpText: "Go to the parent of the active node",
+    helpText: "Edit the radius of the active node",
     keyShortcuts: {
       "O": [ 79 ]
     },

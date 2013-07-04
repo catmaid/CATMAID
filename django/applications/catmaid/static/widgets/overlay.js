@@ -1415,7 +1415,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
         var tagged = false;
         for (var j = label.text.length -1; j > -1; --j) {
           tagged = -1 !== label.text[j].search('end');
-          for (var i = end_labels.length -1; !stop && i > -1; --i) {
+          for (var i = end_labels.length -1; !tagged && i > -1; --i) {
             tagged = label.text[j] === end_labels[i];
           }
         }

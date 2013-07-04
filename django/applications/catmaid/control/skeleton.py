@@ -46,12 +46,12 @@ def last_openleaf(request, project_id=None, skeleton_id=None):
     nearest = None
     distance = len(nodes) + 1
     loc = None
-    print len(nodes), len(parentIDs), tnid, tnid in parentIDs
+    other_tags = set(('uncertain continuation', 'not a branch', 'soma'))
     for node in nodes:
         if node[0] not in parentIDs:
             # Found an end node
             # Check if not tagged with a tag containing 'end'
-            if not node[3] or 'end' not in node[3]:
+            if not node[3] or ('end' not in node[3] and node[3] not in other_tags):
                 # Found open end
                 nid = node[0]
                 d = distances[nid]

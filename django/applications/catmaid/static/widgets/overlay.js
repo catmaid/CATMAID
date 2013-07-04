@@ -1602,6 +1602,7 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
         {pid: project.id,
          connector_id: connectornode.id},
         function(json) {
+          connectornode.needsync = false;
           // If there was a presynaptic node, select it
           var preIDs  = Object.keys(connectornode.pregroup);
           var postIDs = Object.keys(connectornode.postgroup);
@@ -1612,10 +1613,12 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
           } else {
               self.activateNode(null);
           }
+          // capture ID prior to refreshing nodes and connectors
+          var cID = connectornode.id;
           // Refresh all nodes in any case, to reflect the new state of the database
           self.updateNodes();
 
-          statusBar.replaceLast("Deleted connector #" + connectornode.id);
+          statusBar.replaceLast("Deleted connector #" + cID);
         });
   };
 
@@ -1628,6 +1631,9 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
         {pid: project.id,
          treenode_id: node.id},
         function(json) {
+          // nodes not refreshed yet: node still contains the properties of the deleted node
+          // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore
+          node.needsync = false;
           // activate parent node when deleted
           if (wasActiveNode) {
             if (json.parent_id) {
@@ -1649,10 +1655,12 @@ SkeletonAnnotations.SVGOverlay.prototype = new function() {
               ObjectTree.refresh();
             }
           }
+          // capture ID prior to refreshing nodes and connectors
+          var nodeID = node.id;
           // Refresh all nodes in any case, to reflect the new state of the database
           self.updateNodes();
 
-          statusBar.replaceLast("Deleted node #" + node.id);
+          statusBar.replaceLast("Deleted node #" + nodeID);
         });
   };
 

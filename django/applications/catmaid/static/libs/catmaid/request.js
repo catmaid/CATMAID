@@ -223,7 +223,7 @@ var requestQueue = function()
           statusBar.replaceLast( "replacing request ", + r );
           // Send a distinguishable error reponse with the
           // callback:
-          c(200, JSON.stringify({'error': 'REPLACED'}), null);
+          removedRequest.callback(200, JSON.stringify({'error': 'REPLACED'}), null);
         }
       }
       this.register( r, m, d, c, id );

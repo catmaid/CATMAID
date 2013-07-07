@@ -109,7 +109,7 @@ function TracingTool()
     neuronnameDisplay.firstChild.appendChild( spanName );
     neuronnameDisplay.firstChild.firstChild.appendChild( document.createTextNode( "" ) );
     stack.getWindow().getFrame().appendChild( neuronnameDisplay );
-    SkeletonAnnotations.updateNeuronNameLabel(stack.getId());
+    tracingLayer.svgOverlay.updateNeuronNameLabel(stack.getId(), SkeletonAnnotations.getActiveSkeletonId());
   };
 
 	/**
@@ -786,7 +786,7 @@ function TracingTool()
           if (!mayEdit()) {
               return false;
           }
-          if (e.shiftKey) SkeletonAnnotations.renameNeuron(tracingLayer.svgOverlay.getStack().getId());
+          if (e.shiftKey) tracingLayer.svgOverlay.renameNeuron(SkeletonAnnotations.getActiveSkeletonId());
           else ObjectTree.renameCurrentActiveNode();
           return true;
       }

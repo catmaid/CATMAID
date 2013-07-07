@@ -6,7 +6,7 @@ var WebGLApp = (function() { return new function () {
   self.neurons = [];
 
   // Queue server requests, awaiting returns
-  var submit = typeof submitterFn!= "undefined" ? submitterFn() : undefined;
+  var submit;
 
   var camera, scene, renderer, scale, controls, zplane = null, meshes = [];
   var resolution, dimension, translation, canvasWidth, canvasHeight, ortho = false, projector, contour_objects = [],
@@ -29,6 +29,8 @@ var WebGLApp = (function() { return new function () {
 
   this.init = function( divID ) {
 
+    submit = submitterFn();
+
     self.stack_id = project.focusedStack.id;
 
     self.divID = divID;
@@ -48,6 +50,7 @@ var WebGLApp = (function() { return new function () {
     renderer = null;
     self.removeAllSkeletons();
     self.destroy_all_non_skeleton_data();
+    submit = null;
   };
 
   this.destroy_all_non_skeleton_data = function() {

@@ -921,6 +921,7 @@ var WebGLApp = (function() { return new function () {
         // node[0]: treenode ID
         // node[1]: parent ID
         // node[7]: radius
+        // node[8]: confidence
         var v; // for reuse in translating the sphere if any
         // If node has a parent
         if (node[1]) {
@@ -932,6 +933,9 @@ var WebGLApp = (function() { return new function () {
         }
         if (node[7] > 0) {
           createNodeSphere(node[0], node[4], node[5], node[6], v, node[7] * scale);
+        }
+        if (node[8] < 5) {
+          createLabelSphere(node[0], labelColors.uncertain);
         }
       });
 

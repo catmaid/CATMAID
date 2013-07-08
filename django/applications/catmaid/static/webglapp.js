@@ -561,9 +561,8 @@ var WebGLApp = (function() { return new function () {
           scene.remove( this.radiusSpheres[k] );
       }
       for (var k in this.specialTagSpheres) {
-        if (this.specialTagSpheres.hasOwnProperty[k]) {
+        if (this.specialTagSpheres.hasOwnProperty(k))
           scene.remove(this.specialTagSpheres[k]);
-        }
       }
       removeTextMeshes();
     };

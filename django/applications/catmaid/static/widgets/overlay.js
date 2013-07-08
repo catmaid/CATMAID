@@ -577,7 +577,7 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
 
 /** Used to join two skeletons together.
 * Permissions are checked at the server side, returning an error if not allowed. */
-this.createTreenodeLink = function (fromid, toid) {
+SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, toid) {
   if (fromid === toid) return;
   if (!this.nodes.hasOwnProperty(toid)) return;
   var self = this;

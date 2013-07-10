@@ -3,12 +3,10 @@
 
 var SkeletonConnectivity = new function()
 {
-    var projectID;
     var skeletons = {}; // skeletonID, skeletonTitle;
     var self = this;
 
     this.init = function() {
-        projectID = project.id;
     };
 
     this.fetchConnectivityForSkeleton = function() {

@@ -835,18 +835,42 @@ function handle_dataviews(status, text, xml) {
 function switch_dataview( view_id, view_type ) {
 	/* Some views are dynamic, e.g. the plain list view offers a
 	 * live filter of projects. Therefore we treat different types
-	 * of dataviews differently.
+	 * of dataviews differently and need to know whether the
+	 * requested view is a legacy view.
 	 */
-	if ( view_type == "legacy_project_list_data_view" ) {
-		// Show the standard plain list data view
-		document.getElementById("data_view").style.display = "none";
-		document.getElementById("clientside_data_view").style.display = "block";
-		updateProjectListFromCache();
+	var do_switch_dataview = function( view_id, view_type ) {
+		if ( view_type == "legacy_project_list_data_view" ) {
+			// Show the standard plain list data view
+			document.getElementById("data_view").style.display = "none";
+			document.getElementById("clientside_data_view").style.display = "block";
+			updateProjectListFromCache();
+		} else {
+			// let Django render the requested view and display it
+			document.getElementById("clientside_data_view").style.display = "none";
+			document.getElementById("data_view").style.display = "block";
+			load_dataview( view_id )
+		}
+	};
+
+	/* If view type is passed, switch to the data view directly.
+	 * Otherwise, retrieve the data view type first.
+	 */
+	if (view_type) {
+		do_switch_dataview(view_id, view_type);
 	} else {
-		// let Django render the requested view and display it
-		document.getElementById("clientside_data_view").style.display = "none";
-		document.getElementById("data_view").style.display = "block";
-		load_dataview( view_id )
+		requestQueue.register(django_url + 'dataviews/type/' + view_id,
+			'GET', undefined, function(status, text, xml) {
+				if (status == 200 && text) {
+					var e = $.parseJSON(text);
+					if (e.error) {
+						alert(e.error);
+					} else {
+						do_switch_dataview(view_id, e.type);
+					}
+				} else {
+					alert("A problem occurred while retrieving data view information.");
+				}
+		});
 	}
 }
 

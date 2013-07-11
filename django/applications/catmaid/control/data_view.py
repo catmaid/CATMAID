@@ -39,6 +39,14 @@ def dataview_to_dict( dataview ):
         'note': dataview.comment
     }
 
+def get_data_view_type( request, data_view_id ):
+    """ Returns the type of a particular data view.
+    """
+    dv = get_object_or_404(DataView, pk=data_view_id)
+    code_type = dv.data_view_type.code_type
+
+    return HttpResponse(json.dumps({ 'type': code_type }))
+
 def get_available_data_views( request ):
     """ Returns a list of all available data views.
     """

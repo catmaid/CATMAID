@@ -27,6 +27,7 @@ var requestQueue;
 var project;
 var project_view;
 
+var current_dataview;
 var dataview_menu;
 
 var project_menu;
@@ -307,7 +308,11 @@ function handle_updateProjects(status, text, xml) {
 		} else {
 			cachedProjectsInfo = e;
 			// recreate the project data view
-			load_default_dataview();
+			if (current_dataview) {
+				switch_dataview(current_dataview);
+			} else {
+				load_default_dataview();
+			}
 			// update the project > open menu
 			project_menu_open.update(cachedProjectsInfo);
 		}
@@ -817,12 +822,16 @@ function handle_dataviews(status, text, xml) {
 			};
 			/* As we want to handle a data view change in JS,
 			 * a function is added as action for all the menu
-			 * elements.
+			 * elements. Also add small links to each menu entry
+			 * as comment.
 			 */
 			for ( var i in e )
 			{
 				e[i].action = create_handler( e[i].id,
 					e[i].code_type );
+				var link = '<a class="hoverlink" href="' + django_url +
+					'?dataview=' + e[i].id + '">&para;&nbsp;</a>';
+				e[i].note = link + e[i].note;
 			}
 
 			dataview_menu.update( e );
@@ -835,18 +844,42 @@ function handle_dataviews(status, text, xml) {
 function switch_dataview( view_id, view_type ) {
 	/* Some views are dynamic, e.g. the plain list view offers a
 	 * live filter of projects. Therefore we treat different types
-	 * of dataviews differently.
+	 * of dataviews differently and need to know whether the
+	 * requested view is a legacy view.
 	 */
-	if ( view_type == "legacy_project_list_data_view" ) {
-		// Show the standard plain list data view
-		document.getElementById("data_view").style.display = "none";
-		document.getElementById("clientside_data_view").style.display = "block";
-		updateProjectListFromCache();
+	var do_switch_dataview = function( view_id, view_type ) {
+		if ( view_type == "legacy_project_list_data_view" ) {
+			// Show the standard plain list data view
+			document.getElementById("data_view").style.display = "none";
+			document.getElementById("clientside_data_view").style.display = "block";
+			updateProjectListFromCache();
+		} else {
+			// let Django render the requested view and display it
+			document.getElementById("clientside_data_view").style.display = "none";
+			document.getElementById("data_view").style.display = "block";
+			load_dataview( view_id )
+		}
+	};
+
+	/* If view type is passed, switch to the data view directly.
+	 * Otherwise, retrieve the data view type first.
+	 */
+	if (view_type) {
+		do_switch_dataview(view_id, view_type);
 	} else {
-		// let Django render the requested view and display it
-		document.getElementById("clientside_data_view").style.display = "none";
-		document.getElementById("data_view").style.display = "block";
-		load_dataview( view_id )
+		requestQueue.register(django_url + 'dataviews/type/' + view_id,
+			'GET', undefined, function(status, text, xml) {
+				if (status == 200 && text) {
+					var e = $.parseJSON(text);
+					if (e.error) {
+						alert(e.error);
+					} else {
+						do_switch_dataview(view_id, e.type);
+					}
+				} else {
+					alert("A problem occurred while retrieving data view information.");
+				}
+		});
 	}
 }
 
@@ -1016,6 +1049,11 @@ var realInit = function()
 			account = values[ "account" ];
 			password = values[ "password" ];
 		}
+
+		// find data view setting
+		if ( values[ "dataview" ] )
+			current_dataview = parseInt( values["dataview"] );
+		if ( isNaN( current_dataview ) ) delete current_dataview;
 	}
 	
 	statusBar = new Console();

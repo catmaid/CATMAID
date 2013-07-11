@@ -822,12 +822,16 @@ function handle_dataviews(status, text, xml) {
 			};
 			/* As we want to handle a data view change in JS,
 			 * a function is added as action for all the menu
-			 * elements.
+			 * elements. Also add small links to each menu entry
+			 * as comment.
 			 */
 			for ( var i in e )
 			{
 				e[i].action = create_handler( e[i].id,
 					e[i].code_type );
+				var link = '<a class="hoverlink" href="' + django_url +
+					'?dataview=' + e[i].id + '">&para;&nbsp;</a>';
+				e[i].note = link + e[i].note;
 			}
 
 			dataview_menu.update( e );

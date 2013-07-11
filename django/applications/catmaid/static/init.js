@@ -27,6 +27,7 @@ var requestQueue;
 var project;
 var project_view;
 
+var current_dataview;
 var dataview_menu;
 
 var project_menu;
@@ -307,7 +308,11 @@ function handle_updateProjects(status, text, xml) {
 		} else {
 			cachedProjectsInfo = e;
 			// recreate the project data view
-			load_default_dataview();
+			if (current_dataview) {
+				switch_dataview(current_dataview);
+			} else {
+				load_default_dataview();
+			}
 			// update the project > open menu
 			project_menu_open.update(cachedProjectsInfo);
 		}
@@ -1040,6 +1045,11 @@ var realInit = function()
 			account = values[ "account" ];
 			password = values[ "password" ];
 		}
+
+		// find data view setting
+		if ( values[ "dataview" ] )
+			current_dataview = parseInt( values["dataview"] );
+		if ( isNaN( current_dataview ) ) delete current_dataview;
 	}
 	
 	statusBar = new Console();

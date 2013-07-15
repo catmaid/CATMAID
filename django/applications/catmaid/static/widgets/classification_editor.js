@@ -417,6 +417,43 @@ var ClassificationEditor = new function()
             });
         });
 
+        // rename the root node
+        tree.bind("rename.jstree", function(e, data) {
+            var treebefore = data.rlbk;
+            var node = data.rslt.obj;
+            if (!confirm("Are you sure you want to rename this node?")) {
+                $.jstree.rollback(treebefore);
+                return false;
+            }
+            $.blockUI({ message: '<h2><img src="' + STATIC_URL_JS + 'widgets/busy.gif" /> Renaming classification graph node. Just a moment...</h2>' });
+            $.post(self.get_cls_url(project.id, '/instance-operation'), {
+                 "operation": "rename_node",
+                 "id": node.attr("id").replace("node_", ""),
+                 "title": data.rslt.new_name,
+                 "pid": pid,
+              }, function(r) {
+                $.unblockUI();
+                r = $.parseJSON(r);
+                if (r['error']) {
+                  alert(r['error']);
+                  $.jstree.rollback(treebefore);
+                  return;
+                }
+                if(r['status']) {
+                    $("#annotation_graph_object").jstree("refresh", -1);
+                    project.updateTool();
+                    $('#growl-alert').growlAlert({
+                      autoShow: true,
+                      content: 'Classification graph element renamed.',
+                      title: 'SUCCESS',
+                      position: 'top-right',
+                      delayTime: 2500,
+                      onComplete: function() { g.remove(); }
+                    });
+                };
+            });
+        });
+
         // things that need to be done when a node is loaded
         tree.bind("load_node.jstree", function(e, data) {
             // Add handlers to select elements available in edit mode

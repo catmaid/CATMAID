@@ -99,7 +99,7 @@ def _skeleton_for_3d_viewer(skeleton_id):
         if row[7]:
             tags[row[7]].append(row[0])
         x, y, z = imap(float, row[2][1:-1].split(','))
-        # properties: id, parent_id, user_id, reviewer_id, x, y, z, radius
+        # properties: id, parent_id, user_id, reviewer_id, x, y, z, radius, confidence
         nodes.append((row[0], row[4], row[1], row[3], x, y, z, row[5], row[6]))
 
     # Fetch all connectors with their partner treenode IDs

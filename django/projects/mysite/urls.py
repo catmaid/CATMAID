@@ -235,6 +235,7 @@ urlpatterns += patterns('',
     (r'^dataviews/show/(?P<data_view_id>\d+)$', 'catmaid.control.get_data_view'),
     (r'^dataviews/show/default$', 'catmaid.control.get_default_data_view'),
     (r'^dataviews/type/comment$', 'catmaid.control.get_data_view_type_comment'),
+    (r'^dataviews/type/(?P<data_view_id>\d+)$', 'catmaid.control.get_data_view_type'),
     )
 
 # Ontologies

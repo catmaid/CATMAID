@@ -211,6 +211,18 @@ div.pulldown_item div.pulldown div.menu_text
 	*/
 }
 
+div.menu_item tr.menu_item a.hoverlink
+{
+	visibility: hidden;
+}
+
+div.menu_item tr.menu_item_hover a.hoverlink,
+div.menu_item tr.menu_item_selected a.hoverlink
+{
+	visibility: visible;
+	color: #FFF;
+	text-decoration: none;
+}
 
 div.toolbar div.box p.toolbar_wait,
 div.toolbar div.box_right p.toolbar_wait

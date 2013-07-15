@@ -1,0 +1,78 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrahead %}
+<style type="text/css">
+    ul { list-style: none; padding: 0px; }
+    ul li { list-style-type: none; }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url admin:index %}">Home</a> &rsaquo; Tag Based Classification Graph Linker
+  </div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <p>Below you see a more detailed view on the previously selected tab
+    groups. The table displays all projects within a tag group as well as which
+    classification graphs are linked to a particular projects and which graphs
+    are missing to have a uniform tag group. If you are still convinced to
+    create the missing links for all the shown projects, press the submit
+    button below.</p>
+
+    <table>
+        <tr>
+            <th>Tag group</th>
+            <th>Affected projects</th>
+            <th>Linked graphs</th>
+            <th>Missing links</th>
+        </tr>
+        {% for tags, projects in tag_groups.items %}
+            {% for project, cgroots in projects.project_cgroots.items %}
+            <tr>
+                {% if forloop.counter0 == 0 %}
+                    <td rowspan="{{ projects.project_cgroots.items|length }}">{{ tags }}</td>
+                {% endif %}
+                <td>{{ project|safe }}</td>
+                {% if cgroots.linked|length == 0 %}
+                    <td><em>none</em></td>
+                {% else %}
+                    <td>{{ cgroots.linked|join:", " }}</td>
+                {% endif %}
+                {% if cgroots.missing|length == 0 %}
+                    <td><em>none</em></td>
+                {% else %}
+                    <td>{{ cgroots.missing|join:", " }}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        {% endfor %}
+    </table>
+
+    <form method="post" id="path-setup-form" action="">
+     {% csrf_token %}
+     <table>
+     {{ wizard.management_form }}
+     {% if wizard.form.forms %}
+         {{ wizard.form.management_form }}
+         {% for form in wizard.form.forms %}
+             {{ form.as_table }}
+         {% endfor %}
+     {% else %}
+         {{ wizard.form.as_table }}
+     {% endif %}
+     </table>
+     <p>
+     {% if wizard.steps.prev %}
+         <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}" class="button small">{% trans "first step" %}</button>
+         <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}" class="button small">{% trans "prev step" %}</button>
+     {% endif %}
+     <input type="submit" value="add missing links"/>
+     </p>
+     </form>
+</div>
+{% endblock %}
+

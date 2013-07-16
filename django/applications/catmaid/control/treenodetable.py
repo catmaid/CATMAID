@@ -58,7 +58,7 @@ def list_treenode_table(request, project_id=None):
     filter_labels = request.POST.get('sSearch_2', None)
 
     time_current = int(request.POST.get('time_current', 0)) #it helps limiting the results display by the tree node table (they can get very arge and crashed chrome)
-    time_offset = 50 #we will display points from time_current - time_offset to time_current + time_offset
+    time_offset = 25 #we will display points from time_current - time_offset to time_current + time_offset
 
     relation_map = get_relation_to_id_map(project_id)
 
@@ -94,9 +94,7 @@ def list_treenode_table(request, project_id=None):
             sorting_index = [int(request.POST.get('iSortCol_%d' % d)) for d in range(column_count)]
             sorting_cols = map(lambda i: fields[i], sorting_index)
 
-        print "Before query for treenode table"
-        print "Time current =" + str(time_current) + ";time_offset = " + str(time_offset)
-        print "Querying database for time points between " + str(max(time_current - time_offset, 0)) + " and " +  str(time_current + time_offset)
+       
         response_on_error = 'Could not get the list of treenodes.'
         t = Treenode.objects.filter(
             project = project_id,
@@ -120,9 +118,7 @@ def list_treenode_table(request, project_id=None):
                 'last_editor': '"treenode"."editor_id"'
             }).distinct()
 
-        
-        print "After query for treenode table."
-        print "Number of retireved elements is" + str(len(list(t[:])))
+    
         # Rationale for using .extra():
         # Since we don't use .order_by() for ordering, extra fields are not
         # included in the SELECT statement, and so .distinct() will work as

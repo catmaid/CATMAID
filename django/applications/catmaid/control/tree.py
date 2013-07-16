@@ -408,7 +408,7 @@ def tree_object_list(request, project_id=None):
         # Parse to int to sanitize
         expand_request = tuple(int(x) for x in expand_request.split(','))
 
-    max_nodes = 5000  # Limit number of nodes retrievable.
+    max_nodes = 20000  # Limit number of nodes retrievable.
 
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)

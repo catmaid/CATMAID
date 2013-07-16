@@ -1,0 +1,3 @@
+#!/bin/sh
+workon catmaid
+/home/fernando/CATMAID/catmaid_5d_visualization_annotation/django/projects/mysite/run-gevent.py &

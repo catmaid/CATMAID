@@ -12,13 +12,17 @@ var SkeletonConnectivity = new function()
     this.fetchConnectivityForSkeleton = function() {
         skeletons = {};
         if ('Active neuron' === $('#connectivity_source').val()) {
-            var skid = project.selectedObjects.selectedskeleton;
-            if (null === skid) return; // nothing selected
-            skeletons[skid] = $('#neuronName').text();
+            var skid = SkeletonAnnotations.getActiveSkeletonId();
+            if (null === skid) {
+                growlAlert("Information", "Select a skeleton first!");
+                return;
+            }
+            skeletons[skid] = $('#neuronname' + SkeletonAnnotations.getActiveStackId()).text();
         } else {
             skeletons = NeuronStagingArea.get_selected_skeletons_data();
             if (0 === Object.keys(skeletons).length) {
-                return; // nothing selected
+                growlAlert("Information", "Selection Table is empty!");
+                return;
             }
         }
         self.refresh();

@@ -49,6 +49,7 @@ var submitterFn = function() {
 
   var reset = function(q, msg) {
     if (q.blockUI) $.unblockUI();
+    console.log(msg, q);
     if (msg) alert(msg);
     queue.length = 0;
   };
@@ -56,9 +57,15 @@ var submitterFn = function() {
   var handlerFn = function(q) {
     return function(status, text) {
       if (200 !== status) {
-        return reset(q, "Unexpected request response status: " + status);
+        return reset(q, "Unexpected request response status: " + status + "\n for URL: " + q.url);
+      }
+      if (!text) {
+        return reset(q, "Unexpected request response text: " + text + "\n for URL: " + q.url);
       }
       var json = $.parseJSON(text);
+      if (!json) {
+        return reset(q, "Uxpected json: " + json + "\n for URL: " + q.url);
+      }
       if (json.error) {
         if (q.replace && 'REPLACED' === json.error) {
           return complete(q);

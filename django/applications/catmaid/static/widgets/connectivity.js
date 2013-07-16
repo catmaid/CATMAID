@@ -93,6 +93,21 @@ var SkeletonConnectivity = new function()
         var onmouseover = function() { this.style.textDecoration = 'underline'; }
         var onmouseout = function() { this.style.textDecoration = 'none'; };
 
+        var createNameElement = function(name, skeleton_id) {
+            var a = document.createElement('a');
+            a.innerText = name;
+            a.setAttribute('href', '#');
+            a.onclick = function() {
+                TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
+                return false;
+            };
+            a.onmouseover = onmouseover;
+            a.onmouseout = onmouseout;
+            a.style.color = 'black';
+            a.style.textDecoration = 'none';
+            return a;
+        };
+
         var add_to_selection_table = function(ev) {
             var skelid = parseInt( ev.target.value );
             if ($('#incoming-show-skeleton-' + skelid).is(':checked')) {
@@ -142,17 +157,7 @@ var SkeletonConnectivity = new function()
 
                 // Cell with partner neuron name
                 var td = document.createElement('td');
-                var a = document.createElement('a');
-                a.innerText = partner.name;
-                a.setAttribute('href', '#');
-                a.onclick = function() {
-                    TracingTool.goToNearestInNeuronOrSkeleton('skeleton', partner.id);
-                    return false;
-                };
-                a.onmouseover = onmouseover;
-                a.onmouseout = onmouseout;
-                a.style.color = 'black';
-                a.style.textDecoration = 'none';
+                var a = createNameElement(partner.name, partner.id);
                 td.appendChild(a);
                 tr.appendChild(td);
 
@@ -229,11 +234,17 @@ var SkeletonConnectivity = new function()
         add_select_all_fn('up', table_incoming);
         add_select_all_fn('down', table_outgoing);
 
-        $("#connectivity_table").prepend( $(document.createTextNode( Object.keys(skeletons).reduce(function(list, skid) {
-            list.push(skeletons[skid]);
-            return list;
-        }, []).join(', '))));
+        console.log(skeletons);
 
+        var neuronList = document.createElement("ul");
+        Object.keys(skeletons).forEach(function(skid) {
+            var li = document.createElement("li");
+            li.appendChild(createNameElement(skeletons[skid], skid));
+            neuronList.appendChild(li);
+        });
+
+        $("#connectivity_table").prepend(neuronList);
+                
         self.createSynapseDistributionPlots(json);
     };
 

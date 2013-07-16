@@ -332,20 +332,24 @@ var CompartmentGraphWidget = new function()
 
     cy.on('click', 'node', {}, function(evt){
       var node = this;
-      var splitedge = node.id().split('_');
-      if( evt.originalEvent.shiftKey )
-        NeuronStagingArea.select_skeleton( splitedge[0] );
-
+      var splitname = node.id().split('_');
+      if (evt.originalEvent.altKey) {
+        // Toggle visibility in the 3d viewer
+        NeuronStagingArea.select_skeleton( splitname[0] );
+      } else if (evt.originalEvent.shiftKey) {
+        // Select in the overlay
+        TracingTool.goToNearestInNeuronOrSkeleton("skeleton", parseInt(splitname[0]));
+      }
     });
 
     cy.on('click', 'edge', {}, function(evt){
       var edge = this;
       var splitedge = edge.id().split('_');
-      if( evt.originalEvent.shiftKey )
+      if (evt.originalEvent.shiftKey) {
         ConnectorSelection.show_shared_connectors( splitedge[0], splitedge[2] );
+      }
     });
-
-  }
+  };
 
   this.updateConfidenceGraphFrom3DViewer = function() {
     var skellist = NeuronStagingArea.get_selected_skeletons();

@@ -15,7 +15,8 @@ var SkeletonAnnotations = {
     x: null,
     y: null,
     z: null,
-    parent_id: null
+    parent_id: null,
+    stack_id: null
   },
 
   TYPE_NODE : "treenode",
@@ -25,7 +26,7 @@ var SkeletonAnnotations = {
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
 
-SkeletonAnnotations.atn.set = function(node) {
+SkeletonAnnotations.atn.set = function(node, stack_id) {
   if (node) {
     this.id = node.id;
     this.skeleton_id = node.skeleton_id;
@@ -34,6 +35,7 @@ SkeletonAnnotations.atn.set = function(node) {
     this.y = node.y;
     this.z = node.z;
     this.parent_id = node.parent ? node.parent.id : null;
+    this.stack_id = stack_id;
   } else {
     // Set all to null
     for (var prop in this) {
@@ -108,6 +110,10 @@ SkeletonAnnotations.getActiveNodePosition = function() {
   } else {
     return {'x': this.atn.x, 'y': this.atn.y, 'z': this.atn.z};
   }
+};
+
+SkeletonAnnotations.getActiveStackId = function() {
+  return this.atn.stack_id;
 };
 
 /**
@@ -404,7 +410,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
     // Check if the node is already selected/activated
     if (node.id === atn.id && node.skeleton_id === atn.skeleton_id) {
       // Update coordinates
-      atn.set(node);
+      atn.set(node, this.getStack().getId());
       return;
     }
     // Else, select the node
@@ -433,7 +439,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
             });
       }
 
-      atn.set(node);
+      atn.set(node, this.getStack().getId());
       this.recolorAllNodes();
 
       // refresh all widgets except for the object tree
@@ -444,12 +450,12 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
       SkeletonAnnotations.refreshAllWidgets();
     } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
       statusBar.replaceLast("Activated connector node #" + node.id);
-      atn.set(node);
+      atn.set(node, this.getStack().getId());
       this.recolorAllNodes();
     }
   } else {
     // Deselect
-    atn.set(null);
+    atn.set(null, null);
     // Deselect all from Object Tree. It is necessary because the neuron ID
     // would be used to create the next skeleton, and it would fail
     // if the neuron doesn't exist.

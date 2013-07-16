@@ -546,8 +546,7 @@ var NeuronStagingArea = new function()
     if( !skeletonmodels.hasOwnProperty( skeleton_id ) ) {
       return;
     }
-    var vis;
-    if( vis === undefined) {
+    if (undefined === vis) {
       vis = !skeletonmodels[ skeleton_id ].selected;
     }
     var skeleton = skeletonmodels[ skeleton_id ];

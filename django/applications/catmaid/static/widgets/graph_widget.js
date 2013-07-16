@@ -56,7 +56,7 @@ var GraphWidget = new function()
       }
     };
 
-    var networ_json = {
+    var network_json = {
       dataSchema: {
         nodes: [ { name: "label", type: "string" },
           { name: "color", type: "string" }
@@ -70,7 +70,7 @@ var GraphWidget = new function()
         edges: data.edges
       }
     };
-    vis.draw({ network: networ_json,
+    vis.draw({ network: network_json,
       edgeLabelsVisible: true,
       nodeLabelsVisible: true,
       visualStyle: visual_style,

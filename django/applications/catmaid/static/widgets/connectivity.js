@@ -237,6 +237,7 @@ var SkeletonConnectivity = new function()
         console.log(skeletons);
 
         var neuronList = document.createElement("ul");
+        neuronList.setAttribute('id', 'connectivity_widget_name_list');
         Object.keys(skeletons).forEach(function(skid) {
             var li = document.createElement("li");
             li.appendChild(createNameElement(skeletons[skid], skid));

@@ -1033,9 +1033,23 @@ def classification_instance_operation(request, workspace_pid=None, project_id=No
                 response = {'status': 1, 'message': 'Removed node %s successfully.' % params['id']}
                 return HttpResponse(json.dumps(response))
 
+    def rename_node():
+        """ Will rename a node.
+        """
+
+        nodes = ClassInstance.objects.filter(pk=params['id'])
+        if nodes.count() == 0:
+            raise Exception('Could not find any node with ID %s' % params['id'])
+        else:
+            node = nodes[0]
+            node.name = params['title']
+            node.save()
+            response = {'status': 1, 'message': 'Renamed node %s successfully.' % params['id']}
+            return HttpResponse(json.dumps(response))
+
     try:
         # Dispatch to operation
-        if params['operation'] not in ['create_node', 'remove_node']:
+        if params['operation'] not in ['create_node', 'remove_node', 'rename_node']:
             raise Exception('No operation called %s.' % params['operation'])
         return locals()[params['operation']]()
     except Exception as e:

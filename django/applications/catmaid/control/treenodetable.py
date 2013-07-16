@@ -52,10 +52,13 @@ def list_treenode_table(request, project_id=None):
     stack_id = request.POST.get('stack_id', None)
     specified_skeleton_count = request.POST.get('skeleton_nr', 0)
     display_start = request.POST.get('iDisplayStart', 0)
-    display_length = request.POST.get('iDisplayLength', -1)
+    display_length = request.POST.get('iDisplayLength', -1)#second argument is default value in case key is not found
     should_sort = request.POST.get('iSortCol_0', None)
     filter_nodetype = request.POST.get('sSearch_1', None)
     filter_labels = request.POST.get('sSearch_2', None)
+
+    time_curent = request.POST.get('time_current', 0) #it helps limiting the results display by the tree node table (they can get very arge and crashed chrome)
+    time_offset = 50 #we will display points from time_current - time_offset to time_current + time_offset
 
     relation_map = get_relation_to_id_map(project_id)
 
@@ -95,7 +98,9 @@ def list_treenode_table(request, project_id=None):
         response_on_error = 'Could not get the list of treenodes.'
         t = Treenode.objects.filter(
             project = project_id,
-            skeleton_id__in = skeleton_ids).extra(
+            skeleton_id__in = skeleton_ids,
+            location_t__gt = time_current - time_offset,
+            location_t__lt = time_current + time_offset ).extra(
             tables=['auth_user'],
             where=[
                 '"treenode"."user_id" = "auth_user"."id"'],

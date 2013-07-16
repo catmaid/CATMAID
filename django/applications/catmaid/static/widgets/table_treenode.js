@@ -77,7 +77,10 @@ var TreenodeTable = new function()
           "name": "stack_id",
           "value": project.focusedStack.id
         });
-
+        aoData.push({
+          "name": "time_current",
+          "value": project.focusedStack.t
+        });
         if( skelid && !(skelid in last_displayed_skeletons) ) {
           // check if skeleton id already in list, and if so, do not add it
           last_displayed_skeletons[ skelid ] = $('#neuronName').text();

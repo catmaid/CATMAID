@@ -109,75 +109,67 @@ def labels_for_nodes(request, project_id=None):
 
 @requires_user_role(UserRole.Annotate)
 def label_update(request, project_id=None, location_id=None, ntype=None):
+    """ location_id is the ID of a treenode or connector.
+        ntype is either 'treenode' or 'connector'. """
     labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
     p = get_object_or_404(Project, pk=project_id)
-    
+
+    # TODO will FAIL when a tag contains a coma by itself
     new_tags = request.POST['tags'].split(',')
-    
-    # Get the existing list of tags for the tree node/connector and delete any that are not in the new list.
-    if ntype == 'treenode':
-        existingLabels = TreenodeClassInstance.objects.filter(
-            treenode__id=location_id,
-            relation=labeled_as_relation,
-            class_instance__class_column__class_name='label').select_related('class_instance__name')
-        labels_to_delete = TreenodeClassInstance.objects.filter(
-            treenode__id=location_id,
-            relation=labeled_as_relation,
-            class_instance__class_column__class_name='label').exclude(class_instance__name__in=new_tags)
-        other_labels = labels_to_delete.exclude(treenode__user = request.user)
-        # Delete labels created by the current user
-        if request.user.is_superuser:
-            labels_to_delete.delete()
-        else:
-            labels_to_delete.filter(treenode__user = request.user).delete()
-        # Create change requests for labels created by other users
-        for label in other_labels:
-            ChangeRequest(type = 'Remove Tag', 
-                          description = 'Remove tag \'' + label.class_instance.name + '\'', 
-                          project = p, 
-                          user = request.user,
-                          recipient = label.treenode.user,
-                          location = label.treenode.location,
-                          treenode = label.treenode,
-                          validate_action = 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(label.id) + ', "treenode")',
-                          approve_action = 'from catmaid.control.label import remove_label\nremove_label(' + str(label.id) + ', "treenode")').save()
-    elif ntype == 'connector' or ntype == 'location':
-        existingLabels = ConnectorClassInstance.objects.filter(
-            connector__id=location_id,
-            relation=labeled_as_relation,
-            class_instance__class_column__class_name='label').select_related('class_instance__name')
-        labels_to_delete = ConnectorClassInstance.objects.filter(
-            connector__id=location_id,
-            relation=labeled_as_relation,
-            class_instance__class_column__class_name='label').exclude(class_instance__name__in=new_tags)
-        other_labels = labels_to_delete.exclude(connector__user = request.user)
-        # Delete labels created by the current user
-        if request.user.is_superuser:
-            labels_to_delete.delete()
-        else:
-            labels_to_delete.filter(connector__user = request.user).delete()
-        # Create change requests for labels created by other users
-        for label in other_labels:
-            ChangeRequest(type = 'Remove Tag', 
-                          description = 'Remove tag \'' + label.class_instance.name + '\'', 
-                          project = p, 
-                          user = request.user,
-                          recipient = label.connector.user,
-                          location = label.connector.location,
-                          connector = label.connector,
-                          validate_action = 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(label.id) + ', "connector")',
-                          approve_action = 'from catmaid.control.label import remove_label\nremove_label(' + str(label.id) + ', "connector")').save()
-    else:
+
+    kwargs = {'relation': labeled_as_relation,
+              'class_instance__class_column__class_name': 'label'}
+
+    if 'treenode' == ntype:
+        table = TreenodeClassInstance
+        kwargs['treenode__id'] = location_id
+        node = Treenode.objects.get(id=location_id)
+    elif 'connector' == ntype:
+        table = ConnectorClassInstance
+        kwargs['connector__id'] = location_id
+        node = Connector.objects.get(id=location_id)
+
+    if not table:
         raise Http404('Unknown node type: "%s"' % (ntype,))
 
-    existingNames = set(ele.class_instance.name for ele in existingLabels)
+    # Get the existing list of tags for the tree node/connector and delete any that are not in the new list.
+    existingLabels = table.objects.filter(**kwargs).select_related('class_instance__name')
+    labels_to_delete = table.objects.filter(**kwargs).exclude(class_instance__name__in=new_tags)
+    other_labels = labels_to_delete.exclude(user = request.user)
+
+    # Delete labels
+    if request.user.is_superuser:
+        # All labels
+        labels_to_delete.delete()
+    else:
+        # Only labels associated to the treenode by the request.user
+        labels_to_delete.filter(user=request.user).delete()
+
+    # Create change requests for labels associated to the treenode by other users
+    for label in other_labels:
+        ChangeRequest(**{'type': 'Remove Tag',
+                       'project': p,
+                       'user': request.user,
+                       'recipient': node.user,
+                       'location': node.location,
+                       ntype: node,
+                       'description': 'Remove tag \'' + label.class_instance.name + '\'',
+                       'validate_action': 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(label.id) + ', "' + ntype + '")',
+                       'approve_action': 'from catmaid.control.label import remove_label\nremove_label(' + str(label.id) + ', "' + ntype + '")'}).save()
+
+    existing_names = set(ele.class_instance.name for ele in existingLabels)
 
     # Add any new labels.
     label_class = Class.objects.get(project=project_id, class_name='label')
+    kwargs = {'user': request.user,
+              'project': p,
+              'relation': labeled_as_relation,
+              ntype: node}
+
     for tag_name in new_tags:
-        if len(tag_name) > 0 and tag_name not in existingNames:
-            # Make sure the tag instance exists.
-            existing_tags = list(ClassInstance.objects.filter(
+        if len(tag_name) > 0 and tag_name not in existing_names:
+            # Make sure the tag instance exists
+            existing_tags = tuple(ClassInstance.objects.filter(
                 project=p,
                 name=tag_name,
                 class_column=label_class))
@@ -190,48 +182,25 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                 tag.save()
             else:
                 tag = existing_tags[0]
-            
-            # Add the tag to the tree node/connector.
-            if ntype == 'treenode':
-                tn = Treenode.objects.get(id=location_id)
-                tci = TreenodeClassInstance(
-                    user=request.user,
-                    project=p,
-                    relation=labeled_as_relation,
-                    treenode=tn,
-                    class_instance=tag)
-                tci.save()
-                if tn.user != request.user:
-                    # Inform the owner of the node that the tag was added and give them the option of removing it.
-                    wr = ChangeRequest(type = 'Add Tag', 
-                                       description = 'Added tag \'' + tag_name + '\'', 
-                                       project = p, 
-                                       user = request.user,
-                                       recipient = tn.user,
-                                       location = tn.location,
-                                       treenode = tn,
-                                       validate_action = 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(tci.id) + ', "treenode")',
-                                       reject_action = 'from catmaid.control.label import remove_label\nremove_label(' + str(tci.id) + ', "treenode")').save()
-            else:
-                c = Connector.objects.get(id=location_id)
-                tci = ConnectorClassInstance(
-                    user=request.user,
-                    project=p,
-                    relation=labeled_as_relation,
-                    connector=c,
-                    class_instance=tag)
-                tci.save()
-                if c.user != request.user:
-                    # Inform the owner of the connector that the tag was added and give them the option of removing it.
-                    wr = ChangeRequest(type = 'Add Tag', 
-                                       description = 'Added tag \'' + tag_name + '\'', 
-                                       project = p, 
-                                       user = request.user,
-                                       recipient = c.user,
-                                       location = c.location,
-                                       connector = c,
-                                       validate_action = 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(tci.id) + ', "connector")',
-                                       reject_action = 'from catmaid.control.label import remove_label\nremove_label(' + str(tci.id) + ', "connector")').save()
+
+            # Associate the tag with the treenode/connector.
+            kwargs['class_instance'] = tag
+            tci = table(**kwargs) # creates new TreenodeClassInstance or ConnectorClassInstance
+            tci.save()
+
+            if node.user != request.user:
+                # Inform the owner of the node that the tag was added and give them the option of removing it.
+                ChangeRequest(**{'type': 'Add Tag', 
+                               'description': 'Added tag \'' + tag_name + '\'', 
+                               'project': p, 
+                               'user': request.user,
+                               'recipient': node.user,
+                               'location': node.location,
+                               'treenode': node,
+                               'validate_action': 'from catmaid.control.label import label_exists\nis_valid = label_exists(' + str(tci.id) + ', "' + ntype + '")',
+                              'reject_action': 'from catmaid.control.label import remove_label\nremove_label(' + str(tci.id) + ', "' + ntype + '")'}).save()
+
+
     return HttpResponse(json.dumps({'message': 'success'}), mimetype='text/json')
 
 

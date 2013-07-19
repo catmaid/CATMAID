@@ -60,6 +60,9 @@ def node_list_tuples(request, project_id=None):
             raise Exception('Can not find "%s" relation for this project' % relation)
 
     try:
+        is_superuser = request.user.is_superuser
+        user_id = request.user.id
+
         cursor = connection.cursor()
         # Fetch treenodes which are in the bounding box,
         # which in z it includes the full thickess of the prior section
@@ -67,6 +70,12 @@ def node_list_tuples(request, project_id=None):
         response_on_error = 'Failed to query treenodes'
         params['bottom'] = params['top'] + params['height']
         params['right'] = params['left'] + params['width']
+        if is_superuser:
+            # if superuser show all tracings
+            params['hide_other_user_ids'] = ''
+        else:
+            # if not, show only tracings for this user
+            params['hide_other_user_ids'] = 'AND t1.user_id = %s' % user_id
         cursor.execute('''
         SELECT
             t1.id,
@@ -98,6 +107,7 @@ def node_list_tuples(request, project_id=None):
             AND (t1.location).y > %(top)s
             AND (t1.location).y < %(bottom)s
             AND t1.project_id = %(project_id)s
+            %(hide_other_user_ids)s
         LIMIT %(limit)s
         ''', params)
 

@@ -8,35 +8,41 @@
 
 import urllib
 import urllib2
+import base64
 import cookielib
 import sys
 import networkx as nx
 import json
+from collections import defaultdict
 
 class Connection:
-    def __init__(self, server, username, password):
+    def __init__(self, server, authname, authpassword, username, password):
         self.server = server
+        self.authname = authname
+        self.authpassword = authpassword
         self.username = username
         self.password = password
         self.cookies = cookielib.CookieJar()
         self.opener = urllib2.build_opener(urllib2.HTTPRedirectHandler(), urllib2.HTTPCookieProcessor(self.cookies))
 
-    def mkurl(self, path):
+    def djangourl(self, path):
         """ Expects the path to lead with a slash '/'. """
         return self.server + path
 
-    def djangourl(self, path):
-        """ Expects the path to lead with a slash '/'. """
-        return self.server + '/catmaid/dj' + path
+    def auth(self, request):
+        if self.authname:
+            base64string = base64.encodestring('%s:%s' % (self.authname, self.authpassword)).replace('\n', '')
+            request.add_header("Authorization", "Basic %s" % base64string)
 
     def login(self):
-        url = self.mkurl("/catmaid/dj/accounts/login")
+        url = self.djangourl("/accounts/login")
         opts = {
             'name': self.username,
             'pwd': self.password
         }
         data = urllib.urlencode(opts)
         request = urllib2.Request(url, data)
+        self.auth(request)
         response = urllib2.urlopen(request)
         self.cookies.extract_cookies(response, request)
         return response.read()
@@ -48,73 +54,127 @@ class Connection:
         else:
             request = urllib2.Request(url)
 
+        self.auth(request)
         return self.opener.open(request).read()
 
-
+    def fetchJSON(self, url, post=None):
+        response = self.fetch(url, post=post)
+        if not response:
+            return
+        r = json.loads(response)
+        if type(r) == dict and 'error' in r:
+            print "ERROR:", r['error']
+        else:
+            return r
 
 def skeleton_graph(connection, project_id, skeleton_id):
     """ Fetch a skeleton from the database and return it as a NetworkX graph,
     where the nodes are skeleton nodes, the edges are edges between skeleton nodes,
-    and the graph itself has as properties the name of the neuron and the connectors.
-    The connectors are a dictionary of connector ID vs properties.
-    TODO WARNING the IDs of the nodes are all strings; this is an error in the catmaid
-    server-side functions. """
-    url = connection.djangourl('/%s/skeleton/%s/json' % (project_id, skeleton_id))
-    reply = connection.fetch(url)
-    print reply
-    d = json.loads(reply) # decode JSON string
+    and the graph itself has the name of the neuron as a property. """
+    url = connection.djangourl('/%s/skeleton/%s/compact-json' % (project_id, skeleton_id))
+    d = connection.fetchJSON(url)
+    if not d:
+        raise Exception("Invalid server reply")
 
-    vertices = d['vertices']
-    edges = d['connectivity']
+    # d:
+    # 0: neuron name
+    # 1: treenodes
+    # 2: tags
+    # 3: connectors
 
     g = nx.DiGraph()
-    g.name = d['neuron']['neuronname']
-    g.connectors = {}
+    g.skeleton_id = skeleton_id
+    g.name = d[0] # Neuron's name
+    g.tags = d[2] # dictionary of tag text vs list of treenode IDs
+    g.connectors = {} # dictionary of connector IDs vs dictionary of relation vs list of treenode IDs
 
-    for node_id, props in vertices.iteritems():
-        t = props['type']
-        if "skeleton" == t:
-            g.add_node(node_id, props)
-        elif "connector" == t:
-            g.connectors[node_id] = props
+    # 0: treenode.id
+    # 1: treenode.parent_id
+    # 2: treenode.user_id
+    # 3: treenode.reviewer_id
+    # 4: treenode.location.x
+    # 5: treenode.location.y
+    # 6: treenode.location.z
+    # 7: treenode.radius
+    # 8: treenode.confidence
+    for treenode in d[1]:
+        if treenode[1]:
+            # Will create the nodes when not existing yet
+            g.add_edge(treenode[1], treenode[0], {'confidence': treenode[8]})
+        else:
+            # The root node
+            g.add_node(treenode[0])
+        properties = g[treenode[0]]
+        properties['user_id'] = treenode[2]
+        properties['reviewer_id'] = treenode[3]
+        properties['radius'] = treenode[7]
+        properties['x'] = treenode[4]
+        properties['y'] = treenode[5]
+        properties['z'] = treenode[6]
 
-    for node_id, rels in edges.iteritems():
-        # An edge between the node id and the id of the parent node
-        for other_id, props in rels.iteritems():
-            t = props['type']
-            if "neurite" == t:
-                g.add_edge(node_id, other_id, type='skeleton')
-            elif "presynaptic_to" == t:
-                g.connectors[other_id][t] = node_id
-            elif "postsynaptic_to" == t:
-                if t in g.connectors[other_id]:
-                    s = g.connectors[other_id][t]
-                else:
-                    s = set()
-                    g.connectors[other_id][t] = s
-                s.add(node_id)
+    # tags are text vs list of treenode IDs
+    for tag, treenodes in d[2].iteritems():
+        for treenode_id in treenodes:
+            tags = g[treenode_id].get('tags')
+            if tags:
+                tags.append(tag)
+            else:
+                g[treenode_id]['tags'] = [tag]
+
+    # synapse:
+    # 0: treenode_connector.treenode_id
+    # 1: treenode_connector.connector_id
+    # 2: 0 for presynaptic, 1 for postsynaptic
+    # 3: connector.location.x
+    # 4: connector.location.y
+    # 5: connector.location.z
+    # 6: connector.reviewer_id
+    relations = {0: 'presynaptic_to',
+                 1: 'postsynaptic_to'}
+    for synapse in d[3]:
+        treenode_id = synapse[0]
+        connector_id = synapse[1]
+        relation = relations[synapse[2]]
+        # Add as property of the graph node that represents a skeleton treenode
+        synapses = g[treenode_id].get(relation)
+        if synapses:
+            synapses.append(connector_id)
+        else:
+            g[treenode_id][relation] = [connector_id]
+        # Add as property of the general dictionary of connectors
+        connector = g.connectors.get(connector_id)
+        if connector:
+            connector[relation].append(treenode_id)
+        else:
+            connector = defaultdict(list)
+            connector[relation].append(treenode_id)
+            g.connectors[connector_id] = connector
 
     return g
 
 
 def test(connection):
-    g = skeleton_graph(connection, 4, 18247516)
+    g = skeleton_graph(connection, 4, 17285283)
     print "Name:", g.name
+    print "Skeleton:", g.skeleton_id
     print "Number of nodes:", g.number_of_nodes()
     print "Number of edges:", g.number_of_edges()
-    print "Number of connections to other skeletons:", len(g.connectors), g.connectors
+    print "Number of presynaptic relations:", sum(len(c['presynaptic_to']) for c in g.connectors.itervalues())
+    print "Number of postsynaptic relations:", sum(len(c['postsynaptic_to']) for c in g.connectors.itervalues())
 
 
 def main():
-    if not sys.argv or not sys.argv[1] or "-h" == sys.argv[1] or "--help" == sys.argv[1] or len(sys.argv) < 4:
-        print("Usage: $ python remote.py http://neurocean.janelia.org username password")
+    if not sys.argv or len(sys.argv) < 2 or "-h" == sys.argv[1] or "--help" == sys.argv[1] or len(sys.argv) < 6:
+        print("Usage: $ python remote.py http://neurocean.janelia.org authname authpassword username password")
         sys.exit()
 
     server = sys.argv[1]
-    username = sys.argv[2]
-    password = sys.argv[3]
+    authname = sys.argv[2]
+    authpassword = sys.argv[3]
+    username = sys.argv[4]
+    password = sys.argv[5]
 
-    c = Connection(server, username, password)
+    c = Connection(server, authname, authpassword, username, password)
     c.login()
 
     test(c)

@@ -61,7 +61,7 @@ var ObjectTree = new function()
       "json_data": {
         "ajax": {
           "url": django_url + pid + '/object-tree/list',
-          //"url": "model/tree.object.list.php",
+          "type": 'POST',
           "data": function (n) {
             var expandRequest, parentName, parameters;
             // depending on which type of node it is, display those
@@ -510,10 +510,10 @@ var ObjectTree = new function()
                           nodeID = e.root_id;
                           skeletonID = parseInt(skelid);
                           // go to node
-                          project.moveTo(e.z, e.y, e.x, undefined,
-                                         function () {
-                                           SkeletonAnnotations.staticSelectNode(nodeID, skeletonID);
-                                         });
+                          SkeletonAnnotations.staticMoveTo(e.z, e.y, e.x,
+                            function () {
+                              SkeletonAnnotations.staticSelectNode(nodeID, skeletonID);
+                            });
                         }
                       }
                     }
@@ -901,6 +901,12 @@ var ObjectTree = new function()
       });
     });
 
+    // Open tree path to the selected skeleton if any
+    if (SkeletonAnnotations.getActiveSkeletonId()) {
+      // TODO: I cannot find where in init is the request made for listing the root node;
+      // TODO  for it is after that request that the requestOpenTreePath call must be made.
+      setTimeout("ObjectTree.requestOpenTreePath(SkeletonAnnotations.getActiveSkeletonId())", 3000);
+    }
   };
 
   /* A function that takes an array of ids starting from the root id

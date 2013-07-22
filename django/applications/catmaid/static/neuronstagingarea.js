@@ -100,6 +100,11 @@ var NeuronStagingArea = new function()
     };
 
     self.skeleton_info = function() {
+			// TODO if the skeleton is loaded in the WebGLApp, then all of this information
+			// is already present in the client
+			// Additionally, the node count should be continued by the user contribution
+			// (that is, how many nodes each user contributed). Same for review status.
+			// And the "Downstream skeletons" should be split into two: skeletons with more than one node, and skeletons with one single node (placeholder pre- or postsynaptic nodes).
         requestQueue.register(django_url + project.id + '/skeleton/' + self.id + '/statistics', "POST", {},
          function (status, text, xml) {
                 if (status === 200) {
@@ -121,7 +126,7 @@ var NeuronStagingArea = new function()
                                 "Downstream skeletons: " + e.output_count + "<br />" +
                                 "Cable length: " + e.cable_length + " nm <br />" +
                                 "Construction time: " + e.measure_construction_time + "<br />" +
-                                "Percentage reviewed: " + e.percentage_reviewed + "<br />";
+                                "Reviewed: " + e.percentage_reviewed + " %<br />";
                             dialog.appendChild(msg);
 
                             $(dialog).dialog({
@@ -335,7 +340,7 @@ var NeuronStagingArea = new function()
             alert("You must have an active node selected to add its skeleton to the staging area.");
             return;
       }
-        if (SkeletonAnnotations.getActiveNodeType() !== "treenode") {
+        if (SkeletonAnnotations.getActiveNodeType() !== SkeletonAnnotations.TYPE_NODE) {
             alert("Select the node of a skeleton, not a connector, to add it to the staging area.");
             return;
         }
@@ -541,8 +546,7 @@ var NeuronStagingArea = new function()
     if( !skeletonmodels.hasOwnProperty( skeleton_id ) ) {
       return;
     }
-    var vis;
-    if( vis === undefined) {
+    if (undefined === vis) {
       vis = !skeletonmodels[ skeleton_id ].selected;
     }
     var skeleton = skeletonmodels[ skeleton_id ];

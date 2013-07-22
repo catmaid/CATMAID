@@ -11,49 +11,57 @@ import sys
 from collections import defaultdict
 import json
 from operator import itemgetter
-try:
-    import networkx as nx
-except:
-    pass
+import networkx as nx
+from tree_util import reroot, edge_count_to_root
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def last_openleaf(request, project_id=None, skeleton_id=None):
-    # retrieve all treenodes of skeleton with labels
-    # eliminate all node by removing them if they are a parent
-    # check remaining nodes if they have an end tag
-    tn = Treenode.objects.filter(
-        project=project_id,
-        skeleton_id=skeleton_id).order_by("edition_time")
+    """ Return the ID of the nearest node (or itself), and its location string;
+    or two nulls if none found. """
+    tnid = int(request.POST['tnid'])
+    cursor = connection.cursor()
 
-    tnodes = []
-    tparents = []
-    for t in tn:
-        tnodes.append( t.id )
-        if not t.parent is None:
-            tparents.append( t.parent_id )
+    # Select all nodes and their tags
+    cursor.execute('''
+    SELECT t.id, t.parent_id, t.location, ci.name
+    FROM treenode t LEFT OUTER JOIN (treenode_class_instance tci INNER JOIN class_instance ci ON tci.class_instance_id = ci.id) ON t.id = tci.treenode_id
+    WHERE t.skeleton_id = %s
+    ''' % int(skeleton_id))
 
-    for tid in tparents:
-        go = True
-        while go:
-            try:
-                tnodes.remove( tid )
-            except:
-                go = False
+    # Some entries repeated, when a node has more than one tag
+    nodes = tuple(cursor.fetchall())
 
-    qs_labels = TreenodeClassInstance.objects.filter(
-        relation__relation_name='labeled_as',
-        class_instance__class_column__class_name='label',
-        treenode__id__in=tnodes,
-        project=project_id).select_related('treenode', 'class_instance__name').values('treenode_id', 'class_instance__name')
+    # Create a graph with edges from parent to child, and accumulate parents
+    tree = nx.DiGraph()
+    parentIDs = set()
+    for node in nodes:
+        if node[1]:
+            tree.add_edge(node[1], node[0])
+            parentIDs.add(node[1])
 
-    for q in qs_labels:
-        if len(q['class_instance__name']) > 0:
-            tnodes.append( q['treenode_id'] )
+    reroot(tree, tnid)
+    distances = edge_count_to_root(tree, root_node=tnid)
 
-    if len(tnodes) == 0:
-        return HttpResponse(json.dumps({'error': 'No open leafs left!'}), mimetype='text/json')
-    else:
-        return HttpResponse(json.dumps(_fetch_location(tnodes[-1])), mimetype='text/json')
+    # Iterate end nodes, find closest
+    nearest = None
+    distance = len(nodes) + 1
+    loc = None
+    other_tags = set(('uncertain continuation', 'not a branch', 'soma'))
+    for node in nodes:
+        if node[0] not in parentIDs:
+            # Found an end node
+            # Check if not tagged with a tag containing 'end'
+            if not node[3] or ('end' not in node[3] and node[3] not in other_tags):
+                # Found open end
+                nid = node[0]
+                d = distances[nid]
+                if d < distance:
+                    nearest = nid
+                    distance = d
+                    loc = node[2]
+
+    return HttpResponse(json.dumps((nearest, loc)))
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_statistics(request, project_id=None, skeleton_id=None):
@@ -69,7 +77,7 @@ def skeleton_statistics(request, project_id=None, skeleton_id=None):
         'postsynaptic_sites': skel.postsynaptic_sites_count(),
         'cable_length': int(skel.cable_length()),
         'measure_construction_time': construction_time,
-        'percentage_reviewed': skel.percentage_reviewed() }), mimetype='text/json')
+        'percentage_reviewed': "%.2f" % skel.percentage_reviewed() }), mimetype='text/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):

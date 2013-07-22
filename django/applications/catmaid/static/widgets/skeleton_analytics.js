@@ -58,7 +58,7 @@ var SkeletonAnalytics = new function()
             alert("Could not retrieve node location: " + json.error);
             return;
           }
-          project.moveTo(json[3], json[2], json[1], undefined,
+          SkeletonAnnotations.staticMoveTo(json[3], json[2], json[1],
             function() {
               SkeletonAnnotations.staticSelectNode(tnid, skeleton_id);
             });

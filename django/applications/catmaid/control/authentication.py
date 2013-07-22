@@ -210,9 +210,11 @@ def can_edit_or_fail(user, ob_id, table_name):
 
     cursor = connection.cursor()
     cursor.execute("SELECT user_id FROM %s WHERE id=%s" % (table_name, ob_id))
-    rows = cursor.fetchall()
+    rows = tuple(cursor.fetchall())
     if rows:
-        if rows[0][0] == user.id or user.is_superuser:
+        if user.is_superuser:
+            return True
+        if 1 == len(rows) and rows[0][0] == user.id:
             return True
         raise Exception('User %s with id #%s cannot edit object #%s (from user #%s) from table %s' % (user.username, user.id, ob_id, rows[0][0], table_name))
     raise ObjectDoesNotExist('Object #%s not found in table %s' % (ob_id, table_name))
@@ -230,14 +232,14 @@ def can_edit_all_or_fail(user, ob_ids, table_name):
 
     cursor = connection.cursor()
     cursor.execute("SELECT user_id, count(user_id) FROM %s WHERE id IN (%s) GROUP BY user_id" % (table_name, str_ob_ids))
-    rows = cursor.fetchall()
-    if rows:
-        if rows[0] == user.id or user.is_superuser:
-            if rows[1] != len(ob_ids):
-                raise ObjectDoesNotExist('Missing %s out of %s objects to edit in table %s' % (len(ob_ids) - row[1], len(ob_ids), table_name))
+    rows = tuple(cursor.fetchall())
+    if rows and len(ob_ids) == sum(row[1] for row in rows):
+        if user.is_superuser:
+            return True
+        if 1 == len(rows) and rows[0][0] == user.id:
             return True
         raise Exception('User %s cannot edit all of the %s unique objects from table %s' % (user.username, len(ob_ids), table_name))
-    raise ObjectDoesNotExist('None of the %s unique objects were found in table %s' % (len(ob_ids), table_name))
+    raise ObjectDoesNotExist('One or more of the %s unique objects were not found in table %s' % (len(ob_ids), table_name))
 
 
 @requires_user_role([UserRole.Annotate])

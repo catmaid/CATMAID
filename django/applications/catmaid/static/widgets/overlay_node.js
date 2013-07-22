@@ -1,6 +1,8 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
+"use strict";
+
 /** Namespace where Raphael SVG element instances are created, cached and edited. */
 var SkeletonElements = function(paper)
 {
@@ -161,10 +163,6 @@ SkeletonElements.prototype.ElementPool.prototype = (function() {
   };
 })();
 
-
-// Global variables
-var TYPE_NODE = "treenode";
-var TYPE_CONNECTORNODE = "connector";
 
 /** A prototype for both Treenode and Connector. */
 SkeletonElements.prototype.NodePrototype = new (function() {
@@ -388,7 +386,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     if (this.c) {
       this.c.remove();
       this.c = null;
-      SkeletonElements.prototype.mouseEventManager.forget(this.mc, TYPE_NODE);
+      SkeletonElements.prototype.mouseEventManager.forget(this.mc, SkeletonAnnotations.TYPE_NODE);
       this.mc.catmaidNode = null; // break circular reference
       this.mc.remove();
       this.mc = null;
@@ -442,6 +440,7 @@ SkeletonElements.prototype.AbstractTreenode = function() {
     this.skeleton_id = skeleton_id;
     this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
     this.can_edit = can_edit;
+    this.needsync = false;
 
     if (this.c) {
       if (0 !== zdiff) {
@@ -482,7 +481,7 @@ SkeletonElements.prototype.Node = function(
 {
   this.paper = paper;
   this.id = id;
-  this.type = TYPE_NODE;
+  this.type = SkeletonAnnotations.TYPE_NODE;
   this.parent = parent;
   this.parent_id = parent_id;
   this.children = {};
@@ -526,7 +525,7 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
     this.id = null;
     if (this.c) {
       this.c.remove();
-      SkeletonElements.prototype.mouseEventManager.forget(this.mc, TYPE_CONNECTORNODE);
+      SkeletonElements.prototype.mouseEventManager.forget(this.mc, SkeletonAnnotations.TYPE_CONNECTORNODE);
       this.mc.catmaidNode = null; // break circular reference
       this.mc.remove();
     }
@@ -617,6 +616,7 @@ SkeletonElements.prototype.AbstractConnectorNode = function() {
     this.can_edit = can_edit;
     this.pregroup = {};
     this.postgroup = {};
+    this.needsync = false;
 
     if (this.c) {
       if (this.shouldDisplay()) {
@@ -648,7 +648,7 @@ SkeletonElements.prototype.ConnectorNode = function(
 {
   this.paper = paper;
   this.id = id;
-  this.type = TYPE_CONNECTORNODE;
+  this.type = SkeletonAnnotations.TYPE_CONNECTORNODE;
   this.needsync = false; // state variable; whether this node is already synchronized with the database
   this.x = x; // local screen coordinates relative to the div, in pixel coordinates
   this.y = y;
@@ -678,8 +678,9 @@ SkeletonElements.prototype.ConnectorNode.prototype = new SkeletonElements.protot
 SkeletonElements.prototype.mouseEventManager = new (function()
 {
   /** Variables used for mouse events, which involve a single node at a time.
-   * These are set at mc_start and then used at mc_move. */
-  var ox = null, oy = null;
+   * Includes node.x, node.y, node.id and node.c
+   * These are set at mc_start, then used at mc_move, and set to null at mc_up. */
+  var o = null;
 
   var is_middle_click = function(e) {
     return 2 === e.which;
@@ -698,11 +699,11 @@ SkeletonElements.prototype.mouseEventManager = new (function()
   this.mc_click = function(e) {
     e.stopPropagation();
     var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.paper);
-    var node = this.catmaidNode,
-        wasActiveNode = false;
     if (catmaidSVGOverlay.ensureFocused()) {
       return;
     }
+    var node = this.catmaidNode,
+        wasActiveNode = false;
     if (e.shiftKey) {
       var atnID = SkeletonAnnotations.getActiveNodeId();
       if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
@@ -722,7 +723,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
         var atnType = SkeletonAnnotations.getActiveNodeType();
         // connected activated treenode or connectornode
         // to existing treenode or connectornode
-        if (atnType === TYPE_CONNECTORNODE) {
+        if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
           if (!mayEdit()) {
             alert("You lack permissions to declare node #" + node.id + "as postsynaptic to connector #" + atnID);
             return;
@@ -731,7 +732,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
           catmaidSVGOverlay.createLink(node.id, atnID, "postsynaptic_to");
           // TODO check for error
           statusBar.replaceLast("Joined node #" + atnID + " to connector #" + node.id);
-        } else if (atnType === TYPE_NODE) {
+        } else if (atnType === SkeletonAnnotations.TYPE_NODE) {
           // Joining two skeletons: only possible if one owns both nodes involved
           // or is a superuser
           if( node.skeleton_id === SkeletonAnnotations.getActiveSkeletonId() ) {
@@ -758,7 +759,7 @@ SkeletonElements.prototype.mouseEventManager = new (function()
       // Allow middle-click panning
       return;
     }
-    if (!ox || !oy) {
+    if (!o) {
       // Not properly initialized with mc_start
       e.stopPropagation();
       return;
@@ -771,20 +772,19 @@ SkeletonElements.prototype.mouseEventManager = new (function()
       statusBar.replaceLast("You don't have permission to move node #" + this.catmaidNode.id);
       return;
     }
-    var node = this.catmaidNode,
-      mc = this,
-      c = this.prev;
 
-    if( node.id !== SkeletonAnnotations.getActiveNodeId() )
-      return;
+    if (o.id !== SkeletonAnnotations.getActiveNodeId()) return;
+    if (!checkNodeID(this.catmaidNode)) return;
 
-    node.x = ox + dx;
-    node.y = oy + dy;
-    c.attr({
+    var node = this.catmaidNode;
+
+    node.x = o.ox + dx;
+    node.y = o.oy + dy;
+    node.c.attr({
       cx: node.x,
       cy: node.y
     });
-    mc.attr({
+    node.mc.attr({
       cx: node.x,
       cy: node.y
     });
@@ -796,13 +796,21 @@ SkeletonElements.prototype.mouseEventManager = new (function()
 
   /** Here 'this' is mc. */
   var mc_up = function(e) {
-    ox = null;
-    oy = null;
     e.stopPropagation();
-    var c = this.prev;
-    c.attr({
+    if (!checkNodeID(this.catmaidNode)) return;
+    o = null;
+    this.catmaidNode.c.attr({
       opacity: 1
     });
+  };
+
+  var checkNodeID = function(catmaidNode) {
+    if (!o || o.id !== catmaidNode.id) {
+      console.log("WARNING: detected ID mismatch in mouse event system.");
+      SkeletonAnnotations.getSVGOverlayByPaper(catmaidNode.paper).updateNodes();
+      return false;
+    }
+    return true;
   };
 
   /** Here 'this' is mc. */
@@ -813,24 +821,24 @@ SkeletonElements.prototype.mouseEventManager = new (function()
       return;
     }
     e.stopPropagation();
-    var node = this.catmaidNode,
-      c = this.prev;
 
     // If not trying to join or remove a node, but merely click on it to drag it or select it:
     if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
-      var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.paper);
-      catmaidSVGOverlay.activateNode(node);
+      SkeletonAnnotations
+        .getSVGOverlayByPaper(this.paper)
+        .activateNode(this.catmaidNode);
     }
 
-    ox = node.x;
-    oy = node.y;
-    c.attr({
+    o = {ox: this.catmaidNode.x,
+         oy: this.catmaidNode.y,
+         id: this.catmaidNode.id};
+
+    this.catmaidNode.c.attr({
       opacity: 0.7
     });
   };
 
   var mc_mousedown = function(e) {
-  
     if (is_middle_click(e)) {
       // Allow middle-click panning
       return;
@@ -862,21 +870,14 @@ SkeletonElements.prototype.mouseEventManager = new (function()
         var atnType = SkeletonAnnotations.getActiveNodeType();
         // connected activated treenode or connectornode
         // to existing treenode or connectornode
-        if (atnType === TYPE_CONNECTORNODE) {
+        if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
           alert("Can not join two connector nodes!");
-        } else if (atnType === TYPE_NODE) {
+        } else if (atnType === SkeletonAnnotations.TYPE_NODE) {
           catmaidSVGOverlay.createLink(atnID, connectornode.id, "presynaptic_to");
           statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
         }
       } else {
-        $('#growl-alert').growlAlert({
-          autoShow: true,
-          content: 'You need to activate a node before joining it to a connector node!',
-          title: 'BEWARE',
-          position: 'top-right',
-          delayTime: 2500,
-          onComplete: function() {}
-        });
+        growlAlert('BEWARE', 'You need to activate a node before joining it to a connector node!');
       }
     } else {
       // activate this node
@@ -889,10 +890,10 @@ SkeletonElements.prototype.mouseEventManager = new (function()
     mc.mousedown(mc_mousedown);
     mc.dblclick(mc_dblclick);
 
-    if (TYPE_NODE === type) {
+    if (SkeletonAnnotations.TYPE_NODE === type) {
       mc.click(this.mc_click);
     } else {
-      // TYPE_CONNECTORNODE
+      // SkeletonAnnotations.TYPE_CONNECTORNODE
       mc.click(connector_mc_click);
     }
   };
@@ -902,10 +903,10 @@ SkeletonElements.prototype.mouseEventManager = new (function()
     mc.unmousedown(mc_mousedown);
     mc.undblclick(mc_dblclick);
 
-    if (TYPE_NODE === type) {
+    if (SkeletonAnnotations.TYPE_NODE === type) {
       mc.unclick(this.mc_click);
     } else {
-      // TYPE_CONNECTORNODE
+      // SkeletonAnnotations.TYPE_CONNECTORNODE
       mc.unclick(connector_mc_click);
     }
   };

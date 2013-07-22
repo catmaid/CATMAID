@@ -257,7 +257,7 @@ def node_list_tuples(request, project_id=None):
                 treenode_ids.add(row[0:8] + (is_superuser or row[8] == user_id,))
 
         labels = defaultdict(list)
-        if request.POST['labels']:
+        if 'true' == request.POST['labels']:
             z0 = params['z']
             # Collect treenodes visible in the current section
             visible = ','.join(str(row[0]) for row in treenodes if row[4] == z0)
@@ -364,55 +364,43 @@ def most_recent_treenode(request, project_id=None):
     }))
 
 
+def _update(Kind, table, nodes, now, user):
+    if not nodes:
+        return
+    # 0: id
+    # 1: X
+    # 2: Y
+    # 3: Z
+    can_edit_all_or_fail(user, (node[0] for node in nodes.itervalues()), table)
+    for node in nodes.itervalues():
+        Kind.objects.filter(id=int(node[0])).update(
+            editor=user,
+            edition_time=now,
+            location=Double3D(float(node[1]), float(node[2]), float(node[3])))
+
 @requires_user_role(UserRole.Annotate)
 def node_update(request, project_id=None):
-    nodes = {}
-    for key, value in request.POST.items():
-        # TODO wtf? The encoding in overlay.js/updateNodePositions is wasteful and arcane for no reason. JSON can encode javascript objects just fine.
-        parsed_key = re.search('^(?P<property>[a-zA-Z_]+)(?P<node_index>[0-9]+)$', key)
-        if not parsed_key:
-            continue
-        node_index = parsed_key.group('node_index')
-        node_property = parsed_key.group('property')
-        if node_index not in nodes:
-            nodes[node_index] = {}
-        nodes[node_index][node_property] = value
+    N = len(request.POST)
+    if 0 != N % 4:
+        raise Exception("Incorrect number of posted items for node_update.")
 
-    required_properties = set( ['node_id', 'x', 'y', 'z', 'type'] )
+    pattern = re.compile('^[tc]\[(\d+)\]\[(\d+)\]$')
+
+    nodes = {'t': {}, 'c': {}}
+    for key, value in request.POST.iteritems():
+        i, j = pattern.match(key).groups()
+        i = int(i)
+        j = int(j)
+        node = nodes[key[0]].get(i)
+        if not node:
+            nodes[key[0]][i] = node = {}
+        node[j] = value
+
     now = datetime.now()
-    for node_index, node in nodes.items():
-        for req_prop in required_properties:
-            if req_prop not in node:
-                raise Exception('Missing key: %s in index %s' % (req_prop, node_index))
+    _update(Treenode, 'treenode', nodes['t'], now, request.user)
+    _update(Connector, 'connector', nodes['c'], now, request.user)
 
-        try:
-            if node['type'] == 'treenode':
-                try:
-                    can_edit_or_fail(request.user, node['node_id'], 'treenode')
-                except ObjectDoesNotExist:
-                    # Ignore deleted objects.
-                    # This can happen because of the async between the client and the server: the client may move the node in the same mouse action that triggers the deletion of the node.
-                    continue
-                Treenode.objects.filter(id=node['node_id']).update(
-                    editor=request.user,
-                    edition_time=now,
-                    location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
-            elif node['type'] == 'connector':
-                try:
-                    can_edit_or_fail(request.user, node['node_id'], 'connector')
-                except ObjectDoesNotExist:
-                    # Ignore deleted objects.
-                    continue
-                Connector.objects.filter(id=node['node_id']).update(
-                    editor=request.user,
-                    edition_time=now,
-                    location=Double3D(float(node['x']), float(node['y']), float(node['z'])))
-            else:
-                raise Exception('Unknown node type: %s' % node['type'])
-        except:
-            raise Exception('Failed to update treenode: %s' % node['node_id'])
-
-    return HttpResponse(json.dumps({'updated': len(nodes)}))
+    return HttpResponse(json.dumps(len(nodes)))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

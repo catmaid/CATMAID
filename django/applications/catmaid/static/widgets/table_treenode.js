@@ -243,7 +243,7 @@ var TreenodeTable = new function()
       var y = parseFloat(aData[5]);
       var z = parseFloat(aData[6]);
       var id = parseInt(aData[0], 10);
-      project.moveTo(z, y, x, undefined,
+      SkeletonAnnotations.staticMoveTo(z, y, x,
                      function () {
                        SkeletonAnnotations.staticSelectNode(id, skelid);
                      });

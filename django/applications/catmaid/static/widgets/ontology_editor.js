@@ -261,6 +261,17 @@ var OntologyEditor = new function()
                     }
                     }
                 }
+
+                // add "Expand sub-tree" option to each menu
+                menu["expand_subtree"] = {
+                    "separator_before": true,
+                    "separator_after": false,
+                    "label": "Expand sub-tree",
+                    "action": function (obj) {
+                        tree.jstree('open_all', obj);
+                     }
+                };
+
                 return menu;
             }
           },

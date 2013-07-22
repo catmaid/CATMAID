@@ -221,9 +221,8 @@ var requestQueue = function()
         {
           removedRequest = queue.splice( i, 1 );
           statusBar.replaceLast( "replacing request ", + r );
-          // Send a distinguishable error reponse with the
-          // callback:
-          c(200, JSON.stringify({'error': 'REPLACED'}), null);
+          // Send a distinguishable error reponse with the callback:
+          removedRequest[0].callback(200, JSON.stringify({'error': 'REPLACED'}), null);
         }
       }
       this.register( r, m, d, c, id );

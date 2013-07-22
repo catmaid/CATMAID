@@ -13,7 +13,7 @@ def find_root(tree):
             return node
 
 def edge_count_to_root(tree, root_node=None):
-    """ Return a map of nodeID vs number of edges from the first node that lacks predecessors. If root_id is None, it will be searched for."""
+    """ Return a map of nodeID vs number of edges from the first node that lacks predecessors (aka the root). If root_id is None, it will be searched for."""
     distances = {}
     count = 1
     current_level = [root_node if root_node else find_root(tree)]

@@ -365,13 +365,81 @@ def update_treenode_table(request, project_id=None):
         treenode = get_object_or_404(Treenode, project=project_id, id=treenode_id)
         response_on_error = 'Could not update %s for treenode with ID %s.' % (property_name, treenode_id)
         setattr(treenode, property_name, property_value)
-        treenode.user = request.user
+        treenode.editor = request.user
         treenode.save()
 
         return HttpResponse(json.dumps({'success': 'Updated %s of treenode %s to %s.' % (property_name, treenode_id, property_value)}))
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
+
+@requires_user_role(UserRole.Annotate)
+def update_radius(request, project_id=None, treenode_id=None):
+    treenode_id = int(treenode_id)
+    radius = float(request.POST.get('radius', -1))
+    option = int(request.POST.get('option', 0))
+    cursor = connection.cursor()
+
+    if 0 == option:
+        # Update radius only for the treenode
+        Treenode.objects.filter(pk=treenode_id).update(editor=request.user, radius=radius)
+        return HttpResponse(json.dumps({'success': True}))
+    
+    cursor.execute('''
+    SELECT id, parent_id FROM treenode WHERE skeleton_id = (SELECT t.skeleton_id FROM treenode t WHERE id = %s)
+    ''' % treenode_id)
+
+    if 1 == option:
+        # Update radius from treenode_id to the next branch or end node (included)
+        children = defaultdict(list)
+        for row in cursor.fetchall():
+            children[row[1]].append(row[0])
+
+        include = [treenode_id]
+        c = children[treenode_id]
+        while 1 == len(c):
+            child = c[0]
+            include.append(child)
+            c = children[child]
+
+        Treenode.objects.filter(pk__in=include).update(editor=request.user, radius=radius)
+        return HttpResponse(json.dumps({'success': True}))
+    
+    if 2 == option:
+        # Update radius from treenode_id to the previous branch node or root (excluded)
+        parents = {}
+        children = defaultdict(list)
+        for row in cursor.fetchall():
+            parents[row[0]] = row[1]
+            children[row[1]].append(row[0])
+
+        include = [treenode_id]
+        parent = parents[treenode_id]
+        while parent and 1 == len(children[parent]):
+            include.append(parent)
+            parent = parents[parent]
+
+        Treenode.objects.filter(pk__in=include).update(editor=request.user, radius=radius)
+        return HttpResponse(json.dumps({'success': True}))
+
+    if 3 == option:
+        # Update radius from treenode_id to root (included)
+        parents = {row[0]: row[1] for row in cursor.fetchall()}
+
+        include = [treenode_id]
+        parent = parents[treenode_id]
+        while parent:
+            include.append(parent)
+            parent = parents[parent]
+
+        Treenode.objects.filter(pk__in=include).update(editor=request.user, radius=radius)
+        return HttpResponse(json.dumps({'success': True}))
+
+    if 4 == option:
+        # Update radius of all nodes (in a single query)
+        Treenode.objects.filter(skeleton_id=Treenode.objects.filter(pk=treenode_id).values('skeleton_id')).update(editor=request.user, radius=radius)
+        return HttpResponse(json.dumps({'success': True}))
+
 
 # REMARK this function went from 1.6 seconds to 400 ms when de-modelized
 @requires_user_role(UserRole.Annotate)

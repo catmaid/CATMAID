@@ -86,7 +86,7 @@ def _skeleton_for_3d_viewer(skeleton_id):
     
     # Fetch all nodes, with their tags if any
     cursor.execute(
-        '''SELECT t.id, t.user_id, t.location, t.reviewer_id, t.parent_id, t.radius, ci.name
+        '''SELECT t.id, t.user_id, t.location, t.reviewer_id, t.parent_id, t.radius, t.confidence, ci.name
           FROM treenode t LEFT OUTER JOIN (treenode_class_instance tci INNER JOIN class_instance ci ON tci.class_instance_id = ci.id INNER JOIN relation r ON tci.relation_id = r.id AND r.relation_name = 'labeled_as') ON t.id = tci.treenode_id
           WHERE t.skeleton_id = %s
         ''' % skeleton_id)
@@ -94,11 +94,11 @@ def _skeleton_for_3d_viewer(skeleton_id):
     nodes = [] # node properties
     tags = defaultdict(list) # node ID vs list of tags
     for row in cursor.fetchall():
-        if row[6]:
-            tags[row[6]].append(row[0])
+        if row[7]:
+            tags[row[7]].append(row[0])
         x, y, z = imap(float, row[2][1:-1].split(','))
-        # properties: id, parent_id, user_id, reviewer_id, x, y, z, radius
-        nodes.append((row[0], row[4], row[1], row[3], x, y, z, row[5]))
+        # properties: id, parent_id, user_id, reviewer_id, x, y, z, radius, confidence
+        nodes.append((row[0], row[4], row[1], row[3], x, y, z, row[5], row[6]))
 
     # Fetch all connectors with their partner treenode IDs
     cursor.execute(

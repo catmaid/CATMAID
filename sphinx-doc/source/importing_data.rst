@@ -4,7 +4,7 @@ Importing Data
 Introduction
 ------------
 
-Image data in CATMAID is referced by stacks. Stacks in turn are
+Image data in CATMAID is referenced by stacks. Stacks in turn are
 organized in projects. The data used by a stack can have one of
 various types of data sources. A simple and often used source is a
 simple folder structure of tiled image data for each stack. To be

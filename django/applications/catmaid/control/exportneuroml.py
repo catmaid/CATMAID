@@ -113,4 +113,3 @@ def neuroml_network(cells, response):
     doc.export( response, 0, name_="neuroml", namespacedef_=namespacedef)
 
     return response
-

@@ -64,6 +64,7 @@ urlpatterns += patterns(
     (r'^(?P<project_id>\d+)/graphexport/summary-statistics/csv$', 'catmaid.control.graphexport.summary_statistics' ),
     (r'^(?P<project_id>\d+)/graphexport/nx_json$', 'catmaid.control.graphexport.export_nxjsgraph' ),
     (r'^(?P<project_id>\d+)/graphexport/graphml$', 'catmaid.control.graphexport.export_graphml' ),
+    (r'^(?P<project_id>\d+)/neuroml/neuroml_level3_v181$', 'catmaid.control.skeletonexport.export_neuroml_level3_v181'),
         
 
     (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'catmaid.control.adjacency_matrix'),

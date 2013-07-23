@@ -46,7 +46,14 @@
       }
     });
   }
-
+	
+	function graphexport_NetworkML181() {
+		var post = { skids: NeuronStagingArea.get_selected_skeletons() };
+		$(function() {
+				// TODO: leaves behind a hidden iframe
+				var iframe = $("body").append('<iframe src="' + django_url + project.id + '/neuroml/neuroml_level3_v181?' + $.param(post) + '" style="display: none;" ></iframe>'); 
+		});
+	};
 
 </script>
 
@@ -65,6 +72,9 @@ summary statistics.
 
   <li><a target="_new" href="javascript: graphexport_graphml()"><strong>Graph ML</strong></a><br />
   To further analyze the graph in e.g. <a target='_new' href='http://gephi.org/'>Gephi</a> or <a target='_new' href='http://www.cytoscape.org'>Cytoscape</a>.</li>
+
+	<li><a target="_new" href="javascript: graphexport_NetworkML181()"><strong>NeuroML 1.8.1 (Level 3, NetworkML)</strong></a></br />
+	For modeling with <a href="http://www.neuroconstruct.org/">neuroConstruct</a> and then e.g. the <a href="http://www.neuron.yale.edu/neuron/">NEURON</a> simulator.</li>
 
   <!-- <li>Connectivity Matrix (Matlab, Python)</li> -->
 </ul>

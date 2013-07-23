@@ -7,6 +7,7 @@ from catmaid.models import *
 from catmaid.fields import Double3D
 from catmaid.control.authentication import *
 from catmaid.control.common import *
+from catmaid.control import export_NeuroML_Level3
 
 import networkx as nx
 from tree_util import edge_count_to_root
@@ -16,6 +17,7 @@ except ImportError:
     print "NeuroML is not loading"
 
 from itertools import imap
+from functools import partial
 from collections import defaultdict
 from math import sqrt
 
@@ -440,7 +442,7 @@ def _skeleton_neuroml_cell(skeleton_id, preID, postID):
     return neuroml_single_cell(skeleton_id, nodes, pre, post)
  
 
-#@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeletons_neuroml(request, project_id=None):
     """ Export a list of skeletons each as a Cell in NeuroML. """
     project_id = int(project_id) # sanitize
@@ -465,6 +467,59 @@ def skeletons_neuroml(request, project_id=None):
     response['Content-Disposition'] = 'attachment; filename="data.neuroml"'
 
     neuroml_network(cells, response)
+
+    return response
+
+
+@requires_user_role([UserRole.Annotate])
+def export_neuroml_level3_v181(request, project_id=None):
+    """Export the NeuroML Level 3 version 1.8.1 representation of one or more skeletons.
+    Considers synapses among the requested skeletons only. """
+    skeleton_ids = tuple(int(v) for v in request.GET.getlist('skids[]'))
+    skeleton_strings = ",".join(str(skid) for skid in skeleton_ids)
+    cursor = connection.cursor()
+
+    cursor.execute('''
+    SELECT relation_name, id
+    FROM relation
+    WHERE project_id = %s
+      AND (relation_name = 'presynaptic_to'
+           OR relation_name = 'postsynaptic_to')
+    ''' % project_id)
+
+    relations = dict(cursor.fetchall())
+    presynaptic_to = relations['presynaptic_to']
+    postsynaptic_to = relations['postsynaptic_to']
+
+    cursor.execute('''
+    SELECT treenode_id, connector_id, relation_id, skeleton_id
+    FROM treenode_connector
+    WHERE skeleton_id IN (%s)
+    ''' % skeleton_strings)
+
+    # Dictionary of connector ID vs map of relation_id vs list of treenode IDs
+    connectors = defaultdict(partial(defaultdict, list))
+
+    for row in cursor.fetchall():
+        connectors[row[1]][row[2]].append((row[0], row[3]))
+
+    # Dictionary of presynaptic skeleton ID vs map of postsynaptic skeleton ID vs list of tuples with presynaptic treenode ID and postsynaptic treenode ID.
+    connections = defaultdict(partial(defaultdict, list))
+
+    for connectorID, m in connectors.iteritems():
+        for pre_treenodeID, skID1 in m[presynaptic_to]:
+            for post_treenodeID, skID2 in m[postsynaptic_to]:
+                connections[skID1][skID2].append((pre_treenodeID, post_treenodeID))
+
+    cursor.execute('''
+    SELECT id, parent_id, location, radius, skeleton_id
+    FROM treenode
+    WHERE skeleton_id IN (%s)
+    ORDER BY skeleton_id
+    ''' % skeleton_strings)
+
+    response = HttpResponse(export_NeuroML_Level3.export(cursor.fetchall(), connections), mimetype='text/plain')
+    response['Content-Disposition'] = 'attachment; filename=neuronal-circuit.neuroml'
 
     return response
 

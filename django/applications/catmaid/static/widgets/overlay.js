@@ -1419,26 +1419,9 @@ SkeletonAnnotations.SVGOverlay.prototype.goToLastEditedNode = function(skeletonI
 
 SkeletonAnnotations.SVGOverlay.prototype.goToNearestOpenEndNode = function(nodeID) {
   if (this.isIDNull(nodeID)) return;
-  if (this.getLabelStatus()) {
-    var label = this.labels[nodeID];
-    if (label) {
-      var end_labels = ['soma', 'not a branch', 'uncertain continuation', 'uncertain end', 'ends'];
-      var tagged = false;
-      for (var j = label.text.length -1; j > -1; --j) {
-        tagged = -1 !== label.text[j].search('end');
-        for (var i = end_labels.length -1; !tagged && i > -1; --i) {
-          tagged = label.text[j] === end_labels[i];
-        }
-      }
-      if (!tagged) {
-        growlAlert("Information", "You are at an open end node.");
-        return;
-      }
-    }
-  }
   var self = this;
   // TODO could be done by inspecting the graph locally if it is loaded in the 3d Viewer
-  // of from the treenode table (both sources though may not be up to date)
+  // of from the treenode table (but neither source may not be up to date)
   this.submit(
       django_url + project.id + '/skeleton/' + SkeletonAnnotations.getActiveSkeletonId() + '/openleaf',
       {tnid: nodeID},

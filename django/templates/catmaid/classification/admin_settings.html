@@ -1,0 +1,53 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrahead %}
+<style type="text/css">
+    ul { list-style: none; padding: 0px; }
+    ul li { list-style-type: none; }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url admin:index %}">Home</a> &rsaquo; Tag Based Classification Graph Linker
+  </div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <p>Classification graphs are linked to one or more projects. This tool lets
+    you create or modify such links automatically, based on a project's tags. All
+    projects having the same tags attached, form a tag set. If wanted, these
+    tag sets include projects of super sets of itself.  If some projects in a tag
+    set link to one classification graph, this tool below can make sure *all*
+    projects in the tag group link to the same classification graph.</p>
+
+    <p>This page offers some basic settings that affect which projects and tags
+    form a tag set as well as which classification graphs are used</p>
+
+    <form method="post" id="path-setup-form"
+         action="">
+        {% csrf_token %}
+        <table>
+            {{ wizard.management_form }}
+            {% if wizard.form.forms %}
+                {{ wizard.form.management_form }}
+                {% for form in wizard.form.forms %}
+                    {{ form.as_table }}
+                {% endfor %}
+            {% else %}
+                {{ wizard.form.as_table }}
+            {% endif %}
+        </table>
+        <p>
+        {% if wizard.steps.prev %}
+            <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}" class="button small">{% trans "first step" %}</button>
+            <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}" class="button small">{% trans "prev step" %}</button>
+        {% endif %}
+        <input type="submit" value="next step"/>
+        </p>
+    </form>
+</div>
+{% endblock %}
+

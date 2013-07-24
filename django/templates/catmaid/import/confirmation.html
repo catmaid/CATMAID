@@ -97,6 +97,9 @@
             <th>Group Permissions</th>
             <th>Tile width</th>
             <th>Tile height</th>
+            {% if link_cls_graphs %}
+                <th>Classification graphs to link</th>
+            {% endif %}
         </tr>
         <tr>
             <td>
@@ -120,6 +123,13 @@
             </td>
             <td>{{ tile_width }}</td>
             <td>{{ tile_height }}</td>
+            {% if link_cls_graphs %}
+                <td>
+                    {% for cg in cls_graphs_to_link %}
+                        {{ cg.name }} ({{ cg.id }})
+                    {% endfor %}
+                </td>
+            {% endif %}
         </tr>
     </table></p>
     

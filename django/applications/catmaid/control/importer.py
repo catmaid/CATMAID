@@ -4,6 +4,7 @@ import os.path
 import yaml
 
 from django import forms
+from django.db.models import Count
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpResponse, HttpResponseRedirect
@@ -17,13 +18,18 @@ from guardian.shortcuts import get_perms_for_model, assign
 
 import urllib
 
-from catmaid.models import Project, Stack, ProjectStack, Overlay
+from catmaid.models import ClassInstance, Project, Stack, ProjectStack, Overlay
 from catmaid.fields import Double3D
-
+from catmaid.control.classificationadmin import get_tag_sets
 from catmaid.control.common import urljoin
+from catmaid.control.classification import get_classification_links_qs
+from catmaid.control.classification import link_existing_classification
+
+from taggit.models import Tag
 
 TEMPLATES = {"pathsettings": "catmaid/import/setup_path.html",
              "projectselection": "catmaid/import/setup_projects.html",
+             "classification": "catmaid/import/setup_classification.html",
              "confirmation": "catmaid/import/confirmation.html"}
 
 info_file_name = "project.yaml"
@@ -242,11 +248,17 @@ class ImportingWizard(SessionWizardView):
             if hasattr(settings, base_url_setting):
                 form.fields['base_url'].initial = getattr(settings, base_url_setting)
         elif current_step == 'projectselection':
+            # Make sure there is data available. This is needed to test whether
+            # the classification step should be shown with the help of the
+            # show_classification_suggestions() function.
+            cleaned_path_data = self.get_cleaned_data_for_step('pathsettings')
+            if not cleaned_path_data:
+                return form
             # Get the cleaned data from first step
-            path = self.get_cleaned_data_for_step('pathsettings')['relative_path']
-            filter_term = self.get_cleaned_data_for_step('pathsettings')['filter_term']
-            only_unknown = self.get_cleaned_data_for_step('pathsettings')['only_unknown_projects']
-            base_url = self.get_cleaned_data_for_step('pathsettings')['base_url']
+            path = cleaned_path_data['relative_path']
+            filter_term = cleaned_path_data['filter_term']
+            only_unknown = cleaned_path_data['only_unknown_projects']
+            base_url = cleaned_path_data['base_url']
             # Get all folders that match the selected criteria
             data_dir = os.path.join(settings.CATMAID_IMPORT_PATH, path)
             if data_dir[-1] != os.sep:
@@ -274,6 +286,43 @@ class ImportingWizard(SessionWizardView):
             form.group_permissions = group_permissions
             group_perm_tuples = get_element_permission_tuples(group_permissions)
             form.fields['group_permissions'].choices = group_perm_tuples
+        elif current_step == 'classification':
+            # Get tag set and all projecs within it
+            tags = self.get_cleaned_data_for_step('projectselection')['tags']
+            tags = frozenset([t.strip() for t in tags.split(',')])
+            # Get all projects that have all those tags
+            projects = Project.objects.filter( tags__name__in=tags ).annotate(
+                repeat_count=Count("id") ).filter( repeat_count=len(tags) )
+            # Get all classification graphs linked to those projects and add
+            # them to a form for being selected.
+            workspace = settings.ONTOLOGY_DUMMY_PROJECT_ID
+            croots = {}
+            for p in projects:
+                links_qs = get_classification_links_qs(workspace, p.id)
+                linked_croots = set([cici.class_instance_b for cici in links_qs])
+                # Build up dictionary with all classifications mapping to their
+                # linked projects.
+                for cr in linked_croots:
+                    try:
+                        croots[cr].append(p)
+                    except KeyError:
+                        croots[cr] = []
+                        croots[cr].append(p)
+            # Remember graphs and projects
+            form.cls_tags = tags
+            form.cls_graph_map = croots
+            self.id_to_cls_graph = {}
+            # Create data structure for form field and id mapping
+            cgraphs = []
+            for cr in croots:
+                # Create form field tuples
+                name = "%s (%s)" % (cr.name, cr.id)
+                cgraphs.append( (cr.id, name) )
+                # Create ID to classificatin graph mapping
+                self.id_to_cls_graph[cr.id] = cr
+            form.fields['classification_graphs'].choices = cgraphs
+            #form.fields['classification_graphs'].initial = [cg[0] for cg in cgraphs]
+
         return form
 
     def get_context_data(self, form, **kwargs):
@@ -294,6 +343,11 @@ class ImportingWizard(SessionWizardView):
                     'folders': form.folders,
                     'not_readable': form.not_readable,
                 })
+            elif self.steps.current == 'classification':
+                context.update({
+                    'cls_graphs': form.cls_graph_map,
+                    'cls_tags': form.cls_tags,
+                })
             elif self.steps.current == 'confirmation':
                 # Selected projects
                 selected_paths = self.get_cleaned_data_for_step('projectselection')['projects']
@@ -311,6 +365,17 @@ class ImportingWizard(SessionWizardView):
                 group_permissions = self.get_cleaned_data_for_step(
                     'projectselection')['group_permissions']
                 group_permissions = get_permissions_from_selection( Group, group_permissions )
+                # Classification suggestions
+                link_cls_graphs = self.get_cleaned_data_for_step(
+                    'projectselection')['check_classification_links']
+                if link_cls_graphs:
+                    cls_graph_ids = self.get_cleaned_data_for_step(
+                        'classification')['classification_graphs']
+                    cls_graphs_to_link = [ self.id_to_cls_graph[int(cgid)] \
+                        for cgid in cls_graph_ids ]
+                    context.update({
+                        'cls_graphs_to_link': cls_graphs_to_link,
+                    })
                 # Other settings
                 max_num_stacks = 0
                 tile_width = self.get_cleaned_data_for_step('projectselection')['tile_width']
@@ -319,6 +384,7 @@ class ImportingWizard(SessionWizardView):
                     if len(p.stacks) > max_num_stacks:
                         max_num_stacks = len(p.stacks)
                 context.update({
+                    'link_cls_graphs': link_cls_graphs,
                     'projects': selected_projects,
                     'max_num_stacks': max_num_stacks,
                     'tags': tags,
@@ -352,14 +418,22 @@ class ImportingWizard(SessionWizardView):
         # Tags
         tags = self.get_cleaned_data_for_step('projectselection')['tags']
         tags = [t.strip() for t in tags.split(',')]
+        # Classifications
+        link_cls_graphs = self.get_cleaned_data_for_step(
+            'projectselection')['check_classification_links']
+        cls_graph_ids = []
+        if link_cls_graphs:
+            cls_graph_ids = self.get_cleaned_data_for_step(
+                'classification')['classification_graphs']
         # Get remaining properties
         make_public = self.get_cleaned_data_for_step('projectselection')['make_projects_public']
         tile_width = self.get_cleaned_data_for_step('projectselection')['tile_width']
         tile_height = self.get_cleaned_data_for_step('projectselection')['tile_height']
         tile_source_type = 1
         imported_projects, not_imported_projects = import_projects(
-            selected_projects, make_public, tags, permissions,
-            tile_width, tile_height, tile_source_type)
+            self.request.user, selected_projects, make_public, tags,
+            permissions, tile_width, tile_height, tile_source_type,
+            cls_graph_ids)
         # Show final page
         return render_to_response('catmaid/import/done.html', {
             'projects': selected_projects,
@@ -373,9 +447,21 @@ def importer_admin_view(request, *args, **kwargs):
     """
     forms = [("pathsettings", DataFileForm),
              ("projectselection", ProjectSelectionForm),
+             ("classification", ClassificationLinkingForm),
              ("confirmation", ConfirmationForm)]
-    view = ImportingWizard.as_view(forms)
+    # Create view with condition for classification step. It should only
+    # be displayed if selected in the step before.
+    view = ImportingWizard.as_view(forms,
+        condition_dict={'classification': show_classification_suggestions})
     return view(request)
+
+def show_classification_suggestions(wizard):
+    """ This method tests whether the classification linking step should
+    be shown or not.
+    """
+    cleaned_data = wizard.get_cleaned_data_for_step('projectselection') \
+        or {'check_classification_links': False}
+    return cleaned_data['check_classification_links']
 
 def importer_finish(request):
     return render_to_response('catmaid/import/done.html', {})
@@ -459,6 +545,12 @@ class ProjectSelectionForm(forms.Form):
     make_projects_public = forms.BooleanField(initial=False,
         required=False, help_text="If made public, a project \
         can be seen without being logged in.")
+    check_classification_links = forms.BooleanField(initial=False,
+        required=False, help_text="If wanted, the importer can " \
+        "check which projects have the same tag set as specified above " \
+        "and to which classification graphs those projects are linked " \
+        "(if any). If checked, this option will let the importer suggest " \
+        "classification graphs to link the new projects against.")
     user_permissions = forms.MultipleChoiceField(required=False,
         widget=forms.SelectMultiple(attrs={'size':'10'}),
         help_text="The selected <em>user/permission combination</em> \
@@ -468,14 +560,20 @@ class ProjectSelectionForm(forms.Form):
         help_text="The selected <em>group/permission combination</em> \
                    will be assigned to every project.")
 
+class ClassificationLinkingForm(forms.Form):
+    # A checkbox for each project, checked by default
+    classification_graphs = forms.MultipleChoiceField(required=False,
+        widget=forms.CheckboxSelectMultiple(),
+        help_text="Only selected classification graphs will be linked to the new projects.")
+
 class ConfirmationForm(forms.Form):
     """ A form to confirm the selection and settings of the
     projects that are about to be imported.
     """
     something = forms.CharField(initial="", required=False)
 
-def import_projects( pre_projects, make_public, tags, permissions,
-    tile_width, tile_height, tile_source_type ):
+def import_projects( user, pre_projects, make_public, tags, permissions,
+    tile_width, tile_height, tile_source_type, cls_graph_ids_to_link ):
     """ Creates real CATMAID projects out of the PreProject objects
     and imports them into CATMAID.
     """
@@ -525,8 +623,14 @@ def import_projects( pre_projects, make_public, tags, permissions,
                 trln = Double3D()
                 ps = ProjectStack.objects.create(
                     project=p, stack=s, translation=trln)
-            # Save and remember this project
+            # Make project persistent
             p.save()
+            # Link classification graphs
+            for cg in cls_graph_ids_to_link:
+                workspace = settings.ONTOLOGY_DUMMY_PROJECT_ID
+                cgroot = ClassInstance.objects.get(pk=cg)
+                link_existing_classification(workspace, user, p, cgroot)
+            # Remember created project
             imported.append( pp )
         except Exception as e:
             not_imported.append( (pp, e) )

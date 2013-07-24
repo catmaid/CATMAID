@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.views.generic import TemplateView
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
+from django.db.models import Count
 
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
 from catmaid.control.common import insert_into_log
@@ -81,40 +82,45 @@ def get_root_classes_qs(workspace_pid):
     """
     return[ c.class_a.id for c in get_class_links_qs(workspace_pid, 'is_a', 'classification_root') ]
 
-def get_classification_links_qs( workspace_pid, project_id, inverse=False ):
-    """ Returns a list of CICI links that link a classification graph
-    with a project. The classification system uses a dummy project with
-    ID -1 to store its ontologies and class instances. Each project using
-    a particular classification graph instance creates a class instance
-    with its PID of class classification_project (which lives in dummy
-    project -1) and links to a classification root. A query set for those
-    links will be returned. If <inverse> is set to true, only those
-    classification graph links will be returned that *don't* belong to
-    the project with <project_id>.
+def get_classification_links_qs( workspace_pid, project_ids, inverse=False ):
+    """ Returns a list of CICI links that link a classification graph with a
+    project or a list/set of projects (project_ids can be int, list and set).
+    The classification system uses a dummy project (usually with ID -1) to
+    store its ontologies and class instances. Each project using a particular
+    classification graph instance creates a class instance with its PID of
+    class classification_project (which lives in dummy project -1) and links to
+    a classification root. A query set for those links will be returned. If
+    <inverse> is set to true, only those classification graph links will be
+    returned that *don't* belong to the project with <project_id>.
     """
+    # Make sure we deal with a list of project ids
+    if not isinstance(project_ids, list) and not isinstance(project_ids, set):
+        project_ids = [project_ids]
+
     # Expect the classification system to be set up and expect one
     # single 'classification_project' class.
     classification_project_c_q = Class.objects.filter(
         project_id = workspace_pid, class_name = 'classification_project')
-    # Return an empty list if there isn't a classification project class
-    if classification_project_c_q.count() == 0:
-        return []
+    # Return an empty query set if there isn't a classification project class
+    # len() is used on purpose, we need the object later anyway.
+    if len(classification_project_c_q) == 0:
+        return ClassInstanceClassInstance.objects.none()
     classification_project_c = classification_project_c_q[0]
 
     # Get the query set for the classification project instance to test
     # if there already is such an instance.
     if inverse:
-        classification_project_ci_q = ClassInstance.objects.filter(
-            class_column_id = classification_project_c.id).exclude(
-                project_id = project_id)
+        classification_project_cis_q = ClassInstance.objects.filter(
+            class_column_id=classification_project_c.id).exclude(
+                project_id__in=project_ids)
     else:
-        classification_project_ci_q = ClassInstance.objects.filter(
-            project_id = project_id, class_column_id = classification_project_c.id)
-    # Return an empty list if there isn't a classification project
-    # instance
-    if classification_project_ci_q.count() == 0:
-        return []
-    classification_project_ci = classification_project_ci_q[0]
+        classification_project_cis_q = ClassInstance.objects.filter(
+            project_id__in=project_ids,
+                class_column_id=classification_project_c.id)
+    # Return an empty query set if there aren't classification project
+    # instances available.
+    if classification_project_cis_q.count() == 0:
+        return ClassInstanceClassInstance.objects.none()
 
     # Get a list of all classification root classes and return an empty
     # list if teher are none
@@ -128,11 +134,11 @@ def get_classification_links_qs( workspace_pid, project_id, inverse=False ):
     # Query to get the 'classified_by' relation
     classified_by_rel = Relation.objects.filter(project_id=workspace_pid,
         relation_name='classified_by')
-    # Find all 'classification_project' class instances of the current
-    # project that link to those root nodes
+    # Find all 'classification_project' class instances of all requested
+    # projects that link to those root nodes
     cici_q = ClassInstanceClassInstance.objects.filter(project_id=workspace_pid,
         relation__in=classified_by_rel, class_instance_b__in=root_class_instances,
-        class_instance_a__in=classification_project_ci_q)
+        class_instance_a__in=classification_project_cis_q)
 
     return cici_q
 

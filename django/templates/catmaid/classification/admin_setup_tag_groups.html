@@ -1,0 +1,89 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrahead %}
+<style type="text/css">
+    ul { list-style: none; padding: 0px; }
+    ul li { list-style-type: none; }
+</style>
+<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
+<script>
+$(document).ready(function() {
+    var master_cb = $("#select-all");
+    if (master_cb.length > 0) {
+        var slave_cbs = $("#path-setup-form input[type=checkbox]");
+
+        master_cb.click( function() {
+            var val = master_cb.attr("checked") == "checked";
+            slave_cbs.attr("checked", val);
+        });
+
+        slave_cbs.click( function() {
+            master_cb.attr("checked", $.grep(slave_cbs, function(e) {
+                return $(e).attr("checked");
+            }).length == slave_cbs.length)
+        });
+    }
+});
+</script>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url admin:index %}">Home</a> &rsaquo; Tag Based Classification Graph Linker
+  </div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+   <p>Classification graphs are linked to one or more projects. This page
+   offers tools to create or modify such links automatically, based on a
+   project's tags. All projects having the same tags attached, form a tag
+   group. If some projects in such a group link to one classification graph,
+   the tool below can make sure *all* projects in the tag group
+   link to the same classification graph.</p>
+
+   {% if num_tag_groups = 0 %}
+       <p>There are currently <em>no</em> non-uniform tag groups. There is nothing
+       to do.</p>
+       <p><a href="{% url admin:index %}">Return to the administration home page.</a></p>
+   {% else %}
+       <p>Below you see a list of all available tag groups for which not all the
+       linked projects share the same classification graph. Please select all the
+       groups you would like check in more detail. If tag groups are not listed it
+       means all tagged projects link to the same classification graphs
+       already.</p>
+
+       <p>
+           <label for="select_all">
+               <input type="checkbox" name="select_all" id="select-all" checked>
+               Select all tag groups
+           </label>
+       </p>
+
+       <form method="post" id="path-setup-form"
+             action="">
+         {% csrf_token %}
+         <table>
+         {{ wizard.management_form }}
+         {% if wizard.form.forms %}
+             {{ wizard.form.management_form }}
+             {% for form in wizard.form.forms %}
+                 {{ form.as_table }}
+             {% endfor %}
+         {% else %}
+             {{ wizard.form.as_table }}
+         {% endif %}
+         </table>
+         <p>
+         {% if wizard.steps.prev %}
+             <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}" class="button small">{% trans "first step" %}</button>
+             <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}" class="button small">{% trans "prev step" %}</button>
+         {% endif %}
+         <input type="submit" value="next step"/>
+         </p>
+         </form>
+    {% endif %}
+</div>
+{% endblock %}
+

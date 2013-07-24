@@ -4,7 +4,7 @@ Importing Data
 Introduction
 ------------
 
-Image data in CATMAID is referced by stacks. Stacks in turn are
+Image data in CATMAID is referenced by stacks. Stacks in turn are
 organized in projects. The data used by a stack can have one of
 various types of data sources. A simple and often used source is a
 simple folder structure of tiled image data for each stack. To be
@@ -204,7 +204,15 @@ Besides deciding which projects to actually import, you can also add
 tags which will be attached to the new projects. If the tile size
 differs from the standard, it can be adjusted here. If you want your
 projects to be accessible publicly, you can mark the corresponding
-check-box. The last adjustment to make are permissions. With the help
+check-box.
+
+When the *Check classification links* option is selected, the importer
+tries to suggest existing classification graphs to be linked to the
+new project(s). These suggestions are optional and based on the tags
+you entered before. If existing projects have the same tags or a super
+set of it, their linked classification graphs will be suggested.
+
+The last adjustment to make are permissions. With the help
 of a list box you can select one or more group/permission combinations
 that the new projects will be assigned. If all is how you want it,
 you can proceed to the next dialog.

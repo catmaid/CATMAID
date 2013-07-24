@@ -8,7 +8,7 @@ def find_root(tree):
     """ Search and return the first node that has zero predecessors.
     Will be the root node in directed graphs.
     Avoids one database lookup. """
-    for node in tree.nodes():
+    for node in tree:
         if 0 == len(tree.predecessors(node)):
             return node
 

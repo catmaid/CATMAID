@@ -67,7 +67,7 @@ var ClusteringWidget = new function()
         // additional functionality for the classification selection form
         var master_cb = $("#select-all", container);
         if (master_cb.length > 0) {
-            var slave_cbs = $("#clustering-setup-form input[type=checkbox]",
+            var slave_cbs = $("#clustering-setup-form input[type=checkbox][class=autoselectable]",
                 container);
 
             master_cb.click( function() {

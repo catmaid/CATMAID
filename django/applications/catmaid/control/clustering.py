@@ -57,7 +57,7 @@ def create_ontology_selection_form( workspace_pid, class_ids=None ):
         """
         ontologies = forms.ModelMultipleChoiceField(
             queryset=Class.objects.filter(id__in=class_ids),
-            widget=CheckboxSelectMultiple())
+            widget=CheckboxSelectMultiple(attrs={'class': 'autoselectable'}))
 
     return SelectOntologyForm
 
@@ -68,12 +68,12 @@ class ClusteringSetupFeatures(forms.Form):
     #add_nonleafs = forms.BooleanField(initial=False,
     #    required=False, label="Use sub-paths as features")
     features = forms.MultipleChoiceField(choices=[],
-            widget=CheckboxSelectMultiple())
+            widget=CheckboxSelectMultiple(attrs={'class': 'autoselectable'}))
 
 class ClusteringSetupGraphs(forms.Form):
     classification_graphs = forms.ModelMultipleChoiceField(
         queryset=ClassInstanceProxy.objects.all(),
-        widget=CheckboxSelectMultiple())
+        widget=CheckboxSelectMultiple(attrs={'class': 'autoselectable'}))
     only_used_features = forms.BooleanField(initial=True,
         required=False, label="Allow only features used by selected graphs")
 

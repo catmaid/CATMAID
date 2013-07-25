@@ -330,7 +330,10 @@ def graph_instances_feature(graph, feature, idx=0):
     link_q = ClassInstanceClassInstance.objects.filter(
         class_instance_b=graph, class_instance_a__class_column=f_head.class_a,
         relation=f_head.relation)
-    num_links = link_q.count()
+    # Get number of links wth. of len(), because it is doesn't hurt performance
+    # if there are no results, but it improves performance if there is exactly
+    # one result (saves one query). More than one link should not happen often.
+    num_links = len(link_q)
     # Make sure there is the expected child link
     if num_links == 0:
         return False

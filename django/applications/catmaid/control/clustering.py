@@ -74,6 +74,8 @@ class ClusteringSetupGraphs(forms.Form):
     classification_graphs = forms.ModelMultipleChoiceField(
         queryset=ClassInstanceProxy.objects.all(),
         widget=CheckboxSelectMultiple())
+    only_used_features = forms.BooleanField(initial=True,
+        required=False, label="Allow only features used by selected graphs")
 
 class ClusteringSetupMath(forms.Form):
     metric = forms.ChoiceField(choices=metrics)
@@ -94,13 +96,16 @@ class ClusteringWizard(SessionWizardView):
             form.fields['classification_graphs'].queryset = root_ci_qs
         elif current_step == 'features':
             # Display a list of all available features
-            ontologies = self.get_cleaned_data_for_step('ontologies')['ontologies']
+            gcd = self.get_cleaned_data_for_step
+            ontologies = gcd('ontologies')['ontologies']
+            only_used_features = gcd('classifications')['only_used_features']
+            graphs = gcd('classifications')['classification_graphs']
             add_nonleafs = True
             # Featurs are abstract concepts (classes) and graphs will be
             # checked which classes they have instanciated.
             raw_features = []
             for o in ontologies:
-                raw_features = raw_features + get_features( o, add_nonleafs )
+                raw_features = raw_features + get_features( o, graphs, add_nonleafs, only_used_features )
             self.features = raw_features
             # Build form array
             features = []
@@ -155,8 +160,8 @@ class ClusteringWizard(SessionWizardView):
     def done(self, form_list, **kwargs):
         cleaned_data = [form.cleaned_data for form in form_list]
         ontologies = cleaned_data[0].get('ontologies')
-        selected_feature_ids = cleaned_data[1].get('features')
-        graphs = cleaned_data[2].get('classification_graphs')
+        graphs = cleaned_data[1].get('classification_graphs')
+        selected_feature_ids = cleaned_data[2].get('features')
         metric = str(cleaned_data[3].get('metric'))
         linkage = str(cleaned_data[3].get('linkage'))
 
@@ -227,12 +232,25 @@ class Feature:
     def __len__(self):
         return len(self.links)
 
-def get_features( ontology, add_nonleafs=False ):
+def get_features( ontology, graphs, add_nonleafs=False, only_used_features=False ):
     """ Return a list of Feature instances which represent paths
     to leafs of the ontology.
     """
     feature_lists = get_feature_paths( ontology, add_nonleafs )
-    return [ Feature(fl) for fl in feature_lists ]
+    if only_used_features:
+        used_features = []
+        for fl in feature_lists:
+            # Check if this feature is used in one of the graphs
+            f = Feature(fl)
+            for g in graphs:
+                # Improvement: graphs could be sorted according to how many
+                # class instances they have.
+                if graph_instances_feature(g, f):
+                    used_features.append( Feature(fl) )
+                    break
+        return used_features
+    else:
+        return [ Feature(fl) for fl in feature_lists ]
 
 def get_feature_paths( ontology, add_nonleafs=False, depth=0, max_depth=100 ):
     """ Returns all root-leaf paths of the passed ontology. It respects

@@ -3,6 +3,7 @@ import json
 import string
 
 from django import forms
+from django.db.models import Q
 from django.forms.formsets import formset_factory
 from django.forms.widgets import CheckboxSelectMultiple
 from django.shortcuts import render_to_response
@@ -245,7 +246,7 @@ def get_features( ontology, graphs, add_nonleafs=False, only_used_features=False
             for g in graphs:
                 # Improvement: graphs could be sorted according to how many
                 # class instances they have.
-                if graph_instances_feature(g, f):
+                if graph_instanciates_feature(g, f):
                     used_features.append( Feature(fl) )
                     break
         return used_features
@@ -315,7 +316,10 @@ def setup_clustering(request, workspace_pid=None):
     view = ClusteringWizard.as_view(forms, workspace_pid=workspace_pid)
     return view(request)
 
-def graph_instances_feature(graph, feature, idx=0):
+def graph_instanciates_feature(graph, feature):
+    return graph_instanciates_feature_complex(graph, feature)
+
+def graph_instanciates_feature_simple(graph, feature, idx=0):
     """ Traverses a class instance graph, starting from the passed node.
     It recurses into child graphs and tests on every class instance if it
     is linked to an ontology node. If it does, the function returns true.
@@ -342,7 +346,33 @@ def graph_instances_feature(graph, feature, idx=0):
         raise Exception('Found more than one ontology node link of one class instance.')
 
     # Continue with checking children, if any
-    return graph_instances_feature(link_q[0].class_instance_a, feature, idx+1)
+    return graph_instanciates_feature_simple(link_q[0].class_instance_a, feature, idx+1)
+
+def graph_instanciates_feature_complex(graph, feature):
+    """ Creates one complex query that thest if the feature is matched as a
+    whole.
+    """
+    # Build Q objects for to query whole feature instantiation at once. Start
+    # with query that makes sure the passed graph is the root.
+    Qr = Q(class_instance_b=graph)
+    for n,fl in enumerate(feature.links):
+        # Add constraints for each link
+        cia = "class_instance_a__cici_via_b__" * n
+        q_cls = Q(**{cia + "class_instance_a__class_column": fl.class_a})
+        q_rel = Q(**{cia + "relation": fl.relation})
+        # Combine all sub-queries with logical AND
+        Qr = Qr & q_cls & q_rel
+
+    link_q = ClassInstanceClassInstance.objects.filter(Qr).distinct()
+    num_links = link_q.count()
+    # Make sure there is the expected child link
+    if num_links == 0:
+        return False
+    elif num_links == 1:
+        return True
+    else:
+        # More than one?
+        raise Exception('Found more than one ontology node link of one class instance.')
 
 def create_binary_matrix(graphs, features):
     """ Creates a binary matrix for the graphs passed."""
@@ -358,7 +388,7 @@ def create_binary_matrix(graphs, features):
             feature = features[j]
             # Check if a feature (root-leaf path in graph) is part of the
             # current graph
-            if graph_instances_feature(graph, feature):
+            if graph_instanciates_feature(graph, feature):
                 matrix[i][j] = 1
 
     return matrix

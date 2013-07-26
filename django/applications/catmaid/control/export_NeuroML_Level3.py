@@ -13,12 +13,13 @@
 import time
 from collections import defaultdict, namedtuple
 
-def export(all_treenodes, connections):
+def export(all_treenodes, connections, scale=0.001):
     """ Export a group of neuronal arbors and their synapses as NetworkML v1.8.1.
     all_treenodes: an iterator (can be lazy) of treenodes like [<id>, <parent_id>, <location>, <radius>, <skeleton_id>].
     connections: a dictionary of skeleton ID vs tuple of tuple of tuples, each a pair containing the presynaptic treenode ID and the map of connector ID vs list of postsynaptic treenode IDs.
+    scale: defaults to 0.001 to transform nanometers (CATMAID) into micrometers (NeuroML).
     Returns a lazy sequence of strings that expresses the XML. """
-    for source in ([header()], body(all_treenodes, connections), ["</neuroml>"]):
+    for source in ([header()], body(all_treenodes, connections, scale), ["</neuroml>"]):
         for line in source:
             yield line
 
@@ -36,96 +37,125 @@ def header():
   length_units="micrometer">
 """ % time.strftime("%c %z")
 
-def segment(t1, t2, segmentID, parentSegmentID, cableID):
+def segment(t1, t2, p, q, segmentID, parentSegmentID, cableID, is_first):
     s = '<segment id="%s" name="%s"' % (segmentID, segmentID)
     if parentSegmentID:
         s += ' parent="%s"' % parentSegmentID
     s += ' cable="%s">\n' % cableID
-    p = t1[2]
-    q = t2[2]
+    # Fix radius when not set (-1) to 20 nanometers
+    r = t1[3]
+    if r < 0:
+        r = 20
     # Scale radius to micrometers and convert to a diameter
-    s += '<proximal x="%s" y="%s" z="%s" diameter="%s"/>\n' % (p[0], p[1], p[2], t1[3] * 0.002)
-    s += '<distal x="%s" y="%s" z="%s" diameter="%s"/>\n' % (q[0], q[1], q[2], t1[3] * 0.002)
+    r *= 0.002
+    if is_first:
+        s += '<proximal x="%s" y="%s" z="%s" diameter="%s"/>\n' % (p[0], p[1], p[2], r)
+    s += '<distal x="%s" y="%s" z="%s" diameter="%s"/>\n' % (q[0], q[1], q[2], r)
     s += '</segment>\n'
 
     return s
 
-def make_segments(slab, cableID, state):
+def make_segments(slab, cableID, scale, state):
     nodes = slab.nodes
+    points = smooth(nodes, scale)
     if 1 == len(nodes):
         # segment of zero length
         segmentID = state.nextID()
         state.record(nodes[0][0], segmentID)
-        yield segment(nodes[0], nodes[0], segmentID, slab.parent_segmentID, cableID)
+        slab.last_segmentID = segmentID
+        yield segment(nodes[0], nodes[0], points[0], points[0], segmentID, slab.lastSegmentIDOfParent(), cableID, True)
     else:
-        segmentID = state.nextID()
-        previous_segmentID = slab.parent_segmentID
+        previous_segmentID = slab.lastSegmentIDOfParent()
         for i in xrange(1, len(nodes)):
-            id1 = segmentID
+            segmentID = state.nextID()
             id2 = previous_segmentID
             previous_segmentID = segmentID
-            segmentID = state.nextID()
             if 1 == i:
                 # A synapse could exist at the first node
                 # (Realize that CATMAID operates on nodes, and NeuroML on edges aka segments)
-                state.record(nodes[i-1][0], id1)
-            state.record(nodes[i][0], id1)
-            yield segment(nodes[i-1], nodes[i], id1, id2, cableID)
+                state.record(nodes[i-1][0], segmentID)
+            state.record(nodes[i][0], segmentID)
+            slab.last_segmentID = segmentID
+            yield segment(nodes[i-1], nodes[i], points[i-1], points[i], segmentID, id2, cableID, 1 == i)
 
 
 def smooth(treenodes, scale):
-    """ Apply a three-point average sliding window, keeping first and last points intact. """
+    """ Apply a three-point average sliding window, keeping first and last points intact.
+    Returns a new list of points. """
+    points = []
     if len(treenodes) < 3:
         for t in treenodes:
-            t[2][0] *= scale
-            t[2][1] *= scale
-            t[2][2] *= scale
-        return
-    a = treenodes[0][2]
-    b = treenodes[1][2]
-    for i in xrange(1, len(treenodes) -1):
-        c = treenodes[i+1][2]
-        b[0] = ((a[0] + b[0] + c[0]) / 3.0) * scale
-        b[1] = ((a[1] + b[1] + c[1]) / 3.0) * scale
-        b[2] = ((a[2] + b[2] + c[2]) / 3.0) * scale
-        a = b
-        b = c
+            points.append((t[2][0] * scale, t[2][1] * scale, t[2][2] * scale))
+        return points
 
-def make_slabs(Slab, root, successors, cableIDs, state):
+    t = treenodes[0][2]
+    ax, ay, az = t
+
+    # Scale first point after having copied its original values
+    points.append((ax * scale, ay * scale, az * scale))
+
+    t = treenodes[1][2]
+    bx, by, bz = t
+
+    for i in xrange(1, len(treenodes) -1):
+        tc = treenodes[i+1][2]
+        cx, cy, cz = tc
+        points.append((((ax + bx + cx) / 3.0) * scale,
+                       ((ay + by + cy) / 3.0) * scale,
+                       ((az + bz + cz) / 3.0) * scale))
+        ax, ay, az = bx, by, bz
+        bx, by, bz = cx, cy, cz
+        t = tc
+
+    # Scale last point
+    points.append((cx * scale, cy * scale, cz * scale))
+
+    return points
+
+class Slab:
+    def __init__(self, nodes, parent):
+        self.nodes = nodes
+        self.parent = parent
+        self.last_segmentID = None
+    def lastSegmentIDOfParent(self):
+        if self.parent:
+            return self.parent.last_segmentID
+        # Root slab
+        return self.last_segmentID
+
+def make_slabs(root, root_segmentID, successors, cableIDs, scale, state):
     # Create cables, each consisting of one or more segments. Three types:
     # 1. end node to previous branch node or root
     # 2. branch node to previous branch node or root
     # 3. branch node to root
-    leads = [Slab([root], None)]
+    root_slab = Slab([root], None)
+    root_slab.last_segmentID = root_segmentID
+    leads = [root_slab]
     while leads:
         slab = leads.pop()
         parent = slab.nodes[-1]
         children = successors[parent[0]] # parent[0] is the treenode ID
         while children:
-            if 1 == len(children):
-                parent = children[0]
-                slab.nodes.append(parent)
-                children = successors[parent[0]] # parent[0] is the treenode ID
-            else:
+            parent = children[0]
+            slab.nodes.append(parent)
+            children = successors[parent[0]] # parent[0] is the treenode ID
+            if len(children) > 1:
                 # Found branch point
-                leads.extend(Slab([slab.nodes[-1], child], slab.parent_segmentID) for child in children)
+                leads.extend(Slab([parent, child], slab) for child in children)
                 break
-
-        # Smooth and scale to micrometers
-        smooth(slab.nodes, 0.001)
 
         # Add segments
         cableID = state.nextID()
         cableIDs.append(cableID)
-        for line in make_segments(slab, cableID, state):
+        for line in make_segments(slab, cableID, scale, state):
             yield line
 
 def make_cables(cableIDs):
-    for cableID in cableIDs:
-        yield '<cable id="%s" name="%s" fract_along_parent="%s"><meta:group>arbor_group</meta:group></cable>\n' % (cableID, cableID, 1.0)
+    for i, cableID in enumerate(cableIDs):
+        yield '<cable id="%s" name="%s" fract_along_parent="%s"><meta:group>%s_group</meta:group></cable>\n' % (cableID, cableID, 0.5 if 0 == i else 1.0, "soma" if 0 == i else "arbor")
 
 
-def make_arbor(skeletonID, treenodes, state):
+def make_arbor(skeletonID, treenodes, scale, state):
     """ treenodes is a sequence of treenodes, where each treenode is a tuple of id, parent_id, location. """
 
     successors = defaultdict(list)
@@ -135,13 +165,17 @@ def make_arbor(skeletonID, treenodes, state):
         else:
             root = treenode
 
-    Slab = namedtuple('Slab', ['nodes', 'parent_segmentID'])
+    root_point = smooth([root], scale)[0]
+    root_segmentID = state.nextID()
+    root_cableID = state.nextID()
 
     # Accumulate new cable IDs, one for each slab
-    cableIDs = []
+    cableIDs = [root_cableID]
 
     for source in [['<cell name="%s">\n' % skeletonID, '<segments xmlns="http://morphml.org/morphml/schema">\n'],
-                   make_slabs(Slab, root, successors, cableIDs, state),
+                   # Create zero-length point before root to represent the cell body
+                   [segment(root, root, root_point, root_point, root_segmentID, None, root_cableID, True)],
+                   make_slabs(root, root_segmentID, successors, cableIDs, scale, state),
                    ['</segments>\n', '<cables xmlns="http://morphml.org/morphml/schema">\n'],
                    make_cables(cableIDs),
                    ['</cables>\n', '</cell>\n']]:
@@ -159,7 +193,7 @@ class State:
         if treenodeID in self.synaptic_treenodes:
             self.synaptic_treenodes[treenodeID] = segmentID
 
-def make_arbors(all_treenodes, cellIDs, state):
+def make_arbors(all_treenodes, cellIDs, scale, state):
     """ Consume all_treenodes lazily. Assumes treenodes are sorted by skeleton_id.
     Accumulates new cell IDs in cellIDs (the skeletonID is used). """
     i = 0
@@ -172,7 +206,7 @@ def make_arbors(all_treenodes, cellIDs, state):
             treenodes.append((t[0], t[1], map(float, t[2][1:-1].split(',')), t[3]))
             i += 1
         cellIDs.append(skeletonID)
-        for line in make_arbor(skeletonID, treenodes, state):
+        for line in make_arbor(skeletonID, treenodes, scale, state):
             yield line
 
 def make_synapses(pre_skID, post_skID, synapses, state):
@@ -200,9 +234,8 @@ def make_cells(cellIDs):
     for cellID in cellIDs:
         yield '<population name="%s" cell_type="%s"><instances size="1"><instance id="0"><location x="0" y="0" z="0"/></instance></instances></population>\n' % (cellID, cellID)
 
-def body(all_treenodes, connections):
+def body(all_treenodes, connections, scale):
     """ Create a cell for each arbor. """
-    print connections
     synaptic_treenodes = {}
     for m in connections.itervalues():
         for synapses in m.itervalues():
@@ -216,7 +249,7 @@ def body(all_treenodes, connections):
     
     # First cells
     sources = [['<cells>\n'],
-               make_arbors(all_treenodes, cellIDs, state),
+               make_arbors(all_treenodes, cellIDs, scale, state),
                ['</cells>\n']]
 
     # Then populations

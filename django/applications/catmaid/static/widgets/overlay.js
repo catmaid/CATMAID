@@ -652,6 +652,10 @@ SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (c
   // Check that connectorID doesn't have a presynaptic treenode already
   // (It is also checked in the server on attempting to create a link. Here, it is checked for convenience to avoid creating an isolated treenode for no reason.)
   var connectorNode = this.nodes[connectorID];
+  if (!connectorNode) {
+    alert("Connector #" + connectorID + " is not loaded. Browse to its section and make sure it is selected.");
+    return;
+  }
   if (Object.keys(connectorNode.pregroup).length > 0) {
     growlAlert("WARNING", "The connector already has a presynaptic node!");
     return;

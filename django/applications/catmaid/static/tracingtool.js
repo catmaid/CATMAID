@@ -274,7 +274,7 @@ function TracingTool()
   this.addAction( new Action({
     helpText: "Move up 1 slice in z (or 10 with Shift held) (with ctrl move triview planes)",
     keyShortcuts: {
-      ',': [ 44, 188 ]
+      's': [ 83, 115 ]
     },
     run: function (e) {
 
@@ -283,7 +283,7 @@ function TracingTool()
         self.prototype.slider_z.move(-(e.shiftKey ? 10 : 1));
         return true;
       }else{
-        tracingLayer.svgOverlay.moveTriview(0,0,1);
+        tracingLayer.svgOverlay.moveTriview(0,0,-1);
         return true;
       }
     }
@@ -293,7 +293,7 @@ function TracingTool()
   this.addAction( new Action({
     helpText: "Move down 1 slice in z (or 10 with Shift held) (with ctrl move triview planes)",
     keyShortcuts: {
-      '.': [ 46, 190 ]
+      'w': [ 87, 119 ]
     },
     run: function (e) {
 
@@ -302,7 +302,7 @@ function TracingTool()
         self.prototype.slider_z.move((e.shiftKey ? 10 : 1));
         return true;
       }else{
-          tracingLayer.svgOverlay.moveTriview(0,0,-1);
+          tracingLayer.svgOverlay.moveTriview(0,0,1);
           return true;
       }
     }
@@ -312,7 +312,7 @@ function TracingTool()
   this.addAction( new Action({
       helpText: "Move up 1 time point in t",
       keyShortcuts: {
-        's': [ 83, 115 ]
+        'd': [ 68, 100 ]
       },
       run: function (e) {
           self.prototype.slider_t.move(1);
@@ -547,7 +547,7 @@ not needed for cell tracking
     }
   } ) );
 
-
+  /*we need D to move up and down slices
   this.addAction( new Action({
     helpText: "Deselect the active node",
     keyShortcuts:  {
@@ -560,7 +560,8 @@ not needed for cell tracking
       return true;
     }
   }) );
-
+  */
+  
   this.addAction( new Action({
     helpText: "Go to the parent of the active node (Ctrl: set confidence to 5 before going to parent)",
     keyShortcuts: {
@@ -1049,7 +1050,7 @@ TracingTool.search = function()
             actionLink.click(action(data[i].class_name));
             actionLink.text("Go to nearest node");
             row.append($('<td/>').append(actionLink));
-          } else if (data[i].class_name === 'label') {
+          } else if (data[i].class_name === 'label' || data[i].class_name === 'node') {
             // Create a link that will then query, when clickableed, for the list of nodes
             // that point to the label, and show a list [1], [2], [3] ... clickable,
             // or better, insert a table below this row with x,y,z,parent skeleton, parent neuron.

@@ -28,6 +28,25 @@ def search(request, project_id=None):
             'ch': int(node['treenode__location_c']),
             'skid': node['treenode__skeleton']}
 
+
+    def format_node_data_get(node):
+        '''
+        Formats node data for our json output.
+
+        When we start using Django 1.4, we can use prefetch_related instead of using
+        .values('treenode__xxx'), and will then be able to access a proper location
+        object.
+        '''
+
+        return {
+            'id': node.id,
+            'x': node.location.x,
+            'y': node.location.y,
+            'z': node.location.z,
+            't': int(node.location_t),
+            'ch': int(node.location_c),
+            'skid': node.skeleton_id}
+
     search_string = request.GET.get('substring', "")
 
     ids = set()
@@ -52,7 +71,8 @@ def search(request, project_id=None):
             if row['id'] not in ids:
                 rows.append(row)
     except ValueError:
-        pass
+        pass   
+
 
     # 3. Query labels in treenodes. First get a list of matching labels,
     # and then find a list of treenodes for each label.
@@ -85,6 +105,29 @@ def search(request, project_id=None):
           nodes = []
           row_with_node['nodes'] = nodes
         nodes.append(format_node_data(node))
+
+
+    # 4. Query nodes by ID, if the search string is a number
+    try:
+        oid = int(search_string)
+        oid_query = Treenode.objects.get(
+                pk=int(oid),
+                project=project_id
+                )
+        #if we are here it means object exists
+        row = {}
+        row['class_name'] = 'node'
+        row['id'] = search_string
+        row['name'] = 'node'
+        nodes2 = []
+        nodes2.append( format_node_data_get(oid_query) )
+        row['nodes'] = nodes2
+        rows.append( row )
+
+    except ValueError:
+        pass  
+    except ObjectDoesNotExist as e: #in case object does not exist
+        pass
 
     return HttpResponse(json.dumps(rows))
 

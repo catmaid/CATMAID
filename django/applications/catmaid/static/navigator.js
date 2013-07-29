@@ -497,7 +497,7 @@ function Navigator()
 		new Action({
 			helpText: "Move up 1 slice in z (or 10 with Shift held)",
 			keyShortcuts: {
-				',': [ 44, 188 ]
+				's': [ 83, 115 ]
 			},
 			run: function (e) {
 				self.slider_z.move(-(e.shiftKey ? 10 : 1));
@@ -508,7 +508,7 @@ function Navigator()
 		new Action({
 			helpText: "Move down 1 slice in z (or 10 with Shift held)",
 			keyShortcuts: {
-				'.': [ 46, 190 ]
+				'w': [ 87, 119 ]
 			},
 			run: function (e) {
 				self.slider_z.move((e.shiftKey ? 10 : 1));
@@ -519,7 +519,7 @@ function Navigator()
 		new Action({
 			helpText: "Move up 1 time point in t (or 10 with Shift held)",
 			keyShortcuts: {
-				's': [ 83, 115 ]
+				 'd': [ 68, 100 ]
 			},
 			run: function (e) {
 				self.slider_t.move((1));

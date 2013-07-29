@@ -485,7 +485,7 @@ def export_neuroml_level3_v181(request, project_id=None):
     WHERE project_id = %s
       AND (relation_name = 'presynaptic_to'
            OR relation_name = 'postsynaptic_to')
-    ''' % project_id)
+    ''' % int(project_id))
 
     relations = dict(cursor.fetchall())
     presynaptic_to = relations['presynaptic_to']

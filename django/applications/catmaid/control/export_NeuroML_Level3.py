@@ -6,7 +6,6 @@
 # TODO Synapses are potentially incorrect: the properties of release
 # are expected to be the same for all postsynaptic members
 # of the polyadic synapse, because NeuroML cannot express polyadic synapses.
-# TODO consider a soma segment.
 # TODO Consider removing segments when the soma segment radius is large.
 
 
@@ -21,7 +20,7 @@ def export(all_treenodes, connections, scale=0.001):
     Returns a lazy sequence of strings that expresses the XML. """
     for source in ([header()], body(all_treenodes, connections, scale), ["</neuroml>"]):
         for line in source:
-            yield line
+           yield line
 
 def header():
     return """<?xml version="1.0" encoding="UTF-8"?>
@@ -132,17 +131,18 @@ def make_slabs(root, root_segmentID, successors, cableIDs, scale, state):
     root_slab.last_segmentID = root_segmentID
     leads = [root_slab]
     while leads:
-        slab = leads.pop()
+        slab = leads.pop(0)
         parent = slab.nodes[-1]
         children = successors[parent[0]] # parent[0] is the treenode ID
         while children:
-            parent = children[0]
-            slab.nodes.append(parent)
-            children = successors[parent[0]] # parent[0] is the treenode ID
             if len(children) > 1:
                 # Found branch point
                 leads.extend(Slab([parent, child], slab) for child in children)
                 break
+            else:
+                parent = children[0]
+                slab.nodes.append(parent)
+                children = successors[parent[0]] # parent[0] is the treenode ID
 
         # Add segments
         cableID = state.nextID()
@@ -157,7 +157,6 @@ def make_cables(cableIDs):
 
 def make_arbor(skeletonID, treenodes, scale, state):
     """ treenodes is a sequence of treenodes, where each treenode is a tuple of id, parent_id, location. """
-
     successors = defaultdict(list)
     for treenode in treenodes:
         if treenode[1]:

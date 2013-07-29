@@ -243,12 +243,11 @@ def get_features( ontology, graphs, add_nonleafs=False, only_used_features=False
         for fl in feature_lists:
             # Check if this feature is used in one of the graphs
             f = Feature(fl)
-            for g in graphs:
-                # Improvement: graphs could be sorted according to how many
-                # class instances they have.
-                if graph_instanciates_feature(g, f):
-                    used_features.append( Feature(fl) )
-                    break
+            # Improvement: graphs could be sorted according to how many
+            # class instances they have.
+            if graphs_instanciate_feature(graphs, f):
+                used_features.append( Feature(fl) )
+                break
         return used_features
     else:
         return [ Feature(fl) for fl in feature_lists ]
@@ -373,6 +372,41 @@ def graph_instanciates_feature_complex(graph, feature):
     else:
         # More than one?
         raise Exception('Found more than one ontology node link of one class instance.')
+
+def graphs_instanciate_feature(graphlist, feature):
+    """ A delegate method to be able to use different implementations in a
+    simple manner. Benchmarks show that the complex query is faster.
+    """
+    return graphs_instanciate_feature_complex(graphlist, feature)
+
+def graphs_instanciate_feature_simple(graphs, feature):
+    """ Creates a simple query for each graph to test wheter it instantiates
+    a given featuren.
+    """
+    for g in graphs:
+        # Improvement: graphs could be sorted according to how many
+        # class instances they have.
+        if graph_instanciates_feature(g, feature):
+            return True
+    return False
+
+def graphs_instanciate_feature_complex(graphlist, feature):
+    """ Creates one complex query that thest if the feature is matched as a
+    whole.
+    """
+    # Build Q objects for to query whole feature instantiation at once. Start
+    # with query that makes sure the passed graph is the root.
+    Qr = Q(class_instance_b__in=graphlist)
+    for n,fl in enumerate(feature.links):
+        # Add constraints for each link
+        cia = "class_instance_a__cici_via_b__" * n
+        q_cls = Q(**{cia + "class_instance_a__class_column": fl.class_a})
+        q_rel = Q(**{cia + "relation": fl.relation})
+        # Combine all sub-queries with logical AND
+        Qr = Qr & q_cls & q_rel
+
+    link_q = ClassInstanceClassInstance.objects.filter(Qr).distinct()
+    return link_q.count() != 0
 
 def create_binary_matrix(graphs, features):
     """ Creates a binary matrix for the graphs passed."""

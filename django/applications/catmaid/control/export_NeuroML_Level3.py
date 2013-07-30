@@ -61,8 +61,9 @@ def make_segments(slab, cableID, scale, state):
         # segment of zero length
         segmentID = state.nextID()
         state.record(nodes[0][0], segmentID)
+        lastSegmentIDOfParent = slab.lastSegmentIDOfParent() # prior to setting the slab's last_segmentID, or root would reference itself
         slab.last_segmentID = segmentID
-        yield segment(nodes[0], nodes[0], points[0], points[0], segmentID, slab.lastSegmentIDOfParent(), cableID, True)
+        yield segment(nodes[0], nodes[0], points[0], points[0], segmentID, lastSegmentIDOfParent, cableID, True)
     else:
         previous_segmentID = slab.lastSegmentIDOfParent()
         for i in xrange(1, len(nodes)):

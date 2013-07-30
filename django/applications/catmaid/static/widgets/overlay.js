@@ -1347,8 +1347,10 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id) {
           ['Only this node', 'From this node to the next branch or end node (included)',
            'From this node to the previous branch node or root (excluded)',
            'From this node to root (included)', 'All nodes'],
-          [0, 1, 2, 3, 4]);
+          [0, 1, 2, 3, 4],
+          self.editRadius_defaultValue);
         dialog.onOK = function() {
+          self.editRadius_defaultValue = choice.selectedIndex;
           self.submit(
             django_url + project.id + '/treenode/' + treenode_id + '/radius',
             {radius: parseFloat(input.value),
@@ -1358,6 +1360,8 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id) {
               if (NeuronStagingArea.is_widget_open() && NeuronStagingArea.get_skeletonmodel(skeleton_id) && WebGLApp.is_widget_open()) {
                 // Reinit the actor
                 WebGLApp.addSkeletonFromID(skeleton_id, false);
+                // Reinit SVGOverlay to read in the radius of each altered treenode
+                self.updateNodes();
               }
             });
         };
@@ -1868,7 +1872,7 @@ window.OptionsDialog.prototype.appendMessage = function(msg) {
   this.dialog.appendChild(msg);
 };
 
-window.OptionsDialog.prototype.appendChoice = function(title, choiceID, names, values) {
+window.OptionsDialog.prototype.appendChoice = function(title, choiceID, names, values, defaultValue) {
   if (!names || !values || names.length !== values.length) {
     alert("Improper arrays for names and values.");
     return;
@@ -1881,6 +1885,7 @@ window.OptionsDialog.prototype.appendChoice = function(title, choiceID, names, v
     var option = document.createElement('option');
     option.text = names[i];
     option.value = values[i];
+    option.defaultSelected = defaultValue === values[i];
     choice.add(option);
   }
   p.appendChild(choice);

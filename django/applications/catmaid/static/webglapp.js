@@ -16,6 +16,7 @@ var WebGLApp = (function() { return new function () {
 
   var labelspheregeometry;
   var radiusSphere;
+  var icoSphere;
 
   var show_meshes = false,
       show_active_node = true,
@@ -183,8 +184,9 @@ var WebGLApp = (function() { return new function () {
     controls.target = new THREE.Vector3(coord[0]*scale,coord[1]*scale,coord[2]*scale);
 
     // new THREE.SphereGeometry( 160 * scale, 32, 32, 1 );
-    labelspheregeometry = new THREE.OctahedronGeometry( 130 * scale, 4);
-    radiusSphere = new THREE.OctahedronGeometry( 40 * scale, 4);
+    labelspheregeometry = new THREE.OctahedronGeometry( 130 * scale, 3);
+    radiusSphere = new THREE.OctahedronGeometry( 40 * scale, 3);
+    icoSphere = new THREE.IcosahedronGeometry(1, 2);
 
     debugaxes();
     draw_grid();
@@ -903,9 +905,10 @@ var WebGLApp = (function() { return new function () {
       };
 
       var createNodeSphere = function(id, x, y, z, v, radius) {
-        // TODO replace with IcosahedronGeometry: less vertices
-        var radiusCustomSphere = new THREE.SphereGeometry( radius, 32, 32, 1 );
-        var mesh = new THREE.Mesh( radiusCustomSphere, new THREE.MeshBasicMaterial( { color: self.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+        // Reuse geometry: an icoSphere of radius 1.0
+        var mesh = new THREE.Mesh( icoSphere, new THREE.MeshBasicMaterial( { color: self.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+        // Scale the mesh to bring about the correct radius
+        mesh.scale.x = mesh.scale.y = mesh.scale.z = radius;
         if (!v) v = pixelSpaceVector(x, y, z);
         mesh.position.set( v.x, v.y, v.z );
         mesh.node_id = id;

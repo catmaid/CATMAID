@@ -3,6 +3,7 @@ import json
 import string
 
 from django import forms
+from django.db import connection
 from django.db.models import Q
 from django.forms.formsets import formset_factory
 from django.forms.widgets import CheckboxSelectMultiple
@@ -238,19 +239,12 @@ def get_features( ontology, graphs, add_nonleafs=False, only_used_features=False
     to leafs of the ontology.
     """
     feature_lists = get_feature_paths( ontology, add_nonleafs )
+    features = [Feature(fl) for fl in feature_lists]
     if only_used_features:
-        used_features = []
-        for fl in feature_lists:
-            # Check if this feature is used in one of the graphs
-            f = Feature(fl)
-            # Improvement: graphs could be sorted according to how many
-            # class instances they have.
-            if graphs_instanciate_feature(graphs, f):
-                used_features.append( Feature(fl) )
-                break
+        used_features = get_by_graphs_instantiated_features(graphs, features)
         return used_features
     else:
-        return [ Feature(fl) for fl in feature_lists ]
+        return features
 
 def get_feature_paths( ontology, add_nonleafs=False, depth=0, max_depth=100 ):
     """ Returns all root-leaf paths of the passed ontology. It respects
@@ -407,6 +401,52 @@ def graphs_instanciate_feature_complex(graphlist, feature):
 
     link_q = ClassInstanceClassInstance.objects.filter(Qr).distinct()
     return link_q.count() != 0
+
+def get_by_graphs_instantiated_features(graphs, features):
+    """ Creates one complex query that thest which feature are instanciated in one of
+    the graphs.
+    """
+
+    # Find maximum feature length
+    max_links = 0
+    for f in features:
+        if len(f.links) > max_links:
+            max_links = len(f.links)
+
+    # Create feature array
+    normalized_features = []
+    for f in features:
+        links = []
+        for i in range(max_links):
+            if i < len(f.links):
+                fl = f.links[i]
+                links.append( '[%s,%s]' % (fl.class_a.id, fl.relation.id))
+            else:
+                links.append( '[-1,-1]' )
+        normalized_features.append(links)
+
+    # Build query with custom ID arrays: An array of graph ids and an array
+    # of features. Those features are arrays of links and those links are
+    # each an array of the class a ID and the relation ID of that link. All
+    # features need to have the same number of links in the array. So if they
+    # have actually less, pad with [-1, -1] elements.
+    query = "SELECT * FROM filter_used_features(ARRAY[%s], ARRAY[%s] );" % \
+        (",".join([str(g.id) for g in graphs]),
+         ",".join(['[%s]' % ','.join(f) for f in normalized_features]))
+
+    # Run query
+    cursor = connection.cursor()
+    cursor.execute(query)
+
+    # Parse result
+    used_features = []
+    rows = cursor.fetchall()
+    for r in rows:
+        # PostgreSQL uses one based indexing, subtract 1 to get 0 based indices
+        idx = r[0] - 1
+        used_features.append( features[idx] )
+
+    return used_features
 
 def create_binary_matrix(graphs, features):
     """ Creates a binary matrix for the graphs passed."""

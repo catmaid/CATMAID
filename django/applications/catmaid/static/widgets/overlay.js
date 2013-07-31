@@ -88,6 +88,15 @@ SkeletonAnnotations.staticMoveTo = function(z, y, x, fn) {
   }
 };
 
+SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID, fn) {
+  var instances = SkeletonAnnotations.SVGOverlay.prototype._instances;
+  for (var stack in instances) {
+    if (instances.hasOwnProperty(stack)) {
+      instances[stack].moveToAndSelectNode(nodeID, fn);
+    }
+  }
+};
+
 SkeletonAnnotations.getActiveNodeId = function() {
   return this.atn.id;
 };
@@ -1378,12 +1387,13 @@ SkeletonAnnotations.SVGOverlay.prototype.moveTo = function(z, y, x, fn) {
   });
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.moveToAndSelectNode = function(nodeID) {
+SkeletonAnnotations.SVGOverlay.prototype.moveToAndSelectNode = function(nodeID, fn) {
   if (this.isIDNull(nodeID)) return;
   var self = this;
   this.goToNode(nodeID,
       function() {
         self.selectNode(nodeID);
+        if (fn) fn();
       });
 };
 

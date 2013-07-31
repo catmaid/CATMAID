@@ -708,6 +708,7 @@ var WebGLApp = (function() { return new function () {
           // TODO: Darken the skeleton based on the branch calculation.
           edgeWeights = self.branchCentrality;
         }
+
         self.vertexIDs['neurite'].forEach(function(vertexID) {
           var vertex = self.nodeProps[vertexID];
           
@@ -731,14 +732,16 @@ var WebGLApp = (function() { return new function () {
           weight = (weight / neighbors.length) * 0.75 + 0.25;
           var color = new THREE.Color().setRGB(baseColor.r * weight, baseColor.g * weight, baseColor.b * weight);
           self.geometry['neurite'].colors.push(color);
-          
+
           if (vertexID in self.radiusVolumes) {
-            self.radiusVolumes[vertexID].material.color = baseColor;
-            self.radiusVolumes[vertexID].material.needsUpdate = true;
+            var mesh = self.radiusVolumes[vertexID];
+            var material = mesh.material.clone();
+            material.color = color;
+            mesh.setMaterial(material);
           }
         });
         self.geometry['neurite'].colorsNeedUpdate = true;
-        
+
         self.actor['neurite'].material.color = new THREE.Color(0xffffff);
         self.actor['neurite'].material.needsUpdate = true;
       } else {
@@ -748,10 +751,11 @@ var WebGLApp = (function() { return new function () {
         
         self.actor['neurite'].material.color = self.actorColor;
         self.actor['neurite'].material.needsUpdate = true;
-      
+
+        var material = new THREE.MeshBasicMaterial({color: self.actorColor, opacity:1.0, transparent:false});
+
         for ( var k in self.radiusVolumes ) {
-          self.radiusVolumes[k].material.color = self.actorColor;
-          self.radiusVolumes[k].material.needsUpdate = true;
+          self.radiusVolumes[k].setMaterial(material);
         }
       }
     };
@@ -879,6 +883,8 @@ var WebGLApp = (function() { return new function () {
       }, {});
 
       // Store for reuse in other functions
+      // TODO incurs in large memory footprint, should retrieve it when needed from the database (e.g. when needing to create the graph).
+      // TODO all that needs to be kept is the x,y,z for the nodes that have connectors or labels, and those for connectors can be removed after creating them (for the text labels one has to keep them, as labels are recreated every time)
       self.nodeProps = nodeProps;
       self.connectorProps = connectors.reduce(function(ob, con) {
         ob[con[1]] = con;
@@ -902,9 +908,12 @@ var WebGLApp = (function() { return new function () {
         self.vertexIDs[type].push(id2);
       };
 
+      // Reused for all meshes
+      var material = new THREE.MeshBasicMaterial( { color: self.getActorColorAsHex(), opacity:1.0, transparent:false  } );
+
       var createNodeSphere = function(id, v, radius) {
         // Reuse geometry: an icoSphere of radius 1.0
-        var mesh = new THREE.Mesh( icoSphere, new THREE.MeshBasicMaterial( { color: self.getActorColorAsHex(), opacity:1.0, transparent:false  } ) );
+        var mesh = new THREE.Mesh(icoSphere, material);
         // Scale the mesh to bring about the correct radius
         mesh.scale.x = mesh.scale.y = mesh.scale.z = radius;
         mesh.position.set( v.x, v.y, v.z );
@@ -914,7 +923,7 @@ var WebGLApp = (function() { return new function () {
       };
 
       var createCylinder = function(nodeID, v1, v2, radius) {
-        var mesh = new THREE.Mesh(cylinder, new THREE.MeshBasicMaterial({color: self.getActorColorAsHex(), opacity:1.0, transparent:false}));
+        var mesh = new THREE.Mesh(cylinder, material);
 
         // BE CAREFUL with side effects: all functions on a Vector3 alter the vector and return it (rather than returning an altered copy)
         var direction = new THREE.Vector3().subVectors(v2, v1);
@@ -946,17 +955,19 @@ var WebGLApp = (function() { return new function () {
           var p = nodeProps[node[1]];
           var v1 = pixelSpaceVector(node[4], node[5], node[6]);
           var v2 = pixelSpaceVector(p[4], p[5], p[6]);
+          var nodeID = node[0];
           if (node[7] > 0 && p[7] > 0) {
             // Create cylinder using the node's radius only (not the parent) so that the geometry can be reused
-            createCylinder(node[0], v1, v2, node[7] * scale);
+            var scaled_radius = node[7] * scale;
+            createCylinder(nodeID, v1, v2, scaled_radius);
             // Create skeleton line as well
-            createEdge(node[0], v1, p[0], v2, 'neurite');
+            createEdge(nodeID, v1, p[0], v2, 'neurite');
           } else {
             // Create line
-            createEdge(node[0], v1, p[0], v2, 'neurite');
+            createEdge(nodeID, v1, p[0], v2, 'neurite');
             // Create sphere
             if (node[7] > 0) {
-              createNodeSphere(node[0], v1, node[7] * scale);
+              createNodeSphere(nodeID, v1, node[7] * scale);
             }
           }
         } else if (node[7] > 0) {
